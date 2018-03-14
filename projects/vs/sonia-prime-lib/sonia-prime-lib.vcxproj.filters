@@ -1,0 +1,132 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="sonia">
+      <UniqueIdentifier>{1154b024-252b-4bf2-b375-4aa91afd6ee2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.serialization">
+      <UniqueIdentifier>{ebd5b070-4b8b-4a31-84e5-5cdb1859b1d4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.algorithm">
+      <UniqueIdentifier>{b3afdb08-fb25-497c-a7c8-60f85a24d7a7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.logger">
+      <UniqueIdentifier>{c89f215b-69eb-4024-bb0b-cf0d2b84ee34}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.service">
+      <UniqueIdentifier>{577d9926-06fe-40ce-bac0-01ebc6035df0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.io">
+      <UniqueIdentifier>{74d1bad4-5a7d-4958-8ab3-1e3822da573a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility">
+      <UniqueIdentifier>{c309a8c6-dc15-46aa-9cc5-9bfe957608b0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility\iterators">
+      <UniqueIdentifier>{95458c7b-86c2-427b-ab4a-f18d13beec67}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\sonia\element.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\array_view.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\config.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\cstdint.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\string.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\prime_config.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\serialization\serialization.hpp">
+      <Filter>sonia.serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\serialization\integral.hpp">
+      <Filter>sonia.serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\type_traits.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\algorithm\pull.hpp">
+      <Filter>sonia.algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\automatic.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\logger\logger.hpp">
+      <Filter>sonia.logger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\logger\loggable.hpp">
+      <Filter>sonia.logger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\service\service.hpp">
+      <Filter>sonia.service</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\service\service_cache.hpp">
+      <Filter>sonia.service</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\io\file.hpp">
+      <Filter>sonia.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\exceptions.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\scope_exit.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\service\local_service_registry.hpp">
+      <Filter>sonia.service</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\file_persistable.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\wrapper_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\iterator_polymorphic_impl.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\shared_ptr_wrapper_iterator_impl.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\placement_new.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\in_place_factory.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\reference_wrapper.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\optional.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\variadic.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\bind.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
+      <Filter>sonia.logger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\service\service_cache.cpp">
+      <Filter>sonia.service</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\io\file.cpp">
+      <Filter>sonia.io</Filter>
+    </ClCompile>
+  </ItemGroup>
+</Project>

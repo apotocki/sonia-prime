@@ -39,6 +39,9 @@ using std::is_same_v;
 using std::is_base_of;
 using std::is_base_of_v;
 
+using std::is_const;
+using std::is_const_v;
+
 using std::is_rvalue_reference;
 using std::is_rvalue_reference_v;
 
@@ -59,6 +62,9 @@ using std::add_lvalue_reference;
 using std::add_lvalue_reference_t;
 using std::add_rvalue_reference;
 using std::add_rvalue_reference_t;
+
+using std::conditional;
+using std::conditional_t;
 
 //using std::remove_cvref;
 //using std::remove_cvref_t;

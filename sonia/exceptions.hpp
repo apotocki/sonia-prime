@@ -13,6 +13,8 @@
 #include <utility>
 #include <string>
 
+#include <boost/throw_exception.hpp>
+
 namespace sonia {
 
 class exception : public std::runtime_error {

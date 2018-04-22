@@ -19,7 +19,27 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/exceptions.hpp"
 
-namespace sonia {
+namespace sonia { namespace detail {
+
+template <class ImplT, class ReferenceT>
+class wrapper_iterator_proxy
+{
+public:
+    explicit wrapper_iterator_proxy(ImplT & impl) : impl_(impl) {}
+    wrapper_iterator_proxy(wrapper_iterator_proxy &&) = default;
+
+    wrapper_iterator_proxy(wrapper_iterator_proxy const&) = delete;
+    wrapper_iterator_proxy & operator = (wrapper_iterator_proxy const&) = delete;
+    wrapper_iterator_proxy & operator = (wrapper_iterator_proxy &&) = delete;
+
+    operator ReferenceT() const { return impl_.dereference(); }
+    wrapper_iterator_proxy & operator = (ReferenceT ref) { impl_.set(ref); return *this; }
+
+private:
+    ImplT & impl_;
+};
+
+} // namespace sonia::detail
 
 template <typename CategoryT> struct iterator_copy {
     template <typename T>
@@ -39,9 +59,8 @@ template <
     , class DifferenceT = std::ptrdiff_t
 >
 class wrapper_iterator : public boost::iterator_facade<
-        polymorphic_iterator<Value, CategoryOrTraversal, ReferenceT, DifferenceT>,
-        Value, CategoryOrTraversal, ReferenceT, DifferenceT
-    >
+      wrapper_iterator<ImplT, Value, CategoryOrTraversal, ReferenceT, DifferenceT>
+    , Value, CategoryOrTraversal, ReferenceT, DifferenceT>
 {
     friend class boost::iterator_core_access;
 
@@ -71,6 +90,49 @@ public:
 
 private:
     ImplT impl_;
+};
+
+template <
+      class ImplT
+    , class Value
+    , class CategoryOrTraversal
+    , class ReferenceT = Value&
+    , class DifferenceT = std::ptrdiff_t
+>
+class proxy_wrapper_iterator : public boost::iterator_facade<
+      proxy_wrapper_iterator<ImplT, Value, CategoryOrTraversal, detail::wrapper_iterator_proxy<ImplT, ReferenceT>, DifferenceT>
+    , Value, CategoryOrTraversal, ReferenceT, DifferenceT>
+>
+{
+    friend class boost::iterator_core_access;
+    typedef detail::wrapper_iterator_proxy<ImplT, ReferenceT> proxy_type;
+
+    bool equal(polymorphic_iterator const& rhs) const {
+        return impl_.equal(rhs.impl_);
+    }
+
+    void increment() {
+        impl_.increment();
+    }
+
+    void decrement() {
+        impl_.decrement();
+    }
+
+    proxy_type dereference() const {
+        return proxy_type(impl_);
+    }
+
+    void advance(DifferenceT dif) {
+        impl_.advance(dif);
+    }
+
+public:
+    template <typename ... ArgsT>
+    wrapper_iterator(ArgsT && ... args) : impl_(std::forward<ArgsT>(args) ...) {}
+
+private:
+    mutable ImplT impl_;
 };
 
 template <typename PtrT, typename CategoryT>
@@ -111,13 +173,18 @@ public:
         impl_->decrement();
     }
 
-    auto dereference() const {
+    decltype(auto) dereference() const {
         return impl_->dereference();
     }
 
     template <typename DifferenceT>
     void advance(DifferenceT dif) {
         return impl_->advance(dif);
+    }
+
+    template <typename T>
+    void set(T && arg) {
+        impl_->set(std::forward<T>(arg));
     }
 
 private:
@@ -143,6 +210,10 @@ public:
 
     virtual void decrement() {
         BOOST_THROW_EXCEPTION(not_implemented_error("iterator_polymorphic_impl::decrement"));
+    }
+
+    virtual void set(ReferenceT ref) {
+        BOOST_THROW_EXCEPTION(not_implemented_error("iterator_polymorphic_impl::set"));
     }
 
     virtual ReferenceT dereference() const {
@@ -245,8 +316,14 @@ public:
     }
 };
 
-template <class ValueT, class CategoryOrTraversal, class ReferenceT, class DifferenceT>
+template <class ValueT, class CategoryOrTraversal, class ReferenceT = ValueT&, class DifferenceT = std::ptrdiff_t>
 using polymorphic_iterator = wrapper_iterator<
+    iterator_wrapped_ptr_adapter<shared_ptr<iterator_polymorphic_impl<ReferenceT, DifferenceT>>, CategoryOrTraversal>,
+    ValueT, CategoryOrTraversal, ReferenceT, DifferenceT
+>;
+
+template <class ValueT, class CategoryOrTraversal, class ReferenceT = ValueT&, class DifferenceT = std::ptrdiff_t>
+using proxy_polymorphic_iterator = proxy_wrapper_iterator<
     iterator_wrapped_ptr_adapter<shared_ptr<iterator_polymorphic_impl<ReferenceT, DifferenceT>>, CategoryOrTraversal>,
     ValueT, CategoryOrTraversal, ReferenceT, DifferenceT
 >;

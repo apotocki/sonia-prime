@@ -39,7 +39,12 @@ public:
     explicit array_view(T * b, T * e) noexcept
         : data_(b), size_(e - b)
     {
-        BOOST_ASSERT(std::less_equal<T>()(b, e));
+        BOOST_ASSERT(std::less_equal<T*>()(b, e));
+    }
+
+    template <typename OtherT> 
+    array_view(array_view<OtherT> arr) : data_(arr.begin()), size_(arr.size()) {
+        BOOST_STATIC_ASSERT(sizeof(T) == sizeof(OtherT));
     }
 
     iterator begin() const noexcept { return data_; }
@@ -61,7 +66,12 @@ public:
 
     BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL();
 
-private:
+    bool operator== (array_view const& rhs) const
+    {
+        return size_ == rhs.size_ && (!size_ || data_ == rhs.data_);
+    }
+
+protected:
     T * data_;
     size_t size_;
 };

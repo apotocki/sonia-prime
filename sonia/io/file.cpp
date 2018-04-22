@@ -21,7 +21,7 @@ namespace sonia { namespace io {
 
 #ifdef BOOST_WINDOWS
 
-string error_message(DWORD errcode)  {
+std::string error_message(DWORD errcode)  {
     LPWSTR pBuffer = nullptr;
     DWORD num = FormatMessageW(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,  
@@ -40,10 +40,10 @@ string error_message(DWORD errcode)  {
         std::vector<char> buf(len);
         WideCharToMultiByte(CP_ACP, 0, pBuffer, slength, &buf[0], len, 0, 0);
         while (!buf.empty() && (buf.back() == '\r' || buf.back() == '\n')) buf.pop_back();
-        return string(buf.begin(), buf.end());
+        return std::string(buf.begin(), buf.end());
     }
 
-    return "unknown error, errcode: " + boost::lexical_cast<string>(errcode);
+    return "unknown error, errcode: " + boost::lexical_cast<std::string>(errcode);
 }
 
 void file_create() {

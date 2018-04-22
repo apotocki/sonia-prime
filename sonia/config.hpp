@@ -22,8 +22,19 @@
 #   define _ITERATOR_DEBUG_LEVEL 0
 #endif
 
+#if defined(_MSC_VER)
+#   define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
+//#   define _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING
+#endif
+
 #define BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE
 
 #include <boost/config.hpp>
+
+#define SONIA_ONE_VERSION "0.1.0"
+
+#ifndef BOOST_THREAD_VERSION
+#   define BOOST_THREAD_VERSION 3
+#endif
 
 #endif // SONIA_CONFIG_HPP

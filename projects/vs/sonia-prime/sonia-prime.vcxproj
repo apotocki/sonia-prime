@@ -19,86 +19,46 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\sonia\algorithm\pull.hpp" />
-    <ClInclude Include="..\..\..\sonia\application.hpp" />
-    <ClInclude Include="..\..\..\sonia\application\application.hpp" />
-    <ClInclude Include="..\..\..\sonia\array_view.hpp" />
-    <ClInclude Include="..\..\..\sonia\automatic.hpp" />
-    <ClInclude Include="..\..\..\sonia\build_config.hpp" />
-    <ClInclude Include="..\..\..\sonia\cstdint.hpp" />
-    <ClInclude Include="..\..\..\sonia\config.hpp" />
-    <ClInclude Include="..\..\..\sonia\element.hpp" />
-    <ClInclude Include="..\..\..\sonia\exceptions.hpp" />
-    <ClInclude Include="..\..\..\sonia\io\file.hpp" />
-    <ClInclude Include="..\..\..\sonia\logger\loggable.hpp" />
-    <ClInclude Include="..\..\..\sonia\logger\logger.hpp" />
-    <ClInclude Include="..\..\..\sonia\optional.hpp" />
-    <ClInclude Include="..\..\..\sonia\prime_config.hpp" />
-    <ClInclude Include="..\..\..\sonia\reference_wrapper.hpp" />
-    <ClInclude Include="..\..\..\sonia\serialization\integral.hpp" />
-    <ClInclude Include="..\..\..\sonia\serialization\serialization.hpp" />
-    <ClInclude Include="..\..\..\sonia\service\local_service_registry.hpp" />
-    <ClInclude Include="..\..\..\sonia\service\service.hpp" />
-    <ClInclude Include="..\..\..\sonia\service\service_locator.hpp" />
-    <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
-    <ClInclude Include="..\..\..\sonia\string.hpp" />
-    <ClInclude Include="..\..\..\sonia\thread.hpp" />
-    <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\bind.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\file_persistable.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\in_place_factory.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\iterators\array_value_forward_iterator_adapter.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\iterators\file_region_iterator.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\iterators\iterator_polymorphic_impl.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\iterators\range_dereferencing_iterator.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\iterators\shared_ptr_wrapper_iterator_impl.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\iterators\wrapper_iterator.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\placement_new.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\persister.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\scope_exit.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\variadic.hpp" />
+    <ClCompile Include="..\..\..\sonia\application\dllmain.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\sonia\application\application.cpp" />
-    <ClCompile Include="..\..\..\sonia\io\file.cpp" />
-    <ClCompile Include="..\..\..\sonia\logger\logger.cpp" />
-    <ClCompile Include="..\..\..\sonia\service\local_service_registry.cpp" />
-    <ClCompile Include="..\..\..\sonia\service\service_locator.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\iterators\file_region_iterator.cpp" />
+    <ProjectReference Include="..\sonia-prime-lib\sonia-prime-lib.vcxproj">
+      <Project>{c98dcaaf-ba4a-4500-b111-cf0773eb0a38}</Project>
+    </ProjectReference>
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
-    <ProjectGuid>{C98DCAAF-BA4A-4500-B111-CF0773EB0A38}</ProjectGuid>
+    <ProjectGuid>{AA72585C-37C3-430C-8E09-634F201BD396}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>soniaprimelib</RootNamespace>
+    <RootNamespace>soniaprime</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v141</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
-    <CharacterSet>MultiByte</CharacterSet>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -118,11 +78,11 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(BOOST_1_66);$(IncludePath)</IncludePath>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(BOOST_1_66);$(IncludePath)</IncludePath>
   </PropertyGroup>
@@ -134,38 +94,36 @@
     <LinkIncremental>false</LinkIncremental>
     <IncludePath>$(BOOST_1_66);$(IncludePath)</IncludePath>
   </PropertyGroup>
-  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <ClCompile>
-      <PrecompiledHeader>NotUsing</PrecompiledHeader>
-      <WarningLevel>Level3</WarningLevel>
-      <Optimization>Disabled</Optimization>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExceptionHandling>Async</ExceptionHandling>
-      <MinimalRebuild>false</MinimalRebuild>
-      <MultiProcessorCompilation>true</MultiProcessorCompilation>
-    </ClCompile>
-    <Link>
-      <SubSystem>Windows</SubSystem>
-      <GenerateDebugInformation>true</GenerateDebugInformation>
-    </Link>
-  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;SONIAPRIME_EXPORTS;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExceptionHandling>Async</ExceptionHandling>
-      <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;SONIAPRIME_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\</AdditionalIncludeDirectories>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -180,12 +138,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;SONIAPRIME_EXPORTS;_WINDOWS;_USRDLL;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExceptionHandling>Async</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -202,12 +160,12 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;SONIAPRIME_EXPORTS;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExceptionHandling>Async</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
+      <ExceptionHandling>Async</ExceptionHandling>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

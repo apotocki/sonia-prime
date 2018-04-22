@@ -25,6 +25,9 @@
     <Filter Include="sonia.utility\iterators">
       <UniqueIdentifier>{95458c7b-86c2-427b-ab4a-f18d13beec67}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.application">
+      <UniqueIdentifier>{07b0c1e7-bd5a-4964-859f-a6eaa94b1f92}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\element.hpp">
@@ -72,9 +75,6 @@
     <ClInclude Include="..\..\..\sonia\service\service.hpp">
       <Filter>sonia.service</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\service\service_cache.hpp">
-      <Filter>sonia.service</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\io\file.hpp">
       <Filter>sonia.io</Filter>
     </ClInclude>
@@ -117,16 +117,52 @@
     <ClInclude Include="..\..\..\sonia\utility\bind.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\array_value_forward_iterator_adapter.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\application\application.hpp">
+      <Filter>sonia.application</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\build_config.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\application.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\service\service_locator.hpp">
+      <Filter>sonia.service</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\thread.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\persister.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\file_region_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\range_dereferencing_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
       <Filter>sonia.logger</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\service\service_cache.cpp">
-      <Filter>sonia.service</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\io\file.cpp">
       <Filter>sonia.io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\application\application.cpp">
+      <Filter>sonia.application</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\service\service_locator.cpp">
+      <Filter>sonia.service</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\service\local_service_registry.cpp">
+      <Filter>sonia.service</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\iterators\file_region_iterator.cpp">
+      <Filter>sonia.utility\iterators</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

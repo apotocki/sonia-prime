@@ -14,7 +14,17 @@ namespace fs = boost::filesystem;
 #include "sonia/utility/iterators/file_region_iterator.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
 
+#include "sonia/utility/optional_inheritor.hpp"
+
 using namespace sonia;
+
+class test_cls
+    : public polymorphic_clonable
+    , public polymorphic_movable
+{
+public:
+    ~test_cls() {}
+};
 
 BOOST_AUTO_TEST_CASE (iterators_test)
 {
@@ -52,4 +62,8 @@ BOOST_AUTO_TEST_CASE (iterators_test)
         ++fin;
     }
     BOOST_CHECK_EQUAL(sz, fs::file_size("data/sparqldaf184.n3"));
+
+    typedef optional_inheritor<test_cls, 8> opt_t;
+    opt_t opt;
+    opt_t opt2 = std::move(opt);
 }

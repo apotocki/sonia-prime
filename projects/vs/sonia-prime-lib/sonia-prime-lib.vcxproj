@@ -46,6 +46,7 @@
     <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\file_persistable.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\optional_inheritor.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\in_place_factory.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\array_value_forward_iterator_adapter.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\file_region_iterator.hpp" />
@@ -55,6 +56,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\wrapper_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\placement_new.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\persister.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\polymorphic_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\scope_exit.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\variadic.hpp" />
   </ItemGroup>

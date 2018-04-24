@@ -17,7 +17,7 @@
 #include <boost/assert.hpp>
 
 #include "sonia/shared_ptr.hpp"
-#include "sonia/exceptions.hpp"
+#include "sonia/utility/polymorphic_traits.hpp"
 
 namespace sonia { namespace detail {
 
@@ -195,37 +195,39 @@ template <
       class ReferenceT
     , class DifferenceT = std::ptrdiff_t
 >
-class iterator_polymorphic_impl
+class iterator_polymorphic_impl 
+    : public polymorphic_clonable
+    , public polymorphic_movable
 {
 public:
     virtual ~iterator_polymorphic_impl() noexcept {}
 
     virtual bool equal(iterator_polymorphic_impl const& rhs) const {
-        BOOST_THROW_EXCEPTION(not_implemented_error("iterator_polymorphic_impl::equal"));
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::equal"));
     }
 
     virtual void increment() {
-        BOOST_THROW_EXCEPTION(not_implemented_error("iterator_polymorphic_impl::increment"));
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::increment"));
     }
 
     virtual void decrement() {
-        BOOST_THROW_EXCEPTION(not_implemented_error("iterator_polymorphic_impl::decrement"));
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::decrement"));
     }
 
     virtual void set(ReferenceT ref) {
-        BOOST_THROW_EXCEPTION(not_implemented_error("iterator_polymorphic_impl::set"));
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::set"));
     }
 
     virtual ReferenceT dereference() const {
-        BOOST_THROW_EXCEPTION(not_implemented_error("iterator_polymorphic_impl::dereference"));
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::dereference"));
     }
 
     virtual void advance(DifferenceT dif) {
-        BOOST_THROW_EXCEPTION(not_implemented_error("iterator_polymorphic_impl::advance"));
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::advance"));
     }
 
     virtual size_t get_sizeof() {
-        BOOST_THROW_EXCEPTION(not_implemented_error("iterator_polymorphic_impl::get_sizeof"));
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::get_sizeof"));
     }
 
     virtual void clone(void * address, size_t sz) {

@@ -10,6 +10,7 @@
 #endif
 
 #include <type_traits>
+#include <boost/mpl/identity.hpp>
 
 namespace sonia {
 
@@ -65,6 +66,8 @@ using std::add_rvalue_reference_t;
 
 using std::conditional;
 using std::conditional_t;
+
+using boost::mpl::identity;
 
 //using std::remove_cvref;
 //using std::remove_cvref_t;

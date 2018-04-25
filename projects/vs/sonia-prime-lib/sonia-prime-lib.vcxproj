@@ -30,6 +30,7 @@
     <ClInclude Include="..\..\..\sonia\element.hpp" />
     <ClInclude Include="..\..\..\sonia\exceptions.hpp" />
     <ClInclude Include="..\..\..\sonia\io\file.hpp" />
+    <ClInclude Include="..\..\..\sonia\iterator_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\loggable.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\logger.hpp" />
     <ClInclude Include="..\..\..\sonia\optional.hpp" />
@@ -45,7 +46,7 @@
     <ClInclude Include="..\..\..\sonia\thread.hpp" />
     <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\file_persistable.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\file_persister.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optional_inheritor.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\in_place_factory.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\array_value_forward_iterator_adapter.hpp" />
@@ -66,6 +67,7 @@
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp" />
     <ClCompile Include="..\..\..\sonia\service\local_service_registry.cpp" />
     <ClCompile Include="..\..\..\sonia\service\service_locator.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\file_persister.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\iterators\file_region_iterator.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

@@ -67,7 +67,12 @@ using std::add_rvalue_reference_t;
 using std::conditional;
 using std::conditional_t;
 
-using boost::mpl::identity;
+using std::in_place;
+using std::in_place_t;
+using std::in_place_type;
+using std::in_place_type_t;
+
+//using boost::mpl::identity;
 
 //using std::remove_cvref;
 //using std::remove_cvref_t;

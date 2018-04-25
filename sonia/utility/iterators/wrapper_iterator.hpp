@@ -16,8 +16,11 @@
 #include <boost/throw_exception.hpp>
 #include <boost/assert.hpp>
 
+#include "sonia/type_traits.hpp"
 #include "sonia/shared_ptr.hpp"
+#include "sonia/iterator_traits.hpp"
 #include "sonia/utility/polymorphic_traits.hpp"
+#include "sonia/utility/optional_inheritor.hpp"
 
 namespace sonia { namespace detail {
 
@@ -58,13 +61,15 @@ template <
     , class ReferenceT = Value&
     , class DifferenceT = std::ptrdiff_t
 >
-class wrapper_iterator : public boost::iterator_facade<
-      wrapper_iterator<ImplT, Value, CategoryOrTraversal, ReferenceT, DifferenceT>
-    , Value, CategoryOrTraversal, ReferenceT, DifferenceT>
+class wrapper_input_iterator
+    : public boost::iterator_facade<
+          wrapper_input_iterator<ImplT, Value, CategoryOrTraversal, ReferenceT, DifferenceT>
+        , Value, CategoryOrTraversal, ReferenceT, DifferenceT
+    >
 {
     friend class boost::iterator_core_access;
 
-    bool equal(polymorphic_iterator const& rhs) const {
+    bool equal(wrapper_input_iterator const& rhs) const {
         return impl_.equal(rhs.impl_);
     }
 
@@ -86,7 +91,9 @@ class wrapper_iterator : public boost::iterator_facade<
 
 public:
     template <typename ... ArgsT>
-    wrapper_iterator(ArgsT && ... args) : impl_(std::forward<ArgsT>(args) ...) {}
+    explicit wrapper_input_iterator(in_place_t, ArgsT && ... args) 
+        : impl_(std::forward<ArgsT>(args) ...)
+    { }
 
 private:
     ImplT impl_;
@@ -99,15 +106,16 @@ template <
     , class ReferenceT = Value&
     , class DifferenceT = std::ptrdiff_t
 >
-class proxy_wrapper_iterator : public boost::iterator_facade<
-      proxy_wrapper_iterator<ImplT, Value, CategoryOrTraversal, detail::wrapper_iterator_proxy<ImplT, ReferenceT>, DifferenceT>
-    , Value, CategoryOrTraversal, ReferenceT, DifferenceT>
->
+class wrapper_output_iterator 
+    : public boost::iterator_facade<
+          wrapper_output_iterator<ImplT, Value, CategoryOrTraversal, ReferenceT, DifferenceT>
+        , Value, CategoryOrTraversal, detail::wrapper_iterator_proxy<ImplT, ReferenceT>, DifferenceT
+    >
 {
     friend class boost::iterator_core_access;
     typedef detail::wrapper_iterator_proxy<ImplT, ReferenceT> proxy_type;
 
-    bool equal(polymorphic_iterator const& rhs) const {
+    bool equal(wrapper_output_iterator const& rhs) const {
         return impl_.equal(rhs.impl_);
     }
 
@@ -129,37 +137,84 @@ class proxy_wrapper_iterator : public boost::iterator_facade<
 
 public:
     template <typename ... ArgsT>
-    wrapper_iterator(ArgsT && ... args) : impl_(std::forward<ArgsT>(args) ...) {}
+    explicit wrapper_output_iterator(std::in_place_t, ArgsT && ... args) 
+        : impl_(std::forward<ArgsT>(args) ...)
+    { }
 
 private:
     mutable ImplT impl_;
 };
 
-template <typename PtrT, typename CategoryT>
-class iterator_wrapped_ptr_adapter {
+template <
+      class ReferenceT
+    , class DifferenceT = std::ptrdiff_t
+>
+class iterator_polymorphic_impl 
+    : public polymorphic_clonable
+    , public polymorphic_movable
+{
 public:
-    typedef iterator_wrapped_ptr_adapter self_type;
+    virtual ~iterator_polymorphic_impl() noexcept {}
 
+    virtual bool empty() const {
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::empty"));
+    }
+
+    virtual bool equal(iterator_polymorphic_impl const& rhs) const {
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::equal"));
+    }
+
+    virtual void increment() {
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::increment"));
+    }
+
+    virtual void decrement() {
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::decrement"));
+    }
+
+    virtual void set(ReferenceT ref) {
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::set"));
+    }
+
+    virtual ReferenceT dereference() const {
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::dereference"));
+    }
+
+    virtual void advance(DifferenceT dif) {
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::advance"));
+    }
+
+    virtual size_t get_sizeof() const {
+        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::get_sizeof"));
+    }
+};
+
+template <typename PtrT, typename CategoryT>
+class iterator_ptr_wrappee_adapter
+{
+public:
     template <typename ... ArgsT>
-    explicit iterator_wrapped_ptr_adapter(ArgsT && ... args) : impl_(std::forward<ArgsT>(args) ...) {}
+    explicit iterator_ptr_wrappee_adapter(ArgsT && ... args) 
+        : impl_(std::forward<ArgsT>(args) ...)
+    { }
 
-    iterator_wrapped_ptr_adapter(iterator_wrapped_ptr_adapter const& rhs)
+    iterator_ptr_wrappee_adapter(iterator_ptr_wrappee_adapter const& rhs)
         : impl_(iterator_copy<CategoryT>(rhs.impl_))
     {
 
     }
 
-    iterator_wrapped_ptr_adapter & operator=(iterator_wrapped_ptr_adapter const& rhs) {
+    iterator_ptr_wrappee_adapter & operator=(iterator_ptr_wrappee_adapter const& rhs) {
         if (impl_.get() != rhs.impl_.get()) {
             impl_.reset();
             impl_ = iterator_copy<CategoryT>(rhs.impl_);
         }
     }
 
-    iterator_wrapped_ptr_adapter(iterator_wrapped_ptr_adapter &&) = default;
-    iterator_wrapped_ptr_adapter & operator=(iterator_wrapped_ptr_adapter &&) = default;
+    iterator_ptr_wrappee_adapter(iterator_ptr_wrappee_adapter &&) = default;
+    iterator_ptr_wrappee_adapter & operator=(iterator_ptr_wrappee_adapter &&) = default;
 
-    bool equal(self_type const& rhs) const {
+    bool equal(iterator_ptr_wrappee_adapter const& rhs) const {
         if (impl_) return !!rhs.impl_;
         if (rhs.impl_) return false;
         return impl_->equal(*rhs.impl_);
@@ -192,107 +247,111 @@ private:
 };
 
 template <
-      class ReferenceT
-    , class DifferenceT = std::ptrdiff_t
+      size_t SizeV
+    , typename ReferenceT
+    , typename DifferenceT = std::ptrdiff_t
+    , typename OffsetT = void
 >
-class iterator_polymorphic_impl 
-    : public polymorphic_clonable
-    , public polymorphic_movable
+class iterator_polymorphic_wrappee_adapter
 {
+    typedef iterator_polymorphic_impl<ReferenceT, DifferenceT> polymorphic_impl_t;
+
 public:
-    virtual ~iterator_polymorphic_impl() noexcept {}
+    iterator_polymorphic_wrappee_adapter() {}
 
-    virtual bool equal(iterator_polymorphic_impl const& rhs) const {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::equal"));
+    template <typename T, class ... ArgsT>
+    explicit iterator_polymorphic_wrappee_adapter(in_place_type_t<T>, ArgsT&& ... args) 
+        : impl_(in_place_type_t<T>(), std::forward<ArgsT>(args) ...) 
+    { }
+
+    bool equal(iterator_polymorphic_wrappee_adapter const& rhs) const {
+        if (empty()) return rhs.empty();
+        if (rhs.empty()) return false;
+        return impl_->equal(*rhs.impl_);
     }
 
-    virtual void increment() {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::increment"));
+    void increment() {
+        impl_->increment();
     }
 
-    virtual void decrement() {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::decrement"));
+    void decrement() {
+        impl_->decrement();
     }
 
-    virtual void set(ReferenceT ref) {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::set"));
+    decltype(auto) dereference() const {
+        return impl_->dereference();
     }
 
-    virtual ReferenceT dereference() const {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::dereference"));
+    template <typename DifferenceT>
+    void advance(DifferenceT dif) {
+        return impl_->advance(dif);
     }
 
-    virtual void advance(DifferenceT dif) {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::advance"));
+    template <typename T>
+    void set(T && arg) {
+        impl_->set(std::forward<T>(arg));
     }
 
-    virtual size_t get_sizeof() {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::get_sizeof"));
-    }
+    bool empty() const { return impl_.empty() || impl->empty(); }
 
-    virtual void clone(void * address, size_t sz) {
-        BOOST_THROW_EXCEPTION(not_implemented_error("iterator_polymorphic_impl::clone"));
-    }
-
-    virtual void move(void * address, size_t sz) {
-        BOOST_THROW_EXCEPTION(not_implemented_error("iterator_polymorphic_impl::move"));
-    }
+private:
+    optional_inheritor<polymorphic_impl_t, SizeV, OffsetT> impl_;
 };
 
-template <typename IteratorT, typename CategoryT = typename std::iterator_traits<IteratorT>::iterator_category>
-class iterator_polymorpic_impl_adapter : public iterator_polymorphic_impl
+template <
+    typename IteratorT,
+    typename CategoryT = iterator_traversal_t<IteratorT>,
+    typename ReferenceT = iterator_reference_t<IteratorT>
+>
+class iterator_polymorpic_impl_adapter_impl
+    : public iterator_polymorphic_impl<
+        ReferenceT,
+        iterator_difference_t<IteratorT>
+    >
 {
 public:
-    typedef typename std::iterator_traits<IteratorT>::reference reference_type;
+    typedef iterator_difference_t<IteratorT> difference_type;
+    typedef iterator_polymorphic_impl<ReferenceT, difference_type> impl_t;
 
     template <typename ... ArgsT>
-    explicit iterator_polymorpic_impl_adapter(ArgsT && ... args) : it(std::forward<ArgsT>(args)...) {}
+    explicit iterator_polymorpic_impl_adapter_impl(ArgsT&& ... args) : it_(std::forward<ArgsT>(args)...) {}
 
-    bool equal(iterator_polymorphic_impl const& rhs) const override {
-        return ít_ == static_cast<iterator_polymorpic_impl_adapter const&>(rhs).ít_;
+    bool equal(impl_t const& rhs) const override {
+        return it_ == static_cast<iterator_polymorpic_impl_adapter_impl const&>(rhs).it_;
     }
 
     void increment() override {
         ++it_;
     }
 
-    reference_type dereference() const override {
+    ReferenceT dereference() const override {
         return *it_;
     }
 
+    void set(ReferenceT val) override {
+        *it_ = val;
+    }
+
 protected:
-    IteratorT ít_;
+    IteratorT it_;
 };
 
-template <typename IteratorT>
-class iterator_polymorpic_impl_adapter<IteratorT, std::forward_iterator_tag>
-    : public iterator_polymorpic_impl_adapter<IteratorT, std::input_iterator_tag>
+template <class IteratorT, typename ReferenceT>
+class iterator_polymorpic_impl_adapter_impl<IteratorT, forward_traversal_tag, ReferenceT>
+    : public iterator_polymorpic_impl_adapter_impl<IteratorT, single_pass_traversal_tag, ReferenceT>
 {
-    typedef iterator_polymorpic_impl_adapter<IteratorT, std::input_iterator_tag> base_t;
-public:
+    typedef iterator_polymorpic_impl_adapter_impl<IteratorT, single_pass_traversal_tag, ReferenceT> base_t;
 
+public:
     using base_t::base_t;
 
-    size_t get_sizeof() override final {
-        return sizeof(iterator_polymorpic_impl_adapter);
-    }
-
-    void clone(void * address, size_t sz) override {
-        BOOST_ASSERT(sz >= get_sizeof());
-        new (address) iterator_polymorpic_impl_adapter(*this);
-    }
-
-    void move(void * address, size_t sz) {
-        BOOST_ASSERT(sz >= get_sizeof());
-        new (address) iterator_polymorpic_impl_adapter(std::move(*this));
-    }
 };
 
-template <typename IteratorT>
-class iterator_polymorpic_impl_adapter<IteratorT, std::bidirectional_iterator_tag
-    : public iterator_polymorpic_impl_adapter<IteratorT, std::forward_iterator_tag>
+template <class IteratorT, typename ReferenceT>
+class iterator_polymorpic_impl_adapter_impl<IteratorT, bidirectional_traversal_tag, ReferenceT>
+    : public iterator_polymorpic_impl_adapter_impl<IteratorT, forward_traversal_tag, ReferenceT>
 {
-    typedef iterator_polymorpic_impl_adapter<IteratorT, std::forward_iterator_tag> base_t;
+    typedef iterator_polymorpic_impl_adapter_impl<IteratorT, forward_traversal_tag, ReferenceT> base_t;
 
 public:
     using base_t::base_t;
@@ -302,31 +361,61 @@ public:
     }
 };
 
-template <typename IteratorT>
-class iterator_polymorpic_impl_adapter<IteratorT, std::random_access_iterator_tag
-    : public iterator_polymorpic_impl_adapter<IteratorT, std::bidirectional_iterator_tag>
+template <class IteratorT, typename ReferenceT>
+class iterator_polymorpic_impl_adapter_impl<IteratorT, random_access_traversal_tag, ReferenceT>
+    : public iterator_polymorpic_impl_adapter_impl<IteratorT, bidirectional_traversal_tag, ReferenceT>
 {
-    typedef iterator_polymorpic_impl_adapter<IteratorT, std::bidirectional_iterator_tag> base_t;
+    typedef iterator_polymorpic_impl_adapter_impl<IteratorT, bidirectional_traversal_tag, ReferenceT> base_t;
 
 public:
     using base_t::base_t;
 
-    typedef typename std::iterator_traits<IteratorT>::difference_type difference_type;
+    typedef iterator_difference_t<IteratorT> difference_type;
 
     void advance(difference_type dif) override {
         std::advance(it_, dif);
     }
 };
 
-template <class ValueT, class CategoryOrTraversal, class ReferenceT = ValueT&, class DifferenceT = std::ptrdiff_t>
-using polymorphic_iterator = wrapper_iterator<
-    iterator_wrapped_ptr_adapter<shared_ptr<iterator_polymorphic_impl<ReferenceT, DifferenceT>>, CategoryOrTraversal>,
+template <
+    typename IteratorT,
+    typename CategoryT = iterator_traversal_t<IteratorT>,
+    typename ReferenceT = iterator_reference_t<IteratorT>
+>
+class iterator_polymorpic_impl_adapter
+    : public iterator_polymorpic_impl_adapter_impl<IteratorT, CategoryT, ReferenceT>
+{
+    typedef iterator_polymorpic_impl_adapter_impl<IteratorT, CategoryT, ReferenceT> base_t;
+
+public:
+    using base_t::base_t;
+
+    size_t get_sizeof() const override final {
+        return sizeof(iterator_polymorpic_impl_adapter);
+    }
+
+    polymorphic_clonable * clone(void * address, size_t sz) const override final {
+        BOOST_ASSERT(sz >= this->get_sizeof());
+        new (address) iterator_polymorpic_impl_adapter(*this);
+        return reinterpret_cast<iterator_polymorpic_impl_adapter*>(address);
+    }
+
+    polymorphic_movable * move(void * address, size_t sz) override final {
+        BOOST_ASSERT(sz >= this->get_sizeof());
+        new (address) iterator_polymorpic_impl_adapter(std::move(*this));
+        return reinterpret_cast<iterator_polymorpic_impl_adapter*>(address);
+    }
+};
+
+template <size_t SizeV, class ValueT, class CategoryOrTraversal, class ReferenceT = ValueT&, class DifferenceT = std::ptrdiff_t, typename OffsetT = void>
+using polymorphic_input_iterator = wrapper_input_iterator<
+    iterator_polymorphic_wrappee_adapter<SizeV, ReferenceT, DifferenceT, OffsetT>,
     ValueT, CategoryOrTraversal, ReferenceT, DifferenceT
 >;
 
-template <class ValueT, class CategoryOrTraversal, class ReferenceT = ValueT&, class DifferenceT = std::ptrdiff_t>
-using proxy_polymorphic_iterator = proxy_wrapper_iterator<
-    iterator_wrapped_ptr_adapter<shared_ptr<iterator_polymorphic_impl<ReferenceT, DifferenceT>>, CategoryOrTraversal>,
+template <size_t SizeV, class ValueT, class CategoryOrTraversal, class ReferenceT = ValueT&, class DifferenceT = std::ptrdiff_t, typename OffsetT = void>
+using polymorphic_output_iterator = wrapper_output_iterator<
+    iterator_polymorphic_wrappee_adapter<SizeV, ReferenceT, DifferenceT, OffsetT>,
     ValueT, CategoryOrTraversal, ReferenceT, DifferenceT
 >;
 

@@ -9,6 +9,7 @@
 #   pragma once
 #endif
 
+#include <iostream>
 #include <utility>
 #include <boost/assert.hpp>
 
@@ -69,7 +70,7 @@ public:
     }
 
     template <typename T, class ... ArgsT>
-    explicit optional_inheritor(identity<T>, ArgsT&& ... args) {
+    explicit optional_inheritor(in_place_type_t<T>, ArgsT&& ... args) {
         construct<T>(std::forward<ArgsT>(args) ...);
     }
 

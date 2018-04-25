@@ -18,25 +18,26 @@
 #include <boost/iterator/iterator_facade.hpp>
 
 #include "sonia/optional.hpp"
+#include "sonia/iterator_traits.hpp"
 
 namespace sonia {
 
 template <typename IteratorT>
 struct range_dereferencing_iterator_helper
 {
-    typedef typename boost::iterator_traversal<IteratorT>::type traversal_type;
-    typedef typename boost::iterator_value<IteratorT>::type range_type;
+    typedef iterator_traversal_t<IteratorT> traversal_type;
+    typedef iterator_value_t<IteratorT> range_type;
     typedef typename boost::range_iterator<range_type>::type range_iterator_type;
-    typedef typename boost::iterator_value<range_iterator_type>::type value_type;
-    typedef typename boost::iterator_reference<range_iterator_type>::type reference_type;
+    typedef iterator_value_t<range_iterator_type> value_type;
+    typedef iterator_reference_t<range_iterator_type> reference_type;
 };
 
-template <typename IteratorT>
+template <typename IteratorT, typename CategoryOrTraversal = iterator_traversal_t<IteratorT>>
 class range_dereferencing_iterator 
     : public boost::iterator_facade<
-        range_dereferencing_iterator<IteratorT>,
+        range_dereferencing_iterator<IteratorT, CategoryOrTraversal>,
         typename range_dereferencing_iterator_helper<IteratorT>::value_type,
-        typename range_dereferencing_iterator_helper<IteratorT>::traversal_type,
+        CategoryOrTraversal,
         typename range_dereferencing_iterator_helper<IteratorT>::reference_type
     >
 {
@@ -113,6 +114,11 @@ private:
     mutable IteratorT it_;
     mutable optional<std::pair<range_iterator_type, range_iterator_type>> pos_;
 };
+
+template <class IteratorT>
+range_dereferencing_iterator<IteratorT> make_range_dereferencing_iterator(IteratorT it) {
+    return range_dereferencing_iterator<IteratorT>(std::move(it));
+}
 
 }
 

@@ -87,9 +87,6 @@
     <ClInclude Include="..\..\..\sonia\service\local_service_registry.hpp">
       <Filter>sonia.service</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\file_persistable.hpp">
-      <Filter>sonia.utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\iterators\wrapper_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
@@ -150,6 +147,12 @@
     <ClInclude Include="..\..\..\sonia\utility\optional_inheritor.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\iterator_traits.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\file_persister.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -169,6 +172,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\iterators\file_region_iterator.cpp">
       <Filter>sonia.utility\iterators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\file_persister.cpp">
+      <Filter>sonia.utility</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -44,7 +44,7 @@ public:
 
     template <typename OtherT> 
     array_view(array_view<OtherT> arr) : data_(arr.begin()), size_(arr.size()) {
-        BOOST_STATIC_ASSERT(sizeof(T) == sizeof(OtherT));
+        static_assert(sizeof(T) == sizeof(OtherT));
     }
 
     iterator begin() const noexcept { return data_; }

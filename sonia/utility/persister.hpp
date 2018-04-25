@@ -16,10 +16,10 @@ namespace sonia {
 
 class persister {
 public:
-    virtual ~persister() = 0;
+    virtual ~persister() {}
 
-    typedef polymorphic_iterator<array_view<const uint8_t>, std::input_iterator_tag, array_view<const uint8_t>> input_iterator;
-    typedef proxy_polymorphic_iterator<array_view<uint8_t>, std::output_iterator_tag, array_view<uint8_t>> output_iterator;
+    typedef polymorphic_input_iterator<32, array_view<const uint8_t>, forward_traversal_tag, array_view<const uint8_t>> input_iterator;
+    typedef polymorphic_output_iterator<32, array_view<uint8_t>, forward_traversal_tag, array_view<uint8_t>> output_iterator;
 
     virtual input_iterator reader() const = 0;
     virtual output_iterator writer() = 0;

@@ -14,12 +14,12 @@
 
 namespace sonia {
 
-class not_supported_operation_error : public exception {
+class not_supported_operation_error : public internal_error {
 public:
-    not_supported_operation_error() : exception("not_supported_operation_error") { }
+    not_supported_operation_error() : internal_error("not_supported_operation_error") { }
 
     template <class ArgT>
-    explicit not_supported_operation_error(ArgT && arg) : exception(std::forward<ArgT>(arg)) { }
+    explicit not_supported_operation_error(ArgT && arg) : internal_error(std::forward<ArgT>(arg)) { }
 };
 
 class polymorphic_clonable {

@@ -129,7 +129,7 @@ template <typename T>
 class file_region_iterator 
     : public boost::iterator_facade<
         file_region_iterator<T>, array_view<T>, boost::bidirectional_traversal_tag,
-        conditional_t<is_const_v<T>, array_view<T>, file_region_iterator_value_proxy<file_region_iterator<T>, T>>
+        conditional_t<is_const_v<T>, const array_view<T>, file_region_iterator_value_proxy<file_region_iterator<T>, T>>
     >, public file_region_iterator_base
 {
     friend class boost::iterator_core_access;

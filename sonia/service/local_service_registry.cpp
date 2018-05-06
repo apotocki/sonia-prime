@@ -6,14 +6,19 @@
 #include "local_service_registry.hpp"
 
 #include <boost/lexical_cast.hpp>
+#include <boost/archive/xml_iarchive.hpp>
+#include <boost/archive/xml_oarchive.hpp>
 
 #include "sonia/string.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/scope_exit.hpp"
+#include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
+#include "sonia/serialization/boost_serialization_tuple.hpp"
 
 namespace sonia {
 
-local_service_registry::local_service_registry() : counter_(0)
+local_service_registry::local_service_registry(shared_ptr<persister> sp)
+    : counter_(0), state_persister_(std::move(sp))
 {
     restore();
 }
@@ -43,12 +48,18 @@ string_view local_service_registry::get_name(service::id id) const
 
 void local_service_registry::backup() const
 {
-
+    state_persister_->write_stream([this](std::ostream & os) {
+        boost::archive::xml_oarchive oa(os);
+        const_cast<local_service_registry&>(*this).serialize(oa);
+    });
 }
 
 void local_service_registry::restore()
 {
-
+    state_persister_->read_stream([this](std::istream & is) {
+        boost::archive::xml_iarchive ia(is);
+        this->serialize(ia);
+    });
 }
 
 }

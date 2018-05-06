@@ -5,6 +5,10 @@
 #ifndef SONIA_SERIALIZATION_HPP
 #define SONIA_SERIALIZATION_HPP
 
+#ifdef BOOST_HAS_PRAGMA_ONCE
+#   pragma once
+#endif
+
 #include <utility>
 
 namespace sonia {
@@ -19,14 +23,14 @@ struct ordered_t {};
 
 }
 
-template <typename TagT, typename T, typename ArgT, typename OutputIteratorT>
-OutputIteratorT encode(ArgT && arg, OutputIteratorT oi) {
-    return coder<TagT, T>().encode(std::forward<ArgT>(arg), std::move(oi));
+template <typename TagT, typename T, typename OutputIteratorT>
+OutputIteratorT encode(T const& arg, OutputIteratorT oi) {
+    return serialization::coder<TagT, T>().encode(arg, std::move(oi));
 }
 
 template <typename TagT, typename T, typename InputIteratorT, typename ArgT>
 InputIteratorT decode(InputIteratorT ii, ArgT && arg) {
-    return coder<TagT, T>().decode(std::move(ii), std::forward<ArgT>(arg));
+    return serialization::coder<TagT, T>().decode(std::move(ii), std::forward<ArgT>(arg));
 }
 
 template <typename TagT, typename IteratorT>
@@ -36,7 +40,7 @@ struct in_place_decoder_factory
 
     template <class T>
     void apply(void* address) const {
-        ii_ = coder<TagT, T>().decode(std::move(ii_), reinterpret_cast<T*>(address));
+        ii_ = serialization::coder<TagT, T>().decode(std::move(ii_), reinterpret_cast<T*>(address));
     }
 
     mutable IteratorT ii_;

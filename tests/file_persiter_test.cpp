@@ -17,6 +17,7 @@ using namespace sonia;
 
 #include <iostream>
 
+#include "sonia/utility/iterators/file_region_iterator.hpp"
 
 BOOST_AUTO_TEST_CASE(file_persister_test)
 {
@@ -25,9 +26,21 @@ BOOST_AUTO_TEST_CASE(file_persister_test)
 
     fs::create_directories(TEST_FOLDER);
 
-    file_persister p(TEST_FOLDER "/test.data");
+    file_persister p(TEST_FOLDER "/folder1/folder2/test.data");
 
     std::string text("text to persist into file");
 
-    std::copy(text.begin(), text.end(), make_range_dereferencing_iterator(p.writer())).flush();
+    p.write([&text](file_persister::output_iterator it) {
+        std::copy(text.begin(), text.end(), make_range_dereferencing_iterator(std::move(it))).flush();
+    });
+    
+    std::string result;
+    p.read([&result](file_persister::input_iterator it) {
+        auto rdit = make_range_dereferencing_iterator(std::move(it));
+        while (!rdit.empty()) {
+            result.push_back(*rdit++);
+        }
+    });
+
+    BOOST_CHECK_EQUAL(result, text);
 }

@@ -153,6 +153,18 @@
     <ClInclude Include="..\..\..\sonia\utility\file_persister.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\function.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\serialization\json_serialization.hpp">
+      <Filter>sonia.serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\serialization\iostream.hpp">
+      <Filter>sonia.serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\serialization\boost_serialization_tuple.hpp">
+      <Filter>sonia.serialization</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

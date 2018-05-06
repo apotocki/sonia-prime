@@ -11,6 +11,7 @@
 
 #include <utility>
 #include <iterator>
+#include <sstream>
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/throw_exception.hpp>
@@ -90,10 +91,17 @@ class wrapper_input_iterator
     }
 
 public:
+    template <class T, typename ... ArgsT>
+    explicit wrapper_input_iterator(in_place_type_t<T>, ArgsT && ... args) 
+        : impl_(in_place_type_t<T>(), std::forward<ArgsT>(args) ...)
+    { }
+
     template <typename ... ArgsT>
     explicit wrapper_input_iterator(in_place_t, ArgsT && ... args) 
         : impl_(std::forward<ArgsT>(args) ...)
     { }
+
+    bool empty() const { return impl_.empty(); }
 
 private:
     ImplT impl_;
@@ -136,10 +144,17 @@ class wrapper_output_iterator
     }
 
 public:
+    template <class T, typename ... ArgsT>
+    explicit wrapper_output_iterator(in_place_type_t<T>, ArgsT && ... args) 
+        : impl_(in_place_type_t<T>(), std::forward<ArgsT>(args) ...)
+    { }
+
     template <typename ... ArgsT>
     explicit wrapper_output_iterator(std::in_place_t, ArgsT && ... args) 
         : impl_(std::forward<ArgsT>(args) ...)
     { }
+
+    bool empty() const { return impl_.empty(); }
 
 private:
     mutable ImplT impl_;
@@ -213,6 +228,8 @@ public:
 
     iterator_ptr_wrappee_adapter(iterator_ptr_wrappee_adapter &&) = default;
     iterator_ptr_wrappee_adapter & operator=(iterator_ptr_wrappee_adapter &&) = default;
+
+    bool empty() const { return impl_->empty(); }
 
     bool equal(iterator_ptr_wrappee_adapter const& rhs) const {
         if (impl_) return !!rhs.impl_;
@@ -292,7 +309,7 @@ public:
         impl_->set(std::forward<T>(arg));
     }
 
-    bool empty() const { return impl_.empty() || impl->empty(); }
+    bool empty() const { return impl_.empty() || impl_->empty(); }
 
 private:
     optional_inheritor<polymorphic_impl_t, SizeV, OffsetT> impl_;
@@ -316,6 +333,10 @@ public:
     template <typename ... ArgsT>
     explicit iterator_polymorpic_impl_adapter_impl(ArgsT&& ... args) : it_(std::forward<ArgsT>(args)...) {}
 
+    bool empty() const override {
+        return it_.empty();
+    }
+
     bool equal(impl_t const& rhs) const override {
         return it_ == static_cast<iterator_polymorpic_impl_adapter_impl const&>(rhs).it_;
     }
@@ -329,7 +350,13 @@ public:
     }
 
     void set(ReferenceT val) override {
-        *it_ = val;
+        if constexpr (is_output_iterator_v<IteratorT, ReferenceT>) {
+            *it_ = val;
+        } else {
+            std::ostringstream errss;
+            errss << "An attempt to write into the not writable iterator " << typeid(IteratorT).name();
+            BOOST_THROW_EXCEPTION(not_supported_operation_error(std::move(errss.str())));
+        }
     }
 
 protected:

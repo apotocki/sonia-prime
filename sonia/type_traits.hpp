@@ -17,6 +17,8 @@ namespace sonia {
 using std::true_type;
 using std::false_type;
 
+using std::void_t;
+
 using std::enable_if;
 using std::enable_if_t;
 
@@ -72,7 +74,7 @@ using std::in_place_t;
 using std::in_place_type;
 using std::in_place_type_t;
 
-//using boost::mpl::identity;
+using boost::mpl::identity;
 
 //using std::remove_cvref;
 //using std::remove_cvref_t;

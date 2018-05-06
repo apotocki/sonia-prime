@@ -17,12 +17,23 @@
 #include <boost/multi_index/global_fun.hpp>
 
 #include "service.hpp"
+#include "sonia/shared_ptr.hpp"
+#include "sonia/utility/persister.hpp"
 
 namespace sonia {
 
-class local_service_registry : public service_registry {
+class local_service_registry : public service_registry
+{
+    friend class boost::serialization::access;
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int = 0) {
+        ar & boost::serialization::make_nvp("counter", counter_)
+           & boost::serialization::make_nvp("catalog", registry_);
+    }
+
 public:
-    local_service_registry();
+    explicit local_service_registry(shared_ptr<persister> sp);
 
     service::id get_id(string_view) override;
     string_view get_name(service::id) const override;
@@ -34,9 +45,6 @@ private:
     mutable std::mutex mtx_;
 
     typedef std::tuple<std::string, service::id> reg_item_t;
-    //static inline std::string const& get_string_id(reg_tuple_t const& tpl) { return at_c<0>(tpl); }
-    //static inline command_identifier get_cmd_id(reg_tuple_t const& tpl) { return at_c<1>(tpl); }
-    //static inline type_identifier get_type_id(reg_tuple_t const& tpl) { return at_c<2>(tpl); }
 
     typedef boost::multi_index::multi_index_container<
         reg_item_t,
@@ -53,6 +61,7 @@ private:
 
     registry_t registry_;
     service::id counter_;
+    shared_ptr<persister> state_persister_;
 };
 
 }

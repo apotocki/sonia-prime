@@ -12,6 +12,10 @@
 #include <boost/iterator/iterator_traits.hpp>
 #include <boost/iterator/iterator_categories.hpp>
 
+#include <boost/range.hpp>
+
+#include "sonia/type_traits.hpp"
+
 namespace sonia {
 
 using boost::iterator_value;
@@ -32,12 +36,25 @@ template <class IteratorT> using iterator_category_t = typename iterator_categor
 using boost::iterator_traversal;
 template <class IteratorT> using iterator_traversal_t = typename iterator_traversal<IteratorT>::type;
 
+template <class I, typename E = iterator_value_t<I>, typename = void>
+class is_output_iterator : public false_type {};
+
+template <class I, typename E>
+class is_output_iterator<I, E, void_t<
+    iterator_category_t<I>, decltype(*std::declval<I>() = std::declval<E>())>> : public true_type {};
+
+template <class I, typename E = iterator_value_t<I>>
+constexpr bool is_output_iterator_v = is_output_iterator<I, E>::value;
+
 using boost::no_traversal_tag;
 using boost::incrementable_traversal_tag;
 using boost::single_pass_traversal_tag;
 using boost::forward_traversal_tag;
 using boost::bidirectional_traversal_tag;
 using boost::random_access_traversal_tag;
+
+using boost::range_iterator;
+template <class RangeT> using range_iterator_t = typename range_iterator<RangeT>::type;
 
 }
 

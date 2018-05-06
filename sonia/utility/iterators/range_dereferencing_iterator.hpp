@@ -12,7 +12,6 @@
 #include <utility>
 
 #include <boost/assert.hpp>
-#include <boost/range.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/iterator/iterator_facade.hpp>
@@ -27,7 +26,7 @@ struct range_dereferencing_iterator_helper
 {
     typedef iterator_traversal_t<IteratorT> traversal_type;
     typedef iterator_value_t<IteratorT> range_type;
-    typedef typename boost::range_iterator<range_type>::type range_iterator_type;
+    typedef range_iterator_t<range_type> range_iterator_type;
     typedef iterator_value_t<range_iterator_type> value_type;
     typedef iterator_reference_t<range_iterator_type> reference_type;
 };

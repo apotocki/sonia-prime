@@ -29,6 +29,7 @@
     <ClInclude Include="..\..\..\sonia\config.hpp" />
     <ClInclude Include="..\..\..\sonia\element.hpp" />
     <ClInclude Include="..\..\..\sonia\exceptions.hpp" />
+    <ClInclude Include="..\..\..\sonia\function.hpp" />
     <ClInclude Include="..\..\..\sonia\io\file.hpp" />
     <ClInclude Include="..\..\..\sonia\iterator_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\loggable.hpp" />
@@ -36,7 +37,10 @@
     <ClInclude Include="..\..\..\sonia\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\prime_config.hpp" />
     <ClInclude Include="..\..\..\sonia\reference_wrapper.hpp" />
+    <ClInclude Include="..\..\..\sonia\serialization\boost_serialization_tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\serialization\integral.hpp" />
+    <ClInclude Include="..\..\..\sonia\serialization\iostream.hpp" />
+    <ClInclude Include="..\..\..\sonia\serialization\json_serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\serialization\serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\service\local_service_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\service\service.hpp" />
@@ -128,7 +132,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(BOOST_1_66);$(IncludePath)</IncludePath>
+    <IncludePath>$(BOOST);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -136,7 +140,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(BOOST_1_66);$(IncludePath)</IncludePath>
+    <IncludePath>$(BOOST);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

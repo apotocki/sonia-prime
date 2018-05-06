@@ -21,8 +21,8 @@ public:
 
     ~file_persister() override;
 
-    input_iterator reader() const override;
-    output_iterator writer() override;
+    bool read(function<void(input_iterator)> const& ftor) const override;
+    void write(function<void(output_iterator)> const& ftor) override;
 
 private:
     std::string fname_;

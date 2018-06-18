@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -19,9 +19,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\sonia\algorithm\copy.hpp" />
     <ClInclude Include="..\..\..\sonia\algorithm\pull.hpp" />
     <ClInclude Include="..\..\..\sonia\application.hpp" />
     <ClInclude Include="..\..\..\sonia\application\application.hpp" />
+    <ClInclude Include="..\..\..\sonia\application\application_host.hpp" />
+    <ClInclude Include="..\..\..\sonia\application\configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\array_view.hpp" />
     <ClInclude Include="..\..\..\sonia\automatic.hpp" />
     <ClInclude Include="..\..\..\sonia\build_config.hpp" />
@@ -42,6 +45,7 @@
     <ClInclude Include="..\..\..\sonia\serialization\iostream.hpp" />
     <ClInclude Include="..\..\..\sonia\serialization\json_serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\serialization\serialization.hpp" />
+    <ClInclude Include="..\..\..\sonia\services.hpp" />
     <ClInclude Include="..\..\..\sonia\service\local_service_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\service\service.hpp" />
     <ClInclude Include="..\..\..\sonia\service\service_locator.hpp" />
@@ -59,6 +63,15 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_dereferencing_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\shared_ptr_wrapper_iterator_impl.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\wrapper_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\basic_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\json_value.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexems.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexertl_lexer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\model.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\parser.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\lexer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\utility.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\placement_new.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\persister.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\polymorphic_traits.hpp" />
@@ -67,12 +80,15 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\application\application.cpp" />
+    <ClCompile Include="..\..\..\sonia\application\application_host.cpp" />
     <ClCompile Include="..\..\..\sonia\io\file.cpp" />
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp" />
     <ClCompile Include="..\..\..\sonia\service\local_service_registry.cpp" />
     <ClCompile Include="..\..\..\sonia\service\service_locator.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\file_persister.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\iterators\file_region_iterator.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\parsers\json\basic_json_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\parsers\json\json_model.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
@@ -169,7 +185,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_LIB;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir)..\..\bundles</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExceptionHandling>Async</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -212,7 +228,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_LIB;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir)..\..\bundles</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExceptionHandling>Async</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

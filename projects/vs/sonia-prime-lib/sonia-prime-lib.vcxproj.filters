@@ -28,6 +28,12 @@
     <Filter Include="sonia.application">
       <UniqueIdentifier>{07b0c1e7-bd5a-4964-859f-a6eaa94b1f92}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\parsers">
+      <UniqueIdentifier>{cb9f65ac-5ab8-4f9c-b16a-ca68a77791ff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility\parsers\json">
+      <UniqueIdentifier>{43a7cbbb-8444-4ea8-8a9a-70237e9e9563}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\element.hpp">
@@ -165,6 +171,45 @@
     <ClInclude Include="..\..\..\sonia\serialization\boost_serialization_tuple.hpp">
       <Filter>sonia.serialization</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\application\application_host.hpp">
+      <Filter>sonia.application</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\application\configuration.hpp">
+      <Filter>sonia.application</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexertl_lexer.hpp">
+      <Filter>sonia.utility\parsers\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexems.hpp">
+      <Filter>sonia.utility\parsers\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\parser.hpp">
+      <Filter>sonia.utility\parsers\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\utility.hpp">
+      <Filter>sonia.utility\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\model.hpp">
+      <Filter>sonia.utility\parsers\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\builder.hpp">
+      <Filter>sonia.utility\parsers\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\lexer.hpp">
+      <Filter>sonia.utility\parsers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\algorithm\copy.hpp">
+      <Filter>sonia.algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\json_value.hpp">
+      <Filter>sonia.utility\parsers\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\basic_builder.hpp">
+      <Filter>sonia.utility\parsers\json</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -187,6 +232,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\file_persister.cpp">
       <Filter>sonia.utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\application\application_host.cpp">
+      <Filter>sonia.application</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\parsers\json\json_model.cpp">
+      <Filter>sonia.utility\parsers\json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\parsers\json\basic_json_builder.cpp">
+      <Filter>sonia.utility\parsers\json</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

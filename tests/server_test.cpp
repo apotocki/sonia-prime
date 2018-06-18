@@ -31,6 +31,8 @@ public:
 #include <iostream>
 #include "sonia/application/application.hpp"
 
+using namespace sonia;
+
 template <typename ... ArgT>
 void list(ArgT && ... args) {
     ((std::cout << args << ", "), ...);
@@ -51,20 +53,37 @@ std::string foo(ArgT && arg) {
     }
 }
 
+std::string get_configuration() {
+    std::stringstream is;
+    is << 
+        "{"
+        "   'hosts': ["
+        "       {"
+        "           'name': 'h0',"
+        "           'services': ['async.serv']"
+        "       }"
+        "   ]"
+        "}";
+    return std::move(is.str());
+}
+
 BOOST_AUTO_TEST_CASE (server_test)
 {
     using namespace sonia;
 
     fs::remove_all(TEST_FOLDER);
 
-    std::cout << foo("chars str") << "\n";
-    std::cout << foo(std::string("std::str")) << "\n";
-    std::cout << foo(123) << "\n";
-    //application app(0, nullptr);
+    //std::cout << foo("chars str") << "\n";
+    //std::cout << foo(std::string("std::str")) << "\n";
+    //std::cout << foo(123) << "\n";
+    application app;
+    BOOST_CHECK_EQUAL(0, app.open(0, nullptr, &std::istringstream()));
+    app.load_configuration(get_configuration());
+
     //app.load_host();
     //application_host host1;
 
-    list(1, 2, 3);
+    //list(1, 2, 3);
 
     /*
     {

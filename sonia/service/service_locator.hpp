@@ -40,14 +40,15 @@ public:
         thread::id tid;
         shared_ptr<service> object;
         hook_type layer_hook;
+        int layer_;
 
         cached_service_descriptor(std::in_place_t) {}
 
-        int get_layer() const { return object->get_layer(); }
+        int get_layer() const { return layer_; }
 
         struct layer_compare_type {
             bool operator()(cached_service_descriptor const& lhs, cached_service_descriptor const& rhs) const {
-                return lhs.get_layer() < rhs.get_layer();
+                return lhs.layer_ < rhs.layer_;
             }
         };
     };

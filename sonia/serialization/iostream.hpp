@@ -27,12 +27,13 @@ class istreambuf : public std::basic_streambuf<ElemT, TraitsT>
     static const bool is_read = !is_output_iterator_v<IteratorT>;
 
     using base_t::traits_type;
-    using base_t::int_type;
     using base_t::gptr;
     using base_t::egptr;
     using base_t::gbump;
     using base_t::eback;
     using base_t::setg;
+
+    typedef typename base_t::int_type int_type;
 
 public:
     explicit istreambuf(IteratorT it) : it_(std::move(it)) {
@@ -104,11 +105,12 @@ class ostreambuf : public std::basic_streambuf<ElemT, TraitsT>
     typedef public std::basic_streambuf<ElemT, TraitsT> base_t;
 
     using base_t::traits_type;
-    using base_t::int_type;
     using base_t::setp;
     using base_t::pbase;
     using base_t::pptr;
     using base_t::epptr;
+
+    typedef typename base_t::int_type int_type;
 
 public:
     explicit ostreambuf(IteratorT it) : it_(std::move(it)) {

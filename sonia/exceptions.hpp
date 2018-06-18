@@ -11,28 +11,31 @@
 
 #include <stdexcept>
 #include <utility>
-#include <string>
 
 #include <boost/throw_exception.hpp>
+
+#include "sonia/string.hpp"
 
 namespace sonia {
 
 class exception : public std::runtime_error {
 public:
     template <class ArgT>
-    exception(ArgT && arg) : runtime_error(std::string(std::forward<ArgT>(arg))) {}
+    explicit exception(ArgT && arg) 
+        : std::runtime_error(sonia::to_string(std::forward<ArgT>(arg)))
+    {}
 };
 
 class internal_error : public exception {
 public:
     template <class ArgT>
-    internal_error(ArgT && arg) : exception(std::string(std::forward<ArgT>(arg))) {}
+    explicit internal_error(ArgT && arg) : exception(std::forward<ArgT>(arg)) {}
 };
 
 class not_implemented_error : public internal_error {
 public:
     template <class ArgT>
-    not_implemented_error(ArgT && arg) : internal_error(std::string(std::forward<ArgT>(arg))) {}
+    explicit not_implemented_error(ArgT && arg) : internal_error(std::forward<ArgT>(arg)) {}
 };
 
 }

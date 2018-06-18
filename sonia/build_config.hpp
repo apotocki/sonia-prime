@@ -21,7 +21,7 @@
 #endif
 
 #ifndef BUILD_DATETIME
-#   define BUILD_DATETIME __DATE__  __TIME__
+#   define BUILD_DATETIME __DATE__ " " __TIME__
 #endif
 
 #ifndef HELLO_MESSAGE

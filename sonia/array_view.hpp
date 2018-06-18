@@ -32,9 +32,8 @@ public:
     typedef add_pointer_t<T> iterator;
     typedef add_pointer_t<const_value_type> const_iterator;
 
-    explicit array_view(T * d = nullptr, size_type sz = 0) noexcept
-        : data_(d), size_(sz)
-    {}
+    constexpr array_view() noexcept : data_(nullptr), size_(0) {}
+    constexpr array_view(T * d, size_type sz) noexcept : data_(d), size_(sz) {}
 
     explicit array_view(T * b, T * e) noexcept
         : data_(b), size_(e - b)
@@ -56,9 +55,9 @@ public:
     reference back()  const noexcept { return data_[size_ - 1]; }
     iterator data() const noexcept { return data_; }
 
-    bool empty() const noexcept { return !size_; }
+    constexpr bool empty() const noexcept { return !size_; }
 
-    size_type size() const noexcept { return size_; }
+    constexpr size_type size() const noexcept { return size_; }
     void reset() noexcept { ptr_ = nullptr; size_ = 0; }
 
     reference operator[](size_type ind) const noexcept { return ptr_[ind]; }

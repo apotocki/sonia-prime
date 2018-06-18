@@ -23,12 +23,11 @@ class service : public virtual loggable
     friend class service_access;
 
 public:
-    service() : id_(0), layer_(0) {}
+    service() : id_(0) {}
 
     typedef uint32_t id;
     id get_id() const noexcept { return id_; }
     std::string get_name() const noexcept { return name_; }
-    int get_layer() const { return layer_; }
 
     virtual void open() = 0;
     virtual void close() noexcept = 0;
@@ -36,7 +35,6 @@ public:
 private:
     std::string name_;
     id id_;
-    int layer_;
 };
 
 class service_access {

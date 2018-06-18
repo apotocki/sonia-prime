@@ -10,8 +10,8 @@
 #endif
 
 #include <string>
-#include <string_view>
 #include <boost/functional/hash.hpp>
+#include <boost/format.hpp>
 #include "array_view.hpp"
 
 namespace sonia {
@@ -21,9 +21,15 @@ class basic_string_view : public array_view<std::add_const_t<CharT>>
 {
     typedef std::add_const_t<CharT> char_ct;
     typedef array_view<char_ct> base_t;
+    typedef typename base_t::size_type size_type;
 
 public:
-    using base_t::base_t;
+    //using base_t::base_t;
+
+    constexpr basic_string_view() noexcept : base_t(nullptr, 0) {}
+    constexpr basic_string_view(char_ct * str, size_type sz) : base_t(str, sz) {}
+
+    basic_string_view(char_ct * str) : base_t(str, TraitsT::length(str)) {}
 
     basic_string_view(std::basic_string<CharT, TraitsT> const& str) : base_t(str.c_str(), str.size()) {}
 
@@ -51,7 +57,7 @@ template <typename CharT, class TraitsT = std::char_traits<CharT>>
 class basic_cstring_view : public basic_string_view<CharT, TraitsT> {
 public:
 
-    const char* c_str() const noexcept { return data(); }
+    const char* c_str() const noexcept { return this->data(); }
 };
 
 template <typename CharT, class TraitsT>
@@ -100,31 +106,93 @@ typedef basic_string_view<char> string_view;
 typedef basic_cstring_view<char> cstring_view;
 
 struct string_hasher {
-    size_t operator()(std::string const& r) const noexcept { return boost::hash_range(r.begin(), r.end()); }
-    size_t operator()(string_view r) const noexcept { return boost::hash_range(r.begin(), r.end()); } 
+    template <typename CharT, class TraitsT>
+    size_t operator()(std::basic_string<CharT, TraitsT> const& r) const noexcept
+    { return boost::hash_range(r.begin(), r.end()); }
+
+    template <typename CharT, class TraitsT>
+    size_t operator()(basic_string_view<CharT, TraitsT> r) const noexcept
+    { return boost::hash_range(r.begin(), r.end()); } 
 };
 
 struct string_equal_to {
-    bool operator()(string_view l, string_view r) const noexcept { return l == r; }
-    bool operator()(std::string const& l, std::string const& r) const noexcept { return l == r; }
-    bool operator()(string_view l, std::string const& r) const noexcept { return l == r; }
-    bool operator()(std::string const& l, string_view r) const noexcept { return r == l; }
+    template <typename CharT, class TraitsT>
+    bool operator()(basic_string_view<CharT, TraitsT> l, basic_string_view<CharT, TraitsT> r) const noexcept
+    { return l == r; }
+
+    template <typename CharT, class TraitsT>
+    bool operator()(std::basic_string<CharT, TraitsT> const& l, std::basic_string<CharT, TraitsT> const& r) const noexcept
+    { return l == r; }
+
+    template <typename CharT, class TraitsT>
+    bool operator()(basic_string_view<CharT, TraitsT> l, std::basic_string<CharT, TraitsT> const& r) const noexcept
+    { return l == r; }
+
+    template <typename CharT, class TraitsT>
+    bool operator()(std::basic_string<CharT, TraitsT> const& l, basic_string_view<CharT, TraitsT> r) const noexcept
+    { return r == l; }
 };
 
 struct string_less {
-    bool operator()(string_view l, string_view r) const noexcept { return l < r; }
-    bool operator()(std::string const& l, std::string const& r) const noexcept { return l < r; }
-    bool operator()(string_view l, std::string const& r) const noexcept { return l < r; }
-    bool operator()(std::string const& l, string_view r) const noexcept { return l < r; }
+    template <typename CharT, class TraitsT>
+    bool operator()(basic_string_view<CharT, TraitsT> l, basic_string_view<CharT, TraitsT> r) const noexcept
+    { return l < r; }
+
+    template <typename CharT, class TraitsT>
+    bool operator()(std::basic_string<CharT, TraitsT> const& l, std::basic_string<CharT, TraitsT> const& r) const noexcept
+    { return l < r; }
+
+    template <typename CharT, class TraitsT>
+    bool operator()(basic_string_view<CharT, TraitsT> l, std::basic_string<CharT, TraitsT> const& r) const noexcept
+    { return l < r; }
+
+    template <typename CharT, class TraitsT>
+    bool operator()(std::basic_string<CharT, TraitsT> const& l, basic_string_view<CharT, TraitsT> r) const noexcept
+    { return l < r; }
 };
 
-inline std::string to_string(string_view sv) {
-    return std::string(sv.cbegin(), sv.cend());
+
+template <typename CharT, size_t N>
+std::basic_string<CharT> to_string(const CharT (&arr)[N]) { return std::basic_string<CharT>(arr); }
+
+template <typename CharT, class TraitsT>
+std::basic_string<CharT, TraitsT> to_string(std::basic_string<CharT, TraitsT> const& s) { return s; }
+
+//template <typename CharT, class TraitsT>
+//std::basic_string<CharT, TraitsT> to_string(std::basic_string<CharT, TraitsT> & s) { return s; }
+
+template <typename CharT, class TraitsT>
+std::basic_string<CharT, TraitsT> to_string(std::basic_string<CharT, TraitsT> && s) { return std::move(s); }
+
+template <typename CharT, class TraitsT>
+std::basic_string<CharT, TraitsT> to_string(basic_string_view<CharT, TraitsT> sv) {
+    return std::basic_string<CharT, TraitsT>(sv.cbegin(), sv.cend());
 }
+
+template<class Ch, class Tr, class Alloc>
+std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> const& fmt) { return fmt.str(); }
+
+//template<class Ch, class Tr, class Alloc>
+//std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> & fmt) { return fmt.str(); }
+
+template<class Ch, class Tr, class Alloc>
+std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> && fmt) { return fmt.str(); }
+
+template<class Ch, class Tr, class Alloc>
+std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> const && fmt) { return fmt.str(); }
 
 template <typename CharT, class TraitsT>
 std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, basic_string_view<CharT, TraitsT> s) {
     return os.write(s.begin(), s.size());
+}
+
+inline boost::basic_format<char> operator "" _fmt(const char* str, std::size_t) {
+    return boost::format(str);
+}
+
+template <typename CharT, size_t N>
+inline boost::basic_format<CharT> fmt(const CharT (&str)[N]) {
+    return boost::format(str);
 }
 
 }

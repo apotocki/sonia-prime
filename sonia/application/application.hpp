@@ -11,12 +11,28 @@
 
 #include <iosfwd>
 
+#include <boost/program_options.hpp>
+
+#include "sonia/string.hpp"
+#include "application_host.hpp"
+
 namespace sonia {
 
 class application {
 public:
     application();
+    ~application();
+
     int open(int argc, char const* argv[], std::istream * cfgstream = nullptr);
+    void load_configuration(string_view);
+
+    application_host & host(string_view);
+
+private:
+    boost::program_options::options_description application_options_;
+    std::string version_msg_;
+    bool verbose_;
+    bool log_initialized_;
 };
 
 }

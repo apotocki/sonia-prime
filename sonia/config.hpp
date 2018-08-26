@@ -9,6 +9,10 @@
 # pragma once
 #endif
 
+#ifndef BOOST_ENABLE_ASSERT_HANDLER
+#   define BOOST_ENABLE_ASSERT_HANDLER
+#endif
+
 // VC specific
 #if defined(_MSC_VER) & !defined(_CRT_SECURE_NO_WARNINGS) 
 #   define _CRT_SECURE_NO_WARNINGS

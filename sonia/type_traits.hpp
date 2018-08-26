@@ -9,8 +9,10 @@
 #   pragma once
 #endif
 
+#include <utility>
 #include <type_traits>
 #include <boost/mpl/identity.hpp>
+#include <boost/range.hpp>
 
 namespace sonia {
 
@@ -36,6 +38,9 @@ using std::is_signed_v;
 using std::is_unsigned;
 using std::is_unsigned_v;
 
+using std::is_floating_point;
+using std::is_floating_point_v;
+
 using std::is_same;
 using std::is_same_v;
 
@@ -45,8 +50,20 @@ using std::is_base_of_v;
 using std::is_const;
 using std::is_const_v;
 
+using std::is_pointer;
+using std::is_pointer_v;
+
 using std::is_rvalue_reference;
 using std::is_rvalue_reference_v;
+
+using std::is_pod;
+using std::is_pod_v;
+
+using std::is_trivially_destructible;
+using std::is_trivially_destructible_v;
+
+using std::has_virtual_destructor;
+using std::has_virtual_destructor_v;
 
 using std::aligned_storage;
 using std::aligned_storage_t;
@@ -79,13 +96,32 @@ using boost::mpl::identity;
 //using std::remove_cvref;
 //using std::remove_cvref_t;
 
-template< class T >
+template <class T>
 struct remove_cvref {
     typedef remove_cv_t<remove_reference_t<T>> type;
 };
 
-template< class T >
-using remove_cvref_t = typename remove_cvref<T>::type;
+template <class T> using remove_cvref_t = typename remove_cvref<T>::type;
+
+enum class endian
+{
+#ifdef _WIN32
+    little = 0,
+    big    = 1,
+    native = little
+#else
+    little = __ORDER_LITTLE_ENDIAN__,
+    big    = __ORDER_BIG_ENDIAN__,
+    native = __BYTE_ORDER__
+#endif
+};
+
+// range
+using boost::range_value;
+template <class T> using range_value_t = typename range_value<T>::type;
+
+using boost::range_iterator;
+template <class T> using range_iterator_t = typename range_iterator<T>::type;
 
 }
 

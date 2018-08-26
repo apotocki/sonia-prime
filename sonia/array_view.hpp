@@ -9,6 +9,7 @@
 #   pragma once
 #endif
 
+#include <iosfwd>
 #include <functional>
 #include <boost/assert.hpp>
 
@@ -58,9 +59,9 @@ public:
     constexpr bool empty() const noexcept { return !size_; }
 
     constexpr size_type size() const noexcept { return size_; }
-    void reset() noexcept { ptr_ = nullptr; size_ = 0; }
+    void reset() noexcept { data_ = nullptr; size_ = 0; }
 
-    reference operator[](size_type ind) const noexcept { return ptr_[ind]; }
+    reference operator[](size_type ind) const noexcept { return data_[ind]; }
     bool operator!() const noexcept { return empty(); }
 
     BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL();
@@ -76,6 +77,21 @@ protected:
 };
 
 typedef array_view<uint8_t> byte_array_view;
+
+template <typename CharT, class TraitsT, typename T>
+std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, array_view<T> arr) {
+    os << '[';
+    bool first = true;
+    for (T const& val : arr) {
+        if (!first) {
+            os << ", ";
+        } else {
+            first = false;
+        }
+        os << val;
+    }
+    return os << ']';
+}
 
 }
 

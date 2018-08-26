@@ -11,7 +11,7 @@ namespace sonia { namespace parsers { namespace json {
 
 typedef basic_builder::descriptor_type descriptor_type; 
 
-
+/*
 basic_value::basic_value(descriptor_type dt, bool is_owner)
     : value_(dt), is_owner_(is_owner)
 {}
@@ -95,6 +95,7 @@ shared_ptr<json_value> basic_value::operator[](string_view key) const {
 
     return shared_ptr<json_value>();
 }
+*/
 
 descriptor_type basic_builder::build_array(array_view<descriptor_type> av) {
     return make_descriptor(object_type::array, (intptr_t)new array_t(av.begin(), av.end()));
@@ -150,8 +151,13 @@ void basic_builder::do_free(descriptor_type d) {
     }
 }
 
-shared_ptr<json_value> basic_builder::build_json_value(descriptor_type val) {
-    return make_shared<basic_value>(val, true);
+json_value basic_builder::build_json_value(descriptor_type val) {
+    switch (val.first)
+    {
+    default:
+        break;
+    }
+    //return make_shared<basic_value>(val, true);
 }
 
 }}}

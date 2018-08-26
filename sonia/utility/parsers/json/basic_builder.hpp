@@ -16,6 +16,7 @@
 
 namespace sonia { namespace parsers { namespace json {
 
+/*
 class basic_value : public json_value
 {
     typedef builder::descriptor_type descriptor_type;
@@ -47,7 +48,7 @@ private:
     descriptor_type value_;
     bool is_owner_;
 };
-
+*/
 class basic_builder : public parsers::json::builder
 {
     friend class basic_value;
@@ -55,6 +56,7 @@ class basic_builder : public parsers::json::builder
     typedef std::string string_t;
     typedef std::vector<descriptor_type> array_t;
     typedef boost::unordered_map<std::string, descriptor_type> map_t;
+    typedef std::pair<std::string, json_value> object_element_t;
 
     enum class object_type {
         null = 0,
@@ -79,7 +81,7 @@ public:
 
     void free(descriptor_type d) override;
     
-    shared_ptr<json_value> build_json_value(descriptor_type) override;
+    json_value build_json_value(descriptor_type) override;
 
 private:
     static void do_free(descriptor_type d);

@@ -16,6 +16,8 @@ namespace sonia {
 using std::optional;
 using std::in_place;
 using std::in_place_t;
+using std::nullopt;
+using std::nullopt_t;
 
 }
 

@@ -3,13 +3,14 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "application_host.hpp"
+#include "decimal.hpp"
+#include "basic_decimal.ipp"
 
 namespace sonia {
 
-application_host::application_host(config_node const& cn)
-{
-    cn["services"];
-}
+template class basic_decimal<
+    boost::multiprecision::number<boost::multiprecision::cpp_int_backend<64, 0>>,
+    int32_t
+>;
 
 }

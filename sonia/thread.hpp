@@ -10,12 +10,27 @@
 #endif
 
 #include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/lock_guard.hpp>
 
 namespace sonia {
 
 using boost::thread;
+using boost::mutex;
+using boost::lock_guard;
+using boost::unique_lock;
+using boost::condition_variable;
 
 namespace this_thread = boost::this_thread;
+
+struct dummy_mutex_t {
+    void lock() {}
+    void unlock() {}
+    void lock_shared() {}
+    void unlock_shared() {}
+};
+
+constexpr dummy_mutex_t dummy_mutex = {};
 
 }
 

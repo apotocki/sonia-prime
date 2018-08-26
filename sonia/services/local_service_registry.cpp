@@ -29,7 +29,7 @@ service::id local_service_registry::get_id(string_view name)
 
     auto it = registry_.find(name, string_hasher(), string_equal_to());
     if (it == registry_.end()) {
-        registry_.insert(it, std::make_tuple(std::string(), ++counter_));
+        registry_.insert(it, std::make_tuple(to_string(name), ++counter_));
         backup();
         return counter_;
     }

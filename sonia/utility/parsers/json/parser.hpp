@@ -10,6 +10,7 @@
 #endif
 
 #include "sonia/utility/parsers/utility.hpp"
+#include "sonia/utility/parsers/json/lexems.hpp"
 
 namespace sonia { namespace parsers { namespace json {
 
@@ -61,11 +62,15 @@ void parser<LexerT>::parse(iterator & b, iterator const& e) const
         }
 
         if (st == model::state::OBJECT) {
-            if (b->id == ID_STRING) {
+            if (b->id == ID_STRING || b->id == ID_NAME) {
                 if (!comma_parsed && !mdl_.value_stack_empty()) {
                     throw exception("expected COMMA token");
                 }
-                mdl_.push_string(b->first, b->second);
+                if (b->id == ID_STRING) {
+                    mdl_.push_string(b->first, b->second);
+                } else {
+                    mdl_.push_name(b->first, b->second);
+                }
                 ++b;
                 skip_ws(b, e);
                 if (b->id != ID_COLON) {
@@ -112,11 +117,11 @@ void parser<LexerT>::parse(iterator & b, iterator const& e) const
             mdl_.pop_state();
             break;
         case ID_DOUBLE:
-            mdl_.put_double(b->first, b->second);
+            mdl_.put_number(b->first, b->second);
             mdl_.pop_state();
             break;
         case ID_INTEGER:
-            mdl_.put_integer(b->first, b->second);
+            mdl_.put_number(b->first, b->second);
             mdl_.pop_state();
             break;
         case ID_STRING:

@@ -33,7 +33,7 @@ shared_ptr<service> service_locator::get(string_view name)
 
 shared_ptr<service> service_locator::get(service::id id)
 {
-    return get(id, sr_->get_name(id));
+    return get(id, string_view());
 }
 
 shared_ptr<service> service_locator::get(service::id id, string_view name)
@@ -47,14 +47,14 @@ shared_ptr<service> service_locator::get(service::id id, string_view name)
         this_thread::interruption_point();
 
         if (tpl.tid == this_thread::get_id()) {
-            std::ostringstream errss;
-            errss << "found a circular dependency for the service: '" << name << "' (" << id << ")";
-            BOOST_THROW_EXCEPTION(internal_error(errss.str()));
+            BOOST_THROW_EXCEPTION(internal_error(fmt("found a circular dependency for the service: '%1%' (%2%)")
+                % (name ? name : sr_->get_name(id)) % id));
         }
 
         tpl.tid = this_thread::get_id();
         SCOPE_EXIT([&tpl] { tpl.tid = thread::id(); });
 
+        if (name) name = sr_->get_name(id);
         auto creature = sf_->create(name);
         service_access::set(*creature, id, to_string(name));
         creature->open();
@@ -96,11 +96,13 @@ void service_locator::shutdown(shared_ptr<service> serv)
 void service_locator::shutdown(int down_to_layer)
 {
     std::vector<shared_ptr<service>> services_to_shutdown;
-    std::lock_guard<std::mutex> layers_guard(layers_mtx_);
-    for (auto it = layers_.end(); it != layers_.begin();) {
-        --it;
-        if (it->get_layer() < down_to_layer) break;
-        services_to_shutdown.push_back(it->object);
+    {
+        std::lock_guard<std::mutex> layers_guard(layers_mtx_);
+        for (auto it = layers_.end(); it != layers_.begin();) {
+            --it;
+            if (it->get_layer() < down_to_layer) break;
+            services_to_shutdown.push_back(it->object);
+        }
     }
     while (!services_to_shutdown.empty()) {
         auto serv = std::move(services_to_shutdown.back());

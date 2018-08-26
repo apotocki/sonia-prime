@@ -13,6 +13,7 @@
 #include <boost/functional/hash.hpp>
 #include <boost/format.hpp>
 #include "array_view.hpp"
+#include "sonia/utility/comparison_operators.hpp"
 
 namespace sonia {
 
@@ -26,12 +27,15 @@ class basic_string_view : public array_view<std::add_const_t<CharT>>
 public:
     //using base_t::base_t;
 
-    constexpr basic_string_view() noexcept : base_t(nullptr, 0) {}
+    constexpr basic_string_view() noexcept {}
     constexpr basic_string_view(char_ct * str, size_type sz) : base_t(str, sz) {}
+    
+    template <typename SomeCharT>
+    constexpr basic_string_view(array_view<SomeCharT> arr) noexcept : base_t(arr) {}
 
-    basic_string_view(char_ct * str) : base_t(str, TraitsT::length(str)) {}
+    basic_string_view(char_ct * str) noexcept : base_t(str, TraitsT::length(str)) {}
 
-    basic_string_view(std::basic_string<CharT, TraitsT> const& str) : base_t(str.c_str(), str.size()) {}
+    basic_string_view(std::basic_string<CharT, TraitsT> const& str) noexcept : base_t(str.c_str(), str.size()) {}
 
     constexpr bool is_equal(basic_string_view const& rhs) const noexcept
     {
@@ -56,51 +60,55 @@ public:
 template <typename CharT, class TraitsT = std::char_traits<CharT>>
 class basic_cstring_view : public basic_string_view<CharT, TraitsT> {
 public:
-
     const char* c_str() const noexcept { return this->data(); }
 };
 
+template <class T> struct is_string_view : false_type {};
+template <typename CharT, class TraitsT> struct is_string_view<basic_string_view<CharT, TraitsT>> : true_type {};
+template <typename CharT, class TraitsT> struct is_string_view<basic_cstring_view<CharT, TraitsT>> : true_type {};
+template <class T> constexpr bool is_string_view_v = is_string_view<T>::value;
+
 template <typename CharT, class TraitsT>
-constexpr bool operator== (basic_string_view<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept
-{
+constexpr bool operator== (basic_string_view<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept {
     return lhs.is_equal(rhs);
 }
 
 template <typename CharT, class TraitsT>
-constexpr bool operator!= (basic_string_view<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept
-{
-    return !lhs.is_equal(rhs);
+constexpr bool operator== (basic_string_view<CharT, TraitsT> const& lhs, std::basic_string<CharT, TraitsT> const& rhs) noexcept {
+    return lhs.is_equal(basic_string_view<CharT, TraitsT>(rhs));
 }
 
 template <typename CharT, class TraitsT>
-bool operator== (basic_string_view<CharT, TraitsT> const& lhs, std::basic_string<CharT, TraitsT> const& rhs) noexcept
-{
-    return lhs.size() == rhs.size() && TraitsT::compare(lhs.cbegin(), rhs.c_str(), lhs.size()) == 0;
+constexpr bool operator== (std::basic_string<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept {
+    return rhs.is_equal(basic_string_view<CharT, TraitsT>(lhs));
 }
 
 template <typename CharT, class TraitsT>
-bool operator== (std::basic_string<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept
-{
-    return rhs == lhs;
+bool operator== (basic_string_view<CharT, TraitsT> const& lhs, CharT const* rhs) noexcept {
+    return lhs.is_equal(basic_string_view<CharT, TraitsT>(rhs));
 }
 
 template <typename CharT, class TraitsT>
-constexpr bool operator< (basic_string_view<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept
-{
+bool operator== (CharT const* lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept {
+    return rhs.is_equal(basic_string_view<CharT, TraitsT>(lhs));
+}
+
+template <typename CharT, class TraitsT>
+constexpr bool operator< (basic_string_view<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept {
     return lhs.compare(rhs) < 0;
 }
 
 template <typename CharT, class TraitsT>
-constexpr bool operator< (basic_string_view<CharT, TraitsT> const& lhs, std::basic_string<CharT, TraitsT> const& rhs) noexcept
-{
+constexpr bool operator< (basic_string_view<CharT, TraitsT> const& lhs, std::basic_string<CharT, TraitsT> const& rhs) noexcept {
     return lhs.compare(rhs.c_str(), rhs.size()) < 0;
 }
 
 template <typename CharT, class TraitsT>
-constexpr bool operator< (std::basic_string<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept
-{
+constexpr bool operator< (std::basic_string<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept {
     return rhs.compare(lhs.c_str(), lhs.size()) > 0;
 }
+
+MAKE_FREE_COMPARISON_OPERATORS(is_string_view_v)
 
 typedef basic_string_view<char> string_view;
 typedef basic_cstring_view<char> cstring_view;

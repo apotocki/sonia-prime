@@ -79,7 +79,7 @@ uint64_t file_read(HANDLE fh, uint64_t offset, void * dest, uint64_t sz) {
 
 file::file(boost::filesystem::path const& fp, bool create_if_not_exists) {
 #ifdef BOOST_WINDOWS
-    DWORD dwCreationDisposition;
+    // DWORD dwCreationDisposition;
 
 #else
 

@@ -27,6 +27,7 @@ enum lexem {
     ID_COMMA,           // ,
     ID_COLON,           // :
     ID_STRING,          // string
+    ID_NAME,            // prop name in objects
     ID_DOUBLE,
     ID_INTEGER,
     ID_ANY              // any character

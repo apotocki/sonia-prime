@@ -25,6 +25,9 @@ using std::uint32_t;
 using std::int64_t;
 using std::uint64_t;
 
+using std::intmax_t;
+using std::uintmax_t;
+
 typedef float float_t;
 typedef long double double_t;
 

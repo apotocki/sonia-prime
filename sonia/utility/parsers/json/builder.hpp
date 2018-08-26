@@ -13,9 +13,7 @@
 
 #include "sonia/cstdint.hpp"
 #include "sonia/string.hpp"
-#include "sonia/shared_ptr.hpp"
-
-#include "json_value.hpp"
+#include "sonia/utility/json/value.hpp"
 
 namespace sonia { namespace parsers { namespace json {
 
@@ -35,7 +33,7 @@ public:
 
     virtual void free(descriptor_type) = 0;
 
-    virtual shared_ptr<json_value> build_json_value(descriptor_type) = 0;
+    virtual json_value build_json_value(descriptor_type) = 0;
 };
 
 }}}

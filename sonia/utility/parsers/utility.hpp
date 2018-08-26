@@ -123,10 +123,14 @@ void parse(ModelT & model, IteratorT b, IteratorT e)
             tokval = "end of input";
         } else {
             auto const& tok = *iter;
-            tokval = std::string(tok.first, tok.eoi);
+            tokval = std::string(tok.first, tok.second);
         }
         if (msg.empty()) resultss << "token: '" << tokval << "' is not expected";
         else resultss << msg << ", got: '" << tokval << "'";
+
+        std::string rest;
+        copy_not_more(iter->first, e, std::back_inserter(rest), 50);
+        resultss << ", stopped at: \"" << rest << "\"";
 
         throw exception(std::move(resultss.str()));
     }

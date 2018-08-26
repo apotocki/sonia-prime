@@ -7,44 +7,40 @@
 
 namespace sonia { namespace parsers { namespace json {
 
-model::model(builder & jb) : jb_(jb) {}
+model::model() {}
 
-model::~model() {
-    for (descriptor_type & d : stack_) {
-        jb_.free(d);
-    }
-}
+model::~model() {}
 
 void model::push_state(state s) {
     state_stack_.emplace_back(s, stack_.size());
 }
 
 void model::put_null() {
-    stack_.push_back(jb_.build_null());
+    stack_.push_back(json_value());
 }
 
 void model::put_boolean(bool v) {
-    stack_.push_back(jb_.build_boolean(v));
+    stack_.push_back(json_value(v));
 }
 
 void model::put_object() {
     size_t cnt = stack_.size() - state_stack_.back().second;
-    array_view<descriptor_type> values(&stack_[stack_.size() - cnt], cnt);
+    array_view<json_value> values(&stack_[stack_.size() - cnt], cnt);
     array_view<std::string> names(&strings_[strings_.size() - cnt], cnt);
-    descriptor_type obj = jb_.build_object(names, values);
+    json_value obj(names, values);
     stack_.resize(stack_.size() - cnt);
     strings_.resize(strings_.size() - cnt);
-    stack_.push_back(obj);
+    stack_.push_back(std::move(obj));
     state_stack_.pop_back();
     state_stack_.pop_back();
 }
 
 void model::put_array() {
     size_t cnt = stack_.size() - state_stack_.back().second;
-    array_view<descriptor_type> values(&stack_[stack_.size() - cnt], cnt);
-    descriptor_type obj = jb_.build_array(values);
+    array_view<json_value> values(&stack_[stack_.size() - cnt], cnt);
+    json_value obj(values);
     stack_.resize(stack_.size() - cnt);
-    stack_.push_back(obj);
+    stack_.push_back(std::move(obj));
     state_stack_.pop_back();
     state_stack_.pop_back();
 }

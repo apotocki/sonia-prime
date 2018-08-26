@@ -18,6 +18,7 @@ using std::weak_ptr;
 using std::enable_shared_from_this;
 
 using std::make_shared;
+using std::dynamic_pointer_cast;
 
 template <class T>
 shared_ptr<T> make_clone(shared_ptr<T> const& ptr) {

@@ -384,7 +384,7 @@ public:
     using base_t::base_t;
 
     void decrement() override {
-        --it_;
+        --base_t::it_;
     }
 };
 
@@ -400,7 +400,7 @@ public:
     typedef iterator_difference_t<IteratorT> difference_type;
 
     void advance(difference_type dif) override {
-        std::advance(it_, dif);
+        std::advance(base_t::it_, dif);
     }
 };
 

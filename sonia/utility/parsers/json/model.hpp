@@ -13,7 +13,7 @@
 #include <cstdlib>
 
 #include "sonia/exceptions.hpp"
-#include "builder.hpp"
+#include "sonia/utility/json/value.hpp"
 #include "sonia/utility/parsers/utility.hpp"
 
 namespace sonia { namespace parsers { namespace json {
@@ -63,8 +63,6 @@ class model {
     model(model const&) = delete;
     model& operator= (model const&) = delete;
 
-    typedef builder::descriptor_type descriptor_type;
-
 public:
     enum class state {
         VALUE = 1,
@@ -72,7 +70,7 @@ public:
         OBJECT
     };
 
-    model(builder & jb);
+    model();
     ~model();
 
     void put_null();
@@ -81,27 +79,10 @@ public:
     void put_array();
     
     template <typename IteratorT>
-    void put_double(IteratorT b, IteratorT e) {
+    void put_number(IteratorT b, IteratorT e) {
         tempstr_.clear();
         std::copy(b, e, std::back_inserter(tempstr_));
-        tempstr_.push_back(0);
-        char* end;
-#ifdef BOOST_WINDOWS
-        double_t res = std::strtod(&tempstr_[0], &end);
-#else
-        double_t res = std::strtold(&tempstr_[0], &end);
-#endif
-        stack_.push_back(jb_.build_double(res));
-    }
-
-    template <typename IteratorT>
-    void put_integer(IteratorT b, IteratorT e) {
-        tempstr_.clear();
-        std::copy(b, e, std::back_inserter(tempstr_));
-        tempstr_.push_back(0);
-        char* end;
-        int64_t res = strtoll (&tempstr_[0], &end, 10);
-        stack_.push_back(jb_.build_integer(res));
+        stack_.push_back(json_value(decimal::parse(string_view(&tempstr_.front(), tempstr_.size()))));
     }
 
     template <typename IteratorT>
@@ -110,7 +91,7 @@ public:
         tempstr_.clear();
         normilize_json_string(b, e, std::back_inserter(tempstr_));
         tempstr_.pop_back();
-        stack_.push_back(jb_.build_string(string_view(tempstr_.empty() ? nullptr : &tempstr_[0], tempstr_.size())));
+        stack_.push_back(json_value(string_view(tempstr_.empty() ? nullptr : &tempstr_[0], tempstr_.size())));
     }
 
     bool has_state() const { return !state_stack_.empty(); }
@@ -127,19 +108,25 @@ public:
         strings_.push_back(std::move(str));
     }
 
+    template <typename IteratorT>
+    void push_name(IteratorT b, IteratorT e) {
+        std::string str;
+        normilize_json_string(b, e, std::back_inserter(str));
+        strings_.push_back(std::move(str));
+    }
+
     bool value_stack_empty() const {
         return state_stack_.back().second == stack_.size();
     }
 
-    shared_ptr<json_value> detach_result() {
-        shared_ptr<json_value> res = jb_.build_json_value(stack_.back());
+    json_value detach_result() {
+        json_value res = std::move(stack_.back());
         stack_.pop_back();
-        return res;
+        return std::move(res);
     }
 
 private:
-    builder & jb_;
-    std::vector<descriptor_type> stack_;
+    std::vector<json_value> stack_;
     std::vector<std::pair<state, size_t>> state_stack_; // state->stack_position
     std::vector<std::string> strings_;
     std::vector<char> tempstr_;

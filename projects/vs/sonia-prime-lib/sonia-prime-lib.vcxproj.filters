@@ -13,9 +13,6 @@
     <Filter Include="sonia.logger">
       <UniqueIdentifier>{c89f215b-69eb-4024-bb0b-cf0d2b84ee34}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.service">
-      <UniqueIdentifier>{577d9926-06fe-40ce-bac0-01ebc6035df0}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.io">
       <UniqueIdentifier>{74d1bad4-5a7d-4958-8ab3-1e3822da573a}</UniqueIdentifier>
     </Filter>
@@ -34,11 +31,32 @@
     <Filter Include="sonia.utility\parsers\json">
       <UniqueIdentifier>{43a7cbbb-8444-4ea8-8a9a-70237e9e9563}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\options">
+      <UniqueIdentifier>{d05e96a6-0125-4ea4-8f20-0b58dc907eff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility\parameters">
+      <UniqueIdentifier>{ffec3959-3872-41c2-bbc6-55e991dac088}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services">
+      <UniqueIdentifier>{577d9926-06fe-40ce-bac0-01ebc6035df0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility\json">
+      <UniqueIdentifier>{9c2048f9-1471-42c4-8e0e-f0e77d6dbe26}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility\number">
+      <UniqueIdentifier>{dc12b83d-cf94-4d66-becf-539492092d45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility\optimized">
+      <UniqueIdentifier>{1f52dd0d-5980-4cf9-8708-8484462d9cad}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.functional">
+      <UniqueIdentifier>{148357da-58cb-4d01-b7c3-a5b28eda6034}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility\range">
+      <UniqueIdentifier>{8f6f7125-96ce-4429-9228-69649c7e6e96}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\sonia\element.hpp">
-      <Filter>sonia</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
@@ -78,9 +96,6 @@
     <ClInclude Include="..\..\..\sonia\logger\loggable.hpp">
       <Filter>sonia.logger</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\service\service.hpp">
-      <Filter>sonia.service</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\io\file.hpp">
       <Filter>sonia.io</Filter>
     </ClInclude>
@@ -89,9 +104,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\scope_exit.hpp">
       <Filter>sonia.utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\service\local_service_registry.hpp">
-      <Filter>sonia.service</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\iterators\wrapper_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
@@ -123,17 +135,8 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\array_value_forward_iterator_adapter.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\application\application.hpp">
-      <Filter>sonia.application</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\build_config.hpp">
       <Filter>sonia</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\application.hpp">
-      <Filter>sonia</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\service\service_locator.hpp">
-      <Filter>sonia.service</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\thread.hpp">
       <Filter>sonia</Filter>
@@ -174,9 +177,6 @@
     <ClInclude Include="..\..\..\sonia\services.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\application\application_host.hpp">
-      <Filter>sonia.application</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\application\configuration.hpp">
       <Filter>sonia.application</Filter>
     </ClInclude>
@@ -204,11 +204,107 @@
     <ClInclude Include="..\..\..\sonia\algorithm\copy.hpp">
       <Filter>sonia.algorithm</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\parsers\json\json_value.hpp">
-      <Filter>sonia.utility\parsers\json</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\parsers\json\basic_builder.hpp">
       <Filter>sonia.utility\parsers\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\options.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\options\json.hpp">
+      <Filter>sonia.utility\options</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parameters\parameters_description.hpp">
+      <Filter>sonia.utility\parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parameters\value_descriptor.hpp">
+      <Filter>sonia.utility\parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\service.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\service_locator.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\host.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\environment.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\builder.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\boost_any_builder.hpp">
+      <Filter>sonia.utility\parsers\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\object_pool.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parameters\json_store.hpp">
+      <Filter>sonia.utility\parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parameters\variables.hpp">
+      <Filter>sonia.utility\parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\json\value.hpp">
+      <Filter>sonia.utility\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\number\integer.hpp">
+      <Filter>sonia.utility\number</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\comparison_operators.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\optimized\holder.hpp">
+      <Filter>sonia.utility\optimized</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\optimized\integer.hpp">
+      <Filter>sonia.utility\optimized</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\optimized\string.hpp">
+      <Filter>sonia.utility\optimized</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\functional\is_negative.hpp">
+      <Filter>sonia.functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\functional\abs.hpp">
+      <Filter>sonia.functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\functional\reference_wrapper.hpp">
+      <Filter>sonia.functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\number\decimal.hpp">
+      <Filter>sonia.utility\number</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\number\decimal.ipp">
+      <Filter>sonia.utility\number</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\hash_combine_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\optimized\decimal.hpp">
+      <Filter>sonia.utility\optimized</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\number\basic_decimal.hpp">
+      <Filter>sonia.utility\number</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\functional\hash.hpp">
+      <Filter>sonia.functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\buffer.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\functional\forwarder.hpp">
+      <Filter>sonia.functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\functional\mover.hpp">
+      <Filter>sonia.functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\range\combine.hpp">
+      <Filter>sonia.utility\range</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -218,29 +314,56 @@
     <ClCompile Include="..\..\..\sonia\io\file.cpp">
       <Filter>sonia.io</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\application\application.cpp">
-      <Filter>sonia.application</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\service\service_locator.cpp">
-      <Filter>sonia.service</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\service\local_service_registry.cpp">
-      <Filter>sonia.service</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\iterators\file_region_iterator.cpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\file_persister.cpp">
       <Filter>sonia.utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\application\application_host.cpp">
-      <Filter>sonia.application</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\parsers\json\json_model.cpp">
       <Filter>sonia.utility\parsers\json</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\parsers\json\basic_json_builder.cpp">
       <Filter>sonia.utility\parsers\json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\options\json_options.cpp">
+      <Filter>sonia.utility\options</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_description.cpp">
+      <Filter>sonia.utility\parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\service_locator.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\services.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\services_host.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\environment.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\parsers\json\boost_any_builder.cpp">
+      <Filter>sonia.utility\parsers\json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_json_store.cpp">
+      <Filter>sonia.utility\parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_variables.cpp">
+      <Filter>sonia.utility\parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\json\json_value.cpp">
+      <Filter>sonia.utility\json</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\number\number_integer.cpp">
+      <Filter>sonia.utility\number</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp">
+      <Filter>sonia.utility</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

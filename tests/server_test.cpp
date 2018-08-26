@@ -16,6 +16,8 @@ namespace fs = boost::filesystem;
 
 #include "sonia/type_traits.hpp"
 
+#include "sonia/services.hpp"
+
 namespace sonia {
 
 /*
@@ -29,7 +31,6 @@ public:
 }
 
 #include <iostream>
-#include "sonia/application/application.hpp"
 
 using namespace sonia;
 
@@ -59,26 +60,72 @@ std::string get_configuration() {
         "{"
         "   'hosts': ["
         "       {"
-        "           'name': 'h0',"
-        "           'services': ['async.serv']"
+        "           name: 'h0',"
+        "           services: ['async.serv', 'async2.serv']"
+        "       }"
+        "   ],"
+        "   'factories': ["
+        "       {"
+        "           name: 'async.serv',"
+        "           implementation: 'async',"
+        "           layer: 16,"
+        "           parameters: {"
+        "               threads: 40"
+        "           }"
+        "       },"
+        "       {"
+        "           name: 'async2.serv',"
+        "           implementation: 'async',"
+        "           layer: 8,"
+        "           parameters: {"
+        "               threads: 40"
+        "           }"
         "       }"
         "   ]"
         "}";
     return std::move(is.str());
 }
 
+#include "applied/scoped_services.hpp"
+
+class my_service {
+public:
+    virtual ~my_service() {}
+
+    virtual std::string do_job() = 0;
+};
+
+class test_service0 
+    : public service
+    , public my_service
+{
+public:
+    std::string do_job() override { return "job0"; }
+};
+
 BOOST_AUTO_TEST_CASE (server_test)
 {
-    using namespace sonia;
-
     fs::remove_all(TEST_FOLDER);
 
+    scoped_services ss;
+    
     //std::cout << foo("chars str") << "\n";
     //std::cout << foo(std::string("std::str")) << "\n";
     //std::cout << foo(123) << "\n";
-    application app;
-    BOOST_CHECK_EQUAL(0, app.open(0, nullptr, &std::istringstream()));
-    app.load_configuration(get_configuration());
+
+    //BOOST_CHECK_EQUAL(0, app.open(0, nullptr, &std::istringstream()));
+    //app.load_configuration(get_configuration());
+
+    services::register_service_factory("asd", []() -> shared_ptr<service> { return make_shared<test_service0>(); });
+    services::load_configuration("host.json");
+
+    auto p = services::locate<my_service>("asd");
+    BOOST_CHECK_EQUAL("job0", p->do_job());
+
+    try {
+        services::register_service_factory("asd", []() -> shared_ptr<service> { throw 1; });
+        BOOST_CHECK(false);
+    } catch (internal_error const&) {}
 
     //app.load_host();
     //application_host host1;

@@ -48,7 +48,7 @@ class range_dereferencing_iterator
     bool equal(range_dereferencing_iterator const& rhs) const {
         if (empty()) return rhs.empty();
         if (rhs.empty()) return false;
-        return current_ == other.current_;
+        return it_ == rhs.it_;
     }
 
     reference_type dereference() const {

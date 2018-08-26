@@ -7,7 +7,6 @@
 #include <boost/filesystem.hpp>
 
 #include "sonia/utility/parsers/json/lexertl_lexer.hpp"
-#include "sonia/utility/parsers/json/basic_builder.hpp"
 #include "sonia/utility/parsers/json/model.hpp"
 #include "sonia/utility/parsers/json/parser.hpp"
 
@@ -19,6 +18,7 @@ using namespace sonia;
 #include <boost/any.hpp>
 #include <boost/unordered_map.hpp>
 
+#if 0
 class config {
 public:
     template <typename T>
@@ -44,12 +44,78 @@ BOOST_AUTO_TEST_CASE(just_test)
     std::cout << cfg.operator[]<std::string>(string_view("key0")) << "\n";
 }
 
+#endif
+
+BOOST_AUTO_TEST_CASE(json_test)
+{
+    namespace fs = boost::filesystem;
+    std::string text;
+    std::ifstream file("data/json_test.json");
+    std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(text));
+
+    parsers::json::model model;
+
+    parsers::parse<
+        parsers::json::light_lexertl_lexer,
+        parsers::json::parser
+    >(model, text.c_str(), text.c_str() + text.size());
+    
+    json_value res = model.detach_result();
+    BOOST_CHECK(res.type() == json_value_type::object);
+    json_object jobj = res.get_object();
+    BOOST_CHECK_EQUAL(jobj.size(), 10);
+    BOOST_CHECK(jobj["key0"]->type() == json_value_type::null);
+    BOOST_CHECK(jobj["key1"]->type() == json_value_type::boolean);
+    BOOST_CHECK(jobj["key2"]->type() == json_value_type::boolean);
+    BOOST_CHECK(jobj["key3"]->type() == json_value_type::number);
+    BOOST_CHECK(jobj["key4"]->type() == json_value_type::string);
+    BOOST_CHECK(jobj["key5"]->type() == json_value_type::string);
+    
+    BOOST_CHECK(!jobj["key1"]->get_bool());
+    BOOST_CHECK(jobj["key2"]->get_bool());
+    BOOST_CHECK_EQUAL(jobj["key3"]->get_int(), 123);
+    BOOST_CHECK_EQUAL(jobj["key3"]->get_int64(), 123);
+    BOOST_CHECK_EQUAL(jobj["key3"]->get_number(), 123);
+    BOOST_CHECK_EQUAL(jobj["key4"]->get_string(), "string value");
+    BOOST_CHECK_EQUAL(jobj["key5"]->get_string(), "str");
+    BOOST_CHECK(jobj["key4 - just a long key"]->type() == json_value_type::object);
+    BOOST_CHECK_EQUAL(jobj["key4 - just a long key"]->get_object().size(), 0);
+    BOOST_CHECK(jobj["key4 - just a long long key"]->type() == json_value_type::array);
+    BOOST_CHECK_EQUAL(jobj["key4 - just a long long key"]->get_array().size(), 0);
+    BOOST_CHECK(jobj["$k0"]->type() == json_value_type::object);
+    BOOST_CHECK_EQUAL(jobj["$k0"]->get_object().size(), 2);
+    BOOST_CHECK_EQUAL(jobj["$k0"]->get_object()["%0"]->get_int(), 1);
+    BOOST_CHECK_EQUAL(jobj["$k0"]->get_object()["%1"]->get_int(), 2);
+    BOOST_CHECK(jobj["$k1"]->type() == json_value_type::array);
+    BOOST_CHECK_EQUAL(jobj["$k1"]->get_array().size(), 3);
+    BOOST_CHECK_EQUAL(jobj["$k1"]->get_array()[0].get_int(), 1);
+    BOOST_CHECK_EQUAL(jobj["$k1"]->get_array()[1].get_int(), 2);
+    BOOST_CHECK(jobj["$k1"]->get_array()[2].type() == json_value_type::null);
+    BOOST_CHECK(!jobj["key1_"]);
+
+    std::string etalon = "{"
+        "\"$k0\": {\"%0\": 1, \"%1\": 2}, "
+        "\"$k1\": [1, 2, null], "
+        "\"key0\": null, "
+        "\"key1\": false, "
+        "\"key2\": true, "
+        "\"key3\": 123, "
+        "\"key4\": \"string value\", "
+        "\"key4 - just a long key\": {}, "
+        "\"key4 - just a long long key\": [], "
+        "\"key5\": \"str\""
+        "}";
+    BOOST_CHECK_EQUAL(to_string(res), etalon);
+}
+
 #if 0
-BOOST_AUTO_TEST_CASE(json_parser_test)
+
+BOOST_AUTO_TEST_CASE(json_suite_test)
 {
     namespace fs = boost::filesystem;
 
     fs::path suitedir("data/json-test-suite");
+    //fs::path suitedir("data/temp");
 
     std::for_each(fs::directory_iterator(suitedir), fs::directory_iterator(), [](auto const& p) {
         if (!fs::is_regular_file(p)) return;
@@ -63,8 +129,7 @@ BOOST_AUTO_TEST_CASE(json_parser_test)
         std::ifstream file(p.path().string().c_str());
         std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(text));
 
-        parsers::json::basic_builder b;
-        parsers::json::model model(b);
+        parsers::json::model model;
 
         optional<std::string> error;
         try {
@@ -85,10 +150,11 @@ BOOST_AUTO_TEST_CASE(json_parser_test)
         }
         
         if (!error) {
-            shared_ptr<json_value> res = model.detach_result();
+            json_value res = model.detach_result();
         }
         // std::cout << p.path().filename() << "\n";
     });
 
 }
 #endif
+

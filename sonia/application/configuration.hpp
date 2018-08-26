@@ -9,11 +9,20 @@
 #   pragma once
 #endif
 
+#include <boost/program_options.hpp>
+
 #include <boost/any.hpp>
 
 #include "sonia/string.hpp"
 
-namespace sonia {
+namespace sonia { namespace po {
+
+using boost::program_options::options_description;
+using boost::program_options::variables_map;
+
+}
+
+
 
 class config_node {
 public:

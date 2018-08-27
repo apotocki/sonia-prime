@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\sonia\algorithm\construct.hpp" />
     <ClInclude Include="..\..\..\sonia\algorithm\copy.hpp" />
     <ClInclude Include="..\..\..\sonia\algorithm\pull.hpp" />
     <ClInclude Include="..\..\..\sonia\application\configuration.hpp" />
@@ -72,7 +73,7 @@
     <ClInclude Include="..\..\..\sonia\utility\optimized\decimal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optimized\holder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optimized\integer.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\optimized\string.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\optimized\array.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optional_inheritor.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\in_place_factory.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\array_value_forward_iterator_adapter.hpp" />
@@ -86,9 +87,6 @@
     <ClInclude Include="..\..\..\sonia\utility\parameters\parameters_description.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parameters\variables.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parameters\value_descriptor.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\parsers\json\basic_builder.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\parsers\json\boost_any_builder.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\parsers\json\builder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexems.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexertl_lexer.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parsers\json\model.hpp" />
@@ -148,18 +146,6 @@
     <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_description.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_json_store.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_variables.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\parsers\json\basic_json_builder.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\parsers\json\boost_any_builder.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\parsers\json\json_model.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>

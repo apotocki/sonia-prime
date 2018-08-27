@@ -13,7 +13,7 @@
 
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/optimized/decimal.hpp"
-#include "sonia/utility/optimized/string.hpp"
+#include "sonia/utility/optimized/array.hpp"
 #include "sonia/functional/mover.hpp"
 
 namespace sonia {
@@ -36,112 +36,41 @@ void json_value_collect(json_value & jv, std::vector<json_value> & accum) noexce
     }
 }
 
-template <class ElementT, class HolderT>
-struct optimized_collection_impl
-{
-    typedef std::allocator<ElementT> allocator_t;
-    typedef optimized_array_base<ElementT> optimized_collection_base_t;
-    typedef adjacent_buffer<ElementT, optimized_collection_base_t> optimized_collection_t;
-
-    static void init(HolderT * self, array_view<ElementT> s) {
-        if (!s.empty()) {
-            optimized_collection_t * ptr = allocate_adjacent_buffer<ElementT, optimized_collection_base_t, allocator_t>(
-                s.size(), s | boost::adaptors::transformed(mover())
-            );
-            self->set_pointer(ptr);
-        }
-    }
-
-    static array_view<ElementT> get(HolderT * self) {
-        return self->is_ptr() ? ptr(self)->to_array_view() : array_view<ElementT>();
-    }
-
-    static array_view<const ElementT> get(HolderT const* self) {
-        return self->is_ptr() ? ptr(self)->to_array_view() : array_view<const ElementT>();
-    }
-
-    static size_t size(HolderT const* self) {
-        return self->is_ptr() ? ptr(self)->size() : 0;
-    }
-
-protected:
-    static optimized_collection_t * ptr(HolderT * self) {
-        return static_cast<optimized_collection_t *>(self->get_pointer());
-    }
-
-    static optimized_collection_t const* ptr(HolderT const* self) {
-        return static_cast<optimized_collection_t const*>(self->get_pointer());
-    }
-};
-
-typedef std::pair<std::string, json_value> object_item_t;
-
-#if 0
-class optimized_object : public optimized_base {
-public:
-    template <typename IteratorT>
-    explicit optimized_object(IteratorT elem_it) {
-        for (; !elem_it.empty(); ++elem_it) {
-            auto it = map_.find(elem_it->first);
-            if (it == map_.end()) {
-                map_.insert(it, std::move(*elem_it));
-            } else {
-                it->second = std::move(elem_it->second);
-            }
-        }
-    }
-
-    optimized_object(array_view<std::string> names, array_view<json_value> vals) {
-        BOOST_ASSERT(names.size() == vals.size());
-        auto name_it = names.begin();
-        auto value_it = vals.begin();
-        for (; name_it != names.end() && value_it != vals.end(); ++name_it, ++value_it) {
-            auto it = map_.find(*name_it);
-            if (it == map_.end()) {
-                map_.insert(it, std::make_pair(std::move(*name_it), std::move(*value_it)));
-            } else {
-                it->second = std::move(*value_it);
-            }
-        }
-    }
-
-    json_value * get(string_view key) {
-        auto it = map_.find(key, string_hasher(), string_equal_to());
-        return it != map_.end() ? &it->second : (json_value*)nullptr;
-    }
-
-    json_value const* get(string_view key) const {
-        auto it = map_.find(key, string_hasher(), string_equal_to());
-        return it != map_.end() ? &it->second : (json_value const*)nullptr;
-    }
-
-    optimized_base * clone() const override {
-        return new optimized_object(*this);
-    }
-
-    void dispose() noexcept override {
-        delete this;
-    }
-
-private:
-    boost::unordered_map<std::string, json_value> map_;
-};
-
-#endif
-
+//typedef std::pair<std::string, json_value> object_item_t;
+typedef optimized_array<char, 16> json_item_name_t;
+typedef std::pair<json_item_name_t, json_value> object_item_t;
 
 struct json_object_item_transformer
 {
-    typedef std::pair<std::string&&, json_value&&> result_type;
+    typedef std::pair<array_view<const char>, json_value&&> result_type;
 
     template <typename TplT>
-    result_type operator()(TplT&& x) const { return result_type(std::move(boost::get<0>(x)), std::move(boost::get<1>(x))); }
+    result_type operator()(TplT&& x) const {
+        return result_type(
+            to_string_view(boost::get<0>(x)),
+            std::move(boost::get<1>(x))
+        );
+    }
+};
+
+struct object_item_less {
+    inline string_view to_string_view(object_item_t const& v) const {
+        return (string_view)((array_view<const char>)v.first);
+    }
+
+    bool operator()(object_item_t const& l, object_item_t const& r) {
+        return to_string_view(l) < to_string_view(r);
+    }
+
+    bool operator()(object_item_t const& l, string_view r) {
+        return to_string_view(l) < r;
+    }
 };
 
 template <class HolderT>
-struct optimized_object_impl : optimized_collection_impl<object_item_t, HolderT>
+struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
 {
-    typedef optimized_collection_impl<object_item_t, HolderT> base_t;
+    typedef optimized_array_impl<object_item_t, HolderT> base_t;
     typedef typename base_t::allocator_t allocator_t;
     typedef typename base_t::optimized_collection_base_t optimized_collection_base_t;
     typedef typename base_t::optimized_collection_t optimized_collection_t;
@@ -153,7 +82,9 @@ struct optimized_object_impl : optimized_collection_impl<object_item_t, HolderT>
                 keys.size(), boost::combine(keys, vals) | boost::adaptors::transformed(json_object_item_transformer())
             );
             self->set_pointer(ptr);
-            std::sort(ptr->begin(), ptr->end(), [](object_item_t const& l, object_item_t const& r) -> bool { return l.first < r.first; });
+            std::sort(ptr->begin(), ptr->end(), object_item_less());
+        } else {
+            self->set_uint(1);
         }
     }
 
@@ -162,19 +93,29 @@ struct optimized_object_impl : optimized_collection_impl<object_item_t, HolderT>
     static json_value const* get(HolderT const* self, string_view key) {
         if (!self->is_ptr()) return nullptr;
         optimized_collection_t const* ptr = base_t::ptr(self);
-        object_item_t const* it = std::lower_bound(ptr->begin(), ptr->end(), key, [](object_item_t const& l, string_view r) -> bool { return l.first < r; });
-        if (it == ptr->end() || it->first != key) return nullptr;
+        object_item_t const* it = std::lower_bound(ptr->begin(), ptr->end(), key, object_item_less());
+        if (it == ptr->end() || (string_view)((array_view<const char>)it->first) != key) return nullptr;
         return &it->second;
     }
 
     static json_value * get(HolderT * self, string_view key) {
         if (!self->is_ptr()) return nullptr;
         optimized_collection_t * ptr = base_t::ptr(self);
-        object_item_t * it = std::lower_bound(ptr->begin(), ptr->end(), key, [](object_item_t const& l, string_view r) -> bool { return l.first < r; });
-        if (it == ptr->end() || it->first != key) return nullptr;
+        object_item_t * it = std::lower_bound(ptr->begin(), ptr->end(), key, object_item_less());
+        if (it == ptr->end() || (string_view)((array_view<const char>)it->first) != key) return nullptr;
         return &it->second;
     }
 };
+
+template <bool IsConstV>
+typename json_object_item_iterator<IsConstV>::value_t json_object_item_iterator<IsConstV>::dereference() const {
+    typedef optimized_object_impl<json_object::holder_t> object_t;
+    auto& item = object_t::get(&obj_)[pos_];
+    return value_t{string_view(item.first.begin(), item.first.size()), item.second};
+}
+
+//template <> class json_object_item_iterator<false>;
+//template <> class json_object_item_iterator<true>;
 
 bool json_value::get_bool() const {
     if (json_value_type::boolean == type()) {
@@ -209,7 +150,7 @@ decimal json_value::get_number() const {
 
 string_view json_value::get_string() const {
     if (json_value_type::string == type()) {
-        typedef optimized_string_impl<holder_t> string_t;
+        typedef optimized_array_impl<char, holder_t> string_t;
         return string_t::get(this);
     }
     throw exception("json_value (%1%) is not a string"_fmt % to_string(*this));
@@ -217,7 +158,7 @@ string_view json_value::get_string() const {
 
 array_view<const json_value> json_value::get_array() const {
     if (json_value_type::array == type()) {
-        typedef optimized_collection_impl<json_value, holder_t> array_t;
+        typedef optimized_array_impl<json_value, holder_t> array_t;
         return array_t::get(this);
     }
     throw exception("json_value (%1%) is not an array"_fmt % to_string(*this));
@@ -225,7 +166,7 @@ array_view<const json_value> json_value::get_array() const {
 
 array_view<json_value> json_value::get_array() {
     if (json_value_type::array == type()) {
-        typedef optimized_collection_impl<json_value, holder_t> array_t;
+        typedef optimized_array_impl<json_value, holder_t> array_t;
         return array_t::get(this);
     }
     throw exception("json_value (%1%) is not an array"_fmt % to_string(*this));
@@ -242,6 +183,15 @@ json_object::json_object(holder_t const& hval)
     : holder_t(cref(hval))
 {}
 
+json_object::json_object(json_object const& rhs)
+    : holder_t(cref((holder_t const&)rhs))
+{}
+
+json_object& json_object::operator=(json_object const& rhs) {
+    holder_t::operator= (cref((holder_t const&)rhs));
+    return *this;
+}
+
 json_value const* json_object::operator[](string_view key) const noexcept {
     typedef optimized_object_impl<holder_t> object_t;
     return object_t::get(this, key);
@@ -252,21 +202,19 @@ json_value * json_object::operator[](string_view key) noexcept {
     return object_t::get(this, key);
 }
 
-array_view<const std::pair<std::string, json_value>> json_object::items() const noexcept {
-    typedef optimized_object_impl<holder_t> object_t;
-    return object_t::get(this);
+json_object::const_item_range_t json_object::items() const noexcept {
+    typedef json_object_item_iterator<true> const_iterator;
+    return const_item_range_t(const_iterator(*this), const_iterator(*this, size()));
+}
+
+json_object::item_range_t json_object::items() noexcept {
+    typedef json_object_item_iterator<false> iterator;
+    return item_range_t(iterator(*this), iterator(*this, size()));
 }
 
 size_t json_object::size() const noexcept {
     typedef optimized_object_impl<holder_t> object_t;
     return object_t::size(this);
-}
-
-array_view<std::pair<const std::string, json_value>> json_object::items() noexcept {
-    typedef optimized_object_impl<holder_t> object_t;
-    typedef std::pair<const std::string, json_value> safe_item_t;
-    auto r = object_t::get(this);
-    return array_view<safe_item_t>(reinterpret_cast<safe_item_t*>(r.begin()), r.size());
 }
 
 // null 
@@ -289,14 +237,14 @@ json_value::json_value(decimal val) {
 }
 
 json_value::json_value(string_view val) {
-    typedef optimized_string_impl<holder_t> string_t;
+    typedef optimized_array_impl<char, holder_t> string_t;
     string_t::init(this, val);
     set_service_cookie((size_t)json_value_type::string);
 }
 
 json_value::json_value(array_view<json_value> val) {
-    typedef optimized_collection_impl<json_value, holder_t> array_t;
-    array_t::init(this, val);
+    typedef optimized_array_impl<json_value, holder_t> array_t;
+    array_t::init(this, val | boost::adaptors::transformed(mover()), val.size());
     set_service_cookie((size_t)json_value_type::array);
 }
 
@@ -323,7 +271,7 @@ json_value::~json_value() {
                             json_value_collect(jv, accum);
                         }
                     } else if (jv.type() == json_value_type::object) {
-                        for (auto & item : jv.get_object().items()) {
+                        for (auto const & item : jv.get_object().items()) {
                             json_value_collect(item.second, accum);
                         }
                     }

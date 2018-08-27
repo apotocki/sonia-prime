@@ -46,6 +46,7 @@ BOOST_AUTO_TEST_CASE(just_test)
 
 #endif
 
+#if 1
 BOOST_AUTO_TEST_CASE(json_test)
 {
     namespace fs = boost::filesystem;
@@ -64,6 +65,8 @@ BOOST_AUTO_TEST_CASE(json_test)
     BOOST_CHECK(res.type() == json_value_type::object);
     json_object jobj = res.get_object();
     BOOST_CHECK_EQUAL(jobj.size(), 10);
+    jobj["key0"];
+    BOOST_REQUIRE(jobj["key0"]);
     BOOST_CHECK(jobj["key0"]->type() == json_value_type::null);
     BOOST_CHECK(jobj["key1"]->type() == json_value_type::boolean);
     BOOST_CHECK(jobj["key2"]->type() == json_value_type::boolean);
@@ -107,8 +110,9 @@ BOOST_AUTO_TEST_CASE(json_test)
         "}";
     BOOST_CHECK_EQUAL(to_string(res), etalon);
 }
+#endif
 
-#if 0
+#if 1
 
 BOOST_AUTO_TEST_CASE(json_suite_test)
 {
@@ -151,6 +155,7 @@ BOOST_AUTO_TEST_CASE(json_suite_test)
         
         if (!error) {
             json_value res = model.detach_result();
+            BOOST_CHECK(true);
         }
         // std::cout << p.path().filename() << "\n";
     });

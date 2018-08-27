@@ -32,8 +32,8 @@ public:
     optimized_base & operator= (optimized_base const&) = delete;
     optimized_base & operator= (optimized_base &&) = delete;
 
-    size_t service_cookie() const { return service_cookie_; }
-    size_t& service_cookie() { return service_cookie_; }
+    uint32_t service_cookie() const { return service_cookie_; }
+    uint32_t& service_cookie() { return service_cookie_; }
 
     void add_ref() {
         ++refs_;
@@ -51,8 +51,8 @@ public:
     virtual void dispose() noexcept = 0;
 
 private:
-    size_t service_cookie_;
-    long refs_;
+    uint32_t service_cookie_;
+    uint32_t refs_;
 };
 
 template <class WrappedT>
@@ -92,7 +92,7 @@ struct optimized_holder_base {
     static_assert (HolderBytesV >= sizeof(intptr_t));
     static_assert (sizeof(intptr_t) * CHAR_BIT - 1 >= ServiceCookieBitsV);
 
-    static const size_t begin_offs = (ServiceCookieBitsV + CHAR_BIT) / CHAR_BIT;
+    static const size_t begin_offs = 1 + ServiceCookieBitsV / CHAR_BIT;
 
     static const size_t max_cookie_val = (((size_t)1) << ServiceCookieBitsV) - 1;
 
@@ -255,9 +255,10 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
                 *reinterpret_cast<optimized_base**>(&this->holder_) = rhs.get().get_pointer();
                 get_pointer()->add_ref();
             } else {
-                std::memcpy(&this->holder_, &rhs.holder_, HolderBytesV);
+                std::memcpy(&this->holder_, &rhs.get().holder_, HolderBytesV);
             }
         }
+        return *this;
     }
 
     uint_t get_uint() const {
@@ -310,7 +311,7 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
         return base_t::is_ptr() ? get_pointer()->service_cookie() : base_t::get_service_cookie();
     }
 
-    void set_service_cookie(size_t val) {
+    void set_service_cookie(uint32_t val) {
         if (base_t::is_ptr()) {
             get_pointer()->service_cookie() = val;
         } else {

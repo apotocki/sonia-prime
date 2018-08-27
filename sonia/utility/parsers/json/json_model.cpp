@@ -7,7 +7,11 @@
 
 namespace sonia { namespace parsers { namespace json {
 
-model::model() {}
+model::model() {
+    stack_.reserve(16);
+    strings_.reserve(16);
+    state_stack_.reserve(16);
+}
 
 model::~model() {}
 

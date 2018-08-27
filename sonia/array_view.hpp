@@ -27,7 +27,7 @@ public:
     typedef remove_cv_t<T> value_type;
     typedef add_const_t<T> const_value_type;
     typedef add_pointer_t<value_type> pointer;
-    typedef add_lvalue_reference_t<value_type> reference;
+    typedef add_lvalue_reference_t<T> reference;
     typedef add_lvalue_reference_t<const_value_type> const_reference;
     typedef size_t size_type;
     typedef add_pointer_t<T> iterator;

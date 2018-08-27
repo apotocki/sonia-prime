@@ -6,7 +6,6 @@
 #include "json.hpp"
 
 #include "sonia/utility/parsers/json/lexertl_lexer.hpp"
-#include "sonia/utility/parsers/json/basic_builder.hpp"
 #include "sonia/utility/parsers/json/model.hpp"
 #include "sonia/utility/parsers/json/parser.hpp"
 
@@ -17,8 +16,7 @@ using namespace sonia::parsers;
 json_loader::json_loader(array_view<char> data)
     : base_t()
 {
-    json::basic_builder b;
-    json::model model(b);
+    json::model model;
     parse<
         parsers::json::lexertl_lexer,
         parsers::json::parser

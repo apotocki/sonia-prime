@@ -9,12 +9,16 @@
 #   pragma once
 #endif
 
+#include <boost/iterator.hpp>
+#include <boost/iterator/iterator_facade.hpp>
+#include <boost/range/iterator_range_core.hpp>
+
 #include "sonia/string.hpp"
 #include "sonia/array_view.hpp"
+#include "sonia/type_traits.hpp"
 
 #include "sonia/utility/optimized/holder.hpp"
 #include "sonia/utility/number/decimal.hpp"
-//#include "sonia/utility/iterators/wrapper_iterator.hpp"
 
 #define SONIA_JSON_VALUE_SZ 8 // at least pointer size for 64bit platforms
 
@@ -41,21 +45,62 @@ enum class json_value_type {
     object
 };
 
+class json_value;
+class json_object;
+
+template <bool IsConstV>
+class json_object_item_iterator
+    : public boost::iterator_facade<
+        json_object_item_iterator<IsConstV>,
+        std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>>,
+        boost::random_access_traversal_tag,
+        std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>>
+    >
+{
+    friend class boost::iterator_core_access;
+    friend class json_object;
+
+    typedef std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>> value_t;
+    mutable json_object obj_;
+    size_t pos_;
+
+    explicit json_object_item_iterator(json_object const& p, size_t pos = 0) : obj_(p), pos_(pos) {}
+
+    bool equal(json_object_item_iterator const& rhs) const {
+        return pos_ == rhs.pos_;
+    }
+
+    void increment() { ++pos_; }
+    void decrement() { --pos_; }
+
+    value_t dereference() const;
+};
+
 class json_object : optimized_holder<SONIA_JSON_VALUE_SZ, 3>
 {
     friend class json_value;
+    template <bool> friend class json_object_item_iterator;
+
     typedef optimized_holder<SONIA_JSON_VALUE_SZ, 3> holder_t;
 
     json_object(holder_t const&);
 
+    typedef boost::iterator_range<json_object_item_iterator<false>> item_range_t;
+    typedef boost::iterator_range<json_object_item_iterator<true>> const_item_range_t;
+
 public:
+    json_object(json_object const&);
+    json_object(json_object &&) = default;
+    json_object& operator=(json_object const&);
+    json_object& operator=(json_object &&) = default;
+
     size_t size() const noexcept;
 
     json_value const* operator[](string_view) const noexcept;
     json_value * operator[](string_view) noexcept;
 
-    array_view<const std::pair<std::string, json_value>> items() const noexcept;
-    array_view<std::pair<const std::string, json_value>> items() noexcept;
+    const_item_range_t items() const noexcept;
+    item_range_t items() noexcept;
 };
 
 class json_value : optimized_holder<SONIA_JSON_VALUE_SZ, 3>

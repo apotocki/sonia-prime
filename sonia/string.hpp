@@ -63,6 +63,12 @@ public:
     const char* c_str() const noexcept { return this->data(); }
 };
 
+template <typename CharT, class TraitsT>
+basic_string_view<CharT, TraitsT> to_string_view(basic_string_view<CharT, TraitsT> sv) { return sv; }
+
+template <typename CharT, class TraitsT>
+basic_string_view<CharT, TraitsT> to_string_view(std::basic_string<CharT, TraitsT> const& v) { return basic_string_view<CharT, TraitsT>(v); }
+
 template <class T> struct is_string_view : false_type {};
 template <typename CharT, class TraitsT> struct is_string_view<basic_string_view<CharT, TraitsT>> : true_type {};
 template <typename CharT, class TraitsT> struct is_string_view<basic_cstring_view<CharT, TraitsT>> : true_type {};

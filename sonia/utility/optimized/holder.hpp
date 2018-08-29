@@ -113,7 +113,7 @@ struct optimized_holder_base {
     uint8_t const* end() const { return data() + HolderBytesV; }
     uint8_t * end() { return data() + HolderBytesV; }
 
-    size_t get_service_cookie() const {
+    uint32_t get_service_cookie() const {
         if constexpr (ServiceCookieBitsV <= first_byte_bits) {
             return first_byte_mask & ((*data()) >> 1);
         } else {
@@ -121,7 +121,7 @@ struct optimized_holder_base {
         }
     }
 
-    size_t get_service_cookie_adv() const {
+    uint32_t get_service_cookie_adv() const {
         uint8_t const* src = data();
         size_t res = first_byte_mask & ((*src) >> 1);
         size_t sbits = ServiceCookieBitsV - first_byte_bits;
@@ -174,6 +174,7 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
     static const uint_t cookie_mask = (((uint_t)1) << (ServiceCookieBitsV + 1)) - 1;
 
     optimized_holder() {
+        (uint_t)uint_max;
         base_t::init_not_ptr();
     }
 
@@ -307,7 +308,7 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
         //ptr->service_cookie() = cookie;
     }
 
-    size_t get_service_cookie() const noexcept {
+    uint32_t get_service_cookie() const noexcept {
         return base_t::is_ptr() ? get_pointer()->service_cookie() : base_t::get_service_cookie();
     }
 
@@ -320,11 +321,17 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
     }
 };
 
-template <size_t HolderBytesV, class ... Ts>
-class optimized_union : optimized_holder<HolderBytesV, boost::static_log2<sizeof(Ts)>::value + 1>
-{
+template <size_t HolderBytesV, size_t ServiceCookieBitsV>
+const typename optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>::uint_t
+optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>::uint_max;
 
-};
+//        (((((uint_t)1) << (value_bits - 1)) - 1) << 1) | 1;
+
+//template <size_t HolderBytesV, class ... Ts>
+//class optimized_union : optimized_holder<HolderBytesV, boost::static_log2<sizeof...(Ts)>::value + 1>
+//{
+//
+//};
 
 }
 

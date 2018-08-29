@@ -105,7 +105,7 @@ public:
     void flush() {
         if (pos_) {
             typename helper_t::range_type rng = *it_;
-            *it_ = helper_t::range_type(boost::begin(rng), pos_->first);
+            *it_ = typename helper_t::range_type(boost::begin(rng), pos_->first);
         }
     }
 

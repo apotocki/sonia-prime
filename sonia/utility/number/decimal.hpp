@@ -16,7 +16,7 @@
 namespace sonia {
 
 typedef basic_decimal<
-    boost::multiprecision::number<boost::multiprecision::cpp_int_backend<64, 0>>,
+    boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>,
     int32_t
 > decimal;
 

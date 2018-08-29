@@ -34,7 +34,7 @@ void construct(ElementT * dest, RngT && src, size_t sz) {
 
 template <typename ElementT, class RngT>
 void construct(ElementT * dest, RngT && src) {
-    construct(dest, std::forwaed<RngT>(src), boost::size(src));
+    construct(dest, std::forward<RngT>(src), boost::size(src));
 }
 
 }

@@ -172,35 +172,35 @@ public:
     virtual ~iterator_polymorphic_impl() noexcept {}
 
     virtual bool empty() const {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::empty"));
+        throw not_supported_operation_error("iterator_polymorphic_impl::empty");
     }
 
     virtual bool equal(iterator_polymorphic_impl const& rhs) const {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::equal"));
+        throw not_supported_operation_error("iterator_polymorphic_impl::equal");
     }
 
     virtual void increment() {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::increment"));
+        throw not_supported_operation_error("iterator_polymorphic_impl::increment");
     }
 
     virtual void decrement() {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::decrement"));
+        throw not_supported_operation_error("iterator_polymorphic_impl::decrement");
     }
 
     virtual void set(ReferenceT ref) {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::set"));
+        throw not_supported_operation_error("iterator_polymorphic_impl::set");
     }
 
     virtual ReferenceT dereference() const {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::dereference"));
+        throw not_supported_operation_error("iterator_polymorphic_impl::dereference");
     }
 
     virtual void advance(DifferenceT dif) {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::advance"));
+        throw not_supported_operation_error("iterator_polymorphic_impl::advance");
     }
 
     virtual size_t get_sizeof() const {
-        BOOST_THROW_EXCEPTION(not_supported_operation_error("iterator_polymorphic_impl::get_sizeof"));
+        throw not_supported_operation_error("iterator_polymorphic_impl::get_sizeof");
     }
 };
 
@@ -299,8 +299,8 @@ public:
         return impl_->dereference();
     }
 
-    template <typename DifferenceT>
-    void advance(DifferenceT dif) {
+    template <typename DiffT>
+    void advance(DiffT dif) {
         return impl_->advance(dif);
     }
 

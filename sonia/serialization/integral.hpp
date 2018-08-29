@@ -20,7 +20,7 @@
 namespace sonia { namespace serialization {
 
 template <typename T>
-class coder<default_t, T, typename enable_if_t<is_integral_v<T>>>
+class coder<default_t, T, enable_if_t<is_integral_v<T>>>
 {
 public:
     template <typename ArgT, typename OutputIteratorT>

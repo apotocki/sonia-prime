@@ -38,7 +38,7 @@ struct range_equal {
         if constexpr (is_integral_v<T>) {
             return !std::memcmp(lb, rb, sz * sizeof(T));
         } else {
-            return le != std::mismatch(lb, le, rb).first;
+            return le == std::mismatch(lb, le, rb).first;
         }
     }
 };

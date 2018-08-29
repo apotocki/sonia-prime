@@ -47,34 +47,7 @@ enum class json_value_type {
 
 class json_value;
 class json_object;
-
-template <bool IsConstV>
-class json_object_item_iterator
-    : public boost::iterator_facade<
-        json_object_item_iterator<IsConstV>,
-        std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>>,
-        boost::random_access_traversal_tag,
-        std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>>
-    >
-{
-    friend class boost::iterator_core_access;
-    friend class json_object;
-
-    typedef std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>> value_t;
-    mutable json_object obj_;
-    size_t pos_;
-
-    explicit json_object_item_iterator(json_object const& p, size_t pos = 0) : obj_(p), pos_(pos) {}
-
-    bool equal(json_object_item_iterator const& rhs) const {
-        return pos_ == rhs.pos_ && obj_ == rhs.obj_;
-    }
-
-    void increment() { ++pos_; }
-    void decrement() { --pos_; }
-
-    value_t dereference() const;
-};
+template <bool IsConstV> class json_object_item_iterator;
 
 class json_object : optimized_holder<SONIA_JSON_VALUE_SZ, 3>
 {
@@ -104,6 +77,34 @@ public:
 
     const_item_range_t items() const noexcept;
     item_range_t items() noexcept;
+};
+
+template <bool IsConstV>
+class json_object_item_iterator
+    : public boost::iterator_facade<
+        json_object_item_iterator<IsConstV>,
+        std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>>,
+        boost::random_access_traversal_tag,
+        std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>>
+    >
+{
+    friend class boost::iterator_core_access;
+    friend class json_object;
+
+    typedef std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>> value_t;
+    mutable json_object obj_;
+    size_t pos_;
+
+    explicit json_object_item_iterator(json_object const& p, size_t pos = 0) : obj_(p), pos_(pos) {}
+
+    bool equal(json_object_item_iterator const& rhs) const {
+        return pos_ == rhs.pos_ && obj_ == rhs.obj_;
+    }
+
+    void increment() { ++pos_; }
+    void decrement() { --pos_; }
+
+    value_t dereference() const;
 };
 
 class json_value : optimized_holder<SONIA_JSON_VALUE_SZ, 3>

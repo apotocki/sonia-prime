@@ -33,7 +33,7 @@ public:
 
     operator T&&() const noexcept { return std::move(*ptr_); }
 
-    T&& get() const noexcept { return std::move(*ptr); }
+    T&& get() const noexcept { return std::move(*ptr_); }
 
     template <class ... ArgsT>
     auto operator()(ArgsT&&... args) const
@@ -49,7 +49,7 @@ private:
 };
 
 template <typename T>
-typename enable_if_t<is_rvalue_reference_v<T&&>, rvalue_reference_wrapper<remove_reference_t<T>>> rvref(T && val) {
+enable_if_t<is_rvalue_reference_v<T&&>, rvalue_reference_wrapper<remove_reference_t<T>>> rvref(T && val) {
     return rvalue_reference_wrapper<remove_reference_t<T>>(std::forward<T>(val));
 }
 

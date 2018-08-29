@@ -46,6 +46,27 @@ BOOST_AUTO_TEST_CASE(just_test)
 
 #endif
 
+#if 0
+BOOST_AUTO_TEST_CASE(json_temp_test)
+{
+    namespace fs = boost::filesystem;
+    std::string text;
+    std::ifstream file("data/json_temp_test.json");
+    std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(text));
+
+    parsers::json::model model;
+
+    parsers::parse<
+        parsers::json::light_lexertl_lexer,
+        parsers::json::parser
+    >(model, text.c_str(), text.c_str() + text.size());
+
+    json_value res = model.detach_result();
+    auto v = to_string(res);
+    std::cout << v << "\n";
+}
+#endif
+
 #if 1
 BOOST_AUTO_TEST_CASE(json_test)
 {
@@ -96,7 +117,10 @@ BOOST_AUTO_TEST_CASE(json_test)
     BOOST_CHECK(jobj["$k1"]->get_array()[2].type() == json_value_type::null);
     BOOST_CHECK(!jobj["key1_"]);
 
+    BOOST_REQUIRE(jobj["test"]);
     json_object test = jobj["test"]->get_object();
+    BOOST_REQUIRE(test["k0l"]);
+    BOOST_REQUIRE(test["k0r"]);
     BOOST_CHECK_EQUAL(*test["k0l"], *test["k0r"]);
 
     std::string etalon = "{"

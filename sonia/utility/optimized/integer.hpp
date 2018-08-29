@@ -73,7 +73,7 @@ struct optimized_integer_impl
     template <typename ... ArgsT>
     static void init(HolderT * self, ArgsT&& ... args) {
         self->init_not_ptr();
-        if constexpr (sizeof(ArgsT) != 0) {
+        if constexpr (sizeof...(ArgsT)) {
             set(self, std::forward<ArgsT>(args) ...);
         }
     }
@@ -85,7 +85,7 @@ struct optimized_integer_impl
     template <typename T>
     static T get(HolderT const* self) {
         if (self->is_ptr()) {
-            return ptr(self)->template get<T>();
+            return ptr(self)->get().template get<T>();
         } else {
             uint_t rval = self->get_uint();
             if constexpr (is_signed_v<T>) {
@@ -111,10 +111,13 @@ struct optimized_integer_impl
         } else {
             bool is_neg = signbit(val);
             T hval = is_neg ? abs(val + 1) : val;
-            if (hval <= (HolderT::uint_max >> 1)) {
+            if (hval <= (((uint_t)HolderT::uint_max) >> 1)) {
                 self->set_uint((uint_t)hval | (is_neg ? sign_mask : 0));
             } else {
-                self->set_pointer(new optimized_integer(val));
+                auto cookie = self->get_service_cookie();
+                optimized_integer * ptr = new optimized_integer(val);
+                ptr->service_cookie() = cookie;
+                self->set_pointer(ptr);
             }
         }
     }

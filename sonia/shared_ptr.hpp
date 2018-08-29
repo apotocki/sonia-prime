@@ -24,10 +24,10 @@ template <class T>
 shared_ptr<T> make_clone(shared_ptr<T> const& ptr) {
     if (!ptr) return ptr;
     size_t sz = ptr->get_sizeof();
-    void * ptr = new char[sz];
+    void * charptr = new char[sz];
     try {
-        ptr->clone(ptr, sz);
-        return shared_ptr<T>(reinterpret_cast<T*>(ptr), [](T * ptr) { ptr->~T();  delete[] ptr; });
+        ptr->clone(charptr, sz);
+        return shared_ptr<T>(reinterpret_cast<T*>(charptr), [](T * p) { p->~T();  delete[] (char*)p; });
     } catch (...) {
         throw;
     }

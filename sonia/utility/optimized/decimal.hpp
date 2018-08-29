@@ -28,11 +28,11 @@ template <class HolderT>
 struct optimized_decimal_impl
 {
     typedef optimized_wrapper<decimal> optimized_decimal;
+    typedef typename HolderT::uint_t uint_t;
+    typedef typename boost::int_t<HolderT::value_bits>::fast int_t;
 
     static const size_t exp_bits = 4 + 3 * HolderT::value_bits / 4;
     static const size_t mnts_bits = HolderT::value_bits - exp_bits;
-    typedef typename HolderT::uint_t uint_t;
-    typedef typename boost::int_t<HolderT::value_bits>::fast int_t;
 
     static const uint_t mnts_mask = (((uint_t)1) << mnts_bits) - 1;
     static const uint_t mnts_sign_mask = ((uint_t)1) << (mnts_bits - 1);
@@ -47,7 +47,7 @@ struct optimized_decimal_impl
     template <typename ... ArgsT>
     static void init(HolderT * self, ArgsT&& ... args) {
         self->init_not_ptr();
-        if constexpr (sizeof(ArgsT) != 0) {
+        if constexpr (sizeof...(ArgsT)) {
             set(self, decimal(std::forward<ArgsT>(args) ...));
         }
     }
@@ -73,7 +73,7 @@ struct optimized_decimal_impl
             uint_t rval = self->get_uint();
             return decimal(
                 unsigned_to_signed<int_t>(rval & mnts_mask, mnts_sign_mask),
-                unsigned_to_signed<int_t>(rval >> mnts_bits, exp_sign_mask)
+                (int32_t)unsigned_to_signed<int_t>(rval >> mnts_bits, exp_sign_mask)
             );
         }
     }
@@ -82,7 +82,7 @@ struct optimized_decimal_impl
         if (self->is_ptr()) {
             ptr(self)->set(std::move(val));
         } else {
-            if (val.raw_value() >= mnts_min && val.raw_value() <= mnts_max &&
+            if (val.raw_value() >= (int_t)mnts_min && val.raw_value() <= (int_t)mnts_max &&
                 val.raw_exp() >= exp_min && val.raw_exp() <= exp_max)
             {
                 self->set_uint(

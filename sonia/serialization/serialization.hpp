@@ -13,9 +13,9 @@
 
 namespace sonia {
 
-template <typename TagT, typename T, typename EnableT = void> class coder;
-
 namespace serialization {
+
+template <typename TagT, typename T, typename EnableT = void> class coder;
 
 struct default_t {};
 struct compressed_t {};

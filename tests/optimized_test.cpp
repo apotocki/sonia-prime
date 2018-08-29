@@ -19,7 +19,7 @@ BOOST_AUTO_TEST_CASE (optimized_holder_test)
     *v0.data() = 1;
     BOOST_CHECK(!v0.is_ptr());
 
-    for (size_t cv = 0; cv < 16; ++cv) {
+    for (uint32_t cv = 0; cv < 16; ++cv) {
         v0.set_uint(0);
         v0.set_service_cookie(cv);
         BOOST_CHECK(!v0.is_ptr());
@@ -34,7 +34,7 @@ BOOST_AUTO_TEST_CASE (optimized_holder_test)
     opt1_t v1;
     *v1.data() = 1;
     BOOST_CHECK(!v1.is_ptr());
-    for (size_t cv = 0; cv < 256; ++cv) {
+    for (uint32_t cv = 0; cv < 256; ++cv) {
         v1.set_uint(0);
         v1.set_service_cookie(cv);
         BOOST_CHECK(!v1.is_ptr());

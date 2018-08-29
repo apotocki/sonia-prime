@@ -35,6 +35,7 @@
     <ClInclude Include="..\..\..\sonia\functional\hash.hpp" />
     <ClInclude Include="..\..\..\sonia\functional\is_negative.hpp" />
     <ClInclude Include="..\..\..\sonia\functional\mover.hpp" />
+    <ClInclude Include="..\..\..\sonia\functional\range_equal.hpp" />
     <ClInclude Include="..\..\..\sonia\functional\reference_wrapper.hpp" />
     <ClInclude Include="..\..\..\sonia\io\file.hpp" />
     <ClInclude Include="..\..\..\sonia\iterator_traits.hpp" />
@@ -50,6 +51,7 @@
     <ClInclude Include="..\..\..\sonia\serialization\json_serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\serialization\serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\services.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\async\reactor.hpp" />
     <ClInclude Include="..\..\..\sonia\services\builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\environment.hpp" />
     <ClInclude Include="..\..\..\sonia\services\host.hpp" />
@@ -104,6 +106,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\io\file.cpp" />
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\async\async_reactor.cpp" />
     <ClCompile Include="..\..\..\sonia\services\environment.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

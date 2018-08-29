@@ -67,7 +67,7 @@ class json_object_item_iterator
     explicit json_object_item_iterator(json_object const& p, size_t pos = 0) : obj_(p), pos_(pos) {}
 
     bool equal(json_object_item_iterator const& rhs) const {
-        return pos_ == rhs.pos_;
+        return pos_ == rhs.pos_ && obj_ == rhs.obj_;
     }
 
     void increment() { ++pos_; }
@@ -79,6 +79,7 @@ class json_object_item_iterator
 class json_object : optimized_holder<SONIA_JSON_VALUE_SZ, 3>
 {
     friend class json_value;
+    friend class json_value_holder_accessor;
     template <bool> friend class json_object_item_iterator;
 
     typedef optimized_holder<SONIA_JSON_VALUE_SZ, 3> holder_t;
@@ -93,6 +94,8 @@ public:
     json_object(json_object &&) = default;
     json_object& operator=(json_object const&);
     json_object& operator=(json_object &&) = default;
+
+    friend bool operator==(json_object const&, json_object const&);
 
     size_t size() const noexcept;
 
@@ -125,6 +128,8 @@ class json_value : optimized_holder<SONIA_JSON_VALUE_SZ, 3>
     json_value& operator=(json_value const&) = default;
     json_value& operator=(json_value &&) = default;
 
+    friend bool operator==(json_value const&, json_value const&);
+
     json_value_type type() const {
         return (json_value_type)holder_t::get_service_cookie();
     }
@@ -141,7 +146,8 @@ class json_value : optimized_holder<SONIA_JSON_VALUE_SZ, 3>
 
 class json_value_holder_accessor {
 public:
-    static auto& holder(json_value &);
+    template <class HolderT>
+    static add_const_if_t<is_const_v<HolderT>, typename HolderT::holder_t>& holder(HolderT &);
 };
 
 std::string to_string(json_value const&);

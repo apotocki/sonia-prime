@@ -64,7 +64,7 @@ BOOST_AUTO_TEST_CASE(json_test)
     json_value res = model.detach_result();
     BOOST_CHECK(res.type() == json_value_type::object);
     json_object jobj = res.get_object();
-    BOOST_CHECK_EQUAL(jobj.size(), 10);
+    BOOST_CHECK_EQUAL(jobj.size(), 11);
     jobj["key0"];
     BOOST_REQUIRE(jobj["key0"]);
     BOOST_CHECK(jobj["key0"]->type() == json_value_type::null);
@@ -96,6 +96,9 @@ BOOST_AUTO_TEST_CASE(json_test)
     BOOST_CHECK(jobj["$k1"]->get_array()[2].type() == json_value_type::null);
     BOOST_CHECK(!jobj["key1_"]);
 
+    json_object test = jobj["test"]->get_object();
+    BOOST_CHECK_EQUAL(*test["k0l"], *test["k0r"]);
+
     std::string etalon = "{"
         "\"$k0\": {\"%0\": 1, \"%1\": 2}, "
         "\"$k1\": [1, 2, null], "
@@ -106,7 +109,8 @@ BOOST_AUTO_TEST_CASE(json_test)
         "\"key4\": \"string value\", "
         "\"key4 - just a long key\": {}, "
         "\"key4 - just a long long key\": [], "
-        "\"key5\": \"str\""
+        "\"key5\": \"str\", "
+        "\"test\": {\"k0l\": [1, 2, 3], \"k0r\": [1, 2, 3]}"
         "}";
     BOOST_CHECK_EQUAL(to_string(res), etalon);
 }

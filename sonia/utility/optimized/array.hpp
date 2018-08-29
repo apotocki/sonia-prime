@@ -15,6 +15,7 @@
 #include "sonia/utility/optimized/holder.hpp"
 #include "sonia/utility/buffer.hpp"
 #include "sonia/functional/mover.hpp"
+#include "sonia/functional/range_equal.hpp"
 
 namespace sonia {
 
@@ -136,6 +137,10 @@ public:
     ElementT * end() noexcept { return array_t::get(this).end(); }
 
     size_t size() const noexcept { return array_t::size(this); }
+
+    bool operator== (optimized_array const& rhs) const {
+        return range_equal()(begin(), end(), rhs.begin(), end());
+    }
 };
 
 }

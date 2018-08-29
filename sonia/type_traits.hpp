@@ -65,6 +65,9 @@ using std::is_trivially_destructible_v;
 using std::has_virtual_destructor;
 using std::has_virtual_destructor_v;
 
+using std::conditional;
+using std::conditional_t;
+
 using std::aligned_storage;
 using std::aligned_storage_t;
 using std::alignment_of;
@@ -74,8 +77,13 @@ using std::remove_cv;
 using std::remove_cv_t;
 using std::remove_reference;
 using std::remove_reference_t;
+
 using std::add_const;
 using std::add_const_t;
+
+template <bool V, typename T>
+using add_const_if_t = conditional_t<V, add_const_t<T>, T>;
+
 using std::add_pointer;
 using std::add_pointer_t;
 using std::add_lvalue_reference;
@@ -83,8 +91,7 @@ using std::add_lvalue_reference_t;
 using std::add_rvalue_reference;
 using std::add_rvalue_reference_t;
 
-using std::conditional;
-using std::conditional_t;
+
 
 using std::in_place;
 using std::in_place_t;
@@ -92,6 +99,8 @@ using std::in_place_type;
 using std::in_place_type_t;
 
 using boost::mpl::identity;
+
+
 
 //using std::remove_cvref;
 //using std::remove_cvref_t;

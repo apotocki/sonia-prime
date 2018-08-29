@@ -16,6 +16,7 @@
 #include "cstdint.hpp"
 #include "type_traits.hpp"
 #include "explicit_operator_bool.hpp"
+#include "sonia/functional/range_equal.hpp"
 
 namespace sonia {
 
@@ -66,9 +67,8 @@ public:
 
     BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL();
 
-    bool operator== (array_view const& rhs) const
-    {
-        return size_ == rhs.size_ && (!size_ || data_ == rhs.data_);
+    bool operator== (array_view const& rhs) const {
+        return range_equal()(*this, rhs);
     }
 
 protected:

@@ -19,11 +19,11 @@ namespace sonia {
 class loggable {
 public:
     loggable() : logger_(make_shared<logger::logger_type>()) {}
-    loggable(shared_ptr<logger::logger_type> shl) : logger_(std::move(shl)) {}
+    loggable(logger::logger_ptr shl) : logger_(std::move(shl)) {}
 
     virtual ~loggable() {}
 
-    shared_ptr<logger::logger_type> logger() { return logger_; }
+    logger::logger_ptr logger() { return logger_; }
 
     template <typename AttrT>
     void set_attribute(std::string const& name, AttrT const& value) const {

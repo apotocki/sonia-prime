@@ -42,12 +42,22 @@ environment::environment() : log_initialized_(false)
         ("help,h", "display this help and exit")
         ;
     
+    // required | optional | default | default from string
+    config_parameters_.bind()
+        .array("hosts", &environment_configuration::hosts, "hosts description")
+            .required().default_value(std::vector<host_configuration>()).default_json_value("[]")
+            .binder(sp::parameters_description<host_configuration>().bind()
+                .variable("name", &host_configuration::name, "optional name of host").required(false)
+                .array("services", &host_configuration::services, "list of startup services to run")
+            )
+        .array("factories", &environment_configuration::factories);
+    /*
     config_parameters_.add_parameters()
         ("hosts", sp::array_value<shared_ptr<json_value>>())
         ("factories", sp::array_value<shared_ptr<json_value>>())
         ("bundles", sp::array_value<shared_ptr<json_value>>())
         ;
-
+        */
     std::ostringstream version_ss;
     version_ss << "[Version " SONIA_ONE_VERSION " (" << BUILD_NAME << " " << BUILD_DATETIME ")]" HELLO_MESSAGE;
     version_msg_ = std::move(version_ss.str());
@@ -61,7 +71,7 @@ environment::~environment() {
     }
 }
 
-int environment::open(int argc, char const* argv[], std::istream * cfgstream)
+void environment::open(int argc, char const* argv[], std::istream * cfgstream)
 {
     po::variables_map vm;
 
@@ -82,19 +92,15 @@ int environment::open(int argc, char const* argv[], std::istream * cfgstream)
     {
         notify(vm);
     } catch (std::exception const& e) {
-        std::cerr << version_msg_ << "\n";
-        std::cerr << "The syntax is incorrect : " << e.what() << "\n" << options_;
-        return 1;
+        throw exception("%1%\nThe syntax is incorrect : %2%\n%3%"_fmt % version_msg_ % e.what() % options_);
     }
 
     if (vm.count("help")) {
-        std::cout << version_msg_ << "\n" << options_ << "\n";
-        return 0;
+        throw shutdown_exception("%1%\n%2%"_fmt % version_msg_ % options_);
     }
 
     if (vm.count("version")) {
-        std::cout << version_msg_;
-        return 0;
+        throw shutdown_exception("%1%"_fmt % version_msg_);
     }
 
     verbose_ = vm["verbose"].as<bool>();
@@ -102,9 +108,7 @@ int environment::open(int argc, char const* argv[], std::istream * cfgstream)
     std::string const& logcfg = vm["log"].as<std::string>();
 
     if (!fs::is_regular_file(logcfg)) {
-        if (verbose_) std::cout << version_msg_ << "\n";
-        std::cerr << "Can not find the log configuration file: " << logcfg << "\n";
-        return 1;
+        throw exception("Can not find log configuration file: %1%"_fmt % logcfg);
     }
 
     std::ifstream logcdfgis(logcfg.c_str());
@@ -128,7 +132,7 @@ int environment::open(int argc, char const* argv[], std::istream * cfgstream)
     registry_ = make_shared<local_service_registry>(pstr);
 
     hosts_.emplace_back(registry_, factory_);
-    return 0;
+
     //server_configuration.verbose() = vm["verbose"].as<bool>();
     //server_configuration.logger_conf_file_name() = vm["log"].as<std::string>();
     //server_configuration.handling_system_failure() = vm["handling-system-failure"].as<bool>();
@@ -136,31 +140,37 @@ int environment::open(int argc, char const* argv[], std::istream * cfgstream)
 
 void environment::load_configuration(boost::filesystem::path const & fpath) {
     if (!fs::is_regular_file(fpath)) {
-        throw exception(fmt("Can not find the configuration file: '%1%'") % fpath);
+        throw exception("Can not find the configuration file: %1%"_fmt % fs::absolute(fpath));
     }
     std::ifstream file(fpath.string().c_str());
-    load_configuration(file);
+    try {
+        load_configuration(file);
+    } catch (std::exception const& e) {
+        throw exception("Error occurred during loading file: %1%,\n%2%"_fmt % fs::absolute(fpath) % e.what());
+    }
 }
 
 void environment::load_configuration(std::istream & cfg)
 {
-    /*
     using namespace sonia::parsers;
 
     std::string text;
     std::copy(std::istreambuf_iterator<char>(cfg), std::istreambuf_iterator<char>(), std::back_inserter(text));
 
-    json::boost_any_builder b;
-    json::model model(b);
+    json::model model;
 
     parse<
         json::light_lexertl_lexer,
         json::parser
     >(model, text.c_str(), text.c_str() + text.size());
 
-    sp::variables pv;
-    sp::store(config_parameters_, model.detach_result(), pv);
-    */
+    json_value res = model.detach_result();
+
+    environment_configuration ecfg;
+    config_parameters_.apply(res.get_object(), &ecfg);
+
+    //sp::variables pv;
+    //sp::store(config_parameters_, model.detach_result(), pv);
 }
 
 void environment::register_service_factory(string_view nm, function<shared_ptr<service>()> const& fm)

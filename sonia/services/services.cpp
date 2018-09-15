@@ -27,13 +27,13 @@ private:
 environment * env_ = nullptr;
 thread_local thread_descriptor * tdesc_ = nullptr;
 
-int initialize(int argc, char const* argv[], std::istream * cfgstream) {
+void initialize(int argc, char const* argv[], std::istream * cfgstream) {
     if (env_) {
         BOOST_THROW_EXCEPTION(internal_error("an attempt to initialize not empty environment"));
     }
     env_ = new environment;
     try {
-        return env_->open(argc, argv, cfgstream);
+        env_->open(argc, argv, cfgstream);
     } catch (...) {
         delete env_;
         env_ = nullptr;

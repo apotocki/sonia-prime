@@ -12,7 +12,7 @@
 #include "sonia/utility/scope_exit.hpp"
 
 #ifdef BOOST_WINDOWS
-#   include <Windows.h>
+#   include "sonia/utility/windows.hpp"
 #else
 
 #endif
@@ -21,30 +21,7 @@ namespace sonia { namespace io {
 
 #ifdef BOOST_WINDOWS
 
-std::string error_message(DWORD errcode)  {
-    LPWSTR pBuffer = nullptr;
-    DWORD num = FormatMessageW(
-        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,  
-        NULL,
-        errcode,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPWSTR)&pBuffer,
-        0,
-        NULL);
 
-    if (pBuffer) {
-        SCOPE_EXIT([&pBuffer]() { LocalFree(pBuffer); });
-
-        int slength = (int)num + 1;
-        int len = WideCharToMultiByte(CP_ACP, 0, pBuffer, slength, 0, 0, 0, 0);
-        std::vector<char> buf(len);
-        WideCharToMultiByte(CP_ACP, 0, pBuffer, slength, &buf[0], len, 0, 0);
-        while (!buf.empty() && (buf.back() == '\r' || buf.back() == '\n')) buf.pop_back();
-        return std::string(buf.begin(), buf.end());
-    }
-
-    return "unknown error, errcode: " + boost::lexical_cast<std::string>(errcode);
-}
 
 void file_create() {
 
@@ -65,7 +42,7 @@ uint64_t file_read(HANDLE fh, uint64_t offset, void * dest, uint64_t sz) {
         DWORD outrsz;
         if (!ReadFile(fh, addr, sz2read, &outrsz, &ovl)) {
             DWORD errcode = GetLastError();
-            throw exception("read file error : " + error_message(errcode));
+            throw exception("read file error : " + sonia::windows::error_message(errcode));
         }
         rsz += (uint64_t)outrsz;
         sz -= (uint64_t)outrsz;

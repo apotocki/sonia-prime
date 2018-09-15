@@ -20,6 +20,8 @@
 #include <boost/log/sources/global_logger_storage.hpp>
 #include <boost/log/sources/record_ostream.hpp>
 
+#include "sonia/shared_ptr.hpp"
+
 // implementation is based on boost/log/trivial.hpp example
 namespace sonia { namespace logger {
 
@@ -64,23 +66,26 @@ std::basic_istream<CharT, TraitsT> & operator>> (std::basic_istream<CharT, Trait
 }
 
 typedef boost::log::sources::severity_logger_mt<severity_level> logger_type;
+typedef shared_ptr<logger_type> logger_ptr;
 
-#define LOG_TRACE(logger) BOOST_LOG_SEV(logger, sonia::logger::severity_level::trace)
-#define LOG_DEBUG(logger) BOOST_LOG_SEV(logger, sonia::logger::severity_level::debug)
-#define LOG_INFO(logger) BOOST_LOG_SEV(logger, sonia::logger::severity_level::info)
-#define LOG_WARN(logger) BOOST_LOG_SEV(logger, sonia::logger::severity_level::warning)
-#define LOG_ERROR(logger) BOOST_LOG_SEV(logger, sonia::logger::severity_level::error)
-#define LOG_FATAL(logger) BOOST_LOG_SEV(logger, sonia::logger::severity_level::fatal)
+BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(global_logger, boost::log::sources::severity_logger_mt<severity_level>, (severity_level::trace))
 
-BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(global_logger, logger_type, (severity_level::trace))
+}
+
+#define LOG_TRACE(l) BOOST_LOG_SEV(*l, sonia::logger::severity_level::trace)
+#define LOG_DEBUG(l) BOOST_LOG_SEV(*l, sonia::logger::severity_level::debug)
+#define LOG_INFO(l)  BOOST_LOG_SEV(*l, sonia::logger::severity_level::info)
+#define LOG_WARN(l)  BOOST_LOG_SEV(*l, sonia::logger::severity_level::warning)
+#define LOG_ERROR(l) BOOST_LOG_SEV(*l, sonia::logger::severity_level::error)
+#define LOG_FATAL(l) BOOST_LOG_SEV(*l, sonia::logger::severity_level::fatal)
 
 #define GLOBAL_LOG_TRACE() BOOST_LOG_SEV(sonia::logger::global_logger::get(), sonia::logger::severity_level::trace)
 #define GLOBAL_LOG_DEBUG() BOOST_LOG_SEV(sonia::logger::global_logger::get(), sonia::logger::severity_level::debug)
-#define GLOBAL_LOG_INFO() BOOST_LOG_SEV(sonia::logger::global_logger::get(), sonia::logger::severity_level::info)
-#define GLOBAL_LOG_WARN() BOOST_LOG_SEV(sonia::logger::global_logger::get(), sonia::logger::severity_level::warning)
+#define GLOBAL_LOG_INFO()  BOOST_LOG_SEV(sonia::logger::global_logger::get(), sonia::logger::severity_level::info)
+#define GLOBAL_LOG_WARN()  BOOST_LOG_SEV(sonia::logger::global_logger::get(), sonia::logger::severity_level::warning)
 #define GLOBAL_LOG_ERROR() BOOST_LOG_SEV(sonia::logger::global_logger::get(), sonia::logger::severity_level::error)
 #define GLOBAL_LOG_FATAL() BOOST_LOG_SEV(sonia::logger::global_logger::get(), sonia::logger::severity_level::fatal)
 
-}}
+}
 
 #endif // SONIA_LOGGER_HPP

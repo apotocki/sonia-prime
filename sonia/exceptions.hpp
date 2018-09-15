@@ -26,10 +26,22 @@ public:
     {}
 };
 
+class shutdown_exception : public exception {
+public:
+    template <class ArgT>
+    explicit shutdown_exception(ArgT && arg) : exception(std::forward<ArgT>(arg)) {}
+};
+
 class internal_error : public exception {
 public:
     template <class ArgT>
     explicit internal_error(ArgT && arg) : exception(std::forward<ArgT>(arg)) {}
+};
+
+class closed_exception : public exception {
+public:
+    template <class ArgT>
+    explicit closed_exception(ArgT && arg) : exception(std::forward<ArgT>(arg)) {}
 };
 
 class not_implemented_error : public internal_error {

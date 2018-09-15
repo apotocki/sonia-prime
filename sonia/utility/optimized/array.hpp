@@ -16,6 +16,7 @@
 #include "sonia/utility/buffer.hpp"
 #include "sonia/functional/mover.hpp"
 #include "sonia/functional/range_equal.hpp"
+#include "sonia/functional/range_less.hpp"
 
 namespace sonia {
 
@@ -57,7 +58,7 @@ struct optimized_array_impl
     static const size_t aligned_offs = ceiling_v<HolderT::begin_offs, alv>;
     static const size_t gmaxsz = (sizeof(HolderT) - aligned_offs) / sizeof(ElementT); // guessed
     static const size_t szbitscnt = gmaxsz ? boost::static_log2<gmaxsz ? gmaxsz : 1>::value + 1 : 1;
-    static const size_t sz_mask = (1 << (szbitscnt - 1)) - 1;
+    static const size_t sz_mask = (1 << szbitscnt) - 1;
     static const size_t aligned_byte_offs = ceiling_v<(HolderT::used_bits + szbitscnt + CHAR_BIT - 1) / CHAR_BIT, alv>;
     static const size_t maxsz = (sizeof(HolderT) - aligned_byte_offs) / sizeof(ElementT);
 
@@ -69,7 +70,7 @@ struct optimized_array_impl
     template <typename RngT>
     static void init(HolderT * self, RngT && rng, size_t sz) {
         if (sz <= maxsz) {
-            self->set_uint(1 | (sz << HolderT::used_bits));
+            self->set_uint(sz);
             construct(begin(self), std::forward<RngT>(rng), sz);
         } else {
             optimized_collection_t * ptr = allocate_adjacent_buffer<ElementT, optimized_collection_base_t, allocator_t>(
@@ -83,18 +84,19 @@ struct optimized_array_impl
     static void init(HolderT * self, RngT && rng) {
         init(self, std::forward<RngT>(rng), boost::size(rng));
     }
+
     static array_view<ElementT> get(HolderT * self) {
         return self->is_ptr() ? ptr(self)->to_array_view() 
-            : array_view<ElementT>(begin(self), (self->get_uint() >> HolderT::used_bits) & sz_mask);
+            : array_view<ElementT>(begin(self), self->get_uint() & sz_mask);
     }
 
     static array_view<const ElementT> get(HolderT const* self) {
         return self->is_ptr() ? ptr(self)->to_array_view() 
-            : array_view<const ElementT>(begin(self), (self->get_uint() >> HolderT::used_bits) & sz_mask);
+            : array_view<const ElementT>(begin(self), self->get_uint() & sz_mask);
     }
 
     static size_t size(HolderT const* self) {
-        return self->is_ptr() ? ptr(self)->size() : ((self->get_uint() >> HolderT::used_bits) & sz_mask);
+        return self->is_ptr() ? ptr(self)->size() : (self->get_uint() & sz_mask);
     }
 
 protected:
@@ -140,6 +142,10 @@ public:
 
     bool operator== (optimized_array const& rhs) const {
         return range_equal()(begin(), end(), rhs.begin(), end());
+    }
+
+    bool operator< (optimized_array const& rhs) const {
+        return range_less()(begin(), end(), rhs.begin(), end());
     }
 };
 

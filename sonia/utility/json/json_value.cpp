@@ -85,7 +85,7 @@ struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
             self->set_pointer(ptr);
             std::sort(ptr->begin(), ptr->end(), object_item_less());
         } else {
-            self->set_uint(1);
+            self->set_uint(0); // set size 0
         }
     }
 
@@ -120,6 +120,13 @@ bool operator==(json_object const& lhs, json_object const& rhs) {
     auto litems = object_t::get(&lhs);
     auto ritems = object_t::get(&rhs);
     return litems == ritems;
+}
+
+bool operator<(json_object const& lhs, json_object const& rhs) {
+    typedef optimized_object_impl<json_object::holder_t> object_t;
+    auto litems = object_t::get(&lhs);
+    auto ritems = object_t::get(&rhs);
+    return litems < ritems;
 }
 
 //template <> class json_object_item_iterator<false>;
@@ -262,25 +269,35 @@ json_value::json_value(array_view<std::string> keys, array_view<json_value> vals
     set_service_cookie((size_t)json_value_type::object);
 }
 
-bool operator==(json_value const& lhs, json_value const& rhs) {
-    if (lhs.type() != rhs.type()) return false;
+template <class OpT>
+bool compare(json_value const& lhs, json_value const& rhs, OpT const& op) {
     switch (lhs.type())
     {
     case json_value_type::null:
         return true;
     case json_value_type::boolean:
-        return lhs.get_bool() == rhs.get_bool();
+        return op(lhs.get_bool(), rhs.get_bool());
     case json_value_type::number:
-        return lhs.get_number() == rhs.get_number();
+        return op(lhs.get_number(), rhs.get_number());
     case json_value_type::string:
-        return lhs.get_string() == rhs.get_string();
+        return op(lhs.get_string(), rhs.get_string());
     case json_value_type::array:
-        return lhs.get_array() == rhs.get_array();
+        return op(lhs.get_array(), rhs.get_array());
     case json_value_type::object:
-        return lhs.get_object() == rhs.get_object();
+        return op(lhs.get_object(), rhs.get_object());
     default:
         throw internal_error("unexpected json_value type (%1%)"_fmt % (int)lhs.type());
     }
+}
+
+bool operator==(json_value const& lhs, json_value const& rhs) {
+    if (lhs.type() != rhs.type()) return false;
+    return compare(lhs, rhs, [](auto const& l, auto const& r)->bool { return l == r; });
+}
+
+bool operator<(json_value const& lhs, json_value const& rhs) {
+    if (lhs.type() != rhs.type()) return (int)lhs.type() < (int)rhs.type();
+    return compare(lhs, rhs, [](auto const& l, auto const& r)->bool { return l < r; });
 }
 
 json_value::~json_value() {

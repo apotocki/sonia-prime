@@ -1,4 +1,7 @@
-#if 1
+#include "sonia/config.hpp"
+#include <boost/test/unit_test.hpp>
+
+#if 0
 size_t operator "" _a0(const char* str, size_t v) {
     return v;
 }
@@ -19,9 +22,7 @@ void foo_fail() {
 int main() { return 0; }
 #endif
 
-#if 1
-#include "sonia/config.hpp"
-#include <boost/test/unit_test.hpp>
+#if 0
 #include <iostream>
 #include <boost/multiprecision/cpp_int.hpp>
 
@@ -107,8 +108,36 @@ union d0 {
     //U() {}
 };
 
+#endif
+
+#if 1
+
+#define _WIN32_WINNT 0x0501
+#define _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING
+#include <iostream>
+#include <boost/asio.hpp>
+#include "sonia/thread.hpp"
+
 BOOST_AUTO_TEST_CASE (test)
 {
+    using namespace sonia;
+
+    boost::asio::io_service serv;
+    boost::asio::io_service::work w(serv);
+
+    thread t([&serv]() {
+        serv.run();
+    });
+
+    boost::asio::deadline_timer tm(serv);
+    auto dt = boost::posix_time::seconds(5);
+    tm.expires_from_now(dt);
+    tm.async_wait([](const boost::system::error_code& error) {
+        std::cout << "tick!\n";
+    });
+    std::string v;
+    std::cin >> v;
+
     //typedef boost::multiprecision::number<boost::multiprecision::cpp_int_backend<64, 0>> integer_type;
     //std::cout << sizeof(integer_type) << "\n";
     //std::cout << 	__LITTLE_ENDIAN__ << "\n";

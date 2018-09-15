@@ -21,12 +21,39 @@
 
 namespace sonia { namespace services {
 
+class host_configuration {
+public:
+    std::string name;
+    std::vector<std::string> services;
+};
+
+class factory_configuration {
+public:
+    std::string name;
+    std::string implementation;
+    int layer;
+    json_object parameters;
+};
+
+class bundle_configuration {
+public:
+
+};
+
+
+class environment_configuration {
+public:
+    std::vector<host_configuration> hosts;
+    std::vector<factory_configuration> factories;
+    std::vector<bundle_configuration> bundles;
+};
+
 class environment {
 public:
     environment();
     ~environment();
 
-    int open(int argc, char const* argv[], std::istream * cfgstream = nullptr);
+    void open(int argc, char const* argv[], std::istream * cfgstream = nullptr);
     void load_configuration(boost::filesystem::path const &);
     void load_configuration(std::istream &);
 
@@ -41,7 +68,7 @@ private:
     shared_ptr<basic_service_factory> factory_;
 
     boost::program_options::options_description options_;
-    sonia::parameters::parameters_description config_parameters_;
+    sonia::parameters::parameters_description<environment_configuration> config_parameters_;
 
     std::string version_msg_;
     bool verbose_;

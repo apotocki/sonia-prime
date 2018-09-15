@@ -174,7 +174,6 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
     static const uint_t cookie_mask = (((uint_t)1) << (ServiceCookieBitsV + 1)) - 1;
 
     optimized_holder() {
-        (uint_t)uint_max;
         base_t::init_not_ptr();
     }
 
@@ -275,7 +274,7 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
                 tmp <<= sbits;
                 sbits += CHAR_BIT;
                 r |= tmp;
-            } while (bsrc != esrc);
+            } while (sbits < CHAR_BIT * sizeof(uint_t) && bsrc != esrc);
         }
         return r;
     }
@@ -291,7 +290,7 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
             do {
                 *bdest++ = 0xff & (val >> dbits);
                 dbits += CHAR_BIT;
-            } while (bdest != edest);
+            } while (dbits < CHAR_BIT * sizeof(uint_t) && bdest != edest);
         }
     }
 

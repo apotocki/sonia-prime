@@ -34,6 +34,7 @@ public:
 
 using namespace sonia;
 
+#if 0
 template <typename ... ArgT>
 void list(ArgT && ... args) {
     ((std::cout << args << ", "), ...);
@@ -44,7 +45,6 @@ template <typename ArgT>
 std::string foo(ArgT && arg) {
     using namespace sonia;
 
-
     if constexpr (is_same_v<remove_cvref_t<ArgT>, std::string>) {
         return std::string(std::forward<ArgT>(arg));
     } else {
@@ -53,6 +53,8 @@ std::string foo(ArgT && arg) {
         return ss.str();
     }
 }
+
+#endif
 
 std::string get_configuration() {
     std::stringstream is;
@@ -107,8 +109,20 @@ BOOST_AUTO_TEST_CASE (server_test)
 {
     fs::remove_all(TEST_FOLDER);
 
-    scoped_services ss;
+    try {
+        scoped_services ss;
+
+        services::register_service_factory("asd", []() -> shared_ptr<service> { return make_shared<test_service0>(); });
+        services::load_configuration("host.json");
+
+    } catch (shutdown_exception const& e) {
+        std::cout << e.what() << "\n";
+    } catch (std::exception const& e) {
+        std::cerr << e.what() << "\n";
+        BOOST_REQUIRE(false);
+    }
     
+#if 0
     //std::cout << foo("chars str") << "\n";
     //std::cout << foo(std::string("std::str")) << "\n";
     //std::cout << foo(123) << "\n";
@@ -116,8 +130,7 @@ BOOST_AUTO_TEST_CASE (server_test)
     //BOOST_CHECK_EQUAL(0, app.open(0, nullptr, &std::istringstream()));
     //app.load_configuration(get_configuration());
 
-    services::register_service_factory("asd", []() -> shared_ptr<service> { return make_shared<test_service0>(); });
-    services::load_configuration("host.json");
+
 
     auto p = services::locate<my_service>("asd");
     BOOST_CHECK_EQUAL("job0", p->do_job());
@@ -140,4 +153,5 @@ BOOST_AUTO_TEST_CASE (server_test)
         BOOST_SCOPE_EXIT(void) { margot::applications::finish_host(); } BOOST_SCOPE_EXIT_END
     }
     */
+#endif
 }

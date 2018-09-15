@@ -15,11 +15,12 @@
 #include "prime_config.hpp"
 #include "sonia/function.hpp"
 #include "sonia/shared_ptr.hpp"
+#include "sonia/exceptions.hpp"
 #include "sonia/services/service.hpp"
 
 namespace sonia { namespace services {
 
-SONIA_PRIME_API int initialize(int argc = 0, char const* argv[] = nullptr, std::istream * cfgstream = nullptr);
+SONIA_PRIME_API void initialize(int argc = 0, char const* argv[] = nullptr, std::istream * cfgstream = nullptr);
 SONIA_PRIME_API void shutdown();
 
 SONIA_PRIME_API shared_ptr<service> locate(string_view);
@@ -29,7 +30,7 @@ template <class ServiceT, typename IdT>
 shared_ptr<ServiceT> locate(IdT id) {
     shared_ptr<ServiceT> rval = dynamic_pointer_cast<ServiceT>(locate(id));
     if (!rval) {
-        throw exception(fmt("'%1%' service is not compatible with %2%") % id % typeid(ServiceT).name());
+        throw exception("'%1%' service is not compatible with %2%"_fmt % id % typeid(ServiceT).name());
     }
     return std::move(rval);
 }

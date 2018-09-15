@@ -93,7 +93,7 @@ private:
 
 private:
     void * do_malloc() { return pool_t::malloc(); }
-    template <typename FtorT> void do_destruct_check(T * obj, FtorT const& ftor) noexcept { ftor(obj); }
+    void do_free(void * p) { pool_t::free(p); }
 #endif
 };
 

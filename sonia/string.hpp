@@ -35,7 +35,9 @@ public:
 
     basic_string_view(char_ct * str) noexcept : base_t(str, TraitsT::length(str)) {}
 
-    basic_string_view(std::basic_string<CharT, TraitsT> const& str) noexcept : base_t(str.c_str(), str.size()) {}
+    basic_string_view(std::basic_string<CharT, TraitsT> const& str) noexcept : base_t(str.c_str(), str.size()) {
+    
+    }
 
     constexpr bool is_equal(basic_string_view const& rhs) const noexcept
     {

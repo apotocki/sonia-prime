@@ -69,6 +69,7 @@ public:
     json_object& operator=(json_object &&) = default;
 
     friend bool operator==(json_object const&, json_object const&);
+    friend bool operator<(json_object const&, json_object const&);
 
     size_t size() const noexcept;
 
@@ -129,8 +130,6 @@ class json_value : optimized_holder<SONIA_JSON_VALUE_SZ, 3>
     json_value& operator=(json_value const&) = default;
     json_value& operator=(json_value &&) = default;
 
-    friend bool operator==(json_value const&, json_value const&);
-
     json_value_type type() const {
         return (json_value_type)holder_t::get_service_cookie();
     }
@@ -150,6 +149,9 @@ public:
     template <class HolderT>
     static add_const_if_t<is_const_v<HolderT>, typename HolderT::holder_t>& holder(HolderT &);
 };
+
+bool operator==(json_value const&, json_value const&);
+bool operator<(json_value const&, json_value const&);
 
 std::string to_string(json_value const&);
 

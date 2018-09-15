@@ -8,10 +8,10 @@
 #include "sonia/exceptions.hpp"
 
 namespace sonia { namespace parameters {
-
+    /*
 void store(parameters_description const& params, shared_ptr<json_value> jv, variables & vars)
 {
-    /*
+
     if (!jv->is_object()) {
         throw exception("json value is not an object");
     }
@@ -21,7 +21,7 @@ void store(parameters_description const& params, shared_ptr<json_value> jv, vari
             //vars.set_variable(vd.name(), );
         }
     });
-    */
+   
 }
-
+ */
 }}

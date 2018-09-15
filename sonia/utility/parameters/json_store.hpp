@@ -17,7 +17,7 @@
 
 namespace sonia { namespace parameters {
 
-void store(parameters_description const&, shared_ptr<json_value>, variables &);
+//void store(parameters_description const&, shared_ptr<json_value>, variables &);
 
 }}
 

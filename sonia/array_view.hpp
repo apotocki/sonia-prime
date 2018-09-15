@@ -11,12 +11,15 @@
 
 #include <iosfwd>
 #include <functional>
+#include <vector>
+
 #include <boost/assert.hpp>
 
 #include "cstdint.hpp"
 #include "type_traits.hpp"
 #include "explicit_operator_bool.hpp"
 #include "sonia/functional/range_equal.hpp"
+#include "sonia/functional/range_less.hpp"
 
 namespace sonia {
 
@@ -67,16 +70,22 @@ public:
 
     BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL();
 
-    bool operator== (array_view const& rhs) const {
-        return range_equal()(*this, rhs);
-    }
-
 protected:
     T * data_;
     size_t size_;
 };
 
 typedef array_view<uint8_t> byte_array_view;
+
+template <typename T>
+bool operator== (array_view<T> const& lhs, array_view<T> const& rhs) {
+    return range_equal()(lhs, rhs);
+}
+
+template <typename T>
+bool operator< (array_view<T> const& lhs, array_view<T> const& rhs) {
+    return range_less()(lhs, rhs);
+}
 
 template <typename CharT, class TraitsT, typename T>
 std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, array_view<T> arr) {
@@ -91,6 +100,16 @@ std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, Trait
         os << val;
     }
     return os << ']';
+}
+
+template <typename T>
+array_view<T> to_array_view(std::vector<T> & v) {
+    return array_view<T>(v.empty() ? nullptr : &v.front(), v.size());
+}
+
+template <typename T>
+array_view<const T> to_array_view(std::vector<T> const& v) {
+    return array_view<const T>(v.empty() ? nullptr : &v.front(), v.size());
 }
 
 }

@@ -122,6 +122,8 @@ BOOST_AUTO_TEST_CASE(json_test)
     BOOST_REQUIRE(test["k0l"]);
     BOOST_REQUIRE(test["k0r"]);
     BOOST_CHECK_EQUAL(*test["k0l"], *test["k0r"]);
+    BOOST_CHECK(!(*test["k0l"] < *test["k0r"]));
+    BOOST_CHECK(!(*test["k0r"] < *test["k0l"]));
 
     std::string etalon = "{"
         "\"$k0\": {\"%0\": 1, \"%1\": 2}, "

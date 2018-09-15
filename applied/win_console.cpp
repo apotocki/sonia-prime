@@ -14,6 +14,7 @@
 #include "applied/scoped_services.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/thread.hpp"
+#include "sonia/exceptions.hpp"
 
 std::atomic<long> barrier_(0);
 std::atomic<scoped_services*> serv_ = nullptr;
@@ -73,10 +74,17 @@ int main(int argc, char const* argv[])
 
         serv_.store(&s);
         s.run();
+    } catch (sonia::shutdown_exception const& e) {
+        std::cout << e.what() << "\n";
+    } catch (sonia::exception const& e) {
+        std::cerr << e.what() << "\n";
+        return 1;
     } catch (std::exception const& e) {
         std::cerr << boost::diagnostic_information(e);
+        return 1;
     } catch (...) {
         std::cerr << "unspecified error : " << boost::current_exception_diagnostic_information();
+        return 1;
     }
     return 0;
 }

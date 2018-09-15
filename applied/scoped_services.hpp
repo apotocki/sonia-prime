@@ -19,10 +19,7 @@ public:
     scoped_services& operator=(scoped_services const&) = delete;
 
     explicit scoped_services(int argc = 0, char const* argv[] = nullptr) {
-        int ret = sonia::services::initialize(argc, argv);
-        if (ret) {
-            throw sonia::exception(sonia::fmt("Can't initialize services, err: %1$#x") % ret);
-        }
+        sonia::services::initialize(argc, argv);
     }
 
     ~scoped_services() {

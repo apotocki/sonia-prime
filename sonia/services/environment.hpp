@@ -14,10 +14,13 @@
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
+#include <boost/unordered_map.hpp>
+
+#include "sonia/thread.hpp"
 
 #include "host.hpp"
 #include "service_factory.hpp"
-#include "sonia/utility/parameters/parameters_description.hpp"
+#include "sonia/utility/parameters/parameters.hpp"
 
 namespace sonia { namespace services {
 
@@ -27,25 +30,24 @@ public:
     std::vector<std::string> services;
 };
 
-class factory_configuration {
+class service_configuration {
 public:
-    std::string name;
-    std::string implementation;
+    std::string factory;
     int layer;
     json_object parameters;
 };
 
 class bundle_configuration {
 public:
-
+    std::string lib;
+    int layer;
 };
-
 
 class environment_configuration {
 public:
     std::vector<host_configuration> hosts;
-    std::vector<factory_configuration> factories;
-    std::vector<bundle_configuration> bundles;
+    std::map<std::string, service_configuration> services;
+    std::map<std::string, bundle_configuration> bundles;
 };
 
 class environment {
@@ -57,13 +59,17 @@ public:
     void load_configuration(boost::filesystem::path const &);
     void load_configuration(std::istream &);
 
-    std::list<host> const& hosts() const noexcept { return hosts_; }
+    //std::list<host> const& hosts() const noexcept { return hosts_; }
     // host & host(string_view);
+    shared_ptr<host> default_host();
 
-    void register_service_factory(string_view, function<shared_ptr<service>()> const&);
+    void register_service_factory(string_view, function<service_descriptor()> const&);
 
 private:
-    std::list<host> hosts_;
+    static service_descriptor create_service(service_configuration const& cfg);
+    static service_descriptor create_bundle_service(bundle_configuration const& cfg);
+
+    boost::unordered_map<std::string, shared_ptr<host>> hosts_;
     shared_ptr<service_registry> registry_;
     shared_ptr<basic_service_factory> factory_;
 
@@ -73,6 +79,8 @@ private:
     std::string version_msg_;
     bool verbose_;
     bool log_initialized_;
+
+    mutable mutex cfg_mutex_;
 };
 
 }}

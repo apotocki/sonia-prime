@@ -9,6 +9,8 @@
 #   pragma once
 #endif
 
+#include <vector>
+
 #include "sonia/string.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/services/service.hpp"
@@ -22,6 +24,8 @@ public:
 
     shared_ptr<service> locate(string_view) const;
     shared_ptr<service> locate(service::id) const;
+
+    void run(std::vector<std::string> const& servs);
 
 private:
     shared_ptr<service_registry> registry_;

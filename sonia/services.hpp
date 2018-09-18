@@ -20,6 +20,8 @@
 
 namespace sonia { namespace services {
 
+SONIA_PRIME_API char const* bundles_path();
+
 SONIA_PRIME_API void initialize(int argc = 0, char const* argv[] = nullptr, std::istream * cfgstream = nullptr);
 SONIA_PRIME_API void shutdown();
 
@@ -35,7 +37,7 @@ shared_ptr<ServiceT> locate(IdT id) {
     return std::move(rval);
 }
 
-SONIA_PRIME_API void register_service_factory(string_view, function<shared_ptr<service>()> const&);
+SONIA_PRIME_API void register_service_factory(string_view, function<service_descriptor()> const&);
 SONIA_PRIME_API void load_configuration(boost::filesystem::path const &);
 SONIA_PRIME_API void load_configuration(std::istream &);
 

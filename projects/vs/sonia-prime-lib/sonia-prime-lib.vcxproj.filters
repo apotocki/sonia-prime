@@ -216,12 +216,6 @@
     <ClInclude Include="..\..\..\sonia\utility\options\json.hpp">
       <Filter>sonia.utility\options</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\parameters\parameters_description.hpp">
-      <Filter>sonia.utility\parameters</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\parameters\value_descriptor.hpp">
-      <Filter>sonia.utility\parameters</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp">
       <Filter>sonia.services</Filter>
     </ClInclude>
@@ -237,17 +231,8 @@
     <ClInclude Include="..\..\..\sonia\services\environment.hpp">
       <Filter>sonia.services</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\builder.hpp">
-      <Filter>sonia.services</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\object_pool.hpp">
       <Filter>sonia.utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\parameters\json_store.hpp">
-      <Filter>sonia.utility\parameters</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\parameters\variables.hpp">
-      <Filter>sonia.utility\parameters</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp">
       <Filter>sonia.utility\json</Filter>
@@ -339,6 +324,24 @@
     <ClInclude Include="..\..\..\sonia\sal.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp">
+      <Filter>sonia.utility\json</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\type_info.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parameters\parameters.hpp">
+      <Filter>sonia.utility\parameters</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\builder.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\bundle.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\bundle.ipp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -359,9 +362,6 @@
     <ClCompile Include="..\..\..\sonia\utility\options\json_options.cpp">
       <Filter>sonia.utility\options</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_description.cpp">
-      <Filter>sonia.utility\parameters</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
@@ -376,12 +376,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\environment.cpp">
       <Filter>sonia.services</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_json_store.cpp">
-      <Filter>sonia.utility\parameters</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_variables.cpp">
-      <Filter>sonia.utility\parameters</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\json\json_value.cpp">
       <Filter>sonia.utility\json</Filter>
@@ -409,6 +403,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sal\linux_sal.cpp">
       <Filter>sonia.sal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters.cpp">
+      <Filter>sonia.utility\parameters</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\bundle.cpp">
+      <Filter>sonia.services</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

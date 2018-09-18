@@ -4,7 +4,13 @@
 
 #include "sonia/config.hpp"
 #include "sonia/sal.hpp"
-#include "sonia/utility/windows.hpp"
+#include "sonia/exceptions.hpp"
+#include "sonia/services.hpp"
+
+#include <sys/types.h>
+#include <dlfcn.h>
+#include <signal.h>
+#include <unistd.h>
 
 namespace sonia { namespace sal {
 
@@ -14,6 +20,36 @@ void set_thread_name(sonia::thread::id tid, string_view name) {
 
 void set_thread_name(sonia::thread::id tid, std::string const& name) {
     // do nothing
+}
+
+typedef sonia::services::bundle*(get_bundle_fn)();
+
+shared_ptr<sonia::services::bundle> load_bundle(string_view name) {
+    std::string libname = "lib" + to_string(name) + ".so";
+    void * handle = dlopen(
+#ifndef __ANDROID__
+        libname.c_str(),
+#else 
+        (bundles_path + libname).c_str(), // Android requires fullpath
+#endif
+        RTLD_LAZY
+    );
+
+    if (!handle) {
+        throw internal_error("Cannot load bundle: %1%\n%2%"_fmt % libname % dlerror());
+    }
+
+    // reset errors
+    dlerror();
+
+    get_bundle_fn* fn_handle = (get_bundle_fn*)dlsym(handle, "get_bundle");
+    const char* dlsym_error = dlerror();
+    if (dlsym_error) {
+        throw internal_error("Cannot load symbol 'get_bundle' in %1% module\n%2%"_fmt % libname % dlsym_error);
+    }
+    shared_ptr<sonia::services::bundle> result = shared_ptr<sonia::services::bundle>(fn_handle());
+    result->set_handle(handle);
+    return std::move(result);
 }
 
 }}

@@ -23,12 +23,14 @@ class service : public virtual loggable
     friend class service_access;
 
 public:
-    service() : id_(0), layer_(0) {}
+    service() : id_(0) {}
+    ~service() override {
+        LOG_TRACE(logger()) << "terminated";
+    }
 
     typedef uint32_t id;
     id get_id() const noexcept { return id_; }
     std::string const& get_name() const noexcept { return name_; }
-    int get_layer() const noexcept { return layer_; }
 
     virtual void open() {}
     virtual void close() noexcept {}
@@ -36,7 +38,6 @@ public:
 private:
     std::string name_;
     id id_;
-    int layer_;
 };
 
 class service_access {
@@ -44,7 +45,6 @@ public:
     static void set_id(service & s, service::id idval) { s.id_ = idval; }
     static void set_name(service & s, std::string nameval) { s.name_ = std::move(nameval); }
     static void set(service & s, service::id idval, std::string nameval) { s.id_ = idval; s.name_ = std::move(nameval); }
-    static void set_layer(service & s, int layer) { s.layer_ = layer; }
 };
 
 class service_registry {
@@ -55,14 +55,18 @@ public:
     virtual string_view get_name(service::id) const = 0; // throws an exception if the name is undefined for the given id.
 };
 
+struct service_descriptor {
+public:
+    shared_ptr<service> serv;
+    int layer;
+};
+
 class service_factory {
 public:
     virtual ~service_factory() {}
 
-    virtual shared_ptr<service> create(string_view) const = 0;
+    virtual service_descriptor create(string_view) const = 0;
 };
-
-
 
 }
 

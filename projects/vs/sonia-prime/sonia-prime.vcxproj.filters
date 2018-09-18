@@ -20,10 +20,22 @@
     <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\prime_bundle.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\scheduler\scheduler_builder.cpp">
+      <Filter>sonia.services\scheduler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\scheduler\scheduler_service.cpp">
+      <Filter>sonia.services\scheduler</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
       <UniqueIdentifier>{74959f1f-ac70-48cc-b3ce-1a10da274100}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services\scheduler">
+      <UniqueIdentifier>{16a9f79b-83c0-4b38-86d1-74ae8f96bd01}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -44,6 +56,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp">
       <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\bundle.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_builder.hpp">
+      <Filter>sonia.services\scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_configuration.hpp">
+      <Filter>sonia.services\scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service.hpp">
+      <Filter>sonia.services\scheduler</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

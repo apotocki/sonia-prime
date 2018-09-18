@@ -11,6 +11,8 @@
 
 #include "string.hpp"
 #include "thread.hpp"
+#include "shared_ptr.hpp"
+#include "sonia/services/bundle.hpp"
 
 // system abstract level functions
 
@@ -18,6 +20,8 @@ namespace sonia { namespace sal {
 
 void set_thread_name(sonia::thread::id, string_view name);
 void set_thread_name(sonia::thread::id, std::string const& name);
+
+shared_ptr<sonia::services::bundle> load_bundle(string_view name);
 
 }}
 

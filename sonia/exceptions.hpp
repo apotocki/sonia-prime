@@ -20,34 +20,57 @@ namespace sonia {
 
 class exception : public std::runtime_error {
 public:
-    template <class ArgT>
-    explicit exception(ArgT && arg) 
-        : std::runtime_error(sonia::to_string(std::forward<ArgT>(arg)))
+    template <class ... ArgsT>
+    exception(ArgsT && ... args) 
+        : std::runtime_error((... + sonia::to_string(std::forward<ArgsT>(args))))
     {}
 };
 
 class shutdown_exception : public exception {
 public:
     template <class ArgT>
-    explicit shutdown_exception(ArgT && arg) : exception(std::forward<ArgT>(arg)) {}
+    explicit shutdown_exception(ArgT && arg) : exception("shutdown: ", std::forward<ArgT>(arg)) {}
 };
 
 class internal_error : public exception {
 public:
     template <class ArgT>
-    explicit internal_error(ArgT && arg) : exception(std::forward<ArgT>(arg)) {}
+    explicit internal_error(ArgT && arg)
+        : exception("internal error: ", std::forward<ArgT>(arg))
+    {}
+
+    template <class ArgT0, class ... ArgsT>
+    explicit internal_error(ArgT0 && arg0, ArgsT && ... args)
+        : exception(std::forward<ArgT0>(arg0), std::forward<ArgsT>(args) ...)
+    {}
 };
 
 class closed_exception : public exception {
 public:
     template <class ArgT>
-    explicit closed_exception(ArgT && arg) : exception(std::forward<ArgT>(arg)) {}
+    explicit closed_exception(ArgT && arg)
+        : exception("closed: ", std::forward<ArgT>(arg))
+    {}
+
+    template <class ArgT0, class ... ArgsT>
+    explicit closed_exception(ArgT0 && arg0, ArgsT && ... args)
+        : exception(std::forward<ArgT0>(arg0), std::forward<ArgsT>(args) ...)
+    {}
 };
 
 class not_implemented_error : public internal_error {
 public:
+    not_implemented_error() : internal_error("not implemented") {}
+
     template <class ArgT>
-    explicit not_implemented_error(ArgT && arg) : internal_error(std::forward<ArgT>(arg)) {}
+    explicit not_implemented_error(ArgT && arg)
+        : internal_error("not implemented error: ", std::forward<ArgT>(arg))
+    {}
+
+    template <class ArgT0, class ... ArgsT>
+    explicit not_implemented_error(ArgT0 && arg0, ArgsT && ... args)
+        : exception(std::forward<ArgT0>(arg0), std::forward<ArgsT>(args) ...)
+    {}
 };
 
 }

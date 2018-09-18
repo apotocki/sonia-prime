@@ -18,7 +18,7 @@ namespace sonia { namespace services {
 
 class thread_descriptor {
 public:
-    host * host() { return host_; }
+    host * get_host() { return host_; }
 
 private:
     sonia::services::host * host_;
@@ -47,17 +47,22 @@ void shutdown() {
     env_ = nullptr;
 }
 
+char const* bundles_path() {
+    return "/data/app-lib/com.ontos.rdf-1/"; // adnroid case
+}
+
 template <typename ArgT>
 shared_ptr<service> locate_tmpl(ArgT larg) {
     BOOST_ASSERT(env_);
     thread_descriptor * td = tdesc_;
     if (td) {
-        return td->host()->locate(larg);
+        return td->get_host()->locate(larg);
     }
-    auto const& hosts = env_->hosts();
-    if (hosts.size() == 1) {
-        return hosts.front().locate(larg);
+    shared_ptr<host> h = env_->default_host();
+    if (h) {
+        return h->locate(larg);
     }
+    
     BOOST_THROW_EXCEPTION (internal_error(fmt("inappropriate thread to locate '%1%'") % larg));
 }
 
@@ -69,7 +74,7 @@ shared_ptr<service> locate(service::id id) {
     return locate_tmpl(id);
 }
 
-void register_service_factory(string_view nm, function<shared_ptr<service>()> const& fm) {
+void register_service_factory(string_view nm, function<service_descriptor()> const& fm) {
     BOOST_ASSERT(env_);
     env_->register_service_factory(nm, fm);
 }

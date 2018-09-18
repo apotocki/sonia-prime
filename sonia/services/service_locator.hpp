@@ -17,11 +17,12 @@
 
 #include "sonia/thread.hpp"
 #include "sonia/shared_ptr.hpp"
+#include "sonia/logger/loggable.hpp"
 #include "service.hpp"
 
 namespace sonia {
 
-class service_locator {
+class service_locator : public loggable {
 public:
     service_locator(shared_ptr<service_registry> sr, shared_ptr<service_factory> sf);
     ~service_locator() noexcept;
@@ -30,24 +31,27 @@ public:
     shared_ptr<service> get(service::id id);
 
     void shutdown(shared_ptr<service> serv);
-    // returns the shutdowned layer, can be less than an argument level
-    void shutdown(int down_to_layer = std::numeric_limits<int>::min());
+    // returns the shutdowned layer, can be less than the argument level
+    void shutdown(int down_to_layer = (std::numeric_limits<int>::min)());
 
     struct cached_service_descriptor {
         typedef boost::intrusive::set_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link> > hook_type;
 
-        std::mutex mtx;
-        thread::id tid;
-        shared_ptr<service> object;
+        mutex mtx;
+        fiber::id fid;
+        service_descriptor descr;
         hook_type layer_hook;
 
         cached_service_descriptor(std::in_place_t) {}
 
-        int get_layer() const { return object->get_layer(); }
+        int & layer() { return descr.layer; }
+        int layer() const { return descr.layer; }
+        shared_ptr<service> & object() { return descr.serv; }
+        shared_ptr<service> const& object() const { return descr.serv; }
 
         struct layer_compare_type {
             bool operator()(cached_service_descriptor const& lhs, cached_service_descriptor const& rhs) const {
-                return lhs.get_layer() < rhs.get_layer();
+                return lhs.layer() < rhs.layer();
             }
         };
     };
@@ -68,7 +72,8 @@ private:
     shared_ptr<service_registry> sr_;
     shared_ptr<service_factory> sf_;
 
-    std::mutex cache_mtx_, layers_mtx_;
+    fibers::mutex cache_mtx_, layers_mtx_;
+    
     std::unordered_map<service::id, cached_service_descriptor> cache_;
     layer_set_t layers_;
 };

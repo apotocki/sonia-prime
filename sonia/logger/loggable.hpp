@@ -25,9 +25,8 @@ public:
 
     logger::logger_ptr logger() { return logger_; }
 
-    template <typename AttrT>
-    void set_attribute(std::string const& name, AttrT const& value) const {
-        logger_->add_attribute(name, boost::log::attributes::constant<AttrT>(value));
+    void set_attribute(std::string const& name, string_view value) const {
+        logger_->add_attribute(name, boost::log::attributes::constant<std::string>(to_string(value)));
     }
 
 private:

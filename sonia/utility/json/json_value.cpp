@@ -18,10 +18,7 @@
 
 namespace sonia {
 
-template <class HolderT>
-add_const_if_t<is_const_v<HolderT>, typename HolderT::holder_t>& json_value_holder_accessor::holder(HolderT & v) {
-    return static_cast<add_const_if_t<is_const_v<HolderT>, typename HolderT::holder_t>&>(v);
-}
+using namespace json_detail;
 
 void json_value_collect(json_value & jv, std::vector<json_value> & accum) noexcept {
     auto & holder = json_value_holder_accessor::holder(jv);
@@ -37,7 +34,6 @@ void json_value_collect(json_value & jv, std::vector<json_value> & accum) noexce
     }
 }
 
-//typedef std::pair<std::string, json_value> object_item_t;
 typedef optimized_array<char, 16> json_item_name_t;
 typedef std::pair<json_item_name_t, json_value> object_item_t;
 
@@ -108,29 +104,25 @@ struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
     }
 };
 
-template <bool IsConstV>
-typename json_object_item_iterator<IsConstV>::value_t json_object_item_iterator<IsConstV>::dereference() const {
-    typedef optimized_object_impl<json_object::holder_t> object_t;
-    auto& item = object_t::get(&obj_)[pos_];
-    return value_t{string_view(item.first.begin(), item.first.size()), item.second};
+std::pair<string_view, json_value&> json_object_item_iterator_dereference(json_object & obj, size_t pos) {
+    typedef optimized_object_impl<holder_t> object_t;
+    auto& item = object_t::get(&json_value_holder_accessor::holder(obj))[pos];
+    return {string_view(item.first.begin(), item.first.size()), item.second};
 }
 
 bool operator==(json_object const& lhs, json_object const& rhs) {
-    typedef optimized_object_impl<json_object::holder_t> object_t;
+    typedef optimized_object_impl<holder_t> object_t;
     auto litems = object_t::get(&lhs);
     auto ritems = object_t::get(&rhs);
     return litems == ritems;
 }
 
 bool operator<(json_object const& lhs, json_object const& rhs) {
-    typedef optimized_object_impl<json_object::holder_t> object_t;
+    typedef optimized_object_impl<holder_t> object_t;
     auto litems = object_t::get(&lhs);
     auto ritems = object_t::get(&rhs);
     return litems < ritems;
 }
-
-//template <> class json_object_item_iterator<false>;
-//template <> class json_object_item_iterator<true>;
 
 bool json_value::get_bool() const {
     if (json_value_type::boolean == type()) {
@@ -194,6 +186,13 @@ json_object json_value::get_object() const {
     throw exception("json_value (%1%) is not an object"_fmt % to_string(*this));
 }
 
+json_object::json_object()
+{
+    typedef optimized_object_impl<holder_t> object_t;
+    object_t::init(this, array_view<std::string>(), array_view<json_value>());
+    set_service_cookie((size_t)json_value_type::object);
+}
+
 json_object::json_object(holder_t const& hval)
     : holder_t(cref(hval))
 {}
@@ -231,6 +230,14 @@ size_t json_object::size() const noexcept {
     typedef optimized_object_impl<holder_t> object_t;
     return object_t::size(this);
 }
+
+json_object::operator json_value() const noexcept {
+    return json_value((holder_t const&)*this);
+}
+
+json_value::json_value(holder_t const& hval)
+    : holder_t(cref(hval))
+{}
 
 // null 
 json_value::json_value() {

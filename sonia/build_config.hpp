@@ -28,4 +28,8 @@
 #   define HELLO_MESSAGE ""
 #endif
 
+#ifndef BUILD_ID
+#   define BUILD_ID BUILD_NAME ", rev: " REVISION_NAME
+#endif
+
 #endif // SONIA_BUILD_CONFIG_HPP

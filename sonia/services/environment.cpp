@@ -9,18 +9,19 @@
 #include <iostream>
 //#include <sstream>
 #include <fstream>
+#include <tuple>
 
 #include <boost/throw_exception.hpp>
 
 #include "sonia/exceptions.hpp"
 #include "sonia/logger/logger.hpp"
+#include "sonia/services.hpp"
+#include "sonia/sal.hpp"
+#include "sonia/services/builder.hpp"
 
-//#include "sonia/utility/parsers/json/boost_any_builder.hpp"
 #include "sonia/utility/parsers/json/model.hpp"
 #include "sonia/utility/parsers/json/parser.hpp"
 #include "sonia/utility/parsers/json/lexertl_lexer.hpp"
-
-#include "sonia/utility/parameters/json_store.hpp"
 
 #include "sonia/utility/file_persister.hpp"
 #include "local_service_registry.hpp"
@@ -35,7 +36,7 @@ environment::environment() : log_initialized_(false)
 {
     options_.add_options()
         ("log", po::value<std::string>()->default_value("log.conf"), "the logging subsystem configuration file")
-        ("conf", po::value<std::vector<std::string>>()->composing(), "configuration (json) file paths")
+        ("cfg,c", po::value<std::vector<std::string>>()->composing(), "configuration (json) file paths")
         ("registry-file,r", po::value<std::string>()->default_value(".services"), "services registry file")
         ("version,v", "display version and exit")
         ("verbose,V", po::value<bool>()->default_value(true), "verbose")
@@ -44,20 +45,24 @@ environment::environment() : log_initialized_(false)
     
     // required | optional | default | default from string
     config_parameters_.bind()
-        .array("hosts", &environment_configuration::hosts, "hosts description")
-            .required().default_value(std::vector<host_configuration>()).default_json_value("[]")
+        .array("hosts", &environment_configuration::hosts, "hosts description").required()
             .binder(sp::parameters_description<host_configuration>().bind()
-                .variable("name", &host_configuration::name, "optional name of host").required(false)
+                .variable("name", &host_configuration::name, "optional name of host")
                 .array("services", &host_configuration::services, "list of startup services to run")
             )
-        .array("factories", &environment_configuration::factories);
-    /*
-    config_parameters_.add_parameters()
-        ("hosts", sp::array_value<shared_ptr<json_value>>())
-        ("factories", sp::array_value<shared_ptr<json_value>>())
-        ("bundles", sp::array_value<shared_ptr<json_value>>())
+        .map("services", &environment_configuration::services, "services description")
+            .binder(sp::parameters_description<service_configuration>().bind()
+                .variable("factory", &service_configuration::factory, "builder name").required()
+                .variable("layer", &service_configuration::layer, "service layer").default_value(16)
+                .variable("parameters", &service_configuration::parameters, "service parameters")
+            )
+        .map("bundles", &environment_configuration::bundles, "bundles description")
+            .binder(sp::parameters_description<bundle_configuration>().bind()
+                .variable("lib", &bundle_configuration::lib, "library name").required()
+                .variable("layer", &bundle_configuration::layer, "service layer").default_value(0)
+            )
         ;
-        */
+
     std::ostringstream version_ss;
     version_ss << "[Version " SONIA_ONE_VERSION " (" << BUILD_NAME << " " << BUILD_DATETIME ")]" HELLO_MESSAGE;
     version_msg_ = std::move(version_ss.str());
@@ -119,24 +124,22 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
         GLOBAL_LOG_INFO() << version_msg_;
     }
 
+    std::string const& rfile = vm["registry-file"].as<std::string>();
+    shared_ptr<persister> pstr = make_shared<file_persister>(rfile);
+    registry_ = make_shared<local_service_registry>(pstr);
+
     factory_ = make_shared<basic_service_factory>();
-    if (vm.count("conf")) {
-        for (std::string const& f : vm["conf"].as<std::vector<std::string>>()) {
+
+    if (vm.count("cfg")) {
+        for (std::string const& f : vm["cfg"].as<std::vector<std::string>>()) {
             load_configuration(boost::filesystem::path(f));
         }
     }
 
-    std::string const& rfile = vm["registry-file"].as<std::string>();
-
-    shared_ptr<persister> pstr = make_shared<file_persister>(rfile);
-    registry_ = make_shared<local_service_registry>(pstr);
-
-    hosts_.emplace_back(registry_, factory_);
-
     //server_configuration.verbose() = vm["verbose"].as<bool>();
     //server_configuration.logger_conf_file_name() = vm["log"].as<std::string>();
     //server_configuration.handling_system_failure() = vm["handling-system-failure"].as<bool>();
-}
+ }
 
 void environment::load_configuration(boost::filesystem::path const & fpath) {
     if (!fs::is_regular_file(fpath)) {
@@ -169,13 +172,62 @@ void environment::load_configuration(std::istream & cfg)
     environment_configuration ecfg;
     config_parameters_.apply(res.get_object(), &ecfg);
 
-    //sp::variables pv;
-    //sp::store(config_parameters_, model.detach_result(), pv);
+    for (auto const& pair : ecfg.services) {
+        factory_->register_service_factory(pair.first, [cfg = std::move(pair.second)]() {
+            return environment::create_service(cfg);
+        });
+    }
+
+    for (auto const& pair : ecfg.bundles) {
+        factory_->register_service_factory(pair.first, [cfg = std::move(pair.second)]() {
+            return environment::create_bundle_service(cfg);
+        });
+    }
+
+    // load hosts
+    std::vector<std::tuple<shared_ptr<host>, std::vector<std::string>>> host_servs;
+    host_servs.reserve(ecfg.hosts.size());
+    {
+        lock_guard<mutex> guard(cfg_mutex_);
+        for (host_configuration const& h : ecfg.hosts) {
+            auto hit = hosts_.find(h.name);
+            if (hit == hosts_.end()) {
+                auto hptr = make_shared<host>(registry_, factory_);
+                hosts_.insert(std::make_pair(h.name, hptr));
+                host_servs.push_back(std::make_tuple(std::move(hptr), std::move(h.services)));
+            }
+        }
+    }
+
+    for (auto & htpl : host_servs) {
+        std::get<0>(htpl)->run(std::get<1>(htpl));
+    }
 }
 
-void environment::register_service_factory(string_view nm, function<shared_ptr<service>()> const& fm)
-{
+shared_ptr<host> environment::default_host() {
+    lock_guard<mutex> guard(cfg_mutex_);
+    if (hosts_.empty()) {
+        return hosts_.insert(std::make_pair("", make_shared<host>(registry_, factory_))).first->second;
+    } else if (hosts_.size() == 1) {
+        return hosts_.begin()->second;
+    }
+
+    auto it = hosts_.find("");
+    if (it != hosts_.end()) return hosts_.begin()->second;
+    return shared_ptr<host>();
+}
+
+void environment::register_service_factory(string_view nm, function<service_descriptor()> const& fm) {
     factory_->register_service_factory(nm, fm);
+}
+
+service_descriptor environment::create_service(service_configuration const& cfg) {
+    shared_ptr<builder> bld = locate<builder>(cfg.factory);
+    return {bld->build(cfg.parameters), cfg.layer};
+}
+
+service_descriptor environment::create_bundle_service(bundle_configuration const& cfg) {
+    return {sonia::sal::load_bundle(cfg.lib), cfg.layer};
 }
 
 }}

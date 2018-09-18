@@ -9,6 +9,8 @@
 
 #include <boost/lexical_cast.hpp>
 
+#pragma comment(lib, "ws2_32.lib")
+
 const DWORD MS_VC_EXCEPTION=0x406D1388;
 
 namespace sonia { namespace windows {
@@ -25,6 +27,8 @@ typedef struct tagTHREADNAME_INFO
 
 void set_thread_name(DWORD dwThreadId, char const* threadName)
 {
+// is needed and works only on Windows for VS Debugger
+#if !defined(__MINGW32__) && !defined(__MINGW64__)
     THREADNAME_INFO info;
     info.dwType = 0x1000;
     info.szName = threadName;
@@ -38,6 +42,7 @@ void set_thread_name(DWORD dwThreadId, char const* threadName)
     __except(EXCEPTION_EXECUTE_HANDLER)
     {
     }
+#endif
 }
 
 void set_thread_name(boost::thread::id tid, char const* threadName)

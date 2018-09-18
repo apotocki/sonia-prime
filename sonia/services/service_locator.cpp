@@ -11,8 +11,8 @@
 namespace sonia {
 
 struct service_layer_comparer {
-    inline bool operator()(int val, service_locator::cached_service_descriptor const& csd) const { return val < csd.get_layer(); }
-    inline bool operator()(service_locator::cached_service_descriptor const& csd, int val) const { return csd.get_layer() < val; }
+    inline bool operator()(int val, service_locator::cached_service_descriptor const& csd) const { return val < csd.layer(); }
+    inline bool operator()(service_locator::cached_service_descriptor const& csd, int val) const { return csd.layer() < val; }
 };
 
 service_locator::service_locator(shared_ptr<service_registry> sr, shared_ptr<service_factory> sf)
@@ -38,57 +38,61 @@ shared_ptr<service> service_locator::get(service::id id)
 
 shared_ptr<service> service_locator::get(service::id id, string_view name)
 {
-    std::unique_lock<std::mutex> cache_lock(cache_mtx_);
+    auto cache_lock = make_unique_lock(cache_mtx_);
+
     auto & tpl = cache_.try_emplace(id, std::in_place).first->second;
     cache_lock.unlock();
 
-    std::lock_guard<std::mutex> object_guard(tpl.mtx);
-    if (!tpl.object) {
+    lock_guard<mutex> object_guard(tpl.mtx);
+    if (!tpl.object()) {
         this_thread::interruption_point();
 
-        if (tpl.tid == this_thread::get_id()) {
-            BOOST_THROW_EXCEPTION(internal_error(fmt("found a circular dependency for the service: '%1%' (%2%)")
+        if (tpl.fid == this_fiber::get_id()) {
+            BOOST_THROW_EXCEPTION(internal_error("found a circular dependency for the service: '%1%' (%2%)"_fmt
                 % (name ? name : sr_->get_name(id)) % id));
         }
 
-        tpl.tid = this_thread::get_id();
-        SCOPE_EXIT([&tpl] { tpl.tid = thread::id(); });
+        tpl.fid = this_fiber::get_id();
+        SCOPE_EXIT([&tpl] { tpl.fid = fiber::id(); });
 
         if (name) name = sr_->get_name(id);
         auto creature = sf_->create(name);
-        service_access::set(*creature, id, to_string(name));
-        creature->open();
-
+        service_access::set(*creature.serv, id, to_string(name));
+        creature.serv->set_attribute("Name", name);
+        creature.serv->open();
+        LOG_TRACE(logger()) << "service " << name << "(id: " << id << ") is started";
         {
-            std::lock_guard<std::mutex> layers_guard(layers_mtx_);
+            auto layers_guard = make_lock_guard(layers_mtx_);
             layers_.insert(tpl);
         }
 
-        tpl.object = std::move(creature);
+        tpl.descr = std::move(creature);
     }
 
-    return tpl.object;
+    return tpl.object();
 }
 
 void service_locator::shutdown(shared_ptr<service> serv)
 {
-    std::unique_lock<std::mutex> cache_lock(cache_mtx_);
+    auto cache_lock = make_unique_lock(cache_mtx_);
+    
     auto it = cache_.find(serv->get_id());
     BOOST_ASSERT(it != cache_.end());
     auto & tpl = it->second;
     cache_lock.unlock();
 
-    std::lock_guard<std::mutex> object_guard(tpl.mtx);
-    if (tpl.object.get() != serv.get()) {
+    auto object_guard = make_lock_guard(tpl.mtx);
+
+    if (tpl.object().get() != serv.get()) {
         return; // already shutdowned or on its way to it by another thread
     }
 
     {
-        std::lock_guard<std::mutex> layers_guard(layers_mtx_);
+        auto layers_guard = make_lock_guard(layers_mtx_);
         layers_.erase(tpl);
     }
     
-    tpl.object.reset();
+    tpl.object().reset();
 
     serv->close();
 }
@@ -97,11 +101,11 @@ void service_locator::shutdown(int down_to_layer)
 {
     std::vector<shared_ptr<service>> services_to_shutdown;
     {
-        std::lock_guard<std::mutex> layers_guard(layers_mtx_);
+        auto layers_guard = make_lock_guard(layers_mtx_);
         for (auto it = layers_.end(); it != layers_.begin();) {
             --it;
-            if (it->get_layer() < down_to_layer) break;
-            services_to_shutdown.push_back(it->object);
+            if (it->layer() < down_to_layer) break;
+            services_to_shutdown.push_back(it->object());
         }
     }
     while (!services_to_shutdown.empty()) {

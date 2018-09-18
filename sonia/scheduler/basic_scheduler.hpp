@@ -9,14 +9,18 @@
 #   pragma once
 #endif
 
-#include <boost/fiber/all.hpp>
-
 #include "sonia/thread.hpp"
+#include "sonia/function.hpp"
+#include "sonia/logger/loggable.hpp"
+
 #include "scheduler.hpp"
 
 namespace sonia {
 
-class basic_scheduler : public scheduler {
+class basic_scheduler 
+    : public scheduler
+    , public virtual loggable
+{
 public:
     basic_scheduler(uint32_t thr_cnt, uint32_t fb_cnt);
     ~basic_scheduler() override;
@@ -27,18 +31,21 @@ public:
     basic_scheduler& operator=(basic_scheduler &&) = delete;
     
     void start() override;
-    void stop()  override;
+    void stop() override;
     void post(scheduler_task_t &&) override;
 
 private:
     virtual std::string thread_name() const;
     void thread_proc();
-    void fiber_proc();
+    void fiber_proc(fibers::mutex & mtx);
 
     uint32_t thr_cnt_, fb_cnt_;
     std::vector<thread> threads_;
 
-    boost::fibers::mutex queue_mtx_;
+    fibers::mutex queue_mtx_;
+    fibers::condition_variable queue_cond_;
+    std::atomic<bool> stopping_;
+    std::deque<function<void()>> queue_;
 };
 
 }

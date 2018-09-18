@@ -60,6 +60,8 @@
     <ClInclude Include="..\..\..\sonia\services.hpp" />
     <ClInclude Include="..\..\..\sonia\services\async\reactor.hpp" />
     <ClInclude Include="..\..\..\sonia\services\builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bundle.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bundle.ipp" />
     <ClInclude Include="..\..\..\sonia\services\environment.hpp" />
     <ClInclude Include="..\..\..\sonia\services\host.hpp" />
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp" />
@@ -68,12 +70,14 @@
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
     <ClInclude Include="..\..\..\sonia\string.hpp" />
     <ClInclude Include="..\..\..\sonia\thread.hpp" />
+    <ClInclude Include="..\..\..\sonia\type_info.hpp" />
     <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\buffer.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\comparison_operators.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\file_persister.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\hash_combine_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\basic_decimal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\decimal.hpp" />
@@ -92,10 +96,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\shared_ptr_wrapper_iterator_impl.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\wrapper_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\options\json.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\parameters\json_store.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\parameters\parameters_description.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\parameters\variables.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\parameters\value_descriptor.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parameters\parameters.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexems.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexertl_lexer.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parsers\json\model.hpp" />
@@ -124,6 +125,7 @@
     <ClCompile Include="..\..\..\sonia\sal\windows_sal.cpp" />
     <ClCompile Include="..\..\..\sonia\scheduler\basic_scheduler.cpp" />
     <ClCompile Include="..\..\..\sonia\services\async\async_reactor.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\bundle.cpp" />
     <ClCompile Include="..\..\..\sonia\services\environment.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -163,15 +165,10 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\number\number_integer.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\options\json_options.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_description.cpp">
+    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_json_store.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters_variables.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\parsers\json\json_model.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>

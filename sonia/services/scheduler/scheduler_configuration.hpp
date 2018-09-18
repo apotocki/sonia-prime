@@ -2,25 +2,21 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICE_BUILDER_HPP
-#define SONIA_SERVICE_BUILDER_HPP
+#ifndef SONIA_SERVICES_SCHEDULER_CONFIGURATION_HPP
+#define SONIA_SERVICES_SCHEDULER_CONFIGURATION_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
 #endif
 
-#include "service.hpp"
-#include "sonia/utility/json/value.hpp"
-
 namespace sonia { namespace services {
 
-class builder {
+class scheduler_configuration {
 public:
-    virtual ~builder() {}
-
-    virtual shared_ptr<service> build(json_object const& parameters) = 0;
+    uint32_t threads;
+    uint32_t fibers;
 };
 
 }}
 
-#endif // SONIA_SERVICE_BUILDER_HPP
+#endif // SONIA_SERVICES_SCHEDULER_CONFIGURATION_HPP

@@ -13,15 +13,22 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
 
+#include <boost/fiber/all.hpp>
+
 namespace sonia {
 
 using boost::thread;
-using boost::mutex;
-using boost::lock_guard;
-using boost::unique_lock;
-using boost::condition_variable;
+using std::mutex;
+using std::unique_lock;
+using std::condition_variable;
 
+using boost::lock_guard;
+using boost::make_lock_guard;
+using boost::fibers::fiber;
+
+namespace fibers = boost::fibers;
 namespace this_thread = boost::this_thread;
+namespace this_fiber = boost::this_fiber;
 
 struct dummy_mutex_t {
     void lock() {}
@@ -31,6 +38,11 @@ struct dummy_mutex_t {
 };
 
 constexpr dummy_mutex_t dummy_mutex = {};
+
+template <typename MutexT>
+unique_lock<MutexT> make_unique_lock(MutexT & m) {
+    return unique_lock<MutexT>(m);
+}
 
 }
 

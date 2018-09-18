@@ -112,8 +112,21 @@ BOOST_AUTO_TEST_CASE (server_test)
     try {
         scoped_services ss;
 
-        services::register_service_factory("asd", []() -> shared_ptr<service> { return make_shared<test_service0>(); });
+        services::register_service_factory("asd", []() -> service_descriptor {
+            return {make_shared<test_service0>(), 0};
+        });
+
+        auto p = services::locate<my_service>("asd");
+        BOOST_CHECK_EQUAL("job0", p->do_job());
+
+        try {
+            services::register_service_factory("asd", []() -> service_descriptor { throw 1; });
+            BOOST_CHECK(false);
+        } catch (internal_error const&) {}
+
         services::load_configuration("host.json");
+
+        auto s0 = services::locate("scheduler.serv");
 
     } catch (shutdown_exception const& e) {
         std::cout << e.what() << "\n";
@@ -132,13 +145,7 @@ BOOST_AUTO_TEST_CASE (server_test)
 
 
 
-    auto p = services::locate<my_service>("asd");
-    BOOST_CHECK_EQUAL("job0", p->do_job());
 
-    try {
-        services::register_service_factory("asd", []() -> shared_ptr<service> { throw 1; });
-        BOOST_CHECK(false);
-    } catch (internal_error const&) {}
 
     //app.load_host();
     //application_host host1;

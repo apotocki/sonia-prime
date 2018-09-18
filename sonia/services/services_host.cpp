@@ -35,4 +35,10 @@ shared_ptr<service> host::locate(service::id id) const {
     return locator_->get(id);
 }
 
+void host::run(std::vector<std::string> const& servs) {
+    for (auto const& s : servs) {
+        locate(s);
+    }
+}
+
 }}

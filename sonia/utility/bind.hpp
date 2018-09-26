@@ -13,8 +13,9 @@
 #include <tuple>
 
 #include "sonia/type_traits.hpp"
-#include "sonia/reference_wrapper.hpp"
 #include "sonia/function.hpp"
+#include "sonia/reference_wrapper.hpp"
+#include "sonia/utility/rvalue.hpp"
 #include "sonia/utility/variadic.hpp"
 
 namespace sonia {
@@ -24,11 +25,14 @@ struct bind_parameter { typedef remove_cvref_t<T> type; };
 
 template <typename T> struct bind_parameter<T*, false> { typedef T* type; };
 template <typename T> struct bind_parameter<T&, false> { typedef reference_wrapper<T> type; };
-template <typename T> struct bind_parameter<T&&, false> { typedef rvalue_reference_wrapper<T> type; };
+template <typename T> struct bind_parameter<T&&, false> { typedef rvalue_wrapper<T> type; };
 template <typename T> struct bind_parameter<T* &&, false> { typedef T* type; };
 template <typename T> struct bind_parameter<reference_wrapper<T>&, false> { typedef reference_wrapper<T> type; };
 template <typename T> struct bind_parameter<reference_wrapper<T> const&, false> { typedef reference_wrapper<T> type; };
 template <typename T> struct bind_parameter<reference_wrapper<T>&&, false> { typedef reference_wrapper<T> type; };
+template <typename T> struct bind_parameter<rvalue_reference_wrapper<T>&, false> { typedef rvalue_reference_wrapper<T> type; };
+template <typename T> struct bind_parameter<rvalue_reference_wrapper<T> const&, false> { typedef rvalue_reference_wrapper<T> type; };
+template <typename T> struct bind_parameter<rvalue_reference_wrapper<T>&&, false> { typedef rvalue_reference_wrapper<T> type; };
 
 template <typename T> using bind_parameter_t = typename bind_parameter<T>::type;
 

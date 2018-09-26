@@ -23,7 +23,7 @@ template <typename SerializationTagT = compressed_t>
 class command_proxy_coder {
 public:
     template <class CommandT, typename OutputIteratorT>
-    enable_if_t<is_base_of_v<command_base, CommandT>, OutputIteratorT> encode(CommandT const& cmd, OutputIteratorT oi) const {
+    enable_if_t<is_base_of_v<abstract_command_base, CommandT>, OutputIteratorT> encode(CommandT const& cmd, OutputIteratorT oi) const {
         //return encode<SerializationTagT>(cmd, encode<SerializationTagT>(sonia::type::durable_id::get<CommandT>(), std::move(oi)));
         return make_encoder<SerializationTagT>(std::move(oi)) & cmd & sonia::type::durable_id::get<CommandT>();
     }

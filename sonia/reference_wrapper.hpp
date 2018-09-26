@@ -19,45 +19,6 @@ using std::reference_wrapper;
 using std::ref;
 using std::cref;
 
-template <class T>
-class rvalue_reference_wrapper
-{
-public:
-    static_assert(std::is_object_v<T> || std::is_function_v<T>,
-        "rvalue_reference_wrapper<T> requires T to be an object type "
-        "or a function type.");
-
-    using type = T;
-
-    rvalue_reference_wrapper(T&& val) noexcept : ptr_(std::addressof(val)) {}
-
-    operator T&&() const noexcept { return std::move(*ptr_); }
-
-    T&& get() const noexcept { return std::move(*ptr_); }
-
-    template <class ... ArgsT>
-    auto operator()(ArgsT&&... args) const
-        -> decltype(std::invoke(get(), std::forward<ArgsT>(args)...))
-    {
-        return (std::invoke(get(), std::forward<ArgsT>(args)...));
-    }
-
-    rvalue_reference_wrapper(T& val) = delete;
-
-private:
-    T * ptr_;
-};
-
-template <typename T>
-enable_if_t<is_rvalue_reference_v<T&&>, rvalue_reference_wrapper<remove_reference_t<T>>> rvref(T && val) {
-    return rvalue_reference_wrapper<remove_reference_t<T>>(std::forward<T>(val));
-}
-
-template <typename T>
-rvalue_reference_wrapper<T> rvref(T & val) {
-    return rvalue_reference_wrapper<T>(std::move(val));
-}
-
 }
 
 #endif // SONIA_REFERENCE_WRAPPER_HPP

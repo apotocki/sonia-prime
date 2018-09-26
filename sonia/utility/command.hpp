@@ -13,14 +13,20 @@
 
 namespace sonia {
 
-class command_base {
+class abstract_command_base {
 public:
-    virtual ~command_base() {}
+    virtual ~abstract_command_base() {}
     virtual std::type_info const& get_type_info() const = 0;
 };
 
+template <typename R>
+class command_base : public abstract_command_base {
+public:
+    typedef R result_type;
+};
+
 template <typename R, typename ... ArgsT>
-class command : public command_base {
+class command : public command_base<R> {
 public:
     virtual R operator()(ArgsT ...) const = 0;
 };

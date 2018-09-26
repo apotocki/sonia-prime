@@ -14,7 +14,7 @@
 #include "sonia/array_view.hpp"
 #include "sonia/function.hpp"
 #include "sonia/utility/iterators/wrapper_iterator.hpp"
-#include "sonia/serialization/iostream.hpp"
+#include "sonia/utility/serialization/iostream.hpp"
 
 namespace sonia {
 

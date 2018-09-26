@@ -26,10 +26,28 @@
 
 #include "sonia/type_traits.hpp"
 #include "sonia/function.hpp"
+#include "sonia/utility/serialization/serialization_fwd.hpp"
+
 #include "command.hpp"
 #include "bind.hpp"
 
 namespace sonia {
+
+template <class BindTupleT, typename R, typename ... ArgsT>
+class bind_command_proxy : public command_base<R> {
+    SONIA_DECLARE_SERIALIZATION_FRIENDLY;
+
+public:
+    template <typename ... BindArgsT>
+    explicit bind_command_proxy(BindArgsT && ... args)
+        : btpl_{std::forward<BindArgsT>(args)...}
+    {
+
+    }
+
+protected:
+    BindTupleT btpl_;
+};
 
 template <class CallableT, class BindTupleT, typename R, typename ... ArgsT>
 class bind_command : public command<R, ArgsT ...> {
@@ -58,6 +76,7 @@ template <class CallableT, class BindTupleT, typename FuncSigT> struct bind_comm
 
 template <class CallableT, class BindTupleT, typename RT, typename ... ArgsT> struct bind_command_composer<CallableT, BindTupleT, RT(ArgsT...)> {
     typedef bind_command<CallableT, BindTupleT, RT, ArgsT ...> type;
+    typedef bind_command_proxy<BindTupleT, RT, ArgsT ...> proxy_type;
 };
 
 namespace bind_command_detail {
@@ -116,11 +135,18 @@ struct bind_command_helper {
 
     typedef typename boost::function_types::function_type<placeholders_vec_t>::type command_sig_t;
     
-    typedef typename bind_command_composer<function<f_type>, bind_tuple_t<ArgsT ...>, command_sig_t>::type command_type;
+    typedef bind_command_composer<function<f_type>, bind_tuple_t<ArgsT ...>, command_sig_t> composer_t;
+    typedef typename composer_t::type command_type;
+    typedef typename composer_t::proxy_type command_proxy_type;
 };
 
 } // namespace bind_command_detail
 
+template <typename FT, typename ... ArgsT>
+typename bind_command_detail::bind_command_helper<FT, ArgsT ...>::command_proxy_type make_bind_command_proxy(FT const&, ArgsT&& ... args) {
+    typedef bind_command_detail::bind_command_helper<FT, ArgsT ...> helper_t;
+    return typename helper_t::command_proxy_type{std::forward<ArgsT>(args)...};
+}
 
 template <typename FT, typename ... ArgsT>
 typename bind_command_detail::bind_command_helper<FT, ArgsT ...>::command_type make_bind_command(FT const& f, ArgsT&& ... args) {

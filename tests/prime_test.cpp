@@ -10,8 +10,8 @@
 #include <boost/test/unit_test.hpp>
 
 #include "sonia/automatic.hpp"
-#include "sonia/serialization/serialization.hpp"
-#include "sonia/serialization/integral.hpp"
+#include "sonia/utility/serialization/serialization.hpp"
+#include "sonia/utility/serialization/integral.hpp"
 
 #include "sonia/logger/logger.hpp"
 #include <mutex>
@@ -97,11 +97,11 @@ void test_tuple(T && bind_tuple) {
     typedef T tuple_t;
     BOOST_STATIC_ASSERT(is_same_v<reference_wrapper<std::string>, std::tuple_element_t<0, tuple_t>>);
     BOOST_STATIC_ASSERT(is_same_v<reference_wrapper<const std::string>, std::tuple_element_t<1, tuple_t>>);
-    BOOST_STATIC_ASSERT(is_same_v<rvalue_reference_wrapper<int>, std::tuple_element_t<2, tuple_t>>);
+    BOOST_STATIC_ASSERT(is_same_v<rvalue_wrapper<int>, std::tuple_element_t<2, tuple_t>>);
     BOOST_STATIC_ASSERT(is_same_v<reference_wrapper<std::string>, std::tuple_element_t<3, tuple_t>>);
     BOOST_STATIC_ASSERT(is_same_v<reference_wrapper<const std::string>, std::tuple_element_t<4, tuple_t>>);
     BOOST_STATIC_ASSERT(is_same_v<rvalue_reference_wrapper<std::string>, std::tuple_element_t<5, tuple_t>>);
-    BOOST_STATIC_ASSERT(is_same_v<rvalue_reference_wrapper<std::string>, std::tuple_element_t<6, tuple_t>>);
+    BOOST_STATIC_ASSERT(is_same_v<rvalue_wrapper<std::string>, std::tuple_element_t<6, tuple_t>>);
     BOOST_STATIC_ASSERT(is_same_v<std::string*, std::tuple_element_t<7, tuple_t>>);
     BOOST_STATIC_ASSERT(is_same_v<std::string const*, std::tuple_element_t<8, tuple_t>>);
     BOOST_STATIC_ASSERT(std::is_placeholder_v<std::tuple_element_t<9, tuple_t>>);
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE (bind_test)
     //foo(std::placeholders::_2);
     //make_bind_tuple(std::placeholders::_2);
     // warn! temporary value check:  std::string("456")
-    test_tuple(make_bind_tuple(refs0, cref(s0), 1, s0, s1, std::move(s2), std::string("456"), &s0, &s1, std::placeholders::_1, std::placeholders::_2));
+    test_tuple(make_bind_tuple(refs0, cref(s0), 1, s0, s1, rvref(s2), std::string("456"), &s0, &s1, std::placeholders::_1, std::placeholders::_2));
 
     //std::cout << typeid(bind_tuple).name() << "\n";
     //std::cout << typeid(std::tuple_element<0, decltype(bind_tuple)>::type).name() << "\n";

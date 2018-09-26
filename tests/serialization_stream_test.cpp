@@ -21,7 +21,7 @@ namespace fs = boost::filesystem;
 #define TEST_FOLDER "serialization_stream_test"
 
 #include "sonia/string.hpp"
-#include "sonia/serialization/iostream.hpp"
+#include "sonia/utility/serialization/iostream.hpp"
 #include "sonia/utility/iterators/file_region_iterator.hpp"
 
 using namespace sonia;

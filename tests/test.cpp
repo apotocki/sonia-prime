@@ -316,7 +316,7 @@ BOOST_AUTO_TEST_CASE (test)
 #include "sonia/utility/multimethod.hpp"
 #include "sonia/utility/command.hpp"
 #include "sonia/utility/bind_command.hpp"
-#include "sonia/serialization/command.hpp"
+#include "sonia/utility/serialization/command.hpp"
 
 #include <boost/mpl/size.hpp>
 
@@ -380,8 +380,7 @@ BOOST_AUTO_TEST_CASE (test)
     foo_class c0;
     //using std::placeholders::_1;
     //using std::placeholders::_2;
-    int v = 1;
-    auto cmd = make_bind_command(&foo_class::method0, c0, v, _2, _1);
+    auto cmd = make_bind_command(&foo_class::method0, c0, 1, _2, _1);
     std::cout << cmd(1, 42) << "\n";
     //foo(&foo_class::method0);
     

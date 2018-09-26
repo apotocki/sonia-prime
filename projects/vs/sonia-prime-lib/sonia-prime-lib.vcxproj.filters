@@ -4,9 +4,6 @@
     <Filter Include="sonia">
       <UniqueIdentifier>{1154b024-252b-4bf2-b375-4aa91afd6ee2}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.serialization">
-      <UniqueIdentifier>{ebd5b070-4b8b-4a31-84e5-5cdb1859b1d4}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.algorithm">
       <UniqueIdentifier>{b3afdb08-fb25-497c-a7c8-60f85a24d7a7}</UniqueIdentifier>
     </Filter>
@@ -93,12 +90,6 @@
     <ClInclude Include="..\..\..\sonia\prime_config.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\serialization\serialization.hpp">
-      <Filter>sonia.serialization</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\serialization\integral.hpp">
-      <Filter>sonia.serialization</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\type_traits.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
@@ -182,15 +173,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\function.hpp">
       <Filter>sonia</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\serialization\json_serialization.hpp">
-      <Filter>sonia.serialization</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\serialization\iostream.hpp">
-      <Filter>sonia.serialization</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\serialization\boost_serialization_tuple.hpp">
-      <Filter>sonia.serialization</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services.hpp">
       <Filter>sonia</Filter>
@@ -387,9 +369,6 @@
     <ClInclude Include="..\..\..\sonia\utility\command.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\serialization\command.hpp">
-      <Filter>sonia.serialization</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\multimethod.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
@@ -402,14 +381,35 @@
     <ClInclude Include="..\..\..\sonia\utility\range\transform.hpp">
       <Filter>sonia.utility\range</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\serialization\type_durable_id.hpp">
-      <Filter>sonia.serialization</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\serialization\serialization_fwd.hpp">
       <Filter>sonia.utility\serialization</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\bind_command.hpp">
       <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\rvalue.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\boost_serialization_tuple.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\command.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\integral.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\iostream.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\json_serialization.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\serialization.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\type_durable_id.hpp">
+      <Filter>sonia.utility\serialization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

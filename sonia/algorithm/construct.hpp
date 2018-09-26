@@ -33,6 +33,19 @@ void construct(ElementT * dest, RngT && src, size_t sz) {
 }
 
 template <typename ElementT, class RngT>
+void move_construct(ElementT * dest, RngT && src, size_t sz) {
+    if constexpr (is_pod_v<ElementT> && is_same_v<remove_cv_t<range_value_t<RngT>>, ElementT> && is_pointer_v<range_iterator_t<RngT>>) {
+        std::memcpy(dest, boost::begin(src), sizeof(ElementT) * sz);
+    } else if constexpr (is_pod_v<ElementT> && is_same_v<remove_cv_t<range_value_t<RngT>>, ElementT>) {
+        std::copy_n(boost::begin(src), sz, dest);
+    } else {
+        for (auto s = boost::begin(src); sz != 0; ++dest, ++s, --sz) {
+            new (dest) ElementT(std::move(*s));
+        }
+    }
+}
+
+template <typename ElementT, class RngT>
 void construct(ElementT * dest, RngT && src) {
     construct(dest, std::forward<RngT>(src), boost::size(src));
 }

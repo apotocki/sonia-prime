@@ -102,7 +102,7 @@ void service_locator::shutdown(int down_to_layer)
     std::vector<shared_ptr<service>> services_to_shutdown;
     {
         auto layers_guard = make_lock_guard(layers_mtx_);
-        for (auto it = layers_.end(); it != layers_.begin();) {
+        for (auto it = layers_.end(), bit = layers_.begin(); it != bit;) {
             --it;
             if (it->layer() < down_to_layer) break;
             services_to_shutdown.push_back(it->object());

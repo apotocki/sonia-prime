@@ -29,6 +29,9 @@
     <ClCompile Include="..\..\..\sonia\services\scheduler\scheduler_service.cpp">
       <Filter>sonia.services\scheduler</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\local_type_registry.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -68,6 +71,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service.hpp">
       <Filter>sonia.services\scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\type_registry.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\local_type_registry.hpp">
+      <Filter>sonia.services</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

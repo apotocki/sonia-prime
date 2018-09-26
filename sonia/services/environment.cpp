@@ -11,6 +11,7 @@
 #include <fstream>
 #include <tuple>
 
+#include <boost/assert.hpp>
 #include <boost/throw_exception.hpp>
 
 #include "sonia/exceptions.hpp"
@@ -25,6 +26,7 @@
 
 #include "sonia/utility/file_persister.hpp"
 #include "local_service_registry.hpp"
+#include "local_type_registry.hpp"
 
 namespace sonia { namespace services {
 
@@ -37,7 +39,8 @@ environment::environment() : log_initialized_(false)
     options_.add_options()
         ("log", po::value<std::string>()->default_value("log.conf"), "the logging subsystem configuration file")
         ("cfg,c", po::value<std::vector<std::string>>()->composing(), "configuration (json) file paths")
-        ("registry-file,r", po::value<std::string>()->default_value(".services"), "services registry file")
+        ("service-registry-file,r", po::value<std::string>()->default_value(".services"), "services registry file")
+        ("type-registry-file,t", po::value<std::string>()->default_value(".types"), "types registry file")
         ("version,v", "display version and exit")
         ("verbose,V", po::value<bool>()->default_value(true), "verbose")
         ("help,h", "display this help and exit")
@@ -124,9 +127,13 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
         GLOBAL_LOG_INFO() << version_msg_;
     }
 
-    std::string const& rfile = vm["registry-file"].as<std::string>();
-    shared_ptr<persister> pstr = make_shared<file_persister>(rfile);
-    registry_ = make_shared<local_service_registry>(pstr);
+    std::string const& srfile = vm["service-registry-file"].as<std::string>();
+    shared_ptr<persister> psrp = make_shared<file_persister>(srfile);
+    registry_ = make_shared<local_service_registry>(psrp);
+
+    std::string const& trfile = vm["type-registry-file"].as<std::string>();
+    shared_ptr<persister> ptrp = make_shared<file_persister>(trfile);
+    type_registry_ = make_shared<local_type_registry>(ptrp);
 
     factory_ = make_shared<basic_service_factory>();
 
@@ -228,6 +235,34 @@ service_descriptor environment::create_service(service_configuration const& cfg)
 
 service_descriptor environment::create_bundle_service(bundle_configuration const& cfg) {
     return {sonia::sal::load_bundle(cfg.lib), cfg.layer};
+}
+
+uint32_t environment::get_type_id(std::type_info const& ti) {
+    auto guard = make_lock_guard(type_id_mtx_);
+    auto it = type_id_map_.left.find(ti);
+    if (it == type_id_map_.left.end()) {
+        uint32_t idx = ++type_id_counter_;
+        BOOST_VERIFY(type_id_map_.insert(type_id_map_type::value_type(ti, idx)).second);
+        return idx;
+    }
+    return it->second;
+}
+
+uint32_t environment::register_durable_id(string_view nm, std::type_info const& ti) {
+    uint32_t result = type_registry_->get_type_id(nm);
+    auto guard = make_lock_guard(type_durable_id_mtx_);
+    auto rpair = type_durable_id_map_.insert(type_id_map_type::value_type(ti, result));
+    if (rpair.second || rpair.first->right == result) return result;
+    throw internal_error("type registration error, type %1% with name %2% has id %3% instead of %4%"_fmt % ti.name() % nm % rpair.first->right % result);
+}
+
+uint32_t environment::get_durable_id(std::type_info const& ti) {
+    auto guard = make_lock_guard(type_durable_id_mtx_);
+    auto it = type_durable_id_map_.left.find(ti);
+    if (it != type_durable_id_map_.left.end()) {
+        return it->second;
+    }
+    throw internal_error("durable type %1% is not registered"_fmt % ti.name());
 }
 
 }}

@@ -10,6 +10,7 @@
 #endif
 
 #include <utility>
+#include <iosfwd>
 
 #include "sonia/type_traits.hpp"
 
@@ -18,6 +19,8 @@ namespace sonia {
 template <typename T>
 class automatic {
 public:
+    automatic(null_t) {}
+
     automatic() {
         new (get_pointer()) T;
     }
@@ -71,6 +74,11 @@ public:
 private:
     aligned_storage_t<sizeof(T), std::alignment_of_v<T>> buffer_;
 };
+
+template <typename CharT, class TraitsT, typename T>
+std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, automatic<T> val) {
+    return os << *val;
+}
 
 }
 

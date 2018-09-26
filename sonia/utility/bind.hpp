@@ -13,10 +13,13 @@
 #include <tuple>
 
 #include "sonia/type_traits.hpp"
+#include "sonia/reference_wrapper.hpp"
+#include "sonia/function.hpp"
+#include "sonia/utility/variadic.hpp"
 
 namespace sonia {
 
-template <typename T, bool IsPlaceholder = !!std::is_placeholder_v<remove_cvref_t<T>>>
+template <typename T, bool IsPlaceholder = !!is_placeholder_v<remove_cvref_t<T>>>
 struct bind_parameter { typedef remove_cvref_t<T> type; };
 
 template <typename T> struct bind_parameter<T*, false> { typedef T* type; };
@@ -41,7 +44,7 @@ bind_tuple_t<ArgsT...> make_bind_tuple(ArgsT&& ... args) {
     return bind_tuple_t<ArgsT...>(std::forward<ArgsT>(args)...);
 }
 
-template <typename T, int pidx = std::is_placeholder_v<T>>
+template <typename T, int pidx = is_placeholder_v<T>>
 struct substitute_placeholder_value {
     template <typename Arg, typename ... Args>
     auto&& operator()(Arg &&, Args&& ... args)  {
@@ -61,6 +64,16 @@ template <typename Callable, typename Tuple, size_t ... I,  typename ... Args>
 auto apply_placeholders_helper(std::index_sequence<I...>, Callable && c, Tuple && tpl, Args&& ... args) {
     return std::invoke(
         std::forward<Callable>(c),
+        substitute_placeholder_value<std::tuple_element_t<I, remove_cvref_t<Tuple>>>()(
+            std::get<I>(std::forward<Tuple>(tpl)),
+            std::forward<Args>(args) ...
+        ) ...
+    );
+}
+
+template <typename SigT, typename Tuple, size_t ... I,  typename ... Args>
+auto apply_placeholders_helper(std::index_sequence<I...>, function<SigT> const& c, Tuple && tpl, Args&& ... args) {
+    return c(
         substitute_placeholder_value<std::tuple_element_t<I, remove_cvref_t<Tuple>>>()(
             std::get<I>(std::forward<Tuple>(tpl)),
             std::forward<Args>(args) ...

@@ -4,10 +4,10 @@
 
 #include "sonia/config.hpp"
 
-#include <windows.h>
+#include <signal.h>
+#include <pthread.h>
 
-#include <iostream>
-#include <exception>
+#include <atomic>
 
 #include <boost/exception/diagnostic_information.hpp>
 
@@ -19,29 +19,17 @@
 std::atomic<long> barrier_(0);
 std::atomic<scoped_services*> serv_ = nullptr;
 
-BOOL WINAPI TermhandlerRoutine(DWORD ctrl_type)
-{
-    switch (ctrl_type)
-    {
-        case CTRL_C_EVENT:
-        case CTRL_BREAK_EVENT:
-        case CTRL_CLOSE_EVENT:
-        case CTRL_SHUTDOWN_EVENT: {
-            if (0 == barrier_.fetch_add(1)) {
-                SCOPE_EXIT([]() { --barrier_; });
-                scoped_services* pservs = serv_.load();
-                if (pservs) {
-                    try {
-                        pservs->stop();
-                    } catch (...) {
-                        std::cerr << boost::current_exception_diagnostic_information();
-                    }
-                }
+void termination_handler(int signum) {
+    if (0 == barrier_.fetch_add(1)) {
+        SCOPE_EXIT([]() { --barrier_; });
+        scoped_services* pservs = serv_.load();
+        if (pservs) {
+            try {
+                pservs->stop();
+            } catch (...) {
+                std::cerr << boost::current_exception_diagnostic_information();
             }
-            return TRUE;
         }
-        default:
-            return FALSE;
     }
 }
 
@@ -50,16 +38,17 @@ void terminate_impl() {
     abort();
 }
 
-void unexpected_impl() {
-    std::cerr << "unexpected error (unexpected), trying to retrow\n";
-    throw;
-}
 
-int main(int argc, char const* argv[])
-{
-    SetConsoleCtrlHandler(TermhandlerRoutine, TRUE);
-
+int main(int argc, char const* argv[]) {
     std::set_terminate(terminate_impl);
+
+    // Block all signals for background thread.
+    sigset_t new_mask;
+    sigfillset(&new_mask);
+    sigdelset(&new_mask, SIGSEGV);
+    sigdelset(&new_mask, SIGBUS);
+    sigset_t old_mask;
+    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask); 
 
     try {
         scoped_services s(argc, argv);
@@ -73,6 +62,17 @@ int main(int argc, char const* argv[])
         });
 
         serv_.store(&s);
+
+        // Restore previous signals.
+        pthread_sigmask(SIG_SETMASK, &old_mask, 0);
+
+        if (signal (SIGINT, termination_handler) == SIG_IGN)
+            signal (SIGINT, SIG_IGN);
+        if (signal (SIGQUIT, termination_handler) == SIG_IGN)
+            signal (SIGQUIT, SIG_IGN);
+        if (signal (SIGTERM, termination_handler) == SIG_IGN)
+            signal (SIGTERM, SIG_IGN);
+
         s.run();
     } catch (sonia::shutdown_exception const& e) {
         std::cout << e.what() << "\n";
@@ -87,7 +87,5 @@ int main(int argc, char const* argv[])
         return 1;
     }
 
-    //std::string v;
-    //std::cin >> v;
     return 0;
 }

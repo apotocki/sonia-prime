@@ -9,11 +9,16 @@
 #   pragma once
 #endif
 
+#include <boost/thread/barrier.hpp>
+
 #include "sonia/thread.hpp"
 #include "sonia/function.hpp"
+#include "sonia/optional.hpp"
 #include "sonia/logger/loggable.hpp"
 
 #include "scheduler.hpp"
+#include "fiber_work_stealing_scheduler.hpp"
+//#include "fiber_mutex.hpp"
 
 namespace sonia {
 
@@ -41,10 +46,12 @@ private:
 
     uint32_t thr_cnt_, fb_cnt_;
     std::vector<thread> threads_;
+    fiber_work_stealing_scheduler::group_host gh_;
+    optional<fibers::barrier> tbarrier_;
 
     fibers::mutex queue_mtx_;
-    fibers::condition_variable queue_cond_;
-    std::atomic<bool> stopping_;
+    fibers::condition_variable_any queue_cond_;
+    bool stopping_;
     std::deque<function<void()>> queue_;
 };
 

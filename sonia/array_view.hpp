@@ -17,9 +17,10 @@
 
 #include "cstdint.hpp"
 #include "type_traits.hpp"
-#include "explicit_operator_bool.hpp"
+
 #include "sonia/functional/range_equal.hpp"
 #include "sonia/functional/range_less.hpp"
+#include "sonia/utility/explicit_operator_bool.hpp"
 
 namespace sonia {
 
@@ -39,6 +40,9 @@ public:
 
     constexpr array_view() noexcept : data_(nullptr), size_(0) {}
     constexpr array_view(T * d, size_type sz) noexcept : data_(d), size_(sz) {}
+
+    template <size_t N>
+    constexpr array_view(T(&arr)[N]) : data_(arr), size_(N) {}
 
     explicit array_view(T * b, T * e) noexcept
         : data_(b), size_(e - b)

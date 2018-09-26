@@ -14,6 +14,8 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/parsers/json/json_model.cpp
     ${BUNDLE_HOME}/sonia/utility/parameters/parameters.cpp
     ${BUNDLE_HOME}/sonia/utility/iterators/file_region_iterator.cpp
+    ${BUNDLE_HOME}/sonia/scheduler/basic_scheduler.cpp
+    ${BUNDLE_HOME}/sonia/scheduler/fiber_work_stealing_scheduler.cpp
 )
 
 if ( CMAKE_SYSTEM_NAME STREQUAL "Windows")

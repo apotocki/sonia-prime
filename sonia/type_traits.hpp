@@ -11,10 +11,16 @@
 
 #include <utility>
 #include <type_traits>
+#include <boost/is_placeholder.hpp>
 #include <boost/mpl/identity.hpp>
 #include <boost/range.hpp>
 
 namespace sonia {
+
+struct null_t {};
+
+using std::bool_constant;
+using std::integral_constant;
 
 using std::true_type;
 using std::false_type;
@@ -91,7 +97,8 @@ using std::add_lvalue_reference_t;
 using std::add_rvalue_reference;
 using std::add_rvalue_reference_t;
 
-
+template <class T> struct is_placeholder : integral_constant<int, std::is_placeholder_v<T> + boost::is_placeholder<T>::value> {};
+template <class T> constexpr int is_placeholder_v = is_placeholder<T>::value;
 
 using std::in_place;
 using std::in_place_t;
@@ -99,7 +106,7 @@ using std::in_place_type;
 using std::in_place_type_t;
 
 using boost::mpl::identity;
-
+using boost::mpl::make_identity;
 
 
 //using std::remove_cvref;

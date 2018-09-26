@@ -14,14 +14,20 @@
 #include "sonia/services/host.hpp"
 #include "sonia/services/environment.hpp"
 
-namespace sonia { namespace services {
+#include "sonia/utility/on_close.hpp"
+#include "sonia/utility/type_id.hpp"
+#include "sonia/utility/type_durable_id.hpp"
+#include "sonia/utility/multimethod.hpp"
+
+namespace sonia {
+namespace services {
 
 class thread_descriptor {
 public:
-    host * get_host() { return host_; }
+    shared_ptr<host> get_host() { return host_; }
 
 private:
-    sonia::services::host * host_;
+    shared_ptr<host> host_;
 };
 
 environment * env_ = nullptr;
@@ -51,27 +57,25 @@ char const* bundles_path() {
     return "/data/app-lib/com.ontos.rdf-1/"; // adnroid case
 }
 
-template <typename ArgT>
-shared_ptr<service> locate_tmpl(ArgT larg) {
+shared_ptr<host> get_host() {
     BOOST_ASSERT(env_);
     thread_descriptor * td = tdesc_;
     if (td) {
-        return td->get_host()->locate(larg);
+        return td->get_host();
     }
     shared_ptr<host> h = env_->default_host();
-    if (h) {
-        return h->locate(larg);
+    if (!h) {
+        BOOST_THROW_EXCEPTION(internal_error("inappropriate thread to operate"));
     }
-    
-    BOOST_THROW_EXCEPTION (internal_error(fmt("inappropriate thread to locate '%1%'") % larg));
+    return h;
 }
 
 shared_ptr<service> locate(string_view nm) {
-    return locate_tmpl(nm);
+    return get_host()->locate(nm);
 }
 
 shared_ptr<service> locate(service::id id) {
-    return locate_tmpl(id);
+    return get_host()->locate(id);
 }
 
 void register_service_factory(string_view nm, function<service_descriptor()> const& fm) {
@@ -87,6 +91,33 @@ void load_configuration(boost::filesystem::path const & fnm) {
 void load_configuration(std::istream & is) {
     BOOST_ASSERT(env_);
     env_->load_configuration(is);
+}
+
+void on_close(function<void()> const& func) {
+    get_host()->register_on_close(func);
+}
+
+uint32_t get_type_id(std::type_info const& ti) {
+    BOOST_ASSERT(env_);
+    return env_->get_type_id(ti);
+}
+
+uint32_t register_durable_id(string_view nm, std::type_info const& ti) {
+    BOOST_ASSERT(env_);
+    return env_->register_durable_id(nm, ti);
+}
+
+uint32_t get_durable_id(std::type_info const& ti) {
+    BOOST_ASSERT(env_);
+    return env_->get_durable_id(ti);
+}
+
+void register_multimethod(multimethod && mm, type_info const& id, array_view<const type_info> mmid) {
+    get_host()->register_multimethod(std::move(mm), id, mmid);
+}
+
+multimethod const* get_multimethod(type_info const& id) {
+    return get_host()->get_multimethod(id);
 }
 
 }}

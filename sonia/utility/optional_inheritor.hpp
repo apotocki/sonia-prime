@@ -15,7 +15,7 @@
 
 #include "sonia/cstdint.hpp"
 #include "sonia/type_traits.hpp"
-#include "sonia/explicit_operator_bool.hpp"
+#include "sonia/utility/explicit_operator_bool.hpp"
 #include "sonia/utility/polymorphic_traits.hpp"
 
 namespace sonia {
@@ -74,12 +74,17 @@ public:
         construct<T>(std::forward<ArgsT>(args) ...);
     }
 
-    template <typename T>
-    explicit optional_inheritor(T const& val) {
-        static_assert(is_base_of_v<BaseT, T> || is_same_v<BaseT, T>);
+    explicit optional_inheritor(BaseT const& val) {
+        //static_assert(is_base_of_v<BaseT, T> || is_same_v<BaseT, T>);
         // needs polymorphic construct to avoid possible type cut
         static_assert(is_polymorphic_clonable_v<BaseT>);
-        clone();
+        clone(val);
+    }
+
+    explicit optional_inheritor(BaseT && val) {
+        // needs polymorphic construct to avoid possible type cut
+        static_assert(is_polymorphic_movable_v<BaseT>);
+        move(std::move(val));
     }
 
     optional_inheritor(optional_inheritor const& rhs) {
@@ -94,7 +99,7 @@ public:
     optional_inheritor(optional_inheritor && rhs) {
         static_assert(is_polymorphic_movable_v<BaseT>);
         if (!rhs.empty()) {
-            move(*rhs.get_pointer());
+            move(std::move(*rhs.get_pointer()));
         } else {
             do_set_empty();
         }
@@ -203,7 +208,7 @@ private:
         this->set_offset(offset);
     }
 
-    void move(polymorphic_movable & sample) {
+    void move(polymorphic_movable && sample) {
         BaseT * p = static_cast<BaseT*>(sample.move(&this->buffer_, SizeV));
         int offset = static_cast<int>(reinterpret_cast<char*>(p) - reinterpret_cast<char*>(&this->buffer_));
         this->set_offset(offset);

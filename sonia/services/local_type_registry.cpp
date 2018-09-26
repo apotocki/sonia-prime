@@ -3,21 +3,21 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "local_service_registry.hpp"
+#include "local_type_registry.hpp"
 
 namespace sonia {
 
-local_service_registry::local_service_registry(shared_ptr<persister> sp)
+local_type_registry::local_type_registry(shared_ptr<persister> sp)
     : base_t(std::move(sp))
 {
     base_t::restore();
 }
 
-service::id local_service_registry::get_id(string_view name) {
+uint32_t local_type_registry::get_type_id(string_view name) {
     return base_t::get_id(name);
 }
 
-string_view local_service_registry::get_name(service::id id) const {
+string_view local_type_registry::get_type_name(uint32_t id) const {
     return base_t::get_name(id);
 }
 

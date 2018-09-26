@@ -23,6 +23,7 @@
     <ClCompile Include="..\..\..\sonia\services\basic_service_factory.cpp" />
     <ClCompile Include="..\..\..\sonia\services\environment.cpp" />
     <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\local_type_registry.cpp" />
     <ClCompile Include="..\..\..\sonia\services\prime_bundle.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\scheduler_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\scheduler_service.cpp" />
@@ -40,12 +41,14 @@
     <ClInclude Include="..\..\..\sonia\services\environment.hpp" />
     <ClInclude Include="..\..\..\sonia\services\host.hpp" />
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\local_type_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service_factory.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service_locator.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\type_registry.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

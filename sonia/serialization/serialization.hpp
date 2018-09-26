@@ -10,18 +10,9 @@
 #endif
 
 #include <utility>
+#include "sonia/utility/serialization/serialization_fwd.hpp"
 
 namespace sonia {
-
-namespace serialization {
-
-template <typename TagT, typename T, typename EnableT = void> class coder;
-
-struct default_t {};
-struct compressed_t {};
-struct ordered_t {};
-
-}
 
 template <typename TagT, typename T, typename OutputIteratorT>
 OutputIteratorT encode(T const& arg, OutputIteratorT oi) {
@@ -54,6 +45,28 @@ in_place_decoder_factory<TagT, InputIteratorT&> in_place_decode(InputIteratorT &
 template <typename TagT, typename InputIteratorT>
 in_place_decoder_factory<TagT, InputIteratorT> in_place_decode(InputIteratorT ii) {
     return in_place_decoder_factory<TagT, InputIteratorT>(ii);
+}
+
+template <typename TagT, class OutputIteratorT>
+class encoder {
+public:
+    explicit encoder(OutputIteratorT it) : oi(std::move(it)) {}
+
+    template <typename T>
+    encoder & operator& (T && arg) {
+        oi = encode<TagT>(std::forward<T>(arg), std::move(oi));
+        return *this;
+    }
+
+    operator OutputIteratorT && () { return std::move(oi); }
+
+private:
+    OutputIteratorT oi;
+};
+
+template <typename TagT, class OutputIteratorT>
+encoder<TagT, OutputIteratorT> make_encoder(OutputIteratorT oi) {
+    return encoder<TagT, OutputIteratorT>(std::move(oi));
 }
 
 }

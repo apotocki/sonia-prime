@@ -11,15 +11,21 @@
 
 #include <iosfwd>
 #include <list>
+#include <atomic>
+#include <typeinfo>
+#include <typeindex>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/unordered_map.hpp>
+#include <boost/bimap.hpp>
+#include <boost/bimap/unordered_set_of.hpp>
 
 #include "sonia/thread.hpp"
 
 #include "host.hpp"
 #include "service_factory.hpp"
+#include "type_registry.hpp"
 #include "sonia/utility/parameters/parameters.hpp"
 
 namespace sonia { namespace services {
@@ -65,11 +71,19 @@ public:
 
     void register_service_factory(string_view, function<service_descriptor()> const&);
 
+    // type_id api
+    uint32_t get_type_id(std::type_info const&);
+
+    // durable id api
+    uint32_t register_durable_id(string_view nm, std::type_info const& ti);
+    uint32_t get_durable_id(std::type_info const&);
+
 private:
     static service_descriptor create_service(service_configuration const& cfg);
     static service_descriptor create_bundle_service(bundle_configuration const& cfg);
 
     boost::unordered_map<std::string, shared_ptr<host>> hosts_;
+    shared_ptr<type_registry> type_registry_;
     shared_ptr<service_registry> registry_;
     shared_ptr<basic_service_factory> factory_;
 
@@ -81,6 +95,18 @@ private:
     bool log_initialized_;
 
     mutable mutex cfg_mutex_;
+
+    // type_id support
+    mutable spinlock type_id_mtx_;
+    typedef boost::bimap<
+        boost::bimaps::unordered_set_of<std::type_index>,
+        boost::bimaps::unordered_set_of<uint32_t>
+    > type_id_map_type;
+    type_id_map_type type_id_map_;
+    std::atomic<uint32_t> type_id_counter_;
+
+    mutable spinlock type_durable_id_mtx_;
+    type_id_map_type type_durable_id_map_;
 };
 
 }}

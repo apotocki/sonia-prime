@@ -10,11 +10,11 @@
 #endif
 
 #include <set>
+#include <typeinfo>
 
 #include "sonia/shared_ptr.hpp"
 #include "sonia/function.hpp"
 #include "sonia/optional.hpp"
-#include "sonia/type_info.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/json/value.hpp"
 #include "sonia/utility/json/json_cast.hpp"
@@ -45,8 +45,8 @@ public:
     bool is_required() const { return required_; }
     virtual bool has_default() const = 0;
 
-    virtual void assign(json_value const&, type_info, void*) const = 0;
-    virtual void assign_default(type_info, void*) const = 0;
+    virtual void assign(json_value const&, std::type_info const&, void*) const = 0;
+    virtual void assign_default(std::type_info const&, void*) const = 0;
 
 protected:
     std::string name_, descr_;
@@ -78,12 +78,12 @@ public:
         return !!default_;
     }
 
-    void assign_default(type_info ti, void* obj) const override final {
+    void assign_default(std::type_info const& ti, void* obj) const override final {
         member(ti, obj) = *default_;
     }
 
 protected:
-    T& member(type_info ti, void* obj) const {
+    T& member(std::type_info const& ti, void* obj) const {
         if (ti == typeid(BoundT)) {
             return reinterpret_cast<BoundT*>(obj)->*pmember_;
         } else {
@@ -108,7 +108,7 @@ public:
 
     ~simple_value_descriptor() override {}
 
-    void assign(json_value const& val, type_info ti, void* obj) const override final {
+    void assign(json_value const& val, std::type_info const& ti, void* obj) const override final {
         base_t::member(ti, obj) = cast(val);
     }
 
@@ -133,7 +133,7 @@ public:
 
     ~collection_value_descriptor() override {}
 
-    void assign(json_value const& val, type_info ti, void* obj) const override final {
+    void assign(json_value const& val, std::type_info const& ti, void* obj) const override final {
         auto & coll = base_t::member(ti, obj);
         if (json_value_type::array == val.type()) {
             for (json_value const& e : val.get_array()) {
@@ -169,7 +169,7 @@ public:
 
     ~map_value_descriptor() override {}
 
-    void assign(json_value const& val, type_info ti, void* obj) const override final {
+    void assign(json_value const& val, std::type_info const& ti, void* obj) const override final {
         auto & coll = base_t::member(ti, obj);
         json_object jo = val.get_object();
         for (auto const& pair : jo.items()) {

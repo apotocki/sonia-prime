@@ -47,6 +47,9 @@ using std::is_unsigned_v;
 using std::is_floating_point;
 using std::is_floating_point_v;
 
+using std::is_enum;
+using std::is_enum_v;
+
 using std::is_same;
 using std::is_same_v;
 

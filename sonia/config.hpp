@@ -31,6 +31,11 @@
 //#   define _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING
 #endif
 
+#if (defined(__MINGW32__) || defined(__MINGW64__))
+#   define _WIN32_WINNT 0x0601 // Windows 7
+#   define WINVER _WIN32_WINNT
+#endif
+
 #define BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE
 
 #include <boost/config.hpp>

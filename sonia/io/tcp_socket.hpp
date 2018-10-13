@@ -67,6 +67,7 @@ public:
         impl_ = std::move(rhs.impl_);
         handle_ = rhs.handle_;
         rhs.handle_ = nullptr;
+        return *this;
     }
 
     // api

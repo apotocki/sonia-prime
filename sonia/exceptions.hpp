@@ -43,6 +43,8 @@ public:
     explicit internal_error(ArgT0 && arg0, ArgsT && ... args)
         : exception(std::forward<ArgT0>(arg0), std::forward<ArgsT>(args) ...)
     {}
+
+    internal_error(internal_error const&) = default;
 };
 
 class closed_exception : public exception {

@@ -17,13 +17,24 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/services/service.hpp"
+#include "sonia/services/host.hpp"
 
-namespace sonia { namespace services {
+namespace sonia {
+
+namespace this_thread {
+
+SONIA_PRIME_API void attach_host(string_view);
+SONIA_PRIME_API void detach_host();
+
+}
+
+namespace services {
 
 SONIA_PRIME_API char const* bundles_path();
 
 SONIA_PRIME_API void initialize(int argc = 0, char const* argv[] = nullptr, std::istream * cfgstream = nullptr);
 SONIA_PRIME_API void shutdown();
+SONIA_PRIME_API shared_ptr<host> get_host();
 
 SONIA_PRIME_API shared_ptr<service> locate(string_view);
 SONIA_PRIME_API shared_ptr<service> locate(service::id);

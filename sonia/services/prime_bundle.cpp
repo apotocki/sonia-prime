@@ -7,6 +7,7 @@
 
 #include "bundle.ipp"
 #include "sonia/services/scheduler/scheduler_builder.hpp"
+#include "sonia/services/aio/aio_builder.hpp"
 
 namespace sonia { namespace services {
 
@@ -20,6 +21,7 @@ public:
 
     void init() override {
         install<scheduler_builder>("scheduler");
+        install<aio_builder>("aio");
     }
 };
 

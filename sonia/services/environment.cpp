@@ -10,15 +10,18 @@
 //#include <sstream>
 #include <fstream>
 #include <tuple>
+#include <vector>
 
 #include <boost/assert.hpp>
 #include <boost/throw_exception.hpp>
+#include <boost/thread/future.hpp>
 
 #include "sonia/exceptions.hpp"
 #include "sonia/logger/logger.hpp"
 #include "sonia/services.hpp"
 #include "sonia/sal.hpp"
 #include "sonia/services/builder.hpp"
+#include "sonia/services/thread_descriptor.hpp"
 
 #include "sonia/utility/parsers/json/model.hpp"
 #include "sonia/utility/parsers/json/parser.hpp"
@@ -33,6 +36,11 @@ namespace sonia { namespace services {
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
 namespace sp = sonia::parameters;
+
+struct host_equal_to {
+    bool operator()(std::string const& n, shared_ptr<host_impl> const& h) const { return n == h->get_name(); }
+    bool operator()(string_view n, shared_ptr<host_impl> const& h) const { return n == h->get_name(); }
+};
 
 environment::environment() : log_initialized_(false)
 {
@@ -192,36 +200,72 @@ void environment::load_configuration(std::istream & cfg)
     }
 
     // load hosts
-    std::vector<std::tuple<shared_ptr<host>, std::vector<std::string>>> host_servs;
-    host_servs.reserve(ecfg.hosts.size());
-    {
-        lock_guard<mutex> guard(cfg_mutex_);
-        for (host_configuration const& h : ecfg.hosts) {
-            auto hit = hosts_.find(h.name);
-            if (hit == hosts_.end()) {
-                auto hptr = make_shared<host>(registry_, factory_);
-                hosts_.insert(std::make_pair(h.name, hptr));
-                host_servs.push_back(std::make_tuple(std::move(hptr), std::move(h.services)));
+    std::vector<boost::promise<void>> bootstrap_promises(ecfg.hosts.size());
+
+    for (size_t hidx = 0; hidx < ecfg.hosts.size(); ++hidx) {
+        boost::thread host_creation_thread([this, &ecfg, hidx, &bootstrap_promises] {
+            auto & hcfg = ecfg.hosts[hidx];
+            try {
+                sonia::sal::set_thread_name(sonia::this_thread::get_id(), "bootstrap thread for host '" + hcfg.name + "'");
+
+                auto lk = make_unique_lock(host_mtx_);
+                auto hit = hosts_.find(hcfg.name, hash<std::string>(), host_equal_to());
+                if (hit == hosts_.end()) {
+                    lk.unlock();
+                    auto hptr = make_shared<host_impl>(hcfg.name);
+                    hptr->open(registry_, factory_);
+                    lk.lock();
+                    hit = hosts_.insert(hit, std::move(hptr));
+                }
+                lk.unlock();
+                (*hit)->run(hcfg.services);
+                bootstrap_promises[hidx].set_value();
+            } catch(std::exception const& e) {
+                bootstrap_promises[hidx].set_exception(std::runtime_error(to_string("Error occurred during initialization of '%1%' host\n%2%"_fmt % hcfg.name % e.what())));
+            } catch (...) {
+                bootstrap_promises[hidx].set_exception(std::runtime_error(to_string("Error occurred during initialization of '%1%' host\n%2%"_fmt % hcfg.name % boost::current_exception_diagnostic_information())));
             }
-        }
+        });
+        host_creation_thread.detach();
     }
 
-    for (auto & htpl : host_servs) {
-        std::get<0>(htpl)->run(std::get<1>(htpl));
+    for (auto it = bootstrap_promises.begin(), eit = bootstrap_promises.end(); it != eit; ++it) {
+        try {
+            it->get_future().get();
+        } catch (...) {
+            // wait for other hosts
+            for (++it; it != eit; ++it) {
+                try { it->get_future().get(); } catch (...) { /* ignore */ }
+            }
+            throw;
+        }
     }
 }
 
-shared_ptr<host> environment::default_host() {
-    lock_guard<mutex> guard(cfg_mutex_);
+shared_ptr<host_impl> environment::default_host() {
+    auto lk = make_unique_lock(host_mtx_);
     if (hosts_.empty()) {
-        return hosts_.insert(std::make_pair("", make_shared<host>(registry_, factory_))).first->second;
+        lk.unlock();
+        auto h = make_shared<host_impl>("");
+        h->open(registry_, factory_);
+        lk.lock();
+        return *hosts_.insert(h).first;
     } else if (hosts_.size() == 1) {
-        return hosts_.begin()->second;
+        return *hosts_.begin();
     }
 
-    auto it = hosts_.find("");
-    if (it != hosts_.end()) return hosts_.begin()->second;
-    return shared_ptr<host>();
+    auto it = hosts_.find(string_view(""), string_hasher(), host_equal_to());
+    if (it != hosts_.end()) return *hosts_.begin();
+    return {};
+}
+
+shared_ptr<host_impl> environment::get_host(string_view hnm) {
+    auto lk = make_lock_guard(host_mtx_);
+    auto it = hosts_.find(hnm, string_hasher(), host_equal_to());
+    if (it != hosts_.end()) {
+        return *it;
+    }
+    throw exception("host %1% is not found"_fmt % hnm);
 }
 
 void environment::register_service_factory(string_view nm, function<service_descriptor()> const& fm) {

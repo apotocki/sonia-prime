@@ -18,6 +18,7 @@
 
 #include "tcp_socket.hpp"
 #include "tcp_acceptor.hpp"
+#include "file.hpp"
 
 namespace sonia { namespace io {
 
@@ -26,6 +27,8 @@ class factory
     , public tcp_socket_service
     , public tcp_acceptor_factory
     , public tcp_acceptor_service
+    , public file_factory
+    , public file_service
     , public enable_shared_from_this<factory>
     , public virtual loggable
 {
@@ -53,6 +56,13 @@ public:
     //  tcp_acceptor_service
     void tcp_acceptor_async_accept_and_read_some(void * handle, void * buff, size_t sz, acceptor_functor const&) override;
     void tcp_acceptor_close(void * handle) override;
+
+    // file factory
+    file open_file(string_view path, file_open_mode, file_access_mode, file_bufferring_mode) override;
+
+    // file service
+    size_t file_read(void * handle, uint64_t fileoffset, array_view<char> dest) override;
+    size_t file_write(void * handle, uint64_t fileoffset, array_view<const char> src) override;
 
     void thread_proc();
 

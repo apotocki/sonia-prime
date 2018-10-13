@@ -10,7 +10,7 @@
 #endif
 
 #include <boost/unordered_map.hpp>
-
+#include "sonia/function.hpp"
 #include "service.hpp"
 #include "builder.hpp"
 
@@ -39,7 +39,7 @@ protected:
 
 private:
     void * libhandle_;
-    boost::unordered_map<std::string, shared_ptr<service>> builders_;
+    boost::unordered_map<std::string, function<shared_ptr<service>(json_object const&)>> builders_;
 };
 
 }}

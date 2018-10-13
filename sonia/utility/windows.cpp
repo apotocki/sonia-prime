@@ -54,11 +54,27 @@ void set_thread_name(boost::thread::id tid, char const* threadName)
     set_thread_name(dwThreadId, threadName);
 }
 
-std::basic_string<char16_t> utf8_to_utf16(string_view str) {
-    int len = MultiByteToWideChar(CP_UTF8, 0, str.begin(), (int)str.size(), 0, 0);
-    std::basic_string<char16_t> result;
-    result.resize((size_t)len);
-    MultiByteToWideChar(CP_UTF8, 0, str.begin(), (int)str.size(), (LPWSTR)result.data(), len);
+std::wstring utf8_to_utf16(string_view str) {
+    std::wstring result;
+    result.resize(str.size() + 1);
+    int len = MultiByteToWideChar(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size());
+    if (len > result.size()) {
+        result.resize((size_t)len);
+        len = MultiByteToWideChar(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size());
+        BOOST_ASSERT(len <= result.size());
+    }
+    return std::move(result);
+}
+
+std::string utf16_to_utf8(wstring_view str) {
+    std::string result;
+    result.resize(str.size());
+    int len = WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size(), NULL, NULL);
+    if (len > result.size()) {
+        result.resize((size_t)len);
+        int len = WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size(), NULL, NULL);
+        BOOST_ASSERT(len <= result.size());
+    }
     return std::move(result);
 }
 
@@ -101,8 +117,8 @@ wsa_scope::~wsa_scope() {
 }
 
 bool parse_address(string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc) {
-    std::basic_string<char16_t> wadr = utf8_to_utf16(address);
-    std::basic_string<char16_t> portstr = utf8_to_utf16(to_string("%1%"_fmt % port).c_str());
+    std::wstring wadr = utf8_to_utf16(address);
+    std::wstring portstr = utf8_to_utf16(to_string("%1%"_fmt % port).c_str());
 
     ADDRINFOW *result = nullptr, hints;
     ZeroMemory(&hints, sizeof(hints));
@@ -110,7 +126,7 @@ bool parse_address(string_view address, uint16_t port, function<bool(ADDRINFOW*)
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
 
-    DWORD iResult = GetAddrInfoW((PCWSTR)wadr.c_str(), (PCWSTR)portstr.c_str(), &hints, &result);
+    DWORD iResult = GetAddrInfoW(wadr.c_str(), portstr.c_str(), &hints, &result);
     if (iResult) {
         DWORD err = WSAGetLastError();
         throw exception("can't understand addressm error: %1%"_fmt % error_message(err));
@@ -167,7 +183,7 @@ void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov) {
     int rc = WSARecv(soc, &wsabuf, 1, NULL, &flags, pov, NULL);
     if (rc == SOCKET_ERROR) { 
         DWORD err = WSAGetLastError();
-        if (err != WSA_IO_PENDING) {
+        if (WSA_IO_PENDING != err) {
             throw exception("can't receive data from socket, error: %1%"_fmt % error_message(err));
         }
     }
@@ -188,6 +204,29 @@ LPFN_ACCEPTEX get_accept_function(SOCKET soc) {
     }
 
     return lpfnAcceptEx;
+}
+
+std::string get_file_name(HANDLE hFile) {
+    std::vector<WCHAR> buf(64);
+    DWORD dwRet = GetFinalPathNameByHandleW(hFile, &buf.front(), (DWORD)buf.size(), FILE_NAME_NORMALIZED);
+    if (dwRet >= buf.size()) {
+        buf.resize(dwRet);
+        dwRet = GetFinalPathNameByHandleW(hFile, &buf.front(), (DWORD)buf.size(), FILE_NAME_NORMALIZED);
+    }
+    if (!dwRet || dwRet >= buf.size()) {
+        DWORD err = WSAGetLastError();
+        throw exception("can't retrieve file name from handle, error: %1%"_fmt % error_message(err));
+    }
+    buf[dwRet] = 0;
+    return utf16_to_utf8(wstring_view(&buf.front(), dwRet));
+}
+
+void delete_file(string_view path) {
+    std::wstring wfname = utf8_to_utf16(path);
+    if (!DeleteFileW(wfname.c_str())) {
+        DWORD err = GetLastError();
+        throw exception("can't delete file %1%, error : %2%"_fmt % to_string(path) % error_message(err));
+    }
 }
 
 }}

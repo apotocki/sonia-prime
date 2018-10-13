@@ -70,6 +70,9 @@
     <Filter Include="sonia.utility\serialization">
       <UniqueIdentifier>{f850a6ea-5dc1-447c-ab9c-167b7918cdec}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.caches">
+      <UniqueIdentifier>{d0afa015-3b6c-4092-a803-cd5c57985927}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -85,9 +88,6 @@
       <Filter>sonia</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\string.hpp">
-      <Filter>sonia</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\prime_config.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\type_traits.hpp">
@@ -410,6 +410,33 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\serialization\type_durable_id.hpp">
       <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\bind_command.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\serializable.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\tuple.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\service.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\string.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\vector.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\caches\car.hpp">
+      <Filter>sonia.caches</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\caches\clock.hpp">
+      <Filter>sonia.caches</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\caches\utiltiy.hpp">
+      <Filter>sonia.caches</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

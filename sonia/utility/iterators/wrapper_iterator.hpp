@@ -209,21 +209,22 @@ class iterator_ptr_wrappee_adapter
 {
 public:
     template <typename ... ArgsT>
-    explicit iterator_ptr_wrappee_adapter(ArgsT && ... args) 
+    explicit iterator_ptr_wrappee_adapter(in_place_t, ArgsT && ... args) 
         : impl_(std::forward<ArgsT>(args) ...)
     { }
 
     iterator_ptr_wrappee_adapter(iterator_ptr_wrappee_adapter const& rhs)
-        : impl_(iterator_copy<CategoryT>(rhs.impl_))
+        : impl_(iterator_copy<CategoryT>::copy(rhs.impl_))
     {
 
     }
 
     iterator_ptr_wrappee_adapter & operator=(iterator_ptr_wrappee_adapter const& rhs) {
-        if (impl_.get() != rhs.impl_.get()) {
-            impl_.reset();
-            impl_ = iterator_copy<CategoryT>(rhs.impl_);
+        if (impl_ != rhs.impl_) {
+            //impl_.reset();
+            impl_ = iterator_copy<CategoryT>::copy(rhs.impl_);
         }
+        return *this;
     }
 
     iterator_ptr_wrappee_adapter(iterator_ptr_wrappee_adapter &&) = default;

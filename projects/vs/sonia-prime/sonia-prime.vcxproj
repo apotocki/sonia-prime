@@ -20,6 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\applied\dllmain.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\aio\aio_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\aio\aio_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\basic_service_factory.cpp" />
     <ClCompile Include="..\..\..\sonia\services\environment.cpp" />
     <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp" />
@@ -37,6 +39,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\sonia\prime_config.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\aio\aio_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\aio\aio_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\aio\aio_service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.hpp" />
     <ClInclude Include="..\..\..\sonia\services\environment.hpp" />
     <ClInclude Include="..\..\..\sonia\services\host.hpp" />
@@ -46,8 +52,10 @@
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\host_impl.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service_factory.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service_locator.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\thread_descriptor.hpp" />
     <ClInclude Include="..\..\..\sonia\services\type_registry.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

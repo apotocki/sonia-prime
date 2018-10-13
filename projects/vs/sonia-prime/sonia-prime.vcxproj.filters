@@ -32,6 +32,12 @@
     <ClCompile Include="..\..\..\sonia\services\local_type_registry.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\aio\aio_builder.cpp">
+      <Filter>sonia.services\aio</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\aio\aio_service.cpp">
+      <Filter>sonia.services\aio</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -39,6 +45,12 @@
     </Filter>
     <Filter Include="sonia.services\scheduler">
       <UniqueIdentifier>{16a9f79b-83c0-4b38-86d1-74ae8f96bd01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia">
+      <UniqueIdentifier>{676c1e0b-bea2-4ced-96d2-fc66a4a71255}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services\aio">
+      <UniqueIdentifier>{226e04cf-ee30-4a3b-addc-4d6198950edb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -77,6 +89,24 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\local_type_registry.hpp">
       <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\prime_config.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\host_impl.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\thread_descriptor.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\aio\aio_builder.hpp">
+      <Filter>sonia.services\aio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\aio\aio_configuration.hpp">
+      <Filter>sonia.services\aio</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\aio\aio_service.hpp">
+      <Filter>sonia.services\aio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

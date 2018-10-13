@@ -12,6 +12,10 @@
 #include <functional>
 #include <tuple>
 
+#include <boost/function_types/function_type.hpp>
+#include <boost/function_types/parameter_types.hpp>
+#include <boost/function_types/result_type.hpp>
+
 #include "sonia/type_traits.hpp"
 #include "sonia/function.hpp"
 #include "sonia/reference_wrapper.hpp"
@@ -65,7 +69,7 @@ struct substitute_placeholder_value<T, 0> {
 };
 
 template <typename Callable, typename Tuple, size_t ... I,  typename ... Args>
-auto apply_placeholders_helper(std::index_sequence<I...>, Callable && c, Tuple && tpl, Args&& ... args) {
+auto apply_placeholders_helper(std::index_sequence<I ...>, Callable && c, Tuple && tpl, Args&& ... args) {
     return std::invoke(
         std::forward<Callable>(c),
         substitute_placeholder_value<std::tuple_element_t<I, remove_cvref_t<Tuple>>>()(
@@ -76,7 +80,7 @@ auto apply_placeholders_helper(std::index_sequence<I...>, Callable && c, Tuple &
 }
 
 template <typename SigT, typename Tuple, size_t ... I,  typename ... Args>
-auto apply_placeholders_helper(std::index_sequence<I...>, function<SigT> const& c, Tuple && tpl, Args&& ... args) {
+auto apply_placeholders_helper(std::index_sequence<I ...>, function<SigT> const& c, Tuple && tpl, Args&& ... args) {
     return c(
         substitute_placeholder_value<std::tuple_element_t<I, remove_cvref_t<Tuple>>>()(
             std::get<I>(std::forward<Tuple>(tpl)),
@@ -94,6 +98,40 @@ auto apply_placeholders(Callable && c, Tuple && tpl, Args&& ... args) {
     );
 }
 
+// stub routine
+template <typename T, typename Enabler = void>
+struct stub_bound_parameter { typedef remove_cvref_t<T> type; };
+
+template <typename T> using stub_bound_parameter_t = typename stub_bound_parameter<T>::type;
+
+template <typename SigT> struct stub_tuple_composer;
+
+template <typename R, typename ... ArgsT>
+struct stub_tuple_composer<R(ArgsT ...)> {
+    typedef std::tuple<stub_bound_parameter_t<ArgsT> ...> type;
+};
+
+
+
+template <typename SigT, SigT FuncV>
+struct binding_tag_facade {
+    typedef typename boost::function_types::function_type<SigT>::type f_type;
+    typedef typename boost::function_types::result_type<f_type>::type result_type;
+    typedef typename boost::function_types::parameter_types<f_type>::type args_type;
+
+    //define stub tuple
+    typedef typename stub_tuple_composer<f_type>::type stub_tuple_t;
+
+    //template <typename InputIterator>
+    //InputIterator
+};
+
 }
+
+#define SONIA_DECLARE_BINDING_TAG(tagnm, func) \
+struct tagnm : ::sonia::binding_tag_facade<decltype(func), func> {};
+
+#define SONIA_REGISTER_BINDING_TAG(tag, tagnm) \
+::sonia::services::register_durable_id(tagnm, typeid(tag))
 
 #endif // SONIA_UTILIT_BIND_HPP

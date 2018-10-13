@@ -4,6 +4,7 @@
 
 #include "sonia/config.hpp"
 #include "sonia/exceptions.hpp"
+#include "sonia/services.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
 #include "service_locator.hpp"
@@ -18,7 +19,7 @@ struct service_layer_comparer {
 service_locator::service_locator(shared_ptr<service_registry> sr, shared_ptr<service_factory> sf)
     : sr_(std::move(sr)), sf_(std::move(sf))
 {
-
+    set_attribute("Host", services::get_host()->get_name());
 }
 
 service_locator::~service_locator()
@@ -59,6 +60,7 @@ shared_ptr<service> service_locator::get(service::id id, string_view name)
         auto creature = sf_->create(name);
         service_access::set(*creature.serv, id, to_string(name));
         creature.serv->set_attribute("Name", name);
+        creature.serv->set_attribute("Host", services::get_host()->get_name());
         creature.serv->open();
         LOG_TRACE(logger()) << "service " << name << "(id: " << id << ") is started";
         {

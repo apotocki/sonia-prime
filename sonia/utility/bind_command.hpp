@@ -33,7 +33,7 @@
 
 namespace sonia {
 
-template <class BindTupleT, typename R, typename ... ArgsT>
+template <class BindTupleT, typename R>
 class bind_command_proxy : public command_base<R> {
     SONIA_DECLARE_SERIALIZATION_FRIENDLY;
 
@@ -43,6 +43,10 @@ public:
         : btpl_{std::forward<BindArgsT>(args)...}
     {
 
+    }
+
+    std::type_info const& get_type_info() const {
+        return typeid(bind_command_proxy);
     }
 
 protected:
@@ -76,7 +80,7 @@ template <class CallableT, class BindTupleT, typename FuncSigT> struct bind_comm
 
 template <class CallableT, class BindTupleT, typename RT, typename ... ArgsT> struct bind_command_composer<CallableT, BindTupleT, RT(ArgsT...)> {
     typedef bind_command<CallableT, BindTupleT, RT, ArgsT ...> type;
-    typedef bind_command_proxy<BindTupleT, RT, ArgsT ...> proxy_type;
+    typedef bind_command_proxy<BindTupleT, RT> proxy_type;
 };
 
 namespace bind_command_detail {

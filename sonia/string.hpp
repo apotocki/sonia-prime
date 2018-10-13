@@ -119,6 +119,7 @@ constexpr bool operator< (std::basic_string<CharT, TraitsT> const& lhs, basic_st
 MAKE_FREE_COMPARISON_OPERATORS(is_string_view_v)
 
 typedef basic_string_view<char> string_view;
+typedef basic_string_view<wchar_t> wstring_view;
 typedef basic_cstring_view<char> cstring_view;
 
 struct string_hasher {
@@ -129,7 +130,16 @@ struct string_hasher {
     template <typename CharT, class TraitsT>
     size_t operator()(basic_string_view<CharT, TraitsT> r) const noexcept
     { return boost::hash_range(r.begin(), r.end()); } 
+
+    template <typename CharT, size_t N>
+    size_t operator()(const CharT(&arr)[N]) const noexcept
+    { return boost::hash_range(arr, arr + N); } 
 };
+
+template <typename CharT, class TraitsT>
+size_t hash_value(basic_string_view<CharT, TraitsT> const& r) {
+    return boost::hash_range(r.begin(), r.end());
+}
 
 struct string_equal_to {
     template <typename CharT, class TraitsT>

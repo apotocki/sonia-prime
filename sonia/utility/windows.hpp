@@ -7,7 +7,9 @@
 #define WIN32_LEAN_AND_MEAN
 #define UNICODE
 //#define WINVER 0x0600
-//#define _WIN32_WINNT 0x0600
+#ifndef _WIN32_WINNT
+#   define _WIN32_WINNT 0x0600
+#endif
 
 #include <winsock2.h>
 #include <Windows.h>
@@ -29,7 +31,9 @@ public:
 void set_thread_name(DWORD dwThreadId, char const* threadName);
 void set_thread_name(boost::thread::id tid, char const* threadName);
 
-std::basic_string<char16_t> utf8_to_utf16(string_view);
+std::wstring utf8_to_utf16(string_view);
+std::string utf16_to_utf8(wstring_view);
+
 std::string error_message(DWORD errcode);
 
 LPFN_ACCEPTEX get_accept_function(SOCKET);
@@ -44,5 +48,8 @@ HANDLE  create_completion_port(uint32_t thread_count);
 void    assign_completion_port(HANDLE h, HANDLE iocp, ULONG_PTR key);
 void    post_completion_port(HANDLE cp, DWORD btransf, ULONG_PTR key, OVERLAPPED * pov = nullptr);
 
+// file operations
+std::string get_file_name(HANDLE hFile); // returns utf8 string
+void delete_file(string_view path);
 
 }}

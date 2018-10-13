@@ -87,9 +87,8 @@ public:
     template <typename RulesT>
     static void build_rules(RulesT & rules) {}
 
-    template <typename T>
-    iterator begin(T && b, IteratorT const& e) const {
-        return iterator(std::forward<T>(b), e, static_cast<DerivedT const&>(*this));
+    iterator begin(IteratorT b, IteratorT const& e) const {
+        return iterator(b, e, static_cast<DerivedT const&>(*this));
     }
 
     iterator end() const {

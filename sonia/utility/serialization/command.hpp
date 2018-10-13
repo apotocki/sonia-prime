@@ -14,7 +14,6 @@
 #include "serialization.hpp"
 #include "type_durable_id.hpp"
 
-#include "sonia/utility//type_durable_id.hpp"
 #include "sonia/utility/command.hpp"
 
 namespace sonia { namespace serialization {
@@ -33,6 +32,11 @@ public:
         return std::move(oi);
         //sonia::type::durable_id cmdid{cmd.get_type_info()};
         //encode(cmdid, std::move(oi))
+    }
+
+    template <typename OutputIteratorT>
+    OutputIteratorT encode(abstract_command_base const& cmd, OutputIteratorT oi) const {
+        return sonia::encode<SerializationTagT>(sonia::type::durable_id(cmd.get_type_info()), std::move(oi));
     }
 };
 

@@ -2,27 +2,22 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICES_HOST_HPP
-#define SONIA_SERVICES_HOST_HPP
+#ifndef SONIA_SERVICES_AIO_CONFIGURATION_HPP
+#define SONIA_SERVICES_AIO_CONFIGURATION_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
 #endif
 
-#include "sonia/string.hpp"
+#include "sonia/cstdint.hpp"
 
 namespace sonia { namespace services {
 
-class host {
+class aio_configuration {
 public:
-    virtual ~host() {}
-
-    virtual string_view get_name() const = 0;
-
-    virtual void attach_to_current_thread() = 0;
-    virtual void dettach_from_current_thread() = 0;
+    uint32_t threads;
 };
 
 }}
 
-#endif // SONIA_SERVICES_HOST_HPP
+#endif // SONIA_SERVICES_AIO_CONFIGURATION_HPP

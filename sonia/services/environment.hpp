@@ -17,13 +17,13 @@
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 
 #include "sonia/thread.hpp"
 
-#include "host.hpp"
+#include "host_impl.hpp"
 #include "service_factory.hpp"
 #include "type_registry.hpp"
 #include "sonia/utility/parameters/parameters.hpp"
@@ -67,7 +67,8 @@ public:
 
     //std::list<host> const& hosts() const noexcept { return hosts_; }
     // host & host(string_view);
-    shared_ptr<host> default_host();
+    shared_ptr<host_impl> get_host(string_view);
+    shared_ptr<host_impl> default_host();
 
     void register_service_factory(string_view, function<service_descriptor()> const&);
 
@@ -79,10 +80,13 @@ public:
     uint32_t get_durable_id(std::type_info const&);
 
 private:
+    struct host_hasher { size_t operator()(shared_ptr<host_impl> const& ph) const { return hash_value(ph->get_name()); } };
+
     static service_descriptor create_service(service_configuration const& cfg);
     static service_descriptor create_bundle_service(bundle_configuration const& cfg);
 
-    boost::unordered_map<std::string, shared_ptr<host>> hosts_;
+    spinlock host_mtx_;
+    boost::unordered_set<shared_ptr<host_impl>, host_hasher> hosts_;
     shared_ptr<type_registry> type_registry_;
     shared_ptr<service_registry> registry_;
     shared_ptr<basic_service_factory> factory_;

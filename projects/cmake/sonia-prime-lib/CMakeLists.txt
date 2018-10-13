@@ -16,6 +16,8 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/iterators/file_region_iterator.cpp
     ${BUNDLE_HOME}/sonia/scheduler/basic_scheduler.cpp
     ${BUNDLE_HOME}/sonia/scheduler/fiber_work_stealing_scheduler.cpp
+    ${BUNDLE_HOME}/sonia/io/file.cpp
+    ${BUNDLE_HOME}/sonia/io/io_factory.cpp
 )
 
 if ( CMAKE_SYSTEM_NAME STREQUAL "Windows")

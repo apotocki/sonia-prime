@@ -3,6 +3,8 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
+#include "sonia/optional.hpp"
+
 #include "sonia/utility/windows.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/utility/object_pool.hpp"
@@ -20,13 +22,12 @@
 
 namespace sonia { namespace io {
 
-//using namespace sonia::windows;
-
 namespace winapi = sonia::windows;
 
 enum class completion_port {
     socket_callback_key = 0,
     acceptor_callback_key,
+    file_callback_key,
     close_key
 };
 
@@ -38,6 +39,37 @@ struct callback {
         : proc(p)
     {
         SecureZeroMemory((PVOID)&overlapped, sizeof (WSAOVERLAPPED));
+    }
+};
+
+struct file_callback {
+    OVERLAPPED overlapped;
+    size_t readsz;
+    optional<std::error_code> code;
+    fibers::mutex mtx;
+    fibers::condition_variable_any cnd;
+
+    file_callback(uint64_t fileoffset)
+    {
+        SecureZeroMemory((PVOID)&overlapped, sizeof (OVERLAPPED));
+        overlapped.Offset = (DWORD)(fileoffset & 0xFFFFFFFF);
+        overlapped.OffsetHigh = (DWORD)(fileoffset >> 32);
+    }
+
+    void on_op(std::error_code const& err, size_t sz) {
+        readsz = (int32_t)sz;
+        auto lck = make_unique_lock(mtx);
+        code = err;
+        cnd.notify_one();
+    }
+
+    size_t wait() {
+        auto lck = make_unique_lock(mtx);
+        cnd.wait(lck, [this] { return !!code; });
+        if (code && *code) {
+            throw exception(code->message());
+        }
+        return readsz;
     }
 };
 
@@ -141,15 +173,13 @@ struct win_impl_data {
     }
 
     void stop() noexcept {
-        std::unique_lock<boost::fibers::mutex> lk(close_mtx_);
+        auto lk = make_unique_lock(close_mtx_);
         if (qsz_.load() >= 0) {
             if (0 == qsz_.fetch_add(qsz_min_value)) {
                 park_threads();
             }
         }
-        while (!threads_.empty()) {
-            close_cond_.wait(lk);
-        }
+        close_cond_.wait(lk, [this] { return threads_.empty(); });
     }
 
     ~win_impl_data() {
@@ -217,7 +247,7 @@ struct win_impl_data {
             }
         }
         
-        thread t([this]() {
+        thread([this]() {
             for (thread & t : threads_) {
                 t.join();
             }
@@ -225,7 +255,7 @@ struct win_impl_data {
             threads_.clear();
             pin_.reset();
             close_cond_.notify_one();
-        });
+        }).detach();
     }
 
 private:
@@ -297,6 +327,12 @@ void factory::thread_proc() {
                         accept_sock = INVALID_SOCKET; // detach
                         cb = nullptr; // detach
                     });
+                    break;
+                }
+            case completion_port::file_callback_key:
+                {
+                    file_callback* cb = reinterpret_cast<file_callback*>(overlapped);
+                    cb->on_op(err, (size_t)bytes);
                     break;
                 }
             default:
@@ -451,6 +487,96 @@ void factory::tcp_acceptor_close(void * handle) {
     acceptor_handle * ah = reinterpret_cast<acceptor_handle*>(handle);
     ah->close();
     ah->release();
+}
+
+file factory::open_file(string_view path, file_open_mode fom, file_access_mode fam, file_bufferring_mode fbm)
+{
+    std::wstring wpath = winapi::utf8_to_utf16(path);
+    DWORD dwCreationDisposition;
+    switch (fom) {
+    case file_open_mode::create:
+        dwCreationDisposition = CREATE_NEW;
+        break;
+    case file_open_mode::create_or_open:
+        dwCreationDisposition = OPEN_ALWAYS;
+        break;
+    case file_open_mode::open:
+        dwCreationDisposition = OPEN_EXISTING;
+        break;
+    default:
+        throw internal_error("unknown file open mode: %1%"_fmt % (int)fom);
+    }
+
+    DWORD dwDesiredAccess = 0;
+    switch (fam) {
+    case file_access_mode::write:
+        dwDesiredAccess = GENERIC_WRITE;
+    case file_access_mode::read:
+        dwDesiredAccess |= GENERIC_READ;
+        break;
+    default:
+        throw internal_error("unknown file access mode: %1%"_fmt % (int)fam);
+    }
+
+    DWORD dwFlagsAndAttributes = FILE_FLAG_OVERLAPPED;
+    switch (fbm) {
+    case file_bufferring_mode::buffered:
+        dwFlagsAndAttributes |= FILE_FLAG_RANDOM_ACCESS;
+        break;
+    case file_bufferring_mode::not_buffered:
+        dwFlagsAndAttributes |= FILE_FLAG_WRITE_THROUGH | FILE_FLAG_NO_BUFFERING;
+        break;
+    default:
+        throw internal_error("unknown file buffering mode: %1%"_fmt % (int)fbm);
+    }
+
+    HANDLE h = CreateFileW(wpath.c_str(), dwDesiredAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, dwFlagsAndAttributes, NULL);
+    if (h == INVALID_HANDLE_VALUE) {
+        DWORD err = GetLastError();
+        throw exception("can't open file %1%, error: %2%"_fmt % to_string(path) % winapi::error_message(err));
+    }
+
+    winapi::assign_completion_port(h, dataptr->iocp_, (ULONG_PTR)completion_port::file_callback_key);
+
+    return file_access::open_file(shared_from_this(), h);
+}
+
+size_t factory::file_read(void * handle, uint64_t fileoffset, array_view<char> dest) {
+    dataptr->on_add_callback();
+    SCOPE_EXIT([this]() { dataptr->on_release_callback(); });
+
+    file_callback cb{fileoffset};
+    SetLastError(0);
+
+    DWORD sz2read = dest.size() > 0xffffFFFF ? 0xffffFFFF : (DWORD)dest.size();
+    DWORD outrsz;
+    if (!ReadFile(handle, dest.begin(), sz2read, &outrsz, reinterpret_cast<LPOVERLAPPED>(&cb))) {
+        DWORD err = GetLastError();
+        if (ERROR_IO_PENDING != err) {
+            throw exception("read file error : %1%, file: %2%"_fmt % winapi::error_message(err) % winapi::get_file_name(handle));
+        }
+    }
+
+    return cb.wait();
+}
+
+size_t factory::file_write(void * handle, uint64_t fileoffset, array_view<const char> src) {
+    dataptr->on_add_callback();
+    SCOPE_EXIT([this]() { dataptr->on_release_callback(); });
+
+    file_callback cb{fileoffset};
+    SetLastError(0);
+
+    DWORD sz2write = src.size() > 0xffffFFFF ? 0xffffFFFF : (DWORD)src.size();
+    DWORD wrsz;
+    if (!WriteFile((HANDLE)handle, src.cbegin(), sz2write, &wrsz, reinterpret_cast<LPOVERLAPPED>(&cb))) {
+        DWORD err = GetLastError();
+        if (ERROR_IO_PENDING != err) {
+            throw exception("write file error : %1%, file: %2%"_fmt % winapi::error_message(err) % winapi::get_file_name(handle));
+        }
+    }
+
+    return cb.wait();
 }
 
 }}

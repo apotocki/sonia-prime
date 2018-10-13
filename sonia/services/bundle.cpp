@@ -12,7 +12,7 @@ namespace sonia { namespace services {
 bundle::bundle()
     : libhandle_(nullptr)
 {
-    this->set_attribute("Type", "bundle");
+    set_attribute("Type", "bundle");
 }
 
 void bundle::open() {
@@ -34,7 +34,7 @@ shared_ptr<service> bundle::build(json_object const& jo) {
         throw internal_error("The '%1%' bundle has no a definition of '%2%' factory"_fmt % typeid(*this).name() % name);
     }
     
-    return it->second;
+    return it->second(jo);
 }
 
 }}

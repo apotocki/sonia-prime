@@ -32,8 +32,11 @@ using boost::fibers::fiber;
 using boost::fibers::detail::spinlock;
 
 namespace fibers = boost::fibers;
-namespace this_thread = boost::this_thread;
 namespace this_fiber = boost::this_fiber;
+
+namespace this_thread {
+    using namespace boost::this_thread;
+}
 
 struct dummy_mutex_t {
     void lock() {}

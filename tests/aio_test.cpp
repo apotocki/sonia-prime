@@ -94,12 +94,35 @@ BOOST_AUTO_TEST_CASE (aio_test)
         BOOST_CHECK_EQUAL(rsz, buff.size());
 
         fs::create_directories(TEST_FOLDER);
+
+        try {
+            ff->open_file(TEST_FOLDER "/tmp.data", io::file_open_mode::open, io::file_access_mode::write, io::file_bufferring_mode::not_buffered);
+            BOOST_CHECK(false);
+        } catch (...) { }
+
         io::file wrf = ff->open_file(TEST_FOLDER "/tmp.data", io::file_open_mode::create, io::file_access_mode::write, io::file_bufferring_mode::not_buffered);
 
         fiber([&cnt]() { for (size_t i = 0; i < 0xf0000; ++i, ++cnt); }).detach();
         size_t wrsz = wrf.write(0, to_array_view(buff));
         BOOST_CHECK_EQUAL(wrsz, buff.size());
         BOOST_CHECK_EQUAL(0x1e0000, cnt);
+
+        try {
+            ff->open_file(TEST_FOLDER "/tmp.data", io::file_open_mode::create, io::file_access_mode::write, io::file_bufferring_mode::not_buffered);
+            BOOST_CHECK(false);
+        } catch (...) { } // already exists
+
+        wrf.close();
+
+        wrf = ff->open_file(TEST_FOLDER "/tmp.data", io::file_open_mode::create_or_open, io::file_access_mode::read, io::file_bufferring_mode::not_buffered);
+        BOOST_CHECK_EQUAL(wrf.size(), buff.size());
+        try {
+            wrf.write(buff.size(), to_array_view(buff));
+            BOOST_CHECK(false);
+        } catch (...) {} // denied access
+
+        wrf.remove();
+
     } catch (shutdown_exception const& e) {
         std::cout << e.what() << "\n";
     } catch (std::exception const& e) {

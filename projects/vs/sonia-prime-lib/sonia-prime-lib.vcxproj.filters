@@ -73,6 +73,9 @@
     <Filter Include="sonia.caches">
       <UniqueIdentifier>{d0afa015-3b6c-4092-a803-cd5c57985927}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.posix">
+      <UniqueIdentifier>{ad730f3a-0675-4e1e-bbb9-33bffd66ebfc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -438,6 +441,12 @@
     <ClInclude Include="..\..\..\sonia\caches\utiltiy.hpp">
       <Filter>sonia.caches</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sal_types.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\posix\signals.hpp">
+      <Filter>sonia.posix</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -485,9 +494,6 @@
     <ClCompile Include="..\..\..\sonia\services\async\async_reactor.cpp">
       <Filter>sonia.services\async</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\io\io_factory.cpp">
-      <Filter>sonia.io</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\windows.cpp">
       <Filter>sonia.utility</Filter>
     </ClCompile>
@@ -508,6 +514,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\scheduler\fiber_work_stealing_scheduler.cpp">
       <Filter>sonia.scheduler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\io\io_factory_win.cpp">
+      <Filter>sonia.io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\io\io_factory_linux.cpp">
+      <Filter>sonia.io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\posix\signals.cpp">
+      <Filter>sonia.posix</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

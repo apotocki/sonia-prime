@@ -25,8 +25,6 @@ class basic_string_view : public array_view<std::add_const_t<CharT>>
     typedef typename base_t::size_type size_type;
 
 public:
-    //using base_t::base_t;
-
     constexpr basic_string_view() noexcept {}
     constexpr basic_string_view(char_ct * str, size_type sz) : base_t(str, sz) {}
     
@@ -35,9 +33,7 @@ public:
 
     basic_string_view(char_ct * str) noexcept : base_t(str, TraitsT::length(str)) {}
 
-    basic_string_view(std::basic_string<CharT, TraitsT> const& str) noexcept : base_t(str.c_str(), str.size()) {
-    
-    }
+    basic_string_view(std::basic_string<CharT, TraitsT> const& str) noexcept : base_t(str.c_str(), str.size()) {}
 
     constexpr bool is_equal(basic_string_view const& rhs) const noexcept
     {
@@ -61,7 +57,11 @@ public:
 
 template <typename CharT, class TraitsT = std::char_traits<CharT>>
 class basic_cstring_view : public basic_string_view<CharT, TraitsT> {
+    typedef basic_string_view<CharT, TraitsT> base_t;
+    typedef std::add_const_t<CharT> char_ct;
 public:
+    basic_cstring_view(char_ct * str) noexcept : base_t(str) {}
+    basic_cstring_view(std::basic_string<CharT, TraitsT> const& str) noexcept : base_t(str) {}
     const char* c_str() const noexcept { return this->data(); }
 };
 
@@ -177,15 +177,11 @@ struct string_less {
     { return l < r; }
 };
 
-
-template <typename CharT, size_t N>
-std::basic_string<CharT> to_string(const CharT (&arr)[N]) { return std::basic_string<CharT>(arr); }
+template <typename CharT>
+std::basic_string<CharT> to_string(const CharT * arr) { return std::basic_string<CharT>(arr); }
 
 template <typename CharT, class TraitsT>
 std::basic_string<CharT, TraitsT> to_string(std::basic_string<CharT, TraitsT> const& s) { return s; }
-
-//template <typename CharT, class TraitsT>
-//std::basic_string<CharT, TraitsT> to_string(std::basic_string<CharT, TraitsT> & s) { return s; }
 
 template <typename CharT, class TraitsT>
 std::basic_string<CharT, TraitsT> to_string(std::basic_string<CharT, TraitsT> && s) { return std::move(s); }

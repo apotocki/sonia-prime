@@ -52,6 +52,7 @@
     <ClInclude Include="..\..\..\sonia\options.hpp" />
     <ClInclude Include="..\..\..\sonia\reference_wrapper.hpp" />
     <ClInclude Include="..\..\..\sonia\sal.hpp" />
+    <ClInclude Include="..\..\..\sonia\sal_types.hpp" />
     <ClInclude Include="..\..\..\sonia\scheduler\basic_scheduler.hpp" />
     <ClInclude Include="..\..\..\sonia\scheduler\test_fiber_mutex.hpp" />
     <ClInclude Include="..\..\..\sonia\scheduler\fiber_work_stealing_scheduler.hpp" />
@@ -112,6 +113,7 @@
     <ClInclude Include="..\..\..\sonia\utility\persister.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\polymorphic_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\object_pool.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\posix\signals.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\range\combine.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\range\hasher.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\range\transform.hpp" />
@@ -143,7 +145,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\io\file.cpp" />
-    <ClCompile Include="..\..\..\sonia\io\io_factory.cpp" />
+    <ClCompile Include="..\..\..\sonia\io\io_factory_linux.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\io\io_factory_win.cpp" />
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp" />
     <ClCompile Include="..\..\..\sonia\sal\linux_sal.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -204,6 +212,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\posix\signals.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\windows.cpp" />
   </ItemGroup>

@@ -46,4 +46,18 @@ shared_ptr<sonia::services::bundle> load_bundle(string_view name) {
     return std::move(result);
 }
 
+uint64_t file_size(HANDLE h) {
+    LARGE_INTEGER fileSize;
+    if (!GetFileSizeEx(h, &fileSize)) {
+        DWORD err = GetLastError();
+        throw exception("get file size error : %1%"_fmt % winapi::error_message(err));
+    }
+    return (((uint64_t)fileSize.HighPart) << 32) | fileSize.LowPart;
+}
+
+void delete_file(cstring_view path) {
+    std::wstring wfname = winapi::utf8_to_utf16(path);
+    winapi::delete_file(wfname.c_str(), path.c_str());
+}
+
 }}

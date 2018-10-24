@@ -52,4 +52,20 @@ shared_ptr<sonia::services::bundle> load_bundle(string_view name) {
     return std::move(result);
 }
 
+uint64_t file_size(int h) {
+    struct stat filest;
+    if (-1 == fstat(h, &filest)) {
+        int err = errno;
+        throw exception("get file size error : ", strerror(err));
+    }
+    return filest.st_size;
+}
+
+void delete_file(cstring_view path) {
+    if (-1 == unlink(path.c_str())) {
+        int err = errno;
+        throw exception("can't delete file %1%, error : %2%"_fmt % path % strerror(err));
+    }
+}
+
 }}

@@ -489,7 +489,7 @@ void factory::tcp_acceptor_close(void * handle) {
     ah->release();
 }
 
-file factory::open_file(string_view path, file_open_mode fom, file_access_mode fam, file_bufferring_mode fbm)
+file factory::open_file(cstring_view path, file_open_mode fom, file_access_mode fam, file_bufferring_mode fbm)
 {
     std::wstring wpath = winapi::utf8_to_utf16(path);
     DWORD dwCreationDisposition;
@@ -504,7 +504,7 @@ file factory::open_file(string_view path, file_open_mode fom, file_access_mode f
         dwCreationDisposition = OPEN_EXISTING;
         break;
     default:
-        throw internal_error("unknown file open mode: %1%"_fmt % (int)fom);
+        throw internal_error("unknown file open mode: %1%, file: %2%"_fmt % (int)fom % path);
     }
 
     DWORD dwDesiredAccess = 0;
@@ -515,7 +515,7 @@ file factory::open_file(string_view path, file_open_mode fom, file_access_mode f
         dwDesiredAccess |= GENERIC_READ;
         break;
     default:
-        throw internal_error("unknown file access mode: %1%"_fmt % (int)fam);
+        throw internal_error("unknown file access mode: %1%, file: %2%"_fmt % (int)fam % path);
     }
 
     DWORD dwFlagsAndAttributes = FILE_FLAG_OVERLAPPED;
@@ -527,13 +527,13 @@ file factory::open_file(string_view path, file_open_mode fom, file_access_mode f
         dwFlagsAndAttributes |= FILE_FLAG_WRITE_THROUGH | FILE_FLAG_NO_BUFFERING;
         break;
     default:
-        throw internal_error("unknown file buffering mode: %1%"_fmt % (int)fbm);
+        throw internal_error("unknown file buffering mode: %1%, file: %2%"_fmt % (int)fbm % path);
     }
 
     HANDLE h = CreateFileW(wpath.c_str(), dwDesiredAccess, FILE_SHARE_READ, NULL, dwCreationDisposition, dwFlagsAndAttributes, NULL);
     if (h == INVALID_HANDLE_VALUE) {
         DWORD err = GetLastError();
-        throw exception("can't open file %1%, error: %2%"_fmt % to_string(path) % winapi::error_message(err));
+        throw exception("can't open file %1%, error: %2%"_fmt % path % winapi::error_message(err));
     }
 
     winapi::assign_completion_port(h, dataptr->iocp_, (ULONG_PTR)completion_port::file_callback_key);

@@ -17,6 +17,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/scheduler/scheduler_service.cpp
     ${BUNDLE_HOME}/sonia/services/aio/aio_builder.cpp
     ${BUNDLE_HOME}/sonia/services/aio/aio_service.cpp
+    ${BUNDLE_HOME}/sonia/utility/posix/signals.cpp
     ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
 )
 

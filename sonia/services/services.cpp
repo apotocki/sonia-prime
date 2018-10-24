@@ -44,6 +44,7 @@ void initialize(int argc, char const* argv[], std::istream * cfgstream) {
     if (env_) {
         BOOST_THROW_EXCEPTION(internal_error("an attempt to initialize not empty environment"));
     }
+
     env_ = new environment;
     try {
         env_->open(argc, argv, cfgstream);

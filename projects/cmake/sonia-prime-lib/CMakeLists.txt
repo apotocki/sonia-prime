@@ -17,17 +17,18 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/scheduler/basic_scheduler.cpp
     ${BUNDLE_HOME}/sonia/scheduler/fiber_work_stealing_scheduler.cpp
     ${BUNDLE_HOME}/sonia/io/file.cpp
-    ${BUNDLE_HOME}/sonia/io/io_factory.cpp
 )
 
 if ( CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
         ${BUNDLE_HOME}/sonia/sal/windows_sal.cpp
         ${BUNDLE_HOME}/sonia/utility/windows.cpp
+        ${BUNDLE_HOME}/sonia/io/io_factory_win.cpp
     )
 elseif ( CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
         ${BUNDLE_HOME}/sonia/sal/linux_sal.cpp
+        ${BUNDLE_HOME}/sonia/io/io_factory_linux.cpp
     )
 endif ()
 

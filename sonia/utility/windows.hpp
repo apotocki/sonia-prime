@@ -50,6 +50,6 @@ void    post_completion_port(HANDLE cp, DWORD btransf, ULONG_PTR key, OVERLAPPED
 
 // file operations
 std::string get_file_name(HANDLE hFile); // returns utf8 string
-void delete_file(string_view path);
+void delete_file(wchar_t const * path, char const* optutf8path = nullptr);
 
 }}

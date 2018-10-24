@@ -31,6 +31,10 @@
 #include "local_service_registry.hpp"
 #include "local_type_registry.hpp"
 
+#ifndef BOOST_WINDOWS
+#include "sonia/utility/posix/signals.hpp"
+#endif
+
 namespace sonia { namespace services {
 
 namespace po = boost::program_options;
@@ -77,6 +81,10 @@ environment::environment() : log_initialized_(false)
     std::ostringstream version_ss;
     version_ss << "[Version " SONIA_ONE_VERSION " (" << BUILD_NAME << " " << BUILD_DATETIME ")]" HELLO_MESSAGE;
     version_msg_ = std::move(version_ss.str());
+
+#ifndef BOOST_WINDOWS
+    sonia::posix::run_watchers(1);
+#endif
 }
 
 environment::~environment() {
@@ -85,6 +93,9 @@ environment::~environment() {
         GLOBAL_LOG_INFO() << "terminated";
         logger::deinitialize();
     }
+#ifndef BOOST_WINDOWS
+    sonia::posix::stop_watchers();
+#endif
 }
 
 void environment::open(int argc, char const* argv[], std::istream * cfgstream)

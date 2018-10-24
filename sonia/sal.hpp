@@ -12,6 +12,7 @@
 #include "string.hpp"
 #include "thread.hpp"
 #include "shared_ptr.hpp"
+#include "sal_types.hpp"
 #include "sonia/services/bundle.hpp"
 
 // system abstract level functions
@@ -22,6 +23,10 @@ void set_thread_name(sonia::thread::id, string_view name);
 void set_thread_name(sonia::thread::id, std::string const& name);
 
 shared_ptr<sonia::services::bundle> load_bundle(string_view name);
+
+// file routine
+uint64_t file_size(file_handle_type h);
+void delete_file(cstring_view path);
 
 }}
 

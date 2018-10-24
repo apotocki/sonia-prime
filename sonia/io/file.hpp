@@ -13,6 +13,7 @@
 #include "sonia/cstdint.hpp"
 #include "sonia/string.hpp"
 #include "sonia/shared_ptr.hpp"
+#include "sonia/sal_types.hpp"
 
 namespace sonia { namespace io {
 
@@ -36,8 +37,8 @@ class file_service {
 public:
     virtual ~file_service() {}
 
-    virtual size_t file_read(void * handle, uint64_t fileoffset, array_view<char> dest) = 0;
-    virtual size_t file_write(void * handle, uint64_t fileoffset, array_view<const char> src) = 0;
+    virtual size_t file_read(sonia::sal::file_handle_type handle, uint64_t fileoffset, array_view<char> dest) = 0;
+    virtual size_t file_write(sonia::sal::file_handle_type handle, uint64_t fileoffset, array_view<const char> src) = 0;
 };
 
 class file
@@ -47,46 +48,40 @@ class file
     file(file const&) = delete;
     file& operator=(file const&) = delete;
 
-    file(shared_ptr<file_service> s, void * handle)
-        : impl_(std::move(s)), fh_(handle)
+    file(shared_ptr<file_service> s, sonia::sal::file_handle_type handle, string_view path = string_view())
+        : impl_(std::move(s)), path_(to_string(path)), fh_(handle)
     {}
 
 public:
-    file(file && f) : impl_(std::move(f.impl_)), fh_(f.fh_) {
-        f.fh_ = nullptr;
-    }
-
-    file & operator= (file && f) {
-        if (fh_ != f.fh_) {
-            close();
-            fh_ = f.fh_;
-            impl_ = std::move(f.impl_);
-            f.fh_ = nullptr;
-        }
-        return *this;
-    }
-
+    file(file && rhs);
     ~file();
 
-    void close();
+    file & operator= (file && rhs);
+
+    void close() noexcept;
 
     uint64_t size() const;
     void set_size(uint64_t sz);
 
-    size_t read(uint64_t fileoffset, array_view<char> dest);
+    size_t read(uint64_t fileoffset, array_view<char> dest) const;
     size_t write(uint64_t fileoffset, array_view<const char> src);
     
+    void flush() const;
+
     void remove();
+
+    cstring_view path() const;
 
 private:
     shared_ptr<file_service> impl_;
-    void * fh_;
+    mutable std::string path_;
+    sonia::sal::file_handle_type fh_;
 };
 
 class file_access {
 public:
-    static file open_file(shared_ptr<file_service> impl, void * handle) {
-        return file(std::move(impl), handle);
+    static file open_file(shared_ptr<file_service> impl, sonia::sal::file_handle_type handle, string_view path = string_view()) {
+        return file(std::move(impl), handle, path);
     }
 };
 
@@ -94,7 +89,7 @@ class file_factory {
 public:
     virtual ~file_factory() {}
     virtual file open_file(
-        string_view path,
+        cstring_view path,
         file_open_mode fom = file_open_mode::open,
         file_access_mode fam = file_access_mode::read,
         file_bufferring_mode fbm = file_bufferring_mode::not_buffered) = 0;

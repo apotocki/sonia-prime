@@ -221,11 +221,10 @@ std::string get_file_name(HANDLE hFile) {
     return utf16_to_utf8(wstring_view(&buf.front(), dwRet));
 }
 
-void delete_file(string_view path) {
-    std::wstring wfname = utf8_to_utf16(path);
-    if (!DeleteFileW(wfname.c_str())) {
+void delete_file(wchar_t const * path, char const* optutf8path) {
+    if (!DeleteFileW(path)) {
         DWORD err = GetLastError();
-        throw exception("can't delete file %1%, error : %2%"_fmt % to_string(path) % error_message(err));
+        throw exception("can't delete file %1%, error : %2%"_fmt % (optutf8path ? optutf8path : utf16_to_utf8(path).c_str()) % error_message(err));
     }
 }
 

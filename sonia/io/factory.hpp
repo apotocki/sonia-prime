@@ -58,11 +58,11 @@ public:
     void tcp_acceptor_close(void * handle) override;
 
     // file factory
-    file open_file(string_view path, file_open_mode, file_access_mode, file_bufferring_mode) override;
+    file open_file(cstring_view path, file_open_mode, file_access_mode, file_bufferring_mode) override;
 
     // file service
-    size_t file_read(void * handle, uint64_t fileoffset, array_view<char> dest) override;
-    size_t file_write(void * handle, uint64_t fileoffset, array_view<const char> src) override;
+    size_t file_read(sonia::sal::file_handle_type, uint64_t fileoffset, array_view<char> dest) override;
+    size_t file_write(sonia::sal::file_handle_type, uint64_t fileoffset, array_view<const char> src) override;
 
     void thread_proc();
 

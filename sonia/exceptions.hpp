@@ -20,6 +20,8 @@ namespace sonia {
 
 class exception : public std::runtime_error {
 public:
+    exception() : std::runtime_error("error") {}
+
     template <class ... ArgsT>
     exception(ArgsT && ... args) 
         : std::runtime_error((... + sonia::to_string(std::forward<ArgsT>(args))))

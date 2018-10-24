@@ -4,14 +4,12 @@
 
 #include "sonia/config.hpp"
 
-#include <signal.h>
-#include <pthread.h>
-
 #include <atomic>
 
 #include <boost/exception/diagnostic_information.hpp>
 
 #include "applied/scoped_services.hpp"
+#include "sonia/utility/posix/signals.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/thread.hpp"
 #include "sonia/exceptions.hpp"
@@ -19,7 +17,7 @@
 std::atomic<long> barrier_(0);
 std::atomic<scoped_services*> serv_ = nullptr;
 
-void termination_handler(int signum) {
+void interuption_handler(int signum) {
     if (0 == barrier_.fetch_add(1)) {
         SCOPE_EXIT([]() { --barrier_; });
         scoped_services* pservs = serv_.load();
@@ -42,14 +40,6 @@ void terminate_impl() {
 int main(int argc, char const* argv[]) {
     std::set_terminate(terminate_impl);
 
-    // Block all signals for background thread.
-    sigset_t new_mask;
-    sigfillset(&new_mask);
-    sigdelset(&new_mask, SIGSEGV);
-    sigdelset(&new_mask, SIGBUS);
-    sigset_t old_mask;
-    pthread_sigmask(SIG_BLOCK, &new_mask, &old_mask); 
-
     try {
         scoped_services s(argc, argv);
 
@@ -63,15 +53,7 @@ int main(int argc, char const* argv[]) {
 
         serv_.store(&s);
 
-        // Restore previous signals.
-        pthread_sigmask(SIG_SETMASK, &old_mask, 0);
-
-        if (signal (SIGINT, termination_handler) == SIG_IGN)
-            signal (SIGINT, SIG_IGN);
-        if (signal (SIGQUIT, termination_handler) == SIG_IGN)
-            signal (SIGQUIT, SIG_IGN);
-        if (signal (SIGTERM, termination_handler) == SIG_IGN)
-            signal (SIGTERM, SIG_IGN);
+        sonia::posix::set_interruption_handler(&interuption_handler);
 
         s.run();
     } catch (sonia::shutdown_exception const& e) {

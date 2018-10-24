@@ -12,6 +12,7 @@
 #include <boost/log/attributes.hpp>
 
 #include "sonia/shared_ptr.hpp"
+#include "sonia/string.hpp"
 #include "logger.hpp"
 
 namespace sonia {
@@ -34,4 +35,5 @@ private:
 };
 
 }
+
 #endif // SONIA_LOGGER_LOGGABLE_HPP

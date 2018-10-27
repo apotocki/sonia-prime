@@ -3,21 +3,21 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "scheduler_builder.hpp"
+#include "scheduler_service_builder.hpp"
 #include "scheduler_service.hpp"
 
 namespace sonia { namespace services {
 
-scheduler_builder::scheduler_builder() {
+scheduler_service_builder::scheduler_service_builder() {
     set_attribute("Type", "builder");
     parameters_.bind()
-        .variable("threads", &scheduler_configuration::threads, "threads count").required()
-        .variable("fibers", &scheduler_configuration::fibers, "fibers count per thread").default_value(0)
+        .variable("threads", &scheduler_service_configuration::threads, "threads count").required()
+        .variable("fibers", &scheduler_service_configuration::fibers, "fibers count per thread").default_value(0)
     ;
 }
 
-shared_ptr<service> scheduler_builder::build(json_object const& parameters) {
-    scheduler_configuration cfg;
+shared_ptr<service> scheduler_service_builder::build(json_object const& parameters) {
+    scheduler_service_configuration cfg;
     parameters_.apply(parameters, &cfg);
     return make_shared<scheduler_service>(cfg);
 }

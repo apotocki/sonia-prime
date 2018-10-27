@@ -3,21 +3,21 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "aio_service.hpp"
+#include "io_service.hpp"
 
 namespace sonia { namespace services {
 
-aio_service::aio_service(aio_configuration const& cfg)
+io_service::io_service(io_service_configuration const& cfg)
     : cfg_(cfg)
 {
-    set_attribute("Type", "aio");
+    set_attribute("Type", "io");
 }
 
-void aio_service::open() {
+void io_service::open() {
     sonia::io::factory::open(cfg_.threads);
 }
 
-void aio_service::close() noexcept {
+void io_service::close() noexcept {
     sonia::io::factory::close();
 }
 

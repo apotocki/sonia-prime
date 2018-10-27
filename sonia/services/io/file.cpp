@@ -75,11 +75,19 @@ uint64_t file::size() const {
 }
 
 size_t file::read(uint64_t fileoffset, array_view<char> dest) const {
-    return impl_->file_read(fh_, fileoffset, dest);
+    try {
+        return impl_->file_read(fh_, fileoffset, dest);
+    } catch (std::exception const& e) {
+        throw exception(e.what(), ", file: ", path());
+    }
 }
 
 size_t file::write(uint64_t fileoffset, array_view<const char> src) {
-    return impl_->file_write(fh_, fileoffset, src);
+    try {
+        return impl_->file_write(fh_, fileoffset, src);
+    } catch (std::exception const& e) {
+        throw exception(e.what(), ", file: ", path());
+    }
 }
 
 #ifdef BOOST_WINDOWS

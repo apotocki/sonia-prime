@@ -16,6 +16,7 @@ namespace sonia { namespace posix {
 
 typedef function<void()> user_handler_type;
 
+SONIA_PRIME_API int  get_user_signal();
 SONIA_PRIME_API void set_user_signal(int);
 SONIA_PRIME_API void set_interruption_handler(user_handler_type const&);
 SONIA_PRIME_API void raise_user_signal(user_handler_type const&);

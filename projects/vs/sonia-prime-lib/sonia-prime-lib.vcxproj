@@ -41,10 +41,6 @@
     <ClInclude Include="..\..\..\sonia\functional\range_equal.hpp" />
     <ClInclude Include="..\..\..\sonia\functional\range_less.hpp" />
     <ClInclude Include="..\..\..\sonia\functional\reference_wrapper.hpp" />
-    <ClInclude Include="..\..\..\sonia\io\file.hpp" />
-    <ClInclude Include="..\..\..\sonia\io\factory.hpp" />
-    <ClInclude Include="..\..\..\sonia\io\tcp_acceptor.hpp" />
-    <ClInclude Include="..\..\..\sonia\io\tcp_socket.hpp" />
     <ClInclude Include="..\..\..\sonia\iterator_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\loggable.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\logger.hpp" />
@@ -53,10 +49,6 @@
     <ClInclude Include="..\..\..\sonia\reference_wrapper.hpp" />
     <ClInclude Include="..\..\..\sonia\sal.hpp" />
     <ClInclude Include="..\..\..\sonia\sal_types.hpp" />
-    <ClInclude Include="..\..\..\sonia\scheduler\basic_scheduler.hpp" />
-    <ClInclude Include="..\..\..\sonia\scheduler\test_fiber_mutex.hpp" />
-    <ClInclude Include="..\..\..\sonia\scheduler\fiber_work_stealing_scheduler.hpp" />
-    <ClInclude Include="..\..\..\sonia\scheduler\scheduler.hpp" />
     <ClInclude Include="..\..\..\sonia\services.hpp" />
     <ClInclude Include="..\..\..\sonia\services\async\reactor.hpp" />
     <ClInclude Include="..\..\..\sonia\services\builder.hpp" />
@@ -64,7 +56,15 @@
     <ClInclude Include="..\..\..\sonia\services\bundle.ipp" />
     <ClInclude Include="..\..\..\sonia\services\environment.hpp" />
     <ClInclude Include="..\..\..\sonia\services\host.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\factory.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\file.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\tcp_acceptor.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\tcp_socket.hpp" />
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\scheduler\basic_scheduler.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\scheduler\test_fiber_mutex.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service_locator.hpp" />
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
@@ -83,6 +83,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\hash_combine_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\multimethod.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\basic_decimal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\decimal.hpp" />
@@ -144,14 +145,6 @@
     <ClInclude Include="..\..\..\sonia\utility\windows.hpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\sonia\io\file.cpp" />
-    <ClCompile Include="..\..\..\sonia\io\io_factory_linux.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\io\io_factory_win.cpp" />
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp" />
     <ClCompile Include="..\..\..\sonia\sal\linux_sal.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -160,8 +153,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sal\windows_sal.cpp" />
-    <ClCompile Include="..\..\..\sonia\scheduler\basic_scheduler.cpp" />
-    <ClCompile Include="..\..\..\sonia\scheduler\fiber_work_stealing_scheduler.cpp" />
     <ClCompile Include="..\..\..\sonia\services\async\async_reactor.cpp" />
     <ClCompile Include="..\..\..\sonia\services\bundle.cpp" />
     <ClCompile Include="..\..\..\sonia\services\environment.cpp">
@@ -170,6 +161,16 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\file.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\io\io_factory_linux.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_factory_win.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\scheduler\basic_scheduler.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.cpp" />
     <ClCompile Include="..\..\..\sonia\services\services_host.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

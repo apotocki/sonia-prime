@@ -28,13 +28,17 @@ void set_user_signal(int val) {
     user_signal_ = val;
 }
 
+int get_user_signal() {
+    return user_signal_;
+}
+
 void set_interruption_handler(user_handler_type const& ih) {
     interruption_handler_ = ih;
 }
 
 void watcher_proc(int num)
 {
-    std::cout << ("start signal watcher %1%\n"_fmt % num).str();
+    //GLOBAL_LOG_TRACE << ("start signal watcher %1%\n"_fmt % num).str();
 
     sigset_t sigset;
     sigfillset(&sigset);
@@ -53,7 +57,7 @@ void watcher_proc(int num)
             GLOBAL_LOG_ERROR() << "watcher %1%, sigwaitinfo error: %2%"_fmt % num % strerror(err);
             continue;
         }
-        std::cout << ("watcher %1% received a signal %2%\n"_fmt % num % sig).str();
+        //GLOBAL_LOG_TRACE << ("watcher %1% received a signal %2%\n"_fmt % num % sig).str();
         
         try {
             if (sig == user_signal_) {
@@ -77,7 +81,7 @@ void watcher_proc(int num)
         }
     }
 
-    std::cout << ("stop signal watcher %1%\n"_fmt % num).str();
+    //GLOBAL_LOG_TRACE() << ("stop signal watcher %1%\n"_fmt % num).str();
 }
 
 void raise_user_signal(user_handler_type const& pfunc)
@@ -104,10 +108,7 @@ void run_watchers(int count)
     sigfillset(&new_mask);
     sigdelset(&new_mask, SIGSEGV);
     sigdelset(&new_mask, SIGBUS);
-    //sigdelset(&new_mask, SIGINT);
-    //sigdelset(&new_mask, user_signal_);
     pthread_sigmask(SIG_BLOCK, &new_mask, nullptr);
-    //signal (SIGINT, SIG_IGN);
 
     std::vector<thread> *wptr = new std::vector<thread> {};
     SCOPE_EXIT([&wptr]() {
@@ -139,7 +140,7 @@ void stop_watchers()
     val.sival_ptr = nullptr;
 
     for (size_t c = 0; c < wptr->size(); ++c) {
-        std::cout << ("raising signal %1% num %2%\n"_fmt % user_signal_ % c).str();
+        // GLOBAL_LOG_TRACE() << ("raising signal %1% num %2%\n"_fmt % user_signal_ % c).str();
         if (sigqueue(getpid(), user_signal_, val)) {
             int err = errno;
             GLOBAL_LOG_ERROR() << "while stop_watchers : can't raise user signal, error: " << strerror(err);

@@ -23,7 +23,7 @@ service_descriptor basic_service_factory::create(string_view nm) const
         }
     }
 
-    throw internal_error("can't create service '%1%'"_fmt % nm);
+    throw internal_error("can't create unknown service '%1%'"_fmt % nm);
 }
 
 void basic_service_factory::register_service_factory(string_view nm, function<service_descriptor()> const& fm)

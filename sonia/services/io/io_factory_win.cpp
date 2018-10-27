@@ -49,7 +49,7 @@ struct file_callback {
     fibers::mutex mtx;
     fibers::condition_variable_any cnd;
 
-    file_callback(uint64_t fileoffset)
+    explicit file_callback(uint64_t fileoffset)
     {
         SecureZeroMemory((PVOID)&overlapped, sizeof (OVERLAPPED));
         overlapped.Offset = (DWORD)(fileoffset & 0xFFFFFFFF);
@@ -355,7 +355,7 @@ void factory::thread_proc() {
 tcp_socket factory::create_tcp_socket(string_view address, uint16_t port, tcp_socket_type dt) {
     SOCKET sock;
     if (winapi::parse_address(address, port, [this, &sock](ADDRINFOW * r)->bool {
-        if (r->ai_family != AF_INET || r->ai_socktype != SOCK_STREAM || r->ai_protocol != IPPROTO_TCP)
+        if ((r->ai_family != AF_INET /* && r->ai_family != AF_INET6*/) || r->ai_socktype != SOCK_STREAM || r->ai_protocol != IPPROTO_TCP)
             return false;
 
         sock = winapi::create_socket(r->ai_family, r->ai_socktype, r->ai_protocol);
@@ -365,9 +365,9 @@ tcp_socket factory::create_tcp_socket(string_view address, uint16_t port, tcp_so
         DWORD iResult = connect(sock, r->ai_addr, (int)r->ai_addrlen);
         if (iResult == SOCKET_ERROR) {
             DWORD err = WSAGetLastError();
-            if (WSAECONNREFUSED == err) {
-                return false;
-            }
+            //if (WSAECONNREFUSED == err) {
+            //    return false;
+            //}
             throw exception("can't connect socket, error: %1%"_fmt % winapi::error_message(err));
         }
 
@@ -483,7 +483,7 @@ void factory::tcp_acceptor_async_accept_and_read_some(void * handle, void * buff
     accept_sock = INVALID_SOCKET; // detach
 }
 
-void factory::tcp_acceptor_close(void * handle) {
+void factory::tcp_acceptor_close(void * handle) noexcept {
     acceptor_handle * ah = reinterpret_cast<acceptor_handle*>(handle);
     ah->close();
     ah->release();
@@ -553,7 +553,7 @@ size_t factory::file_read(void * handle, uint64_t fileoffset, array_view<char> d
     if (!ReadFile(handle, dest.begin(), sz2read, &outrsz, reinterpret_cast<LPOVERLAPPED>(&cb))) {
         DWORD err = GetLastError();
         if (ERROR_IO_PENDING != err) {
-            throw exception("read file error : %1%, file: %2%"_fmt % winapi::error_message(err) % winapi::get_file_name(handle));
+            throw exception("read file error : %1%"_fmt % winapi::error_message(err));
         }
     }
 
@@ -572,7 +572,7 @@ size_t factory::file_write(void * handle, uint64_t fileoffset, array_view<const 
     if (!WriteFile((HANDLE)handle, src.cbegin(), sz2write, &wrsz, reinterpret_cast<LPOVERLAPPED>(&cb))) {
         DWORD err = GetLastError();
         if (ERROR_IO_PENDING != err) {
-            throw exception("write file error : %1%, file: %2%"_fmt % winapi::error_message(err) % winapi::get_file_name(handle));
+            throw exception("write file error : %1%"_fmt % winapi::error_message(err));
         }
     }
 

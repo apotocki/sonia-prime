@@ -90,7 +90,7 @@ environment::environment() : log_initialized_(false)
 environment::~environment() {
     hosts_.clear();
     if (log_initialized_) {
-        GLOBAL_LOG_INFO() << "terminated";
+        GLOBAL_LOG_INFO() << "environment terminated";
         logger::deinitialize();
     }
 #ifndef BOOST_WINDOWS

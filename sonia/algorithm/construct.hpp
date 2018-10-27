@@ -32,6 +32,17 @@ void construct(ElementT * dest, RngT && src, size_t sz) {
     }
 }
 
+template <typename ElementT>
+void construct(ElementT * dest, size_t sz) {
+    if constexpr (is_trivially_constructible_v<ElementT>) {
+        // do nothing
+    } else {
+        for (; sz != 0; ++dest, --sz) {
+            new (dest) ElementT;
+        }
+    }
+}
+
 template <typename ElementT, class RngT>
 void move_construct(ElementT * dest, RngT && src, size_t sz) {
     if constexpr (is_pod_v<ElementT> && is_same_v<remove_cv_t<range_value_t<RngT>>, ElementT> && is_pointer_v<range_iterator_t<RngT>>) {

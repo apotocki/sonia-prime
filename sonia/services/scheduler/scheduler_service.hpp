@@ -10,8 +10,8 @@
 #endif
 
 #include "sonia/services/service.hpp"
-#include "sonia/scheduler/basic_scheduler.hpp"
-#include "scheduler_configuration.hpp"
+#include "sonia/services/scheduler/basic_scheduler.hpp"
+#include "scheduler_service_configuration.hpp"
 
 namespace sonia { namespace services {
 
@@ -20,7 +20,7 @@ class scheduler_service
     , public basic_scheduler
 {
 public:
-    scheduler_service(scheduler_configuration const& cfg);
+    scheduler_service(scheduler_service_configuration const& cfg);
 
     void open() override;
     void close() noexcept override;

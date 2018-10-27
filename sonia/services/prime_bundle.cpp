@@ -6,8 +6,9 @@
 #include "sonia/prime_config.hpp"
 
 #include "bundle.ipp"
-#include "sonia/services/scheduler/scheduler_builder.hpp"
-#include "sonia/services/aio/aio_builder.hpp"
+#include "sonia/services/scheduler/scheduler_service_builder.hpp"
+#include "sonia/services/net/net_builder.hpp"
+#include "sonia/services/io/io_service_builder.hpp"
 
 namespace sonia { namespace services {
 
@@ -20,8 +21,9 @@ public:
     }
 
     void init() override {
-        install<scheduler_builder>("scheduler");
-        install<aio_builder>("aio");
+        install<scheduler_service_builder>("scheduler");
+        install<net_builder>("net-server");
+        install<io_service_builder>("io");
     }
 };
 

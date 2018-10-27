@@ -68,6 +68,9 @@ using std::is_rvalue_reference_v;
 using std::is_pod;
 using std::is_pod_v;
 
+using std::is_trivially_constructible;
+using std::is_trivially_constructible_v;
+
 using std::is_trivially_destructible;
 using std::is_trivially_destructible_v;
 

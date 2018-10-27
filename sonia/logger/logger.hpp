@@ -71,7 +71,7 @@ typedef shared_ptr<logger_type> logger_ptr;
 BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(global_logger, boost::log::sources::severity_logger_mt<severity_level>, (severity_level::trace))
 
 }
-
+#define LOG_SEV(l, sev) BOOST_LOG_SEV(*l, sev)
 #define LOG_TRACE(l) BOOST_LOG_SEV(*l, sonia::logger::severity_level::trace)
 #define LOG_DEBUG(l) BOOST_LOG_SEV(*l, sonia::logger::severity_level::debug)
 #define LOG_INFO(l)  BOOST_LOG_SEV(*l, sonia::logger::severity_level::info)

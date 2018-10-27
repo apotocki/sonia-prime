@@ -23,4 +23,13 @@ public:
 
 }}
 
+#define DECLARE_PARTICULAR_BUILDER(name)                                         \
+class name##_builder : public service, public builder {                          \
+public:                                                                          \
+    name##_builder();                                                            \
+    shared_ptr<service> build(json_object const& parameters) override;           \
+private:                                                                         \
+    sonia::parameters::parameters_description<name##_configuration> parameters_; \
+};
+
 #endif // SONIA_SERVICE_BUILDER_HPP

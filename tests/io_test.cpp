@@ -117,9 +117,11 @@ BOOST_AUTO_TEST_CASE (aio_test)
         wrf = ff->open_file(TEST_FOLDER "/tmp.data", io::file_open_mode::create_or_open, io::file_access_mode::read, io::file_bufferring_mode::not_buffered);
         BOOST_CHECK_EQUAL(wrf.size(), buff.size());
         try {
-            wrf.write(buff.size(), to_array_view(buff));
+            size_t sz = wrf.write(buff.size(), to_array_view(buff));
             BOOST_CHECK(false);
-        } catch (...) {} // denied access
+        } catch (...) {
+            // std::cout << boost::current_exception_diagnostic_information();
+        } // denied access
 
         wrf.remove();
 

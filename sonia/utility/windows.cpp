@@ -118,7 +118,7 @@ wsa_scope::~wsa_scope() {
 
 bool parse_address(string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc) {
     std::wstring wadr = utf8_to_utf16(address);
-    std::wstring portstr = utf8_to_utf16(to_string("%1%"_fmt % port).c_str());
+    std::wstring portstr = boost::lexical_cast<std::wstring>(port);
 
     ADDRINFOW *result = nullptr, hints;
     ZeroMemory(&hints, sizeof(hints));
@@ -129,7 +129,7 @@ bool parse_address(string_view address, uint16_t port, function<bool(ADDRINFOW*)
     DWORD iResult = GetAddrInfoW(wadr.c_str(), portstr.c_str(), &hints, &result);
     if (iResult) {
         DWORD err = WSAGetLastError();
-        throw exception("can't understand addressm error: %1%"_fmt % error_message(err));
+        throw exception("can't understand address error: %1%"_fmt % error_message(err));
     }
 
     SCOPE_EXIT([result]() { FreeAddrInfoW(result); });

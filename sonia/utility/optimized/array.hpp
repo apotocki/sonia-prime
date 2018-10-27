@@ -44,7 +44,7 @@ void optimized_array_base<T, DerivedBaseT, AllocatorT>::dispose() noexcept {
     typedef adjacent_buffer<T, base_derived_t> derived_t;
     derived_t & self = static_cast<derived_t&>(*this);
     self.~derived_t();
-    deallocate_adjacent_buffer<T, base_derived_t, AllocatorT>(&self);
+    deallocate_adjacent_buffer<AllocatorT>(&self);
 }
 
 template <class ElementT, class HolderT>

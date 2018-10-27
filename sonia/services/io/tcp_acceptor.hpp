@@ -20,7 +20,7 @@ public:
     typedef function<void(void *, size_t)> renew_functor;
     typedef function<void(std::error_code const&, size_t, tcp_socket soc, renew_functor const&)> acceptor_functor;
 
-    virtual void tcp_acceptor_close(void * handle) = 0;
+    virtual void tcp_acceptor_close(void * handle) noexcept = 0;
     virtual void tcp_acceptor_async_accept_and_read_some(void * handle, void * buff, size_t sz, acceptor_functor const&) = 0;
 };
 
@@ -33,14 +33,32 @@ class tcp_acceptor
     {}
 
 public:
+    tcp_acceptor() : handle_(nullptr) {}
+
+    tcp_acceptor(tcp_acceptor const& rhs) = delete;
+    tcp_acceptor(tcp_acceptor && rhs) noexcept : impl_(std::move(rhs.impl_)), handle_(rhs.handle_) {
+        rhs.handle_ = nullptr;
+    }
+
     ~tcp_acceptor() {
         if (handle_) impl_->tcp_acceptor_close(handle_);
+    }
+
+    tcp_acceptor & operator= (tcp_acceptor const& rhs) = delete;
+    tcp_acceptor & operator= (tcp_acceptor && rhs) noexcept {
+        if (handle_) {
+            impl_->tcp_acceptor_close(handle_);
+        }
+        impl_ = std::move(rhs.impl_);
+        handle_ = rhs.handle_;
+        rhs.handle_ = nullptr;
+        return *this;
     }
 
     typedef function<void(void *, size_t)> renew_functor;
     typedef function<void(std::error_code const&, size_t, tcp_socket soc, renew_functor const&)> acceptor_functor;
 
-    void close() {
+    void close() noexcept {
         if (handle_) {
             impl_->tcp_acceptor_close(handle_);
             handle_ = nullptr;

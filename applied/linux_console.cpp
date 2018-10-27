@@ -17,7 +17,7 @@
 std::atomic<long> barrier_(0);
 std::atomic<scoped_services*> serv_ = nullptr;
 
-void interuption_handler(int signum) {
+void interuption_handler() {
     if (0 == barrier_.fetch_add(1)) {
         SCOPE_EXIT([]() { --barrier_; });
         scoped_services* pservs = serv_.load();

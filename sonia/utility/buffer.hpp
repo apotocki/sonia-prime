@@ -34,6 +34,13 @@ public:
         construct(begin(), std::forward<RngT>(rng), sz);
     }
 
+    template <typename ... ArgsT>
+    adjacent_buffer(size_t sz, in_place_t, ArgsT&& ... args)
+        : BaseT(std::forward<ArgsT>(args) ...), sz_(sz)
+    {
+        construct(begin(), sz);
+    }
+
     adjacent_buffer(adjacent_buffer const& rhs) = delete;
     adjacent_buffer(adjacent_buffer && rhs) = delete;
     adjacent_buffer & operator= (adjacent_buffer const&) = delete;
@@ -89,7 +96,7 @@ adjacent_buffer<T, BaseT> * allocate_adjacent_buffer(size_t sz, ArgsT&& ... args
     }
 }
 
-template <typename T, typename BaseT, typename AllocatorT>
+template <typename AllocatorT, typename T, typename BaseT>
 void deallocate_adjacent_buffer(adjacent_buffer<T, BaseT> * ptr) noexcept {
     typedef typename AllocatorT::template rebind<char>::other allocator_type;
     typedef adjacent_buffer<T, BaseT> buffer_t;

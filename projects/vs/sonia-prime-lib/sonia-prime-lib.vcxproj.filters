@@ -10,9 +10,6 @@
     <Filter Include="sonia.logger">
       <UniqueIdentifier>{c89f215b-69eb-4024-bb0b-cf0d2b84ee34}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.io">
-      <UniqueIdentifier>{74d1bad4-5a7d-4958-8ab3-1e3822da573a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.utility">
       <UniqueIdentifier>{c309a8c6-dc15-46aa-9cc5-9bfe957608b0}</UniqueIdentifier>
     </Filter>
@@ -55,9 +52,6 @@
     <Filter Include="sonia.services\async">
       <UniqueIdentifier>{d0ebef30-37ad-4f67-8b9d-3d5d592fde5e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.scheduler">
-      <UniqueIdentifier>{7a02a053-7571-4567-b77e-41984419817e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.sal">
       <UniqueIdentifier>{51847fa8-f43c-46c8-8939-7d494d843269}</UniqueIdentifier>
     </Filter>
@@ -75,6 +69,12 @@
     </Filter>
     <Filter Include="sonia.posix">
       <UniqueIdentifier>{ad730f3a-0675-4e1e-bbb9-33bffd66ebfc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services.io">
+      <UniqueIdentifier>{74d1bad4-5a7d-4958-8ab3-1e3822da573a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services.scheduler">
+      <UniqueIdentifier>{7a02a053-7571-4567-b77e-41984419817e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -107,9 +107,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\logger\loggable.hpp">
       <Filter>sonia.logger</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\io\file.hpp">
-      <Filter>sonia.io</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\exceptions.hpp">
       <Filter>sonia</Filter>
@@ -297,23 +294,8 @@
     <ClInclude Include="..\..\..\sonia\functional\range_less.hpp">
       <Filter>sonia.functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\io\factory.hpp">
-      <Filter>sonia.io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\io\tcp_socket.hpp">
-      <Filter>sonia.io</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\windows.hpp">
       <Filter>sonia.utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\io\tcp_acceptor.hpp">
-      <Filter>sonia.io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\scheduler\scheduler.hpp">
-      <Filter>sonia.scheduler</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\scheduler\basic_scheduler.hpp">
-      <Filter>sonia.scheduler</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\sal.hpp">
       <Filter>sonia</Filter>
@@ -332,12 +314,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\bundle.ipp">
       <Filter>sonia.services</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\scheduler\fiber_work_stealing_scheduler.hpp">
-      <Filter>sonia.scheduler</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\scheduler\test_fiber_mutex.hpp">
-      <Filter>sonia.scheduler</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\simple_queue.hpp">
       <Filter>sonia.utility</Filter>
@@ -447,13 +423,37 @@
     <ClInclude Include="..\..\..\sonia\utility\posix\signals.hpp">
       <Filter>sonia.posix</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\factory.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\file.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\tcp_acceptor.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\tcp_socket.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\basic_scheduler.hpp">
+      <Filter>sonia.services.scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.hpp">
+      <Filter>sonia.services.scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler.hpp">
+      <Filter>sonia.services.scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\test_fiber_mutex.hpp">
+      <Filter>sonia.services.scheduler</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
       <Filter>sonia.logger</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\io\file.cpp">
-      <Filter>sonia.io</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\iterators\file_region_iterator.cpp">
       <Filter>sonia.utility\iterators</Filter>
@@ -497,9 +497,6 @@
     <ClCompile Include="..\..\..\sonia\utility\windows.cpp">
       <Filter>sonia.utility</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\scheduler\basic_scheduler.cpp">
-      <Filter>sonia.scheduler</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\sal\windows_sal.cpp">
       <Filter>sonia.sal</Filter>
     </ClCompile>
@@ -512,17 +509,23 @@
     <ClCompile Include="..\..\..\sonia\services\bundle.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\scheduler\fiber_work_stealing_scheduler.cpp">
-      <Filter>sonia.scheduler</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\io\io_factory_win.cpp">
-      <Filter>sonia.io</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\io\io_factory_linux.cpp">
-      <Filter>sonia.io</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\posix\signals.cpp">
       <Filter>sonia.posix</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\file.cpp">
+      <Filter>sonia.services.io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_factory_linux.cpp">
+      <Filter>sonia.services.io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_factory_win.cpp">
+      <Filter>sonia.services.io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\scheduler\basic_scheduler.cpp">
+      <Filter>sonia.services.scheduler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.cpp">
+      <Filter>sonia.services.scheduler</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

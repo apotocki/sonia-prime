@@ -102,7 +102,7 @@ class tcp_socket_factory {
 public:
     virtual ~tcp_socket_factory() {}
 
-    virtual tcp_socket create_tcp_socket(string_view address, uint16_t port, tcp_socket_type dt = tcp_socket_type::TCP) = 0;
+    virtual tcp_socket create_tcp_socket(string_view address, uint16_t port = 0, tcp_socket_type dt = tcp_socket_type::TCP) = 0;
     virtual size_t tcp_socket_count(tcp_socket_type) const = 0;
 };
 

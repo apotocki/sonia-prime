@@ -55,7 +55,7 @@ public:
 
     //  tcp_acceptor_service
     void tcp_acceptor_async_accept_and_read_some(void * handle, void * buff, size_t sz, acceptor_functor const&) override;
-    void tcp_acceptor_close(void * handle) override;
+    void tcp_acceptor_close(void * handle) noexcept override;
 
     // file factory
     file open_file(cstring_view path, file_open_mode, file_access_mode, file_bufferring_mode) override;

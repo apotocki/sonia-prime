@@ -9,8 +9,9 @@
 #   pragma once
 #endif
 
-#include <set>
 #include <typeinfo>
+
+#include <boost/unordered_set.hpp>
 
 #include "sonia/shared_ptr.hpp"
 #include "sonia/function.hpp"
@@ -113,11 +114,13 @@ public:
     }
 
     void set_binder(shared_ptr<binder_type> b) { binder_ = std::move(b); }
+    void set_jh(function<T(json_value const& v)> const& jh) { jh_ = jh; }
 
 private:
     T cast(json_value const& v) const;
 
     shared_ptr<binder_type> binder_;
+    function<T(json_value const& v)> jh_;
 };
 
 template <typename T, typename BoundT>
@@ -255,6 +258,8 @@ public:
 
     parameter_options & binder(binder_type const& pd);
 
+    parameter_options & binder(function<target_type(json_value const& v)> const& jh);
+
     template <typename NextBoundT>
     parameter_options & binder(parameters_binding<NextBoundT>);
 
@@ -287,6 +292,8 @@ T simple_value_descriptor<T, BoundT>::cast(json_value const& v) const {
         T val{};
         binder_->apply(v.get_object(), &val);
         return std::move(val);
+    } else if (jh_) {
+        return jh_(v);
     } else {
         return json_cast<T>(v);
     }
@@ -348,6 +355,12 @@ parameter_options<VDT> & parameter_options<VDT>::binder(binder_type const& pd) {
 }
 
 template <class VDT>
+parameter_options<VDT> & parameter_options<VDT>::binder(function<typename VDT::target_type(json_value const& v)> const& jh) {
+    vd_->set_jh(jh);
+    return *this;
+}
+
+template <class VDT>
 template <typename NextBoundT>
 parameter_options<VDT> & parameter_options<VDT>::binder(parameters_binding<NextBoundT> pb) {
     vd_->set_binder(make_shared<binder_type>(pb.description()));
@@ -357,7 +370,7 @@ parameter_options<VDT> & parameter_options<VDT>::binder(parameters_binding<NextB
 template <class BoundT>
 void parameters_description<BoundT>::apply(json_object const& jo, BoundT * obj) {
     try {
-        std::set<std::string> used_names;
+        boost::unordered_set<std::string> used_names;
         for (auto const& pd : descriptors()) {
             json_value const* val = jo[pd->name()];
             if (!val && !pd->is_required() && pd->has_default()) {
@@ -371,6 +384,11 @@ void parameters_description<BoundT>::apply(json_object const& jo, BoundT * obj) 
                 } catch (std::exception const& e) {
                     throw exception("Error occurred during applying value %1% for %2%\n%3%"_fmt % to_string(*val) % pd->name() % e.what());
                 }
+            }
+        }
+        for (auto const& item : jo.items()) {
+            if (used_names.find(item.first, string_hasher(), string_equal_to()) == used_names.cend()) {
+                throw exception("An unbound parameter '%1%' was found"_fmt % item.first);
             }
         }
     } catch (std::exception const& e) {

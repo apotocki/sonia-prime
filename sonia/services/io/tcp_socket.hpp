@@ -77,6 +77,11 @@ public:
     }
 
     template <typename T>
+    size_t read_some(T * buff, size_t sz) {
+        return impl_->tcp_socket_read_some(handle_, buff, sz * sizeof(T));
+    }
+
+    template <typename T>
     void async_read_some(array_view<T> buff, function<void(std::error_code const&, size_t)> const& ftor) {
         return impl_->tcp_socket_async_read_some(handle_, buff.begin(), buff.size() * sizeof(T), ftor);
     }
@@ -84,6 +89,11 @@ public:
     template <typename T>
     size_t write_some(array_view<const T> buff) {
         return impl_->tcp_socket_write_some(handle_, buff.begin(), buff.size() * sizeof(T));
+    }
+
+    template <typename T>
+    size_t write_some(const T * buff, size_t sz) {
+        return impl_->tcp_socket_write_some(handle_, buff, sz * sizeof(T));
     }
 
 private:

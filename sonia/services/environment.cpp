@@ -303,8 +303,8 @@ uint32_t environment::get_type_id(std::type_info const& ti) {
     return it->second;
 }
 
-uint32_t environment::register_durable_id(string_view nm, std::type_info const& ti) {
-    uint32_t result = type_registry_->get_type_id(nm);
+uint32_t environment::register_durable_id(string_view nm, string_view servnm, std::type_info const& ti) {
+    uint32_t result = type_registry_->get_type_id(nm, servnm);
     auto guard = make_lock_guard(type_durable_id_mtx_);
     auto rpair = type_durable_id_map_.insert(type_id_map_type::value_type(ti, result));
     if (rpair.second || rpair.first->right == result) return result;

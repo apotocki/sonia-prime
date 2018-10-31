@@ -14,7 +14,6 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
-//#include <boost/multi_index/global_fun.hpp>
 
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
@@ -23,6 +22,8 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/thread.hpp"
 #include "sonia/utility/persister.hpp"
+#include "sonia/utility/thread/rw_fiber_mutex.hpp"
+#include "sonia/utility/scope_exit.hpp"
 
 namespace sonia { namespace utility { namespace basic_local_registry_detail {
 
@@ -38,10 +39,10 @@ struct persisted_flag {
 
 template <typename IDT>
 struct reg_item : persisted_flag {
-    std::string name;
+    std::string name, meta;
     IDT id;
 
-    reg_item(std::string nm, IDT idval) : name(std::move(nm)), id(idval) {}
+    reg_item(std::string nm, IDT idval, std::string mi = "") : name(std::move(nm)), meta(std::move(mi)), id(idval) {}
 
     reg_item() = default;
     reg_item(reg_item const& rhs) = default;
@@ -52,7 +53,8 @@ struct reg_item : persisted_flag {
     template<class Archive>
     void serialize(Archive & ar, const unsigned int = 0) {
         ar & boost::serialization::make_nvp("name", name)
-            & boost::serialization::make_nvp("id", id);
+           & boost::serialization::make_nvp("id", id)
+           & boost::serialization::make_nvp("meta", meta);
         if constexpr (Archive::is_loading::value) {
             persisted.store(true);
         }
@@ -119,27 +121,40 @@ public:
         : state_persister_(std::move(sp))
     {}
 
-    IDT get_id(string_view name) {
-        auto lk = make_unique_lock(mtx_);
+    IDT get_id(string_view name, string_view meta) {
+        auto rwguard = make_rw_lock_guard(mtx_, rw_type::shared);
         auto it = registry_.find(name, string_hasher(), string_equal_to());
-        bool found_flag = it != registry_.end();
-        if (found_flag && it->persisted.load()) {
-            return it->id;
+        reg_item const* pitm = it != registry_.end() ? &*it : nullptr;
+        
+        if (BOOST_UNLIKELY(!pitm)) {
+            rwguard.promote();
+            // "it" could be invalidated (by other threads), so get it again and check
+            it = registry_.find(name, string_hasher(), string_equal_to());
+            if (it == registry_.end()) {
+                IDT result = derived().increment_fetch_counter();
+                pitm = &*registry_.insert(it, reg_item{to_string(name), result, to_string(meta)});
+            } else {
+                pitm = &*it;
+            }
+            rwguard.demote();
         }
-        auto wrguard = make_lock_guard(wrmtx_);
-        IDT result = found_flag ? it->id : derived().increment_fetch_counter();
-        if (found_flag && it->persisted.load()) return result;
-        if (!found_flag) {
-            it = registry_.insert(it, reg_item{to_string(name), result});
+
+        if (BOOST_UNLIKELY(!pitm->persisted.load())) {
+            auto bguard = make_lock_guard(backup_mtx_);
+            if (!pitm->persisted.load()) {
+                backup();
+                for (auto & itm : registry_) {
+                    itm.persisted.store(true);
+                }
+            }
+            BOOST_ASSERT(pitm->persisted.load());
         }
-        lk.unlock();
-        backup();
-        it->persisted.store(true);
-        return result;
+        
+        return pitm->id;
     }
 
     string_view get_name(IDT id) const {
-        auto guard = make_lock_guard(mtx_);
+        auto guard = make_shared_lock_guard(mtx_);
         auto it = registry_.template get<1>().find(id);
         if (it != registry_.template get<1>().end() && it->persisted.load()) {
             return it->name;
@@ -151,8 +166,8 @@ private:
     IDT counter_;
     shared_ptr<persister> state_persister_;
     registry_t registry_;
-    mutable spinlock mtx_;
-    mutable fibers::mutex wrmtx_;
+    mutable fibers::rw_mutex mtx_;
+    mutable fibers::mutex backup_mtx_;
 };
 
 }}

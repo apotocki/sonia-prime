@@ -131,7 +131,7 @@ struct binding_tag_facade {
 #define SONIA_DECLARE_BINDING_TAG(tagnm, func) \
 struct tagnm : ::sonia::binding_tag_facade<decltype(func), func> {};
 
-#define SONIA_REGISTER_BINDING_TAG(tag, tagnm) \
-::sonia::services::register_durable_id(tagnm, typeid(tag))
+#define SONIA_REGISTER_BINDING_TAG(tag, tagnm, serv) \
+::sonia::services::register_durable_id(tagnm, serv, typeid(tag))
 
 #endif // SONIA_UTILIT_BIND_HPP

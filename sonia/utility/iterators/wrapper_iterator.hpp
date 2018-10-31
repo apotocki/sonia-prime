@@ -23,27 +23,9 @@
 #include "sonia/utility/polymorphic_traits.hpp"
 #include "sonia/utility/optional_inheritor.hpp"
 
-namespace sonia { namespace detail {
+#include "proxy.hpp"
 
-template <class ImplT, class ReferenceT>
-class wrapper_iterator_proxy
-{
-public:
-    explicit wrapper_iterator_proxy(ImplT & impl) : impl_(impl) {}
-    wrapper_iterator_proxy(wrapper_iterator_proxy &&) = default;
-
-    wrapper_iterator_proxy(wrapper_iterator_proxy const&) = delete;
-    wrapper_iterator_proxy & operator = (wrapper_iterator_proxy const&) = delete;
-    wrapper_iterator_proxy & operator = (wrapper_iterator_proxy &&) = delete;
-
-    operator ReferenceT() const { return impl_.dereference(); }
-    wrapper_iterator_proxy & operator = (ReferenceT ref) { impl_.set(ref); return *this; }
-
-private:
-    ImplT & impl_;
-};
-
-} // namespace sonia::detail
+namespace sonia {
 
 template <typename CategoryT> struct iterator_copy {
     template <typename T>
@@ -117,11 +99,11 @@ template <
 class wrapper_output_iterator 
     : public boost::iterator_facade<
           wrapper_output_iterator<ImplT, Value, CategoryOrTraversal, ReferenceT, DifferenceT>
-        , Value, CategoryOrTraversal, detail::wrapper_iterator_proxy<ImplT, ReferenceT>, DifferenceT
+        , Value, CategoryOrTraversal, wrapper_iterator_proxy<member_dereference_wrapper<ImplT, ReferenceT>>, DifferenceT
     >
 {
     friend class boost::iterator_core_access;
-    typedef detail::wrapper_iterator_proxy<ImplT, ReferenceT> proxy_type;
+    typedef wrapper_iterator_proxy<member_dereference_wrapper<ImplT, ReferenceT>> proxy_type;
 
     bool equal(wrapper_output_iterator const& rhs) const {
         return impl_.equal(rhs.impl_);
@@ -150,11 +132,13 @@ public:
     { }
 
     template <typename ... ArgsT>
-    explicit wrapper_output_iterator(std::in_place_t, ArgsT && ... args) 
+    explicit wrapper_output_iterator(in_place_t, ArgsT && ... args) 
         : impl_(std::forward<ArgsT>(args) ...)
     { }
 
     bool empty() const { return impl_.empty(); }
+
+    void flush() { impl_.flush(); }
 
 private:
     mutable ImplT impl_;
@@ -187,6 +171,10 @@ public:
         throw not_supported_operation_error("iterator_polymorphic_impl::decrement");
     }
 
+    virtual void flush() {
+        throw not_supported_operation_error("iterator_polymorphic_impl::flush");
+    }
+
     virtual void set(ReferenceT ref) {
         throw not_supported_operation_error("iterator_polymorphic_impl::set");
     }
@@ -204,10 +192,15 @@ public:
     }
 };
 
-template <typename PtrT, typename CategoryT>
+template <typename T, typename CategoryT>
 class iterator_ptr_wrappee_adapter
 {
 public:
+    template <typename DerivedT>
+    explicit iterator_ptr_wrappee_adapter(DerivedT * arg, enable_if_t<is_base_of_v<T, DerivedT>> * enabler = nullptr)
+        : impl_(iterator_copy<CategoryT>::copy(arg))
+    { }
+
     template <typename ... ArgsT>
     explicit iterator_ptr_wrappee_adapter(in_place_t, ArgsT && ... args) 
         : impl_(std::forward<ArgsT>(args) ...)
@@ -230,7 +223,9 @@ public:
     iterator_ptr_wrappee_adapter(iterator_ptr_wrappee_adapter &&) = default;
     iterator_ptr_wrappee_adapter & operator=(iterator_ptr_wrappee_adapter &&) = default;
 
-    bool empty() const { return impl_->empty(); }
+    bool empty() const {
+        return impl_->empty();
+    }
 
     bool equal(iterator_ptr_wrappee_adapter const& rhs) const {
         if (impl_) return !!rhs.impl_;
@@ -244,6 +239,10 @@ public:
 
     void decrement() {
         impl_->decrement();
+    }
+
+    void flush() {
+        impl_->flush();
     }
 
     decltype(auto) dereference() const {
@@ -261,7 +260,7 @@ public:
     }
 
 private:
-    PtrT impl_;
+    T * impl_;
 };
 
 template <
@@ -335,7 +334,11 @@ public:
     explicit iterator_polymorpic_impl_adapter_impl(ArgsT&& ... args) : it_(std::forward<ArgsT>(args)...) {}
 
     bool empty() const override {
-        return it_.empty();
+        if constexpr (iterators::has_member_empty_v<IteratorT>) {
+            return it_.empty();
+        } else {
+            throw internal_error("empty() is not a part of %1% public interface"_fmt % typeid(IteratorT).name());
+        }
     }
 
     bool equal(impl_t const& rhs) const override {
@@ -344,6 +347,14 @@ public:
 
     void increment() override {
         ++it_;
+    }
+
+    void flush() override {
+        if constexpr (iterators::has_member_flush_v<IteratorT>) {
+            it_.flush();
+        } else {
+            ++it_;
+        }
     }
 
     ReferenceT dereference() const override {

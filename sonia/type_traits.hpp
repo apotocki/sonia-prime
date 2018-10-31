@@ -89,6 +89,8 @@ using std::remove_cv;
 using std::remove_cv_t;
 using std::remove_reference;
 using std::remove_reference_t;
+using std::remove_pointer;
+using std::remove_pointer_t;
 
 using std::add_const;
 using std::add_const_t;

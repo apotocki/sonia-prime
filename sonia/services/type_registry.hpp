@@ -18,7 +18,7 @@ class type_registry {
 public:
     virtual ~type_registry() {}
 
-    virtual uint32_t get_type_id(string_view) = 0;
+    virtual uint32_t get_type_id(string_view, string_view) = 0;
     virtual string_view get_type_name(uint32_t) const = 0; // throws an exception if the name is undefined for the given id.
 };
 

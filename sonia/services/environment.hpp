@@ -76,8 +76,9 @@ public:
     uint32_t get_type_id(std::type_info const&);
 
     // durable id api
-    uint32_t register_durable_id(string_view nm, std::type_info const& ti);
+    uint32_t register_durable_id(string_view nm, string_view servnm, std::type_info const& ti);
     uint32_t get_durable_id(std::type_info const&);
+    std::type_info const& get_durable_type_info(uint32_t);
 
 private:
     struct host_hasher { size_t operator()(shared_ptr<host_impl> const& ph) const { return hash_value(ph->get_name()); } };

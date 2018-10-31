@@ -12,9 +12,10 @@
 #include <vector>
 
 #include "sonia/services/service.hpp"
-#include "sonia/io/tcp_acceptor.hpp"
+#include "sonia/services/io/tcp_acceptor.hpp"
+#include "sonia/services/scheduler/scheduler.hpp"
+
 #include "sonia/utility/linked_buffers.hpp"
-#include "sonia/scheduler/scheduler.hpp"
 
 #include "net_configuration.hpp"
 #include "connector.hpp"

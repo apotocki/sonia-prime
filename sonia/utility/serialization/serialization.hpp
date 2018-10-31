@@ -66,13 +66,51 @@ public:
 
     operator OutputIteratorT && () { return std::move(oi); }
 
+    OutputIteratorT & iterator() { return oi; }
+
 private:
     OutputIteratorT oi;
+};
+
+template <typename TagT, class InputIteratorT>
+class decoder {
+public:
+    explicit decoder(InputIteratorT it) : ii(std::move(it)) {}
+
+    template <typename T>
+    decoder & operator& (T * arg) {
+        ii = decode<TagT, T>(std::move(ii), arg);
+        return *this;
+    }
+
+    template <typename T>
+    decoder & operator& (T & arg) {
+        ii = decode<TagT, T>(std::move(ii), arg);
+        return *this;
+    }
+
+    template <typename T>
+    decoder & operator& (T const& arg) {
+        ii = decode<TagT, T>(std::move(ii), arg);
+        return *this;
+    }
+
+    operator InputIteratorT && () { return std::move(ii); }
+
+    InputIteratorT & iterator() { return ii; }
+
+private:
+    InputIteratorT ii;
 };
 
 template <typename TagT, class OutputIteratorT>
 encoder<TagT, OutputIteratorT> make_encoder(OutputIteratorT oi) {
     return encoder<TagT, OutputIteratorT>(std::move(oi));
+}
+
+template <typename TagT, class InputIteratorT>
+decoder<TagT, InputIteratorT> make_decoder(InputIteratorT ii) {
+    return decoder<TagT, InputIteratorT>(std::move(ii));
 }
 
 }

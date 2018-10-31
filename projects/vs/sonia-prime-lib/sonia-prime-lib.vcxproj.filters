@@ -49,14 +49,8 @@
     <Filter Include="sonia.utility\range">
       <UniqueIdentifier>{8f6f7125-96ce-4429-9228-69649c7e6e96}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.services\async">
-      <UniqueIdentifier>{d0ebef30-37ad-4f67-8b9d-3d5d592fde5e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.sal">
       <UniqueIdentifier>{51847fa8-f43c-46c8-8939-7d494d843269}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.thread">
-      <UniqueIdentifier>{2190df41-1de2-4abc-bd0a-b98dc5b37467}</UniqueIdentifier>
     </Filter>
     <Filter Include="sonia.utility\thread">
       <UniqueIdentifier>{de59bf45-ac48-45e2-be5e-c0fcd98b36c1}</UniqueIdentifier>
@@ -285,9 +279,6 @@
     <ClInclude Include="..\..\..\sonia\utility\optimized\array.hpp">
       <Filter>sonia.utility\optimized</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\async\reactor.hpp">
-      <Filter>sonia.services\async</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\functional\range_equal.hpp">
       <Filter>sonia.functional</Filter>
     </ClInclude>
@@ -332,9 +323,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\basic_local_registry.hpp">
       <Filter>sonia.utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\thread\rw_fiber_mutex.hpp">
-      <Filter>sonia.thread</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\thread\rw_fiber_mutex.hpp">
       <Filter>sonia.utility\thread</Filter>
@@ -450,6 +438,18 @@
     <ClInclude Include="..\..\..\sonia\services\scheduler\test_fiber_mutex.hpp">
       <Filter>sonia.services.scheduler</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\tcp_write_output_iterator.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\functional\has.hpp">
+      <Filter>sonia.functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\tcp_read_output_iterator.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\proxy.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -490,9 +490,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp">
       <Filter>sonia.utility</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\services\async\async_reactor.cpp">
-      <Filter>sonia.services\async</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\windows.cpp">
       <Filter>sonia.utility</Filter>

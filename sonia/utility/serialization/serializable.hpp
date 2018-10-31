@@ -23,14 +23,14 @@ public:
     // note: range_write_iterator and range_read_iterator are reference iterators
 
     typedef wrapper_output_iterator<
-        iterator_ptr_wrappee_adapter<output_impl_type*, std::input_iterator_tag>,
+        iterator_ptr_wrappee_adapter<output_impl_type, std::input_iterator_tag>,
         array_view<char>,
         std::output_iterator_tag,
         array_view<char>
     > range_write_iterator;
 
     typedef wrapper_output_iterator<
-        iterator_ptr_wrappee_adapter<input_impl_type*, std::input_iterator_tag>,
+        iterator_ptr_wrappee_adapter<input_impl_type, std::input_iterator_tag>,
         array_view<const char>,
         std::output_iterator_tag,
         array_view<const char>

@@ -89,7 +89,7 @@ private:
         >
     > mm_set_t;
 
-    mutable rw_fiber_mutex mm_item_mtx_;
+    mutable sonia::fibers::rw_mutex mm_item_mtx_;
     mm_set_t mm_set_;
 
     //object_pool<mm_item> mm_item_pool_;

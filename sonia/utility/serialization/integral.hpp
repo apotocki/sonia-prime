@@ -194,6 +194,35 @@ public:
     }
 };
 
+template <typename T>
+class coder<ordered_t, T, enable_if_t<is_integral_v<T> && !is_signed_v<T> && !integral_detail::is_special<T>>>
+{
+public:
+    template <typename OutputIteratorT>
+    OutputIteratorT encode(T val, OutputIteratorT oi) const {
+        for (int i = sizeof(T) - 1; i >= 0; --i) {
+            *oi = (val >> CHAR_BIT * i) & ((1 << CHAR_BIT) - 1);
+            ++oi;
+        }
+        return std::move(oi);
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, T & val) const {
+        val = T{0};
+        for (int i = sizeof(T) - 1; i >= 0; --i) {
+            val |= static_cast<uint8_t>(*ii) * (1 << CHAR_BIT * i);
+            ++ii;
+        }
+        return std::move(ii);
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, T * val) const {
+        return decode(std::move(ii), *val);
+    }
+};
+
 }}
 
 #endif // SONIA_SERIALIZATION_INTEGRAL_HPP

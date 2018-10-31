@@ -21,9 +21,9 @@ namespace serialization {
 
 template <typename TagT, typename T, typename EnableT = void> class coder;
 
-struct default_t {};
+struct default_t {}; // can be incompatible among systems
 struct compressed_t {};
-struct ordered_t {};
+struct ordered_t {}; // compatible among systems
 
 }}
 

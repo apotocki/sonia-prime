@@ -106,6 +106,12 @@ public:
         if (pos_) {
             typename helper_t::range_type rng = *it_;
             *it_ = typename helper_t::range_type(boost::begin(rng), pos_->first);
+            pos_.reset();
+            if constexpr (iterators::has_member_flush_v<IteratorT>) {
+                it_.flush();
+            } else {
+                ++it_;
+            }
         }
     }
 

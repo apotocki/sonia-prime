@@ -24,8 +24,9 @@ namespace sonia {
 
 namespace services {
 
-SONIA_PRIME_API uint32_t register_durable_id(string_view, std::type_info const&);
+SONIA_PRIME_API uint32_t register_durable_id(string_view, string_view, std::type_info const&);
 SONIA_PRIME_API uint32_t get_durable_id(std::type_info const&);
+SONIA_PRIME_API std::type_info const& get_durable_type_info(uint32_t);
 
 }
 
@@ -45,9 +46,9 @@ class durable_id {
                 cache<T>::cached_val_ = sonia::services::get_durable_id(typeid(T));
             });
         }
-        explicit cache(string_view nm) {
+        explicit cache(string_view nm, string_view servnm) {
             std::call_once(once_flag_, [nm]() {
-                cache<T>::cached_val_ = sonia::services::register_durable_id(nm, typeid(T));
+                cache<T>::cached_val_ = sonia::services::register_durable_id(nm, servnm, typeid(T));
             });
         }
         uint32_t get() const noexcept { return cached_val_; }
@@ -56,15 +57,24 @@ class durable_id {
 public:
     durable_id(std::type_info const& ti) : val_(sonia::services::get_durable_id(ti)) {}
 
-    //durable_id() noexcept : val_(0) {}
+    durable_id() noexcept : val_(0) {}
 
-    //BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL()
+    BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL()
 
-    //constexpr bool operator!() const noexcept { return !val_; }
+    constexpr bool operator!() const noexcept { return !val_; }
 
-    template <class T, typename ... ArgsT>
-    static durable_id get(ArgsT && ... args) {
-        return durable_id(cache<T>(std::forward<ArgsT>(args) ...).get());
+    std::type_info const& get_type_info() const {
+        return sonia::services::get_durable_type_info(val_);
+    }
+
+    template <class T>
+    static durable_id get() {
+        return durable_id(cache<T>().get());
+    }
+
+    template <class T>
+    static durable_id get(string_view nm, string_view servnm) {
+        return durable_id(cache<T>(nm, servnm).get());
     }
 
     template <typename CharT, class TraitsT>

@@ -74,6 +74,11 @@ public:
 
     BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL();
 
+    bool is_subset_of(array_view r) const {
+        return std::less_equal<T*>()(r.data_, data_) && std::less_equal<T*>()(data_, r.end()) &&
+            data_ - r.data_ + size_ <= r.size_;
+    }
+
 protected:
     T * data_;
     size_t size_;
@@ -104,6 +109,11 @@ std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, Trait
         os << val;
     }
     return os << ']';
+}
+
+template <typename T, size_t N>
+array_view<T> to_array_view(T (&arr)[N]) {
+    return array_view<T>(arr, N);
 }
 
 template <typename T>

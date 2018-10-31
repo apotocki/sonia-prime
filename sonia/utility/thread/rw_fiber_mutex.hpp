@@ -2,8 +2,8 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_RW_FIBER_MUTEX_HPP
-#define SONIA_RW_FIBER_MUTEX_HPP
+#ifndef SONIA_FIBERS_RW_MUTEX_HPP
+#define SONIA_FIBERS_RW_MUTEX_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
@@ -17,9 +17,9 @@
 #include <boost/fiber/mutex.hpp>
 #include <boost/fiber/condition_variable.hpp>
 
-namespace sonia {
+namespace sonia { namespace fibers {
 
-class rw_fiber_mutex {
+class rw_mutex {
     static const size_t log_half_rng = (sizeof(intptr_t) * CHAR_BIT - 1) / 2;
     static const intptr_t state_pos_value = (intptr_t)1 << log_half_rng; // intptr_t::max / state_pos_value = ~ wr and state_pos_value r locks simultaneously
     std::atomic<intptr_t> state_{0};
@@ -33,9 +33,9 @@ class rw_fiber_mutex {
     boost::fibers::condition_variable_any rvar_;
 
 public:
-    rw_fiber_mutex() = default;
-    rw_fiber_mutex(rw_fiber_mutex const&) = delete;
-    rw_fiber_mutex& operator= (rw_fiber_mutex const&) = delete;
+    rw_mutex() = default;
+    rw_mutex(rw_mutex const&) = delete;
+    rw_mutex& operator= (rw_mutex const&) = delete;
 
     void lock_shared() {
         for (;;) {
@@ -62,17 +62,17 @@ public:
         }
     }
 
-    bool promote() {
+    void promote() {
         intptr_t stateval = state_.fetch_add(state_pos_value + 1, std::memory_order_acquire);
-        BOOST_ASSERT(!stateval);
+        BOOST_ASSERT(0 != stateval);
         if (-1 == stateval) {
             mtx_.lock();
-            return true;
-        } else if (stateval < 0) { // there is an another shared lock at the moemnt
+            return;
+        } else if (stateval < 0) { // there is another shared lock at the moment
             mtx_.lock();
             std::unique_lock<spinlock_t> rnext_lock(smtx_);
             rvar_.wait(smtx_, [this]() { return 0 == state_.load(std::memory_order_relaxed) % state_pos_value; });
-            return true;
+            return;
         }
         // there is a waiting write lock
         // so release shared lock and acquire lock
@@ -82,7 +82,6 @@ public:
             rvar_.notify_one();
         }
         lock();
-        return false;
     }
 
     void lock() {
@@ -118,6 +117,6 @@ public:
     }
 };
 
-}
+}}
 
-#endif // SONIA_RW_FIBER_MUTEX_HPP
+#endif // SONIA_FIBERS_RW_MUTEX_HPP

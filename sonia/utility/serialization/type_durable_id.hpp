@@ -24,6 +24,11 @@ public:
     OutputIteratorT encode(sonia::type::durable_id const& did, OutputIteratorT oi) const {
         return sonia::encode<SerializationTagT>(did.val_, std::move(oi));
     }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, sonia::type::durable_id & did) const {
+        return sonia::decode<SerializationTagT>(std::move(ii), did.val_);
+    }
 };
 
 }}

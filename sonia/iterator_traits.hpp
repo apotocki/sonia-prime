@@ -15,8 +15,14 @@
 #include <boost/range.hpp>
 
 #include "sonia/type_traits.hpp"
+#include "sonia/functional/has.hpp"
 
-namespace sonia {
+namespace sonia { namespace iterators {
+
+HAS_MEMBER_TRAIT_DEF(empty);
+HAS_MEMBER_TRAIT_DEF(flush);
+
+} // sonia::iterators
 
 using boost::iterator_value;
 template <class IteratorT> using iterator_value_t = typename iterator_value<IteratorT>::type;

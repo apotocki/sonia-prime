@@ -9,11 +9,45 @@
 #   pragma once
 #endif
 
-#include "sonia/type_traits.hpp"
+#include <tuple>
+#include <type_traits>
+#include <utility>
 
 #include "serialization.hpp"
 
 namespace sonia { namespace serialization {
+
+template <class TupleT, size_t N> struct tuple_item {
+    TupleT * tuple;
+};
+
+template <typename TagT, typename ... Ts, size_t N>
+class coder<TagT, tuple_item<std::tuple<Ts ...>, N>>
+{
+    typedef std::tuple<Ts ...> tuple_t;
+    typedef std::tuple_element_t<N, tuple_t> item_t;
+
+public:
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, tuple_item<tuple_t, N> ts) const {
+        try {
+            return sonia::decode<TagT, item_t>(std::move(ii), &std::get<N>(*ts.tuple));
+        } catch (...) {
+            do_destroy(std::make_index_sequence<N>(), ts.tuple);
+            throw;
+        }
+    }
+
+private:
+    template <typename T>
+    static void destroyer(T * obj) noexcept { obj->~T(); }
+
+    template <size_t ... I>
+    static void do_destroy(std::index_sequence<I ...>, std::tuple<Ts ...> * val) noexcept {
+        (destroyer(&std::get<I>(*val)), ...);
+    }
+};
+
 
 template <typename TagT, typename ... Ts>
 class coder<TagT, std::tuple<Ts ...>>
@@ -24,21 +58,32 @@ public:
         return do_encode(std::make_index_sequence<sizeof ...(Ts)>(), val, std::move(oi));
     }
 
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, std::tuple<Ts ...> & val) const {
+        return do_decode(std::make_index_sequence<sizeof ...(Ts)>(), std::move(ii), val);
+    }
+
+    // I rely on: a construction of all items of a tuple is equivalent of the tuple construction
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, std::tuple<Ts ...> * val) const {
+        return do_decode(std::make_index_sequence<sizeof ...(Ts)>(), std::move(ii), val);
+    }
+
 private:
     template <size_t ... I, typename OutputIteratorT>
     static OutputIteratorT do_encode(std::index_sequence<I ...>, std::tuple<Ts ...> const& val, OutputIteratorT oi) {
         return (encoder<TagT, OutputIteratorT>(std::move(oi)) & ... & std::get<I>(val));
     }
-    //template <typename ArgT, typename InputIteratorT>
-    //InputIteratorT decode(InputIteratorT ii, ArgT * val) const {
-    //    auto it = reinterpret_cast<char*>(val), eit = it + sizeof(ArgT);
-    //    return pull(std::move(ii), it, eit);
-    //}
 
-    //template <typename ArgT, typename InputIteratorT>
-    //InputIteratorT decode(InputIteratorT ii, ArgT & val) const {
-    //    return decode(std::move(ii), &val);
-    //}
+    template <size_t ... I, typename InputIteratorT>
+    static InputIteratorT do_decode(std::index_sequence<I ...>, InputIteratorT ii, std::tuple<Ts ...> & val) {
+        return (decoder<TagT, InputIteratorT>(std::move(ii)) & ... & std::get<I>(val));
+    }
+
+    template <size_t ... I, typename InputIteratorT>
+    static InputIteratorT do_decode(std::index_sequence<I ...>, InputIteratorT ii, std::tuple<Ts ...> * val) {
+        return (decoder<TagT, InputIteratorT>(std::move(ii)) & ... & tuple_item<std::tuple<Ts ...>, I>{val});
+    }
 };
 
 }}

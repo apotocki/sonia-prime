@@ -118,9 +118,9 @@ uint32_t get_type_id(std::type_info const& ti) {
     return env_->get_type_id(ti);
 }
 
-uint32_t register_durable_id(string_view nm, std::type_info const& ti) {
+uint32_t register_durable_id(string_view nm, string_view servnm, std::type_info const& ti) {
     BOOST_ASSERT(env_);
-    return env_->register_durable_id(nm, ti);
+    return env_->register_durable_id(nm, servnm, ti);
 }
 
 uint32_t get_durable_id(std::type_info const& ti) {

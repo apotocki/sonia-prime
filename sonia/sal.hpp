@@ -10,7 +10,7 @@
 #endif
 
 #include "string.hpp"
-#include "thread.hpp"
+#include "concurrency.hpp"
 #include "shared_ptr.hpp"
 #include "sal_types.hpp"
 #include "sonia/services/bundle.hpp"

@@ -14,7 +14,7 @@
 #include <boost/pool/pool.hpp>
 #include <boost/unordered_set.hpp>
 
-#include "sonia/thread.hpp"
+#include "sonia/concurrency.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/logger/logger.hpp"
 

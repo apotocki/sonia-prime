@@ -13,7 +13,7 @@
 #include <iosfwd>
 
 #include "explicit_operator_bool.hpp"
-#include "sonia/functional/hash.hpp"
+#include "sonia/utility/functional/hash.hpp"
 
 namespace sonia {
 

@@ -11,7 +11,7 @@
 
 #include <boost/unordered_map.hpp>
 
-#include "sonia/thread.hpp"
+#include "sonia/concurrency.hpp"
 #include "sonia/function.hpp"
 
 #include "sonia/services.hpp"
@@ -28,7 +28,7 @@ private:
     typedef boost::unordered_map<std::string, function<service_descriptor()>> factories_type;
     factories_type named_factories_;
 
-    mutable fibers::mutex named_factories_mtx_;
+    mutable sonia::fibers::mutex named_factories_mtx_;
 };
 
 }}

@@ -14,12 +14,11 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
-//#include <boost/unordered_map.hpp>
 
 #include "sonia/string.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/function.hpp"
-#include "sonia/thread.hpp"
+#include "sonia/concurrency.hpp"
 #include "sonia/services/service.hpp"
 #include "sonia/services/service_locator.hpp"
 #include "sonia/utility/multimethod.hpp"
@@ -61,7 +60,7 @@ private:
     shared_ptr<service_registry> registry_;
     shared_ptr<service_locator> locator_;
 
-    spinlock on_close_mtx_;
+    spin_mutex on_close_mtx_;
     std::vector<function<void()>> on_close_handlers_;
 
     typedef optional_inheritor<multimethod, sizeof(void*) + sizeof(function<void()>)> mmholder_t;

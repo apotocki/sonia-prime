@@ -14,7 +14,7 @@
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/optimized/decimal.hpp"
 #include "sonia/utility/optimized/array.hpp"
-#include "sonia/functional/mover.hpp"
+#include "sonia/utility/functional/mover.hpp"
 
 namespace sonia {
 

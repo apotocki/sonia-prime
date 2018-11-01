@@ -15,7 +15,7 @@
 
 #include "sonia/cstdint.hpp"
 #include "sonia/type_traits.hpp"
-#include "sonia/functional/reference_wrapper.hpp"
+#include "sonia/utility/functional/reference_wrapper.hpp"
 
 #define SONIA_OPTIMIZED_TYPE_ALIGNMENT sizeof(void*) // to be able to store ponters directly in first holder bytes
 

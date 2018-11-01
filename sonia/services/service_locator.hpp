@@ -15,7 +15,7 @@
 
 #include <boost/intrusive/set.hpp>
 
-#include "sonia/thread.hpp"
+#include "sonia/concurrency.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/logger/loggable.hpp"
 #include "service.hpp"

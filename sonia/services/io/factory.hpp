@@ -13,7 +13,7 @@
 #include <atomic>
 
 #include "sonia/shared_ptr.hpp"
-#include "sonia/thread.hpp"
+#include "sonia/concurrency.hpp"
 #include "sonia/logger/loggable.hpp"
 
 #include "tcp_socket.hpp"

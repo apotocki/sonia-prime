@@ -20,7 +20,7 @@
 
 #include "sonia/string.hpp"
 #include "sonia/shared_ptr.hpp"
-#include "sonia/thread.hpp"
+#include "sonia/concurrency.hpp"
 #include "sonia/utility/persister.hpp"
 #include "sonia/utility/thread/rw_fiber_mutex.hpp"
 #include "sonia/utility/scope_exit.hpp"

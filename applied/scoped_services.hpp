@@ -9,7 +9,7 @@
 #   pragma once
 #endif
 
-#include "sonia/thread.hpp"
+#include "sonia/concurrency.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/services.hpp"
 

@@ -15,7 +15,7 @@
 #include <boost/range.hpp>
 
 #include "sonia/type_traits.hpp"
-#include "sonia/functional/has.hpp"
+#include "sonia/utility/functional/has.hpp"
 
 namespace sonia { namespace iterators {
 

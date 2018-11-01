@@ -15,7 +15,7 @@
 #include <boost/integer_traits.hpp>
 
 #include "sonia/type_traits.hpp"
-#include "sonia/algorithm/pull.hpp"
+#include "sonia/utility/algorithm/pull.hpp"
 
 #include "serialization.hpp"
 

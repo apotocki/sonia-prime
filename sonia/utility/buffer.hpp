@@ -13,7 +13,7 @@
 
 #include "sonia/type_traits.hpp"
 #include "sonia/array_view.hpp"
-#include "sonia/algorithm/construct.hpp"
+#include "sonia/utility/algorithm/construct.hpp"
 
 namespace sonia {
 

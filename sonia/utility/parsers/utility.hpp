@@ -16,7 +16,7 @@
 #include "sonia/cstdint.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/iterator_traits.hpp"
-#include "sonia/algorithm/copy.hpp"
+#include "sonia/utility/algorithm/copy.hpp"
 
 namespace sonia { namespace parsers {
 

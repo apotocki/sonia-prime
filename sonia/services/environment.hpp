@@ -21,7 +21,7 @@
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 
-#include "sonia/thread.hpp"
+#include "sonia/concurrency.hpp"
 
 #include "host_impl.hpp"
 #include "service_factory.hpp"
@@ -86,7 +86,7 @@ private:
     static service_descriptor create_service(service_configuration const& cfg);
     static service_descriptor create_bundle_service(bundle_configuration const& cfg);
 
-    spinlock host_mtx_;
+    spin_mutex host_mtx_;
     boost::unordered_set<shared_ptr<host_impl>, host_hasher> hosts_;
     shared_ptr<type_registry> type_registry_;
     shared_ptr<service_registry> registry_;
@@ -102,7 +102,7 @@ private:
     mutable mutex cfg_mutex_;
 
     // type_id support
-    mutable spinlock type_id_mtx_;
+    mutable spin_mutex type_id_mtx_;
     typedef boost::bimap<
         boost::bimaps::unordered_set_of<std::type_index>,
         boost::bimaps::unordered_set_of<uint32_t>
@@ -110,7 +110,7 @@ private:
     type_id_map_type type_id_map_;
     std::atomic<uint32_t> type_id_counter_;
 
-    mutable spinlock type_durable_id_mtx_;
+    mutable spin_mutex type_durable_id_mtx_;
     type_id_map_type type_durable_id_map_;
 };
 

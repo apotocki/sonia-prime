@@ -12,11 +12,11 @@
 #include <memory>
 
 #include "sonia/string.hpp"
-#include "sonia/utility/optimized/holder.hpp"
 #include "sonia/utility/buffer.hpp"
-#include "sonia/functional/mover.hpp"
-#include "sonia/functional/range_equal.hpp"
-#include "sonia/functional/range_less.hpp"
+#include "sonia/utility/optimized/holder.hpp"
+#include "sonia/utility/functional/mover.hpp"
+#include "sonia/utility/functional/range_equal.hpp"
+#include "sonia/utility/functional/range_less.hpp"
 
 namespace sonia {
 

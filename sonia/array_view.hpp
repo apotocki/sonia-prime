@@ -18,8 +18,8 @@
 #include "cstdint.hpp"
 #include "type_traits.hpp"
 
-#include "sonia/functional/range_equal.hpp"
-#include "sonia/functional/range_less.hpp"
+#include "sonia/utility/functional/range_equal.hpp"
+#include "sonia/utility/functional/range_less.hpp"
 #include "sonia/utility/explicit_operator_bool.hpp"
 
 namespace sonia {

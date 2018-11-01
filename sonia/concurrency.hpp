@@ -2,8 +2,8 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_THREAD_HPP
-#define SONIA_THREAD_HPP
+#ifndef SONIA_CONCURRENCY_HPP
+#define SONIA_CONCURRENCY_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
@@ -29,7 +29,7 @@ using boost::shared_lock_guard;
 using boost::make_lock_guard;
 using boost::fibers::fiber;
 
-using boost::fibers::detail::spinlock;
+typedef boost::fibers::detail::spinlock spin_mutex;
 
 namespace fibers {
     using namespace boost::fibers;
@@ -115,4 +115,4 @@ rw_lock_guard<MutexT> make_rw_lock_guard(MutexT & m, rw_type rwt) {
 
 }
 
-#endif // SONIA_THREAD_HPP
+#endif // SONIA_CONCURRENCY_HPP

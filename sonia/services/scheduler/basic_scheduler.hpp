@@ -11,14 +11,13 @@
 
 #include <boost/thread/barrier.hpp>
 
-#include "sonia/thread.hpp"
+#include "sonia/concurrency.hpp"
 #include "sonia/function.hpp"
 #include "sonia/optional.hpp"
 #include "sonia/logger/loggable.hpp"
 
 #include "scheduler.hpp"
 #include "fiber_work_stealing_scheduler.hpp"
-//#include "fiber_mutex.hpp"
 
 namespace sonia {
 

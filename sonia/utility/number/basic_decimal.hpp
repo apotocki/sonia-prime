@@ -10,7 +10,7 @@
 #endif
 
 #include "sonia/string.hpp"
-#include "sonia/functional/hash.hpp"
+#include "sonia/utility/functional/hash.hpp"
 #include "sonia/utility/comparison_operators.hpp"
 
 namespace sonia {

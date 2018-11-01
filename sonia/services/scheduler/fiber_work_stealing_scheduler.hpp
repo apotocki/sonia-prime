@@ -19,7 +19,7 @@
 //#   include <boost/fiber/detail/context_spinlock_queue.hpp>
 //#endif
 
-#include "sonia/thread.hpp"
+#include "sonia/concurrency.hpp"
 
 namespace sonia {
 
@@ -29,7 +29,7 @@ public:
         friend class fiber_work_stealing_scheduler;
 
         std::vector<boost::intrusive_ptr<fiber_work_stealing_scheduler>> schedulers;
-        spinlock mtx;
+        spin_mutex mtx;
         size_t victim_sched_idx = 0;
 
     public:
@@ -64,7 +64,7 @@ private:
     group_host & group_;
     mutex mtx_;
     condition_variable cnd_;
-    simple_queue<boost::fibers::context*, spinlock> rqueue_{1024};
+    simple_queue<boost::fibers::context*, spin_mutex> rqueue_{1024};
     uint8_t flag_ : 1;
     uint8_t suspend_ : 1;
 };

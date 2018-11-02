@@ -113,26 +113,31 @@ void on_close(function<void()> const& func) {
     get_host_impl()->register_on_close(func);
 }
 
-uint32_t get_type_id(std::type_info const& ti) {
+uint32_t get_type_id(std::type_index ti) {
     BOOST_ASSERT(env_);
     return env_->get_type_id(ti);
 }
 
-uint32_t register_durable_id(string_view nm, string_view servnm, std::type_info const& ti) {
+uint32_t register_durable_id(string_view nm, string_view servnm, std::type_index ti) {
     BOOST_ASSERT(env_);
     return env_->register_durable_id(nm, servnm, ti);
 }
 
-uint32_t get_durable_id(std::type_info const& ti) {
+uint32_t get_durable_id(std::type_index ti) {
     BOOST_ASSERT(env_);
     return env_->get_durable_id(ti);
 }
 
-void register_multimethod(multimethod && mm, type_info const& id, array_view<const type_info> mmid) {
+std::type_index get_durable_type_index(uint32_t did) {
+    BOOST_ASSERT(env_);
+    return env_->get_durable_type_index(did);
+}
+
+void register_multimethod(multimethod && mm, std::type_index id, array_view<const std::type_index> mmid) {
     get_host_impl()->register_multimethod(std::move(mm), id, mmid);
 }
 
-multimethod const* get_multimethod(type_info const& id) {
+multimethod const* get_multimethod(std::type_index id) {
     return get_host_impl()->get_multimethod(id);
 }
 

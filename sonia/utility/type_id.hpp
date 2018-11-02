@@ -20,7 +20,7 @@
 namespace sonia {
 
 namespace services {
-    SONIA_PRIME_API uint32_t get_type_id(std::type_info const&);
+    SONIA_PRIME_API uint32_t get_type_id(std::type_index);
 }
 
 namespace type {

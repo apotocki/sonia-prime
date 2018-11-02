@@ -9,8 +9,9 @@
 #   pragma once
 #endif
 
-#include <mutex>
+#include <mutex> // call_once
 #include <iosfwd>
+#include <typeindex>
 
 #include "sonia/prime_config.hpp"
 #include "sonia/cstdint.hpp"
@@ -24,9 +25,9 @@ namespace sonia {
 
 namespace services {
 
-SONIA_PRIME_API uint32_t register_durable_id(string_view, string_view, std::type_info const&);
-SONIA_PRIME_API uint32_t get_durable_id(std::type_info const&);
-SONIA_PRIME_API std::type_info const& get_durable_type_info(uint32_t);
+SONIA_PRIME_API uint32_t register_durable_id(string_view, string_view, std::type_index);
+SONIA_PRIME_API uint32_t get_durable_id(std::type_index);
+SONIA_PRIME_API std::type_index get_durable_type_index(uint32_t);
 
 }
 
@@ -35,55 +36,64 @@ namespace type {
 class durable_id {
     SONIA_DECLARE_SERIALIZATION_FRIENDLY;
     
-    explicit durable_id(uint32_t idval) noexcept : val_(idval) {}
+    durable_id(uint32_t idval, std::type_index ti)
+        : val_(idval), ti_(ti)
+    {}
 
+    template <typename T> friend class cache;
+    
     template <typename T>
-    struct cache {
+    class cache {
         static uint32_t cached_val_;
         static std::once_flag once_flag_;
+        friend class durable_id;
+
         cache() {
             std::call_once(once_flag_, []() {
                 cache<T>::cached_val_ = sonia::services::get_durable_id(typeid(T));
             });
         }
-        explicit cache(string_view nm, string_view servnm) {
+
+        cache(string_view nm, string_view servnm) {
             std::call_once(once_flag_, [nm]() {
                 cache<T>::cached_val_ = sonia::services::register_durable_id(nm, servnm, typeid(T));
             });
         }
-        uint32_t get() const noexcept { return cached_val_; }
+
+        durable_id get() const noexcept { return durable_id{cached_val_, typeid(T)}; }
     };
 
 public:
-    durable_id(std::type_info const& ti) : val_(sonia::services::get_durable_id(ti)) {}
+    explicit durable_id(uint32_t idval)
+        : val_(idval)
+        , ti_(sonia::services::get_durable_type_index(idval))
+    {}
 
-    durable_id() noexcept : val_(0) {}
+    explicit durable_id(std::type_index ti)
+        : val_(sonia::services::get_durable_id(ti))
+        , ti_(ti)
+    {}
 
-    BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL()
-
-    constexpr bool operator!() const noexcept { return !val_; }
-
-    std::type_info const& get_type_info() const {
-        return sonia::services::get_durable_type_info(val_);
-    }
+    std::type_index const& ti() const { return ti_; }
 
     template <class T>
     static durable_id get() {
-        return durable_id(cache<T>().get());
+        return cache<T>().get();
     }
 
     template <class T>
     static durable_id get(string_view nm, string_view servnm) {
-        return durable_id(cache<T>(nm, servnm).get());
+        return cache<T>(nm, servnm).get();
     }
 
     template <typename CharT, class TraitsT>
-    friend std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, durable_id const& v){
-        return os << v.val_;
+    friend std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, durable_id const& v) {
+        return os << v.val_ << " (" << ti_.name() << ")";
     }
 
 private:
     uint32_t val_;
+    std::type_index ti_;
 };
 
 template <typename T>

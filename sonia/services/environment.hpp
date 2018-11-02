@@ -12,7 +12,6 @@
 #include <iosfwd>
 #include <list>
 #include <atomic>
-#include <typeinfo>
 #include <typeindex>
 
 #include <boost/program_options.hpp>
@@ -73,12 +72,12 @@ public:
     void register_service_factory(string_view, function<service_descriptor()> const&);
 
     // type_id api
-    uint32_t get_type_id(std::type_info const&);
+    uint32_t get_type_id(std::type_index);
 
     // durable id api
-    uint32_t register_durable_id(string_view nm, string_view servnm, std::type_info const& ti);
-    uint32_t get_durable_id(std::type_info const&);
-    std::type_info const& get_durable_type_info(uint32_t);
+    uint32_t register_durable_id(string_view nm, string_view servnm, std::type_index);
+    uint32_t get_durable_id(std::type_index);
+    std::type_index get_durable_type_index(uint32_t);
 
 private:
     struct host_hasher { size_t operator()(shared_ptr<host_impl> const& ph) const { return hash_value(ph->get_name()); } };
@@ -110,7 +109,8 @@ private:
     type_id_map_type type_id_map_;
     std::atomic<uint32_t> type_id_counter_;
 
-    mutable spin_mutex type_durable_id_mtx_;
+    sonia::fibers::rw_mutex type_durable_id_mtx_;
+    //mutable spin_mutex type_durable_id_mtx_;
     type_id_map_type type_durable_id_map_;
 };
 

@@ -297,9 +297,6 @@
     <ClInclude Include="..\..\..\sonia\utility\multimethod.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\type_info.hpp">
-      <Filter>sonia.utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\range\hasher.hpp">
       <Filter>sonia.utility\range</Filter>
     </ClInclude>
@@ -443,6 +440,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\concurrency.hpp">
       <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\type_info_obs.hpp">
+      <Filter>sonia.utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -10,6 +10,7 @@
 #endif
 
 #include <utility>
+#include <typeindex>
 
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/size.hpp>
@@ -23,7 +24,6 @@
 #include "sonia/type_traits.hpp"
 #include "sonia/function.hpp"
 #include "sonia/array_view.hpp"
-#include "sonia/utility/type_info.hpp"
 #include "sonia/utility/polymorphic_traits.hpp"
 
 namespace sonia {
@@ -35,8 +35,8 @@ public:
 
 namespace services {
 
-SONIA_PRIME_API void register_multimethod(multimethod &&, type_info const& id, array_view<const type_info> fullid);
-SONIA_PRIME_API multimethod const* get_multimethod(type_info const& msig);
+SONIA_PRIME_API void register_multimethod(multimethod &&, std::type_index id, array_view<const std::type_index> fullid);
+SONIA_PRIME_API multimethod const* get_multimethod(std::type_index msig);
 
 }
 

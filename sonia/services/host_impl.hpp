@@ -48,8 +48,8 @@ public:
 
     void run(std::vector<std::string> const& servs);
 
-    void register_multimethod(multimethod && mm, type_info const& id, array_view<const type_info> mmid);
-    multimethod const* get_multimethod(type_info const& id) const;
+    void register_multimethod(multimethod && mm, std::type_index id, array_view<const std::type_index> mmid);
+    multimethod const* get_multimethod(std::type_index id) const;
 
     string_view get_name() const override final { return name_; }
     void attach_to_current_thread() override final;
@@ -67,8 +67,8 @@ private:
 
     struct mm_item {
         mmholder_t mm;
-        type_info id;
-        std::vector<type_info> full_id;
+        std::type_index id;
+        std::vector<std::type_index> full_id;
     };
 
     //struct mm_item_id_equal {
@@ -82,8 +82,7 @@ private:
         mm_item,
         boost::multi_index::indexed_by<
             boost::multi_index::hashed_unique<
-                boost::multi_index::member<mm_item, type_info, &mm_item::id>,
-                hash<type_info>
+                boost::multi_index::member<mm_item, std::type_index, &mm_item::id>
             >
         >
     > mm_set_t;

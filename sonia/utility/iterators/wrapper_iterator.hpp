@@ -254,9 +254,9 @@ public:
         return impl_->advance(dif);
     }
 
-    template <typename T>
-    void set(T && arg) {
-        impl_->set(std::forward<T>(arg));
+    template <typename ArgT>
+    void set(ArgT && arg) {
+        impl_->set(std::forward<ArgT>(arg));
     }
 
 private:

@@ -133,12 +133,12 @@ std::type_index get_durable_type_index(uint32_t did) {
     return env_->get_durable_type_index(did);
 }
 
-void register_multimethod(multimethod && mm, std::type_index id, array_view<const std::type_index> mmid) {
-    get_host_impl()->register_multimethod(std::move(mm), id, mmid);
+void register_multimethod(multimethod && mm, array_view<const std::type_index> mmid) {
+    get_host_impl()->register_multimethod(std::move(mm), mmid);
 }
 
-multimethod const* get_multimethod(std::type_index id) {
-    return get_host_impl()->get_multimethod(id);
+multimethod const* get_multimethod(array_view<const std::type_index> mmid) {
+    return get_host_impl()->get_multimethod(mmid);
 }
 
 }}

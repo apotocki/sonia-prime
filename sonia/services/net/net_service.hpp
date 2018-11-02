@@ -17,7 +17,7 @@
 
 #include "sonia/utility/linked_buffers.hpp"
 
-#include "net_configuration.hpp"
+#include "net_service_configuration.hpp"
 #include "connector.hpp"
 
 namespace sonia { namespace services {
@@ -29,7 +29,7 @@ class net_service
     typedef single_linked_buffer_ptr<char> buff_ptr;
 
 public:
-    explicit net_service(net_configuration const& cfg);
+    explicit net_service(net_service_configuration const& cfg);
 
     void open() override;
     void close() noexcept override;
@@ -53,7 +53,7 @@ private:
 
     
 
-    net_configuration cfg_;
+    net_service_configuration cfg_;
     shared_ptr<sonia::io::tcp_acceptor_factory> acceptor_factory_;
     shared_ptr<scheduler> scheduler_;
     std::vector<shared_ptr<listener>> listeners_;

@@ -265,14 +265,14 @@ shared_ptr<host_impl> environment::default_host() {
         return *hosts_.begin();
     }
 
-    auto it = hosts_.find(string_view(""), string_hasher(), host_equal_to());
+    auto it = hosts_.find(string_view(""), hasher(), host_equal_to());
     if (it != hosts_.end()) return *hosts_.begin();
     return {};
 }
 
 shared_ptr<host_impl> environment::get_host(string_view hnm) {
     auto lk = make_lock_guard(host_mtx_);
-    auto it = hosts_.find(hnm, string_hasher(), host_equal_to());
+    auto it = hosts_.find(hnm, hasher(), host_equal_to());
     if (it != hosts_.end()) {
         return *it;
     }

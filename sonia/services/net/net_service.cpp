@@ -12,7 +12,7 @@ namespace sonia { namespace services {
 using sonia::io::tcp_socket;
 using sonia::io::tcp_acceptor;
 
-net_service::net_service(net_configuration const& cfg)
+net_service::net_service(net_service_configuration const& cfg)
     : cfg_(cfg)
 {
     set_attribute("Type", "net-server");

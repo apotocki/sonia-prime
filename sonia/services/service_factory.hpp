@@ -15,6 +15,7 @@
 #include "sonia/function.hpp"
 
 #include "sonia/services.hpp"
+#include "sonia/utility/functional/hash/string.hpp"
 
 namespace sonia { namespace services {
 
@@ -25,7 +26,7 @@ public:
     void register_service_factory(string_view, function<service_descriptor()> const&);
 
 private:
-    typedef boost::unordered_map<std::string, function<service_descriptor()>> factories_type;
+    typedef boost::unordered_map<std::string, function<service_descriptor()>, hasher> factories_type;
     factories_type named_factories_;
 
     mutable sonia::fibers::mutex named_factories_mtx_;

@@ -19,6 +19,7 @@
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/json/value.hpp"
 #include "sonia/utility/json/json_cast.hpp"
+#include "sonia/utility/functional/hash/string.hpp"
 
 namespace sonia { namespace parameters {
 
@@ -370,7 +371,7 @@ parameter_options<VDT> & parameter_options<VDT>::binder(parameters_binding<NextB
 template <class BoundT>
 void parameters_description<BoundT>::apply(json_object const& jo, BoundT * obj) {
     try {
-        boost::unordered_set<std::string> used_names;
+        boost::unordered_set<std::string, hasher> used_names;
         for (auto const& pd : descriptors()) {
             json_value const* val = jo[pd->name()];
             if (!val && !pd->is_required() && pd->has_default()) {
@@ -387,7 +388,7 @@ void parameters_description<BoundT>::apply(json_object const& jo, BoundT * obj) 
             }
         }
         for (auto const& item : jo.items()) {
-            if (used_names.find(item.first, string_hasher(), string_equal_to()) == used_names.cend()) {
+            if (used_names.find(item.first, hasher(), string_equal_to()) == used_names.cend()) {
                 throw exception("An unbound parameter '%1%' was found"_fmt % item.first);
             }
         }

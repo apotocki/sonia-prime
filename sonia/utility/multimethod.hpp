@@ -10,13 +10,10 @@
 #endif
 
 #include <utility>
-#include <typeindex>
+#include <array>
 
-#include <boost/mpl/for_each.hpp>
 #include <boost/mpl/size.hpp>
 #include <boost/mpl/vector.hpp>
-//#include <boost/mpl/fold.hpp>
-//#include <boost/mpl/push_back.hpp>
 #include <boost/function_types/parameter_types.hpp>
 #include <boost/function_types/result_type.hpp>
 
@@ -35,8 +32,8 @@ public:
 
 namespace services {
 
-SONIA_PRIME_API void register_multimethod(multimethod &&, std::type_index id, array_view<const std::type_index> fullid);
-SONIA_PRIME_API multimethod const* get_multimethod(std::type_index msig);
+SONIA_PRIME_API void register_multimethod(multimethod &&, array_view<const std::type_index>);
+SONIA_PRIME_API multimethod const* get_multimethod(array_view<const std::type_index>);
 
 }
 
@@ -63,59 +60,80 @@ private:
 
 namespace multimethod_detail {
 
-struct type_filler {
-    type_info * it_;
-    type_filler(type_info * it) : it_(it) {}
-    template <typename U> void operator()(U) { *it_++ = typeid(U); }
-};
-
 template <typename MethodIDT, typename SigT>
 struct multimethod_sig {
     typedef typename boost::function_types::result_type<SigT>::type result_type;
     typedef typename boost::function_types::parameter_types<SigT>::type params_mpl_seq_type;
     static const size_t params_count = boost::mpl::size<params_mpl_seq_type>::value;
+    typedef boost::mpl::vector2<MethodIDT, SigT> type;
 
-    //typedef typename boost::mpl::fold<
-    //    boost::mpl::vector2<MethodIDT, result_type>,
-    //    params_mpl_seq_type,
-    //    boost::mpl::push_back<boost::mpl::_1, boost::mpl::_2>
-    //>::type full_sig_vec_type;
-    typedef boost::mpl::vector2<MethodIDT, SigT> full_sig_vec_type;
-
-    // we need identity wrappers to preserve cv modifiers and references on types
-    type_info arr[2 + params_count] = {typeid(MethodIDT), typeid(identity<result_type>)};
-
-    multimethod_sig() {
-        boost::mpl::for_each<params_mpl_seq_type, make_identity<boost::mpl::_>>(type_filler(arr + 2));
-    }
-
-    array_view<const type_info> params() const { return array_view<const type_info>(arr); }
+    static std::type_index ti() { return typeid(type); }
 };
 
 }
 
-template <typename MethodIDT, typename SigT>
-void register_multimethod(function<SigT> const& f) {
+template <typename MethodIDT, typename ... TS, typename SigT>
+void register_multimethod(function<SigT> const& f)
+{
     typedef multimethod_detail::multimethod_sig<MethodIDT, SigT> sig_t;
-
-    sig_t mmsig;
-    
-    sonia::services::register_multimethod(
-        concrete_multimethod<SigT>(f),
-        typeid(typename sig_t::full_sig_vec_type),
-        mmsig.params()
-    );
+    std::array<std::type_index, 1 + sizeof ...(TS)> tis{sig_t::ti(), typeid(TS) ...};
+    sonia::services::register_multimethod(concrete_multimethod<SigT>(f), to_array_view(tis));
 }
 
-template <typename MethodIDT, typename SigT>
-function<SigT> const* get_multimethod() {
+template <typename MethodIDT, typename SigT, typename ... TS>
+function<SigT> const* get_multimethod()
+{
     typedef multimethod_detail::multimethod_sig<MethodIDT, SigT> sig_t;
-    //sig_t mmsig;
-
-    multimethod const* mm = sonia::services::get_multimethod(typeid(typename sig_t::full_sig_vec_type));
-
+    std::array<std::type_index, 1 + sizeof ...(TS)> tis{sig_t::ti(), typeid(TS) ...};
+    multimethod const* mm = sonia::services::get_multimethod(to_array_view(tis));
     return mm ? &static_cast<concrete_multimethod<SigT> const&>(*mm)() : nullptr;
 }
+
+template <typename MethodIDT, typename SigT, size_t ... I, class ArrT>
+function<SigT> const* get_multimethod(std::index_sequence<I ...>, ArrT const& arr)
+{
+    typedef multimethod_detail::multimethod_sig<MethodIDT, SigT> sig_t;
+    std::array<std::type_index, 1 + sizeof ...(I)> tis{sig_t::ti(), arr[I] ...};
+    multimethod const* mm = sonia::services::get_multimethod(to_array_view(tis));
+    return mm ? &static_cast<concrete_multimethod<SigT> const&>(*mm)() : nullptr;
+}
+
+template <typename MethodIDT, typename SigT, size_t N>
+function<SigT> const* get_multimethod(const std::type_index (&tis_)[N])
+{
+    return get_multimethod<MethodIDT, SigT>(std::make_index_sequence<N>(), tis_);
+}
+
+template <typename MethodIDT, typename SigT, size_t N>
+function<SigT> const* get_multimethod(const std::type_info (&tis_)[N])
+{
+    return get_multimethod<MethodIDT, SigT>(std::make_index_sequence<N>(), tis_);
+}
+
+//template <typename MethodIDT, typename SigT, size_t N>
+//function<SigT> const* get_multimethod(std::initializer_list<std::type_index> il)
+//{
+//    return nullptr;
+//}
+// std::array<std::type_index, N>
+//template <typename MethodIDT, typename SigT>
+//function<SigT> const* get_multimethod(std::initializer_list<std::type_index> l)
+//{
+//    static const size_t ilsz = l.size();
+//    std::array<std::type_index, ilsz> arr = {typeid(int)};
+//    return get_multimethod2<MethodIDT, SigT>(std::make_index_sequence<ilsz>(), arr);
+//    /*
+//    typedef multimethod_detail::multimethod_sig<MethodIDT, SigT> sig_t;
+//
+//    std::make_index_sequence<N>()
+//
+//    std::array<std::type_index, 1 + l.size()> tis{sig_t::ti(), tis ...};
+//
+//    multimethod const* mm = sonia::services::get_multimethod(to_array_view(tis));
+//
+//    return mm ? &static_cast<concrete_multimethod<SigT> const&>(*mm)() : nullptr;
+//    */
+//}
 
 //template<TupleT>
 //multimethod_apply()

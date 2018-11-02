@@ -29,7 +29,7 @@ shared_ptr<service> bundle::build(json_object const& jo) {
     }
 
     string_view name = jnm->get_string();
-    auto it = builders_.find(name, string_hasher(), string_equal_to());
+    auto it = builders_.find(name, hasher(), string_equal_to());
     if (it == builders_.end()) {
         throw internal_error("The '%1%' bundle has no a definition of '%2%' factory"_fmt % typeid(*this).name() % name);
     }

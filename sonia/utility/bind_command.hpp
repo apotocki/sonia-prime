@@ -45,7 +45,7 @@ public:
 
     }
 
-    std::type_info const& get_type_info() const {
+    std::type_index ti() const override {
         return typeid(bind_command_proxy);
     }
 
@@ -67,7 +67,7 @@ public:
         return apply_placeholders(callable_, btpl_, std::forward<ArgsT>(args) ...);
     }
 
-    std::type_info const& get_type_info() const {
+    std::type_index ti() const override {
         return typeid(bind_command);
     }
 

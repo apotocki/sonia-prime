@@ -12,6 +12,7 @@
 #include <iosfwd>
 #include <functional>
 #include <vector>
+#include <array>
 
 #include <boost/assert.hpp>
 
@@ -124,6 +125,16 @@ array_view<T> to_array_view(std::vector<T> & v) {
 template <typename T>
 array_view<const T> to_array_view(std::vector<T> const& v) {
     return array_view<const T>(v.empty() ? nullptr : &v.front(), v.size());
+}
+
+template <typename T, size_t SzV>
+array_view<T> to_array_view(std::array<T, SzV> & v) {
+    return array_view<T>(SzV ? &v.front() : nullptr, SzV);
+}
+
+template <typename T, size_t SzV>
+array_view<const T> to_array_view(std::array<T, SzV> const& v) {
+    return array_view<const T>(SzV ? &v.front() : nullptr, SzV);
 }
 
 }

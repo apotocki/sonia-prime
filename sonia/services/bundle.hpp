@@ -11,6 +11,7 @@
 
 #include <boost/unordered_map.hpp>
 #include "sonia/function.hpp"
+#include "sonia/utility/functional/hash/string.hpp"
 #include "service.hpp"
 #include "builder.hpp"
 
@@ -39,7 +40,7 @@ protected:
 
 private:
     void * libhandle_;
-    boost::unordered_map<std::string, function<shared_ptr<service>(json_object const&)>> builders_;
+    boost::unordered_map<std::string, function<shared_ptr<service>(json_object const&)>, hasher> builders_;
 };
 
 }}

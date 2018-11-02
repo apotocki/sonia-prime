@@ -7,7 +7,7 @@
 
 #include "bundle.ipp"
 #include "sonia/services/scheduler/scheduler_service_builder.hpp"
-#include "sonia/services/net/net_builder.hpp"
+#include "sonia/services/net/net_service_builder.hpp"
 #include "sonia/services/io/io_service_builder.hpp"
 
 namespace sonia { namespace services {
@@ -22,7 +22,7 @@ public:
 
     void init() override {
         install<scheduler_service_builder>("scheduler");
-        install<net_builder>("net-server");
+        install<net_service_builder>("net-server");
         install<io_service_builder>("io");
     }
 };

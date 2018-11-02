@@ -2,8 +2,8 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICES_NET_CONFIGURATION_HPP
-#define SONIA_SERVICES_NET_CONFIGURATION_HPP
+#ifndef SONIA_SERVICES_NET_SERVICE_CONFIGURATION_HPP
+#define SONIA_SERVICES_NET_SERVICE_CONFIGURATION_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
@@ -14,9 +14,7 @@
 #include "sonia/cstdint.hpp"
 #include "sonia/string.hpp"
 
-namespace sonia {
-namespace services {
-namespace net {
+namespace sonia { namespace services { namespace net {
 
 enum class listener_type {
     TCP = 0,
@@ -35,7 +33,7 @@ public:
 
 }
 
-class net_configuration {
+class net_service_configuration {
 public:
     std::string acceptor_factory;
     std::string scheduler;
@@ -44,4 +42,4 @@ public:
 
 }}
 
-#endif // SONIA_SERVICES_NET_CONFIGURATION_HPP
+#endif // SONIA_SERVICES_NET_SERVICE_CONFIGURATION_HPP

@@ -36,7 +36,7 @@ public:
 
     template <typename OutputIteratorT>
     OutputIteratorT encode(abstract_command_base const& cmd, OutputIteratorT oi) const {
-        return sonia::encode<SerializationTagT>(sonia::type::durable_id(cmd.get_type_info()), std::move(oi));
+        return sonia::encode<SerializationTagT>(sonia::type::durable_id(cmd.ti()), std::move(oi));
     }
 };
 

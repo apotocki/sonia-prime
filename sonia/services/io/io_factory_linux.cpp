@@ -96,7 +96,7 @@ void factory::tcp_acceptor_async_accept_and_read_some(void * handle, void * buff
     throw not_implemented_error("tcp_acceptor_async_accept_and_read_some");
 }
 
-void factory::tcp_acceptor_close(void * handle) {
+void factory::tcp_acceptor_close(void * handle) noexcept {
     throw not_implemented_error("tcp_acceptor_close");
 }
 

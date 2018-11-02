@@ -10,6 +10,7 @@
 #endif
 
 #include <functional>
+#include "sonia/type_traits.hpp"
 
 namespace sonia {
 
@@ -17,11 +18,23 @@ template <typename T>
 struct hash : public std::hash<T> {};
 
 template <class T>
-inline void hash_combine(std::size_t& seed, const T& v)
+inline void hash_combine(std::size_t& seed, const T& v) noexcept
 {
     hash<T> hasher;
     seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
 }
+
+template <typename T>
+inline size_t hash_value(T && arg) {
+    return hash<remove_cvref_t<T>>()(std::forward<T>(arg));
+}
+
+struct hasher {
+    template <typename T>
+    size_t operator()(T && arg) const noexcept {
+        return hash<remove_cvref_t<T>>()(std::forward<T>(arg));
+    }
+};
 
 }
 

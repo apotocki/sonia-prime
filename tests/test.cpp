@@ -329,7 +329,7 @@ public:
         return x + y;
     }
 
-    std::type_info const& get_type_info() const override { return typeid(plus_cmd); }
+    std::type_index ti() const override { return typeid(plus_cmd); }
 };
 
 class foo_class {
@@ -362,7 +362,7 @@ BOOST_AUTO_TEST_CASE (test)
 {
     scoped_services ss;
     
-    /*
+    ///*
     struct my_method_name {};
     //register_multimethod(function<int&&(int, int*, int&, int&&)>());
     struct minus {};
@@ -372,16 +372,21 @@ BOOST_AUTO_TEST_CASE (test)
     BOOST_CHECK_EQUAL(42, (get_multimethod<plus, int(int, int)>()->operator()(40, 2)));
     BOOST_CHECK_EQUAL(42, (get_multimethod<minus, int(int, int)>()->operator()(44, 2)));
 
-    plus_cmd cmd;
+    register_multimethod<plus, int>(function<int(int, int)>([](int a, int b) { return a + b + 1; }));
+    BOOST_CHECK_EQUAL(43, (get_multimethod<plus, int(int, int), int>()->operator()(40, 2)));
+    BOOST_CHECK_EQUAL(43, (get_multimethod<plus, int(int, int)>({typeidx(int)})->operator()(40, 2)));
+
+#if 0
+    plus_cmd cmd0;
     std::vector<char> result;
     serialization::command_proxy_coder<serialization::default_t>()
-        .encode(cmd, std::back_inserter(result));
-    */
+        .encode(cmd0, std::back_inserter(result));
+    //*/
     foo_class c0;
     //using std::placeholders::_1;
     //using std::placeholders::_2;
     auto cmd = make_bind_command(&foo_class::method0, c0, 1, _2, _1);
     std::cout << cmd(1, 42) << "\n";
     //foo(&foo_class::method0);
-    
+#endif
 }

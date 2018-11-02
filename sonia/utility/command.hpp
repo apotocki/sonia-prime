@@ -9,14 +9,14 @@
 #   pragma once
 #endif
 
-#include <typeinfo>
+#include <typeindex>
 
 namespace sonia {
 
 class abstract_command_base {
 public:
     virtual ~abstract_command_base() {}
-    virtual std::type_info const& get_type_info() const = 0;
+    virtual std::type_index ti() const = 0;
 };
 
 template <typename R>

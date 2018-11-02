@@ -15,13 +15,19 @@
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 
+#include "sonia/type_traits.hpp"
+
 namespace sonia {
 
 struct range_equal {
     template <typename LR, typename RR>
     bool operator()(LR const& l, RR const& r) const {
-        return boost::addressof(l) == boost::addressof(r) ||
-            this->operator()(boost::begin(l), boost::end(l), boost::begin(r), boost::end(r));
+        if constexpr (is_same_v<LR, RR>) {
+            return boost::addressof(l) == boost::addressof(r) ||
+                this->operator()(boost::begin(l), boost::end(l), boost::begin(r), boost::end(r));
+        } else {
+            return this->operator()(boost::begin(l), boost::end(l), boost::begin(r), boost::end(r));
+        }
     }
 
     template <typename LForwardIteratorT, typename RForwardIteratorT>

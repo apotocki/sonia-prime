@@ -26,6 +26,7 @@
 #include "service_factory.hpp"
 #include "type_registry.hpp"
 #include "sonia/utility/parameters/parameters.hpp"
+#include "sonia/utility/functional/hash/string.hpp"
 
 namespace sonia { namespace services {
 

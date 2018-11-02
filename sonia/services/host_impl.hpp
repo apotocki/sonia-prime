@@ -23,9 +23,10 @@
 #include "sonia/services/service_locator.hpp"
 #include "sonia/utility/multimethod.hpp"
 #include "sonia/utility/optional_inheritor.hpp"
+#include "sonia/utility/functional/hash/vector.hpp"
 //#include "sonia/utility/object_pool.hpp"
 
-#include "sonia/utility/thread/rw_fiber_mutex.hpp"
+#include "sonia/utility/concurrency/rw_fiber_mutex.hpp"
 
 #include "host.hpp"
 
@@ -48,8 +49,8 @@ public:
 
     void run(std::vector<std::string> const& servs);
 
-    void register_multimethod(multimethod && mm, std::type_index id, array_view<const std::type_index> mmid);
-    multimethod const* get_multimethod(std::type_index id) const;
+    void register_multimethod(multimethod &&, array_view<const std::type_index>);
+    multimethod const* get_multimethod(array_view<const std::type_index>) const;
 
     string_view get_name() const override final { return name_; }
     void attach_to_current_thread() override final;
@@ -67,8 +68,7 @@ private:
 
     struct mm_item {
         mmholder_t mm;
-        std::type_index id;
-        std::vector<std::type_index> full_id;
+        std::vector<std::type_index> id;
     };
 
     //struct mm_item_id_equal {
@@ -82,7 +82,8 @@ private:
         mm_item,
         boost::multi_index::indexed_by<
             boost::multi_index::hashed_unique<
-                boost::multi_index::member<mm_item, std::type_index, &mm_item::id>
+                boost::multi_index::member<mm_item, std::vector<std::type_index>, &mm_item::id>,
+                sonia::hash<std::vector<std::type_index>>
             >
         >
     > mm_set_t;

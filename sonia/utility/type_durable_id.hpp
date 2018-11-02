@@ -55,7 +55,7 @@ class durable_id {
         }
 
         cache(string_view nm, string_view servnm) {
-            std::call_once(once_flag_, [nm]() {
+            std::call_once(once_flag_, [nm, servnm]() {
                 cache<T>::cached_val_ = sonia::services::register_durable_id(nm, servnm, typeid(T));
             });
         }
@@ -88,7 +88,7 @@ public:
 
     template <typename CharT, class TraitsT>
     friend std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, durable_id const& v) {
-        return os << v.val_ << " (" << ti_.name() << ")";
+        return os << v.val_ << " (" << v.ti_.name() << ")";
     }
 
 private:

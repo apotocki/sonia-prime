@@ -22,8 +22,9 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/persister.hpp"
-#include "sonia/utility/thread/rw_fiber_mutex.hpp"
+#include "sonia/utility/concurrency/rw_fiber_mutex.hpp"
 #include "sonia/utility/scope_exit.hpp"
+#include "sonia/utility/functional/hash/string.hpp"
 
 namespace sonia { namespace utility { namespace basic_local_registry_detail {
 
@@ -80,7 +81,7 @@ class basic_local_registry
         boost::multi_index::indexed_by<
             boost::multi_index::hashed_unique<
                 boost::multi_index::member<reg_item, std::string, &reg_item::name>,
-                string_hasher
+                hasher
             >,
             boost::multi_index::hashed_unique<
                 boost::multi_index::member<reg_item, IDT, &reg_item::id>
@@ -123,13 +124,13 @@ public:
 
     IDT get_id(string_view name, string_view meta) {
         auto rwguard = make_rw_lock_guard(mtx_, rw_type::shared);
-        auto it = registry_.find(name, string_hasher(), string_equal_to());
+        auto it = registry_.find(name, hasher(), string_equal_to());
         reg_item const* pitm = it != registry_.end() ? &*it : nullptr;
         
         if (BOOST_UNLIKELY(!pitm)) {
             rwguard.promote();
             // "it" could be invalidated (by other threads), so get it again and check
-            it = registry_.find(name, string_hasher(), string_equal_to());
+            it = registry_.find(name, hasher(), string_equal_to());
             if (it == registry_.end()) {
                 IDT result = derived().increment_fetch_counter();
                 pitm = &*registry_.insert(it, reg_item{to_string(name), result, to_string(meta)});

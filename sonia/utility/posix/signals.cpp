@@ -9,7 +9,7 @@
 
 #include "sonia/string.hpp"
 #include "sonia/exceptions.hpp"
-#include "sonia/thread.hpp"
+#include "sonia/concurrency.hpp"
 #include "sonia/logger/logger.hpp"
 #include "sonia/utility/scope_exit.hpp"
 

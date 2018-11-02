@@ -15,7 +15,7 @@ namespace sonia { namespace services {
 
 template <typename ServiceT>
 void bundle::install(string_view nm) {
-    auto it = builders_.find(nm, string_hasher(), string_equal_to());
+    auto it = builders_.find(nm, hasher(), string_equal_to());
     if (it == builders_.end()) {
         builders_.insert(it, std::make_pair(to_string(nm), [](json_object const&) {
             return make_shared<ServiceT>();

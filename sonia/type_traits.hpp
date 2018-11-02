@@ -11,9 +11,12 @@
 
 #include <utility>
 #include <type_traits>
+#include <typeindex>
 #include <boost/is_placeholder.hpp>
 #include <boost/mpl/identity.hpp>
 #include <boost/range.hpp>
+
+#define typeidx(t) std::type_index(typeid(t))
 
 namespace sonia {
 
@@ -116,15 +119,10 @@ using std::in_place_type_t;
 using boost::mpl::identity;
 using boost::mpl::make_identity;
 
-
 //using std::remove_cvref;
 //using std::remove_cvref_t;
 
-template <class T>
-struct remove_cvref {
-    typedef remove_cv_t<remove_reference_t<T>> type;
-};
-
+template <class T> struct remove_cvref : remove_cv<remove_reference_t<T>> {};
 template <class T> using remove_cvref_t = typename remove_cvref<T>::type;
 
 enum class endian

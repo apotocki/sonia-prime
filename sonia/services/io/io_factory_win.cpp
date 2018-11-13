@@ -306,16 +306,17 @@ void factory::thread_proc() {
         BOOL r = GetQueuedCompletionStatus(dataptr->iocp_, &bytes, &key, &overlapped, INFINITE);
         std::error_code err(r ? 0 : GetLastError(), std::system_category());
 
-        if (overlapped) {
-            switch ((completion_port)key) {
-            case completion_port::socket_callback_key:
+        try {
+            if (overlapped) {
+                switch ((completion_port)key) {
+                case completion_port::socket_callback_key:
                 {
                     callback* cb = reinterpret_cast<callback*>(overlapped);
                     SCOPE_EXIT([&cb, this]() { if (cb) dataptr->delete_socket_callback(cb); });
                     cb->proc(err, (size_t)bytes);
                     break;
                 }
-            case completion_port::acceptor_callback_key:
+                case completion_port::acceptor_callback_key:
                 {
                     acceptor_callback* cb = reinterpret_cast<acceptor_callback*>(overlapped);
                     SCOPE_EXIT([&cb, this]() { if (cb) dataptr->delete_acceptor_callback(cb); });
@@ -329,24 +330,27 @@ void factory::thread_proc() {
                     });
                     break;
                 }
-            case completion_port::file_callback_key:
+                case completion_port::file_callback_key:
                 {
                     file_callback* cb = reinterpret_cast<file_callback*>(overlapped);
                     cb->on_op(err, (size_t)bytes);
                     break;
                 }
-            default:
-                LOG_ERROR(logger()) << "completion port unknown key: " << (int)key;
-            }
-        } else {
-            if (!r) {
-                DWORD err = GetLastError();
-                LOG_ERROR(logger()) << "completion port errror: " << winapi::error_message(err);
-            } else if (key == (ULONG_PTR)completion_port::close_key) {
-                break;
+                default:
+                    LOG_ERROR(logger()) << "completion port unknown key: " << (int)key;
+                }
             } else {
-                LOG_ERROR(logger()) << "completion port unknown key: " << (int)key;
+                if (!r) {
+                    DWORD err = GetLastError();
+                    LOG_ERROR(logger()) << "completion port errror: " << winapi::error_message(err);
+                } else if (key == (ULONG_PTR)completion_port::close_key) {
+                    break;
+                } else {
+                    LOG_ERROR(logger()) << "completion port unknown key: " << (int)key;
+                }
             }
+        } catch (std::exception const& e) {
+            LOG_ERROR(logger()) << e.what();
         }
     }
 }

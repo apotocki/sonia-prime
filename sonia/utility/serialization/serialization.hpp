@@ -33,7 +33,7 @@ InputIteratorT decode(InputIteratorT ii, ArgT && arg) {
 template <typename TagT, typename IteratorT>
 struct in_place_decoder_factory
 {
-    explicit in_place_decoder_factory(IteratorT it) : ii_(it) {}
+    explicit in_place_decoder_factory(IteratorT it) : ii_(std::move(it)) {}
 
     template <class T>
     void apply(void* address) const {
@@ -43,14 +43,27 @@ struct in_place_decoder_factory
     mutable IteratorT ii_;
 };
 
+template <typename TagT, typename IteratorT>
+struct in_place_decoder_factory<TagT, IteratorT&>
+{
+    explicit in_place_decoder_factory(IteratorT & it) : ii_(it) {}
+
+    template <class T>
+    void apply(void* address) const {
+        ii_ = serialization::coder<TagT, T>().decode(std::move(ii_), reinterpret_cast<T*>(address));
+    }
+
+    IteratorT & ii_;
+};
+
 template <typename TagT, typename InputIteratorT>
 in_place_decoder_factory<TagT, InputIteratorT&> in_place_decode(InputIteratorT & ii) {
     return in_place_decoder_factory<TagT, InputIteratorT&>(ii);
 }
 
 template <typename TagT, typename InputIteratorT>
-in_place_decoder_factory<TagT, InputIteratorT> in_place_decode(InputIteratorT ii) {
-    return in_place_decoder_factory<TagT, InputIteratorT>(ii);
+in_place_decoder_factory<TagT, InputIteratorT> in_place_decode(InputIteratorT && ii) {
+    return in_place_decoder_factory<TagT, InputIteratorT>(std::move(ii));
 }
 
 template <typename TagT, class OutputIteratorT>

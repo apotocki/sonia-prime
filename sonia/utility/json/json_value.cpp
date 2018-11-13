@@ -23,7 +23,7 @@ using namespace json_detail;
 void json_value_collect(json_value & jv, std::vector<json_value> & accum) noexcept {
     auto & holder = json_value_holder_accessor::holder(jv);
     if (holder.is_ptr()) {
-        optimized_base * ptr = holder.get_pointer();
+        auto * ptr = holder.get_pointer();
         if (ptr->unique()) {
             if (jv.type() == json_value_type::array || jv.type() == json_value_type::object) {
                 // stealing value, don't care about cookie
@@ -34,12 +34,12 @@ void json_value_collect(json_value & jv, std::vector<json_value> & accum) noexce
     }
 }
 
-typedef optimized_array<char, 16> json_item_name_t;
-typedef std::pair<json_item_name_t, json_value> object_item_t;
+using json_item_name_t = optimized_array<char, 16, uint32_t>;
+using object_item_t = std::pair<json_item_name_t, json_value>;
 
 struct json_object_item_transformer
 {
-    typedef std::pair<array_view<const char>, json_value&&> result_type;
+    using result_type = std::pair<array_view<const char>, json_value&&>;
 
     template <typename TplT>
     result_type operator()(TplT&& x) const {
@@ -309,7 +309,7 @@ bool operator<(json_value const& lhs, json_value const& rhs) {
 
 json_value::~json_value() {
     if (is_ptr()) {
-        optimized_base * ptr = get_pointer();
+        auto * ptr = get_pointer();
         if (ptr->unique()) {
             if (type() == json_value_type::array || type() == json_value_type::object) {
                 std::vector<json_value> accum;

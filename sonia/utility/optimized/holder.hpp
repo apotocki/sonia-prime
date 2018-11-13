@@ -9,6 +9,8 @@
 #   pragma once
 #endif
 
+#include <atomic>
+
 #include <boost/assert.hpp>
 #include <boost/integer/static_log2.hpp> 
 #include <boost/integer.hpp>
@@ -21,10 +23,11 @@
 
 namespace sonia {
 
+template <typename RefCountT = std::atomic<uint32_t>>
 class optimized_base {
 public:
-    optimized_base() : refs_(1) {}
-    optimized_base(optimized_base const& rhs) : service_cookie_(rhs.service_cookie_), refs_(1) {}
+    optimized_base() {}
+    optimized_base(optimized_base const& rhs) : service_cookie_(rhs.service_cookie_) {}
     optimized_base(optimized_base && rhs) = delete;
 
     virtual ~optimized_base() {}
@@ -52,11 +55,11 @@ public:
 
 private:
     uint32_t service_cookie_;
-    uint32_t refs_;
+    RefCountT refs_{1};
 };
 
-template <class WrappedT>
-class optimized_wrapper : public optimized_base
+template <class WrappedT, typename RefCountT>
+class optimized_wrapper : public optimized_base<RefCountT>
 {
 public:
     template <typename ArgT>
@@ -77,7 +80,7 @@ public:
         delete this;
     }
 
-    optimized_base * clone() const override {
+    optimized_base<RefCountT> * clone() const override {
         return new optimized_wrapper(*this);
     }
 
@@ -160,10 +163,10 @@ struct optimized_holder_base {
     }
 };
 
-template <size_t HolderBytesV, size_t ServiceCookieBitsV, endian e = endian::native> struct optimized_holder;
+template <size_t HolderBytesV, size_t ServiceCookieBitsV, typename RefCountT = std::atomic<uint32_t>, endian e = endian::native> struct optimized_holder;
 
-template <size_t HolderBytesV, size_t ServiceCookieBitsV>
-struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
+template <size_t HolderBytesV, size_t ServiceCookieBitsV, typename RefCountT>
+struct optimized_holder<HolderBytesV, ServiceCookieBitsV, RefCountT, endian::little>
     : optimized_holder_base<HolderBytesV, ServiceCookieBitsV>
 {
     typedef optimized_holder_base<HolderBytesV, ServiceCookieBitsV> base_t;
@@ -172,6 +175,9 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
     typedef typename boost::uint_t<value_bits>::fast uint_t;
     static const uint_t uint_max = (((((uint_t)1) << (value_bits - 1)) - 1) << 1) | 1;
     static const uint_t cookie_mask = (((uint_t)1) << (ServiceCookieBitsV + 1)) - 1;
+
+    using optimized_base_t = optimized_base<RefCountT>;
+    using refcount_t = RefCountT;
 
     optimized_holder() {
         base_t::init_not_ptr();
@@ -186,8 +192,8 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
 
     optimized_holder(optimized_holder const& rhs) {
         if (rhs.is_ptr()) {
-            // the cookie is supposed to be the same in the cloned object
-            *reinterpret_cast<optimized_base**>(&this->holder_) = rhs.get_pointer()->clone();
+            // a cookie is supposed to be the same in the cloned object
+            *reinterpret_cast<optimized_base_t**>(&this->holder_) = rhs.get_pointer()->clone();
         } else {
             std::memcpy(&this->holder_, &rhs.holder_, HolderBytesV);
         }
@@ -195,7 +201,7 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
 
     optimized_holder(optimized_holder && rhs) {
         if (rhs.is_ptr()) {
-            *reinterpret_cast<optimized_base**>(&this->holder_) = rhs.get_pointer();
+            *reinterpret_cast<optimized_base_t**>(&this->holder_) = rhs.get_pointer();
             rhs.set_not_ptr();
         } else {
             std::memcpy(&this->holder_, &rhs.holder_, HolderBytesV);
@@ -204,7 +210,7 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
 
     optimized_holder(reference_wrapper<const optimized_holder> rhs) {
         if (rhs.get().is_ptr()) {
-            *reinterpret_cast<optimized_base**>(&this->holder_) = rhs.get().get_pointer();
+            *reinterpret_cast<optimized_base_t**>(&this->holder_) = rhs.get().get_pointer();
             get_pointer()->add_ref();
         } else {
             std::memcpy(&this->holder_, &rhs.get().holder_, HolderBytesV);
@@ -223,7 +229,7 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
                 get_pointer()->release();
             }
             if (rhs.is_ptr()) {
-                *reinterpret_cast<optimized_base**>(&this->holder_) = rhs.get_pointer()->clone();
+                *reinterpret_cast<optimized_base_t**>(&this->holder_) = rhs.get_pointer()->clone();
             } else {
                 std::memcpy(&this->holder_, &rhs.holder_, HolderBytesV);
             }
@@ -237,7 +243,7 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
                 get_pointer()->release();
             }
             if (rhs.is_ptr()) {
-                *reinterpret_cast<optimized_base**>(&this->holder_) = rhs.get_pointer();
+                *reinterpret_cast<optimized_base_t**>(&this->holder_) = rhs.get_pointer();
                 rhs.set_not_ptr();
             } else {
                 std::memcpy(&this->holder_, &rhs.holder_, HolderBytesV);
@@ -252,7 +258,7 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
                 get_pointer()->release();
             }
             if (rhs.get().is_ptr()) {
-                *reinterpret_cast<optimized_base**>(&this->holder_) = rhs.get().get_pointer();
+                *reinterpret_cast<optimized_base_t**>(&this->holder_) = rhs.get().get_pointer();
                 get_pointer()->add_ref();
             } else {
                 std::memcpy(&this->holder_, &rhs.get().holder_, HolderBytesV);
@@ -294,16 +300,16 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
         }
     }
 
-    optimized_base * get_pointer() const {
+    optimized_base_t * get_pointer() const {
         BOOST_ASSERT(base_t::is_ptr());
-        return *reinterpret_cast<optimized_base* const*>(&this->holder_);
+        return *reinterpret_cast<optimized_base_t* const*>(&this->holder_);
     }
 
-    void set_pointer(optimized_base * ptr) {
+    void set_pointer(optimized_base_t * ptr) {
         BOOST_ASSERT(!base_t::is_ptr());
         BOOST_ASSERT(!(reinterpret_cast<intptr_t>(ptr) & 1));
         //size_t cookie = base_t::get_service_cookie();
-        *reinterpret_cast<optimized_base**>(&this->holder_) = ptr;
+        *reinterpret_cast<optimized_base_t**>(&this->holder_) = ptr;
         //ptr->service_cookie() = cookie;
     }
 
@@ -320,9 +326,9 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>
     }
 };
 
-template <size_t HolderBytesV, size_t ServiceCookieBitsV>
-const typename optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>::uint_t
-optimized_holder<HolderBytesV, ServiceCookieBitsV, endian::little>::uint_max;
+template <size_t HolderBytesV, size_t ServiceCookieBitsV, typename RefCountT>
+const typename optimized_holder<HolderBytesV, ServiceCookieBitsV, RefCountT, endian::little>::uint_t
+optimized_holder<HolderBytesV, ServiceCookieBitsV, RefCountT, endian::little>::uint_max;
 
 //        (((((uint_t)1) << (value_bits - 1)) - 1) << 1) | 1;
 

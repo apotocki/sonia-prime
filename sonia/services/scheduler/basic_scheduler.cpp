@@ -8,7 +8,29 @@
 
 #include <boost/fiber/all.hpp>
 
-namespace sonia {
+namespace sonia { namespace scheduler_detail {
+
+void task_entry::release_ref(task_entry_pool_t * ppool) {
+    if (1 == refs_.fetch_sub(1)) {
+        ppool->delete_object(this);
+    }
+}
+
+void task_entry::cancel() {
+    bool exp = false;
+    if (handled_.compare_exchange_strong(exp, true, std::memory_order::memory_order_relaxed)) {
+        task_->cancel();
+    }
+}
+
+void task_entry::run() {
+    bool exp = false;
+    if (handled_.compare_exchange_strong(exp, true, std::memory_order::memory_order_relaxed)) {
+        task_->run();
+    }
+}
+
+} // namespace sonia::scheduler_detail
 
 basic_scheduler::basic_scheduler(uint32_t thr_cnt, uint32_t fb_cnt)
     : thr_cnt_(thr_cnt), fb_cnt_(fb_cnt), stopping_(true)
@@ -49,21 +71,10 @@ void basic_scheduler::stop()
         stopping_ = true;
         queue_cond_.notify_all();
     }
-    /*
-    bool flag = true;
-    thread t([this, &flag]() {
-        while (flag) {
-            LOG_INFO(logger()) << "notify_all";
-            queue_cond_.notify_all();
-            this_thread::sleep(boost::chrono::milliseconds(1000));
-        }
-    });
-    //*/
+
     for (auto & t : threads_) {
         t.join();
     }
-    //flag = false;
-    //t.join();
 
     threads_.clear();
 }

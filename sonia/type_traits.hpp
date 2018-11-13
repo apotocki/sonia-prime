@@ -12,6 +12,7 @@
 #include <utility>
 #include <type_traits>
 #include <typeindex>
+#include <functional> // is_placeholder
 #include <boost/is_placeholder.hpp>
 #include <boost/mpl/identity.hpp>
 #include <boost/range.hpp>
@@ -32,9 +33,6 @@ using std::void_t;
 
 using std::enable_if;
 using std::enable_if_t;
-
-template <bool Test, class T = void> using disable_if = enable_if<!Test, T>;
-template <bool Test, class T = void> using disable_if_t = enable_if_t<!Test, T>;
 
 using std::enable_if_t;
 
@@ -70,6 +68,9 @@ using std::is_rvalue_reference_v;
 
 using std::is_pod;
 using std::is_pod_v;
+
+using std::is_void;
+using std::is_void_v;
 
 using std::is_trivially_constructible;
 using std::is_trivially_constructible_v;
@@ -111,6 +112,10 @@ using std::add_rvalue_reference_t;
 template <class T> struct is_placeholder : integral_constant<int, std::is_placeholder_v<T> + boost::is_placeholder<T>::value> {};
 template <class T> constexpr int is_placeholder_v = is_placeholder<T>::value;
 
+template <class T, class Enabler = void> struct size_of : integral_constant<int, sizeof(T)> {};
+template <class T> struct size_of<T, enable_if_t<is_void_v<T>>> : integral_constant<int, 0> {};
+template <class T> constexpr size_t size_of_v = size_of<T>::value;
+
 using std::in_place;
 using std::in_place_t;
 using std::in_place_type;
@@ -124,6 +129,12 @@ using boost::mpl::make_identity;
 
 template <class T> struct remove_cvref : remove_cv<remove_reference_t<T>> {};
 template <class T> using remove_cvref_t = typename remove_cvref<T>::type;
+
+template <bool Test, class T = void> using disable_if = enable_if<!Test, T>;
+template <bool Test, class T = void> using disable_if_t = enable_if_t<!Test, T>;
+
+template <class T, class TestT> using disable_if_same_ref = disable_if<is_same_v<T, remove_cvref_t<TestT>>>;
+template <class T, class TestT> using disable_if_same_ref_t = typename disable_if_same_ref<T, TestT>::type;
 
 enum class endian
 {

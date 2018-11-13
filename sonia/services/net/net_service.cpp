@@ -35,8 +35,8 @@ void net_service::open() {
 
             ls->acceptor.async_accept_and_read_some(
                 ls->buff->to_array_view(),
-                [ls](std::error_code const& err, size_t sz, tcp_socket soc, tcp_acceptor::renew_functor const& rfunc) {
-                    ls->acceptor_proc(err, sz, std::move(soc), rfunc);
+                [schd = scheduler_, ls](std::error_code const& err, size_t sz, tcp_socket soc, tcp_acceptor::renew_functor const& rfunc) mutable {
+                    ls->acceptor_proc(err, sz, std::move(soc), rfunc, std::move(schd));
                 }
             );
             //shared_ptr<listener> ls = make_shared<listener>(std::move(cn));
@@ -53,13 +53,35 @@ void net_service::close() noexcept {
     listeners_.clear();
 }
 
-void net_service::listener::acceptor_proc(std::error_code const& err, size_t sz, sonia::io::tcp_socket soc, sonia::io::tcp_acceptor::renew_functor const& rfunc)
+class listener_task : public scheduler_task {
+    shared_ptr<net::connector> cn_;
+    single_linked_buffer_ptr<char> buff_;
+    size_t sz_;
+    sonia::io::tcp_socket soc_;
+
+public:
+    template <class CnT, class BuffT>
+    listener_task(CnT && cn, BuffT && buff, size_t sz, sonia::io::tcp_socket soc)
+        : cn_(std::forward<CnT>(cn)), buff_(std::forward<BuffT>(buff)), sz_(sz), soc_(std::move(soc))
+    {}
+
+    void run() override {
+        cn_->connect(std::move(buff_), sz_, std::move(soc_));
+    }
+};
+
+void net_service::listener::acceptor_proc(std::error_code const& err, size_t sz, sonia::io::tcp_socket soc, sonia::io::tcp_acceptor::renew_functor const& rfunc, shared_ptr<scheduler> sched)
 {
     if (!err) {
         buff_ptr cur_buff_ptr = std::move(buff);
         buff = make_single_linked_buffer<char>(cur_buff_ptr->size());
         rfunc(buff->begin(), buff->size());
-        cn->connect(std::move(cur_buff_ptr), sz, std::move(soc));
+
+        sched->post(scheduler_task_t(
+            in_place_type_t<listener_task>(),
+            cn, std::move(cur_buff_ptr), sz, std::move(soc)
+        ));
+
     } else {
         LOG_SEV(logger(), closing ? sonia::logger::severity_level::trace : sonia::logger::severity_level::error)
             << err.message();

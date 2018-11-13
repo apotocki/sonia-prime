@@ -26,9 +26,10 @@
 #   define _ITERATOR_DEBUG_LEVEL 0
 #endif
 
-#if defined(_MSC_VER)
-#   define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
-//#   define _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING
+#if defined(_MSC_VER) & !defined(_SILENCE_FPOS_SEEKPOS_DEPRECATION_WARNING) 
+#   define _SILENCE_FPOS_SEEKPOS_DEPRECATION_WARNING // boost::archive
+#	define _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING // boost::asio
+#	define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS // boost::circular_buffer
 #endif
 
 #if (defined(__MINGW32__) || defined(__MINGW64__))
@@ -44,6 +45,10 @@
 
 #ifndef BOOST_THREAD_VERSION
 #   define BOOST_THREAD_VERSION 3
+#endif
+
+#if defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES)
+#   error "Outdated compiler (no variadic templates)"
 #endif
 
 #endif // SONIA_CONFIG_HPP

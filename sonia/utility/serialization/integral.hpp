@@ -167,30 +167,49 @@ public:
 template <typename T>
 class coder<compressed_t, T, enable_if_t<is_integral_v<T> && !is_signed_v<T> && !integral_detail::is_special<T>>>
 {
-    typedef remove_cv_t<T> type;
-    typedef boost::integer_traits<type> traits;
+    using type = remove_cv_t<T>;
+    using traits = boost::integer_traits<type>;
+    static constexpr unsigned int parts_ = (traits::digits + 6) / 7u;
 
 public:
     template <typename OutputIteratorT>
-    OutputIteratorT encode(type val, OutputIteratorT oi) const {
-        int fields  = (traits::digits + 6) / 7u;
-        // if ( traits::digits % 7u ) ++fields;
-
-        for (; fields > 0; --fields) {
-            uint8_t block = val & 0x7F;
+    OutputIteratorT encode(type val, OutputIteratorT oi) const
+    {
+        for (unsigned int fs = parts_; fs; --fs) {
+            uint8_t part = val & 0x7F;
             val >>= 7;
-            if (val > 0) {
-                block |= 0x80;
-                *oi = static_cast<char>(block);
+            if (val) {
+                *oi = (part | 0x80);
                 ++oi;
             } else {
-                *oi = static_cast<char>(block);
+                *oi = part;
                 ++oi;
                 break;
             }
         }
 
         return std::move(oi);
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, type & val) const
+    {
+        val = 0;
+        for (unsigned int i = 0; i < parts_ * 7; i += 7) {
+            type part = *ii;
+            ++ii;
+
+            const auto hasnext = part & 0x80;
+            val |= ((part & 0x7f) << i);
+            if (!hasnext) break;
+        }
+        return std::move(ii);
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, type * val) const
+    {
+        return decode(std::move(ii), *val);
     }
 };
 

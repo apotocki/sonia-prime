@@ -93,9 +93,6 @@
     <ClInclude Include="..\..\..\sonia\type_traits.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\automatic.hpp">
-      <Filter>sonia</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\logger\logger.hpp">
       <Filter>sonia.logger</Filter>
     </ClInclude>
@@ -378,9 +375,6 @@
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler.hpp">
       <Filter>sonia.services.scheduler</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\scheduler\test_fiber_mutex.hpp">
-      <Filter>sonia.services.scheduler</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\io\tcp_write_output_iterator.hpp">
       <Filter>sonia.services.io</Filter>
     </ClInclude>
@@ -461,6 +455,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\concurrency\spinlock_trier.hpp">
       <Filter>sonia.utility\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\automatic.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\thread_manager.hpp">
+      <Filter>sonia.services.scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\thread_manager.ipp">
+      <Filter>sonia.services.scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\variant.hpp">
+      <Filter>sonia.utility\serialization</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

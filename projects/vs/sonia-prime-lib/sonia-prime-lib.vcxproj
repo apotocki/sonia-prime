@@ -20,7 +20,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\array_view.hpp" />
-    <ClInclude Include="..\..\..\sonia\automatic.hpp" />
     <ClInclude Include="..\..\..\sonia\build_config.hpp" />
     <ClInclude Include="..\..\..\sonia\concurrency.hpp" />
     <ClInclude Include="..\..\..\sonia\cstdint.hpp" />
@@ -51,7 +50,8 @@
     <ClInclude Include="..\..\..\sonia\services\scheduler\basic_scheduler.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\scheduler\test_fiber_mutex.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\scheduler\thread_manager.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\scheduler\thread_manager.ipp" />
     <ClInclude Include="..\..\..\sonia\services\service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service_locator.hpp" />
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
@@ -60,6 +60,7 @@
     <ClInclude Include="..\..\..\sonia\utility\algorithm\construct.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\algorithm\copy.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\algorithm\pull.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\automatic.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\basic_local_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind_command.hpp" />
@@ -140,6 +141,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\string.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\type_durable_id.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\vector.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\simple_queue.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\type_index.hpp" />

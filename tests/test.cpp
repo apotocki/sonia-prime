@@ -241,7 +241,32 @@ auto tag(const char (&arr) [RN])
 }
 #endif
 
-#if 0
+#if 1
+template <char ... chars> struct constexpr_string {};
+
+template <size_t SizeV> using static_string = std::array<const char, SizeV>;
+template <size_t SizeV, size_t ... I>
+constexpr static_string<sizeof ... (I) + 1> make_static_string(const char (&str)[SizeV], std::index_sequence<I ...>) {
+    return {str[I] ..., '\0'};
+}
+template <size_t SizeV>
+constexpr static_string<SizeV> make_static_string(const char (&str)[SizeV]) {
+    return make_static_string(str, std::make_index_sequence<SizeV - 1>());
+}
+
+template <size_t SizeV, size_t ... I>
+constexpr auto make_constexpr_string(static_string<SizeV> const ss, std::index_sequence<I ...>) {
+    return constexpr_string<ss[I] ...>();
+}
+
+template <size_t SizeV>
+constexpr auto make_constexpr_string(static_string<SizeV> const ss) {
+    return make_constexpr_string(ss, std::make_index_sequence<SizeV>());
+}
+
+#define declare_tag3(lit) \
+using lit##_tag = decltype(make_constexpr_string(make_static_string(#lit)));
+
 template <int N>
 constexpr auto tag(const char(&arr)[1])
 {
@@ -249,7 +274,7 @@ constexpr auto tag(const char(&arr)[1])
     //return compose_tag<nth_char(arr, 0)>();
 }
 
-template <char ... chars> struct constexpr_string {};
+
 
 template <class ParticularStringT, int sz, char ... chars>
 struct builder {
@@ -273,8 +298,10 @@ typedef decltype(lit##_tag_instance) lit##_tag;
 
 #define declare_tag2(lit) \
 struct lit##_tag_helper{ const char * str = #lit; }; \
-typedef builder<lit##_tag_helper, sizeof(#lit) - 1>::result lit##_tag;
+using lit##_tag = builder<lit##_tag_helper, sizeof(#lit) - 1>::result ;
 
+#define STRLIT(v) union { static constexpr char * value() { return #v; } }
+#define declare_tag4(lit) using lit##_tag = decltype(builder<STRLIT(lit), sizeof(#lit) - 1>::result ())
 //template <char ... chars>
 //struct tag {
 //
@@ -285,6 +312,21 @@ typedef builder<lit##_tag_helper, sizeof(#lit) - 1>::result lit##_tag;
 //    constexpr static char const* str() { return "hello world"; }
 //};
 
+template <class T>
+struct D : T {
+
+};
+
+template <class T>
+D<T> foo(T);
+
+template <class T>
+struct strbuilder {};
+
+#define STRFUNC(v) []{ return #v;}
+template <class T>
+constexpr auto make_strbuilder(T) { return strbuilder<T>(); }
+
 
 #include <iostream>
 BOOST_AUTO_TEST_CASE (test)
@@ -292,11 +334,27 @@ BOOST_AUTO_TEST_CASE (test)
     //typedef f<"asd"> tag_type;
     declare_tag2(main);
     declare_tag2(secondary);
+    std::cout << typeid(get_string(5)).name() << "\n";
 
+    //using m = decltype(make_strbuilder(STRFUNC(forth)));
+    //declare_tag4(third);
+    //typedef builder<decltype(foo(union { static constexpr auto value() { return "third"; })), 5> ttt_t;
+    //using third_tag = decltype(builder<struct third { const char * str = "third"; }, 5 > ::result());
+    //constexpr auto arr0 = make_static_string("lll");
+    //foo<4, arr0>();
+    //make_constexpr_string(arr0);
+    //declare_tag3(third);
+    /*
     //typedef decltype(sonia_tag("main")) tag_type;
     std::cout << typeid(main_tag).name() << "\n";
     std::cout << typeid(secondary_tag).name() << "\n";
+    //std::cout << typeid(third_tag).name() << "\n";
     //typedef tag<my_str_provider::str()> tag_main;
+
+    constexpr auto arr0 = make_static_string("lll");
+    make_constexpr_string(arr0, std::make_index_sequence<4>());
+    typedef ppp<make_static_string("lll")[0]> ppp_t;
+    */
 }
 
 #endif
@@ -311,6 +369,7 @@ BOOST_AUTO_TEST_CASE (test)
 //}
 //}
 
+#if 0
 
 #include "applied/scoped_services.hpp"
 #include "sonia/utility/multimethod.hpp"
@@ -390,3 +449,4 @@ BOOST_AUTO_TEST_CASE (test)
     //foo(&foo_class::method0);
 #endif
 }
+#endif

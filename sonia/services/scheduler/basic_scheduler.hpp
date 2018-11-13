@@ -9,6 +9,8 @@
 #   pragma once
 #endif
 
+#include <atomic>
+
 #include <boost/thread/barrier.hpp>
 
 #include "sonia/concurrency.hpp"
@@ -19,7 +21,32 @@
 #include "scheduler.hpp"
 #include "fiber_work_stealing_scheduler.hpp"
 
-namespace sonia {
+#include "sonia/utility/object_pool.hpp"
+
+namespace sonia { namespace scheduler_detail {
+
+class task_entry;
+using task_entry_pool_t = object_pool<task_entry, sonia::spin_mutex>;
+
+class task_entry {
+public:
+    template <typename T, class ... ArgsT>
+    task_entry(in_place_type_t<T> ipt, ArgsT&& ... args)
+        : task_(ipt, std::forward<ArgsT>(args) ...)
+    {}
+
+    void add_ref() { ++refs_; }
+    void release_ref(task_entry_pool_t * ppool);
+    void cancel();
+    void run();
+
+private:
+    scheduler_task_t task_;
+    std::atomic<long> refs_{1};
+    std::atomic<bool> handled_{false};
+};
+
+}
 
 class basic_scheduler 
     : public scheduler
@@ -38,6 +65,9 @@ public:
     void stop() override;
     void post(scheduler_task_t &&) override;
 
+protected:
+
+
 private:
     virtual std::string thread_name() const;
     void thread_proc();
@@ -52,6 +82,8 @@ private:
     fibers::condition_variable_any queue_cond_;
     bool stopping_;
     std::deque<function<void()>> queue_;
+
+    //scheduler_detail::task_entry_pool_t task_pool_;
 };
 
 }

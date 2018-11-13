@@ -105,9 +105,9 @@ void fiber_work_stealing_scheduler::suspend_until(std::chrono::steady_clock::tim
 
 void fiber_work_stealing_scheduler::notify() noexcept {
     if (suspend_) {
-        auto lk = make_unique_lock(mtx_);
+        mtx_.lock();
         flag_ = 1;
-        lk.unlock();
+        mtx_.unlock();
         cnd_.notify_all();
     }
 }

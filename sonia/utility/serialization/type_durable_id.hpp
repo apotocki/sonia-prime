@@ -27,7 +27,18 @@ public:
 
     template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, sonia::type::durable_id & did) const {
-        return sonia::decode<SerializationTagT>(std::move(ii), did.val_);
+        uint32_t didval;
+        ii = sonia::decode<SerializationTagT, uint32_t>(std::move(ii), didval);
+        did = sonia::type::durable_id(didval);
+        return std::move(ii);
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, sonia::type::durable_id * did) const {
+        uint32_t didval;
+        ii = sonia::decode<SerializationTagT, uint32_t>(std::move(ii), didval);
+        new(did) sonia::type::durable_id(didval);
+        return std::move(ii);
     }
 };
 

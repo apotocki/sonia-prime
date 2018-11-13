@@ -26,7 +26,7 @@ class net_service
     : public service
     , public enable_shared_from_this<net_service>
 {
-    typedef single_linked_buffer_ptr<char> buff_ptr;
+    using buff_ptr = single_linked_buffer_ptr<char>;
 
 public:
     explicit net_service(net_service_configuration const& cfg);
@@ -43,15 +43,13 @@ private:
         listener(logger::logger_ptr lptr) : loggable(lptr), closing(false) {}
         //listener(shared_ptr<net::connector> ncn) : cn(std::move(ncn)) {}
 
-        void acceptor_proc(std::error_code const&, size_t, sonia::io::tcp_socket soc, sonia::io::tcp_acceptor::renew_functor const&);
+        void acceptor_proc(std::error_code const&, size_t, sonia::io::tcp_socket soc, sonia::io::tcp_acceptor::renew_functor const&, shared_ptr<scheduler>);
 
         void close() {
             closing = true;
             acceptor.close();
         }
     };
-
-    
 
     net_service_configuration cfg_;
     shared_ptr<sonia::io::tcp_acceptor_factory> acceptor_factory_;

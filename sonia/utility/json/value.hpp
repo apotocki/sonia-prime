@@ -25,7 +25,7 @@
 namespace sonia {
 
 namespace json_detail {
-    typedef optimized_holder<SONIA_JSON_VALUE_SZ, 3> holder_t;
+    typedef optimized_holder<SONIA_JSON_VALUE_SZ, 3, uint32_t> holder_t;
 }
 
 /*

@@ -24,10 +24,10 @@ UnsignedT signed_to_unsigned(SignedT val, UnsignedT sign_mask) {
     return val < 0 ? ((UnsignedT)-val) + sign_mask : (UnsignedT)val;
 }
 
-template <class HolderT>
+template <class HolderT, typename RefCountT = uint32_t>
 struct optimized_decimal_impl
 {
-    typedef optimized_wrapper<decimal> optimized_decimal;
+    typedef optimized_wrapper<decimal, RefCountT> optimized_decimal;
     typedef typename HolderT::uint_t uint_t;
     typedef typename boost::int_t<HolderT::value_bits>::fast int_t;
 

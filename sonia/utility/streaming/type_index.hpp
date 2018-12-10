@@ -2,8 +2,8 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_STREAMING_HPP
-#define SONIA_UTILITY_STREAMING_HPP
+#ifndef SONIA_UTILITY_STREAMING_TYPE_INDEX_HPP
+#define SONIA_UTILITY_STREAMING_TYPE_INDEX_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
@@ -27,4 +27,4 @@ std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, Trait
 
 }
 
-#endif // SONIA_UTILITY_STREAMING_HPP
+#endif // SONIA_UTILITY_STREAMING_TYPE_INDEX_HPP

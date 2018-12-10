@@ -10,6 +10,7 @@
 #endif
 
 #include <memory>
+#include "sonia/utility/allocator_facade.hpp"
 
 namespace sonia {
 
@@ -18,10 +19,25 @@ using std::weak_ptr;
 using std::enable_shared_from_this;
 
 using std::make_shared;
+using std::allocate_shared;
 using std::dynamic_pointer_cast;
+using std::static_pointer_cast;
+using std::const_pointer_cast;
+
+template <typename T, typename ... ArgsT>
+shared_ptr<T> make_shared_adv(ArgsT && ... args)
+{
+    if constexpr (sizeof ...(ArgsT) == 1) {
+        sonia::allocator_facade<std::allocator<T>> alloc;
+        return sonia::allocate_shared<T>(alloc, std::forward<ArgsT>(args) ...);
+    } else {
+        return sonia::make_shared(std::forward<ArgsT>(args) ...);
+    }
+}
 
 template <class T>
-shared_ptr<T> make_clone(shared_ptr<T> const& ptr) {
+shared_ptr<T> make_clone(shared_ptr<T> const& ptr)
+{
     if (!ptr) return ptr;
     size_t sz = ptr->get_sizeof();
     void * charptr = new char[sz];

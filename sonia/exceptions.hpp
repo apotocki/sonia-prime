@@ -18,7 +18,8 @@
 
 namespace sonia {
 
-class exception : public std::runtime_error {
+class exception : public std::runtime_error
+{
 public:
     exception() : std::runtime_error("error") {}
 
@@ -28,13 +29,35 @@ public:
     {}
 };
 
-class shutdown_exception : public exception {
+class silence_exception : public exception {};
+
+class shutdown_exception : public exception
+{
 public:
+    shutdown_exception() : exception("shutdown") {}
+
     template <class ArgT>
     explicit shutdown_exception(ArgT && arg) : exception("shutdown: ", std::forward<ArgT>(arg)) {}
 };
 
-class internal_error : public exception {
+class fatal_error : public exception
+{
+public:
+    template <class ArgT>
+    explicit fatal_error(ArgT && arg)
+        : exception("fatal error: ", std::forward<ArgT>(arg))
+    {}
+
+    template <class ArgT0, class ... ArgsT>
+    explicit fatal_error(ArgT0 && arg0, ArgsT && ... args)
+        : exception(std::forward<ArgT0>(arg0), std::forward<ArgsT>(args) ...)
+    {}
+
+    fatal_error(fatal_error const&) = default;
+};
+
+class internal_error : public exception
+{
 public:
     template <class ArgT>
     explicit internal_error(ArgT && arg)
@@ -49,7 +72,8 @@ public:
     internal_error(internal_error const&) = default;
 };
 
-class closed_exception : public exception {
+class closed_exception : public exception
+{
 public:
     template <class ArgT>
     explicit closed_exception(ArgT && arg)
@@ -62,7 +86,8 @@ public:
     {}
 };
 
-class not_implemented_error : public internal_error {
+class not_implemented_error : public internal_error
+{
 public:
     not_implemented_error() : internal_error("not implemented") {}
 

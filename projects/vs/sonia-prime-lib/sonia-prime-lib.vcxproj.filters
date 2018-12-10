@@ -468,6 +468,18 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\variant.hpp">
       <Filter>sonia.utility\serialization</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\streaming\vector.hpp">
+      <Filter>sonia.utility\streaming</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\streaming\array_view.hpp">
+      <Filter>sonia.utility\streaming</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\bit_coder.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\expected.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

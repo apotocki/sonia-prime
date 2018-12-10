@@ -15,6 +15,7 @@
 #include "sonia/utility/optimized/decimal.hpp"
 #include "sonia/utility/optimized/array.hpp"
 #include "sonia/utility/functional/mover.hpp"
+#include "sonia/utility/streaming/array_view.hpp"
 
 namespace sonia {
 

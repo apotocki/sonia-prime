@@ -11,6 +11,7 @@
 
 #include <utility>
 #include <algorithm>
+#include <iterator> // std::advance
 
 #include <boost/integer_traits.hpp>
 
@@ -22,66 +23,78 @@
 namespace sonia { namespace serialization {
 
 template <typename TagT>
-class coder<TagT, bool> {
+class coder<TagT, bool>
+{
 public:
     template <typename OutputIteratorT>
-    OutputIteratorT encode(bool value, OutputIteratorT oi) const {
+    OutputIteratorT encode(bool value, OutputIteratorT oi) const
+    {
         *oi = value ? 1 : 0;
         ++oi;
         return std::move(oi);
     }
 
     template <typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, bool & value) const {
+    InputIteratorT decode(InputIteratorT ii, bool & value) const
+    {
         value = *ii != 0;
         ++ii;
         return std::move(ii);
     }
 
     template <typename ArgT, typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, bool * val) const {
+    InputIteratorT decode(InputIteratorT ii, bool * val) const
+    {
         return decode(std::move(ii), *val);
     }
 };
 
 template <typename TagT, typename T>
-class coder<TagT, T, enable_if_t<is_integral_v<T> && sizeof(T) == 1 && !is_same_v<bool, T>>> {
+class coder<TagT, T, enable_if_t<is_integral_v<T> && sizeof(T) == 1 && !is_same_v<bool, T>>>
+{
 public:
     template <typename OutputIteratorT>
-    OutputIteratorT encode(T value, OutputIteratorT oi) const {
+    OutputIteratorT encode(T value, OutputIteratorT oi) const
+    {
         *oi = value;
         ++oi;
         return std::move(oi);
     }
 
     template <typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, T & value) const {
+    InputIteratorT decode(InputIteratorT ii, T & value) const
+    {
         value = (T)*ii;
         ++ii;
         return std::move(ii);
     }
 
     template <typename ArgT, typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, T * val) const {
+    InputIteratorT decode(InputIteratorT ii, T * val) const
+    {
         return decode(std::move(ii), *val);
     }
 };
 
 template <typename TagT, typename T>
-class coder<TagT, T, enable_if_t<is_enum_v<T>>> {
+class coder<TagT, T, enable_if_t<is_enum_v<T>>>
+{
 public:
     template <typename OutputIteratorT>
-    OutputIteratorT encode(T value, OutputIteratorT oi) const {
+    OutputIteratorT encode(T value, OutputIteratorT oi) const
+    {
         return coder<TagT, int>().encode((int)value, std::move(oi));
     }
 
     template <typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, T * value) const {
+    InputIteratorT decode(InputIteratorT ii, T * value) const
+    {
         return coder<TagT, int>().decode(std::move(ii), (int*)value);
     }
 
     template <typename ArgT, typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, T & value) const {
+    InputIteratorT decode(InputIteratorT ii, T & value) const
+    {
         return coder<TagT, int>().decode(std::move(ii), (int*)&value);
     }
 };
@@ -97,19 +110,22 @@ class coder<default_t, T, enable_if_t<is_integral_v<T> && !integral_detail::is_s
 {
 public:
     template <typename ArgT, typename OutputIteratorT>
-    OutputIteratorT encode(ArgT val, OutputIteratorT oi) const {
+    OutputIteratorT encode(ArgT val, OutputIteratorT oi) const
+    {
         auto it = reinterpret_cast<char const*>(&val), eit = it + sizeof(ArgT);
         return std::copy(it, eit, oi);
     }
 
     template <typename ArgT, typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, ArgT * val) const {
+    InputIteratorT decode(InputIteratorT ii, ArgT * val) const
+    {
         auto it = reinterpret_cast<char*>(val), eit = it + sizeof(ArgT);
         return pull(std::move(ii), it, eit);
     }
 
     template <typename ArgT, typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, ArgT & val) const {
+    InputIteratorT decode(InputIteratorT ii, ArgT & val) const
+    {
         return decode(std::move(ii), &val);
     }
 };
@@ -122,7 +138,8 @@ class coder<compressed_t, T, enable_if_t<is_integral_v<T> && is_signed_v<T> && !
 
 public:
     template <typename OutputIteratorT>
-    OutputIteratorT encode(type val, OutputIteratorT oi) const {
+    OutputIteratorT encode(type val, OutputIteratorT oi) const
+    {
         int fields  = (traits::digits + 6) / 7u;
 
         int sign = val < 0 ? 1 : 0;
@@ -213,34 +230,54 @@ public:
     }
 };
 
-template <typename T>
-class coder<ordered_t, T, enable_if_t<is_integral_v<T> && !is_signed_v<T> && !integral_detail::is_special<T>>>
+// SzV is the size of an external storage in increments
+template <size_t SzV, typename T>
+class coder<sized_t<SzV, ordered_t>, T, enable_if_t<is_integral_v<T> && !is_signed_v<T> && !integral_detail::is_special<T>>>
 {
+    static constexpr size_t tsz_in_bytes = sizeof(T) * CHAR_BIT / 8;
+    static constexpr bool is_too_big = tsz_in_bytes < SzV;
+    static constexpr size_t realsz = is_too_big ? tsz_in_bytes : SzV;
+
 public:
     template <typename OutputIteratorT>
-    OutputIteratorT encode(T val, OutputIteratorT oi) const {
-        for (int i = sizeof(T) - 1; i >= 0; --i) {
-            *oi = (val >> CHAR_BIT * i) & ((1 << CHAR_BIT) - 1);
+    OutputIteratorT encode(T value, OutputIteratorT oi) const
+    {
+        if constexpr (is_too_big) { // put leading 0s if required
+            for (auto i = SzV; i > sizeof(T); --i) {
+                *oi = 0;
+                ++oi;
+            }
+        } else if constexpr (sizeof(T) > SzV) {
+            BOOST_ASSERT(value < ((T)1) << (realsz * 8));
+        }
+
+        for (int i = realsz - 1; i >= 0; --i) {
+            *oi = (value >> CHAR_BIT * i) & ((1 << 8) - 1);
             ++oi;
         }
+
         return std::move(oi);
     }
 
     template <typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, T & val) const {
-        val = T{0};
-        for (int i = sizeof(T) - 1; i >= 0; --i) {
-            val |= static_cast<uint8_t>(*ii) * (1 << CHAR_BIT * i);
+    InputIteratorT decode(InputIteratorT ii, T & value) const
+    {
+        value = 0;
+        if constexpr (sizeof(T) < SzV) { // skip trailing 0s if required
+            std::advance(ii, sizeof(T) - SzV);
+        }
+        for (int i = realsz - 1; i >= 0; --i) {
+            value |= static_cast<uint8_t>(*ii) * (1 << CHAR_BIT * i);
             ++ii;
         }
         return std::move(ii);
     }
-
-    template <typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, T * val) const {
-        return decode(std::move(ii), *val);
-    }
 };
+
+template <typename T>
+class coder<ordered_t, T, enable_if_t<is_integral_v<T> && !is_signed_v<T> && !integral_detail::is_special<T>>>
+    : public coder<sized_t<sizeof(T), ordered_t>, T>
+{};
 
 }}
 

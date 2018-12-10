@@ -24,6 +24,8 @@ template <typename TagT, typename T, typename EnableT = void> class coder;
 struct default_t {}; // can be incompatible among systems
 struct compressed_t {};
 struct ordered_t {}; // compatible among systems
+template <size_t sz, class T> struct sized_t {}; // size modifier for serialization with a given size
+template <size_t sz, class T> struct binary_t {}; // size modifier for serialization with a given binary size
 
 }}
 

@@ -73,6 +73,7 @@
     <ClInclude Include="..\..\..\sonia\utility\concurrency\rw_fiber_mutex.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\rw_fiber_mutex_ext.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\spinlock_trier.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\expected.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\explicit_operator_bool.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\file_persister.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\abs.hpp" />
@@ -128,6 +129,7 @@
     <ClInclude Include="..\..\..\sonia\utility\range\transform.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\rvalue.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\scope_exit.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\bit_coder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\bind_command.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost_serialization_tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\command.hpp" />
@@ -144,7 +146,9 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\vector.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\simple_queue.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\streaming\array_view.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\type_index.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\streaming\vector.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\type_durable_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\type_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\type_info_obs.hpp" />
@@ -233,7 +237,7 @@
     <ProjectGuid>{C98DCAAF-BA4A-4500-B111-CF0773EB0A38}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>soniaprimelib</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -282,19 +286,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(BOOST_1_66);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(BOOST);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(BOOST_1_66);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(BOOST);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -304,9 +304,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir)..\..\tpls\boost\include;$(SolutionDir)..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExceptionHandling>Async</ExceptionHandling>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -323,7 +323,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_LIB;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir)..\..\bundles</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir)..\..\tpls\boost\include;$(SolutionDir)..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -344,9 +344,9 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir)..\..\tpls\boost\include;$(SolutionDir)..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <ExceptionHandling>Async</ExceptionHandling>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -366,7 +366,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_LIB;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir)..\..\bundles</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir)..\..\tpls\boost\include;$(SolutionDir)..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

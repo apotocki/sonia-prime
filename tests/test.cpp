@@ -327,14 +327,21 @@ struct strbuilder {};
 template <class T>
 constexpr auto make_strbuilder(T) { return strbuilder<T>(); }
 
+#include "sonia/sal.hpp"
 
 #include <iostream>
 BOOST_AUTO_TEST_CASE (test)
 {
+    uint64_t v = 255;
+    auto f = [](uint64_t v) {
+        int lv = sonia::sal::log2(v);
+        return (sonia::sal::log2(v) + CHAR_BIT) / CHAR_BIT;
+    };
+    std::cout << f(1) << ", " << f(255) << ", " << f(256) << ", " << f(65535) << ", " << f(65536) << "\n";
     //typedef f<"asd"> tag_type;
-    declare_tag2(main);
-    declare_tag2(secondary);
-    std::cout << typeid(get_string(5)).name() << "\n";
+    //declare_tag2(main);
+    //declare_tag2(secondary);
+    //std::cout << typeid(get_string(5)).name() << "\n";
 
     //using m = decltype(make_strbuilder(STRFUNC(forth)));
     //declare_tag4(third);

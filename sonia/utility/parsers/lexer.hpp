@@ -9,8 +9,8 @@
 #   pragma once
 #endif
 
-#include "lexertl14/generator.hpp"
-#include "lexertl14/lookup.hpp"
+#include "lexertl/generator.hpp"
+#include "lexertl/lookup.hpp"
 
 #include <boost/utility/addressof.hpp>
 #include <boost/iterator/iterator_facade.hpp>

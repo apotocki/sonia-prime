@@ -73,6 +73,17 @@ struct optimized_array_impl
         self->set_uint(0);
     }
 
+    static void init(HolderT * self, size_t sz)
+    {
+        if (sz <= maxsz) {
+            self->set_uint(sz);
+            construct(begin(self), sz);
+        } else {
+            optimized_collection_t * ptr = allocate_adjacent_buffer<ElementT, optimized_collection_base_t, allocator_t>(sz, in_place);
+            self->set_pointer(ptr);
+        }
+    }
+
     template <typename RngT>
     static void init(HolderT * self, RngT && rng, size_t sz)
     {
@@ -134,6 +145,11 @@ public:
         array_t::init(this);
     }
 
+    explicit optimized_array(std::initializer_list<ElementT> l)
+    {
+        array_t::init(this, l);
+    }
+
     template <typename RngT>
     explicit optimized_array(RngT && rng, disable_if_same_ref_t<optimized_array, RngT> * dummy = nullptr)
     {
@@ -146,6 +162,11 @@ public:
         array_t::init(this, std::forward<RngT>(rng), sz);
     }
 
+    explicit optimized_array(size_t sz)
+    {
+        array_t::init(this, sz);
+    }
+
     optimized_array(optimized_array const&) = default;
     optimized_array(optimized_array &&) = default;
     optimized_array& operator=(optimized_array const&) = default;
@@ -154,9 +175,14 @@ public:
     operator array_view<ElementT>() noexcept { return array_t::get(this); }
     operator array_view<const ElementT>() const noexcept { return array_t::get(this); }
 
+    array_view<ElementT> to_array_view() noexcept { return array_t::get(this); }
+    array_view<const ElementT> to_array_view() const noexcept { return array_t::get(this); }
+
+    ElementT const* cbegin() const noexcept { return array_t::get(this).begin(); }
     ElementT const* begin() const noexcept { return array_t::get(this).begin(); }
     ElementT * begin() noexcept { return array_t::get(this).begin(); }
-    ElementT const* end() const noexcept { return array_t::get(this).end();; }
+    ElementT const* cend() const noexcept { return array_t::get(this).end(); }
+    ElementT const* end() const noexcept { return array_t::get(this).end(); }
     ElementT * end() noexcept { return array_t::get(this).end(); }
 
     size_t size() const noexcept { return array_t::size(this); }

@@ -13,6 +13,7 @@
 #include <functional>
 #include <vector>
 #include <array>
+#include <iterator>
 
 #include <boost/assert.hpp>
 
@@ -30,20 +31,22 @@ class array_view
 {
 public:
     // range resembling
-    typedef remove_cv_t<T> value_type;
-    typedef add_const_t<T> const_value_type;
-    typedef add_pointer_t<value_type> pointer;
-    typedef add_lvalue_reference_t<T> reference;
-    typedef add_lvalue_reference_t<const_value_type> const_reference;
-    typedef size_t size_type;
-    typedef add_pointer_t<T> iterator;
-    typedef add_pointer_t<const_value_type> const_iterator;
+    using value_type = remove_cv_t<T>;
+    using const_value_type = add_const_t<T>;
+    using pointer = add_pointer_t<value_type>;
+    using reference = add_lvalue_reference_t<T>;
+    using const_reference = add_lvalue_reference_t<const_value_type>;
+    using size_type = size_t;
+    using iterator = add_pointer_t<T>;
+    using const_iterator = add_pointer_t<const_value_type>;
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     constexpr array_view() noexcept : data_(nullptr), size_(0) {}
     constexpr array_view(T * d, size_type sz) noexcept : data_(d), size_(sz) {}
 
     template <size_t N>
-    constexpr array_view(T(&arr)[N]) : data_(arr), size_(N) {}
+    constexpr array_view(T(&arr)[N]) noexcept : data_(arr), size_(N) {}
 
     explicit array_view(T * b, T * e) noexcept
         : data_(b), size_(e - b)
@@ -61,6 +64,9 @@ public:
     const_iterator cbegin() const noexcept { return data_; }
     const_iterator cend() const noexcept { return data_ + size_; }
 
+    reverse_iterator rbegin() const noexcept { return reverse_iterator{end()}; }
+    reverse_iterator rend() const noexcept { return reverse_iterator{begin()}; }
+
     reference front() const noexcept { return data_[0]; }
     reference back()  const noexcept { return data_[size_ - 1]; }
     iterator data() const noexcept { return data_; }
@@ -68,14 +74,27 @@ public:
     constexpr bool empty() const noexcept { return !size_; }
 
     constexpr size_type size() const noexcept { return size_; }
+    
+    constexpr void advance_front(std::ptrdiff_t dist)
+    {
+        size_ -= dist;
+        data_ += dist;
+    }
+
+    constexpr void advance_back(std::ptrdiff_t dist)
+    {
+        size_ += dist;
+    }
+
     void reset() noexcept { data_ = nullptr; size_ = 0; }
 
     reference operator[](size_type ind) const noexcept { return data_[ind]; }
-    bool operator!() const noexcept { return empty(); }
+    constexpr bool operator!() const noexcept { return empty(); }
 
     BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL();
 
-    bool is_subset_of(array_view r) const {
+    bool is_subset_of(array_view r) const
+    {
         return std::less_equal<T*>()(r.data_, data_) && std::less_equal<T*>()(data_, r.end()) &&
             data_ - r.data_ + size_ <= r.size_;
     }
@@ -97,33 +116,18 @@ bool operator< (array_view<T> const& lhs, array_view<T> const& rhs) {
     return range_less()(lhs, rhs);
 }
 
-template <typename CharT, class TraitsT, typename T>
-std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, array_view<T> arr) {
-    os << '[';
-    bool first = true;
-    for (T const& val : arr) {
-        if (!first) {
-            os << ", ";
-        } else {
-            first = false;
-        }
-        os << val;
-    }
-    return os << ']';
-}
-
 template <typename T, size_t N>
 array_view<T> to_array_view(T (&arr)[N]) {
     return array_view<T>(arr, N);
 }
 
-template <typename T>
-array_view<T> to_array_view(std::vector<T> & v) {
+template <typename T, class AllocatorT>
+array_view<T> to_array_view(std::vector<T, AllocatorT> & v) {
     return array_view<T>(v.empty() ? nullptr : &v.front(), v.size());
 }
 
-template <typename T>
-array_view<const T> to_array_view(std::vector<T> const& v) {
+template <typename T, class AllocatorT>
+array_view<const T> to_array_view(std::vector<T, AllocatorT> const& v) {
     return array_view<const T>(v.empty() ? nullptr : &v.front(), v.size());
 }
 

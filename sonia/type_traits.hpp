@@ -17,11 +17,30 @@
 #include <boost/mpl/identity.hpp>
 #include <boost/range.hpp>
 
+#include "utility/expected.hpp"
+
 #define typeidx(t) std::type_index(typeid(t))
 
 namespace sonia {
 
-struct null_t {};
+struct null_t
+{
+    null_t() = default;
+
+    template <typename ... IgnoredArgsT>
+    explicit null_t(IgnoredArgsT && ...) noexcept {}
+
+    inline bool operator == (null_t const&) const noexcept { return true; }
+    inline bool operator != (null_t const&) const noexcept { return false; }
+    inline bool operator < (null_t const&) const noexcept { return false; }
+    inline bool operator <= (null_t const&) const noexcept { return true; }
+    inline bool operator > (null_t const&) const noexcept { return false; }
+    inline bool operator >= (null_t const&) const noexcept { return true; }
+};
+
+using namespace tl;
+//template <class T, class E> using expected = tl::expected<T, E>;
+//using make_unexpected = tl::make_unexpected;
 
 using std::bool_constant;
 using std::integral_constant;

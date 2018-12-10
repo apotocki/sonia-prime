@@ -6,6 +6,7 @@
 #include "host_impl.hpp"
 
 #include "sonia/utility/streaming/type_index.hpp"
+#include "sonia/utility/streaming/array_view.hpp"
 #include "thread_descriptor.hpp"
 
 //#ifndef SONIA_MM_ITEM_POOL_SIZE

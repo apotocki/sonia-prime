@@ -1,0 +1,396 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\sonia\array_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\build_config.hpp" />
+    <ClInclude Include="..\..\..\sonia\concurrency.hpp" />
+    <ClInclude Include="..\..\..\sonia\cstdint.hpp" />
+    <ClInclude Include="..\..\..\sonia\config.hpp" />
+    <ClInclude Include="..\..\..\sonia\exceptions.hpp" />
+    <ClInclude Include="..\..\..\sonia\function.hpp" />
+    <ClInclude Include="..\..\..\sonia\iterator_traits.hpp" />
+    <ClInclude Include="..\..\..\sonia\logger\loggable.hpp" />
+    <ClInclude Include="..\..\..\sonia\logger\logger.hpp" />
+    <ClInclude Include="..\..\..\sonia\optional.hpp" />
+    <ClInclude Include="..\..\..\sonia\reference_wrapper.hpp" />
+    <ClInclude Include="..\..\..\sonia\sal.hpp" />
+    <ClInclude Include="..\..\..\sonia\sal_types.hpp" />
+    <ClInclude Include="..\..\..\sonia\services.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bundle.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bundle.ipp" />
+    <ClInclude Include="..\..\..\sonia\services\environment.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\host.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\factory.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\file.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\tcp_acceptor.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\tcp_read_output_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\tcp_socket.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\tcp_write_output_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\scheduler\basic_scheduler.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\scheduler\thread_manager.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\scheduler\thread_manager.ipp" />
+    <ClInclude Include="..\..\..\sonia\services\service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\service_locator.hpp" />
+    <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
+    <ClInclude Include="..\..\..\sonia\string.hpp" />
+    <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\algorithm\construct.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\algorithm\copy.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\algorithm\pull.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\allocator_facade.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\automatic.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\automatic_pointer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\basic_local_registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\bind.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\bind_command.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\buffer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\caches\car.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\caches\clock.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\caches\utiltiy.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\command.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\comparison_operators.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\concurrency\rw_fiber_mutex.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\concurrency\rw_fiber_mutex_ext.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\concurrency\spinlock_trier.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\expected.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\explicit_operator_bool.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\file_persister.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\abs.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\compare.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\equal.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\forwarder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\has.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\hash.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\hash\array_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\hash\string.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\hash\vector.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\is_negative.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\less.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\mover.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\range_compare.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\range_equal.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\range_less.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\reference_wrapper.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\buffering_mediator_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\bz2_compress_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\bz2_decompress_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\deflate_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\hash_combine_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\inflate_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\range_reference.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\proxy.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\tar_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\multimethod.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\number\basic_decimal.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\number\decimal.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\number\decimal.ipp" />
+    <ClInclude Include="..\..\..\sonia\utility\number\integer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\on_close.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\optimized\decimal.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\optimized\holder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\optimized\integer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\optimized\array.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\automatic_polymorphic.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\in_place_factory.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\array_value_forward_iterator_adapter.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\file_region_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\range_dereferencing_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\wrapper_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\optimized_optional.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parameters\parameters.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexems.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexertl_lexer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\model.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\json\parser.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\lexer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\utility.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\placement_new.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\persister.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\polymorphic_traits.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\object_pool.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\posix\signals.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\range\combine.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\range\hasher.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\range\transform.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\rvalue.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\scope_exit.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\bit_coder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\bind_command.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\boost\optional.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\boost_serialization_tuple.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\command.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\integral.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\iostream.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\json_serialization.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\serializable.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\serialization.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\serialization_fwd.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\service.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\string.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\tuple.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\type_durable_id.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\variant.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\vector.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\simple_queue.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\streaming\array_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\streaming\type_index.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\streaming\vector.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\type_durable_id.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\type_id.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\type_info_obs.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\variadic.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\windows.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\..\sonia\logger\logger.cpp" />
+    <ClCompile Include="..\..\..\sonia\sal\linux_sal.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sal\windows_sal.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\bundle.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\environment.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\file.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\io\io_factory_linux.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_factory_win.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\scheduler\basic_scheduler.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\services_host.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\services.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\service_locator.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\file_persister.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\iterators\file_region_iterator.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\iterators\tar_iterator.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\json\json_value.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\number\number_integer.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\parameters\parameters.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\parsers\json\json_model.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\posix\signals.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\windows.cpp" />
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>15.0</VCProjectVersion>
+    <ProjectGuid>{C98DCAAF-BA4A-4500-B111-CF0773EB0A38}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>soniaprimelib</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v141</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>NotSet</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="Shared">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>_DEBUG;_LIB;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <MinimalRebuild>false</MinimalRebuild>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <PrecompiledHeader>NotUsing</PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_LIB;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <ExceptionHandling>SyncCThrow</ExceptionHandling>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
+    </ClCompile>
+    <Link>
+      <SubSystem>Windows</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+    </Link>
+  </ItemDefinitionGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

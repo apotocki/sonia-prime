@@ -1,0 +1,139 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\sonia\services\services.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\applied\dllmain.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\environment.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\services_host.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\service_locator.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\basic_service_factory.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\prime_bundle.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\scheduler\scheduler_service.cpp">
+      <Filter>sonia.services\scheduler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\local_type_registry.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\net_service.cpp">
+      <Filter>sonia.services\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\basic_connector.cpp">
+      <Filter>sonia.services\net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_service.cpp">
+      <Filter>sonia.services\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_service_builder.cpp">
+      <Filter>sonia.services\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\scheduler\scheduler_service_builder.cpp">
+      <Filter>sonia.services\scheduler</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\net_service_builder.cpp">
+      <Filter>sonia.services\net</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="sonia.services">
+      <UniqueIdentifier>{74959f1f-ac70-48cc-b3ce-1a10da274100}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services\scheduler">
+      <UniqueIdentifier>{16a9f79b-83c0-4b38-86d1-74ae8f96bd01}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia">
+      <UniqueIdentifier>{676c1e0b-bea2-4ced-96d2-fc66a4a71255}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services\net">
+      <UniqueIdentifier>{f3ae0c95-625f-45a4-b815-929407c52b9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services\io">
+      <UniqueIdentifier>{226e04cf-ee30-4a3b-addc-4d6198950edb}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\..\sonia\services\environment.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\host.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\service.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\service_locator.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\service_factory.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\bundle.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service.hpp">
+      <Filter>sonia.services\scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\type_registry.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\local_type_registry.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\prime_config.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\host_impl.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\thread_descriptor.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\net_service.hpp">
+      <Filter>sonia.services\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\connector.hpp">
+      <Filter>sonia.services\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\basic_connector.hpp">
+      <Filter>sonia.services\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\io_service.hpp">
+      <Filter>sonia.services\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\io_service_builder.hpp">
+      <Filter>sonia.services\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\io_service_configuration.hpp">
+      <Filter>sonia.services\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service_configuration.hpp">
+      <Filter>sonia.services\scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service_builder.hpp">
+      <Filter>sonia.services\scheduler</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\net_service_configuration.hpp">
+      <Filter>sonia.services\net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\net_service_builder.hpp">
+      <Filter>sonia.services\net</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

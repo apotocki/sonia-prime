@@ -132,10 +132,12 @@ public:
             stack_.back() = tar_extract_iterator(std::move(it));
             break;
         case archive_type::TGZ:
-            stack_.back() = tar_extract_iterator(buffering_mediator_iterator(inflate_iterator(std::move(it), true), buffsz_));
+            stack_.back() = tar_extract_iterator(archive_iterator_t(
+                in_place_type<iterator_adapter_t<buffering_mediator_iterator<inflate_iterator<SomeIteratorT>>>>,
+                inflate_iterator(std::move(it), true), buffsz_));
             break;
         default:
-            BOOST_THROW_EXCEPTION(internal_error("unexpected archive type: %1%" % ext_type));
+            BOOST_THROW_EXCEPTION(internal_error("unexpected archive type: %1%"_fmt % (int)ext_type));
         }
         return archive_iterator_t{};
     }
@@ -145,9 +147,10 @@ public:
     {
         if (it.next()) {
             auto const& [fullname, localname] = namearr_.back();
-            namearr_.push_back(std::pair(fullname + "/" + it.current_name, it.current_name()));
+            namearr_.push_back(std::pair(fullname + "/" + it.current_name(), it.current_name()));
             stack_.push_back(archive_iterator_t(in_place_type<iterator_adapter_t<tar_extract_iterator<SomeIteratorT>>>, std::move(it)));
         }
+        throw not_implemented_error();
     }
 
     bool next(archive_iterator_t & it)

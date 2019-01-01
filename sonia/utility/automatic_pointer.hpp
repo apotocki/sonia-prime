@@ -38,7 +38,7 @@ public:
     automatic_pointer(automatic_pointer const& rhs)
     {
         if constexpr (is_polymorphic_clonable_v<T>) {
-            ptr_ = make_clone(rhs);
+            ptr_ = make_clone(rhs.ptr_);
         } else {
             ptr_ = make_shared<T>(*rhs);
         }

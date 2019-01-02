@@ -83,7 +83,7 @@ struct optimized_array_impl
             self->set_uint(sz);
             construct(begin(self), sz);
         } else {
-            optimized_collection_t * ptr = allocate_adjacent_buffer<ElementT, optimized_collection_base_t, allocator_t>(sz, in_place);
+            optimized_collection_t * ptr = allocate_adjacent_buffer<ElementT, optimized_collection_base_t>(allocator_t(), sz, in_place);
             self->set_pointer(ptr);
         }
     }

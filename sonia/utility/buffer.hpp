@@ -32,14 +32,14 @@ public:
     explicit adjacent_buffer(size_t sz, RngT && rng, ArgsT&& ... args)
         : BaseT(std::forward<ArgsT>(args) ...), sz_(sz)
     {
-        construct(begin(), std::forward<RngT>(rng), sz);
+        sonia::construct(begin(), std::forward<RngT>(rng), sz);
     }
 
     template <typename ... ArgsT>
     adjacent_buffer(size_t sz, in_place_t, ArgsT&& ... args)
         : BaseT(std::forward<ArgsT>(args) ...), sz_(sz)
     {
-        construct(begin(), sz);
+        sonia::construct(begin(), sz);
     }
 
     adjacent_buffer(adjacent_buffer const& rhs) = delete;

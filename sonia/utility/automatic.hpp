@@ -95,7 +95,7 @@ public:
     T * operator->() { return get_pointer(); }
 
 private:
-    alignas(T) char[sizeof(T)] buffer_;
+    alignas(T) char buffer_[sizeof(T)];
 };
 
 template <typename CharT, class TraitsT, typename T>

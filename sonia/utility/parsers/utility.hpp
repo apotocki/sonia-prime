@@ -109,7 +109,7 @@ template <
     class ModelT,
     typename IteratorT
 >
-void parse(ModelT & model, IteratorT b, IteratorT e)
+IteratorT parse(ModelT & model, IteratorT b, IteratorT e)
 {
     typedef LexerT<IteratorT> lexer_type;
 
@@ -145,6 +145,8 @@ void parse(ModelT & model, IteratorT b, IteratorT e)
         copy_not_more(iter->first, e, std::back_inserter(rest), 50);
         throw exception(fmt("parser error: unexpected token, stopped at: \"%1%\"") % rest);
     }
+
+    return std::move(iter->first);
 }
 
 }}

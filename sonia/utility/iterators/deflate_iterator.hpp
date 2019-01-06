@@ -136,7 +136,7 @@ void deflate_iterator<IteratorT>::strm_data::deflate(int flag)
 
 		ret_ = ::deflate(&strm_, flag);
 		if (ret_ < 0) {
-			throw exception("deflate compressor error #"_fmt % ret_);
+			throw exception("deflate compressor error #%1%"_fmt % ret_);
 		}
 
 		BOOST_ASSERT(!strm_.avail_in || !strm_.avail_out);

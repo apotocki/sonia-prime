@@ -16,7 +16,7 @@
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
 
-#include "zlib.h"
+#include "sonia/utility/zlib_util.hpp"
 
 namespace sonia {
 
@@ -78,15 +78,20 @@ class inflate_iterator
 public:
     inflate_iterator(IteratorT base, bool gzip)
     {
-        data_ = make_shared<strm_data>(std::move(base), gzip);
+        data_ = std::make_unique<strm_data>(std::move(base), gzip);
     }
+
+    inflate_iterator(inflate_iterator const&) = delete;
+    inflate_iterator(inflate_iterator &&) = default;
+    inflate_iterator& operator=(inflate_iterator const&) = delete;
+    inflate_iterator& operator=(inflate_iterator &&) = default;
 
     bool empty() const { return data_->empty(); }
 
     IteratorT & base() const { return data_->base_; }
 
 private:
-    shared_ptr<strm_data> data_;
+    std::unique_ptr<strm_data> data_;
 };
 
 template <class IteratorT>
@@ -102,7 +107,7 @@ inflate_iterator<IteratorT>::strm_data::strm_data(IteratorT it, bool gzip)
     ret_ = inflateInit2(&strm_, gzip ? 16 + MAX_WBITS : -15);
 
     if (ret_ != Z_OK) {
-        BOOST_THROW_EXCEPTION(internal_error("inflate decompressor initialization error #%1%"_fmt % ret_));
+        BOOST_THROW_EXCEPTION(internal_error("inflate decompressor initialization error #%1% (%2%)"_fmt % ret_ % zlib_detail::err_to_str(ret_)));
     }
 }
 
@@ -161,7 +166,7 @@ void inflate_iterator<IteratorT>::strm_data::inflate()
         int flag = strm_.avail_in ? Z_SYNC_FLUSH : Z_FINISH;
         ret_ = ::inflate(&strm_, flag);
         if (ret_ < 0) {
-            throw exception("inflate decompressor error #"_fmt % ret_);
+            throw exception("inflate decompressor error #%1% (%2%)"_fmt % ret_ % zlib_detail::err_to_str(ret_));
         } else if (Z_FINISH == flag && strm_.avail_out && Z_STREAM_END != ret_) {
             throw exception("insufficient input data to inflate");
         }

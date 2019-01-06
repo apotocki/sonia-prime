@@ -66,6 +66,7 @@
     <ClInclude Include="..\..\..\sonia\utility\bind.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind_command.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\buffer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\bz2_util.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\car.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\clock.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\utiltiy.hpp" />
@@ -166,6 +167,7 @@
     <ClInclude Include="..\..\..\sonia\utility\type_info_obs.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\variadic.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\windows.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\zlib_util.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp" />

@@ -16,7 +16,7 @@
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
 
-#include "bzlib.h"
+#include "sonia/utility/bz2_util.hpp"
 
 namespace sonia {
 
@@ -78,15 +78,20 @@ class bz2_decompress_iterator
 public:
     explicit bz2_decompress_iterator(IteratorT base)
     {
-        data_ = make_shared<strm_data>(std::move(base));
+        data_ = std::make_unique<strm_data>(std::move(base));
     }
+
+    bz2_decompress_iterator(bz2_decompress_iterator const&) = delete;
+    bz2_decompress_iterator(bz2_decompress_iterator &&) = default;
+    bz2_decompress_iterator& operator=(bz2_decompress_iterator const&) = delete;
+    bz2_decompress_iterator& operator=(bz2_decompress_iterator &&) = default;
 
     bool empty() const { return data_->empty(); }
 
     IteratorT & base() const { return data_->base_; }
 
 private:
-    shared_ptr<strm_data> data_;
+    std::unique_ptr<strm_data> data_;
 };
 
 template <class IteratorT>
@@ -98,7 +103,7 @@ bz2_decompress_iterator<IteratorT>::strm_data::strm_data(IteratorT it)
     ret_ = BZ2_bzDecompressInit(&strm_, 0, 0);
 
     if (ret_ != BZ_OK) {
-        BOOST_THROW_EXCEPTION(internal_error("bz2 decompressor initialization error #%1%"_fmt % ret_));
+        BOOST_THROW_EXCEPTION(internal_error("bz2 decompressor initialization error #%1% (%2%)"_fmt % ret_ % bz2_detail::err_to_str(ret_)));
     }
 }
 
@@ -157,7 +162,7 @@ void bz2_decompress_iterator<IteratorT>::strm_data::inflate()
 
         ret_ = BZ2_bzDecompress(&strm_);
         if (ret_ < 0) {
-            throw exception("bz2 decompressor error #"_fmt % ret_);
+            throw exception("bz2 decompressor error #%1% (%2%)"_fmt % ret_ % bz2_detail::err_to_str(ret_));
         } else if (!strm_.avail_in && strm_.avail_out && BZ_STREAM_END != ret_) {
             throw exception("insufficient input data to decompress");
         }

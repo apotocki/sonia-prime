@@ -132,7 +132,7 @@ void bz2_compress_iterator<IteratorT>::strm_data::deflate(int flag)
 
 		ret_ = BZ2_bzCompress(&strm_, flag);
 		if (ret_ < 0) {
-			throw exception("bz2 compressor error #"_fmt % ret_);
+			throw exception("bz2 compressor error #%1%"_fmt % ret_);
 		}
 
 		BOOST_ASSERT(!strm_.avail_in || !strm_.avail_out);

@@ -58,7 +58,7 @@ class archive_iterator
     : public wrapper_iterator<
         automatic_pointer<shared_ptr<archive_iterator_polymorphic>>,
         array_view<const char>,
-        forward_traversal_tag
+        std::forward_iterator_tag
     >
 {
     using base_type = archive_iterator::wrapper_iterator_t;

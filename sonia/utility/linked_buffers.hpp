@@ -61,7 +61,8 @@ public:
 	{
         if (!next) {
             next = make_single_linked_buffer<T, BaseT>(
-                allocator(), preferred_sz ? preferred_sz : static_cast<single_linked_buffer<T, BaseT, AllocatorT>*>(this)->size()    
+                allocator(),
+                preferred_sz ? preferred_sz : static_cast<single_linked_buffer<T, BaseT, AllocatorT>*>(this)->size()
             );
         }
         return next;

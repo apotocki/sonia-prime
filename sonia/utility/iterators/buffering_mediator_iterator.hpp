@@ -38,10 +38,12 @@ class buffering_mediator_iterator
 	using buffer_ptr = single_linked_buffer_ptr<buff_elem_t, base_holder_t, allocator_t>;
 
 	buffer_ptr pbuff_;
+    mutable buff_elem_t * begin_{ nullptr };
+    mutable size_t size_{ 0 };
 
     bool equal(buffering_mediator_iterator const& rhs) const
     {
-        return pbuff_.get() == rhs.pbuff_.get();
+        return (begin_ ? begin_ : pbuff_->begin()) == (rhs.begin_ ? rhs.begin_ : rhs.pbuff_->begin());
     }
 
     void increment()
@@ -49,17 +51,37 @@ class buffering_mediator_iterator
 		if (pbuff_->next) {
 			buffer_ptr tmp = pbuff_->next;
 			pbuff_ = std::move(tmp);
+            begin_ = pbuff_->begin();
+            size_ = std::get<1>((base_holder_t&)*pbuff_);
 		} else if (1 == pbuff_->refs) {
 			std::get<1>((base_holder_t&)*pbuff_) = 0;
+            size_ = 0;
 		} else {
-			pbuff_ = pbuff_->get_or_make_next();
+            begin_ += size_;
+            base_holder_t& tpl = *pbuff_;
+            size_t used_buffer_size = std::get<1>(tpl); // other part could change used size
+            elem_t * end = pbuff_->begin() + used_buffer_size;
+            if (end > begin_) {
+                size_ = end - begin_;
+                return;
+            }
+            BOOST_ASSERT(begin_ == end);
+            size_ = 0;
+            if (end < pbuff_->end()) { // not all current buffer is used yet
+                return;
+            }
+            // need to allocate new buffer
+			auto tmp = pbuff_->get_or_make_next();
+            ((base_holder_t&)*tmp) = { std::get<0>((base_holder_t&)*pbuff_), 0 };
+            pbuff_ = std::move(tmp);
+            begin_ = pbuff_->begin();
 		}
     }
 
 	typename buffering_mediator_iterator::reference dereference() const
     {
-		size_t used_buffer_size = std::get<1>((base_holder_t&)*pbuff_);
-		return {pbuff_->begin(), used_buffer_size};
+        BOOST_ASSERT(begin_);
+		return {begin_, size_};
     }
 	
 public:
@@ -68,17 +90,34 @@ public:
 		pbuff_ = make_single_linked_buffer<buff_elem_t, base_holder_t>(allocator_t(), bfsz, make_shared<IteratorT>(std::move(it)), 0);
     }
 
+    template <typename ... ArgsT>
+    buffering_mediator_iterator(in_place_t, size_t bfsz, ArgsT && ... args)
+    {
+        pbuff_ = make_single_linked_buffer<buff_elem_t, base_holder_t>(allocator_t(), bfsz, make_shared<IteratorT>(std::forward<ArgsT>(args) ...), 0);
+    }
+
 	bool empty() const
 	{
+        if (size_) return false;
+
+        buff_elem_t * buff_begin = pbuff_->begin();
+        if (!begin_) {
+            begin_ = buff_begin;
+        }
+
 		auto &[pit, used_buffer_size] = (base_holder_t&)*pbuff_;
-		if (!used_buffer_size) {
+        size_t offset = begin_ - buff_begin;
+        if (!(used_buffer_size - offset)) {
 			if (pit->empty()) return true;
-			**pit = pbuff_->to_array_view();
+            **pit = array_view(begin_, pbuff_->end());
 			++(*pit);
 			if (pit->empty()) return true;
 			array_view<elem_t> r = **pit;
-			used_buffer_size = r.size();
-		}
+            size_ = r.size();
+            used_buffer_size += size_;
+        } else { // other part changed used_buffer_size, update available size_
+            size_ = used_buffer_size - offset;
+        }
 		return false;
 	}
 

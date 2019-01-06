@@ -38,16 +38,22 @@ class range_dereferencing_iterator_state
     IteratorT base_;
 
 public:
+    range_dereferencing_iterator_state() {}
+
     explicit range_dereferencing_iterator_state(IteratorT it)
         : base_(std::move(it))
-    {
-    
-    }
+    {}
 
     IteratorT & base() { return base_; }
     IteratorT const& base() const { return base_; }
 
-    bool empty() const { return base_.empty(); }
+    bool empty() const
+    {
+        if (BOOST_LIKELY(state_)) return false;
+        if (sonia::empty(base_)) return true;
+        init_state();
+        return false;
+    }
 
     void increment()
     {
@@ -71,12 +77,7 @@ public:
     state_t & get() const
     {
         if (!state_) {
-            iterator_dereferenced_range_t<IteratorT> rng = *base_;
-            if constexpr (is_bidirectional_v) {
-                state_.emplace(std::tuple(boost::begin(rng), boost::end(rng), boost::begin(rng)));
-            } else {
-                state_.emplace(std::tuple(boost::begin(rng), boost::end(rng)));
-            }
+            init_state();
         }
         return *state_;
     }
@@ -87,6 +88,17 @@ public:
         *base_ = array_view(boost::begin(rng), std::get<0>(get()));
         if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
             base_.flush();
+        }
+    }
+
+private:
+    void init_state() const
+    {
+        iterator_dereferenced_range_t<IteratorT> rng = *base_;
+        if constexpr (is_bidirectional_v) {
+            state_.emplace(std::tuple(boost::begin(rng), boost::end(rng), boost::begin(rng)));
+        } else {
+            state_.emplace(std::tuple(boost::begin(rng), boost::end(rng)));
         }
     }
 };
@@ -151,6 +163,9 @@ public:
     {
         state_t::flush();
     }
+
+    IteratorT & base() { return state_t::base(); }
+    IteratorT const& base() const { return state_t::base(); }
 };
 
 }

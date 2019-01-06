@@ -48,27 +48,31 @@ bool extract_iterator_polymorpic_adapter_base::do_next(shared_ptr<archive_iterat
         {
         case archive_type::GZIP:
             ptr = make_shared<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<inflate_iterator<archive_iterator>>>>(
-                std::move(name_wo_ext_str), buffsz_, buffering_mediator_iterator(inflate_iterator(archive_iterator(std::move(ptr)), true), buffsz_)
+                //std::move(name_wo_ext_str), buffsz_, buffering_mediator_iterator(inflate_iterator(archive_iterator(std::move(ptr)), true), buffsz_)
+                //std::move(name_wo_ext_str), buffsz_, buffering_mediator_iterator<inflate_iterator<archive_iterator>>(std::in_place, buffsz_, archive_iterator(std::move(ptr)), true)
+                std::move(name_wo_ext_str), buffsz_, in_place, buffsz_, archive_iterator(std::move(ptr)), true
                 );
             return false;
         case archive_type::BZIP2:
             ptr = make_shared<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<bz2_decompress_iterator<archive_iterator>>>>(
-                std::move(name_wo_ext_str), buffsz_, buffering_mediator_iterator(bz2_decompress_iterator(archive_iterator(std::move(ptr))), buffsz_)
-                );
+                //std::move(name_wo_ext_str), buffsz_, buffering_mediator_iterator(bz2_decompress_iterator(archive_iterator(std::move(ptr))), buffsz_)
+                std::move(name_wo_ext_str), buffsz_, in_place, buffsz_, archive_iterator(std::move(ptr))
+            );
             return false;
         case archive_type::TAR:
             ptr = make_shared<extract_iterator_polymorpic_adapter<tar_extract_iterator<archive_iterator>>>(
                 std::move(name_wo_ext_str), buffsz_, archive_iterator(std::move(ptr))
-                );
+            );
             return false;
         case archive_type::TGZ:
         {
             auto tmpptr = make_shared<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<inflate_iterator<archive_iterator>>>>(
-                "", buffsz_, buffering_mediator_iterator(inflate_iterator(archive_iterator(std::move(ptr)), true), buffsz_)
-                );
+                //"", buffsz_, buffering_mediator_iterator(inflate_iterator(archive_iterator(std::move(ptr)), true), buffsz_)
+                "", buffsz_, in_place, buffsz_, archive_iterator(std::move(ptr)), true
+            );
             ptr = make_shared<extract_iterator_polymorpic_adapter<tar_extract_iterator<archive_iterator>>>(
                 std::move(name_wo_ext_str), buffsz_, archive_iterator(std::move(tmpptr))
-                );
+            );
             return false;
         }
         default:

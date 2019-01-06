@@ -28,10 +28,11 @@
 #   define DEFAULT_ARCHIVER_INTERNAL_BUFFER_SIZE 65536
 #endif
 
-namespace sonia {
+namespace sonia { namespace archive_detail {
 
 enum class archive_type
 {
+    UNDEFINED,
     TAR,        // tar
     GZIP,       // gz
     BZIP2,      // bz2
@@ -39,191 +40,152 @@ enum class archive_type
     UNKNOWN
 };
 
-inline archive_type get_archive_type(string_view str)
+archive_type get_archive_type(string_view str);
+std::pair<string_view, archive_type> split_name(string_view nm);
+
+class archive_iterator;
+
+class archive_iterator_polymorphic
+    : public iterator_polymorphic<array_view<const char>>
 {
-    if (str.size() > 3) return archive_type::UNKNOWN;
-
-    char buff[8];
-    char * buff_it = buff;
-    for (char c : str) {
-        if (c >= 'a' && c <= 'z') c -= ('a' - 'A');
-        *buff_it++ = c;
-    }
-    *buff_it = 0;
-    cstring_view ucasestr((char*)buff, buff_it);
-    if (ucasestr == "TAR") return archive_type::TAR;
-    if (ucasestr == "GZ") return archive_type::GZIP;
-    if (ucasestr == "BZ2") return archive_type::BZIP2;
-    if (ucasestr == "TGZ") return archive_type::TGZ;
-    return archive_type::UNKNOWN;
-}
-
-using archive_iterator_t = wrapper_iterator<
-    automatic_pointer<shared_ptr<iterator_polymorphic<array_view<const char>>>>,
-    array_view<const char>,
-    forward_traversal_tag
->;
-
-template <class IteratorT>
-class archive_traverser_visitor 
-    : public boost::static_visitor<archive_iterator_t>
-{
-    static_assert(is_same_v<iterator_value_t<IteratorT>, array_view<const char>>);
-
-    using var_iterator = boost::variant<
-        IteratorT,
-        archive_iterator_t,
-        tar_extract_iterator<IteratorT>,
-        tar_extract_iterator<archive_iterator_t>
-    >;
-
-    template <class SomeIteratorT>
-    using iterator_adapter_t = iterator_polymorpic_adapter<
-        SomeIteratorT,
-        forward_traversal_tag,
-        array_view<const char>>;
-
-    std::pair<string_view, archive_type> split_name(string_view nm)
-    {
-        auto rit = std::find(nm.rbegin(), nm.rend(), '.');
-        string_view extstr(rit.base(), nm.end() - rit.base());
-        string_view name_wo_ext(nm.begin(), rit.base() - (rit != nm.rend() ? 1 : 0));
-        return {name_wo_ext, get_archive_type(extstr)};
-    }
-
 public:
-    archive_traverser_visitor(string_view name, IteratorT && it, size_t internalbuffsz)
-        : buffsz_(internalbuffsz)
-    {
-        stack_.push_back(std::move(it));
-        //stack_.push_back(archive_iterator_t(in_place_type<iterator_adapter_t<IteratorT>>, std::move(it)));
-        namearr_.push_back(std::pair(to_string(name), to_string(name)));
-    }
-
-    template <class SomeIteratorT>
-    archive_iterator_t operator()(SomeIteratorT & it)
-    {
-        auto const& [fullname, localname] = namearr_.back();
-        auto [name_wo_ext, ext_type] = split_name(localname);
-        
-        if (archive_type::UNKNOWN == ext_type) {
-            if constexpr (is_same_v<SomeIteratorT, archive_iterator_t>) {
-                return std::move(it);
-            } else {
-                return archive_iterator_t(in_place_type<iterator_adapter_t<IteratorT>>, std::move(it));
-            }
-        }
-
-        namearr_.push_back(std::pair(fullname, to_string(name_wo_ext)));
-
-        switch (ext_type)
-        {
-        case archive_type::GZIP:
-            stack_.back() = archive_iterator_t(
-                in_place_type<iterator_adapter_t<buffering_mediator_iterator<inflate_iterator<SomeIteratorT>>>>,
-                inflate_iterator(std::move(it), true), buffsz_);
-            break;
-        case archive_type::BZIP2:
-            stack_.back() = archive_iterator_t(
-                in_place_type<iterator_adapter_t<buffering_mediator_iterator<bz2_decompress_iterator<SomeIteratorT>>>>,
-                bz2_decompress_iterator(std::move(it)), buffsz_);
-            break;
-        case archive_type::TAR:
-            stack_.back() = tar_extract_iterator(std::move(it));
-            break;
-        case archive_type::TGZ:
-            stack_.back() = tar_extract_iterator(archive_iterator_t(
-                in_place_type<iterator_adapter_t<buffering_mediator_iterator<inflate_iterator<SomeIteratorT>>>>,
-                inflate_iterator(std::move(it), true), buffsz_));
-            break;
-        default:
-            BOOST_THROW_EXCEPTION(internal_error("unexpected archive type: %1%"_fmt % (int)ext_type));
-        }
-        return archive_iterator_t{};
-    }
-
-    template <class SomeIteratorT>
-    archive_iterator_t operator()(tar_extract_iterator<SomeIteratorT> & it)
-    {
-        if (it.next()) {
-            auto const& [fullname, localname] = namearr_.back();
-            namearr_.push_back(std::pair(fullname + "/" + it.current_name(), it.current_name()));
-            stack_.push_back(archive_iterator_t(in_place_type<iterator_adapter_t<tar_extract_iterator<SomeIteratorT>>>, std::move(it)));
-        }
-        throw not_implemented_error();
-    }
-
-    bool next(archive_iterator_t & it)
-    {
-        while (!stack_.empty()) {
-            if (it = boost::apply_visitor(*this, stack_.back()); !it.empty()) {
-                stack_.pop_back();
-                return true;
-            }
-        }
-        return false;
-    }
-
-    std::string const& current_name() const
-    {
-        return namearr_.back().first;
-    }
-
-private:
-    std::list<var_iterator> stack_;
-    std::vector<std::pair<std::string, std::string>> namearr_; //{(full, handled)}
-    size_t buffsz_;
+    virtual bool next(shared_ptr<archive_iterator_polymorphic> &) = 0;
+    virtual std::string const& name() = 0;
+    virtual archive_iterator * pbase() = 0;
 };
 
-
-
-template <class IteratorT>
-class archive_extract_iterator
-    : public boost::iterator_facade<
-        archive_extract_iterator<IteratorT>,
+class archive_iterator
+    : public wrapper_iterator<
+        automatic_pointer<shared_ptr<archive_iterator_polymorphic>>,
         array_view<const char>,
-        forward_traversal_tag,
-        array_view<const char>>
+        forward_traversal_tag
+    >
 {
-    friend class boost::iterator_core_access;
-
-    using archive_visitor_t = archive_traverser_visitor<IteratorT>;
-
-    void increment()
-    {
-        ++it_;
-    }
-
-    array_view<const char> dereference() const
-    {
-        return *it_;
-    }
+    using base_type = archive_iterator::wrapper_iterator_t;
 
 public:
-    archive_extract_iterator(string_view name, IteratorT it, size_t interal_buffsz = DEFAULT_ARCHIVER_INTERNAL_BUFFER_SIZE)
-    {
-        visitor_ = make_shared<archive_visitor_t>(name, std::move(it), interal_buffsz);
-    }
+    using base_type::base_type;
+
+    std::string const& name() const { return impl->name(); }
 
     bool next()
     {
-        return visitor_->next(it_);
+        while (impl.ptr) {
+            bool r = impl->next(impl.ptr);
+            if (r || !impl.ptr) return r;
+        }
+        return false;
     }
-
-    std::string const& current_name() const
-    {
-        return visitor_->current_name();
-    }
-
-    bool empty() const
-    {
-        return !visitor_ || it_.empty();
-    }
-
-private:
-    shared_ptr<archive_visitor_t> visitor_;
-    archive_iterator_t it_;
 };
+
+class extract_iterator_polymorpic_adapter_base
+{
+protected:
+    std::string full_name_;
+    std::string part_name_;
+    archive_type type_;
+    size_t buffsz_;
+
+public:
+    extract_iterator_polymorpic_adapter_base(std::string full_name, std::string part_name, size_t buffsz)
+        : full_name_(std::move(full_name))
+        , part_name_(std::move(part_name))
+        , type_(archive_type::UNDEFINED)
+        , buffsz_(buffsz)
+    {}
+
+    extract_iterator_polymorpic_adapter_base(std::string name, size_t buffsz)
+        : full_name_(std::move(name))
+        , type_(archive_type::UNDEFINED)
+        , buffsz_(buffsz)
+    {}
+
+    bool do_next(shared_ptr<archive_iterator_polymorphic> & ptr);
+
+    std::string const& do_get_name() const
+    {
+        if (!part_name_.empty()) return part_name_;
+        return full_name_;
+    }
+};
+
+template <class IteratorT>
+class extract_iterator_polymorpic_adapter
+    : public iterator_polymorpic_adapter_base<
+        IteratorT,
+        forward_traversal_tag,
+        archive_iterator_polymorphic>
+    , extract_iterator_polymorpic_adapter_base
+{
+    using base_type = typename extract_iterator_polymorpic_adapter::adapter_base_t;
+
+public:
+    template <typename ... ArgsT>
+    explicit extract_iterator_polymorpic_adapter(std::string fullname, size_t buffsz, ArgsT && ... args)
+        : base_type(std::forward<ArgsT>(args)...)
+        , extract_iterator_polymorpic_adapter_base(std::move(fullname), buffsz)
+    {}
+
+    template <typename ... ArgsT>
+    explicit extract_iterator_polymorpic_adapter(std::string fullname, std::string partname, size_t buffsz, ArgsT && ... args)
+        : base_type(std::forward<ArgsT>(args)...)
+        , extract_iterator_polymorpic_adapter_base(std::move(fullname), std::move(partname), buffsz)
+    {}
+
+    array_view<const char> dereference() const override final { return *base_type::it_; }
+    size_t get_sizeof() const override final { return sizeof(extract_iterator_polymorpic_adapter); }
+    polymorphic_clonable * clone(void * address, size_t sz) const override final { return base_type::do_clone(this, address, sz); }
+    polymorphic_movable * move(void * address, size_t sz) override final { return base_type::do_move(this, address, sz); }
+
+    archive_iterator * pbase() override final
+    {
+        if constexpr (is_template_instance_v<tar_extract_iterator, IteratorT>) {
+            return &base_type::it_.base();
+        } else if constexpr (is_template_instance_v<buffering_mediator_iterator, IteratorT>) {
+            // structure: buffering_mediator_iterator<some decompress iterator <archive_iterator>>
+            return &base_type::it_.base().base();
+        } else {
+            return nullptr;
+        }
+    }
+
+    bool next(shared_ptr<archive_iterator_polymorphic> & ptr) override final
+    {
+        if constexpr (is_template_instance_v<tar_extract_iterator, IteratorT>) {
+            while (!base_type::it_.empty()) ++base_type::it_;
+
+            bool res = base_type::it_.next();
+            if (res) {
+                part_name_ = full_name_ + '/' + base_type::it_.name();
+                type_ = archive_type::UNDEFINED;
+            } else {
+                // skip possible odd data
+                while (!base_type::it_.base().empty()) ++base_type::it_.base();
+                // note: it_.base() is an archive_iterator
+                ptr = std::move(base_type::it_.base().impl.ptr);
+                return false;
+            }
+        }
+
+        return do_next(ptr);
+    }
+
+    std::string const& name() override final
+    {
+        return do_get_name();
+    }
+
+};
+
+} // sonia::archive_detail
+
+using archive_iterator = archive_detail::archive_iterator;
+
+template <class IteratorT>
+archive_iterator make_archive_extract_iterator(std::string name, IteratorT && it, size_t interal_buffsz = DEFAULT_ARCHIVER_INTERNAL_BUFFER_SIZE)
+{
+    return archive_iterator(in_place_type<archive_detail::extract_iterator_polymorpic_adapter<remove_cvref_t<IteratorT>>>, std::move(name), interal_buffsz, std::forward<IteratorT>(it));
+}
 
 }
 

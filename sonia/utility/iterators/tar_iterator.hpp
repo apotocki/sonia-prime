@@ -54,43 +54,6 @@ struct tar_header
 };
 
 template <class IteratorT>
-class tar_item_iterator
-    : public boost::iterator_facade<
-        tar_item_iterator<IteratorT>,
-        range_reference_t<iterator_value_t<IteratorT>>,
-        at_least_traversal_t<forward_traversal_tag, iterator_traversal_t<IteratorT>>,
-        range_reference_t<iterator_value_t<IteratorT>>>
-    , range_dereferencing_iterator_state<IteratorT>
-{
-    friend class boost::iterator_core_access;
-    using rng_state_t = range_dereferencing_iterator_state<IteratorT>;
-    using rng_t = iterator_value_t<IteratorT>;
-    using reference_type = range_reference_t<rng_t>;
-
-    std::string name_;
-    uint64_t size_;
-
-    reference_type dereference() const
-    {
-        auto & rng = rng_state_t::get();
-        return range_reference<rng_t>::make(std::get<0>(rng), std::get<1>(rng));
-    }
-
-    void increment()
-    {
-        rng_state_t::increment();
-    }
-
-public:
-    tar_item_iterator(std::string nm, uint64_t sz, rng_state_t const& rngst)
-        : rng_state_t(rngst), name_(std::move(nm)), size_(sz)
-    {}
-
-    std::string const& name() const { return name; }
-    uint64_t size() const { return size_; }
-};
-
-template <class IteratorT>
 class tar_extract_iterator
     : public boost::iterator_facade<
         tar_extract_iterator<IteratorT>,
@@ -150,7 +113,7 @@ class tar_extract_iterator
     }
 
 public:
-    using item_iterator = tar_item_iterator<IteratorT>;
+    using base_iterator_type = IteratorT;
 
     explicit tar_extract_iterator(IteratorT it)
         : rng_state_t(std::move(it)), closed_(true)
@@ -158,12 +121,14 @@ public:
         
     }
 
-
-    std::string const& current_name() const { return current_name_; }
+    std::string const& name() const { return current_name_; }
     
     uint64_t current_size() const { return current_size_; }
 
     bool empty() const { return closed_; }
+
+    IteratorT & base() { return rng_state_t::base(); }
+    IteratorT const& base() const { return rng_state_t::base(); }
 
     bool next()
     {
@@ -175,7 +140,9 @@ public:
     {
         char * h_it = reinterpret_cast<char*>(&h), *h_eit = h_it + sizeof(tar_header);
         for (;;) {
-            if (rng_state_t::empty()) throw exception("tar_extract_iterator : unexpected eof");
+            if (rng_state_t::empty()) {
+                throw exception("tar_extract_iterator : unexpected eof");
+            }
             auto & st = rng_state_t::get();
             std::tie(std::get<0>(st), h_it) = copy_not_more(std::get<0>(st), std::get<1>(st), h_it, h_eit - h_it);
             if (h_it == h_eit) break;
@@ -189,35 +156,37 @@ public:
         bool next_entry_has_long_name = false;
         std::string name;
 
-        load_header(h);
-
-        if (h.is_end()) {
-            closed_ = true;
-            return;
-        }
-
-        if (next_entry_has_long_name) {
-            // Set the filename from the current header
-            current_name_ = h.filename;
-            next_entry_has_long_name = false;
+        for (;;) {
             load_header(h);
-        } else {
-            current_name_ = h.get_filename();
-        }
 
-        if (h.type_flag == '0' || h.type_flag == 0) {
-            current_size_ = h.get_file_size();
-            padding_ = (512 - (current_size_ % 512)) % 512;
-            closed_ = false;
-            return;
-        } else if (h.type_flag == '5') {
-            // skip directory
-        } else if(h.type_flag == 'L') {
-            next_entry_has_long_name = true;
-        } else {
-            // Neither normal file nor directory (symlink etc.) -- currently ignored silently
-            closed_ = true;
-            throw exception("found unhandled TAR Entry type '%1%', for name:  %2%"_fmt % h.type_flag % name);
+            if (h.is_end()) {
+                closed_ = true;
+                return;
+            }
+
+            if (next_entry_has_long_name) {
+                // Set the filename from the current header
+                current_name_ = h.filename;
+                next_entry_has_long_name = false;
+                load_header(h);
+            } else {
+                current_name_ = h.get_filename();
+            }
+
+            if (h.type_flag == '0' || h.type_flag == 0) {
+                current_size_ = h.get_file_size();
+                padding_ = (512 - (current_size_ % 512)) % 512;
+                closed_ = false;
+                return;
+            } else if (h.type_flag == '5') {
+                // skip directory
+            } else if (h.type_flag == 'L') {
+                next_entry_has_long_name = true;
+            } else {
+                // Neither normal file nor directory (symlink etc.) -- currently ignored silently
+                closed_ = true;
+                throw exception("found unhandled TAR Entry type '%1%', for name:  %2%"_fmt % h.type_flag % name);
+            }
         }
     }
 };

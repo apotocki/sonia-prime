@@ -189,6 +189,15 @@ using is_in_t = typename is_in<WhatT, ListT ...>::type;
 template <typename WhatT, typename ... ListT>
 constexpr bool is_in_v = is_in<WhatT, ListT ...>::value;
 
+template <template <class ...> class TemplateT, class T>
+struct is_template_instance : false_type {};
+
+template <template <class ...> class TemplateT, class ... Ts>
+struct is_template_instance<TemplateT, TemplateT<Ts...>> : true_type {};
+
+template <template <class ...> class TemplateT, class T>
+constexpr bool is_template_instance_v = is_template_instance<TemplateT, T>::value;
+
 // call traits
 template <typename T> using call_param_t = typename boost::call_traits<T>::param_type;
 

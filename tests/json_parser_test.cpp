@@ -11,6 +11,7 @@
 #include "sonia/utility/parsers/json/parser.hpp"
 
 using namespace sonia;
+namespace fs = boost::filesystem;
 
 #include <fstream>
 #include <iterator>
@@ -18,61 +19,15 @@ using namespace sonia;
 #include <boost/any.hpp>
 #include <boost/unordered_map.hpp>
 
-#if 0
-class config {
-public:
-    template <typename T>
-    T const& operator[](string_view key) const {
-        auto it = values_.find(key, string_hasher(), string_equal_to());
-        if (it != values_.end()) {
-            return boost::any_cast<T const&>(it->second);
-        }
-        //throw exception(boost::format("key %1% is not found") % key);
-        //throw exception(fmt("key %1% is not found %x") % key % 'a');
-        throw exception(fmt("%1$#x") % (int)'a');
-    }
-
-private:
-    boost::unordered_map<std::string, boost::any> values_;
-};
-
-#include <iostream>
-
-BOOST_AUTO_TEST_CASE(just_test)
-{
-    config cfg;
-    std::cout << cfg.operator[]<std::string>(string_view("key0")) << "\n";
-}
-
-#endif
-
-#if 0
-BOOST_AUTO_TEST_CASE(json_temp_test)
-{
-    namespace fs = boost::filesystem;
-    std::string text;
-    std::ifstream file("data/json_temp_test.json");
-    std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(text));
-
-    parsers::json::model model;
-
-    parsers::parse<
-        parsers::json::light_lexertl_lexer,
-        parsers::json::parser
-    >(model, text.c_str(), text.c_str() + text.size());
-
-    json_value res = model.detach_result();
-    auto v = to_string(res);
-    std::cout << v << "\n";
-}
-#endif
-
 #if 1
 BOOST_AUTO_TEST_CASE(json_test)
 {
-    namespace fs = boost::filesystem;
+    char const* path = std::getenv("SONIA_PRIME_HOME");
+    BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
+    fs::path sonia_prime_home{ path };
+
     std::string text;
-    std::ifstream file("data/json_test.json");
+    std::ifstream file((sonia_prime_home / "tests" / "data" / "json_test.json").string().c_str());
     std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(text));
 
     parsers::json::model model;
@@ -148,7 +103,11 @@ BOOST_AUTO_TEST_CASE(json_suite_test)
 {
     namespace fs = boost::filesystem;
 
-    fs::path suitedir("data/json-test-suite");
+    char const* path = std::getenv("SONIA_PRIME_HOME");
+    BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
+    fs::path sonia_prime_home{path};
+
+    fs::path suitedir(sonia_prime_home / "tests" / "data" / "json-test-suite");
     //fs::path suitedir("data/temp");
 
     std::for_each(fs::directory_iterator(suitedir), fs::directory_iterator(), [](auto const& p) {

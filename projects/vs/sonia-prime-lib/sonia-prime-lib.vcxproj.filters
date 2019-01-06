@@ -590,5 +590,8 @@
     <ClCompile Include="..\..\..\sonia\utility\iterators\tar_iterator.cpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.cpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

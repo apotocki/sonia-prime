@@ -81,6 +81,8 @@ public:
 		}
 		return false;
 	}
+
+    IteratorT & base() const { return *std::get<0>((base_holder_t&)*pbuff_); }
 };
 
 }

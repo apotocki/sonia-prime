@@ -23,24 +23,26 @@ template <typename T>
 class automatic_pointer<shared_ptr<T>>
 {
 public:
-    explicit automatic_pointer(T * rawptr = nullptr) : ptr_(rawptr) {}
+    explicit automatic_pointer(T * rawptr = nullptr) : ptr(rawptr) {}
     
+    explicit automatic_pointer(shared_ptr<T> ptr) : ptr(std::move(ptr)) {}
+
     template <typename ... ArgsT>
     automatic_pointer(in_place_t, ArgsT && ... args)
-        : ptr_(make_shared<T>(std::forward<ArgsT>(args) ...))
+        : ptr(make_shared<T>(std::forward<ArgsT>(args) ...))
     {}
 
     template <class DT, typename ... ArgsT>
     automatic_pointer(in_place_type_t<DT>, ArgsT && ... args)
-        : ptr_(make_shared<DT>(std::forward<ArgsT>(args) ...))
+        : ptr(make_shared<DT>(std::forward<ArgsT>(args) ...))
     {}
 
     automatic_pointer(automatic_pointer const& rhs)
     {
         if constexpr (is_polymorphic_clonable_v<T>) {
-            ptr_ = make_clone(rhs.ptr_);
+            ptr = make_clone(rhs.ptr);
         } else {
-            ptr_ = make_shared<T>(*rhs);
+            ptr = make_shared<T>(*rhs);
         }
     }
 
@@ -48,25 +50,24 @@ public:
 
     automatic_pointer & operator= (automatic_pointer const& rhs)
     {
-        if (BOOST_LIKELY(ptr_.get() != rhs.ptr_.get())) {
+        if (BOOST_LIKELY(ptr.get() != rhs.ptr.get())) {
             automatic_pointer tmp(rhs);
-            ptr_ = std::move(tmp.ptr_);
+            ptr = std::move(tmp.ptr);
         }
         return *this;
     }
 
     automatic_pointer & operator= (automatic_pointer && rhs) = default;
 
-    bool operator!() const noexcept { return !ptr_; }
+    bool operator!() const noexcept { return !ptr; }
 
     BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL();
 
-    T * get() const { return ptr_.get(); }
-    T * operator-> () const { return ptr_.get(); }
-    T & operator* () const { return *ptr_; }
+    T * get() const { return ptr.get(); }
+    T * operator-> () const { return ptr.get(); }
+    T & operator* () const { return *ptr; }
 
-private:
-    shared_ptr<T> ptr_;
+    shared_ptr<T> ptr;
 };
 
 template <typename T> T * get_pointer(automatic_pointer<T> const& p) { return p.get(); }

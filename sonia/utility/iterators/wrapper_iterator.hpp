@@ -45,42 +45,44 @@ class wrapper_iterator
 
     bool equal(wrapper_iterator const& rhs) const
     {
-        if (impl_) return !!rhs.impl_;
-        if (rhs.impl_) return false;
-        return impl_->equal(*rhs.impl_);
+        if (impl) return !!rhs.impl;
+        if (rhs.impl) return false;
+        return impl->equal(*rhs.impl);
     }
 
-    void increment() { impl_->increment(); }
+    void increment() { impl->increment(); }
 
-    void decrement() { impl_->decrement(); }
+    void decrement() { impl->decrement(); }
 
     decltype(auto) dereference() const
     {
-        return impl_->dereference();
+        return impl->dereference();
     }
 
-    void advance(DifferenceT dif) { impl_->advance(dif); }
+    void advance(DifferenceT dif) { impl->advance(dif); }
 
 public:
+    using wrapper_iterator_t = wrapper_iterator;
+
     wrapper_iterator() {}
 
     template <typename ArgT>
     explicit wrapper_iterator(ArgT && arg, enable_if_t<is_same_v<remove_cvref_t<ArgT>, wrapper_iterator>> * enabler = nullptr) 
-        : impl_(std::forward<ArgT>(arg).impl_)
+        : impl(std::forward<ArgT>(arg).impl)
     {}
 
     template <typename ArgT>
     explicit wrapper_iterator(ArgT && arg, disable_if_t<is_same_v<remove_cvref_t<ArgT>, wrapper_iterator>> * enabler = nullptr) 
-        : impl_(std::forward<ArgT>(arg))
+        : impl(std::forward<ArgT>(arg))
     {}
 
     template <typename ArgT0, typename ArgT1, typename ... ArgsT>
     wrapper_iterator(ArgT0 && arg0, ArgT1 && arg1, ArgsT && ... args) 
-        : impl_(std::forward<ArgT0>(arg0), std::forward<ArgT1>(arg1), std::forward<ArgsT>(args) ...)
+        : impl(std::forward<ArgT0>(arg0), std::forward<ArgT1>(arg1), std::forward<ArgsT>(args) ...)
     {}
 
     wrapper_iterator(wrapper_iterator const& rhs)
-        : impl_(rhs.impl_)
+        : impl(rhs.impl)
     {}
 
     wrapper_iterator(wrapper_iterator && rhs) = default;
@@ -88,19 +90,18 @@ public:
     wrapper_iterator & operator=(wrapper_iterator const& rhs)
     {
         if (this != &rhs) {
-            impl_ = rhs.impl_;
+            impl = rhs.impl;
         }
         return *this;
     }
 
     wrapper_iterator & operator=(wrapper_iterator && rhs) = default;
 
-    bool empty() const { return !impl_ || impl_->empty(); }
+    bool empty() const { return !impl || impl->empty(); }
 
-    void flush() { impl_->flush(); }
+    void flush() { impl->flush(); }
 
-private:
-    ImplT impl_;
+    ImplT impl;
 };
 
 template <typename ValueT, typename SetValueT>
@@ -263,6 +264,8 @@ public:
         }
     }
 
+    IteratorT & base() { return it_; }
+
 protected:
     template <class DerivedT>
     static polymorphic_clonable * do_clone(DerivedT const * obj, void * address, size_t sz)
@@ -311,7 +314,7 @@ class iterator_polymorpic_adapter
 public:
     using adapter_base_t::adapter_base_t;
 
-    ReferenceT dereference() const override
+    ReferenceT dereference() const override final
     {
         return *this->it_;
     }

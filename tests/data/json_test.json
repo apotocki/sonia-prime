@@ -1,0 +1,10 @@
+{
+    key2:   true,key3:1.23e2,"key4":'string value','key5':"str",
+    key1:   false ,
+    key0: null,
+    'key4 - just a long key':{} ,
+    'key4 - just a long long key':[],
+    $k0:{%0:1,%1:2},
+    $k1:[1,2,null],
+    test:{k0l: [1,2,3], k0r: [1,2,3]}
+}

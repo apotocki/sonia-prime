@@ -15,6 +15,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/parameters/parameters.cpp
     ${BUNDLE_HOME}/sonia/utility/iterators/file_region_iterator.cpp
     ${BUNDLE_HOME}/sonia/utility/iterators/tar_iterator.cpp
+    ${BUNDLE_HOME}/sonia/utility/iterators/archive_extract_iterator.cpp
     ${BUNDLE_HOME}/sonia/services/scheduler/basic_scheduler.cpp
     ${BUNDLE_HOME}/sonia/services/scheduler/fiber_work_stealing_scheduler.cpp
     ${BUNDLE_HOME}/sonia/services/io/file.cpp

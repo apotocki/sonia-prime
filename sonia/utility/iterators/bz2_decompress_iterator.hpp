@@ -47,7 +47,9 @@ class bz2_decompress_iterator
         void set(array_view<char>);
         array_view<const char> get() const;
 
-        bool inflate(); // returns false in case of eof
+        bool empty() const;
+
+        void inflate();
     };
 
     proxy_t dereference() const
@@ -67,9 +69,10 @@ class bz2_decompress_iterator
 
     void increment()
     {
-        if (!data_->inflate()) {
-            data_.reset();
+        if (empty()) {
+            BOOST_THROW_EXCEPTION(internal_error("increment an empty iterator"));
         }
+        data_->inflate();
     }
 
 public:
@@ -78,7 +81,9 @@ public:
         data_ = make_shared<strm_data>(std::move(base));
     }
 
-    bool empty() const { return !data_; }
+    bool empty() const { return data_->empty(); }
+
+    IteratorT & base() const { return data_->base_; }
 
 private:
     shared_ptr<strm_data> data_;
@@ -117,19 +122,32 @@ array_view<const char> bz2_decompress_iterator<IteratorT>::strm_data::get() cons
 }
 
 template <class IteratorT>
-bool bz2_decompress_iterator<IteratorT>::strm_data::inflate()
+bool bz2_decompress_iterator<IteratorT>::strm_data::empty() const
 {
-    if (BZ_STREAM_END == ret_) return false;
+    return ret_ < 0;
+}
+
+template <class IteratorT>
+void bz2_decompress_iterator<IteratorT>::strm_data::inflate()
+{
+    if (BOOST_UNLIKELY(BZ_STREAM_END == ret_)) {
+        ret_ = BZ_DATA_ERROR;
+        return;
+    }
 
     if (!strm_.next_in) { // first call
-        if (base_.empty()) return false;
+        if (BOOST_UNLIKELY(base_.empty())) { // no input data => no output data
+            ret_ = BZ_UNEXPECTED_EOF;
+            return;
+        }
+
         array_view<const char> crng = *base_;
         strm_.avail_in = static_cast<unsigned int>(crng.size());
         strm_.next_in = const_cast<char*>(crng.begin());
     }
 
     do {
-        while (!strm_.avail_in) {
+        while (!strm_.avail_in && !base_.empty()) {
             ++base_;
             if (base_.empty()) break;
             array_view<const char> crng = *base_;
@@ -140,10 +158,10 @@ bool bz2_decompress_iterator<IteratorT>::strm_data::inflate()
         ret_ = BZ2_bzDecompress(&strm_);
         if (ret_ < 0) {
             throw exception("bz2 decompressor error #"_fmt % ret_);
+        } else if (!strm_.avail_in && strm_.avail_out && BZ_STREAM_END != ret_) {
+            throw exception("insufficient input data to decompress");
         }
     } while (ret_ != BZ_STREAM_END && strm_.avail_out);
-
-    return true;
 }
 
 }

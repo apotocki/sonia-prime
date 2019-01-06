@@ -47,7 +47,9 @@ class inflate_iterator
         void set(array_view<char>);
         array_view<const char> get() const;
 
-        bool inflate(); // returns false in case of eof
+        bool empty() const;
+
+        void inflate();
     };
 
     proxy_t dereference() const
@@ -67,9 +69,10 @@ class inflate_iterator
 
     void increment()
     {
-        if (!data_->inflate()) {
-            data_.reset();
+        if (empty()) {
+            BOOST_THROW_EXCEPTION(internal_error("increment an empty iterator"));
         }
+        data_->inflate();
     }
 
 public:
@@ -78,7 +81,9 @@ public:
         data_ = make_shared<strm_data>(std::move(base), gzip);
     }
 
-    bool empty() const { return !data_; }
+    bool empty() const { return data_->empty(); }
+
+    IteratorT & base() const { return data_->base_; }
 
 private:
     shared_ptr<strm_data> data_;
@@ -121,19 +126,31 @@ array_view<const char> inflate_iterator<IteratorT>::strm_data::get() const
 }
 
 template <class IteratorT>
-bool inflate_iterator<IteratorT>::strm_data::inflate()
+bool inflate_iterator<IteratorT>::strm_data::empty() const
 {
-    if (Z_STREAM_END == ret_) return false;
+    return ret_ < 0;
+}
+
+template <class IteratorT>
+void inflate_iterator<IteratorT>::strm_data::inflate()
+{
+    if (BOOST_UNLIKELY(Z_STREAM_END == ret_)) {
+        ret_ = Z_STREAM_ERROR;
+        return;
+    }
 
     if (!strm_.next_in) { // first call
-        if (base_.empty()) return false;
+        if (BOOST_UNLIKELY(base_.empty())) { // no input data => no output data
+            ret_ = Z_STREAM_ERROR;
+            return;
+        }
         array_view<const char> crng = *base_;
         strm_.avail_in = static_cast<uInt>(crng.size());
         strm_.next_in = const_cast<Bytef*>(reinterpret_cast<Bytef const*>(crng.begin()));
     }
 
     do {
-        while (!strm_.avail_in) {
+        while (!strm_.avail_in && !base_.empty()) {
             ++base_;
             if (base_.empty()) break;
             array_view<const char> crng = *base_;
@@ -145,10 +162,10 @@ bool inflate_iterator<IteratorT>::strm_data::inflate()
         ret_ = ::inflate(&strm_, flag);
         if (ret_ < 0) {
             throw exception("inflate decompressor error #"_fmt % ret_);
+        } else if (Z_FINISH == flag && strm_.avail_out && Z_STREAM_END != ret_) {
+            throw exception("insufficient input data to inflate");
         }
     } while (ret_ != Z_STREAM_END && strm_.avail_out);
-
-    return true;
 }
 
 }

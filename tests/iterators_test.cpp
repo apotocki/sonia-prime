@@ -25,7 +25,7 @@ namespace fs = boost::filesystem;
 
 using namespace sonia;
 
-#if 0
+#if 1
 #if 1
 BOOST_AUTO_TEST_CASE (file_region_iterator_test)
 {
@@ -68,11 +68,11 @@ BOOST_AUTO_TEST_CASE( tar_iterator_test )
     using file_iterator_t = file_region_iterator<const char>;
     using tar_iterator_t = tar_extract_iterator<file_iterator_t>;
 
-    tar_iterator_t tit(file_iterator_t(sonia_prime_home / "tests" / "data" / "files.tar", 0, 65536));
+    tar_iterator_t tit(file_iterator_t(sonia_prime_home / "tests" / "data" / "archives" / "files.tar", 0, 65536));
 
     std::map<std::string, std::string> content;
     while (tit.next()) {
-        std::string name = tit.current_name();
+        std::string name = tit.name();
         std::string val;
         do {
             array_view<const char> rng = *tit;
@@ -95,7 +95,7 @@ BOOST_AUTO_TEST_CASE(gz_iterator_test)
     BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
 
     fs::path sonia_prime_home(path);
-    fs::path files_base_path = sonia_prime_home / "tests" / "data";
+    fs::path files_base_path = sonia_prime_home / "tests" / "data" / "archives";
 
     using file_iterator_t = file_region_iterator<const char>;
 
@@ -112,7 +112,7 @@ BOOST_AUTO_TEST_CASE(gz_iterator_test)
 
 	std::map<std::string, std::string> content;
 	while (tit.next()) {
-		std::string name = tit.current_file_name();
+		std::string name = tit.name();
 		std::string val;
 		do {
 			array_view<const char> rng = *tit;
@@ -201,10 +201,10 @@ namespace {
 std::map<std::string, std::string> load_archive(fs::path const& p)
 {
     std::map<std::string, std::string> result;
-    archive_extract_iterator ait(to_string_view(p.leaf().string()), file_region_iterator<const char>(p, 0, 65536));
+    archive_iterator ait = make_archive_extract_iterator(p.leaf().string(), file_region_iterator<const char>(p, 0, 65536));
     
     while (ait.next()) {
-        std::string name = ait.current_name();
+        std::string name = ait.name();
         std::string val;
 
         do {
@@ -225,29 +225,86 @@ BOOST_AUTO_TEST_CASE (archive_extract_iterator_test)
     char const* path = std::getenv("SONIA_PRIME_HOME");
     BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
 
-    fs::path sonia_prime_home{path};
-
+    fs::path sonia_prime_home{ path };
+    fs::path archive_test_home{ sonia_prime_home / "tests" / "data" / "archives"};
     std::map<std::string, std::string> cnt;
-#if 0
+
+#if 1
     // just a file
-    cnt = load_archive(sonia_prime_home / "tests" / "data" / "file0.txt");
+    cnt = load_archive(archive_test_home / "file0.txt");
     BOOST_CHECK_EQUAL(cnt.size(), 1);
     BOOST_CHECK_EQUAL(cnt["file0.txt"], "file0");
 
     // gzipped file
-    cnt = load_archive(sonia_prime_home / "tests" / "data" / "file0.txt.gz");
+    cnt = load_archive(archive_test_home / "file0.txt.gz");
     BOOST_CHECK_EQUAL(cnt.size(), 1);
     BOOST_CHECK_EQUAL(cnt["file0.txt"], "file0");
 
     // bzipp2ed file
-    cnt = load_archive(sonia_prime_home / "tests" / "data" / "file0.txt.bz2");
+    cnt = load_archive(archive_test_home / "file0.txt.bz2");
     BOOST_CHECK_EQUAL(cnt.size(), 1);
     BOOST_CHECK_EQUAL(cnt["file0.txt"], "file0");
-#endif
+
     // tar file
-    cnt = load_archive(sonia_prime_home / "tests" / "data" / "files.tar");
+    cnt = load_archive(archive_test_home / "files.tar");
     BOOST_CHECK_EQUAL(cnt.size(), 2);
-    BOOST_CHECK_EQUAL(cnt["file0.txt"], "file0\r\n");
-    BOOST_CHECK_EQUAL(cnt["file1.txt"], "file1\r\n");
+    BOOST_CHECK_EQUAL(cnt["files/file0.txt"], "file0\r\n");
+    BOOST_CHECK_EQUAL(cnt["files/file1.txt"], "file1\r\n");
+
+    // tgz file
+    cnt = load_archive(archive_test_home / "files.tgz");
+    BOOST_CHECK_EQUAL(cnt.size(), 2);
+    BOOST_CHECK_EQUAL(cnt["files/file0.txt"], "file0\r\n");
+    BOOST_CHECK_EQUAL(cnt["files/file1.txt"], "file1\r\n");
+
+    // gzipped tar file
+    cnt = load_archive(archive_test_home / "files.tar.gz");
+    BOOST_CHECK_EQUAL(cnt.size(), 2);
+    BOOST_CHECK_EQUAL(cnt["files/file0.txt"], "file0\r\n");
+    BOOST_CHECK_EQUAL(cnt["files/file1.txt"], "file1\r\n");
+
+    // bzipped2 tar file
+    cnt = load_archive(archive_test_home / "files.tar.bz2");
+    BOOST_CHECK_EQUAL(cnt.size(), 2);
+    BOOST_CHECK_EQUAL(cnt["files/file0.txt"], "file0\r\n");
+    BOOST_CHECK_EQUAL(cnt["files/file1.txt"], "file1\r\n");
+
+    cnt = load_archive(archive_test_home / "fileset0.tgz");
+    BOOST_CHECK_EQUAL(cnt.size(), 5);
+    BOOST_CHECK_EQUAL(cnt["fileset0/file0.txt"], "file0");
+    BOOST_CHECK_EQUAL(cnt["fileset0/file1.txt"], "file1");
+    BOOST_CHECK_EQUAL(cnt["fileset0/files2/file2.txt"], "file2");
+    BOOST_CHECK_EQUAL(cnt["fileset0/files5/file0.txt"], "file0\r\n");
+    BOOST_CHECK_EQUAL(cnt["fileset0/files5/file1.txt"], "file1\r\n");
+#endif
+#if 1
+    cnt = load_archive(archive_test_home / "fileset1.tgz");
+    BOOST_CHECK_EQUAL(cnt.size(), 7);
+    BOOST_CHECK_EQUAL(cnt["fileset1/file0.txt"], "file0");
+    BOOST_CHECK_EQUAL(cnt["fileset1/file1.txt"], "file1");
+    BOOST_CHECK_EQUAL(cnt["fileset1/files2/file2.txt"], "file2");
+    BOOST_CHECK_EQUAL(cnt["fileset1/files2/files/file0.txt"], "file0\r\n");
+    BOOST_CHECK_EQUAL(cnt["fileset1/files2/files/file1.txt"], "file1\r\n");
+    BOOST_CHECK_EQUAL(cnt["fileset1/files5/file0.txt"], "file0\r\n");
+    BOOST_CHECK_EQUAL(cnt["fileset1/files5/file1.txt"], "file1\r\n");
+#endif
+#if 1
+    // gzipped tar files of different items
+    cnt = load_archive(archive_test_home / "fileset.tgz");
+    BOOST_CHECK_EQUAL(cnt.size(), 12);
+    BOOST_CHECK_EQUAL(cnt["fileset/file0.txt"], "file0");
+    BOOST_CHECK_EQUAL(cnt["fileset/file1.txt"], "file1");
+    BOOST_CHECK_EQUAL(cnt["fileset/files5/file0.txt"], "file0\r\n");
+    BOOST_CHECK_EQUAL(cnt["fileset/files5/file1.txt"], "file1\r\n");
+    BOOST_CHECK_EQUAL(cnt["fileset/files2/file2.txt"], "file2");
+    BOOST_CHECK_EQUAL(cnt["fileset/files2/file0.txt"], "file0");
+    BOOST_CHECK_EQUAL(cnt["fileset/files2/files/file0.txt"], "file0\r\n");
+    BOOST_CHECK_EQUAL(cnt["fileset/files2/files/file1.txt"], "file1\r\n");
+    BOOST_CHECK_EQUAL(cnt["fileset/files2/files3/file0.txt"], "file0\r\n");
+    BOOST_CHECK_EQUAL(cnt["fileset/files2/files3/file1.txt"], "file1\r\n");
+    BOOST_CHECK_EQUAL(cnt["fileset/files2/files4/file0.txt"], "file0\r\n");
+    BOOST_CHECK_EQUAL(cnt["fileset/files2/files4/file1.txt"], "file1\r\n");
+    
+#endif
 }
 #endif

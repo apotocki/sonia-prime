@@ -23,6 +23,9 @@ namespace sonia { namespace iterators {
 
 HAS_METHOD_TRAIT_DEF(empty);
 HAS_METHOD_TRAIT_DEF(flush);
+HAS_METHOD_TRAIT_DEF(next);
+HAS_METHOD_TRAIT_DEF(base);
+HAS_METHOD_TRAIT_DEF(name);
 
 } // sonia::iterators
 

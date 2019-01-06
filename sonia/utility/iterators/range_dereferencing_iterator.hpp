@@ -49,7 +49,7 @@ public:
 
     bool empty() const
     {
-        if (BOOST_LIKELY(state_)) return false;
+        if (BOOST_LIKELY(!!state_)) return false;
         if (sonia::empty(base_)) return true;
         init_state();
         return false;

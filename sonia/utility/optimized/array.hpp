@@ -38,8 +38,8 @@ public:
 template <typename T, typename RefCountT, class DerivedBaseT, class AllocatorT>
 optimized_base<RefCountT> * optimized_array_base<T, RefCountT, DerivedBaseT, AllocatorT>::clone() const
 {
-    typedef conditional_t<is_same_v<void, DerivedBaseT>, optimized_array_base, DerivedBaseT> base_derived_t;
-    typedef adjacent_buffer<T, base_derived_t> derived_t;
+    using base_derived_t = conditional_t<is_same_v<void, DerivedBaseT>, optimized_array_base, DerivedBaseT>;
+    using derived_t = adjacent_buffer<T, base_derived_t>;
     derived_t const& self = static_cast<derived_t const&>(*this);
     return allocate_adjacent_buffer<T, base_derived_t>(allocator(), self.size(), self.to_array_view(), self);
 }
@@ -47,17 +47,17 @@ optimized_base<RefCountT> * optimized_array_base<T, RefCountT, DerivedBaseT, All
 template <typename T, typename RefCountT, class DerivedBaseT, class AllocatorT>
 void optimized_array_base<T, RefCountT, DerivedBaseT, AllocatorT>::dispose() noexcept
 {
-    typedef conditional_t<is_same_v<void, DerivedBaseT>, optimized_array_base, DerivedBaseT> base_derived_t;
-    typedef adjacent_buffer<T, base_derived_t> derived_t;
+    using base_derived_t = conditional_t<is_same_v<void, DerivedBaseT>, optimized_array_base, DerivedBaseT>;
+    using derived_t = adjacent_buffer<T, base_derived_t>;
     deallocate_adjacent_buffer(allocator(), static_cast<derived_t*>(this));
 }
 
 template <class ElementT, class HolderT>
 struct optimized_array_impl
 {
-    typedef std::allocator<ElementT> allocator_t;
-    typedef optimized_array_base<ElementT, typename HolderT::refcount_t> optimized_collection_base_t;
-    typedef adjacent_buffer<ElementT, optimized_collection_base_t> optimized_collection_t;
+    using allocator_t = std::allocator<ElementT>;
+    using optimized_collection_base_t = optimized_array_base<ElementT, typename HolderT::refcount_t>;
+    using optimized_collection_t = adjacent_buffer<ElementT, optimized_collection_base_t>;
 
     static const size_t alv = alignment_of_v<ElementT>;
     static const size_t aligned_offs = ceiling_v<HolderT::begin_offs, alv>;
@@ -140,8 +140,8 @@ protected:
 template <typename ElementT, size_t btsz, typename RefCountT>
 class optimized_array : optimized_holder<btsz, 0, RefCountT>
 {
-    typedef optimized_holder<btsz, 0, RefCountT> holder_t;
-    typedef optimized_array_impl<ElementT, holder_t> array_t;
+    using holder_t = optimized_holder<btsz, 0, RefCountT>;
+    using array_t = optimized_array_impl<ElementT, holder_t>;
 
 protected:
     template <class HolderArgT>
@@ -150,6 +150,9 @@ protected:
     {}
 
 public:
+    using iterator = ElementT *;
+    using const_iterator = ElementT const*;
+
     optimized_array()
     {
         array_t::init(this);

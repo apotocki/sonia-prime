@@ -522,6 +522,9 @@
     <ClInclude Include="..\..\..\sonia\utility\bz2_util.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\streaming\tuple.hpp">
+      <Filter>sonia.utility\streaming</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

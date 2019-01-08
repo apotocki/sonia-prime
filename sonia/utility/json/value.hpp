@@ -28,19 +28,8 @@ namespace json_detail {
     typedef optimized_holder<SONIA_JSON_VALUE_SZ, 3, uint32_t> holder_t;
 }
 
-/*
-class json_value_visitor {
-public:
-    virtual ~json_value_visitor() {}
-
-    virtual void operator()() = 0; // null
-    virtual void operator()(bool) = 0;
-    virtual void operator()(decimal const&) = 0;
-    virtual void operator()(std::string const&) = 0;
-    virtual void operator()(array_view<json_value>) = 0;
-};
-*/
-enum class json_value_type {
+enum class json_value_type
+{
     null = 0,
     boolean,
     number,

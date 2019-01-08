@@ -253,6 +253,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\windows.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\sonia.natvis" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{C98DCAAF-BA4A-4500-B111-CF0773EB0A38}</ProjectGuid>

@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+<Type Name="sonia::array_view&lt;*&gt;">
+    <Intrinsic Name="size" Expression="size_" />
+    <Intrinsic Name="data" Expression="data_" />
+    <DisplayString>size={size()}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">size()</Item>
+      <ArrayItems>
+        <Size>size()</Size>
+        <ValuePointer>data()</ValuePointer>
+      </ArrayItems>
+    </Expand>
+</Type>
+
+<Type Name="sonia::basic_string_view&lt;*,*&gt;">
+    <Intrinsic Name="size" Expression="size_" />
+    <Intrinsic Name="data" Expression="data_" />
+    <DisplayString>{data(),[size()]}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">size()</Item>
+      <ArrayItems>
+        <Size>size()</Size>
+        <ValuePointer>data()</ValuePointer>
+      </ArrayItems>
+    </Expand>
+</Type>
+
+<Type Name="sonia::automatic&lt;*&gt;">
+    <DisplayString>{*((value_type*)&amp;buffer_)}</DisplayString>
+    <Expand>
+        <Item Name="[sizeof]">sizeof(value_type)</Item>
+		<ExpandedItem>*((value_type*)&amp;buffer_)</ExpandedItem>
+	</Expand>
+</Type>
+
+<Type Name="sonia::optimized_holder&lt;*&gt;">
+  <Intrinsic Name="is_on_stack" Expression="1 &amp; *(char*)&amp;holder_"/>
+  <Intrinsic Name="heap_ptr" Expression="(optimized_base_t*)(*(uintptr_t*)&amp;holder_)"/>
+  <DisplayString Condition="is_on_stack()"> on stack</DisplayString>
+  <DisplayString Condition="!is_on_stack()"> on heap = {heap_ptr()}</DisplayString>
+  <Expand>
+    <Item Condition="!is_on_stack()" Name="ptr">heap_ptr()</Item>
+  </Expand>
+</Type>
+  
+<Type Name="sonia::optimized_array&lt;*&gt;">
+    <Intrinsic Name="is_on_stack" Expression="1 &amp; *(char*)&amp;holder_"/>
+    <Intrinsic Name="heap_buffer" Expression="(array_t::optimized_collection_t*)(*(uintptr_t*)&amp;holder_)"/>
+    <Intrinsic Name="on_stack_size" Expression="array_t::sz_mask &amp; (*(uint_t*)&amp;holder_ &gt;&gt; 1)" />
+    <Intrinsic Name="on_heap_size" Expression="heap_buffer()-&gt;sz_" />
+    <Intrinsic Name="on_stack_begin" Expression="($T1*)(((char*)&amp;holder_) + array_t::aligned_byte_offs)" />
+    <Intrinsic Name="on_heap_begin" Expression="($T1*)(char*)heap_buffer() + sizeof(array_t::optimized_collection_t)" />
+    <Intrinsic Name="size" Expression="is_on_stack()?on_stack_size():on_heap_size()" />
+    <Intrinsic Name="begin" Expression="is_on_stack()?on_stack_begin():on_heap_begin()" />
+    <DisplayString Condition="is_on_stack()"> stack size={on_stack_size()}</DisplayString>
+    <DisplayString Condition="!is_on_stack()"> heap size={on_heap_size()}</DisplayString>
+    <Expand>
+        <Item Name="[size]">size()</Item>
+        <Item Condition="!is_on_stack()" Name="adjacent_buffer">heap_buffer()</Item>
+        <Item Condition="!is_on_stack()" Name="begin">begin()</Item>
+        <ArrayItems>
+            <Size>size()</Size>
+            <ValuePointer>begin()</ValuePointer>
+        </ArrayItems>
+    </Expand>
+</Type>
+
+<Type Name="sonia::optimized_array&lt;char,*&gt;">
+    <Intrinsic Name="is_on_stack" Expression="1 &amp; *(char*)&amp;holder_"/>
+    <Intrinsic Name="heap_buffer" Expression="(array_t::optimized_collection_t*)(*(uintptr_t*)&amp;holder_)"/>
+    <Intrinsic Name="on_stack_size" Expression="array_t::sz_mask &amp; (*(uint_t*)&amp;holder_ &gt;&gt; 1)" />
+    <Intrinsic Name="on_heap_size" Expression="heap_buffer()-&gt;sz_" />
+    <Intrinsic Name="on_stack_begin" Expression="(((char*)&amp;holder_) + array_t::aligned_byte_offs)" />
+    <Intrinsic Name="on_heap_begin" Expression="(char*)heap_buffer() + sizeof(array_t::optimized_collection_t)" />
+    <Intrinsic Name="size" Expression="is_on_stack()?on_stack_size():on_heap_size()" />
+    <Intrinsic Name="begin" Expression="is_on_stack()?on_stack_begin():on_heap_begin()" />
+    <DisplayString>{begin(),[size()]}</DisplayString>
+    <Expand>
+        <Item Name="[on stack]" Condition="is_on_stack()">on_stack_begin()</Item>
+        <Item Name="[on heap]" Condition="!is_on_stack()">on_heap_begin()</Item>
+        
+        <Item Condition="!is_on_stack()" Name="adjacent_buffer">heap_buffer()</Item>
+        <Item Name="[size]">size()</Item>
+        <ArrayItems>
+            <Size>size()</Size>
+            <ValuePointer>begin()</ValuePointer>
+        </ArrayItems>
+    </Expand>
+</Type>
+
+<Type Name="sonia::adjacent_buffer&lt;*&gt;">
+    <Intrinsic Name="size" Expression="sz_" />
+    <Intrinsic Name="data" Expression="(char*)this + sizeof(*this)" />
+    <DisplayString>size={size()}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">size()</Item>
+      <ArrayItems>
+        <Size>size()</Size>
+        <ValuePointer>data()</ValuePointer>
+      </ArrayItems>
+    </Expand>
+</Type>
+
+</AutoVisualizer>

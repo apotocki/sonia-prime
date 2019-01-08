@@ -19,7 +19,8 @@
 
 namespace sonia {
 
-class integer {
+class integer
+{
 public:
     typedef boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>> integer_type;
 
@@ -40,7 +41,8 @@ public:
     void operator= (integer && rhs) { value_ = std::move(rhs.value_); }
 
     template <typename T>
-    T get() const {
+    T get() const
+    {
         return value_.convert_to<T>();
     }
 
@@ -49,86 +51,104 @@ public:
     integer_type const& raw() const { return value_; }
     integer_type & raw() { return value_; }
 
-    bool operator! () const {
+    bool operator! () const
+    {
         return !value_;
     }
 
-    bool operator== (integer const& rhs) const {
+    bool operator== (integer const& rhs) const
+    {
         return value_ == rhs.value_;
     }
 
-    bool operator< (integer const& rhs) const {
+    bool operator< (integer const& rhs) const
+    {
         return value_ < rhs.value_;
     }
 
-    bool operator> (integer const& rhs) const {
+    bool operator> (integer const& rhs) const
+    {
         return value_ > rhs.value_;
     }
 
     // float    
-    bool operator== (float_t const& rhs) const {
+    bool operator== (float_t const& rhs) const
+    {
         return value_.convert_to<float_t>() == rhs;
     }
 
-    bool operator< (float_t const& rhs) const {
+    bool operator< (float_t const& rhs) const
+    {
         return value_.convert_to<float_t>() < rhs;
     }
 
-    bool operator> (float_t const& rhs) const {
+    bool operator> (float_t const& rhs) const
+    {
         return value_.convert_to<float_t>() > rhs;
     }
 
     // double_t
-    bool operator== (double_t const& rhs) const {
+    bool operator== (double_t const& rhs) const
+    {
         return value_.convert_to<double_t>() == rhs;
     }
 
-    bool operator< (double_t const& rhs) const {
+    bool operator< (double_t const& rhs) const
+    {
         return value_.convert_to<double_t>() < rhs;
     }
 
-    bool operator> (double_t const& rhs) const {
+    bool operator> (double_t const& rhs) const
+    {
         return value_.convert_to<double_t>() > rhs;
     }
 
     template <typename T>
-    bool operator== (T && rhs) const {
+    bool operator== (T && rhs) const
+    {
         return value_ == std::forward<T>(rhs);
     }
 
     template <typename T>
-    bool operator< (T && rhs) const {
+    bool operator< (T && rhs) const
+    {
         return value_ < std::forward<T>(rhs);
     }
 
     template <typename T>
-    bool operator> (T && rhs) const {
+    bool operator> (T && rhs) const
+    {
         return value_ > std::forward<T>(rhs);
     }
 
     MAKE_COMPARISON_OPERATORS(integer)
 
     // operations
-    integer operator- () const {
+    integer operator- () const
+    {
         return integer(-value_);
     }
 
-    BOOST_FORCEINLINE integer & operator+= (integer const& rhs) {
+    BOOST_FORCEINLINE integer & operator+= (integer const& rhs)
+    {
         value_ += rhs.value_;
         return *this;
     }
 
-    BOOST_FORCEINLINE integer & operator-= (integer const& rhs) {
+    BOOST_FORCEINLINE integer & operator-= (integer const& rhs)
+    {
         value_ -= rhs.value_;
         return *this;
     }
 
-    BOOST_FORCEINLINE integer & operator*= (integer const& rhs) {
+    BOOST_FORCEINLINE integer & operator*= (integer const& rhs)
+    {
         value_ *= rhs.value_;
         return *this;
     }
 
-    BOOST_FORCEINLINE integer & operator/= (integer const& rhs) {
+    BOOST_FORCEINLINE integer & operator/= (integer const& rhs)
+    {
         value_ /= rhs.value_;
         return *this;
     }
@@ -149,7 +169,8 @@ private:
 };
 
 template <typename ElemT, typename TraitsT>
-std::basic_ostream<ElemT, TraitsT> & operator<< (std::basic_ostream<ElemT, TraitsT> & os, integer const& val) {
+std::basic_ostream<ElemT, TraitsT> & operator<< (std::basic_ostream<ElemT, TraitsT> & os, integer const& val)
+{
     return os << val.raw();
 }
 
@@ -158,25 +179,29 @@ inline size_t hash_value(integer const& x)
     return x.hash();
 }
 
-inline integer operator+ (integer const& lhs, integer const& rhs) {
+inline integer operator+ (integer const& lhs, integer const& rhs)
+{
     integer result(lhs);
     result += rhs;
     return std::move(result);
 }
 
-inline integer operator- (integer const& lhs, integer const& rhs) {
+inline integer operator- (integer const& lhs, integer const& rhs)
+{
     integer result(lhs);
     result -= rhs;
     return std::move(result);
 }
 
-inline integer operator* (integer const& lhs, integer const& rhs) {
+inline integer operator* (integer const& lhs, integer const& rhs)
+{
     integer result(lhs);
     result *= rhs;
     return std::move(result);
 }
 
-inline integer operator/ (integer const& lhs, integer const& rhs) {
+inline integer operator/ (integer const& lhs, integer const& rhs)
+{
     integer result(lhs);
     result /= rhs;
     return std::move(result);

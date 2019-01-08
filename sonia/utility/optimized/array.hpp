@@ -138,7 +138,7 @@ protected:
 };
 
 template <typename ElementT, size_t btsz, typename RefCountT>
-class optimized_array : optimized_holder<btsz, 0, RefCountT>
+class optimized_array : protected optimized_holder<btsz, 0, RefCountT>
 {
     using holder_t = optimized_holder<btsz, 0, RefCountT>;
     using array_t = optimized_array_impl<ElementT, holder_t>;
@@ -237,6 +237,7 @@ public:
     shared_optimized_array& operator=(shared_optimized_array const& rhs)
     {
         holder_t::operator=(ref(static_cast<holder_t const&>(rhs)));
+        return *this;
     }
 
     shared_optimized_array(shared_optimized_array &&) = default;

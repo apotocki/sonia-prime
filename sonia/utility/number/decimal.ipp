@@ -101,7 +101,8 @@ void decimal_parse(string_view str, SignificandT & v, ExponentT & e)
 }
 
 template <typename SignificandT, typename ExponentT>
-std::string decimal_string(SignificandT const& v, ExponentT const& e) {
+std::string decimal_string(SignificandT const& v, ExponentT const& e)
+{
     std::string result = boost::lexical_cast<std::string>(v);
     if (e >= 0) {
         result.resize(result.size() + e, '0');
@@ -117,7 +118,8 @@ std::string decimal_string(SignificandT const& v, ExponentT const& e) {
 }
 
 template <typename LSignificandT, typename LExponentT, typename RSignificandT, typename RExponentT>
-bool decimal_less(LSignificandT const& lv, LExponentT const& le, RSignificandT const& rv, RExponentT const& re) {
+bool decimal_less(LSignificandT const& lv, LExponentT const& le, RSignificandT const& rv, RExponentT const& re)
+{
     if ((lv < 0 && rv >= 0) || (lv == 0 && rv > 0)) return true;
     if (rv <= 0 && lv >= 0) return false;
     if (le <= re) {
@@ -128,7 +130,8 @@ bool decimal_less(LSignificandT const& lv, LExponentT const& le, RSignificandT c
 }
 
 template <typename LSignificandT, typename LExponentT, typename RSignificandT, typename RExponentT>
-bool decimal_equal(LSignificandT const& lv, LExponentT const& le, RSignificandT const& rv, RExponentT const& re) {
+bool decimal_equal(LSignificandT const& lv, LExponentT const& le, RSignificandT const& rv, RExponentT const& re)
+{
     if ((lv < 0 && rv >= 0) || (lv == 0 && rv != 0) || (lv > 0 && rv <= 0)) return false;
     if (lv == 0) return true;
     if (le <= re) {

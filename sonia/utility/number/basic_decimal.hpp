@@ -16,7 +16,8 @@
 namespace sonia {
 
 template <typename SignificandT, typename ExponentT>
-class basic_decimal {
+class basic_decimal
+{
 public:
     basic_decimal() noexcept
         : value_(0), exponent_10_(0)
@@ -33,19 +34,22 @@ public:
     {}
 
     template <typename T>
-    explicit basic_decimal(T val) {
+    explicit basic_decimal(T val)
+    {
         this->operator= (std::move(val));
     }
 
     template <typename SomeSignificandT, typename SomeExponentT>
-    basic_decimal & operator= (basic_decimal<SomeSignificandT, SomeExponentT> const& rhs) {
+    basic_decimal & operator= (basic_decimal<SomeSignificandT, SomeExponentT> const& rhs)
+    {
         value_ = rhs.value_;
         exponent_10_ = rhs.exponent_10_;
         return *this;
     }
 
     template <typename T>
-    basic_decimal & operator= (T val) {
+    basic_decimal & operator= (T val)
+    {
         if constexpr (is_integral_v<T>) {
             *this = basic_decimal(val, 0);
         } else {

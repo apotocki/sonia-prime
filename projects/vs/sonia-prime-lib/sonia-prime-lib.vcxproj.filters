@@ -603,4 +603,7 @@
       <Filter>sonia.utility\iterators</Filter>
     </ClCompile>
   </ItemGroup>
+  <ItemGroup>
+    <Natvis Include="..\sonia.natvis" />
+  </ItemGroup>
 </Project>

@@ -32,7 +32,7 @@ file_mapping_holder::file_mapping_holder(boost::filesystem::path const& path, bo
         size_t pagesz = ipc::mapped_region::get_page_size();
         fmc_->region_size = pagesz * ((rsz + pagesz - 1) / pagesz);
     } catch (std::exception const& e) {
-        throw exception("can't create a file mapping for '%1$S', error: %2%"_fmt % path.string() % e.what());
+        throw exception("can't create a file mapping for '%1$S', mode: %2%, error: %3%"_fmt % path.string() % (int)mode % e.what());
     }
 }
 

@@ -160,10 +160,11 @@ void bz2_decompress_iterator<IteratorT>::strm_data::inflate()
             strm_.next_in = const_cast<char*>(crng.begin());
         }
 
+        bool no_input = !strm_.avail_in;
         ret_ = BZ2_bzDecompress(&strm_);
         if (ret_ < 0) {
             throw exception("bz2 decompressor error #%1% (%2%)"_fmt % ret_ % bz2_detail::err_to_str(ret_));
-        } else if (!strm_.avail_in && strm_.avail_out && BZ_STREAM_END != ret_) {
+        } else if (no_input && strm_.avail_out && BZ_STREAM_END != ret_) {
             throw exception("insufficient input data to decompress");
         }
     } while (ret_ != BZ_STREAM_END && strm_.avail_out);

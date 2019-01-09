@@ -198,6 +198,9 @@ struct is_template_instance<TemplateT, TemplateT<Ts...>> : true_type {};
 template <template <class ...> class TemplateT, class T>
 constexpr bool is_template_instance_v = is_template_instance<TemplateT, T>::value;
 
+template <typename T>
+using arrow_deref_type_t = remove_pointer_t<decltype(std::declval<T>().operator->())>;
+
 // call traits
 template <typename T> using call_param_t = typename boost::call_traits<T>::param_type;
 

@@ -14,9 +14,10 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/variant.hpp>
+#include <boost/intrusive_ptr.hpp>
 
 #include "sonia/iterator_traits.hpp"
-#include "sonia/utility/automatic_pointer.hpp"
+#include "sonia/utility/explicit_operator_bool.hpp"
 #include "sonia/utility/iterators/wrapper_iterator.hpp"
 #include "sonia/utility/iterators/buffering_mediator_iterator.hpp"
 #include "sonia/utility/iterators/inflate_iterator.hpp"
@@ -49,14 +50,78 @@ class archive_iterator_polymorphic
     : public iterator_polymorphic<array_view<const char>>
 {
 public:
-    virtual bool next(shared_ptr<archive_iterator_polymorphic> &) = 0;
-    virtual std::string const& name() = 0;
+    archive_iterator_polymorphic() : refs(1) {}
+    archive_iterator_polymorphic(archive_iterator_polymorphic const&) : refs(1) {}
+
+    virtual bool next(archive_iterator &) = 0;
+    virtual std::string const& name() const = 0;
     virtual archive_iterator * pbase() = 0;
+
+    friend void intrusive_ptr_add_ref(archive_iterator_polymorphic * p)
+    {
+        ++p->refs;
+    }
+
+    friend void intrusive_ptr_release(archive_iterator_polymorphic * p)
+    {
+        if (0 == --p->refs) {
+            delete[] reinterpret_cast<char*>(p);
+        }
+    }
+
+    unsigned int refs;
+};
+
+class archive_iterator_impl
+{
+public:
+    archive_iterator_impl() {}
+
+    template <class T, typename ... ArgsT>
+    archive_iterator_impl(in_place_type_t<T>, ArgsT && ... args)
+    {
+        char * p = new char[sizeof(T)];
+        try {
+            new (p) T(std::forward<ArgsT>(args)...);
+        } catch (...) {
+            delete[] p;
+            throw;
+        }
+        ptr.reset(reinterpret_cast<T*>(p), false);
+    }
+
+    archive_iterator_impl(archive_iterator_impl const&) = default;
+    archive_iterator_impl(archive_iterator_impl &&) = default;
+    archive_iterator_impl& operator= (archive_iterator_impl const&) = default;
+    archive_iterator_impl& operator= (archive_iterator_impl &&) = default;
+    
+    void increment()
+    {
+        if (1 != ptr->refs) {
+            size_t sz = ptr->get_sizeof();
+            char * p = new char[sz];
+            try {
+                ptr.reset(static_cast<archive_iterator_polymorphic*>(ptr->clone(p, sz)), false);
+            } catch (...) {
+                delete[] p;
+                throw;
+            }
+        }
+        ptr->increment();
+    }
+    
+    bool operator!() const { return !ptr; }
+    BOOST_EXPLICIT_OPERATOR_BOOL();
+
+    void reset() { ptr.reset(); }
+
+    archive_iterator_polymorphic * operator-> () const { return ptr.get(); }
+    boost::intrusive_ptr<archive_iterator_polymorphic> ptr;
 };
 
 class archive_iterator
     : public wrapper_iterator<
-        automatic_pointer<shared_ptr<archive_iterator_polymorphic>>,
+        archive_iterator_impl,
         array_view<const char>,
         std::forward_iterator_tag
     >
@@ -70,12 +135,16 @@ public:
 
     bool next()
     {
-        while (impl.ptr) {
-            bool r = impl->next(impl.ptr);
-            if (r || !impl.ptr) return r;
+        while (impl) {
+            bool r = impl->next(*this);
+            if (r || !impl) return r;
         }
         return false;
     }
+
+    archive_iterator * pbase() { return impl->pbase(); }
+
+    void reset() { impl.reset(); }
 };
 
 class extract_iterator_polymorpic_adapter_base
@@ -100,7 +169,7 @@ public:
         , buffsz_(buffsz)
     {}
 
-    bool do_next(shared_ptr<archive_iterator_polymorphic> & ptr);
+    bool do_next(archive_iterator &);
 
     std::string const& do_get_name() const
     {
@@ -149,7 +218,7 @@ public:
         }
     }
 
-    bool next(shared_ptr<archive_iterator_polymorphic> & ptr) override final
+    bool next(archive_iterator & ax) override final
     {
         if constexpr (is_template_instance_v<tar_extract_iterator, IteratorT>) {
             while (!base_type::it_.empty()) ++base_type::it_;
@@ -162,15 +231,16 @@ public:
                 // skip possible odd data
                 while (!base_type::it_.base().empty()) ++base_type::it_.base();
                 // note: it_.base() is an archive_iterator
-                ptr = std::move(base_type::it_.base().impl.ptr);
+                archive_iterator tmp(std::move(base_type::it_.base()));
+                ax = std::move(tmp);
                 return false;
             }
         }
 
-        return do_next(ptr);
+        return do_next(ax);
     }
 
-    std::string const& name() override final
+    std::string const& name() const override final
     {
         return do_get_name();
     }

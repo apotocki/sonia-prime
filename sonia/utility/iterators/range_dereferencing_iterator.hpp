@@ -21,6 +21,7 @@
 
 namespace sonia {
 
+#if 1
 template <class IteratorT, class CategoryOrTraversalT = iterator_traversal_t<IteratorT>>
 class range_dereferencing_iterator_state
 {
@@ -61,15 +62,22 @@ public:
         state_.reset();
     }
 
+    void decrement_one()
+    {
+        if (!state_ || std::get<0>(*state_) == std::get<2>(*state_)) {
+            decrement();
+        }
+        BOOST_ASSERT(std::get<0>(*state_) != std::get<2>(*state_)); // retrieved range must not be empty
+        --std::get<0>(*state_);
+    }
+
     void decrement()
     {
         --base_;
         state_.reset();
         iterator_dereferenced_range_t<IteratorT> rng = *base_;
-        state_.emplace(std::tuple(boost::end(rng), boost::end(rng), boost::begin(rng)));
+        state_.emplace(boost::end(rng), boost::end(rng), boost::begin(rng));
     }
-
-    auto & optget() { return state_; }
 
     /*
     state[0] - cursor, state[1] - end of rng, (for bidirectional:) state[2] - begin of range
@@ -80,6 +88,11 @@ public:
             init_state();
         }
         return *state_;
+    }
+
+    subrange_iterator unsafe_begin() const
+    {
+        return std::get<0>(*state_);
     }
 
     void flush()
@@ -96,12 +109,17 @@ private:
     {
         iterator_dereferenced_range_t<IteratorT> rng = *base_;
         if constexpr (is_bidirectional_v) {
-            state_.emplace(std::tuple(boost::begin(rng), boost::end(rng), boost::begin(rng)));
+            state_.emplace(boost::begin(rng), boost::end(rng), boost::begin(rng));
         } else {
-            state_.emplace(std::tuple(boost::begin(rng), boost::end(rng)));
+            state_.emplace(boost::begin(rng), boost::end(rng));
         }
     }
 };
+
+#else
+
+
+#endif
 
 template <class IteratorT, class CategoryOrTraversal = iterator_traversal_t<IteratorT>>
 class range_dereferencing_iterator 
@@ -122,7 +140,7 @@ class range_dereferencing_iterator
     {
         if (empty()) return rhs.empty();
         if (rhs.empty()) return false;
-        return std::get<0>(state_t::get()) == std::get<0>(rhs.get());
+        return state_t::unsafe_begin() == rhs.unsafe_begin();
     }
 
     reference_type dereference() const
@@ -133,21 +151,13 @@ class range_dereferencing_iterator
     void increment()
     {
         auto & st = state_t::get();
-        ++std::get<0>(st);
-        if (std::get<0>(st) == std::get<1>(st)) {
-            state_t::increment();
-        }
+        if (BOOST_LIKELY(++std::get<0>(st) != std::get<1>(st))) return;
+        state_t::increment();
     }
 
     void decrement()
     {
-        auto & optst = state_t::optget();
-        if (!optst || std::get<0>(*optst) == std::get<2>(*optst)) {
-            state_t::decrement();
-            // after that optst is not nullopt
-        }
-        BOOST_ASSERT(std::get<0>(*optst) != std::get<2>(*optst)); // retrieved range must not be empty
-        --std::get<0>(*optst);
+        state_t::decrement_one();
     }
 
 public:

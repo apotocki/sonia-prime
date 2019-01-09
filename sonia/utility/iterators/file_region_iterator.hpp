@@ -13,6 +13,8 @@
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/filesystem/path.hpp>
+#include <boost/intrusive_ptr.hpp>
+
 #include "sonia/shared_ptr.hpp"
 #include "sonia/array_view.hpp"
 #include "sonia/type_traits.hpp"
@@ -20,6 +22,8 @@
 #include "sonia/utility/iterators/proxy.hpp"
 
 namespace sonia {
+
+class file_region_iterator_base;
 
 class file_mapping_holder
 {
@@ -53,11 +57,12 @@ class file_region_descriptor
     : private file_mapping_holder
     , public enable_shared_from_this<file_region_descriptor>
 {
+    friend class file_region_iterator_base;
+
     uint64_t fileoffset_;
     boost::interprocess::mapped_region region_;
     char * cursor_;
-    weak_ptr<file_region_descriptor> previous_;
-    shared_ptr<file_region_descriptor> next_;
+    boost::intrusive_ptr<file_region_descriptor> next_;
 
     file_region_descriptor(file_region_descriptor const&) = delete;
     file_region_descriptor& operator=(file_region_descriptor const&) = delete;
@@ -65,18 +70,18 @@ class file_region_descriptor
 public:
     file_region_descriptor(boost::filesystem::path const& path, boost::interprocess::mode_t mode, uint64_t offset, size_t region_sz);
 
-    file_region_descriptor(shared_ptr<file_region_descriptor> prev);
+    file_region_descriptor(boost::intrusive_ptr<file_region_descriptor> prev);
 
     ~file_region_descriptor();
 
     array_view<char> get() const;
     void update_region_size(size_t);
 
-    shared_ptr<file_region_descriptor> get_next() const { return next_; }
-    void set_next(shared_ptr<file_region_descriptor> next) { next_ = std::move(next); }
+    boost::intrusive_ptr<file_region_descriptor> get_next() const { return next_; }
+    void set_next(boost::intrusive_ptr<file_region_descriptor> next) { next_ = std::move(next); }
 
-    shared_ptr<file_region_descriptor> get_previous() const { return previous_.lock(); }
-    void set_previous(shared_ptr<file_region_descriptor> const& prev) { previous_ = prev; }
+    //boost::intrusive_ptr<file_region_descriptor> get_previous() const { return previous_.lock(); }
+    //void set_previous(boost::intrusive_ptr<file_region_descriptor> const& prev) { previous_ = prev; }
 
     void next_from(file_region_descriptor const& previous);
     void previous_from(file_region_descriptor const& next);
@@ -89,7 +94,20 @@ public:
 
     void flush();
 
+    friend void intrusive_ptr_add_ref(file_region_descriptor * p)
+    {
+        ++p->refs_;
+    }
+
+    friend void intrusive_ptr_release(file_region_descriptor * p)
+    {
+        if (0 == --p->refs_) {
+            delete p;
+        }
+    }
+
 private:
+    unsigned int refs_{1};
     boost::interprocess::mapped_region create_region(uint64_t offset, size_t region_size);
 };
 
@@ -114,16 +132,22 @@ protected:
 public:
     bool empty() const { return !region_ || region_->empty(); }
 
+    file_region_iterator_base() {}
     file_region_iterator_base(bool readonly, boost::filesystem::path const& path, uint64_t offset, size_t least_region_sz);
 
 protected:
-    shared_ptr<file_region_descriptor> region_;
+    boost::intrusive_ptr<file_region_descriptor> region_;
 };
 
 template <typename T>
 class file_region_iterator 
     : public boost::iterator_facade<
-        file_region_iterator<T>, array_view<T>, boost::bidirectional_traversal_tag,
+        file_region_iterator<T>, array_view<T>,
+        conditional_t <
+            is_const_v<T>,
+            std::bidirectional_iterator_tag,
+            boost::bidirectional_traversal_tag
+        >,
         conditional_t<
             is_const_v<T>,
             const array_view<T>,
@@ -161,6 +185,8 @@ class file_region_iterator
     }
 
 public:
+    file_region_iterator() {}
+
     template <typename CharT>
     explicit file_region_iterator(const CharT* name, uint64_t offset = 0, size_t least_region_sz = 1)
         : file_region_iterator_base(is_readonly, name, sizeof(T) * offset, sizeof(T) * least_region_sz)
@@ -169,6 +195,27 @@ public:
     explicit file_region_iterator(boost::filesystem::path const& fp, uint64_t offset = 0, size_t least_region_sz = 1)
         : file_region_iterator_base(is_readonly, fp.c_str(), sizeof(T) * offset, sizeof(T) * least_region_sz)
     {}
+
+    file_region_iterator(file_region_iterator const&) = default;
+    file_region_iterator(file_region_iterator &&) = default;
+
+    file_region_iterator & operator=(file_region_iterator const& rhs)
+    {
+        if (BOOST_UNLIKELY(region_.get() != rhs.region_.get())) {
+            region_ = rhs.region_;
+        }
+        return *this;
+    }
+
+    file_region_iterator & operator=(file_region_iterator && rhs)
+    {
+        if (BOOST_UNLIKELY(region_.get() != rhs.region_.get())) {
+            region_ = std::move(rhs.region_);
+        } else {
+            rhs.region_.reset();
+        }
+        return *this;
+    }
 
 	template <bool IsReadV = is_readonly>
 	enable_if_t<IsReadV == is_readonly && !IsReadV> flush()

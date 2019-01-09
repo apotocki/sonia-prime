@@ -52,8 +52,8 @@ file_region_descriptor::file_region_descriptor(boost::filesystem::path const& pa
     cursor_ = nullptr; // not initialized
 }
 
-file_region_descriptor::file_region_descriptor(shared_ptr<file_region_descriptor> prev)
-    : file_mapping_holder(static_cast<file_mapping_holder const&>(*prev)), fileoffset_(prev->fileoffset_), previous_(prev)
+file_region_descriptor::file_region_descriptor(boost::intrusive_ptr<file_region_descriptor> prev)
+    : file_mapping_holder(static_cast<file_mapping_holder const&>(*prev)), fileoffset_(prev->fileoffset_)
 {
     cursor_ = nullptr;
 }
@@ -62,7 +62,7 @@ file_region_descriptor::~file_region_descriptor()
 {
     // to avoid stack overflow for long chains
     while (next_) {
-        shared_ptr<file_region_descriptor> tmp = std::move(next_->next_);
+        boost::intrusive_ptr<file_region_descriptor> tmp = std::move(next_->next_);
         next_ = std::move(tmp);
     }
 }
@@ -142,24 +142,24 @@ file_region_iterator_base::file_region_iterator_base(bool readonly, boost::files
 {
     namespace ipc = boost::interprocess;
 
-    region_ = make_shared<file_region_descriptor>(
+    region_.reset(new file_region_descriptor(
         path,
         readonly ? ipc::read_only : ipc::read_write,
         offset, least_region_sz
-    );
+    ));
 }
 
 void file_region_iterator_base::increment()
 {
     if (!region_->is_cursor_at_the_end_or_null()) return;
 
-    shared_ptr<file_region_descriptor> next = region_->get_next();
+    boost::intrusive_ptr<file_region_descriptor> next = region_->get_next();
     if (next) {
         region_ = next;
-    } else if (1 == region_.use_count()) {
+    } else if (1 == region_->refs_) {
         region_->next_from(*region_);
     } else {
-        auto nextreg = make_shared<file_region_descriptor>(region_);
+        auto nextreg = boost::intrusive_ptr(new file_region_descriptor(region_));
         nextreg->next_from(*region_);
         region_->set_next(nextreg);
         region_ = std::move(nextreg);
@@ -172,15 +172,15 @@ void file_region_iterator_base::decrement()
         region_->set_cursor(nullptr);
         return;
     }
-    shared_ptr<file_region_descriptor> previous = region_->get_previous();
-    if (previous) {
-        region_ = previous;
-    } else if (1 == region_.use_count()) {
+    //boost::intrusive_ptr<file_region_descriptor> previous = region_->get_previous();
+    //if (previous) {
+    //    region_ = previous;
+    if (1 == region_->refs_) {
         region_->previous_from(*region_);
     } else {
-        auto prevreg = make_shared<file_region_descriptor>(region_);
+        auto prevreg = boost::intrusive_ptr(new file_region_descriptor(region_));
         prevreg->previous_from(*region_);
-        region_->set_previous(prevreg);
+        //region_->set_previous(prevreg);
         region_ = std::move(prevreg);
     }
 }

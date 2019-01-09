@@ -14,6 +14,14 @@
 
 namespace sonia {
 
+template <class T>
+class polymorphic_factory
+{
+public:
+    virtual ~polymorphic_factory() {}
+    virtual T* create(void* address, size_t sz) const = 0;
+};
+
 class polymorphic_clonable
 {
 public:

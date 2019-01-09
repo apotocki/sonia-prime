@@ -84,8 +84,8 @@ public:
     T & get() & { return *get_pointer(); }
     T && get() && { return std::move(*get_pointer()); }
 
-    T const* get_pointer() const { return std::launder(reinterpret_cast<T const*>(&buffer_)); }
-    T * get_pointer() { return std::launder(reinterpret_cast<T*>(&buffer_)); }
+    T const* get_pointer() const { return std::launder(reinterpret_cast<T const*>(buffer_)); }
+    T * get_pointer() { return std::launder(reinterpret_cast<T*>(buffer_)); }
 
     T const& operator*() const& { return get(); }
     T & operator*() & { return get(); }

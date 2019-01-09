@@ -81,7 +81,7 @@ public:
     }
 
     buffer_ptr next;
-    int refs;
+    unsigned int refs;
 };
 
 template <typename T, class BaseT, typename ... BaseArgsT>

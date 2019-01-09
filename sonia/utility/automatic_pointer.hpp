@@ -67,6 +67,7 @@ public:
     T * operator-> () const { return ptr.get(); }
     T & operator* () const { return *ptr; }
 
+    void reset() { ptr.reset(); }
     shared_ptr<T> ptr;
 };
 

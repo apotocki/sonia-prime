@@ -34,44 +34,56 @@ std::pair<string_view, archive_type> split_name(string_view nm)
     return { name_wo_ext, get_archive_type(extstr) };
 }
 
-bool extract_iterator_polymorpic_adapter_base::do_next(shared_ptr<archive_iterator_polymorphic> & ptr)
+namespace {
+
+template <class T, typename ... ArgsT>
+void replace(archive_iterator & r, ArgsT&& ... args)
+{
+    archive_iterator tmp(in_place_type<T>, std::forward<ArgsT>(args) ...);
+    r = std::move(tmp);
+}
+
+}
+
+bool extract_iterator_polymorpic_adapter_base::do_next(archive_iterator & ax)
 {
     if (archive_type::UNDEFINED == type_) {
         string_view name_wo_ext;
         std::tie(name_wo_ext, type_) = split_name(do_get_name());
         if (archive_type::UNKNOWN == type_) {
-            return !ptr->empty();
+            return !ax.empty();
         }
 
         std::string name_wo_ext_str = to_string(name_wo_ext);
         switch (type_)
         {
         case archive_type::GZIP:
-            ptr = make_shared<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<inflate_iterator<archive_iterator>>>>(
-                //std::move(name_wo_ext_str), buffsz_, buffering_mediator_iterator(inflate_iterator(archive_iterator(std::move(ptr)), true), buffsz_)
-                //std::move(name_wo_ext_str), buffsz_, buffering_mediator_iterator<inflate_iterator<archive_iterator>>(std::in_place, buffsz_, archive_iterator(std::move(ptr)), true)
-                std::move(name_wo_ext_str), buffsz_, in_place, buffsz_, archive_iterator(std::move(ptr)), true
-                );
+            replace<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<inflate_iterator<archive_iterator>>>>(
+                ax,
+                std::move(name_wo_ext_str), buffsz_, in_place, buffsz_, std::move(ax), true
+            );
             return false;
         case archive_type::BZIP2:
-            ptr = make_shared<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<bz2_decompress_iterator<archive_iterator>>>>(
-                //std::move(name_wo_ext_str), buffsz_, buffering_mediator_iterator(bz2_decompress_iterator(archive_iterator(std::move(ptr))), buffsz_)
-                std::move(name_wo_ext_str), buffsz_, in_place, buffsz_, archive_iterator(std::move(ptr))
+            replace<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<bz2_decompress_iterator<archive_iterator>>>>(
+                ax,
+                std::move(name_wo_ext_str), buffsz_, in_place, buffsz_, std::move(ax)
             );
             return false;
         case archive_type::TAR:
-            ptr = make_shared<extract_iterator_polymorpic_adapter<tar_extract_iterator<archive_iterator>>>(
-                std::move(name_wo_ext_str), buffsz_, archive_iterator(std::move(ptr))
+            replace<extract_iterator_polymorpic_adapter<tar_extract_iterator<archive_iterator>>>(
+                ax,
+                std::move(name_wo_ext_str), buffsz_, std::move(ax)
             );
             return false;
         case archive_type::TGZ:
         {
-            auto tmpptr = make_shared<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<inflate_iterator<archive_iterator>>>>(
-                //"", buffsz_, buffering_mediator_iterator(inflate_iterator(archive_iterator(std::move(ptr)), true), buffsz_)
-                "", buffsz_, in_place, buffsz_, archive_iterator(std::move(ptr)), true
+            archive_iterator tmp(
+                in_place_type<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<inflate_iterator<archive_iterator>>>>,
+                "", buffsz_, in_place, buffsz_, std::move(ax), true
             );
-            ptr = make_shared<extract_iterator_polymorpic_adapter<tar_extract_iterator<archive_iterator>>>(
-                std::move(name_wo_ext_str), buffsz_, archive_iterator(std::move(tmpptr))
+            replace<extract_iterator_polymorpic_adapter<tar_extract_iterator<archive_iterator>>>(
+                ax,
+                std::move(name_wo_ext_str), buffsz_, std::move(tmp)
             );
             return false;
         }
@@ -79,12 +91,12 @@ bool extract_iterator_polymorpic_adapter_base::do_next(shared_ptr<archive_iterat
             BOOST_THROW_EXCEPTION(internal_error("unexpected archive type: %1%"_fmt % (int)type_));
         }
     } else {
-        archive_iterator * pbs = ptr->pbase();
+        archive_iterator * pbs = ax.pbase();
         if (pbs) { // pop
-            ptr = std::move(pbs->impl.ptr);
-        }
-        else { // no more iterators on the stack
-            ptr.reset();
+            archive_iterator tmp(std::move(*pbs));
+            ax = std::move(tmp);
+        } else { // no more iterators on the stack
+            ax.reset();
         }
         return false;
     }

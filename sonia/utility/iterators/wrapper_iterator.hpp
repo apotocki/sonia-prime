@@ -50,9 +50,23 @@ class wrapper_iterator
         return impl->equal(*rhs.impl);
     }
 
-    void increment() { impl->increment(); }
+    void increment()
+    {
+        if constexpr (iterators::has_method_increment_v<ImplT, void()>) {
+            impl.increment();
+        } else {
+            impl->increment();
+        }
+    }
 
-    void decrement() { impl->decrement(); }
+    void decrement()
+    {
+        if constexpr (iterators::has_method_decrement_v<ImplT, void()>) {
+            impl.decrement();
+        } else {
+            impl->decrement();
+        }
+    }
 
     decltype(auto) dereference() const
     {

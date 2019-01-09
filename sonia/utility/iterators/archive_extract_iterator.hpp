@@ -65,6 +65,7 @@ public:
     friend void intrusive_ptr_release(archive_iterator_polymorphic * p)
     {
         if (0 == --p->refs) {
+            std::destroy_at(p);
             delete[] reinterpret_cast<char*>(p);
         }
     }

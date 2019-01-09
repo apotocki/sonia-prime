@@ -146,7 +146,7 @@ file_region_iterator_base::file_region_iterator_base(bool readonly, boost::files
         path,
         readonly ? ipc::read_only : ipc::read_write,
         offset, least_region_sz
-    ));
+    ), false);
 }
 
 void file_region_iterator_base::increment()

@@ -159,7 +159,7 @@ void file_region_iterator_base::increment()
     } else if (1 == region_->refs_) {
         region_->next_from(*region_);
     } else {
-        auto nextreg = boost::intrusive_ptr(new file_region_descriptor(region_));
+        auto nextreg = boost::intrusive_ptr(new file_region_descriptor(region_), false);
         nextreg->next_from(*region_);
         region_->set_next(nextreg);
         region_ = std::move(nextreg);
@@ -178,7 +178,7 @@ void file_region_iterator_base::decrement()
     if (1 == region_->refs_) {
         region_->previous_from(*region_);
     } else {
-        auto prevreg = boost::intrusive_ptr(new file_region_descriptor(region_));
+        auto prevreg = boost::intrusive_ptr(new file_region_descriptor(region_), false);
         prevreg->previous_from(*region_);
         //region_->set_previous(prevreg);
         region_ = std::move(prevreg);

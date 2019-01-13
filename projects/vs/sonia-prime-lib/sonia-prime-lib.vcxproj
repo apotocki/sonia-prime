@@ -152,6 +152,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\iostream.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\json_serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\optional.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\pair.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serializable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serialization_fwd.hpp" />

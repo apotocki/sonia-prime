@@ -11,7 +11,6 @@
 
 #include <utility>
 #include <iosfwd>
-#include <boost/utility/in_place_factory.hpp>
 
 #include "sonia/type_traits.hpp"
 
@@ -39,10 +38,13 @@ public:
     template <typename ArgT>
     explicit automatic(ArgT && arg)
     {
-        if constexpr (is_same_v<automatic, remove_cvref_t<ArgT>>) {
+        using pure_arg_t = remove_cvref_t<ArgT>;
+        if constexpr (is_same_v<automatic, pure_arg_t>) {
             new (get_pointer()) T(*std::forward<ArgT>(arg));
-        } else if constexpr (is_base_of_v<boost::in_place_factory_base, remove_cvref_t<ArgT>>) {
+        } else if constexpr (is_in_place_factory_v<pure_arg_t>) {
             arg.template apply<T>(get_pointer());
+        } else if constexpr (is_typed_in_place_factory_v<pure_arg_t> && is_same_v<T, typename pure_arg_t::value_type>) {
+            arg.apply(get_pointer());
         } else {
             new (get_pointer()) T(std::forward<ArgT>(arg));
         }
@@ -101,7 +103,8 @@ private:
 };
 
 template <typename CharT, class TraitsT, typename T>
-std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, automatic<T> val) {
+std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, automatic<T> val)
+{
     return os << *val;
 }
 

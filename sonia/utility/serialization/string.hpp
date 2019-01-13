@@ -43,12 +43,14 @@ public:
         ii = sonia::decode<TagT, size_type>(std::move(ii), sz);
         if constexpr (sizeof(CharT) == 1) {
             value.reserve(sz);
-            return std::copy_n(std::move(ii), sz, std::back_inserter(value));
+            for (auto sit = value.begin(); sz > 0; --sz, ++sit, ++ii) {
+                *sit = *ii;
+            }
+            return std::move(ii);
         } else {
-            coder<TagT, CharT> dec;
             value.resize(sz);
             for (auto sit = value.begin(), eit = value.end(); sit != eit; ++sit) {
-                ii = dec.decode(std::move(ii), *sit);
+                ii = coder<TagT, CharT>().decode(std::move(ii), *sit);
             }
             return std::move(ii);
         }

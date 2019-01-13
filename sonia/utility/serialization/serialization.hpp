@@ -34,6 +34,30 @@ InputIteratorT decode(InputIteratorT ii, ArgT && arg)
     return serialization::coder<TagT, T>().decode(std::move(ii), std::forward<ArgT>(arg));
 }
 
+template <typename TagT, typename InputIteratorT, typename T>
+InputIteratorT decode(InputIteratorT ii, T & arg)
+{
+    return serialization::coder<TagT, T>().decode(std::move(ii), arg);
+}
+
+template <typename TagT, typename InputIteratorT, typename T>
+InputIteratorT decode(InputIteratorT ii, T * arg)
+{
+    return serialization::coder<TagT, T>().decode(std::move(ii), arg);
+}
+
+template <typename TagT, typename InputIteratorT, typename T>
+InputIteratorT default_decode_ptr(InputIteratorT ii, T * arg)
+{
+    new(arg) T;
+    try {
+        return serialization::coder<TagT, T>().decode(std::move(ii), *arg);
+    } catch (...) {
+        std::destroy_at(arg);
+        throw;
+    }
+}
+
 template <typename TagT, typename IteratorT>
 struct in_place_decoder_factory
     : boost::in_place_factory_base

@@ -120,7 +120,7 @@ public:
     InputIteratorT decode(InputIteratorT ii, ArgT * val) const
     {
         auto it = reinterpret_cast<char*>(val), eit = it + sizeof(ArgT);
-        return pull(std::move(ii), it, eit);
+        return sonia::pull(std::move(ii), it, eit);
     }
 
     template <typename ArgT, typename InputIteratorT>

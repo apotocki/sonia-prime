@@ -17,6 +17,8 @@
 #include <boost/mpl/identity.hpp>
 #include <boost/range.hpp>
 #include <boost/call_traits.hpp>
+#include <boost/utility/in_place_factory.hpp>
+#include <boost/utility/typed_in_place_factory.hpp>
 
 #include "utility/expected.hpp"
 
@@ -228,6 +230,13 @@ template <size_t val, size_t acc>
 constexpr size_t ceiling_v = ((val + acc - 1) / acc) * acc;
 
 template <typename T> T * get_pointer(T * ptr) { return ptr; }
+
+// in_place_factory
+template <class T> struct is_in_place_factory : is_base_of<boost::in_place_factory_base, T> {};
+template <class T> constexpr bool is_in_place_factory_v = is_in_place_factory<T>::value;
+
+template <class T> struct is_typed_in_place_factory : is_base_of<boost::typed_in_place_factory_base, T> {};
+template <class T> constexpr bool is_typed_in_place_factory_v = is_typed_in_place_factory<T>::value;
 
 }
 

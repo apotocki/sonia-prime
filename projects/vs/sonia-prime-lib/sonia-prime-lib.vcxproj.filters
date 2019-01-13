@@ -534,6 +534,9 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\optional.hpp">
       <Filter>sonia.utility\serialization</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\pair.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

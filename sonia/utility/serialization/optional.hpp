@@ -49,13 +49,7 @@ public:
     template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, type * value) const
     {
-        new(value) type;
-        try {
-            sonia::decode<TagT, T>(std::move(ii), *value);
-        } else {
-            std::destroy_at(value);
-            throw;
-        }
+        return default_decode_ptr<TagT>(std::move(ii), value);
     }
 };
 

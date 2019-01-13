@@ -37,6 +37,10 @@ shared_ptr<T> make_clone(shared_ptr<T> const& ptr)
     }
 }
 
+}
+
+namespace std {
+
 template <typename T> T * get_pointer(shared_ptr<T> const& p) { return p.get(); }
 
 }

@@ -20,17 +20,34 @@ namespace sonia {
 template <typename T>
 class hazardous
 {
+    hazardous(hazardous const&) = delete;
+    hazardous(hazardous &&) = delete;
+    hazardous& operator=(hazardous const&) = delete;
+    hazardous& operator=(hazardous &&) = delete;
+
 public:
     using value_type = T;
 
     hazardous() {}
     ~hazardous() {}
 
-    template <typename ... ArgsT>
-    T & emplace(ArgsT && ... args)
+    template <typename ArgT>
+    T & emplace(ArgT && arg)
+    {
+        if constexpr (is_base_of_v<boost::in_place_factory_base, remove_cvref_t<ArgT>>) {
+            arg.template apply<T>(get_pointer());
+        } else {
+            T * place = get_pointer();
+            new (place) T(std::forward<ArgT>(arg));
+            return *place;
+        }
+    }
+
+    template <typename ArgT0, typename ArgT1, typename ... ArgsT>
+    T & emplace(ArgT0 && arg0, ArgT1 && arg1, ArgsT && ... args)
     {
         T * place = get_pointer();
-        new (place) T(std::forward<ArgsT>(args) ...);
+        new (place) T(std::forward<ArgT0>(arg0), std::forward<ArgT1>(arg1), std::forward<ArgsT>(args) ...);
         return *place;
     }
 
@@ -63,6 +80,15 @@ public:
 private:
     alignas(T) char buffer_[sizeof(T)];
 };
+
+template <typename CharT, class TraitsT, typename T>
+std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, hazardous<T> val)
+{
+    return os << *val;
+}
+
+template <typename T> T * get_pointer(hazardous<T> & p) { return p.get_pointer(); }
+template <typename T> T const* get_pointer(hazardous<T> const& p) { return p.get_pointer(); }
 
 }
 

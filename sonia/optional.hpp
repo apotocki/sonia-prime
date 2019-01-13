@@ -20,6 +20,10 @@ using std::in_place_t;
 using std::nullopt;
 using std::nullopt_t;
 
+}
+
+namespace std {
+
 template <typename T> T const * get_pointer(optional<T> const& opt) { return opt ? std::addressof(*opt) : nullptr; }
 template <typename T> T * get_pointer(optional<T> & opt) { return opt ? std::addressof(*opt) : nullptr; }
 

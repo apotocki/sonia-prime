@@ -17,7 +17,6 @@
 #include <boost/intrusive_ptr.hpp>
 
 #include "sonia/iterator_traits.hpp"
-#include "sonia/utility/explicit_operator_bool.hpp"
 #include "sonia/utility/iterators/wrapper_iterator.hpp"
 #include "sonia/utility/iterators/buffering_mediator_iterator.hpp"
 #include "sonia/utility/iterators/inflate_iterator.hpp"
@@ -111,8 +110,7 @@ public:
         ptr->increment();
     }
     
-    bool operator!() const { return !ptr; }
-    BOOST_EXPLICIT_OPERATOR_BOOL();
+    operator bool() const { return !!ptr; }
 
     void reset() { ptr.reset(); }
 

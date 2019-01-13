@@ -35,6 +35,13 @@
 		<ExpandedItem>*((value_type*)&amp;buffer_)</ExpandedItem>
 	</Expand>
 </Type>
+  
+<Type Name="sonia::automatic_polymorphic&lt;*&gt;">
+  <DisplayString>{*((value_type*)&amp;buffer_)}</DisplayString>
+  <Expand>
+    <ExpandedItem>*((value_type*)&amp;buffer_)</ExpandedItem>
+  </Expand>
+</Type>
 
 <Type Name="sonia::optimized_holder&lt;*&gt;">
   <Intrinsic Name="is_on_stack" Expression="1 &amp; *(char*)&amp;holder_"/>

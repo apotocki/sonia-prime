@@ -14,22 +14,23 @@
 
 #include "sonia/prime_config.hpp"
 #include "sonia/cstdint.hpp"
-#include "sonia/utility/explicit_operator_bool.hpp"
 #include "sonia/utility/on_close.hpp"
 
-namespace sonia {
+namespace sonia { namespace services {
 
-namespace services {
-    SONIA_PRIME_API uint32_t get_type_id(std::type_index);
+SONIA_PRIME_API uint32_t get_type_id(std::type_index);
+
 }
 
 namespace type {
 
-class id {
+class id
+{
     explicit id(uint32_t idval) noexcept : val_(idval) {}
 
     template <typename T>
-    struct cache {
+    struct cache
+    {
         static uint32_t cached_val_;
         static std::once_flag once_flag_;
         cache() {
@@ -44,17 +45,17 @@ class id {
 public:
     //id() noexcept : val_(0) {}
 
-    //BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL()
-
-    //constexpr bool operator!() const noexcept { return !val_; }
+    //constexpr operator bool() const noexcept { return !!val_; }
 
     template <class T>
-    static id get() noexcept {
+    static id get() noexcept
+    {
         return id(cache<T>().get());
     }
 
     template <typename CharT, class TraitsT>
-    friend std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, id const& v){
+    friend std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, id const& v)
+    {
         return os << v.val_;
     }
 

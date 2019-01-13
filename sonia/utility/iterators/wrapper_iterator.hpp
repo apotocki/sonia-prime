@@ -78,47 +78,40 @@ class wrapper_iterator
 public:
     using wrapper_iterator_t = wrapper_iterator;
 
-    //wrapper_iterator() {}
+    template <typename ... ArgsT>
+    explicit wrapper_iterator(ArgsT && ... args)
+        : impl(std::forward<ArgsT>(args) ...)
+    {}
 
     template <typename ArgT>
     explicit wrapper_iterator(ArgT && arg, enable_if_t<is_same_v<remove_cvref_t<ArgT>, wrapper_iterator>> * enabler = nullptr) 
         : impl(std::forward<ArgT>(arg).impl)
     {}
 
-    template <typename ... ArgsT>
-    explicit wrapper_iterator(ArgsT && ... args)
-        : impl(std::forward<ArgsT>(args) ...)
-    {}
-
-    //template <typename ArgT>
-    //explicit wrapper_iterator(ArgT && arg, disable_if_t<is_same_v<remove_cvref_t<ArgT>, wrapper_iterator>> * enabler = nullptr) 
-    //    : impl(std::forward<ArgT>(arg))
-    //{}
-
-    //template <typename ArgT0, typename ArgT1, typename ... ArgsT>
-    //wrapper_iterator(ArgT0 && arg0, ArgT1 && arg1, ArgsT && ... args) 
-    //    : impl(std::forward<ArgT0>(arg0), std::forward<ArgT1>(arg1), std::forward<ArgsT>(args) ...)
-    //{}
-
-    wrapper_iterator(wrapper_iterator const& rhs)
-        : impl(rhs.impl)
-    {}
-
+    wrapper_iterator(wrapper_iterator const& rhs) = default;
     wrapper_iterator(wrapper_iterator && rhs) = default;
-
-    wrapper_iterator & operator=(wrapper_iterator const& rhs)
-    {
-        if (this != &rhs) {
-            impl = rhs.impl;
-        }
-        return *this;
-    }
-
+    wrapper_iterator & operator=(wrapper_iterator const& rhs) = default;
     wrapper_iterator & operator=(wrapper_iterator && rhs) = default;
 
-    bool empty() const { return !impl || impl->empty(); }
+    bool empty() const
+    {
+        if (!impl) return true;
+        if constexpr(iterators::has_method_empty_v<ImplT, bool()>) {
+            return impl.empty();
+        } else {
+            return impl->empty();
+        }
+    }
 
-    void flush() { impl->flush(); }
+    void flush()
+    {
+        if constexpr (iterators::has_method_flush_v<ImplT, void()>)
+        {
+            impl.flush();
+        } else {
+            impl->flush();
+        }
+    }
 
     ImplT impl;
 };

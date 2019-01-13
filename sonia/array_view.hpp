@@ -22,7 +22,6 @@
 
 #include "sonia/utility/functional/range_equal.hpp"
 #include "sonia/utility/functional/range_less.hpp"
-#include "sonia/utility/explicit_operator_bool.hpp"
 
 namespace sonia {
 
@@ -93,9 +92,7 @@ public:
     constexpr void reset() noexcept { data_ = nullptr; size_ = 0; }
 
     constexpr reference operator[](size_type ind) const noexcept { return data_[ind]; }
-    constexpr bool operator!() const noexcept { return empty(); }
-
-    BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL();
+    constexpr operator bool() const noexcept { return !empty(); }
 
     constexpr bool has(T const * e) const
     {

@@ -16,7 +16,6 @@
 
 #include "sonia/cstdint.hpp"
 #include "sonia/type_traits.hpp"
-#include "sonia/utility/explicit_operator_bool.hpp"
 #include "sonia/utility/polymorphic_traits.hpp"
 
 namespace sonia {
@@ -75,9 +74,11 @@ class automatic_polymorphic
     using base_t = automatic_polymorphic_base<PolymorphicT, SizeV, OffsetT>;
 
 public:
+    using value_type = PolymorphicT;
+
     automatic_polymorphic()
     {
-        do_set_empty();
+        do_reset();
     }
 
     template <class T, class ... ArgsT>
@@ -122,8 +123,8 @@ public:
 
     ~automatic_polymorphic() noexcept
     {
-        if (!empty()) {
-            get_pointer()->~PolymorphicT();
+        if (*this) {
+            std::destroy_at(get_pointer());
         }
     }
 
@@ -131,15 +132,15 @@ public:
     {
         static_assert(is_polymorphic_clonable_v<PolymorphicT>);
         if (this != &rhs) {
-            if (!empty()) {
-                get_pointer()->~PolymorphicT();
+            if (*this) {
+                std::destroy_at(get_pointer());
             }
-            if (rhs.empty()) {
-                do_set_empty();
+            if (!rhs) {
+                do_reset();
             } else try {
                 clone(*rhs.get_pointer());
             } catch (...) {
-                do_set_empty();
+                do_reset();
                 throw;
             }
         }
@@ -150,16 +151,16 @@ public:
     {
         static_assert(is_polymorphic_movable_v<PolymorphicT>);
         if (this != &rhs) {
-            if (!empty()) {
-                get_pointer()->~PolymorphicT();
+            if (*this) {
+                std::destroy_at(get_pointer());
             }
-            if (rhs.empty()) {
-                do_set_empty();
+            if (!rhs) {
+                do_reset();
             } else try {
                 move(*rhs.get_pointer());
                 rhs.reset();
             } catch (...) {
-                do_set_empty();
+                do_reset();
                 throw;
             }
         }
@@ -169,13 +170,13 @@ public:
     template <typename T, class ... ArgsT>
     void emplace(ArgsT&& ... args)
     {
-        if (!empty()) {
-            get_pointer()->~PolymorphicT();
+        if (!*this) {
+            std::destroy_at(get_pointer());
         }
         try {
             construct<T>(std::forward<ArgsT>(args) ...);
         } catch (...) {
-            do_set_empty();
+            do_reset();
             throw;
         }
     }
@@ -184,29 +185,25 @@ public:
 
     void reset() noexcept
     {
-        if (empty()) {
-            get_pointer()->~PolymorphicT();
+        if (!*this) {
+            std::destroy_at(get_pointer());
         }
-        do_set_empty();
+        do_reset();
     }
 
-    PolymorphicT const& get() const { BOOST_ASSERT(!empty()); return *get_pointer(); }
-    PolymorphicT & get() { BOOST_ASSERT(!empty()); return *get_pointer(); }
+    PolymorphicT const& get() const { BOOST_ASSERT(*this); return *get_pointer(); }
+    PolymorphicT & get() { BOOST_ASSERT(*this); return *get_pointer(); }
 
     PolymorphicT const& operator*() const { return get(); }
     PolymorphicT & operator*() { return get(); }
 
-    PolymorphicT const* operator->() const { BOOST_ASSERT(!empty()); return get_pointer(); }
-    PolymorphicT * operator->() { BOOST_ASSERT(!empty()); return get_pointer(); }
+    PolymorphicT const* operator->() const { BOOST_ASSERT(*this); return get_pointer(); }
+    PolymorphicT * operator->() { BOOST_ASSERT(*this); return get_pointer(); }
 
-    bool operator!() const noexcept { return empty(); }
-
-    BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL();
-
-    bool empty() const noexcept { return !*reinterpret_cast<void* const*>(&this->buffer_);  }
+    explicit operator bool() const noexcept { return nullptr != *reinterpret_cast<void* const*>(&this->buffer_); }
 
 private:
-    void do_set_empty() { *reinterpret_cast<void**>(&this->buffer_) = nullptr; }
+    void do_reset() { *reinterpret_cast<void**>(&this->buffer_) = nullptr; }
 
     template <class T, class ... ArgsT>
     void construct(ArgsT&& ... args)
@@ -221,10 +218,10 @@ private:
 
     void clone(automatic_polymorphic const& rhs)
     {
-        if (!rhs.empty()) {
+        if (rhs) {
             clone(*rhs.get_pointer());
         } else {
-            do_set_empty();
+            do_reset();
         }
     }
 
@@ -237,10 +234,10 @@ private:
 
     void move(automatic_polymorphic && rhs)
     {
-        if (!rhs.empty()) {
+        if (rhs) {
             move(std::move(*rhs.get_pointer()));
         } else {
-            do_set_empty();
+            do_reset();
         }
     }
 

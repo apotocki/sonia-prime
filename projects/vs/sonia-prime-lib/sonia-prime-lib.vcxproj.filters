@@ -258,9 +258,6 @@
     <ClInclude Include="..\..\..\sonia\utility\type_id.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\explicit_operator_bool.hpp">
-      <Filter>sonia.utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\on_close.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>

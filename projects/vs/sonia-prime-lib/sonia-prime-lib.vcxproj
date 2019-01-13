@@ -144,11 +144,13 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\bit_coder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\bind_command.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost\optional.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\boost\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost_serialization_tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\command.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\integral.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\iostream.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\json_serialization.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serializable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serialization_fwd.hpp" />

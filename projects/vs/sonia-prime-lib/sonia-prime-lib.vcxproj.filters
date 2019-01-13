@@ -525,6 +525,12 @@
     <ClInclude Include="..\..\..\sonia\utility\streaming\tuple.hpp">
       <Filter>sonia.utility\streaming</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\boost\tuple.hpp">
+      <Filter>sonia.utility\serialization\boost</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\optional.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

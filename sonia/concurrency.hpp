@@ -41,7 +41,8 @@ namespace this_thread {
     using namespace boost::this_thread;
 }
 
-struct dummy_mutex_t {
+struct dummy_mutex_t
+{
     void lock() {}
     void unlock() {}
     void lock_shared() {}
@@ -51,22 +52,26 @@ struct dummy_mutex_t {
 constexpr dummy_mutex_t dummy_mutex = {};
 
 template <typename MutexT>
-unique_lock<MutexT> make_unique_lock(MutexT & m) {
+unique_lock<MutexT> make_unique_lock(MutexT & m)
+{
     return unique_lock<MutexT>(m);
 }
 
 template <typename MutexT>
-shared_lock_guard<MutexT> make_shared_lock_guard(MutexT & m) {
+shared_lock_guard<MutexT> make_shared_lock_guard(MutexT & m)
+{
     return shared_lock_guard<MutexT>(m);
 }
 
-enum class rw_type {
+enum class rw_type
+{
     shared = 0,
     exclusive
 };
 
 template <typename RWMutexT>
-class rw_lock_guard {
+class rw_lock_guard
+{
 public:
     explicit rw_lock_guard(RWMutexT & mtx, rw_type rwt)
         : mtx_(mtx), rwt_(rwt)
@@ -83,19 +88,22 @@ public:
     rw_lock_guard& operator=(rw_lock_guard const&) = delete;
     rw_lock_guard& operator=(rw_lock_guard &&) = default;
 
-    void promote() {
+    void promote()
+    {
         BOOST_ASSERT(rw_type::shared == rwt_);
         mtx_.promote();
         rwt_ = rw_type::exclusive;
     }
 
-    void demote() {
+    void demote()
+    {
         BOOST_ASSERT(rw_type::exclusive == rwt_);
         mtx_.demote();
         rwt_ = rw_type::shared;
     }
 
-    ~rw_lock_guard() {
+    ~rw_lock_guard()
+    {
         if (rw_type::shared == rwt_) {
             mtx_.unlock_shared();
         } else {
@@ -109,7 +117,8 @@ private:
 };
 
 template <typename MutexT>
-rw_lock_guard<MutexT> make_rw_lock_guard(MutexT & m, rw_type rwt) {
+rw_lock_guard<MutexT> make_rw_lock_guard(MutexT & m, rw_type rwt)
+{
     return rw_lock_guard<MutexT>(m, rwt);
 }
 

@@ -26,7 +26,8 @@ class coder<json_t, TargetT, typename enable_if_t<is_integral_v<TargetT>>>
 {
 public:
     template <typename ArgT, typename OutputIteratorT>
-    OutputIteratorT encode(ArgT val, OutputIteratorT oi) const {
+    OutputIteratorT encode(ArgT val, OutputIteratorT oi) const
+    {
         char buff[64];
         int res = snprintf(buff, sizeof(buff), get_format<T>(), value);
         if (res > 0) {
@@ -36,19 +37,22 @@ public:
     }
 
     template <typename ArgT, typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, ArgT * val) const {
+    InputIteratorT decode(InputIteratorT ii, ArgT * val) const
+    {
         auto it = reinterpret_cast<char*>(val), eit = it + sizeof(ArgT);
         return pull(std::move(ii), it, eit);
     }
 
     template <typename ArgT, typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, ArgT & val) const {
+    InputIteratorT decode(InputIteratorT ii, ArgT & val) const
+    {
         return decode(std::move(ii), &val);
     }
 
 private:
     template <typename T>
-    static const char * get_format() {
+    static const char * get_format()
+    {
         if constexpr (is_same_v<T, int>) return "%d";
         else if constexpr (is_same_v<T, unsigned int>) return "%u";
         else if constexpr (is_same_v<T, int16_t>) return "%hd";
@@ -60,9 +64,10 @@ private:
         }
     }
 
-    template <typename T> void error() {
+    template <typename T> void error()
+    {
         // unexpected integer type
-        static_assert(is_integral_v<TargetT>);
+        static_assert(is_integral_v<T>);
     }
 
     static const char * get_format(identity<int>) { return "%d"; }

@@ -34,6 +34,13 @@ public:
         return *place;
     }
 
+    template <typename ... ArgsT>
+    T & replace(ArgsT && ... args)
+    {
+        get() = T(std::forward<ArgsT>(args) ...);
+        return get();
+    }
+
     void destroy()
     {
         std::destroy_at(get_pointer());

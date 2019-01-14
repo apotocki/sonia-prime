@@ -30,33 +30,34 @@
 
 namespace sonia { namespace services {
 
-class host_configuration {
-public:
+struct host_configuration
+{
     std::string name;
     std::vector<std::string> services;
 };
 
-class service_configuration {
-public:
+struct service_configuration
+{
     std::string factory;
     int layer;
     json_object parameters;
 };
 
-class bundle_configuration {
-public:
+struct bundle_configuration
+{
     std::string lib;
     int layer;
 };
 
-class environment_configuration {
-public:
+struct environment_configuration
+{
     std::vector<host_configuration> hosts;
     std::map<std::string, service_configuration> services;
     std::map<std::string, bundle_configuration> bundles;
 };
 
-class environment {
+class environment
+{
 public:
     environment();
     ~environment();
@@ -103,10 +104,10 @@ private:
 
     // type_id support
     mutable spin_mutex type_id_mtx_;
-    typedef boost::bimap<
+    using type_id_map_type = boost::bimap<
         boost::bimaps::unordered_set_of<std::type_index>,
         boost::bimaps::unordered_set_of<uint32_t>
-    > type_id_map_type;
+    >;
     type_id_map_type type_id_map_;
     std::atomic<uint32_t> type_id_counter_;
 

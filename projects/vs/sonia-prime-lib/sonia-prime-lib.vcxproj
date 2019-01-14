@@ -53,6 +53,7 @@
     <ClInclude Include="..\..\..\sonia\services\scheduler\thread_manager.ipp" />
     <ClInclude Include="..\..\..\sonia\services\service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service_locator.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\transceiver.hpp" />
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
     <ClInclude Include="..\..\..\sonia\string.hpp" />
     <ClInclude Include="..\..\..\sonia\type_traits.hpp" />

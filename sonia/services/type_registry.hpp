@@ -14,7 +14,8 @@
 
 namespace sonia {
 
-class type_registry {
+class type_registry
+{
 public:
     virtual ~type_registry() {}
 

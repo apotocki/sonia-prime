@@ -28,7 +28,8 @@
 
 namespace sonia { namespace utility { namespace basic_local_registry_detail {
 
-struct persisted_flag {
+struct persisted_flag
+{
     mutable std::atomic<bool> persisted;
     persisted_flag() : persisted(false) {}
     persisted_flag(persisted_flag const& rhs) : persisted(rhs.persisted.load()) {}
@@ -39,11 +40,14 @@ struct persisted_flag {
 };
 
 template <typename IDT>
-struct reg_item : persisted_flag {
+struct reg_item : persisted_flag
+{
     std::string name, meta;
     IDT id;
 
-    reg_item(std::string nm, IDT idval, std::string mi = "") : name(std::move(nm)), meta(std::move(mi)), id(idval) {}
+    reg_item(std::string nm, IDT idval, std::string mi = "")
+        : name(std::move(nm)), meta(std::move(mi)), id(idval)
+    {}
 
     reg_item() = default;
     reg_item(reg_item const& rhs) = default;
@@ -52,7 +56,8 @@ struct reg_item : persisted_flag {
     reg_item & operator=(reg_item &&) = default;
 
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int = 0) {
+    void serialize(Archive & ar, const unsigned int = 0)
+    {
         ar & boost::serialization::make_nvp("name", name)
            & boost::serialization::make_nvp("id", id)
            & boost::serialization::make_nvp("meta", meta);
@@ -68,15 +73,16 @@ template <class DerivedT, typename IDT>
 class basic_local_registry
 {
     friend class boost::serialization::access;
-    typedef basic_local_registry_detail::reg_item<IDT> reg_item;
+    using reg_item = basic_local_registry_detail::reg_item<IDT>;
 
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int = 0) {
+    void serialize(Archive & ar, const unsigned int = 0)
+    {
         ar & boost::serialization::make_nvp("counter", counter_)
            & boost::serialization::make_nvp("catalog", registry_);
     }
 
-    typedef boost::multi_index::multi_index_container<
+    using registry_t = boost::multi_index::multi_index_container<
         reg_item,
         boost::multi_index::indexed_by<
             boost::multi_index::hashed_unique<
@@ -87,13 +93,15 @@ class basic_local_registry
                 boost::multi_index::member<reg_item, IDT, &reg_item::id>
             >
         >
-    > registry_t;
+    >;
 
-    void bootstrap() {
+    void bootstrap()
+    {
         counter_ = 0;
     }
 
-    IDT increment_fetch_counter() {
+    IDT increment_fetch_counter()
+    {
         return ++counter_;
     }
 
@@ -101,14 +109,16 @@ class basic_local_registry
     DerivedT const& derived() const { return static_cast<DerivedT const&>(*this); }
 
 protected:
-    void backup() const {
+    void backup() const
+    {
         state_persister_->write_stream([this](std::ostream & os) {
             boost::archive::xml_oarchive oa(os);
             const_cast<DerivedT&>(derived()).serialize(oa);
         });
     }
 
-    void restore() {
+    void restore()
+    {
         if (!state_persister_->read_stream([this](std::istream & is) {
             boost::archive::xml_iarchive ia(is);
             derived().serialize(ia);
@@ -122,7 +132,8 @@ public:
         : state_persister_(std::move(sp))
     {}
 
-    IDT get_id(string_view name, string_view meta) {
+    IDT get_id(string_view name, string_view meta)
+    {
         auto rwguard = make_rw_lock_guard(mtx_, rw_type::shared);
         auto it = registry_.find(name, hasher(), string_equal_to());
         reg_item const* pitm = it != registry_.end() ? &*it : nullptr;
@@ -154,7 +165,8 @@ public:
         return pitm->id;
     }
 
-    string_view get_name(IDT id) const {
+    string_view get_name(IDT id) const
+    {
         auto guard = make_shared_lock_guard(mtx_);
         auto it = registry_.template get<1>().find(id);
         if (it != registry_.template get<1>().end() && it->persisted.load()) {

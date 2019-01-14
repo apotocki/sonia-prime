@@ -71,6 +71,12 @@ using std::is_signed_v;
 using std::is_unsigned;
 using std::is_unsigned_v;
 
+using std::make_unsigned;
+using std::make_unsigned_t;
+
+using std::make_signed;
+using std::make_signed_t;
+
 using std::is_floating_point;
 using std::is_floating_point_v;
 
@@ -237,6 +243,10 @@ template <class T> constexpr bool is_in_place_factory_v = is_in_place_factory<T>
 
 template <class T> struct is_typed_in_place_factory : is_base_of<boost::typed_in_place_factory_base, T> {};
 template <class T> constexpr bool is_typed_in_place_factory_v = is_typed_in_place_factory<T>::value;
+
+// meta programming
+template <class TargetT, typename TagT>
+using apply_t = typename TargetT::template apply<TagT>;
 
 }
 

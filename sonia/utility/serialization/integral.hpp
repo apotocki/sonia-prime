@@ -130,56 +130,56 @@ public:
     }
 };
 
-template <typename T>
-class coder<compressed_t, T, enable_if_t<is_integral_v<T> && is_signed_v<T> && !integral_detail::is_special<T>>>
-{
-    typedef remove_cv_t<T> type;
-    typedef boost::integer_traits<type> traits;
-
-public:
-    template <typename OutputIteratorT>
-    OutputIteratorT encode(type val, OutputIteratorT oi) const
-    {
-        int fields  = (traits::digits + 6) / 7u;
-
-        int sign = val < 0 ? 1 : 0;
-
-        if (sign) {
-            val *= -1;
-        }
-
-        for (int i = 0; i < fields; ++i, ++oi) {
-            if (i == 0) {
-                uint8_t block = val & 0x3F;
-                val >>= 6;
-
-                if (sign) block |= 0x80;
-                if (val > 0) {
-                    block |= 0x40;
-                    *oi = static_cast<char>(block);
-                } else {
-                    *oi = static_cast<char>(block);
-                    ++oi;
-                    break;
-                }
-            } else {
-                uint8_t block = val & 0x7F;
-                val >>= 7;
-
-                if (val > 0) {
-                    block |= 0x80;
-                    *oi = static_cast<char>(block);
-                } else {
-                    *oi = static_cast<char>(block);
-                    ++oi;
-                    break;
-                }              
-            }
-        }
-
-        return std::move(oi);
-    }
-};
+//template <typename T>
+//class coder<compressed_t, T, enable_if_t<is_integral_v<T> && is_signed_v<T> && !integral_detail::is_special<T>>>
+//{
+//    typedef remove_cv_t<T> type;
+//    typedef boost::integer_traits<type> traits;
+//
+//public:
+//    template <typename OutputIteratorT>
+//    OutputIteratorT encode(type val, OutputIteratorT oi) const
+//    {
+//        int fields  = (traits::digits + 6) / 7u;
+//
+//        int sign = val < 0 ? 1 : 0;
+//
+//        if (sign) {
+//            val *= -1;
+//        }
+//
+//        for (int i = 0; i < fields; ++i, ++oi) {
+//            if (i == 0) {
+//                uint8_t block = val & 0x3F;
+//                val >>= 6;
+//
+//                if (sign) block |= 0x80;
+//                if (val > 0) {
+//                    block |= 0x40;
+//                    *oi = static_cast<char>(block);
+//                } else {
+//                    *oi = static_cast<char>(block);
+//                    ++oi;
+//                    break;
+//                }
+//            } else {
+//                uint8_t block = val & 0x7F;
+//                val >>= 7;
+//
+//                if (val > 0) {
+//                    block |= 0x80;
+//                    *oi = static_cast<char>(block);
+//                } else {
+//                    *oi = static_cast<char>(block);
+//                    ++oi;
+//                    break;
+//                }              
+//            }
+//        }
+//
+//        return std::move(oi);
+//    }
+//};
 
 template <typename T>
 class coder<compressed_t, T, enable_if_t<is_integral_v<T> && !is_signed_v<T> && !integral_detail::is_special<T>>>
@@ -219,6 +219,42 @@ public:
             const auto hasnext = part & 0x80;
             val |= ((part & 0x7f) << i);
             if (!hasnext) break;
+        }
+        return std::move(ii);
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, type * val) const
+    {
+        return decode(std::move(ii), *val);
+    }
+};
+
+template <typename T>
+class coder<compressed_t, T, enable_if_t<is_integral_v<T> && is_signed_v<T> && !integral_detail::is_special<T>>>
+{
+    using type = remove_cv_t<T>;
+    using unsigned_t = make_unsigned_t<type>;
+
+public:
+    template <typename OutputIteratorT>
+    OutputIteratorT encode(type val, OutputIteratorT oi) const
+    {
+        bool is_neg = val < 0 ? 1 : 0;
+        unsigned_t surrogate = static_cast<unsigned_t>(is_neg ? -1 - val : val);
+        surrogate = (surrogate << 1) + (is_neg ? 1 : 0);
+        return coder<compressed_t, unsigned_t>().encode(surrogate, std::move(oi));
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, type & val) const
+    {
+        unsigned_t surrogate;
+        ii = coder<compressed_t, unsigned_t>().decode(std::move(ii), surrogate);
+        bool is_neg = !!(surrogate & 1);
+        val = static_cast<type>(surrogate >> 1);
+        if (is_neg) {
+            val = -val - 1;
         }
         return std::move(ii);
     }

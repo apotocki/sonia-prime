@@ -24,6 +24,12 @@ class basic_string_view : public array_view<std::add_const_t<CharT>>
     using base_t = array_view<char_ct>;
 
 public:
+    using traits_type = TraitsT;
+    using value_type = CharT;
+    using pointer = CharT *;
+    using const_pointer = CharT const*;
+    using reference = CharT & ;
+    using const_reference = CharT const& ;
     using size_type = typename base_t::size_type;
 
     constexpr basic_string_view() noexcept {}
@@ -209,6 +215,15 @@ std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> && fmt) {
 
 template<class Ch, class Tr, class Alloc>
 std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> const && fmt) { return fmt.str(); }
+
+template <typename CharT, class TraitsT>
+array_view<const CharT> to_array_view(basic_string_view<CharT, TraitsT> sv) noexcept { return sv; }
+
+template <typename CharT, class TraitsT>
+array_view<const CharT> to_array_view(std::basic_string<CharT, TraitsT> const& str) noexcept { return array_view(str.data(), str.size()); }
+
+template <typename CharT, class TraitsT>
+array_view<CharT> to_array_view(std::basic_string<CharT, TraitsT> & str) noexcept { return array_view(str.data(), str.size()); }
 
 template <typename CharT, class TraitsT>
 std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, basic_string_view<CharT, TraitsT> s)

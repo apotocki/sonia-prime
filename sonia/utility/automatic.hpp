@@ -43,7 +43,7 @@ public:
             new (get_pointer()) T(*std::forward<ArgT>(arg));
         } else if constexpr (is_in_place_factory_v<pure_arg_t>) {
             arg.template apply<T>(get_pointer());
-        } else if constexpr (is_typed_in_place_factory_v<pure_arg_t> && is_same_v<T, typename pure_arg_t::value_type>) {
+        } else if constexpr (is_typed_in_place_factory_v<pure_arg_t>) {
             arg.apply(get_pointer());
         } else {
             new (get_pointer()) T(std::forward<ArgT>(arg));

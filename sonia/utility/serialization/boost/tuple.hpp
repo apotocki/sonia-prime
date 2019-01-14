@@ -17,7 +17,7 @@ namespace boost { namespace serialization {
 template <size_t ... I, class ArchiveT, class TupleT>
 void do_save(std::index_sequence<I ...>, ArchiveT & ar, TupleT const& t)
 {
-    (ar << ... << boost::serialization::make_nvp(std::to_string(I).c_str(), std::get<I>(t)));
+    (ar << ... << boost::serialization::make_nvp(("e" + std::to_string(I)).c_str(), std::get<I>(t)));
 }
 
 template <class ArchiveT, typename ... Ts>
@@ -29,7 +29,7 @@ void save(ArchiveT & ar, const std::tuple<Ts ...> & t, const unsigned int /*vers
 template <size_t ... I, class ArchiveT, class TupleT>
 void do_load(std::index_sequence<I ...>, ArchiveT & ar, TupleT & t)
 {
-    (ar >> ... >> boost::serialization::make_nvp(std::to_string(I).c_str(), std::get<I>(t)));
+    (ar >> ... >> boost::serialization::make_nvp(("e" + std::to_string(I)).c_str(), std::get<I>(t)));
 }
 
 template <class ArchiveT, typename ... Ts>

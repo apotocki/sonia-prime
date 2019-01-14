@@ -12,46 +12,39 @@
 #include <algorithm>
 #include <vector>
 
+#include "array.hpp"
 #include "integral.hpp"
 
 namespace sonia { namespace serialization {
 
-template <typename TagT, typename T>
-class coder<TagT, std::vector<T>> {
-    typedef std::vector<T> vector_t;
-    typedef typename vector_t::size_type size_type;
+template <typename TagT, typename T, class AllocT>
+class coder<TagT, std::vector<T, AllocT>>
+{
+    using type = std::vector<T, AllocT>;
+    using size_type = typename vector_t::size_type;
 
 public:
     template <typename OutputIteratorT>
-    OutputIteratorT encode(vector_t const& value, OutputIteratorT oi) const {
-        oi = sonia::encode<TagT, size_type>(value.size(), std::move(oi));
-        if constexpr (sizeof(T) == 1) {
-            return std::copy(value.begin(), value.end(), std::move(oi));
-        } else {
-            coder<TagT, T> enc;
-            for (auto it = value.begin(), eit = value.end(); it != eit; ++it) {
-                oi = enc.encode(*it, std::move(oi));
-            }
-            return std::move(oi);
-        }
+    OutputIteratorT encode(type const& value, OutputIteratorT oi) const
+    {
+        return sonia::encode<TagT>(to_array_view(value), 
+            sonia::encode<TagT, size_type>(value.size(), std::move(oi));
+        );
     }
 
     template <typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, vector_t & value) const {
-        value.clear();
+    InputIteratorT decode(InputIteratorT ii, type & value) const
+    {
         size_type sz;
-        ii = sonia::decode<TagT, size_type>(std::move(ii), sz);
-        if constexpr (sizeof(T) == 1) {
-            value.reserve(sz);
-            return std::copy_n(std::move(ii), sz, std::back_inserter(value));
-        } else {
-            coder<TagT, T> dec;
-            value.resize(sz);
-            for (auto sit = value.begin(), eit = value.end(); sit != eit; ++sit) {
-                ii = dec.decode(std::move(ii), *sit);
-            }
-            return std::move(ii);
-        }
+        ii = sonia::decode<TagT>(std::move(ii), sz);
+        value.resize(sz);
+        return sonia::decode<TagT>(std::move(ii), to_array_view(value));
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, type * value) const
+    {
+        return default_decode_ptr(std::move(ii), value);
     }
 };
 

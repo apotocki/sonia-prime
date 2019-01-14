@@ -36,6 +36,7 @@ public:
     using reference = add_lvalue_reference_t<T>;
     using const_reference = add_lvalue_reference_t<const_value_type>;
     using size_type = size_t;
+    using difference_type = std::ptrdiff_t;
     using iterator = add_pointer_t<T>;
     using const_iterator = add_pointer_t<const_value_type>;
     using reverse_iterator = std::reverse_iterator<iterator>;

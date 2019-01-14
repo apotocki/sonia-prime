@@ -14,7 +14,8 @@
 namespace sonia {
 
 template <typename InputIteratorT, typename OutputIteratorT>
-InputIteratorT pull(InputIteratorT iit, OutputIteratorT ob, OutputIteratorT oe) {
+InputIteratorT pull(InputIteratorT iit, OutputIteratorT ob, OutputIteratorT oe)
+{
     for (; ob != oe; ++iit, ++ob) {
         *ob = *iit;
     }

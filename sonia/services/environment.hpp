@@ -24,7 +24,7 @@
 
 #include "host_impl.hpp"
 #include "service_factory.hpp"
-#include "type_registry.hpp"
+#include "durable_type_registry.hpp"
 #include "sonia/utility/parameters/parameters.hpp"
 #include "sonia/utility/functional/hash/string.hpp"
 
@@ -57,6 +57,7 @@ struct environment_configuration
 };
 
 class environment
+    : public durable_type_registry
 {
 public:
     environment();
@@ -75,11 +76,6 @@ public:
 
     // type_id api
     uint32_t get_type_id(std::type_index);
-
-    // durable id api
-    uint32_t register_durable_id(string_view nm, string_view servnm, std::type_index);
-    uint32_t get_durable_id(std::type_index);
-    std::type_index get_durable_type_index(uint32_t);
 
 private:
     struct host_hasher { size_t operator()(shared_ptr<host_impl> const& ph) const { return hash_value(ph->get_name()); } };

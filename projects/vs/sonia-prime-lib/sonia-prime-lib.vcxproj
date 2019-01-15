@@ -37,8 +37,10 @@
     <ClInclude Include="..\..\..\sonia\services\builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.ipp" />
+    <ClInclude Include="..\..\..\sonia\services\durable_type_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\services\environment.hpp" />
     <ClInclude Include="..\..\..\sonia\services\host.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\host_impl.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\factory.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\file.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_acceptor.hpp" />
@@ -46,6 +48,7 @@
     <ClInclude Include="..\..\..\sonia\services\io\tcp_socket.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_write_output_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\multimethod_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\basic_scheduler.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler.hpp" />
@@ -154,6 +157,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\json_serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\pair.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\placeholder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serializable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serialization_fwd.hpp" />
@@ -185,6 +189,7 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sal\windows_sal.cpp" />
     <ClCompile Include="..\..\..\sonia\services\bundle.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\durable_type_registry.cpp" />
     <ClCompile Include="..\..\..\sonia\services\environment.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -199,6 +204,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\io_factory_win.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\multimethod_registry.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\basic_scheduler.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.cpp" />
     <ClCompile Include="..\..\..\sonia\services\services_host.cpp">

@@ -540,6 +540,18 @@
     <ClInclude Include="..\..\..\sonia\services\transceiver.hpp">
       <Filter>sonia.services</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\placeholder.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\durable_type_registry.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\multimethod_registry.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\host_impl.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -616,6 +628,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.cpp">
       <Filter>sonia.utility\iterators</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\durable_type_registry.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\multimethod_registry.cpp">
+      <Filter>sonia.services</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

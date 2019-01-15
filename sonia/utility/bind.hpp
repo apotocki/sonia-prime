@@ -73,9 +73,9 @@ template <typename CallableT, class TupleT, size_t ... I,  typename ... Args>
 auto apply_placeholders_helper(std::index_sequence<I ...>, CallableT && c, TupleT && tpl, Args&& ... args)
 {
     return std::invoke(
-        std::forward<Callable>(c),
-        substitute_placeholder_value<std::tuple_element_t<I, remove_cvref_t<Tuple>>>()(
-            std::get<I>(std::forward<Tuple>(tpl)),
+        std::forward<CallableT>(c),
+        substitute_placeholder_value<std::tuple_element_t<I, remove_cvref_t<TupleT>>>()(
+            std::get<I>(std::forward<TupleT>(tpl)),
             std::forward<Args>(args) ...
         ) ...
     );
@@ -85,19 +85,19 @@ template <typename SigT, class TupleT, size_t ... I,  typename ... Args>
 auto apply_placeholders_helper(std::index_sequence<I ...>, function<SigT> const& c, TupleT && tpl, Args&& ... args)
 {
     return c(
-        substitute_placeholder_value<std::tuple_element_t<I, remove_cvref_t<Tuple>>>()(
-            std::get<I>(std::forward<Tuple>(tpl)),
+        substitute_placeholder_value<std::tuple_element_t<I, remove_cvref_t<TupleT>>>()(
+            std::get<I>(std::forward<TupleT>(tpl)),
             std::forward<Args>(args) ...
         ) ...
     );
 }
 
-template <typename Callable, typename TupleT, typename ... Args>
-auto apply_placeholders(Callable && c, TupleT && tpl, Args&& ... args)
+template <typename CallableT, typename TupleT, typename ... Args>
+auto apply_placeholders(CallableT && c, TupleT && tpl, Args&& ... args)
 {
     return apply_placeholders_helper(
-        std::make_index_sequence<std::tuple_size_v<remove_cvref_t<Tuple>>>(),
-        std::forward<Callable>(c), std::forward<Tuple>(tpl),
+        std::make_index_sequence<std::tuple_size_v<remove_cvref_t<TupleT>>>(),
+        std::forward<CallableT>(c), std::forward<TupleT>(tpl),
         std::forward<Args>(args) ...
     );
 }

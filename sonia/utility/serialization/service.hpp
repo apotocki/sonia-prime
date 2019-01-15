@@ -21,7 +21,8 @@ class coder<TagT, T*, enable_if_t<is_base_of_v<service, T>>>
 {
 public:
     template <typename OutputIteratorT>
-    OutputIteratorT encode(T * pserv, OutputIteratorT oi) {
+    OutputIteratorT encode(T * pserv, OutputIteratorT oi) const
+    {
         return coder<TagT, service::id>().encode(pserv->get_id(), std::move(oi));
     }
 };
@@ -31,7 +32,8 @@ class coder<TagT, T, enable_if_t<is_base_of_v<service, T>>>
 {
 public:
     template <typename OutputIteratorT>
-    OutputIteratorT encode(T const& serv, OutputIteratorT oi) {
+    OutputIteratorT encode(T const& serv, OutputIteratorT oi) const
+    {
         return coder<TagT, service::id>().encode(serv.get_id(), std::move(oi));
     }
 };

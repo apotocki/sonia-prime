@@ -26,12 +26,14 @@ thread_local thread_descriptor * tdesc_ = nullptr;
 
 environment * env_ = nullptr;
 
-void thread_descriptor::reset() {
+void thread_descriptor::reset()
+{
     delete tdesc_;
     tdesc_ = nullptr;
 }
 
-void thread_descriptor::set() {
+void thread_descriptor::set()
+{
     if (tdesc_) {
         delete tdesc_;
     } else {
@@ -40,7 +42,8 @@ void thread_descriptor::set() {
     tdesc_ = this;
 }
 
-void initialize(int argc, char const* argv[], std::istream * cfgstream) {
+void initialize(int argc, char const* argv[], std::istream * cfgstream)
+{
     if (env_) {
         BOOST_THROW_EXCEPTION(internal_error("an attempt to initialize not empty environment"));
     }
@@ -55,24 +58,28 @@ void initialize(int argc, char const* argv[], std::istream * cfgstream) {
     }
 }
 
-void shutdown() {
+void shutdown()
+{
     sonia::this_thread::detach_host();
     GLOBAL_LOG_INFO() << "terminating...";
     delete env_;
     env_ = nullptr;
 }
 
-shared_ptr<host> get_host() {
+shared_ptr<host> get_host()
+{
     thread_descriptor * td = tdesc_;
     if (td) return td->host;
     BOOST_THROW_EXCEPTION(internal_error("inappropriate thread to operate, attach a host to the current thread first."));
 }
 
-char const* bundles_path() {
+char const* bundles_path()
+{
     return "/data/app-lib/com.ontos.rdf-1/"; // android case
 }
 
-shared_ptr<host_impl> get_host_impl() {
+shared_ptr<host_impl> get_host_impl()
+{
     BOOST_ASSERT(env_);
     thread_descriptor * td = tdesc_;
     if (td) {
@@ -86,58 +93,70 @@ shared_ptr<host_impl> get_host_impl() {
     return h;
 }
 
-shared_ptr<service> locate(string_view nm) {
+shared_ptr<service> locate(string_view nm)
+{
     return get_host_impl()->locate(nm);
 }
 
-shared_ptr<service> locate(service::id id) {
+shared_ptr<service> locate(service::id id)
+{
     return get_host_impl()->locate(id);
 }
 
-void register_service_factory(string_view nm, function<service_descriptor()> const& fm) {
+void register_service_factory(string_view nm, function<service_descriptor()> const& fm)
+{
     BOOST_ASSERT(env_);
     env_->register_service_factory(nm, fm);
 }
 
-void load_configuration(boost::filesystem::path const & fnm) {
+void load_configuration(boost::filesystem::path const & fnm)
+{
     BOOST_ASSERT(env_);
     env_->load_configuration(fnm);
 }
 
-void load_configuration(std::istream & is) {
+void load_configuration(std::istream & is)
+{
     BOOST_ASSERT(env_);
     env_->load_configuration(is);
 }
 
-void on_close(function<void()> const& func) {
+void on_close(function<void()> const& func)
+{
     get_host_impl()->register_on_close(func);
 }
 
-uint32_t get_type_id(std::type_index ti) {
+uint32_t get_type_id(std::type_index ti)
+{
     BOOST_ASSERT(env_);
     return env_->get_type_id(ti);
 }
 
-uint32_t register_durable_id(string_view nm, string_view servnm, std::type_index ti) {
+uint32_t register_durable_id(string_view nm, string_view servnm, std::type_index ti)
+{
     BOOST_ASSERT(env_);
     return env_->register_durable_id(nm, servnm, ti);
 }
 
-uint32_t get_durable_id(std::type_index ti) {
+uint32_t get_durable_id(std::type_index ti)
+{
     BOOST_ASSERT(env_);
     return env_->get_durable_id(ti);
 }
 
-std::type_index get_durable_type_index(uint32_t did) {
+std::type_index get_durable_type_index(uint32_t did)
+{
     BOOST_ASSERT(env_);
     return env_->get_durable_type_index(did);
 }
 
-void register_multimethod(multimethod && mm, array_view<const std::type_index> mmid) {
+void register_multimethod(multimethod && mm, array_view<const std::type_index> mmid)
+{
     get_host_impl()->register_multimethod(std::move(mm), mmid);
 }
 
-multimethod const* get_multimethod(array_view<const std::type_index> mmid) {
+multimethod const* get_multimethod(array_view<const std::type_index> mmid)
+{
     return get_host_impl()->get_multimethod(mmid);
 }
 
@@ -145,12 +164,14 @@ multimethod const* get_multimethod(array_view<const std::type_index> mmid) {
 
 namespace sonia { namespace this_thread {
 
-void attach_host(string_view nm) {
+void attach_host(string_view nm)
+{
     BOOST_ASSERT(sonia::services::env_);
     sonia::services::env_->get_host(nm)->attach_to_current_thread();
 }
 
-void detach_host() {
+void detach_host()
+{
     sonia::services::thread_descriptor::reset();
 }
 

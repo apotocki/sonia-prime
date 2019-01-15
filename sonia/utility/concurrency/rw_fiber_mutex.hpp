@@ -19,7 +19,8 @@
 
 namespace sonia { namespace fibers {
 
-class rw_mutex {
+class rw_mutex
+{
     static const size_t log_half_rng = (sizeof(intptr_t) * CHAR_BIT - 1) / 2;
     static const intptr_t state_pos_value = (intptr_t)1 << log_half_rng; // intptr_t::max / state_pos_value = ~ wr and state_pos_value r locks simultaneously
     std::atomic<intptr_t> state_{0};
@@ -37,7 +38,8 @@ public:
     rw_mutex(rw_mutex const&) = delete;
     rw_mutex& operator= (rw_mutex const&) = delete;
 
-    void lock_shared() {
+    void lock_shared()
+    {
         for (;;) {
             if (state_.fetch_sub(1, std::memory_order_acquire) <= 0) {
                 return;
@@ -54,7 +56,8 @@ public:
         }
     }
 
-    void unlock_shared() {
+    void unlock_shared()
+    {
         intptr_t stateval = 1 + state_.fetch_add(1, std::memory_order_release);
         if (stateval > 0 && 0 == (stateval % state_pos_value)) {
             std::lock_guard<spinlock_t> guard(smtx_);
@@ -62,7 +65,8 @@ public:
         }
     }
 
-    void promote() {
+    void promote()
+    {
         intptr_t stateval = state_.fetch_add(state_pos_value + 1, std::memory_order_acquire);
         BOOST_ASSERT(0 != stateval);
         if (-1 == stateval) {
@@ -84,7 +88,8 @@ public:
         lock();
     }
 
-    void lock() {
+    void lock()
+    {
         for (;;) {
             intptr_t stateval = state_.fetch_add(state_pos_value, std::memory_order_acquire);
             if (!stateval) {
@@ -106,12 +111,14 @@ public:
         }
     }
 
-    void unlock() {
+    void unlock()
+    {
         state_.fetch_sub(state_pos_value, std::memory_order_release);
         mtx_.unlock();
     }
 
-    void demote() {
+    void demote()
+    {
         state_.fetch_sub(state_pos_value + 1, std::memory_order_acq_rel);
         mtx_.unlock();
     }

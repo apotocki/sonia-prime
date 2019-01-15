@@ -1,0 +1,42 @@
+//  Sonia.one framework (c) by Alexander A Pototskiy
+//  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
+//  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
+
+#include "sonia/config.hpp"
+#include "sonia/exceptions.hpp"
+#include "sonia/concurrency.hpp"
+
+#include "durable_type_registry.hpp"
+
+namespace sonia { namespace services {
+
+uint32_t durable_type_registry::register_durable_id(string_view nm, string_view servnm, std::type_index ti)
+{
+    uint32_t result = type_registry_->get_type_id(nm, servnm);
+    auto guard = make_lock_guard(type_durable_id_mtx_);
+    auto rpair = type_durable_id_map_.insert(type_id_map_type::value_type(ti, result));
+    if (rpair.second || rpair.first->right == result) return result;
+    throw internal_error("type registration error, type %1% with name %2% has id %3% instead of %4%"_fmt % ti.name() % nm % rpair.first->right % result);
+}
+
+uint32_t durable_type_registry::get_durable_id(std::type_index ti)
+{
+    auto guard = make_shared_lock_guard(type_durable_id_mtx_);
+    auto it = type_durable_id_map_.left.find(ti);
+    if (it != type_durable_id_map_.left.end()) {
+        return it->second;
+    }
+    throw internal_error("durable type %1% is not registered"_fmt % ti.name());
+}
+
+std::type_index durable_type_registry::get_durable_type_index(uint32_t id)
+{
+    auto guard = make_shared_lock_guard(type_durable_id_mtx_);
+    auto it = type_durable_id_map_.right.find(id);
+    if (it != type_durable_id_map_.right.end()) {
+        return it->second;
+    }
+    throw internal_error("durable type %1% is not registered"_fmt % id);
+}
+
+}}

@@ -159,7 +159,16 @@ using std::add_lvalue_reference_t;
 using std::add_rvalue_reference;
 using std::add_rvalue_reference_t;
 
-template <class T> struct is_placeholder : integral_constant<int, std::is_placeholder_v<T> + boost::is_placeholder<T>::value> {};
+// placeholders
+template <int I> struct arg_c { static constexpr int value = I; };
+template <class VT> struct arg { using type = arg_c<VT::value>; static constexpr int value = VT::value; };
+
+template <class T> struct is_arg : integral_constant<int, 0> {};
+template <class T> struct is_arg<arg<T>> : integral_constant<int, T::VT::value> {};
+template <int I> struct is_arg<arg_c<I>> : integral_constant<int, I> {};
+template <class T> constexpr int is_arg_v = is_arg<T>::value;
+
+template <class T> struct is_placeholder : integral_constant<int, std::is_placeholder_v<T> + boost::is_placeholder<T>::value + is_arg_v<T>> {};
 template <class T> constexpr int is_placeholder_v = is_placeholder<T>::value;
 
 template <class T, class Enabler = void> struct size_of : integral_constant<int, sizeof(T)> {};

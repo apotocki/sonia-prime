@@ -111,6 +111,9 @@
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\marshaling\marshaling.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\marshaling\string.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\marshaling\stub_parameter.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\multimethod.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\basic_decimal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\decimal.hpp" />
@@ -158,6 +161,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\pair.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\placeholder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\reference.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serializable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serialization_fwd.hpp" />

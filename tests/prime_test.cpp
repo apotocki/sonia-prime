@@ -130,7 +130,8 @@ BOOST_AUTO_TEST_CASE (bind_test)
 #include "sonia/utility/placement_new.hpp"
 #include "sonia/utility/in_place_factory.hpp"
 
-struct test_component {
+struct test_component
+{
     test_component(std::string& a0, std::string const& a1, int a2, std::string& a3, std::string const& a4, std::string a5, std::string && a6, std::string * a7, std::string const* a8)
     {
         BOOST_CHECK_EQUAL(a0, "123");

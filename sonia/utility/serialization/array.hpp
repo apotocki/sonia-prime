@@ -38,7 +38,7 @@ public:
     }
 
     template <typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, type & value) const
+    InputIteratorT decode(InputIteratorT ii, type value) const
     {
         if constexpr (is_trivial_v<T> && sizeof(T) == 1) {
             return sonia::pull(std::move(ii), value.begin(), value.end());

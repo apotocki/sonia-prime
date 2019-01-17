@@ -19,7 +19,8 @@
 namespace sonia { namespace parsers { namespace json {
 
 template <typename InputIteratorT, typename OutputIteratorT>
-void normilize_json_string_aux(InputIteratorT & it, InputIteratorT const& eit, OutputIteratorT & oit) {
+void normilize_json_string_aux(InputIteratorT & it, InputIteratorT const& eit, OutputIteratorT & oit)
+{
     ++it;
     if (it == eit) throw exception("unexpected end of string");
     char c = *it;
@@ -47,7 +48,8 @@ void normilize_json_string_aux(InputIteratorT & it, InputIteratorT const& eit, O
 }
 
 template <typename InputIteratorT, typename OutputIteratorT>
-void normilize_json_string(InputIteratorT it, InputIteratorT const& eit, OutputIteratorT oit) {
+void normilize_json_string(InputIteratorT it, InputIteratorT const& eit, OutputIteratorT oit)
+{
     while (it != eit) {
         char c = *it;
         if (c != '\\') {
@@ -59,12 +61,14 @@ void normilize_json_string(InputIteratorT it, InputIteratorT const& eit, OutputI
     }
 }
 
-class model {
+class model
+{
     model(model const&) = delete;
     model& operator= (model const&) = delete;
 
 public:
-    enum class state {
+    enum class state
+    {
         VALUE = 1,
         ARRAY,
         OBJECT
@@ -100,7 +104,8 @@ public:
     void pop_state() { state_stack_.pop_back(); }
 
     template <typename IteratorT>
-    void push_string(IteratorT b, IteratorT e) {
+    void push_string(IteratorT b, IteratorT e)
+    {
         ++b;
         std::string str;
         normilize_json_string(b, e, std::back_inserter(str));
@@ -109,17 +114,20 @@ public:
     }
 
     template <typename IteratorT>
-    void push_name(IteratorT b, IteratorT e) {
+    void push_name(IteratorT b, IteratorT e)
+    {
         std::string str;
         normilize_json_string(b, e, std::back_inserter(str));
         strings_.push_back(std::move(str));
     }
 
-    bool value_stack_empty() const {
+    bool value_stack_empty() const
+    {
         return state_stack_.back().second == stack_.size();
     }
 
-    json_value detach_result() {
+    json_value detach_result()
+    {
         json_value res = std::move(stack_.back());
         stack_.pop_back();
         return std::move(res);

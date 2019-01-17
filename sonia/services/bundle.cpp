@@ -12,17 +12,19 @@ namespace sonia { namespace services {
 bundle::bundle()
     : libhandle_(nullptr)
 {
-    set_attribute("Type", "bundle");
+    set_log_attribute("Type", "bundle");
 }
 
-void bundle::open() {
+void bundle::open()
+{
     if (std::string(BUILD_ID) != build_id()) {
         LOG_WARN(logger()) << "different bundle id: " << build_id() << ", expected: " << BUILD_ID;
     }
     init();
 }
 
-shared_ptr<service> bundle::build(json_object const& jo) {
+shared_ptr<service> bundle::build(json_object const& jo)
+{
     json_value const* jnm = jo["name"];
     if (!jnm || jnm->type() != json_value_type::string) {
         throw internal_error("bundle factory error: No factory name was found in '%1%'"_fmt % to_string(jo));

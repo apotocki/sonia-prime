@@ -17,16 +17,18 @@
 
 namespace sonia {
 
-class loggable {
+class loggable
+{
 public:
     loggable() : logger_(make_shared<logger::logger_type>()) {}
-    loggable(logger::logger_ptr shl) : logger_(std::move(shl)) {}
+    explicit loggable(logger::logger_ptr shl) : logger_(std::move(shl)) {}
 
     virtual ~loggable() {}
 
     logger::logger_ptr logger() { return logger_; }
 
-    void set_attribute(std::string const& name, string_view value) const {
+    void set_log_attribute(std::string const& name, string_view value) const
+    {
         logger_->add_attribute(name, boost::log::attributes::constant<std::string>(to_string(value)));
     }
 

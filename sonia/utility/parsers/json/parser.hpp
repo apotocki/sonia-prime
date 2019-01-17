@@ -10,7 +10,9 @@
 #endif
 
 #include "sonia/utility/parsers/utility.hpp"
-#include "sonia/utility/parsers/json/lexems.hpp"
+
+#include "lexems.hpp"
+#include "model.hpp"
 
 namespace sonia { namespace parsers { namespace json {
 
@@ -171,7 +173,8 @@ void parser<LexerT>::parse(iterator & b, iterator const& e) const
 }
 
 template <typename LexerT>
-bool parser<LexerT>::ws(iterator & b, iterator const& e) {
+bool parser<LexerT>::ws(iterator & b, iterator const& e)
+{
     auto tokid = b->id;
     if (tokid == ID_SPACE || tokid == ID_LINE_COMMENT || tokid == ID_COMMENT) {
         ++b;
@@ -181,12 +184,14 @@ bool parser<LexerT>::ws(iterator & b, iterator const& e) {
 }
 
 template <typename LexerT>
-void parser<LexerT>::skip_ws(iterator & b, iterator const& e) const {
+void parser<LexerT>::skip_ws(iterator & b, iterator const& e) const
+{
     if (!valid(b, e) || !star(b, e, &this->ws) || !valid(b, e)) throw_unexpected_eof();
 }
 
 template <typename LexerT>
-void parser<LexerT>::throw_unexpected_eof() {
+void parser<LexerT>::throw_unexpected_eof()
+{
     throw exception("unexpected eof");
 }
 

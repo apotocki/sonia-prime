@@ -34,7 +34,7 @@ public:
     template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, T & value) const
     {
-        return sonia::encode(static_cast<array_view<T>>(value), std::move(oi));
+        return sonia::encode(static_cast<array_view<T>>(value), std::move(ii));
     }
 };
 

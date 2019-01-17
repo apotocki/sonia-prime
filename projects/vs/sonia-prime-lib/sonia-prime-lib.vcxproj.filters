@@ -73,6 +73,9 @@
     <Filter Include="sonia.utility\serialization\boost">
       <UniqueIdentifier>{8f27435c-1fc5-459b-bbd0-eb87c22b65d9}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\marshaling">
+      <UniqueIdentifier>{abf9cc83-b41c-44eb-9e84-b2985308b0b7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -551,6 +554,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\host_impl.hpp">
       <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\reference.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\marshaling\marshaling.hpp">
+      <Filter>sonia.utility\marshaling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\marshaling\string.hpp">
+      <Filter>sonia.utility\marshaling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\marshaling\stub_parameter.hpp">
+      <Filter>sonia.utility\marshaling</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

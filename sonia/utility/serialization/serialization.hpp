@@ -47,6 +47,12 @@ InputIteratorT decode(InputIteratorT ii, T * arg)
 }
 
 template <typename TagT, typename InputIteratorT, typename T>
+enable_if_t<is_rvalue_reference_v<T&&>, InputIteratorT> decode(InputIteratorT ii, T&& arg)
+{
+    return serialization::coder<TagT, T>().decode(std::move(ii), std::move(arg));
+}
+
+template <typename TagT, typename InputIteratorT, typename T>
 InputIteratorT default_decode_ptr(InputIteratorT ii, T * arg)
 {
     new(arg) T;

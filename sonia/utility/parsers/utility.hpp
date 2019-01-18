@@ -105,7 +105,7 @@ void to_utf8(uint32_t uchar, OutputIteratorT & oit)
 
 template <
     template <class> class LexerT,
-    template <class> class ParserT,
+    template <class, class> class ParserT,
     class ModelT,
     typename IteratorT
 >
@@ -116,7 +116,7 @@ IteratorT parse(ModelT & model, IteratorT b, IteratorT e)
     lexer_type lexer;
     typename lexer_type::iterator iter = lexer.begin(std::move(b), e), end = lexer.end();
 
-    ParserT<lexer_type> parser(model);
+    ParserT<lexer_type, ModelT> parser(model);
 
     try {
         parser.parse(iter, end);

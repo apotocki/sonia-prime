@@ -12,17 +12,17 @@
 #include "sonia/utility/parsers/utility.hpp"
 
 #include "lexems.hpp"
-#include "model.hpp"
 
 namespace sonia { namespace parsers { namespace json {
 
-template <class LexerT>
-class parser {
+template <class LexerT, class ModelT>
+class parser
+{
     typedef typename LexerT::iterator iterator;
     typedef typename LexerT::token_type token_type;
 
 public:
-    explicit parser(model & mdl) : mdl_(mdl) {}
+    explicit parser(ModelT & mdl) : mdl_(mdl) {}
 
     void parse(iterator & b, iterator const& e) const;
 
@@ -32,7 +32,7 @@ private:
 
     void skip_ws(iterator & b, iterator const& e) const;
 
-    model & mdl_;
+    ModelT & mdl_;
 };
 
 }}}
@@ -40,8 +40,8 @@ private:
 // Implementation
 namespace sonia { namespace parsers { namespace json {
 
-template <typename LexerT>
-void parser<LexerT>::parse(iterator & b, iterator const& e) const
+template <class LexerT, class ModelT>
+void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
 {
     mdl_.push_state(model::state::VALUE);
 
@@ -172,8 +172,8 @@ void parser<LexerT>::parse(iterator & b, iterator const& e) const
     !valid(b, e) || !star(b, e, &this->ws);
 }
 
-template <typename LexerT>
-bool parser<LexerT>::ws(iterator & b, iterator const& e)
+template <class LexerT, class ModelT>
+bool parser<LexerT, ModelT>::ws(iterator & b, iterator const& e)
 {
     auto tokid = b->id;
     if (tokid == ID_SPACE || tokid == ID_LINE_COMMENT || tokid == ID_COMMENT) {
@@ -183,14 +183,14 @@ bool parser<LexerT>::ws(iterator & b, iterator const& e)
     return false;
 }
 
-template <typename LexerT>
-void parser<LexerT>::skip_ws(iterator & b, iterator const& e) const
+template <class LexerT, class ModelT>
+void parser<LexerT, ModelT>::skip_ws(iterator & b, iterator const& e) const
 {
     if (!valid(b, e) || !star(b, e, &this->ws) || !valid(b, e)) throw_unexpected_eof();
 }
 
-template <typename LexerT>
-void parser<LexerT>::throw_unexpected_eof()
+template <class LexerT, class ModelT>
+void parser<LexerT, ModelT>::throw_unexpected_eof()
 {
     throw exception("unexpected eof");
 }

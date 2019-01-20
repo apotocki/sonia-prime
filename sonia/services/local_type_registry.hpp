@@ -25,7 +25,7 @@ public:
     explicit local_type_registry(shared_ptr<persister> sp);
 
     uint32_t get_type_id(string_view, string_view) override;
-    string_view get_type_name(uint32_t) const override;
+    std::pair<string_view, string_view> get_type_description(uint32_t) const override;
 };
 
 }

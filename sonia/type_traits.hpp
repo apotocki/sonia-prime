@@ -83,6 +83,9 @@ using std::is_floating_point_v;
 using std::is_enum;
 using std::is_enum_v;
 
+using std::underlying_type;
+using std::underlying_type_t;
+
 using std::is_same;
 using std::is_same_v;
 

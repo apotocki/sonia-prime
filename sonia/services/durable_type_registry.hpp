@@ -34,6 +34,8 @@ public:
     uint32_t get_durable_id(std::type_index);
     std::type_index get_durable_type_index(uint32_t);
 
+    optional<std::type_index> try_get_durable_type_index(uint32_t id);
+
     void set_type_registry(shared_ptr<type_registry> v)
     {
         type_registry_ = std::move(v);

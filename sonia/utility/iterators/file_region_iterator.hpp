@@ -166,7 +166,7 @@ class file_region_iterator
         if constexpr (is_readonly) {
             return get_dereference();
         } else {
-            return sonia::make_proxy<const array_view<T>>(this);
+            return sonia::iterators::make_value_proxy<const array_view<T>>(this);
         }
     }
 

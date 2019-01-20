@@ -21,12 +21,14 @@ class coder<SerializationTagT, sonia::type::durable_id>
 {
 public:
     template <typename OutputIteratorT>
-    OutputIteratorT encode(sonia::type::durable_id const& did, OutputIteratorT oi) const {
+    OutputIteratorT encode(sonia::type::durable_id const& did, OutputIteratorT oi) const
+    {
         return sonia::encode<SerializationTagT>(did.val_, std::move(oi));
     }
 
     template <typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, sonia::type::durable_id & did) const {
+    InputIteratorT decode(InputIteratorT ii, sonia::type::durable_id & did) const
+    {
         uint32_t didval;
         ii = sonia::decode<SerializationTagT, uint32_t>(std::move(ii), didval);
         did = sonia::type::durable_id(didval);
@@ -34,7 +36,8 @@ public:
     }
 
     template <typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, sonia::type::durable_id * did) const {
+    InputIteratorT decode(InputIteratorT ii, sonia::type::durable_id * did) const
+    {
         uint32_t didval;
         ii = sonia::decode<SerializationTagT, uint32_t>(std::move(ii), didval);
         new(did) sonia::type::durable_id(didval);

@@ -18,9 +18,9 @@ uint32_t local_type_registry::get_type_id(string_view name, string_view meta)
     return base_t::get_id(name, meta);
 }
 
-string_view local_type_registry::get_type_name(uint32_t id) const
+std::pair<string_view, string_view> local_type_registry::get_type_description(uint32_t id) const
 {
-    return base_t::get_name(id);
+    return base_t::get_data(id);
 }
 
 }

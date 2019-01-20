@@ -70,12 +70,14 @@ private:
 	WrappedPtrT ptr_;
 };
 
+namespace iterators {
+
 template <typename ReferenceT = void, class T>
-wrapper_iterator_proxy<ptr_proxy_wrapper<T*, ReferenceT>> make_proxy(T * ptr)
+wrapper_iterator_proxy<ptr_proxy_wrapper<T*, ReferenceT>> make_value_proxy(T * ptr)
 {
     return wrapper_iterator_proxy<ptr_proxy_wrapper<T*, ReferenceT>>(ptr);
 }
 
-}
+}}
 
 #endif // SONIA_UTILITY_ITERATORS_PROXY_HPP

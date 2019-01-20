@@ -5,6 +5,8 @@
 #include "sonia/config.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/concurrency.hpp"
+#include "sonia/utility/streaming/array_view.hpp"
+#include "sonia/utility/streaming/type_index.hpp"
 
 #include "multimethod_registry.hpp"
 

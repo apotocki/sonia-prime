@@ -85,6 +85,20 @@ void register_multimethod(function<SigT> const& f)
     sonia::services::register_multimethod(concrete_multimethod<SigT>(f), to_array_view(tis));
 }
 
+template <typename MethodIDT, typename SigT, size_t ... I, class ArrT>
+void register_multimethod(function<SigT> const& f, std::index_sequence<I ...>, ArrT const& arr)
+{
+    using sig_t = multimethod_detail::multimethod_sig<MethodIDT, SigT>;
+    std::array<std::type_index, 1 + sizeof ...(I)> tis{sig_t::ti(), arr[I] ...};
+    sonia::services::register_multimethod(concrete_multimethod<SigT>(f), to_array_view(tis));
+}
+
+template <typename MethodIDT, typename SigT, size_t N>
+void register_multimethod(function<SigT> const& f, const std::type_index(&tis_)[N])
+{
+    return register_multimethod<MethodIDT, SigT>(f, std::make_index_sequence<N>(), tis_);
+}
+
 template <typename MethodIDT, typename SigT, typename ... TS>
 function<SigT> const* get_multimethod()
 {

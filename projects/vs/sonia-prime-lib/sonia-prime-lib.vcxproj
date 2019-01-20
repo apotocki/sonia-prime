@@ -48,6 +48,7 @@
     <ClInclude Include="..\..\..\sonia\services\io\tcp_socket.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_write_output_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\local_type_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\services\multimethod_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\basic_scheduler.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.hpp" />
@@ -107,6 +108,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\inflate_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_reference.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\proxy.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\reference_wrapper_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\tar_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
@@ -208,6 +210,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\io_factory_win.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\local_type_registry.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\multimethod_registry.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\basic_scheduler.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.cpp" />

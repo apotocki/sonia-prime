@@ -10,7 +10,7 @@ namespace sonia { namespace services {
 scheduler_service::scheduler_service(scheduler_service_configuration const& cfg)
     : basic_scheduler(cfg.threads, cfg.fibers)
 {
-    set_attribute("Type", "scheduler");
+    set_log_attribute("Type", "scheduler");
 }
 
 void scheduler_service::open() {

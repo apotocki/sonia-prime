@@ -8,8 +8,9 @@
 
 namespace sonia { namespace services {
 
-scheduler_service_builder::scheduler_service_builder() {
-    set_attribute("Type", "builder");
+scheduler_service_builder::scheduler_service_builder()
+{
+    set_log_attribute("Type", "builder");
     parameters_.bind()
         .variable("threads", &scheduler_service_configuration::threads, "threads count").required()
         .variable("fibers", &scheduler_service_configuration::fibers, "fibers count per thread").default_value(0)

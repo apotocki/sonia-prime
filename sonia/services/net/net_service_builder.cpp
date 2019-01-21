@@ -10,8 +10,9 @@ namespace sonia { namespace services {
 
 namespace sp = sonia::parameters;
 
-net_service_builder::net_service_builder() {
-    set_attribute("Type", "builder");
+net_service_builder::net_service_builder()
+{
+    set_log_attribute("Type", "builder");
     parameters_.bind()
         .variable("acceptor-factory", &net_service_configuration::acceptor_factory, "acceptor factory name").required()
         .variable("scheduler", &net_service_configuration::scheduler, "scheduler service name").required()

@@ -10,7 +10,7 @@ namespace sonia { namespace services {
 io_service::io_service(io_service_configuration const& cfg)
     : cfg_(cfg)
 {
-    set_attribute("Type", "io");
+    set_log_attribute("Type", "io");
 }
 
 void io_service::open() {

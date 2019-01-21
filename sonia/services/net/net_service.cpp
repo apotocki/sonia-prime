@@ -15,7 +15,7 @@ using sonia::io::tcp_acceptor;
 net_service::net_service(net_service_configuration const& cfg)
     : cfg_(cfg)
 {
-    set_attribute("Type", "net-server");
+    set_log_attribute("Type", "net-server");
     locate(cfg.acceptor_factory, acceptor_factory_);
     locate(cfg.scheduler, scheduler_);
 }

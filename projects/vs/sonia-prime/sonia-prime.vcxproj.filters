@@ -17,9 +17,6 @@
     <ClCompile Include="..\..\..\sonia\services\basic_service_factory.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp">
-      <Filter>sonia.services</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\prime_bundle.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
@@ -79,9 +76,6 @@
       <Filter>sonia.services</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\service_factory.hpp">
-      <Filter>sonia.services</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp">
       <Filter>sonia.services</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\bundle.hpp">

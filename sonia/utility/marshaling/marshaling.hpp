@@ -126,32 +126,12 @@ struct binding_tag_facade
     {
         using r_type = decltype(std::apply(std::declval<stub_invoker_type>(), bind_tuple_t<ArgsT...>(std::declval<ArgsT>()...)));
         static_assert(is_same_v<result_type, r_type>);
-        
-        //using stub_tuple_t = composed_tuple_t<stub_arg_types_t, stub_bound_parameter>;
+
         stub_tuple_t stub_tuple;
         decode<DecT>(std::move(ii), stub_tuple);
 
         return apply_placeholders(FuncV, stub_tuple, std::forward<ArgsT>(args)...);
-
-        //std::invoke(FuncV, )
-        //std::cout << typeid(r_type).name() << "\n";
-        //return result_type{};
-        //throw not_implemented_error();
     }
-
-    //template <typename InputIteratorT, typename ... ArgsT>
-    //static result_type stub_invoke(InputIteratorT, ArgsT && ... args)
-    //{
-    //    using r_t = decltype(
-    //        std::apply(
-    //            std::declval<stub_invoker_t>(),
-    //            bind_tuple_t<ArgsT...>(std::declval<ArgsT>()...)
-    //        ));
-
-    //    std::cout << typeid(r_t).name() << "\n";
-    //    return result_type{};
-    //    //throw not_implemented_error();
-    //}
 };
 
 }

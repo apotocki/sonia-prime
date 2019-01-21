@@ -52,7 +52,7 @@ class deflate_iterator
 
 	decltype(auto) dereference() const
 	{
-		return sonia::make_proxy(this);
+		return iterators::make_value_proxy(this);
 	}
 
 	void set_dereference(array_view<const char> rng)

@@ -167,7 +167,7 @@ public:
 
     string_view get_name(IDT id) const
     {
-        return get_data().first;
+        return get_data(id).first;
     }
 
     std::pair<string_view, string_view> get_data(IDT id) const

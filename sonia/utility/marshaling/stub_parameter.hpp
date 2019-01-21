@@ -52,7 +52,7 @@ public:
         PointerT ptr;
         ii = sonia::decode<TagT>(std::move(ii), ptr);
         new (val) stub_parameter_holder<T, PointerT>{std::move(ptr)};
-        return std:move(ii);
+        return std::move(ii);
     }
 };
 

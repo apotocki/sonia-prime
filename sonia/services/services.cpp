@@ -150,6 +150,12 @@ std::type_index get_durable_type_index(uint32_t did)
     return env_->get_durable_type_index(did);
 }
 
+void load_durable_id(string_view name, string_view meta)
+{
+    BOOST_ASSERT(env_);
+    locate(meta);
+}
+
 void register_multimethod(multimethod && mm, array_view<const std::type_index> mmid)
 {
     get_host_impl()->register_multimethod(std::move(mm), mmid);

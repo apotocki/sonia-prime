@@ -43,14 +43,14 @@ optional<std::type_index> durable_type_registry::try_get_durable_type_index(uint
 std::type_index durable_type_registry::get_durable_type_index(uint32_t id)
 {
     auto res = try_get_durable_type_index(id);
-    if (BOOST_LIKELY(res)) {
+    if (BOOST_LIKELY(!!res)) {
         return *res;
     }
 
     auto [name, meta] = type_registry_->get_type_description(id);
     load_durable_id(name, meta);
     res = try_get_durable_type_index(id);
-    if (BOOST_LIKELY(res)) {
+    if (BOOST_LIKELY(!!res)) {
         return *res;
     }
 

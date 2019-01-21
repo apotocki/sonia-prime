@@ -54,7 +54,7 @@ class bz2_decompress_iterator
 
     proxy_t dereference() const
     {
-        return make_proxy<array_view<const char>>(this);
+        return iterators::make_value_proxy<array_view<const char>>(this);
     }
 
     array_view<const char> get_dereference() const

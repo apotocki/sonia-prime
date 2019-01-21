@@ -104,6 +104,14 @@ public:
         }
     }
 
+    void flush_position()
+    {
+        *base_ = std::get<0>(get());
+        if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
+            base_.flush();
+        }
+    }
+
 private:
     void init_state() const
     {
@@ -121,7 +129,7 @@ private:
 
 #endif
 
-template <class IteratorT, class CategoryOrTraversal = iterator_traversal_t<IteratorT>>
+template <class IteratorT, class CategoryOrTraversal = iterator_category_t<IteratorT>>
 class range_dereferencing_iterator 
     : public boost::iterator_facade<
         range_dereferencing_iterator<IteratorT, CategoryOrTraversal>,
@@ -172,6 +180,11 @@ public:
     void flush()
     {
         state_t::flush();
+    }
+
+    void flush_position()
+    {
+        state_t::flush_position();
     }
 
     IteratorT & base() { return state_t::base(); }

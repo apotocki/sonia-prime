@@ -167,10 +167,15 @@ public:
 
     string_view get_name(IDT id) const
     {
+        return get_data().first;
+    }
+
+    std::pair<string_view, string_view> get_data(IDT id) const
+    {
         auto guard = make_shared_lock_guard(mtx_);
         auto it = registry_.template get<1>().find(id);
         if (it != registry_.template get<1>().end() && it->persisted.load()) {
-            return it->name;
+            return {it->name, it->meta};
         }
         throw internal_error("no registry item with id: %1%"_fmt % id);
     }

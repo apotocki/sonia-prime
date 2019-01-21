@@ -69,7 +69,7 @@ public:
         return std::move(ii);
     }
 
-    template <typename ArgT, typename InputIteratorT>
+    template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, T * val) const
     {
         return decode(std::move(ii), *val);
@@ -79,23 +79,26 @@ public:
 template <typename TagT, typename T>
 class coder<TagT, T, enable_if_t<is_enum_v<T>>>
 {
+    using utype_t = underlying_type_t<T>;
+    static inline coder<TagT, utype_t> coder_{};
+
 public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(T value, OutputIteratorT oi) const
     {
-        return coder<TagT, int>().encode((int)value, std::move(oi));
+        return coder_.encode((utype_t)value, std::move(oi));
     }
 
     template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, T * value) const
     {
-        return coder<TagT, int>().decode(std::move(ii), (int*)value);
+        return coder_.decode(std::move(ii), (utype_t*)value);
     }
 
-    template <typename ArgT, typename InputIteratorT>
+    template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, T & value) const
     {
-        return coder<TagT, int>().decode(std::move(ii), (int*)&value);
+        return coder_.decode(std::move(ii), (utype_t&)value);
     }
 };
 
@@ -307,6 +310,12 @@ public:
             ++ii;
         }
         return std::move(ii);
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, T * value) const
+    {
+        return decode(std::move(ii), *value);
     }
 };
 

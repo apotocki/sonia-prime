@@ -567,6 +567,12 @@
     <ClInclude Include="..\..\..\sonia\utility\marshaling\stub_parameter.hpp">
       <Filter>sonia.utility\marshaling</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\reference_wrapper_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\local_type_registry.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -648,6 +654,9 @@
       <Filter>sonia.services</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\multimethod_registry.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\local_type_registry.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
   </ItemGroup>

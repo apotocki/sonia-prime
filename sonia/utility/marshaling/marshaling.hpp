@@ -34,7 +34,7 @@
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/bind.hpp"
 
-//#include "sonia/utility/type_durable_id.hpp"
+#include "sonia/utility/type_durable_id.hpp"
 
 #include "sonia/utility/serialization/tuple.hpp"
 
@@ -138,6 +138,9 @@ struct binding_tag_facade
 
 #define SONIA_DECLARE_BINDING_TAG(tagnm, func, ...) \
 struct tagnm : ::sonia::binding_tag_facade<decltype(func), func, ## __VA_ARGS__> {};
+
+#define SONIA_DECLARE_BINDING_PTAG(tags, tagnm, func, ...) \
+template <class ... tags> struct tagnm : ::sonia::binding_tag_facade<decltype(func), func, ## __VA_ARGS__> {};
 
 #define SONIA_REGISTER_BINDING_TAG(tag, tagnm, serv) \
 ::sonia::services::register_durable_id(tagnm, serv, typeid(tag))

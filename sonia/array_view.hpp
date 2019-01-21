@@ -93,11 +93,12 @@ public:
     constexpr void reset() noexcept { data_ = nullptr; size_ = 0; }
 
     constexpr reference operator[](size_type ind) const noexcept { return data_[ind]; }
-    constexpr operator bool() const noexcept { return !empty(); }
+    
+    constexpr explicit operator bool() const noexcept { return !empty(); }
 
     constexpr bool has(T const * e) const
     {
-        return std::less_equal<T const*>()(data_, e) && std::less<T const*>()(e, end());
+        return std::less_equal<T const*>()(data_, e) && std::less_equal<T const*>()(e, end());
     }
 
     constexpr bool is_subset_of(array_view r) const

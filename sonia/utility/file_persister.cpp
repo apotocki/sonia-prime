@@ -14,7 +14,7 @@ namespace fs = boost::filesystem;
 
 namespace sonia {
 
-file_persister::file_persister(std::string fname)
+file_persister::file_persister(boost::filesystem::path fname)
     : fname_(std::move(fname))
 {
 
@@ -30,12 +30,12 @@ bool file_persister::read(function<void(input_iterator)> const& ftor) const
     using impl_t = iterator_polymorpic_adapter<file_region_iterator<const char>, forward_traversal_tag>;
 
     if (fs::exists(fname_)) {
-        ftor(input_iterator(in_place_type<impl_t>, fname_.c_str()));
+        ftor(input_iterator(in_place_type<impl_t>, fname_));
     } else {
-        std::string tmpfile = fname_ + ".tmp";
+        boost::filesystem::path tmpfile = fname_.string() + ".tmp";
         if (!fs::exists(tmpfile)) return false;
 
-        ftor(input_iterator(in_place_type<impl_t>, tmpfile.c_str()));
+        ftor(input_iterator(in_place_type<impl_t>, tmpfile));
     }
     return true;
 }
@@ -51,7 +51,7 @@ void file_persister::write(function<void(output_iterator)> const& ftor)
 
     // firstly write into a temp file, then rename it
 
-    std::string tmpfile = fname_ + ".tmp";
+    boost::filesystem::path tmpfile = fname_.string() + ".tmp";
     if (fs::exists(tmpfile)) {
         fs::remove(tmpfile);
     }
@@ -63,7 +63,7 @@ void file_persister::write(function<void(output_iterator)> const& ftor)
 
         std::ofstream(tmpfile.c_str());
 
-        ftor(output_iterator(in_place_type<impl_t>, tmpfile.c_str()));
+        ftor(output_iterator(in_place_type<impl_t>, tmpfile));
     } catch (...) {
         fs::remove(tmpfile);
         throw;

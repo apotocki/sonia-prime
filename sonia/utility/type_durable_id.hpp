@@ -28,6 +28,8 @@ SONIA_PRIME_API uint32_t register_durable_id(string_view, string_view, std::type
 SONIA_PRIME_API uint32_t get_durable_id(std::type_index);
 SONIA_PRIME_API std::type_index get_durable_type_index(uint32_t);
 
+void load_durable_id(string_view, string_view);
+
 }
 
 namespace type {

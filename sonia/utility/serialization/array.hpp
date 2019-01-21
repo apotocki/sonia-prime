@@ -52,6 +52,25 @@ public:
     }
 };
 
+template <typename TagT, typename T, size_t SzV>
+class coder<TagT, std::array<T, SzV>>
+{
+    using type = std::array<T, SzV>;
+
+public:
+    template <typename OutputIteratorT>
+    OutputIteratorT encode(type const& value, OutputIteratorT oi) const
+    {
+        return sonia::encode<TagT>(to_array_view(value), std::move(oi));
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, type value) const
+    {
+        return sonia::decode<TagT>(std::move(ii), to_array_view(value));
+    }
+};
+
 }}
 
 #endif // SONIA_SERIALIZATION_ARRAY_HPP

@@ -206,7 +206,7 @@ class proxying_iterator_polymorphic
 public:
     reference_t dereference() const override final
     {
-        return make_proxy<ValueT>(static_cast<proxy_backend_t const*>(this));
+        return iterators::make_value_proxy<ValueT>(static_cast<proxy_backend_t const*>(this));
     }
 };
 

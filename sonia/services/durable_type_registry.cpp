@@ -6,6 +6,7 @@
 #include "sonia/exceptions.hpp"
 #include "sonia/concurrency.hpp"
 
+#include "sonia/utility/type_durable_id.hpp"
 #include "durable_type_registry.hpp"
 
 namespace sonia { namespace services {
@@ -23,19 +24,36 @@ uint32_t durable_type_registry::get_durable_id(std::type_index ti)
 {
     auto guard = make_shared_lock_guard(type_durable_id_mtx_);
     auto it = type_durable_id_map_.left.find(ti);
-    if (it != type_durable_id_map_.left.end()) {
+    if (BOOST_LIKELY(it != type_durable_id_map_.left.end())) {
         return it->second;
     }
     throw internal_error("durable type %1% is not registered"_fmt % ti.name());
 }
 
-std::type_index durable_type_registry::get_durable_type_index(uint32_t id)
+optional<std::type_index> durable_type_registry::try_get_durable_type_index(uint32_t id)
 {
     auto guard = make_shared_lock_guard(type_durable_id_mtx_);
     auto it = type_durable_id_map_.right.find(id);
-    if (it != type_durable_id_map_.right.end()) {
+    if (BOOST_LIKELY(it != type_durable_id_map_.right.end())) {
         return it->second;
     }
+    return nullopt;
+}
+
+std::type_index durable_type_registry::get_durable_type_index(uint32_t id)
+{
+    auto res = try_get_durable_type_index(id);
+    if (BOOST_LIKELY(res)) {
+        return *res;
+    }
+
+    auto [name, meta] = type_registry_->get_type_description(id);
+    load_durable_id(name, meta);
+    res = try_get_durable_type_index(id);
+    if (BOOST_LIKELY(res)) {
+        return *res;
+    }
+
     throw internal_error("durable type %1% is not registered"_fmt % id);
 }
 

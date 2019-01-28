@@ -13,20 +13,24 @@
 #include "sonia/exceptions.hpp"
 #include "sonia/services.hpp"
 
-class scoped_services {
+class scoped_services
+{
 public:
     scoped_services(scoped_services const&) = delete;
     scoped_services& operator=(scoped_services const&) = delete;
 
-    explicit scoped_services(int argc = 0, char const* argv[] = nullptr) {
+    explicit scoped_services(int argc = 0, char const* argv[] = nullptr)
+    {
         sonia::services::initialize(argc, argv);
     }
 
-    ~scoped_services() {
+    ~scoped_services()
+    {
         sonia::services::shutdown();
     }
 
-    void run() {
+    void run()
+    {
         run_ = true;
         auto lock = sonia::make_unique_lock(mtx_);
         while (run_) {
@@ -34,7 +38,8 @@ public:
         }
     }
 
-    void stop() {
+    void stop()
+    {
         auto lock = sonia::make_unique_lock(mtx_);
         run_ = false;
         var_.notify_one();

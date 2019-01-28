@@ -267,7 +267,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
 
         auto s0 = services::locate("scheduler.serv");
         */
-    } catch (shutdown_exception const& e) {
+    } catch (closed_exception const& e) {
         std::cout << e.what() << "\n";
     } catch (std::exception const& e) {
         std::cerr << e.what() << "\n";

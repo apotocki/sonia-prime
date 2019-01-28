@@ -14,11 +14,12 @@
 
 namespace sonia { namespace services { namespace net {
 
-class connector {
+class connector
+{
 public:
     virtual ~connector() noexcept {}
 
-    typedef single_linked_buffer_ptr<char> buff_ptr;
+    using buff_ptr = single_linked_buffer_ptr<char>;
 
     virtual void connect(buff_ptr, size_t, sonia::io::tcp_socket) = 0;
 };

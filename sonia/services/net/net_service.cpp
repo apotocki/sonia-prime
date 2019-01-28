@@ -20,7 +20,8 @@ net_service::net_service(net_service_configuration const& cfg)
     locate(cfg.scheduler, scheduler_);
 }
 
-void net_service::open() {
+void net_service::open()
+{
     listeners_.reserve(cfg_.listeners.size());
     for (net::listener_configuration const& lc : cfg_.listeners) {
         shared_ptr<listener> ls = make_shared<listener>(logger());
@@ -35,8 +36,8 @@ void net_service::open() {
 
             ls->acceptor.async_accept_and_read_some(
                 ls->buff->to_array_view(),
-                [schd = scheduler_, ls](std::error_code const& err, size_t sz, tcp_socket soc, tcp_acceptor::renew_functor const& rfunc) mutable {
-                    ls->acceptor_proc(err, sz, std::move(soc), rfunc, std::move(schd));
+                [schd = scheduler_, ls](std::error_code const& err, size_t sz, tcp_socket soc, tcp_acceptor::renew_functor const& rfunc) {
+                    ls->acceptor_proc(err, sz, std::move(soc), rfunc, schd);
                 }
             );
             //shared_ptr<listener> ls = make_shared<listener>(std::move(cn));
@@ -46,14 +47,16 @@ void net_service::open() {
     }
 }
 
-void net_service::close() noexcept {
+void net_service::close() noexcept
+{
     for (auto & lp : listeners_) {
         lp->close();
     }
     listeners_.clear();
 }
 
-class listener_task : public scheduler_task {
+class listener_task : public scheduler_task
+{
     shared_ptr<net::connector> cn_;
     single_linked_buffer_ptr<char> buff_;
     size_t sz_;
@@ -65,8 +68,16 @@ public:
         : cn_(std::forward<CnT>(cn)), buff_(std::forward<BuffT>(buff)), sz_(sz), soc_(std::move(soc))
     {}
 
-    void run() override {
+    void run() override
+    {
         cn_->connect(std::move(buff_), sz_, std::move(soc_));
+    }
+
+    polymorphic_movable* move(void* address, size_t sz) override
+    {
+        BOOST_ASSERT(sz >= sizeof(listener_task));
+        new (address) listener_task(std::move(*this));
+        return reinterpret_cast<listener_task*>(address);
     }
 };
 
@@ -83,8 +94,13 @@ void net_service::listener::acceptor_proc(std::error_code const& err, size_t sz,
         ));
 
     } else {
+        std::string errmsg = err.message();
+        errmsg.erase(std::find_if(errmsg.rbegin(), errmsg.rend(), [](int ch) {
+            return !std::isspace(ch);
+        }).base(), errmsg.end());
+
         LOG_SEV(logger(), closing ? sonia::logger::severity_level::trace : sonia::logger::severity_level::error)
-            << err.message();
+            << errmsg;
     }
 }
 

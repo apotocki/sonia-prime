@@ -159,21 +159,24 @@ HANDLE create_completion_port(uint32_t thread_count) {
     return result;
 }
 
-void assign_completion_port(HANDLE h, HANDLE iocp, ULONG_PTR key) {
+void assign_completion_port(HANDLE h, HANDLE iocp, ULONG_PTR key)
+{
     if (!CreateIoCompletionPort(h, iocp, key, 0)) {
         DWORD err = GetLastError();
         throw exception("can't assign completion port, error: %1%"_fmt % error_message(err));
     }
 }
 
-void post_completion_port(HANDLE cp, DWORD btransf, ULONG_PTR key, OVERLAPPED * pov) {
+void post_completion_port(HANDLE cp, DWORD btransf, ULONG_PTR key, OVERLAPPED * pov)
+{
     if (!PostQueuedCompletionStatus(cp, btransf, key, pov)) {
         DWORD err = GetLastError();
         throw exception("Can't post into completion port queue, error: %1%"_fmt % error_message(err));
     }
 }
 
-void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov) {
+void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov)
+{
     WSABUF wsabuf;
     wsabuf.len = (ULONG)sz;
     wsabuf.buf = reinterpret_cast<char*>(buff);
@@ -189,7 +192,24 @@ void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov) {
     }
 }
 
-LPFN_ACCEPTEX get_accept_function(SOCKET soc) {
+void async_send(SOCKET soc, void const * buff, size_t sz, WSAOVERLAPPED * pov)
+{
+    WSABUF wsabuf;
+    wsabuf.len = (ULONG)sz;
+    wsabuf.buf = const_cast<char*>(reinterpret_cast<char const*>(buff));
+
+    DWORD sentsz;
+    int rc = WSASend(soc, &wsabuf, 1, &sentsz, 0, pov, NULL);
+    if (rc == SOCKET_ERROR) {
+        DWORD err = WSAGetLastError();
+        if (WSA_IO_PENDING != err) {
+            throw exception("can't send data to socket, error: %1%"_fmt % error_message(err));
+        }
+    }
+}
+
+LPFN_ACCEPTEX get_accept_function(SOCKET soc)
+{
     LPFN_ACCEPTEX lpfnAcceptEx;
     GUID GuidAcceptEx = WSAID_ACCEPTEX;
     DWORD dwBytes;

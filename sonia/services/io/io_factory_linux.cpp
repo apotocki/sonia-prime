@@ -22,7 +22,8 @@
 
 namespace sonia { namespace io {
 
-struct lin_impl_data {
+struct lin_impl_data
+{
     friend class factory;
 };
 
@@ -34,11 +35,13 @@ factory::factory()
     
 }
 
-factory::~factory() {
+factory::~factory()
+{
     delete dataptr;
 }
 
-void factory::open(uint32_t thr_cnt) {
+void factory::open(uint32_t thr_cnt)
+{
     if (impl_data_) {
         throw internal_error("io factory is already initialized");
     }
@@ -47,13 +50,15 @@ void factory::open(uint32_t thr_cnt) {
     //dataptr->run();
 }
 
-void factory::close() {
+void factory::close()
+{
     if (impl_data_) {
         //dataptr->stop();
     }
 }
 
-std::string factory::name() const {
+std::string factory::name() const
+{
     return std::string("linux");
 }
 
@@ -62,41 +67,50 @@ void factory::thread_proc() {
 }
 
 // tcp_socket_factory
-tcp_socket factory::create_tcp_socket(string_view address, uint16_t port, tcp_socket_type dt) {
+tcp_socket factory::create_tcp_socket(string_view address, uint16_t port, tcp_socket_type dt)
+{
     //throw exception("can't create socket with address: '%1%' and port: '%2%'"_fmt % address % port);
     throw not_implemented_error("create_tcp_socket");
 }
 
-size_t factory::tcp_socket_count(tcp_socket_type) const {
+size_t factory::tcp_socket_count(tcp_socket_type) const
+{
     throw not_implemented_error("tcp_socket_count");
 }
 
 // tcp_socket_service
-void factory::tcp_socket_close(void * handle) {
+void factory::tcp_socket_close(void * handle)
+{
     throw not_implemented_error("tcp_socket_close");
 }
 
-size_t factory::tcp_socket_read_some(void * handle, void * buff, size_t sz) {
+size_t factory::tcp_socket_read_some(void * handle, void * buff, size_t sz)
+{
     throw not_implemented_error("tcp_socket_read_some");
 }
 
-void factory::tcp_socket_async_read_some(void * soc, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor) {
+void factory::tcp_socket_async_read_some(void * soc, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor)
+{
     throw not_implemented_error("tcp_socket_async_read_some");
 }
 
-size_t factory::tcp_socket_write_some(void * handle, void const* buff, size_t sz) {
+size_t factory::tcp_socket_write_some(void * handle, void const* buff, size_t sz)
+{
     throw not_implemented_error("tcp_socket_write_some");
 }
 
-tcp_acceptor factory::create_tcp_acceptor(string_view address, uint16_t port, tcp_socket_type dt) {
+tcp_acceptor factory::create_tcp_acceptor(string_view address, uint16_t port, tcp_socket_type dt)
+{
     throw not_implemented_error("create_tcp_acceptor");
 }
 
-void factory::tcp_acceptor_async_accept_and_read_some(void * handle, void * buff, size_t sz, acceptor_functor const& func) {
+void factory::tcp_acceptor_async_accept_and_read_some(void * handle, void * buff, size_t sz, acceptor_functor const& func)
+{
     throw not_implemented_error("tcp_acceptor_async_accept_and_read_some");
 }
 
-void factory::tcp_acceptor_close(void * handle) noexcept {
+void factory::tcp_acceptor_close(void * handle) noexcept
+{
     throw not_implemented_error("tcp_acceptor_close");
 }
 
@@ -161,7 +175,8 @@ file factory::open_file(cstring_view path, file_open_mode fom, file_access_mode 
     return file_access::open_file(shared_from_this(), h, path);
 }
 
-struct file_callback {
+struct file_callback
+{
     aiocb cb;
     sonia::posix::user_handler_type h_;
 
@@ -171,7 +186,8 @@ struct file_callback {
     fibers::condition_variable_any cnd;
 
     template <class BuffT>
-    explicit file_callback(uint64_t fileoffset, BuffT buff) {
+    explicit file_callback(uint64_t fileoffset, BuffT buff)
+    {
         memset(&cb, 0, sizeof(aiocb));
         cb.aio_offset = fileoffset;
         cb.aio_buf = (void*)buff.begin();
@@ -182,14 +198,16 @@ struct file_callback {
         h_ = [this] { on_op(); };
     }
 
-    void on_op() {
+    void on_op()
+    {
         auto lck = make_unique_lock(mtx);
         int err = aio_error(&cb) ? errno : 0;
         code.emplace(err, std::system_category());
         cnd.notify_one();
     }
 
-    void wait() {
+    void wait()
+    {
         auto lck = make_unique_lock(mtx);
         cnd.wait(lck, [this] { return !!code; });
         if (code && *code) {
@@ -218,7 +236,8 @@ size_t factory::file_read(int handle, uint64_t fileoffset, array_view<char> dest
     return (size_t)rsz;
 }
 
-size_t factory::file_write(int handle, uint64_t fileoffset, array_view<const char> src) {
+size_t factory::file_write(int handle, uint64_t fileoffset, array_view<const char> src)
+{
     file_callback fcb(fileoffset, src);
     fcb.cb.aio_fildes = handle;
 

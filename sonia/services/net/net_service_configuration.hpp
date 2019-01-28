@@ -16,14 +16,15 @@
 
 namespace sonia { namespace services { namespace net {
 
-enum class listener_type {
+enum class listener_type
+{
     TCP = 0,
     SSL,
     UDP
 };
 
-class listener_configuration {
-public:
+struct listener_configuration
+{
     std::string connector;
     std::string address;
     uint16_t port;
@@ -33,8 +34,8 @@ public:
 
 }
 
-class net_service_configuration {
-public:
+struct net_service_configuration
+{
     std::string acceptor_factory;
     std::string scheduler;
     std::vector<net::listener_configuration> listeners;

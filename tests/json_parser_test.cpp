@@ -19,6 +19,23 @@ namespace fs = boost::filesystem;
 #include <boost/any.hpp>
 #include <boost/unordered_map.hpp>
 
+#if 0
+BOOST_AUTO_TEST_CASE(json_parse_test)
+{
+    std::string text;
+    std::ifstream file("");
+    std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(text));
+
+    parsers::json::model model;
+
+    parsers::parse<
+        parsers::json::light_lexertl_lexer,
+        parsers::json::parser
+    >(model, text.c_str(), text.c_str() + text.size());
+
+}
+#endif
+
 #if 1
 BOOST_AUTO_TEST_CASE(json_test)
 {
@@ -151,4 +168,3 @@ BOOST_AUTO_TEST_CASE(json_suite_test)
 
 }
 #endif
-

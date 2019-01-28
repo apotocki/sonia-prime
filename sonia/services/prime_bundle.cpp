@@ -8,22 +8,24 @@
 #include "bundle.ipp"
 #include "sonia/services/scheduler/scheduler_service_builder.hpp"
 #include "sonia/services/net/net_service_builder.hpp"
+#include "sonia/services/net/echo/echo_connector_builder.hpp"
 #include "sonia/services/io/io_service_builder.hpp"
 
 namespace sonia { namespace services {
 
-class prime_bundle : public bundle {
+class prime_bundle : public bundle
+{
 public:
     ~prime_bundle() override final {}
 
-    string_view build_id() const noexcept override {
-        return BUILD_ID;
-    }
+    string_view build_id() const noexcept override { return BUILD_ID; }
 
-    void init() override {
+    void init() override
+    {
         install<scheduler_service_builder>("scheduler");
         install<net_service_builder>("net-server");
         install<io_service_builder>("io");
+        install<echo_connector_builder>("echo");
     }
 };
 

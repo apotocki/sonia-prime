@@ -13,11 +13,13 @@ scheduler_service::scheduler_service(scheduler_service_configuration const& cfg)
     set_log_attribute("Type", "scheduler");
 }
 
-void scheduler_service::open() {
+void scheduler_service::open()
+{
     start();
 }
 
-void scheduler_service::close() noexcept {
+void scheduler_service::close() noexcept
+{
     stop();
 }
 

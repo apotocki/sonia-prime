@@ -12,17 +12,20 @@ namespace sonia { namespace sal {
 
 namespace winapi = sonia::windows;
 
-void set_thread_name(sonia::thread::id tid, string_view name) {
+void set_thread_name(sonia::thread::id tid, string_view name)
+{
     winapi::set_thread_name(tid, (&name.back() + 1) ? to_string(name).c_str() : name.begin());
 }
 
-void set_thread_name(sonia::thread::id tid, std::string const& name) {
+void set_thread_name(sonia::thread::id tid, std::string const& name)
+{
     winapi::set_thread_name(tid, name.c_str());
 }
 
 typedef sonia::services::bundle*(get_bundle_fn)();
 
-shared_ptr<sonia::services::bundle> load_bundle(string_view name) {
+shared_ptr<sonia::services::bundle> load_bundle(string_view name)
+{
 #if !defined(__MINGW32__) && !defined(__MINGW64__)
     std::string libname = to_string(name) + ".dll";
 #else
@@ -46,7 +49,8 @@ shared_ptr<sonia::services::bundle> load_bundle(string_view name) {
     return std::move(result);
 }
 
-uint64_t file_size(HANDLE h) {
+uint64_t file_size(HANDLE h)
+{
     LARGE_INTEGER fileSize;
     if (!GetFileSizeEx(h, &fileSize)) {
         DWORD err = GetLastError();
@@ -55,7 +59,8 @@ uint64_t file_size(HANDLE h) {
     return (((uint64_t)fileSize.HighPart) << 32) | fileSize.LowPart;
 }
 
-void delete_file(cstring_view path) {
+void delete_file(cstring_view path)
+{
     std::wstring wfname = winapi::utf8_to_utf16(path);
     winapi::delete_file(wfname.c_str(), path.c_str());
 }

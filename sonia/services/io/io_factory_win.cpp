@@ -24,14 +24,16 @@ namespace sonia { namespace io {
 
 namespace winapi = sonia::windows;
 
-enum class completion_port {
+enum class completion_port
+{
     socket_callback_key = 0,
     acceptor_callback_key,
     file_callback_key,
     close_key
 };
 
-struct callback {
+struct callback
+{
     WSAOVERLAPPED overlapped;
     function<void(std::error_code const&, size_t)> proc;
 
@@ -42,38 +44,63 @@ struct callback {
     }
 };
 
-struct file_callback {
-    OVERLAPPED overlapped;
-    size_t readsz;
+struct sync_callback_base
+{
+    size_t handlsz;
     optional<std::error_code> code;
     fibers::mutex mtx;
     fibers::condition_variable_any cnd;
 
-    explicit file_callback(uint64_t fileoffset)
+    void on_op(std::error_code const& err, size_t sz)
     {
-        SecureZeroMemory((PVOID)&overlapped, sizeof (OVERLAPPED));
-        overlapped.Offset = (DWORD)(fileoffset & 0xFFFFFFFF);
-        overlapped.OffsetHigh = (DWORD)(fileoffset >> 32);
-    }
-
-    void on_op(std::error_code const& err, size_t sz) {
-        readsz = (int32_t)sz;
+        handlsz = sz;
         auto lck = make_unique_lock(mtx);
         code = err;
         cnd.notify_one();
     }
 
-    size_t wait() {
+    size_t wait()
+    {
         auto lck = make_unique_lock(mtx);
         cnd.wait(lck, [this] { return !!code; });
         if (code && *code) {
             throw exception(code->message());
         }
-        return readsz;
+        return handlsz;
     }
 };
 
-struct acceptor_handle : public loggable {
+template <class OvT>
+struct sync_callback
+{
+    OvT overlapped;
+
+    sync_callback()
+    {
+        SecureZeroMemory((PVOID)&overlapped, sizeof(OvT));
+    }
+};
+
+struct socket_sync_callback
+    : sync_callback<WSAOVERLAPPED>
+    , sync_callback_base
+{
+
+};
+
+struct file_callback 
+    : sync_callback<OVERLAPPED>
+    , sync_callback_base
+{
+    explicit file_callback(uint64_t fileoffset)
+    {
+        overlapped.Offset = (DWORD)(fileoffset & 0xFFFFFFFF);
+        overlapped.OffsetHigh = (DWORD)(fileoffset >> 32);
+    }
+};
+
+struct acceptor_handle : public loggable
+{
     SOCKET socket;
     LPFN_ACCEPTEX lpfnAcceptEx;
     std::atomic<long> refs_;
@@ -87,21 +114,25 @@ struct acceptor_handle : public loggable {
     acceptor_handle& operator= (acceptor_handle const&) = delete;
     acceptor_handle& operator= (acceptor_handle &&) = delete;
 
-    void add_ref() {
+    void add_ref()
+    {
         ++refs_;
     }
 
-    void release() {
+    void release()
+    {
         if (--refs_ == 0) {
             delete this;
         }
     }
 
-    ~acceptor_handle() {
+    ~acceptor_handle()
+    {
         close();
     }
 
-    void close() noexcept {
+    void close() noexcept
+    {
         if (socket != INVALID_SOCKET && closesocket(socket) == SOCKET_ERROR) {
             DWORD err = WSAGetLastError();
             LOG_ERROR(logger()) << "errror while closing acceptor socket: " << winapi::error_message(err);
@@ -110,7 +141,8 @@ struct acceptor_handle : public loggable {
     }
 };
 
-struct acceptor_callback {
+struct acceptor_callback
+{
     WSAOVERLAPPED overlapped;
     char buff_[2 * sizeof(sockaddr_in) + 32];
     tcp_acceptor::acceptor_functor proc;
@@ -123,11 +155,13 @@ struct acceptor_callback {
         ah_->add_ref();
     }
 
-    ~acceptor_callback() {
+    ~acceptor_callback()
+    {
         ah_->release();
     }
 
-    void accept(void * buff, size_t sz) {
+    void accept(void * buff, size_t sz)
+    {
         if (sz < 2 * (sizeof(sockaddr_in) + 16)) {
             buff = buff_;
             sz = 0;
@@ -144,7 +178,8 @@ struct acceptor_callback {
     }
 };
 
-struct win_impl_data {
+struct win_impl_data
+{
     friend class factory;
 
     static const long qsz_min_value = boost::integer_traits<long>::const_min;
@@ -163,7 +198,8 @@ struct win_impl_data {
         iocp_ = winapi::create_completion_port(thr_cnt);
     }
 
-    void run() {
+    void run()
+    {
         threads_.reserve(thr_cnt_);
 
         for (size_t i = 0; i < thr_cnt_; ++i) {
@@ -172,7 +208,8 @@ struct win_impl_data {
         }
     }
 
-    void stop() noexcept {
+    void stop() noexcept
+    {
         auto lk = make_unique_lock(close_mtx_);
         if (qsz_.load() >= 0) {
             if (0 == qsz_.fetch_add(qsz_min_value)) {
@@ -182,12 +219,14 @@ struct win_impl_data {
         close_cond_.wait(lk, [this] { return threads_.empty(); });
     }
 
-    ~win_impl_data() {
+    ~win_impl_data()
+    {
         CloseHandle(iocp_);
     }
 
     template <typename ArgT>
-    callback * new_socket_callback(ArgT && arg) {
+    callback * new_socket_callback(ArgT && arg)
+    {
         on_add_callback();
         try {
             return socket_callbacks_.new_object(std::forward<ArgT>(arg));
@@ -198,7 +237,8 @@ struct win_impl_data {
     }
 
     template <typename ... ArgsT>
-    acceptor_callback * new_acceptor_callback(ArgsT&& ... args) {
+    acceptor_callback * new_acceptor_callback(ArgsT&& ... args)
+    {
         on_add_callback();
         try {
             return acceptor_callbacks_.new_object(std::forward<ArgsT>(args) ...);
@@ -208,17 +248,20 @@ struct win_impl_data {
         }
     }
 
-    void delete_socket_callback(callback * cb) noexcept {
+    void delete_socket_callback(callback * cb) noexcept
+    {
         socket_callbacks_.delete_object(cb);
         on_release_callback();
     }
 
-    void delete_acceptor_callback(acceptor_callback * cb) noexcept {
+    void delete_acceptor_callback(acceptor_callback * cb) noexcept
+    {
         acceptor_callbacks_.delete_object(cb);
         on_release_callback();
     }
 
-    void on_add_callback() {
+    void on_add_callback()
+    {
         long qszval = qsz_.fetch_add(1);
         if (qszval < 0) {
             if (qsz_min_value != qszval) {
@@ -232,13 +275,15 @@ struct win_impl_data {
         }
     }
 
-    void on_release_callback() noexcept {
+    void on_release_callback() noexcept
+    {
         if ((qsz_min_value + 1) == qsz_.fetch_sub(1)) {
             park_threads();
         }
     }
 
-    void park_threads() noexcept {
+    void park_threads() noexcept
+    {
         for (uint32_t c = 0; c < thr_cnt_; ++c) {
             try {
                 winapi::post_completion_port(iocp_, 0, (ULONG_PTR)completion_port::close_key);
@@ -273,11 +318,13 @@ factory::factory()
     
 }
 
-factory::~factory() {
+factory::~factory()
+{
     delete dataptr;
 }
 
-void factory::open(uint32_t thr_cnt) {
+void factory::open(uint32_t thr_cnt)
+{
     if (impl_data_) {
         throw internal_error("io factory is already initialized");
     }
@@ -286,17 +333,20 @@ void factory::open(uint32_t thr_cnt) {
     dataptr->run();
 }
 
-void factory::close() {
+void factory::close()
+{
     if (impl_data_) {
         dataptr->stop();
     }
 }
 
-std::string factory::name() const {
+std::string factory::name() const
+{
     return std::string("windows");
 }
 
-void factory::thread_proc() {
+void factory::thread_proc()
+{
     for (;;)
     {
         DWORD bytes;
@@ -320,9 +370,10 @@ void factory::thread_proc() {
                 {
                     acceptor_callback* cb = reinterpret_cast<acceptor_callback*>(overlapped);
                     SCOPE_EXIT([&cb, this]() { if (cb) dataptr->delete_acceptor_callback(cb); });
-                    cb->proc(err, (size_t)bytes, tcp_socket_access::create_tcp_socket(shared_from_this(), (void*)cb->socket), [&cb](void * buff, size_t sz) {
+                    cb->proc(err, (size_t)bytes, tcp_socket_access::create_tcp_socket(shared_from_this(), (void*)cb->socket), [this, &cb](void * buff, size_t sz) {
                         SOCKET accept_sock = winapi::create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
                         SCOPE_EXIT([&accept_sock]() { if (accept_sock != INVALID_SOCKET) closesocket(accept_sock); });
+                        winapi::assign_completion_port((HANDLE)accept_sock, dataptr->iocp_, (ULONG_PTR)completion_port::socket_callback_key);
                         cb->socket = accept_sock;
                         cb->accept(buff, sz);
                         accept_sock = INVALID_SOCKET; // detach
@@ -356,7 +407,8 @@ void factory::thread_proc() {
 }
 
 // tcp_socket_factory
-tcp_socket factory::create_tcp_socket(string_view address, uint16_t port, tcp_socket_type dt) {
+tcp_socket factory::create_tcp_socket(string_view address, uint16_t port, tcp_socket_type dt)
+{
     SOCKET sock;
     if (winapi::parse_address(address, port, [this, &sock](ADDRINFOW * r)->bool {
         if ((r->ai_family != AF_INET /* && r->ai_family != AF_INET6*/) || r->ai_socktype != SOCK_STREAM || r->ai_protocol != IPPROTO_TCP)
@@ -385,34 +437,22 @@ tcp_socket factory::create_tcp_socket(string_view address, uint16_t port, tcp_so
     throw exception("can't create socket with address: '%1%' and port: '%2%'"_fmt % address % port);
 }
 
-size_t factory::tcp_socket_count(tcp_socket_type) const {
+size_t factory::tcp_socket_count(tcp_socket_type) const
+{
     throw not_implemented_error("tcp_socket_count");
 }
 
 // tcp_socket_service
-void factory::tcp_socket_close(void * handle) {
+void factory::tcp_socket_close(void * handle)
+{
     if (closesocket((SOCKET)handle) == SOCKET_ERROR) {
         DWORD err = WSAGetLastError();
         LOG_ERROR(logger()) << "errror while closing socket: " << winapi::error_message(err);
     }
 }
 
-size_t factory::tcp_socket_read_some(void * handle, void * buff, size_t sz) {
-    WSABUF wsabuf;
-    wsabuf.len = (ULONG)sz;
-    wsabuf.buf = reinterpret_cast<char*>(buff);
-
-
-    DWORD recvBytes, flags = 0;
-    int rc = WSARecv((SOCKET)handle, &wsabuf, 1, &recvBytes, &flags, NULL, NULL);
-    if (rc == SOCKET_ERROR) { 
-        DWORD err = WSAGetLastError();
-        throw exception("can't receive data from socket, error: %1%"_fmt % winapi::error_message(err));
-    }
-    return recvBytes;
-}
-
-void factory::tcp_socket_async_read_some(void * soc, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor) {
+void factory::tcp_socket_async_read_some(void * soc, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor)
+{
     callback * cb = dataptr->new_socket_callback(ftor);
     SCOPE_EXIT([&cb, this]() { if (cb) dataptr->delete_socket_callback(cb); });
 
@@ -420,21 +460,65 @@ void factory::tcp_socket_async_read_some(void * soc, void * buff, size_t sz, fun
     cb = nullptr; // detach
 }
 
-size_t factory::tcp_socket_write_some(void * handle, void const* buff, size_t sz) {
-    WSABUF wsabuf;
-    wsabuf.len = (ULONG)sz;
-    wsabuf.buf = const_cast<char*>(reinterpret_cast<char const*>(buff));
+size_t factory::tcp_socket_read_some(void * soc, void * buff, size_t sz)
+{
+    sync_callback_base scb;
 
-    DWORD sentBytes;
-    int rc = WSASend((SOCKET)handle, &wsabuf, 1, &sentBytes, 0, NULL, NULL);
-    if (rc == SOCKET_ERROR) { 
-        DWORD err = WSAGetLastError();
-        throw exception("can't send data to socket, error: %1%"_fmt % winapi::error_message(err));
-    }
-    return sentBytes;
+    callback * cb = dataptr->new_socket_callback([&scb](std::error_code const& err, size_t sz) { scb.on_op(err, sz); });
+    SCOPE_EXIT([&cb, this]() { if (cb) dataptr->delete_socket_callback(cb); });
+
+    winapi::async_recv((SOCKET)soc, buff, sz, reinterpret_cast<WSAOVERLAPPED*>(cb));
+    cb = nullptr; // detach
+
+    return scb.wait();
 }
 
-tcp_acceptor factory::create_tcp_acceptor(string_view address, uint16_t port, tcp_socket_type dt) {
+size_t factory::tcp_socket_write_some(void * soc, void const* buff, size_t sz)
+{
+    sync_callback_base scb;
+
+    callback * cb = dataptr->new_socket_callback([&scb](std::error_code const& err, size_t sz) { scb.on_op(err, sz); });
+    SCOPE_EXIT([&cb, this]() { if (cb) dataptr->delete_socket_callback(cb); });
+
+    winapi::async_send((SOCKET)soc, buff, sz, reinterpret_cast<WSAOVERLAPPED*>(cb));
+    cb = nullptr; // detach
+
+    return scb.wait();
+}
+
+//size_t factory::tcp_socket_read_some(void * handle, void * buff, size_t sz)
+//{
+//    WSABUF wsabuf;
+//    wsabuf.len = (ULONG)sz;
+//    wsabuf.buf = reinterpret_cast<char*>(buff);
+//
+//
+//    DWORD recvBytes, flags = 0;
+//    int rc = WSARecv((SOCKET)handle, &wsabuf, 1, &recvBytes, &flags, NULL, NULL);
+//    if (rc == SOCKET_ERROR) { 
+//        DWORD err = WSAGetLastError();
+//        throw exception("can't receive data from socket, error: %1%"_fmt % winapi::error_message(err));
+//    }
+//    return recvBytes;
+//}
+
+//size_t factory::tcp_socket_write_some(void * handle, void const* buff, size_t sz)
+//{
+//    WSABUF wsabuf;
+//    wsabuf.len = (ULONG)sz;
+//    wsabuf.buf = const_cast<char*>(reinterpret_cast<char const*>(buff));
+//
+//    DWORD sentBytes;
+//    int rc = WSASend((SOCKET)handle, &wsabuf, 1, &sentBytes, 0, NULL, NULL);
+//    if (rc == SOCKET_ERROR) { 
+//        DWORD err = WSAGetLastError();
+//        throw exception("can't send data to socket, error: %1%"_fmt % winapi::error_message(err));
+//    }
+//    return sentBytes;
+//}
+
+tcp_acceptor factory::create_tcp_acceptor(string_view address, uint16_t port, tcp_socket_type dt)
+{
     SOCKET soc;
     LPFN_ACCEPTEX lpfnAcceptEx;
     if (winapi::parse_address(address, port, [this, &soc, &lpfnAcceptEx](ADDRINFOW * r)->bool {
@@ -470,7 +554,8 @@ tcp_acceptor factory::create_tcp_acceptor(string_view address, uint16_t port, tc
     throw exception("can't create acceptor at the address: '%1%' and port: '%2%'"_fmt % address % port);
 }
 
-void factory::tcp_acceptor_async_accept_and_read_some(void * handle, void * buff, size_t sz, acceptor_functor const& func) {
+void factory::tcp_acceptor_async_accept_and_read_some(void * handle, void * buff, size_t sz, acceptor_functor const& func)
+{
     acceptor_handle * ah = reinterpret_cast<acceptor_handle*>(handle);
 
     SOCKET accept_sock = winapi::create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -478,6 +563,8 @@ void factory::tcp_acceptor_async_accept_and_read_some(void * handle, void * buff
 
     acceptor_callback * cb = dataptr->new_acceptor_callback(ah, func, accept_sock);
     SCOPE_EXIT([&cb, this]() { if (cb) dataptr->delete_acceptor_callback(cb); });
+
+    winapi::assign_completion_port((HANDLE)accept_sock, dataptr->iocp_, (ULONG_PTR)completion_port::socket_callback_key);
 
     cb->accept(buff, sz);
     
@@ -487,7 +574,8 @@ void factory::tcp_acceptor_async_accept_and_read_some(void * handle, void * buff
     accept_sock = INVALID_SOCKET; // detach
 }
 
-void factory::tcp_acceptor_close(void * handle) noexcept {
+void factory::tcp_acceptor_close(void * handle) noexcept
+{
     acceptor_handle * ah = reinterpret_cast<acceptor_handle*>(handle);
     ah->close();
     ah->release();
@@ -545,7 +633,8 @@ file factory::open_file(cstring_view path, file_open_mode fom, file_access_mode 
     return file_access::open_file(shared_from_this(), h);
 }
 
-size_t factory::file_read(void * handle, uint64_t fileoffset, array_view<char> dest) {
+size_t factory::file_read(void * handle, uint64_t fileoffset, array_view<char> dest)
+{
     dataptr->on_add_callback();
     SCOPE_EXIT([this]() { dataptr->on_release_callback(); });
 
@@ -564,7 +653,8 @@ size_t factory::file_read(void * handle, uint64_t fileoffset, array_view<char> d
     return cb.wait();
 }
 
-size_t factory::file_write(void * handle, uint64_t fileoffset, array_view<const char> src) {
+size_t factory::file_write(void * handle, uint64_t fileoffset, array_view<const char> src)
+{
     dataptr->on_add_callback();
     SCOPE_EXIT([this]() { dataptr->on_release_callback(); });
 

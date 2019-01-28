@@ -19,6 +19,8 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/io/io_service.cpp
     ${BUNDLE_HOME}/sonia/services/net/net_service_builder.cpp
     ${BUNDLE_HOME}/sonia/services/net/net_service.cpp
+    ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector_builder.cpp
+    ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector.cpp
     ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
 )
 

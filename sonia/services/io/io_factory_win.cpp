@@ -14,9 +14,11 @@
 #include <memory>
 #include <iostream>
 
+#include <boost/throw_exception.hpp>
 #include <boost/integer_traits.hpp>
 #include <boost/fiber/mutex.hpp>
 #include <boost/fiber/condition_variable.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -54,14 +56,14 @@ struct sync_callback_base
     void on_op(std::error_code const& err, size_t sz)
     {
         handlsz = sz;
-        auto lck = make_unique_lock(mtx);
+        unique_lock lck(mtx);
         code = err;
         cnd.notify_one();
     }
 
     size_t wait()
     {
-        auto lck = make_unique_lock(mtx);
+        unique_lock lck(mtx);
         cnd.wait(lck, [this] { return !!code; });
         if (code && *code) {
             throw exception(code->message());
@@ -103,10 +105,10 @@ struct acceptor_handle : public loggable
 {
     SOCKET socket;
     LPFN_ACCEPTEX lpfnAcceptEx;
-    std::atomic<long> refs_;
+    std::atomic<long> refs_{1};
 
     acceptor_handle(logger::logger_ptr lgp, SOCKET soc, LPFN_ACCEPTEX fn) 
-        : loggable(std::move(lgp)), socket(soc), lpfnAcceptEx(fn), refs_(1)
+        : loggable(std::move(lgp)), socket(soc), lpfnAcceptEx(fn)
     {}
 
     acceptor_handle(acceptor_handle const&) = delete;
@@ -145,14 +147,34 @@ struct acceptor_callback
 {
     WSAOVERLAPPED overlapped;
     char buff_[2 * sizeof(sockaddr_in) + 32];
-    tcp_acceptor::acceptor_functor proc;
     SOCKET socket;
     acceptor_handle * ah_;
-    acceptor_callback(acceptor_handle * ah, tcp_acceptor::acceptor_functor const& p, SOCKET soc)
-        : proc(p), socket(soc), ah_(ah)
+    HANDLE iocp_;
+
+    function<void(sonia::io::tcp_acceptor_factory::connection_factory_t const&)> handler_;
+    sonia::io::tcp_acceptor_factory::connector_t conn_;
+
+    template <typename HandlerT>
+    acceptor_callback(acceptor_handle * ah, HANDLE iocp, HandlerT const& h)
+        : ah_(ah), iocp_(iocp), handler_(h)
     {
-        SecureZeroMemory((PVOID)&overlapped, sizeof (WSAOVERLAPPED));
+        SecureZeroMemory((PVOID)&overlapped, sizeof(WSAOVERLAPPED));
         ah_->add_ref();
+        prepare();
+    }
+
+    void prepare()
+    {
+        SOCKET accept_sock = winapi::create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+        SCOPE_EXIT([&accept_sock]() { if (accept_sock != INVALID_SOCKET) closesocket(accept_sock); });
+
+        winapi::assign_completion_port((HANDLE)accept_sock, iocp_, (ULONG_PTR)completion_port::socket_callback_key);
+        socket = accept_sock;
+        handler_([this](array_view<char> buff, sonia::io::tcp_acceptor_factory::connector_t const& conn) {
+            this->conn_ = conn;
+            this->accept(buff);
+        });
+        accept_sock = INVALID_SOCKET;
     }
 
     ~acceptor_callback()
@@ -160,16 +182,15 @@ struct acceptor_callback
         ah_->release();
     }
 
-    void accept(void * buff, size_t sz)
+    void accept(array_view<char> buff)
     {
-        if (sz < 2 * (sizeof(sockaddr_in) + 16)) {
-            buff = buff_;
-            sz = 0;
+        if (buff.size() < sizeof(buff_)) {
+            buff = array_view<char>(buff_);
         } else {
-            sz -= 2 * (sizeof(sockaddr_in) + 16);
+            buff.advance_back(-(ptrdiff_t)sizeof(buff_));
         }
 
-        if (!ah_->lpfnAcceptEx(ah_->socket, socket, buff, (DWORD)sz, sizeof (sockaddr_in) + 16, sizeof (sockaddr_in) + 16, NULL, &overlapped)) {
+        if (!ah_->lpfnAcceptEx(ah_->socket, socket, buff.begin(), (DWORD)buff.size(), sizeof (sockaddr_in) + 16, sizeof (sockaddr_in) + 16, NULL, &overlapped)) {
             DWORD err = WSAGetLastError();
             if (err != WSA_IO_PENDING) {
                 throw exception("can't accept socket, error: %1%"_fmt % winapi::error_message(err));
@@ -178,48 +199,20 @@ struct acceptor_callback
     }
 };
 
-struct win_impl_data
+struct win_impl_data : public factory::impl_base
 {
     friend class factory;
 
-    static const long qsz_min_value = boost::integer_traits<long>::const_min;
-
     winapi::wsa_scope ws_;
     HANDLE iocp_;
-    shared_ptr<factory> pin_;
-    uint32_t thr_cnt_;
     
-    boost::fibers::mutex close_mtx_;
-    boost::fibers::condition_variable close_cond_;
-
-    win_impl_data(shared_ptr<factory> itself, uint32_t thr_cnt)
-        : pin_(std::move(itself)), thr_cnt_(thr_cnt), socket_callbacks_(256), acceptor_callbacks_(16), qsz_(0)
+    explicit win_impl_data(shared_ptr<factory> wr, uint32_t thr_cnt)
+        : factory::impl_base(std::move(wr)), socket_callbacks_(256), acceptor_callbacks_(16)
     {
         iocp_ = winapi::create_completion_port(thr_cnt);
     }
 
-    void run()
-    {
-        threads_.reserve(thr_cnt_);
-
-        for (size_t i = 0; i < thr_cnt_; ++i) {
-            threads_.push_back(thread([this] { pin_->thread_proc(); }));
-            winapi::set_thread_name(threads_.back().get_id(), ("%1% factory thread #%2%"_fmt % pin_->name() % i).str().c_str());
-        }
-    }
-
-    void stop() noexcept
-    {
-        auto lk = make_unique_lock(close_mtx_);
-        if (qsz_.load() >= 0) {
-            if (0 == qsz_.fetch_add(qsz_min_value)) {
-                park_threads();
-            }
-        }
-        close_cond_.wait(lk, [this] { return threads_.empty(); });
-    }
-
-    ~win_impl_data()
+    ~win_impl_data() override
     {
         CloseHandle(iocp_);
     }
@@ -227,11 +220,11 @@ struct win_impl_data
     template <typename ArgT>
     callback * new_socket_callback(ArgT && arg)
     {
-        on_add_callback();
+        wrapper->on_add_callback();
         try {
             return socket_callbacks_.new_object(std::forward<ArgT>(arg));
         } catch (...) {
-            on_release_callback();
+            wrapper->on_release_callback();
             throw;
         }
     }
@@ -239,11 +232,11 @@ struct win_impl_data
     template <typename ... ArgsT>
     acceptor_callback * new_acceptor_callback(ArgsT&& ... args)
     {
-        on_add_callback();
+        wrapper->on_add_callback();
         try {
             return acceptor_callbacks_.new_object(std::forward<ArgsT>(args) ...);
         } catch (...) {
-            on_release_callback();
+            wrapper->on_release_callback();
             throw;
         }
     }
@@ -251,40 +244,19 @@ struct win_impl_data
     void delete_socket_callback(callback * cb) noexcept
     {
         socket_callbacks_.delete_object(cb);
-        on_release_callback();
+        wrapper->on_release_callback();
     }
 
     void delete_acceptor_callback(acceptor_callback * cb) noexcept
     {
         acceptor_callbacks_.delete_object(cb);
-        on_release_callback();
+        wrapper->on_release_callback();
     }
 
-    void on_add_callback()
+    void park_threads() noexcept override
     {
-        long qszval = qsz_.fetch_add(1);
-        if (qszval < 0) {
-            if (qsz_min_value != qszval) {
-                on_release_callback();
-            } else {
-                // if qsz_min_value == qszval then initiate_thread_parking was already called, 
-                // so we just keep it actual
-                --qsz_;
-            }
-            throw closed_exception("io::factory");
-        }
-    }
-
-    void on_release_callback() noexcept
-    {
-        if ((qsz_min_value + 1) == qsz_.fetch_sub(1)) {
-            park_threads();
-        }
-    }
-
-    void park_threads() noexcept
-    {
-        for (uint32_t c = 0; c < thr_cnt_; ++c) {
+        size_t tc = wrapper->thread_count();
+        for (uint32_t c = 0; c < tc; ++c) {
             try {
                 winapi::post_completion_port(iocp_, 0, (ULONG_PTR)completion_port::close_key);
             } catch (std::exception const& e) {
@@ -292,25 +264,15 @@ struct win_impl_data
             }
         }
         
-        thread([this]() {
-            for (thread & t : threads_) {
-                t.join();
-            }
-            unique_lock<boost::fibers::mutex > lk(this->close_mtx_);
-            threads_.clear();
-            pin_.reset();
-            close_cond_.notify_one();
-        }).detach();
+        thread([wr = std::move(wrapper)]() { wr->join_threads(); }).detach();
     }
 
 private:
     object_pool<callback, mutex> socket_callbacks_;
     object_pool<acceptor_callback, mutex> acceptor_callbacks_;
-    std::atomic<long> qsz_;
-    std::vector<thread> threads_;
 };
 
-#define dataptr reinterpret_cast<win_impl_data*>(impl_data_)
+#define dataptr static_cast<win_impl_data*>(impl_data_.get())
 
 factory::factory() 
     : impl_data_(nullptr)
@@ -320,24 +282,16 @@ factory::factory()
 
 factory::~factory()
 {
-    delete dataptr;
+
 }
 
-void factory::open(uint32_t thr_cnt)
+void factory::initialize_impl(uint32_t thr_cnt)
 {
     if (impl_data_) {
         throw internal_error("io factory is already initialized");
     }
     
-    impl_data_ = new win_impl_data(shared_from_this(), thr_cnt);
-    dataptr->run();
-}
-
-void factory::close()
-{
-    if (impl_data_) {
-        dataptr->stop();
-    }
+    impl_data_.reset(new win_impl_data(shared_from_this(), thr_cnt));
 }
 
 std::string factory::name() const
@@ -370,15 +324,17 @@ void factory::thread_proc()
                 {
                     acceptor_callback* cb = reinterpret_cast<acceptor_callback*>(overlapped);
                     SCOPE_EXIT([&cb, this]() { if (cb) dataptr->delete_acceptor_callback(cb); });
-                    cb->proc(err, (size_t)bytes, tcp_socket_access::create_tcp_socket(shared_from_this(), (void*)cb->socket), [this, &cb](void * buff, size_t sz) {
-                        SOCKET accept_sock = winapi::create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-                        SCOPE_EXIT([&accept_sock]() { if (accept_sock != INVALID_SOCKET) closesocket(accept_sock); });
-                        winapi::assign_completion_port((HANDLE)accept_sock, dataptr->iocp_, (ULONG_PTR)completion_port::socket_callback_key);
-                        cb->socket = accept_sock;
-                        cb->accept(buff, sz);
-                        accept_sock = INVALID_SOCKET; // detach
-                        cb = nullptr; // detach
-                    });
+                    if (!err) {
+                        cb->conn_(tcp_socket_access::create_tcp_socket(shared_from_this(), cb->socket), (size_t)bytes);
+                        try {
+                            cb->prepare();
+                            cb = nullptr;
+                        } catch (...) {
+                            LOG_ERROR(logger()) << "acceptor closed unexpectedly, errror: " << boost::current_exception_diagnostic_information();
+                        }
+                    } else if (err.value() != ERROR_OPERATION_ABORTED) {
+                        LOG_WARN(logger()) << "acceptor closed: " << boost::trim_right_copy(err.message());
+                    }
                     break;
                 }
                 case completion_port::file_callback_key:
@@ -407,7 +363,7 @@ void factory::thread_proc()
 }
 
 // tcp_socket_factory
-tcp_socket factory::create_tcp_socket(string_view address, uint16_t port, tcp_socket_type dt)
+tcp_socket factory::create_tcp_socket(cstring_view address, uint16_t port, tcp_socket_type dt)
 {
     SOCKET sock;
     if (winapi::parse_address(address, port, [this, &sock](ADDRINFOW * r)->bool {
@@ -421,9 +377,6 @@ tcp_socket factory::create_tcp_socket(string_view address, uint16_t port, tcp_so
         DWORD iResult = connect(sock, r->ai_addr, (int)r->ai_addrlen);
         if (iResult == SOCKET_ERROR) {
             DWORD err = WSAGetLastError();
-            //if (WSAECONNREFUSED == err) {
-            //    return false;
-            //}
             throw exception("can't connect socket, error: %1%"_fmt % winapi::error_message(err));
         }
 
@@ -431,7 +384,7 @@ tcp_socket factory::create_tcp_socket(string_view address, uint16_t port, tcp_so
         pinsock = 0; // detach
         return true;
     })) {
-        return tcp_socket_access::create_tcp_socket(shared_from_this(), (void*)sock);
+        return tcp_socket_access::create_tcp_socket(shared_from_this(), sock);
     }
 
     throw exception("can't create socket with address: '%1%' and port: '%2%'"_fmt % address % port);
@@ -443,7 +396,7 @@ size_t factory::tcp_socket_count(tcp_socket_type) const
 }
 
 // tcp_socket_service
-void factory::tcp_socket_close(void * handle)
+void factory::tcp_socket_close(intptr_t handle)
 {
     if (closesocket((SOCKET)handle) == SOCKET_ERROR) {
         DWORD err = WSAGetLastError();
@@ -451,7 +404,7 @@ void factory::tcp_socket_close(void * handle)
     }
 }
 
-void factory::tcp_socket_async_read_some(void * soc, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor)
+void factory::tcp_socket_async_read_some(intptr_t soc, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor)
 {
     callback * cb = dataptr->new_socket_callback(ftor);
     SCOPE_EXIT([&cb, this]() { if (cb) dataptr->delete_socket_callback(cb); });
@@ -460,7 +413,7 @@ void factory::tcp_socket_async_read_some(void * soc, void * buff, size_t sz, fun
     cb = nullptr; // detach
 }
 
-size_t factory::tcp_socket_read_some(void * soc, void * buff, size_t sz)
+size_t factory::tcp_socket_read_some(intptr_t soc, void * buff, size_t sz)
 {
     sync_callback_base scb;
 
@@ -473,7 +426,7 @@ size_t factory::tcp_socket_read_some(void * soc, void * buff, size_t sz)
     return scb.wait();
 }
 
-size_t factory::tcp_socket_write_some(void * soc, void const* buff, size_t sz)
+size_t factory::tcp_socket_write_some(intptr_t soc, void const* buff, size_t sz)
 {
     sync_callback_base scb;
 
@@ -517,7 +470,7 @@ size_t factory::tcp_socket_write_some(void * soc, void const* buff, size_t sz)
 //    return sentBytes;
 //}
 
-tcp_acceptor factory::create_tcp_acceptor(string_view address, uint16_t port, tcp_socket_type dt)
+tcp_acceptor factory::create_tcp_acceptor(cstring_view address, uint16_t port, tcp_socket_type dt, function<void(tcp_acceptor_factory::connection_factory_t const&)> const& handler)
 {
     SOCKET soc;
     LPFN_ACCEPTEX lpfnAcceptEx;
@@ -547,32 +500,43 @@ tcp_acceptor factory::create_tcp_acceptor(string_view address, uint16_t port, tc
 
         pinsock = INVALID_SOCKET; // detach
         return true;
-    })) {
-        return tcp_acceptor_access::create_tcp_acceptor(shared_from_this(), (void*)new acceptor_handle(logger(), soc, lpfnAcceptEx));
+        }))
+    {
+        acceptor_handle * ah = new acceptor_handle(logger(), soc, lpfnAcceptEx);
+        acceptor_handle * pin = ah;
+        SCOPE_EXIT([&pin]() { delete pin; });
+
+        for (size_t i = 0, tc = thread_count(); i < tc; ++i) {
+            dataptr->new_acceptor_callback(ah, dataptr->iocp_, handler);
+        }
+
+        pin = nullptr; // detach
+
+        return tcp_acceptor_access::create_tcp_acceptor(shared_from_this(), (void*)ah);
     }
 
     throw exception("can't create acceptor at the address: '%1%' and port: '%2%'"_fmt % address % port);
 }
 
-void factory::tcp_acceptor_async_accept_and_read_some(void * handle, void * buff, size_t sz, acceptor_functor const& func)
-{
-    acceptor_handle * ah = reinterpret_cast<acceptor_handle*>(handle);
-
-    SOCKET accept_sock = winapi::create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    SCOPE_EXIT([&accept_sock]() { if (accept_sock != INVALID_SOCKET) closesocket(accept_sock); });
-
-    acceptor_callback * cb = dataptr->new_acceptor_callback(ah, func, accept_sock);
-    SCOPE_EXIT([&cb, this]() { if (cb) dataptr->delete_acceptor_callback(cb); });
-
-    winapi::assign_completion_port((HANDLE)accept_sock, dataptr->iocp_, (ULONG_PTR)completion_port::socket_callback_key);
-
-    cb->accept(buff, sz);
-    
-    //winapi::assign_completion_port((HANDLE)ah->socket, dataptr->iocp_, (ULONG_PTR)completion_port::acceptor_callback_key);
-
-    cb = nullptr; // detach
-    accept_sock = INVALID_SOCKET; // detach
-}
+//void factory::tcp_acceptor_async_accept_and_read_some(void * handle, void * buff, size_t sz, acceptor_functor const& func)
+//{
+//    acceptor_handle * ah = reinterpret_cast<acceptor_handle*>(handle);
+//
+//    SOCKET accept_sock = winapi::create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+//    SCOPE_EXIT([&accept_sock]() { if (accept_sock != INVALID_SOCKET) closesocket(accept_sock); });
+//
+//    acceptor_callback * cb = dataptr->new_acceptor_callback(ah, func, accept_sock);
+//    SCOPE_EXIT([&cb, this]() { if (cb) dataptr->delete_acceptor_callback(cb); });
+//
+//    winapi::assign_completion_port((HANDLE)accept_sock, dataptr->iocp_, (ULONG_PTR)completion_port::socket_callback_key);
+//
+//    cb->accept(buff, sz);
+//    
+//    //winapi::assign_completion_port((HANDLE)ah->socket, dataptr->iocp_, (ULONG_PTR)completion_port::acceptor_callback_key);
+//
+//    cb = nullptr; // detach
+//    accept_sock = INVALID_SOCKET; // detach
+//}
 
 void factory::tcp_acceptor_close(void * handle) noexcept
 {
@@ -635,8 +599,8 @@ file factory::open_file(cstring_view path, file_open_mode fom, file_access_mode 
 
 size_t factory::file_read(void * handle, uint64_t fileoffset, array_view<char> dest)
 {
-    dataptr->on_add_callback();
-    SCOPE_EXIT([this]() { dataptr->on_release_callback(); });
+    on_add_callback();
+    SCOPE_EXIT([this]() { on_release_callback(); });
 
     file_callback cb{fileoffset};
     SetLastError(0);
@@ -655,8 +619,8 @@ size_t factory::file_read(void * handle, uint64_t fileoffset, array_view<char> d
 
 size_t factory::file_write(void * handle, uint64_t fileoffset, array_view<const char> src)
 {
-    dataptr->on_add_callback();
-    SCOPE_EXIT([this]() { dataptr->on_release_callback(); });
+    on_add_callback();
+    SCOPE_EXIT([this]() { on_release_callback(); });
 
     file_callback cb{fileoffset};
     SetLastError(0);

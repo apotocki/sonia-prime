@@ -54,7 +54,8 @@ void set_thread_name(boost::thread::id tid, char const* threadName)
     set_thread_name(dwThreadId, threadName);
 }
 
-std::wstring utf8_to_utf16(string_view str) {
+std::wstring utf8_to_utf16(string_view str)
+{
     std::wstring result;
     result.resize(str.size() + 1);
     int len = MultiByteToWideChar(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size());
@@ -66,7 +67,8 @@ std::wstring utf8_to_utf16(string_view str) {
     return std::move(result);
 }
 
-std::string utf16_to_utf8(wstring_view str) {
+std::string utf16_to_utf8(wstring_view str)
+{
     std::string result;
     result.resize(str.size());
     int len = WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size(), NULL, NULL);
@@ -78,7 +80,8 @@ std::string utf16_to_utf8(wstring_view str) {
     return std::move(result);
 }
 
-std::string error_message(DWORD errcode)  {
+std::string error_message(DWORD errcode)
+{
     LPWSTR pBuffer = nullptr;
     DWORD num = FormatMessageW(
         FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,  
@@ -103,7 +106,8 @@ std::string error_message(DWORD errcode)  {
     return to_string("unknown error, errcode: %1%"_fmt % errcode);
 }
 
-wsa_scope::wsa_scope() {
+wsa_scope::wsa_scope()
+{
     WSADATA wsa_data;
     long result = WSAStartup(WINSOCK_VERSION, &wsa_data);
     if (result) {
@@ -112,11 +116,13 @@ wsa_scope::wsa_scope() {
     }
 }
 
-wsa_scope::~wsa_scope() {
+wsa_scope::~wsa_scope()
+{
     WSACleanup();
 }
 
-bool parse_address(string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc) {
+bool parse_address(string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc)
+{
     std::wstring wadr = utf8_to_utf16(address);
     std::wstring portstr = boost::lexical_cast<std::wstring>(port);
 
@@ -141,7 +147,8 @@ bool parse_address(string_view address, uint16_t port, function<bool(ADDRINFOW*)
     return false;
 }
 
-SOCKET create_socket(int af, int type, int protocol) {
+SOCKET create_socket(int af, int type, int protocol)
+{
     SOCKET sock = socket(af, type, protocol);
     if (sock == INVALID_SOCKET) {
         DWORD err = WSAGetLastError();
@@ -150,7 +157,8 @@ SOCKET create_socket(int af, int type, int protocol) {
     return sock;
 }
 
-HANDLE create_completion_port(uint32_t thread_count) {
+HANDLE create_completion_port(uint32_t thread_count)
+{
     HANDLE result = CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, thread_count);
     if (!result) {
         DWORD err = GetLastError();
@@ -226,7 +234,8 @@ LPFN_ACCEPTEX get_accept_function(SOCKET soc)
     return lpfnAcceptEx;
 }
 
-std::string get_file_name(HANDLE hFile) {
+std::string get_file_name(HANDLE hFile)
+{
     std::vector<WCHAR> buf(64);
     DWORD dwRet = GetFinalPathNameByHandleW(hFile, &buf.front(), (DWORD)buf.size(), FILE_NAME_NORMALIZED);
     if (dwRet >= buf.size()) {
@@ -241,7 +250,8 @@ std::string get_file_name(HANDLE hFile) {
     return utf16_to_utf8(wstring_view(&buf.front(), dwRet));
 }
 
-void delete_file(wchar_t const * path, char const* optutf8path) {
+void delete_file(wchar_t const * path, char const* optutf8path)
+{
     if (!DeleteFileW(path)) {
         DWORD err = GetLastError();
         throw exception("can't delete file %1%, error : %2%"_fmt % (optutf8path ? optutf8path : utf16_to_utf8(path).c_str()) % error_message(err));

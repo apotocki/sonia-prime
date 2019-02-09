@@ -32,7 +32,7 @@ public:
     void run()
     {
         run_ = true;
-        auto lock = sonia::make_unique_lock(mtx_);
+        sonia::unique_lock lock(mtx_);
         while (run_) {
             var_.wait(lock);
         }
@@ -40,7 +40,7 @@ public:
 
     void stop()
     {
-        auto lock = sonia::make_unique_lock(mtx_);
+        sonia::unique_lock lock(mtx_);
         run_ = false;
         var_.notify_one();
     }

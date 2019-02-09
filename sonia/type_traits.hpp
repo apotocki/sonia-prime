@@ -9,6 +9,7 @@
 #   pragma once
 #endif
 
+#include <iosfwd>
 #include <utility>
 #include <type_traits>
 #include <typeindex>
@@ -40,6 +41,12 @@ struct null_t
     inline bool operator > (null_t const&) const noexcept { return false; }
     inline bool operator >= (null_t const&) const noexcept { return true; }
 };
+
+template <typename CharT, class TraitsT>
+std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, null_t const&)
+{
+    return os << "null";
+}
 
 constexpr null_t null{};
 

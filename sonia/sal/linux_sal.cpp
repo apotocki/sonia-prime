@@ -14,17 +14,20 @@
 
 namespace sonia { namespace sal {
 
-void set_thread_name(sonia::thread::id tid, string_view name) {
+void set_thread_name(sonia::thread::id tid, string_view name)
+{
     // do nothing
 }
 
-void set_thread_name(sonia::thread::id tid, std::string const& name) {
+void set_thread_name(sonia::thread::id tid, std::string const& name)
+{
     // do nothing
 }
 
 typedef sonia::services::bundle*(get_bundle_fn)();
 
-shared_ptr<sonia::services::bundle> load_bundle(string_view name) {
+shared_ptr<sonia::services::bundle> load_bundle(string_view name)
+{
     std::string libname = "lib" + to_string(name) + ".so";
     void * handle = dlopen(
 #ifndef __ANDROID__
@@ -52,7 +55,8 @@ shared_ptr<sonia::services::bundle> load_bundle(string_view name) {
     return std::move(result);
 }
 
-uint64_t file_size(int h) {
+uint64_t file_size(int h)
+{
     struct stat filest;
     if (-1 == fstat(h, &filest)) {
         int err = errno;
@@ -61,7 +65,8 @@ uint64_t file_size(int h) {
     return filest.st_size;
 }
 
-void delete_file(cstring_view path) {
+void delete_file(cstring_view path)
+{
     if (-1 == unlink(path.c_str())) {
         int err = errno;
         throw exception("can't delete file %1%, error : %2%"_fmt % path % strerror(err));

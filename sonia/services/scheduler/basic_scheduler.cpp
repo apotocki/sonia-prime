@@ -95,7 +95,7 @@ std::string basic_scheduler::thread_name() const
 void basic_scheduler::start()
 {
     {
-        auto lck = make_lock_guard(queue_mtx_);
+        lock_guard lck(queue_mtx_);
         if (!stopping_) return;
         stopping_ = false;
     }
@@ -112,7 +112,7 @@ void basic_scheduler::start()
 void basic_scheduler::stop()
 {
     {
-        auto lck = make_lock_guard(queue_mtx_);
+        lock_guard lck(queue_mtx_);
         if (stopping_) return;
         stopping_ = true;
         queue_cond_.notify_all();
@@ -178,7 +178,7 @@ void basic_scheduler::fiber_proc(fibers::mutex & mtx)
                 //LOG_TRACE(logger()) << "before acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
                 //auto guard = make_lock_guard(mtx);
                 //LOG_TRACE(logger()) << "acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
-                auto lck = make_unique_lock(queue_mtx_);
+                unique_lock lck(queue_mtx_);
                 //LOG_TRACE(logger()) << "got guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
                 if (stopping_ && queue_not_safe_empty()) {
                     //LOG_TRACE(logger()) << "return00 from fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
@@ -224,7 +224,7 @@ task_handle_ptr basic_scheduler::do_post(bool wh, ArgsT && ... args)
         }
     }
     {
-        auto guard = make_lock_guard(queue_mtx_);
+        lock_guard guard(queue_mtx_);
         entries_.push_front(*pe);
     }
     queue_cond_.notify_one();
@@ -265,7 +265,7 @@ task_entry * basic_scheduler::queue_not_safe_pop_next()
 
 bool basic_scheduler::unlink_and_cancel(scheduler_detail::task_entry * te)
 {
-    if (auto guard = make_lock_guard(queue_mtx_); BOOST_UNLIKELY(te->is_linked())) {
+    if (lock_guard guard(queue_mtx_); BOOST_UNLIKELY(te->is_linked())) {
         entries_.erase(entry_list_t::s_iterator_to(*te));
     } else {
         return false;

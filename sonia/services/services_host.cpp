@@ -54,7 +54,7 @@ void host_impl::run(std::vector<std::string> const& servs)
 
 void host_impl::register_on_close(function<void()> const& func)
 {
-    auto guard = make_lock_guard(on_close_mtx_);
+    lock_guard guard(on_close_mtx_);
     on_close_handlers_.push_back(func);
 }
 

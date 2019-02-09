@@ -22,7 +22,8 @@
 
 namespace sonia { namespace windows {
 
-class wsa_scope final {
+class wsa_scope final
+{
 public:
     wsa_scope();
     ~wsa_scope();

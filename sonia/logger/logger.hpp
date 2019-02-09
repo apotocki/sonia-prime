@@ -29,13 +29,14 @@ namespace sonia { namespace logger {
     ((trace, TRACE))     \
     ((debug, DEBUG))     \
     ((info, INFO))       \
-    ((warning, WARNING)) \
+    ((warning, WARN))    \
     ((error, ERROR))     \
     ((fatal, FATAL))
 
 #define SONIA_PRINT_TYPE_ENUM(r, data, i, elem) BOOST_PP_TUPLE_ELEM(2, 0, elem),
 
-enum class severity_level {
+enum class severity_level
+{
     BOOST_PP_SEQ_FOR_EACH_I(SONIA_PRINT_TYPE_ENUM, _, SONIA_LOG_SEVERITY_LEVEL_SEQ)
     UNKNOWN
 };
@@ -71,6 +72,7 @@ typedef shared_ptr<logger_type> logger_ptr;
 BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(global_logger, boost::log::sources::severity_logger_mt<severity_level>, (severity_level::trace))
 
 }
+
 #define LOG_SEV(l, sev) BOOST_LOG_SEV(*l, sev)
 #define LOG_TRACE(l) BOOST_LOG_SEV(*l, sonia::logger::severity_level::trace)
 #define LOG_DEBUG(l) BOOST_LOG_SEV(*l, sonia::logger::severity_level::debug)

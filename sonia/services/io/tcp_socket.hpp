@@ -31,12 +31,12 @@ class tcp_socket_service
 public:
     virtual ~tcp_socket_service() {}
 
-    virtual void   tcp_socket_close(void * handle) = 0;
+    virtual void   tcp_socket_close(intptr_t handle) = 0;
 
-    virtual size_t tcp_socket_read_some(void * handle, void * buff, size_t sz) = 0;
-    virtual void   tcp_socket_async_read_some(void * handle, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor) = 0;
+    virtual size_t tcp_socket_read_some(intptr_t handle, void * buff, size_t sz) = 0;
+    virtual void   tcp_socket_async_read_some(intptr_t handle, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor) = 0;
 
-    virtual size_t tcp_socket_write_some(void * handle, void const* buff, size_t sz) = 0;
+    virtual size_t tcp_socket_write_some(intptr_t handle, void const* buff, size_t sz) = 0;
 
 };
 
@@ -44,14 +44,14 @@ class tcp_socket
 {
     friend class tcp_socket_access;
 
-    tcp_socket(shared_ptr<tcp_socket_service> impl, void * handle)
+    tcp_socket(shared_ptr<tcp_socket_service> impl, intptr_t handle)
         : impl_(std::move(impl)), handle_(handle)
     {}
 
 public:
     ~tcp_socket()
     {
-        if (handle_) impl_->tcp_socket_close(handle_);
+        if (handle_ != -1) impl_->tcp_socket_close(handle_);
     }
 
     tcp_socket(tcp_socket const&) = delete;
@@ -60,15 +60,15 @@ public:
     tcp_socket(tcp_socket && rhs)
         : impl_(std::move(rhs.impl_)), handle_(rhs.handle_)
     {
-        rhs.handle_ = nullptr;
+        rhs.handle_ = -1;
     }
 
     tcp_socket& operator= (tcp_socket && rhs)
     {
-        if (handle_ && handle_ != rhs.handle_) impl_->tcp_socket_close(handle_);
+        if (handle_ != -1 && handle_ != rhs.handle_) impl_->tcp_socket_close(handle_);
         impl_ = std::move(rhs.impl_);
         handle_ = rhs.handle_;
-        rhs.handle_ = nullptr;
+        rhs.handle_ = -1;
         return *this;
     }
 
@@ -105,13 +105,13 @@ public:
 
 private:
     shared_ptr<tcp_socket_service> impl_;
-    void * handle_;
+    intptr_t handle_;
 };
 
 class tcp_socket_access
 {
 public:
-    static tcp_socket create_tcp_socket(shared_ptr<tcp_socket_service> impl, void * handle)
+    static tcp_socket create_tcp_socket(shared_ptr<tcp_socket_service> impl, intptr_t handle)
     {
         return tcp_socket(std::move(impl), handle);
     }
@@ -122,7 +122,7 @@ class tcp_socket_factory
 public:
     virtual ~tcp_socket_factory() {}
 
-    virtual tcp_socket create_tcp_socket(string_view address, uint16_t port = 0, tcp_socket_type dt = tcp_socket_type::TCP) = 0;
+    virtual tcp_socket create_tcp_socket(cstring_view address, uint16_t port = 0, tcp_socket_type dt = tcp_socket_type::TCP) = 0;
     virtual size_t tcp_socket_count(tcp_socket_type) const = 0;
 };
 

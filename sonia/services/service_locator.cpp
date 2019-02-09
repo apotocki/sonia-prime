@@ -40,7 +40,7 @@ shared_ptr<service> service_locator::get(service::id id)
 
 shared_ptr<service> service_locator::get(service::id id, string_view name)
 {
-    auto cache_lock = make_unique_lock(cache_mtx_);
+    unique_lock cache_lock(cache_mtx_);
 
     auto & tpl = cache_.try_emplace(id, in_place).first->second;
     cache_lock.unlock();
@@ -64,7 +64,7 @@ shared_ptr<service> service_locator::get(service::id id, string_view name)
         tpl.descr = std::move(creature);
         LOG_TRACE(logger()) << "service " << name << "(id: " << id << ") is started";
         {
-            auto layers_guard = make_lock_guard(layers_mtx_);
+            lock_guard layers_guard(layers_mtx_);
             layers_.insert(tpl);
         }
     }
@@ -75,21 +75,21 @@ shared_ptr<service> service_locator::get(service::id id, string_view name)
 void service_locator::shutdown(shared_ptr<service> serv)
 {
     //GLOBAL_LOG_TRACE() << "service_locator::shutdown: " << serv->get_name();
-    auto cache_lock = make_unique_lock(cache_mtx_);
+    unique_lock cache_lock(cache_mtx_);
     
     auto it = cache_.find(serv->get_id());
     BOOST_ASSERT(it != cache_.end());
     auto & tpl = it->second;
     cache_lock.unlock();
 
-    auto object_guard = make_lock_guard(tpl.mtx);
+    lock_guard object_guard(tpl.mtx);
 
     if (tpl.object().get() != serv.get()) {
         return; // already shutdowned or on its way to it by another thread
     }
 
     {
-        auto layers_guard = make_lock_guard(layers_mtx_);
+        lock_guard layers_guard(layers_mtx_);
         layers_.erase(tpl);
     }
     
@@ -105,7 +105,7 @@ void service_locator::shutdown()
 
     for (;;)
     {
-        if (auto layers_guard = make_lock_guard(layers_mtx_); !layers_.empty()) {
+        if (lock_guard layers_guard(layers_mtx_); !layers_.empty()) {
             for (auto it = layers_.end(), bit = layers_.begin(); it != bit;) {
                 --it;
                 if (it->descr.layer < layer) {

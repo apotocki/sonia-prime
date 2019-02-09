@@ -15,7 +15,7 @@ namespace sonia { namespace services {
 void multimethod_registry::register_multimethod(multimethod && mm, array_view<const std::type_index> mmid)
 {
     std::vector<std::type_index> vid(mmid.begin(), mmid.end());
-    auto slguard = make_lock_guard(mm_item_mtx_);
+    lock_guard slguard(mm_item_mtx_);
     auto it = mm_set_.find(vid);
     if (it == mm_set_.end()) {
         mm_set_.insert(it, {mmholder_t(std::move(mm)), std::move(vid)});
@@ -26,7 +26,7 @@ void multimethod_registry::register_multimethod(multimethod && mm, array_view<co
 
 multimethod const* multimethod_registry::get_multimethod(array_view<const std::type_index> mmid) const
 {
-    auto slguard = make_shared_lock_guard(mm_item_mtx_);
+    shared_lock_guard slguard(mm_item_mtx_);
     auto it = mm_set_.find(mmid, hasher(), range_equal());
     return (it != mm_set_.cend()) ? it->mm.get_pointer() : nullptr;
 }

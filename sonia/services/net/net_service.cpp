@@ -11,49 +11,7 @@ namespace sonia { namespace services {
 
 using sonia::io::tcp_socket;
 using sonia::io::tcp_acceptor;
-
-net_service::net_service(net_service_configuration const& cfg)
-    : cfg_(cfg)
-{
-    set_log_attribute("Type", "net-server");
-    locate(cfg.acceptor_factory, acceptor_factory_);
-    locate(cfg.scheduler, scheduler_);
-}
-
-void net_service::open()
-{
-    listeners_.reserve(cfg_.listeners.size());
-    for (net::listener_configuration const& lc : cfg_.listeners) {
-        shared_ptr<listener> ls = make_shared<listener>(logger());
-        locate(lc.connector, ls->cn);
-        
-        if (net::listener_type::TCP == lc.type || net::listener_type::SSL == lc.type) {
-            ls->acceptor = acceptor_factory_->create_tcp_acceptor(
-                lc.address, lc.port,
-                net::listener_type::TCP == lc.type ? sonia::io::tcp_socket_type::TCP : sonia::io::tcp_socket_type::SSL);
-
-            ls->buff = make_single_linked_buffer<char>(lc.buffer_size);
-
-            ls->acceptor.async_accept_and_read_some(
-                ls->buff->to_array_view(),
-                [schd = scheduler_, ls](std::error_code const& err, size_t sz, tcp_socket soc, tcp_acceptor::renew_functor const& rfunc) {
-                    ls->acceptor_proc(err, sz, std::move(soc), rfunc, schd);
-                }
-            );
-            //shared_ptr<listener> ls = make_shared<listener>(std::move(cn));
-        }
-
-        listeners_.push_back(std::move(ls));
-    }
-}
-
-void net_service::close() noexcept
-{
-    for (auto & lp : listeners_) {
-        lp->close();
-    }
-    listeners_.clear();
-}
+using sonia::io::tcp_acceptor_factory;
 
 class listener_task : public scheduler_task
 {
@@ -81,27 +39,49 @@ public:
     }
 };
 
-void net_service::listener::acceptor_proc(std::error_code const& err, size_t sz, sonia::io::tcp_socket soc, sonia::io::tcp_acceptor::renew_functor const& rfunc, shared_ptr<scheduler> sched)
+net_service::net_service(net_service_configuration const& cfg)
+    : cfg_(cfg)
 {
-    if (!err) {
-        buff_ptr cur_buff_ptr = std::move(buff);
-        buff = make_single_linked_buffer<char>(cur_buff_ptr->size());
-        rfunc(buff->begin(), buff->size());
+    set_log_attribute("Type", "net-server");
+    locate(cfg.acceptor_factory, acceptor_factory_);
+    locate(cfg.scheduler, scheduler_);
+}
 
-        sched->post(scheduler_task_t(
-            in_place_type_t<listener_task>(),
-            cn, std::move(cur_buff_ptr), sz, std::move(soc)
-        ));
+void net_service::open()
+{
+    listeners_.reserve(cfg_.listeners.size());
+    for (net::listener_configuration const& lc : cfg_.listeners) {
+        shared_ptr<listener> ls = make_shared<listener>();
+        ls->sched = scheduler_;
+        locate(lc.connector, ls->cn);
+        
+        if (net::listener_type::TCP == lc.type || net::listener_type::SSL == lc.type) {
+            ls->acceptor = acceptor_factory_->create_tcp_acceptor(
+                lc.address, lc.port,
+                net::listener_type::TCP == lc.type ? sonia::io::tcp_socket_type::TCP : sonia::io::tcp_socket_type::SSL,
+                [ls, bfsz = lc.buffer_size](tcp_acceptor_factory::connection_factory_t const& c) {
+                    auto buff = make_single_linked_buffer<char>(bfsz);
+                    auto av = buff->to_array_view();
+                    c(av, [ls, abuff = std::move(buff)](tcp_socket soc, size_t rsize) {
+                        ls->sched->post(scheduler_task_t(
+                            in_place_type_t<listener_task>(),
+                            ls->cn, std::move(abuff), rsize, std::move(soc)
+                        ));
+                    });
+                }
+            );
+        }
 
-    } else {
-        std::string errmsg = err.message();
-        errmsg.erase(std::find_if(errmsg.rbegin(), errmsg.rend(), [](int ch) {
-            return !std::isspace(ch);
-        }).base(), errmsg.end());
-
-        LOG_SEV(logger(), closing ? sonia::logger::severity_level::trace : sonia::logger::severity_level::error)
-            << errmsg;
+        listeners_.push_back(std::move(ls));
     }
+}
+
+void net_service::close() noexcept
+{
+    for (auto & lp : listeners_) {
+        lp->close();
+    }
+    listeners_.clear();
 }
 
 }}

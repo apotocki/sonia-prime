@@ -22,6 +22,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/scheduler/basic_scheduler.cpp
     ${BUNDLE_HOME}/sonia/services/scheduler/fiber_work_stealing_scheduler.cpp
     ${BUNDLE_HOME}/sonia/services/io/file.cpp
+    ${BUNDLE_HOME}/sonia/services/io/io_factory.cpp
 )
 
 if ( CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -33,6 +34,7 @@ if ( CMAKE_SYSTEM_NAME STREQUAL "Windows")
 elseif ( CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
         ${BUNDLE_HOME}/sonia/sal/linux_sal.cpp
+        ${BUNDLE_HOME}/sonia/utility/linux.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory_linux.cpp
     )
 endif ()

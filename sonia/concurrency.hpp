@@ -26,7 +26,6 @@ using std::condition_variable;
 
 using boost::lock_guard;
 using boost::shared_lock_guard;
-using boost::make_lock_guard;
 using boost::fibers::fiber;
 
 typedef boost::fibers::detail::spinlock spin_mutex;
@@ -50,18 +49,6 @@ struct dummy_mutex_t
 };
 
 constexpr dummy_mutex_t dummy_mutex = {};
-
-template <typename MutexT>
-unique_lock<MutexT> make_unique_lock(MutexT & m)
-{
-    return unique_lock<MutexT>(m);
-}
-
-template <typename MutexT>
-shared_lock_guard<MutexT> make_shared_lock_guard(MutexT & m)
-{
-    return shared_lock_guard<MutexT>(m);
-}
 
 enum class rw_type
 {
@@ -115,12 +102,6 @@ private:
     RWMutexT & mtx_;
     rw_type rwt_;
 };
-
-template <typename MutexT>
-rw_lock_guard<MutexT> make_rw_lock_guard(MutexT & m, rw_type rwt)
-{
-    return rw_lock_guard<MutexT>(m, rwt);
-}
 
 }
 

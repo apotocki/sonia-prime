@@ -35,22 +35,12 @@ public:
     void close() noexcept override;
 
 private:
-    struct listener : public loggable
+    struct listener
     {
         shared_ptr<net::connector> cn;
         sonia::io::tcp_acceptor acceptor;
-        buff_ptr buff;
-        bool closing;
-        explicit listener(logger::logger_ptr lptr) : loggable(lptr), closing(false) {}
-        //listener(shared_ptr<net::connector> ncn) : cn(std::move(ncn)) {}
-
-        void acceptor_proc(std::error_code const&, size_t, sonia::io::tcp_socket soc, sonia::io::tcp_acceptor::renew_functor const&, shared_ptr<scheduler>);
-
-        void close()
-        {
-            closing = true;
-            acceptor.close();
-        }
+        shared_ptr<scheduler> sched;
+        void close() { acceptor.close(); }
     };
 
     net_service_configuration cfg_;

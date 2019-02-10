@@ -90,8 +90,6 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\forwarder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\has.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\functional\hash\array_view.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\functional\hash\string.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\vector.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\is_negative.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\less.hpp" />

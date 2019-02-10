@@ -10,7 +10,6 @@
 #endif
 
 #include <string>
-#include <boost/functional/hash.hpp>
 #include <boost/format.hpp>
 #include "array_view.hpp"
 #include "sonia/utility/comparison_operators.hpp"
@@ -26,10 +25,10 @@ class basic_string_view : public array_view<std::add_const_t<CharT>>
 public:
     using traits_type = TraitsT;
     using value_type = CharT;
-    using pointer = CharT *;
+    using pointer = CharT * ;
     using const_pointer = CharT const*;
     using reference = CharT & ;
-    using const_reference = CharT const& ;
+    using const_reference = CharT const&;
     using size_type = typename base_t::size_type;
 
     constexpr basic_string_view() noexcept {}
@@ -155,38 +154,54 @@ struct string_equal_to
 {
     template <typename CharT, class TraitsT>
     bool operator()(basic_string_view<CharT, TraitsT> l, basic_string_view<CharT, TraitsT> r) const noexcept
-    { return l == r; }
+    {
+        return l == r;
+    }
 
     template <typename CharT, class TraitsT>
     bool operator()(std::basic_string<CharT, TraitsT> const& l, std::basic_string<CharT, TraitsT> const& r) const noexcept
-    { return l == r; }
+    {
+        return l == r;
+    }
 
     template <typename CharT, class TraitsT>
     bool operator()(basic_string_view<CharT, TraitsT> l, std::basic_string<CharT, TraitsT> const& r) const noexcept
-    { return l == r; }
+    {
+        return l == r;
+    }
 
     template <typename CharT, class TraitsT>
     bool operator()(std::basic_string<CharT, TraitsT> const& l, basic_string_view<CharT, TraitsT> r) const noexcept
-    { return r == l; }
+    {
+        return r == l;
+    }
 };
 
 struct string_less
 {
     template <typename CharT, class TraitsT>
     bool operator()(basic_string_view<CharT, TraitsT> l, basic_string_view<CharT, TraitsT> r) const noexcept
-    { return l < r; }
+    {
+        return l < r;
+    }
 
     template <typename CharT, class TraitsT>
     bool operator()(std::basic_string<CharT, TraitsT> const& l, std::basic_string<CharT, TraitsT> const& r) const noexcept
-    { return l < r; }
+    {
+        return l < r;
+    }
 
     template <typename CharT, class TraitsT>
     bool operator()(basic_string_view<CharT, TraitsT> l, std::basic_string<CharT, TraitsT> const& r) const noexcept
-    { return l < r; }
+    {
+        return l < r;
+    }
 
     template <typename CharT, class TraitsT>
     bool operator()(std::basic_string<CharT, TraitsT> const& l, basic_string_view<CharT, TraitsT> r) const noexcept
-    { return l < r; }
+    {
+        return l < r;
+    }
 };
 
 template <typename CharT>
@@ -237,9 +252,30 @@ inline boost::basic_format<char> operator "" _fmt(const char* str, std::size_t)
 }
 
 template <typename CharT, size_t N>
-inline boost::basic_format<CharT> fmt(const CharT (&str)[N])
+inline boost::basic_format<CharT> fmt(const CharT(&str)[N])
 {
     return boost::format(str);
+}
+
+template <class CharT, class TraitsT, class AllocatorT>
+struct hash<std::basic_string<CharT, TraitsT, AllocatorT>>
+{
+    size_t operator()(std::basic_string<CharT, TraitsT, AllocatorT> const& str) const noexcept
+    {
+        return hash<array_view<const CharT>>()(to_string_view(str));
+    }
+};
+
+template <class CharT, class TraitsT>
+size_t hash_value(basic_string_view<CharT, TraitsT> sv)
+{
+    return hash<array_view<const CharT>>()(sv);
+}
+
+template <class CharT, class TraitsT>
+size_t hash_value(basic_cstring_view<CharT, TraitsT> csv)
+{
+    return hash<array_view<const CharT>>()(csv);
 }
 
 }

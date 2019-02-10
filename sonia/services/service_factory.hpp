@@ -15,7 +15,6 @@
 #include "sonia/function.hpp"
 
 #include "sonia/services.hpp"
-#include "sonia/utility/functional/hash/string.hpp"
 
 namespace sonia { namespace services {
 

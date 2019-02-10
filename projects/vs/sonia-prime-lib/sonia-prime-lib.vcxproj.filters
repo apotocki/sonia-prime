@@ -423,13 +423,7 @@
     <ClInclude Include="..\..\..\sonia\utility\streaming\type_index.hpp">
       <Filter>sonia.utility\streaming</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\functional\hash\array_view.hpp">
-      <Filter>sonia.utility\functional\hash</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\vector.hpp">
-      <Filter>sonia.utility\functional\hash</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\functional\hash\string.hpp">
       <Filter>sonia.utility\functional\hash</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\concurrency\rw_fiber_mutex.hpp">

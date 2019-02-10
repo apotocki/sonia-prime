@@ -11,7 +11,7 @@
 
 #include <boost/unordered_map.hpp>
 #include "sonia/function.hpp"
-#include "sonia/utility/functional/hash/string.hpp"
+#include "sonia/utility/functional/hash.hpp"
 #include "service.hpp"
 #include "builder.hpp"
 

@@ -26,7 +26,6 @@
 #include "service_factory.hpp"
 #include "durable_type_registry.hpp"
 #include "sonia/utility/parameters/parameters.hpp"
-#include "sonia/utility/functional/hash/string.hpp"
 
 namespace sonia { namespace services {
 
@@ -78,7 +77,7 @@ public:
     uint32_t get_type_id(std::type_index);
 
 private:
-    struct host_hasher { size_t operator()(shared_ptr<host_impl> const& ph) const { return hash_value(ph->get_name()); } };
+    struct host_hasher { size_t operator()(shared_ptr<host_impl> const& ph) const { return hasher()(ph->get_name()); } };
 
     static service_descriptor create_service(service_configuration const& cfg);
     static service_descriptor create_bundle_service(bundle_configuration const& cfg);

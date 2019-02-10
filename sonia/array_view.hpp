@@ -175,4 +175,30 @@ array_view<const T> to_array_view(std::array<T, SzV> const& v)
 
 }
 
+#include "sonia/utility/functional/hash.hpp"
+
+namespace sonia {
+
+template <typename T>
+size_t hash_value(array_view<T> arr)
+{
+    size_t hash_value = hash_init_value();
+    if constexpr (sizeof(T) == 1 && is_integral_v<T>)
+    {
+        const uint8_t * it = (uint8_t const*)(arr.begin());
+        const uint8_t * eit = (uint8_t const*)(arr.end());
+        for (; it != eit; ++it) {
+            hash_value ^= static_cast<size_t>(*it);
+            hash_value *= hash_prime_value();
+        }
+    } else {
+        for (T const& item : arr) {
+            hash_combine(hash_value, item);
+        }
+    }
+    return hash_value;
+}
+
+}
+
 #endif // SONIA_ARRAY_VIEW_HPP

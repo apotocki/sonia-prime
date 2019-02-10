@@ -28,12 +28,6 @@ template <typename T> struct hash<T, enable_if_t<is_integral_v<T>>> : std::hash<
 
 template <> struct hash<std::type_index> : std::hash<std::type_index> {};
 
-template <>
-struct hash<null_t>
-{
-    size_t operator()(null_t const&) const { return 0; }
-};
-
 template <class T>
 inline void hash_combine(std::size_t& seed, const T& v) noexcept
 {
@@ -49,6 +43,26 @@ struct hasher
         return hash<remove_cvref_t<T>>()(std::forward<T>(arg));
     }
 };
+
+inline constexpr size_t hash_init_value()
+{
+    if constexpr (sizeof(size_t) == 4)
+    {
+        return 2166136261U;
+    } else {
+        return 14695981039346656037ULL;
+    }
+}
+
+inline constexpr size_t hash_prime_value()
+{
+    if constexpr (sizeof(size_t) == 4)
+    {
+        return 16777619U;
+    } else {
+        return 1099511628211ULL;
+    }
+}
 
 }
 

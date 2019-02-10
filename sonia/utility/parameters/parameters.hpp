@@ -19,7 +19,6 @@
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/json/value.hpp"
 #include "sonia/utility/json/json_cast.hpp"
-#include "sonia/utility/functional/hash/string.hpp"
 
 namespace sonia { namespace parameters {
 

@@ -9,7 +9,7 @@
 #   pragma once
 #endif
 
-#include "array_view.hpp"
+#include "sonia/array_view.hpp"
 
 namespace sonia {
 

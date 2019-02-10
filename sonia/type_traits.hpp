@@ -48,6 +48,8 @@ std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, Trait
     return os << "null";
 }
 
+inline size_t hash_value(null_t const&) { return 0; }
+
 constexpr null_t null{};
 
 struct empty_t {};

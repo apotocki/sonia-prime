@@ -22,7 +22,8 @@
 
 namespace sonia {
 
-class service_locator : public loggable {
+class service_locator : public loggable
+{
 public:
     service_locator(shared_ptr<service_registry> sr, shared_ptr<service_factory> sf);
     ~service_locator() noexcept;
@@ -31,10 +32,10 @@ public:
     shared_ptr<service> get(service::id id);
 
     void shutdown(shared_ptr<service> serv);
-    // returns the shutdowned layer, can be less than the argument level
-    void shutdown(int down_to_layer = (std::numeric_limits<int>::min)());
+    void shutdown();
 
-    struct cached_service_descriptor {
+    struct cached_service_descriptor
+    {
         typedef boost::intrusive::set_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link> > hook_type;
 
         mutex mtx;
@@ -42,16 +43,16 @@ public:
         service_descriptor descr;
         hook_type layer_hook;
 
-        cached_service_descriptor(std::in_place_t) {}
+        cached_service_descriptor(in_place_t) {}
 
-        int & layer() { return descr.layer; }
-        int layer() const { return descr.layer; }
         shared_ptr<service> & object() { return descr.serv; }
         shared_ptr<service> const& object() const { return descr.serv; }
 
-        struct layer_compare_type {
-            bool operator()(cached_service_descriptor const& lhs, cached_service_descriptor const& rhs) const {
-                return lhs.layer() < rhs.layer();
+        struct layer_compare_type
+        {
+            bool operator()(cached_service_descriptor const& lhs, cached_service_descriptor const& rhs) const noexcept
+            {
+                return lhs.descr.layer < rhs.descr.layer;
             }
         };
     };

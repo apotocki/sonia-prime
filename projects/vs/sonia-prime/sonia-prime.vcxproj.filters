@@ -44,6 +44,12 @@
     <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\echo\echo_connector_builder.cpp">
+      <Filter>sonia.services\net\echo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\echo\echo_connector.cpp">
+      <Filter>sonia.services\net\echo</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -60,6 +66,9 @@
     </Filter>
     <Filter Include="sonia.services\io">
       <UniqueIdentifier>{226e04cf-ee30-4a3b-addc-4d6198950edb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services\net\echo">
+      <UniqueIdentifier>{4b38a90a-a7fe-448b-800d-996ce8f57401}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -128,6 +137,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp">
       <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\echo\echo_connector_configuration.hpp">
+      <Filter>sonia.services\net\echo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\echo\echo_connector_builder.hpp">
+      <Filter>sonia.services\net\echo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\echo\echo_connector.hpp">
+      <Filter>sonia.services\net\echo</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

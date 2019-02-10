@@ -23,7 +23,7 @@ public:
     loggable() : logger_(make_shared<logger::logger_type>()) {}
     explicit loggable(logger::logger_ptr shl) : logger_(std::move(shl)) {}
 
-    virtual ~loggable() {}
+    virtual ~loggable() noexcept {}
 
     logger::logger_ptr logger() { return logger_; }
 

@@ -11,7 +11,7 @@ namespace sonia { namespace services {
 
 service_descriptor basic_service_factory::create(string_view nm) const 
 {
-    auto lock = make_unique_lock(named_factories_mtx_);
+    unique_lock lock(named_factories_mtx_);
     auto it = named_factories_.find(nm, hasher(), string_equal_to());
     if (it != named_factories_.cend()) {
         function<service_descriptor()> func = it->second;
@@ -28,7 +28,7 @@ service_descriptor basic_service_factory::create(string_view nm) const
 
 void basic_service_factory::register_service_factory(string_view nm, function<service_descriptor()> const& fm)
 {
-    auto guard = make_lock_guard(named_factories_mtx_);
+    lock_guard guard(named_factories_mtx_);
     auto it = named_factories_.find(nm, hasher(), string_equal_to());
     if (it == named_factories_.end()) {
         named_factories_.insert(it, factories_type::value_type(to_string(nm), fm));

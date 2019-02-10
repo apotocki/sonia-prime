@@ -222,7 +222,7 @@ void environment::load_configuration(std::istream & cfg)
             try {
                 sonia::sal::set_thread_name(sonia::this_thread::get_id(), "bootstrap thread for host '" + hcfg.name + "'");
 
-                auto lk = make_unique_lock(host_mtx_);
+                unique_lock lk(host_mtx_);
                 auto hit = hosts_.find(hcfg.name, hash<std::string>(), host_equal_to());
                 if (hit == hosts_.end()) {
                     lk.unlock();
@@ -258,7 +258,7 @@ void environment::load_configuration(std::istream & cfg)
 
 shared_ptr<host_impl> environment::default_host()
 {
-    auto lk = make_unique_lock(host_mtx_);
+    unique_lock lk(host_mtx_);
     if (hosts_.empty()) {
         lk.unlock();
         auto h = make_shared<host_impl>("");
@@ -276,7 +276,7 @@ shared_ptr<host_impl> environment::default_host()
 
 shared_ptr<host_impl> environment::get_host(string_view hnm)
 {
-    auto lk = make_lock_guard(host_mtx_);
+    lock_guard guard(host_mtx_);
     auto it = hosts_.find(hnm, hasher(), host_equal_to());
     if (it != hosts_.end()) {
         return *it;
@@ -302,7 +302,7 @@ service_descriptor environment::create_bundle_service(bundle_configuration const
 
 uint32_t environment::get_type_id(std::type_index ti)
 {
-    auto guard = make_lock_guard(type_id_mtx_);
+    lock_guard guard(type_id_mtx_);
     auto it = type_id_map_.left.find(ti);
     if (it == type_id_map_.left.end()) {
         uint32_t idx = ++type_id_counter_;

@@ -13,19 +13,43 @@
 #include "sonia/utility/automatic_polymorphic.hpp"
 
 #ifndef SONIA_SCHEDULER_TASK_SZ
-#   define SONIA_SCHEDULER_TASK_SZ 64
+#   define SONIA_SCHEDULER_TASK_SZ (std::max)((size_t)64, sizeof(function<void()>) + sizeof(void*))
 #endif
 
 namespace sonia {
 
-class scheduler_task : public polymorphic_movable {
+class scheduler_task : public polymorphic_movable
+{
 public:
-    virtual ~scheduler_task() {}
-    virtual void cancel() {}
+    virtual void on_cancel() {}
     virtual void run() = 0;
 };
 
-typedef automatic_polymorphic<scheduler_task, SONIA_SCHEDULER_TASK_SZ> scheduler_task_t;
+using scheduler_task_t = automatic_polymorphic<scheduler_task, SONIA_SCHEDULER_TASK_SZ>;
+
+class scheduler_task_handle
+{
+    virtual void add_ref() = 0;
+    virtual void release_ref() = 0;
+
+public:
+    virtual ~scheduler_task_handle() {}
+
+    virtual bool cancel() = 0; // returns true if cancelled
+
+    friend void intrusive_ptr_add_ref(scheduler_task_handle * p)
+    {
+        p->add_ref();
+    }
+
+    friend void intrusive_ptr_release(scheduler_task_handle * p)
+    {
+        p->release_ref();
+    }
+};
+
+using task_handle_ptr = boost::intrusive_ptr<scheduler_task_handle>;
+
 
 template <typename FunctionT>
 class function_call_scheduler_task : public scheduler_task
@@ -41,8 +65,16 @@ public:
     function_call_scheduler_task & operator= (function_call_scheduler_task const&) = delete;
     function_call_scheduler_task & operator= (function_call_scheduler_task &&) = default;
 
-    void run() override {
+    void run() override
+    {
         func_();
+    }
+
+    polymorphic_movable* move(void* address, size_t sz) override
+    {
+        BOOST_ASSERT(sz >= sizeof(function_call_scheduler_task));
+        new (address) function_call_scheduler_task(std::move(*this));
+        return reinterpret_cast<function_call_scheduler_task*>(address);
     }
 
 private:
@@ -50,25 +82,21 @@ private:
 };
 
 template <typename FuncT>
-scheduler_task_t make_scheduler_task(FuncT && func) {
+scheduler_task_t make_scheduler_task(FuncT && func)
+{
     return scheduler_task_t(
         in_place_type_t<function_call_scheduler_task<remove_cvref_t<FuncT>>>(),
         std::forward<FuncT>(func)
     );
 }
 
-class scheduler {
+class scheduler
+{
 public:
     virtual ~scheduler() {}
 
-    virtual void start() = 0;
-    virtual void stop() = 0;
-    virtual void post(scheduler_task_t &&) = 0;
-
-    template <typename FuncT>
-    void post(FuncT && func) {
-        post(make_scheduler_task(std::forward<FuncT>(func)));
-    }
+    virtual task_handle_ptr post(scheduler_task_t &&, bool with_handle = true) = 0;
+    virtual task_handle_ptr post(function<void()> const&, bool with_handle = true) = 0;
 };
 
 }

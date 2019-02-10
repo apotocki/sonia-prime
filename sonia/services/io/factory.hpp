@@ -32,29 +32,30 @@ class factory
     , public enable_shared_from_this<factory>
     , public virtual loggable
 {
+    static constexpr long qsz_min_value = boost::integer_traits<long>::const_min;
+
 public:
     factory();
-    virtual ~factory();
+    virtual ~factory() override;
 
     void open(uint32_t thr_cnt);
     void close();
     virtual std::string name() const;
 
     // tcp_socket_factory
-    tcp_socket create_tcp_socket(string_view address, uint16_t port, tcp_socket_type dt = tcp_socket_type::TCP) override;
+    tcp_socket create_tcp_socket(cstring_view address, uint16_t port, tcp_socket_type dt = tcp_socket_type::TCP) override;
     size_t tcp_socket_count(tcp_socket_type) const override;
 
     // tcp_socket_service
-    void   tcp_socket_close(void * handle) override;
-    size_t tcp_socket_read_some(void * handle, void * buff, size_t sz) override;
-    void   tcp_socket_async_read_some(void * handle, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor) override;
-    size_t tcp_socket_write_some(void * handle, void const* buff, size_t sz) override;
+    void   tcp_socket_close(intptr_t handle) override;
+    size_t tcp_socket_read_some(intptr_t handle, void * buff, size_t sz) override;
+    void   tcp_socket_async_read_some(intptr_t handle, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor) override;
+    size_t tcp_socket_write_some(intptr_t handle, void const* buff, size_t sz) override;
 
     // tcp_acceptor_factory
-    tcp_acceptor create_tcp_acceptor(string_view address, uint16_t port, tcp_socket_type dt = tcp_socket_type::TCP) override;
+    tcp_acceptor create_tcp_acceptor(cstring_view address, uint16_t port, tcp_socket_type dt, function<void(tcp_acceptor_factory::connection_factory_t const&)> const& handler) override;
 
     //  tcp_acceptor_service
-    void tcp_acceptor_async_accept_and_read_some(void * handle, void * buff, size_t sz, acceptor_functor const&) override;
     void tcp_acceptor_close(void * handle) noexcept override;
 
     // file factory
@@ -64,10 +65,34 @@ public:
     size_t file_read(sonia::sal::file_handle_type, uint64_t fileoffset, array_view<char> dest) override;
     size_t file_write(sonia::sal::file_handle_type, uint64_t fileoffset, array_view<const char> src) override;
 
-    void thread_proc();
+    class impl_base
+    {
+    public:
+        virtual ~impl_base() {}
+
+        explicit impl_base(shared_ptr<factory> wr) : wrapper(std::move(wr)) {}
+
+        virtual void park_threads() noexcept  = 0;
+
+        shared_ptr<factory> wrapper;
+    };
+    
+    friend class impl_base;
+
+    void on_add_callback();
+    void on_release_callback() noexcept;
+    void join_threads();
+    size_t thread_count() const;
+    std::atomic<long> qsz{0};
 
 private:
-    void * impl_data_;
+    void thread_proc();
+    void initialize_impl(uint32_t thr_cnt);
+
+    mutable boost::fibers::mutex close_mtx_;
+    boost::fibers::condition_variable close_cond_;
+    std::vector<thread> threads_;
+    std::unique_ptr<impl_base> impl_data_;
 };
 
 }}

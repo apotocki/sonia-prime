@@ -23,9 +23,11 @@
 
 namespace sonia {
 
-class fiber_work_stealing_scheduler : public boost::fibers::algo::algorithm {
+class fiber_work_stealing_scheduler : public boost::fibers::algo::algorithm
+{
 public:
-    class group_host {
+    class group_host
+    {
         friend class fiber_work_stealing_scheduler;
 
         std::vector<boost::intrusive_ptr<fiber_work_stealing_scheduler>> schedulers;
@@ -49,7 +51,8 @@ public:
 
     fibers::context * pick_next() noexcept override final;
 
-    bool has_ready_fibers() const noexcept override final {
+    bool has_ready_fibers() const noexcept override final
+    {
         return !rqueue_.empty();
     }
 

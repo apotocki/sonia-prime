@@ -576,6 +576,9 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp">
       <Filter>sonia.utility\functional\hash</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\linux.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -661,6 +664,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\local_type_registry.cpp">
       <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_factory.cpp">
+      <Filter>sonia.services.io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\linux.cpp">
+      <Filter>sonia.utility</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

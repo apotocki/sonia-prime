@@ -16,8 +16,10 @@ namespace sonia { namespace logger {
 
 #define SONIA_PRINT_CASE(r, data, i, elem) case severity_level::BOOST_PP_TUPLE_ELEM(2, 0, elem): return BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(2, 1, elem));
 
-const char* to_string(severity_level lvl) {
-    switch (lvl) {
+const char* to_string(severity_level lvl)
+{
+    switch (lvl)
+    {
         BOOST_PP_SEQ_FOR_EACH_I(SONIA_PRINT_CASE, _, SONIA_LOG_SEVERITY_LEVEL_SEQ)
     default:
         return "UNKNOWN";
@@ -26,12 +28,14 @@ const char* to_string(severity_level lvl) {
 
 #define SONIA_PRINT_STR_COND(r, data, i, elem) if (str == BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(2, 1, elem))) return severity_level::BOOST_PP_TUPLE_ELEM(2, 0, elem);
 
-severity_level from_string(std::string const& str) {
+severity_level from_string(std::string const& str)
+{
     BOOST_PP_SEQ_FOR_EACH_I(SONIA_PRINT_STR_COND, _, SONIA_LOG_SEVERITY_LEVEL_SEQ)
     return severity_level::UNKNOWN;
 }
 
-void initialize(std::istream & s) {
+void initialize(std::istream & s)
+{
     using namespace boost::log;
 
     add_common_attributes(); // (LineID, TimeStamp, ProcessID, ThreadID)
@@ -41,7 +45,8 @@ void initialize(std::istream & s) {
     init_from_stream(s);
 }
 
-void deinitialize() {
+void deinitialize()
+{
     auto core = boost::log::core::get();
     if (!core) return;
     core->flush();

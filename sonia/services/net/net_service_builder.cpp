@@ -34,7 +34,8 @@ net_service_builder::net_service_builder()
     ;
 }
 
-shared_ptr<service> net_service_builder::build(json_object const& parameters) {
+shared_ptr<service> net_service_builder::build(json_object const& parameters)
+{
     net_service_configuration cfg;
     parameters_.apply(parameters, &cfg);
     return make_shared<net_service>(cfg);

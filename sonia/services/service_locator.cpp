@@ -11,9 +11,10 @@
 
 namespace sonia {
 
-struct service_layer_comparer {
-    inline bool operator()(int val, service_locator::cached_service_descriptor const& csd) const { return val < csd.layer(); }
-    inline bool operator()(service_locator::cached_service_descriptor const& csd, int val) const { return csd.layer() < val; }
+struct service_layer_comparer
+{
+    inline bool operator()(int val, service_locator::cached_service_descriptor const& csd) const noexcept { return val < csd.descr.layer; }
+    inline bool operator()(service_locator::cached_service_descriptor const& csd, int val) const noexcept { return csd.descr.layer < val; }
 };
 
 service_locator::service_locator(shared_ptr<service_registry> sr, shared_ptr<service_factory> sf)
@@ -39,15 +40,13 @@ shared_ptr<service> service_locator::get(service::id id)
 
 shared_ptr<service> service_locator::get(service::id id, string_view name)
 {
-    auto cache_lock = make_unique_lock(cache_mtx_);
+    unique_lock cache_lock(cache_mtx_);
 
-    auto & tpl = cache_.try_emplace(id, std::in_place).first->second;
+    auto & tpl = cache_.try_emplace(id, in_place).first->second;
     cache_lock.unlock();
 
     lock_guard<mutex> object_guard(tpl.mtx);
     if (!tpl.object()) {
-        this_thread::interruption_point();
-
         if (tpl.fid == this_fiber::get_id()) {
             BOOST_THROW_EXCEPTION(internal_error("found a circular dependency for the service: '%1%' (%2%)"_fmt
                 % (name ? name : sr_->get_name(id)) % id));
@@ -62,13 +61,12 @@ shared_ptr<service> service_locator::get(service::id id, string_view name)
         creature.serv->set_log_attribute("Name", name);
         creature.serv->set_log_attribute("Host", services::get_host()->get_name());
         creature.serv->open();
+        tpl.descr = std::move(creature);
         LOG_TRACE(logger()) << "service " << name << "(id: " << id << ") is started";
         {
-            auto layers_guard = make_lock_guard(layers_mtx_);
+            lock_guard layers_guard(layers_mtx_);
             layers_.insert(tpl);
         }
-
-        tpl.descr = std::move(creature);
     }
 
     return tpl.object();
@@ -76,21 +74,22 @@ shared_ptr<service> service_locator::get(service::id id, string_view name)
 
 void service_locator::shutdown(shared_ptr<service> serv)
 {
-    auto cache_lock = make_unique_lock(cache_mtx_);
+    //GLOBAL_LOG_TRACE() << "service_locator::shutdown: " << serv->get_name();
+    unique_lock cache_lock(cache_mtx_);
     
     auto it = cache_.find(serv->get_id());
     BOOST_ASSERT(it != cache_.end());
     auto & tpl = it->second;
     cache_lock.unlock();
 
-    auto object_guard = make_lock_guard(tpl.mtx);
+    lock_guard object_guard(tpl.mtx);
 
     if (tpl.object().get() != serv.get()) {
         return; // already shutdowned or on its way to it by another thread
     }
 
     {
-        auto layers_guard = make_lock_guard(layers_mtx_);
+        lock_guard layers_guard(layers_mtx_);
         layers_.erase(tpl);
     }
     
@@ -99,21 +98,30 @@ void service_locator::shutdown(shared_ptr<service> serv)
     serv->close();
 }
 
-void service_locator::shutdown(int down_to_layer)
+void service_locator::shutdown()
 {
-    std::vector<shared_ptr<service>> services_to_shutdown;
+    int layer = (std::numeric_limits<int>::max)();
+    std::vector<fiber> fibers;
+
+    for (;;)
     {
-        auto layers_guard = make_lock_guard(layers_mtx_);
-        for (auto it = layers_.end(), bit = layers_.begin(); it != bit;) {
-            --it;
-            if (it->layer() < down_to_layer) break;
-            services_to_shutdown.push_back(it->object());
+        if (lock_guard layers_guard(layers_mtx_); !layers_.empty()) {
+            for (auto it = layers_.end(), bit = layers_.begin(); it != bit;) {
+                --it;
+                if (it->descr.layer < layer) {
+                    layer = it->descr.layer;
+                    break;
+                }
+                fibers.push_back(fiber([this, serv = it->object()]() { shutdown(std::move(serv)); }));
+            }
+        } else {
+            break;
         }
-    }
-    while (!services_to_shutdown.empty()) {
-        auto serv = std::move(services_to_shutdown.back());
-        services_to_shutdown.pop_back();
-        shutdown(std::move(serv));
+
+        for (fiber & f : fibers) {
+            f.join();
+        }
+        fibers.clear();
     }
 }
 

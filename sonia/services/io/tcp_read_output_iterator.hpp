@@ -24,19 +24,22 @@ class tcp_read_output_iterator
         , wrapper_iterator_proxy<basic_dereference_wrapper<tcp_read_output_iterator, array_view<const char>>>
     >
 {
-    typedef basic_dereference_wrapper<tcp_read_output_iterator, array_view<const char>> dereference_wrapper_type;
+    using dereference_wrapper_type = basic_dereference_wrapper<tcp_read_output_iterator, array_view<const char>>;
 
     friend class boost::iterator_core_access;
 
-    bool equal(tcp_read_output_iterator const& rhs) const {
+    bool equal(tcp_read_output_iterator const& rhs) const
+    {
         return false;
     }
 
-    array_view<const char>& dereference() const {
+    array_view<const char>& dereference() const
+    {
         return buff_;
     }
 
-    void increment() {
+    void increment()
+    {
         while (buff_.size()) {
             size_t sz = psoc_->read_some(buff_);
             buff_ = array_view<const char>(buff_.begin() + sz, buff_.size() - sz);

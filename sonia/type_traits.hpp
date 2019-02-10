@@ -42,15 +42,15 @@ struct null_t
     inline bool operator >= (null_t const&) const noexcept { return true; }
 };
 
-constexpr null_t null{};
-
-struct empty_t {};
-
 template <typename CharT, class TraitsT>
 std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, null_t const&)
 {
     return os << "null";
 }
+
+constexpr null_t null{};
+
+struct empty_t {};
 
 using namespace tl;
 //template <class T, class E> using expected = tl::expected<T, E>;

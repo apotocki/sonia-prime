@@ -22,8 +22,7 @@
 
 // system abstract level functions
 
-namespace sonia {
-namespace sal {
+namespace sonia { namespace sal {
 
 void set_thread_name(sonia::thread::id, string_view name);
 void set_thread_name(sonia::thread::id, std::string const& name);

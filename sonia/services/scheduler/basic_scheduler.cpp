@@ -4,52 +4,98 @@
 
 #include "sonia/config.hpp"
 #include "sonia/sal.hpp"
+#include "sonia/utility/scope_exit.hpp"
+
 #include "basic_scheduler.hpp"
 
 #include <boost/fiber/all.hpp>
 
+#ifndef SONIA_TASK_POOL_INITIAL_SIZE
+#   define SONIA_TASK_POOL_INITIAL_SIZE 1024
+#endif
+#ifndef SONIA_TASK_HANDLE_POOL_INITIAL_SIZE
+#   define SONIA_TASK_HANDLE_POOL_INITIAL_SIZE 128
+#endif
+
 namespace sonia { namespace scheduler_detail {
 
-void task_entry::release_ref(task_entry_pool_t * ppool) {
+void task_entry::release_ref(task_entry_pool_t & pool)
+{
     if (1 == refs_.fetch_sub(1)) {
-        ppool->delete_object(this);
+        pool.delete_object(this);
     }
 }
 
-void task_entry::cancel() {
-    bool exp = false;
-    if (handled_.compare_exchange_strong(exp, true, std::memory_order::memory_order_relaxed)) {
-        task_->cancel();
+bool task_entry::cancel()
+{
+    for (;;) {
+        auto expval = refs_.load();
+        if (0 == (expval & handled_flag_value)) return false; // already some way handled
+        if (refs_.compare_exchange_strong(expval, expval & ~handled_flag_value)) break;
+    }
+    task_->on_cancel();
+    return true;
+}
+
+void task_entry::run()
+{
+    for (;;) {
+        auto expval = refs_.load();
+        if (0 == (expval & handled_flag_value)) return; // already some way handled
+        if (refs_.compare_exchange_strong(expval, expval & ~handled_flag_value)) break;
+    }
+    task_->run();
+}
+
+basic_task_handle::basic_task_handle(shared_ptr<basic_scheduler> s, task_entry * task)
+    : scheduler_(std::move(s)), task_(task)
+{
+    task_->add_ref();
+}
+
+basic_task_handle::~basic_task_handle()
+{
+    scheduler_->release_task_ref(task_);
+}
+
+void basic_task_handle::release_ref()
+{
+    if (0 == --refs_) {
+        scheduler_->free_task_handle(this);
     }
 }
 
-void task_entry::run() {
-    bool exp = false;
-    if (handled_.compare_exchange_strong(exp, true, std::memory_order::memory_order_relaxed)) {
-        task_->run();
-    }
+bool basic_task_handle::cancel()
+{
+    return scheduler_->unlink_and_cancel(task_);
 }
 
 } // namespace sonia::scheduler_detail
 
+using namespace ::sonia::scheduler_detail;
+
 basic_scheduler::basic_scheduler(uint32_t thr_cnt, uint32_t fb_cnt)
     : thr_cnt_(thr_cnt), fb_cnt_(fb_cnt), stopping_(true)
+    , task_pool_(SONIA_TASK_POOL_INITIAL_SIZE)
+    , handle_pool_(SONIA_TASK_HANDLE_POOL_INITIAL_SIZE)
 {
 
 }
 
-basic_scheduler::~basic_scheduler() {
+basic_scheduler::~basic_scheduler()
+{
 
 }
 
-std::string basic_scheduler::thread_name() const {
+std::string basic_scheduler::thread_name() const
+{
     return "scheduler thread";
 }
 
 void basic_scheduler::start()
 {
     {
-        auto lck = make_unique_lock(queue_mtx_);
+        lock_guard lck(queue_mtx_);
         if (!stopping_) return;
         stopping_ = false;
     }
@@ -66,7 +112,7 @@ void basic_scheduler::start()
 void basic_scheduler::stop()
 {
     {
-        auto lck = make_unique_lock(queue_mtx_);
+        lock_guard lck(queue_mtx_);
         if (stopping_) return;
         stopping_ = true;
         queue_cond_.notify_all();
@@ -81,7 +127,8 @@ void basic_scheduler::stop()
 
 
 
-void basic_scheduler::thread_proc() {
+void basic_scheduler::thread_proc()
+{
     fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler>(gh_, true);
     /*
     fibers::context::active()->get_scheduler()->exthook = [](fibers::context::id fid, int op) {
@@ -119,30 +166,38 @@ void basic_scheduler::thread_proc() {
     }
 }
 
-void basic_scheduler::fiber_proc(fibers::mutex & mtx) {
+void basic_scheduler::fiber_proc(fibers::mutex & mtx)
+{
     try {
         for (;;) {
         ///*
         try {
+            bool stopping = false;
+            task_entry * pe;
             {
                 //LOG_TRACE(logger()) << "before acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
-                auto guard = make_lock_guard(mtx);
+                //auto guard = make_lock_guard(mtx);
                 //LOG_TRACE(logger()) << "acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
-                auto lck = make_unique_lock(queue_mtx_);
+                unique_lock lck(queue_mtx_);
                 //LOG_TRACE(logger()) << "got guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
-                if (stopping_) {
+                if (stopping_ && queue_not_safe_empty()) {
                     //LOG_TRACE(logger()) << "return00 from fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
                     return;
                 }
-                queue_cond_.wait(lck, [this]() { return !queue_.empty() || stopping_; });
-                if (stopping_) {
+                queue_cond_.wait(lck, [this]() { return !queue_not_safe_empty() || stopping_; });
+                if (stopping_ && queue_not_safe_empty()) {
                     //LOG_TRACE(logger()) << "return0 from fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
                     return;
                 }
+                stopping = stopping_;
+                pe = queue_not_safe_pop_next();
             }
-            function<void()> f = std::move(queue_.back());
-            queue_.pop_back();
-            f();
+            SCOPE_EXIT([this, pe] { release_task_ref(pe); });
+            if (BOOST_LIKELY(!stopping)) {
+                pe->run();
+            } else {
+                pe->cancel();
+            }
         } catch (...) {
             LOG_ERROR(logger()) << boost::current_exception_diagnostic_information();
         }
@@ -155,8 +210,67 @@ void basic_scheduler::fiber_proc(fibers::mutex & mtx) {
     LOG_TRACE(logger()) << "return1 from fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
 }
 
-void basic_scheduler::post(scheduler_task_t && task) {
+template <class ... ArgsT>
+task_handle_ptr basic_scheduler::do_post(bool wh, ArgsT && ... args)
+{
+    task_handle_ptr result;
+    task_entry * pe = task_pool_.new_object(std::forward<ArgsT>(args) ...);
+    if (wh) {
+        try {
+            result.reset(handle_pool_.new_object(shared_from_this(), pe), false);
+        } catch (...) {
+            release_task_ref(pe);
+            throw;
+        }
+    }
+    {
+        lock_guard guard(queue_mtx_);
+        entries_.push_front(*pe);
+    }
+    queue_cond_.notify_one();
+    return std::move(result);
+}
 
+task_handle_ptr basic_scheduler::post(function<void()> const& task, bool wh)
+{
+    return do_post(wh, in_place_type<function_call_scheduler_task<function<void()>>>, task);
+}
+
+task_handle_ptr basic_scheduler::post(scheduler_task_t && task, bool wh)
+{
+    return do_post(wh, std::move(task));
+}
+
+void basic_scheduler::release_task_ref(task_entry * te)
+{
+    te->release_ref(task_pool_);
+}
+
+void basic_scheduler::free_task_handle(basic_task_handle * th)
+{
+    handle_pool_.delete_object(th);
+}
+
+bool basic_scheduler::queue_not_safe_empty() const
+{
+    return entries_.empty();
+}
+
+task_entry * basic_scheduler::queue_not_safe_pop_next()
+{
+    task_entry * pe = &entries_.back();
+    entries_.pop_back();
+    return pe;
+}
+
+bool basic_scheduler::unlink_and_cancel(scheduler_detail::task_entry * te)
+{
+    if (lock_guard guard(queue_mtx_); BOOST_UNLIKELY(te->is_linked())) {
+        entries_.erase(entry_list_t::s_iterator_to(*te));
+    } else {
+        return false;
+    }
+    return te->cancel();
 }
 
 }

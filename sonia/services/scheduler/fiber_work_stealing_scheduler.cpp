@@ -13,9 +13,10 @@
 
 namespace sonia {
 
-fibers::context * fiber_work_stealing_scheduler::group_host::steal(fiber_work_stealing_scheduler * exc) {
+fibers::context * fiber_work_stealing_scheduler::group_host::steal(fiber_work_stealing_scheduler * exc)
+{
     int count = (int)schedulers.size();
-    auto lock = make_lock_guard(mtx);
+    lock_guard lock(mtx);
     do {
         size_t idx = ++victim_sched_idx % schedulers.size();
         fiber_work_stealing_scheduler * victim_sched = schedulers[idx].get();
@@ -28,8 +29,9 @@ fibers::context * fiber_work_stealing_scheduler::group_host::steal(fiber_work_st
     return nullptr;
 }
 
-void fiber_work_stealing_scheduler::group_host::remove(fiber_work_stealing_scheduler * s) {
-    auto lock = make_lock_guard(mtx);
+void fiber_work_stealing_scheduler::group_host::remove(fiber_work_stealing_scheduler * s)
+{
+    lock_guard lock(mtx);
     for (auto it = schedulers.begin(), eit = schedulers.end(); it != eit; ++it) {
         if (it->get() == s) {
             schedulers.erase(it);
@@ -41,20 +43,20 @@ void fiber_work_stealing_scheduler::group_host::remove(fiber_work_stealing_sched
 fiber_work_stealing_scheduler::fiber_work_stealing_scheduler(group_host & g, bool suspend)
     : group_(g), flag_(0), suspend_(suspend ? 1 : 0)
 {
-    auto guard = make_lock_guard(group_.mtx);
+    lock_guard guard(group_.mtx);
     group_.schedulers.push_back(this);
 }
 
-fiber_work_stealing_scheduler::~fiber_work_stealing_scheduler() {
-
-}
+fiber_work_stealing_scheduler::~fiber_work_stealing_scheduler()
+{}
 
 fibers::context * fiber_work_stealing_scheduler::steal() noexcept
 {
     return rqueue_.take_if([](fibers::context * c) { return !c->is_context(fibers::type::pinned_context); });
 }
 
-void fiber_work_stealing_scheduler::awakened(fibers::context* ctx) noexcept {
+void fiber_work_stealing_scheduler::awakened(fibers::context* ctx) noexcept
+{
     if (!ctx->is_context(fibers::type::pinned_context)) {
         //GLOBAL_LOG_TRACE() << "push fiber " << ctx->get_id() << ", thread: " << this_thread::get_id();
         ctx->detach();
@@ -66,7 +68,8 @@ void fiber_work_stealing_scheduler::awakened(fibers::context* ctx) noexcept {
     rqueue_.push(ctx);
 }
 
-fibers::context * fiber_work_stealing_scheduler::pick_next() noexcept {
+fibers::context * fiber_work_stealing_scheduler::pick_next() noexcept
+{
     fibers::context * victim = rqueue_.pop();
     if (victim) {
         boost::context::detail::prefetch_range(victim, sizeof(fibers::context));
@@ -89,21 +92,23 @@ fibers::context * fiber_work_stealing_scheduler::pick_next() noexcept {
     return victim;
 }
 
-void fiber_work_stealing_scheduler::suspend_until(std::chrono::steady_clock::time_point const& tp) noexcept {
+void fiber_work_stealing_scheduler::suspend_until(std::chrono::steady_clock::time_point const& tp) noexcept
+{
     if ( suspend_) {
         if ((std::chrono::steady_clock::time_point::max)() == tp) {
-            auto lk = make_unique_lock(mtx_);
+            unique_lock lk(mtx_);
             cnd_.wait( lk, [this](){ return !!flag_; });
             flag_ = 0;
         } else {
-            auto lk = make_unique_lock(mtx_);
+            unique_lock lk(mtx_);
             cnd_.wait_until(lk, tp, [this](){ return !!flag_; });
             flag_ = 0;
         }
     }
 }
 
-void fiber_work_stealing_scheduler::notify() noexcept {
+void fiber_work_stealing_scheduler::notify() noexcept
+{
     if (suspend_) {
         mtx_.lock();
         flag_ = 1;

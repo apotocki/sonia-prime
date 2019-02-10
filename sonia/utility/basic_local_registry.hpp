@@ -134,7 +134,7 @@ public:
 
     IDT get_id(string_view name, string_view meta)
     {
-        auto rwguard = make_rw_lock_guard(mtx_, rw_type::shared);
+        rw_lock_guard rwguard(mtx_, rw_type::shared);
         auto it = registry_.find(name, hasher(), string_equal_to());
         reg_item const* pitm = it != registry_.end() ? &*it : nullptr;
         
@@ -152,7 +152,7 @@ public:
         }
 
         if (BOOST_UNLIKELY(!pitm->persisted.load())) {
-            auto bguard = make_lock_guard(backup_mtx_);
+            lock_guard bguard(backup_mtx_);
             if (!pitm->persisted.load()) {
                 backup();
                 for (auto & itm : registry_) {
@@ -172,7 +172,7 @@ public:
 
     std::pair<string_view, string_view> get_data(IDT id) const
     {
-        auto guard = make_shared_lock_guard(mtx_);
+        shared_lock_guard guard(mtx_);
         auto it = registry_.template get<1>().find(id);
         if (it != registry_.template get<1>().end() && it->persisted.load()) {
             return {it->name, it->meta};

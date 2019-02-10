@@ -13,11 +13,13 @@ io_service::io_service(io_service_configuration const& cfg)
     set_log_attribute("Type", "io");
 }
 
-void io_service::open() {
+void io_service::open()
+{
     sonia::io::factory::open(cfg_.threads);
 }
 
-void io_service::close() noexcept {
+void io_service::close() noexcept
+{
     sonia::io::factory::close();
 }
 

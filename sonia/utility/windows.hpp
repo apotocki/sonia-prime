@@ -22,7 +22,8 @@
 
 namespace sonia { namespace windows {
 
-class wsa_scope final {
+class wsa_scope final
+{
 public:
     wsa_scope();
     ~wsa_scope();
@@ -40,8 +41,9 @@ LPFN_ACCEPTEX get_accept_function(SOCKET);
 bool parse_address(string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc);
 
 SOCKET create_socket(int af, int type, int protocol);
-void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov);
 
+void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov);
+void async_send(SOCKET soc, void const * buff, size_t sz, WSAOVERLAPPED * pov);
 
 
 HANDLE  create_completion_port(uint32_t thread_count);

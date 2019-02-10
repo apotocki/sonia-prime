@@ -24,11 +24,14 @@ class service : public virtual loggable
 
 public:
     service() : id_(0) {}
-    ~service() override {
+
+    ~service() noexcept override
+    {
         LOG_TRACE(logger()) << "terminated";
     }
 
-    typedef uint32_t id;
+    using id = uint32_t;
+
     id get_id() const noexcept { return id_; }
     std::string const& get_name() const noexcept { return name_; }
 
@@ -40,14 +43,16 @@ private:
     id id_;
 };
 
-class service_access {
+class service_access
+{
 public:
     static void set_id(service & s, service::id idval) { s.id_ = idval; }
     static void set_name(service & s, std::string nameval) { s.name_ = std::move(nameval); }
     static void set(service & s, service::id idval, std::string nameval) { s.id_ = idval; s.name_ = std::move(nameval); }
 };
 
-class service_registry {
+class service_registry
+{
 public:
     virtual ~service_registry() {}
 
@@ -55,15 +60,16 @@ public:
     virtual string_view get_name(service::id) const = 0; // throws an exception if the name is undefined for the given id.
 };
 
-struct service_descriptor {
-public:
+struct service_descriptor
+{
     shared_ptr<service> serv;
     int layer;
 };
 
-class service_factory {
+class service_factory
+{
 public:
-    virtual ~service_factory() {}
+    virtual ~service_factory() noexcept {}
 
     virtual service_descriptor create(string_view) const = 0;
 };

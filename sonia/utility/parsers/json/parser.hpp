@@ -105,8 +105,10 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
         }
 
         // value
+        if (eof) throw_unexpected_eof();
+
         bool start_internal = false;
-        switch (eof ? ID_NULL : b->id)
+        switch (b->id)
         {
         case ID_NULL:
             mdl_.put_null();
@@ -143,7 +145,7 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
         default:
             throw exception("unexpected token");
         }
-        if (eof) break;
+        
         ++b;
 
         /*
@@ -170,7 +172,7 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
             }
         }
         */
-    } while (mdl_.has_state());
+    };
 
     star(b, e, &this->ws);
 }
@@ -190,7 +192,6 @@ template <class LexerT, class ModelT>
 void parser<LexerT, ModelT>::skip_ws(iterator & b, iterator const& e) const
 {
     star(b, e, &this->ws);
-    //if (!valid(b, e) || !star(b, e, &this->ws) || !valid(b, e)) throw_unexpected_eof();
 }
 
 template <class LexerT, class ModelT>

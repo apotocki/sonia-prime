@@ -125,7 +125,6 @@ BOOST_AUTO_TEST_CASE(json_suite_test)
     fs::path sonia_prime_home{path};
 
     fs::path suitedir(sonia_prime_home / "tests" / "data" / "json-test-suite");
-    //fs::path suitedir("data/temp");
 
     std::for_each(fs::directory_iterator(suitedir), fs::directory_iterator(), [](auto const& p) {
         if (!fs::is_regular_file(p)) return;

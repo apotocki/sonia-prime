@@ -14,9 +14,11 @@
 namespace sonia {
 
 template <typename T, class AllocatorT>
-struct hash<std::vector<T, AllocatorT>> {
-    size_t operator()(std::vector<T, AllocatorT> const& vec) const noexcept {
-        return hash_value(to_array_view(vec));
+struct hash<std::vector<T, AllocatorT>>
+{
+    size_t operator()(std::vector<T, AllocatorT> const& vec) const noexcept
+    {
+        return hasher()(to_array_view(vec));
     }
 };
 

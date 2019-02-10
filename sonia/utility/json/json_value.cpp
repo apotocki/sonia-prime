@@ -208,7 +208,7 @@ json_object json_value::get_object() const
 
 json_object::json_object()
 {
-    typedef optimized_object_impl<holder_t> object_t;
+    using object_t = optimized_object_impl<holder_t>;
     object_t::init(this, array_view<std::string>(), array_view<json_value>());
     set_service_cookie((size_t)json_value_type::object);
 }

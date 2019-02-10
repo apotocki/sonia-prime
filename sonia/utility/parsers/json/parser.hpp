@@ -48,12 +48,14 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
     while (mdl_.has_state())
     {
         skip_ws(b, e);
+        bool eof = b == e;
+
         auto st = mdl_.get_state();
 
         // handle comma
         bool comma_parsed = false;
         if (st == model::state::OBJECT || st == model::state::ARRAY) {
-            if (b->id == ID_COMMA) {
+            if (!eof && b->id == ID_COMMA) {
                 if (mdl_.value_stack_empty()) {
                     throw exception("unexpected COMMA token");
                 }
@@ -64,7 +66,7 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
         }
 
         if (st == model::state::OBJECT) {
-            if (b->id == ID_STRING || b->id == ID_NAME) {
+            if (!eof && (b->id == ID_STRING || b->id == ID_NAME)) {
                 if (!comma_parsed && !mdl_.value_stack_empty()) {
                     throw exception("expected COMMA token");
                 }
@@ -81,7 +83,7 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
                 mdl_.push_state(model::state::VALUE);
                 ++b;
                 skip_ws(b, e);
-            } else if (b->id == ID_STOP_OBJECT) {
+            } else if (!eof && b->id == ID_STOP_OBJECT) {
                 if (comma_parsed) throw exception("unexpected '}'");
                 ++b;
                 mdl_.put_object();
@@ -90,7 +92,7 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
                 throw exception("expected STRING or '}'");
             }
         } else if (st == model::state::ARRAY) {
-            if (b->id == ID_STOP_ARRAY) {
+            if (!eof && b->id == ID_STOP_ARRAY) {
                 if (comma_parsed) throw exception("unexpected ']'");
                 ++b;
                 mdl_.put_array();
@@ -104,7 +106,7 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
 
         // value
         bool start_internal = false;
-        switch (b->id)
+        switch (eof ? ID_NULL : b->id)
         {
         case ID_NULL:
             mdl_.put_null();
@@ -141,6 +143,7 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
         default:
             throw exception("unexpected token");
         }
+        if (eof) break;
         ++b;
 
         /*
@@ -167,9 +170,9 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
             }
         }
         */
-    }
+    } while (mdl_.has_state());
 
-    !valid(b, e) || !star(b, e, &this->ws);
+    star(b, e, &this->ws);
 }
 
 template <class LexerT, class ModelT>
@@ -186,7 +189,8 @@ bool parser<LexerT, ModelT>::ws(iterator & b, iterator const& e)
 template <class LexerT, class ModelT>
 void parser<LexerT, ModelT>::skip_ws(iterator & b, iterator const& e) const
 {
-    if (!valid(b, e) || !star(b, e, &this->ws) || !valid(b, e)) throw_unexpected_eof();
+    star(b, e, &this->ws);
+    //if (!valid(b, e) || !star(b, e, &this->ws) || !valid(b, e)) throw_unexpected_eof();
 }
 
 template <class LexerT, class ModelT>

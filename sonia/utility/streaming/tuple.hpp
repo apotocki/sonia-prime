@@ -15,7 +15,8 @@
 namespace std {
 
 template <size_t I, class TupleT>
-struct tplelem {
+struct tplelem
+{
     TupleT const& val;
 };
 

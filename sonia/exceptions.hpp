@@ -53,6 +53,7 @@ public:                                                                         
 DECLARE_EXCEPTION(closed_exception, "closed", exception)
 DECLARE_EXCEPTION(fatal_error, "fatal error", exception)
 DECLARE_EXCEPTION(internal_error, "internal error", exception)
+DECLARE_EXCEPTION(client_error, "client error", exception)
 DECLARE_EXCEPTION(not_implemented_error, "not implemented error", internal_error)
 DECLARE_EXCEPTION(not_supported_operation_error, "not supported operation error", internal_error)
 DECLARE_EXCEPTION(illegal_argument_error, "illegal argument", internal_error)

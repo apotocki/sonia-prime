@@ -75,6 +75,7 @@
     <ClInclude Include="..\..\..\sonia\utility\caches\car.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\clock.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\utiltiy.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\hazardous.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\command.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\comparison_operators.hpp" />

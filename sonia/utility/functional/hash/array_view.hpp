@@ -15,8 +15,10 @@
 namespace sonia {
 
 template <typename T>
-struct hash<array_view<T>> {
-    static constexpr size_t init_value() {
+struct hash<array_view<T>>
+{
+    static constexpr size_t init_value()
+    {
         if constexpr (sizeof(size_t) == 4) {
             return 2166136261U;
         } else {
@@ -24,7 +26,8 @@ struct hash<array_view<T>> {
         }
     }
 
-    static constexpr size_t prime_value() {
+    static constexpr size_t prime_value()
+    {
         if constexpr (sizeof(size_t) == 4) {
             return 16777619U;
         } else {
@@ -32,7 +35,8 @@ struct hash<array_view<T>> {
         }
     }
 
-    size_t operator()(array_view<T> arr) const noexcept {
+    size_t operator()(array_view<T> arr) const noexcept
+    {
         size_t hash_value = init_value();
         if constexpr (sizeof(T) == 1 && is_integral_v<T>) {
             const uint8_t * it = (uint8_t const*)(arr.begin());

@@ -32,18 +32,14 @@ bool valid(IteratorT const& b, IteratorT const& e) noexcept
 template <typename IteratorT, typename FunctorT>
 bool star(IteratorT & b, IteratorT const& e, FunctorT const& ftor)
 {
-    // prerequisites: valid(b, e) == true
-    BOOST_ASSERT(valid(b, e));
-    while (ftor(b, e) && valid(b, e));
+    while (valid(b, e) && ftor(b, e));
     return true;
 }
 
 template <typename IteratorT, typename FunctorT>
 bool plus(IteratorT & b, IteratorT const& e, FunctorT const& ftor)
 {
-    // prerequisites: valid(b, e) == true
-    BOOST_ASSERT(valid(b, e));
-    if (!ftor(b, e)) return false;
+    if (!valid(b, e) || !ftor(b, e)) return false;
     while (valid(b, e) && ftor(b, e));
     return true;
 }

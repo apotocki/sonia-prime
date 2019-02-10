@@ -86,7 +86,8 @@ template <class T> constexpr bool is_decimal_v = is_decimal<T>::value;
 namespace sonia {
 
 template <typename SignificandT, typename ExponentT>
-basic_decimal<SignificandT, ExponentT> basic_decimal<SignificandT, ExponentT>::parse(string_view sval) {
+basic_decimal<SignificandT, ExponentT> basic_decimal<SignificandT, ExponentT>::parse(string_view sval)
+{
     SignificandT s;
     ExponentT e;
     decimal_parse(sval, s, e);
@@ -95,7 +96,8 @@ basic_decimal<SignificandT, ExponentT> basic_decimal<SignificandT, ExponentT>::p
 
 template <typename SignificandT, typename ExponentT>
 template <typename T>
-T basic_decimal<SignificandT, ExponentT>::get() const {
+T basic_decimal<SignificandT, ExponentT>::get() const
+{
     if constexpr (is_floating_point_v<T>) {
         return (T)value_ * std::pow(10.0, exponent_10_);
     } else {
@@ -110,18 +112,21 @@ T basic_decimal<SignificandT, ExponentT>::get() const {
 }
 
 template <typename SignificandT, typename ExponentT>
-std::string to_string(basic_decimal<SignificandT, ExponentT> const& val) {
+std::string to_string(basic_decimal<SignificandT, ExponentT> const& val)
+{
     return decimal_string(val.raw_value(), val.raw_exp());
 }
 
 
 template <typename LSignificandT, typename LExponentT, typename RSignificandT, typename RExponentT>
-bool operator== (basic_decimal<LSignificandT, LExponentT> const& lhs, basic_decimal<RSignificandT, RExponentT> const& rhs) noexcept {
+bool operator== (basic_decimal<LSignificandT, LExponentT> const& lhs, basic_decimal<RSignificandT, RExponentT> const& rhs) noexcept
+{
     return decimal_equal(lhs.raw_value(), lhs.raw_exp(), rhs.raw_value(), rhs.raw_exp());
 }
 
 template <typename LSignificandT, typename LExponentT, typename T>
-bool operator== (basic_decimal<LSignificandT, LExponentT> const& lhs, T const& rhs) {
+bool operator== (basic_decimal<LSignificandT, LExponentT> const& lhs, T const& rhs)
+{
     return lhs == basic_decimal<LSignificandT, LExponentT>(rhs);
 }
 
@@ -130,30 +135,36 @@ bool operator== (T const& lhs, basic_decimal<LSignificandT, LExponentT> const& r
 
 
 template <typename LSignificandT, typename LExponentT, typename RSignificandT, typename RExponentT>
-bool operator< (basic_decimal<LSignificandT, LExponentT> const& lhs, basic_decimal<RSignificandT, RExponentT> const& rhs) noexcept {
+bool operator< (basic_decimal<LSignificandT, LExponentT> const& lhs, basic_decimal<RSignificandT, RExponentT> const& rhs) noexcept
+{
     return decimal_less(lhs.raw_value(), lhs.raw_exp(), rhs.raw_value(), rhs.raw_exp());
 }
 
 template <typename LSignificandT, typename LExponentT, typename T>
-bool operator< (basic_decimal<LSignificandT, LExponentT> const& lhs, T const& rhs) {
+bool operator< (basic_decimal<LSignificandT, LExponentT> const& lhs, T const& rhs)
+{
     return lhs < basic_decimal<LSignificandT, LExponentT>(rhs);
 }
 
 template <typename LSignificandT, typename LExponentT, typename T>
-bool operator< (T const& lhs, basic_decimal<LSignificandT, LExponentT> const& rhs) {
+bool operator< (T const& lhs, basic_decimal<LSignificandT, LExponentT> const& rhs)
+{
     return basic_decimal<LSignificandT, LExponentT>(lhs) < rhs;
 }
 
 MAKE_FREE_COMPARISON_OPERATORS(is_decimal_v)
 
 template <typename ElemT, typename TraitsT, typename SignificandT, typename ExponentT>
-std::basic_ostream<ElemT, TraitsT> & operator<< (std::basic_ostream<ElemT, TraitsT> & os, basic_decimal<SignificandT, ExponentT> const& val) {
+std::basic_ostream<ElemT, TraitsT> & operator<< (std::basic_ostream<ElemT, TraitsT> & os, basic_decimal<SignificandT, ExponentT> const& val)
+{
     return os << to_string(val);
 }
 
 template <typename SignificandT, typename ExponentT>
-struct hash<basic_decimal<SignificandT, ExponentT>> {
-    size_t operator()(basic_decimal<SignificandT, ExponentT> const& s) const {
+struct hash<basic_decimal<SignificandT, ExponentT>>
+{
+    size_t operator()(basic_decimal<SignificandT, ExponentT> const& s) const
+    {
         size_t hash_value = 0;
         hash_combine(hash_value, s.raw_value());
         hash_combine(hash_value, s.raw_exp());

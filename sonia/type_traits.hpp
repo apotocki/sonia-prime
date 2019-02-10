@@ -9,6 +9,7 @@
 #   pragma once
 #endif
 
+#include <iosfwd>
 #include <utility>
 #include <type_traits>
 #include <typeindex>
@@ -44,6 +45,12 @@ struct null_t
 constexpr null_t null{};
 
 struct empty_t {};
+
+template <typename CharT, class TraitsT>
+std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, null_t const&)
+{
+    return os << "null";
+}
 
 using namespace tl;
 //template <class T, class E> using expected = tl::expected<T, E>;

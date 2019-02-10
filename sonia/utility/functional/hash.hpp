@@ -10,12 +10,29 @@
 #endif
 
 #include <functional>
+#include <typeindex>
 #include "sonia/type_traits.hpp"
+#include "sonia/utility/functional/has.hpp"
 
 namespace sonia {
 
-template <typename T>
-struct hash : public std::hash<T> {};
+template <typename T, typename Enabler = void> struct hash
+{
+    size_t operator()(T const& v) const
+    {
+        return hash_value(v);
+    }
+};
+
+template <typename T> struct hash<T, enable_if_t<is_integral_v<T>>> : std::hash<T> {};
+
+template <> struct hash<std::type_index> : std::hash<std::type_index> {};
+
+template <>
+struct hash<null_t>
+{
+    size_t operator()(null_t const&) const { return 0; }
+};
 
 template <class T>
 inline void hash_combine(std::size_t& seed, const T& v) noexcept
@@ -24,14 +41,11 @@ inline void hash_combine(std::size_t& seed, const T& v) noexcept
     seed ^= hasher(v) + 0x9e3779b9 + (seed<<6) + (seed>>2);
 }
 
-template <typename T>
-inline size_t hash_value(T && arg) {
-    return hash<remove_cvref_t<T>>()(std::forward<T>(arg));
-}
-
-struct hasher {
+struct hasher
+{
     template <typename T>
-    size_t operator()(T && arg) const noexcept {
+    size_t operator()(T && arg) const noexcept
+    {
         return hash<remove_cvref_t<T>>()(std::forward<T>(arg));
     }
 };

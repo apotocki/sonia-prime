@@ -49,4 +49,23 @@ public:                                                                         
 template <class T, typename FT> constexpr bool has_method_##X##_v =					\
 	has_method_##X<T, FT>::value;
 
+#define HAS_OPERATOR_TRAIT_DEF(X, OP)                                               \
+template <typename T, typename FT> class has_operator_##X {                         \
+static_assert(																		\
+	std::integral_constant<FT, false>::value,                                       \
+	"Second template parameter needs to be of function type.");						\
+};																					\
+template <class T, typename RT, typename... ArgsT>									\
+class has_operator_##X<T, RT(ArgsT...)> {										    \
+    template <typename ST> static constexpr auto check(ST*) ->						\
+	    std::is_same<RT, decltype(std::declval<ST>().operator OP                    \
+            (std::declval<ArgsT>()...))>;                                           \
+    template <typename> static std::false_type check(...);							\
+public:                                                                             \
+	using type  = decltype(check<T>(nullptr));										\
+    static constexpr bool value = type::value;						                \
+};                                                                                  \
+template <class T, typename FT> constexpr bool has_operator_##X##_v =				\
+	has_operator_##X<T, FT>::value;
+
 #endif // SONIA_FUNCTIONAL_HAS_HPP

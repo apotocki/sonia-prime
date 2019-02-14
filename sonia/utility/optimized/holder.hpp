@@ -19,12 +19,11 @@
 #include "sonia/type_traits.hpp"
 #include "sonia/utility/functional/reference_wrapper.hpp"
 
-#define SONIA_OPTIMIZED_TYPE_ALIGNMENT sizeof(void*) // to be able to store ponters directly in first holder bytes
-
 namespace sonia {
 
 template <typename RefCountT>
-class optimized_base {
+class optimized_base
+{
 public:
     optimized_base() {}
     optimized_base(optimized_base const& rhs) : service_cookie_(rhs.service_cookie_) {}
@@ -38,11 +37,13 @@ public:
     uint32_t service_cookie() const { return service_cookie_; }
     uint32_t& service_cookie() { return service_cookie_; }
 
-    void add_ref() {
+    void add_ref()
+    {
         ++refs_;
     }
 
-    void release() {
+    void release()
+    {
         if (--refs_ == 0) {
             dispose();
         }
@@ -65,22 +66,23 @@ public:
     template <typename ArgT>
     explicit optimized_wrapper(ArgT && arg)
         : val_(std::forward<ArgT>(arg))
-    { }
+    {}
 
-    WrappedT const& get() const {
-        return val_;
-    }
+    WrappedT const& get() const { return val_; }
 
     template <typename T>
-    void set(T && arg) {
+    void set(T && arg)
+    {
         val_ = std::forward<T>(arg);
     }
 
-    void dispose() noexcept override {
+    void dispose() noexcept override
+    {
         delete this;
     }
 
-    optimized_base<RefCountT> * clone() const override {
+    optimized_base<RefCountT> * clone() const override
+    {
         return new optimized_wrapper(*this);
     }
 
@@ -89,7 +91,8 @@ private:
 };
 
 template <size_t HolderBytesV, size_t ServiceCookieBitsV>
-struct optimized_holder_base {
+struct optimized_holder_base
+{
     static const size_t used_bits = ServiceCookieBitsV + 1;
 
     static_assert (HolderBytesV >= sizeof(intptr_t));
@@ -102,7 +105,8 @@ struct optimized_holder_base {
     static const int first_byte_bits = ServiceCookieBitsV < (CHAR_BIT - 1) ? ServiceCookieBitsV : (CHAR_BIT - 1);
     static const uint8_t first_byte_mask = (((uint8_t)1) << first_byte_bits) - 1;
 
-    aligned_storage_t<HolderBytesV, SONIA_OPTIMIZED_TYPE_ALIGNMENT> holder_;
+    // to be able to store ponters directly in first holder bytes
+    alignas(void*) char holder_[HolderBytesV];
 
     void init_not_ptr() noexcept { *data() = 1; }
     void set_not_ptr() noexcept { *data() |= 1; }
@@ -173,10 +177,11 @@ template <size_t HolderBytesV, size_t ServiceCookieBitsV, typename RefCountT>
 struct optimized_holder<HolderBytesV, ServiceCookieBitsV, RefCountT, endian::little>
     : optimized_holder_base<HolderBytesV, ServiceCookieBitsV>
 {
-    typedef optimized_holder_base<HolderBytesV, ServiceCookieBitsV> base_t;
+    using optimized_holder_t = optimized_holder;
+    using base_t = optimized_holder_base<HolderBytesV, ServiceCookieBitsV>;
     static const int value_bits_act = HolderBytesV * CHAR_BIT - ServiceCookieBitsV - 1;
     static const int value_bits = value_bits_act <= sizeof(uintmax_t) * CHAR_BIT ? value_bits_act : sizeof(uintmax_t) * CHAR_BIT;
-    typedef typename boost::uint_t<value_bits>::fast uint_t;
+    using uint_t = typename boost::uint_t<value_bits>::fast;
     static const uint_t uint_max = (((((uint_t)1) << (value_bits - 1)) - 1) << 1) | 1;
     static const uint_t cookie_mask = (((uint_t)1) << (ServiceCookieBitsV + 1)) - 1;
 

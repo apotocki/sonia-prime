@@ -15,21 +15,23 @@
 namespace sonia {
 
 template <typename SignedT, typename UnsignedT>
-SignedT unsigned_to_signed(UnsignedT val, UnsignedT sign_mask) {
+SignedT unsigned_to_signed(UnsignedT val, UnsignedT sign_mask)
+{
     return (val & sign_mask) ? (-((SignedT)(val & (~sign_mask))) - 1) : (SignedT)val;
 }
 
 template <typename UnsignedT, typename SignedT>
-UnsignedT signed_to_unsigned(SignedT val, UnsignedT sign_mask) {
+UnsignedT signed_to_unsigned(SignedT val, UnsignedT sign_mask)
+{
     return val < 0 ? ((UnsignedT)-val) + sign_mask : (UnsignedT)val;
 }
 
 template <class HolderT, typename RefCountT = uint32_t>
 struct optimized_decimal_impl
 {
-    typedef optimized_wrapper<decimal, RefCountT> optimized_decimal;
-    typedef typename HolderT::uint_t uint_t;
-    typedef typename boost::int_t<HolderT::value_bits>::fast int_t;
+    using optimized_decimal = optimized_wrapper<decimal, RefCountT>;
+    using uint_t = typename HolderT::uint_t;
+    using int_t = typename boost::int_t<HolderT::value_bits>::fast;
 
     static const size_t exp_bits = 4 + 3 * HolderT::value_bits / 4;
     static const size_t mnts_bits = HolderT::value_bits - exp_bits;
@@ -45,7 +47,8 @@ struct optimized_decimal_impl
     static const int_t exp_min = -((int_t)exp_mask) - 1;
 
     template <typename ... ArgsT>
-    static void init(HolderT * self, ArgsT&& ... args) {
+    static void init(HolderT * self, ArgsT&& ... args)
+    {
         self->init_not_ptr();
         if constexpr (sizeof...(ArgsT)) {
             set(self, decimal(std::forward<ArgsT>(args) ...));
@@ -53,7 +56,8 @@ struct optimized_decimal_impl
     }
 
     template <typename T>
-    static T get(HolderT const* self) {
+    static T get(HolderT const* self)
+    {
         if (self->is_ptr()) {
             return (T)ptr(self)->get();
         } else {
@@ -66,7 +70,8 @@ struct optimized_decimal_impl
         }
     }
 
-    static decimal get(HolderT const* self) {
+    static decimal get(HolderT const* self)
+    {
         if (self->is_ptr()) {
             return ptr(self)->get();
         } else {
@@ -78,7 +83,8 @@ struct optimized_decimal_impl
         }
     }
 
-    static void set(HolderT * self, decimal val) {
+    static void set(HolderT * self, decimal val)
+    {
         if (self->is_ptr()) {
             ptr(self)->set(std::move(val));
         } else {
@@ -96,11 +102,13 @@ struct optimized_decimal_impl
     }
 
 private:
-    static optimized_decimal * ptr(HolderT * self) {
+    static optimized_decimal * ptr(HolderT * self)
+    {
         return static_cast<optimized_decimal *>(self->get_pointer());
     }
 
-    static optimized_decimal const* ptr(HolderT const* self) {
+    static optimized_decimal const* ptr(HolderT const* self)
+    {
         return static_cast<optimized_decimal const*>(self->get_pointer());
     }
 };

@@ -51,8 +51,8 @@ class json_object : json_detail::holder_t
 
     json_object(json_detail::holder_t const&);
 
-    typedef boost::iterator_range<json_object_item_iterator<false>> item_range_t;
-    typedef boost::iterator_range<json_object_item_iterator<true>> const_item_range_t;
+    using item_range_t = boost::iterator_range<json_object_item_iterator<false>>;
+    using const_item_range_t = boost::iterator_range<json_object_item_iterator<true>>;
 
 public:
     json_object(); // equivalent of {}
@@ -133,7 +133,8 @@ class json_value : json_detail::holder_t
     json_value& operator=(json_value const&) = default;
     json_value& operator=(json_value &&) = default;
 
-    json_value_type type() const {
+    json_value_type type() const
+    {
         return (json_value_type)json_detail::holder_t::get_service_cookie();
     }
 
@@ -147,10 +148,12 @@ class json_value : json_detail::holder_t
     json_object get_object() const;
 };
 
-class json_value_holder_accessor {
+class json_value_holder_accessor
+{
 public:
     template <class JsonT>
-    static add_const_if_t<is_const_v<JsonT>, json_detail::holder_t>& holder(JsonT & v) {
+    static add_const_if_t<is_const_v<JsonT>, json_detail::holder_t>& holder(JsonT & v)
+    {
         return static_cast<add_const_if_t<is_const_v<JsonT>, json_detail::holder_t>&>(v);
     }
 };

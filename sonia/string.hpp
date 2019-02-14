@@ -32,8 +32,11 @@ public:
     using size_type = typename base_t::size_type;
 
     constexpr basic_string_view() noexcept {}
-    constexpr basic_string_view(char_ct * str, size_type sz) : base_t(str, sz) {}
-    constexpr basic_string_view(char_ct * bstr, char_ct * estr) : base_t(bstr, estr) {}
+    constexpr basic_string_view(char_ct * str, size_type sz) noexcept : base_t(str, sz) {}
+    constexpr basic_string_view(char_ct * bstr, char_ct * estr) noexcept : base_t(bstr, estr) {}
+
+    template <size_t N>
+    constexpr basic_string_view(char_ct(&arr)[N]) noexcept : base_t(arr, N) {}
 
     template <typename SomeCharT>
     constexpr basic_string_view(array_view<SomeCharT> arr) noexcept : base_t(arr) {}

@@ -71,6 +71,44 @@ public:
     }
 };
 
+template <typename TagT, class VectorT, typename SizeT = typename VectorT::size_type>
+struct vector_coder
+{
+    using vector_coder_t = vector_coder;
+
+    template <typename OutputIteratorT>
+    OutputIteratorT encode(VectorT const& value, OutputIteratorT oi) const
+    {
+        return sonia::encode<TagT>(to_array_view(value),
+            sonia::encode<TagT, SizeT>(value.size(), std::move(oi))
+        );
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, VectorT & value) const
+    {
+        SizeT sz;
+        ii = sonia::decode<TagT>(std::move(ii), sz);
+        value.resize(sz);
+        return sonia::decode<TagT>(std::move(ii), to_array_view(value));
+    }
+
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, VectorT * value) const
+    {
+        SizeT sz;
+        ii = sonia::decode<TagT>(std::move(ii), sz);
+
+        try {
+            new(value) VectorT(sz);
+            return sonia::decode<TagT>(std::move(ii), to_array_view(*value));
+        } catch (...) {
+            std::destroy_at(value);
+            throw;
+        }
+    }
+};
+
 }}
 
 #endif // SONIA_SERIALIZATION_ARRAY_HPP

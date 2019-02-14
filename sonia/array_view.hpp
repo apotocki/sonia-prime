@@ -135,6 +135,12 @@ bool operator== (array_view<T> const& lhs, array_view<T> const& rhs)
 }
 
 template <typename T>
+bool operator!= (array_view<T> const& lhs, array_view<T> const& rhs)
+{
+    return !range_equal()(lhs, rhs);
+}
+
+template <typename T>
 bool operator< (array_view<T> const& lhs, array_view<T> const& rhs)
 {
     return range_less()(lhs, rhs);

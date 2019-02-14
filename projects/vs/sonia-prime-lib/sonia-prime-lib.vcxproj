@@ -109,6 +109,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\proxy.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\reference_wrapper_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\tar_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\type_as_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp" />
@@ -132,6 +133,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\file_region_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_dereferencing_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\wrapper_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\optimized\maybe_array.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optimized_optional.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parameters\parameters.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexems.hpp" />
@@ -160,6 +162,8 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\integral.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\iostream.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\json_serialization.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\maybe_array.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\optimized_array.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\pair.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\placeholder.hpp" />

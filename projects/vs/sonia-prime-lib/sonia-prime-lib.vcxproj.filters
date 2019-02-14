@@ -573,6 +573,18 @@
     <ClInclude Include="..\..\..\sonia\utility\linux.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\optimized_array.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\optimized\maybe_array.hpp">
+      <Filter>sonia.utility\optimized</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\maybe_array.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\type_as_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

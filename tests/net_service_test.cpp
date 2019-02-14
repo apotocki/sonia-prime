@@ -189,6 +189,7 @@ void tcp_echo_test(io::tcp_socket soc)
     uint8_t rbuff[961];
     while (tested_sz != test_sz) {
         size_t rsz = soc.read_some(rbuff, sizeof(rbuff));
+        if (!rsz) throw exception("echo mismatch, no enough data");
         for (uint8_t c : array_view(rbuff, rsz)) {
             BOOST_ASSERT(c == buff[tested_sz % 1024]);
             ++tested_sz;

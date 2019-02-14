@@ -66,7 +66,8 @@ struct sync_callback_base
         unique_lock lck(mtx);
         cnd.wait(lck, [this] { return !!code; });
         if (code && *code) {
-            throw exception(code->message());
+            //throw exception(code->message());
+            return 0;
         }
         return handlsz;
     }

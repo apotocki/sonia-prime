@@ -50,6 +50,7 @@ public:                                                                         
     {}                                                                          \
 };
 
+DECLARE_EXCEPTION(eof_exception, "end of file", exception)
 DECLARE_EXCEPTION(closed_exception, "closed", exception)
 DECLARE_EXCEPTION(fatal_error, "fatal error", exception)
 DECLARE_EXCEPTION(internal_error, "internal error", exception)

@@ -573,6 +573,12 @@
     <ClInclude Include="..\..\..\sonia\utility\linux.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\socket_write_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

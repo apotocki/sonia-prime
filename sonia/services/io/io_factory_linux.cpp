@@ -39,6 +39,8 @@
 
 namespace sonia { namespace io {
 
+static constexpr bool IO_DEBUG = false;
+
 struct socket_handle_base;
 struct lin_impl_data;
 struct socket_handle;
@@ -250,21 +252,75 @@ struct socket_handle : socket_handle_base
         }
     }
 
-    void wait()
-    {
-        unique_lock lck(mtx);
-        cnd.wait(lck, [this] { return flag; });
-    }
-
     void on_event(int efd, uint32_t evflags) noexcept override
     {
-        //GLOBAL_LOG_INFO() << "SOCKET EVENT! " << ((evflags & EPOLLIN) ? "IN" : "") << " " << ((evflags & EPOLLOUT) ? "OUT" : "");
+        if constexpr (IO_DEBUG) GLOBAL_LOG_INFO() << "SOCKET EVENT! " << ((evflags & EPOLLIN) ? "IN" : "") << " " << ((evflags & EPOLLOUT) ? "OUT" : "");
         unique_lock lck(mtx);
         flag = true;
         cnd.notify_one();
     }
 
     void free(lin_impl_data* impl) noexcept override { impl->free(this); }
+
+    void throw_socket_error(string_view errmsg) const
+    {
+        int err;
+        socklen_t len = sizeof(int);
+        if (!::getsockopt(sock.value, SOL_SOCKET, SO_ERROR, &err, &len)) {
+            throw exception("%1%, sockopt error: %2%"_fmt % errmsg % strerror(err));
+        }
+        throw exception("%1%, unknown error"_fmt % errmsg);
+    }
+
+    void connect(addrinfo * rp)
+    {
+        unique_lock lck(mtx);
+        for (;;)
+        {
+            if (::connect(sock.value, rp->ai_addr, rp->ai_addrlen) != -1) {
+                return;
+            }
+            int err = errno;
+            if (BOOST_UNLIKELY(EINPROGRESS != err)) {
+                throw exception("can't connect socket, error: %1%"_fmt % strerror(err));
+            }
+            flag = false;
+            cnd.wait(lck, [this] { return flag; });
+        }
+    }
+
+    size_t write_some(void const* buff, size_t sz) noexcept
+    {
+        unique_lock lck(mtx);
+        for (;;)
+        {
+            ssize_t n = ::write(sock.value, buff, sz);
+            if (n >= 0) return (size_t)n;
+            int err = errno;
+            if (BOOST_UNLIKELY(EAGAIN != err)) { return 0; }
+            flag = false;
+            if constexpr (IO_DEBUG) GLOBAL_LOG_TRACE() << to_string("socket(%1%) write waiting..."_fmt % sock.value);
+            cnd.wait(lck, [this] { return flag; });
+            if constexpr (IO_DEBUG) GLOBAL_LOG_TRACE() << to_string("socket(%1%) woke up"_fmt % sock.value);
+        }
+    }
+
+    size_t read_some(void * buff, size_t sz) noexcept
+    {
+        unique_lock lck(mtx);
+        for (;;)
+        {
+            ssize_t n = ::read(sock.value, buff, sz);
+            if constexpr (IO_DEBUG) GLOBAL_LOG_TRACE() << to_string("socket(%1%) read %2% bytes"_fmt % sock.value % n);
+            if (n >= 0) return (size_t)n;
+            int err = errno;
+            if (BOOST_UNLIKELY(EAGAIN != err)) { return 0; }
+            flag = false;
+            if constexpr (IO_DEBUG) GLOBAL_LOG_TRACE() << to_string("socket(%1%) read waiting..."_fmt % sock.value);
+            cnd.wait(lck, [this] { return flag; });
+            if constexpr (IO_DEBUG) GLOBAL_LOG_TRACE() << to_string("socket(%1%) woke up"_fmt % sock.value);
+        }
+    }
 };
 
 struct acceptor_socket_handle : socket_handle_base
@@ -295,33 +351,41 @@ struct acceptor_socket_handle : socket_handle_base
         }
     }
 
-    //std::atomic<int> enters{0};
-
     void on_event(int efd, uint32_t evflags) noexcept override
     {
-        //int ent = enters.fetch_add(1);
-        //GLOBAL_LOG_INFO() << "ACCEPTOR EVENT! " << ent;
+        int ent{0};
+        if constexpr (IO_DEBUG)
+        {
+            static std::atomic<int> enters{0};
+            ent = enters.fetch_add(1);
+        }
+
+        if constexpr (IO_DEBUG) LOG_TRACE(impl_->wrapper->logger()) << "ACCEPTOR EVENT " << ent;
         for (;;) {
             sockaddr in_addr;
             socklen_t in_len = sizeof(in_addr);
             int infd = accept(sock.value, &in_addr, &in_len);
             if (infd == -1) {
-                //int err = errno;
-                //LOG_TRACE(impl_->wrapper->logger()) << "accept error: " << strerror(err);
+                if constexpr (IO_DEBUG) {
+                    int err = errno;
+                    if (err != EAGAIN) {
+                        LOG_TRACE(impl_->wrapper->logger()) << "accept (" << ent << ") error: " << strerror(err);
+                    }
+                }
                 break;
             }
 
             unique_fd ufd{infd};
 
-            /*
-            char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
-            getnameinfo(&in_addr, in_len,
-                hbuf, sizeof(hbuf),
-                sbuf, sizeof(sbuf),
-                NI_NUMERICHOST | NI_NUMERICSERV);
+            if constexpr (IO_DEBUG) {
+                char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
+                getnameinfo(&in_addr, in_len,
+                    hbuf, sizeof(hbuf),
+                    sbuf, sizeof(sbuf),
+                    NI_NUMERICHOST | NI_NUMERICSERV);
 
-            GLOBAL_LOG_TRACE() << hbuf << " " << sbuf << "(" << ent << ")";
-            */
+                LOG_TRACE(impl_->wrapper->logger()) << hbuf << " " << sbuf << "(" << ent << ")";
+            }
 
             set_descriptor_flags(infd, O_NONBLOCK);
 
@@ -421,9 +485,9 @@ void factory::thread_proc()
 {
     epoll_event events[MAX_EPOLL_EVENTS];
     for (;;) {
-        //LOG_INFO(logger()) << "before epoll_wait";
+        if constexpr (IO_DEBUG) LOG_INFO(logger()) << "before epoll_wait";
         int n = epoll_wait(dataptr->efd, events, MAX_EPOLL_EVENTS, -1);
-        //LOG_INFO(logger()) << "woke up";
+        if constexpr (IO_DEBUG) LOG_INFO(logger()) << "woke up";
         if (-1 == n) {
             int err = errno;
             LOG_ERROR(logger()) << "epoll interrupted: " << strerror(err);
@@ -485,7 +549,7 @@ tcp_socket factory::create_tcp_socket(cstring_view address, uint16_t port, tcp_s
         int pinsockfd = sockfd;
         SCOPE_EXIT([&pinsockfd]() { if (pinsockfd >= 0) ::close(pinsockfd); });
 
-        //LOG_INFO(logger()) << "BEFORE CONNECT";
+        if constexpr (IO_DEBUG) LOG_INFO(logger()) << "BEFORE CONNECT";
         /*
         if (connect(sockfd, rp->ai_addr, rp->ai_addrlen) != -1) {
             set_descriptor_flags(sockfd, O_NONBLOCK);
@@ -499,22 +563,17 @@ tcp_socket factory::create_tcp_socket(cstring_view address, uint16_t port, tcp_s
         ///*
         set_descriptor_flags(sockfd, O_NONBLOCK);
         socket_handle * sh = dataptr->new_socket_handle(sockfd);
-        for (;;) {
-            if (connect(sockfd, rp->ai_addr, rp->ai_addrlen) != -1) {
-                pinsockfd = -1;
-                //LOG_INFO(logger()) << "CONNECTED";
-                return tcp_socket_access::create_tcp_socket(shared_from_this(), (intptr_t)(socket_handle_base*)sh);
-            }
-            int err = errno;
-            if (BOOST_UNLIKELY(EINPROGRESS != err)) {
-                LOG_WARN(logger()) << "can't connect socket, error: " << strerror(err);
-                break;
-            }
-            sh->wait();
+
+        try {
+            sh->connect(rp);
+            pinsockfd = -1;
+            if constexpr (IO_DEBUG) LOG_INFO(logger()) << "CONNECTED (" << sockfd << ")";
+            return tcp_socket_access::create_tcp_socket(shared_from_this(), (intptr_t)(socket_handle_base*)sh);
+        } catch (std::exception const& e) {
+            LOG_WARN(logger()) << "can't connect socket, error: " << e.what();
         }
         
         tcp_socket_close((intptr_t)(socket_handle_base*)sh);
-        //*/
     }
 
     BOOST_ASSERT(!rp);
@@ -539,16 +598,7 @@ void factory::tcp_socket_close(intptr_t handle)
 size_t factory::tcp_socket_read_some(intptr_t handle, void * buff, size_t sz)
 {
     socket_handle * sh = static_cast<socket_handle*>(reinterpret_cast<socket_handle_base*>(handle));
-
-    for (;;) {
-        ssize_t n = ::read(sh->sock.value, buff, sz);
-        if (n >= 0) return (size_t)n;
-        int err = errno;
-        if (BOOST_UNLIKELY(EAGAIN != err)) {
-            throw exception("can't read from socket, error: %1%"_fmt % strerror(err));
-        }
-        sh->wait();
-    }
+    return sh->read_some(buff, sz);
 }
 
 void factory::tcp_socket_async_read_some(intptr_t soc, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor)
@@ -559,16 +609,7 @@ void factory::tcp_socket_async_read_some(intptr_t soc, void * buff, size_t sz, f
 size_t factory::tcp_socket_write_some(intptr_t handle, void const* buff, size_t sz)
 {
     socket_handle * sh = static_cast<socket_handle*>(reinterpret_cast<socket_handle_base*>(handle));
-
-    for (;;) {
-        ssize_t n = ::write(sh->sock.value, buff, sz);
-        if (n >= 0) return (size_t)n;
-        int err = errno;
-        if (BOOST_UNLIKELY(EAGAIN != err)) {
-            throw exception("can't write to socket, error: %1%"_fmt % strerror(err));
-        }
-        sh->wait();
-    }
+    return sh->write_some(buff, sz);
 }
 
 tcp_acceptor factory::create_tcp_acceptor(cstring_view address, uint16_t port, tcp_socket_type dt, function<void(tcp_acceptor_factory::connection_factory_t const&)> const& handler)

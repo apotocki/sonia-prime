@@ -10,6 +10,8 @@
 #endif
 
 #include "sonia/services/io/tcp_socket.hpp"
+#include "sonia/services/io/udp_socket.hpp"
+#include "sonia/services/io/sockets.hpp"
 #include "sonia/utility/linked_buffers.hpp"
 
 namespace sonia { namespace services { namespace net {
@@ -22,6 +24,7 @@ public:
     using buff_ptr = single_linked_buffer_ptr<char>;
 
     virtual void connect(buff_ptr, size_t, sonia::io::tcp_socket) = 0;
+    virtual void connect(buff_ptr, size_t, sonia::io::socket_address const&, sonia::io::udp_weak_socket) = 0;
 };
 
 }}}

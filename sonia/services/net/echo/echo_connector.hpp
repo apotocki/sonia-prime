@@ -29,6 +29,7 @@ public:
     void close() noexcept override;
 
     void connect(buff_ptr, size_t, sonia::io::tcp_socket) override;
+    void connect(buff_ptr, size_t, sonia::io::socket_address const&, sonia::io::udp_weak_socket) override;
 
 private:
     echo_connector_configuration cfg_;

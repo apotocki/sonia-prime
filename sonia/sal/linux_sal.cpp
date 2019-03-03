@@ -4,8 +4,10 @@
 
 #include "sonia/config.hpp"
 #include "sonia/sal.hpp"
+#include "sonia/sal/net.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/services.hpp"
+#include "sonia/logger/logger.hpp"
 
 #include <sys/types.h>
 #include <dlfcn.h>
@@ -70,6 +72,14 @@ void delete_file(cstring_view path)
     if (-1 == unlink(path.c_str())) {
         int err = errno;
         throw exception("can't delete file %1%, error : %2%"_fmt % path % strerror(err));
+    }
+}
+
+void close_socket(socket_type sval) noexcept
+{
+    if (-1 == ::close(sval)) {
+        int err = errno;
+        GLOBAL_LOG_ERROR() << "errror while closing descriptor: " << strerror(err);
     }
 }
 

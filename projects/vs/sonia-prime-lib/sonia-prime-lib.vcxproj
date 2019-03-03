@@ -32,6 +32,7 @@
     <ClInclude Include="..\..\..\sonia\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\reference_wrapper.hpp" />
     <ClInclude Include="..\..\..\sonia\sal.hpp" />
+    <ClInclude Include="..\..\..\sonia\sal\net.hpp" />
     <ClInclude Include="..\..\..\sonia\sal_types.hpp" />
     <ClInclude Include="..\..\..\sonia\services.hpp" />
     <ClInclude Include="..\..\..\sonia\services\builder.hpp" />
@@ -43,10 +44,12 @@
     <ClInclude Include="..\..\..\sonia\services\host_impl.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\factory.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\file.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\io\tcp_acceptor.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\sockets.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\socket_address.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_read_output_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_socket.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_write_output_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\udp_socket.hpp" />
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\services\local_type_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\services\multimethod_registry.hpp" />
@@ -111,6 +114,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\tar_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_write_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\type_as_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp" />
@@ -134,6 +138,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\file_region_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_dereferencing_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\wrapper_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\optimized\maybe_array.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optimized_optional.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parameters\parameters.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parsers\json\lexems.hpp" />
@@ -146,6 +151,7 @@
     <ClInclude Include="..\..\..\sonia\utility\persister.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\polymorphic_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\object_pool.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\polymorphic_vector.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\posix\signals.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\range\combine.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\range\hasher.hpp" />
@@ -162,6 +168,8 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\integral.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\iostream.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\json_serialization.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\maybe_array.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\optimized_array.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\pair.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\placeholder.hpp" />
@@ -175,6 +183,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\type_durable_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\vector.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\shared_handle.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\simple_queue.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\array_view.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\tuple.hpp" />
@@ -213,6 +222,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\io_factory_win.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\io\socket_address.cpp" />
     <ClCompile Include="..\..\..\sonia\services\local_type_registry.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>

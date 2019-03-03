@@ -33,13 +33,19 @@ void echo_connector::connect(buff_ptr buff, size_t sz, sonia::io::tcp_socket soc
     //tcp_socket_read_iterator r(buff, sz, soc);
 
     try {
-        array_view<const char> readybuff{buff->cbegin(), sz};
+        auto readybuff = std::as_const(*buff).subview(0, sz);
         while (!wit.empty() && !rit.empty()) {
             *wit = readybuff; ++wit;
             *rit = buff->to_array_view(); ++rit;
             readybuff = *rit;
         }
     } catch (...) {}
+}
+
+void echo_connector::connect(buff_ptr buff, size_t sz, sonia::io::socket_address const& addr, sonia::io::udp_weak_socket soc)
+{
+    LOG_TRACE(logger()) << "udp connection from: " << addr.str();
+    BOOST_VERIFY(sz == soc.write_some(addr, buff->subview(0, sz)));
 }
 
 }}

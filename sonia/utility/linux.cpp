@@ -7,6 +7,7 @@
 #include "sonia/exceptions.hpp"
 
 #include <sys/utsname.h>
+#include <arpa/inet.h>
 
 #include <string>
 #include <cstdlib>
@@ -35,6 +36,24 @@ std::tuple<int, int, int> kernel_version()
     if (svec.size() > 1) std::get<1>(result) = atoi(svec[1].c_str());
     if (svec.size() > 2) std::get<2>(result) = atoi(svec[2].c_str());
     return result;
+}
+
+std::string inet_ntoa(sockaddr_in const* addr)
+{
+    char buff[INET6_ADDRSTRLEN];
+    const char* r = inet_ntop(
+        addr->sin_family,
+        AF_INET == addr->sin_family ? 
+            (void const*)&addr->sin_addr :
+            (void const*)&((sockaddr_in6 const*)addr)->sin6_addr,
+        buff,
+        sizeof(buff)
+    );
+    if (!r) {
+        int err = errno;
+        throw exception("can't retrieve the address, error : %1%"_fmt % strerror(err));
+    }
+    return std::string(r);
 }
 
 }}

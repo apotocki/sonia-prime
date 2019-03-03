@@ -74,6 +74,18 @@ public:
     array_view<T> to_array_view() noexcept { return array_view<T>(begin(), sz_); }
     array_view<const T> to_array_view() const noexcept { return array_view<const T>(begin(), sz_); }
 
+    template <typename OffsT>
+    array_view<T> subview(OffsT offset) { return to_subview(*this, offset); }
+
+    template <typename OffsT>
+    array_view<const T> subview(OffsT offset) const { return to_subview(*this, offset); }
+
+    template <typename OffsT>
+    array_view<T> subview(OffsT offset, size_t sz) { return to_subview(*this, offset, sz); }
+
+    template <typename OffsT>
+    array_view<const T> subview(OffsT offset, size_t sz) const { return to_subview(*this, offset, sz); }
+
     size_type size() const noexcept { return sz_; }
     bool empty() const noexcept { return 0 == sz_; }
     bool operator!() const noexcept { return empty(); }

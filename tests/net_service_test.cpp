@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 //============================================================================
 #include "sonia/config.hpp"
-
+//#include "sonia/utility/windows.hpp"
 #include <sstream>
 
 #include <boost/test/unit_test.hpp>
@@ -12,6 +12,8 @@
 
 #include "applied/scoped_services.hpp"
 #include "sonia/services/io/tcp_socket.hpp"
+#include "sonia/services/io/udp_socket.hpp"
+#include "sonia/services/io/sockets.hpp"
 
 using namespace sonia;
 
@@ -47,11 +49,12 @@ void get_configuration(std::ostream & os)
         "           factory: 'net-server-factory',"
         "           layer : 16,"
         "           parameters : {"
-        "               acceptor-factory: 'io.serv',"
-        "               scheduler: 'scheduler.serv',"
+        "               tcp-factory: 'io.serv',"
+        "               udp-factory: 'io.serv',"
+//        "               scheduler: 'scheduler.serv',"
         "               listeners: ["
 //        "                   { connector: 'echo.serv', address: '0.0.0.0', port: 2223, type: 'ssl'},"
-//        "                   { connector: 'echo.serv', address: '0.0.0.0', port: 2224, type: 'udp'},"
+ //       "                   { connector: 'echo.serv', address: '0.0.0.0', port: 2224, type: 'udp'},"
         "                   { connector: 'echo.serv', address: '0.0.0.0', port: 2222, type: 'tcp'}"
         "               ]"
         "           }"
@@ -147,34 +150,35 @@ void echo_test(tcp_socket soc)
     BOOST_CHECK_EQUAL(test_str, std::string(&conn.buffer[0], conn.buffer.size()));
 }
 
-void udp_echo_test(udp_socket soc, udp_endpoint const& ep)
+#endif
+
+void udp_echo_test(io::udp_socket soc)
 {
     // sync test
     std::string test_str("This is a test meassage.");
 
-    soc.write(to_array_ref(test_str), ep);
+    soc.write_some("127.0.0.1", 2224, to_array_view(test_str));
     std::vector<char> result(1024);
-    size_t sz = soc.read_some(to_array_ref(result));
+    size_t sz = soc.read_some(to_array_view(result));
     BOOST_REQUIRE(sz);
     BOOST_CHECK_EQUAL(test_str, std::string(&result[0], sz));
 
     // async test
-    test_conn conn;
-    soc.async_write(to_array_ref(test_str), ep, [&conn, &soc, &ep](boost::system::error_code const& err, size_t sz) {
-        if (!sz) {
-            conn.notify(sz);
-        } else {
-            soc.async_read_some(to_array_ref(conn.buffer), [&conn, &soc, &ep](boost::system::error_code const& err, udp_endpoint rep, size_t sz) {
-                BOOST_ASSERT(ep == rep);
-                conn.notify(sz);
-            });
-        }
-    });
+    //test_conn conn;
+    //soc.async_write(to_array_ref(test_str), ep, [&conn, &soc, &ep](boost::system::error_code const& err, size_t sz) {
+    //    if (!sz) {
+    //        conn.notify(sz);
+    //    } else {
+    //        soc.async_read_some(to_array_ref(conn.buffer), [&conn, &soc, &ep](boost::system::error_code const& err, udp_endpoint rep, size_t sz) {
+    //            BOOST_ASSERT(ep == rep);
+    //            conn.notify(sz);
+    //        });
+    //    }
+    //});
 
-    conn.wait();
-    BOOST_CHECK_EQUAL(test_str, std::string(&conn.buffer[0], conn.buffer.size()));
+    //conn.wait();
+    //BOOST_CHECK_EQUAL(test_str, std::string(&conn.buffer[0], conn.buffer.size()));
 }
-#endif
 
 void tcp_echo_test(io::tcp_socket soc)
 {
@@ -233,25 +237,29 @@ BOOST_AUTO_TEST_CASE( net_service_test )
     services::load_configuration(cfgss);
 
     std::string test_str("This is a test meassage.");
-    auto socfactory = services::locate<io::tcp_socket_factory>("io.serv");
+    auto tcpfactory = services::locate<io::tcp_socket_factory_type>("io.serv");
 
-#if 1
+#if 0
     // test tcp connection
-    auto soc = socfactory->create_tcp_socket("127.0.0.1", 2222);
+    auto soc = tcpfactory->create_tcp_socket("127.0.0.1", 2222);
     try {
         tcp_echo_test(std::move(soc));
     } catch (std::exception const& e) {
         BOOST_CHECK_MESSAGE(false, e.what());
     }
 #endif
-#if 1
-    soc = socfactory->create_tcp_socket("127.0.0.1", 2222);
+#if 0
+    soc = tcpfactory->create_tcp_socket("127.0.0.1", 2222);
     try {
         tcp_echo_test(std::move(soc));
     } catch (std::exception const& e) {
         BOOST_CHECK_MESSAGE(false, e.what());
     }
 #endif
+#if 0
+    auto udpfactory = services::locate<io::udp_socket_factory_type>("io.serv");
+    auto udpsoc = udpfactory->create_udp_socket();
+    udp_echo_test(std::move(udpsoc));
 
     //// test ssl connection
     //soc = socfactory->create_tcp_socket("127.0.0.1", 2223, tcp_socket_type::SSL);
@@ -264,8 +272,6 @@ BOOST_AUTO_TEST_CASE( net_service_test )
     //// test ssl
     //soc = socfactory->create_tcp_socket("127.0.0.1", 2223, tcp_socket_type::SSL);
     //echo_test(std::move(soc));
+#endif
 
-    //auto udpsoc = socfactory->create_udp_socket();
-    //auto udpep = socfactory->create_udp_endpoint("127.0.0.1", 2224);
-    //udp_echo_test(std::move(udpsoc), udpep);
 }

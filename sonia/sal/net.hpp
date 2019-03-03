@@ -2,8 +2,8 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SAL_TYPES_HPP
-#define SONIA_SAL_TYPES_HPP
+#ifndef SONIA_SAL_NET_HPP
+#define SONIA_SAL_NET_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
@@ -12,11 +12,15 @@
 namespace sonia { namespace sal {
 
 #ifdef BOOST_WINDOWS
-using file_handle_type = void*;
+using socket_type = uintptr_t;
+static constexpr socket_type not_initialized_socket_v = (uintptr_t)(~0);
 #else
-using file_handle_type = int;
+using socket_type = int;
+static constexpr socket_type not_initialized_socket_v = -1;
 #endif
+
+void close_socket(socket_type) noexcept;
 
 }}
 
-#endif // SONIA_SAL_HPP
+#endif // SONIA_SAL_NET_HPP

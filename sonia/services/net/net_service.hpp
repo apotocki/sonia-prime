@@ -12,7 +12,8 @@
 #include <vector>
 
 #include "sonia/services/service.hpp"
-#include "sonia/services/io/tcp_acceptor.hpp"
+#include "sonia/services/io/udp_socket.hpp"
+#include "sonia/services/io/sockets.hpp"
 #include "sonia/services/scheduler/scheduler.hpp"
 
 #include "sonia/utility/linked_buffers.hpp"
@@ -34,18 +35,16 @@ public:
     void open() override;
     void close() noexcept override;
 
-private:
     struct listener
     {
-        shared_ptr<net::connector> cn;
-        sonia::io::tcp_acceptor acceptor;
-        shared_ptr<scheduler> sched;
-        void close() { acceptor.close(); }
+        virtual ~listener() {}
+        virtual void close() = 0;
     };
 
+private:
     net_service_configuration cfg_;
-    shared_ptr<sonia::io::tcp_acceptor_factory> acceptor_factory_;
-    shared_ptr<scheduler> scheduler_;
+    shared_ptr<sonia::io::udp_socket_factory_type> udp_socket_factory_;
+    shared_ptr<sonia::io::tcp_socket_factory_type> tcp_socket_factory_;
     std::vector<shared_ptr<listener>> listeners_;
 };
 

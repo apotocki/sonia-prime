@@ -67,10 +67,10 @@ struct optimized_array_impl
     static const size_t aligned_byte_offs = ceiling_v<(HolderT::used_bits + szbitscnt + CHAR_BIT - 1) / CHAR_BIT, alv>;
     static const size_t maxsz = (sizeof(HolderT) - aligned_byte_offs) / sizeof(ElementT);
 
-    static ElementT const* begin(HolderT const* h) noexcept { return (ElementT const*)(h->data() + aligned_byte_offs); }
-    static ElementT * begin(HolderT * h) noexcept { return (ElementT*)(h->data() + aligned_byte_offs); }
-    static ElementT const* end(HolderT const* h) noexcept { return begin(h) + maxsz; }
-    static ElementT * end(HolderT * h) noexcept { return begin(h) + maxsz; }
+    static ElementT const* local_begin(HolderT const* h) noexcept { return (ElementT const*)(h->data() + aligned_byte_offs); }
+    static ElementT * local_begin(HolderT * h) noexcept { return (ElementT*)(h->data() + aligned_byte_offs); }
+    static ElementT const* local_end(HolderT const* h) noexcept { return begin(h) + (h->get_uint() & sz_mask); }
+    static ElementT * local_end(HolderT * h) noexcept { return begin(h) + (h->get_uint() & sz_mask); }
 
     static void init(HolderT * self)
     {
@@ -108,16 +108,36 @@ struct optimized_array_impl
         init(self, std::forward<RngT>(rng), boost::size(rng));
     }
 
+    static ElementT* begin(HolderT * self)
+    {
+        return self->is_ptr() ? ptr(self)->begin() : local_begin(self);
+    }
+
+    static ElementT const* begin(HolderT const* self)
+    {
+        return self->is_ptr() ? ptr(self)->begin() : local_begin(self);
+    }
+
+    static ElementT* end(HolderT * self)
+    {
+        return self->is_ptr() ? ptr(self)->end() : local_end(self);
+    }
+
+    static ElementT const* end(HolderT const* self)
+    {
+        return self->is_ptr() ? ptr(self)->end() : local_end(self);
+    }
+
     static array_view<ElementT> get(HolderT * self)
 	{
         return self->is_ptr() ? ptr(self)->to_array_view() 
-            : array_view<ElementT>(begin(self), self->get_uint() & sz_mask);
+            : array_view<ElementT>(local_begin(self), self->get_uint() & sz_mask);
     }
 
-    static array_view<const ElementT> get(HolderT const* self)
-	{
-        return self->is_ptr() ? ptr(self)->to_array_view() 
-            : array_view<const ElementT>(begin(self), self->get_uint() & sz_mask);
+    static array_view<const ElementT> get(HolderT const * self)
+    {
+        return self->is_ptr() ? ptr(self)->to_array_view()
+            : array_view<const ElementT>(local_begin(self), self->get_uint() & sz_mask);
     }
 
     static size_t size(HolderT const* self)
@@ -137,10 +157,10 @@ protected:
     }
 };
 
-template <typename ElementT, size_t btsz, typename RefCountT>
-class optimized_array : protected optimized_holder<btsz, 0, RefCountT>
+template <typename ElementT, size_t ByteSzV, typename RefCountT>
+class optimized_array : protected optimized_holder<ByteSzV, 0, RefCountT>
 {
-    using holder_t = optimized_holder<btsz, 0, RefCountT>;
+    using holder_t = typename optimized_array::optimized_holder_t;
     using array_t = optimized_array_impl<ElementT, holder_t>;
 
 protected:
@@ -152,6 +172,7 @@ protected:
 public:
     using iterator = ElementT *;
     using const_iterator = ElementT const*;
+    using size_type = size_t;
 
     optimized_array()
     {
@@ -191,12 +212,12 @@ public:
     array_view<ElementT> to_array_view() noexcept { return array_t::get(this); }
     array_view<const ElementT> to_array_view() const noexcept { return array_t::get(this); }
 
-    ElementT const* cbegin() const noexcept { return array_t::get(this).begin(); }
-    ElementT const* begin() const noexcept { return array_t::get(this).begin(); }
-    ElementT * begin() noexcept { return array_t::get(this).begin(); }
-    ElementT const* cend() const noexcept { return array_t::get(this).end(); }
-    ElementT const* end() const noexcept { return array_t::get(this).end(); }
-    ElementT * end() noexcept { return array_t::get(this).end(); }
+    ElementT const* cbegin() const noexcept { return array_t::begin(this); }
+    ElementT const* begin() const noexcept { return array_t::begin(this); }
+    ElementT * begin() noexcept { return array_t::begin(this); }
+    ElementT const* cend() const noexcept { return array_t::end(this); }
+    ElementT const* end() const noexcept { return array_t::end(this); }
+    ElementT * end() noexcept { return array_t::end(this); }
 
     size_t size() const noexcept { return array_t::size(this); }
 
@@ -207,16 +228,21 @@ public:
         return range_equal()(begin(), end(), rhs.begin(), rhs.end());
     }
 
+    bool operator!= (optimized_array const& rhs) const
+    {
+        return !operator==(rhs);
+    }
+
     bool operator< (optimized_array const& rhs) const
     {
         return range_less()(begin(), end(), rhs.begin(), rhs.end());
     }
 };
 
-template <typename ElementT, size_t btsz, typename RefCountT>
-class shared_optimized_array : public optimized_array<ElementT, btsz, RefCountT>
+template <typename ElementT, size_t ByteSzV, typename RefCountT>
+class shared_optimized_array : public optimized_array<ElementT, ByteSzV, RefCountT>
 {
-    using base_t = optimized_array<ElementT, btsz, RefCountT>;
+    using base_t = optimized_array<ElementT, ByteSzV, RefCountT>;
     using holder_t = typename base_t::holder_t;
 
 public:
@@ -243,6 +269,12 @@ public:
     shared_optimized_array(shared_optimized_array &&) = default;
     shared_optimized_array& operator=(shared_optimized_array &&) = default;
 };
+
+template <typename ElementT, size_t ByteSzV, typename RefCountT>
+array_view<const ElementT> to_array_view(shared_optimized_array<ElementT, ByteSzV, RefCountT> const& sa) { return sa.to_array_view(); }
+
+template <typename ElementT, size_t ByteSzV, typename RefCountT>
+array_view<ElementT> to_array_view(shared_optimized_array<ElementT, ByteSzV, RefCountT> & sa) { return sa.to_array_view(); }
 
 }
 

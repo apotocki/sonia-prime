@@ -9,11 +9,15 @@
 #   pragma once
 #endif
 
+#include <netinet/in.h>
+
 #include <tuple>
 
 namespace sonia { namespace linux {
 
 std::tuple<int, int, int> kernel_version();
+
+std::string inet_ntoa(sockaddr_in const* addr);
 
 }}
 

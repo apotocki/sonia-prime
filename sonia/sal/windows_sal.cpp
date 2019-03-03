@@ -5,6 +5,7 @@
 #include "sonia/config.hpp"
 #include "sonia/utility/windows.hpp"
 #include "sonia/sal.hpp"
+#include "sonia/sal/net.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
@@ -63,6 +64,16 @@ void delete_file(cstring_view path)
 {
     std::wstring wfname = winapi::utf8_to_utf16(path);
     winapi::delete_file(wfname.c_str(), path.c_str());
+}
+
+// net
+void close_socket(socket_type sval) noexcept
+{
+    SOCKET s = (SOCKET)sval;
+    if (s != INVALID_SOCKET && closesocket(s) == SOCKET_ERROR) {
+        DWORD err = WSAGetLastError();
+        GLOBAL_LOG_ERROR() << "errror while closing socket: " << winapi::error_message(err);
+    }
 }
 
 }}

@@ -6,6 +6,7 @@
 #include "sonia/utility/windows.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/exceptions.hpp"
+#include "sonia/utility/optimized/array.hpp"
 
 #include <boost/lexical_cast.hpp>
 
@@ -121,7 +122,7 @@ wsa_scope::~wsa_scope()
     WSACleanup();
 }
 
-bool parse_address(string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc)
+bool parse_address(int hint_type, int hint_protocol, string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc)
 {
     std::wstring wadr = utf8_to_utf16(address);
     std::wstring portstr = boost::lexical_cast<std::wstring>(port);
@@ -129,8 +130,8 @@ bool parse_address(string_view address, uint16_t port, function<bool(ADDRINFOW*)
     ADDRINFOW *result = nullptr, hints;
     ZeroMemory(&hints, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_socktype = hint_type;
+    hints.ai_protocol = hint_protocol;
 
     DWORD iResult = GetAddrInfoW(wadr.c_str(), portstr.c_str(), &hints, &result);
     if (iResult) {
@@ -147,6 +148,23 @@ bool parse_address(string_view address, uint16_t port, function<bool(ADDRINFOW*)
     return false;
 }
 
+std::string inet_ntoa(sockaddr const* addr, DWORD addrsz, LPWSAPROTOCOL_INFOW lpProtocolInfo)
+{
+    using arr_type = shared_optimized_array<wchar_t, 48, uint16_t>;
+    arr_type temparr{(size_t)46};
+    for (;;) {
+        DWORD sz = (DWORD)temparr.size();
+        int r = WSAAddressToStringW(const_cast<sockaddr*>(addr), addrsz, lpProtocolInfo, temparr.begin(), &sz);
+        if (!r) return utf16_to_utf8(temparr.to_array_view().subview(0, sz));
+        DWORD err = WSAGetLastError();
+        if (WSAEFAULT == err) {
+            temparr = arr_type(temparr.size() * 2);
+            continue;
+        }
+        throw exception("can't understand address error: %1%"_fmt % error_message(err));
+    }
+}
+
 SOCKET create_socket(int af, int type, int protocol)
 {
     SOCKET sock = socket(af, type, protocol);
@@ -155,6 +173,15 @@ SOCKET create_socket(int af, int type, int protocol)
         throw exception("can't create socket, error: %1%"_fmt % error_message(err));
     }
     return sock;
+}
+
+void bind_socket(SOCKET soc, sockaddr * name, int namelen)
+{
+    int iResult = bind(soc, name, namelen);
+    if (iResult == SOCKET_ERROR) {
+        DWORD err = WSAGetLastError();
+        throw exception("can't bind socket, error: %1%"_fmt % error_message(err));
+    }
 }
 
 HANDLE create_completion_port(uint32_t thread_count)
@@ -183,6 +210,23 @@ void post_completion_port(HANDLE cp, DWORD btransf, ULONG_PTR key, OVERLAPPED * 
     }
 }
 
+void async_recvfrom(SOCKET soc, void * buff, size_t sz, SOCKADDR * sa, int * sasz, WSAOVERLAPPED * pov)
+{
+    WSABUF wsabuf;
+    wsabuf.len = (ULONG)sz;
+    wsabuf.buf = reinterpret_cast<char*>(buff);
+
+    DWORD flags = 0;
+
+    int rc = WSARecvFrom(soc, &wsabuf, 1, NULL, &flags, sa, sasz, pov, NULL);
+    if (rc == SOCKET_ERROR) {
+        DWORD err = WSAGetLastError();
+        if (WSA_IO_PENDING != err) {
+            throw exception("can't async receive data from socket, error: %1%"_fmt % error_message(err));
+        }
+    }
+}
+
 void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov)
 {
     WSABUF wsabuf;
@@ -195,7 +239,7 @@ void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov)
     if (rc == SOCKET_ERROR) { 
         DWORD err = WSAGetLastError();
         if (WSA_IO_PENDING != err) {
-            throw exception("can't receive data from socket, error: %1%"_fmt % error_message(err));
+            throw exception("can't async receive data from socket, error: %1%"_fmt % error_message(err));
         }
     }
 }
@@ -208,6 +252,22 @@ void async_send(SOCKET soc, void const * buff, size_t sz, WSAOVERLAPPED * pov)
 
     DWORD sentsz;
     int rc = WSASend(soc, &wsabuf, 1, &sentsz, 0, pov, NULL);
+    if (rc == SOCKET_ERROR) {
+        DWORD err = WSAGetLastError();
+        if (WSA_IO_PENDING != err) {
+            throw exception("can't send data to socket, error: %1%"_fmt % error_message(err));
+        }
+    }
+}
+
+void async_send_to(SOCKET soc, sockaddr const* addr, int addrlen, void const * buff, size_t sz, WSAOVERLAPPED * pov)
+{
+    WSABUF wsabuf;
+    wsabuf.len = (ULONG)sz;
+    wsabuf.buf = const_cast<char*>(reinterpret_cast<char const*>(buff));
+
+    DWORD sentsz;
+    int rc = WSASendTo(soc, &wsabuf, 1, &sentsz, 0, addr, addrlen, pov, NULL);
     if (rc == SOCKET_ERROR) {
         DWORD err = WSAGetLastError();
         if (WSA_IO_PENDING != err) {
@@ -255,6 +315,36 @@ void delete_file(wchar_t const * path, char const* optutf8path)
     if (!DeleteFileW(path)) {
         DWORD err = GetLastError();
         throw exception("can't delete file %1%, error : %2%"_fmt % (optutf8path ? optutf8path : utf16_to_utf8(path).c_str()) % error_message(err));
+    }
+}
+
+void async_read_file(HANDLE handle, uint64_t fileoffset, void * buff, size_t sz, OVERLAPPED * pov)
+{
+    pov->Offset = (DWORD)(fileoffset & 0xFFFFFFFF);
+    pov->OffsetHigh = (DWORD)(fileoffset >> 32);
+
+    DWORD sz2read = sz > 0xffffFFFF ? 0xffffFFFF : (DWORD)sz;
+    SetLastError(0);
+    if (!ReadFileEx(handle, buff, sz2read, pov, NULL)) {
+        DWORD err = GetLastError();
+        if (ERROR_IO_PENDING != err) {
+            throw exception("read file error : %1%"_fmt % error_message(err));
+        }
+    }
+}
+
+void async_write_file(HANDLE handle, uint64_t fileoffset, void const * buff, size_t sz, OVERLAPPED * pov)
+{
+    pov->Offset = (DWORD)(fileoffset & 0xFFFFFFFF);
+    pov->OffsetHigh = (DWORD)(fileoffset >> 32);
+
+    DWORD sz2write = sz > 0xffffFFFF ? 0xffffFFFF : (DWORD)sz;
+    SetLastError(0);
+    if (!WriteFileEx(handle, buff, sz2write, pov, NULL)) {
+        DWORD err = GetLastError();
+        if (ERROR_IO_PENDING != err) {
+            throw exception("write file error : %1%"_fmt % error_message(err));
+        }
     }
 }
 

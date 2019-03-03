@@ -12,6 +12,10 @@
 #endif
 
 #include <utility>
+#include <boost/stacktrace.hpp>
+#include <boost/exception/diagnostic_information.hpp>
+#include "sonia/exceptions.hpp"
+#include "sonia/logger/logger.hpp"
 
 namespace sonia {
 
@@ -21,7 +25,17 @@ class scope_exit
 public:
     scope_exit(scope_exit const&) = delete;
     explicit scope_exit(T&& exitScope) : exitScope_(std::forward<T>(exitScope)){}
-    ~scope_exit() noexcept { try { exitScope_(); } catch(...) {} }
+    ~scope_exit() noexcept
+    {
+        try {
+            exitScope_(); 
+        } catch (internal_error const& e) {
+            GLOBAL_LOG_ERROR() << "error during the scope exit: " << e.what();
+        } catch (...) {
+            GLOBAL_LOG_ERROR() << "error during the scope exit: " << boost::current_exception_diagnostic_information() << '\n' << boost::stacktrace::stacktrace();
+        }
+    }
+
 private:
     T exitScope_;
 };          

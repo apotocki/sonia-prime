@@ -345,9 +345,6 @@
     <ClInclude Include="..\..\..\sonia\services\io\file.hpp">
       <Filter>sonia.services.io</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\io\tcp_acceptor.hpp">
-      <Filter>sonia.services.io</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\io\tcp_socket.hpp">
       <Filter>sonia.services.io</Filter>
     </ClInclude>
@@ -579,6 +576,36 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\optimized_array.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\optimized\maybe_array.hpp">
+      <Filter>sonia.utility\optimized</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\maybe_array.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\type_as_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\udp_socket.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\sockets.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\socket_address.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\polymorphic_vector.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sal\net.hpp">
+      <Filter>sonia.sal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\shared_handle.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -670,6 +697,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\linux.cpp">
       <Filter>sonia.utility</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\socket_address.cpp">
+      <Filter>sonia.services.io</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

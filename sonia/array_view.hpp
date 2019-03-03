@@ -57,7 +57,7 @@ public:
         BOOST_ASSERT(std::less_equal<T*>()(b, e));
     }
 
-    template <typename OtherT> 
+    template <typename OtherT>
     constexpr array_view(array_view<OtherT> arr) : data_(arr.begin()), size_(arr.size())
     {
         static_assert(sizeof(T) == sizeof(OtherT));
@@ -78,7 +78,7 @@ public:
     constexpr bool empty() const noexcept { return !size_; }
 
     constexpr size_type size() const noexcept { return size_; }
-    
+
     constexpr void advance_front(std::ptrdiff_t dist)
     {
         size_ -= dist;
@@ -93,7 +93,7 @@ public:
     constexpr void reset() noexcept { data_ = nullptr; size_ = 0; }
 
     constexpr reference operator[](size_type ind) const noexcept { return data_[ind]; }
-    
+
     constexpr explicit operator bool() const noexcept { return !empty(); }
 
     constexpr bool has(T const * e) const
@@ -110,12 +110,19 @@ public:
     bool starts_with(array_view prefix) const
     {
         if (size_ < prefix.size()) return false;
-        if constexpr (is_trivial_v<T>) {
+        if constexpr (is_trivial_v<T>)
+        {
             return 0 == std::memcmp(data_, prefix.data_, prefix.size() * sizeof(T));
         } else {
             return std::equal(prefix.begin(), prefix.end(), data_);
         }
     }
+
+    template <typename OffsT>
+    constexpr array_view subview(OffsT offset) const;
+    
+    template <typename OffsT>
+    constexpr array_view subview(OffsT offset, size_type sz) const;
 
 protected:
     T * data_;
@@ -135,6 +142,12 @@ bool operator== (array_view<T> const& lhs, array_view<T> const& rhs)
 }
 
 template <typename T>
+bool operator!= (array_view<T> const& lhs, array_view<T> const& rhs)
+{
+    return !range_equal()(lhs, rhs);
+}
+
+template <typename T>
 bool operator< (array_view<T> const& lhs, array_view<T> const& rhs)
 {
     return range_less()(lhs, rhs);
@@ -144,7 +157,7 @@ template <typename T>
 array_view<T> to_array_view(array_view<T> av) { return av; }
 
 template <typename T, size_t N>
-array_view<T> to_array_view(T (&arr)[N])
+array_view<T> to_array_view(T(&arr)[N])
 {
     return array_view<T>(arr, N);
 }
@@ -172,6 +185,50 @@ array_view<const T> to_array_view(std::array<T, SzV> const& v)
 {
     return array_view<const T>(SzV ? &v.front() : nullptr, SzV);
 }
+
+template <typename ArrayT, typename OffsT>
+constexpr auto to_subview(ArrayT && arr, OffsT offset)
+{
+    auto b = std::forward<ArrayT>(arr).begin();
+    auto size = std::forward<ArrayT>(arr).size();
+    //BOOST_ASSERT((size_type)std::abs(offset) <= sz);
+    if constexpr (is_signed_v<OffsT>)
+    {
+        if (offset >= 0) {
+            return array_view{b + offset, (size_t)(size - offset)};
+        } else {
+            return array_view{b + size + offset, (size_t)(-offset)};
+        }
+    } else {
+        return array_view{b + offset, size - offset};
+    }
+}
+
+template <typename ArrayT, typename OffsT>
+constexpr auto to_subview(ArrayT && arr, OffsT offset, size_t sz)
+{
+    auto b = std::forward<ArrayT>(arr).begin();
+    auto size = std::forward<ArrayT>(arr).size();
+
+    if constexpr (is_signed_v<OffsT>)
+    {
+        if (offset >= 0) {
+            return array_view{b + offset, sz};
+        } else {
+            return array_view{b + size + offset, sz};
+        }
+    } else {
+        return array_view{b + offset, sz};
+    }
+}
+
+template <typename T>
+template <typename OffsT>
+constexpr array_view<T> array_view<T>::subview(OffsT offset) const { return to_subview(*this, offset); }
+
+template <typename T>
+template <typename OffsT>
+constexpr array_view<T> array_view<T>::subview(OffsT offset, size_type sz) const { return to_subview(*this, offset, sz); }
 
 }
 

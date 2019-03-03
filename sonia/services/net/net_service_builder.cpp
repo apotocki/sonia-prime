@@ -14,8 +14,9 @@ net_service_builder::net_service_builder()
 {
     set_log_attribute("Type", "builder");
     parameters_.bind()
-        .variable("acceptor-factory", &net_service_configuration::acceptor_factory, "acceptor factory name").required()
-        .variable("scheduler", &net_service_configuration::scheduler, "scheduler service name").required()
+        .variable("udp-factory", &net_service_configuration::udp_factory, "udp socket factory name")
+        .variable("tcp-factory", &net_service_configuration::tcp_factory, "tcp socket factory name")
+        //.variable("scheduler", &net_service_configuration::scheduler, "scheduler service name").required()
         .array("listeners", &net_service_configuration::listeners, "listeners set definition")
             .binder(sp::parameters_description<net::listener_configuration>().bind()
                 .variable("connector", &net::listener_configuration::connector, "connector service name").required()

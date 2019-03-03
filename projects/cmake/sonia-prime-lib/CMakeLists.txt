@@ -23,6 +23,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/scheduler/fiber_work_stealing_scheduler.cpp
     ${BUNDLE_HOME}/sonia/services/io/file.cpp
     ${BUNDLE_HOME}/sonia/services/io/io_factory.cpp
+    ${BUNDLE_HOME}/sonia/services/io/socket_address.cpp
 )
 
 if ( CMAKE_SYSTEM_NAME STREQUAL "Windows")

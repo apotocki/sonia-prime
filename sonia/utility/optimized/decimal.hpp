@@ -17,7 +17,7 @@ namespace sonia {
 template <typename SignedT, typename UnsignedT>
 SignedT unsigned_to_signed(UnsignedT val, UnsignedT sign_mask)
 {
-    return (val & sign_mask) ? (-((SignedT)(val & (~sign_mask))) - 1) : (SignedT)val;
+    return (val & sign_mask) ? -((SignedT)(val & (~sign_mask))) : (SignedT)val;
 }
 
 template <typename UnsignedT, typename SignedT>
@@ -33,18 +33,18 @@ struct optimized_decimal_impl
     using uint_t = typename HolderT::uint_t;
     using int_t = typename boost::int_t<HolderT::value_bits>::fast;
 
-    static const size_t exp_bits = 4 + 3 * HolderT::value_bits / 4;
-    static const size_t mnts_bits = HolderT::value_bits - exp_bits;
+    static const size_t mnts_bits = 4 + 3 * HolderT::value_bits / 4;
+    static const size_t exp_bits = HolderT::value_bits - mnts_bits;
 
     static const uint_t mnts_mask = (((uint_t)1) << mnts_bits) - 1;
     static const uint_t mnts_sign_mask = ((uint_t)1) << (mnts_bits - 1);
     static const uint_t exp_mask = (((uint_t)1) << exp_bits) - 1;
     static const uint_t exp_sign_mask = ((uint_t)1) << (exp_bits - 1);
 
-    static const int_t mnts_max = (int_t)mnts_mask;
-    static const int_t mnts_min = -((int_t)mnts_mask) - 1;
-    static const int_t exp_max = (int_t)exp_mask;
-    static const int_t exp_min = -((int_t)exp_mask) - 1;
+    static const int_t mnts_max = (int_t)(mnts_mask >> 1);
+    static const int_t mnts_min = -mnts_max - 1;
+    static const int_t exp_max = (int_t)(exp_mask >> 1);
+    static const int_t exp_min = -exp_max - 1;
 
     template <typename ... ArgsT>
     static void init(HolderT * self, ArgsT&& ... args)

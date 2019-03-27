@@ -11,7 +11,6 @@
 
 #include <utility>
 #include <boost/utility/in_place_factory.hpp>
-#include "sonia/reference_wrapper.hpp"
 #include "sonia/utility/serialization/serialization_fwd.hpp"
 
 namespace sonia {
@@ -20,12 +19,6 @@ template <typename TagT, typename T, typename OutputIteratorT>
 OutputIteratorT encode(T const& arg, OutputIteratorT oi)
 {
     return serialization::coder<TagT, T>().encode(arg, std::move(oi));
-}
-
-template <typename TagT, typename T, typename OutputIteratorT>
-OutputIteratorT encode(reference_wrapper<T> arg, OutputIteratorT oi)
-{
-    return serialization::coder<TagT, remove_cv_t<T>>().encode(arg.get(), std::move(oi));
 }
 
 template <typename TagT, typename T, typename InputIteratorT, typename ArgT>

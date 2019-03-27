@@ -10,6 +10,7 @@
 #endif
 
 #include <utility>
+#include "sonia/function.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
 
 #ifndef SONIA_SCHEDULER_TASK_SZ

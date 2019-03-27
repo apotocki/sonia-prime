@@ -29,7 +29,7 @@ public:
         if constexpr (is_trivial_v<T> && sizeof(T) == 1) {
             return std::copy(value.begin(), value.end(), std::move(oi));
         } else {
-            coder<TagT, T> enc;
+            coder<TagT, remove_cv_t<T>> enc;
             for (auto const& e : value) {
                 oi = enc.encode(e, std::move(oi));
             }

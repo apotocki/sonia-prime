@@ -21,7 +21,7 @@
 namespace sonia {
 
 template <typename T, bool IsPlaceholder = !!is_placeholder_v<remove_cvref_t<T>>>
-struct bound_parameter { typedef remove_cvref_t<T> type; };
+struct bound_parameter { using type = remove_cvref_t<T>; };
 
 template <typename T> struct bound_parameter<T*, false> { using type = T*; };
 template <typename T> struct bound_parameter<T&, false> { using type = reference_wrapper<T>; };
@@ -48,7 +48,7 @@ template <typename T, int pidx = is_placeholder_v<T>>
 struct substitute_placeholder_value
 {
     template <typename Arg, typename ... Args>
-    auto&& operator()(Arg &&, Args&& ... args) const
+    decltype(auto) operator()(Arg &&, Args&& ... args) const
     {
         return variadic::forward_at<pidx - 1>(std::forward<Args>(args) ...);
     }
@@ -58,7 +58,7 @@ template <typename T>
 struct substitute_placeholder_value<T, 0>
 {
     template <typename Arg, typename ... Args>
-    auto operator()(Arg && arg, Args&& ...) const
+    decltype(auto) operator()(Arg && arg, Args&& ...) const
     {
         return std::forward<Arg>(arg);
     }

@@ -99,7 +99,7 @@ template <typename T>
 T basic_decimal<SignificandT, ExponentT>::get() const
 {
     if constexpr (is_floating_point_v<T>) {
-        return (T)value_ * std::pow(10.0, exponent_10_);
+        return (T)((T)value_ * std::pow(10.0, exponent_10_));
     } else {
         if (exponent_10_ == 0) {
             return (T)value_; // .convert_to<T>();

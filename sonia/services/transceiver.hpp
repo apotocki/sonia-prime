@@ -10,6 +10,7 @@
 #endif
 
 #include <utility>
+#include <boost/mpl/at.hpp>
 
 #include "sonia/string.hpp"
 #include "sonia/optional.hpp"
@@ -17,23 +18,25 @@
 #include "sonia/utility/type_durable_id.hpp"
 #include "sonia/utility/bind.hpp"
 #include "sonia/utility/multimethod.hpp"
+#include "sonia/utility/marshaling/marshaling.hpp"
 #include "sonia/utility/serialization/serialization.hpp"
 #include "sonia/utility/serialization/serializable.hpp"
 #include "sonia/utility/serialization/type_durable_id.hpp"
 #include "sonia/utility/serialization/tuple.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
+#include "sonia/exceptions/internal_errors.hpp"
 
-//#include "sonia/utility/command.hpp"
 
-//#include <boost/fiber/future.hpp>
+namespace sonia::services {
 
-namespace sonia { namespace services {
+class serializable_proxy_object : public serializable {};
 
-class transceiver {
+class transceiver
+{
 public:
-    virtual ~transceiver() {}
+    virtual ~transceiver() = default;
 
-    virtual void transmit_and_receive(string_view dest, sonia::type::durable_id objid, serializable & obj) = 0;
+    virtual void transmit_and_receive(string_view dest, serializable_proxy_object & obj) = 0;
 /*
     // send and forget
     virtual void async_send(string_view dest, command<void> &) = 0;
@@ -56,7 +59,8 @@ protected:
 };
 
 template <typename RT>
-class proxy_object_base {
+class proxy_object_base
+{
 public:
     RT get() const { return std::move(*ret_); }
 
@@ -67,17 +71,20 @@ protected:
 };
 
 template <>
-class proxy_object_base<void> {
+class proxy_object_base<void>
+{
 public:
     void get() const {}
 };
 
+
 template <class BindingTagT, typename ... ArgsT>
 class proxy_object 
     : public proxy_object_base<typename BindingTagT::result_type>
-    , public serializable
+    , public serializable_proxy_object
 {
     using result_type = typename BindingTagT::result_type;
+    using base_type = proxy_object_base<result_type>;
 
 public:
     explicit proxy_object(ArgsT&& ... args)
@@ -92,17 +99,28 @@ public:
 
     void serialize(range_write_iterator wit) const override
     {
-        auto enc = make_encoder<sonia::serialization::compressed_t>(
-            range_dereferencing_iterator(wit)
-        );
-        enc & sonia::type::durable_id::get<BindingTagT>() & proxy_tuple_;
-        enc.iterator().flush();
+        range_dereferencing_iterator rit{std::move(wit)};
+        rit = encode<sonia::serialization::compressed_t>(sonia::type::durable_id::get<BindingTagT>(), std::move(rit));
+        encode<sonia::serialization::compressed_t>(proxy_tuple_, std::move(rit)).flush();
     }
 
-    void deserialize(range_read_iterator rit) const override
+    void deserialize(range_read_iterator rit) override
     {
-        auto it = range_dereferencing_iterator(rit);
-        throw not_implemented_error();
+        range_dereferencing_iterator rdit{std::move(rit)};
+
+        std::string errstr;
+        rdit = decode<sonia::serialization::compressed_t>(std::move(rdit), errstr);
+        if (!errstr.empty()) {
+            throw exception(std::move(errstr));
+        }
+
+        if constexpr (!is_void_v<result_type>) {
+            base_type::ret_.emplace();
+            rdit = decode<sonia::serialization::compressed_t>(std::move(rdit), *base_type::ret_);
+        }
+  
+        auto tv = sonia::mpl::make_transform_view<typename BindingTagT::result_transformer_t>(proxy_tuple_);
+        decode<sonia::serialization::compressed_t>(std::move(rdit), tv);
     }
 
 private:
@@ -110,12 +128,13 @@ private:
 };
 
 struct process_taged_object{};
+using stub_read_iterator = range_dereferencing_iterator<serializable::range_read_iterator>;
+using stub_write_iterator = range_dereferencing_iterator<serializable::range_write_iterator>;
 
 template <typename RangeReadIteratorT, typename RangeWriteIteratorT>
 void deserialize_object(RangeReadIteratorT rit, RangeWriteIteratorT writ)
 {
     using read_iterator = range_dereferencing_iterator<RangeReadIteratorT>;
-    //using write_iterator = range_dereferencing_iterator<RangeWriteIteratorT>;
 
     read_iterator it = range_dereferencing_iterator(rit);
     automatic<sonia::type::durable_id> btid(in_place_decode<sonia::serialization::compressed_t>(it));
@@ -126,30 +145,26 @@ void deserialize_object(RangeReadIteratorT rit, RangeWriteIteratorT writ)
     }
 }
 
-template <class BindingTagT>
-class stub_object : public serializable {
-public:
-
-    void deserialize(range_read_iterator rit) const override
-    {
-
-    }
-
-private:
-    typename BindingTagT::stub_tuple_t stub_tuple_;
-};
-
-template <typename BindingTagT, typename ... ArgsT>
+template <class BindingTagT, typename ... ArgsT>
 typename BindingTagT::result_type transmit_end_receive(shared_ptr<transceiver> t, string_view dest, ArgsT&& ... args)
 {
     proxy_object<BindingTagT, ArgsT...> po(std::forward<ArgsT>(args) ...);
-    t->transmit_and_receive(
-        dest,
-        sonia::type::durable_id::get<BindingTagT>(),
-        po);
+    t->transmit_and_receive(dest, po);
     return po.get();
 }
 
-}}
+//void(stub_read_iterator, serializable::range_write_iterator)
+template <class BindingTagT>
+void register_transceiver_invoker()
+{
+    sonia::register_multimethod<process_taged_object>(function<void(stub_read_iterator&, stub_write_iterator&)>(
+        [](stub_read_iterator & rit, stub_write_iterator & wit)
+        {
+            BindingTagT::template stub_invoke_and_encode<sonia::serialization::compressed_t>(rit, wit);
+        }
+    ), {typeidx(BindingTagT)});
+}
+
+}
 
 #endif // SONIA_SERVIVES_TRANSCEIVER_HPP

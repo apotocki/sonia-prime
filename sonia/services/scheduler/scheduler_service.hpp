@@ -12,6 +12,7 @@
 #include "sonia/services/service.hpp"
 #include "sonia/services/scheduler/basic_scheduler.hpp"
 #include "scheduler_service_configuration.hpp"
+#include "sonia/services.hpp"
 
 namespace sonia { namespace services {
 
@@ -20,10 +21,15 @@ class scheduler_service
     , public basic_scheduler
 {
 public:
-    scheduler_service(scheduler_service_configuration const& cfg);
+    explicit scheduler_service(scheduler_service_configuration const& cfg);
 
     void open() override;
     void close() noexcept override;
+
+    void on_new_thread() override;
+
+private:
+    shared_ptr<host> host_;
 };
 
 }}

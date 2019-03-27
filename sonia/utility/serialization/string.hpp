@@ -22,19 +22,19 @@ class coder<TagT, T, enable_if_t<
     is_template_instance_v<basic_string_view, T> ||
     is_template_instance_v<basic_cstring_view, T>>>
 {
-    using type = T;
+    using element_type = add_const_t<typename T::value_type>;
 
 public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(T const& value, OutputIteratorT oi) const
     {
-        return sonia::encode(static_cast<array_view<T>>(value), std::move(oi));
+        return sonia::encode<TagT>(static_cast<array_view<element_type> const&>(value), std::move(oi));
     }
 
     template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, T & value) const
     {
-        return sonia::encode(static_cast<array_view<T>>(value), std::move(ii));
+        return sonia::decode<TagT>(std::move(ii), array_view(const_cast<typename T::value_type*>(value.begin(), value.size())));
     }
 };
 

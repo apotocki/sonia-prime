@@ -6,7 +6,7 @@
 #include "io_service_builder.hpp"
 #include "io_service.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 io_service_builder::io_service_builder()
 {
@@ -23,4 +23,4 @@ shared_ptr<service> io_service_builder::build(json_object const& parameters) {
     return make_shared<io_service>(cfg);
 }
 
-}}
+}

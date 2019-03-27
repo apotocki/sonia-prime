@@ -66,8 +66,8 @@ std::basic_istream<CharT, TraitsT> & operator>> (std::basic_istream<CharT, Trait
     return strm;
 }
 
-typedef boost::log::sources::severity_logger_mt<severity_level> logger_type;
-typedef shared_ptr<logger_type> logger_ptr;
+using logger_type = boost::log::sources::severity_logger_mt<severity_level>;
+using logger_ptr = shared_ptr<logger_type>;
 
 BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(global_logger, boost::log::sources::severity_logger_mt<severity_level>, (severity_level::trace))
 

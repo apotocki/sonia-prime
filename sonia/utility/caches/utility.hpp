@@ -14,28 +14,29 @@
 #include <boost/call_traits.hpp>
 #include <boost/intrusive/unordered_set.hpp>
 
-#include "sonia/thread.hpp"
-#include "sonia/functional/hash.hpp"
-#include "sonia/utility/explicit_operator_bool.hpp"
+#include "sonia/concurrency.hpp"
+#include "sonia/utility/functional/hash.hpp"
+#include "sonia/exceptions/internal_errors.hpp"
 
-namespace sonia { namespace cashe {
+namespace sonia::cache {
 
 template <class CacheT>
-class handle {
+class item_handle
+{
     CacheT * cache_;
-    typename CacheT::item_type * item_;
+    typename CacheT::item_type * item_{nullptr};
     bool cache_miss_{false};
 
 public:
-    handle() : item_(nullptr) {}
+    item_handle() = default;
 
-    handle(CacheT & c, typename CacheT::item_type & i, bool cache_miss = false) noexcept
+    item_handle(CacheT & c, typename CacheT::item_type & i, bool cache_miss = false) noexcept
         : cache_(&c), item_(&i), cache_miss_(cache_miss)
     {
         ++item_->refs;
     }
 
-    handle(handle const& rhs) noexcept
+    item_handle(item_handle const& rhs) noexcept
         : cache_(rhs.cache_), item_(rhs.item_)
     {
         if (item_) {
@@ -43,13 +44,14 @@ public:
         }
     }
 
-    handle(handle && rhs) noexcept
+    item_handle(item_handle && rhs) noexcept
         : cache_(rhs.cache_), item_(rhs.item_)
     {
         rhs.item_ = nullptr;
     }
 
-    handle& operator=(handle const& rhs) noexcept {
+    item_handle& operator=(item_handle const& rhs) noexcept
+    {
         if (item_ != rhs.item_) {
             if (item_) {
                 cache_->release(*item_);
@@ -63,7 +65,8 @@ public:
         return *this;
     }
 
-    handle& operator=(handle && rhs) noexcept {
+    item_handle& operator=(item_handle && rhs) noexcept
+    {
         if (item_ != rhs.item_) {
             if (item_) {
                 cache_->release(*item_);
@@ -75,22 +78,22 @@ public:
         return *this;
     }
 
-    ~handle() noexcept {
+    ~item_handle() noexcept
+    {
         if (item_) {
             cache_->release(*item_);
         }
     }
 
-    bool operator!() const noexcept { return !item_; }
+    explicit operator bool() const noexcept { return !!item_; }
 
-    BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL();
-
-    ValueT & value() noexcept { return item_->value; }
+    auto & value() noexcept { return item_->value; }
     bool is_miss() const noexcept { return cache_miss_; }
 };
 
 template <typename BucketT>
-class buckets {
+class buckets
+{
 public:
     buckets() = default;
 
@@ -99,11 +102,13 @@ public:
     buckets& operator=(buckets const&) = delete;
     buckets& operator=(buckets &&) = default;
 
-    explicit bucket(size_t sz) 
+    explicit buckets(size_t sz) 
         : buckets_(sz)
     {}
 
-    BucketT * buckets() { return &buckets_.front(); }
+    ~buckets() = default;
+
+    BucketT * get_buckets() { return &buckets_.front(); }
 
     void resize_buckets(size_t sz) { buckets_.resize(sz); }
 
@@ -114,16 +119,17 @@ private:
 };
 
 template <typename CacheT>
-class hash_partition {
-    typedef typename CacheT::item_type item_type;
-    typedef typename CacheT::key_type key_type;
-    typedef typename item_type::key_hook_type key_hook_type;
-    typedef boost::intrusive::unordered_set<
-          ItemT
+class hash_partition
+{
+    using item_type = typename CacheT::item_type ;
+    using key_type = typename CacheT::key_type;
+    using key_hook_type = typename item_type::key_hook_type;
+    using set_t = boost::intrusive::unordered_set<
+          item_type
         , boost::intrusive::member_hook<item_type, key_hook_type, &item_type::key_hook>
-    > set_t;
-    typedef buckets<typename set_t::bucket_type> buckets_t;
-    typedef typename boost::call_traits<typename AlgoT::key_type>::param_type key_param_type;
+    >;
+    using buckets_t = buckets<typename set_t::bucket_type>;
+    using key_param_type = typename boost::call_traits<key_type>::param_type;
 
 public:
     hash_partition(hash_partition const&) = delete;
@@ -133,14 +139,15 @@ public:
 
     explicit hash_partition(size_t bucket_count)
         : buckets_(bucket_count)
-        , set_(typename set_t::bucket_traits(buckets_.buckets(), buckets_.size()))
+        , set_(typename set_t::bucket_traits(buckets_.get_buckets(), buckets_.size()))
     {}
 
-    handle<CacheT> try_get(CacheT & c, key_param_type key) {
-        auto guard = make_lock_guard(mtx_);
+    item_handle<CacheT> try_get(CacheT & c, key_param_type key)
+    {
+        lock_guard guard(mtx_);
         auto it = set_.find(key);
         if (it != set_.end()) {
-            return handle<CacheT>(c, *it);
+            return item_handle<CacheT>(c, *it);
         }
         return {};
     }
@@ -148,16 +155,17 @@ public:
 private:
     buckets_t buckets_;
     set_t set_;
-    mutable spinlock mtx_;
+    mutable spin_mutex mtx_;
 };
 
 template <class DerivedT, class AlgoT>
-class cache_facade : AlgoT {
-    typedef typename AlgoT::item item_type;
-    typedef hash_partition<item_type> partition_type;
-    typedef typename AlgoT::key_type key_type;
-    typedef typename boost::call_traits<typename AlgoT::key_type>::param_type key_param_type;
-    typedef handle<item_type> handle_type;
+class cache_facade : AlgoT
+{
+    using item_type = typename AlgoT::item;
+    using partition_type = hash_partition<item_type>;
+    using key_type = typename AlgoT::key_type;
+    using key_param_type = typename boost::call_traits<typename AlgoT::key_type>::param_type;
+    using handle_type = item_handle<item_type>;
 
     // prototype properties
     size_t get_partion_count() const { return 1; }
@@ -170,7 +178,8 @@ public:
     handle_type lookup(key_param_type key, ArgsT&& ... args);
 
 private:
-    partition_type const& get_partition(key_param_type key) const noexcept {
+    partition_type const& get_partition(key_param_type key) const noexcept
+    {
         size_t pidx = hash<key_type>()(key) % partitions_.size();
         return partitions_[pidx];
     }
@@ -182,7 +191,8 @@ private:
 };
 
 template <class DerivedT, class AlgoT>
-void cache_facade<DerivedT, AlgoT>::open() {
+void cache_facade<DerivedT, AlgoT>::open()
+{
     auto pcount = derived().get_partion_count();
     auto buckets_per_partition = derived().get_buckets_per_partition();
     partitions_.reserve(pcount);
@@ -193,12 +203,14 @@ void cache_facade<DerivedT, AlgoT>::open() {
 
 template <class DerivedT, class AlgoT>
 template <typename ... ArgsT>
-cache_facade<DerivedT, AlgoT>::handle_type cache_facade<DerivedT, AlgoT>::lookup(key_param_type key, ArgsT&& ... args) {
+typename cache_facade<DerivedT, AlgoT>::handle_type cache_facade<DerivedT, AlgoT>::lookup(key_param_type key, ArgsT&& ... args)
+{
     partition_type & partition = get_partition(key);
     handle_type h = partition.try_get(*this, key);
     if (h) return h;
+    THROW_NOT_IMPLEMENTED_ERROR();
 }
 
-}}
+}
 
 #endif // SONIA_CACHES_UTILITY_HPP

@@ -9,31 +9,46 @@
 #   pragma once
 #endif
 
-#include <vector>
+#include <tuple>
+#include <boost/preprocessor/seq/for_each_i.hpp>
+#include <boost/preprocessor/tuple/elem.hpp>
 #include "sonia/cstdint.hpp"
 #include "sonia/string.hpp"
+#include "sockets.hpp"
+
+#include "sonia/sal/net.hpp"
 
 namespace sonia { namespace io {
 
-class socket_address
+enum class socket_type : uint8_t
 {
-public:
-    socket_address();
-    socket_address(const void*, size_t);
-
-    void reset();
-    
-    std::string str() const;
-    uint16_t port() const;
-
-    std::pair<const char*, size_t> in_addr() const;
-    template <typename T> T * addr() { return (T*)buffer_; }
-    uint8_t size() const { return sz_; }
-
-private:
-    alignas(void*) char buffer_[31]; // to be able to store sockaddr_in6
-    uint8_t sz_;
+    TCP,
+    TCP6,
+    UDP,
+    UDP6
 };
+
+#define SONIA_IO_PROTOCOL_TYPE_SEQ  \
+    ((TCP, tcp))                    \
+    ((TCP6, tcp6))                  \
+    ((UDP, udp))                    \
+    ((UDP6, udp6))                  \
+    ((SSL, ssl))                    \
+
+#define SONIA_PRINT_IO_PROTOCOL_TYPE_ENUM(r, data, i, elem) BOOST_PP_TUPLE_ELEM(2, 0, elem), 
+
+enum class protocol_type : uint8_t
+{
+    BOOST_PP_SEQ_FOR_EACH_I(SONIA_PRINT_IO_PROTOCOL_TYPE_ENUM, _, SONIA_IO_PROTOCOL_TYPE_SEQ)
+    UNKNOWN
+};
+
+/**
+ *  examples: tcp://localhost:8080 udp6://[fe80::156a:c70:636e:4bc1]:49000
+ */
+std::tuple<protocol_type, std::string, uint16_t> parse_address(string_view);
+
+using sonia::sal::socket_address;
 
 //class socket_addresses
 //{

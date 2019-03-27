@@ -38,8 +38,8 @@ class socket_write_iterator
 	void set_dereference(array_view<const char> rng)
 	{
         while (!rng.empty()) {
-            if (size_t wsz = psoc_->write_some(rng.begin(), rng.size()); !!wsz) {
-                rng.advance_front(wsz);
+            if (auto expwsz = psoc_->write_some(rng.begin(), rng.size()); expwsz.has_value()) {
+                rng.advance_front(expwsz.value());
             } else {
                 empty_ = true;
                 break;

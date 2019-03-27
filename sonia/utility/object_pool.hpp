@@ -42,7 +42,8 @@ public:
     }
 
     template <typename ... ArgsT>
-    T * new_object(ArgsT&& ... args) {
+    T * new_object(ArgsT&& ... args)
+    {
         T * result;
         {
             lock_guard<MutexT> guard(*this);
@@ -61,7 +62,15 @@ public:
     }
 
 #ifndef NDEBUG
-    void delete_object(T * obj) noexcept {
+    ~object_pool()
+    {
+        if (used_.size()) {
+            GLOBAL_LOG_FATAL() << "An attempt to delete not empty pool<" << typeid(T).name() << ">, size: " << used_.size();
+        }
+    }
+
+    void delete_object(T * obj) noexcept
+    {
         lock_guard<MutexT> guard(*this);
         if (!used_.erase(obj)) {
             GLOBAL_LOG_FATAL() << "an attempt to free a not initialized object '" << typeid(T).name() << "' (" << sizeof(T) << " bytes)";
@@ -72,20 +81,23 @@ public:
     }
 
 private:
-    boost::unordered_set<void*> used_;
+    boost::unordered_set<T*> used_;
 
-    void * do_malloc() {
-        void * result = pool_t::malloc();
+    void * do_malloc()
+    {
+        T * result = std::launder(reinterpret_cast<T*>(pool_t::malloc()));
         BOOST_VERIFY (result && used_.insert(result).second);
         return result;
     }
 
-    void do_free(void * p) {
+    void do_free(T * p)
+    {
         BOOST_ASSERT(used_.erase(p));
         pool_t::free(p);
     }
 #else
-    void delete_object(T * obj) noexcept {
+    void delete_object(T * obj) noexcept
+    {
         lock_guard<MutexT> guard(*this);
         obj->~T();
         pool_t::free(obj);

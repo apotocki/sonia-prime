@@ -13,11 +13,13 @@
 
 #include "host_impl.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
-class thread_descriptor {
+class thread_descriptor
+{
 public:
-    virtual ~thread_descriptor() {}
+    virtual ~thread_descriptor() = default;
+
     shared_ptr<host_impl> host;
 
     explicit thread_descriptor(shared_ptr<host_impl> h) : host{std::move(h)} {}
@@ -30,6 +32,6 @@ public:
     SONIA_PRIME_API void set();
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_THREAD_DESCRIPTOR_HPP

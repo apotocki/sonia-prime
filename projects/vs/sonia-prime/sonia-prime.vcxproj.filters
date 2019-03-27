@@ -50,6 +50,18 @@
     <ClCompile Include="..\..\..\sonia\services\net\echo\echo_connector.cpp">
       <Filter>sonia.services\net\echo</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\transceiver\transceiver_builder.cpp">
+      <Filter>sonia.services\transceiver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\transceiver\transceiver_service.cpp">
+      <Filter>sonia.services\transceiver</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_cache_service_builder.cpp">
+      <Filter>sonia.services\io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_cache_service.cpp">
+      <Filter>sonia.services\io</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -69,6 +81,9 @@
     </Filter>
     <Filter Include="sonia.services\net\echo">
       <UniqueIdentifier>{4b38a90a-a7fe-448b-800d-996ce8f57401}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services\transceiver">
+      <UniqueIdentifier>{0616f2c9-3460-4e59-824a-df4346a66923}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -146,6 +161,24 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\echo\echo_connector.hpp">
       <Filter>sonia.services\net\echo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\transceiver\transceiver_builder.hpp">
+      <Filter>sonia.services\transceiver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\transceiver\transceiver_configuration.hpp">
+      <Filter>sonia.services\transceiver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\transceiver\transceiver_service.hpp">
+      <Filter>sonia.services\transceiver</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\io_cache_service_configuration.hpp">
+      <Filter>sonia.services\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\io_cache_service_builder.hpp">
+      <Filter>sonia.services\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\io_cache_service.hpp">
+      <Filter>sonia.services\io</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -104,7 +104,7 @@ void basic_scheduler::start()
     tbarrier_.emplace(thr_cnt_);
 
     for (size_t t = 0; t < thr_cnt_; ++t) {
-        threads_.push_back(thread([this]() { thread_proc(); }));
+        threads_.push_back(thread([this]() { on_new_thread(); thread_proc(); }));
         sal::set_thread_name(threads_.back().get_id(), ("%1% #%2%"_fmt % thread_name() % t).str());
     }
 }
@@ -118,14 +118,20 @@ void basic_scheduler::stop()
         queue_cond_.notify_all();
     }
 
-    for (auto & t : threads_) {
-        t.join();
-    }
-
-    threads_.clear();
+    // fiber friendly thread join procedure
+    unique_lock lk(close_mtx_);
+    thread([this] {
+        for (thread & t : threads_) {
+            t.join();
+        }
+        {
+            unique_lock lk(close_mtx_);
+            threads_.clear();
+        }
+        close_cond_.notify_one();
+    }).detach();
+    close_cond_.wait(lk, [this] { return threads_.empty(); });
 }
-
-
 
 void basic_scheduler::thread_proc()
 {
@@ -176,7 +182,7 @@ void basic_scheduler::fiber_proc(fibers::mutex & mtx)
             task_entry * pe;
             {
                 //LOG_TRACE(logger()) << "before acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
-                //auto guard = make_lock_guard(mtx);
+                lock_guard guard(mtx);
                 //LOG_TRACE(logger()) << "acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
                 unique_lock lck(queue_mtx_);
                 //LOG_TRACE(logger()) << "got guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();

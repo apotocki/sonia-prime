@@ -40,7 +40,6 @@ public:
     };
 
     explicit fiber_work_stealing_scheduler(group_host & g, bool suspend = true);
-    ~fiber_work_stealing_scheduler() noexcept override final;
 
     fiber_work_stealing_scheduler(fiber_work_stealing_scheduler const&) = delete;
     fiber_work_stealing_scheduler(fiber_work_stealing_scheduler &&) = delete;
@@ -61,7 +60,6 @@ public:
     void notify() noexcept override final;
 
     fibers::context * steal() noexcept;
-    //{return rqueue_.steal();}
 
 private:
     group_host & group_;

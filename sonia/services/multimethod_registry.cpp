@@ -9,11 +9,13 @@
 #include "sonia/utility/streaming/type_index.hpp"
 
 #include "multimethod_registry.hpp"
+#include "sonia/logger/logger.hpp"
 
 namespace sonia { namespace services {
 
 void multimethod_registry::register_multimethod(multimethod && mm, array_view<const std::type_index> mmid)
 {
+    //GLOBAL_LOG_INFO() << "SET " << mmid;
     std::vector<std::type_index> vid(mmid.begin(), mmid.end());
     lock_guard slguard(mm_item_mtx_);
     auto it = mm_set_.find(vid);
@@ -26,6 +28,7 @@ void multimethod_registry::register_multimethod(multimethod && mm, array_view<co
 
 multimethod const* multimethod_registry::get_multimethod(array_view<const std::type_index> mmid) const
 {
+    //GLOBAL_LOG_INFO() << "GET " << mmid;
     shared_lock_guard slguard(mm_item_mtx_);
     auto it = mm_set_.find(mmid, hasher(), range_equal());
     return (it != mm_set_.cend()) ? it->mm.get_pointer() : nullptr;

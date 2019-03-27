@@ -18,17 +18,16 @@
 #include <atomic>
 #include <sstream>
 
+#include <boost/unordered_map.hpp>
+
 #include "sonia/utility/posix/signals.hpp"
 
 #include "sonia/concurrency.hpp"
 #include "sonia/optional.hpp"
-#include "sonia/exceptions.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/utility/object_pool.hpp"
+#include "sonia/exceptions/internal_errors.hpp"
 #include "sonia/utility/linux.hpp"
-//#include "sonia/utility/concurrency/rw_fiber_mutex.hpp"
-
-#include <boost/unordered_map.hpp>
 
 #ifndef MAX_EPOLL_EVENTS
 #   define MAX_EPOLL_EVENTS 5
@@ -38,30 +37,14 @@
 #   define SOCKET_POOL_SIZE 128
 #endif
 
-namespace sonia { namespace io {
+namespace sonia::io {
 
 static constexpr bool IO_DEBUG = false;
 static constexpr uint64_t epool_exit_cookie_v = (std::numeric_limits<uint64_t>::max)();
 
-struct lin_impl_data;
+namespace linapi = sonia::linux;
 
-void set_descriptor_flags(int fd, int appending_flags)
-{
-    int flags = fcntl(fd, F_GETFL, 0);
-    if (flags == -1)
-    {
-        int err = errno;
-        throw exception("can't get descriptor flags, error: %1%"_fmt % strerror(err));
-    }
-
-    flags |= appending_flags;
-    int s = fcntl(fd, F_SETFL, flags);
-    if (s == -1)
-    {
-        int err = errno;
-        throw exception("can't set descriptor flags, error: %1%"_fmt % strerror(err));
-    }
-}
+struct lin_impl;
 
 template <typename OnErrorHandlerT>
 void epoll_ctl(int efd, int fd, uint64_t cookie, uint32_t evflags, OnErrorHandlerT const& errh)
@@ -129,18 +112,33 @@ struct lin_shared_handle : shared_handle<socket_handle_traits>
 {
     using base_type = shared_handle<socket_handle_traits>;
 
-    lin_shared_handle(uint32_t id, handle_type h) : base_type(h), bkid_(id) {}
+    lin_shared_handle(handle_type h, uint32_t id) : base_type(h), bkid_(id) {}
 
     int fd() const noexcept { return handle; }
     uint32_t bkid() const { return bkid_; }
 
-    virtual void on_event(int efd, uint32_t evflags) noexcept {};
+    virtual void on_event() noexcept
+    {
+        unique_lock lck(mtx);
+        cnd.notify_one();
+    };
+
+    std::atomic<size_t> waiting_cnt{0};
+
+    void wait(unique_lock<fibers::mutex> & lck)
+    {
+        cnd.wait(lck);
+    }
+
+    fibers::mutex mtx;
+    fibers::condition_variable_any cnd;
 
 private:
     uint32_t bkid_;
-    fibers::mutex mtx;
-    fibers::condition_variable_any cnd;
 };
+
+using tcp_scoped_handle = scoped_handle<tcp_socket_service_type*, lin_shared_handle>;
+using udp_scoped_handle = scoped_handle<udp_socket_service_type*, lin_shared_handle>;
 
 struct lin_shared_handle_hasher
 {
@@ -155,45 +153,9 @@ struct lin_shared_handle_equal_to
     size_t operator()(uint32_t lhs, lin_shared_handle * rhs) const { return lhs == rhs->bkid(); }
 };
 
-using tcp_scoped_handle = scoped_handle<tcp_socket_service_type*, lin_shared_handle>;
-using udp_scoped_handle = scoped_handle<udp_socket_service_type*, lin_shared_handle>;
-
-#if 0
-struct socket_handle_base
-{
-    unique_fd sock;
-    std::atomic<long> refs_{1};
-
-    explicit socket_handle_base(int sockfd = -1) : sock(sockfd) {}
-
-    socket_handle_base(socket_handle_base const&) = delete;
-    socket_handle_base(socket_handle_base &&) = delete;
-    socket_handle_base& operator= (socket_handle_base const&) = delete;
-    socket_handle_base& operator= (socket_handle_base &&) = delete;
-
-    virtual ~socket_handle_base() noexcept {}
-
-    void close() noexcept { sock.close(); }
-
-    virtual void on_event(int efd, uint32_t evflags) noexcept = 0;
-    virtual void free(lin_impl_data*) noexcept = 0;
-
-    void add_ref() { ++refs_; }
-    long release() { return refs_.fetch_sub(1) - 1; }
-};
-#endif
-
-//struct pipe_handle : socket_handle_base
-//{
-//    using socket_handle_base::socket_handle_base;
-//
-//    bool on_event(int efd, uint32_t evflags) noexcept override
-//    {
-//        return false;
-//    }
-//};
-
-struct lin_impl_data : public factory::impl_base
+struct lin_impl 
+    : public factory::impl_base
+    , public enable_shared_from_this<lin_impl>
 {
     friend class factory;
 
@@ -201,40 +163,48 @@ struct lin_impl_data : public factory::impl_base
 
     int efd;
 
-    int acceptor_flags;
-
     sonia::spin_mutex bk_mtx_;
     std::atomic<uint32_t> bkid_cnt_{0};
     boost::unordered_set<lin_shared_handle*, lin_shared_handle_hasher> book_keeper_;
 
-    object_pool<lin_shared_handle, spin_mutex> handles_;
+    object_pool<lin_shared_handle, spin_mutex> sockets_;
+    object_pool<lin_shared_handle, spin_mutex> acceptors_;
 
-    lin_impl_data(shared_ptr<factory> itself, uint32_t thr_cnt);
+    lin_impl(shared_ptr<factory> itself, uint32_t thr_cnt);
 
     lin_shared_handle * new_socket_handle(int sockfd);
     void delete_socket_handle(lin_shared_handle * h) noexcept;
+
+    //acceptor_shared_handle * new_acceptor_handle(int sockfd, std::function<void(tcp_acceptor_handler_type const&)> const&);
+    //void delete_acceptor_handle(lin_shared_handle * h) noexcept;
 
     void park_threads() noexcept override
     {
         LOG_TRACE(wrapper->logger()) << "parking threads...";
         char ch = 'e';
-        if (int r = ::write(ctl_pipe[1], &ch, 1); 1 == r) {
-            thread([wr = wrapper]() {
-                wr->join_threads();
-                LOG_TRACE(wr->logger()) << "threads have been parked";
-            }).detach();
-        } else {
+        if (int r = ::write(ctl_pipe[1], &ch, 1); 1 != r) {
             int err = errno;
-            LOG_ERROR(wrapper->logger()) << "can't park threads, error: "_fmt << strerror(err);
+            LOG_ERROR(wrapper->logger()) << "can't park threads, error: " << strerror(err);
         }
     }
 
-    ~lin_impl_data() override
+    ~lin_impl() override
     {
-        close(ctl_pipe[0]);
-        close(ctl_pipe[1]);
+        ::close(ctl_pipe[0]);
+        ::close(ctl_pipe[1]);
         ::close(efd);
     }
+
+    void thread_proc() override;
+
+    tcp_socket do_create_tcp_socket(sonia::sal::socket_handle) override;
+
+    std::pair<tcp_socket, size_t> tcp_socket_accept(tcp_handle_type, char*, size_t) override;
+    size_t tcp_socket_waiting_count(tcp_handle_type) override;
+    expected<size_t, std::error_code> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) override;
+    expected<size_t, std::error_code> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) override;
+    void tcp_socket_close(tcp_handle_type) noexcept override;
+    void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override;
 
     //void add_to_bk(lin_shared_handle * sh)
     //{
@@ -263,6 +233,15 @@ struct lin_impl_data : public factory::impl_base
     //void free(acceptor_socket_handle * sh) noexcept;
 };
 
+//inline shared_ptr<lin_impl> get_dataptr(weak_ptr<factory::impl_base> const& wptr)
+//{
+//    shared_ptr<lin_impl> r = static_pointer_cast<lin_impl>(wptr.lock());
+//    if (!r) throw closed_exception();
+//    return r;
+//}
+
+#define dataptr static_pointer_cast<lin_impl>(get_dataptr())
+
 #if 0
 struct socket_handle : socket_handle_base
 {
@@ -270,7 +249,7 @@ struct socket_handle : socket_handle_base
     fibers::condition_variable_any cnd;
     bool flag{false};
 
-    socket_handle(lin_impl_data * impl, int sockfd)
+    socket_handle(lin_impl * impl, int sockfd)
         : socket_handle_base(sockfd)
     {
         impl->wrapper->on_add_callback();
@@ -300,7 +279,7 @@ struct socket_handle : socket_handle_base
         cnd.notify_one();
     }
 
-    void free(lin_impl_data* impl) noexcept override { impl->free(this); }
+    void free(lin_impl* impl) noexcept override { impl->free(this); }
 
     void throw_socket_error(string_view errmsg) const
     {
@@ -367,11 +346,11 @@ struct socket_handle : socket_handle_base
 #if 0
 struct acceptor_socket_handle : socket_handle_base
 {
-    lin_impl_data * impl_;
+    lin_impl * impl_;
     function<void(tcp_socket_service_type::connection_factory_t const&)> handle_;
 
     template <typename HandleT>
-    acceptor_socket_handle(lin_impl_data * impl, int sockfd, HandleT const& h)
+    acceptor_socket_handle(lin_impl * impl, int sockfd, HandleT const& h)
         : socket_handle_base(sockfd), impl_(impl), handle_(h)
     {
         impl_->wrapper->on_add_callback();
@@ -429,7 +408,7 @@ struct acceptor_socket_handle : socket_handle_base
                 LOG_TRACE(impl_->wrapper->logger()) << hbuf << " " << sbuf << "(" << ent << ")";
             }
 
-            set_descriptor_flags(infd, O_NONBLOCK);
+            linapi::append_descriptor_flags(infd, O_NONBLOCK);
 
             try {
                 handle_([this, efd, sockfd = ufd.value](array_view<char> buff, tcp_acceptor_factory::connector_t const& conn) {
@@ -443,13 +422,14 @@ struct acceptor_socket_handle : socket_handle_base
         }
     }
 
-    void free(lin_impl_data*) noexcept override { impl_->free(this); }
+    void free(lin_impl*) noexcept override { impl_->free(this); }
 };
 #endif
 
-lin_impl_data::lin_impl_data(shared_ptr<factory> itself, uint32_t thr_cnt)
+lin_impl::lin_impl(shared_ptr<factory> itself, uint32_t thr_cnt)
     : factory::impl_base(std::move(itself))
-    , handles_(SOCKET_POOL_SIZE)
+    , sockets_(SOCKET_POOL_SIZE)
+    , acceptors_(SOCKET_POOL_SIZE)
 {
     if (efd = epoll_create1(0); efd == -1) {
         int err = errno;
@@ -461,7 +441,7 @@ lin_impl_data::lin_impl_data(shared_ptr<factory> itself, uint32_t thr_cnt)
         throw exception("can't create a contorl pipe instance, error: %1%"_fmt % strerror(err));
     }
 
-    set_descriptor_flags(ctl_pipe[0], O_NONBLOCK); // read
+    linapi::append_descriptor_flags(ctl_pipe[0], O_NONBLOCK); // read
 
     epoll_ctl(efd, ctl_pipe[0], epool_exit_cookie_v, EPOLLIN, [](const char* msg) {
         throw exception("can't start watch the controll pipe, error: %1%"_fmt % msg);
@@ -469,85 +449,22 @@ lin_impl_data::lin_impl_data(shared_ptr<factory> itself, uint32_t thr_cnt)
 
     auto[a, b, c] = sonia::linux::kernel_version();
     LOG_INFO(wrapper->logger()) << "KERNEL: " << a << "." << b << "." << c;
-
-    acceptor_flags = EPOLLIN | EPOLLET;
-    if (a >= 4 && b >= 5) {
-        acceptor_flags |= EPOLLEXCLUSIVE;
-        LOG_INFO(wrapper->logger()) << "USING EPOLLEXCLUSIVE";
-    }
 }
 
-lin_shared_handle * lin_impl_data::new_socket_handle(int sockfd)
-{
-    for (;;) {
-        lin_shared_handle *ph = handles_.new_object(bkid_cnt_.fetch_add(1), sockfd);
-        lock_guard guard(bk_mtx_);
-        if (BOOST_LIKELY(book_keeper_.insert(ph).second)) break;
-        handles_.delete_object(ph);
-    }
-    wrapper->on_add_callback();
-}
-
-void lin_impl_data::delete_socket_handle(lin_shared_handle * h) noexcept
-{
-    ::epoll_ctl(efd, EPOLL_CTL_DEL, h->fd(), NULL);
-
-    {
-        lock_guard guard(bk_mtx_);
-        book_keeper_.erase(h);
-    }
-
-    handles_.delete_object(h);
-    wrapper->on_release_callback();
-}
-
-//void lin_impl_data::free(lin_shared_handle * sh) noexcept
-//{
-//    handles_.delete_object(sh);
-//    wrapper->on_release_callback();
-//}
-
-#define dataptr static_cast<lin_impl_data*>(impl_data_.get())
-
-factory::factory() 
-    : impl_data_(nullptr)
-{
-    
-}
-
-factory::~factory()
-{
-
-}
-
-void factory::initialize_impl(uint32_t thr_cnt)
-{
-    if (impl_data_) {
-        throw internal_error("io factory is already initialized");
-    }
-
-    impl_data_.reset(new lin_impl_data(shared_from_this(), thr_cnt));
-}
-
-std::string factory::name() const
-{
-    return std::string("linux");
-}
-
-void factory::thread_proc()
+void lin_impl::thread_proc()
 {
     epoll_event events[MAX_EPOLL_EVENTS];
     for (;;) {
-        if constexpr (IO_DEBUG) LOG_INFO(logger()) << "before epoll_wait";
-        int n = epoll_wait(dataptr->efd, events, MAX_EPOLL_EVENTS, -1);
-        if constexpr (IO_DEBUG) LOG_INFO(logger()) << "woke up";
+        if constexpr (IO_DEBUG) LOG_INFO(wrapper->logger()) << "before epoll_wait, thread: " << this_thread::get_id();
+        int n = epoll_wait(efd, events, MAX_EPOLL_EVENTS, -1);
+        if constexpr (IO_DEBUG) LOG_INFO(wrapper->logger()) << "woke up thread: " << this_thread::get_id();
         if (-1 == n) {
             int err = errno;
-            LOG_ERROR(logger()) << "epoll interrupted: " << strerror(err);
+            LOG_ERROR(wrapper->logger()) << "epoll interrupted: " << strerror(err) ;
             return;
         }
         if (n == 0) {
-            LOG_ERROR(logger()) << "epoll WRONG WOKE UP";
+            LOG_ERROR(wrapper->logger()) << "epoll WRONG WOKE UP";
         }
         for (int i = 0; i < n; i++) {
             if (epool_exit_cookie_v == events[i].data.u64) return; // close event
@@ -555,22 +472,115 @@ void factory::thread_proc()
 
             lin_shared_handle* h;
             {
-                lock_guard guard(dataptr->bk_mtx_);
-                auto it = dataptr->book_keeper_.find(bkid, lin_shared_handle_hasher(), lin_shared_handle_equal_to());
-                if (it == dataptr->book_keeper_.end()) continue; // skip obsoleted descriptor event
-                h = static_cast<lin_shared_handle*>((*it)->lock());
+                lock_guard guard(bk_mtx_);
+                auto it = book_keeper_.find(bkid, lin_shared_handle_hasher(), lin_shared_handle_equal_to());
+                if (it == book_keeper_.end()) continue; // skip obsoleted descriptor event
+                h = static_cast<lin_shared_handle*>(*it);
+                h->add_weakref();
             }
 
             if (h) {
-                h->on_event(dataptr->efd, events[i].events); // noexcept
-                h->release((tcp_socket_service_type*)this);
+                h->on_event(); // noexcept
+                h->release_weak((tcp_socket_service_type*)this);
             }
         }
     }
 }
 
+lin_shared_handle * lin_impl::new_socket_handle(int sockfd)
+{
+    for (;;) {
+        lin_shared_handle *ph = sockets_.new_object(sockfd, bkid_cnt_.fetch_add(1));
+        lock_guard guard(bk_mtx_);
+        if (BOOST_LIKELY(book_keeper_.insert(ph).second)) {
+            try {
+                on_add_callback();
+            } catch (...) {
+                sockets_.delete_object(ph);
+                throw;
+            }
+            ph->add_weakref();
+            return ph;
+        }
+        sockets_.delete_object(ph);
+    }
+}
+
+void lin_impl::delete_socket_handle(lin_shared_handle * h) noexcept
+{
+    {
+        lock_guard guard(bk_mtx_);
+        BOOST_VERIFY(1 == book_keeper_.erase(h));
+    }
+
+    sockets_.delete_object(h);
+    on_release_callback();
+}
+
+tcp_socket lin_impl::do_create_tcp_socket(sonia::sal::socket_handle s)
+{
+    linapi::append_descriptor_flags(s, O_NONBLOCK);
+
+    lin_shared_handle * sh = new_socket_handle(s);
+    
+    epoll_ctl(efd, s, sh->bkid(), EPOLLIN | EPOLLOUT | EPOLLET, [this, sh](const char * msg) {
+        delete_socket_handle(sh);
+        throw exception("can't watch acceptor, error: %1%"_fmt % msg);
+    });
+
+    return tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), sh);
+}
+
+//acceptor_shared_handle * lin_impl::new_acceptor_handle(int sockfd, std::function<void(tcp_acceptor_handler_type const&)> const& handler)
+//{
+//    for (;;) {
+//        acceptor_shared_handle *ph = acceptors_.new_object(bkid_cnt_.fetch_add(1), sockfd, handler);
+//        lock_guard guard(bk_mtx_);
+//        if (BOOST_LIKELY(book_keeper_.insert(ph).second)) break;
+//        acceptors_.delete_object(ph);
+//    }
+//    wrapper->on_add_callback();
+//}
+
+//void lin_impl::delete_socket_handle(acceptor_shared_handle * h) noexcept
+//{
+//    ::epoll_ctl(efd, EPOLL_CTL_DEL, h->fd(), NULL);
+//
+//    {
+//        lock_guard guard(bk_mtx_);
+//        book_keeper_.erase(h);
+//    }
+//
+//    handlers_.delete_object(h);
+//    wrapper->on_release_callback();
+//}
+
+//void lin_impl::free(lin_shared_handle * sh) noexcept
+//{
+//    sockets_.delete_object(sh);
+//    wrapper->on_release_callback();
+//}
+
+factory::factory() {}
+
+factory::~factory() {}
+
+void factory::initialize_impl(uint32_t thr_cnt)
+{
+    if (impl_holder_) {
+        THROW_INTERNAL_ERROR("io factory is already initialized");
+    }
+    impl_holder_ = make_shared<lin_impl>(shared_from_this(), thr_cnt);
+    impl_ = impl_holder_;
+}
+
+std::string factory::name() const
+{
+    return std::string("linux");
+}
 
 // tcp_socket_factory
+#if 0
 tcp_socket factory::create_tcp_socket(tcp_socket_type dt)
 {
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -582,17 +592,17 @@ tcp_socket factory::create_tcp_socket(tcp_socket_type dt)
     int pinsockfd = sockfd;
     SCOPE_EXIT([&pinsockfd]() { if (pinsockfd >= 0) ::close(pinsockfd); });
 
-    set_descriptor_flags(sockfd, O_NONBLOCK);
+    linapi::append_descriptor_flags(sockfd, O_NONBLOCK);
     lin_shared_handle * sh = dataptr->new_socket_handle(sockfd);
 
     pinsockfd = -1;
     return tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), sh);
 }
+#endif
 
-tcp_socket factory::create_tcp_socket(cstring_view address, uint16_t port, tcp_socket_type dt)
-{
-    BOOST_THROW_EXCEPTION(not_implemented_error("create_tcp_socket"));
 #if 0
+tcp_socket factory::create_connected_tcp_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type dt)
+{
     addrinfo hints;
     bzero((char*)&hints, sizeof(addrinfo));
     hints.ai_family = AF_UNSPEC;    /* Allow IPv4 or IPv6 */
@@ -603,57 +613,90 @@ tcp_socket factory::create_tcp_socket(cstring_view address, uint16_t port, tcp_s
     hints.ai_addr = NULL;
     hints.ai_next = NULL;
 
-    addrinfo *result;
-    if (int s = getaddrinfo(address.c_str(), std::to_string(port).c_str(), &hints, &result); s != 0 || !result) {
+    addrinfo *rp;
+    if (int s = getaddrinfo(address.c_str(), std::to_string(port).c_str(), &hints, &rp); s != 0 || !rp) {
         throw exception("tcp socket address '%1%' is not valid, error: %2%"_fmt % address % gai_strerror(s));
     }
-    SCOPE_EXIT([result] { freeaddrinfo(result); });
+    SCOPE_EXIT([rp] { freeaddrinfo(rp); });
 
-    addrinfo * rp;
-    for (rp = result; !!rp; rp = rp->ai_next) {
-        int sockfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (sockfd == -1) {
-            int err = errno;
-            LOG_ERROR(logger()) << "can't create socket, error: " << strerror(err);
-            continue;
-        }
-
-        int pinsockfd = sockfd;
-        SCOPE_EXIT([&pinsockfd]() { if (pinsockfd >= 0) ::close(pinsockfd); });
-
-        if constexpr (IO_DEBUG) LOG_INFO(logger()) << "BEFORE CONNECT";
-        /*
-        if (connect(sockfd, rp->ai_addr, rp->ai_addrlen) != -1) {
-            set_descriptor_flags(sockfd, O_NONBLOCK);
-            socket_handle * sh = dataptr->new_socket_handle(sockfd);
-            
-            pinsockfd = -1;
-            LOG_INFO(logger()) << "CONNECTED!";
-            return tcp_socket_access::create_tcp_socket(shared_from_this(), (intptr_t)(socket_handle_base*)sh);
-        }
-        //*/
-        ///*
-        set_descriptor_flags(sockfd, O_NONBLOCK);
-        socket_handle * sh = dataptr->new_socket_handle(sockfd);
-
+    std::ostringstream errmsgs;
+    for (; !!rp; rp = rp->ai_next) {
         try {
-            sh->connect(rp);
-            pinsockfd = -1;
-            if constexpr (IO_DEBUG) LOG_INFO(logger()) << "CONNECTED (" << sockfd << ")";
-            return tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), (intptr_t)(socket_handle_base*)sh);
-        } catch (std::exception const& e) {
-            LOG_WARN(logger()) << "can't connect socket, error: " << e.what();
-        }
-        
-        tcp_socket_close((intptr_t)(socket_handle_base*)sh);
-    }
+            int sockfd = linapi::socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+            int pinsockfd = sockfd;
+            SCOPE_EXIT([&pinsockfd]() { if (pinsockfd >= 0) ::close(pinsockfd); });
 
-    BOOST_ASSERT(!rp);
-    throw exception("can't connect socket to '%1% : %2%'"_fmt % address % port);
+            if constexpr (IO_DEBUG) LOG_TRACE(logger()) << "BEFORE CONNECT";
+
+            linapi::connect(sockfd, rp->ai_addr, rp->ai_addrlen);
+
+            if constexpr (IO_DEBUG) LOG_TRACE(logger()) << "CONNECTED!";
+
+            linapi::append_descriptor_flags(sockfd, O_NONBLOCK);
+
+            socket_handle * sh = dataptr->new_socket_handle(sockfd);
+
+            pinsockfd = -1;
+
+            return tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), dataptr->new_socket_handle(sh));
+
+        } catch (std::exception const& e) {
+            if (!errmsgs.str().empty()) errmsgs << '\n';
+            errmsgs << e.what();
+        }
+    }
+    throw exception("can't connect socket to '%1%:%2%', error(s): %3%"_fmt % address % port % errmsgs.str());
+    THROW_NOT_IMPLEMENTED_ERROR();
+}
 #endif
+
+//tcp_socket factory::create_bound_tcp_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type dt)
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("bind_tcp_socket");
+//}
+
+std::pair<tcp_socket, size_t> lin_impl::tcp_socket_accept(tcp_handle_type handle, char* buff, size_t sz)
+{
+    tcp_scoped_handle sh{this, handle};
+    SCOPE_EXIT([&sh]() { --sh->waiting_cnt; });
+    ++sh->waiting_cnt;
+    unique_lock lck(sh->mtx);
+
+    ::sockaddr in_addr;
+    socklen_t in_len = sizeof(::in_addr);
+    for (;;) {
+        if (sh->fd() == -1) throw eof_exception("closed acceptor socket");
+        int infd = accept(sh->fd(), &in_addr, &in_len);
+        if (infd != -1) {
+            sh->cnd.notify_one();
+            lck.unlock();
+            SCOPE_EXIT([&infd]() { if (infd != -1) ::close(infd); });
+            if constexpr (IO_DEBUG) {
+                char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
+                getnameinfo(&in_addr, in_len,
+                    hbuf, sizeof(hbuf),
+                    sbuf, sizeof(sbuf),
+                    NI_NUMERICHOST | NI_NUMERICSERV);
+
+                LOG_TRACE(wrapper->logger()) << hbuf << " " << sbuf;
+            }
+            linapi::append_descriptor_flags(infd, O_NONBLOCK);
+            tcp_socket rs = do_create_tcp_socket(infd);
+            ssize_t n = ::read(infd, buff, sz);
+            infd = -1;
+            return {std::move(rs), n >= 0 ? n : 0};
+        }
+
+        int err = errno;
+        if (err != EAGAIN) {
+            throw exception("accept error: %1%"_fmt % strerror(err));
+        }
+        sh->wait(lck);
+    }
 }
 
 // tcp_socket_service
+#if 0
 void factory::tcp_socket_bind(tcp_handle_type handle, cstring_view address, uint16_t port)
 {
     tcp_scoped_handle sh{this, handle};
@@ -700,6 +743,9 @@ void factory::tcp_socket_listen(tcp_handle_type handle, function<void(tcp_connec
         throw exception("can't listen socket, error: %1%"_fmt % strerror(err));
     }
 
+    epoll_ctl(dataptr->efd, sh->fd(), sh->bkid(), dataptr->acceptor_flags, [](const char * msg) {
+        throw exception("can't watch acceptor, error: %1%"_fmt % msg);
+    });
     //acceptor_socket_handle * sh = new acceptor_socket_handle(dataptr, sockfd, handler);
     //pinsockfd = -1;
     //return tcp_acceptor_access::create_tcp_acceptor(shared_from_this(), (void*)sh);
@@ -707,41 +753,73 @@ void factory::tcp_socket_listen(tcp_handle_type handle, function<void(tcp_connec
     BOOST_THROW_EXCEPTION(not_implemented_error("tcp_socket_listen"));
 }
 
-void factory::tcp_socket_async_read_some(tcp_handle_type handle, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor)
-{
-    BOOST_THROW_EXCEPTION(not_implemented_error("tcp_socket_async_read_some"));
-}
-
-size_t factory::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz)
-{
-    BOOST_THROW_EXCEPTION(not_implemented_error("tcp_socket_read_some"));
-#if 0
-    socket_handle * sh = static_cast<socket_handle*>(reinterpret_cast<socket_handle_base*>(handle));
-    return sh->read_some(buff, sz);
 #endif
+
+expected<size_t, std::error_code> lin_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz)
+{
+    tcp_scoped_handle sh{this, handle};
+    SCOPE_EXIT([&sh]() { --sh->waiting_cnt; });
+    ++sh->waiting_cnt;
+    unique_lock lck(sh->mtx);
+
+    for (;;)
+    {
+        if (sh->fd() == -1) return 0;
+        ssize_t n = ::read(sh->fd(), buff, sz);
+
+        if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) read %2% bytes"_fmt % sh->fd() % n);
+        if (n >= 0) return (size_t)n;
+        int err = errno;
+        if (BOOST_UNLIKELY(EAGAIN != err)) { return 0; }
+        if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) read waiting..."_fmt % sh->fd());
+        sh->wait(lck);
+        if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) woke up"_fmt % sh->fd());
+    }
 }
 
-size_t factory::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz)
+expected<size_t, std::error_code> lin_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz)
 {
-    BOOST_THROW_EXCEPTION(not_implemented_error("tcp_socket_read_some"));
+    tcp_scoped_handle sh{this, handle};
+    SCOPE_EXIT([&sh]() { --sh->waiting_cnt; });
+    ++sh->waiting_cnt;
+    unique_lock lck(sh->mtx);
+
+    for (;;)
+    {
+        if (sh->fd() == -1) return 0;
+        ssize_t n = ::write(sh->fd(), buff, sz);
+        if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write %2% bytes"_fmt % sh->fd() % n);
+        if (n >= 0) return (size_t)n;
+        int err = errno;
+        if (BOOST_UNLIKELY(EAGAIN != err)) { return 0; }
+        if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write waiting..."_fmt % sh->fd());
+        sh->wait(lck);
+        if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) woke up"_fmt % sh->fd());
+    }
+}
+
+void lin_impl::tcp_socket_close(tcp_handle_type h) noexcept
+{
+    lin_shared_handle * lh = static_cast<lin_shared_handle*>(h->lock());
+    if (lh) {
+        lock_guard guard(lh->mtx);
+        if (lh->fd() != -1) {
+            ::epoll_ctl(efd, EPOLL_CTL_DEL, lh->fd(), NULL);
+            ::close(lh->fd());
+            lh->handle = -1;
+        }
+        lh->cnd.notify_all();
+        lh->release(static_cast<tcp_socket_service_type*>(this));
+    }
+}
+
+void lin_impl::free_handle(identity<tcp_socket_service_type>, tcp_handle_type h) noexcept
+{
+    delete_socket_handle(static_cast<lin_shared_handle*>(h));
+}
+
 #if 0
-    socket_handle * sh = static_cast<socket_handle*>(reinterpret_cast<socket_handle_base*>(handle));
-    return sh->write_some(buff, sz);
-#endif
-}
-
-void factory::tcp_socket_on_close(tcp_handle_type)
-{
-
-}
-
-void factory::free_handle(identity<tcp_socket_service_type>, tcp_handle_type h)
-{
-    dataptr->delete_socket_handle(static_cast<lin_shared_handle*>(h));
-}
-
-#if 0
-tcp_acceptor factory::create_tcp_acceptor(cstring_view address, uint16_t port, tcp_socket_type dt, function<void(tcp_acceptor_factory::connection_factory_t const&)> const& handler)
+tcp_acceptor factory::create_tcp_acceptor(cstring_view address, uint16_t port, tcp_socket_type dt, function<void(tcp_acceptor_handler_type const&)> const& handler)
 {
     addrinfo hints;
     bzero((char*)&hints, sizeof(addrinfo));
@@ -753,90 +831,94 @@ tcp_acceptor factory::create_tcp_acceptor(cstring_view address, uint16_t port, t
     hints.ai_addr = NULL;
     hints.ai_next = NULL;
 
-    addrinfo *result;
-    if (int s = getaddrinfo(address.c_str(), std::to_string(port).c_str(), &hints, &result); s != 0 || !result) {
+    addrinfo *rp;
+    if (int s = getaddrinfo(address.c_str(), std::to_string(port).c_str(), &hints, &rp); s != 0 || !rp) {
         throw exception("tcp acceptor's address '%1%' is not valid, error: %2%"_fmt % address % gai_strerror(s));
     }
     SCOPE_EXIT([result] { freeaddrinfo(result); });
 
-    addrinfo * rp;
-    for (rp = result; !!rp; rp = rp->ai_next) {
-        // LOG_INFO(logger()) << "family: " << rp->ai_family << ", socktype: " << rp->ai_socktype << ", protocol: " << rp->ai_protocol;
-        int sockfd = socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
-        if (sockfd == -1) continue;
-
-        int pinsockfd = sockfd;
-        SCOPE_EXIT([this, &pinsockfd]() { if (pinsockfd >= 0) { ::close(pinsockfd); dataptr->remove_from_bk(pinsockfd); }});
+    std::ostringstream errmsgs;
+    for (; !!rp; rp = rp->ai_next) {
+        try {
+            int sockfd = linapi::socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+            int pinsockfd = sockfd;
+            SCOPE_EXIT([&pinsockfd]() { if (pinsockfd >= 0) { ::close(pinsockfd); }});
         
-        int enable = 1;
-        if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
-            int err = errno;
-            throw exception("can't set socket(SO_REUSEADDR) for '%1% : %2%', error: %3%"_fmt % address % port % strerror(err));
-        }
-
-        if (!bind(sockfd, rp->ai_addr, rp->ai_addrlen)) {
-            set_descriptor_flags(sockfd, O_NONBLOCK);
-            if (int r = listen(sockfd, SOMAXCONN); r != 0) {
+            int enable = 1;
+            if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
                 int err = errno;
-                throw exception("can't listen socket '%1% : %2%', error: %3%"_fmt % address % port % strerror(err));
+                throw exception("can't set socket(SO_REUSEADDR), error: %1%"_fmt % strerror(err));
             }
 
-            acceptor_socket_handle * sh = new acceptor_socket_handle(dataptr, sockfd, handler);
+            linapi::bind_socket(sockfd, rp->ai_addr, rp->ai_addrlen));
+                
+            linapi::append_descriptor_flags(sockfd, O_NONBLOCK);
+
+            linapi::listen(sockfd, SOMAXCONN);
+
+            acceptor_socket_handle * sh = dataptr->new_acceptor_handle(sockfd, handler);
 
             pinsockfd = -1;
-            return tcp_acceptor_access::create_tcp_acceptor(shared_from_this(), (void*)sh);
+
+            return tcp_acceptor_access::create_tcp_acceptor(shared_from_this(), sh);
+        } catch (std::exception const& e) {
+            if (!errmsgs.str().empty()) errmsgs << '\n';
+            errmsgs << e.what();
         }
     }
-    BOOST_ASSERT(!rp);
-    throw exception("can't bind socket to '%1% : %2%'"_fmt % address % port);
+
+    throw exception("can't bind socket to '%1%:%2%', error(s): %3%"_fmt % address % port % errmsgs.str());
 }
 
-void factory::tcp_acceptor_close(void * handle) noexcept
+void factory::tcp_acceptor_on_close(acceptor_handle_type handle) noexcept
 {
-    socket_handle_base * ah = reinterpret_cast<socket_handle_base*>(handle);
-    dataptr->remove_from_bk(ah->sock.value);
-    if (!ah->release()) {
-        ah->free(dataptr);
-    }
+
 }
+
 #endif
+
+size_t lin_impl::tcp_socket_waiting_count(tcp_handle_type handle)
+{
+    tcp_scoped_handle sh{this, handle};
+    return sh->waiting_cnt.load();
+}
 
 udp_socket factory::create_udp_socket()
 {
-    BOOST_THROW_EXCEPTION(not_implemented_error("create_udp_socket"));
+    THROW_NOT_IMPLEMENTED_ERROR("create_udp_socket");
 }
 
 void factory::udp_socket_bind(udp_handle_type handle, cstring_view address, uint16_t port)
 {
-    BOOST_THROW_EXCEPTION(not_implemented_error("udp_socket_bind"));
+    THROW_NOT_IMPLEMENTED_ERROR("udp_socket_bind");
 }
 
 void factory::udp_socket_listen(udp_handle_type handle, function<void(udp_connection_handler_type const&)> const& handler)
 {
-    BOOST_THROW_EXCEPTION(not_implemented_error("udp_socket_listen"));
+    THROW_NOT_IMPLEMENTED_ERROR("udp_socket_listen");
 }
 
-size_t factory::udp_socket_read_some(udp_handle_type handle, void * buff, size_t sz)
+expected<size_t, std::error_code> factory::udp_socket_read_some(udp_handle_type handle, void * buff, size_t sz)
 {
-    BOOST_THROW_EXCEPTION(not_implemented_error("udp_socket_read_some"));
+    THROW_NOT_IMPLEMENTED_ERROR("udp_socket_read_some");
 }
 
-size_t factory::udp_socket_write_some(udp_handle_type handle, socket_address const& address, void const* buff, size_t sz)
+expected<size_t, std::error_code> factory::udp_socket_write_some(udp_handle_type handle, socket_address const& address, void const* buff, size_t sz)
 {
-    BOOST_THROW_EXCEPTION(not_implemented_error("udp_socket_write_some"));
+    THROW_NOT_IMPLEMENTED_ERROR("udp_socket_write_some");
 }
 
-size_t factory::udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz)
+expected<size_t, std::error_code> factory::udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz)
 {
-    BOOST_THROW_EXCEPTION(not_implemented_error("udp_socket_write_some"));
+    THROW_NOT_IMPLEMENTED_ERROR("udp_socket_write_some");
 }
 
-void factory::udp_socket_on_close(udp_handle_type)
+void factory::udp_socket_on_close(udp_handle_type) noexcept
 {
 
 }
 
-void factory::free_handle(identity<udp_socket_service_type>, udp_handle_type h)
+void factory::free_handle(identity<udp_socket_service_type>, udp_handle_type h) noexcept
 {
     dataptr->delete_socket_handle(static_cast<lin_shared_handle*>(h));
 }
@@ -983,4 +1065,4 @@ size_t factory::file_write(int handle, uint64_t fileoffset, array_view<const cha
     return (size_t)rsz;
 }
 
-}}
+}

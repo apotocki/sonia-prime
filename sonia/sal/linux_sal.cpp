@@ -10,11 +10,20 @@
 #include "sonia/logger/logger.hpp"
 
 #include <sys/types.h>
+#include <sys/socket.h>
+
 #include <dlfcn.h>
 #include <signal.h>
 #include <unistd.h>
+#include <netdb.h>
 
-namespace sonia { namespace sal {
+#include "sonia/utility/linux.hpp"
+#include "sonia/utility/scope_exit.hpp"
+
+namespace linapi = sonia::linux;
+
+
+namespace sonia::sal {
 
 void set_thread_name(sonia::thread::id tid, string_view name)
 {
@@ -75,7 +84,31 @@ void delete_file(cstring_view path)
     }
 }
 
-void close_socket(socket_type sval) noexcept
+// net
+inline int af_value(net_family_type ft)
+{
+    switch(ft) {
+        case net_family_type::INET: return AF_INET;
+        case net_family_type::INET6: return AF_INET6;
+        default: return AF_UNSPEC;
+    }
+}
+
+inline net_family_type ft_value(int af)
+{
+    switch(af) {
+        case AF_INET: return net_family_type::INET;
+        case AF_INET6: return net_family_type::INET6;
+        default: return net_family_type::UNSPEC;
+    }
+}
+
+socket_handle create_socket(net_family_type ft, int type, int protocol)
+{
+    return linapi::create_socket(af_value(ft), type, protocol);
+}
+
+void close_socket(socket_handle sval) noexcept
 {
     if (-1 == ::close(sval)) {
         int err = errno;
@@ -83,4 +116,70 @@ void close_socket(socket_type sval) noexcept
     }
 }
 
-}}
+void setsockopt(socket_handle s, int level, int optname, int val)
+{
+    linapi::setsockopt(s, level, optname, (const char*)&optname, sizeof(int));
+}
+
+void connect_socket(socket_handle s, sockaddr * addr, size_t addrlen)
+{
+    linapi::connect(s, reinterpret_cast<::sockaddr*>(addr), (socklen_t)addrlen);
+}
+
+void bind_socket(socket_handle s, sockaddr * addr, size_t addrlen)
+{
+    linapi::bind_socket(s, reinterpret_cast<::sockaddr*>(addr), (socklen_t)addrlen);
+}
+
+void listen_socket(socket_handle s, int bl)
+{
+    linapi::listen(s, bl);
+}
+
+std::string socket_address::str() const
+{
+    return linapi::inet_ntoa(reinterpret_cast<sockaddr_in const*>(buffer_));
+}
+
+uint16_t socket_address::port() const
+{
+    return reinterpret_cast<sockaddr_in const*>(buffer_)->sin_port;
+}
+
+int addrinfo::ai_flags() const { return reinterpret_cast<::addrinfo const*>(this)->ai_flags; }
+net_family_type addrinfo::family() const { return ft_value(reinterpret_cast<::addrinfo const*>(this)->ai_family); }
+int addrinfo::ai_socktype() const { return reinterpret_cast<::addrinfo const*>(this)->ai_socktype; }
+int addrinfo::ai_protocol() const { return reinterpret_cast<::addrinfo const*>(this)->ai_protocol; }
+size_t addrinfo::ai_addrlen() const { return reinterpret_cast<::addrinfo const*>(this)->ai_addrlen; }
+sockaddr * addrinfo::ai_addr() const { return reinterpret_cast<sockaddr *>(reinterpret_cast<::addrinfo const*>(this)->ai_addr); }
+
+boost::coroutines2::coroutine<addrinfo const*&>::pull_type parse_net_address(net_family_type hint_ft, int hint_type, int hint_protocol, cstring_view address, uint16_t port)
+{
+    return boost::coroutines2::coroutine<addrinfo const*&>::pull_type
+        ([=](boost::coroutines2::coroutine<addrinfo const*&>::push_type & yield)
+    {
+        ::addrinfo hints;
+        bzero((char*)&hints, sizeof(::addrinfo));
+        hints.ai_family = af_value(hint_ft);
+        hints.ai_socktype = hint_type;
+        hints.ai_flags = AI_PASSIVE;    /* For wildcard IP address */
+        hints.ai_protocol = hint_protocol;
+        hints.ai_canonname = NULL;
+        hints.ai_addr = NULL;
+        hints.ai_next = NULL;
+
+        ::addrinfo *rp;
+        if (int s = getaddrinfo(address.c_str(), std::to_string(port).c_str(), &hints, &rp); s != 0 || !rp) {
+            throw exception("tcp socket address '%1%' is not valid, error: %2%"_fmt % address % gai_strerror(s));
+        }
+        SCOPE_EXIT([rp] { freeaddrinfo(rp); });
+        for (::addrinfo *pai = rp; !!pai; pai = pai->ai_next)
+        {
+            addrinfo const* val = reinterpret_cast<addrinfo*>(pai);
+            yield(val);
+            if (!val) break;
+        }
+    });
+}
+
+}

@@ -90,6 +90,20 @@ environment::environment() : log_initialized_(false)
 
 environment::~environment()
 {
+#if 0
+    std::vector<fiber> fibers;
+    for (auto const& h : hosts_) {
+        fibers.emplace_back([h]() { h->close(); });
+    }
+    for (fiber & f : fibers) {
+        f.join();
+    }
+    fibers.clear();
+#else
+    for (auto const& h : hosts_) {
+        h->close();
+    }
+#endif
     hosts_.clear();
     if (log_initialized_) {
         GLOBAL_LOG_INFO() << "environment terminated";

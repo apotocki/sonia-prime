@@ -15,7 +15,7 @@
 
 #include "serialization.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <class TupleT, size_t N> struct tuple_item
 {
@@ -95,6 +95,6 @@ private:
     }
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_TUPLE_HPP

@@ -122,14 +122,14 @@ wsa_scope::~wsa_scope()
     WSACleanup();
 }
 
-bool parse_address(int hint_type, int hint_protocol, string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc)
+bool parse_address(int hint_af, int hint_type, int hint_protocol, string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc)
 {
     std::wstring wadr = utf8_to_utf16(address);
     std::wstring portstr = boost::lexical_cast<std::wstring>(port);
 
     ADDRINFOW *result = nullptr, hints;
     ZeroMemory(&hints, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
+    hints.ai_family = hint_af;
     hints.ai_socktype = hint_type;
     hints.ai_protocol = hint_protocol;
 
@@ -177,10 +177,33 @@ SOCKET create_socket(int af, int type, int protocol)
 
 void bind_socket(SOCKET soc, sockaddr * name, int namelen)
 {
-    int iResult = bind(soc, name, namelen);
-    if (iResult == SOCKET_ERROR) {
+    if (int iResult = bind(soc, name, namelen); SOCKET_ERROR == iResult) {
         DWORD err = WSAGetLastError();
         throw exception("can't bind socket, error: %1%"_fmt % error_message(err));
+    }
+}
+
+void connect_socket(SOCKET soc, sockaddr * name, int namelen)
+{
+    if (int iResult = ::connect(soc, name, namelen); SOCKET_ERROR == iResult) {
+        DWORD err = WSAGetLastError();
+        throw exception("can't connect socket, error: %1%"_fmt % error_message(err));
+    }
+}
+
+void listen_socket(SOCKET soc, int bl)
+{
+    if (int iResult = ::listen(soc, bl); SOCKET_ERROR == iResult) {
+        DWORD err = WSAGetLastError();
+        throw exception("can't listen to socket, error: %1%"_fmt % error_message(err));
+    }
+}
+
+void setsockopt(SOCKET s, int level, int optname, const char* val, int optlen)
+{
+    if (::setsockopt(s, level, optname, val, optlen) < 0) {
+        DWORD err = WSAGetLastError();
+        throw exception("can't setsockopt, optname: %1%, error: %2%"_fmt % optname % error_message(err));
     }
 }
 

@@ -13,8 +13,9 @@
 
 #include "sonia/cstdint.hpp"
 #include "sonia/string.hpp"
+#include "sonia/sal/net.hpp"
 
-namespace sonia { namespace services { namespace net {
+namespace sonia::services { namespace net {
 
 enum class listener_type
 {
@@ -26,22 +27,24 @@ enum class listener_type
 struct listener_configuration
 {
     std::string connector;
+    sonia::sal::net_family_type family;
     std::string address;
     uint16_t port;
     listener_type type;
     size_t buffer_size;
+    size_t workers_count;
 };
 
 }
 
 struct net_service_configuration
 {
-    std::string udp_factory;
-    std::string tcp_factory;
-    //std::string scheduler;
+    std::string udp_socket_factory;
+    std::string tcp_socket_factory;
+    std::string scheduler;
     std::vector<net::listener_configuration> listeners;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_NET_SERVICE_CONFIGURATION_HPP

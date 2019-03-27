@@ -14,11 +14,28 @@
 
 namespace sonia {
 
+//template <typename ReferenceT>
+//struct stub_reference_holder
+//{
+//    using value_type = remove_reference_t<ReferenceT>;
+//    value_type value;
+//    operator ReferenceT() { return value; }
+//};
+
 template <typename T, typename Enabler = void>
-struct stub_bound_parameter { using type = remove_cvref_t<T>; };
+struct stub_bound_parameter
+{
+    using type = remove_cvref_t<T>;
+    //using type = conditional_t<
+    //    is_lvalue_reference_v<T> && !is_const_v<remove_reference_t<T>>,
+    //    stub_reference_holder<T>,
+    //    remove_cvref_t<T>
+    //>;
+
+    static constexpr bool is_modifiable = is_lvalue_reference_v<T> && !is_const_v<remove_reference_t<T>>;
+};
 
 template <typename T> using stub_bound_parameter_t = typename stub_bound_parameter<T>::type;
-
 
 template <class T, class PointerT>
 struct stub_parameter_holder
@@ -29,6 +46,29 @@ struct stub_parameter_holder
 };
 
 namespace serialization {
+
+//template <typename TagT, typename ReferenceT>
+//class coder<TagT, stub_reference_holder<ReferenceT>>
+//{
+//public:
+//    template <typename OutputIteratorT>
+//    OutputIteratorT encode(stub_reference_holder<ReferenceT> const& val, OutputIteratorT oi) const
+//    {
+//        return sonia::encode<TagT>(val.value, std::move(oi));
+//    }
+//
+//    template <typename InputIteratorT>
+//    InputIteratorT decode(InputIteratorT ii, stub_reference_holder<ReferenceT> & val) const
+//    {
+//        return sonia::decode<TagT>(std::move(ii), val.value);
+//    }
+//
+//    template <typename InputIteratorT>
+//    InputIteratorT decode(InputIteratorT ii, stub_reference_holder<ReferenceT> * val) const
+//    {
+//        return sonia::decode<TagT>(std::move(ii), &val->value);
+//    }
+//};
 
 template <typename TagT, class T, class PointerT>
 class coder<TagT, stub_parameter_holder<T, PointerT>>

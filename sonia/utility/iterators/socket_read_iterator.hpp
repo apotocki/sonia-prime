@@ -49,8 +49,8 @@ class socket_read_iterator
 
     void increment()
     {
-        if (size_t rsz = psoc_->read_some(buff_.begin(), buff_.size()); !!rsz) {
-            buff_.advance_back(ptrdiff_t(rsz) - buff_.size());
+        if (auto exprsz = psoc_->read_some(buff_.begin(), buff_.size()); exprsz.has_value()) {
+            buff_.advance_back(ptrdiff_t(exprsz.value()) - buff_.size());
         } else {
             empty_ = true;
         }

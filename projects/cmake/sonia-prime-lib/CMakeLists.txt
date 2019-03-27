@@ -8,6 +8,7 @@ set (BUNDLE_HOME ${BUNDLES}/sonia-prime)
 set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/logger/logger.cpp
     ${BUNDLE_HOME}/sonia/services/bundle.cpp
+    ${BUNDLE_HOME}/sonia/sal/sal.cpp
     ${BUNDLE_HOME}/sonia/utility/assert_handler.cpp
     ${BUNDLE_HOME}/sonia/utility/file_persister.cpp
     ${BUNDLE_HOME}/sonia/utility/json/json_value.cpp

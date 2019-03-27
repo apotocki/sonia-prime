@@ -14,7 +14,7 @@
 #include "sonia/utility/parameters/parameters.hpp"
 #include "io_service_configuration.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 class io_service_builder 
     : public service
@@ -28,6 +28,6 @@ private:
     sonia::parameters::parameters_description<io_service_configuration> parameters_;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_IO_SERVICE_BUILDER_HPP

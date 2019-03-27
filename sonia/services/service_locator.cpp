@@ -112,11 +112,13 @@ void service_locator::shutdown()
                     layer = it->descr.layer;
                     break;
                 }
-                fibers.push_back(fiber([this, serv = it->object()]() { shutdown(std::move(serv)); }));
+                fibers.emplace_back([this, serv = it->object()]() mutable { shutdown(std::move(serv)); });
             }
         } else {
             break;
         }
+
+        //GLOBAL_LOG_TRACE() << "service_locator: scheduled " << fibers.size() << " shutdowns, layer: " << layer << " join...";
 
         for (fiber & f : fibers) {
             f.join();

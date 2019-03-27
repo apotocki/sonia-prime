@@ -13,9 +13,11 @@
 
 namespace sonia { namespace services {
 
-class host {
+class host
+{
 public:
-    virtual ~host() {}
+    virtual ~host() = default;
+    virtual void close() = 0;
 
     virtual string_view get_name() const = 0;
 

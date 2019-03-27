@@ -105,6 +105,8 @@ public:
     void start();
     void stop();
 
+    virtual void on_new_thread() {};
+
     task_handle_ptr post(scheduler_task_t &&, bool wh) override;
     task_handle_ptr post(function<void()> const&, bool wh) override;
 
@@ -134,9 +136,12 @@ private:
 
     fibers::mutex queue_mtx_;
     fibers::condition_variable_any queue_cond_;
-    bool stopping_;
     entry_list_t entries_;
-    
+
+    bool stopping_;
+    mutable fibers::mutex close_mtx_;
+    fibers::condition_variable close_cond_;
+
     scheduler_detail::task_entry_pool_t task_pool_;
     handle_pool_t handle_pool_;
 

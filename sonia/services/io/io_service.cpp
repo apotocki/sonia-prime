@@ -5,7 +5,7 @@
 #include "sonia/config.hpp"
 #include "io_service.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 io_service::io_service(io_service_configuration const& cfg)
     : cfg_(cfg)
@@ -23,4 +23,4 @@ void io_service::close() noexcept
     sonia::io::factory::close();
 }
 
-}}
+}

@@ -1,5 +1,5 @@
 {
-    key2:   true,key3:1.23e2,"key4":'string value','key5':"str",
+    key2:   true,key3:1.23e2,"key4":'string value','key5':"str",'key6':-5.3,
     key1:   false ,
     key0: null,
     'key4 - just a long key':{} ,

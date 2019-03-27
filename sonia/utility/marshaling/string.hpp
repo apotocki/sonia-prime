@@ -15,7 +15,11 @@
 namespace sonia {
 
 template <typename CharT, class TraitsT>
-struct stub_bound_parameter<basic_string_view<CharT, TraitsT>> { using type = std::basic_string<CharT, TraitsT>; };
+struct stub_bound_parameter<basic_string_view<CharT, TraitsT>>
+{
+    using type = std::basic_string<CharT, TraitsT>;
+    static constexpr bool is_modifiable = false;
+};
 
 }
 

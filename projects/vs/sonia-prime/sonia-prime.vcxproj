@@ -22,10 +22,17 @@
     <ClCompile Include="..\..\..\applied\dllmain.cpp" />
     <ClCompile Include="..\..\..\sonia\services\basic_service_factory.cpp" />
     <ClCompile Include="..\..\..\sonia\services\environment.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\io\io_cache_service.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\io\io_cache_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\io\io_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\io\io_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp" />
-    <ClCompile Include="..\..\..\sonia\services\net\basic_connector.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\basic_connector.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\echo\echo_connector.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\echo\echo_connector_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\net_service_builder.cpp" />
@@ -36,6 +43,8 @@
     <ClCompile Include="..\..\..\sonia\services\services.cpp" />
     <ClCompile Include="..\..\..\sonia\services\services_host.cpp" />
     <ClCompile Include="..\..\..\sonia\services\service_locator.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\transceiver\transceiver_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\transceiver\transceiver_service.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\sonia-prime-lib\sonia-prime-lib.vcxproj">
@@ -47,6 +56,9 @@
     <ClInclude Include="..\..\..\sonia\services\bundle.hpp" />
     <ClInclude Include="..\..\..\sonia\services\environment.hpp" />
     <ClInclude Include="..\..\..\sonia\services\host.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\io_cache_service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\io_cache_service_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\io_cache_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\io_service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\io_service_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\io_service_configuration.hpp" />
@@ -67,6 +79,9 @@
     <ClInclude Include="..\..\..\sonia\services\service_factory.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service_locator.hpp" />
     <ClInclude Include="..\..\..\sonia\services\thread_descriptor.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\transceiver\transceiver_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\transceiver\transceiver_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\transceiver\transceiver_service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\type_registry.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

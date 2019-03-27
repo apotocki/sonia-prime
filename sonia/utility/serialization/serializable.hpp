@@ -10,7 +10,6 @@
 #endif
 
 #include "sonia/array_view.hpp"
-#include "sonia/reference_wrapper.hpp"
 #include "sonia/utility/iterators/wrapper_iterator.hpp"
 
 namespace sonia {
@@ -28,7 +27,7 @@ public:
         array_view<char>,
         std::output_iterator_tag,
         array_view<char>
-    > ;
+    >;
 
     using range_read_iterator = wrapper_iterator<
         input_impl_type*,
@@ -37,10 +36,10 @@ public:
         const array_view<const char>
     >;
 
-    virtual ~serializable() {}
+    virtual ~serializable() = default;
 
     virtual void serialize(range_write_iterator) const = 0;
-    virtual void deserialize(range_read_iterator) const = 0;
+    virtual void deserialize(range_read_iterator) = 0;
 };
 
 }

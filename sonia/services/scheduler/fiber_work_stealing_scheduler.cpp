@@ -44,11 +44,8 @@ fiber_work_stealing_scheduler::fiber_work_stealing_scheduler(group_host & g, boo
     : group_(g), flag_(0), suspend_(suspend ? 1 : 0)
 {
     lock_guard guard(group_.mtx);
-    group_.schedulers.push_back(this);
+    group_.schedulers.emplace_back(this);
 }
-
-fiber_work_stealing_scheduler::~fiber_work_stealing_scheduler()
-{}
 
 fibers::context * fiber_work_stealing_scheduler::steal() noexcept
 {

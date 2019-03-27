@@ -25,7 +25,7 @@ class service : public virtual loggable
 public:
     service() : id_(0) {}
 
-    ~service() noexcept override
+    ~service() override
     {
         LOG_TRACE(logger()) << "terminated";
     }

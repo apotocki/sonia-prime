@@ -5,12 +5,13 @@
 #include "sonia/config.hpp"
 #include "scheduler_service.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 scheduler_service::scheduler_service(scheduler_service_configuration const& cfg)
     : basic_scheduler(cfg.threads, cfg.fibers)
 {
     set_log_attribute("Type", "scheduler");
+    host_ = get_host();
 }
 
 void scheduler_service::open()
@@ -23,4 +24,9 @@ void scheduler_service::close() noexcept
     stop();
 }
 
-}}
+void scheduler_service::on_new_thread()
+{
+    host_->attach_to_current_thread();
+}
+
+}

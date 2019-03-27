@@ -19,8 +19,9 @@
 #include "sonia/utility/type_id.hpp"
 #include "sonia/utility/type_durable_id.hpp"
 #include "sonia/utility/multimethod.hpp"
+#include "sonia/exceptions/internal_errors.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 thread_local thread_descriptor * tdesc_ = nullptr;
 
@@ -45,7 +46,7 @@ void thread_descriptor::set()
 void initialize(int argc, char const* argv[], std::istream * cfgstream)
 {
     if (env_) {
-        BOOST_THROW_EXCEPTION(internal_error("an attempt to initialize not empty environment"));
+        THROW_INTERNAL_ERROR("an attempt to initialize not empty environment");
     }
 
     env_ = new environment;
@@ -70,7 +71,7 @@ shared_ptr<host> get_host()
 {
     thread_descriptor * td = tdesc_;
     if (td) return td->host;
-    BOOST_THROW_EXCEPTION(internal_error("inappropriate thread to operate, attach a host to the current thread first."));
+    THROW_INTERNAL_ERROR("inappropriate thread to operate, attach a host to the current thread first.");
 }
 
 char const* bundles_path()
@@ -87,7 +88,7 @@ shared_ptr<host_impl> get_host_impl()
     }
     shared_ptr<host_impl> h = env_->default_host();
     if (!h) {
-        BOOST_THROW_EXCEPTION(internal_error("inappropriate thread to operate"));
+        THROW_INTERNAL_ERROR("inappropriate thread to operate");
     }
     h->attach_to_current_thread();
     return h;
@@ -166,9 +167,9 @@ multimethod const* get_multimethod(array_view<const std::type_index> mmid)
     return get_host_impl()->get_multimethod(mmid);
 }
 
-}}
+}
 
-namespace sonia { namespace this_thread {
+namespace sonia::this_thread {
 
 void attach_host(string_view nm)
 {
@@ -181,4 +182,4 @@ void detach_host()
     sonia::services::thread_descriptor::reset();
 }
 
-}}
+}

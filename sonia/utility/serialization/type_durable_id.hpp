@@ -14,7 +14,7 @@
 #include "serialization.hpp"
 #include "integral.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <typename SerializationTagT>
 class coder<SerializationTagT, sonia::type::durable_id>
@@ -45,6 +45,6 @@ public:
     }
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_TYPE_DURABLE_ID_HPP

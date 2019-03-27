@@ -16,12 +16,10 @@
 #include "sonia/services/io/sockets.hpp"
 #include "sonia/services/scheduler/scheduler.hpp"
 
-#include "sonia/utility/linked_buffers.hpp"
-
 #include "net_service_configuration.hpp"
 #include "connector.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 class net_service 
     : public service
@@ -43,11 +41,12 @@ public:
 
 private:
     net_service_configuration cfg_;
-    shared_ptr<sonia::io::udp_socket_factory_type> udp_socket_factory_;
     shared_ptr<sonia::io::tcp_socket_factory_type> tcp_socket_factory_;
+    shared_ptr<sonia::io::udp_socket_factory_type> udp_socket_factory_;
+    shared_ptr<scheduler> scheduler_;
     std::vector<shared_ptr<listener>> listeners_;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_NET_SERVICE_HPP

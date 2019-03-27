@@ -21,10 +21,11 @@
 
 #include "utiltiy.hpp"
 
-namespace sonia { namespace cashe {
+namespace sonia::cashe {
 
 template <typename KeyT, typename ValueT>
-class clock {
+class clock
+{
     template <class> friend class handle;
     typedef KeyT key_type;
     typedef typename boost::call_traits<KeyT>::param_type key_param_type;
@@ -55,12 +56,13 @@ private:
 
 
 template <typename KeyT, typename ValueT>
-void clock<KeyT, ValueT>::release(item & i) {
+void clock<KeyT, ValueT>::release(item & i)
+{
     if (1 == --i.refs) {
     
     }
 }
 
-}}
+}
 
 #endif // SONIA_CACHES_CLOCK_HPP

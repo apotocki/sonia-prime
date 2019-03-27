@@ -28,6 +28,11 @@ void host_impl::open(shared_ptr<service_registry> r, shared_ptr<service_factory>
     locator_ = make_shared<service_locator>(std::move(r), std::move(f));
 }
 
+void host_impl::close()
+{
+    locator_->shutdown();
+}
+
 host_impl::~host_impl()
 {
     for (function<void()> & h : on_close_handlers_) {

@@ -96,7 +96,7 @@ public:
     template <typename CharT, class TraitsT>
     friend std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, durable_id const& v)
     {
-        return os << v.val_ << " (" << v.ti_.name() << ")";
+        return os << "durable_id: " << v.val_ << " (" << v.ti_.name() << ")";
     }
 
 private:

@@ -34,7 +34,7 @@ public:
     template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, std::pair<FT, ST> * val) const
     {
-        return default_decode_ptr<TagT>(std:move(ii), val);
+        return default_decode_ptr<TagT>(std::move(ii), val);
     }
 };
 

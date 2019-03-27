@@ -13,6 +13,7 @@
 #include <numeric>
 
 #include "sonia/exceptions.hpp"
+#include "sonia/logger/logger.hpp"
 
 namespace sonia {
 
@@ -20,13 +21,10 @@ namespace sonia {
 see HandleTraitsT prototype:
 struct handle_traits
 {
-    using type = unspecified_type;
-    static constexpr type not_initialized_v = unspecified_value;
-    
     using base_type = unspecified_type; // used to enable polymorphic destruction
 
     template <typename ... ServiceT>
-    void close(ServiceT && ..., type);
+    void close(ServiceT && ..., shared_handle *);
     
     template <typename ... ServiceT>
     void free(ServiceT && ..., shared_handle *);
@@ -36,31 +34,27 @@ struct handle_traits
 template <class HandleTraitsT>
 struct shared_handle : HandleTraitsT::base_type
 {
-    using handle_type = typename HandleTraitsT::type;
-    handle_type handle;
-
     std::atomic<uintptr_t> refs_{0};
     static constexpr uintptr_t weakunit = ((uintptr_t)1) << (sizeof(uintptr_t) * 4);
     static constexpr uintptr_t refs_mask = weakunit - 1;
 
-    explicit shared_handle(handle_type h = HandleTraitsT::not_initialized_v) : handle(h) {}
-    virtual ~shared_handle() {}
+    shared_handle() = default;
+    virtual ~shared_handle() = default;
 
     shared_handle(shared_handle const&) = delete;
     shared_handle(shared_handle &&) = delete;
     shared_handle& operator= (shared_handle const&) = delete;
     shared_handle& operator= (shared_handle &&) = delete;
 
-    void add_ref() { ++refs_; }
+    uintptr_t add_ref() { return ++refs_; }
     void add_weakref() { refs_.fetch_add(weakunit); }
 
     template <typename ... ServiceT>
     void release(ServiceT && ... s)
     {
-        uintptr_t rval = refs_.fetch_sub(1) - 1;
+        const uintptr_t rval = refs_.fetch_sub(1) - 1;
         if (0 == (rval & refs_mask)) {
-            HandleTraitsT::close(std::forward<ServiceT>(s) ..., handle);
-            handle = HandleTraitsT::not_initialized_v;
+            HandleTraitsT::close(std::forward<ServiceT>(s) ..., this);
         }
         if (!rval) {
             HandleTraitsT::free(std::forward<ServiceT>(s) ..., this);
@@ -74,17 +68,24 @@ struct shared_handle : HandleTraitsT::base_type
             HandleTraitsT::free(std::forward<ServiceT>(s) ..., this);
         }
     }
-
+    /*
     shared_handle * lock()
     {
         if ((refs_.fetch_add(1) & refs_mask) > 0) {
             return this;
         }
-        BOOST_VERIFY(refs_.fetch_sub(1) > 1);
+        auto v = refs_.fetch_sub(1);
+        if ((v & refs_mask) != 1) {
+            GLOBAL_LOG_ERROR() << "shared_handle lock error: " << v << ", " << (v & refs_mask);
+        }
+        BOOST_VERIFY((v & refs_mask) == 1);
+        //BOOST_VERIFY((refs_.fetch_sub(1) & refs_mask) == 1);
         return nullptr;
     }
+    */
 };
 
+/*
 template <class ServiceT, class SharedHandleT>
 class scoped_handle
 {
@@ -92,7 +93,7 @@ public:
     explicit scoped_handle(ServiceT s, SharedHandleT * sh)
         : s_(s), sh_(static_cast<SharedHandleT*>(sh->lock()))
     {
-        if (!sh_) throw exception("socket is closed");
+        if (!sh_) throw eof_exception("socket is closed");
     }
 
     template <class HandleTraitsT>
@@ -115,6 +116,7 @@ private:
     ServiceT s_;
     SharedHandleT * sh_;
 };
+*/
 
 }
 

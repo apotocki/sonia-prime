@@ -11,6 +11,9 @@
 
 namespace sonia {
 
+struct null_t;
+struct empty_t;
+
 template <typename TagT, typename T, typename OutputIteratorT>
 OutputIteratorT encode(T const& arg, OutputIteratorT oi);
 
@@ -26,6 +29,19 @@ struct compressed_t {};
 struct ordered_t {}; // compatible among systems
 template <size_t sz, class T> struct sized_t {}; // size modifier for serialization with a given size
 template <size_t sz, class T> struct binary_t {}; // size modifier for serialization with a given binary size
+
+template <typename TagT>
+class coder<TagT, null_t>
+{
+public:
+    template <typename T, typename OutputIteratorT>
+    OutputIteratorT encode(T const&, OutputIteratorT oi) const noexcept { return std::move(oi); }
+
+    template <typename InputIteratorT, typename T>
+    InputIteratorT decode(InputIteratorT ii, T &&) const noexcept { return std::move(ii); }
+};
+
+template <typename TagT> class coder<TagT, empty_t> : coder<TagT, null_t> {};
 
 }}
 

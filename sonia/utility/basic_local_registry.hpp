@@ -24,6 +24,7 @@
 #include "sonia/utility/persister.hpp"
 #include "sonia/utility/concurrency/rw_fiber_mutex.hpp"
 #include "sonia/utility/scope_exit.hpp"
+#include "sonia/exceptions/internal_errors.hpp"
 
 namespace sonia { namespace utility { namespace basic_local_registry_detail {
 
@@ -176,7 +177,7 @@ public:
         if (it != registry_.template get<1>().end() && it->persisted.load()) {
             return {it->name, it->meta};
         }
-        throw internal_error("no registry item with id: %1%"_fmt % id);
+        THROW_INTERNAL_ERROR("no registry item with id: %1%"_fmt % id);
     }
 
 private:

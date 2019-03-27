@@ -21,52 +21,32 @@
 #include "file.hpp"
 #include "sockets.hpp"
 
-namespace sonia { namespace io {
+namespace sonia::io {
 
 class factory
     : public tcp_socket_factory_type
-    , public tcp_socket_service_type
     , public udp_socket_factory_type
-    , public udp_socket_service_type
     , public file_factory
     , public file_service
     , public enable_shared_from_this<factory>
     , public virtual loggable
 {
-    static constexpr long qsz_min_value = boost::integer_traits<long>::const_min;
+    static constexpr long qsz_min_value = (std::numeric_limits<long>::min)();
 
 public:
     factory();
     virtual ~factory() override;
 
     void open(uint32_t thr_cnt);
-    void close();
+    void close() noexcept;
     virtual std::string name() const;
 
     // tcp_socket_factory
-    tcp_socket create_tcp_socket(tcp_socket_type dt) override;
-    tcp_socket create_tcp_socket(cstring_view address, uint16_t port, tcp_socket_type dt) override;
+    tcp_socket create_connected_tcp_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type dt) override;
+    tcp_socket create_bound_tcp_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type dt) override;
 
-    // tcp_socket_service
-    void   tcp_socket_bind(tcp_handle_type, cstring_view address, uint16_t port) override;
-    void   tcp_socket_listen(tcp_handle_type, function<void(tcp_connection_handler_type const&)> const& handler) override;
-    size_t tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) override;
-    void   tcp_socket_async_read_some(tcp_handle_type, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor) override;
-    size_t tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) override;
-    void   tcp_socket_on_close(tcp_handle_type) override;
-    void   free_handle(identity<tcp_socket_service_type>, tcp_handle_type) override;
-
-    // udp_socket_factory
-    udp_socket create_udp_socket() override;
-
-    // udp_socket_service
-    void   udp_socket_bind(udp_handle_type, cstring_view address, uint16_t port) override;
-    void   udp_socket_listen(udp_handle_type, function<void(udp_connection_handler_type const&)> const& handler) override;
-    size_t udp_socket_read_some(udp_handle_type, void * buff, size_t sz) override;
-    size_t udp_socket_write_some(udp_handle_type, socket_address const&, void const* buff, size_t sz) override;
-    size_t udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz) override;
-    void   udp_socket_on_close(udp_handle_type) override;
-    void   free_handle(identity<udp_socket_service_type>, udp_handle_type) override;
+     // udp_socket_factory
+    udp_socket create_udp_socket(sonia::sal::net_family_type) override;
 
     // file factory
     file open_file(cstring_view path, file_open_mode, file_access_mode, file_bufferring_mode) override;
@@ -75,38 +55,51 @@ public:
     size_t file_read(sonia::sal::file_handle_type, uint64_t fileoffset, array_view<char> dest) override;
     size_t file_write(sonia::sal::file_handle_type, uint64_t fileoffset, array_view<const char> src) override;
 
-    class impl_base
+    class impl_base 
+        : public tcp_socket_service_type
+        , public udp_socket_service_type
     {
     public:
-        virtual ~impl_base() {}
+        virtual ~impl_base() = default;
 
         explicit impl_base(shared_ptr<factory> wr) : wrapper(std::move(wr)) {}
+        
+        impl_base(impl_base const&) = delete;
+        impl_base& operator=(impl_base const&) = delete;
 
+        virtual void thread_proc() = 0;
+
+        void close() noexcept;
         virtual void park_threads() noexcept  = 0;
 
+        void on_add_callback();
+        void on_release_callback() noexcept;
+
+        virtual tcp_socket do_create_tcp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type dt) = 0;
+        virtual udp_socket do_create_udp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type dt) = 0;
+
         shared_ptr<factory> wrapper;
+        std::atomic<long> qsz{0};
     };
     
     friend class impl_base;
 
-    void on_add_callback();
-    void on_release_callback() noexcept;
-    void join_threads();
     size_t thread_count() const;
-    std::atomic<long> qsz{0};
 
 private:
+    shared_ptr<impl_base> get_dataptr();
+
     void close_handle(shared_handle<socket_handle_traits> * h);
 
-    void thread_proc();
     void initialize_impl(uint32_t thr_cnt);
 
-    mutable boost::fibers::mutex close_mtx_;
-    boost::fibers::condition_variable close_cond_;
+    mutable fibers::mutex close_mtx_;
+    fibers::condition_variable close_cond_;
     std::vector<thread> threads_;
-    std::unique_ptr<impl_base> impl_data_;
+    shared_ptr<impl_base> impl_holder_;
+    weak_ptr<impl_base> impl_;
 };
 
-}}
+}
 
 #endif // SONIA_IO_FACTORY_HPP

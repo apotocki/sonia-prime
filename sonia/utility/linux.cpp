@@ -8,6 +8,8 @@
 
 #include <sys/utsname.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #include <string>
 #include <cstdlib>
@@ -54,6 +56,66 @@ std::string inet_ntoa(sockaddr_in const* addr)
         throw exception("can't retrieve the address, error : %1%"_fmt % strerror(err));
     }
     return std::string(r);
+}
+
+int create_socket(int af, int type, int protocol)
+{
+    int sockfd = socket(af, type, protocol);
+    if (sockfd == -1) {
+        int err = errno;
+        throw exception("can't create socket, error: %1%"_fmt % strerror(err));
+    }
+    return sockfd;
+}
+
+void connect(int s, const sockaddr *addr, socklen_t addrlen)
+{
+    if (int ir = ::connect(s, addr, addrlen); ir == -1) {
+        int err = errno;
+        throw exception("can't connect socket, error: %1%"_fmt % strerror(err));
+    }
+}
+
+void bind_socket(int sockfd, const sockaddr *addr, socklen_t addrlen)
+{
+    if (::bind(sockfd, addr, addrlen)) {
+        int err = errno;
+        throw exception("can't bind socket, error: %1%"_fmt % strerror(err));
+    }
+}
+
+void listen(int sockfd, int backlog)
+{
+    if (int r = ::listen(sockfd, SOMAXCONN); r != 0) {
+        int err = errno;
+        throw exception("can't listen socket, error: %1%"_fmt % strerror(err));
+    }
+}
+
+void setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen)
+{
+    if (int r = ::setsockopt(sockfd, level, optname, optval, optlen); r != 0) {
+        int err = errno;
+        throw exception("can't setsockopt, optname: %1%, error: %2%"_fmt % optname % strerror(err));
+    }
+}
+
+void append_descriptor_flags(int fd, int appending_flags)
+{
+    int flags = fcntl(fd, F_GETFL, 0);
+    if (flags == -1)
+    {
+        int err = errno;
+        throw exception("can't get descriptor flags, error: %1%"_fmt % strerror(err));
+    }
+
+    flags |= appending_flags;
+    int s = fcntl(fd, F_SETFL, flags);
+    if (s == -1)
+    {
+        int err = errno;
+        throw exception("can't set descriptor flags, error: %1%"_fmt % strerror(err));
+    }
 }
 
 }}

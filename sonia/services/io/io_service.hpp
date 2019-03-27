@@ -13,7 +13,7 @@
 #include "sonia/services/io/factory.hpp"
 #include "sonia/services/io/io_service_configuration.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 class io_service 
     : public service
@@ -29,6 +29,6 @@ private:
     io_service_configuration cfg_;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_IO_SERVICE_HPP

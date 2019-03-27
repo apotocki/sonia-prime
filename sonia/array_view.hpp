@@ -43,7 +43,7 @@ public:
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     // potentially unsafe
-    array_view(null_t) {}
+    explicit constexpr array_view(null_t) {}
 
     constexpr array_view() noexcept : data_(nullptr), size_(0) {}
     constexpr array_view(T * d, size_type sz) noexcept : data_(d), size_(sz) {}

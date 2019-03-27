@@ -5,49 +5,25 @@
 #include "sonia/config.hpp"
 #include "net_service.hpp"
 
+#include <boost/exception/diagnostic_information.hpp>
+#include <boost/algorithm/string/trim.hpp>
+
 #include "sonia/services.hpp"
+#include "sonia/concurrency.hpp"
+#include "sonia/utility/scope_exit.hpp"
 
 namespace sonia { namespace services {
 
 using sonia::io::tcp_socket;
-using sonia::io::tcp_socket_factory;
-using tcp_connection_handler_type = sonia::io::tcp_connection_handler_t<sonia::io::socket_traits>;
-
 using sonia::io::udp_socket;
-using sonia::io::udp_weak_socket;
-using udp_connection_handler_type = sonia::io::udp_connection_handler_t<sonia::io::socket_traits>;
-
-//class listener_task : public scheduler_task
-//{
-//    shared_ptr<net::connector> cn_;
-//    single_linked_buffer_ptr<char> buff_;
-//    size_t sz_;
-//    sonia::io::tcp_socket soc_;
-//
-//public:
-//    template <class CnT, class BuffT>
-//    listener_task(CnT && cn, BuffT && buff, size_t sz, sonia::io::tcp_socket soc)
-//        : cn_(std::forward<CnT>(cn)), buff_(std::forward<BuffT>(buff)), sz_(sz), soc_(std::move(soc))
-//    {}
-//
-//    void run() override
-//    {
-//        cn_->connect(std::move(buff_), sz_, std::move(soc_));
-//    }
-//
-//    polymorphic_movable* move(void* address, size_t sz) override
-//    {
-//        BOOST_ASSERT(sz >= sizeof(listener_task));
-//        new (address) listener_task(std::move(*this));
-//        return reinterpret_cast<listener_task*>(address);
-//    }
-//};
 
 struct tcp_acceptor_listener : net_service::listener
 {
     shared_ptr<net::connector> cn;
     sonia::io::tcp_socket sock;
-
+    std::atomic<size_t> workers_count{1};
+    size_t workers_max{1};
+    size_t buffer_size{0};
     void close() override { sock.close(); }
 };
 
@@ -55,15 +31,122 @@ struct udp_socket_listener : net_service::listener
 {
     shared_ptr<net::connector> cn;
     sonia::io::udp_socket sock;
-
+    std::atomic<size_t> workers_count{1};
+    size_t workers_max{1};
+    size_t buffer_size{0};
     void close() override { sock.close(); }
+};
+
+class acceptor_task : public scheduler_task
+{
+    shared_ptr<tcp_acceptor_listener> al_;
+    shared_ptr<scheduler> sched_;
+
+public:
+    acceptor_task(shared_ptr<tcp_acceptor_listener> al, shared_ptr<scheduler> sched)
+        : al_(std::move(al)), sched_(std::move(sched))
+    {}
+
+    void run() override
+    {
+        SCOPE_EXIT([this]{--al_->workers_count;});
+        GLOBAL_LOG_TRACE() << "new acceptor threadid: " << this_thread::get_id() << ", fiberid: " << this_fiber::get_id() << ", buff: " << al_->buffer_size;
+        std::vector<char> buff(al_->buffer_size);
+        char *buffstart = buff.empty() ? nullptr : &buff.front();
+
+        try {
+            for (;;) {
+                auto[soc, sz] = al_->sock.accept(buffstart, buff.size());
+                //GLOBAL_LOG_TRACE() << "accept by threadid: " << this_thread::get_id() << ", fiberid: " << this_fiber::get_id();
+                // if there is no waiting workers and current number of workers is less than configured max count then create a new worker
+                if (0 == al_->sock.waiting_count()) {
+                    if (al_->workers_max > al_->workers_count.fetch_add(1)) {
+                        sched_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), al_, sched_));
+                    } else {
+                        --al_->workers_count;
+                    }
+                }
+                try {
+                    al_->cn->connect(to_array_view(buff), sz, std::move(soc));
+                } catch (eof_exception const&) { // on socket closing
+                } catch (closed_exception const&) { // on host termination
+                } catch (...) {
+                    GLOBAL_LOG_WARN() << boost::trim_right_copy(boost::current_exception_diagnostic_information());
+                }
+            }
+        } catch (eof_exception const&) { // on socket(acceptor) closing just quit the thread
+        } catch (closed_exception const&) { // on host termination just quit the thread
+        } catch (...) {
+            GLOBAL_LOG_ERROR() << "acceptor terminated unexpectedly, cause: " << boost::trim_right_copy(boost::current_exception_diagnostic_information());
+        }
+    }
+
+    polymorphic_movable* move(void* address, size_t sz) override
+    {
+        BOOST_ASSERT(sz >= sizeof(acceptor_task));
+        new (address) acceptor_task(std::move(*this));
+        return reinterpret_cast<acceptor_task*>(address);
+    }
+};
+
+class listener_task : public scheduler_task
+{
+    shared_ptr<udp_socket_listener> al_;
+    shared_ptr<scheduler> sched_;
+
+public:
+    listener_task(shared_ptr<udp_socket_listener> al, shared_ptr<scheduler> sched)
+        : al_(std::move(al)), sched_(std::move(sched))
+    {}
+
+    void run() override
+    {
+        SCOPE_EXIT([this]{--al_->workers_count;});
+        GLOBAL_LOG_TRACE() << "new udp listener socket threadid: " << this_thread::get_id() << ", fiberid: " << this_fiber::get_id() << ", buff: " << al_->buffer_size;
+        std::vector<char> buff(al_->buffer_size);
+        char *buffstart = buff.empty() ? nullptr : &buff.front();
+
+        try {
+            for (;;) {
+                sonia::sal::socket_address sa;
+                auto res = al_->sock.read_some(buffstart, buff.size(), sa);
+                if (!res.has_value()) throw eof_exception(res.error().message());
+                if (0 == al_->sock.waiting_count()) {
+                    if (al_->workers_max > al_->workers_count.fetch_add(1)) {
+                        sched_->post(scheduler_task_t(in_place_type_t<listener_task>(), al_, sched_));
+                    } else {
+                        --al_->workers_count;
+                    }
+                }
+                try {
+                    al_->cn->connect(to_array_view(buff), res.value(), sa, al_->sock);
+                } catch (eof_exception const&) { // on socket closing
+                } catch (closed_exception const&) { // on host termination
+                } catch (...) {
+                    GLOBAL_LOG_WARN() << boost::trim_right_copy(boost::current_exception_diagnostic_information());
+                }
+            }
+
+        } catch (eof_exception const&) { // on socket closing just quit the thread
+        } catch (closed_exception const&) { // on host termination just quit the thread
+        } catch (...) {
+            GLOBAL_LOG_ERROR() << "acceptor terminated unexpectedly, cause: " << boost::trim_right_copy(boost::current_exception_diagnostic_information());
+        }
+    }
+
+    polymorphic_movable* move(void* address, size_t sz) override
+    {
+        BOOST_ASSERT(sz >= sizeof(listener_task));
+        new (address) listener_task(std::move(*this));
+        return reinterpret_cast<listener_task*>(address);
+    }
 };
 
 net_service::net_service(net_service_configuration const& cfg)
     : cfg_(cfg)
 {
     set_log_attribute("Type", "net-server");
-    //locate(cfg.scheduler, scheduler_);
+    locate(cfg.scheduler, scheduler_);
 }
 
 void net_service::open()
@@ -73,41 +156,29 @@ void net_service::open()
     {
         if (net::listener_type::TCP == lc.type || net::listener_type::SSL == lc.type) {
             if (!tcp_socket_factory_) {
-                locate(cfg_.tcp_factory, tcp_socket_factory_);
+                locate(cfg_.tcp_socket_factory, tcp_socket_factory_);
             }
             shared_ptr<tcp_acceptor_listener> ls = make_shared<tcp_acceptor_listener>();
             locate(lc.connector, ls->cn);
-            ls->sock = tcp_socket_factory_->create_tcp_socket(net::listener_type::TCP == lc.type ? sonia::io::tcp_socket_type::TCP : sonia::io::tcp_socket_type::SSL);
-            ls->sock.bind(lc.address, lc.port);
-            ls->sock.listen(
-                [ls, bfsz = lc.buffer_size](tcp_connection_handler_type const& c) {
-                    auto buff = make_single_linked_buffer<char>(bfsz);
-                    auto av = buff->to_array_view();
-                    c(av, [ls, abuff = std::move(buff)](tcp_socket soc, size_t rsize) mutable {
-                        ls->cn->connect(std::move(abuff), rsize, std::move(soc));
-                        //ls->sched->post(scheduler_task_t(
-                        //    in_place_type_t<listener_task>(),
-                        //    ls->cn, std::move(abuff), rsize, std::move(soc)
-                        //));
-                    });
-                });
-
+            ls->workers_max = lc.workers_count;
+            ls->buffer_size = lc.buffer_size;
+            ls->sock = tcp_socket_factory_->create_bound_tcp_socket(lc.address, lc.port, lc.family);
+            scheduler_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), ls, scheduler_));
+            
             listeners_.push_back(std::move(ls));
         } else if (net::listener_type::UDP == lc.type) {
             if (!udp_socket_factory_) {
-                locate(cfg_.udp_factory, udp_socket_factory_);
+                locate(cfg_.udp_socket_factory, udp_socket_factory_);
             }
+
             shared_ptr<udp_socket_listener> ls = make_shared<udp_socket_listener>();
             locate(lc.connector, ls->cn);
-            ls->sock = udp_socket_factory_->create_udp_socket();
+            ls->workers_max = lc.workers_count;
+            ls->buffer_size = lc.buffer_size;
+            ls->sock = udp_socket_factory_->create_udp_socket(lc.family);
             ls->sock.bind(lc.address, lc.port);
-            ls->sock.listen([ls, bfsz = lc.buffer_size](udp_connection_handler_type const& h) {
-                auto buff = make_single_linked_buffer<char>(bfsz);
-                auto av = buff->to_array_view();
-                h(av, [ls, abuff = std::move(buff)](size_t rsize, sonia::io::socket_address const& address, udp_weak_socket s) mutable {
-                    ls->cn->connect(std::move(abuff), rsize, address, std::move(s));
-                });
-            });
+            scheduler_->post(scheduler_task_t(in_place_type_t<listener_task>(), ls, scheduler_));
+            
             listeners_.push_back(std::move(ls));
         }
     }

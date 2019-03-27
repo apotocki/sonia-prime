@@ -102,6 +102,7 @@ public:
         if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
             base_.flush();
         }
+        state_.reset();
     }
 
     void flush_position()

@@ -31,7 +31,7 @@ public:
     using const_reference = CharT const&;
     using size_type = typename base_t::size_type;
 
-    constexpr basic_string_view() noexcept {}
+    constexpr basic_string_view() noexcept = default;
     constexpr basic_string_view(char_ct * str, size_type sz) noexcept : base_t(str, sz) {}
     constexpr basic_string_view(char_ct * bstr, char_ct * estr) noexcept : base_t(bstr, estr) {}
 
@@ -92,6 +92,12 @@ template <typename CharT, class TraitsT, class AllocT>
 basic_string_view<CharT, TraitsT> to_string_view(std::basic_string<CharT, TraitsT, AllocT> const& s)
 {
     return basic_string_view<CharT, TraitsT>(s);
+}
+
+template <typename CharT, class AllocatorT>
+basic_string_view<CharT> to_string_view(std::vector<CharT, AllocatorT> const& v)
+{
+    return basic_string_view<CharT>(v.empty() ? nullptr : &v.front(), v.size());
 }
 
 template <class T> struct is_string_view : false_type {};
@@ -220,6 +226,12 @@ template <typename CharT, class TraitsT>
 std::basic_string<CharT, TraitsT> to_string(basic_string_view<CharT, TraitsT> sv)
 {
     return std::basic_string<CharT, TraitsT>(sv.cbegin(), sv.cend());
+}
+
+template <typename CharT, class AllocatorT>
+std::basic_string<CharT> to_string(std::vector<CharT, AllocatorT> const& v)
+{
+    return std::basic_string<CharT>(v.begin(), v.end());
 }
 
 template<class Ch, class Tr, class Alloc>

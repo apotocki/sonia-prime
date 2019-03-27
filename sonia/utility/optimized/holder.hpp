@@ -9,6 +9,7 @@
 #   pragma once
 #endif
 
+#include <new>
 #include <atomic>
 
 #include <boost/assert.hpp>
@@ -25,7 +26,7 @@ template <typename RefCountT>
 class optimized_base
 {
 public:
-    optimized_base() {}
+    optimized_base() = default;
     optimized_base(optimized_base const& rhs) : service_cookie_(rhs.service_cookie_) {}
     optimized_base(optimized_base && rhs) = delete;
 

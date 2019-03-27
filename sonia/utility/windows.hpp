@@ -40,12 +40,15 @@ std::string utf16_to_utf8(wstring_view);
 std::string error_message(DWORD errcode);
 
 LPFN_ACCEPTEX get_accept_function(SOCKET);
-bool parse_address(int hint_type, int hint_protocol, string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc);
+bool parse_address(int hint_af, int hint_type, int hint_protocol, string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc);
 
 std::string inet_ntoa(sockaddr const* addr, DWORD sz, LPWSAPROTOCOL_INFOW);
 
 SOCKET create_socket(int af, int type, int protocol);
+void connect_socket(SOCKET soc, sockaddr * name, int namelen);
 void bind_socket(SOCKET soc, sockaddr * name, int namelen);
+void listen_socket(SOCKET, int);
+void setsockopt(SOCKET s, int level, int optname, const char* val, int optlen);
 
 void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov);
 void async_recvfrom(SOCKET soc, void * buff, size_t sz, SOCKADDR * sa, int * sasz, WSAOVERLAPPED * pov);

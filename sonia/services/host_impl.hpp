@@ -29,10 +29,11 @@ class host_impl
     , public enable_shared_from_this<host_impl>
 {
 public:
-    host_impl(std::string name);
+    explicit host_impl(std::string name);
     ~host_impl() override;
 
     void open(shared_ptr<service_registry> r, shared_ptr<service_factory> f);
+    void close() override;
 
     shared_ptr<service> locate(string_view) const;
     shared_ptr<service> locate(service::id) const;

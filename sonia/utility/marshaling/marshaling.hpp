@@ -31,13 +31,18 @@
 
 #include <boost/bind/placeholders.hpp>
 
-#include "sonia/exceptions.hpp"
+#include "sonia/optional.hpp"
+
+#include "sonia/mpl/transform_view.hpp"
+
 #include "sonia/utility/bind.hpp"
-
+#include "sonia/utility/automatic.hpp"
 #include "sonia/utility/type_durable_id.hpp"
-
 #include "sonia/utility/serialization/tuple.hpp"
+#include "sonia/utility/serialization/mpl_sequence.hpp"
+#include "sonia/utility/serialization/reference.hpp"
 
+#include "sonia/mpl/sequence.hpp"
 #include "stub_parameter.hpp"
 
 namespace sonia {
@@ -64,12 +69,42 @@ using composed_tuple_t = typename compose_tuple<SeqT, PredicateT>::type;
 //};
 //template <typename ... ArgsT> using stub_tuple_t = std::tuple<stub_bound_parameter_t<ArgsT&&> ...>;
 
+template <class RealArgTypesT>
+struct result_transformer
+{
+    template <typename T, size_t I>
+    struct apply
+    {
+        using arg_type = sonia::mpl::at_t<RealArgTypesT, I>;
+        constexpr static bool is_fwd_v = stub_bound_parameter<arg_type>::is_modifiable;
+        using type = conditional_t<is_fwd_v, T, null_t const&>;
+
+        template <typename VT>
+        auto const& operator()(VT && val) const
+        {
+            if constexpr (is_fwd_v) { return val; } else { return null; }
+        }
+        
+        //template <typename ReferenceT>
+        //auto const& operator()(stub_reference_holder<ReferenceT> const& val) const { return val.value; }
+
+        //template <typename SomeT>
+        //null_t const& operator()(SomeT const&) const { return null; }
+
+    };
+};
+
+//using
+//using proxy_decode_transformer = stub_encode_transformer;
+
 template <typename SigT, SigT FuncV, size_t ... PlaceHolderIndexVs>
 struct binding_tag_facade
 {
     using f_type = typename boost::function_types::function_type<SigT>::type;
     using result_type = typename boost::function_types::result_type<f_type>::type;
     using args_type = typename boost::function_types::parameter_types<f_type>::type;
+
+    using result_transformer_t = result_transformer<args_type>;
 
     typedef result_type(stub_invoker_type)(typename boost::mpl::at_c<args_type, PlaceHolderIndexVs>::type ...);
 
@@ -121,16 +156,41 @@ struct binding_tag_facade
         return encode<EncT>(make_bind_tuple(std::forward<ArgsT>(args)...), std::move(oi));
     }
 
-    template <typename DecT, typename InputIteratorT, typename ... ArgsT>
+    template <typename CoderTagT, typename InputIteratorT, typename ... ArgsT>
     static result_type stub_invoke(InputIteratorT ii, ArgsT && ... args)
     {
         using r_type = decltype(std::apply(std::declval<stub_invoker_type>(), bind_tuple_t<ArgsT...>(std::declval<ArgsT>()...)));
         static_assert(is_same_v<result_type, r_type>);
 
-        stub_tuple_t stub_tuple;
-        decode<DecT>(std::move(ii), stub_tuple);
+        automatic<stub_tuple_t> stub_tuple{in_place_decode<CoderTagT>(ii)};
 
-        return apply_placeholders(FuncV, stub_tuple, std::forward<ArgsT>(args)...);
+        return apply_placeholders(FuncV, *stub_tuple, std::forward<ArgsT>(args)...);
+    }
+
+    template <typename CoderTagT, typename InputIteratorT, typename OutputIteratorT, typename ... ArgsT>
+    static void stub_invoke_and_encode(InputIteratorT & ii, OutputIteratorT & oi, ArgsT && ... args)
+    {
+        using r_type = decltype(std::apply(std::declval<stub_invoker_type>(), bind_tuple_t<ArgsT...>(std::declval<ArgsT>()...)));
+        static_assert(is_same_v<result_type, r_type>);
+
+        automatic<stub_tuple_t> stub_tuple{in_place_decode<CoderTagT>(ii)};
+        
+        auto error_handler = [&oi](std::exception const& e) {
+            string_view err{e.what()};
+            oi = (make_encoder<CoderTagT>(std::move(oi)) & err.size() & err).iterator();
+        };
+
+        if constexpr (!is_void_v<result_type>)
+        {
+            optional<conditional_t<is_void_v<result_type>, void*, result_type>> r;
+            try { r = apply_placeholders(FuncV, *stub_tuple, std::forward<ArgsT>(args)...); } catch (std::exception const& e) { error_handler(e); return; }
+            oi = sonia::encode<CoderTagT, size_t>(0, std::move(oi));
+            oi = sonia::encode<CoderTagT>(*r, std::move(oi));
+        } else {
+            try { apply_placeholders(FuncV, *stub_tuple, std::forward<ArgsT>(args)...); } catch (std::exception const& e) { error_handler(e); return; }
+            oi = sonia::encode<CoderTagT, size_t>(0, std::move(oi));
+        }
+        oi = sonia::encode<CoderTagT>(sonia::mpl::make_transform_view<result_transformer_t>(*stub_tuple), std::move(oi));
     }
 };
 

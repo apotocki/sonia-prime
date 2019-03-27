@@ -76,6 +76,12 @@
     <Filter Include="sonia.utility\marshaling">
       <UniqueIdentifier>{abf9cc83-b41c-44eb-9e84-b2985308b0b7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.exceptions">
+      <UniqueIdentifier>{ea99972c-d38c-411a-b487-6616bf42fe36}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.mpl">
+      <UniqueIdentifier>{8bdf32b6-4a9f-4d16-9519-9a4f4f88f413}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -372,9 +378,6 @@
     <ClInclude Include="..\..\..\sonia\utility\caches\clock.hpp">
       <Filter>sonia.utility\caches</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\caches\utiltiy.hpp">
-      <Filter>sonia.utility\caches</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\algorithm\construct.hpp">
       <Filter>sonia.utility\algorithm</Filter>
     </ClInclude>
@@ -606,6 +609,30 @@
     <ClInclude Include="..\..\..\sonia\utility\shared_handle.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\smart_handle_facade.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\exceptions\internal_errors.hpp">
+      <Filter>sonia.exceptions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\marshaling\service.hpp">
+      <Filter>sonia.utility\marshaling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\transform_view.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\mpl_sequence.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\sequence.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\tcp_acceptor_.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\caches\utility.hpp">
+      <Filter>sonia.utility\caches</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -700,6 +727,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\socket_address.cpp">
       <Filter>sonia.services.io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sal\sal.cpp">
+      <Filter>sonia.sal</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -49,13 +49,13 @@ void get_configuration(std::ostream & os)
         "           factory: 'net-server-factory',"
         "           layer : 16,"
         "           parameters : {"
-        "               tcp-factory: 'io.serv',"
+        "               tcp-socket-factory: 'io.serv',"
         "               udp-factory: 'io.serv',"
-//        "               scheduler: 'scheduler.serv',"
+        "               scheduler: 'scheduler.serv',"
         "               listeners: ["
 //        "                   { connector: 'echo.serv', address: '0.0.0.0', port: 2223, type: 'ssl'},"
- //       "                   { connector: 'echo.serv', address: '0.0.0.0', port: 2224, type: 'udp'},"
-        "                   { connector: 'echo.serv', address: '0.0.0.0', port: 2222, type: 'tcp'}"
+//        "                   { connector: 'echo.serv', address: '0.0.0.0', port: 2224, type: 'udp'},"
+        "                   { connector: 'echo.serv', workers: 4, address: '0.0.0.0', port: 2222, type: 'tcp'}"
         "               ]"
         "           }"
         "       },"
@@ -184,9 +184,16 @@ void tcp_echo_test(io::tcp_socket soc)
 {
     uint8_t buff[1024];
     for (size_t idx = 0; idx < 1024; ++idx) buff[idx] = (uint8_t)(0xff & idx);
-    size_t sz = soc.write_some(buff, sizeof(buff));
-    BOOST_CHECK_EQUAL(sz, sizeof(buff));
 
+    size_t offs = 0;
+    while (offs < sizeof(buff)) {
+        size_t sz = soc.write_some(buff + offs, sizeof(buff));
+        if (!sz) {
+            GLOBAL_LOG_ERROR() << "unexpected write error. expected write count: " << (sizeof(buff) - offs);
+        }
+        offs += sz;
+    }
+    
     size_t test_sz = 1024;
     size_t tested_sz = 0;
 
@@ -239,9 +246,33 @@ BOOST_AUTO_TEST_CASE( net_service_test )
     std::string test_str("This is a test meassage.");
     auto tcpfactory = services::locate<io::tcp_socket_factory_type>("io.serv");
 
+    std::vector<boost::thread> ts;
+    for (int i = 0; i < 8; ++i) {
+        ts.push_back(boost::thread([&tcpfactory]() {
+            size_t c = 0;
+            try {
+                for (; c < 1024; ++c) {
+                    auto soc = tcpfactory->connect_tcp_socket("127.0.0.1", 2222);
+                    try {
+                        tcp_echo_test(std::move(soc));
+                    } catch (std::exception const& e) {
+                        GLOBAL_LOG_ERROR() << e.what();
+                        //BOOST_CHECK_MESSAGE(false, e.what());
+                        break;
+                    }
+                }
+            } catch (std::exception const& e) {
+                GLOBAL_LOG_ERROR() << "round #" << c << ", " << e.what();
+            }
+        }));
+    }
+
+    for (boost::thread & t : ts) {
+        t.join();
+    }
 #if 0
     // test tcp connection
-    auto soc = tcpfactory->create_tcp_socket("127.0.0.1", 2222);
+    auto soc = tcpfactory->connect_tcp_socket("127.0.0.1", 2222);
     try {
         tcp_echo_test(std::move(soc));
     } catch (std::exception const& e) {
@@ -249,7 +280,7 @@ BOOST_AUTO_TEST_CASE( net_service_test )
     }
 #endif
 #if 0
-    soc = tcpfactory->create_tcp_socket("127.0.0.1", 2222);
+    soc = tcpfactory->connect_tcp_socket("127.0.0.1", 2222);
     try {
         tcp_echo_test(std::move(soc));
     } catch (std::exception const& e) {

@@ -13,7 +13,7 @@
 #include "sonia/utility/rvalue.hpp"
 #include "serialization.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <typename TagT, class T>
 class coder<TagT, reference_wrapper<T>>
@@ -54,6 +54,6 @@ public:
     }
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_REFERENCE_HPP

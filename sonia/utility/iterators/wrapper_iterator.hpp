@@ -13,7 +13,6 @@
 #include <iterator>
 
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/throw_exception.hpp>
 #include <boost/assert.hpp>
 
 #include "sonia/type_traits.hpp"
@@ -21,6 +20,7 @@
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/polymorphic_traits.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
+#include "sonia/exceptions/internal_errors.hpp"
 
 #include "proxy.hpp"
 
@@ -124,12 +124,12 @@ public:
 
     virtual ValueT get_dereference() const
     {
-        throw not_supported_operation_error("polymorphic_proxy_backend::get_dereference");
+        THROW_NOT_SUPPORTED_ERROR("polymorphic_proxy_backend::get_dereference");
     }
 
     virtual void set_dereference(SetValueT)
     {
-        throw not_supported_operation_error("polymorphic_proxy_backend::set_dereference");
+        THROW_NOT_SUPPORTED_ERROR("polymorphic_proxy_backend::set_dereference");
     }
 };
 
@@ -145,46 +145,46 @@ protected:
     using iterator_polymorphic_t = iterator_polymorphic;
 
 public:
-    virtual ~iterator_polymorphic() noexcept {}
+    virtual ~iterator_polymorphic() noexcept = default;
 
     virtual bool empty() const
     {
-        throw not_supported_operation_error("iterator_polymorphic::empty");
+        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::empty");
     }
 
     virtual bool equal(iterator_polymorphic const& rhs) const
     {
-        throw not_supported_operation_error("iterator_polymorphic::equal");
+        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::equal");
     }
 
     virtual void increment()
     {
-        throw not_supported_operation_error("iterator_polymorphic::increment");
+        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::increment");
     }
 
     virtual void decrement()
     {
-        throw not_supported_operation_error("iterator_polymorphic::decrement");
+        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::decrement");
     }
 
     virtual void flush()
     {
-        throw not_supported_operation_error("iterator_polymorphic::flush");
+        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::flush");
     }
 
     virtual ReferenceT dereference() const
     {
-        throw not_supported_operation_error("iterator_polymorphic::dereference");
+        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::dereference");
     }
 
     virtual void advance(DifferenceT dif)
     {
-        throw not_supported_operation_error("iterator_polymorphic::advance");
+        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::advance");
     }
 
     virtual size_t get_sizeof() const
     {
-        throw not_supported_operation_error("iterator_polymorphic::get_sizeof");
+        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::get_sizeof");
     }
 };
 
@@ -230,9 +230,7 @@ public:
         if constexpr (iterators::has_method_empty_v<IteratorT, bool()>) {
             return it_.empty();
         } else {
-            BOOST_THROW_EXCEPTION (
-                not_supported_operation_error("%1% has no member: empty()"_fmt % typeid(IteratorT).name())
-            );
+            THROW_NOT_SUPPORTED_ERROR("%1% has no member: empty()"_fmt % typeid(IteratorT).name());
         }
     }
 
@@ -248,9 +246,7 @@ public:
         if constexpr (is_base_of_v<bidirectional_traversal_tag, CategoryT>) {
             --it_;
         } else {
-            BOOST_THROW_EXCEPTION (
-                not_supported_operation_error("%1% is not a bidirectional iterator"_fmt % typeid(IteratorT).name())
-            );
+            THROW_NOT_SUPPORTED_ERROR("%1% is not a bidirectional iterator"_fmt % typeid(IteratorT).name());
         }
     }
 
@@ -259,9 +255,7 @@ public:
         if constexpr (is_base_of_v<random_access_traversal_tag, CategoryT>) {
             std::advance(it_, dif);
         } else {
-            BOOST_THROW_EXCEPTION (
-                not_supported_operation_error("%1% is not a random access iterator"_fmt % typeid(IteratorT).name())
-            );
+            THROW_NOT_SUPPORTED_ERROR("%1% is not a random access iterator"_fmt % typeid(IteratorT).name());
         }
     }
 
@@ -270,9 +264,7 @@ public:
         if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
             it_.flush();
         } else {
-            BOOST_THROW_EXCEPTION (
-                not_supported_operation_error("%1% has no member: flush()"_fmt % typeid(IteratorT).name())
-            );
+            THROW_NOT_SUPPORTED_ERROR("%1% has no member: flush()"_fmt % typeid(IteratorT).name());
         }
     }
 
@@ -287,7 +279,7 @@ protected:
             new (address) DerivedT(*obj);
             return reinterpret_cast<DerivedT*>(address);
         } else {
-            throw not_supported_operation_error("%1% can not be copied"_fmt % typeid(IteratorT).name());
+            THROW_NOT_SUPPORTED_ERROR("%1% can not be copied"_fmt % typeid(IteratorT).name());
         }
     }
 
@@ -299,7 +291,7 @@ protected:
             new (address) DerivedT(std::move(*obj));
             return reinterpret_cast<DerivedT*>(address);
         } else {
-            throw not_supported_operation_error("%1% can not be moved"_fmt % typeid(IteratorT).name());
+            THROW_NOT_SUPPORTED_ERROR("%1% can not be moved"_fmt % typeid(IteratorT).name());
         }
     }
 

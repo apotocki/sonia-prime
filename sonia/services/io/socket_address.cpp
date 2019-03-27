@@ -5,8 +5,11 @@
 #include "sonia/config.hpp"
 #include "socket_address.hpp"
 
-#include <boost/throw_exception.hpp>
-#include "sonia/exceptions.hpp"
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/phoenix/stl/container.hpp>
+#include <boost/phoenix/object/construct.hpp>
 
 #ifdef BOOST_WINDOWS
 #   include "sonia/utility/windows.hpp"
@@ -17,45 +20,52 @@ namespace winapi = sonia::windows;
 namespace linapi = sonia::linux;
 #endif
 
+#include "sonia/exceptions/internal_errors.hpp"
+
 namespace sonia { namespace io {
 
-socket_address::socket_address()
-{
-    reset();
-}
 
-socket_address::socket_address(const void* p, size_t sz)
-    : sz_(static_cast<uint8_t>(sz))
+
+#define SONIA_PRINT_IO_PROTOCOL_TYPE_CASE(r, data, i, elem) \
+    if (lcasestr == BOOST_STRINGIZE(BOOST_PP_TUPLE_ELEM(2, 1, elem))) { pt = protocol_type::BOOST_PP_TUPLE_ELEM(2, 0, elem); } else 
+
+std::tuple<protocol_type, std::string, uint16_t> parse_address(string_view sv)
 {
-    if (sz >= sizeof(buffer_)) {
-        BOOST_THROW_EXCEPTION(internal_error("can't store inet address, required size: %1%"_fmt % sz));
+    namespace qi = boost::spirit::qi;
+    namespace ascii = boost::spirit::ascii;
+    namespace phoenix = boost::phoenix;
+
+    std::vector<char> protocol_str;
+    std::vector<char> address_str;
+    uint16_t port;
+
+    auto it = sv.begin();
+    if (bool r = qi::phrase_parse(it, sv.end(),
+          qi::lexeme[+(qi::char_ - ':')][phoenix::ref(protocol_str) = qi::_1] >> "://" >>
+          ((
+            qi::lexeme[+(qi::char_ - ':')][phoenix::ref(address_str) = qi::_1]
+          ) ||
+          (
+            '[' >> qi::lexeme[+(qi::char_ - ']')][phoenix::ref(address_str) = qi::_1] >> ']'
+          )) >> ':' >>
+          qi::ushort_[phoenix::ref(port) = qi::_1]
+        , ascii::space); !r || it != sv.end())
+    {
+        throw exception("can't parse address string: '%1%', sopped at: '%2%'"_fmt % sv % string_view(it, sv.end()));
     }
-    std::memcpy(buffer_, p, sz);
-}
 
-void socket_address::reset()
-{
-    sz_ = sizeof(buffer_);
-    memset(buffer_, 0, sz_);
-}
+    for (char & c : protocol_str) {
+        if (c >= 'A' && c <= 'Z') c += ('a' - 'A');
+    }
 
-std::pair<const char*, size_t> socket_address::in_addr() const
-{
-    return std::pair(buffer_, sz_);
-}
+    protocol_type pt = protocol_type::UNKNOWN;
+    string_view lcasestr = to_string_view(protocol_str);
+    BOOST_PP_SEQ_FOR_EACH_I(SONIA_PRINT_IO_PROTOCOL_TYPE_CASE, _, SONIA_IO_PROTOCOL_TYPE_SEQ)
+    {
+        throw exception("unknown protocol name: '%1%'"_fmt % lcasestr);
+    }
 
-std::string socket_address::str() const
-{
-#ifdef BOOST_WINDOWS
-    return winapi::inet_ntoa(reinterpret_cast<sockaddr const*>(buffer_), (DWORD)sz_, NULL);
-#else
-    return linapi::inet_ntoa(reinterpret_cast<sockaddr_in const*>(buffer_));
-#endif
-}
-
-uint16_t socket_address::port() const
-{
-    return reinterpret_cast<sockaddr_in const*>(buffer_)->sin_port;
+    return {pt, to_string(address_str), port};
 }
 
 }}

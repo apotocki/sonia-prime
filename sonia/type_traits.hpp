@@ -107,6 +107,9 @@ using std::is_pointer_v;
 using std::is_reference;
 using std::is_reference_v;
 
+using std::is_lvalue_reference;
+using std::is_lvalue_reference_v;
+
 using std::is_rvalue_reference;
 using std::is_rvalue_reference_v;
 

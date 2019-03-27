@@ -8,19 +8,24 @@
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
-#include <boost/lexical_cast.hpp>
 
 #include "sonia/services.hpp"
 
 #include "applied/scoped_services.hpp"
 
-#include "sonia/utility/type_durable_id.hpp"
-#include "sonia/utility/bind_command.hpp"
+#include "sonia/utility/marshaling/marshaling.hpp"
+#include "sonia/utility/marshaling/service.hpp"
+#include "sonia/utility/marshaling/string.hpp"
+
 #include "sonia/services/transceiver.hpp"
+#include "sonia/services/scheduler/scheduler.hpp"
+#include "sonia/utility/streaming/vector.hpp"
 
 #include "sonia/utility/serialization/service.hpp"
+#include "sonia/utility/serialization/pair.hpp"
 #include "sonia/utility/serialization/string.hpp"
 #include "sonia/utility/serialization/vector.hpp"
+#include <boost/exception/diagnostic_information.hpp>
 
 namespace fs = boost::filesystem;
 
@@ -34,7 +39,7 @@ namespace {
 class itest_service : public service
 {
 public:
-    itest_service() { }
+    itest_service() = default;
 
     virtual void empty_method() const = 0;
     virtual void exception_method() const = 0;
@@ -43,11 +48,11 @@ public:
     virtual int get_value_method() const = 0;
 };
 
-SONIA_DECLARE_BINDING_TAG(ts_empty_method, &itest_service::empty_method)
-SONIA_DECLARE_BINDING_TAG(ts_exception_method, &itest_service::exception_method)
-SONIA_DECLARE_BINDING_TAG(ts_some_method, &itest_service::some_method)
-SONIA_DECLARE_BINDING_TAG(ts_message_method, &itest_service::message_method)
-SONIA_DECLARE_BINDING_TAG(ts_get_value_method, &itest_service::get_value_method)
+SONIA_DECLARE_BINDING_TAG(ts_empty_method, &itest_service::empty_method);
+SONIA_DECLARE_BINDING_TAG(ts_exception_method, &itest_service::exception_method);
+SONIA_DECLARE_BINDING_TAG(ts_some_method, &itest_service::some_method);
+SONIA_DECLARE_BINDING_TAG(ts_message_method, &itest_service::message_method);
+SONIA_DECLARE_BINDING_TAG(ts_get_value_method, &itest_service::get_value_method);
 
 class test_service : public itest_service
 {
@@ -57,7 +62,7 @@ public:
     std::pair<std::string, std::vector<std::string> > some_method(int ival, std::string const& str, std::vector<std::string> & result) override
     {
         std::pair<std::string, std::vector<std::string> > mainresult(str, result);
-        result.push_back(boost::lexical_cast<std::string>(ival));
+        result.push_back(std::to_string(ival));
         return mainresult;
     }
 
@@ -91,7 +96,7 @@ public:
     void open() override
     {
         transmitter_ = sonia::services::locate<sonia::services::transceiver>("transceiver.serv");
-        tcpaddr_ = "localhost";
+        tcpaddr_ = "tcp://localhost:2222";
     }
 
     void empty_method() const override
@@ -141,64 +146,48 @@ void get_configuration(std::ostream & os) {
         "           factory: 'transceiver-factory',"
         "           layer: 16,"
         "           parameters: {"
-        "              socket-factory: 'io.serv'"
+        "              socket-factory: 'io-cache.serv'"
         "           }"
         "       },"
         "       io.serv: {"
         "           factory: 'io-factory',"
         "           layer: 16,"
-        "           parameters: {"
-        "               threads: 8"
-        "           }"
+        "           parameters: { threads: 4 }"
+        "       },"
+        "       io-cache.serv: {"
+        "           factory: 'io-cache-factory',"
+        "           layer: 16,"
+        "           parameters: { tcp-socket-factory: 'io.serv', max-connection-count: 128, per-route-max-connection-count: 128 }"
         "       },"
         "       net.serv: {"
         "           factory: 'net-server-factory',"
         "           layer: 16,"
         "           parameters: {"
-        "               acceptor-factory: 'io.serv',"
+        "               tcp-socket-factory: 'io.serv',"
         "               scheduler: 'scheduler.serv',"
         "               listeners: ["
-        "                   {"
-        "                       connector: 'transceiver.serv',"
-        "                       address: '0.0.0.0',"
-        "                       port: 2222,"
-        "                       type: 'tcp'"
-        "                   }"
+        "                   { connector: 'transceiver.serv', workers : 100, buffer-size: 65536, address : '0.0.0.0', port : 2222, type : 'tcp'}"
         "               ]"
         "           }"
         "       },"
         "       scheduler.serv: {"
         "           factory: 'scheduler-factory',"
         "           layer: 16,"
-        "           parameters: {"
-        "               threads: 8,"
-        "               fibers: 8"
-        "           }"
+        "           parameters: { threads: 16, fibers: 1 }"
         "       },"
-        "       transceiver-factory: {"
-        "           factory: 'net',"
-        "           layer: 8,"
-        "           parameters: {name: 'transceiver'}"
+        "       test-scheduler.serv: {"
+        "           factory: 'scheduler-factory',"
+        "           layer: 16,"
+        "           parameters: { threads: 4, fibers: 8 }"
         "       },"
-        "       net-server-factory: {"
-        "           factory: 'prime',"
-        "           layer: 0,"
-        "           parameters: { name: 'net-server' }"
-        "       },"
-        "       io-factory: {"
-        "           factory: 'prime',"
-        "           layer: 0,"
-        "           parameters: { name: 'io' }"
-        "       },"
-        "       scheduler-factory: {"
-        "           factory: 'prime',"
-        "           layer: 0,"
-        "           parameters: { name: 'scheduler' }"
-        "       }"
+        "       transceiver-factory: { factory: 'prime', layer: 8, parameters: {name: 'transceiver'} },"
+        "       net-server-factory: { factory: 'prime', layer: 0, parameters: { name: 'net-server' } },"
+        "       io-factory: { factory: 'prime', layer: 0, parameters: { name: 'io' } },"
+        "       io-cache-factory: { factory: 'prime', layer: 0, parameters: { name: 'io-cache' } },"
+        "       scheduler-factory: { factory: 'prime', layer: 0, parameters: { name: 'scheduler' } }"
         "   },"
         "   bundles: {"
-        "       prime: {lib: 'sonia-prime'},"
-        "       net: {lib: 'sonia-net'}"
+        "       prime: {lib: 'sonia-prime'}"
         "   }"
         "}";
 }
@@ -211,17 +200,24 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
 
     fs::remove_all(TEST_FOLDER);
 
+    //std::cout << typeid(ts_some_method::stub_tuple_t).name();
+    //return;
     try {
         scoped_services ss;
-        SONIA_REGISTER_BINDING_TAG(ts_empty_method, "ts_empty_method", "prime");
-        SONIA_REGISTER_BINDING_TAG(ts_exception_method, "ts_exception_method", "prime");
-        SONIA_REGISTER_BINDING_TAG(ts_some_method, "ts_some_method", "prime");
-        SONIA_REGISTER_BINDING_TAG(ts_message_method, "ts_message_method", "prime");
-        SONIA_REGISTER_BINDING_TAG(ts_get_value_method, "ts_get_value_method", "prime");
+        SONIA_REGISTER_BINDING_TAG(ts_empty_method, "ts_empty_method", "test_service");
+        SONIA_REGISTER_BINDING_TAG(ts_exception_method, "ts_exception_method", "test_service");
+        SONIA_REGISTER_BINDING_TAG(ts_some_method, "ts_some_method", "test_service");
+        SONIA_REGISTER_BINDING_TAG(ts_message_method, "ts_message_method", "test_service");
+        SONIA_REGISTER_BINDING_TAG(ts_get_value_method, "ts_get_value_method", "test_service");
 
         services::register_service_factory("test_service", []() -> service_descriptor {
             shared_ptr<service> serv;
             if (services::get_host()->get_name() == "server") {
+                services::register_transceiver_invoker<ts_empty_method>();
+                services::register_transceiver_invoker<ts_exception_method>();
+                services::register_transceiver_invoker<ts_some_method>();
+                services::register_transceiver_invoker<ts_message_method>();
+                services::register_transceiver_invoker<ts_get_value_method>();
                 serv = make_shared<test_service>();
             } else {
                 serv = make_shared<test_service_proxy>();
@@ -242,35 +238,73 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
             BOOST_CHECK (false);
         } catch (std::exception const& e) {
             if (e.what() != std::string("exception_method")) {
-                GLOBAL_LOG_DEBUG() << e.what();
+                GLOBAL_LOG_DEBUG() << boost::diagnostic_information(e);
                 BOOST_CHECK(e.what() == std::string("exception_method"));
             }
         }
+       
+        //boost::this_thread::sleep(boost::posix_time::milliseconds(300));
         ctl_proxy->empty_method();
 
-        /*
-        type::durable_id v0 = type::durable_id::get<std::string>("stl-string");
-        type::durable_id v1 = type::durable_id::get<int>("int");
-        type::durable_id v2 = type::durable_id::get<std::string>();
-        std::cout << v0 << ", " << v1 << "\n";
-        */
-        /*
-        auto p = services::locate<itest_service>("test_service");
-        BOOST_CHECK_EQUAL("job0", p->do_job());
+        ///*
+        int ival = 10;
+        std::string str = "asd";
+        std::vector<std::string> result;
+        result.push_back("123"); result.push_back("234"); result.push_back("345");
+        std::vector<std::string> maincopy = result;
 
-        try {
-            services::register_service_factory("asd", []() -> service_descriptor { throw 1; });
-            BOOST_CHECK(false);
-        } catch (internal_error const&) {}
+        for (int i = 0; i < 50; ++i)
+        {
+            std::vector<std::string> copy = result;
+            auto main_result = ctl_proxy->some_method(ival, str, result);
+            BOOST_CHECK_EQUAL (main_result.second, copy);
+            BOOST_CHECK_EQUAL (result.back(), std::to_string(ival));
+            BOOST_CHECK_EQUAL (main_result.first,  str);
+            result.push_back(to_string("xxx%1%"_fmt % i));
+        }
+#if 1
+#ifdef _DEBUG
+    const int calls_count = 300;
+    const size_t max_pass_count = 4;
+#else
+    const int calls_count = 1500;
+    const size_t max_pass_count = 32;
+#endif
 
-        services::load_configuration("host.json");
+        shared_ptr<scheduler> async = services::locate<scheduler>("test-scheduler.serv");
+        std::atomic<long> tasks(0);
+        for (int i = 0; i < max_pass_count; ++i) {
+            ++tasks;
+            async->post([&](){
+                try {
+                    std::vector<std::string> result = maincopy;
+                    for (int i = 0; i < calls_count; ++i)
+                    {
+                        std::vector<std::string> copy = result;
+                        auto main_result = ctl_proxy->some_method(ival, str, result);
+                        BOOST_ASSERT (main_result.second == copy);
+                        BOOST_ASSERT (result.back() == std::to_string(ival));
+                        BOOST_ASSERT (main_result.first == str);
+                        std::ostringstream ss;
+                        ss << "xxx" << i;
+                        result.push_back(ss.str());
+                    }
+                    --tasks;
+                } catch (...) {
+                    --tasks;
+                    throw;
+                }
+            }, false);
+        }
 
-        auto s0 = services::locate("scheduler.serv");
-        */
+        while (tasks.load() > 0) {
+            boost::thread::sleep(boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds(100));
+        }
+#endif
     } catch (closed_exception const& e) {
         std::cout << e.what() << "\n";
     } catch (std::exception const& e) {
-        std::cerr << e.what() << "\n";
+        std::cerr << e.what() << boost::diagnostic_information(e) << "\n";
         BOOST_REQUIRE(false);
     }
 }

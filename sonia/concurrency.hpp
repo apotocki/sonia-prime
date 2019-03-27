@@ -28,7 +28,7 @@ using boost::lock_guard;
 using boost::shared_lock_guard;
 using boost::fibers::fiber;
 
-typedef boost::fibers::detail::spinlock spin_mutex;
+using spin_mutex = boost::fibers::detail::spinlock;
 
 namespace fibers {
     using namespace boost::fibers;

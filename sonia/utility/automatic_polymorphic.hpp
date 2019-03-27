@@ -57,7 +57,7 @@ public:
     PolymorphicT const* get_pointer() const noexcept { return std::launder(reinterpret_cast<PolymorphicT const*>(&buffer_)); }
 
 protected:
-    int get_offset() const noexcept { return 0; }
+    constexpr int get_offset() const noexcept { return 0; }
 
     void set_offset(int offset)
     {

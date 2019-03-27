@@ -11,7 +11,7 @@
 
 #include "sonia/cstdint.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 class io_service_configuration
 {
@@ -19,6 +19,6 @@ public:
     uint32_t threads;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_IO_SERVICE_CONFIGURATION_HPP

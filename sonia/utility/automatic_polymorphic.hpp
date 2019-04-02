@@ -157,7 +157,7 @@ public:
             if (!rhs) {
                 do_reset();
             } else try {
-                move(*rhs.get_pointer());
+                move(std::move(*rhs.get_pointer()));
                 rhs.reset();
             } catch (...) {
                 do_reset();

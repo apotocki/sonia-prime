@@ -23,7 +23,7 @@ service_locator::service_locator(shared_ptr<service_registry> sr, shared_ptr<ser
     set_log_attribute("Host", services::get_host()->get_name());
 }
 
-service_locator::~service_locator()
+service_locator::~service_locator() noexcept
 {
     shutdown();
 }

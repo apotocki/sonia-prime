@@ -36,7 +36,10 @@ class id
         cache() {
             std::call_once(once_flag_, []() {
                 cache<T>::cached_val_ = sonia::services::get_type_id(typeid(T));
-                sonia::services::on_close([]() { cache<T>::once_flag_ = std::once_flag{}; });
+                sonia::services::on_close([]() {
+                    std::destroy_at(&cache<T>::once_flag_);
+                    new (&cache<T>::once_flag_) std::once_flag{};
+                });
             });
         }
         uint32_t get() const noexcept { return cached_val_; }

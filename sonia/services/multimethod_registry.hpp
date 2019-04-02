@@ -27,7 +27,7 @@ namespace sonia { namespace services {
 
 class multimethod_registry
 {
-    using mmholder_t = automatic_polymorphic<multimethod, sizeof(void*) + sizeof(function<void()>)>;
+    using mmholder_t = automatic_polymorphic<multimethod, 2 * sizeof(void*) + sizeof(function<void()>)>;
 
     struct mm_item
     {

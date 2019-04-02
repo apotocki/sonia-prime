@@ -15,19 +15,20 @@
 #include "sonia/services/service.hpp"
 #include "sonia/services/transceiver.hpp"
 #include "sonia/services/net/connector.hpp"
-#include "sonia/services/io/tcp_socket.hpp"
-#include "sonia/services/io/sockets.hpp"
+
 #include "transceiver_configuration.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 class transceiver_service
     : public transceiver
     , public service
-    , public net::connector
+    , public net::tcp_connector
+    , public net::udp_connector
 {
 public:
     explicit transceiver_service(transceiver_configuration const&);
+
     void close() noexcept override;
 
     // transceiver api
@@ -45,9 +46,8 @@ private:
     fibers::mutex mtx;
     std::list<sonia::io::tcp_socket> using_set_;
     bool closed_{false};
-
 };
 
-}}
+}
 
 #endif // SONIA_SERVIVES_TRANSCEIVER_SERVICE_HPP

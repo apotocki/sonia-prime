@@ -35,6 +35,8 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\echo\echo_connector.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\echo\echo_connector_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_connector.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_connector_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\net_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\net_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\prime_bundle.cpp" />
@@ -68,6 +70,9 @@
     <ClInclude Include="..\..\..\sonia\services\net\echo\echo_connector.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\echo\echo_connector_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\echo\echo_connector_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_connector.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_connector_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_connector_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service.hpp" />

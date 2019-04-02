@@ -166,19 +166,19 @@ void get_configuration(std::ostream & os) {
         "               tcp-socket-factory: 'io.serv',"
         "               scheduler: 'scheduler.serv',"
         "               listeners: ["
-        "                   { connector: 'transceiver.serv', workers : 100, buffer-size: 65536, address : '0.0.0.0', port : 2222, type : 'tcp'}"
+        "                   { connector: 'transceiver.serv', workers : 128, buffer-size: 65536, address : '0.0.0.0', port : 2222, type : 'tcp'}"
         "               ]"
         "           }"
         "       },"
         "       scheduler.serv: {"
         "           factory: 'scheduler-factory',"
         "           layer: 16,"
-        "           parameters: { threads: 16, fibers: 1 }"
+        "           parameters: { threads: 8, fibers: 10 }"
         "       },"
         "       test-scheduler.serv: {"
         "           factory: 'scheduler-factory',"
         "           layer: 16,"
-        "           parameters: { threads: 4, fibers: 8 }"
+        "           parameters: { threads: 8, fibers: 10 }"
         "       },"
         "       transceiver-factory: { factory: 'prime', layer: 8, parameters: {name: 'transceiver'} },"
         "       net-server-factory: { factory: 'prime', layer: 0, parameters: { name: 'net-server' } },"
@@ -197,7 +197,6 @@ void get_configuration(std::ostream & os) {
 BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
 {
     using namespace sonia;
-
     fs::remove_all(TEST_FOLDER);
 
     //std::cout << typeid(ts_some_method::stub_tuple_t).name();
@@ -228,10 +227,10 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         std::stringstream cfgss;
         get_configuration(cfgss);
         services::load_configuration(cfgss);
-        
-        this_thread::attach_host("client");
 
+        this_thread::attach_host("client");
         auto ctl_proxy = services::locate<itest_service>("test_service");
+        //this_thread::attach_host("server");
 
         try {
             ctl_proxy->exception_method();
@@ -275,7 +274,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         std::atomic<long> tasks(0);
         for (int i = 0; i < max_pass_count; ++i) {
             ++tasks;
-            async->post([&](){
+            async->post([tnum = i, &tasks, &maincopy, &ival, &str, ctl_proxy, calls_count](){
                 try {
                     std::vector<std::string> result = maincopy;
                     for (int i = 0; i < calls_count; ++i)
@@ -294,11 +293,12 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
                     --tasks;
                     throw;
                 }
+                //GLOBAL_LOG_INFO() << "finished: " << tnum;
             }, false);
         }
 
         while (tasks.load() > 0) {
-            boost::thread::sleep(boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds(100));
+            boost::thread::sleep(boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds(1000));
         }
 #endif
     } catch (closed_exception const& e) {

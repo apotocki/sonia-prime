@@ -76,7 +76,7 @@ int main(int argc, char const* argv[])
 
         serv_.store(&s);
         s.run();
-    } catch (sonia::shutdown_exception const& e) {
+    } catch (sonia::closed_exception const& e) {
         std::cout << e.what() << "\n";
     } catch (sonia::exception const& e) {
         std::cerr << e.what() << "\n";

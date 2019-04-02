@@ -12,28 +12,24 @@
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
-namespace sonia { namespace services {
+#include "connector.hpp"
+
+namespace sonia::services {
 
 using sonia::io::tcp_socket;
 using sonia::io::udp_socket;
 
 struct tcp_acceptor_listener : net_service::listener
 {
-    shared_ptr<net::connector> cn;
+    shared_ptr<net::tcp_connector> cn;
     sonia::io::tcp_socket sock;
-    std::atomic<size_t> workers_count{1};
-    size_t workers_max{1};
-    size_t buffer_size{0};
     void close() override { sock.close(); }
 };
 
 struct udp_socket_listener : net_service::listener
 {
-    shared_ptr<net::connector> cn;
+    shared_ptr<net::udp_connector> cn;
     sonia::io::udp_socket sock;
-    std::atomic<size_t> workers_count{1};
-    size_t workers_max{1};
-    size_t buffer_size{0};
     void close() override { sock.close(); }
 };
 
@@ -70,6 +66,7 @@ public:
                     al_->cn->connect(to_array_view(buff), sz, std::move(soc));
                 } catch (eof_exception const&) { // on socket closing
                 } catch (closed_exception const&) { // on host termination
+                    throw;
                 } catch (...) {
                     GLOBAL_LOG_WARN() << boost::trim_right_copy(boost::current_exception_diagnostic_information());
                 }
@@ -192,4 +189,4 @@ void net_service::close() noexcept
     listeners_.clear();
 }
 
-}}
+}

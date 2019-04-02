@@ -12,18 +12,22 @@
 #include "sonia/services/io/tcp_socket.hpp"
 #include "sonia/services/io/udp_socket.hpp"
 #include "sonia/services/io/sockets.hpp"
-#include "sonia/utility/linked_buffers.hpp"
 
 namespace sonia::services::net {
 
-class connector
+class tcp_connector
 {
 public:
-    virtual ~connector() noexcept {}
-
-    using buff_ptr = single_linked_buffer_ptr<char>;
+    virtual ~tcp_connector() = default;
 
     virtual void connect(array_view<char> buff, size_t rsz, sonia::io::tcp_socket) = 0;
+};
+
+class udp_connector
+{
+public:
+    virtual ~udp_connector() = default;
+
     virtual void connect(array_view<char> buff, size_t rsz, sonia::sal::socket_address const&, sonia::io::udp_socket&) = 0;
 };
 

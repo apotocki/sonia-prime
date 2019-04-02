@@ -114,4 +114,64 @@ void fiber_work_stealing_scheduler::notify() noexcept
     }
 }
 
+//////////////////////////////////
+fiber_work_stealing_scheduler2::fiber_work_stealing_scheduler2(group_host & g, bool suspend)
+    : group_(g), flag_(0), suspend_(suspend ? 1 : 0)
+{
+    lock_guard guard(group_.mtx);
+    group_.schedulers.emplace_back(this);
+}
+
+void fiber_work_stealing_scheduler2::awakened(fibers::context* ctx) noexcept
+{
+    if (!ctx->is_context(fibers::type::pinned_context)) {
+        ctx->detach();
+        group_.rqueue_.push(ctx);
+    } else {
+        rqueue_.push(ctx);
+    }
+}
+
+fibers::context * fiber_work_stealing_scheduler2::pick_next() noexcept
+{
+    fibers::context * victim = rqueue_.pop();
+    if (victim) {
+        boost::context::detail::prefetch_range(victim, sizeof(fibers::context));
+        BOOST_ASSERT(victim->is_context(fibers::type::pinned_context));
+    } else {
+        victim = group_.rqueue_.pop();
+        if (victim) {
+            boost::context::detail::prefetch_range(victim, sizeof(fibers::context));
+            BOOST_ASSERT(!victim->is_context(fibers::type::pinned_context));
+            fibers::context::active()->attach(victim);
+        }
+    }
+    return victim;
+}
+
+void fiber_work_stealing_scheduler2::suspend_until(std::chrono::steady_clock::time_point const& tp) noexcept
+{
+    if ( suspend_) {
+        if ((std::chrono::steady_clock::time_point::max)() == tp) {
+            unique_lock lk(mtx_);
+            cnd_.wait( lk, [this](){ return !!flag_; });
+            flag_ = 0;
+        } else {
+            unique_lock lk(mtx_);
+            cnd_.wait_until(lk, tp, [this](){ return !!flag_; });
+            flag_ = 0;
+        }
+    }
+}
+
+void fiber_work_stealing_scheduler2::notify() noexcept
+{
+    if (suspend_) {
+        mtx_.lock();
+        flag_ = 1;
+        mtx_.unlock();
+        cnd_.notify_all();
+    }
+}
+
 }

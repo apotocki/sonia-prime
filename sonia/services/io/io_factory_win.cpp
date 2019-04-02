@@ -191,32 +191,83 @@ struct win_impl
 
     HANDLE iocp() const { return iocp_; }
 
-    tcp_socket do_create_tcp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type) override;
-    udp_socket do_create_udp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type) override;
+    tcp_socket do_create_tcp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type) override final;
+    udp_socket do_create_udp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type) override final;
 
     // tcp socket service
-    std::pair<tcp_socket, size_t> tcp_socket_accept(tcp_handle_type, char*, size_t) override;
-    size_t tcp_socket_waiting_count(tcp_handle_type) override;
-    expected<size_t, std::error_code> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) override;
-    expected<size_t, std::error_code> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) override;
-    void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override;
-    void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override;
-    void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override;
+    std::pair<tcp_socket, size_t> tcp_socket_accept(tcp_handle_type, char*, size_t) override final;
+    size_t tcp_socket_waiting_count(tcp_handle_type) override final;
+    expected<size_t, std::error_code> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) override final;
+    expected<size_t, std::error_code> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) override final;
+    void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
+    void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
+    void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
 
     // udp socket service
-    void udp_socket_bind(udp_handle_type, cstring_view address, uint16_t port) override;
-    size_t udp_socket_waiting_count(udp_handle_type) override;
-    expected<size_t, std::error_code> udp_socket_read_some(udp_handle_type, void * buff, size_t sz, sonia::sal::socket_address* addr) override;
-    expected<size_t, std::error_code> udp_socket_write_some(udp_handle_type, sonia::sal::socket_address const&, void const* buff, size_t sz) override;
-    expected<size_t, std::error_code> udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz) override;
-    void close_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override;
-    void release_handle(identity<udp_socket_service_type>, tcp_handle_type) noexcept override;
-    void free_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override;
+    void udp_socket_bind(udp_handle_type, cstring_view address, uint16_t port) override final;
+    size_t udp_socket_waiting_count(udp_handle_type) override final;
+    expected<size_t, std::error_code> udp_socket_read_some(udp_handle_type, void * buff, size_t sz, sonia::sal::socket_address* addr) override final;
+    expected<size_t, std::error_code> udp_socket_write_some(udp_handle_type, sonia::sal::socket_address const&, void const* buff, size_t sz) override final;
+    expected<size_t, std::error_code> udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz) override final;
+    void close_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override final;
+    void release_handle(identity<udp_socket_service_type>, tcp_handle_type) noexcept override final;
+    void free_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override final;
 
 private:
     object_pool<win_shared_handle, mutex> handles_;
 };
 
+#if 0
+void win_impl::thread_proc()
+{
+    for (;;)
+    {
+        OVERLAPPED_ENTRY overlapped_arr[1];
+
+        ULONG rnum;
+        BOOL r = GetQueuedCompletionStatusEx(iocp_, overlapped_arr, sizeof(overlapped_arr)/sizeof(OVERLAPPED_ENTRY), &rnum, INFINITE, TRUE);
+        DWORD errc = GetLastError();
+        std::error_code err(errc, std::system_category());
+        
+        for (ULONG i = 0; i < rnum; ++i) {
+            LPOVERLAPPED overlapped = overlapped_arr[i].lpOverlapped;
+            ULONG_PTR key = overlapped_arr[i].lpCompletionKey;
+            DWORD bytes = overlapped_arr[i].dwNumberOfBytesTransferred;
+
+            try {
+                if (overlapped) {
+                    switch ((completion_port)key) {
+                    case completion_port::socket_callback_key:
+                    {
+                        auto * cb = callback<WSAOVERLAPPED>::get(overlapped);
+                        cb->on_op(err, (size_t)bytes);
+                        break;
+                    }
+                    case completion_port::file_callback_key:
+                    {
+                        auto* cb = callback<OVERLAPPED>::get(overlapped);
+                        cb->on_op(err, (size_t)bytes);
+                        break;
+                    }
+                    default:
+                        LOG_ERROR(wrapper->logger()) << "completion port unknown key: " << (int)key;
+                    }
+                } else {
+                    if (!r) {
+                        LOG_ERROR(wrapper->logger()) << "completion port errror: " << winapi::error_message(errc);
+                    } else if (key == (ULONG_PTR)completion_port::close_key) {
+                        break;
+                    } else {
+                        LOG_ERROR(wrapper->logger()) << "completion port unknown key: " << (int)key;
+                    }
+                }
+            } catch (std::exception const& e) {
+                LOG_ERROR(wrapper->logger()) << e.what();
+            }
+        }
+    }
+}
+#else
 void win_impl::thread_proc()
 {
     for (;;)
@@ -261,17 +312,17 @@ void win_impl::thread_proc()
         }
     }
 }
-
-tcp_socket win_impl::do_create_tcp_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
+#endif
+tcp_socket win_impl::do_create_tcp_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type ft)
 {
     winapi::assign_completion_port((HANDLE)s, iocp_, (ULONG_PTR)completion_port::socket_callback_key);
-    return tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), new_socket_handle(s, dt));
+    return tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), new_socket_handle(s, ft));
 }
 
-udp_socket win_impl::do_create_udp_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
+udp_socket win_impl::do_create_udp_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type ft)
 {
     winapi::assign_completion_port((HANDLE)s, iocp_, (ULONG_PTR)completion_port::socket_callback_key);
-    return udp_socket_access::create_udp_socket<socket_traits>(shared_from_this(), new_socket_handle(s, dt));
+    return udp_socket_access::create_udp_socket<socket_traits>(shared_from_this(), new_socket_handle(s, ft));
 }
 
 template <typename OvT>
@@ -537,55 +588,13 @@ std::pair<tcp_socket, size_t> win_impl::tcp_socket_accept(tcp_handle_type handle
     return {tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), newh), r.value()};
 }
 
-size_t win_impl::udp_socket_waiting_count(tcp_handle_type handle)
+size_t win_impl::tcp_socket_waiting_count(tcp_handle_type handle)
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
     return wh->waiting_cnt.load();
 }
 
-#if 0
-void factory::tcp_socket_bind(tcp_handle_type handle, cstring_view address, uint16_t port)
-{
-    tcp_scoped_handle sh{this, handle};
-
-    if (!winapi::parse_address(SOCK_DGRAM, IPPROTO_UDP, address, port, [&sh](ADDRINFOW * r)->bool {
-        winapi::bind_socket(sh->socket(), r->ai_addr, (int)r->ai_addrlen);
-        return true;
-    })) {
-        throw exception("can't bind socket at the address: '%1%' and port: '%2%'"_fmt % address % port);
-    }
-}
-
-void factory::tcp_socket_listen(tcp_handle_type handle, function<void(tcp_connection_handler_type const&)> const& handler)
-{
-    tcp_scoped_handle sh{this, handle};
-
-    int iResult = ::listen(sh->socket(), SOMAXCONN);
-    if (iResult == SOCKET_ERROR) {
-        DWORD err = WSAGetLastError();
-        throw exception("can't listen to socket, error: %1%"_fmt % winapi::error_message(err));
-    }
-
-    LPFN_ACCEPTEX lpfnAcceptEx = winapi::get_accept_function(sh->socket());
-
-    for (size_t i = 0, tc = thread_count(); i < tc; ++i) {
-        dataptr->new_acceptor_callback(sh.get(), lpfnAcceptEx, handler);
-    }
-}
-
-#endif
-
-//void factory::tcp_socket_async_read_some(tcp_handle_type handle, void * buff, size_t sz, function<void(std::error_code const&, size_t)> const& ftor)
-//{
-//    tcp_scoped_handle sh{this, handle};
-//    async_callback * cb = dataptr->new_async_callback(ftor);
-//    SCOPE_EXIT([&cb, this]() { if (cb) cb->release(dataptr); });
-//
-//    winapi::async_recv(sh->socket(), buff, sz, &cb->overlapped);
-//    cb = nullptr; // detach
-//}
-
-size_t win_impl::tcp_socket_waiting_count(tcp_handle_type handle)
+size_t win_impl::udp_socket_waiting_count(tcp_handle_type handle)
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
     return wh->waiting_cnt.load();

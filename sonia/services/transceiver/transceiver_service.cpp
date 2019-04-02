@@ -17,6 +17,8 @@
 #include "sonia/utility/serialization/string.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
+//#define NO_CRC_CHECK
+
 namespace sonia::services {
 
 using namespace sonia::io;
@@ -76,7 +78,11 @@ public:
     void flush()
     {
         if (datasz_) {
+#ifndef NO_CRC_CHECK
             uint32_t crc = boost::crc<32, 0xBEEF, 0xC001F00D, 0, true, true>(buff_.begin() + sizeof(chunk_header), datasz_);
+#else
+            uint32_t crc = 0;
+#endif
             make_encoder<sonia::serialization::ordered_t>(buff_.begin()) & crc & (uint16_t)datasz_;
             
             size_t sz2wr = sizeof(chunk_header) + datasz_;
@@ -136,10 +142,12 @@ class chunk_read_iterator
             make_decoder<sonia::serialization::ordered_t>(buff_.cbegin()) & crc & datasz;
 
             read(datasz + sizeof(chunk_header));
+#ifndef NO_CRC_CHECK
             uint32_t rcrc = boost::crc<32, 0xBEEF, 0xC001F00D, 0, true, true>(buff_.begin() + sizeof(chunk_header), datasz);
             if (crc != rcrc) {
                 throw exception("crc inconsistancy : %1% instead of %2%"_fmt % crc % rcrc);
             }
+#endif
             data_ = buff_.subview(sizeof(chunk_header), datasz);
         }
         return data_;

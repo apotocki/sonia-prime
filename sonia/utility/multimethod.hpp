@@ -22,13 +22,14 @@
 #include "sonia/function.hpp"
 #include "sonia/array_view.hpp"
 #include "sonia/utility/polymorphic_traits.hpp"
+#include "sonia/exceptions/internal_errors.hpp"
 
 namespace sonia {
 
 class multimethod : public polymorphic_movable
 {
 public:
-    virtual ~multimethod() {}
+    virtual ~multimethod() = default;
 };
 
 namespace services {
@@ -53,7 +54,9 @@ public:
 
     polymorphic_movable* move(void* address, size_t sz)
     {
-        BOOST_ASSERT(sz >= sizeof(concrete_multimethod));
+        if (sz < sizeof(concrete_multimethod)) {
+            THROW_INTERNAL_ERROR("provided sz(%1%) is less than required minimum size(%2%)"_fmt % sz % sizeof(concrete_multimethod));
+        }
         return new(address) concrete_multimethod(std::move(*this));
     }
     

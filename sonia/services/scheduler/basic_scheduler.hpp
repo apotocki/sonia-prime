@@ -131,7 +131,7 @@ private:
 
     uint32_t thr_cnt_, fb_cnt_;
     std::vector<thread> threads_;
-    fiber_work_stealing_scheduler::group_host gh_;
+    fiber_work_stealing_scheduler2::group_host gh_;
     optional<fibers::barrier> tbarrier_;
 
     fibers::mutex queue_mtx_;

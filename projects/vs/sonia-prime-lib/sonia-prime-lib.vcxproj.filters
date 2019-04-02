@@ -417,9 +417,6 @@
     <ClInclude Include="..\..\..\sonia\concurrency.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\type_info_obs.hpp">
-      <Filter>sonia.utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\streaming\type_index.hpp">
       <Filter>sonia.utility\streaming</Filter>
     </ClInclude>

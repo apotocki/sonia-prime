@@ -62,6 +62,12 @@
     <ClCompile Include="..\..\..\sonia\services\io\io_cache_service.cpp">
       <Filter>sonia.services\io</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_connector.cpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_connector_builder.cpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -84,6 +90,9 @@
     </Filter>
     <Filter Include="sonia.services\transceiver">
       <UniqueIdentifier>{0616f2c9-3460-4e59-824a-df4346a66923}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services\net\http">
+      <UniqueIdentifier>{a82c12bf-9c1d-4d99-a116-8215bf6c8dff}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -179,6 +188,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\io\io_cache_service.hpp">
       <Filter>sonia.services\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_connector.hpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_connector_builder.hpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_connector_configuration.hpp">
+      <Filter>sonia.services\net\http</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

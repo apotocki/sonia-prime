@@ -9,18 +9,17 @@
 #   pragma once
 #endif
 
-#include <vector>
-
 #include "sonia/services/service.hpp"
 #include "sonia/services/net/connector.hpp"
 
 #include "echo_connector_configuration.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 class echo_connector
     : public service
-    , public net::connector
+    , public net::tcp_connector
+    , public net::udp_connector
 {
 public:
     explicit echo_connector(echo_connector_configuration const& cfg);
@@ -30,13 +29,11 @@ public:
 
     void connect(array_view<char> buff, size_t, sonia::io::tcp_socket) override;
     void connect(array_view<char> buff, size_t, sonia::sal::socket_address const&, sonia::io::udp_socket&) override;
-    //void connect(buff_ptr, size_t, sonia::io::tcp_socket) override;
-    //void connect(buff_ptr, size_t, sonia::io::socket_address const&, sonia::io::udp_weak_socket) override;
 
 private:
     echo_connector_configuration cfg_;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_ECHO_CONNECTOR_HPP

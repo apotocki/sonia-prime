@@ -181,7 +181,6 @@ void io_cache_service::connection_cache::close_handle(identity<io::tcp_socket_se
 {
     auto * ci = static_cast<cache_item*>(h);
     ci->sock.reset();
-    //THROW_NOT_IMPLEMENTED_ERROR();
 }
 
 void io_cache_service::connection_cache::release_handle(identity<io::tcp_socket_service_type>, tcp_handle_type h) noexcept
@@ -203,9 +202,6 @@ void io_cache_service::connection_cache::release_handle(identity<io::tcp_socket_
         ci->release_weak(static_cast<io::tcp_socket_service_type*>(this));
     }
     rd->cv.notify_one();
-
-    //auto sz = cache_.size();
-    //sz += 0;
 }
 
 void io_cache_service::connection_cache::free_handle(identity<io::tcp_socket_service_type>, tcp_handle_type h) noexcept

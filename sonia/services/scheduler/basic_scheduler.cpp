@@ -135,7 +135,9 @@ void basic_scheduler::stop()
 
 void basic_scheduler::thread_proc()
 {
-    fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler>(gh_, true);
+    //fibers::use_scheduling_algorithm< boost::fibers::algo::shared_work >();
+    //fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler>(gh_, true);
+    fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler2>(gh_, true);
     /*
     fibers::context::active()->get_scheduler()->exthook = [](fibers::context::id fid, int op) {
         switch (op) {
@@ -155,15 +157,15 @@ void basic_scheduler::thread_proc()
         fibers::mutex mtx;
         std::vector<fiber> fibers;
         for (size_t f = 0; f < fb_cnt_; ++f) {
-            fibers.push_back(boost::fibers::fiber([this, &mtx]() { fiber_proc(mtx); }));
+            fibers.emplace_back([this, &mtx]() { fiber_proc(mtx); });
         }
 
         fiber_proc(mtx);
 
-        auto ctid = this_thread::get_id();
+        //auto ctid = this_thread::get_id();
 
         for (fiber & f : fibers) {
-            auto fid = f.get_id();
+            //auto fid = f.get_id();
             f.join();
             //LOG_TRACE(logger()) << "fiber finished " << fid << ", thread " << ctid;
         }
@@ -174,22 +176,20 @@ void basic_scheduler::thread_proc()
 
 void basic_scheduler::fiber_proc(fibers::mutex & mtx)
 {
-    try {
-        for (;;) {
+    for (;;)
+    {
         ///*
-        try {
+        try
+        {
             bool stopping = false;
+            bool has_more = false;
             task_entry * pe;
             {
                 //LOG_TRACE(logger()) << "before acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
-                lock_guard guard(mtx);
+                //lock_guard guard(mtx);
                 //LOG_TRACE(logger()) << "acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
                 unique_lock lck(queue_mtx_);
                 //LOG_TRACE(logger()) << "got guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
-                if (stopping_ && queue_not_safe_empty()) {
-                    //LOG_TRACE(logger()) << "return00 from fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
-                    return;
-                }
                 queue_cond_.wait(lck, [this]() { return !queue_not_safe_empty() || stopping_; });
                 if (stopping_ && queue_not_safe_empty()) {
                     //LOG_TRACE(logger()) << "return0 from fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
@@ -197,8 +197,10 @@ void basic_scheduler::fiber_proc(fibers::mutex & mtx)
                 }
                 stopping = stopping_;
                 pe = queue_not_safe_pop_next();
+                has_more = queue_not_safe_empty();
             }
             SCOPE_EXIT([this, pe] { release_task_ref(pe); });
+            if (has_more) queue_cond_.notify_one();
             if (BOOST_LIKELY(!stopping)) {
                 pe->run();
             } else {
@@ -210,10 +212,6 @@ void basic_scheduler::fiber_proc(fibers::mutex & mtx)
         //*/
         //this_thread::sleep(boost::chrono::milliseconds(100));
     }
-    } catch (...) {
-        LOG_ERROR(logger()) << boost::current_exception_diagnostic_information();
-    }
-    LOG_TRACE(logger()) << "return1 from fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
 }
 
 template <class ... ArgsT>
@@ -233,6 +231,7 @@ task_handle_ptr basic_scheduler::do_post(bool wh, ArgsT && ... args)
         lock_guard guard(queue_mtx_);
         entries_.push_front(*pe);
     }
+    //queue_cond_.notify_one();
     queue_cond_.notify_one();
     return std::move(result);
 }

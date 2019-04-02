@@ -20,7 +20,7 @@
 #include "sonia/utility/json/value.hpp"
 #include "sonia/utility/json/json_cast.hpp"
 
-namespace sonia { namespace parameters {
+namespace sonia::parameters {
 
 template <class BoundT> class parameters_description;
 template <class VDT> class parameter_options;
@@ -294,7 +294,7 @@ class parameters_description
 
 public:
     parameters_description()
-        : vds_(make_shared<descriptors_t>())
+        : vds_(sonia::make_shared<descriptors_t>())
     {}
 
     descriptors_t & descriptors() { return *vds_; }
@@ -349,7 +349,7 @@ template <class BoundT>
 template <typename ET>
 parameter_options<simple_value_descriptor<ET, BoundT>> parameters_binding<BoundT>::variable(const char * name, ET BoundT::* var, const char * descr)
 {
-    auto vd = make_shared<simple_value_descriptor<ET, BoundT>>(name, var);
+    auto vd = sonia::make_shared<simple_value_descriptor<ET, BoundT>>(name, var);
     if (descr) vd->set_description(descr);
     pd_->descriptors().push_back(vd);
     return parameter_options<simple_value_descriptor<ET, BoundT>>(pd_, vd.get());
@@ -359,7 +359,7 @@ template <class BoundT>
 template <typename ET>
 parameter_options<collection_value_descriptor<ET, BoundT>> parameters_binding<BoundT>::array(const char * name, ET BoundT::* elem, const char * descr)
 {
-    auto vd = make_shared<collection_value_descriptor<ET, BoundT>>(name, elem);
+    auto vd = sonia::make_shared<collection_value_descriptor<ET, BoundT>>(name, elem);
     if (descr) vd->set_description(descr);
     pd_->descriptors().push_back(vd);
     return parameter_options<collection_value_descriptor<ET, BoundT>>(pd_, vd.get());
@@ -369,7 +369,7 @@ template <class BoundT>
 template <typename ET>
 parameter_options<map_value_descriptor<ET, BoundT>> parameters_binding<BoundT>::map(const char * name, ET BoundT::* elem, const char * descr)
 {
-    auto vd = make_shared<map_value_descriptor<ET, BoundT>>(name, elem);
+    auto vd = sonia::make_shared<map_value_descriptor<ET, BoundT>>(name, elem);
     if (descr) vd->set_description(descr);
     pd_->descriptors().push_back(vd);
     return parameter_options<map_value_descriptor<ET, BoundT>>(pd_, vd.get());
@@ -378,7 +378,7 @@ parameter_options<map_value_descriptor<ET, BoundT>> parameters_binding<BoundT>::
 template <class VDT>
 parameter_options<VDT> & parameter_options<VDT>::binder(binder_type const& pd)
 {
-    vd_->set_binder(make_shared<binder_type>(pd));
+    vd_->set_binder(sonia::make_shared<binder_type>(pd));
     return *this;
 }
 
@@ -393,7 +393,7 @@ template <class VDT>
 template <typename NextBoundT>
 parameter_options<VDT> & parameter_options<VDT>::binder(parameters_binding<NextBoundT> pb)
 {
-    vd_->set_binder(make_shared<binder_type>(pb.description()));
+    vd_->set_binder(sonia::make_shared<binder_type>(pb.description()));
     return *this;
 }
 
@@ -427,6 +427,6 @@ void parameters_description<BoundT>::apply(json_object const& jo, BoundT * obj)
     }
 }
 
-}}
+}
 
 #endif // SONIA_UTILITY_PARAMETERS_HPP

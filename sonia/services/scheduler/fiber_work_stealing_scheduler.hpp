@@ -70,6 +70,45 @@ private:
     uint8_t suspend_ : 1;
 };
 
+class fiber_work_stealing_scheduler2 : public boost::fibers::algo::algorithm
+{
+public:
+    struct group_host
+    {
+        spin_mutex mtx;
+        std::vector<boost::intrusive_ptr<fiber_work_stealing_scheduler2>> schedulers;
+        simple_queue<boost::fibers::context*, spin_mutex> rqueue_{1024};
+    };
+
+    explicit fiber_work_stealing_scheduler2(group_host & g, bool suspend = true);
+
+    fiber_work_stealing_scheduler2(fiber_work_stealing_scheduler2 const&) = delete;
+    fiber_work_stealing_scheduler2(fiber_work_stealing_scheduler2 &&) = delete;
+    fiber_work_stealing_scheduler2& operator=(fiber_work_stealing_scheduler const&) = delete;
+    fiber_work_stealing_scheduler2& operator=(fiber_work_stealing_scheduler2 &&) = delete;
+
+    void awakened(fibers::context*) noexcept override final;
+
+    fibers::context * pick_next() noexcept override final;
+
+    bool has_ready_fibers() const noexcept override final
+    {
+        return !rqueue_.empty() || !group_.rqueue_.empty();
+    }
+
+    void suspend_until(std::chrono::steady_clock::time_point const&) noexcept override final;
+
+    void notify() noexcept override final;
+
+private:
+    group_host & group_;
+    mutex mtx_;
+    condition_variable cnd_;
+    simple_queue<boost::fibers::context*, spin_mutex> rqueue_{2};
+    uint8_t flag_ : 1;
+    uint8_t suspend_ : 1;
+};
+
 }
 
 #endif // SONIA_FIBER_WORK_STEALING_SCHEDULER_HPP

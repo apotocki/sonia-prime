@@ -160,10 +160,10 @@ protected:
 template <typename ElementT, size_t ByteSzV, typename RefCountT>
 class optimized_array : protected optimized_holder<ByteSzV, 0, RefCountT>
 {
+protected:
     using holder_t = typename optimized_array::optimized_holder_t;
     using array_t = optimized_array_impl<ElementT, holder_t>;
 
-protected:
     template <class HolderArgT>
     optimized_array(in_place_type_t<holder_t>, HolderArgT && harg)
         : holder_t(std::forward<HolderArgT>(harg))

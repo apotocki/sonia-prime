@@ -47,16 +47,16 @@
 
 namespace sonia {
 
-template <class SeqT, template <class> class PredicateT, class IndexSeqT = std::make_index_sequence<boost::mpl::size<SeqT>::value>>
+template <class SeqT, template <class...> class PredicateT, class IndexSeqT = std::make_index_sequence<boost::mpl::size<SeqT>::value>>
 struct compose_tuple;
 
-template <class SeqT, template <class> class PredicateT, size_t ... I>
+template <class SeqT, template <class...> class PredicateT, size_t ... I>
 struct compose_tuple<SeqT, PredicateT, std::index_sequence<I...>>
 {
     using type = std::tuple<typename PredicateT<typename boost::mpl::at_c<SeqT, I>::type>::type ...>;
 };
 
-template <class SeqT, template <class> class PredicateT>
+template <class SeqT, template <class...> class PredicateT>
 using composed_tuple_t = typename compose_tuple<SeqT, PredicateT>::type;
 
 // stub routine
@@ -143,9 +143,6 @@ struct binding_tag_facade
             >
         >
     >::type;
-
-    //define stub tuple
-    //using stub_tuple_t = typename stub_tuple_composer<f_type>::type;
 
     using stub_tuple_t = composed_tuple_t<stub_arg_types_t, stub_bound_parameter>;
 

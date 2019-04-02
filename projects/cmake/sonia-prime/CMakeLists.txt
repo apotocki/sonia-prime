@@ -17,12 +17,16 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/scheduler/scheduler_service.cpp
     ${BUNDLE_HOME}/sonia/services/io/io_service_builder.cpp
     ${BUNDLE_HOME}/sonia/services/io/io_service.cpp
+    ${BUNDLE_HOME}/sonia/services/io/io_cache_service_builder.cpp
+    ${BUNDLE_HOME}/sonia/services/io/io_cache_service.cpp
     ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_builder.cpp
     ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_service.cpp
     ${BUNDLE_HOME}/sonia/services/net/net_service_builder.cpp
     ${BUNDLE_HOME}/sonia/services/net/net_service.cpp
     ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector_builder.cpp
     ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector.cpp
+    ${BUNDLE_HOME}/sonia/services/net/http/http_connector_builder.cpp
+    ${BUNDLE_HOME}/sonia/services/net/http/http_connector.cpp
     ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
 )
 

@@ -198,7 +198,6 @@
     <ClInclude Include="..\..\..\sonia\utility\streaming\vector.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\type_durable_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\type_id.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\type_info_obs.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\variadic.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\windows.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\zlib_util.hpp" />

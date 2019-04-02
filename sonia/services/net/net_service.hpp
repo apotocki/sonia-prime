@@ -10,6 +10,7 @@
 #endif
 
 #include <vector>
+#include <atomic>
 
 #include "sonia/services/service.hpp"
 #include "sonia/services/io/udp_socket.hpp"
@@ -17,7 +18,6 @@
 #include "sonia/services/scheduler/scheduler.hpp"
 
 #include "net_service_configuration.hpp"
-#include "connector.hpp"
 
 namespace sonia::services {
 
@@ -25,8 +25,6 @@ class net_service
     : public service
     , public enable_shared_from_this<net_service>
 {
-    using buff_ptr = single_linked_buffer_ptr<char>;
-
 public:
     explicit net_service(net_service_configuration const& cfg);
 
@@ -35,8 +33,12 @@ public:
 
     struct listener
     {
-        virtual ~listener() {}
+        virtual ~listener() = default;
         virtual void close() = 0;
+
+        std::atomic<size_t> workers_count{1};
+        size_t workers_max{1};
+        size_t buffer_size{0};
     };
 
 private:

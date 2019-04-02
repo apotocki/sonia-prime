@@ -151,13 +151,13 @@ private:
 
         io::tcp_socket create_connected_tcp_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type dt);
 
-        std::pair<io::tcp_socket, size_t> tcp_socket_accept(tcp_handle_type, char*, size_t) override;
-        size_t tcp_socket_waiting_count(tcp_handle_type) override;
-        expected<size_t, std::error_code> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) override;
-        expected<size_t, std::error_code> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) override;
-        void close_handle(identity<io::tcp_socket_service_type>, tcp_handle_type) noexcept override;
-        void release_handle(identity<io::tcp_socket_service_type>, tcp_handle_type h) noexcept;
-        void free_handle(identity<io::tcp_socket_service_type>, tcp_handle_type) noexcept override;
+        std::pair<io::tcp_socket, size_t> tcp_socket_accept(tcp_handle_type, char*, size_t) override final;
+        size_t tcp_socket_waiting_count(tcp_handle_type) override final;
+        expected<size_t, std::error_code> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) override final;
+        expected<size_t, std::error_code> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) override final;
+        void close_handle(identity<io::tcp_socket_service_type>, tcp_handle_type) noexcept override final;
+        void release_handle(identity<io::tcp_socket_service_type>, tcp_handle_type h) noexcept override final;
+        void free_handle(identity<io::tcp_socket_service_type>, tcp_handle_type) noexcept override final;
 
         spin_mutex lru_mtx_;
         //fibers::mutex lru_mtx_;

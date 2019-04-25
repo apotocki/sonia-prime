@@ -21,6 +21,7 @@
 #include <boost/log/sources/record_ostream.hpp>
 
 #include "sonia/shared_ptr.hpp"
+#include "sonia/string.hpp"
 
 // implementation is based on boost/log/trivial.hpp example
 namespace sonia { namespace logger {
@@ -43,7 +44,7 @@ enum class severity_level
 
 #undef SONIA_PRINT_TYPE_ENUM
 
-const char* to_string(severity_level lvl);
+string_view to_string_view(severity_level lvl);
 severity_level from_string(std::string const&);
 
 void initialize(std::istream &);
@@ -53,7 +54,7 @@ void deinitialize();
 template <typename CharT, typename TraitsT>
 std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT>& strm, severity_level lvl)
 {
-    return strm << to_string(lvl);
+    return strm << to_string_view(lvl);
 }
 
 //! Reads stringized representation of the severity level from the stream

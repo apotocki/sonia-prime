@@ -26,7 +26,6 @@ namespace fs = boost::filesystem;
 using namespace sonia;
 
 #if 1
-#if 1
 BOOST_AUTO_TEST_CASE (file_region_iterator_test)
 {
     fs::remove_all(TEST_FOLDER);
@@ -40,17 +39,18 @@ BOOST_AUTO_TEST_CASE (file_region_iterator_test)
         std::ofstream f(TEST_FOLDER "/test.dat");
     }
 
-    range_dereferencing_iterator it(file_write_iterator_t{TEST_FOLDER "/test.dat"});
+    range_dereferencing_iterator it{file_write_iterator_t{TEST_FOLDER "/test.dat"}};
 
     std::string content = "this is a content";
     std::copy(content.begin(), content.end(), std::move(it)).flush();
     BOOST_CHECK_EQUAL(content.size(), fs::file_size(TEST_FOLDER "/test.dat"));
 
     {
-        std::ofstream f(TEST_FOLDER "/test1.dat");
-        file_write_iterator_t fout2(TEST_FOLDER "/test1.dat");
+        std::ofstream f{TEST_FOLDER "/test1.dat"};
+        file_write_iterator_t fout2{TEST_FOLDER "/test1.dat"};
         *fout2 = string_view(content);
-        fout2.flush();
+        ++fout2;
+        //fout2.flush();
     }
     BOOST_CHECK_EQUAL(content.size(), fs::file_size(TEST_FOLDER "/test1.dat"));
 }
@@ -68,7 +68,7 @@ BOOST_AUTO_TEST_CASE( tar_iterator_test )
     using file_iterator_t = file_region_iterator<const char>;
     using tar_iterator_t = tar_extract_iterator<file_iterator_t>;
 
-    tar_iterator_t tit(file_iterator_t(sonia_prime_home / "tests" / "data" / "archives" / "files.tar", 0, 65536));
+    tar_iterator_t tit{file_iterator_t{sonia_prime_home / "tests" / "data" / "archives" / "files.tar", 0, 65536}};
 
     std::map<std::string, std::string> content;
     while (tit.next()) {
@@ -103,12 +103,12 @@ BOOST_AUTO_TEST_CASE(gz_iterator_test)
 	//using buffering_mediator_iterator_t = buffering_mediator_iterator<inflate_iterator_t>;
 	//using tar_extract_iterator_t = tar_extract_iterator<buffering_mediator_iterator_t>;
 	
-	tar_extract_iterator tit(
-		buffering_mediator_iterator(
-			inflate_iterator(file_iterator_t(files_base_path / "files.tar.gz", 0, 65536), true),
+	tar_extract_iterator tit{
+		buffering_mediator_iterator{
+        inflate_iterator{file_iterator_t{files_base_path / "files.tar.gz", 0, 65536}, true},
 			65536
-		)
-	);
+        }
+    };
 
 	std::map<std::string, std::string> content;
 	while (tit.next()) {
@@ -128,6 +128,7 @@ BOOST_AUTO_TEST_CASE(gz_iterator_test)
 }
 #endif
 
+#if 1
 template <
     template <class> class compress_iterator,
     template <class> class decompress_iterator,
@@ -136,7 +137,7 @@ template <
 void archiver_test(const char* fname, size_t fsz, ArgsT && ... args)
 {
     std::ofstream{fname};
-    compress_iterator oit(file_region_iterator<char>(fname, 0, 65536), std::forward<ArgsT>(args) ...);
+    compress_iterator oit{file_region_iterator<char>{fname, 0, 65536}, std::forward<ArgsT>(args) ...};
 
     for (size_t idx = 0; idx < fsz;) {
         char buff[40000];
@@ -148,11 +149,11 @@ void archiver_test(const char* fname, size_t fsz, ArgsT && ... args)
         ++oit;
         idx += sz;
     }
-    oit.flush();
+    oit.close();
 
-    buffering_mediator_iterator iit(
-        decompress_iterator(file_region_iterator<const char>(fname, 0, 65536), std::forward<ArgsT>(args) ...),
-        40017);
+    buffering_mediator_iterator iit{
+        decompress_iterator{file_region_iterator<const char>{fname, 0, 65536}, std::forward<ArgsT>(args) ...},
+        40017};
 
     size_t rfsz = 0;
     char checkv = 0;
@@ -172,7 +173,6 @@ void archiver_test(const char* fname, size_t fsz, ArgsT && ... args)
     BOOST_CHECK_EQUAL(rfsz, fsz);
 }
 
-#if 1
 BOOST_AUTO_TEST_CASE(gzip_iterators_test)
 {
     //fs::remove_all(TEST_FOLDER);
@@ -180,9 +180,7 @@ BOOST_AUTO_TEST_CASE(gzip_iterators_test)
 
     archiver_test<deflate_iterator, inflate_iterator>(TEST_FOLDER "/temp.gz", 1024 * 1024 * 128, true);
 }
-#endif
 
-#if 1
 BOOST_AUTO_TEST_CASE(bzip2_iterators_test)
 {
     //fs::remove_all(TEST_FOLDER);
@@ -192,10 +190,10 @@ BOOST_AUTO_TEST_CASE(bzip2_iterators_test)
 }
 #endif
 
-#endif
+#if 1
 
 #include "sonia/utility/iterators/archive_extract_iterator.hpp"
-#if 1
+
 namespace {
 
 std::map<std::string, std::string> load_archive(fs::path const& p)

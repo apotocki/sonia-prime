@@ -37,9 +37,9 @@ void set_thread_name(sonia::thread::id tid, std::string const& name)
 
 typedef sonia::services::bundle*(get_bundle_fn)();
 
-shared_ptr<sonia::services::bundle> load_bundle(string_view name)
+shared_ptr<sonia::services::bundle> load_bundle(sonia::services::bundle_configuration const& cfg)
 {
-    std::string libname = "lib" + to_string(name) + ".so";
+    std::string libname = "lib" + to_string(cfg.lib) + ".so";
     void * handle = dlopen(
 #ifndef __ANDROID__
         libname.c_str(),
@@ -62,8 +62,9 @@ shared_ptr<sonia::services::bundle> load_bundle(string_view name)
         throw internal_error("Cannot load symbol 'get_bundle' in %1% module\n%2%"_fmt % libname % dlsym_error);
     }
     shared_ptr<sonia::services::bundle> result = shared_ptr<sonia::services::bundle>(fn_handle());
+    service_access::set_layer(*result, cfg.layer);
     result->set_handle(handle);
-    return std::move(result);
+    return result;
 }
 
 uint64_t file_size(int h)

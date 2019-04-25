@@ -12,7 +12,7 @@
 #include "sonia/type_traits.hpp"
 #include "serialization.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <typename TagT, class T>
 class coder<TagT, T, enable_if_t<is_placeholder_v<T>>>
@@ -21,10 +21,10 @@ public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(T const&, OutputIteratorT oi) const noexcept { return std::move(oi); }
 
-    template <typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, T const&) const noexcept { return std::move(ii); }
+    template <typename InputIteratorT, typename AnyT>
+    InputIteratorT decode(InputIteratorT ii, AnyT &&) const noexcept { return std::move(ii); }
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_PLACEHOLDER_HPP

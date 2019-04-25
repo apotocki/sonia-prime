@@ -53,7 +53,7 @@ void locate(IdT id, shared_ptr<ServiceT> & serv) {
     serv = locate<ServiceT>(id);
 }
 
-SONIA_PRIME_API void register_service_factory(string_view, function<service_descriptor()> const&);
+SONIA_PRIME_API void register_service_factory(string_view, function<shared_ptr<service>()> const&);
 SONIA_PRIME_API void load_configuration(boost::filesystem::path const &);
 SONIA_PRIME_API void load_configuration(std::istream &);
 

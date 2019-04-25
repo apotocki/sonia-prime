@@ -14,7 +14,7 @@
 
 #include "sonia/prime_config.hpp"
 #include "sonia/cstdint.hpp"
-#include "sonia/utility/on_close.hpp"
+#include "sonia/services/on_close.hpp"
 
 namespace sonia { namespace services {
 

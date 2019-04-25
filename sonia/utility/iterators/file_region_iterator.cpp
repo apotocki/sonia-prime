@@ -187,8 +187,10 @@ void file_region_iterator_base::decrement()
 
 void file_region_iterator_base::flush()
 {
-    region_->flush();
-    region_.reset();
+    if (region_) {
+        region_->flush();
+        region_.reset();
+    }
 }
 
 // post condition: region_->cursor_ != nullptr; it's important for the correctness of increment()

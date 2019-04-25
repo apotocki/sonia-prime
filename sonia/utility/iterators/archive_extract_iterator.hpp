@@ -190,17 +190,17 @@ class extract_iterator_polymorpic_adapter
 public:
     template <typename ... ArgsT>
     explicit extract_iterator_polymorpic_adapter(std::string fullname, size_t buffsz, ArgsT && ... args)
-        : base_type(std::forward<ArgsT>(args)...)
-        , extract_iterator_polymorpic_adapter_base(std::move(fullname), buffsz)
+        : base_type{std::forward<ArgsT>(args)...}
+        , extract_iterator_polymorpic_adapter_base{std::move(fullname), buffsz}
     {}
 
     template <typename ... ArgsT>
     explicit extract_iterator_polymorpic_adapter(std::string fullname, std::string partname, size_t buffsz, ArgsT && ... args)
-        : base_type(std::forward<ArgsT>(args)...)
-        , extract_iterator_polymorpic_adapter_base(std::move(fullname), std::move(partname), buffsz)
+        : base_type{std::forward<ArgsT>(args)...}
+        , extract_iterator_polymorpic_adapter_base{std::move(fullname), std::move(partname), buffsz}
     {}
 
-    array_view<const char> dereference() const override final { return *base_type::it_; }
+    array_view<const char> dereference() const override final { return *base_type::base; }
     size_t get_sizeof() const override final { return sizeof(extract_iterator_polymorpic_adapter); }
     polymorphic_clonable * clone(void * address, size_t sz) const override final { return base_type::do_clone(this, address, sz); }
     polymorphic_movable * move(void * address, size_t sz) override final { return base_type::do_move(this, address, sz); }
@@ -208,10 +208,10 @@ public:
     archive_iterator * pbase() override final
     {
         if constexpr (is_template_instance_v<tar_extract_iterator, IteratorT>) {
-            return &base_type::it_.base();
+            return &base_type::base.base();
         } else if constexpr (is_template_instance_v<buffering_mediator_iterator, IteratorT>) {
             // structure: buffering_mediator_iterator<some decompress iterator <archive_iterator>>
-            return &base_type::it_.base().base();
+            return &base_type::base.base().base();
         } else {
             return nullptr;
         }
@@ -220,17 +220,17 @@ public:
     bool next(archive_iterator & ax) override final
     {
         if constexpr (is_template_instance_v<tar_extract_iterator, IteratorT>) {
-            while (!base_type::it_.empty()) ++base_type::it_;
+            while (!base_type::base.empty()) ++base_type::base;
 
-            bool res = base_type::it_.next();
+            bool res = base_type::base.next();
             if (res) {
-                part_name_ = full_name_ + '/' + base_type::it_.name();
+                part_name_ = full_name_ + '/' + base_type::base.name();
                 type_ = archive_type::UNDEFINED;
             } else {
                 // skip possible odd data
-                while (!base_type::it_.base().empty()) ++base_type::it_.base();
+                while (!base_type::base.base().empty()) ++base_type::base.base();
                 // note: it_.base() is an archive_iterator
-                archive_iterator tmp(std::move(base_type::it_.base()));
+                archive_iterator tmp(std::move(base_type::base.base()));
                 ax = std::move(tmp);
                 return false;
             }
@@ -243,7 +243,6 @@ public:
     {
         return do_get_name();
     }
-
 };
 
 } // sonia::archive_detail

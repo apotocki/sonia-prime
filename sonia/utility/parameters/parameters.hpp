@@ -32,7 +32,7 @@ public:
         : name_(name), required_(false)
     {}
 
-    virtual ~value_descriptor() {}
+    virtual ~value_descriptor() = default;
 
     value_descriptor() : required_(false) {}
 
@@ -60,7 +60,9 @@ class typed_value_descriptor : public value_descriptor
 {
 public:
     using target_type = T;
-    using bound_type =BoundT;
+    using optional_target_type = conditional_t<is_optional_v<T>, T, optional<T>>;
+    using normilized_target_type = typename optional_target_type::value_type;
+    using bound_type = BoundT;
     using parameters_description_type = parameters_description<bound_type>;
 
     typed_value_descriptor(const char * name, T BoundT::* pm)
@@ -101,7 +103,7 @@ protected:
 
 private:
     T BoundT::* pmember_;
-    optional<T> default_;
+    optional_target_type default_;
 };
 
 template <typename T, typename BoundT>
@@ -110,7 +112,7 @@ class simple_value_descriptor : public typed_value_descriptor<T, BoundT>
     using base_type = typed_value_descriptor<T, BoundT>;
 
 public:
-    using binder_type = parameters_description<T>;
+    using binder_type = parameters_description<typename base_type::normilized_target_type>;
 
     simple_value_descriptor(const char * name, T BoundT::* pm) : base_type(name, pm)
     {}
@@ -281,7 +283,7 @@ public:
     parameter_options & binder(function<target_type(json_value const& v)> const& jh);
 
     template <typename NextBoundT>
-    parameter_options & binder(parameters_binding<NextBoundT>);
+    parameter_options & binder(parameters_binding<NextBoundT> const&);
 
 private:
     VDT * vd_;
@@ -311,7 +313,7 @@ template <typename T, typename BoundT>
 T simple_value_descriptor<T, BoundT>::cast(json_value const& v) const
 {
     if (binder_) {
-        T val{};
+        typename base_type::normilized_target_type val{};
         binder_->apply(v.get_object(), &val);
         return std::move(val);
     } else if (jh_) {
@@ -391,7 +393,7 @@ parameter_options<VDT> & parameter_options<VDT>::binder(function<typename VDT::t
 
 template <class VDT>
 template <typename NextBoundT>
-parameter_options<VDT> & parameter_options<VDT>::binder(parameters_binding<NextBoundT> pb)
+parameter_options<VDT> & parameter_options<VDT>::binder(parameters_binding<NextBoundT> const& pb)
 {
     vd_->set_binder(sonia::make_shared<binder_type>(pb.description()));
     return *this;

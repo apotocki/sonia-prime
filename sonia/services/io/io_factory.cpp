@@ -3,30 +3,41 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "factory.hpp"
-
-#include "sonia/sal.hpp"
-#include "sonia/utility/scope_exit.hpp"
 
 #ifdef BOOST_WINDOWS
+#   include "sonia/utility/windows.hpp"
 #else
 #   include <sys/types.h>
 #   include <sys/socket.h>
 #endif
 
+#include "factory.hpp"
+
+#include "sonia/utility/scope_exit.hpp"
+#include "sonia/sal.hpp"
+
 namespace sonia::io {
 
-void factory::open(uint32_t thr_cnt)
+void factory::open(uint32_t thr_cnt, optional<ssl_configuration> const& optssl)
 {
     unique_lock lk(close_mtx_);
 
     initialize_impl(thr_cnt);
+    // initialize ssl
+    if (optssl) {
+        impl_holder_->ssl = make_shared<io_ssl>(*optssl);
+    }
     threads_.reserve(thr_cnt);
 
     for (size_t i = 0; i < thr_cnt; ++i) {
         threads_.emplace_back(thread([impl = impl_holder_] { impl->thread_proc(); }));
         sonia::sal::set_thread_name(threads_.back().get_id(), ("%1% factory thread #%2%"_fmt % name() % i).str());
     }
+}
+
+factory::~factory()
+{
+    
 }
 
 void factory::close() noexcept
@@ -55,6 +66,10 @@ size_t factory::thread_count() const
 {
     return threads_.size();
 }
+
+factory::impl_base::impl_base(shared_ptr<factory> wr)
+    : wrapper(std::move(wr))
+{}
 
 void factory::impl_base::close() noexcept
 {
@@ -111,7 +126,11 @@ tcp_socket factory::create_bound_tcp_socket(cstring_view address, uint16_t port,
             socket_handle sock = create_socket(ai->family(), ai->ai_socktype(), ai->ai_protocol());
             SCOPE_EXIT([&sock]() { if (sock != not_initialized_socket_v) close_socket(sock); });
 
-            setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, 1);
+#ifdef BOOST_WINDOWS
+            setsockopt(sock, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, 1);
+#else
+            setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, 0);
+#endif
             bind_socket(sock, ai->ai_addr(), ai->ai_addrlen());
             listen_socket(sock, SOMAXCONN);
 

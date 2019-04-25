@@ -9,25 +9,12 @@
 #   pragma once
 #endif
 
-#include "sonia/services/service.hpp"
 #include "sonia/services/builder.hpp"
-#include "sonia/utility/parameters/parameters.hpp"
-#include "transceiver_configuration.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
-class transceiver_builder 
-    : public service
-    , public builder
-{
-public:
-    transceiver_builder();
-    shared_ptr<service> build(json_object const& parameters) override;
+DECLARE_PARTICULAR_BUILDER(transceiver_service)
 
-private:
-    sonia::parameters::parameters_description<transceiver_configuration> parameters_;
-};
-
-}}
+}
 
 #endif // SONIA_SERVICES_TRANSCEIVER_BUILDER_HPP

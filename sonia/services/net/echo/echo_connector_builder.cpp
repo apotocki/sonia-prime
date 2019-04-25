@@ -3,10 +3,12 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
+#include "sonia/services/builder.ipp"
 #include "echo_connector_builder.hpp"
+
 #include "echo_connector.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 namespace sp = sonia::parameters;
 
@@ -18,11 +20,4 @@ echo_connector_builder::echo_connector_builder()
     ;
 }
 
-shared_ptr<service> echo_connector_builder::build(json_object const& parameters)
-{
-    echo_connector_configuration cfg;
-    parameters_.apply(parameters, &cfg);
-    return make_shared<echo_connector>(cfg);
 }
-
-}}

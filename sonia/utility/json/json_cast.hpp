@@ -10,6 +10,7 @@
 #endif
 
 #include "sonia/exceptions.hpp"
+#include "sonia/optional.hpp"
 #include "value.hpp"
 
 namespace sonia {
@@ -39,6 +40,13 @@ template <typename T>
 struct json_cast_impl<T, enable_if_t<is_floating_point_v<T>>> {
     T operator()(json_value const& jv) const {
         return (T)jv.get_number();
+    }
+};
+
+template <typename T>
+struct json_cast_impl<optional<T>> {
+    optional<T> operator()(json_value const& jv) const {
+        return json_cast_impl<T>()(jv);
     }
 };
 

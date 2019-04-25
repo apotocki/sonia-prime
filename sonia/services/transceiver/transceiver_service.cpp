@@ -182,7 +182,7 @@ private:
     mutable array_view<const char> data_;
 };
 
-transceiver_service::transceiver_service(transceiver_configuration const& cfg)
+transceiver_service::transceiver_service(transceiver_service_configuration const& cfg)
     : cfg_(cfg)
 {
     set_log_attribute("Type", "transceiver");

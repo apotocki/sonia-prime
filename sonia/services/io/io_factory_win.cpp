@@ -54,23 +54,26 @@ struct win_shared_handle : shared_handle<socket_handle_traits>
     SOCKET handle;
 };
 
-//using tcp_scoped_handle = scoped_handle<tcp_socket_service_type*, win_shared_handle>;
-//using udp_scoped_handle = scoped_handle<udp_socket_service_type*, win_shared_handle>;
-
-
 template <typename OvT>
-struct callback
+struct callback_base
 {
     OvT overlapped;
 
+    static callback_base * get(OvT * pov)
+    {
+        return reinterpret_cast<callback_base*>(reinterpret_cast<char*>(pov) - offsetof(callback_base, overlapped));
+    }
+};
+
+
+template <typename OvT>
+struct callback : callback_base<OvT>
+{
     explicit callback(win_impl *);
     
     virtual void on_op(std::error_code const&, size_t) = 0;
 
-    static callback * get(OvT * pov)
-    {
-        return reinterpret_cast<callback*>(reinterpret_cast<char*>(pov) - offsetof(callback, overlapped));
-    }
+    static callback * get(OvT * pov) { return static_cast<callback*>(callback_base<OvT>::get(pov)); }
 
 protected:
     ~callback() = default;
@@ -277,7 +280,7 @@ void win_impl::thread_proc()
         LPOVERLAPPED overlapped = nullptr;
 
         BOOL r = GetQueuedCompletionStatus(iocp_, &bytes, &key, &overlapped, INFINITE);
-        DWORD errc = GetLastError();
+        DWORD errc = r ? 0 : GetLastError();
         std::error_code err(errc, std::system_category());
 
         try {
@@ -328,8 +331,8 @@ udp_socket win_impl::do_create_udp_socket(sonia::sal::socket_handle s, sonia::sa
 template <typename OvT>
 callback<OvT>::callback(win_impl * p)
 {
-    BOOST_ASSERT(this == get(&overlapped));
-    SecureZeroMemory((PVOID)&overlapped, sizeof(OvT));
+    BOOST_ASSERT(this == get(&this->overlapped));
+    SecureZeroMemory((PVOID)&this->overlapped, sizeof(OvT));
     p->on_add_callback();
 }
 
@@ -439,8 +442,6 @@ acceptor_callback::~acceptor_callback()
 #define dataptr static_pointer_cast<win_impl>(get_dataptr())
 
 factory::factory() {}
-
-factory::~factory() {}
 
 void factory::initialize_impl(uint32_t thr_cnt)
 {

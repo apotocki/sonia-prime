@@ -9,26 +9,11 @@
 #   pragma once
 #endif
 
-#include "sonia/services/service.hpp"
 #include "sonia/services/builder.hpp"
-#include "sonia/utility/parameters/parameters.hpp"
-#include "http_connector_configuration.hpp"
 
 namespace sonia::services {
 
-//DECLARE_PARTICULAR_BUILDER(http_connector)
-
-class http_connector_builder 
-    : public service
-    , public builder
-{
-public:
-    http_connector_builder();
-    shared_ptr<service> build(json_object const& parameters) override;
-
-private:
-    sonia::parameters::parameters_description<http_connector_configuration> parameters_;
-};
+DECLARE_PARTICULAR_BUILDER(http_connector)
 
 }
 

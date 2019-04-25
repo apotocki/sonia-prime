@@ -9,14 +9,14 @@
 #   pragma once
 #endif
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
-class scheduler_service_configuration {
-public:
+struct scheduler_service_configuration
+{
     uint32_t threads;
     uint32_t fibers;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_SCHEDULER_SERVICE_CONFIGURATION_HPP

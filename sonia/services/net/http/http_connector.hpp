@@ -15,6 +15,11 @@
 #include "sonia/services/service.hpp"
 #include "sonia/services/net/connector.hpp"
 
+#include "sonia/utility/iterators/socket_read_input_iterator.hpp"
+#include "sonia/utility/iterators/socket_write_input_iterator.hpp"
+//#include "sonia/utility/iterators/socket_write_iterator.hpp"
+//#include "sonia/utility/iterators/buffering_mediator_iterator.hpp"
+
 #include "http_connector_configuration.hpp"
 
 namespace sonia::services {
@@ -34,6 +39,12 @@ public:
     void one_shot_connect(array_view<char> buff, size_t rsz, sonia::io::tcp_socket soc);
 
 private:
+    using read_iterator = socket_read_input_iterator<io::tcp_socket>;
+    using write_iterator = socket_write_input_iterator<io::tcp_socket>;
+    //using write_iterator = buffering_mediator_iterator<socket_write_iterator<io::tcp_socket>>;
+    bool do_connection(read_iterator &, write_iterator &); // returns true if keep alive
+
+
     http_connector_configuration cfg_;
 
     fibers::mutex mtx;

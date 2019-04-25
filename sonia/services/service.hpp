@@ -14,64 +14,55 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/logger/loggable.hpp"
 
+#include "sonia/services/singleton.hpp"
+
 namespace sonia {
 
-class service_access;
+struct service_access;
 
-class service : public virtual loggable
+class service 
+    : public singleton
+    , public virtual loggable
 {
-    friend class service_access;
+    friend struct service_access;
 
 public:
-    service() : id_(0) {}
+    service() : singleton(0) {}
 
-    ~service() override
+    ~service() noexcept override
     {
         LOG_TRACE(logger()) << "terminated";
     }
 
-    using id = uint32_t;
-
-    id get_id() const noexcept { return id_; }
-    std::string const& get_name() const noexcept { return name_; }
-
     virtual void open() {}
-    virtual void close() noexcept {}
+
+    std::string const& get_name() const noexcept { return name_; }
 
 private:
     std::string name_;
-    id id_;
 };
 
-class service_access
+struct service_access : singleton_access
 {
-public:
-    static void set_id(service & s, service::id idval) { s.id_ = idval; }
     static void set_name(service & s, std::string nameval) { s.name_ = std::move(nameval); }
-    static void set(service & s, service::id idval, std::string nameval) { s.id_ = idval; s.name_ = std::move(nameval); }
+    static void set(service & s, service::id idval, std::string nameval) { singleton_access::set_id(s, idval); s.name_ = std::move(nameval); }
 };
 
 class service_registry
 {
 public:
-    virtual ~service_registry() {}
+    virtual ~service_registry() = default;
 
     virtual service::id get_id(string_view) = 0;
     virtual string_view get_name(service::id) const = 0; // throws an exception if the name is undefined for the given id.
 };
 
-struct service_descriptor
-{
-    shared_ptr<service> serv;
-    int layer;
-};
-
 class service_factory
 {
 public:
-    virtual ~service_factory() noexcept {}
+    virtual ~service_factory() = default;
 
-    virtual service_descriptor create(string_view) const = 0;
+    virtual shared_ptr<service> create(string_view) const = 0;
 };
 
 }

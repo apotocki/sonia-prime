@@ -16,7 +16,7 @@ namespace sonia { namespace logger {
 
 #define SONIA_PRINT_CASE(r, data, i, elem) case severity_level::BOOST_PP_TUPLE_ELEM(2, 0, elem): return BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(2, 1, elem));
 
-const char* to_string(severity_level lvl)
+string_view to_string_view(severity_level lvl)
 {
     switch (lvl)
     {

@@ -9,27 +9,12 @@
 #   pragma once
 #endif
 
-#include "sonia/services/service.hpp"
 #include "sonia/services/builder.hpp"
-#include "sonia/utility/parameters/parameters.hpp"
-#include "echo_connector_configuration.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
-//DECLARE_PARTICULAR_BUILDER(echo_connector)
+DECLARE_PARTICULAR_BUILDER(echo_connector)
 
-class echo_connector_builder 
-    : public service
-    , public builder
-{
-public:
-    echo_connector_builder();
-    shared_ptr<service> build(json_object const& parameters) override;
-
-private:
-    sonia::parameters::parameters_description<echo_connector_configuration> parameters_;
-};
-
-}}
+}
 
 #endif // SONIA_SERVICES_ECHO_CONNECTOR_BUILDER_HPP

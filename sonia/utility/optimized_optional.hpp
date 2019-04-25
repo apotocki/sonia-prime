@@ -11,7 +11,6 @@
 
 #include "sonia/optional.hpp"
 #include "sonia/array_view.hpp"
-#include "sonia/utility/explicit_operator_bool.hpp"
 
 namespace sonia {
 
@@ -25,9 +24,7 @@ public:
 
     constexpr void reset() noexcept { value_ = nullptr; }
 
-    constexpr bool operator!() const noexcept { return !value_; }
-
-    BOOST_EXPLICIT_OPERATOR_BOOL_NOEXCEPT();
+    explicit constexpr operator bool() const noexcept { return value; }
 
     constexpr T *& get() noexcept { return value_; }
     constexpr T *  get() const noexcept{ return value_; }
@@ -46,7 +43,7 @@ class optional_array_view
     array_view<T> value_;
 
 public:
-    constexpr optional_array_view() {}
+    constexpr optional_array_view() = default;
     constexpr explicit optional_array_view(nullopt_t) {}
     constexpr explicit optional_array_view(array_view<T> val) noexcept : value_(val) {}
 
@@ -56,11 +53,10 @@ public:
     optional_array_view & emplace(ArgsT && ... args)
     {
         value_ = array_view<T>(std::forward<ArgsT>(args)...);
+        return *this;
     }
 
-    constexpr bool operator!() const noexcept { return !value_.data(); }
-
-    BOOST_EXPLICIT_OPERATOR_BOOL_NOEXCEPT();
+    constexpr explicit operator bool() const noexcept { return value_; }
 
     constexpr array_view<T> & get() noexcept { return value_; }
     constexpr array_view<T> get() const noexcept{ return value_; }

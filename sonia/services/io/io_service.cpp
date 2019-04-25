@@ -15,7 +15,7 @@ io_service::io_service(io_service_configuration const& cfg)
 
 void io_service::open()
 {
-    sonia::io::factory::open(cfg_.threads);
+    sonia::io::factory::open(cfg_.threads, cfg_.ssl_configuration);
 }
 
 void io_service::close() noexcept

@@ -9,27 +9,12 @@
 #   pragma once
 #endif
 
-#include "sonia/services/service.hpp"
 #include "sonia/services/builder.hpp"
-#include "sonia/utility/parameters/parameters.hpp"
-#include "net_service_configuration.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
-//DECLARE_PARTICULAR_BUILDER(net_service)
+DECLARE_PARTICULAR_BUILDER(net_service)
 
-class net_service_builder 
-    : public service
-    , public builder
-{
-public:
-    net_service_builder();
-    shared_ptr<service> build(json_object const& parameters) override;
-
-private:
-    sonia::parameters::parameters_description<net_service_configuration> parameters_;
-};
-
-}}
+}
 
 #endif // SONIA_SERVICES_NET_SERVICE_BUILDER_HPP

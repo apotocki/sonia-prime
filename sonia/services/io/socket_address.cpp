@@ -3,13 +3,6 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "socket_address.hpp"
-
-#include <boost/spirit/include/qi.hpp>
-#include <boost/spirit/include/phoenix_core.hpp>
-#include <boost/spirit/include/phoenix_operator.hpp>
-#include <boost/phoenix/stl/container.hpp>
-#include <boost/phoenix/object/construct.hpp>
 
 #ifdef BOOST_WINDOWS
 #   include "sonia/utility/windows.hpp"
@@ -20,11 +13,17 @@ namespace winapi = sonia::windows;
 namespace linapi = sonia::linux;
 #endif
 
+#include "socket_address.hpp"
+
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/phoenix/stl/container.hpp>
+#include <boost/phoenix/object/construct.hpp>
+
 #include "sonia/exceptions/internal_errors.hpp"
 
 namespace sonia { namespace io {
-
-
 
 #define SONIA_PRINT_IO_PROTOCOL_TYPE_CASE(r, data, i, elem) \
     if (lcasestr == BOOST_STRINGIZE(BOOST_PP_TUPLE_ELEM(2, 1, elem))) { pt = protocol_type::BOOST_PP_TUPLE_ELEM(2, 0, elem); } else 

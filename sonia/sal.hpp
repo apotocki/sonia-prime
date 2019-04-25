@@ -22,12 +22,12 @@
 
 // system abstract level functions
 
-namespace sonia { namespace sal {
+namespace sonia::sal {
 
 void set_thread_name(sonia::thread::id, string_view name);
 void set_thread_name(sonia::thread::id, std::string const& name);
 
-shared_ptr<sonia::services::bundle> load_bundle(string_view name);
+shared_ptr<sonia::services::bundle> load_bundle(sonia::services::bundle_configuration const&);
 
 // file routine
 uint64_t file_size(file_handle_type h);
@@ -73,6 +73,6 @@ inline uint8_t log2(uint64_t x)
 }
 #endif
 
-}}
+}
 
 #endif // SONIA_SAL_HPP

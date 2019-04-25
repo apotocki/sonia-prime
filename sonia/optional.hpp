@@ -20,6 +20,10 @@ using std::in_place_t;
 using std::nullopt;
 using std::nullopt_t;
 
+template <class T> struct is_optional : std::false_type {};
+template <class T> struct is_optional<optional<T>> : std::true_type{};
+template <class T> constexpr bool is_optional_v = is_optional<T>::value;
+
 }
 
 namespace std {

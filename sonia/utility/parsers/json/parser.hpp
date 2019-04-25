@@ -13,7 +13,7 @@
 
 #include "lexems.hpp"
 
-namespace sonia { namespace parsers { namespace json {
+namespace sonia::parsers::json {
 
 template <class LexerT, class ModelT>
 class parser
@@ -35,10 +35,10 @@ private:
     ModelT & mdl_;
 };
 
-}}}
+}
 
 // Implementation
-namespace sonia { namespace parsers { namespace json {
+namespace sonia::parsers::json {
 
 template <class LexerT, class ModelT>
 void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
@@ -200,6 +200,6 @@ void parser<LexerT, ModelT>::throw_unexpected_eof()
     throw exception("unexpected eof");
 }
 
-}}}
+}
 
 #endif // SONIA_UTILITY_JSON_PARSER_HPP

@@ -132,7 +132,7 @@ protected:
 public:
     bool empty() const { return !region_ || region_->empty(); }
 
-    file_region_iterator_base() {}
+    file_region_iterator_base() = default;
     file_region_iterator_base(bool readonly, boost::filesystem::path const& path, uint64_t offset, size_t least_region_sz);
 
 protected:
@@ -185,7 +185,7 @@ class file_region_iterator
     }
 
 public:
-    file_region_iterator() {}
+    file_region_iterator() = default;
 
     template <typename CharT>
     explicit file_region_iterator(const CharT* name, uint64_t offset = 0, size_t least_region_sz = 1)
@@ -198,6 +198,15 @@ public:
 
     file_region_iterator(file_region_iterator const&) = default;
     file_region_iterator(file_region_iterator &&) = default;
+
+    ~file_region_iterator() noexcept
+    {
+        if constexpr(!is_readonly) {
+            try {
+                file_region_iterator_base::flush();
+            } catch (...) { /* ignore*/ }
+        }
+    }
 
     file_region_iterator & operator=(file_region_iterator const& rhs)
     {

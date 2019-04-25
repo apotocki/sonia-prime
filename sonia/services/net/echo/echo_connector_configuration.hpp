@@ -9,13 +9,13 @@
 #   pragma once
 #endif
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 struct echo_connector_configuration
 {
 
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_ECHO_CONNECTOR_CONFIGURATION_HPP

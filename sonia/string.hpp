@@ -88,10 +88,13 @@ public:
 template <typename CharT, class TraitsT>
 basic_string_view<CharT, TraitsT> to_string_view(basic_string_view<CharT, TraitsT> sv) { return sv; }
 
+template <typename CharT, class TraitsT>
+basic_cstring_view<CharT, TraitsT> to_string_view(basic_cstring_view<CharT, TraitsT> sv) { return sv; }
+
 template <typename CharT, class TraitsT, class AllocT>
-basic_string_view<CharT, TraitsT> to_string_view(std::basic_string<CharT, TraitsT, AllocT> const& s)
+basic_cstring_view<CharT, TraitsT> to_string_view(std::basic_string<CharT, TraitsT, AllocT> const& s)
 {
-    return basic_string_view<CharT, TraitsT>(s);
+    return basic_cstring_view<CharT, TraitsT>(s);
 }
 
 template <typename CharT, class AllocatorT>
@@ -291,6 +294,19 @@ template <class CharT, class TraitsT>
 size_t hash_value(basic_cstring_view<CharT, TraitsT> csv)
 {
     return hash<array_view<const CharT>>()(csv);
+}
+
+template <size_t BuffSzV, class CharT, class TraitsT, typename FtorT>
+auto as_cstring(basic_string_view<CharT, TraitsT> sv, FtorT const& ftor)
+{
+    if (BuffSzV > sv.size()) {
+        CharT buff[BuffSzV];
+        *std::copy(sv.begin(), sv.end(), buff) = 0;
+        return ftor(basic_cstring_view<CharT, TraitsT>(buff, sv.size()));
+    } else {
+        auto tmp = to_string(sv);
+        return ftor(basic_cstring_view<CharT, TraitsT>(tmp.c_str(), sv.size()));
+    }
 }
 
 }

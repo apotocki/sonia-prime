@@ -2,8 +2,8 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_SOCKET_READ_ITERATOR_HPP
-#define SONIA_UTILITY_SOCKET_READ_ITERATOR_HPP
+#ifndef SONIA_UTILITY_SOCKET_READ_OUTPUT_ITERATOR_HPP
+#define SONIA_UTILITY_SOCKET_READ_OUTPUT_ITERATOR_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
@@ -19,18 +19,18 @@
 namespace sonia {
 
 template <class SocketT>
-class socket_read_iterator
+class socket_read_output_iterator
     : public boost::iterator_facade<
-          socket_read_iterator<SocketT>
+          socket_read_output_iterator<SocketT>
         , array_view<const char>
         , std::output_iterator_tag
-        , wrapper_iterator_proxy<ptr_proxy_wrapper<socket_read_iterator<SocketT> const*, array_view<const char>>>
+        , wrapper_iterator_proxy<ptr_proxy_wrapper<socket_read_output_iterator<SocketT> const*, array_view<const char>>>
     >
 {
     friend class boost::iterator_core_access;
     template <class, class> friend class ptr_proxy_wrapper;
 
-    using proxy_t = wrapper_iterator_proxy<ptr_proxy_wrapper<socket_read_iterator const*, array_view<const char>>>;
+    using proxy_t = wrapper_iterator_proxy<ptr_proxy_wrapper<socket_read_output_iterator const*, array_view<const char>>>;
 
     proxy_t dereference() const
     {
@@ -49,7 +49,7 @@ class socket_read_iterator
 
     void increment()
     {
-        if (auto exprsz = psoc_->read_some(buff_.begin(), buff_.size()); exprsz.has_value()) {
+        if (auto exprsz = psoc_->read_some(buff_.begin(), buff_.size()); exprsz.has_value() && exprsz.value()) {
             buff_.advance_back(ptrdiff_t(exprsz.value()) - buff_.size());
         } else {
             empty_ = true;
@@ -57,7 +57,7 @@ class socket_read_iterator
     }
 
 public:
-    explicit socket_read_iterator(SocketT & soc) : psoc_(std::addressof(soc)) {}
+    explicit socket_read_output_iterator(SocketT & soc) : psoc_(std::addressof(soc)) {}
 
     bool empty() const { return empty_; }
 
@@ -69,4 +69,4 @@ private:
 
 }
 
-#endif // SONIA_UTILITY_SOCKET_READ_ITERATOR_HPP
+#endif // SONIA_UTILITY_SOCKET_READ_OUTPUT_ITERATOR_HPP

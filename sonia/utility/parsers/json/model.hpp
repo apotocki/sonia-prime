@@ -37,7 +37,7 @@ void normilize_json_string_aux(InputIteratorT & it, InputIteratorT const& eit, O
     case 't':  *oit = '\t'; break;
     case 'u': {
         uint32_t utf32char;
-        if (!hexdigit(it, eit, 4, utf32char)) throw exception("found wrong \\uXXXX character");
+        if (!hexinteger(it, eit, 4, 4, utf32char)) throw exception("found wrong \\uXXXX character");
         to_utf8(utf32char, oit);
         break;
     }

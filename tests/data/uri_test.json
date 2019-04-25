@@ -1,0 +1,18 @@
+[
+    {
+        uri:'http://example.com/',
+        result:{scheme:'http', authority:'example.com', host:'example.com', path:'/', is_absolute:true }
+    },
+    {
+        uri:'http://uinfo@example.com:15/a1/a2?a=12&b=23#fff',
+        result:{scheme:'http', authority:'uinfo@example.com:15', userinfo:'uinfo', host:'example.com', port:15, path:'/a1/a2', query:'a=12&b=23', fragment:'fff', is_absolute:true }
+    },
+    {
+        uri:'//uinfo@example.com:15/a1/a2?a=12&b=23#fff',
+        result:{authority:'uinfo@example.com:15', userinfo:'uinfo', host:'example.com', port:15, path:'/a1/a2', query:'a=12&b=23', fragment:'fff', is_absolute:false }
+    },
+    {
+        uri:'https://127.0.0.1:123/a2?a=12&b=23#fff',
+        result:{scheme:'https', authority:'127.0.0.1:123', host:'127.0.0.1', port:123, path:'/a2', query:'a=12&b=23', fragment:'fff', is_absolute:true }
+    }
+]

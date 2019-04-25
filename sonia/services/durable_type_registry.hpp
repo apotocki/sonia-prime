@@ -20,7 +20,7 @@
 
 #include "type_registry.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 class durable_type_registry
 {
@@ -47,6 +47,6 @@ private:
     type_id_map_type type_durable_id_map_;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_DURABLE_TYPE_REGISTRY_HPP

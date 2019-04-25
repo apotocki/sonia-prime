@@ -126,8 +126,30 @@ class tcp_socket_factory
 public:
     virtual ~tcp_socket_factory() = default;
     
-    virtual smart_handle_facade<TraitsT, tcp_socket_adapter> create_bound_tcp_socket(cstring_view address, uint16_t port = 0, sonia::sal::net_family_type dt = sonia::sal::net_family_type::INET) = 0;
-    virtual smart_handle_facade<TraitsT, tcp_socket_adapter> create_connected_tcp_socket(cstring_view address, uint16_t port = 0, sonia::sal::net_family_type dt = sonia::sal::net_family_type::INET) = 0;
+    virtual smart_handle_facade<TraitsT, tcp_socket_adapter> create_bound_tcp_socket(cstring_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET) = 0;
+    virtual smart_handle_facade<TraitsT, tcp_socket_adapter> create_connected_tcp_socket(cstring_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET) = 0;
+
+    smart_handle_facade<TraitsT, tcp_socket_adapter> create_bound_tcp_socket(string_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
+    {
+        return as_cstring<64>(address, [this, port, ft](cstring_view address) { return create_bound_tcp_socket(address, port, ft); });
+    }
+    
+    smart_handle_facade<TraitsT, tcp_socket_adapter> create_connected_tcp_socket(string_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
+    {
+        return as_cstring<64>(address, [this, port, ft](cstring_view address) { return create_connected_tcp_socket(address, port, ft); });
+    }
+
+    template <typename StringT>
+    smart_handle_facade<TraitsT, tcp_socket_adapter> create_bound_tcp_socket(StringT && address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
+    {
+        return create_bound_tcp_socket(to_string_view(address), port, ft);
+    }
+
+    template <typename StringT>
+    smart_handle_facade<TraitsT, tcp_socket_adapter> create_connected_tcp_socket(StringT && address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
+    {
+        return create_connected_tcp_socket(to_string_view(address), port, ft);
+    }
 };
 
 }

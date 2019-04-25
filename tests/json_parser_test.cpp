@@ -55,7 +55,7 @@ BOOST_AUTO_TEST_CASE(json_test)
     >(model, text.c_str(), text.c_str() + text.size());
     
     json_value res = model.detach_result();
-    BOOST_CHECK(res.type() == json_value_type::object);
+    BOOST_REQUIRE(res.type() == json_value_type::object);
     json_object jobj = res.get_object();
     BOOST_CHECK_EQUAL(jobj.size(), 12);
     jobj["key0"];

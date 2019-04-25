@@ -27,7 +27,7 @@ class transceiver_service
     , public net::udp_connector
 {
 public:
-    explicit transceiver_service(transceiver_configuration const&);
+    explicit transceiver_service(transceiver_service_configuration const&);
 
     void close() noexcept override;
 
@@ -40,7 +40,7 @@ public:
     void connect(array_view<char> buff, size_t, sonia::sal::socket_address const&, sonia::io::udp_socket&) override;
 
 private:
-    transceiver_configuration cfg_;
+    transceiver_service_configuration cfg_;
     shared_ptr<sonia::io::tcp_socket_factory_type> soc_factory_;
 
     fibers::mutex mtx;

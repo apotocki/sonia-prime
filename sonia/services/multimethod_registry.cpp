@@ -11,7 +11,7 @@
 #include "multimethod_registry.hpp"
 #include "sonia/logger/logger.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 void multimethod_registry::register_multimethod(multimethod && mm, array_view<const std::type_index> mmid)
 {
@@ -34,4 +34,4 @@ multimethod const* multimethod_registry::get_multimethod(array_view<const std::t
     return (it != mm_set_.cend()) ? it->mm.get_pointer() : nullptr;
 }
 
-}}
+}

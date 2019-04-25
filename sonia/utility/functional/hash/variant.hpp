@@ -20,7 +20,7 @@ struct variant_hash_visitor : boost::static_visitor<size_t>
     template <typename T>
     size_t operator()(T const& val) const
     {
-        return  hash<T>()(val);
+        return hash<T>()(val);
     }
 };
 

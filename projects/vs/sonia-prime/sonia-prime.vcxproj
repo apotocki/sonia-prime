@@ -37,6 +37,8 @@
     <ClCompile Include="..\..\..\sonia\services\net\echo\echo_connector_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_connector.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_connector_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_default_application.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_default_application_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\net_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\net_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\prime_bundle.cpp" />
@@ -73,6 +75,10 @@
     <ClInclude Include="..\..\..\sonia\services\net\http\http_connector.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_connector_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_connector_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_application.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service.hpp" />
@@ -161,7 +167,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;SONIA_PRIME_EXPORTS;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -169,7 +175,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>zlibd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -180,7 +187,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;SONIA_PRIME_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>Async</ExceptionHandling>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -188,7 +195,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -201,7 +208,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;SONIA_PRIME_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>Async</ExceptionHandling>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -211,7 +218,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -224,7 +231,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;SONIA_PRIME_EXPORTS;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -234,7 +241,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

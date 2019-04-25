@@ -9,15 +9,13 @@
 #   pragma once
 #endif
 
-#include <mutex>
-
 #include "sonia/prime_config.hpp"
 #include "sonia/function.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 SONIA_PRIME_API void on_close(function<void()> const&);
 
-}}
+}
 
 #endif // SONIA_UTILITY_ON_CLOSE_HPP

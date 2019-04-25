@@ -11,7 +11,7 @@
 
 namespace sonia { namespace services {
 
-struct transceiver_configuration
+struct transceiver_service_configuration
 {
     std::string socket_factory;
 };

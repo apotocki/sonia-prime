@@ -8,7 +8,6 @@
 
 #include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
-
 #include "sonia/services.hpp"
 
 #include "applied/scoped_services.hpp"
@@ -128,7 +127,8 @@ private:
     shared_ptr<sonia::services::transceiver> transmitter_;
 };
 
-void get_configuration(std::ostream & os) {
+void get_configuration(std::ostream & os)
+{
      os << 
         "{"
         "   hosts: ["
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         SONIA_REGISTER_BINDING_TAG(ts_message_method, "ts_message_method", "test_service");
         SONIA_REGISTER_BINDING_TAG(ts_get_value_method, "ts_get_value_method", "test_service");
 
-        services::register_service_factory("test_service", []() -> service_descriptor {
+        services::register_service_factory("test_service", []() -> shared_ptr<service> {
             shared_ptr<service> serv;
             if (services::get_host()->get_name() == "server") {
                 services::register_transceiver_invoker<ts_empty_method>();
@@ -221,7 +221,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
             } else {
                 serv = make_shared<test_service_proxy>();
             }
-            return {serv, 0};
+            return serv;
         });
 
         std::stringstream cfgss;

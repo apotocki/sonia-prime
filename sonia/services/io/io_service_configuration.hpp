@@ -10,13 +10,15 @@
 #endif
 
 #include "sonia/cstdint.hpp"
+#include "sonia/optional.hpp"
+#include "io_ssl_configuration.hpp"
 
 namespace sonia::services {
 
-class io_service_configuration
+struct io_service_configuration
 {
-public:
     uint32_t threads;
+    optional<io::ssl_configuration> ssl_configuration;
 };
 
 }

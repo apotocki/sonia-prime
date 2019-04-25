@@ -80,12 +80,12 @@ public:
 
     template <typename ... ArgsT>
     explicit wrapper_iterator(ArgsT && ... args)
-        : impl(std::forward<ArgsT>(args) ...)
+        : impl{std::forward<ArgsT>(args) ...}
     {}
 
     template <typename ArgT>
     explicit wrapper_iterator(ArgT && arg, enable_if_t<is_same_v<remove_cvref_t<ArgT>, wrapper_iterator>> * enabler = nullptr) 
-        : impl(std::forward<ArgT>(arg).impl)
+        : impl{std::forward<ArgT>(arg).impl}
     {}
 
     wrapper_iterator(wrapper_iterator const& rhs) = default;
@@ -172,6 +172,11 @@ public:
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::flush");
     }
 
+    virtual void close()
+    {
+        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::close");
+    }
+
     virtual ReferenceT dereference() const
     {
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::dereference");
@@ -222,13 +227,13 @@ public:
 
     template <typename ... ArgsT>
     explicit iterator_polymorpic_adapter_base(ArgsT&& ... args) 
-        : it_(std::forward<ArgsT>(args)...)
+        : base(std::forward<ArgsT>(args)...)
     {}
 
     bool empty() const override
     {
         if constexpr (iterators::has_method_empty_v<IteratorT, bool()>) {
-            return it_.empty();
+            return base.empty();
         } else {
             THROW_NOT_SUPPORTED_ERROR("%1% has no member: empty()"_fmt % typeid(IteratorT).name());
         }
@@ -236,15 +241,15 @@ public:
 
     bool equal(typename BaseT::iterator_polymorphic_t const& rhs) const override
     {
-        return it_ == dynamic_cast<iterator_polymorpic_adapter_base const&>(rhs).it_;
+        return base == dynamic_cast<iterator_polymorpic_adapter_base const&>(rhs).base;
     }
 
-    void increment() override { ++it_; }
+    void increment() override { ++base; }
 
     void decrement() override
     {
         if constexpr (is_base_of_v<bidirectional_traversal_tag, CategoryT>) {
-            --it_;
+            --base;
         } else {
             THROW_NOT_SUPPORTED_ERROR("%1% is not a bidirectional iterator"_fmt % typeid(IteratorT).name());
         }
@@ -253,7 +258,7 @@ public:
     void advance(difference_type dif) override
     {
         if constexpr (is_base_of_v<random_access_traversal_tag, CategoryT>) {
-            std::advance(it_, dif);
+            std::advance(base, dif);
         } else {
             THROW_NOT_SUPPORTED_ERROR("%1% is not a random access iterator"_fmt % typeid(IteratorT).name());
         }
@@ -262,13 +267,22 @@ public:
     void flush() override
     {
         if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
-            it_.flush();
+            base.flush();
         } else {
             THROW_NOT_SUPPORTED_ERROR("%1% has no member: flush()"_fmt % typeid(IteratorT).name());
         }
     }
 
-    IteratorT & base() { return it_; }
+    void close() override
+    {
+        if constexpr (iterators::has_method_close_v<IteratorT, void()>) {
+            base.close();
+        } else {
+            THROW_NOT_SUPPORTED_ERROR("%1% has no member: close()"_fmt % typeid(IteratorT).name());
+        }
+    }
+
+    IteratorT base;
 
 protected:
     template <class DerivedT>
@@ -294,8 +308,6 @@ protected:
             THROW_NOT_SUPPORTED_ERROR("%1% can not be moved"_fmt % typeid(IteratorT).name());
         }
     }
-
-    IteratorT it_;
 };
 
 template <
@@ -320,7 +332,7 @@ public:
 
     ReferenceT dereference() const override final
     {
-        return *this->it_;
+        return *this->base;
     }
 
     size_t get_sizeof() const override final
@@ -364,12 +376,12 @@ public:
 
     ValueT get_dereference() const override final
     {
-        return *this->it_;
+        return *this->base;
     }
 
     void set_dereference(SetValueT val) override final
     {
-        *this->it_ = std::move(val);
+        *this->base = std::move(val);
     }
 
     size_t get_sizeof() const override final

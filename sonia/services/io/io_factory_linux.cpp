@@ -350,8 +350,6 @@ udp_socket lin_impl::do_create_udp_socket(sonia::sal::socket_handle s, sonia::sa
 
 factory::factory() {}
 
-factory::~factory() {}
-
 void factory::initialize_impl(uint32_t thr_cnt)
 {
     if (impl_holder_) {

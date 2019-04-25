@@ -7,14 +7,14 @@
 
 #include "sonia/exceptions.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
-service_descriptor basic_service_factory::create(string_view nm) const 
+shared_ptr<service> basic_service_factory::create(string_view nm) const 
 {
     unique_lock lock(named_factories_mtx_);
     auto it = named_factories_.find(nm, hasher(), string_equal_to());
     if (it != named_factories_.cend()) {
-        function<service_descriptor()> func = it->second;
+        function<shared_ptr<service>()> func = it->second;
         lock.unlock();
         try {
             return func();
@@ -26,7 +26,7 @@ service_descriptor basic_service_factory::create(string_view nm) const
     throw internal_error("can't create unknown service '%1%'"_fmt % nm);
 }
 
-void basic_service_factory::register_service_factory(string_view nm, function<service_descriptor()> const& fm)
+void basic_service_factory::register_service_factory(string_view nm, function<shared_ptr<service>()> const& fm)
 {
     lock_guard guard(named_factories_mtx_);
     auto it = named_factories_.find(nm, hasher(), string_equal_to());
@@ -37,4 +37,4 @@ void basic_service_factory::register_service_factory(string_view nm, function<se
     }
 }
 
-}}
+}

@@ -3,10 +3,11 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
+#include "sonia/services/builder.ipp"
 #include "scheduler_service_builder.hpp"
 #include "scheduler_service.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 scheduler_service_builder::scheduler_service_builder()
 {
@@ -17,10 +18,4 @@ scheduler_service_builder::scheduler_service_builder()
     ;
 }
 
-shared_ptr<service> scheduler_service_builder::build(json_object const& parameters) {
-    scheduler_service_configuration cfg;
-    parameters_.apply(parameters, &cfg);
-    return make_shared<scheduler_service>(cfg);
 }
-
-}}

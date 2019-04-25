@@ -125,7 +125,7 @@ BOOST_AUTO_TEST_CASE (aio_test)
 
         wrf.remove();
 
-    } catch (shutdown_exception const& e) {
+    } catch (closed_exception const& e) {
         std::cout << e.what() << "\n";
     } catch (std::exception const& e) {
         std::cerr << e.what() << "\n";

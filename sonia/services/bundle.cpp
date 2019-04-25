@@ -3,11 +3,11 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/build_config.hpp"
-#include "sonia/exceptions.hpp"
+#include "sonia/exceptions/internal_errors.hpp"
 
 #include "bundle.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 bundle::bundle()
     : libhandle_(nullptr)
@@ -23,20 +23,22 @@ void bundle::open()
     init();
 }
 
-shared_ptr<service> bundle::build(json_object const& jo)
+shared_ptr<service> bundle::build(service_configuration const& cfg)
 {
-    json_value const* jnm = jo["name"];
+    json_value const* jnm = cfg.parameters["name"];
     if (!jnm || jnm->type() != json_value_type::string) {
-        throw internal_error("bundle factory error: No factory name was found in '%1%'"_fmt % to_string(jo));
+        THROW_INTERNAL_ERROR("bundle factory error: No factory name was found in '%1%'"_fmt % to_string(cfg.parameters));
     }
 
     string_view name = jnm->get_string();
     auto it = builders_.find(name, hasher(), string_equal_to());
     if (it == builders_.end()) {
-        throw internal_error("The '%1%' bundle has no a definition of '%2%' factory"_fmt % typeid(*this).name() % name);
+        THROW_INTERNAL_ERROR("The '%1%' bundle has no a definition of '%2%' factory"_fmt % typeid(*this).name() % name);
     }
     
-    return it->second(jo);
+    shared_ptr<service> r = it->second(cfg.parameters);
+    service_access::set_layer(*r, cfg.layer);
+    return r;
 }
 
-}}
+}

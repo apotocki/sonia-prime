@@ -47,7 +47,7 @@ struct less<LT, RT, enable_if_t<is_integral_v<LT> && is_integral_v<RT>>>
 };
 
 template <typename LT, typename RT>
-constexpr inline  bool less_f(LT && l, RT && r)
+constexpr inline bool less_f(LT && l, RT && r)
 {
     return less<remove_cvref_t<LT>, remove_cvref_t<RT>>()
         (std::forward<LT>(l), std::forward<RT>(r));

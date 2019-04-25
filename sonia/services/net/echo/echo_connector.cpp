@@ -8,7 +8,7 @@
 #include "sonia/exceptions.hpp"
 
 #include "sonia/utility/iterators/socket_write_iterator.hpp"
-#include "sonia/utility/iterators/socket_read_iterator.hpp"
+#include "sonia/utility/iterators/socket_read_output_iterator.hpp"
 
 namespace sonia::services {
 
@@ -29,7 +29,7 @@ void echo_connector::close() noexcept
 void echo_connector::connect(array_view<char> buff, size_t rsz, sonia::io::tcp_socket soc)
 {
     socket_write_iterator wit{soc};
-    socket_read_iterator rit{soc};
+    socket_read_output_iterator rit{soc};
 
     try {
         array_view<const char> readybuff = buff.subview(0, rsz);

@@ -94,17 +94,17 @@ private:
 template <size_t HolderBytesV, size_t ServiceCookieBitsV>
 struct optimized_holder_base
 {
-    static const size_t used_bits = ServiceCookieBitsV + 1;
+    static constexpr size_t used_bits = ServiceCookieBitsV + 1;
 
     static_assert (HolderBytesV >= sizeof(intptr_t));
     static_assert (sizeof(intptr_t) * CHAR_BIT - 1 >= ServiceCookieBitsV);
 
-    static const size_t begin_offs = 1 + ServiceCookieBitsV / CHAR_BIT;
+    static constexpr size_t begin_offs = 1 + ServiceCookieBitsV / CHAR_BIT;
 
-    static const size_t max_cookie_val = (((size_t)1) << ServiceCookieBitsV) - 1;
+    static constexpr size_t max_cookie_val = (((size_t)1) << ServiceCookieBitsV) - 1;
 
-    static const int first_byte_bits = ServiceCookieBitsV < (CHAR_BIT - 1) ? ServiceCookieBitsV : (CHAR_BIT - 1);
-    static const uint8_t first_byte_mask = (((uint8_t)1) << first_byte_bits) - 1;
+    static constexpr int first_byte_bits = ServiceCookieBitsV < (CHAR_BIT - 1) ? ServiceCookieBitsV : (CHAR_BIT - 1);
+    static constexpr uint8_t first_byte_mask = (((uint8_t)1) << first_byte_bits) - 1;
 
     // to be able to store ponters directly in first holder bytes
     alignas(void*) char holder_[HolderBytesV];
@@ -180,11 +180,11 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, RefCountT, endian::lit
 {
     using optimized_holder_t = optimized_holder;
     using base_t = optimized_holder_base<HolderBytesV, ServiceCookieBitsV>;
-    static const int value_bits_act = HolderBytesV * CHAR_BIT - ServiceCookieBitsV - 1;
-    static const int value_bits = value_bits_act <= sizeof(uintmax_t) * CHAR_BIT ? value_bits_act : sizeof(uintmax_t) * CHAR_BIT;
+    static constexpr int value_bits_act = HolderBytesV * CHAR_BIT - ServiceCookieBitsV - 1;
+    static constexpr int value_bits = value_bits_act <= sizeof(uintmax_t) * CHAR_BIT ? value_bits_act : sizeof(uintmax_t) * CHAR_BIT;
     using uint_t = typename boost::uint_t<value_bits>::fast;
-    static const uint_t uint_max = (((((uint_t)1) << (value_bits - 1)) - 1) << 1) | 1;
-    static const uint_t cookie_mask = (((uint_t)1) << (ServiceCookieBitsV + 1)) - 1;
+    static constexpr uint_t uint_max = (((((uint_t)1) << (value_bits - 1)) - 1) << 1) | 1;
+    static constexpr uint_t cookie_mask = (((uint_t)1) << (ServiceCookieBitsV + 1)) - 1;
 
     using optimized_base_t = optimized_base<RefCountT>;
     using refcount_t = RefCountT;
@@ -353,9 +353,9 @@ struct optimized_holder<HolderBytesV, ServiceCookieBitsV, RefCountT, endian::lit
     }
 };
 
-template <size_t HolderBytesV, size_t ServiceCookieBitsV, typename RefCountT>
-const typename optimized_holder<HolderBytesV, ServiceCookieBitsV, RefCountT, endian::little>::uint_t
-optimized_holder<HolderBytesV, ServiceCookieBitsV, RefCountT, endian::little>::uint_max;
+//template <size_t HolderBytesV, size_t ServiceCookieBitsV, typename RefCountT>
+//const typename optimized_holder<HolderBytesV, ServiceCookieBitsV, RefCountT, endian::little>::uint_t
+//optimized_holder<HolderBytesV, ServiceCookieBitsV, RefCountT, endian::little>::uint_max;
 
 //        (((((uint_t)1) << (value_bits - 1)) - 1) << 1) | 1;
 

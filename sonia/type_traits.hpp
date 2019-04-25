@@ -249,13 +249,6 @@ enum class endian
 #endif
 };
 
-// range
-using boost::range_value;
-template <class T> using range_value_t = typename range_value<T>::type;
-
-using boost::range_iterator;
-template <class T> using range_iterator_t = typename range_iterator<T>::type;
-
 template <size_t val, size_t acc>
 constexpr size_t ceiling_v = ((val + acc - 1) / acc) * acc;
 

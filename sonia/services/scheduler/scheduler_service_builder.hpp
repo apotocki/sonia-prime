@@ -9,25 +9,12 @@
 #   pragma once
 #endif
 
-#include "sonia/services/service.hpp"
 #include "sonia/services/builder.hpp"
-#include "sonia/utility/parameters/parameters.hpp"
-#include "scheduler_service_configuration.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
-class scheduler_service_builder 
-    : public service
-    , public builder
-{
-public:
-    scheduler_service_builder();
-    shared_ptr<service> build(json_object const& parameters) override;
+DECLARE_PARTICULAR_BUILDER(scheduler_service)
 
-private:
-    sonia::parameters::parameters_description<scheduler_service_configuration> parameters_;
-};
-
-}}
+}
 
 #endif // SONIA_SERVICES_SCHEDULER_SERVICE_BUILDER_HPP

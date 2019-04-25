@@ -23,6 +23,7 @@ namespace sonia { namespace iterators {
 
 HAS_METHOD_TRAIT_DEF(empty);
 HAS_METHOD_TRAIT_DEF(flush);
+HAS_METHOD_TRAIT_DEF(close);
 HAS_METHOD_TRAIT_DEF(increment);
 HAS_METHOD_TRAIT_DEF(decrement);
 HAS_METHOD_TRAIT_DEF(next);
@@ -76,9 +77,11 @@ using boost::forward_traversal_tag;
 using boost::bidirectional_traversal_tag;
 using boost::random_access_traversal_tag;
 
+using boost::range_value;
 using boost::range_iterator;
 using boost::range_const_iterator;
 
+template <class RangeT> using range_value_t = typename range_value<RangeT>::type;
 template <class RangeT> using range_iterator_t = typename range_iterator<RangeT>::type;
 template <class RangeT> using range_const_iterator_t = typename range_const_iterator<RangeT>::type;
 template <class RangeT> using range_iterator_value_t = iterator_value_t<range_iterator_t<RangeT>>;

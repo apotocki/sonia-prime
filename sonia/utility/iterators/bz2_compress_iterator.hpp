@@ -21,13 +21,13 @@
 
 namespace sonia {
 
-template <class IteratorT>
+template <class WriteInputIteratorT>
 class bz2_compress_iterator
 	: public boost::iterator_facade<
-		  bz2_compress_iterator<IteratorT>
+		  bz2_compress_iterator<WriteInputIteratorT>
 		, void
 		, std::output_iterator_tag
-		, wrapper_iterator_proxy<ptr_proxy_wrapper<bz2_compress_iterator<IteratorT> const*, void>>
+		, wrapper_iterator_proxy<ptr_proxy_wrapper<bz2_compress_iterator<WriteInputIteratorT> const*, void>>
 	>
 {
 	friend class boost::iterator_core_access;
@@ -35,19 +35,19 @@ class bz2_compress_iterator
 
 	struct strm_data
 	{
-		IteratorT base_;
+		WriteInputIteratorT base_;
         bz_stream strm_;
 		char * out_begin = nullptr;
 		int ret_;
 
-		explicit strm_data(IteratorT, int blockSize100k, int workFactor);
+		explicit strm_data(WriteInputIteratorT, int blockSize100k, int workFactor);
 		~strm_data();
 
 		void set(array_view<const char>);
 		array_view<const char> get() const;
 
 		void deflate(int flag = BZ_RUN);
-		void flush();
+		void close();
 	};
 
 	decltype(auto) dereference() const
@@ -66,22 +66,24 @@ class bz2_compress_iterator
 	}
 
 public:
-	explicit bz2_compress_iterator(IteratorT base, int blockSize100k = 9, int workFactor = 4)
+	explicit bz2_compress_iterator(WriteInputIteratorT base, int blockSize100k = 9, int workFactor = 4)
 	{
 		data_ = make_shared<strm_data>(std::move(base), blockSize100k, workFactor);
 	}
 
-	void flush()
+	void close()
 	{
-		data_->flush();
+		data_->close();
 	}
+
+    bool empty() const { return !data_->strm_.next_out; }
 
 private:
 	shared_ptr<strm_data> data_;
 };
 
-template <class IteratorT>
-bz2_compress_iterator<IteratorT>::strm_data::strm_data(IteratorT it, int blockSize100k, int workFactor)
+template <class WriteInputIteratorT>
+bz2_compress_iterator<WriteInputIteratorT>::strm_data::strm_data(WriteInputIteratorT it, int blockSize100k, int workFactor)
 	: base_(std::move(it))
 {
     std::memset(&strm_, 0, sizeof(bz_stream));
@@ -93,28 +95,28 @@ bz2_compress_iterator<IteratorT>::strm_data::strm_data(IteratorT it, int blockSi
 	}
 }
 
-template <class IteratorT>
-bz2_compress_iterator<IteratorT>::strm_data::~strm_data()
+template <class WriteInputIteratorT>
+bz2_compress_iterator<WriteInputIteratorT>::strm_data::~strm_data()
 {
-    flush();
+    close();
     BZ2_bzCompressEnd(&strm_);
 }
 
-template <class IteratorT>
-void bz2_compress_iterator<IteratorT>::strm_data::set(array_view<const char> d)
+template <class WriteInputIteratorT>
+void bz2_compress_iterator<WriteInputIteratorT>::strm_data::set(array_view<const char> d)
 {
 	strm_.avail_in = static_cast<unsigned int>(d.size());
 	strm_.next_in = const_cast<char*>(d.empty() ? nullptr : &d.front());
 }
 
-template <class IteratorT>
-array_view<const char> bz2_compress_iterator<IteratorT>::strm_data::get() const
+template <class WriteInputIteratorT>
+array_view<const char> bz2_compress_iterator<WriteInputIteratorT>::strm_data::get() const
 {
 	return {reinterpret_cast<char*>(out_begin), static_cast<size_t>(strm_.next_out - out_begin)};
 }
 
-template <class IteratorT>
-void bz2_compress_iterator<IteratorT>::strm_data::deflate(int flag)
+template <class WriteInputIteratorT>
+void bz2_compress_iterator<WriteInputIteratorT>::strm_data::deflate(int flag)
 {
 	if (!strm_.next_out) { // first call
 		array_view<char> outrng = *base_;
@@ -139,8 +141,8 @@ void bz2_compress_iterator<IteratorT>::strm_data::deflate(int flag)
 	}
 }
 
-template <class IteratorT>
-void bz2_compress_iterator<IteratorT>::strm_data::flush()
+template <class WriteInputIteratorT>
+void bz2_compress_iterator<WriteInputIteratorT>::strm_data::close()
 {
     if (strm_.next_out) {
         deflate(BZ_FINISH);
@@ -148,8 +150,9 @@ void bz2_compress_iterator<IteratorT>::strm_data::flush()
         *base_ = array_view(outrng.begin(), reinterpret_cast<char*>(strm_.next_out));
         strm_.next_out = nullptr;
         strm_.avail_out = 0;
-        if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
-            base_.flush();
+        ++base_;
+        if constexpr (iterators::has_method_close_v<WriteInputIteratorT, void()>) {
+            base_.close();
         }
     }
 }

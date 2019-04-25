@@ -9,13 +9,14 @@
 #include <boost/throw_exception.hpp>
 #include <boost/filesystem.hpp>
 
+#include "sonia/singleton.hpp"
 #include "sonia/services.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/services/host_impl.hpp"
 #include "sonia/services/environment.hpp"
 #include "sonia/services/thread_descriptor.hpp"
+#include "sonia/services/on_close.hpp"
 
-#include "sonia/utility/on_close.hpp"
 #include "sonia/utility/type_id.hpp"
 #include "sonia/utility/type_durable_id.hpp"
 #include "sonia/utility/multimethod.hpp"
@@ -104,10 +105,15 @@ shared_ptr<service> locate(service::id id)
     return get_host_impl()->locate(id);
 }
 
-void register_service_factory(string_view nm, function<service_descriptor()> const& fm)
+void register_service_factory(string_view nm, function<shared_ptr<service>()> const& fm)
 {
     BOOST_ASSERT(env_);
     env_->register_service_factory(nm, fm);
+}
+
+singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>()> const& f)
+{
+    return env_->locate_singleton(ti, f);
 }
 
 void load_configuration(boost::filesystem::path const & fnm)

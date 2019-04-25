@@ -3,6 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
+#include "sonia/services/builder.ipp"
 #include "net_service_builder.hpp"
 #include "net_service.hpp"
 
@@ -41,13 +42,6 @@ net_service_builder::net_service_builder()
                     })
             )
     ;
-}
-
-shared_ptr<service> net_service_builder::build(json_object const& parameters)
-{
-    net_service_configuration cfg;
-    parameters_.apply(parameters, &cfg);
-    return make_shared<net_service>(cfg);
 }
 
 }

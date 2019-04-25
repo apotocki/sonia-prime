@@ -18,15 +18,88 @@
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/algorithm/copy.hpp"
 
-namespace sonia { namespace parsers {
+namespace sonia::parsers {
 
 template <typename TokenT>
-bool valid(TokenT const& t) noexcept { return t.id != 0; };
+bool valid(TokenT const& t) noexcept { return true; } /*t.id != 0; };*/
 
 template <typename IteratorT>
 bool valid(IteratorT const& b, IteratorT const& e) noexcept
 {
     return b != e && valid(*b);
+}
+
+template <typename IteratorT>
+inline bool alpha(IteratorT & b)
+{
+    char c = *b;
+    if ((c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A)) { // A-Z || a-z
+        ++b;
+        return true;
+    }
+    return false;
+}
+
+template <typename IteratorT>
+inline bool digit(IteratorT & b)
+{
+    char c = *b;
+    if (c >= 0x30 && c <= 0x39) { // 0-9
+        ++b;
+        return true;
+    }
+    return false;
+}
+
+template <typename IteratorT>
+inline bool character(IteratorT & b, char c)
+{
+    if (*b != c) return false;
+    ++b;
+    return true;
+}
+
+template <typename IteratorT>
+inline bool character_from(IteratorT & b, string_view s)
+{
+    char c = *b;
+    for (char tc : s) {
+        if (tc == c) {
+            ++b;
+            return true;
+        }
+    }
+    return false;
+}
+
+template <typename IteratorT>
+inline bool string(IteratorT & b, IteratorT const& e, string_view s)
+{
+    IteratorT it = b;
+    for (auto sit = s.begin(), seit = s.end(); sit != seit;) {
+        if (*it != *sit) return false;
+        ++it; ++sit;
+        if (!valid(it, e)) {
+            if (sit != seit) return false;
+            break;
+        }
+    }
+    b = it;
+    return true;
+}
+
+template <typename CharT>
+bool is_hexdigit(CharT c) noexcept
+{
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+template <typename IteratorT>
+inline bool hexdig(IteratorT & b)
+{
+    if (!is_hexdigit(*b)) return false;
+    ++b;
+    return true;
 }
 
 template <typename IteratorT, typename FunctorT>
@@ -45,29 +118,56 @@ bool plus(IteratorT & b, IteratorT const& e, FunctorT const& ftor)
 }
 
 template <typename CharT>
-bool is_hexdigit(CharT c) noexcept
-{
-    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
-}
-
-template <typename CharT>
-uint8_t hexdigit(CharT c) noexcept
+uint8_t get_hexdigit(CharT c) noexcept
 {
     if (c >= '0' && c <= '9') return (uint8_t)(c - '0');
-    else if (c >= 'a' && c <= 'f') return (uint8_t)((c - 'a') + 10);
-    else return (uint8_t)(c - 'A' + 10);
+    else if (c >= 'a' && c <= 'f') return (uint8_t)(c - 'a' + 10);
+    else if (c >= 'A' && c <= 'F') return (uint8_t)(c - 'A' + 10);
+    else return 0xff;
 }
 
 template <typename IteratorT, typename IntegerT>
-bool hexdigit(IteratorT & first, IteratorT const& last, int maxdigits, IntegerT& result) noexcept
+bool hexinteger(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsigned int maxdigits, IntegerT& result) noexcept
 {
-    typedef iterator_value_t<IteratorT> char_type;
+    IteratorT pos = b;
+    using char_type = iterator_value_t<IteratorT>;
     result = 0;
-    for (; first != last && maxdigits > 0; ++first, --maxdigits) {
-        const char_type c0 = *first;
-        if (!is_hexdigit(c0)) return false;
-        result = result * 16 + hexdigit(c0);
+    unsigned int dc = 0;
+    for (; b != e && dc < maxdigits; ++pos, ++dc) {
+        const char_type c0 = *pos;
+        uint8_t v = get_hexdigit(c0);
+        if (v != 0xff) {
+            result = result * 16 + v;
+        } else {
+            break;
+        }
     }
+    if (dc < mindigits) {
+        return false;
+    }
+    b = pos;
+    return true;
+}
+
+template <typename IteratorT, typename IntegerT>
+bool integer(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsigned int maxdigits, IntegerT& result) noexcept
+{
+    IteratorT pos = b;
+    using char_type = iterator_value_t<IteratorT>;
+    result = 0;
+    unsigned int dc = 0;
+    for (; b != e && dc < maxdigits; ++pos, ++dc) {
+        const char_type c = *pos;
+        if (c >= '0' && c <= '9') {
+            result = result * 10 + (uint8_t)(c - '0');
+        } else {
+            break;
+        }
+    }
+    if (dc < mindigits) {
+        return false;
+    }
+    b = pos;
     return true;
 }
 
@@ -145,6 +245,6 @@ IteratorT parse(ModelT & model, IteratorT b, IteratorT e)
     return std::move(iter->first);
 }
 
-}}
+}
 
 #endif // SONIA_PARSER_UTILITY_HPP

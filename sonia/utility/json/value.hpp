@@ -159,7 +159,16 @@ public:
 };
 
 bool operator==(json_value const&, json_value const&);
+
 bool operator<(json_value const&, json_value const&);
+
+inline bool operator!=(json_value const& l, json_value const& r) { return !(l == r); }
+
+inline bool operator>(json_value const& l, json_value const& r) { return r < l; }
+
+inline bool operator<=(json_value const& l, json_value const& r) { return !(r < l); }
+
+inline bool operator>=(json_value const& l, json_value const& r) { return !(l < r); }
 
 std::string to_string(json_value const&);
 

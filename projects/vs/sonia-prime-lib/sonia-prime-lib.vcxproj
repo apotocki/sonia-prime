@@ -32,6 +32,12 @@
     <ClInclude Include="..\..\..\sonia\logger\logger.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\sequence.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\transform_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\net\http\headers.hpp" />
+    <ClInclude Include="..\..\..\sonia\net\http\http.hpp" />
+    <ClInclude Include="..\..\..\sonia\net\http\message.hpp" />
+    <ClInclude Include="..\..\..\sonia\net\http\status_codes.hpp" />
+    <ClInclude Include="..\..\..\sonia\net\uri.hpp" />
+    <ClInclude Include="..\..\..\sonia\net\uri.ipp" />
     <ClInclude Include="..\..\..\sonia\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\reference_wrapper.hpp" />
     <ClInclude Include="..\..\..\sonia\sal.hpp" />
@@ -39,6 +45,7 @@
     <ClInclude Include="..\..\..\sonia\sal_types.hpp" />
     <ClInclude Include="..\..\..\sonia\services.hpp" />
     <ClInclude Include="..\..\..\sonia\services\builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\builder.ipp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.ipp" />
     <ClInclude Include="..\..\..\sonia\services\durable_type_registry.hpp" />
@@ -47,6 +54,8 @@
     <ClInclude Include="..\..\..\sonia\services\host_impl.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\factory.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\file.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\io_ssl.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\io_ssl_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\smart_handle_facade.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\sockets.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\socket_address.hpp" />
@@ -65,8 +74,11 @@
     <ClInclude Include="..\..\..\sonia\services\scheduler\thread_manager.ipp" />
     <ClInclude Include="..\..\..\sonia\services\service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service_locator.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\singleton.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\singleton_locator.hpp" />
     <ClInclude Include="..\..\..\sonia\services\transceiver.hpp" />
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
+    <ClInclude Include="..\..\..\sonia\singleton.hpp" />
     <ClInclude Include="..\..\..\sonia\string.hpp" />
     <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\algorithm\construct.hpp" />
@@ -83,6 +95,7 @@
     <ClInclude Include="..\..\..\sonia\utility\caches\car.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\clock.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\utility.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\equal\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\hazardous.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\command.hpp" />
@@ -108,17 +121,21 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\reference_wrapper.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\buffering_mediator_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\buffering_write_input_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\bz2_compress_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\bz2_decompress_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\deflate_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\hash_combine_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\http_chunking_write_input_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\inflate_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_reference.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\proxy.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\reference_wrapper_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_input_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\socket_write_input_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\tar_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_write_iterator.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_output_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\type_as_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
@@ -133,7 +150,6 @@
     <ClInclude Include="..\..\..\sonia\utility\number\decimal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\decimal.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\number\integer.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\on_close.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optimized\decimal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optimized\holder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optimized\integer.hpp" />
@@ -171,6 +187,9 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost_serialization_tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\command.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\http_message.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\http_request.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\http_response.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\integral.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\iostream.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\json_serialization.hpp" />
@@ -204,6 +223,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp" />
+    <ClCompile Include="..\..\..\sonia\net\http\http.cpp" />
+    <ClCompile Include="..\..\..\sonia\net\http\http_message.cpp" />
+    <ClCompile Include="..\..\..\sonia\net\uri.cpp" />
     <ClCompile Include="..\..\..\sonia\sal\linux_sal.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -229,6 +251,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\io_factory_win.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\io\io_ssl.cpp" />
     <ClCompile Include="..\..\..\sonia\services\io\socket_address.cpp" />
     <ClCompile Include="..\..\..\sonia\services\local_type_registry.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
@@ -261,6 +284,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\singleton_locator.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\file_persister.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.cpp">
@@ -377,7 +401,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -394,9 +418,9 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -417,7 +441,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -437,9 +461,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

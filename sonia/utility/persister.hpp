@@ -21,7 +21,7 @@ namespace sonia {
 class persister
 {
 public:
-    virtual ~persister() {}
+    virtual ~persister() = default;
 
     static const size_t iterator_size = 5 * sizeof(void*);
 

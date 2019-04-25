@@ -127,8 +127,8 @@ public:
 
     bool empty() const { return closed_; }
 
-    IteratorT & base() { return rng_state_t::base(); }
-    IteratorT const& base() const { return rng_state_t::base(); }
+    IteratorT & base() { return rng_state_t::base; }
+    IteratorT const& base() const { return rng_state_t::base; }
 
     bool next()
     {

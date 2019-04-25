@@ -7,7 +7,6 @@
 #include <boost/test/unit_test.hpp>
 
 #include <vector>
-#include <iostream>
 
 #include "sonia/utility/marshaling/marshaling.hpp"
 #include "sonia/utility/marshaling/string.hpp"

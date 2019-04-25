@@ -9,7 +9,6 @@
 #   pragma once
 #endif
 
-#include "sonia/reference_wrapper.hpp"
 #include "sonia/iterator_traits.hpp"
 
 namespace sonia {
@@ -18,6 +17,7 @@ template <typename IteratorT>
 class reference_wrapper_iterator
 {
 public:
+    using base_iterator = IteratorT;
     using value_type = iterator_value_t<IteratorT>;
     using pointer = iterator_pointer_t<IteratorT>;
     using reference = iterator_reference_t<IteratorT>;
@@ -30,29 +30,33 @@ public:
         std::input_iterator_tag
     >;
 
-    explicit reference_wrapper_iterator(IteratorT & it) : base_(it) {}
+    reference_wrapper_iterator() : base_(nullptr) {}
+    explicit reference_wrapper_iterator(IteratorT & it) : base_(std::addressof(it)) {}
 
-    IteratorT & base() { return base_.get(); }
-    IteratorT const& base() const { return base_.get(); }
+    IteratorT & base() { return *base_; }
+    IteratorT const& base() const { return *base_; }
 
     bool operator== (reference_wrapper_iterator const& rhs) const { return base() == rhs.base(); }
     bool operator!= (reference_wrapper_iterator const& rhs) const { return base() != rhs.base(); }
-    auto operator*() const { return *base_.get(); }
+    auto operator*() const { return **base_; }
 
-    reference_wrapper_iterator & operator++() { return ++base(); }
+    reference_wrapper_iterator & operator++() { ++base(); return *this; }
     reference_wrapper_iterator operator++(int) = delete;
 
     reference_wrapper_iterator & operator--() { return --base(); }
     reference_wrapper_iterator operator--(int) = delete;
 
-    template <typename T = IteratorT>
-    enable_if_t<iterators::has_method_empty_v<T, bool()>, bool> empty() const { return base().empty(); }
+    bool empty() const
+    {
+        if (!base_) return true;
+        return sonia::empty(*base_);
+    }
 
     template <typename T = IteratorT>
-    enable_if_t<iterators::has_method_flush_v<T, void()>> flush() { base().flush(); }
+    enable_if_t<iterators::has_method_flush_v<T, void()>> flush() { base_->flush(); }
 
 private:
-    reference_wrapper<IteratorT> base_;
+    IteratorT * base_;
 };
 
 }

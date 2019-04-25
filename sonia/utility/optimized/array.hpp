@@ -59,13 +59,13 @@ struct optimized_array_impl
     using optimized_collection_base_t = optimized_array_base<ElementT, typename HolderT::refcount_t>;
     using optimized_collection_t = adjacent_buffer<ElementT, optimized_collection_base_t>;
 
-    static const size_t alv = alignment_of_v<ElementT>;
-    static const size_t aligned_offs = ceiling_v<HolderT::begin_offs, alv>;
-    static const size_t gmaxsz = (sizeof(HolderT) - aligned_offs) / sizeof(ElementT); // guessed
-    static const size_t szbitscnt = gmaxsz ? boost::static_log2<gmaxsz ? gmaxsz : 1>::value + 1 : 1;
-    static const size_t sz_mask = (1 << szbitscnt) - 1;
-    static const size_t aligned_byte_offs = ceiling_v<(HolderT::used_bits + szbitscnt + CHAR_BIT - 1) / CHAR_BIT, alv>;
-    static const size_t maxsz = (sizeof(HolderT) - aligned_byte_offs) / sizeof(ElementT);
+    static constexpr size_t alv = alignment_of_v<ElementT>;
+    static constexpr size_t aligned_offs = ceiling_v<HolderT::begin_offs, alv>;
+    static constexpr size_t gmaxsz = (sizeof(HolderT) - aligned_offs) / sizeof(ElementT); // guessed
+    static constexpr size_t szbitscnt = gmaxsz ? boost::static_log2<gmaxsz ? gmaxsz : 1>::value + 1 : 1;
+    static constexpr size_t sz_mask = (1 << szbitscnt) - 1;
+    static constexpr size_t aligned_byte_offs = ceiling_v<(HolderT::used_bits + szbitscnt + CHAR_BIT - 1) / CHAR_BIT, alv>;
+    static constexpr size_t maxsz = (sizeof(HolderT) - aligned_byte_offs) / sizeof(ElementT);
 
     static ElementT const* local_begin(HolderT const* h) noexcept { return (ElementT const*)(h->data() + aligned_byte_offs); }
     static ElementT * local_begin(HolderT * h) noexcept { return (ElementT*)(h->data() + aligned_byte_offs); }

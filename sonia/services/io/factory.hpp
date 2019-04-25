@@ -20,6 +20,7 @@
 #include "udp_socket.hpp"
 #include "file.hpp"
 #include "sockets.hpp"
+#include "io_ssl.hpp"
 
 namespace sonia::io {
 
@@ -37,7 +38,7 @@ public:
     factory();
     virtual ~factory() override;
 
-    void open(uint32_t thr_cnt);
+    void open(uint32_t thr_cnt, optional<ssl_configuration> const& optssl);
     void close() noexcept;
     virtual std::string name() const;
 
@@ -62,7 +63,7 @@ public:
     public:
         virtual ~impl_base() = default;
 
-        explicit impl_base(shared_ptr<factory> wr) : wrapper(std::move(wr)) {}
+        explicit impl_base(shared_ptr<factory> wr);
         
         impl_base(impl_base const&) = delete;
         impl_base& operator=(impl_base const&) = delete;
@@ -78,6 +79,7 @@ public:
         virtual tcp_socket do_create_tcp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type dt) = 0;
         virtual udp_socket do_create_udp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type dt) = 0;
 
+        shared_ptr<io_ssl> ssl;
         shared_ptr<factory> wrapper;
         std::atomic<long> qsz{0};
     };

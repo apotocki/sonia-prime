@@ -46,7 +46,7 @@ class concrete_multimethod : public multimethod
 
 public:
     template <typename ArgT>
-    concrete_multimethod(ArgT && arg) : func_(std::forward<ArgT>(arg)) {}
+    concrete_multimethod(in_place_t, ArgT && arg) : func_(std::forward<ArgT>(arg)) {}
     concrete_multimethod(concrete_multimethod const&) = default;
     concrete_multimethod(concrete_multimethod &&) = default;
 
@@ -85,7 +85,7 @@ void register_multimethod(function<SigT> const& f)
 {
     using sig_t = multimethod_detail::multimethod_sig<MethodIDT, SigT>;
     std::array<std::type_index, 1 + sizeof ...(TS)> tis{sig_t::ti(), typeid(TS) ...};
-    sonia::services::register_multimethod(concrete_multimethod<SigT>(f), to_array_view(tis));
+    sonia::services::register_multimethod(concrete_multimethod<SigT>(in_place, f), to_array_view(tis));
 }
 
 template <typename MethodIDT, typename SigT, size_t ... I, class ArrT>
@@ -93,7 +93,7 @@ void register_multimethod(function<SigT> const& f, std::index_sequence<I ...>, A
 {
     using sig_t = multimethod_detail::multimethod_sig<MethodIDT, SigT>;
     std::array<std::type_index, 1 + sizeof ...(I)> tis{sig_t::ti(), arr[I] ...};
-    sonia::services::register_multimethod(concrete_multimethod<SigT>(f), to_array_view(tis));
+    sonia::services::register_multimethod(concrete_multimethod<SigT>(in_place, f), to_array_view(tis));
 }
 
 template <typename MethodIDT, typename SigT, size_t N>

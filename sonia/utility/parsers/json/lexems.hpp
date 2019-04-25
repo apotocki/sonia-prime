@@ -9,7 +9,7 @@
 #   pragma once
 #endif
 
-namespace sonia { namespace parsers { namespace json {
+namespace sonia::parsers::json {
 
 enum lexem {
     ID_SPACE = 1,
@@ -31,6 +31,6 @@ enum lexem {
     ID_ANY              // any character
 };
 
-}}}
+}
 
 #endif // SONIA_UTILITY_JSON_LEXEMS_HPP

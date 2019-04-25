@@ -15,7 +15,13 @@
 #include "service.hpp"
 #include "builder.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
+
+struct bundle_configuration
+{
+    std::string lib;
+    int layer;
+};
 
 class bundle 
     : public service
@@ -23,7 +29,7 @@ class bundle
 {
 public:
     bundle();
-    ~bundle() override {}
+    ~bundle() override = default;
 
     void open() override;
 
@@ -32,7 +38,7 @@ public:
 
     void set_handle(void * h) { libhandle_ = h; }
 
-    shared_ptr<service> build(json_object const&) override;
+    shared_ptr<service> build(service_configuration const&) override;
 
 protected:
     template <typename ServiceT>
@@ -43,6 +49,6 @@ private:
     boost::unordered_map<std::string, function<shared_ptr<service>(json_object const&)>, hasher> builders_;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_BUNDLE_HPP

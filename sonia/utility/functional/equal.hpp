@@ -18,7 +18,8 @@ namespace sonia {
 template <typename LT, typename RT, typename Enabler = void>
 struct equal
 {
-    bool operator()(call_param_t<LT> l, call_param_t<RT> r) const { return l == r; }
+    template <typename LArgT, typename RArgT>
+    bool operator()(LArgT && l, RArgT && r) const { return std::equal_to()(l, r); } // { return l == r; }
 };
 
 template <typename T>
@@ -49,6 +50,16 @@ inline bool equal_f(LT && l, RT && r)
     return equal<remove_cvref_t<LT>, remove_cvref_t<RT>>()
         (std::forward<LT>(l), std::forward<RT>(r));
 }
+
+struct equal_to
+{
+    template <typename LT, typename RT>
+    bool operator()(LT && l, RT && r) const
+    {
+        return equal<remove_cvref_t<LT>, remove_cvref_t<RT>>()
+            (std::forward<LT>(l), std::forward<RT>(r));
+    }
+};
 
 }
 

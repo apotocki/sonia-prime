@@ -10,7 +10,8 @@
 #endif
 
 #include <utility>
-
+#include <boost/range/begin.hpp>
+#include <boost/range/end.hpp>
 #include "sonia/iterator_traits.hpp"
 
 namespace sonia {
@@ -35,6 +36,35 @@ auto copy_not_more(
         }
         return std::tuple(std::move(b), std::move(oit));
     }
+}
+
+template <typename ForwardInputIteratorT, typename ForwardOutputIteratorT>
+auto copy(ForwardInputIteratorT ib, ForwardInputIteratorT ie, ForwardOutputIteratorT ob, ForwardOutputIteratorT oe)
+{
+    for (; ib != ie && ob != oe; ++ib, ++ob) {
+        *ob = *ib;
+    }
+    return std::pair{ib, ob};
+}
+
+template <typename SrcRangeT, typename RangeWriteInputIteratorT>
+RangeWriteInputIteratorT copy_range(SrcRangeT rng, RangeWriteInputIteratorT it)
+{
+    auto iit0 = boost::begin(rng);
+    for (;;) {
+        iterator_value_t<RangeWriteInputIteratorT> orng = *it;
+        auto[iit, oit] = copy(iit0, boost::end(rng), boost::begin(orng), boost::end(orng));
+        if (iit == boost::end(rng)) {
+            if (oit != boost::end(orng)) {
+                *it = iterator_value_t<RangeWriteInputIteratorT>{boost::begin(orng), oit};
+            }
+            ++it;
+            return std::move(it);
+        }
+        ++it;
+        iit0 = iit;
+    }
+    return std::move(it);
 }
 
 }

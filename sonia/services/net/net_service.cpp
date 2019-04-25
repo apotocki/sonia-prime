@@ -149,35 +149,40 @@ net_service::net_service(net_service_configuration const& cfg)
 void net_service::open()
 {
     listeners_.reserve(cfg_.listeners.size());
-    for (net::listener_configuration const& lc : cfg_.listeners)
-    {
-        if (net::listener_type::TCP == lc.type || net::listener_type::SSL == lc.type) {
-            if (!tcp_socket_factory_) {
-                locate(cfg_.tcp_socket_factory, tcp_socket_factory_);
-            }
-            shared_ptr<tcp_acceptor_listener> ls = make_shared<tcp_acceptor_listener>();
-            locate(lc.connector, ls->cn);
-            ls->workers_max = lc.workers_count;
-            ls->buffer_size = lc.buffer_size;
-            ls->sock = tcp_socket_factory_->create_bound_tcp_socket(lc.address, lc.port, lc.family);
-            scheduler_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), ls, scheduler_));
-            
-            listeners_.push_back(std::move(ls));
-        } else if (net::listener_type::UDP == lc.type) {
-            if (!udp_socket_factory_) {
-                locate(cfg_.udp_socket_factory, udp_socket_factory_);
-            }
+    try {
+        for (net::listener_configuration const& lc : cfg_.listeners)
+        {
+            if (net::listener_type::TCP == lc.type || net::listener_type::SSL == lc.type) {
+                if (!tcp_socket_factory_) {
+                    locate(cfg_.tcp_socket_factory, tcp_socket_factory_);
+                }
+                shared_ptr<tcp_acceptor_listener> ls = make_shared<tcp_acceptor_listener>();
+                locate(lc.connector, ls->cn);
+                ls->workers_max = lc.workers_count;
+                ls->buffer_size = lc.buffer_size;
+                ls->sock = tcp_socket_factory_->create_bound_tcp_socket(lc.address, lc.port, lc.family);
+                scheduler_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), ls, scheduler_));
+                
+                listeners_.push_back(std::move(ls));
+            } else if (net::listener_type::UDP == lc.type) {
+                if (!udp_socket_factory_) {
+                    locate(cfg_.udp_socket_factory, udp_socket_factory_);
+                }
 
-            shared_ptr<udp_socket_listener> ls = make_shared<udp_socket_listener>();
-            locate(lc.connector, ls->cn);
-            ls->workers_max = lc.workers_count;
-            ls->buffer_size = lc.buffer_size;
-            ls->sock = udp_socket_factory_->create_udp_socket(lc.family);
-            ls->sock.bind(lc.address, lc.port);
-            scheduler_->post(scheduler_task_t(in_place_type_t<listener_task>(), ls, scheduler_));
-            
-            listeners_.push_back(std::move(ls));
+                shared_ptr<udp_socket_listener> ls = make_shared<udp_socket_listener>();
+                locate(lc.connector, ls->cn);
+                ls->workers_max = lc.workers_count;
+                ls->buffer_size = lc.buffer_size;
+                ls->sock = udp_socket_factory_->create_udp_socket(lc.family);
+                ls->sock.bind(lc.address, lc.port);
+                scheduler_->post(scheduler_task_t(in_place_type_t<listener_task>(), ls, scheduler_));
+                
+                listeners_.push_back(std::move(ls));
+            }
         }
+    } catch (...) {
+        close();
+        throw;
     }
 }
 

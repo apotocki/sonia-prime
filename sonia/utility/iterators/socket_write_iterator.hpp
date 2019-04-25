@@ -22,7 +22,7 @@ template <class SocketT>
 class socket_write_iterator
 	: public boost::iterator_facade<
           socket_write_iterator<SocketT>
-		, void
+		, array_view<const char>
 		, std::output_iterator_tag
 		, wrapper_iterator_proxy<ptr_proxy_wrapper<socket_write_iterator<SocketT> const*, void>>
 	>

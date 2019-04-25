@@ -19,11 +19,10 @@
 #include "sonia/utility/concurrency/rw_fiber_mutex.hpp"
 #include "sonia/utility/functional/hash/vector.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
-//#include "sonia/utility/object_pool.hpp"
 
 #include "sonia/utility/multimethod.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 class multimethod_registry
 {
@@ -52,18 +51,8 @@ public:
 private:
     mutable sonia::fibers::rw_mutex mm_item_mtx_;
     mm_set_t mm_set_;
-
-    //struct mm_item_id_equal {
-    //    bool operator()(type_info const& id0, type_info const& id1) const { return id0 == id1; }
-    //    //bool operator()(mm_item const& item0, mm_item const& item1) const { return item0.id == item1.id; }
-    //    //bool operator()(mm_item const& item, type_info const& id) const { return item.id == id; }
-    //    //bool operator()(type_info const& id, mm_item const& item) const { return item.id == id; }
-    //};
-
-    //object_pool<mm_item> mm_item_pool_;
-    //boost::unordered_map < ti_array_t, mmholder_t, range_hasher > mm_;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_MULTIMETHOD_REGISTRY_HPP

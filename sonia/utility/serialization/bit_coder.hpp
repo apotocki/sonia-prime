@@ -15,7 +15,7 @@
 #include "sonia/sal.hpp"
 #include "serialization.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <uint8_t BitWidthV = CHAR_BIT>
 class bit_coder
@@ -241,6 +241,6 @@ public:
 
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_BIT_CODER_HPP

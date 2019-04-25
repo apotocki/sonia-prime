@@ -18,21 +18,21 @@ template <class T>
 class polymorphic_factory
 {
 public:
-    virtual ~polymorphic_factory() {}
+    virtual ~polymorphic_factory() = default;
     virtual T* create(void* address, size_t sz) const = 0;
 };
 
 class polymorphic_clonable
 {
 public:
-    virtual ~polymorphic_clonable() {}
+    virtual ~polymorphic_clonable() = default;
     virtual polymorphic_clonable* clone(void* address, size_t sz) const { throw not_supported_operation_error("copy"); }
 };
 
 class polymorphic_movable
 {
 public:
-    virtual ~polymorphic_movable() {}
+    virtual ~polymorphic_movable() = default;
     virtual polymorphic_movable* move(void* address, size_t sz) { throw not_supported_operation_error("move"); }
 };
 

@@ -10,10 +10,11 @@
 #endif
 
 #include <boost/iterator/iterator_facade.hpp>
-
+#include "sonia/exceptions.hpp"
 #include "tcp_socket.hpp"
+#include "sockets.hpp"
 
-namespace sonia { namespace io {
+namespace sonia::io {
 
 class tcp_write_output_iterator
     : public boost::iterator_facade<
@@ -24,17 +25,21 @@ class tcp_write_output_iterator
 {
     friend class boost::iterator_core_access;
 
-    bool equal(tcp_write_output_iterator const& rhs) const {
+    bool equal(tcp_write_output_iterator const& rhs) const
+    {
         return false;
     }
 
-    array_view<const char>& dereference() const {
+    array_view<const char>& dereference() const
+    {
         return buff_;
     }
 
-    void increment() {
+    void increment()
+    {
         while (buff_.size()) {
             size_t sz = psoc_->write_some(buff_);
+            if (!sz) throw eof_exception();
             buff_ = array_view<const char>(buff_.begin() + sz, buff_.size() - sz);
         }
     }
@@ -54,6 +59,6 @@ private:
     mutable array_view<const char> buff_;
 };
 
-}}
+}
 
 #endif // SONIA_IO_TCP_WRITE_OUTPUT_ITERATOR_HPP

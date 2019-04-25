@@ -36,29 +36,25 @@ class range_dereferencing_iterator_state
         std::tuple<subrange_iterator, subrange_iterator>
     >;
     mutable optional<state_t> state_;
-    IteratorT base_;
 
 public:
     range_dereferencing_iterator_state() {}
 
     explicit range_dereferencing_iterator_state(IteratorT it)
-        : base_(std::move(it))
+        : base{std::move(it)}
     {}
-
-    IteratorT & base() { return base_; }
-    IteratorT const& base() const { return base_; }
 
     bool empty() const
     {
         if (BOOST_LIKELY(!!state_)) return false;
-        if (sonia::empty(base_)) return true;
+        if (sonia::empty(base)) return true;
         init_state();
         return false;
     }
 
     void increment()
     {
-        ++base_;
+        ++base;
         state_.reset();
     }
 
@@ -73,9 +69,9 @@ public:
 
     void decrement()
     {
-        --base_;
+        --base;
         state_.reset();
-        iterator_dereferenced_range_t<IteratorT> rng = *base_;
+        iterator_dereferenced_range_t<IteratorT> rng = *base;
         state_.emplace(boost::end(rng), boost::end(rng), boost::begin(rng));
     }
 
@@ -97,26 +93,25 @@ public:
 
     void flush()
     {
-        iterator_dereferenced_range_t<IteratorT> rng = *base_;
-        *base_ = array_view(boost::begin(rng), std::get<0>(get()));
-        if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
-            base_.flush();
-        }
+        iterator_dereferenced_range_t<IteratorT> rng = *base;
+        *base = array_view(boost::begin(rng), std::get<0>(get()));
+        ++base;
         state_.reset();
     }
 
     void flush_position()
     {
-        *base_ = std::get<0>(get());
-        if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
-            base_.flush();
-        }
+        *base = std::get<0>(get());
+        ++base;
+        state_.reset();
     }
+
+    IteratorT base;
 
 private:
     void init_state() const
     {
-        iterator_dereferenced_range_t<IteratorT> rng = *base_;
+        iterator_dereferenced_range_t<IteratorT> rng = *base;
         if constexpr (is_bidirectional_v) {
             state_.emplace(boost::begin(rng), boost::end(rng), boost::begin(rng));
         } else {
@@ -137,7 +132,7 @@ class range_dereferencing_iterator
         iterator_dereferenced_range_iterator_value_t<IteratorT>,
         CategoryOrTraversal,
         iterator_dereferenced_range_iterator_reference_t<IteratorT>>
-    , range_dereferencing_iterator_state<IteratorT>
+    , public range_dereferencing_iterator_state<IteratorT>
 {
     friend class boost::iterator_core_access;
 
@@ -173,7 +168,7 @@ public:
     range_dereferencing_iterator() {}
 
     explicit range_dereferencing_iterator(IteratorT it)
-        : state_t(std::move(it))
+        : state_t{std::move(it)}
     {}
 
     bool empty() const { return state_t::empty(); }
@@ -187,9 +182,6 @@ public:
     {
         state_t::flush_position();
     }
-
-    IteratorT & base() { return state_t::base(); }
-    IteratorT const& base() const { return state_t::base(); }
 };
 
 }

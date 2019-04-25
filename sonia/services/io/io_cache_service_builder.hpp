@@ -9,24 +9,11 @@
 #   pragma once
 #endif
 
-#include "sonia/services/service.hpp"
 #include "sonia/services/builder.hpp"
-#include "sonia/utility/parameters/parameters.hpp"
-#include "io_cache_service_configuration.hpp"
 
 namespace sonia::services {
 
-class io_cache_service_builder 
-    : public service
-    , public builder
-{
-public:
-    io_cache_service_builder();
-    shared_ptr<service> build(json_object const& parameters) override;
-
-private:
-    sonia::parameters::parameters_description<io_cache_service_configuration> parameters_;
-};
+DECLARE_PARTICULAR_BUILDER(io_cache_service)
 
 }
 

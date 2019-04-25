@@ -157,7 +157,7 @@ public:
             if (!rhs) {
                 do_reset();
             } else try {
-                move(*rhs.get_pointer());
+                move(std::move(*rhs.get_pointer()));
                 rhs.reset();
             } catch (...) {
                 do_reset();
@@ -170,7 +170,7 @@ public:
     template <typename T, class ... ArgsT>
     void emplace(ArgsT&& ... args)
     {
-        if (!*this) {
+        if (*this) {
             std::destroy_at(get_pointer());
         }
         try {

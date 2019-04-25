@@ -60,7 +60,7 @@ void unexpected_impl()
 int main(int argc, char const* argv[])
 {
     SetConsoleCtrlHandler(TermhandlerRoutine, TRUE);
-
+    
     std::set_terminate(terminate_impl);
 
     try {
@@ -89,7 +89,5 @@ int main(int argc, char const* argv[])
         return 1;
     }
 
-    //std::string v;
-    //std::cin >> v;
     return 0;
 }

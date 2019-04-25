@@ -82,6 +82,15 @@
     <Filter Include="sonia.mpl">
       <UniqueIdentifier>{8bdf32b6-4a9f-4d16-9519-9a4f4f88f413}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.net">
+      <UniqueIdentifier>{11de3c4c-184b-42dd-a6ab-d8aa9780ba2c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.net\http">
+      <UniqueIdentifier>{9c3dd187-4374-4941-bce9-6ea0b1930853}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility\functional\equal">
+      <UniqueIdentifier>{a3fb7c16-8026-4743-b082-ac5229b4406f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -265,9 +274,6 @@
       <Filter>sonia.utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\type_id.hpp">
-      <Filter>sonia.utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\on_close.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\type_durable_id.hpp">
@@ -573,9 +579,6 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_write_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_iterator.hpp">
-      <Filter>sonia.utility\iterators</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\serialization\optimized_array.hpp">
       <Filter>sonia.utility\serialization</Filter>
     </ClInclude>
@@ -629,6 +632,69 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\caches\utility.hpp">
       <Filter>sonia.utility\caches</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\singleton_locator.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\singleton.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\singleton.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\builder.ipp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\io_ssl.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\io_ssl_configuration.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\uri.hpp">
+      <Filter>sonia.net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\uri.ipp">
+      <Filter>sonia.net</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\http_request.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\http\headers.hpp">
+      <Filter>sonia.net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\http\http.hpp">
+      <Filter>sonia.net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\http\message.hpp">
+      <Filter>sonia.net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\http\status_codes.hpp">
+      <Filter>sonia.net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\functional\equal\variant.hpp">
+      <Filter>sonia.utility\functional\equal</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\http_message.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_output_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_input_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\http_response.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\socket_write_input_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\http_chunking_write_input_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\buffering_write_input_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -727,6 +793,21 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sal\sal.cpp">
       <Filter>sonia.sal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\singleton_locator.cpp">
+      <Filter>sonia.services</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_ssl.cpp">
+      <Filter>sonia.services.io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\net\uri.cpp">
+      <Filter>sonia.net</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\net\http\http.cpp">
+      <Filter>sonia.net\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\net\http\http_message.cpp">
+      <Filter>sonia.net\http</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

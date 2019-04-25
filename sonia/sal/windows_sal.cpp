@@ -10,7 +10,7 @@
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/exceptions/internal_errors.hpp"
 
-namespace sonia { namespace sal {
+namespace sonia::sal {
 
 namespace winapi = sonia::windows;
 
@@ -26,12 +26,12 @@ void set_thread_name(sonia::thread::id tid, std::string const& name)
 
 typedef sonia::services::bundle*(get_bundle_fn)();
 
-shared_ptr<sonia::services::bundle> load_bundle(string_view name)
+shared_ptr<sonia::services::bundle> load_bundle(sonia::services::bundle_configuration const& cfg)
 {
 #if !defined(__MINGW32__) && !defined(__MINGW64__)
-    std::string libname = to_string(name) + ".dll";
+    std::string libname = to_string(cfg.lib) + ".dll";
 #else
-    std::string libname = "lib" + to_string(name) + ".dll";
+    std::string libname = "lib" + to_string(cfg.lib) + ".dll";
 #endif
     HMODULE lib_handle = LoadLibraryA(libname.c_str());
     if (!lib_handle) {
@@ -46,6 +46,7 @@ shared_ptr<sonia::services::bundle> load_bundle(string_view name)
         THROW_INTERNAL_ERROR("Cannot load symbol 'get_bundle' in %1% module\n%2%"_fmt % libname % winapi::error_message(err));
     }
     shared_ptr<sonia::services::bundle> result = shared_ptr<sonia::services::bundle>(fn_handle());
+    service_access::set_layer(*result, cfg.layer);
     result->set_handle(lib_handle);
     lib_handle = NULL; // unpin
     return std::move(result);
@@ -172,4 +173,4 @@ boost::coroutines2::coroutine<addrinfo const*&>::pull_type parse_net_address(net
     });
 }
 
-}}
+}

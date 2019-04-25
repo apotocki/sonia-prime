@@ -47,7 +47,7 @@ class deflate_iterator
 		array_view<const char> get() const;
 
 		void deflate(int flag = Z_SYNC_FLUSH);
-		void flush();
+		void close();
 	};
 
 	decltype(auto) dereference() const
@@ -71,10 +71,12 @@ public:
 		data_ = make_shared<strm_data>(std::move(base), gzip);
 	}
 
-	void flush()
+	void close()
 	{
-		data_->flush();
+		data_->close();
 	}
+
+    bool empty() const { return !data_->strm_.next_out; }
 
 private:
 	shared_ptr<strm_data> data_;
@@ -82,7 +84,7 @@ private:
 
 template <class IteratorT>
 deflate_iterator<IteratorT>::strm_data::strm_data(IteratorT it, bool gzip)
-	: base_(std::move(it))
+    : base_{std::move(it)}
 {
 	strm_.zalloc = Z_NULL;
 	strm_.zfree = Z_NULL;
@@ -100,7 +102,7 @@ deflate_iterator<IteratorT>::strm_data::strm_data(IteratorT it, bool gzip)
 template <class IteratorT>
 deflate_iterator<IteratorT>::strm_data::~strm_data()
 {
-    flush();
+    close();
 	deflateEnd(&strm_);
 }
 
@@ -144,7 +146,7 @@ void deflate_iterator<IteratorT>::strm_data::deflate(int flag)
 }
 
 template <class IteratorT>
-void deflate_iterator<IteratorT>::strm_data::flush()
+void deflate_iterator<IteratorT>::strm_data::close()
 {
     if (strm_.next_out) {
         deflate(Z_FINISH);
@@ -152,8 +154,9 @@ void deflate_iterator<IteratorT>::strm_data::flush()
         *base_ = array_view(outrng.begin(), reinterpret_cast<char*>(strm_.next_out));
         strm_.next_out = nullptr;
         strm_.avail_out = 0;
-        if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
-            base_.flush();
+        ++base_;
+        if constexpr (iterators::has_method_close_v<IteratorT, void()>) {
+            base_.close();
         }
     }
 }

@@ -3,6 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
+#include "sonia/services/builder.ipp"
 #include "io_cache_service_builder.hpp"
 #include "io_cache_service.hpp"
 
@@ -17,13 +18,6 @@ io_cache_service_builder::io_cache_service_builder()
         .variable("max-connection-count", &io_cache_service_configuration::connection_count, "max connection count").default_value(16)
         .variable("per-route-max-connection-count", &io_cache_service_configuration::per_route_connection_count, "max connection count per unique route").default_value(4)
     ;
-}
-
-shared_ptr<service> io_cache_service_builder::build(json_object const& parameters)
-{
-    io_cache_service_configuration cfg;
-    parameters_.apply(parameters, &cfg);
-    return make_shared<io_cache_service>(cfg);
 }
 
 }

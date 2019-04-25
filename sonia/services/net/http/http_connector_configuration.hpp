@@ -12,13 +12,16 @@
 #include <string>
 #include <vector>
 #include <boost/regex.hpp>
+#include "sonia/shared_ptr.hpp"
+#include "http_application.hpp"
 
 namespace sonia::services {
 
 struct http_route
 {
-    std::string application;
+    std::string application_name;
     boost::regex pathre{""};
+    mutable shared_ptr<http_application> application;
 };
 
 struct http_connector_configuration
@@ -27,8 +30,10 @@ struct http_connector_configuration
     size_t not_keep_alive_max_count;
     // keep_alive_timeout;
     std::string dos_message;
-    std::string page_not_found_message;
     std::vector<http_route> routes;
+    std::string page404_message;
+    optional<std::string> page404_application_name;
+    mutable shared_ptr<http_application> page404_application;
 };
 
 }

@@ -13,29 +13,32 @@
 
 #include "lexems.hpp"
 
-namespace sonia { namespace parsers { namespace json {
+namespace sonia::parsers::json {
 
 template <typename DerivedT, typename IteratorT>
 class lexertl_lexer_base : public lexer_base<DerivedT, IteratorT>
 {
 protected:
-    typedef lexertl_lexer_base lexertl_lexer_base_t;
+    using lexertl_lexer_base_t = lexertl_lexer_base;
 
 public:
     template <typename RulesT>
-    static void build_string_rules(RulesT & rules) {
+    static void build_string_rules(RulesT & rules)
+    {
         rules.push("\\x22([\\x20\\x21\\x23-\\x5b\\x5d-\\xff]|\\x5c[bfnrt\\x22\\x27\\x5c\\x2f]|\\x5cu(\\d|[a-f]|[A-F]){4})*\\x22", ID_STRING);
         rules.push("\\x27([\\x20-\\x26\\x28-\\x5b\\x5d-\\xff]|\\x5c[bfnrt\\x22\\x27\\x5c\\x2f]|\\x5cu(\\d|[a-f]|[A-F]){4})*\\x27", ID_STRING);
     }
 
     template <typename RulesT>
-    static void build_numeric_rules(RulesT & rules) {
+    static void build_numeric_rules(RulesT & rules)
+    {
         rules.push("-?(0|[1-9]\\d*)(([.]\\d+([eE][-+]?\\d+)?)|([eE][-+]?\\d+))", ID_DOUBLE);
         rules.push("-?(0|[1-9]\\d*)", ID_INTEGER);
     }
 
     template <typename RulesT>
-    static void build_rules(RulesT & rules) {
+    static void build_rules(RulesT & rules)
+    {
         rules.push("\\s+", ID_SPACE);
         rules.push("\\/\\/[^\r\n]*", ID_LINE_COMMENT);
         rules.push("\\/\\*([^*]|\\*+[^/*])*\\*+\\/", ID_COMMENT);
@@ -64,12 +67,13 @@ class light_lexertl_lexer : public lexertl_lexer_base<light_lexertl_lexer<Iterat
 {
 public:
     template <typename RulesT>
-    static void build_string_rules(RulesT & rules) {
+    static void build_string_rules(RulesT & rules)
+    {
         light_lexertl_lexer::lexertl_lexer_base_t::build_string_rules(rules);
         rules.push("[A-Z_a-z\\x23-\\x25\\x2e\\x7f-\\xff]([0-9A-Z_a-z\\x23-\\x25\\x2d\\x2e\\x7f-\\xff]|\\x5c[bfnrt\\x22\\x27\\x3b\\x5c\\x2f]|\\x5cu(\\d|[a-f]|[A-F]){4})*", ID_NAME);
     }
 };
 
-}}}
+}
 
 #endif // SONIA_UTILITY_JSON_LEXER_HPP

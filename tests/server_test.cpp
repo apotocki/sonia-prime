@@ -55,14 +55,10 @@ std::string get_configuration()
     return std::move(is.str());
 }
 
-}
-
-#include "applied/scoped_services.hpp"
-
 class my_service
 {
 public:
-    virtual ~my_service() {}
+    virtual ~my_service() = default;
     virtual std::string do_job() = 0;
 };
 
@@ -74,6 +70,10 @@ public:
     std::string do_job() override { return "job0"; }
 };
 
+}
+
+#include "applied/scoped_services.hpp"
+
 BOOST_AUTO_TEST_CASE (server_test)
 {
     fs::remove_all(TEST_FOLDER);
@@ -81,15 +81,15 @@ BOOST_AUTO_TEST_CASE (server_test)
     try {
         scoped_services ss;
 
-        services::register_service_factory("asd", []() -> service_descriptor {
-            return {make_shared<test_service0>(), 0};
+        services::register_service_factory("asd", []() -> shared_ptr<service> {
+            return make_shared<test_service0>();
         });
 
         auto p = services::locate<my_service>("asd");
         BOOST_CHECK_EQUAL("job0", p->do_job());
 
         try {
-            services::register_service_factory("asd", []() -> service_descriptor { throw 1; });
+            services::register_service_factory("asd", []() -> shared_ptr<service> { throw 1; });
             BOOST_CHECK(false);
         } catch (internal_error const&) {}
 

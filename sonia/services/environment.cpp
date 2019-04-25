@@ -20,7 +20,7 @@
 #include "sonia/logger/logger.hpp"
 #include "sonia/services.hpp"
 #include "sonia/sal.hpp"
-#include "sonia/services/builder.hpp"
+
 #include "sonia/services/thread_descriptor.hpp"
 
 #include "sonia/utility/parsers/json/model.hpp"
@@ -35,7 +35,7 @@
 #include "sonia/utility/posix/signals.hpp"
 #endif
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 namespace po = boost::program_options;
 namespace fs = boost::filesystem;
@@ -88,7 +88,7 @@ environment::environment() : log_initialized_(false)
 #endif
 }
 
-environment::~environment()
+environment::~environment() noexcept
 {
 #if 0
     std::vector<fiber> fibers;
@@ -103,6 +103,7 @@ environment::~environment()
     for (auto const& h : hosts_) {
         h->close();
     }
+    slocator_.shutdown();
 #endif
     hosts_.clear();
     if (log_initialized_) {
@@ -181,7 +182,7 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
     //server_configuration.verbose() = vm["verbose"].as<bool>();
     //server_configuration.logger_conf_file_name() = vm["log"].as<std::string>();
     //server_configuration.handling_system_failure() = vm["handling-system-failure"].as<bool>();
- }
+}
 
 void environment::load_configuration(boost::filesystem::path const & fpath)
 {
@@ -249,9 +250,9 @@ void environment::load_configuration(std::istream & cfg)
                 (*hit)->run(hcfg.services);
                 bootstrap_promises[hidx].set_value();
             } catch(std::exception const& e) {
-                bootstrap_promises[hidx].set_exception(std::runtime_error(to_string("Error occurred during initialization of '%1%' host\n%2%"_fmt % hcfg.name % e.what())));
+                bootstrap_promises[hidx].set_exception(std::runtime_error(to_string("Error occurred during '%1%' host initialization\n%2%"_fmt % (hcfg.name.empty() ? "default" : hcfg.name.c_str()) % e.what())));
             } catch (...) {
-                bootstrap_promises[hidx].set_exception(std::runtime_error(to_string("Error occurred during initialization of '%1%' host\n%2%"_fmt % hcfg.name % boost::current_exception_diagnostic_information())));
+                bootstrap_promises[hidx].set_exception(std::runtime_error(to_string("Error occurred during '%1%' host initialization\n%2%"_fmt % (hcfg.name.empty() ? "default" : hcfg.name.c_str()) % boost::current_exception_diagnostic_information())));
             }
         });
         host_creation_thread.detach();
@@ -268,6 +269,12 @@ void environment::load_configuration(std::istream & cfg)
             throw;
         }
     }
+}
+
+singleton & environment::locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>()> const& f)
+{
+    const uint32_t tid = get_type_id(ti);
+    return *slocator_.get(tid, f);
 }
 
 shared_ptr<host_impl> environment::default_host()
@@ -298,23 +305,23 @@ shared_ptr<host_impl> environment::get_host(string_view hnm)
     throw exception("host %1% is not found"_fmt % hnm);
 }
 
-void environment::register_service_factory(string_view nm, function<service_descriptor()> const& fm)
+void environment::register_service_factory(string_view nm, function<shared_ptr<service>()> const& fm)
 {
     factory_->register_service_factory(nm, fm);
 }
 
-service_descriptor environment::create_service(service_configuration const& cfg)
+shared_ptr<service> environment::create_service(service_configuration const& cfg)
 {
     shared_ptr<builder> bld = locate<builder>(cfg.factory);
-    return {bld->build(cfg.parameters), cfg.layer};
+    return bld->build(cfg);
 }
 
-service_descriptor environment::create_bundle_service(bundle_configuration const& cfg)
+shared_ptr<service> environment::create_bundle_service(bundle_configuration const& cfg)
 {
-    return {sonia::sal::load_bundle(cfg.lib), cfg.layer};
+    return sonia::sal::load_bundle(cfg);
 }
 
-uint32_t environment::get_type_id(std::type_index ti)
+uint32_t environment::get_type_id(std::type_index const& ti)
 {
     lock_guard guard(type_id_mtx_);
     auto it = type_id_map_.left.find(ti);
@@ -326,4 +333,4 @@ uint32_t environment::get_type_id(std::type_index ti)
     return it->second;
 }
 
-}}
+}

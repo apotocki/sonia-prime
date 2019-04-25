@@ -9,74 +9,30 @@
 #   pragma once
 #endif
 
-#include <unordered_map>
-#include <mutex>
-#include <tuple>
-
-#include <boost/intrusive/set.hpp>
-
-#include "sonia/concurrency.hpp"
-#include "sonia/shared_ptr.hpp"
 #include "sonia/logger/loggable.hpp"
+
+#include "singleton_locator.hpp"
 #include "service.hpp"
 
 namespace sonia {
 
-class service_locator : public loggable
+class service_locator 
+    : public singleton_locator
+    , public loggable
 {
 public:
     service_locator(shared_ptr<service_registry> sr, shared_ptr<service_factory> sf);
     ~service_locator() noexcept;
 
+    using singleton_locator::get;
     shared_ptr<service> get(string_view name);
     shared_ptr<service> get(service::id id);
-
-    void shutdown(shared_ptr<service> serv);
-    void shutdown();
-
-    struct cached_service_descriptor
-    {
-        typedef boost::intrusive::set_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link> > hook_type;
-
-        mutex mtx;
-        fiber::id fid;
-        service_descriptor descr;
-        hook_type layer_hook;
-
-        cached_service_descriptor(in_place_t) {}
-
-        shared_ptr<service> & object() { return descr.serv; }
-        shared_ptr<service> const& object() const { return descr.serv; }
-
-        struct layer_compare_type
-        {
-            bool operator()(cached_service_descriptor const& lhs, cached_service_descriptor const& rhs) const noexcept
-            {
-                return lhs.descr.layer < rhs.descr.layer;
-            }
-        };
-    };
 
 private:
     shared_ptr<service> get(service::id id, string_view name);
 
-    typedef boost::intrusive::multiset<
-        cached_service_descriptor,
-        boost::intrusive::member_hook<
-              cached_service_descriptor
-            , cached_service_descriptor::hook_type
-            , &cached_service_descriptor::layer_hook
-        >,
-        boost::intrusive::compare<cached_service_descriptor::layer_compare_type>
-    > layer_set_t;
-
     shared_ptr<service_registry> sr_;
     shared_ptr<service_factory> sf_;
-
-    fibers::mutex cache_mtx_, layers_mtx_;
-    
-    std::unordered_map<service::id, cached_service_descriptor> cache_;
-    layer_set_t layers_;
 };
 
 }

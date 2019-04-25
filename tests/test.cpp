@@ -2,115 +2,8 @@
 #include <boost/test/unit_test.hpp>
 
 #if 0
-size_t operator "" _a0(const char* str, size_t v) {
-    return v;
-}
-
-void do_nothing(size_t) {}
-
-void foo_ok(int arg) {
-    size_t r = "string"_a0; // OK
-    do_nothing("string"_a0); // OK
-}
-
-template <typename T>
-void foo_fail() {
-    size_t r = "string"_a0; // OK
-    do_nothing("string"_a0); // error
-}
-
-int main() { return 0; }
-#endif
-
-#if 0
 #include <iostream>
 #include <boost/multiprecision/cpp_int.hpp>
-
-//template <typename HolderT, size_t RightServBits>
-//class integer
-
-template <class DT> struct b0 {
-    b0(int v = 0) : ival(v) { std::cout << "init b0\n"; }
-    b0(b0 const& v) { ival = v.ival + 1; }
-    int ival;
-};
-
-template <class DT> struct b1 {
-    b1(unsigned int v = 0) : uival(v) { std::cout << "init b1\n"; }
-    unsigned int uival;
-};
-
-template <class DT> struct b2 {
-    b2() { std::cout << "init b2\n"; }
-    float fval;
-};
-
-template <class DT> struct b3 {
-    b3() { std::cout << "init b3\n"; }
-    signed int sival;
-};
-
-/*
-struct d0 : public b0<d0>
-{
-    union {
-        void * ptrl;
-        int ival;
-    };
-};
-
-struct d1 
-    : private b0<d1>
-    , private b1<d1>
-{
-    union {
-        void * ptrl;
-        int ival;
-    };
-};
-
-struct d2
-    : public b0<d2>
-    , public b1<d2>
-    , public b2<d2>
-{
-    union {
-        void * ptrl;
-        int ival;
-    };
-};
-
-struct d3
-    : public b0<d3>
-    , public b1<d3>
-    , public b2<d3>
-    , public b3<d3>
-{
-    union {
-        void * ptrl;
-        int ival;
-    };
-};
-*/
-
-union d0 {
-    //std::string str;
-    b0<d0> b0val_;
-    b1<d0> b1val_;
-    b2<d0> b2val_;
-    b3<d0> b3val_;
-
-    struct {
-        intptr_t filler : sizeof(intptr_t) - 4;
-        intptr_t type : 3;
-        intptr_t isptr : 1;
-    };
-    //U() {}
-};
-
-#endif
-
-#if 0
 
 #define _WIN32_WINNT 0x0501
 #define _SILENCE_CXX17_ALLOCATOR_VOID_DEPRECATION_WARNING
@@ -148,9 +41,6 @@ BOOST_AUTO_TEST_CASE (test)
     //std::cout << "sizeof(d3) = " << sizeof(d3) << "\n";
 }
 
-#endif
-
-#if 0
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -194,54 +84,7 @@ BOOST_AUTO_TEST_CASE (log_processor)
         outfile << "}}}}}}}\n\n\n\n";
     }
 }
-#endif
 
-//template <typename T> struct tag;
-
-//template <int N>
-//using char(&ArrT)[N];
-
-template <char ... chars>
-struct compose_tag {
-    template <char c> using append = compose_tag<chars..., c>;
-};
-
-template< unsigned N > constexpr
-char nth_char( const char (&arr) [N], unsigned i )
-{
-    return arr[i];
-}
-
-//constexpr auto tag(const char (&arr) [1]) {
-//    return compose_tag<nth_char(arr, 0)>();
-//}
-
-//template <char(*F)(int)>
-//struct resolver {
-//
-//};
-
-#if 0
-template <int N, int RN > constexpr
-auto tag(const char (&arr) [RN])
-{
-    auto f = [arr](int n) { return arr[n]; };
-    //auto f = [](int n) { return 'a'; };
-    constexpr char(*inc)(int) = f;
-    return resolver <inc> ();
-    /*
-    if constexpr (N == 1) {
-        return compose_tag<nth_char(arr, 0)>();
-    } else {
-        typedef decltype(tag<RN - 1>(arr)) prev_t;
-        typedef prev_t::template append<nth_char(arr, N)> next_t;
-        return next_t();
-    }
-    */
-}
-#endif
-
-#if 0
 template <char ... chars> struct constexpr_string {};
 
 template <size_t SizeV> using static_string = std::array<const char, SizeV>;
@@ -273,8 +116,6 @@ constexpr auto tag(const char(&arr)[1])
     return compose_tag<arr[0]>();
     //return compose_tag<nth_char(arr, 0)>();
 }
-
-
 
 template <class ParticularStringT, int sz, char ... chars>
 struct builder {
@@ -364,20 +205,6 @@ BOOST_AUTO_TEST_CASE (test)
     */
 }
 
-#endif
-
-#include <iostream>
-//#include <typeindex>
-//
-//namespace std {
-//template <typename CharT, class TraitsT>
-//std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, std::type_index const& val) {
-//    return os << ((std::type_info)val).name();
-//}
-//}
-
-#if 0
-
 #include "applied/scoped_services.hpp"
 #include "sonia/utility/multimethod.hpp"
 #include "sonia/utility/command.hpp"
@@ -458,3 +285,60 @@ BOOST_AUTO_TEST_CASE (multimethod_test)
 }
 
 #endif
+
+#include <iostream>
+#include <fstream>
+#include "sonia/exceptions.hpp"
+
+using namespace sonia;
+
+void parse_line(std::string const& line, std::array<std::string, 5> & res)
+{
+    size_t pos = 0;
+    auto bit = line.begin();
+    for (auto it = bit, eit = line.end(); it != eit; ++it) {
+        if (*it == '\"') {
+            for (++it; it != eit && *it != '\"'; ++it);
+            if (it == eit) throw exception("unexpected eol %1%"_fmt % line);
+            continue;
+        }
+        if (*it != ',') continue;
+        res[pos++] =  std::string(bit, it);
+        bit = it;
+        ++bit;
+        BOOST_ASSERT (pos < res.size());
+    }
+    res[pos++] = std::string(bit, line.end());
+    BOOST_ASSERT (pos == res.size());
+}
+
+template <class VectorT>
+void load_file(std::string const& name, VectorT & result)
+{
+    std::ifstream s{name.c_str()};
+    if (s.fail()) throw exception("%1% is not found"_fmt % name);
+
+    std::string line;
+    std::getline(s, line);
+
+    using row_type = typename VectorT::value_type;
+
+    row_type row;
+    while (std::getline(s, line)) {
+        parse_line(line, row);
+        result.push_back(std::move(row));
+    }
+}
+
+std::string get_enum_name(std::string const& v)
+{
+    std::string result;
+    for (char c : v) {
+        if (c == '-') c = '_';
+        c = (char)std::toupper(c);
+        result.push_back(c);
+    }
+    return result;
+}
+
+

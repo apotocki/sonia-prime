@@ -11,25 +11,46 @@
 
 #include "service.hpp"
 #include "sonia/utility/json/value.hpp"
+#include "sonia/utility/parameters/parameters.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
-class builder {
-public:
-    virtual ~builder() {}
-
-    virtual shared_ptr<service> build(json_object const& parameters) = 0;
+struct service_configuration
+{
+    std::string factory;
+    int layer;
+    json_object parameters;
 };
 
-}}
+class builder
+{
+public:
+    virtual ~builder() = default;
+
+    virtual shared_ptr<service> build(service_configuration const&) = 0;
+};
+
+template <class ServT, class ConfT>
+class basic_builder 
+    : public service
+    , public builder
+{
+public:
+    shared_ptr<service> build(service_configuration const& scfg);
+
+protected:
+    sonia::parameters::parameters_description<ConfT> parameters_;
+};
+
+}
 
 #define DECLARE_PARTICULAR_BUILDER(name)                                         \
-class name##_builder : public service, public builder {                          \
+class name;                                                                      \
+struct name##_configuration;                                                     \
+class name##_builder : public basic_builder<name, name##_configuration>          \
+{                                                                                \
 public:                                                                          \
     name##_builder();                                                            \
-    shared_ptr<service> build(json_object const& parameters) override;           \
-private:                                                                         \
-    sonia::parameters::parameters_description<name##_configuration> parameters_; \
 };
 
 #endif // SONIA_SERVICE_BUILDER_HPP

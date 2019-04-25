@@ -51,7 +51,7 @@ public:
     template <size_t N>
     constexpr array_view(T(&arr)[N]) noexcept : data_(arr), size_(N) {}
 
-    constexpr explicit array_view(T * b, T * e) noexcept
+    constexpr array_view(T * b, T * e) noexcept
         : data_(b), size_(e - b)
     {
         BOOST_ASSERT(std::less_equal<T*>()(b, e));
@@ -135,14 +135,14 @@ template <class T> struct is_array_view : false_type {};
 template <class T> struct is_array_view<array_view<T>> : true_type {};
 template <class T> constexpr bool is_array_view_v = is_array_view<T>::value;
 
-template <typename T>
-bool operator== (array_view<T> const& lhs, array_view<T> const& rhs)
+template <typename LT, typename RT>
+bool operator== (array_view<LT> const& lhs, array_view<RT> const& rhs)
 {
     return range_equal()(lhs, rhs);
 }
 
-template <typename T>
-bool operator!= (array_view<T> const& lhs, array_view<T> const& rhs)
+template <typename LT, typename RT>
+bool operator!= (array_view<LT> const& lhs, array_view<RT> const& rhs)
 {
     return !range_equal()(lhs, rhs);
 }

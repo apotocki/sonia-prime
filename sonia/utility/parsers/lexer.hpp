@@ -75,10 +75,10 @@ template <typename DerivedT, typename IteratorT>
 class lexer_base
 {
 public:
-    typedef iterator_value_t<IteratorT> char_t;
+    using char_t = iterator_value_t<IteratorT>;
 
-    typedef lexertl_iterator<DerivedT, IteratorT> iterator;
-    typedef lexertl::match_results<IteratorT> token_type;
+    using iterator = lexertl_iterator<DerivedT, IteratorT>;
+    using token_type = lexertl::match_results<IteratorT> ;
 
     lexer_base()
     {

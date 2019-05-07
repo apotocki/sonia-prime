@@ -51,7 +51,7 @@ environment::environment() : log_initialized_(false)
 {
     options_.add_options()
         ("log", po::value<std::string>()->default_value("log.conf"), "the logging subsystem configuration file")
-        ("cfg,c", po::value<std::vector<std::string>>()->composing(), "configuration (json) file paths")
+        ("cfg,c", po::value<std::string>()->default_value("config.json"), "configuration (json) file paths")
         ("service-registry-file,r", po::value<std::string>()->default_value(".services"), "services registry file")
         ("type-registry-file,t", po::value<std::string>()->default_value(".types"), "types registry file")
         ("version,v", "display version and exit")
@@ -61,7 +61,7 @@ environment::environment() : log_initialized_(false)
     
     // required | optional | default | default from string
     config_parameters_.bind()
-        .array("hosts", &environment_configuration::hosts, "hosts description").required()
+        .array("hosts", &environment_configuration::hosts, "hosts description")
             .binder(sp::parameters_description<host_configuration>().bind()
                 .variable("name", &host_configuration::name, "optional name of host")
                 .array("services", &host_configuration::services, "list of startup services to run")
@@ -174,9 +174,11 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
     factory_ = make_shared<basic_service_factory>();
 
     if (vm.count("cfg")) {
-        for (std::string const& f : vm["cfg"].as<std::vector<std::string>>()) {
-            load_configuration(boost::filesystem::path(f));
-        }
+        std::string const& f = vm["cfg"].as<std::string>();
+        load_configuration(boost::filesystem::path(f));
+        //for (std::string const& f : vm["cfg"].as<std::vector<std::string>>()) {
+        //    load_configuration(boost::filesystem::path(f));
+        //}
     }
 
     //server_configuration.verbose() = vm["verbose"].as<bool>();

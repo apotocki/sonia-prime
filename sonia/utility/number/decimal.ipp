@@ -13,27 +13,42 @@
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/lexical_cast.hpp>
-
 #include "sonia/string.hpp"
 #include "sonia/exceptions.hpp"
 
 namespace sonia {
 
+//template <typename ExponentT>
+//ExponentT exponent_sub(ExponentT minuend, ExponentT subtrahend)
+//{
+//    if (minuend < 0 && subtrahend <= 0 || minuend > 0 && subtrahend >= 0) return minuend - subtrahend;
+//    if (minuend <= 0 && subtrahend >= 0) { // -5 - 6
+//    
+//    }
+//}
+
 template <typename SignificandT, typename ExponentT>
 void decimal_normilize(SignificandT & v, ExponentT & e)
 {
-    if (v) {
-        for (;;) {
-            if (0 != v % 10) break;
-            v /= 10;
-            ++e;
+    if (e != (std::numeric_limits<ExponentT>::max)()) {
+        if (v) {
+            for (;;) {
+                if (0 != v % 10) break;
+                v /= 10;
+                ++e;
+            }
         }
-    }
+    } else if (v > 0) { // INF
+        v = 1;
+    } else if (v < 0) { // -INF
+        v = -1;
+    } // else v = 0, NAN
 }
 
 template <typename SignificandT, typename ExponentT>
 void decimal_parse(string_view str, SignificandT & v, ExponentT & e)
 {
+    // to do: parser INF, -INF, NAN
     SignificandT value = 0;
     ExponentT exp = 0;
     while (!str.empty())
@@ -103,18 +118,26 @@ void decimal_parse(string_view str, SignificandT & v, ExponentT & e)
 template <typename SignificandT, typename ExponentT>
 std::string decimal_string(SignificandT const& v, ExponentT const& e)
 {
-    std::string result = boost::lexical_cast<std::string>(v);
-    if (e >= 0) {
-        result.resize(result.size() + e, '0');
-    } else {
-        int pos = v < 0 ? 1 : 0;
-        int zpadcount = -e - (int)result.size() + pos + 1;
-        if (zpadcount > 0) {
-            result.insert(result.begin() + pos, zpadcount, '0');
+    if (e != (std::numeric_limits<ExponentT>::max)()) {
+        std::string result = boost::lexical_cast<std::string>(v);
+        if (e >= 0) {
+            result.resize(result.size() + e, '0');
+        } else {
+            int pos = v < 0 ? 1 : 0;
+            int zpadcount = -e - (int)result.size() + pos + 1;
+            if (zpadcount > 0) {
+                result.insert(result.begin() + pos, zpadcount, '0');
+            }
+            result.insert(result.begin() + result.size() + e, '.');
         }
-        result.insert(result.begin() + result.size() + e, '.');
+        return std::move(result);
+    } else if (v > 0) {
+        return "INF";
+    } else if (v < 0) {
+        return "-INF";
+    } else {
+        return "NAN";
     }
-    return std::move(result);
 }
 
 template <typename LSignificandT, typename LExponentT, typename RSignificandT, typename RExponentT>
@@ -139,6 +162,21 @@ bool decimal_equal(LSignificandT const& lv, LExponentT const& le, RSignificandT 
     } else {
         return lv * pow(LSignificandT(10), le - re) == rv;
     }
+}
+
+template <typename SignificandT, typename ExponentT>
+void decimal_add(SignificandT & lv, ExponentT & le, SignificandT const& rv, ExponentT const& re)
+{
+    ExponentT minexp = (std::min)(le, re);
+    if (le != minexp) {
+        lv = lv * pow(SignificandT(10), le - minexp) + rv;
+        le = minexp;
+    } else if (re != minexp) {
+        lv += rv * pow(SignificandT(10), re - minexp);
+    } else {
+        lv += rv;
+    }
+    decimal_normilize(lv, le);
 }
 
 }

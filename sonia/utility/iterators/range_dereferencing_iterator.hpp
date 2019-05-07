@@ -165,7 +165,7 @@ class range_dereferencing_iterator
     }
 
 public:
-    range_dereferencing_iterator() {}
+    range_dereferencing_iterator() = default;
 
     explicit range_dereferencing_iterator(IteratorT it)
         : state_t{std::move(it)}

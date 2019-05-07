@@ -209,8 +209,8 @@ template <class T> using remove_cvref_t = typename remove_cvref<T>::type;
 template <bool Test, class T = void> using disable_if = enable_if<!Test, T>;
 template <bool Test, class T = void> using disable_if_t = enable_if_t<!Test, T>;
 
-template <class T, class TestT> using disable_if_same_ref = disable_if<is_same_v<T, remove_cvref_t<TestT>>>;
-template <class T, class TestT> using disable_if_same_ref_t = typename disable_if_same_ref<T, TestT>::type;
+template <class T, class TestT, class RT = void> using disable_if_same_ref = disable_if<is_same_v<T, remove_cvref_t<TestT>>, RT>;
+template <class T, class TestT, class RT = void> using disable_if_same_ref_t = typename disable_if_same_ref<T, TestT, RT>::type;
 
 template <typename WhatT, typename ... ListT>
 struct is_in : bool_constant<false || (is_same_v<WhatT, ListT> || ...)> {};

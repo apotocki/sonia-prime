@@ -9,7 +9,6 @@
 #   pragma once
 #endif
 
-#include <iostream>
 #include <utility>
 #include <boost/assert.hpp>
 #include <boost/mpl/assert.hpp>

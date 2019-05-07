@@ -16,7 +16,7 @@ namespace linapi = sonia::linux;
 #include "sonia/sal.hpp"
 #include "sonia/sal/net.hpp"
 
-#include "sonia/exceptions/internal_errors.hpp"
+#include "sonia/exceptions.hpp"
 
 namespace sonia::sal {
     

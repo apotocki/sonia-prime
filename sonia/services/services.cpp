@@ -20,7 +20,6 @@
 #include "sonia/utility/type_id.hpp"
 #include "sonia/utility/type_durable_id.hpp"
 #include "sonia/utility/multimethod.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
 
 namespace sonia::services {
 

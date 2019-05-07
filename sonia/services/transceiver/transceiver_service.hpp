@@ -36,7 +36,7 @@ public:
     //void async_send(string_view dest, command<void> &)  override;
     //void invoke_raw(string_view dest, abstract_command_base & cmd, void * p_opt_future) override;
 
-    void connect(array_view<char> buff, size_t rsz, sonia::io::tcp_socket) override;
+    void connect(sonia::io::tcp_socket) override;
     void connect(array_view<char> buff, size_t, sonia::sal::socket_address const&, sonia::io::udp_socket&) override;
 
 private:

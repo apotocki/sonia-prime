@@ -27,7 +27,7 @@ public:
     void open() override;
     void close() noexcept override;
 
-    void connect(array_view<char> buff, size_t, sonia::io::tcp_socket) override;
+    void connect(sonia::io::tcp_socket) override;
     void connect(array_view<char> buff, size_t, sonia::sal::socket_address const&, sonia::io::udp_socket&) override;
 
 private:

@@ -22,15 +22,15 @@ using sonia::io::udp_socket;
 struct tcp_acceptor_listener : net_service::listener
 {
     shared_ptr<net::tcp_connector> cn;
-    sonia::io::tcp_socket sock;
-    void close() override { sock.close(); }
+    sonia::io::tcp_server_socket sock;
+    void close() override { closed.store(true); sock.close(); }
 };
 
 struct udp_socket_listener : net_service::listener
 {
     shared_ptr<net::udp_connector> cn;
     sonia::io::udp_socket sock;
-    void close() override { sock.close(); }
+    void close() override { closed.store(true); sock.close(); }
 };
 
 class acceptor_task : public scheduler_task
@@ -45,37 +45,54 @@ public:
 
     void run() override
     {
+#if 1
         SCOPE_EXIT([this]{--al_->workers_count;});
-        GLOBAL_LOG_TRACE() << "new acceptor threadid: " << this_thread::get_id() << ", fiberid: " << this_fiber::get_id() << ", buff: " << al_->buffer_size;
-        std::vector<char> buff(al_->buffer_size);
-        char *buffstart = buff.empty() ? nullptr : &buff.front();
+        GLOBAL_LOG_TRACE() << "new acceptor threadid: " << this_thread::get_id() << ", fiberid: " << this_fiber::get_id();
 
-        try {
-            for (;;) {
-                auto[soc, sz] = al_->sock.accept(buffstart, buff.size());
-                //GLOBAL_LOG_TRACE() << "accept by threadid: " << this_thread::get_id() << ", fiberid: " << this_fiber::get_id();
-                // if there is no waiting workers and current number of workers is less than configured max count then create a new worker
-                if (0 == al_->sock.waiting_count()) {
-                    if (al_->workers_max > al_->workers_count.fetch_add(1)) {
-                        sched_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), al_, sched_));
-                    } else {
-                        --al_->workers_count;
-                    }
-                }
-                try {
-                    al_->cn->connect(to_array_view(buff), sz, std::move(soc));
-                } catch (eof_exception const&) { // on socket closing
-                } catch (closed_exception const&) { // on host termination
-                    throw;
-                } catch (...) {
-                    GLOBAL_LOG_WARN() << boost::trim_right_copy(boost::current_exception_diagnostic_information());
+        for (;;) try {
+            auto sock = al_->sock.accept().get();
+            //GLOBAL_LOG_TRACE() << "after accept" << this_thread::get_id() << ", fiberid: " << this_fiber::get_id();
+            // if there is no waiting workers and current number of workers is less than configured max count then create a new worker
+            if (0 == al_->sock.accepting_count()) {
+                if (al_->workers_max > al_->workers_count.fetch_add(1)) {
+                    sched_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), al_, sched_));
+                } else {
+                    --al_->workers_count;
                 }
             }
-        } catch (eof_exception const&) { // on socket(acceptor) closing just quit the thread
-        } catch (closed_exception const&) { // on host termination just quit the thread
+
+            al_->cn->connect(std::move(sock));
+
+        } catch (eof_exception const&) { // on socket closing
+            //GLOBAL_LOG_TRACE() << "acceptor_task accept eof_exception";
+            if (al_->closed.load()) break;
+        } catch (closed_exception const&) {
+            //GLOBAL_LOG_TRACE() << "acceptor_task accept closed_exception";
+            throw;
         } catch (...) {
-            GLOBAL_LOG_ERROR() << "acceptor terminated unexpectedly, cause: " << boost::trim_right_copy(boost::current_exception_diagnostic_information());
+            GLOBAL_LOG_TRACE() << "acceptor error: " << boost::trim_right_copy(boost::current_exception_diagnostic_information());
+            if (al_->closed.load()) break;
         }
+#else
+        GLOBAL_LOG_TRACE() << "new acceptor threadid: " << this_thread::get_id() << ", fiberid: " << this_fiber::get_id();
+        for (;;) {
+            try {
+                auto sock = al_->sock.accept().get();
+                sched_->post([al = al_, sock = std::move(sock)]() mutable {
+                    try {
+                        al->cn->connect(std::move(sock));
+                    } catch (...) {
+                        GLOBAL_LOG_TRACE() << "acceptor error: " << boost::trim_right_copy(boost::current_exception_diagnostic_information());
+                    }
+                });
+            } catch (closed_exception const&) {
+                throw;
+            } catch (...) {
+                GLOBAL_LOG_TRACE() << "acceptor error: " << boost::trim_right_copy(boost::current_exception_diagnostic_information());
+                if (al_->closed.load()) break;
+            }
+        }
+#endif
     }
 
     polymorphic_movable* move(void* address, size_t sz) override
@@ -153,14 +170,14 @@ void net_service::open()
         for (net::listener_configuration const& lc : cfg_.listeners)
         {
             if (net::listener_type::TCP == lc.type || net::listener_type::SSL == lc.type) {
-                if (!tcp_socket_factory_) {
-                    locate(cfg_.tcp_socket_factory, tcp_socket_factory_);
+                if (!tcp_server_socket_factory_) {
+                    locate(cfg_.tcp_server_socket_factory, tcp_server_socket_factory_);
                 }
                 shared_ptr<tcp_acceptor_listener> ls = make_shared<tcp_acceptor_listener>();
                 locate(lc.connector, ls->cn);
                 ls->workers_max = lc.workers_count;
                 ls->buffer_size = lc.buffer_size;
-                ls->sock = tcp_socket_factory_->create_bound_tcp_socket(lc.address, lc.port, lc.family);
+                ls->sock = tcp_server_socket_factory_->create_server_socket(to_string_view(lc.address), lc.port, lc.family);
                 scheduler_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), ls, scheduler_));
                 
                 listeners_.push_back(std::move(ls));

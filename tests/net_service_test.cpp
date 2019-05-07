@@ -49,8 +49,8 @@ void get_configuration(std::ostream & os)
         "           factory: 'net-server-factory',"
         "           layer : 16,"
         "           parameters : {"
-        "               tcp-socket-factory: 'io.serv',"
-        "               udp-factory: 'io.serv',"
+        "               tcp-server-socket-factory: 'io.serv',"
+        "               udp-socket-factory: 'io.serv',"
         "               scheduler: 'scheduler.serv',"
         "               listeners: ["
 //        "                   { connector: 'echo.serv', address: '0.0.0.0', port: 2223, type: 'ssl'},"
@@ -159,9 +159,9 @@ void udp_echo_test(io::udp_socket soc)
 
     soc.write_some("127.0.0.1", 2224, to_array_view(test_str));
     std::vector<char> result(1024);
-    size_t sz = soc.read_some(to_array_view(result));
-    BOOST_REQUIRE(sz);
-    BOOST_CHECK_EQUAL(test_str, std::string(&result[0], sz));
+    auto szres = soc.read_some(to_array_view(result));
+    BOOST_REQUIRE(szres.has_value() && szres.value());
+    BOOST_CHECK_EQUAL(test_str, std::string(&result[0], szres.value()));
 
     // async test
     //test_conn conn;
@@ -187,11 +187,11 @@ void tcp_echo_test(io::tcp_socket soc)
 
     size_t offs = 0;
     while (offs < sizeof(buff)) {
-        size_t sz = soc.write_some(buff + offs, sizeof(buff));
-        if (!sz) {
+        auto rsz = soc.write_some(buff + offs, sizeof(buff));
+        if (!rsz.has_value() || !rsz.value()) {
             GLOBAL_LOG_ERROR() << "unexpected write error. expected write count: " << (sizeof(buff) - offs);
         }
-        offs += sz;
+        offs += rsz.value();
     }
     
     size_t test_sz = 1024;
@@ -199,9 +199,12 @@ void tcp_echo_test(io::tcp_socket soc)
 
     uint8_t rbuff[961];
     while (tested_sz != test_sz) {
-        size_t rsz = soc.read_some(rbuff, sizeof(rbuff));
-        if (!rsz) throw exception("echo mismatch, no enough data");
-        for (uint8_t c : array_view(rbuff, rsz)) {
+        auto rsz = soc.read_some(rbuff, sizeof(rbuff));
+        if (!rsz.has_value()) {
+            throw exception("read error: %1%"_fmt % rsz.error().message());
+        }
+        if (!rsz.value()) throw exception("echo mismatch, no enough data");
+        for (uint8_t c : array_view(rbuff, rsz.value())) {
             BOOST_ASSERT(c == buff[tested_sz % 1024]);
             ++tested_sz;
         }
@@ -246,13 +249,14 @@ BOOST_AUTO_TEST_CASE( net_service_test )
     std::string test_str("This is a test meassage.");
     auto tcpfactory = services::locate<io::tcp_socket_factory_type>("io.serv");
 
+#if 1
     std::vector<boost::thread> ts;
     for (int i = 0; i < 8; ++i) {
         ts.push_back(boost::thread([&tcpfactory]() {
             size_t c = 0;
             try {
-                for (; c < 1024; ++c) {
-                    auto soc = tcpfactory->connect_tcp_socket("127.0.0.1", 2222);
+                for (; c < 128; ++c) {
+                    auto soc = tcpfactory->create_connected_tcp_socket(cstring_view("127.0.0.1"), 2222);
                     try {
                         tcp_echo_test(std::move(soc));
                     } catch (std::exception const& e) {
@@ -270,9 +274,11 @@ BOOST_AUTO_TEST_CASE( net_service_test )
     for (boost::thread & t : ts) {
         t.join();
     }
+#endif
 #if 0
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     // test tcp connection
-    auto soc = tcpfactory->connect_tcp_socket("127.0.0.1", 2222);
+    auto soc = tcpfactory->create_connected_tcp_socket(cstring_view("127.0.0.1"), 2222);
     try {
         tcp_echo_test(std::move(soc));
     } catch (std::exception const& e) {

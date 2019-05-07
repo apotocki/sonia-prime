@@ -14,9 +14,9 @@
 #include <boost/call_traits.hpp>
 #include <boost/intrusive/unordered_set.hpp>
 
+#include "sonia/exceptions.hpp"
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/functional/hash.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
 
 namespace sonia::cache {
 
@@ -31,13 +31,13 @@ public:
     item_handle() = default;
 
     item_handle(CacheT & c, typename CacheT::item_type & i, bool cache_miss = false) noexcept
-        : cache_(&c), item_(&i), cache_miss_(cache_miss)
+        : cache_{&c}, item_{&i}, cache_miss_{cache_miss}
     {
         ++item_->refs;
     }
 
     item_handle(item_handle const& rhs) noexcept
-        : cache_(rhs.cache_), item_(rhs.item_)
+        : cache_{rhs.cache_}, item_{rhs.item_}
     {
         if (item_) {
             ++item_->refs;
@@ -45,7 +45,7 @@ public:
     }
 
     item_handle(item_handle && rhs) noexcept
-        : cache_(rhs.cache_), item_(rhs.item_)
+        : cache_{rhs.cache_}, item_{rhs.item_}
     {
         rhs.item_ = nullptr;
     }
@@ -138,8 +138,8 @@ public:
     hash_partition& operator= (hash_partition &&) = delete;
 
     explicit hash_partition(size_t bucket_count)
-        : buckets_(bucket_count)
-        , set_(typename set_t::bucket_traits(buckets_.get_buckets(), buckets_.size()))
+        : buckets_{bucket_count}
+        , set_{typename set_t::bucket_traits(buckets_.get_buckets(), buckets_.size())}
     {}
 
     item_handle<CacheT> try_get(CacheT & c, key_param_type key)

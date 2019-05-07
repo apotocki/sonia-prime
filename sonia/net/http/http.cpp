@@ -10,7 +10,7 @@
 #include <boost/assign/list_of.hpp>
 
 #include "sonia/singleton.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
+#include "sonia/exceptions.hpp"
 
 #define SONIA_PRINT_HTTP_STATUS_CODES_SETUPPER(r, data, i, elem) \
     map_[BOOST_PP_TUPLE_ELEM(3, 2, elem)] = std::string(BOOST_PP_TUPLE_ELEM(3, 1, elem));

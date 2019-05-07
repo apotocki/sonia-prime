@@ -22,7 +22,7 @@
 #include "sonia/function.hpp"
 #include "sonia/array_view.hpp"
 #include "sonia/utility/polymorphic_traits.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
+#include "sonia/exceptions.hpp"
 
 namespace sonia {
 

@@ -10,7 +10,8 @@
 #endif
 
 #include <boost/iterator/iterator_facade.hpp>
-#include "sonia/exceptions/internal_errors.hpp"
+
+#include "sonia/exceptions.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
 
 namespace sonia {

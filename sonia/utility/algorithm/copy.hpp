@@ -10,6 +10,7 @@
 #endif
 
 #include <utility>
+#include <cstring>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include "sonia/iterator_traits.hpp"

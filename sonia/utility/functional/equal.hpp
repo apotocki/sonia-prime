@@ -19,7 +19,7 @@ template <typename LT, typename RT, typename Enabler = void>
 struct equal
 {
     template <typename LArgT, typename RArgT>
-    bool operator()(LArgT && l, RArgT && r) const { return std::equal_to()(l, r); } // { return l == r; }
+    bool operator()(LArgT && l, RArgT && r) const { return std::equal_to<void>()(l, r); } // { return l == r; }
 };
 
 template <typename T>

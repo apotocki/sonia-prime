@@ -9,6 +9,9 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/logger/logger.cpp
     ${BUNDLE_HOME}/sonia/services/bundle.cpp
     ${BUNDLE_HOME}/sonia/sal/sal.cpp
+    ${BUNDLE_HOME}/sonia/net/uri.cpp
+    ${BUNDLE_HOME}/sonia/net/http/http.cpp
+    ${BUNDLE_HOME}/sonia/net/http/http_message.cpp
     ${BUNDLE_HOME}/sonia/utility/assert_handler.cpp
     ${BUNDLE_HOME}/sonia/utility/file_persister.cpp
     ${BUNDLE_HOME}/sonia/utility/json/json_value.cpp
@@ -24,6 +27,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/scheduler/fiber_work_stealing_scheduler.cpp
     ${BUNDLE_HOME}/sonia/services/io/file.cpp
     ${BUNDLE_HOME}/sonia/services/io/io_factory.cpp
+    ${BUNDLE_HOME}/sonia/services/io/io_ssl_factory.cpp
     ${BUNDLE_HOME}/sonia/services/io/socket_address.cpp
 )
 

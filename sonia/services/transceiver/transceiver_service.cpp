@@ -10,10 +10,10 @@
 #include <boost/crc.hpp>
 #include <boost/exception/diagnostic_information.hpp>
 
+#include "sonia/exceptions.hpp"
 #include "sonia/services.hpp"
 
 #include "sonia/services/io/socket_address.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
 #include "sonia/utility/serialization/string.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
@@ -205,9 +205,9 @@ void transceiver_service::transmit_and_receive(string_view dest, serializable_pr
 
     auto [protocol, address, port] = sonia::io::parse_address(dest);
 
-    auto soc = soc_factory_->create_connected_tcp_socket(address, port);
+    auto soc = soc_factory_->create_connected_tcp_socket(to_string_view(address), port);
     
-    char tmp_buff[65536];
+    std::vector<char> tmp_buff(65536);
 
     output_iterator_polymorpic_adapter<
         chunk_write_iterator,
@@ -227,7 +227,7 @@ void transceiver_service::transmit_and_receive(string_view dest, serializable_pr
     obj.deserialize(serializable::range_read_iterator{&rditimpl});
 }
 
-void transceiver_service::connect(array_view<char> buff, size_t sz, io::tcp_socket soc)
+void transceiver_service::connect(io::tcp_socket soc)
 {
     std::list<io::tcp_socket>::iterator soc_it;
     {
@@ -242,17 +242,19 @@ void transceiver_service::connect(array_view<char> buff, size_t sz, io::tcp_sock
         using_set_.erase(soc_it);
     });
 
+    std::vector<char> buff(65536);
+
     iterator_polymorpic_adapter<
         chunk_read_iterator,
         boost::forward_traversal_tag,
         array_view<const char>
-    > rditimpl(soc, buff, sz);
+    > rditimpl(soc, to_array_view(buff), 0);
 
     output_iterator_polymorpic_adapter<
         chunk_write_iterator,
         boost::forward_traversal_tag,
         array_view<char>
-    > writimpl(soc, buff);
+    > writimpl(soc, to_array_view(buff));
 
     serializable::range_write_iterator wit(&writimpl);
     

@@ -34,9 +34,9 @@ public:
     void open() override;
     void close() noexcept override;
 
-    void connect(array_view<char> buff, size_t, sonia::io::tcp_socket) override;
-    void keep_alive_connect(array_view<char> buff, size_t rsz, sonia::io::tcp_socket soc);
-    void one_shot_connect(array_view<char> buff, size_t rsz, sonia::io::tcp_socket soc);
+    void connect(sonia::io::tcp_socket) override;
+    void keep_alive_connect(sonia::io::tcp_socket soc);
+    void one_shot_connect(sonia::io::tcp_socket soc);
 
 private:
     using read_iterator = socket_read_input_iterator<io::tcp_socket>;

@@ -28,6 +28,8 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector.cpp
     ${BUNDLE_HOME}/sonia/services/net/http/http_connector_builder.cpp
     ${BUNDLE_HOME}/sonia/services/net/http/http_connector.cpp
+    ${BUNDLE_HOME}/sonia/services/net/http/http_default_application_builder.cpp
+    ${BUNDLE_HOME}/sonia/services/net/http/http_default_application.cpp
     ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
 )
 
@@ -45,5 +47,5 @@ if ("${LIBRARY_TYPE}" STREQUAL "STATIC")
 endif ()
 
 add_library(${BUNDLE_NAME} ${LIBRARY_TYPE} ${BUNDLE_SOURCES})
-target_link_libraries(${BUNDLE_NAME} sonia-prime-lib ${BOOST_SERIALIZATION} ${BOOST_FILESYSTEM} ${BOOST_FIBERS} ${BOOST_THREAD} ${BOOST_PROGRAM_OPTIONS} ${BOOST_CONTEXT} ${BOOST_REGEX} ${PLATFORM_LIBS})
+target_link_libraries(${BUNDLE_NAME} sonia-prime-lib ${OPENSSL} ${ZLIB_LIB} ${BOOST_SERIALIZATION} ${BOOST_FILESYSTEM} ${BOOST_FIBERS} ${BOOST_THREAD} ${BOOST_PROGRAM_OPTIONS} ${BOOST_CONTEXT} ${BOOST_REGEX} ${PLATFORM_LIBS})
 set_target_properties(${BUNDLE_NAME} PROPERTIES FOLDER "libs")

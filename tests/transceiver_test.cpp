@@ -151,19 +151,19 @@ void get_configuration(std::ostream & os)
         "       },"
         "       io.serv: {"
         "           factory: 'io-factory',"
-        "           layer: 16,"
+        "           layer: 8,"
         "           parameters: { threads: 4 }"
         "       },"
         "       io-cache.serv: {"
         "           factory: 'io-cache-factory',"
-        "           layer: 16,"
+        "           layer: 12,"
         "           parameters: { tcp-socket-factory: 'io.serv', max-connection-count: 128, per-route-max-connection-count: 128 }"
         "       },"
         "       net.serv: {"
         "           factory: 'net-server-factory',"
-        "           layer: 16,"
+        "           layer: 14,"
         "           parameters: {"
-        "               tcp-socket-factory: 'io.serv',"
+        "               tcp-server-socket-factory: 'io.serv',"
         "               scheduler: 'scheduler.serv',"
         "               listeners: ["
         "                   { connector: 'transceiver.serv', workers : 128, buffer-size: 65536, address : '0.0.0.0', port : 2222, type : 'tcp'}"
@@ -172,7 +172,7 @@ void get_configuration(std::ostream & os)
         "       },"
         "       scheduler.serv: {"
         "           factory: 'scheduler-factory',"
-        "           layer: 16,"
+        "           layer: 4,"
         "           parameters: { threads: 8, fibers: 10 }"
         "       },"
         "       test-scheduler.serv: {"
@@ -180,7 +180,7 @@ void get_configuration(std::ostream & os)
         "           layer: 16,"
         "           parameters: { threads: 8, fibers: 10 }"
         "       },"
-        "       transceiver-factory: { factory: 'prime', layer: 8, parameters: {name: 'transceiver'} },"
+        "       transceiver-factory: { factory: 'prime', layer: 0, parameters: {name: 'transceiver'} },"
         "       net-server-factory: { factory: 'prime', layer: 0, parameters: { name: 'net-server' } },"
         "       io-factory: { factory: 'prime', layer: 0, parameters: { name: 'io' } },"
         "       io-cache-factory: { factory: 'prime', layer: 0, parameters: { name: 'io-cache' } },"
@@ -264,7 +264,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
 #if 1
 #ifdef _DEBUG
     const int calls_count = 300;
-    const size_t max_pass_count = 4;
+    const size_t max_pass_count = 32;
 #else
     const int calls_count = 1500;
     const size_t max_pass_count = 32;
@@ -293,7 +293,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
                     --tasks;
                     throw;
                 }
-                //GLOBAL_LOG_INFO() << "finished: " << tnum;
+                GLOBAL_LOG_INFO() << "finished: " << tnum;
             }, false);
         }
 

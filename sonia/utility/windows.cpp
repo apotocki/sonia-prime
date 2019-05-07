@@ -245,7 +245,7 @@ void async_recvfrom(SOCKET soc, void * buff, size_t sz, SOCKADDR * sa, int * sas
     if (rc == SOCKET_ERROR) {
         DWORD err = WSAGetLastError();
         if (WSA_IO_PENDING != err) {
-            throw exception("can't async receive data from socket, error: %1%"_fmt % error_message(err));
+            throw eof_exception("can't async receive data from socket, error: %1%"_fmt % error_message(err));
         }
     }
 }
@@ -262,7 +262,7 @@ void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov)
     if (rc == SOCKET_ERROR) { 
         DWORD err = WSAGetLastError();
         if (WSA_IO_PENDING != err) {
-            throw exception("can't async receive data from socket, error: %1%"_fmt % error_message(err));
+            throw eof_exception("can't async receive data from socket, error: %1%"_fmt % error_message(err));
         }
     }
 }
@@ -278,7 +278,7 @@ void async_send(SOCKET soc, void const * buff, size_t sz, WSAOVERLAPPED * pov)
     if (rc == SOCKET_ERROR) {
         DWORD err = WSAGetLastError();
         if (WSA_IO_PENDING != err) {
-            throw exception("can't send data to socket, error: %1%"_fmt % error_message(err));
+            throw eof_exception("can't send data to socket, error: %1%"_fmt % error_message(err));
         }
     }
 }
@@ -294,7 +294,7 @@ void async_send_to(SOCKET soc, sockaddr const* addr, int addrlen, void const * b
     if (rc == SOCKET_ERROR) {
         DWORD err = WSAGetLastError();
         if (WSA_IO_PENDING != err) {
-            throw exception("can't send data to socket, error: %1%"_fmt % error_message(err));
+            throw eof_exception("can't send data to socket, error: %1%"_fmt % error_message(err));
         }
     }
 }

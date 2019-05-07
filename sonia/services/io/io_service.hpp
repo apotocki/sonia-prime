@@ -11,6 +11,7 @@
 
 #include "sonia/services/service.hpp"
 #include "sonia/services/io/factory.hpp"
+#include "sonia/services/io/ssl_factory.hpp"
 #include "sonia/services/io/io_service_configuration.hpp"
 
 namespace sonia::services {
@@ -20,13 +21,27 @@ class io_service
     , public sonia::io::factory
 {
 public:
-    explicit io_service(io_service_configuration const& cfg);
+    explicit io_service(io_service_configuration cfg);
 
     void open() override;
     void close() noexcept override;
 
 private:
     io_service_configuration cfg_;
+};
+
+class io_ssl_service 
+    : public service
+    , public sonia::io::ssl_factory
+{
+public:
+    explicit io_ssl_service(io_ssl_service_configuration cfg);
+
+    void open() override;
+    void close() noexcept override;
+
+private:
+    io_ssl_service_configuration cfg_;
 };
 
 }

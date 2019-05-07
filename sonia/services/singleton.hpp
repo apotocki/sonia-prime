@@ -31,18 +31,21 @@ public:
 
     id get_id() const noexcept { return id_; }
     int get_layer() const noexcept { return layer_; }
-    
+    std::string const& get_name() const noexcept { return name_; }
+
     virtual void close() noexcept {}
 
 private:
     id id_;
     int layer_{0};
+    std::string name_;
 };
 
 struct singleton_access
 {
     static void set_id(singleton & s, singleton::id idval) { s.id_ = idval; }
     static void set_layer(singleton & s, int lval) { s.layer_ = lval; }
+    static void set_name(singleton & s, std::string sval) { s.name_ = std::move(sval); }
 };
 
 

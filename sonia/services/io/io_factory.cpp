@@ -18,15 +18,12 @@
 
 namespace sonia::io {
 
-void factory::open(uint32_t thr_cnt, optional<ssl_configuration> const& optssl)
+void factory::open(uint32_t thr_cnt)
 {
     unique_lock lk(close_mtx_);
 
     initialize_impl(thr_cnt);
-    // initialize ssl
-    if (optssl) {
-        impl_holder_->ssl = make_shared<io_ssl>(*optssl);
-    }
+
     threads_.reserve(thr_cnt);
 
     for (size_t i = 0; i < thr_cnt; ++i) {
@@ -74,7 +71,7 @@ factory::impl_base::impl_base(shared_ptr<factory> wr)
 void factory::impl_base::close() noexcept
 {
     auto qszval = qsz.load();
-    //LOG_TRACE(wrapper->logger()) << "close, queue size: " << qszval;
+    LOG_TRACE(wrapper->logger()) << "close, queue size: " << qszval;
     if (qszval >= 0) {
         if (0 == qsz.fetch_add(qsz_min_value)) {
             park_threads();
@@ -114,7 +111,7 @@ shared_ptr<factory::impl_base> factory::get_dataptr()
     return r;
 }
 
-tcp_socket factory::create_bound_tcp_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type ft)
+tcp_server_socket factory::create_server_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type ft)
 {
     using namespace sonia::sal;
 
@@ -126,6 +123,7 @@ tcp_socket factory::create_bound_tcp_socket(cstring_view address, uint16_t port,
             socket_handle sock = create_socket(ai->family(), ai->ai_socktype(), ai->ai_protocol());
             SCOPE_EXIT([&sock]() { if (sock != not_initialized_socket_v) close_socket(sock); });
 
+            //setsockopt(sock, SOL_SOCKET, TCP_NODELAY, 1);
 #ifdef BOOST_WINDOWS
             setsockopt(sock, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, 1);
 #else
@@ -134,7 +132,7 @@ tcp_socket factory::create_bound_tcp_socket(cstring_view address, uint16_t port,
             bind_socket(sock, ai->ai_addr(), ai->ai_addrlen());
             listen_socket(sock, SOMAXCONN);
 
-            tcp_socket result = get_dataptr()->do_create_tcp_socket(sock, ft);
+            tcp_server_socket result = get_dataptr()->do_create_tcp_server_socket(sock, ft);
 
             sock = not_initialized_socket_v;
             ai = nullptr;

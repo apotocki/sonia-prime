@@ -26,17 +26,19 @@ void echo_connector::open()
 void echo_connector::close() noexcept
 {}
 
-void echo_connector::connect(array_view<char> buff, size_t rsz, sonia::io::tcp_socket soc)
+void echo_connector::connect(sonia::io::tcp_socket soc)
 {
     socket_write_iterator wit{soc};
     socket_read_output_iterator rit{soc};
 
+    char buff[1024];
+
     try {
-        array_view<const char> readybuff = buff.subview(0, rsz);
-        while (!wit.empty() && !rit.empty()) {
+        while (!wit.empty()) {
+            *rit = array_view(buff); ++rit;
+            if (rit.empty()) break;
+            auto readybuff = *rit;
             *wit = readybuff; ++wit;
-            *rit = buff; ++rit;
-            readybuff = *rit;
         }
     } catch (...) {}
 }

@@ -20,7 +20,7 @@ class tcp_connector
 public:
     virtual ~tcp_connector() = default;
 
-    virtual void connect(array_view<char> buff, size_t rsz, sonia::io::tcp_socket) = 0;
+    virtual void connect(sonia::io::tcp_socket) = 0;
 };
 
 class udp_connector

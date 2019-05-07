@@ -20,12 +20,12 @@
 #include "udp_socket.hpp"
 #include "file.hpp"
 #include "sockets.hpp"
-#include "io_ssl.hpp"
 
 namespace sonia::io {
 
 class factory
     : public tcp_socket_factory_type
+    , public tcp_server_socket_factory_type
     , public udp_socket_factory_type
     , public file_factory
     , public file_service
@@ -38,13 +38,15 @@ public:
     factory();
     virtual ~factory() override;
 
-    void open(uint32_t thr_cnt, optional<ssl_configuration> const& optssl);
+    void open(uint32_t thr_cnt);
     void close() noexcept;
     virtual std::string name() const;
 
     // tcp_socket_factory
     tcp_socket create_connected_tcp_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type dt) override;
-    tcp_socket create_bound_tcp_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type dt) override;
+
+    // tcp_server_socket_factory
+    tcp_server_socket create_server_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type dt) override;
 
      // udp_socket_factory
     udp_socket create_udp_socket(sonia::sal::net_family_type) override;
@@ -58,8 +60,12 @@ public:
 
     class impl_base 
         : public tcp_socket_service_type
+        , public tcp_server_socket_service_type
         , public udp_socket_service_type
     {
+    protected:
+        using tcp_handle_type = tcp_socket_service_type::tcp_handle_type;
+
     public:
         virtual ~impl_base() = default;
 
@@ -76,10 +82,10 @@ public:
         void on_add_callback();
         void on_release_callback() noexcept;
 
+        virtual tcp_server_socket do_create_tcp_server_socket(sonia::sal::socket_handle, sonia::sal::net_family_type dt) = 0;
         virtual tcp_socket do_create_tcp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type dt) = 0;
         virtual udp_socket do_create_udp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type dt) = 0;
 
-        shared_ptr<io_ssl> ssl;
         shared_ptr<factory> wrapper;
         std::atomic<long> qsz{0};
     };

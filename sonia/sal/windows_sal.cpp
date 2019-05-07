@@ -8,7 +8,7 @@
 #include "sonia/sal/net.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/scope_exit.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
+#include "sonia/exceptions.hpp"
 
 namespace sonia::sal {
 

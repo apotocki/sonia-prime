@@ -249,8 +249,6 @@ void environment::load_configuration(std::istream & cfg)
                 lk.unlock();
                 (*hit)->run(hcfg.services);
                 bootstrap_promises[hidx].set_value();
-            } catch(std::exception const& e) {
-                bootstrap_promises[hidx].set_exception(std::runtime_error(to_string("Error occurred during '%1%' host initialization\n%2%"_fmt % (hcfg.name.empty() ? "default" : hcfg.name.c_str()) % e.what())));
             } catch (...) {
                 bootstrap_promises[hidx].set_exception(std::runtime_error(to_string("Error occurred during '%1%' host initialization\n%2%"_fmt % (hcfg.name.empty() ? "default" : hcfg.name.c_str()) % boost::current_exception_diagnostic_information())));
             }

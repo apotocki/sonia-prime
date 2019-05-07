@@ -35,17 +35,12 @@ public:
     }
 
     virtual void open() {}
-
-    std::string const& get_name() const noexcept { return name_; }
-
-private:
-    std::string name_;
 };
 
 struct service_access : singleton_access
 {
-    static void set_name(service & s, std::string nameval) { s.name_ = std::move(nameval); }
-    static void set(service & s, service::id idval, std::string nameval) { singleton_access::set_id(s, idval); s.name_ = std::move(nameval); }
+    static void set_name(service & s, std::string nameval) { singleton_access::set_name(s, std::move(nameval)); }
+    static void set(service & s, service::id idval, std::string nameval) { singleton_access::set_id(s, idval); singleton_access::set_name(s, std::move(nameval)); }
 };
 
 class service_registry

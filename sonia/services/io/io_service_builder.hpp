@@ -14,6 +14,7 @@
 namespace sonia::services {
 
 DECLARE_PARTICULAR_BUILDER(io_service)
+DECLARE_PARTICULAR_BUILDER(io_ssl_service)
 
 }
 

@@ -24,7 +24,7 @@
 #include "sonia/utility/persister.hpp"
 #include "sonia/utility/concurrency/rw_fiber_mutex.hpp"
 #include "sonia/utility/scope_exit.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
+#include "sonia/exceptions.hpp"
 
 namespace sonia { namespace utility { namespace basic_local_registry_detail {
 

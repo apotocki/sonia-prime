@@ -5,6 +5,8 @@
 #include "sonia/config.hpp"
 #include "http_connector.hpp"
 
+#include <boost/algorithm/string/predicate.hpp>
+
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/utility/iterators/socket_write_iterator.hpp"
@@ -49,7 +51,7 @@ void http_connector::close() noexcept
     }
 }
 
-void http_connector::connect(array_view<char> buff, size_t rsz, sonia::io::tcp_socket soc)
+void http_connector::connect(sonia::io::tcp_socket soc)
 {
     std::list<io::tcp_socket>::iterator soc_it;
     {
@@ -67,12 +69,12 @@ void http_connector::connect(array_view<char> buff, size_t rsz, sonia::io::tcp_s
     try {
         if (keep_alive_count_.fetch_add(1) < cfg_.keep_alive_max_count) {
             SCOPE_EXIT([this]{ --keep_alive_count_; });
-            keep_alive_connect(buff, rsz, std::move(soc));
+            keep_alive_connect(std::move(soc));
         } else {
             --keep_alive_count_;
             if (one_shot_count_.fetch_add(1) < cfg_.not_keep_alive_max_count) {
                 SCOPE_EXIT([this]{ --one_shot_count_; });
-                one_shot_connect(buff, rsz, std::move(soc));
+                one_shot_connect(std::move(soc));
             } else {
                 --one_shot_count_;
                 socket_write_iterator wit{soc};
@@ -114,14 +116,18 @@ bool http_connector::do_connection(read_iterator & ii, write_iterator & oi)
     }
 
     auto hvals = req.get_header(http::header::CONNECTION);
-    return (hvals.size() == 1 && hvals[0] == "keep-alive");
+    //return false;
+    return (hvals.size() == 1 && boost::iequals(hvals[0], "keep-alive"));
 }
 
-void http_connector::keep_alive_connect(array_view<char> buff, size_t rsz, io::tcp_socket soc)
+void http_connector::keep_alive_connect(io::tcp_socket soc)
 {
-    char respbuff[4096];
+    std::vector<char> buff(cfg_.response_buffer_size + cfg_.request_buffer_size);
+    array_view respbuff{&buff.front(), cfg_.response_buffer_size};
+    array_view reqbuff{&buff.front() + cfg_.response_buffer_size, cfg_.request_buffer_size};
+
     write_iterator oi{soc, respbuff};
-    read_iterator ii{soc, buff, rsz};
+    read_iterator ii{soc, reqbuff, 0};
 
     static std::atomic<int> keep_alive_connnum{0};
     int curconnection = keep_alive_connnum.fetch_add(1);
@@ -131,11 +137,14 @@ void http_connector::keep_alive_connect(array_view<char> buff, size_t rsz, io::t
     }
 }
 
-void http_connector::one_shot_connect(array_view<char> buff, size_t rsz, sonia::io::tcp_socket soc)
+void http_connector::one_shot_connect(sonia::io::tcp_socket soc)
 {
-    char respbuff[4096];
+    std::vector<char> buff(cfg_.response_buffer_size + cfg_.request_buffer_size);
+    array_view respbuff{&buff.front(), cfg_.response_buffer_size};
+    array_view reqbuff{&buff.front() + cfg_.response_buffer_size, cfg_.request_buffer_size};
+
     write_iterator oi{soc, respbuff};
-    read_iterator ii{soc, buff, rsz};
+    read_iterator ii{soc, reqbuff, 0};
 
     do_connection(ii, oi);
 }

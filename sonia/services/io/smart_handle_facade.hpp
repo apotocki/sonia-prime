@@ -78,6 +78,8 @@ public:
 
     explicit operator bool() const noexcept { return handle_ != TraitsT::not_initialized_v; }
 
+    typename base_type::handle_type handle() const { return handle_; }
+
 private:
     shared_ptr<typename base_type::service_type> impl_;
     typename base_type::handle_type handle_;

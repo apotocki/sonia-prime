@@ -19,15 +19,16 @@
 #include <sstream>
 
 #include <boost/unordered_map.hpp>
+#include <boost/intrusive/list.hpp>
 
-#include "sonia/utility/posix/signals.hpp"
-
+#include "sonia/exceptions.hpp"
 #include "sonia/concurrency.hpp"
 #include "sonia/optional.hpp"
+#include "sonia/utility/automatic_polymorphic.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/utility/object_pool.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
 #include "sonia/utility/linux.hpp"
+#include "sonia/utility/posix/signals.hpp"
 
 #ifndef MAX_EPOLL_EVENTS
 #   define MAX_EPOLL_EVENTS 5
@@ -35,6 +36,10 @@
 
 #ifndef SOCKET_POOL_SIZE
 #   define SOCKET_POOL_SIZE 128
+#endif
+
+#ifndef CALLBACK_POOL_SIZE
+#   define CALLBACK_POOL_SIZE 128
 #endif
 
 namespace sonia::io {
@@ -45,6 +50,7 @@ static constexpr uint64_t epool_exit_cookie_v = (std::numeric_limits<uint64_t>::
 namespace linapi = sonia::linux;
 
 struct lin_impl;
+struct lin_shared_handle;
 
 template <typename OnErrorHandlerT>
 void epoll_ctl(int efd, int fd, uint64_t cookie, uint32_t evflags, OnErrorHandlerT const& errh)
@@ -108,13 +114,48 @@ private:
 };
 #endif
 
+struct callback : boost::intrusive::list_base_hook<>
+{
+    virtual ~callback() = default;
+
+    virtual bool operator()(lin_shared_handle & sh, bool eof) noexcept = 0; // returns true if completed and needs to be removed; if eof is true, must report about eof and reutrn true
+
+    virtual void free(lin_shared_handle & sh) = 0;
+};
+
+struct acceptor_callback : callback
+{
+    fibers::promise<tcp_socket> promise_;
+    bool operator()(lin_shared_handle & sh, bool eof) noexcept override;
+
+    fibers::future<tcp_socket> get_future() { return promise_.get_future(); }
+
+    void free(lin_shared_handle & sh) override;
+};
+
 struct lin_shared_handle : shared_handle<socket_handle_traits>
 {
     using base_type = shared_handle<socket_handle_traits>;
 
-    lin_shared_handle(sonia::sal::socket_handle h, uint32_t id, sonia::sal::net_family_type ftval)
-        : handle(h), family_(ftval), bkid_(id)
+    using callback_t = automatic_polymorphic<callback, sizeof(acceptor_callback)>;
+    using callback_list_t = boost::intrusive::list<callback>;
+
+    shared_ptr<lin_impl> impl;
+    fibers::mutex mtx;
+    fibers::condition_variable_any cnd;
+    sonia::sal::socket_handle handle;
+
+    lin_shared_handle(shared_ptr<lin_impl> p, sonia::sal::socket_handle h, uint32_t id, sonia::sal::net_family_type ftval)
+        : impl(std::move(p)), handle(h), family_(ftval), bkid_(id)
     {}
+
+    ~lin_shared_handle()
+    {
+        handle_callbacks(true);
+        BOOST_ASSERT (callback_list_.empty());
+    }
+
+    void handle_callbacks(bool eof = false);
 
     uint32_t bkid() const { return bkid_; }
     sonia::sal::net_family_type family() { return family_; }
@@ -122,8 +163,16 @@ struct lin_shared_handle : shared_handle<socket_handle_traits>
     virtual void on_event() noexcept
     {
         unique_lock lck(mtx);
+        handle_callbacks(false);
         cnd.notify_one();
     };
+
+    void add_callback(callback * cb)
+    {
+        callback_list_.push_back(*cb);
+    }
+
+    tcp_socket create_tcp_socket(int fd);
 
     std::atomic<size_t> waiting_cnt{0};
 
@@ -132,13 +181,12 @@ struct lin_shared_handle : shared_handle<socket_handle_traits>
         cnd.wait(lck);
     }
 
-    fibers::mutex mtx;
-    fibers::condition_variable_any cnd;
-    sonia::sal::socket_handle handle;
-    
+    bool close(int efd); // return true if book_keeper needs updating
+
 private:
     uint32_t bkid_;
     sonia::sal::net_family_type family_;
+    callback_list_t callback_list_;
 };
 
 struct lin_shared_handle_hasher
@@ -169,11 +217,16 @@ struct lin_impl
     boost::unordered_set<lin_shared_handle*, lin_shared_handle_hasher> book_keeper_;
 
     object_pool<lin_shared_handle, spin_mutex> sockets_;
+    object_pool<lin_shared_handle::callback_t, spin_mutex> callbacks_;
 
     lin_impl(shared_ptr<factory> itself, uint32_t thr_cnt);
 
     lin_shared_handle * new_socket_handle(int sockfd, sonia::sal::net_family_type);
     void delete_socket_handle(lin_shared_handle * h) noexcept;
+
+    template <typename ... ArgsT>
+    lin_shared_handle::callback_t * new_callback(ArgsT&& ... args);
+    void delete_callback(lin_shared_handle::callback_t *) noexcept;
 
     void park_threads() noexcept override
     {
@@ -187,6 +240,7 @@ struct lin_impl
 
     ~lin_impl() override
     {
+        LOG_TRACE(wrapper->logger()) << "descruction of lin_impl";
         ::close(ctl_pipe[0]);
         ::close(ctl_pipe[1]);
         ::close(efd);
@@ -194,12 +248,18 @@ struct lin_impl
 
     void thread_proc() override;
 
+    tcp_server_socket do_create_tcp_server_socket(sonia::sal::socket_handle, sonia::sal::net_family_type) override final;
     tcp_socket do_create_tcp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type) override;
     udp_socket do_create_udp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type) override;
 
+    // tcp server socket service
+    fibers::future<tcp_socket> tcp_server_socket_accept(tcp_handle_type) override final;
+    size_t tcp_server_socket_accepting_count(tcp_handle_type) const override final;
+    void close_handle(identity<tcp_server_socket_service_type>, tcp_handle_type) noexcept override final;
+    void release_handle(identity<tcp_server_socket_service>, tcp_handle_type) noexcept override final;
+    void free_handle(identity<tcp_server_socket_service_type>, tcp_handle_type) noexcept override final;
+
     // tcp socket service
-    std::pair<tcp_socket, size_t> tcp_socket_accept(tcp_handle_type, char*, size_t) override final;
-    size_t tcp_socket_waiting_count(tcp_handle_type) override final;
     expected<size_t, std::error_code> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) override final;
     expected<size_t, std::error_code> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) override final;
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
@@ -217,9 +277,80 @@ struct lin_impl
     void free_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override final;
 };
 
+tcp_socket lin_shared_handle::create_tcp_socket(int fd)
+{
+    return impl->do_create_tcp_socket(fd, family());
+}
+
+void lin_shared_handle::handle_callbacks(bool eof)
+{
+    for (auto it = callback_list_.begin(), eit = callback_list_.end(); it != eit; it) {
+        callback & cb = *it;
+        if (cb(*this, eof)) {
+            --waiting_cnt;
+            it = callback_list_.erase(it);
+            cb.free(*this);
+        } else {
+            BOOST_ASSERT (!eof);
+            ++it;
+        }
+    }
+}
+
+bool lin_shared_handle::close(int efd)
+{
+    if (lock_guard guard(mtx); handle != -1) {
+        ::epoll_ctl(efd, EPOLL_CTL_DEL, handle, NULL);
+        ::close(handle);
+        handle = -1;
+        handle_callbacks(true);
+        return true;
+    }
+    return false;
+}
+
+bool acceptor_callback::operator()(lin_shared_handle & sh, bool eof) noexcept
+{
+    if (eof) {
+        promise_.set_exception(std::make_exception_ptr(eof_exception()));
+        return true;
+    }
+
+    ::sockaddr in_addr;
+    socklen_t in_len = sizeof(::in_addr);
+    int infd = accept(sh.handle, &in_addr, &in_len);
+    if (infd == -1) {
+        int err = errno;
+        if (err == EAGAIN) return false;
+        promise_.set_exception(std::make_exception_ptr(eof_exception("accept error: %1%"_fmt % strerror(err))));
+        return true;
+    }
+
+    if constexpr (IO_DEBUG) {
+        char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
+        getnameinfo(&in_addr, in_len,
+            hbuf, sizeof(hbuf),
+            sbuf, sizeof(sbuf),
+            NI_NUMERICHOST | NI_NUMERICSERV);
+
+        LOG_TRACE(sh.impl->wrapper->logger()) << hbuf << " " << sbuf;
+    }
+
+    linapi::append_descriptor_flags(infd, O_NONBLOCK);
+    promise_.set_value(sh.create_tcp_socket(infd));
+
+    return true;
+}
+
+void acceptor_callback::free(lin_shared_handle & sh)
+{
+    sh.impl->delete_callback(reinterpret_cast<lin_shared_handle::callback_t*>(this));
+}
+          
 lin_impl::lin_impl(shared_ptr<factory> itself, uint32_t thr_cnt)
     : factory::impl_base(std::move(itself))
     , sockets_(SOCKET_POOL_SIZE)
+    , callbacks_(CALLBACK_POOL_SIZE)
 {
     if (efd = epoll_create1(0); efd == -1) {
         int err = errno;
@@ -280,15 +411,9 @@ void lin_impl::thread_proc()
 lin_shared_handle * lin_impl::new_socket_handle(int sockfd, sonia::sal::net_family_type ft)
 {
     for (;;) {
-        lin_shared_handle *ph = sockets_.new_object(sockfd, bkid_cnt_.fetch_add(1), ft);
+        lin_shared_handle *ph = sockets_.new_object(shared_from_this(), sockfd, bkid_cnt_.fetch_add(1), ft);
         lock_guard guard(bk_mtx_);
         if (BOOST_LIKELY(book_keeper_.insert(ph).second)) {
-            //try {
-            //    on_add_callback();
-            //} catch (...) {
-            //    sockets_.delete_object(ph);
-            //    throw;
-            //}
             ph->add_weakref();
             return ph;
         }
@@ -299,6 +424,31 @@ lin_shared_handle * lin_impl::new_socket_handle(int sockfd, sonia::sal::net_fami
 void lin_impl::delete_socket_handle(lin_shared_handle * h) noexcept
 {
     sockets_.delete_object(h);
+}
+
+template <typename ... ArgsT>
+lin_shared_handle::callback_t * lin_impl::new_callback(ArgsT&& ... args)
+{
+    return callbacks_.new_object(std::forward<ArgsT>(args) ...);
+}
+
+void lin_impl::delete_callback(lin_shared_handle::callback_t * cb) noexcept
+{
+    callbacks_.delete_object(cb);
+}
+
+tcp_server_socket lin_impl::do_create_tcp_server_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
+{
+    linapi::append_descriptor_flags(s, O_NONBLOCK);
+
+    lin_shared_handle * sh = new_socket_handle(s, dt);
+    
+    epoll_ctl(efd, s, sh->bkid(), EPOLLIN | EPOLLOUT | EPOLLET, [this, sh](const char * msg) {
+        delete_socket_handle(sh);
+        throw exception("can't watch socket, error: %1%"_fmt % msg);
+    });
+
+    return tcp_socket_access::create_tcp_server_socket<socket_traits>(shared_from_this(), sh);
 }
 
 tcp_socket lin_impl::do_create_tcp_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
@@ -329,25 +479,6 @@ udp_socket lin_impl::do_create_udp_socket(sonia::sal::socket_handle s, sonia::sa
     return udp_socket_access::create_udp_socket<socket_traits>(shared_from_this(), sh);
 }
 
-//void lin_impl::delete_socket_handle(acceptor_shared_handle * h) noexcept
-//{
-//    ::epoll_ctl(efd, EPOLL_CTL_DEL, h->fd(), NULL);
-//
-//    {
-//        lock_guard guard(bk_mtx_);
-//        book_keeper_.erase(h);
-//    }
-//
-//    handlers_.delete_object(h);
-//    wrapper->on_release_callback();
-//}
-
-//void lin_impl::free(lin_shared_handle * sh) noexcept
-//{
-//    sockets_.delete_object(sh);
-//    wrapper->on_release_callback();
-//}
-
 factory::factory() {}
 
 void factory::initialize_impl(uint32_t thr_cnt)
@@ -364,53 +495,47 @@ std::string factory::name() const
     return std::string("linux");
 }
 
-// tcp_socket_service
-
-std::pair<tcp_socket, size_t> lin_impl::tcp_socket_accept(tcp_handle_type handle, char* buff, size_t sz)
+fibers::future<tcp_socket> lin_impl::tcp_server_socket_accept(tcp_handle_type handle)
 {
     auto * sh = static_cast<lin_shared_handle*>(handle);
-    SCOPE_EXIT([&sh]() { --sh->waiting_cnt; });
+    SCOPE_EXIT([&sh]() { if (sh) --sh->waiting_cnt; });
     ++sh->waiting_cnt;
 
+    auto * pcb = new_callback(in_place_type<acceptor_callback>);
+    SCOPE_EXIT([this, &pcb]() { if (pcb) delete_callback(pcb); });
+
+    auto ftr = static_cast<acceptor_callback*>(pcb->get_pointer())->get_future();
+
     unique_lock lck(sh->mtx);
-
-    ::sockaddr in_addr;
-    socklen_t in_len = sizeof(::in_addr);
-    for (;;) {
-        if (sh->handle == -1) throw eof_exception("closed acceptor socket");
-        int infd = accept(sh->handle, &in_addr, &in_len);
-        if (infd != -1) {
-            sh->cnd.notify_one();
-            lck.unlock();
-            SCOPE_EXIT([&infd]() { if (infd != -1) ::close(infd); });
-            if constexpr (IO_DEBUG) {
-                char hbuf[NI_MAXHOST], sbuf[NI_MAXSERV];
-                getnameinfo(&in_addr, in_len,
-                    hbuf, sizeof(hbuf),
-                    sbuf, sizeof(sbuf),
-                    NI_NUMERICHOST | NI_NUMERICSERV);
-
-                LOG_TRACE(wrapper->logger()) << hbuf << " " << sbuf;
-            }
-            linapi::append_descriptor_flags(infd, O_NONBLOCK);
-            tcp_socket rs = do_create_tcp_socket(infd, sh->family());
-            ssize_t n = ::read(infd, buff, sz);
-            infd = -1;
-            return {std::move(rs), n >= 0 ? n : 0};
-        }
-
-        int err = errno;
-        if (err != EAGAIN) {
-            throw exception("accept error: %1%"_fmt % strerror(err));
-        }
-        sh->wait(lck);
+    
+    if (!(**pcb)(*sh, false)) {
+        sh->add_callback(pcb->get_pointer());
+        pcb = nullptr; // unpin
+        sh = nullptr; // unpin
     }
+        
+    return std::move(ftr);
 }
 
-size_t lin_impl::tcp_socket_waiting_count(tcp_handle_type handle)
+size_t lin_impl::tcp_server_socket_accepting_count(tcp_handle_type handle) const
 {
     auto * sh = static_cast<lin_shared_handle*>(handle);
     return sh->waiting_cnt.load();
+}
+
+void lin_impl::close_handle(identity<tcp_server_socket_service_type>, tcp_handle_type h) noexcept
+{
+    close_handle(identity<tcp_socket_service_type>(), h);
+}
+
+void lin_impl::release_handle(identity<tcp_server_socket_service>, tcp_handle_type h) noexcept
+{
+    close_handle(identity<tcp_socket_service_type>(), h);
+}
+
+void lin_impl::free_handle(identity<tcp_server_socket_service>, tcp_handle_type h) noexcept
+{
+    delete_socket_handle(static_cast<lin_shared_handle*>(h));
 }
 
 expected<size_t, std::error_code> lin_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz)
@@ -460,17 +585,10 @@ void lin_impl::close_handle(identity<tcp_socket_service_type>, tcp_handle_type h
 {
     auto * sh = static_cast<lin_shared_handle*>(h);
     if (sh) {
-        bool need_clean = false;
-        if (lock_guard guard(sh->mtx); sh->handle != -1) {
-            ::epoll_ctl(efd, EPOLL_CTL_DEL, sh->handle, NULL);
-            ::close(sh->handle);
-            sh->handle = -1;
-            need_clean = true;
-        }
-        if (need_clean) {
-            //on_release_callback();
+        if (sh->close(efd)) {
             lock_guard guard(bk_mtx_);
             BOOST_VERIFY(1 == book_keeper_.erase(sh));
+            sh->release_weak((tcp_socket_service_type*)this);
         }
         sh->cnd.notify_all();
     }

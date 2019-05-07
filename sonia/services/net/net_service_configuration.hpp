@@ -40,7 +40,7 @@ struct listener_configuration
 struct net_service_configuration
 {
     std::string udp_socket_factory;
-    std::string tcp_socket_factory;
+    std::string tcp_server_socket_factory;
     std::string scheduler;
     std::vector<net::listener_configuration> listeners;
 };

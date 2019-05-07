@@ -76,9 +76,6 @@
     <Filter Include="sonia.utility\marshaling">
       <UniqueIdentifier>{abf9cc83-b41c-44eb-9e84-b2985308b0b7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.exceptions">
-      <UniqueIdentifier>{ea99972c-d38c-411a-b487-6616bf42fe36}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.mpl">
       <UniqueIdentifier>{8bdf32b6-4a9f-4d16-9519-9a4f4f88f413}</UniqueIdentifier>
     </Filter>
@@ -612,9 +609,6 @@
     <ClInclude Include="..\..\..\sonia\services\io\smart_handle_facade.hpp">
       <Filter>sonia.services.io</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\exceptions\internal_errors.hpp">
-      <Filter>sonia.exceptions</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\marshaling\service.hpp">
       <Filter>sonia.utility\marshaling</Filter>
     </ClInclude>
@@ -644,12 +638,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\builder.ipp">
       <Filter>sonia.services</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\io\io_ssl.hpp">
-      <Filter>sonia.services.io</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\io\io_ssl_configuration.hpp">
-      <Filter>sonia.services.io</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\net\uri.hpp">
       <Filter>sonia.net</Filter>
@@ -695,6 +683,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\iterators\buffering_write_input_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\ssl_factory.hpp">
+      <Filter>sonia.services.io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\ssl_configuration.hpp">
+      <Filter>sonia.services.io</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -797,9 +791,6 @@
     <ClCompile Include="..\..\..\sonia\services\singleton_locator.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\services\io\io_ssl.cpp">
-      <Filter>sonia.services.io</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\net\uri.cpp">
       <Filter>sonia.net</Filter>
     </ClCompile>
@@ -808,6 +799,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\net\http\http_message.cpp">
       <Filter>sonia.net\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_ssl_factory.cpp">
+      <Filter>sonia.services.io</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

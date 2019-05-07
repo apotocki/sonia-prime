@@ -103,6 +103,12 @@ basic_string_view<CharT> to_string_view(std::vector<CharT, AllocatorT> const& v)
     return basic_string_view<CharT>(v.empty() ? nullptr : &v.front(), v.size());
 }
 
+template <typename CharT>
+basic_string_view<CharT> to_string_view(CharT * arr) noexcept
+{
+    return basic_string_view<CharT>(arr);
+}
+
 template <class T> struct is_string_view : false_type {};
 template <typename CharT, class TraitsT> struct is_string_view<basic_string_view<CharT, TraitsT>> : true_type {};
 template <typename CharT, class TraitsT> struct is_string_view<basic_cstring_view<CharT, TraitsT>> : true_type {};

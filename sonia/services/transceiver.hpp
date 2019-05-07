@@ -14,6 +14,8 @@
 
 #include "sonia/string.hpp"
 #include "sonia/optional.hpp"
+#include "sonia/exceptions.hpp"
+
 #include "sonia/utility/automatic.hpp"
 #include "sonia/utility/type_durable_id.hpp"
 #include "sonia/utility/bind.hpp"
@@ -24,8 +26,6 @@
 #include "sonia/utility/serialization/type_durable_id.hpp"
 #include "sonia/utility/serialization/tuple.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
-
 
 namespace sonia::services {
 
@@ -88,7 +88,7 @@ class proxy_object
 
 public:
     explicit proxy_object(ArgsT&& ... args)
-        : proxy_tuple_(std::forward<ArgsT>(args) ...)
+        : proxy_tuple_{std::forward<ArgsT>(args) ...}
     {
         // check that provided arguments match the function signature
         static_assert(is_same_v<
@@ -148,7 +148,7 @@ void deserialize_object(RangeReadIteratorT rit, RangeWriteIteratorT writ)
 template <class BindingTagT, typename ... ArgsT>
 typename BindingTagT::result_type transmit_end_receive(shared_ptr<transceiver> t, string_view dest, ArgsT&& ... args)
 {
-    proxy_object<BindingTagT, ArgsT...> po(std::forward<ArgsT>(args) ...);
+    proxy_object<BindingTagT, ArgsT...> po{std::forward<ArgsT>(args) ...};
     t->transmit_and_receive(dest, po);
     return po.get();
 }

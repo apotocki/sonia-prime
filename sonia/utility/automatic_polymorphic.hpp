@@ -26,12 +26,12 @@ class automatic_polymorphic_base
 public:
     PolymorphicT * get_pointer() noexcept
     {
-        return std::launder(reinterpret_cast<PolymorphicT*>(reinterpret_cast<char*>(&buffer_) + offset_));
+        return std::launder(reinterpret_cast<PolymorphicT*>(buffer_ + offset_));
     }
 
     PolymorphicT const* get_pointer() const noexcept
     {
-        return std::launder(reinterpret_cast<PolymorphicT const*>(reinterpret_cast<char const*>(&buffer_) + offset_));
+        return std::launder(reinterpret_cast<PolymorphicT const*>(buffer_ + offset_));
     }
 
 protected:
@@ -44,7 +44,7 @@ protected:
         offset_ = static_cast<OffsetT>(offset);
     }
 
-    aligned_storage_t<SizeV, std::alignment_of_v<PolymorphicT>> buffer_;
+    alignas(PolymorphicT) char buffer_[SizeV];
     OffsetT offset_;
 };
 
@@ -53,8 +53,8 @@ template <typename PolymorphicT, size_t SizeV>
 class automatic_polymorphic_base<PolymorphicT, SizeV, void>
 {
 public:
-    PolymorphicT * get_pointer() noexcept { return std::launder(reinterpret_cast<PolymorphicT*>(&buffer_)); }
-    PolymorphicT const* get_pointer() const noexcept { return std::launder(reinterpret_cast<PolymorphicT const*>(&buffer_)); }
+    PolymorphicT * get_pointer() noexcept { return std::launder(reinterpret_cast<PolymorphicT*>(buffer_)); }
+    PolymorphicT const* get_pointer() const noexcept { return std::launder(reinterpret_cast<PolymorphicT const*>(buffer_)); }
 
 protected:
     constexpr int get_offset() const noexcept { return 0; }
@@ -64,7 +64,7 @@ protected:
         BOOST_ASSERT (0 == offset);
     }
 
-    aligned_storage_t<SizeV, std::alignment_of_v<PolymorphicT>> buffer_;
+    alignas(PolymorphicT) char buffer_[SizeV];
 };
 
 template <class PolymorphicT, size_t SizeV, typename OffsetT = void>
@@ -200,18 +200,18 @@ public:
     PolymorphicT const* operator->() const { BOOST_ASSERT(*this); return get_pointer(); }
     PolymorphicT * operator->() { BOOST_ASSERT(*this); return get_pointer(); }
 
-    explicit operator bool() const noexcept { return nullptr != *reinterpret_cast<void* const*>(&this->buffer_); }
+    explicit operator bool() const noexcept { return nullptr != *reinterpret_cast<void* const*>(this->buffer_); }
 
 private:
-    void do_reset() { *reinterpret_cast<void**>(&this->buffer_) = nullptr; }
+    void do_reset() { *reinterpret_cast<void**>(this->buffer_) = nullptr; }
 
     template <class T, class ... ArgsT>
     void construct(ArgsT&& ... args)
     {
         static_assert(is_base_of_v<PolymorphicT, T>);
         BOOST_MPL_ASSERT_RELATION( sizeof(T), <=, SizeV );
-        new (&this->buffer_) T(std::forward<ArgsT>(args) ...);
-        T * place = std::launder(reinterpret_cast<T*>(&this->buffer_));
+        new (this->buffer_) T(std::forward<ArgsT>(args) ...);
+        T * place = std::launder(reinterpret_cast<T*>(this->buffer_));
         int offset = static_cast<int>(reinterpret_cast<char*>(static_cast<PolymorphicT*>(place)) - reinterpret_cast<char*>(place));
         this->set_offset(offset);
     }
@@ -227,8 +227,8 @@ private:
 
     void clone(polymorphic_clonable const& sample)
     {
-        PolymorphicT * p = static_cast<PolymorphicT*>(sample.clone(&this->buffer_, SizeV));
-        int offset = static_cast<int>(reinterpret_cast<char*>(p) - std::launder(reinterpret_cast<char*>(&this->buffer_)));
+        PolymorphicT * p = static_cast<PolymorphicT*>(sample.clone(this->buffer_, SizeV));
+        int offset = static_cast<int>(reinterpret_cast<char*>(p) - std::launder(reinterpret_cast<char*>(this->buffer_)));
         this->set_offset(offset);
     }
 
@@ -243,8 +243,8 @@ private:
 
     void move(polymorphic_movable && sample)
     {
-        PolymorphicT * p = static_cast<PolymorphicT*>(sample.move(&this->buffer_, SizeV));
-        int offset = static_cast<int>(reinterpret_cast<char*>(p) - std::launder(reinterpret_cast<char*>(&this->buffer_)));
+        PolymorphicT * p = static_cast<PolymorphicT*>(sample.move(this->buffer_, SizeV));
+        int offset = static_cast<int>(reinterpret_cast<char*>(p) - std::launder(reinterpret_cast<char*>(this->buffer_)));
         this->set_offset(offset);
     }
 };

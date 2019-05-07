@@ -4,7 +4,8 @@
 
 #include "sonia/config.hpp"
 #include "io_cache_service.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
+
+#include "sonia/exceptions.hpp"
 #include "sonia/services.hpp"
 
 namespace sonia::services {
@@ -147,22 +148,6 @@ io::tcp_socket io_cache_service::connection_cache::create_connected_tcp_socket(c
         cache_.insert(*result_pitm);
         return io::tcp_socket_access::create_tcp_socket<io::socket_traits>(shared_from_this(), result_pitm);
     }
-}
-
-io::tcp_socket io_cache_service::create_bound_tcp_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type dt)
-{
-    THROW_NOT_SUPPORTED_ERROR("bound sockets are not supported");
-}
-
-std::pair<io::tcp_socket, size_t> io_cache_service::connection_cache::tcp_socket_accept(tcp_handle_type, char*, size_t)
-{
-    THROW_NOT_SUPPORTED_ERROR();
-}
-
-size_t io_cache_service::connection_cache::tcp_socket_waiting_count(tcp_handle_type h)
-{
-    auto * ci = static_cast<cache_item*>(h);
-    return ci->sock.waiting_count();
 }
 
 expected<size_t, std::error_code> io_cache_service::connection_cache::tcp_socket_read_some(tcp_handle_type h, void * buff, size_t sz)

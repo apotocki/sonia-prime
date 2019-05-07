@@ -39,11 +39,13 @@ public:
         std::atomic<size_t> workers_count{1};
         size_t workers_max{1};
         size_t buffer_size{0};
+
+        std::atomic<bool> closed{false};
     };
 
 private:
     net_service_configuration cfg_;
-    shared_ptr<sonia::io::tcp_socket_factory_type> tcp_socket_factory_;
+    shared_ptr<sonia::io::tcp_server_socket_factory_type> tcp_server_socket_factory_;
     shared_ptr<sonia::io::udp_socket_factory_type> udp_socket_factory_;
     shared_ptr<scheduler> scheduler_;
     std::vector<shared_ptr<listener>> listeners_;

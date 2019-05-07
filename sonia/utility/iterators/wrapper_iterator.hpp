@@ -20,7 +20,7 @@
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/polymorphic_traits.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
+#include "sonia/exceptions.hpp"
 
 #include "proxy.hpp"
 

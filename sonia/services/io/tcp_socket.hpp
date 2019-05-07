@@ -15,6 +15,7 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/string.hpp"
 #include "sonia/cstdint.hpp"
+#include "sonia/concurrency.hpp"
 #include "sonia/sal/net.hpp"
 
 #include "smart_handle_facade.hpp"
@@ -22,6 +23,24 @@
 namespace sonia::io {
 
 template <class DerivedT, class TraitsT> class tcp_socket_adapter;
+template <class DerivedT, class TraitsT> class tcp_server_socket_adapter;
+
+template <typename TraitsT>
+class tcp_server_socket_service
+{
+protected:
+    using tcp_handle_type = typename TraitsT::handle_type;
+
+public:
+    virtual ~tcp_server_socket_service() = default;
+
+    virtual fibers::future<smart_handle_facade<TraitsT, tcp_socket_adapter>> tcp_server_socket_accept(tcp_handle_type) = 0;
+    virtual size_t tcp_server_socket_accepting_count(tcp_handle_type) const = 0;
+
+    virtual void close_handle(identity<tcp_server_socket_service>, tcp_handle_type) noexcept = 0;
+    virtual void release_handle(identity<tcp_server_socket_service>, tcp_handle_type) noexcept = 0;
+    virtual void free_handle(identity<tcp_server_socket_service>, tcp_handle_type) noexcept = 0;
+};
 
 template <typename TraitsT>
 class tcp_socket_service
@@ -32,9 +51,6 @@ protected:
 public:
     virtual ~tcp_socket_service() = default;
 
-    virtual std::pair<smart_handle_facade<TraitsT, tcp_socket_adapter>, size_t> tcp_socket_accept(tcp_handle_type, char*, size_t) = 0;
-    virtual size_t tcp_socket_waiting_count(tcp_handle_type) = 0;
-
     virtual expected<size_t, std::error_code> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) = 0;
     virtual expected<size_t, std::error_code> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) = 0;
     virtual void close_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
@@ -43,22 +59,39 @@ public:
 };
 
 template <class DerivedT, class TraitsT>
+class tcp_server_socket_adapter
+{
+public:
+    using handle_type = typename TraitsT::handle_type;
+    using service_type = tcp_server_socket_service<TraitsT>;
+    using socket_handle = smart_handle_facade<TraitsT, sonia::io::tcp_socket_adapter>;
+
+    fibers::future<socket_handle> accept()
+    {
+        return impl().tcp_server_socket_accept(handle());
+    }
+
+    size_t accepting_count() const
+    {
+        return impl().tcp_server_socket_accepting_count(handle());
+    }
+
+    void close() noexcept
+    {
+        impl().close_handle(identity<service_type>(), handle());
+    }
+
+private:
+    service_type & impl() const { return *static_cast<DerivedT const*>(this)->impl_; }
+    handle_type handle() const { return static_cast<DerivedT const*>(this)->handle_; }
+};
+
+template <class DerivedT, class TraitsT>
 class tcp_socket_adapter
 {
 public:
     using handle_type = typename TraitsT::handle_type;
     using service_type = tcp_socket_service<TraitsT>;
-    using socket_handle = smart_handle_facade<TraitsT, sonia::io::tcp_socket_adapter>;
-
-    std::pair<socket_handle, size_t> accept(char * buff, size_t sz)
-    {
-        return impl().tcp_socket_accept(handle(), buff, sz);
-    }
-
-    size_t waiting_count() const
-    {
-        return impl().tcp_socket_waiting_count(handle());
-    }
 
     template <typename T>
     expected<size_t, std::error_code> read_some(array_view<T> buff)
@@ -74,7 +107,7 @@ public:
     }
 
     template <typename T>
-    expected<size_t, std::error_code> write_some(array_view<const T> buff)
+    expected<size_t, std::error_code> write_some(array_view<T> buff)
     {
         return impl().tcp_socket_write_some(handle(), buff.begin(), buff.size() * sizeof(T));
     }
@@ -108,6 +141,14 @@ public:
     }
 
     template <typename TraitsT>
+    static smart_handle_facade<TraitsT, tcp_server_socket_adapter> create_tcp_server_socket(
+        shared_ptr<tcp_server_socket_service<typename TraitsT::strong_traits_type>> impl,
+        typename TraitsT::handle_type handle) noexcept
+    {
+        return smart_handle_access<tcp_server_socket_adapter>::create<TraitsT>(std::move(impl), handle);
+    }
+
+    template <typename TraitsT>
     static typename TraitsT::handle_type handle(smart_handle_facade<TraitsT, tcp_socket_adapter> const& h)
     {
         return smart_handle_access<tcp_socket_adapter>::handle(h);
@@ -121,34 +162,30 @@ public:
 };
 
 template <class TraitsT>
+class tcp_server_socket_factory
+{
+public:
+    virtual ~tcp_server_socket_factory() = default;
+
+    virtual smart_handle_facade<TraitsT, tcp_server_socket_adapter> create_server_socket(cstring_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET) = 0;
+
+    smart_handle_facade<TraitsT, tcp_server_socket_adapter> create_server_socket(string_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
+    {
+        return as_cstring<64>(address, [this, port, ft](cstring_view address) { return create_server_socket(address, port, ft); });
+    }
+};
+
+template <class TraitsT>
 class tcp_socket_factory
 {
 public:
     virtual ~tcp_socket_factory() = default;
     
-    virtual smart_handle_facade<TraitsT, tcp_socket_adapter> create_bound_tcp_socket(cstring_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET) = 0;
     virtual smart_handle_facade<TraitsT, tcp_socket_adapter> create_connected_tcp_socket(cstring_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET) = 0;
-
-    smart_handle_facade<TraitsT, tcp_socket_adapter> create_bound_tcp_socket(string_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
-    {
-        return as_cstring<64>(address, [this, port, ft](cstring_view address) { return create_bound_tcp_socket(address, port, ft); });
-    }
     
     smart_handle_facade<TraitsT, tcp_socket_adapter> create_connected_tcp_socket(string_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
     {
         return as_cstring<64>(address, [this, port, ft](cstring_view address) { return create_connected_tcp_socket(address, port, ft); });
-    }
-
-    template <typename StringT>
-    smart_handle_facade<TraitsT, tcp_socket_adapter> create_bound_tcp_socket(StringT && address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
-    {
-        return create_bound_tcp_socket(to_string_view(address), port, ft);
-    }
-
-    template <typename StringT>
-    smart_handle_facade<TraitsT, tcp_socket_adapter> create_connected_tcp_socket(StringT && address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
-    {
-        return create_connected_tcp_socket(to_string_view(address), port, ft);
     }
 };
 

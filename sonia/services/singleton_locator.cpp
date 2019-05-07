@@ -4,7 +4,7 @@
 
 #include "sonia/config.hpp"
 #include "singleton_locator.hpp"
-#include "sonia/exceptions/internal_errors.hpp"
+#include "sonia/exceptions.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
 namespace sonia {
@@ -70,7 +70,7 @@ void singleton_locator::shutdown()
 
 void singleton_locator::shutdown(shared_ptr<singleton> s)
 {
-    //GLOBAL_LOG_TRACE() << "singleton_locator::shutdown: " << serv->get_name();
+    GLOBAL_LOG_TRACE() << "singleton_locator::shutdown: " << s->get_name();
     unique_lock cache_lock(cache_mtx_);
     
     auto it = cache_.find(s->get_id());

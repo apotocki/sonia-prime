@@ -218,14 +218,14 @@ protected:
     explicit parameters_binding(parameters_description<BoundT> * pd) : pd_(pd) {}
 
 public:
-    template <typename ET>
-    parameter_options<simple_value_descriptor<ET, BoundT>> variable(const char * name, ET BoundT::* elem, const char * descr = nullptr);
+    template <typename ET, class T>
+    parameter_options<simple_value_descriptor<ET, BoundT>> variable(const char * name, ET T::* elem, enable_if_t<is_base_of_v<T, BoundT>, const char> * descr = nullptr);
 
-    template <typename ET>
-    parameter_options<collection_value_descriptor<ET, BoundT>> array(const char * name, ET BoundT::* elem, const char * descr = nullptr);
+    template <typename ET, class T>
+    parameter_options<collection_value_descriptor<ET, BoundT>> array(const char * name, ET T::* elem, enable_if_t<is_base_of_v<T, BoundT>, const char> * descr = nullptr);
 
-    template <typename ET>
-    parameter_options<map_value_descriptor<ET, BoundT>> map(const char * name, ET BoundT::* elem, const char * descr = nullptr);
+    template <typename ET, class T>
+    parameter_options<map_value_descriptor<ET, BoundT>> map(const char * name, ET T::* elem, enable_if_t<is_base_of_v<T, BoundT>, const char> * descr = nullptr);
 
     parameters_description<BoundT> & description() const { return *pd_; }
 
@@ -348,8 +348,8 @@ typename map_value_descriptor<T, BoundT>::item_type map_value_descriptor<T, Boun
 }
 
 template <class BoundT>
-template <typename ET>
-parameter_options<simple_value_descriptor<ET, BoundT>> parameters_binding<BoundT>::variable(const char * name, ET BoundT::* var, const char * descr)
+template <typename ET, class T>
+parameter_options<simple_value_descriptor<ET, BoundT>> parameters_binding<BoundT>::variable(const char * name, ET T::* var, enable_if_t<is_base_of_v<T, BoundT>, const char> * descr)
 {
     auto vd = sonia::make_shared<simple_value_descriptor<ET, BoundT>>(name, var);
     if (descr) vd->set_description(descr);
@@ -358,8 +358,8 @@ parameter_options<simple_value_descriptor<ET, BoundT>> parameters_binding<BoundT
 }
 
 template <class BoundT>
-template <typename ET>
-parameter_options<collection_value_descriptor<ET, BoundT>> parameters_binding<BoundT>::array(const char * name, ET BoundT::* elem, const char * descr)
+template <typename ET, class T>
+parameter_options<collection_value_descriptor<ET, BoundT>> parameters_binding<BoundT>::array(const char * name, ET T::* elem, enable_if_t<is_base_of_v<T, BoundT>, const char> * descr)
 {
     auto vd = sonia::make_shared<collection_value_descriptor<ET, BoundT>>(name, elem);
     if (descr) vd->set_description(descr);
@@ -368,8 +368,8 @@ parameter_options<collection_value_descriptor<ET, BoundT>> parameters_binding<Bo
 }
 
 template <class BoundT>
-template <typename ET>
-parameter_options<map_value_descriptor<ET, BoundT>> parameters_binding<BoundT>::map(const char * name, ET BoundT::* elem, const char * descr)
+template <typename ET, class T>
+parameter_options<map_value_descriptor<ET, BoundT>> parameters_binding<BoundT>::map(const char * name, ET T::* elem, enable_if_t<is_base_of_v<T, BoundT>, const char> * descr)
 {
     auto vd = sonia::make_shared<map_value_descriptor<ET, BoundT>>(name, elem);
     if (descr) vd->set_description(descr);

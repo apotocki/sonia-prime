@@ -74,6 +74,15 @@ struct socket_traits : socket_traits_base
     }
 };
 
+template <class DerivedT, class TraitsT> class tcp_server_socket_adapter;
+template <class TraitsT> class tcp_server_socket_service;
+template <class TraitsT> class tcp_server_socket_factory;
+
+using tcp_server_socket = smart_handle_facade<socket_traits, tcp_server_socket_adapter>;
+using tcp_server_socket_service_type = tcp_server_socket_service<socket_traits>;
+using tcp_server_socket_factory_type = tcp_server_socket_factory<socket_traits>;
+
+
 template <class DerivedT, class TraitsT> class tcp_socket_adapter;
 template <class TraitsT> class tcp_socket_service;
 template <class TraitsT> class tcp_socket_factory;
@@ -82,6 +91,7 @@ using tcp_socket = smart_handle_facade<socket_traits, tcp_socket_adapter>;
 using tcp_weak_socket = smart_handle_facade<socket_traits::weak_traits_type, tcp_socket_adapter>;
 using tcp_socket_service_type = tcp_socket_service<socket_traits>;
 using tcp_socket_factory_type = tcp_socket_factory<socket_traits>;
+
 
 template <class DerivedT, class TraitsT> class udp_socket_adapter;
 template <class TraitsT> class udp_socket_service;

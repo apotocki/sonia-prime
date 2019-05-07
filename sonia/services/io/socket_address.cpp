@@ -21,7 +21,7 @@ namespace linapi = sonia::linux;
 #include <boost/phoenix/stl/container.hpp>
 #include <boost/phoenix/object/construct.hpp>
 
-#include "sonia/exceptions/internal_errors.hpp"
+#include "sonia/exceptions.hpp"
 
 namespace sonia { namespace io {
 

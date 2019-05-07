@@ -68,21 +68,6 @@ struct shared_handle : HandleTraitsT::base_type
             HandleTraitsT::free(std::forward<ServiceT>(s) ..., this);
         }
     }
-    /*
-    shared_handle * lock()
-    {
-        if ((refs_.fetch_add(1) & refs_mask) > 0) {
-            return this;
-        }
-        auto v = refs_.fetch_sub(1);
-        if ((v & refs_mask) != 1) {
-            GLOBAL_LOG_ERROR() << "shared_handle lock error: " << v << ", " << (v & refs_mask);
-        }
-        BOOST_VERIFY((v & refs_mask) == 1);
-        //BOOST_VERIFY((refs_.fetch_sub(1) & refs_mask) == 1);
-        return nullptr;
-    }
-    */
 };
 
 /*

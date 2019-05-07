@@ -11,14 +11,19 @@
 
 #include "sonia/cstdint.hpp"
 #include "sonia/optional.hpp"
-#include "io_ssl_configuration.hpp"
+#include "ssl_configuration.hpp"
 
 namespace sonia::services {
 
 struct io_service_configuration
 {
     uint32_t threads;
-    optional<io::ssl_configuration> ssl_configuration;
+};
+
+struct io_ssl_service_configuration : io::ssl_configuration
+{
+    optional<std::string> tcp_server_socket_factory;
+    optional<std::string> tcp_socket_factory;
 };
 
 }

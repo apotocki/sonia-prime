@@ -28,6 +28,8 @@ struct http_connector_configuration
 {
     size_t keep_alive_max_count;
     size_t not_keep_alive_max_count;
+    size_t request_buffer_size;
+    size_t response_buffer_size;
     // keep_alive_timeout;
     std::string dos_message;
     std::vector<http_route> routes;

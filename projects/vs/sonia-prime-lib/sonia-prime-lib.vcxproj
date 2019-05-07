@@ -25,7 +25,6 @@
     <ClInclude Include="..\..\..\sonia\cstdint.hpp" />
     <ClInclude Include="..\..\..\sonia\config.hpp" />
     <ClInclude Include="..\..\..\sonia\exceptions.hpp" />
-    <ClInclude Include="..\..\..\sonia\exceptions\internal_errors.hpp" />
     <ClInclude Include="..\..\..\sonia\function.hpp" />
     <ClInclude Include="..\..\..\sonia\iterator_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\loggable.hpp" />
@@ -54,11 +53,11 @@
     <ClInclude Include="..\..\..\sonia\services\host_impl.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\factory.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\file.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\io\io_ssl.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\io\io_ssl_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\smart_handle_facade.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\sockets.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\socket_address.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\ssl_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\ssl_factory.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_acceptor_.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_read_output_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_socket.hpp" />
@@ -251,7 +250,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\io_factory_win.cpp" />
-    <ClCompile Include="..\..\..\sonia\services\io\io_ssl.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\io\io_ssl_factory.cpp" />
     <ClCompile Include="..\..\..\sonia\services\io\socket_address.cpp" />
     <ClCompile Include="..\..\..\sonia\services\local_type_registry.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>

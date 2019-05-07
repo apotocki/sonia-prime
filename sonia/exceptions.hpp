@@ -12,21 +12,25 @@
 #include <stdexcept>
 #include <utility>
 
+#include <boost/stacktrace.hpp>
+#include <boost/exception/all.hpp>
 #include <boost/throw_exception.hpp>
 
 #include "sonia/string.hpp"
+#include "sonia/type_traits.hpp"
 
 namespace sonia {
 
 class exception : public std::runtime_error
 {
 public:
-    exception() : std::runtime_error("error") {}
+    template <typename ... ArgsT>
+    exception(ArgsT && ... args) : std::runtime_error(construct(std::forward<ArgsT>(args) ...)) {}
 
-    template <class ... ArgsT>
-    exception(ArgsT && ... args) 
-        : std::runtime_error((... + sonia::to_string(std::forward<ArgsT>(args))))
-    {}
+private:
+    static std::string construct() { return "error"; }
+    static std::runtime_error const& construct(exception & e) { return e; }
+    template <typename ... ArgsT> static std::string construct(ArgsT && ... args) { return (... + sonia::to_string(std::forward<ArgsT>(args))); }
 };
 
 class silence_exception : public exception {};
@@ -35,19 +39,15 @@ class silence_exception : public exception {};
 class name : public base                                                        \
 {                                                                               \
 public:                                                                         \
-    name() : base(#msg) {}                                                      \
-    name(name const&) = default;                                                \
-                                                                                \
-    template <class ArgT>                                                       \
-    explicit name(ArgT && arg)                                                  \
-        : base(#msg ": ", std::forward<ArgT>(arg))                              \
-    {}                                                                          \
-                                                                                \
-    template <class ArgT0, class ArgT1, class ... ArgsT>                        \
-    name(ArgT0 && arg0, ArgT1 && arg1, ArgsT && ... args)                       \
-        : base(std::forward<ArgT0>(arg0), std::forward<ArgT1>(arg1),            \
-            std::forward<ArgsT>(args) ...)                                      \
-    {}                                                                          \
+    template <typename ... ArgsT>                                               \
+    name(ArgsT && ... args) : base(construct(std::forward<ArgsT>(args) ...)) {} \
+private:                                                                        \
+    static base construct() { return base{#msg}; }                              \
+    static base const& construct(name & e) { return e; }                        \
+    template <class ArgT> base construct(ArgT && arg)                           \
+    { return base{#msg ": ", std::forward<ArgT>(arg)}; }                        \
+    template <class ... ArgsT> base construct(ArgsT && ... args)                \
+    { return base{std::forward<ArgsT>(args) ...}; }                             \
 };
 
 DECLARE_EXCEPTION(eof_exception, "end of file", exception)
@@ -59,6 +59,26 @@ DECLARE_EXCEPTION(internal_error, "internal error", exception)
 DECLARE_EXCEPTION(not_implemented_error, "not implemented error", internal_error)
 DECLARE_EXCEPTION(not_supported_operation_error, "not supported operation error", internal_error)
 DECLARE_EXCEPTION(illegal_argument_error, "illegal argument", internal_error)
+
+using trace_info = boost::error_info<struct tag_stacktrace, boost::stacktrace::stacktrace>;
+
+#define THROW_PARTICULAR_ERROR_RAW(cl, current_function, file, line, ...) \
+    throw boost::enable_error_info(cl(__VA_ARGS__)) << boost::throw_function(current_function) \
+        << boost::throw_file(file) \
+        << boost::throw_line(line) \
+        << trace_info(boost::stacktrace::stacktrace())
+
+#define THROW_PARTICULAR_ERROR_RAW2(err, current_function, file, line) \
+    throw boost::enable_error_info(err) << boost::throw_function(current_function) \
+        << boost::throw_file(file) \
+        << boost::throw_line(line) \
+        << trace_info(boost::stacktrace::stacktrace())
+
+#define THROW_ERROR(err) THROW_PARTICULAR_ERROR_RAW2(err, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__)
+
+#define THROW_INTERNAL_ERROR(...) THROW_PARTICULAR_ERROR_RAW2(internal_error(__VA_ARGS__), BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__)
+#define THROW_NOT_IMPLEMENTED_ERROR(...) THROW_PARTICULAR_ERROR_RAW(not_implemented_error, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
+#define THROW_NOT_SUPPORTED_ERROR(...) THROW_PARTICULAR_ERROR_RAW(not_supported_operation_error, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
 
 }
 

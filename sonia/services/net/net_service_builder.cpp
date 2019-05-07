@@ -15,7 +15,7 @@ net_service_builder::net_service_builder()
 {
     set_log_attribute("Type", "builder");
     parameters_.bind()
-        .variable("tcp-socket-factory", &net_service_configuration::tcp_socket_factory, "tcp socket factory name")
+        .variable("tcp-server-socket-factory", &net_service_configuration::tcp_server_socket_factory, "tcp server socket factory name")
         .variable("udp-socket-factory", &net_service_configuration::udp_socket_factory, "udp socket factory name")
         .variable("scheduler", &net_service_configuration::scheduler, "scheduler service name").required()
         .array("listeners", &net_service_configuration::listeners, "listeners set definition")

@@ -15,7 +15,7 @@
 #include "sonia/services/io/io_service_builder.hpp"
 #include "sonia/services/io/io_cache_service_builder.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 class prime_bundle : public bundle
 {
@@ -31,13 +31,14 @@ public:
         install<http_connector_builder>("http-server");
         install<http_default_application_builder>("http-default");
         install<io_service_builder>("io");
+        install<io_ssl_service_builder>("io-ssl");
         install<io_cache_service_builder>("io-cache");
         install<echo_connector_builder>("echo");
         install<transceiver_service_builder>("transceiver");
     }
 };
 
-}}
+}
 
 #ifndef SONIA_PRIME_STATIC
 extern "C" {

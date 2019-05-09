@@ -74,6 +74,12 @@
     <ClCompile Include="..\..\..\sonia\services\net\http\http_default_application.cpp">
       <Filter>sonia.services\net\http</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_static_application.cpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_static_application_builder.cpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -214,6 +220,15 @@
       <Filter>sonia.services\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application.hpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application.hpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application_builder.hpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application_configuration.hpp">
       <Filter>sonia.services\net\http</Filter>
     </ClInclude>
   </ItemGroup>

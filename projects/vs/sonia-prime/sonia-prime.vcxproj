@@ -39,6 +39,8 @@
     <ClCompile Include="..\..\..\sonia\services\net\http\http_connector_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_default_application.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_default_application_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_static_application.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_static_application_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\net_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\net_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\prime_bundle.cpp" />
@@ -79,6 +81,9 @@
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service.hpp" />

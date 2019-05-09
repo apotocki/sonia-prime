@@ -30,6 +30,8 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/net/http/http_connector.cpp
     ${BUNDLE_HOME}/sonia/services/net/http/http_default_application_builder.cpp
     ${BUNDLE_HOME}/sonia/services/net/http/http_default_application.cpp
+    ${BUNDLE_HOME}/sonia/services/net/http/http_static_application_builder.cpp
+    ${BUNDLE_HOME}/sonia/services/net/http/http_static_application.cpp
     ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
 )
 

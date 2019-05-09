@@ -44,11 +44,13 @@ public:
         if (!hvals.empty()) { // content legth is a flag that signals of raw write op
             writ = base_type::encode(r, std::move(writ));
             writ.flush();
-            oi = std::move(writ.base);
-            
-            output_iterator_polymorpic_adapter<WriteIteratorT> roimpl{oi};
-            r.content_writer(http::message::range_write_input_iterator{&roimpl});
-            roimpl.flush();
+
+            if (r.content_writer) {
+                oi = std::move(writ.base);
+                output_iterator_polymorpic_adapter<WriteIteratorT> roimpl{oi};
+                r.content_writer(http::message::range_write_input_iterator{&roimpl});
+                roimpl.flush();
+            }
         } else {
             hvals = r.get_header(http::header::TRANSFER_ENCODING);
             if (hvals.size() != 1 || hvals[0] != "chunked") {
@@ -89,7 +91,9 @@ public:
                 );
             }
             
-            r.content_writer(http::message::range_write_input_iterator{roimpl.get_pointer()});
+            if (r.content_writer) {
+                r.content_writer(http::message::range_write_input_iterator{roimpl.get_pointer()});
+            }
             roimpl->close();
         }
         

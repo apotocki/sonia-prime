@@ -102,7 +102,6 @@ deflate_iterator<IteratorT>::strm_data::strm_data(IteratorT it, bool gzip)
 template <class IteratorT>
 deflate_iterator<IteratorT>::strm_data::~strm_data()
 {
-    close();
 	deflateEnd(&strm_);
 }
 

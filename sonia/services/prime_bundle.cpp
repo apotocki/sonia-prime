@@ -11,6 +11,7 @@
 #include "sonia/services/net/echo/echo_connector_builder.hpp"
 #include "sonia/services/net/http/http_connector_builder.hpp"
 #include "sonia/services/net/http/http_default_application_builder.hpp"
+#include "sonia/services/net/http/http_static_application_builder.hpp"
 #include "sonia/services/transceiver/transceiver_builder.hpp"
 #include "sonia/services/io/io_service_builder.hpp"
 #include "sonia/services/io/io_cache_service_builder.hpp"
@@ -30,6 +31,7 @@ public:
         install<net_service_builder>("net-server");
         install<http_connector_builder>("http-server");
         install<http_default_application_builder>("http-default");
+        install<http_static_application_builder>("http-static");
         install<io_service_builder>("io");
         install<io_ssl_service_builder>("io-ssl");
         install<io_cache_service_builder>("io-cache");

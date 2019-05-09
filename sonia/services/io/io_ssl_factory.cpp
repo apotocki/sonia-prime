@@ -340,7 +340,7 @@ size_t ssl_factory::ssl_descriptor::perform(int (ssl_factory::ssl_descriptor::* 
             return (size_t)result;
         }
     } catch (eof_exception const& e) {
-        GLOBAL_LOG_ERROR() << "eof_exception in perfom: " << e.what();
+        // GLOBAL_LOG_TRACE() << "eof_exception in perform: " << e.what();
         shutdowned_ = true;
         throw;
     }

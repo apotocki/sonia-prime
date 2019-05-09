@@ -25,6 +25,9 @@ namespace sonia::services {
 
 thread_local thread_descriptor * tdesc_ = nullptr;
 
+post_initialize_fn post_initialize_fn_;
+
+std::string * version_message_ = nullptr;
 environment * env_ = nullptr;
 
 void thread_descriptor::reset()
@@ -43,6 +46,25 @@ void thread_descriptor::set()
     tdesc_ = this;
 }
 
+void set_version_message(std::string msg)
+{
+    if (!version_message_) {
+        version_message_ = new std::string(std::move(msg));
+    } else {
+        *version_message_ = std::move(msg);
+    }
+}
+
+std::string const* get_version_message()
+{
+    return version_message_;
+}
+
+void set_post_initialize(post_initialize_fn fn)
+{
+    post_initialize_fn_ = fn;
+}
+
 void initialize(int argc, char const* argv[], std::istream * cfgstream)
 {
     if (env_) {
@@ -52,6 +74,10 @@ void initialize(int argc, char const* argv[], std::istream * cfgstream)
     env_ = new environment;
     try {
         env_->open(argc, argv, cfgstream);
+        if (post_initialize_fn_) {
+            post_initialize_fn_();
+        }
+        env_->start();
     } catch (...) {
         delete env_;
         env_ = nullptr;
@@ -65,6 +91,10 @@ void shutdown()
     GLOBAL_LOG_INFO() << "terminating...";
     delete env_;
     env_ = nullptr;
+    if (version_message_) {
+        delete version_message_;
+        version_message_ = nullptr;
+    }
 }
 
 shared_ptr<host> get_host()

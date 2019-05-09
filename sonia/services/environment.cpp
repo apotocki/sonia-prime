@@ -79,9 +79,15 @@ environment::environment() : log_initialized_(false)
             )
         ;
 
-    std::ostringstream version_ss;
-    version_ss << "[Version " SONIA_ONE_VERSION " (" << BUILD_NAME << " " << BUILD_DATETIME ")]" HELLO_MESSAGE;
-    version_msg_ = std::move(version_ss.str());
+    auto const * vmsg = get_version_message();
+    if (!vmsg) {
+        std::ostringstream version_ss;
+        version_ss << "[Version " SONIA_ONE_VERSION " (" << BUILD_NAME << " " << BUILD_DATETIME ")]" HELLO_MESSAGE;
+        version_msg_ = version_ss.str();
+        set_version_message(version_msg_);
+    } else {
+        version_msg_ = *vmsg;
+    }
 
 #ifndef BOOST_WINDOWS
     sonia::posix::run_watchers(1);
@@ -174,16 +180,21 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
     factory_ = make_shared<basic_service_factory>();
 
     if (vm.count("cfg")) {
-        std::string const& f = vm["cfg"].as<std::string>();
-        load_configuration(boost::filesystem::path(f));
+        start_conf_ = vm["cfg"].as<std::string>();
+    }
+}
+
+void environment::start()
+{
+    if (start_conf_) {
+        load_configuration(boost::filesystem::path(*start_conf_));
         //for (std::string const& f : vm["cfg"].as<std::vector<std::string>>()) {
         //    load_configuration(boost::filesystem::path(f));
         //}
     }
 
-    //server_configuration.verbose() = vm["verbose"].as<bool>();
-    //server_configuration.logger_conf_file_name() = vm["log"].as<std::string>();
-    //server_configuration.handling_system_failure() = vm["handling-system-failure"].as<bool>();
+    //vm["verbose"].as<bool>();
+    //vm["handling-system-failure"].as<bool>();
 }
 
 void environment::load_configuration(boost::filesystem::path const & fpath)
@@ -203,8 +214,7 @@ void environment::load_configuration(std::istream & cfg)
 {
     using namespace sonia::parsers;
 
-    std::string text;
-    std::copy(std::istreambuf_iterator<char>(cfg), std::istreambuf_iterator<char>(), std::back_inserter(text));
+    std::string text{std::istreambuf_iterator<char>(cfg), std::istreambuf_iterator<char>()};
 
     json::model model;
 

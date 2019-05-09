@@ -19,18 +19,23 @@
 #include "sonia/services/service.hpp"
 #include "sonia/services/host.hpp"
 
-namespace sonia {
-
-namespace this_thread {
+namespace sonia::this_thread {
 
 SONIA_PRIME_API void attach_host(string_view);
 SONIA_PRIME_API void detach_host();
 
 }
 
-namespace services {
+namespace sonia::services {
+
+typedef void (*post_initialize_fn)();
 
 SONIA_PRIME_API char const* bundles_path();
+
+SONIA_PRIME_API void set_version_message(std::string msg);
+SONIA_PRIME_API std::string const* get_version_message();
+
+SONIA_PRIME_API void set_post_initialize(post_initialize_fn);
 
 SONIA_PRIME_API void initialize(int argc = 0, char const* argv[] = nullptr, std::istream * cfgstream = nullptr);
 SONIA_PRIME_API void shutdown();
@@ -40,7 +45,8 @@ SONIA_PRIME_API shared_ptr<service> locate(string_view);
 SONIA_PRIME_API shared_ptr<service> locate(service::id);
 
 template <class ServiceT, typename IdT>
-shared_ptr<ServiceT> locate(IdT id) {
+shared_ptr<ServiceT> locate(IdT id)
+{
     shared_ptr<ServiceT> rval = dynamic_pointer_cast<ServiceT>(locate(id));
     if (!rval) {
         throw exception("'%1%' service is not compatible with %2%"_fmt % id % typeid(ServiceT).name());
@@ -49,7 +55,8 @@ shared_ptr<ServiceT> locate(IdT id) {
 }
 
 template <class ServiceT, typename IdT>
-void locate(IdT id, shared_ptr<ServiceT> & serv) {
+void locate(IdT id, shared_ptr<ServiceT> & serv)
+{
     serv = locate<ServiceT>(id);
 }
 
@@ -57,6 +64,6 @@ SONIA_PRIME_API void register_service_factory(string_view, function<shared_ptr<s
 SONIA_PRIME_API void load_configuration(boost::filesystem::path const &);
 SONIA_PRIME_API void load_configuration(std::istream &);
 
-}}
+}
 
 #endif // SONIA_SERVICES_HPP

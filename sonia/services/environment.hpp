@@ -20,6 +20,7 @@
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 
+#include "sonia/optional.hpp"
 #include "sonia/concurrency.hpp"
 
 #include "host_impl.hpp"
@@ -54,6 +55,8 @@ public:
     ~environment() noexcept;
 
     void open(int argc, char const* argv[], std::istream * cfgstream = nullptr);
+    void start();
+
     void load_configuration(boost::filesystem::path const &);
     void load_configuration(std::istream &);
 
@@ -87,6 +90,8 @@ private:
     std::string version_msg_;
     bool verbose_;
     bool log_initialized_;
+
+    optional<std::string> start_conf_;
 
     mutable mutex cfg_mutex_;
 

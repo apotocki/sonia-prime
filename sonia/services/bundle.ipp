@@ -10,8 +10,9 @@
 #endif
 
 #include "bundle.hpp"
+#include "sonia/exceptions.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 template <typename ServiceT>
 void bundle::install(string_view nm)
@@ -22,10 +23,10 @@ void bundle::install(string_view nm)
             return make_shared<ServiceT>();
         }));
     } else {
-        throw internal_error("builder for the service '%1%' is already installed"_fmt % nm);
+        THROW_INTERNAL_ERROR("builder for the service '%1%' is already installed"_fmt % nm);
     }
 }
 
-}}
+}
 
 #endif // SONIA_SERVICES_BUNDLE_IPP

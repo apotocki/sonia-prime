@@ -9,6 +9,8 @@
 #   pragma once
 #endif
 
+#include <iosfwd>
+
 #include "service.hpp"
 #include "sonia/utility/json/value.hpp"
 #include "sonia/utility/parameters/parameters.hpp"
@@ -26,7 +28,6 @@ class builder
 {
 public:
     virtual ~builder() = default;
-
     virtual shared_ptr<service> build(service_configuration const&) = 0;
 };
 
@@ -36,7 +37,7 @@ class basic_builder
     , public builder
 {
 public:
-    shared_ptr<service> build(service_configuration const& scfg);
+    shared_ptr<service> build(service_configuration const& scfg) override;
 
 protected:
     sonia::parameters::parameters_description<ConfT> parameters_;
@@ -47,7 +48,8 @@ protected:
 #define DECLARE_PARTICULAR_BUILDER(name)                                         \
 class name;                                                                      \
 struct name##_configuration;                                                     \
-class name##_builder : public basic_builder<name, name##_configuration>          \
+class name##_builder                                                             \
+    : public sonia::services::basic_builder<name, name##_configuration>          \
 {                                                                                \
 public:                                                                          \
     name##_builder();                                                            \

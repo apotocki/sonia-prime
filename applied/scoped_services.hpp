@@ -21,6 +21,7 @@ public:
 
     explicit scoped_services(int argc = 0, char const* argv[] = nullptr)
     {
+        pre_initialize(argc, argv);
         sonia::services::initialize(argc, argv);
     }
 
@@ -44,6 +45,8 @@ public:
         run_ = false;
         var_.notify_one();
     }
+
+    void pre_initialize(int& argc, char const**& argv);
 
 private:
     sonia::mutex mtx_;

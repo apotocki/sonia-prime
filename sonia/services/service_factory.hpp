@@ -16,21 +16,22 @@
 
 #include "sonia/services.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
-class basic_service_factory : public service_factory {
+class basic_service_factory : public service_factory
+{
 public:
     shared_ptr<service> create(string_view nm) const override;
 
     void register_service_factory(string_view, function<shared_ptr<service>()> const&);
 
 private:
-    typedef boost::unordered_map<std::string, function<shared_ptr<service>()>, hasher> factories_type;
+    using factories_type = boost::unordered_map<std::string, function<shared_ptr<service>()>, hasher>;
     factories_type named_factories_;
 
     mutable sonia::fibers::mutex named_factories_mtx_;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICE_FACTORY_HPP

@@ -690,6 +690,12 @@
     <ClInclude Include="..\..\..\sonia\services\io\ssl_configuration.hpp">
       <Filter>sonia.services.io</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\throw.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\boost_stacktrace.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

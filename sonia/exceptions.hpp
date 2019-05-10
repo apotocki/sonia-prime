@@ -12,12 +12,12 @@
 #include <stdexcept>
 #include <utility>
 
-#include <boost/stacktrace.hpp>
-#include <boost/exception/all.hpp>
-#include <boost/throw_exception.hpp>
-
 #include "sonia/string.hpp"
 #include "sonia/type_traits.hpp"
+#include "sonia/utility/boost_stacktrace.hpp"
+
+#include <boost/exception/all.hpp>
+#include <boost/throw_exception.hpp>
 
 namespace sonia {
 

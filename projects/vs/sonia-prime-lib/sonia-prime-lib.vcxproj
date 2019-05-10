@@ -79,6 +79,7 @@
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
     <ClInclude Include="..\..\..\sonia\singleton.hpp" />
     <ClInclude Include="..\..\..\sonia\string.hpp" />
+    <ClInclude Include="..\..\..\sonia\throw.hpp" />
     <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\algorithm\construct.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\algorithm\copy.hpp" />
@@ -89,6 +90,7 @@
     <ClInclude Include="..\..\..\sonia\utility\basic_local_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind_command.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\boost_stacktrace.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\buffer.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bz2_util.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\car.hpp" />
@@ -417,7 +419,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -460,7 +462,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>

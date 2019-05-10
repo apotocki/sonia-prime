@@ -43,6 +43,10 @@
 
 #define SONIA_ONE_VERSION "0.1.0"
 
+#ifdef BOOST_WINDOWS
+#   define BOOST_STACKTRACE_USE_WINDBG
+#endif
+
 #ifndef BOOST_THREAD_VERSION
 #   define BOOST_THREAD_VERSION 3
 #endif

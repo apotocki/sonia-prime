@@ -12,10 +12,11 @@
 #endif
 
 #include <utility>
-#include <boost/stacktrace.hpp>
 #include <boost/exception/diagnostic_information.hpp>
+
 #include "sonia/exceptions.hpp"
 #include "sonia/logger/logger.hpp"
+#include "sonia/utility/boost_stacktrace.hpp"
 
 namespace sonia {
 
@@ -32,7 +33,7 @@ public:
         } catch (internal_error const& e) {
             GLOBAL_LOG_ERROR() << "error during the scope exit: " << e.what();
         } catch (...) {
-            GLOBAL_LOG_ERROR() << "error during the scope exit: " << boost::current_exception_diagnostic_information() << '\n' << boost::stacktrace::stacktrace();
+            GLOBAL_LOG_ERROR() << "error during the scope exit: " << boost::current_exception_diagnostic_information() << boost::stacktrace::stacktrace();
         }
     }
 

@@ -143,7 +143,7 @@ std::string decimal_string(SignificandT const& v, ExponentT const& e)
 template <typename SignificandT, typename ExponentT>
 std::string decimal_scientific_string(SignificandT const& v, ExponentT const& e)
 {
-    if (v == 0) return "0";
+    if (v == 0) return "0.0E0";
     std::string result = boost::lexical_cast<std::string>(v);
     ExponentT sc_e = e;
     for (; result.back() == '0'; result.pop_back(), ++sc_e);

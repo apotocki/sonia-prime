@@ -28,6 +28,7 @@ HAS_METHOD_TRAIT_DEF(decrement);
 HAS_METHOD_TRAIT_DEF(next);
 HAS_METHOD_TRAIT_DEF(base);
 HAS_METHOD_TRAIT_DEF(name);
+HAS_METHOD_TRAIT_DEF(set);
 
 } // sonia::iterators
 

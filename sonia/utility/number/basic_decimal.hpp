@@ -70,6 +70,8 @@ public:
 
     static basic_decimal parse(string_view);
 
+    void operator += (basic_decimal const& rhs);
+
 private:
     SignificandT value_;
     ExponentT exponent_10_;
@@ -176,6 +178,20 @@ struct hash<basic_decimal<SignificandT, ExponentT>>
         return hash_value;
     }
 };
+
+template <typename SignificandT, typename ExponentT>
+void basic_decimal<SignificandT, ExponentT>::operator += (basic_decimal<SignificandT, ExponentT> const& rhs)
+{
+    decimal_add(value_, exponent_10_, rhs.value_, rhs.exponent_10_);
+}
+
+template <typename SignificandT, typename ExponentT>
+basic_decimal<SignificandT, ExponentT> operator+ (basic_decimal<SignificandT, ExponentT> const& lhs, basic_decimal<SignificandT, ExponentT> const& rhs)
+{
+    basic_decimal<SignificandT, ExponentT> result{lhs};
+    result += rhs;
+    return result;
+}
 
 }
 

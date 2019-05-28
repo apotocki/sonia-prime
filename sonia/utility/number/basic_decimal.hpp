@@ -117,6 +117,11 @@ std::string to_string(basic_decimal<SignificandT, ExponentT> const& val)
     return decimal_string(val.raw_value(), val.raw_exp());
 }
 
+template <typename SignificandT, typename ExponentT>
+std::string to_scientific_string(basic_decimal<SignificandT, ExponentT> const& val)
+{
+    return decimal_scientific_string(val.raw_value(), val.raw_exp());
+}
 
 template <typename LSignificandT, typename LExponentT, typename RSignificandT, typename RExponentT>
 bool operator== (basic_decimal<LSignificandT, LExponentT> const& lhs, basic_decimal<RSignificandT, RExponentT> const& rhs) noexcept

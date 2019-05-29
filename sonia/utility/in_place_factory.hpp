@@ -53,7 +53,8 @@ template <typename ... ArgsT> struct is_in_place_factory<in_place_factory_impl<A
 template <class T> using is_in_place_factory_t = typename is_in_place_factory<T>::type;
 
 template <typename ... ArgsT>
-in_place_factory_impl<ArgsT ...> in_place_factory(ArgsT&& ... args) {
+in_place_factory_impl<ArgsT ...> in_place_factory(ArgsT&& ... args)
+{
     return in_place_factory_impl<ArgsT ...>(std::forward<ArgsT>(args)...);
 }
 

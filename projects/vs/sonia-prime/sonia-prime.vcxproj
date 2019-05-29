@@ -77,7 +77,6 @@
     <ClInclude Include="..\..\..\sonia\services\net\http\http_connector.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_connector_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_connector_configuration.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\net\http\http_application.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_configuration.hpp" />

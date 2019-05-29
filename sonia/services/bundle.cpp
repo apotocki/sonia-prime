@@ -17,9 +17,9 @@ bundle::bundle()
 
 void bundle::open()
 {
-    if (std::string(BUILD_ID) != build_id()) {
-        LOG_WARN(logger()) << "different bundle id: " << build_id() << ", expected: " << BUILD_ID;
-    }
+    //if (std::string(BUILD_ID) != build_id()) {
+    //    LOG_WARN(logger()) << "different bundle id: " << build_id() << ", expected: " << BUILD_ID;
+    //}
     init();
 }
 

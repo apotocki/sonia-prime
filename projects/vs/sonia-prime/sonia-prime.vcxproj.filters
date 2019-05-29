@@ -210,9 +210,6 @@
     <ClInclude Include="..\..\..\sonia\services\net\http\http_connector_configuration.hpp">
       <Filter>sonia.services\net\http</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\net\http\http_application.hpp">
-      <Filter>sonia.services\net\http</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_configuration.hpp">
       <Filter>sonia.services\net\http</Filter>
     </ClInclude>

@@ -31,9 +31,11 @@
     <ClInclude Include="..\..\..\sonia\logger\logger.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\sequence.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\transform_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\net\http\application.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\headers.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\http.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\message.hpp" />
+    <ClInclude Include="..\..\..\sonia\net\http\sonnet.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\status_codes.hpp" />
     <ClInclude Include="..\..\..\sonia\net\uri.hpp" />
     <ClInclude Include="..\..\..\sonia\net\uri.ipp" />
@@ -129,6 +131,8 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\hash_combine_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\http_chunking_write_input_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\inflate_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\chain_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\iterator_of_ranges_with_limit.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_reference.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\proxy.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\reference_wrapper_iterator.hpp" />
@@ -226,6 +230,7 @@
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp" />
     <ClCompile Include="..\..\..\sonia\net\http\http.cpp" />
     <ClCompile Include="..\..\..\sonia\net\http\http_message.cpp" />
+    <ClCompile Include="..\..\..\sonia\net\http\sonnet.cpp" />
     <ClCompile Include="..\..\..\sonia\net\uri.cpp" />
     <ClCompile Include="..\..\..\sonia\sal\linux_sal.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>

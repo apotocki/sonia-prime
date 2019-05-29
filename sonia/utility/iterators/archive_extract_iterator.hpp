@@ -9,20 +9,14 @@
 #   pragma once
 #endif
 
-#include <list>
-#include <vector>
-
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/variant.hpp>
 #include <boost/intrusive_ptr.hpp>
 
-#include "sonia/iterator_traits.hpp"
 #include "sonia/utility/iterators/wrapper_iterator.hpp"
 #include "sonia/utility/iterators/buffering_mediator_iterator.hpp"
 #include "sonia/utility/iterators/inflate_iterator.hpp"
 #include "sonia/utility/iterators/bz2_decompress_iterator.hpp"
 #include "sonia/utility/iterators/tar_iterator.hpp"
-#include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
 
 #ifndef DEFAULT_ARCHIVER_INTERNAL_BUFFER_SIZE
 #   define DEFAULT_ARCHIVER_INTERNAL_BUFFER_SIZE 65536
@@ -49,8 +43,8 @@ class archive_iterator_polymorphic
     : public iterator_polymorphic<array_view<const char>>
 {
 public:
-    archive_iterator_polymorphic() : refs(1) {}
-    archive_iterator_polymorphic(archive_iterator_polymorphic const&) : refs(1) {}
+    archive_iterator_polymorphic() = default;
+    archive_iterator_polymorphic(archive_iterator_polymorphic const&) = default;
 
     virtual bool next(archive_iterator &) = 0;
     virtual std::string const& name() const = 0;
@@ -69,13 +63,13 @@ public:
         }
     }
 
-    unsigned int refs;
+    unsigned int refs{1};
 };
 
 class archive_iterator_impl
 {
 public:
-    archive_iterator_impl() {}
+    archive_iterator_impl() = default;
 
     template <class T, typename ... ArgsT>
     archive_iterator_impl(in_place_type_t<T>, ArgsT && ... args)
@@ -110,7 +104,7 @@ public:
         ptr->increment();
     }
     
-    operator bool() const { return !!ptr; }
+    explicit operator bool() const { return !!ptr; }
 
     void reset() { ptr.reset(); }
 

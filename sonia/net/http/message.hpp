@@ -17,12 +17,24 @@
 #include "sonia/optional.hpp"
 #include "sonia/array_view.hpp"
 #include "sonia/function.hpp"
+#include "sonia/utility/json/value.hpp"
 #include "sonia/utility/iterators/wrapper_iterator.hpp"
+#include "sonia/utility/iterators/chain_iterator.hpp"
 
 #include "http.hpp"
 
 namespace sonia::http {
-    
+
+using any_header_t = boost::variant<header, std::string>;
+using any_header_param_t = boost::variant<header, string_view>;
+using header_value_param_t = boost::variant<string_view, std::string>;
+using headers_t = boost::unordered_map<any_header_t, std::vector<std::string>, hasher>;
+
+struct form_item
+{
+    headers_t headers;
+};
+
 class message
 {
 public:
@@ -36,10 +48,15 @@ public:
         array_view<char>
     >;
 
-    using any_header_t = boost::variant<header, std::string>;
-    using any_header_param_t = boost::variant<header, string_view>;
-    using header_value_param_t = boost::variant<string_view, std::string>;
-    using headers_t = boost::unordered_map<any_header_t, std::vector<std::string>, hasher>;
+    using range_read_impl_type = proxying_iterator_polymorphic<array_view<const char>>;
+    using range_read_input_iterator = wrapper_iterator<
+        range_read_impl_type*,
+        array_view<const char>,
+        std::input_iterator_tag,
+        array_view<const char>
+    >;
+
+    using content_read_iterator_t = chain_linkable_iterator<array_view<const char>, std::input_iterator_tag>;
 
     int version{11}; // http protocol version * 10. e.g. 1.1 -> 11
 
@@ -52,9 +69,15 @@ public:
     void add_header(any_header_param_t, header_value_param_t);
     void remove_header(any_header_param_t);
        
+    template <size_t N> void set_header(any_header_param_t h, const char(&hv)[N]) { set_header(h, string_view{hv, hv[N - 1] ? N : N -1}); }
+    template <size_t N> void add_header(any_header_param_t h, const char(&hv)[N]) { add_header(h, string_view{hv, hv[N - 1] ? N : N -1}); }
+
     static string_view header_name(any_header_t const&);
 
     function<void(range_write_input_iterator)> content_writer;
+    content_read_iterator_t input;
+
+    std::string get_body_as_string();
 };
 
 class request : public message
@@ -74,12 +97,23 @@ public:
     using parameter_arg_t = boost::variant<string_view, std::string>;
 
     void add_parameter(parameter_arg_t name, parameter_arg_t value);
+    array_view<std::string const> get_parameter(string_view name) const;
 
-private:
+    void set_property(string_view name, json_value value);
+    json_value const* get_property(string_view name) const;
+
     using parameter_value_t = std::vector<std::string>;
     using parameters_t = boost::unordered_map<std::string, parameter_value_t, hasher>;
 
-    parameters_t parameters_;
+    parameters_t parameters;
+
+    using properties_t = boost::unordered_map<std::string, json_value, hasher>;
+
+    properties_t properties;
+
+    void parse_body_as_x_www_form_urlencoded();
+
+private:
     std::vector<char> relative_uri_;
 };
 
@@ -89,6 +123,11 @@ public:
     explicit response(status code = status::OK, optional<std::string> status_str = nullopt);
 
     void meet_request(request const&);
+
+    void make401(string_view realm, string_view opaque, string_view nonce);
+    void make404();
+    void make_custom(status code, string_view ct, string_view body);
+    void make_moved_temporarily_302(string_view location);
 
     status status_code;
     optional<std::string> status_string;

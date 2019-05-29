@@ -13,14 +13,14 @@
 
 #include "sonia/string.hpp"
 #include "sonia/services/service.hpp"
-#include "http_application.hpp"
+#include "sonia/net/http/application.hpp"
 #include "http_static_application_configuration.hpp"
 
 namespace sonia::services {
 
 class http_static_application
     : public service
-    , public http_application
+    , public http::application
 {
     using mime_mapping_type = boost::unordered_map<std::string, std::string, hasher>;
 
@@ -36,7 +36,7 @@ private:
     std::string www_path_;
     boost::filesystem::path sys_path_;
     std::vector<std::pair<boost::regex, std::string>> forwards_;
-    shared_ptr<http_application> app404_;
+    shared_ptr<http::application> app404_;
 };
 
 }

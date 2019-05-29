@@ -16,7 +16,7 @@ http_default_application::http_default_application(http_default_application_conf
 
 void http_default_application::handle(http::request & req, http::response & resp)
 {
-    resp.set_header(http::header::CONTENT_TYPE, string_view("text/html; charset=UTF-8"));
+    resp.set_header(http::header::CONTENT_TYPE, "text/html; charset=UTF-8");
     resp.status_code = cfg_.response_code;
 
     std::ostringstream res;
@@ -45,7 +45,7 @@ void http_default_application::handle(http::request & req, http::response & resp
     std::string body = res.str();
     //resp.set_header(http::header::CONTENT_LENGTH, std::to_string(body.size()));
     resp.meet_request(req);
-    resp.set_header(http::header::TRANSFER_ENCODING, string_view("chunked"));
+    resp.set_header(http::header::TRANSFER_ENCODING, "chunked");
     resp.content_writer = [cnt = std::move(body)](http::message::range_write_input_iterator it) {
         copy_range(string_view(cnt), it);
     };

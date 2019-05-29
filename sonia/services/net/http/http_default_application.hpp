@@ -10,14 +10,14 @@
 #endif
 
 #include "sonia/services/service.hpp"
-#include "http_application.hpp"
+#include "sonia/net/http/application.hpp"
 #include "http_default_application_configuration.hpp"
 
 namespace sonia::services {
 
 class http_default_application
     : public service
-    , public http_application
+    , public http::application
 {
 public:
     explicit http_default_application(http_default_application_configuration cfg);

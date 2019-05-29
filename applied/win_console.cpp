@@ -60,7 +60,8 @@ void unexpected_impl()
 int main(int argc, char const* argv[])
 {
     SetConsoleCtrlHandler(TermhandlerRoutine, TRUE);
-    
+    SetConsoleOutputCP(65001);
+
     std::set_terminate(terminate_impl);
 
     try {

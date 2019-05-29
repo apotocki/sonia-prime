@@ -14,7 +14,7 @@
 #include "scheduler_service_configuration.hpp"
 #include "sonia/services.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 class scheduler_service 
     : public service
@@ -32,6 +32,6 @@ private:
     shared_ptr<host> host_;
 };
 
-}}
+}
 
 #endif // SONIA_SERVICES_SCHEDULER_SERVICE_HPP

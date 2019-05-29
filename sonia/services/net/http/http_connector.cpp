@@ -12,6 +12,8 @@
 #include "sonia/utility/iterators/socket_write_iterator.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
 #include "sonia/utility/iterators/reference_wrapper_iterator.hpp"
+#include "sonia/utility/iterators/iterator_of_ranges_with_limit.hpp"
+#include "sonia/utility/iterators/chain_iterator.hpp"
 #include "sonia/net/http/message.hpp"
 #include "sonia/utility/serialization/http_request.hpp"
 #include "sonia/utility/serialization/http_response.hpp"
@@ -33,12 +35,12 @@ void http_connector::open()
 {
     cfg_.dos_message = to_string("HTTP/1.1 503 Service Unavailable\r\nContent-Type: text/html\r\nContent-Length: %1%\r\n\r\n%2%"_fmt % cfg_.dos_message.size() % cfg_.dos_message);
     if (cfg_.page404_application_name) {
-        cfg_.page404_application = locate<http_application>(*cfg_.page404_application_name);
+        locate(*cfg_.page404_application_name, cfg_.page404_application);
     } else {
         cfg_.page404_message = to_string("HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: %1%\r\n\r\n%2%"_fmt % cfg_.page404_message.size() % cfg_.page404_message);
     }
     for (auto const& r : cfg_.routes) {
-        r.application = locate<http_application>(r.application_name);
+         locate(r.application_name, r.application);
     }
 }
 
@@ -93,7 +95,28 @@ bool http_connector::do_connection(read_iterator & ii, write_iterator & oi)
 {
     bool handled = false;
     http::request req;
-    decode<serialization::default_t>(range_dereferencing_iterator{reference_wrapper_iterator(ii)}, req);
+    auto it = decode<serialization::default_t>(range_dereferencing_iterator{reference_wrapper_iterator{ii}}, req);
+    it.flush();
+
+    array_view<const std::string> hval = req.get_header(header::CONTENT_LENGTH);
+    if (hval.size() > 1) {
+        throw exception("multiple content lengths");
+    }
+
+    if (!hval.empty()) {
+        size_t len;
+        auto hit = hval[0].cbegin(), heit = hval[0].cend();
+        if (!parsers::integer(hit, heit, 1, 16, len)) {
+            throw exception("can't parse content length content lengths");
+        }
+        req.input = make_chain_linkable_iterator(iterator_of_ranges_with_limit{reference_wrapper_iterator{ii}, len});
+    } else {
+        req.input = make_chain_linkable_iterator(reference_wrapper_iterator{ii});
+    }
+
+    //output_iterator_polymorpic_adapter<reference_wrapper_iterator<read_iterator>> rimpl{reference_wrapper_iterator{ii}};
+    //req.input = http::message::range_read_input_iterator(&rimpl);
+
     cstring_view uri = req.get_relative_uri();
     for (auto const& r : cfg_.routes) {
         if (regex_match(uri.c_str(), r.pathre)) {

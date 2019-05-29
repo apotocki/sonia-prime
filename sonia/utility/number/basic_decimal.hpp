@@ -156,8 +156,8 @@ bool operator< (T const& lhs, basic_decimal<LSignificandT, LExponentT> const& rh
 
 MAKE_FREE_COMPARISON_OPERATORS(is_decimal_v)
 
-template <typename ElemT, typename TraitsT, typename SignificandT, typename ExponentT>
-std::basic_ostream<ElemT, TraitsT> & operator<< (std::basic_ostream<ElemT, TraitsT> & os, basic_decimal<SignificandT, ExponentT> const& val)
+template <class OStreamT, typename SignificandT, typename ExponentT>
+OStreamT & operator<< (OStreamT & os, basic_decimal<SignificandT, ExponentT> const& val)
 {
     return os << to_string(val);
 }

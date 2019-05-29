@@ -7,6 +7,7 @@
 #include "http_static_application.hpp"
 
 #include <boost/filesystem.hpp>
+#include <boost/algorithm/string/trim.hpp>
 
 #include <fstream>
 
@@ -40,8 +41,8 @@ http_static_application::http_static_application(http_static_application_configu
         if (delit == rule.end()) {
             continue;
         }
-        std::string ext(rule.begin(), delit);
-        std::string mt(delit + 1, rule.end());
+        std::string ext = boost::trim_copy(std::string{rule.begin(), delit});
+        std::string mt = boost::trim_copy(std::string{delit + 1, rule.end()});
         mime_map_[ext] = mt;
     }
 
@@ -55,8 +56,7 @@ void http_static_application::handle404(http::request & req, http::response & re
     if (app404_) {
         app404_->handle(req, resp);
     } else {
-        resp.status_code = http::status::NOT_FOUND;
-        resp.set_header(http::header::CONTENT_LENGTH, cstring_view{"0"});
+        resp.make404();
     }
 }
 
@@ -87,14 +87,14 @@ void http_static_application::handle(http::request & req, http::response & resp)
         auto extit = mime_map_.find(ext, hasher(), string_equal_to());
         if (extit == mime_map_.end()) {
             LOG_WARN(logger()) << "undefined mime type for extension: '" << ext << "', path: '" << uri << "'";
-            resp.set_header(http::header::CONTENT_TYPE, string_view("text/html; charset=UTF-8"));
+            resp.set_header(http::header::CONTENT_TYPE, "text/html; charset=UTF-8");
         } else {
             resp.set_header(http::header::CONTENT_TYPE, extit->second + std::string("; charset=UTF-8"));
         }
 
         try {
             auto abspath = boost::filesystem::canonical(sys_path_ / relpath.c_str());
-            resp.set_header(http::header::TRANSFER_ENCODING, string_view("chunked"));
+            resp.set_header(http::header::TRANSFER_ENCODING, "chunked");
             //resp.set_header(http::header::CONTENT_LENGTH, std::to_string(boost::filesystem::file_size(abspath)));
             file_region_iterator<const char> fit{abspath};
 

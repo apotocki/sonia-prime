@@ -93,9 +93,11 @@ public:
 
     void flush()
     {
-        iterator_dereferenced_range_t<IteratorT> rng = *base;
-        *base = array_view(boost::begin(rng), std::get<0>(get()));
-        ++base;
+        if (state_) {
+            iterator_dereferenced_range_t<IteratorT> rng = *base;
+            *base = array_view(boost::begin(rng), std::get<0>(get()));
+            ++base;
+        }
         state_.reset();
     }
 

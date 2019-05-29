@@ -103,6 +103,15 @@ basic_string_view<CharT> to_string_view(std::vector<CharT, AllocatorT> const& v)
     return basic_string_view<CharT>(v.empty() ? nullptr : &v.front(), v.size());
 }
 
+template <typename CharT, class TraitsT>
+basic_cstring_view<CharT, TraitsT> to_cstring_view(basic_cstring_view<CharT, TraitsT> sv) { return sv; }
+
+template <typename CharT, class TraitsT, class AllocT>
+basic_cstring_view<CharT, TraitsT> to_cstring_view(std::basic_string<CharT, TraitsT, AllocT> const& s)
+{
+    return basic_cstring_view<CharT, TraitsT>(s);
+}
+
 template <typename CharT>
 basic_string_view<CharT> to_string_view(CharT * arr) noexcept
 {

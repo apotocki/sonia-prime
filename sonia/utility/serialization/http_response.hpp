@@ -41,14 +41,16 @@ public:
         writ = std::copy(start_line.begin(), start_line.end(), std::move(writ));
 
         auto hvals = r.get_header(http::header::CONTENT_LENGTH);
-        if (!hvals.empty()) { // content legth is a flag that signals of raw write op
+        if (!hvals.empty() || !r.content_writer) { // content legth is a flag that signals of raw write op
             writ = base_type::encode(r, std::move(writ));
             writ.flush();
             oi = std::move(writ.base);
             
-            output_iterator_polymorpic_adapter<WriteIteratorT> roimpl{oi};
-            r.content_writer(http::message::range_write_input_iterator{&roimpl});
-            roimpl.flush();
+            if (r.content_writer) {
+                output_iterator_polymorpic_adapter<WriteIteratorT> roimpl{oi};
+                r.content_writer(http::message::range_write_input_iterator{&roimpl});
+                roimpl.flush();
+            }
         } else {
             hvals = r.get_header(http::header::TRANSFER_ENCODING);
             if (hvals.size() != 1 || hvals[0] != "chunked") {
@@ -104,10 +106,13 @@ public:
         if (*ii != ' ') {
             throw exception("wrong protocol version");
         }
+        ++ii;
 
-        // parse error code
+        // parse status code
         unsigned int code;
-        sonia::parsers::integer(ii, InputIteratorT(), 1, 3, code);
+        if (!sonia::parsers::integer(ii, InputIteratorT(), 1, 3, code)) {
+            throw exception("wrong status code");
+        }
         resp.status_code = (sonia::http::status)code;
 
         char c = *ii; ++ii;

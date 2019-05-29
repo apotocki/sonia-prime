@@ -38,7 +38,7 @@ class range_dereferencing_iterator_state
     mutable optional<state_t> state_;
 
 public:
-    range_dereferencing_iterator_state() {}
+    range_dereferencing_iterator_state() = default;
 
     explicit range_dereferencing_iterator_state(IteratorT it)
         : base{std::move(it)}
@@ -170,6 +170,11 @@ public:
     explicit range_dereferencing_iterator(IteratorT it)
         : state_t{std::move(it)}
     {}
+
+    ~range_dereferencing_iterator()
+    {
+        state_t::flush();
+    }
 
     bool empty() const { return state_t::empty(); }
 

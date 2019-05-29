@@ -64,15 +64,14 @@ class socket_write_input_iterator
             wrpos_ = nullptr;
             throw eof_exception("socket closed");
         }
-
     }
 
     void increment()
     {
         if (begin_ != end_) { // otherwise if set_dereference({begin_, begin_}) was called
             begin_ = end_;
-            write(wrpos_ < begin_ ? begin_ : wrend_);
-            if (begin_ == buff_.end()) begin_ = buff_.begin();
+            //write(wrpos_ < begin_ ? begin_ : wrend_);
+            //if (begin_ == buff_.end()) begin_ = buff_.begin();
         }
 
         for (;;) {

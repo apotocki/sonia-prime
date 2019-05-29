@@ -52,7 +52,7 @@ void get_configuration(std::ostream & os)
         "           factory: 'net-server-factory',"
         "           layer : 16,"
         "           parameters : {"
-        "               tcp-socket-factory: 'io.serv',"
+        "               tcp-server-socket-factory: 'io.serv',"
         "               scheduler: 'scheduler.serv',"
         "               listeners: ["
         "                   { connector: 'http.serv', workers: 4, buffer-size: 65536, address: '127.0.0.1', port: 2222, type: 'tcp'}"
@@ -106,7 +106,22 @@ class web0_application
 public:
     void handle(http::request & req, http::response & resp)
     {
+        resp.content_writer = [](http::message::range_write_input_iterator it) {
+            copy_range(string_view("web0"), it);
+        };
+    }
+};
 
+class web1_application 
+    : public sonia::services::http_application
+    , public sonia::service
+{
+public:
+    void handle(http::request & req, http::response & resp)
+    {
+        resp.content_writer = [](http::message::range_write_input_iterator it) {
+            copy_range(string_view("web1"), it);
+        };
     }
 };
 
@@ -119,6 +134,10 @@ BOOST_AUTO_TEST_CASE (http_service_test)
         return serv;
     });
 
+    services::register_service_factory("web1", []() -> shared_ptr<service> {
+        shared_ptr<service> serv = make_shared<web1_application>();
+        return serv;
+    });
 
     std::stringstream cfgss;
     get_configuration(cfgss);
@@ -128,12 +147,13 @@ BOOST_AUTO_TEST_CASE (http_service_test)
     services::locate("net.serv");
 
     // make request
-    char buff[64];
+    char buff[128];
     auto sf = services::locate<io::tcp_socket_factory_type>("io-cache.serv");
     http::request req{"http://localhost:2222/web0"};
-    io::tcp_socket sock = sf->create_connected_tcp_socket(req.host, req.port, sal::net_family_type::UNSPEC);
+    io::tcp_socket sock = sf->create_connected_tcp_socket(req.host, req.port, sal::net_family_type::INET);
     socket_write_input_iterator<io::tcp_socket> oi{sock, array_view<char>(buff)};
-    encode<serialization::default_t>(req, range_dereferencing_iterator(reference_wrapper_iterator(oi))).flush();
+    encode<serialization::default_t>(req, range_dereferencing_iterator(reference_wrapper_iterator(oi)));
+    oi.flush();
 
     // get response
     http::response resp;

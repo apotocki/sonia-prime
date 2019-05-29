@@ -187,6 +187,12 @@ public:
     {
         return as_cstring<64>(address, [this, port, ft](cstring_view address) { return create_connected_tcp_socket(address, port, ft); });
     }
+
+    template <typename StrT>
+    smart_handle_facade<TraitsT, tcp_socket_adapter> create_connected_tcp_socket(StrT && address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
+    {
+        return create_connected_tcp_socket(to_string_view(std::forward<StrT>(address)), port, ft);
+    }
 };
 
 }

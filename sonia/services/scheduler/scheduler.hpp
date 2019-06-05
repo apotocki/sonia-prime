@@ -94,7 +94,7 @@ scheduler_task_t make_scheduler_task(FuncT && func)
 class scheduler
 {
 public:
-    virtual ~scheduler() {}
+    virtual ~scheduler() = default;
 
     virtual task_handle_ptr post(scheduler_task_t &&, bool with_handle = true) = 0;
     virtual task_handle_ptr post(function<void()> const&, bool with_handle = true) = 0;

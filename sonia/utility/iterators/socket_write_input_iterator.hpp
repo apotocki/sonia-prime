@@ -41,62 +41,65 @@ class socket_write_input_iterator
 
     array_view<char> get_dereference() const
     {
+        BOOST_ASSERT(wrpos_);
         BOOST_ASSERT (end_ - begin_ >= MinRngSzV);
         return {begin_, end_};
     }
 
     void set_dereference(array_view<char> span)
     {
+        BOOST_ASSERT(wrpos_);
         BOOST_ASSERT(span.begin() == begin_);
         end_ = span.end();
     }
 
-    void write(const char * edata)
+    void write() noexcept
     {
-        expected<size_t, std::error_code> r = psoc_->write_some(array_view<const char>(wrpos_, edata));
+        BOOST_ASSERT (wrpos_ != wrend_);
+        auto r = psoc_->write_some(array_view<const char>{wrpos_, wrend_});
         if (r.has_value() && r.value()) {
             wrpos_ += r.value();
-            if (wrpos_ == wrend_) {
-                wrpos_ = buff_.begin();
-                wrend_ = buff_.end();
-            }
         } else {
             wrpos_ = nullptr;
-            throw eof_exception("socket closed");
         }
     }
 
     void increment()
     {
+        BOOST_ASSERT(wrpos_);
         if (begin_ != end_) { // otherwise if set_dereference({begin_, begin_}) was called
             begin_ = end_;
-            //write(wrpos_ < begin_ ? begin_ : wrend_);
-            //if (begin_ == buff_.end()) begin_ = buff_.begin();
+            if (begin_ > wrpos_) {
+                wrend_ = begin_;
+            }
         }
 
-        for (;;) {
-            if (begin_ < wrpos_) {
+        do {
+            if (wrpos_ == wrend_) { // all data was written
+                wrpos_ = wrend_ = begin_ = buff_.begin();
+                end_ = buff_.end();
+                return;
+            } else if (begin_ < wrpos_) {
                 end_ = wrpos_;
+                if (end_ - begin_ >= MinRngSzV) return;
+                write();
+                continue;
             } else if ((buff_.end() - begin_) >= MinRngSzV) {
                 end_ = buff_.end();
                 return;
-            } else if (begin_ == wrpos_) { // all data was written
-                wrpos_ = begin_ = buff_.begin();
-                wrend_ = end_ = buff_.end();
-            } else { // begin_ > wrpos_
-                wrend_ = begin_;
+            } else { // (buff_.end() - begin_) < MinRngSzV
+                write();
                 begin_ = buff_.begin();
-                end_ = wrpos_;
+                continue;
             }
-
-            if (end_ - begin_ >= MinRngSzV) break;
-            write(wrend_);
-        }
+        } while (wrpos_);
     }
     
 public:
+    socket_write_input_iterator() : wrpos_(nullptr) {}
+
     explicit socket_write_input_iterator(SocketT & soc, array_view<char> buff) 
-        : psoc_(&soc), buff_(buff), begin_(buff.begin()), end_(buff.end()), wrpos_(buff.begin()), wrend_(buff.end())
+        : psoc_(&soc), buff_(buff), begin_(buff.begin()), end_(buff.end()), wrpos_(buff.begin()), wrend_(buff.begin())
     {
         if (buff.size() < MinRngSzV) {
             THROW_INTERNAL_ERROR("too small buffer size");
@@ -108,18 +111,24 @@ public:
     socket_write_input_iterator& operator= (socket_write_input_iterator const&) = delete;
     socket_write_input_iterator& operator= (socket_write_input_iterator && rhs) = default;
 
+    ~socket_write_input_iterator() noexcept
+    {
+        while (wrpos_ && wrpos_ != wrend_)
+        {
+            write();
+        }
+    }
+
     bool empty() const { return !wrpos_; }
 
     void flush()
     {
-        BOOST_ASSERT (begin_ != buff_.end());
-        BOOST_ASSERT (wrpos_ != wrend_);
-        while (wrpos_ != begin_)
+        while (wrpos_ && wrpos_ != wrend_)
         {
-            write(wrpos_ < begin_ ? begin_ : wrend_);
+            write();
         }
-        wrpos_ = begin_ = buff_.begin();
-        wrend_ = end_ = buff_.end();
+        wrpos_ = wrend_ = begin_ = buff_.begin();
+        end_ = buff_.end();
     }
 
 private:

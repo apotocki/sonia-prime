@@ -10,7 +10,6 @@
 #endif
 
 #include <boost/iterator/iterator_facade.hpp>
-#include "sonia/exceptions.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
 
 namespace sonia {
@@ -44,7 +43,7 @@ class socket_read_input_iterator
             auto exprsz = psoc_->read_some(buff_);
             if (!exprsz.has_value() || !exprsz.value()) {
                 psoc_ = nullptr;
-                throw eof_exception("socket closed");
+                return {};
             }
             ready_buff_ = {buff_.begin(), exprsz.value()};
             ready_pos_ = ready_buff_.end();

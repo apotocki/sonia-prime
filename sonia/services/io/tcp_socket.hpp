@@ -16,6 +16,7 @@
 #include "sonia/string.hpp"
 #include "sonia/cstdint.hpp"
 #include "sonia/concurrency.hpp"
+#include "sonia/exceptions.hpp"
 #include "sonia/sal/net.hpp"
 
 #include "smart_handle_facade.hpp"
@@ -51,8 +52,8 @@ protected:
 public:
     virtual ~tcp_socket_service() = default;
 
-    virtual expected<size_t, std::error_code> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) = 0;
-    virtual expected<size_t, std::error_code> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) = 0;
+    virtual expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept = 0;
+    virtual expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept = 0;
     virtual void close_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
     virtual void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
     virtual void free_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
@@ -94,26 +95,26 @@ public:
     using service_type = tcp_socket_service<TraitsT>;
 
     template <typename T>
-    expected<size_t, std::error_code> read_some(array_view<T> buff)
+    expected<size_t, std::exception_ptr> read_some(array_view<T> buff) noexcept
     {
         return impl().tcp_socket_read_some(handle(), buff.begin(), buff.size() * sizeof(T));
     }
 
     template <typename T>
-    expected<size_t, std::error_code> read_some(T * buff, size_t sz)
+    expected<size_t, std::exception_ptr> read_some(T * buff, size_t sz) noexcept
     {
         constexpr size_t elem_sz = is_void_v<T> ? 1 : size_of_v<T>;
         return impl().tcp_socket_read_some(handle(), buff, sz * elem_sz);
     }
 
     template <typename T>
-    expected<size_t, std::error_code> write_some(array_view<T> buff)
+    expected<size_t, std::exception_ptr> write_some(array_view<T> buff) noexcept
     {
         return impl().tcp_socket_write_some(handle(), buff.begin(), buff.size() * sizeof(T));
     }
 
     template <typename T>
-    expected<size_t, std::error_code> write_some(const T * buff, size_t sz)
+    expected<size_t, std::exception_ptr> write_some(const T * buff, size_t sz) noexcept
     {
         constexpr size_t elem_sz = is_void_v<T> ? 1 : size_of_v<T>;
         return impl().tcp_socket_write_some(handle(), buff, sz * elem_sz);

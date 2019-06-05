@@ -116,11 +116,11 @@ public:
     ImplT impl;
 };
 
-template <typename ValueT, typename SetValueT>
+template <typename ValueT, typename SetValueT = ValueT>
 class polymorphic_proxy_backend
 {
 public:
-    virtual ~polymorphic_proxy_backend() noexcept {}
+    virtual ~polymorphic_proxy_backend() noexcept = default;
 
     virtual ValueT get_dereference() const
     {
@@ -147,24 +147,23 @@ protected:
 public:
     virtual ~iterator_polymorphic() noexcept = default;
 
-    virtual bool empty() const
-    {
-        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::empty");
-    }
-
-    virtual bool equal(iterator_polymorphic const& rhs) const
-    {
-        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::equal");
-    }
-
-    virtual void increment()
-    {
-        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::increment");
-    }
+    virtual bool equal(iterator_polymorphic const& rhs) const = 0;
+    virtual ReferenceT dereference() const = 0;
+    virtual void increment() = 0;
 
     virtual void decrement()
     {
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::decrement");
+    }
+
+    virtual void advance(DifferenceT dif)
+    {
+        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::advance");
+    }
+
+    virtual bool empty() const
+    {
+        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::empty");
     }
 
     virtual void flush()
@@ -177,23 +176,13 @@ public:
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::close");
     }
 
-    virtual ReferenceT dereference() const
-    {
-        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::dereference");
-    }
-
-    virtual void advance(DifferenceT dif)
-    {
-        THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::advance");
-    }
-
     virtual size_t get_sizeof() const
     {
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::get_sizeof");
     }
 };
 
-template <typename ValueT, typename SetValueT>
+template <typename ValueT, typename SetValueT = ValueT>
 using polymorphic_iterator_proxy_t = wrapper_iterator_proxy<ptr_proxy_wrapper<polymorphic_proxy_backend<ValueT, SetValueT> const*, ValueT>>;
 
 template <

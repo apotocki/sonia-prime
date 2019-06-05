@@ -50,9 +50,9 @@ void bind_socket(SOCKET soc, sockaddr * name, int namelen);
 void listen_socket(SOCKET, int);
 void setsockopt(SOCKET s, int level, int optname, const char* val, int optlen);
 
-void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov);
+std::error_code async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov) noexcept;
 void async_recvfrom(SOCKET soc, void * buff, size_t sz, SOCKADDR * sa, int * sasz, WSAOVERLAPPED * pov);
-void async_send(SOCKET soc, void const * buff, size_t sz, WSAOVERLAPPED * pov);
+std::error_code async_send(SOCKET soc, void const * buff, size_t sz, WSAOVERLAPPED * pov) noexcept;
 void async_send_to(SOCKET soc, sockaddr const* addr, int addrlen, void const * buff, size_t sz, WSAOVERLAPPED * pov);
 
 HANDLE  create_completion_port(uint32_t thread_count);

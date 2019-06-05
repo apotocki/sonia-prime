@@ -1,0 +1,90 @@
+//  Sonia.one framework (c) by Alexander A Pototskiy
+//  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
+//  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
+
+#include "sonia/config.hpp"
+#include "sonnet.hpp"
+#include "sonia/exceptions.hpp"
+
+#include "sonia/net/uri.hpp"
+#include "sonia/net/uri.ipp"
+
+namespace sonia::http {
+
+void sonnet::handle(request & req, response & resp)
+{
+    resp.set_header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+    resp.set_header(header::ACCESS_CONTROL_ALLOW_HEADERS, "Pragma");
+
+    if (req.method == method_verb::OPTIONS) {
+        resp.set_header(header::ALLOW, cstring_view("GET,POST,OPTIONS"));
+        resp.status_code = status::OK;
+        return;
+    }
+
+    cstring_view uri = req.get_relative_uri();
+    auto uriparts = net::parse_uri(uri);
+
+    method_handler_type const* handler = nullptr;
+
+    if (uriparts.path.size() >= path_base_.size() && std::equal(path_base_.begin(), path_base_.end(), uriparts.path.begin())) {
+        string_view path = uriparts.path;
+        path.advance_front(path_base_.size());
+
+        auto it = handlers_.find(path, hasher(), string_equal_to());
+        if (it != handlers_.end()) {
+            handler = &it->second;
+        }
+    }
+
+    resp.meet_request(req);
+    
+    try {
+        if (handler) {
+            (*handler)(req, resp);
+        } else {
+            handle_unhandled(req, resp);
+        }
+    } catch (sonnet_exception const& e) {
+        resp.make_custom(e.s, "text/html", e.what());
+    } catch (...) {
+        resp.make_custom(status::INTERNAL_SERVER_ERROR, "text/html", boost::current_exception_diagnostic_information());
+    }
+}
+
+void sonnet::handle_unhandled(request & req, response & resp)
+{
+    resp.make404();
+}
+
+void sonnet::bind_handler(string_view path, method_handler_type const& h)
+{
+    auto rpair = handlers_.insert(std::pair(to_string(path), h));
+    if (!rpair.second) {
+        THROW_INTERNAL_ERROR("path '%1%' is already bound"_fmt % path);
+    }
+}
+
+void sonnet::handle_json_callback(request & req, response & resp, function<void(message::range_write_input_iterator)> const& writer)
+{
+    auto callback = req.get_parameter("callback");
+    if (callback.size() > 1) {
+        return resp.make_custom(http::status::BAD_REQUEST, "text/html", "bad callback parameter");
+    }
+
+    resp.status_code = status::OK;
+    resp.set_header(header::CONTENT_TYPE, "application/json");
+
+    resp.content_writer = [callback, &writer](message::range_write_input_iterator it) {
+        if (!callback.empty()) {
+            copy_range(callback[0], it);
+            copy_range(string_view("("), it);
+        }
+        writer(it);
+        if (!callback.empty()) {
+            copy_range(string_view(")"), it);
+        }
+    };
+}
+
+}

@@ -138,6 +138,8 @@ class json_value : json_detail::holder_t
         return (json_value_type)json_detail::holder_t::get_service_cookie();
     }
 
+    explicit operator bool() const noexcept { return type() == json_value_type::null; }
+
     bool get_bool() const;
     int get_int() const;
     int64_t get_int64() const;

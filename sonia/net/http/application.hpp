@@ -11,14 +11,14 @@
 
 #include "sonia/net/http/message.hpp"
 
-namespace sonia::services {
+namespace sonia::http {
 
-class http_application
+class application
 {
 public:
-    virtual ~http_application() = default;
+    virtual ~application() = default;
 
-    virtual void handle(http::request & req, http::response & resp) = 0;
+    virtual void handle(request & req, response & resp) = 0;
 };
 
 }

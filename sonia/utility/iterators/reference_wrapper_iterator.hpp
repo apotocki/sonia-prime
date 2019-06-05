@@ -38,7 +38,7 @@ public:
 
     bool operator== (reference_wrapper_iterator const& rhs) const { return base() == rhs.base(); }
     bool operator!= (reference_wrapper_iterator const& rhs) const { return base() != rhs.base(); }
-    auto operator*() const { return **base_; }
+    decltype(auto) operator*() const { return **base_; }
 
     reference_wrapper_iterator & operator++() { ++base(); return *this; }
     reference_wrapper_iterator operator++(int) = delete;

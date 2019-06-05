@@ -98,7 +98,6 @@ bz2_compress_iterator<WriteInputIteratorT>::strm_data::strm_data(WriteInputItera
 template <class WriteInputIteratorT>
 bz2_compress_iterator<WriteInputIteratorT>::strm_data::~strm_data()
 {
-    close();
     BZ2_bzCompressEnd(&strm_);
 }
 

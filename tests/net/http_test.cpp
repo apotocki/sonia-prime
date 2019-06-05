@@ -17,6 +17,7 @@ namespace fs = boost::filesystem;
 #include "sonia/string.hpp"
 #include "sonia/type_traits.hpp"
 #include "sonia/services.hpp"
+#include "sonia/net/http/message.ipp"
 
 using namespace sonia;
 
@@ -87,7 +88,7 @@ void get_configuration(std::ostream & os)
 #include "sonia/services/io/sockets.hpp"
 #include "sonia/net/http/message.hpp"
 
-#include "sonia/services/net/http/http_application.hpp"
+#include "sonia/net/http/application.hpp"
 
 #include "sonia/net/uri.hpp"
 #include "sonia/utility/serialization/serialization.hpp"
@@ -100,7 +101,7 @@ void get_configuration(std::ostream & os)
 
 #if 1
 class web0_application 
-    : public sonia::services::http_application
+    : public sonia::http::application
     , public sonia::service
 {
 public:
@@ -113,7 +114,7 @@ public:
 };
 
 class web1_application 
-    : public sonia::services::http_application
+    : public sonia::http::application
     , public sonia::service
 {
 public:
@@ -152,14 +153,17 @@ BOOST_AUTO_TEST_CASE (http_service_test)
     http::request req{"http://localhost:2222/web0"};
     io::tcp_socket sock = sf->create_connected_tcp_socket(req.host, req.port, sal::net_family_type::INET);
     socket_write_input_iterator<io::tcp_socket> oi{sock, array_view<char>(buff)};
-    encode<serialization::default_t>(req, range_dereferencing_iterator(reference_wrapper_iterator(oi)));
+    encode<serialization::default_t>(req, range_dereferencing_iterator(reference_wrapper_iterator(oi))).flush();
     oi.flush();
 
     // get response
     http::response resp;
     socket_read_input_iterator<io::tcp_socket> ii{sock, buff};
-    decode<serialization::default_t>(range_dereferencing_iterator{reference_wrapper_iterator(ii)}, resp);
+    decode<serialization::default_t>(range_dereferencing_iterator{reference_wrapper_iterator(ii)}, resp).flush();
     BOOST_CHECK_EQUAL(resp.status_code, http::status::OK);
+    resp.build_input_iterator(ii);
+    std::string r = resp.get_body_as_string();
+    BOOST_CHECK_EQUAL(r, "web0"); 
 }
 #endif
 

@@ -148,6 +148,19 @@ struct sync_callback
         }
         return handlsz;
     }
+
+    expected<size_t, std::exception_ptr> wait2() noexcept
+    {
+        this->unlock();
+        unique_lock lck{mtx};
+        //GLOBAL_LOG_TRACE() << "before wait";
+        cnd.wait(lck, [this] { return !!code; });
+        //GLOBAL_LOG_TRACE() << "after wait";
+        if (*code) {
+            return make_unexpected(std::make_exception_ptr(exception(code->message())));
+        }
+        return handlsz;
+    }
 };
 
 /*
@@ -239,8 +252,8 @@ struct win_impl
     void free_handle(identity<tcp_server_socket_service_type>, tcp_handle_type) noexcept override final;
 
     // tcp socket service
-    expected<size_t, std::error_code> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) override final;
-    expected<size_t, std::error_code> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) override final;
+    expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept override final;
+    expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept override final;
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
     void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
@@ -661,20 +674,22 @@ size_t win_impl::udp_socket_waiting_count(tcp_handle_type handle)
     return wh->waiting_cnt.load();
 }
 
-expected<size_t, std::error_code> win_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz)
+expected<size_t, std::exception_ptr> win_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz) noexcept
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
     sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
-    winapi::async_recv(wh->socket(), buff, sz, &scb.overlapped);
-    return scb.wait(); // noexcept
+    std::error_code err = winapi::async_recv(wh->socket(), buff, sz, &scb.overlapped);
+    if (err) return make_unexpected(std::make_exception_ptr(exception(err.message())));
+    return scb.wait2(); // noexcept
 }
 
-expected<size_t, std::error_code> win_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz)
+expected<size_t, std::exception_ptr> win_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz) noexcept
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
     sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
-    winapi::async_send(wh->socket(), buff, sz, &scb.overlapped);
-    return scb.wait(); // noexcept
+    std::error_code err = winapi::async_send(wh->socket(), buff, sz, &scb.overlapped);
+    if (err) return make_unexpected(std::make_exception_ptr(exception(err.message())));
+    return scb.wait2(); // noexcept
 }
 
 void win_impl::close_handle(identity<tcp_socket_service_type>, tcp_handle_type h) noexcept

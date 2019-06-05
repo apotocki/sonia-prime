@@ -70,7 +70,7 @@ public:
                 }
             }
             
-            string_view hname(tmpbuff, bit);
+            string_view hname{tmpbuff, bit};
             header h = to_header(hname);
         
             for (char c = *ii; c == ' '; ++ii, c = *ii);
@@ -86,7 +86,7 @@ public:
                 val.push_back(c);
             }
 
-            m.add_header(h == header::UNKNOWN ? message::any_header_param_t(hname) : message::any_header_param_t(h), std::move(val));
+            m.add_header(h == header::UNKNOWN ? any_header_param_t(hname) : any_header_param_t(h), std::move(val));
         }
 
         return std::move(ii);

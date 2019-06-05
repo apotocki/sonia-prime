@@ -5,7 +5,7 @@
 #include "sonia/config.hpp"
 #include "archive_extract_iterator.hpp"
 
-namespace sonia { namespace archive_detail {
+namespace sonia::archive_detail {
 
 archive_type get_archive_type(string_view str)
 {
@@ -88,7 +88,7 @@ bool extract_iterator_polymorpic_adapter_base::do_next(archive_iterator & ax)
             return false;
         }
         default:
-            BOOST_THROW_EXCEPTION(internal_error("unexpected archive type: %1%"_fmt % (int)type_));
+            THROW_INTERNAL_ERROR("unexpected archive type: %1%"_fmt % (int)type_);
         }
     } else {
         archive_iterator * pbs = ax.pbase();
@@ -102,5 +102,4 @@ bool extract_iterator_polymorpic_adapter_base::do_next(archive_iterator & ax)
     }
 }
 
-}}
-
+}

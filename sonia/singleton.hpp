@@ -2,8 +2,8 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_SINGLETON_HPP
-#define SONIA_UTILITY_SINGLETON_HPP
+#ifndef SONIA_SINGLETON_HPP
+#define SONIA_SINGLETON_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
@@ -41,6 +41,8 @@ struct singleton_wrapper
 
     T * operator->() const { return instance_; }
 
+    T & get() const { return *instance_; }
+
 private:
     static T * instance_;
     static std::once_flag once_flag_;
@@ -60,4 +62,4 @@ std::once_flag singleton_wrapper<T>::once_flag_{};
 
 }
 
-#endif // SONIA_UTILITY_SINGLETON_HPP
+#endif // SONIA_SINGLETON_HPP

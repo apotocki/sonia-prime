@@ -31,9 +31,12 @@
     <ClInclude Include="..\..\..\sonia\logger\logger.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\sequence.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\transform_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\net\http\application.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\headers.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\http.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\message.hpp" />
+    <ClInclude Include="..\..\..\sonia\net\http\message.ipp" />
+    <ClInclude Include="..\..\..\sonia\net\http\sonnet.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\status_codes.hpp" />
     <ClInclude Include="..\..\..\sonia\net\uri.hpp" />
     <ClInclude Include="..\..\..\sonia\net\uri.ipp" />
@@ -79,6 +82,7 @@
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
     <ClInclude Include="..\..\..\sonia\singleton.hpp" />
     <ClInclude Include="..\..\..\sonia\string.hpp" />
+    <ClInclude Include="..\..\..\sonia\throw.hpp" />
     <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\algorithm\construct.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\algorithm\copy.hpp" />
@@ -89,6 +93,7 @@
     <ClInclude Include="..\..\..\sonia\utility\basic_local_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind_command.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\boost_stacktrace.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\buffer.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bz2_util.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\car.hpp" />
@@ -124,9 +129,13 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\bz2_compress_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\bz2_decompress_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\deflate_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\empty_check_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\hash_combine_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\http_chunking_read_input_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\http_chunking_write_input_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\inflate_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\chain_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\iterator_of_ranges_with_limit.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_reference.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\proxy.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\reference_wrapper_iterator.hpp" />
@@ -224,6 +233,7 @@
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp" />
     <ClCompile Include="..\..\..\sonia\net\http\http.cpp" />
     <ClCompile Include="..\..\..\sonia\net\http\http_message.cpp" />
+    <ClCompile Include="..\..\..\sonia\net\http\sonnet.cpp" />
     <ClCompile Include="..\..\..\sonia\net\uri.cpp" />
     <ClCompile Include="..\..\..\sonia\sal\linux_sal.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -417,7 +427,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
@@ -460,7 +470,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>

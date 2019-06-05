@@ -25,7 +25,7 @@ namespace sonia::http {
     ((PUT, "PUT"))             \
     ((DELETE_, "DELETE"))      \
     ((CONNECT, "CONNECT"))     \
-    ((OPTIONS_, "OPTIONS"))    \
+    ((OPTIONS, "OPTIONS"))     \
     ((TRACE_, "TRACE"))        \
     ((PATCH, "PATCH"))
 

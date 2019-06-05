@@ -690,6 +690,33 @@
     <ClInclude Include="..\..\..\sonia\services\io\ssl_configuration.hpp">
       <Filter>sonia.services.io</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\throw.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\boost_stacktrace.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\http\sonnet.hpp">
+      <Filter>sonia.net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\http\application.hpp">
+      <Filter>sonia.net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\iterator_of_ranges_with_limit.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\chain_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\empty_check_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\http\message.ipp">
+      <Filter>sonia.net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\http_chunking_read_input_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -802,6 +829,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\io_ssl_factory.cpp">
       <Filter>sonia.services.io</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\net\http\sonnet.cpp">
+      <Filter>sonia.net\http</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

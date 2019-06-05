@@ -40,10 +40,17 @@ public:
         range_dereferencing_iterator writ{std::move(oi)};
         writ = std::copy(start_line.begin(), start_line.end(), std::move(writ));
 
+        if (!r.content_writer) {
+            writ = base_type::encode(r, std::move(writ));
+            writ.flush();
+            return std::move(writ.base);
+        }
+
         auto hvals = r.get_header(http::header::CONTENT_LENGTH);
         if (!hvals.empty() || !r.content_writer) { // content legth is a flag that signals of raw write op
             writ = base_type::encode(r, std::move(writ));
             writ.flush();
+
             oi = std::move(writ.base);
             
             if (r.content_writer) {
@@ -51,6 +58,7 @@ public:
                 r.content_writer(http::message::range_write_input_iterator{&roimpl});
                 roimpl.flush();
             }
+
         } else {
             hvals = r.get_header(http::header::TRANSFER_ENCODING);
             if (hvals.size() != 1 || hvals[0] != "chunked") {
@@ -92,6 +100,7 @@ public:
             }
             
             r.content_writer(http::message::range_write_input_iterator{roimpl.get_pointer()});
+
             roimpl->close();
         }
         

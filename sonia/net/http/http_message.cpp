@@ -8,18 +8,20 @@
 #include "sonia/net/uri.hpp"
 #include "sonia/net/uri.ipp"
 #include "sonia/utility/functional/hash/variant.hpp"
+#include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
+
 
 namespace sonia::http {
 
-struct header_param_converter : boost::static_visitor<message::any_header_t>
+struct header_param_converter : boost::static_visitor<any_header_t>
 {
-    message::any_header_t operator()(header h) const { return h; }
-    message::any_header_t operator()(string_view h) const { return to_string(h); }
+    any_header_t operator()(header h) const { return h; }
+    any_header_t operator()(string_view h) const { return to_string(h); }
 };
 
 struct header_equal_to
 {
-    bool operator()(message::any_header_param_t const& l, message::any_header_t const& r) const
+    bool operator()(any_header_param_t const& l, any_header_t const& r) const
     {
         if (l.which() != r.which()) return false;
         header const* lh = boost::get<header>(&l);
@@ -40,7 +42,7 @@ struct to_string_view_visitor : boost::static_visitor<string_view>
     string_view operator()(std::string const& s) const { return s; }
 };
 
-std::string header_string(message::header_value_param_t & v)
+std::string header_string(header_value_param_t & v)
 {
     return boost::apply_visitor(to_rvstring_visitor(), v);
 }
@@ -130,6 +132,62 @@ void message::tokenize_header(any_header_param_t h, function<bool(string_view, s
     }
 }
 
+std::string message::get_body_as_string()
+{
+    std::string result;
+    while (!input.empty()) {
+        array_view<const char> rng = *input; ++input;
+        result.insert(result.end(), boost::begin(rng), boost::end(rng));
+    }
+    return result;
+}
+
+template <typename InputIterator>
+char uri_char_decoder(InputIterator & it)
+{
+    char c = *it; ++it;
+    if (c == '+') return ' ';
+    if (c == '%') {
+        uint8_t result = 0;
+        unsigned int dc = 0;
+        for (; !it.empty() && dc < 2; ++it, ++dc) {
+            const char c0 = *it;
+            uint8_t v = parsers::get_hexdigit(c0);
+            if (v != 0xff) {
+                result = result * 16 + v;
+            } else {
+                break;
+            }
+        }
+        if (dc < 2) {
+            throw exception("wrong urlencoded sequence");
+        }
+        return result;
+    }
+    return c;
+}
+
+void request::parse_body_as_x_www_form_urlencoded()
+{
+    range_dereferencing_iterator b{std::move(input)};
+    do {
+        std::string paramname;
+        while (!b.empty()) {
+            if ('=' == *b) { ++b; break; }
+            char c = uri_char_decoder(b);
+            paramname.push_back(c);
+        }
+        if (b.empty()) return;
+        std::string paramval;
+        while (!b.empty()) {
+            if ('&' == *b) { ++b; break; }
+            char c = uri_char_decoder(b);
+            paramval.push_back(c);
+        }
+        add_parameter(paramname, paramval);
+    } while (!b.empty());
+}
+
 request::request(string_view requri)
 {
     set_uri(requri, false);
@@ -166,15 +224,39 @@ void request::set_uri(string_view uri, bool ignore_abs_parts)
 void request::add_parameter(parameter_arg_t name, parameter_arg_t value)
 {
     string_view pname = boost::apply_visitor(to_string_view_visitor(), name);
-    auto it = parameters_.find(pname, hasher(), string_equal_to());
-    if (it == parameters_.end()) {
-        parameters_.insert(it, std::pair(
+    auto it = parameters.find(pname, hasher(), string_equal_to());
+    if (it == parameters.end()) {
+        parameters.insert(it, std::pair(
             boost::apply_visitor(to_rvstring_visitor(), name),
             parameter_value_t{boost::apply_visitor(to_rvstring_visitor(), value)})
         );
     } else {
         it->second.push_back(boost::apply_visitor(to_rvstring_visitor(), value));
     }
+}
+
+array_view<std::string const> request::get_parameter(string_view name) const
+{
+    auto it = parameters.find(name, hasher(), string_equal_to());
+    if (it == parameters.end() || it->second.empty()) return array_view<std::string const>();
+    return to_array_view(it->second);
+}
+
+void request::set_property(string_view name, json_value value)
+{
+    auto it = properties.find(name, hasher(), string_equal_to());
+    if (it == properties.end()) {
+        properties.insert(it, std::pair(to_string(name), value));
+    } else {
+        it->second = value;
+    }
+}
+
+json_value const* request::get_property(string_view name) const
+{
+    auto it = properties.find(name, hasher(), string_equal_to());
+    if (it == properties.end()) return nullptr;
+    return &it->second;
 }
 
 response::response(status code, optional<std::string> status_str)
@@ -197,6 +279,47 @@ void response::meet_request(request const& r)
         }
         return true;
     });
+}
+
+void response::make401(string_view realm, string_view opaque, string_view nonce)
+{
+    std::ostringstream authval;
+    authval << "Digest realm=\"" << realm << "\"";
+    authval << ",qop=\"auth\"";
+    authval << ",opaque=\"" << opaque << "\"";
+    authval << ",nonce=\"" << nonce << "\"";
+
+    set_header(header::WWW_AUTHENTICATE, authval.str());
+    make_custom(status::UNAUTHORIZED, "text/html", "<h1>401 Unauthorized.</h1>");
+}
+
+void response::make404()
+{
+    set_header(header::CONTENT_TYPE, "text/html; charset=UTF-8");
+    set_header(http::header::TRANSFER_ENCODING, "chunked");
+    status_code = status::NOT_FOUND;
+    content_writer = [](http::message::range_write_input_iterator it) {
+        copy_range(string_view("<h1>404 Not Found.</h1>"), it);
+    };
+}
+
+void response::make_custom(status code, string_view ct, string_view body)
+{
+    status_code = code;
+    set_header(header::CONTENT_TYPE, ct);
+    if (!body.empty()) {
+        set_header(http::header::CONTENT_LENGTH, std::to_string(body.size()));
+        content_writer = [body = to_string(body)](http::message::range_write_input_iterator it) {
+            copy_range(body, it);
+        };
+    }
+}
+
+void response::make_moved_temporarily_302(string_view location)
+{
+    status_code = status::FOUND;
+    set_header(http::header::CONTENT_LENGTH, "0");
+    set_header(header::LOCATION, location);
 }
 
 }

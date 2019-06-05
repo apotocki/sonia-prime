@@ -250,7 +250,7 @@ void async_recvfrom(SOCKET soc, void * buff, size_t sz, SOCKADDR * sa, int * sas
     }
 }
 
-void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov)
+std::error_code async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov) noexcept
 {
     WSABUF wsabuf;
     wsabuf.len = (ULONG)sz;
@@ -262,12 +262,13 @@ void async_recv(SOCKET soc, void * buff, size_t sz, WSAOVERLAPPED * pov)
     if (rc == SOCKET_ERROR) { 
         DWORD err = WSAGetLastError();
         if (WSA_IO_PENDING != err) {
-            throw eof_exception("can't async receive data from socket, error: %1%"_fmt % error_message(err));
+            return std::error_code{(int)err, std::system_category()};
         }
     }
+    return {};
 }
 
-void async_send(SOCKET soc, void const * buff, size_t sz, WSAOVERLAPPED * pov)
+std::error_code async_send(SOCKET soc, void const * buff, size_t sz, WSAOVERLAPPED * pov) noexcept
 {
     WSABUF wsabuf;
     wsabuf.len = (ULONG)sz;
@@ -278,9 +279,10 @@ void async_send(SOCKET soc, void const * buff, size_t sz, WSAOVERLAPPED * pov)
     if (rc == SOCKET_ERROR) {
         DWORD err = WSAGetLastError();
         if (WSA_IO_PENDING != err) {
-            throw eof_exception("can't send data to socket, error: %1%"_fmt % error_message(err));
+            return std::error_code{(int)err, std::system_category()};
         }
     }
+    return {};
 }
 
 void async_send_to(SOCKET soc, sockaddr const* addr, int addrlen, void const * buff, size_t sz, WSAOVERLAPPED * pov)

@@ -25,7 +25,7 @@ http_connector_builder::http_connector_builder()
         .array("routes", &http_connector_configuration::routes, "routes page404_application_name")
             .binder(sp::parameters_description<http_route>().bind()
                 .variable("application", &http_route::application_name, "http application name").required()
-                .variable("pathre", &http_route::pathre, "http application name").required()
+                .variable("pathre", &http_route::pathre, "path regexp").required()
                     .binder([](json_value const& v)->boost::regex {
                         return boost::regex(to_string(v.get_string()));
                     })

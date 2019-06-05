@@ -303,7 +303,8 @@ void ssl_factory::ssl_descriptor::handle_async_perform_result(int ssl_error, siz
             if (net_write_data_.empty()) {
                 auto ressz = sock.read_some(&net_write_buff_.front(), net_write_buff_.size());
                 if (!ressz.has_value()) {
-                    throw eof_exception("can't read ssl socket, error: %1%"_fmt % ressz.error().message());
+                    try { std::rethrow_exception(ressz.error()); }
+                    catch (...) { std::throw_with_nested(eof_exception("can't read ssl socket")); }
                 }
                 if (ressz.value() == 0) {
                     throw eof_exception("can't read ssl socket");
@@ -457,24 +458,32 @@ void ssl_factory::free_handle(identity<tcp_server_socket_service_type>, tcp_hand
     acceptor_pool_.delete_object(ci);
 }
 
-expected<size_t, std::error_code> ssl_factory::tcp_socket_read_some(tcp_handle_type h, void * buff, size_t sz)
+expected<size_t, std::exception_ptr> ssl_factory::tcp_socket_read_some(tcp_handle_type h, void * buff, size_t sz) noexcept
 {
-    auto * ci = static_cast<ssl_descriptor*>(h);
-    if (ci->shutdowned_) {
-        ci->perform(&ssl_descriptor::do_accept);
-        ci->shutdowned_ = false;
+    try {
+        auto * ci = static_cast<ssl_descriptor*>(h);
+        if (ci->shutdowned_) {
+            ci->perform(&ssl_descriptor::do_accept);
+            ci->shutdowned_ = false;
+        }
+        return ci->perform(&ssl_descriptor::do_read, array_view(reinterpret_cast<char*>(buff), sz));
+    } catch (...) {
+        return make_unexpected(std::current_exception());
     }
-    return ci->perform(&ssl_descriptor::do_read, array_view(reinterpret_cast<char*>(buff), sz));
 }
 
-expected<size_t, std::error_code> ssl_factory::tcp_socket_write_some(tcp_handle_type h, void const* buff, size_t sz)
+expected<size_t, std::exception_ptr> ssl_factory::tcp_socket_write_some(tcp_handle_type h, void const* buff, size_t sz) noexcept
 {
-    auto * ci = static_cast<ssl_descriptor*>(h);
-    if (ci->shutdowned_) {
-        ci->perform(&ssl_descriptor::do_accept);
-        ci->shutdowned_ = false;
+    try {
+        auto * ci = static_cast<ssl_descriptor*>(h);
+        if (ci->shutdowned_) {
+            ci->perform(&ssl_descriptor::do_accept);
+            ci->shutdowned_ = false;
+        }
+        return ci->perform(&ssl_descriptor::do_write, array_view(reinterpret_cast<char*>(const_cast<void*>(buff)), sz));
+    } catch (...) {
+        return make_unexpected(std::current_exception());
     }
-    return ci->perform(&ssl_descriptor::do_write, array_view(reinterpret_cast<char*>(const_cast<void*>(buff)), sz));
 }
 
 void ssl_factory::close_handle(identity<io::tcp_socket_service_type>, tcp_handle_type h) noexcept

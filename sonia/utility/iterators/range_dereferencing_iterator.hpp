@@ -93,17 +93,21 @@ public:
 
     void flush()
     {
-        iterator_dereferenced_range_t<IteratorT> rng = *base;
-        *base = array_view(boost::begin(rng), std::get<0>(get()));
-        ++base;
-        state_.reset();
+        if (state_) {
+            iterator_dereferenced_range_t<IteratorT> rng = *base;
+            *base = array_view(boost::begin(rng), std::get<0>(get()));
+            ++base;
+            state_.reset();
+        }
     }
 
     void flush_position()
     {
-        *base = std::get<0>(get());
-        ++base;
-        state_.reset();
+        if (state_) {
+            *base = std::get<0>(get());
+            ++base;
+            state_.reset();
+        }
     }
 
     IteratorT base;
@@ -171,10 +175,7 @@ public:
         : state_t{std::move(it)}
     {}
 
-    ~range_dereferencing_iterator()
-    {
-        state_t::flush();
-    }
+    ~range_dereferencing_iterator() = default; // no flush call on exit!
 
     bool empty() const { return state_t::empty(); }
 

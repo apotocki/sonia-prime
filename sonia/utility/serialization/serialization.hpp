@@ -156,9 +156,9 @@ private:
 };
 
 template <typename TagT, class OutputIteratorT>
-encoder<TagT, OutputIteratorT> make_encoder(OutputIteratorT oi)
+encoder<TagT, remove_cvref_t<OutputIteratorT>> make_encoder(OutputIteratorT && oi)
 {
-    return encoder<TagT, OutputIteratorT>(std::move(oi));
+    return encoder<TagT, remove_cvref_t<OutputIteratorT>>(std::forward<OutputIteratorT>(oi));
 }
 
 template <typename TagT, class InputIteratorT>

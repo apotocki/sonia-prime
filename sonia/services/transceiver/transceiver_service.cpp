@@ -15,6 +15,8 @@
 
 #include "sonia/services/io/socket_address.hpp"
 #include "sonia/utility/serialization/string.hpp"
+#include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
+#include "sonia/utility/iterators/reference_wrapper_iterator.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
 //#define NO_CRC_CHECK
@@ -258,8 +260,8 @@ void transceiver_service::connect(io::tcp_socket soc)
 
     serializable::range_write_iterator wit(&writimpl);
     
-    range_dereferencing_iterator rdit(serializable::range_read_iterator {&rditimpl});
-    range_dereferencing_iterator rwdit(serializable::range_write_iterator{&writimpl});
+    range_dereferencing_iterator rdit{serializable::range_read_iterator {&rditimpl}};
+    range_dereferencing_iterator rwdit{serializable::range_write_iterator{&writimpl}};
 
     for (;;)
     {
@@ -275,10 +277,10 @@ void transceiver_service::connect(io::tcp_socket soc)
             
         } catch (std::exception const& e) {
             string_view err{e.what()};
-            (make_encoder<sonia::serialization::compressed_t>(std::move(rwdit)) & err.size() & err).iterator().flush();
+            make_encoder<sonia::serialization::compressed_t>(reference_wrapper_iterator{rwdit}) & err.size() & err;
+            rwdit.flush();
             break; // current socket can not be used any more
         }
-
         rwdit.flush();
     }
 }

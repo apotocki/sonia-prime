@@ -12,6 +12,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/net/uri.cpp
     ${BUNDLE_HOME}/sonia/net/http/http.cpp
     ${BUNDLE_HOME}/sonia/net/http/http_message.cpp
+    ${BUNDLE_HOME}/sonia/net/http/sonnet.cpp
     ${BUNDLE_HOME}/sonia/utility/assert_handler.cpp
     ${BUNDLE_HOME}/sonia/utility/file_persister.cpp
     ${BUNDLE_HOME}/sonia/utility/json/json_value.cpp
@@ -46,7 +47,5 @@ elseif ( CMAKE_SYSTEM_NAME STREQUAL "Linux")
 endif ()
 
 add_library(${BUNDLE_NAME} STATIC ${BUNDLE_SOURCES})
-target_link_libraries(${BUNDLE_NAME} ${BOOST_LOG} ${BOOST_LOG_SETUP})
-#target_link_libraries(${BUNDLE_NAME} ${ZLIB_LIB})
-set_target_properties(${BUNDLE_NAME} PROPERTIES FOLDER "libs")
 
+set_target_properties(${BUNDLE_NAME} PROPERTIES FOLDER "libs")

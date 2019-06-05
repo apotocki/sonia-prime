@@ -91,13 +91,6 @@ class http_chunking_write_input_iterator
 public:
     explicit http_chunking_write_input_iterator(WriteInputIteratorT base_it) : base(std::move(base_it)) {}
     
-    //~http_chunking_write_input_iterator()
-    //{
-    //    try {
-    //        close();
-    //    } catch (...) { /* ignore*/ }
-    //}
-
     bool empty() const
     {
         return sonia::empty(base);

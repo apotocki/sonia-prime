@@ -14,7 +14,7 @@
 #include <tuple>
 #include <string>
 
-namespace sonia { namespace linux {
+namespace sonia::linux {
 
 std::tuple<int, int, int> kernel_version();
 
@@ -28,6 +28,6 @@ void setsockopt(int sockfd, int level, int optname, const void *optval, socklen_
 
 void append_descriptor_flags(int fd, int appending_flags);
 
-}}
+}
 
 #endif // SONIA_UTILITY_LINUX_HPP

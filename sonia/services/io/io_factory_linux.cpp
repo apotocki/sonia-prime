@@ -28,7 +28,7 @@
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/utility/object_pool.hpp"
 #include "sonia/utility/linux.hpp"
-#include "sonia/utility/posix/signals.hpp"
+#include "sonia/sys/linux/signals.hpp"
 
 #ifndef MAX_EPOLL_EVENTS
 #   define MAX_EPOLL_EVENTS 5
@@ -260,8 +260,8 @@ struct lin_impl
     void free_handle(identity<tcp_server_socket_service_type>, tcp_handle_type) noexcept override final;
 
     // tcp socket service
-    expected<size_t, std::error_code> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) override final;
-    expected<size_t, std::error_code> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) override final;
+    expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept override final;
+    expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept override final;
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
     void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
@@ -538,7 +538,7 @@ void lin_impl::free_handle(identity<tcp_server_socket_service>, tcp_handle_type 
     delete_socket_handle(static_cast<lin_shared_handle*>(h));
 }
 
-expected<size_t, std::error_code> lin_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz)
+expected<size_t, std::exception_ptr> lin_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz) noexcept
 {
     auto * sh = static_cast<lin_shared_handle*>(handle);
     SCOPE_EXIT([&sh]() { --sh->waiting_cnt; });
@@ -553,14 +553,14 @@ expected<size_t, std::error_code> lin_impl::tcp_socket_read_some(tcp_handle_type
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) read %2% bytes"_fmt % sh->handle % n);
         if (n >= 0) return (size_t)n;
         int err = errno;
-        if (BOOST_UNLIKELY(EAGAIN != err)) { return 0; }
+        if (BOOST_UNLIKELY(EAGAIN != err)) return make_unexpected(std::make_exception_ptr(exception(strerror(err))));
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) read waiting..."_fmt % sh->handle);
         sh->wait(lck);
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) woke up"_fmt % sh->handle);
     }
 }
 
-expected<size_t, std::error_code> lin_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz)
+expected<size_t, std::exception_ptr> lin_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz) noexcept
 {
     auto * sh = static_cast<lin_shared_handle*>(handle);
     SCOPE_EXIT([&sh]() { --sh->waiting_cnt; });
@@ -574,7 +574,7 @@ expected<size_t, std::error_code> lin_impl::tcp_socket_write_some(tcp_handle_typ
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write %2% bytes"_fmt % sh->handle % n);
         if (n >= 0) return (size_t)n;
         int err = errno;
-        if (BOOST_UNLIKELY(EAGAIN != err)) { return 0; }
+        if (BOOST_UNLIKELY(EAGAIN != err)) return make_unexpected(std::make_exception_ptr(exception(strerror(err))));
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write waiting..."_fmt % sh->handle);
         sh->wait(lck);
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) woke up"_fmt % sh->handle);
@@ -825,7 +825,7 @@ file factory::open_file(cstring_view path, file_open_mode fom, file_access_mode 
 struct file_callback
 {
     aiocb cb;
-    sonia::posix::user_handler_type h_;
+    linux::user_handler_type h_;
 
     optional<std::error_code> code;
 
@@ -840,7 +840,7 @@ struct file_callback
         cb.aio_buf = (void*)buff.begin();
         cb.aio_nbytes = buff.size();
         cb.aio_sigevent.sigev_notify = SIGEV_SIGNAL;
-        cb.aio_sigevent.sigev_signo = sonia::posix::get_user_signal();
+        cb.aio_sigevent.sigev_signo = linux::get_user_signal();
         cb.aio_sigevent.sigev_value.sival_ptr = &h_;
         h_ = [this] { on_op(); };
     }

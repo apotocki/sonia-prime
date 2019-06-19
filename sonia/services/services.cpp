@@ -16,7 +16,7 @@
 #include "sonia/services/environment.hpp"
 #include "sonia/services/thread_descriptor.hpp"
 #include "sonia/services/on_close.hpp"
-
+#include "sonia/services/timer.hpp"
 #include "sonia/utility/type_id.hpp"
 #include "sonia/utility/type_durable_id.hpp"
 #include "sonia/utility/multimethod.hpp"
@@ -202,6 +202,14 @@ multimethod const* get_multimethod(array_view<const std::type_index> mmid)
     return get_host_impl()->get_multimethod(mmid);
 }
 
+// timer
+#ifdef BOOST_WINDOWS
+timer::timer(function<void()> const& f)
+{
+    BOOST_ASSERT(env_);
+    impl_ = env_->get_threadpool().create_timer(f);
+}
+#endif
 }
 
 namespace sonia::this_thread {

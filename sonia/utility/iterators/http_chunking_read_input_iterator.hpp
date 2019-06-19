@@ -135,7 +135,7 @@ class http_chunking_read_input_iterator
             //    return {};
 
             default:
-                THROW_INTERNAL_ERROR("unexpected mode: %1%"_fmt % mode_);
+                THROW_INTERNAL_ERROR("unexpected mode: %1%"_fmt % (int)mode_);
         }
     }
 

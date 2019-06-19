@@ -17,7 +17,8 @@
 std::atomic<long> barrier_(0);
 std::atomic<scoped_services*> serv_ = nullptr;
 
-void interuption_handler() {
+void interuption_handler()
+{
     if (0 == barrier_.fetch_add(1)) {
         SCOPE_EXIT([]() { --barrier_; });
         scoped_services* pservs = serv_.load();
@@ -31,13 +32,15 @@ void interuption_handler() {
     }
 }
 
-void terminate_impl() {
+void terminate_impl()
+{
     std::cerr << "unexpected fatal error (terminate)\n";
     abort();
 }
 
 
-int main(int argc, char const* argv[]) {
+int main(int argc, char const* argv[])
+{
     std::set_terminate(terminate_impl);
 
     try {

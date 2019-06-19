@@ -37,7 +37,7 @@ void sonnet::handle(request & req, response & resp)
         }
     }
 
-    resp.meet_request(req);
+    //resp.meet_request(req);
     
     try {
         if (handler) {

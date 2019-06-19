@@ -139,6 +139,7 @@ void http_connector::keep_alive_connect(io::tcp_socket soc)
     int curconnection = keep_alive_connnum.fetch_add(1);
 
     while (do_connection(ii, oi)) {
+        oi.flush();
         LOG_TRACE(logger()) << "next keep alive connection: " << curconnection;
     }
 }

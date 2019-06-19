@@ -40,7 +40,8 @@ public:
         // parse verb
         char * bit = tmpbuff, * beit = tmpbuff + sizeof(tmpbuff);
         for (; bit != beit; ++bit) {
-            *bit = *ii; ++ii;
+            *bit = *ii;
+            ++ii;
             if (*bit == ' ') break;
         }
         req.method = http::to_method(string_view(tmpbuff, bit));

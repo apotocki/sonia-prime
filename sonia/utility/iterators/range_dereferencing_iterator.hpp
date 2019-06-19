@@ -49,7 +49,7 @@ public:
         if (BOOST_LIKELY(!!state_)) return false;
         if (sonia::empty(base)) return true;
         init_state();
-        return false;
+        return !state_;
     }
 
     void increment()
@@ -95,7 +95,7 @@ public:
     {
         if (state_) {
             iterator_dereferenced_range_t<IteratorT> rng = *base;
-            *base = array_view(boost::begin(rng), std::get<0>(get()));
+            *base = array_view(boost::begin(rng), std::get<0>(*state_));
             ++base;
             state_.reset();
         }
@@ -104,7 +104,7 @@ public:
     void flush_position()
     {
         if (state_) {
-            *base = std::get<0>(get());
+            *base = std::get<0>(*state_);
             ++base;
             state_.reset();
         }
@@ -115,12 +115,18 @@ public:
 private:
     void init_state() const
     {
-        iterator_dereferenced_range_t<IteratorT> rng = *base;
-        if constexpr (is_bidirectional_v) {
-            state_.emplace(boost::begin(rng), boost::end(rng), boost::begin(rng));
-        } else {
-            state_.emplace(boost::begin(rng), boost::end(rng));
-        }
+        do {
+            iterator_dereferenced_range_t<IteratorT> rng = *base;
+            if (!boost::empty(rng)) {
+                if constexpr (is_bidirectional_v) {
+                    state_.emplace(boost::begin(rng), boost::end(rng), boost::begin(rng));
+                } else {
+                    state_.emplace(boost::begin(rng), boost::end(rng));
+                }
+                return;
+            }
+            ++const_cast<IteratorT&>(base);
+        } while (!sonia::empty(base));
     }
 };
 

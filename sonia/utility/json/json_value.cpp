@@ -41,13 +41,13 @@ using object_item_t = std::pair<json_item_name_t, json_value>;
 
 struct json_object_item_transformer
 {
-    using result_type = std::pair<array_view<const char>, json_value&&>;
+    using result_type = std::pair<array_view<const char>, json_value>;
 
     template <typename TplT>
     result_type operator()(TplT&& x) const {
         return result_type(
             to_string_view(boost::get<0>(x)),
-            std::move(boost::get<1>(x))
+            boost::get<1>(x)
         );
     }
 };
@@ -78,7 +78,7 @@ struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
     typedef typename base_t::optimized_collection_base_t optimized_collection_base_t;
     typedef typename base_t::optimized_collection_t optimized_collection_t;
 
-    static void init(HolderT * self, array_view<std::string> keys, array_view<json_value> vals)
+    static void init(HolderT * self, array_view<const std::string> keys, array_view<const json_value> vals)
     {
         BOOST_ASSERT(keys.size() == vals.size());
         if (!keys.empty()) {
@@ -283,28 +283,28 @@ json_value::json_value(bool val)
 
 json_value::json_value(decimal val)
 {
-    typedef optimized_decimal_impl<holder_t> number_t;
+    using number_t = optimized_decimal_impl<holder_t>;
     number_t::set(this, val);
     set_service_cookie((size_t)json_value_type::number);
 }
 
 json_value::json_value(string_view val)
 {
-    typedef optimized_array_impl<char, holder_t> string_t;
+    using string_t = optimized_array_impl<char, holder_t>;
     string_t::init(this, val);
     set_service_cookie((size_t)json_value_type::string);
 }
 
 json_value::json_value(array_view<json_value> val)
 {
-    typedef optimized_array_impl<json_value, holder_t> array_t;
+    using array_t = optimized_array_impl<json_value, holder_t>;
     array_t::init(this, val | boost::adaptors::transformed(mover()), val.size());
     set_service_cookie((size_t)json_value_type::array);
 }
 
-json_value::json_value(array_view<std::string> keys, array_view<json_value> vals)
+json_value::json_value(array_view<const std::string> keys, array_view<const json_value> vals)
 {
-    typedef optimized_object_impl<holder_t> object_t;
+    using object_t = optimized_object_impl<holder_t>;
     object_t::init(this, keys, vals);
     set_service_cookie((size_t)json_value_type::object);
 }

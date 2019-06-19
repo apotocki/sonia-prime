@@ -64,9 +64,6 @@
     <Filter Include="sonia.utility\functional\hash">
       <UniqueIdentifier>{d4100e8e-34b8-459a-9075-9bda4393a249}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.utility.posix">
-      <UniqueIdentifier>{ad730f3a-0675-4e1e-bbb9-33bffd66ebfc}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.utility\concurrency">
       <UniqueIdentifier>{de59bf45-ac48-45e2-be5e-c0fcd98b36c1}</UniqueIdentifier>
     </Filter>
@@ -87,6 +84,18 @@
     </Filter>
     <Filter Include="sonia.utility\functional\equal">
       <UniqueIdentifier>{a3fb7c16-8026-4743-b082-ac5229b4406f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.sys">
+      <UniqueIdentifier>{ad730f3a-0675-4e1e-bbb9-33bffd66ebfc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.sys\posix">
+      <UniqueIdentifier>{3f379cdc-163a-4d64-b9be-7391b0ed6236}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.sys\windows">
+      <UniqueIdentifier>{bd38a029-7841-4c53-a959-cbe8c1f300e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.sys\linux">
+      <UniqueIdentifier>{e136d02d-a1e2-422b-be0a-0dbbbaa3fc0b}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -341,9 +350,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\sal_types.hpp">
       <Filter>sonia</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\posix\signals.hpp">
-      <Filter>sonia.utility.posix</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp">
       <Filter>sonia.utility</Filter>
@@ -717,6 +723,27 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\http_chunking_read_input_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\linux\signals.hpp">
+      <Filter>sonia.sys\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\windows\main_api.hpp">
+      <Filter>sonia.sys\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\windows\thread_pool.hpp">
+      <Filter>sonia.sys\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\windows\thread_pool_api.hpp">
+      <Filter>sonia.sys\windows</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\linux\timer.hpp">
+      <Filter>sonia.sys\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\linux\signals_api.hpp">
+      <Filter>sonia.sys\linux</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\on_close.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -769,9 +796,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\bundle.cpp">
       <Filter>sonia.services</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\posix\signals.cpp">
-      <Filter>sonia.utility.posix</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\file.cpp">
       <Filter>sonia.services.io</Filter>
@@ -832,6 +856,24 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\net\http\sonnet.cpp">
       <Filter>sonia.net\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\linux\signals.cpp">
+      <Filter>sonia.sys\linux</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\windows\main_api.cpp">
+      <Filter>sonia.sys\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\windows\thread_pool.cpp">
+      <Filter>sonia.sys\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\windows\thread_pool_api.cpp">
+      <Filter>sonia.sys\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\linux\linux_timer.cpp">
+      <Filter>sonia.sys\linux</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\linux\signals_api.cpp">
+      <Filter>sonia.sys\linux</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -19,6 +19,8 @@ namespace sonia::services {
 using sonia::io::tcp_socket;
 using sonia::io::udp_socket;
 
+using namespace std::chrono_literals;
+
 struct tcp_acceptor_listener : net_service::listener
 {
     shared_ptr<net::tcp_connector> cn;
@@ -55,7 +57,7 @@ public:
             // if there is no waiting workers and current number of workers is less than configured max count then create a new worker
             if (0 == al_->sock.accepting_count()) {
                 if (al_->workers_max > al_->workers_count.fetch_add(1)) {
-                    sched_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), al_, sched_));
+                    sched_->post(0ms, scheduler_task_t(in_place_type_t<acceptor_task>(), al_, sched_));
                 } else {
                     --al_->workers_count;
                 }
@@ -127,7 +129,7 @@ public:
                 if (!res.has_value()) throw eof_exception(res.error().message());
                 if (0 == al_->sock.waiting_count()) {
                     if (al_->workers_max > al_->workers_count.fetch_add(1)) {
-                        sched_->post(scheduler_task_t(in_place_type_t<listener_task>(), al_, sched_));
+                        sched_->post(0ms, scheduler_task_t(in_place_type_t<listener_task>(), al_, sched_));
                     } else {
                         --al_->workers_count;
                     }
@@ -178,7 +180,7 @@ void net_service::open()
                 ls->workers_max = lc.workers_count;
                 ls->buffer_size = lc.buffer_size;
                 ls->sock = tcp_server_socket_factory_->create_server_socket(to_string_view(lc.address), lc.port, lc.family);
-                scheduler_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), ls, scheduler_));
+                scheduler_->post(0ms, scheduler_task_t(in_place_type_t<acceptor_task>(), ls, scheduler_));
                 
                 listeners_.push_back(std::move(ls));
             } else if (net::listener_type::UDP == lc.type) {
@@ -192,7 +194,7 @@ void net_service::open()
                 ls->buffer_size = lc.buffer_size;
                 ls->sock = udp_socket_factory_->create_udp_socket(lc.family);
                 ls->sock.bind(lc.address, lc.port);
-                scheduler_->post(scheduler_task_t(in_place_type_t<listener_task>(), ls, scheduler_));
+                scheduler_->post(0ms, scheduler_task_t(in_place_type_t<listener_task>(), ls, scheduler_));
                 
                 listeners_.push_back(std::move(ls));
             }

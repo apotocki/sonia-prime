@@ -269,6 +269,7 @@ struct win_impl
     void free_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override final;
 
     void free(acceptor_async_callback * cb) { acceptor_callbacks_.delete_object(cb); }
+
 private:
     object_pool<win_shared_handle, mutex> handles_;
     object_pool<acceptor_async_callback, fibers::mutex> acceptor_callbacks_;

@@ -21,6 +21,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/iterators/file_region_iterator.cpp
     ${BUNDLE_HOME}/sonia/utility/iterators/tar_iterator.cpp
     ${BUNDLE_HOME}/sonia/utility/iterators/archive_extract_iterator.cpp
+    ${BUNDLE_HOME}/sonia/services/singleton_locator.cpp
     ${BUNDLE_HOME}/sonia/services/local_type_registry.cpp
     ${BUNDLE_HOME}/sonia/services/durable_type_registry.cpp
     ${BUNDLE_HOME}/sonia/services/multimethod_registry.cpp
@@ -32,19 +33,26 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/io/socket_address.cpp
 )
 
-if ( CMAKE_SYSTEM_NAME STREQUAL "Windows")
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        ${BUNDLE_HOME}/sonia/sys/windows/main_api.cpp
+        ${BUNDLE_HOME}/sonia/sys/windows/thread_pool_api.cpp
+        ${BUNDLE_HOME}/sonia/sys/windows/thread_pool.cpp
         ${BUNDLE_HOME}/sonia/sal/windows_sal.cpp
         ${BUNDLE_HOME}/sonia/utility/windows.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory_win.cpp
     )
-elseif ( CMAKE_SYSTEM_NAME STREQUAL "Linux")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        ${BUNDLE_HOME}/sonia/sys/linux/signals_api.cpp
+        ${BUNDLE_HOME}/sonia/sys/linux/linux_timer.cpp
         ${BUNDLE_HOME}/sonia/sal/linux_sal.cpp
         ${BUNDLE_HOME}/sonia/utility/linux.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory_linux.cpp
     )
 endif ()
+
+add_definitions(-DSONIA_PRIME_STATIC)
 
 add_library(${BUNDLE_NAME} STATIC ${BUNDLE_SOURCES})
 

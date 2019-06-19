@@ -4,14 +4,7 @@
 
 #pragma once
 
-#define WIN32_LEAN_AND_MEAN
-#ifndef UNICODE
-#   define UNICODE
-#endif
-//#define WINVER 0x0600
-#ifndef _WIN32_WINNT
-#   define _WIN32_WINNT 0x0600
-#endif
+#include "sonia/sys/windows/main_api.hpp"
 
 #include <winsock2.h>
 #include <Windows.h>
@@ -22,7 +15,7 @@
 #include "sonia/string.hpp"
 #include "sonia/function.hpp"
 
-namespace sonia { namespace windows {
+namespace sonia::windows {
 
 class wsa_scope final
 {
@@ -30,14 +23,6 @@ public:
     wsa_scope();
     ~wsa_scope();
 };
-
-void set_thread_name(DWORD dwThreadId, char const* threadName);
-void set_thread_name(boost::thread::id tid, char const* threadName);
-
-std::wstring utf8_to_utf16(string_view);
-std::string utf16_to_utf8(wstring_view);
-
-std::string error_message(DWORD errcode);
 
 LPFN_ACCEPTEX get_accept_function(SOCKET);
 bool parse_address(int hint_af, int hint_type, int hint_protocol, string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc);
@@ -65,4 +50,4 @@ void delete_file(wchar_t const * path, char const* optutf8path = nullptr);
 void async_read_file(HANDLE, uint64_t fileoffset, void * buff, size_t sz, OVERLAPPED * pov);
 void async_write_file(HANDLE, uint64_t fileoffset, void const* buff, size_t sz, OVERLAPPED * pov);
 
-}}
+}

@@ -31,8 +31,8 @@
 #include "local_service_registry.hpp"
 #include "local_type_registry.hpp"
 
-#ifndef BOOST_WINDOWS
-#include "sonia/utility/posix/signals.hpp"
+#ifdef __linux__
+#   include "sonia/sys/linux/signals.hpp"
 #endif
 
 namespace sonia::services {
@@ -88,10 +88,6 @@ environment::environment() : log_initialized_(false)
     } else {
         version_msg_ = *vmsg;
     }
-
-#ifndef BOOST_WINDOWS
-    sonia::posix::run_watchers(1);
-#endif
 }
 
 environment::~environment() noexcept
@@ -116,9 +112,13 @@ environment::~environment() noexcept
         GLOBAL_LOG_INFO() << "environment terminated";
         logger::deinitialize();
     }
-#ifndef BOOST_WINDOWS
-    sonia::posix::stop_watchers();
+
+#ifdef BOOST_WINDOWS
+    threadpool_.reset();
+#elif defined (__linux__)
+    linux::stop_watchers();
 #endif
+
 }
 
 void environment::open(int argc, char const* argv[], std::istream * cfgstream)
@@ -182,6 +182,12 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
     if (vm.count("cfg")) {
         start_conf_ = vm["cfg"].as<std::string>();
     }
+
+#ifdef BOOST_WINDOWS
+    threadpool_.reset(new windows::threadpool);
+#elif defined (__linux__)
+    linux::run_watchers(1);
+#endif
 }
 
 void environment::start()

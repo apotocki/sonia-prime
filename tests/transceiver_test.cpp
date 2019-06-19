@@ -30,6 +30,7 @@ namespace fs = boost::filesystem;
 
 #define TEST_FOLDER "cmd_transceiver_test"
 
+using namespace std::chrono_literals;
 using namespace sonia;
 namespace serv = sonia::services;
 
@@ -274,7 +275,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         std::atomic<long> tasks(0);
         for (int i = 0; i < max_pass_count; ++i) {
             ++tasks;
-            async->post([tnum = i, &tasks, &maincopy, &ival, &str, ctl_proxy, calls_count](){
+            async->post(0ms, [tnum = i, &tasks, &maincopy, &ival, &str, ctl_proxy, calls_count](){
                 try {
                     std::vector<std::string> result = maincopy;
                     for (int i = 0; i < calls_count; ++i)
@@ -294,7 +295,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
                     throw;
                 }
                 GLOBAL_LOG_INFO() << "finished: " << tnum;
-            }, false);
+            });
         }
 
         while (tasks.load() > 0) {

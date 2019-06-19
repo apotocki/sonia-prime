@@ -10,6 +10,10 @@
 #endif
 
 #include <utility>
+#include <chrono>
+
+#include <boost/variant.hpp>
+
 #include "sonia/function.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
 
@@ -22,7 +26,7 @@ namespace sonia {
 class scheduler_task : public polymorphic_movable
 {
 public:
-    virtual void on_cancel() {}
+    virtual void on_cancel() noexcept {}
     virtual void run() = 0;
 };
 
@@ -34,7 +38,7 @@ class scheduler_task_handle
     virtual void release_ref() = 0;
 
 public:
-    virtual ~scheduler_task_handle() {}
+    virtual ~scheduler_task_handle() = default;
 
     virtual bool cancel() = 0; // returns true if cancelled
 
@@ -57,8 +61,8 @@ class function_call_scheduler_task : public scheduler_task
 {
 public:
     template <typename ArgT>
-    explicit function_call_scheduler_task(ArgT && arg) 
-        : func_(std::forward<ArgT>(arg))
+    explicit function_call_scheduler_task(ArgT && arg, disable_if_same_ref_t<function_call_scheduler_task, ArgT>* dummy = nullptr) 
+        : func_{std::forward<ArgT>(arg)}
     {}
 
     function_call_scheduler_task(function_call_scheduler_task const&) = delete;
@@ -96,8 +100,22 @@ class scheduler
 public:
     virtual ~scheduler() = default;
 
-    virtual task_handle_ptr post(scheduler_task_t &&, bool with_handle = true) = 0;
-    virtual task_handle_ptr post(function<void()> const&, bool with_handle = true) = 0;
+    using time_point_t = std::chrono::time_point<std::chrono::system_clock>;
+    using time_duration_t = std::chrono::microseconds;
+    using when_t = boost::variant<time_duration_t, time_point_t>;
+
+    virtual void post(when_t when, scheduler_task_t &&) = 0;
+    [[nodiscard]] virtual task_handle_ptr handled_post(when_t when, scheduler_task_t &&) = 0;
+    [[nodiscard]] virtual task_handle_ptr post_and_repeat(time_duration_t interval, scheduler_task_t &&) = 0;
+
+    void post(when_t when, function<void()> const& f) { post(when, make_scheduler_task(f)); }
+    task_handle_ptr handled_post(when_t when, function<void()> const& f) { return handled_post(when, make_scheduler_task(f)); }
+    task_handle_ptr post_and_repeat(time_duration_t interval, function<void()> const& f) { return post_and_repeat(interval, make_scheduler_task(f)); }
+
+    //virtual task_handle_ptr post(scheduler_task_t &&, bool with_handle = true) = 0;
+    //virtual task_handle_ptr post(function<void()> const&, bool with_handle = true) = 0;
+    //virtual task_handle_ptr post(std::chrono::milliseconds delay, function<void()> const&, bool with_handle = true) = 0;
+    //virtual task_handle_ptr post_repeated(std::chrono::milliseconds interval, function<void()> const&, bool with_handle = true) = 0;
 };
 
 }

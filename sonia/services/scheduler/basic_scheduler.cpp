@@ -231,20 +231,44 @@ task_handle_ptr basic_scheduler::do_post(bool wh, ArgsT && ... args)
         lock_guard guard(queue_mtx_);
         entries_.push_front(*pe);
     }
-    //queue_cond_.notify_one();
     queue_cond_.notify_one();
     return std::move(result);
 }
 
-task_handle_ptr basic_scheduler::post(function<void()> const& task, bool wh)
+void basic_scheduler::post(when_t when, scheduler_task_t && t)
 {
-    return do_post(wh, in_place_type<function_call_scheduler_task<function<void()>>>, task);
+    time_duration_t const* td = boost::get<time_duration_t>(&when);
+    if (td && !td->count()) {
+        task_entry * pe = task_pool_.new_object(std::move(t));
+        {
+            lock_guard guard(queue_mtx_);
+            entries_.push_front(*pe);
+        }
+        queue_cond_.notify_one();
+    } else {
+        throw;
+    }
 }
 
-task_handle_ptr basic_scheduler::post(scheduler_task_t && task, bool wh)
+task_handle_ptr basic_scheduler::handled_post(when_t when, scheduler_task_t &&)
 {
-    return do_post(wh, std::move(task));
+    throw;
 }
+
+task_handle_ptr basic_scheduler::post_and_repeat(time_duration_t interval, scheduler_task_t &&)
+{
+    throw;
+}
+
+//task_handle_ptr basic_scheduler::post(function<void()> const& task, bool wh)
+//{
+//    return do_post(wh, in_place_type<function_call_scheduler_task<function<void()>>>, task);
+//}
+//
+//task_handle_ptr basic_scheduler::post(scheduler_task_t && task, bool wh)
+//{
+//    return do_post(wh, std::move(task));
+//}
 
 void basic_scheduler::release_task_ref(task_entry * te)
 {

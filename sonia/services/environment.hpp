@@ -32,6 +32,10 @@
 #include "sonia/services/bundle.hpp"
 #include "sonia/services/singleton_locator.hpp"
 
+#ifdef BOOST_WINDOWS
+#   include "sonia/sys/windows/thread_pool.hpp"
+#endif
+
 namespace sonia::services {
 
 struct host_configuration
@@ -109,6 +113,14 @@ private:
     //type_id_map_type type_durable_id_map_;
 
     singleton_locator slocator_;
+
+#ifdef BOOST_WINDOWS
+public:
+    windows::threadpool & get_threadpool() { return *threadpool_; }
+private:
+    shared_ptr<windows::threadpool> threadpool_;
+#endif
+
 };
 
 }

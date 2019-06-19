@@ -228,5 +228,8 @@
     <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application_configuration.hpp">
       <Filter>sonia.services\net\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\timer.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

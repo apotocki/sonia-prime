@@ -53,10 +53,12 @@ public:
 
 private:
     scheduler_task_t task_;
-    static constexpr unsigned long handled_flag_value =
-        ((unsigned long)1) << (sizeof(unsigned long) * CHAR_BIT - 1);
 
-    std::atomic<unsigned long> refs_{handled_flag_value + 1}; // high bit is a 'handled' flag
+    using ref_integral_type = unsigned long;
+    static constexpr ref_integral_type handled_flag_value =
+        ((ref_integral_type)1) << (sizeof(ref_integral_type) * CHAR_BIT - 1);
+
+    std::atomic<ref_integral_type> refs_{handled_flag_value + 1}; // high bit is a 'handled' flag
 };
 
 class basic_task_handle : public scheduler_task_handle
@@ -107,8 +109,9 @@ public:
 
     virtual void on_new_thread() {};
 
-    task_handle_ptr post(scheduler_task_t &&, bool wh) override;
-    task_handle_ptr post(function<void()> const&, bool wh) override;
+    void post(when_t when, scheduler_task_t &&) override;
+    task_handle_ptr handled_post(when_t when, scheduler_task_t &&) override;
+    task_handle_ptr post_and_repeat(time_duration_t interval, scheduler_task_t &&) override;
 
 protected:
 

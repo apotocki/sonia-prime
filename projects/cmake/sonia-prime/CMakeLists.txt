@@ -10,7 +10,6 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/services.cpp
     ${BUNDLE_HOME}/sonia/services/environment.cpp
     ${BUNDLE_HOME}/sonia/services/services_host.cpp
-    ${BUNDLE_HOME}/sonia/services/singleton_locator.cpp
     ${BUNDLE_HOME}/sonia/services/service_locator.cpp
     ${BUNDLE_HOME}/sonia/services/basic_service_factory.cpp
     ${BUNDLE_HOME}/sonia/services/local_service_registry.cpp
@@ -35,9 +34,9 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
 )
 
-if ( CMAKE_SYSTEM_NAME STREQUAL "Linux")
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
-        ${BUNDLE_HOME}/sonia/utility/posix/signals.cpp
+        ${BUNDLE_HOME}/sonia/sys/linux/signals.cpp
     )
 endif ()
 
@@ -49,5 +48,5 @@ if ("${LIBRARY_TYPE}" STREQUAL "STATIC")
 endif ()
 
 add_library(${BUNDLE_NAME} ${LIBRARY_TYPE} ${BUNDLE_SOURCES})
-target_link_libraries(${BUNDLE_NAME} sonia-prime-lib ${OPENSSL} ${ZLIB} ${BOOST_LOG} ${BOOST_LOG_SETUP} ${BOOST_SERIALIZATION} ${BOOST_FILESYSTEM} ${BOOST_FIBERS} ${BOOST_THREAD} ${BOOST_PROGRAM_OPTIONS} ${BOOST_CONTEXT} ${BOOST_REGEX} ${PLATFORM_LIBS})
+target_link_libraries(${BUNDLE_NAME} sonia-prime-lib ${OPENSSL} ${ZLIB} ${BOOST_LOG} ${BOOST_LOG_SETUP} ${BOOST_SERIALIZATION} ${BOOST_FILESYSTEM} ${BOOST_FIBERS} ${BOOST_THREAD} ${BOOST_PROGRAM_OPTIONS} ${BOOST_CONTEXT} ${BOOST_REGEX} ${BOOST_STACKTRACE} ${PLATFORM_LIBS})
 set_target_properties(${BUNDLE_NAME} PROPERTIES FOLDER "libs")

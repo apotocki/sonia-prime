@@ -26,6 +26,7 @@ namespace sonia::services {
 class timer
 {
 public:
+    timer() = default;
     SONIA_PRIME_API explicit timer(function<void()> const&);
     ~timer() = default;
 

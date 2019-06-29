@@ -26,11 +26,13 @@ void timer::timer_descriptor::release()
 {
     unregister_handler(hid_);
     linux::timer_delete(timerid_);
+    lock_guard guard(mtx);
+    handler = std::nullptr_t{};
 }
 
 void timer::timer_descriptor::set(std::chrono::milliseconds ms)
 {
-    int64_t ns = ms.count() * 1000;
+    int64_t ns = ms.count() * 1000000;
     
     itimerspec its;
     its.it_value.tv_sec = ns / 1000000000;

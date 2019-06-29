@@ -38,6 +38,7 @@ class timer
     };
 
 public:
+    timer() = default;
     explicit timer(function<void()> const& h, bool realtime = true);
     ~timer();
 

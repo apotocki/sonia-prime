@@ -7,6 +7,9 @@
 #include <boost/test/unit_test.hpp>
 #include "sonia/utility/scope_exit.hpp"
 
+#include "applied/scoped_services.hpp"
+
+#if 0
 #if BOOST_OS_WINDOWS
 #include "sonia/sys/windows/thread_pool.hpp"
 BOOST_AUTO_TEST_CASE (windows_timer_test)
@@ -71,7 +74,6 @@ BOOST_AUTO_TEST_CASE (apple_timer_test)
 }
 #endif
 
-#include "applied/scoped_services.hpp"
 #include "sonia/services/timer.hpp"
 BOOST_AUTO_TEST_CASE (service_timer_test)
 {
@@ -94,5 +96,62 @@ BOOST_AUTO_TEST_CASE (service_timer_test)
     tmr2 = services::timer{ [&check]{ check |= 16; } };
     tmr2.set(30ms);
     std::this_thread::sleep_for(100ms);
+    BOOST_CHECK_EQUAL(check.load(), 18);
+}
+
+#endif
+
+#include <sstream>
+#include "sonia/services/scheduler/scheduler.hpp"
+
+namespace {
+
+void get_configuration(std::ostream & os)
+{
+     os << 
+        "{"
+        "   hosts: ["
+        "       {"
+        "           name: 'default',"
+        "           services: []"
+        "       }"
+        "   ],"
+        "   services: {"
+        "       scheduler.serv: {"
+        "           factory: 'scheduler-factory',"
+        "           layer: 4,"
+        "           parameters: { threads: 8, fibers: 10 }"
+        "       },"
+        "       scheduler-factory: { factory: 'prime', layer: 0, parameters: { name: 'scheduler' } }"
+        "   },"
+        "   bundles: {"
+        "       prime: {lib: 'sonia-prime'}"
+        "   }"
+        "}";
+}
+
+}
+
+BOOST_AUTO_TEST_CASE (scheduler_timer_test)
+{
+    using namespace sonia;
+    using namespace std::chrono_literals;
+
+    scoped_services ss;
+    std::stringstream cfgss;
+    get_configuration(cfgss);
+    services::load_configuration(cfgss);
+
+    auto sched = services::locate<scheduler>("scheduler.serv");
+
+    std::atomic<int> check = 0;
+    auto hndl = sched->post([&check]{ check |= 2; }, 150ms);
+    hndl.reschedule(100ms);
+    auto hndl2 = sched->post([&check]{ check |= 4; }, 70ms); // must be ignored
+    hndl2.cancel();
+    sched->post([&check]{ check |= 16; }, 30ms);
+    std::this_thread::sleep_for(50ms);
+    BOOST_CHECK_EQUAL(check.load(), 16);
+    std::this_thread::sleep_for(70ms);
     BOOST_CHECK_EQUAL(check.load(), 18);
 }

@@ -13,61 +13,94 @@
 #ifndef SONIA_TASK_POOL_INITIAL_SIZE
 #   define SONIA_TASK_POOL_INITIAL_SIZE 1024
 #endif
-#ifndef SONIA_TASK_HANDLE_POOL_INITIAL_SIZE
-#   define SONIA_TASK_HANDLE_POOL_INITIAL_SIZE 128
-#endif
 
 namespace sonia { namespace scheduler_detail {
 
-void task_entry::release_ref(task_entry_pool_t & pool)
+bool basic_scheduler_task_handle_impl::cancel(uintptr_t cookie)
 {
-    if (1 == refs_.fetch_sub(1)) {
-        pool.delete_object(this);
+    auto * s = sched(cookie);
+    if (entry_->is_priority_type()) {
+        if (!s->unlink(*static_cast<priority_queue_entry*>(entry_))) return false;
+    } else {
+        if (!s->unlink(*entry_)) return false;
     }
-}
-
-bool task_entry::cancel()
-{
-    for (;;) {
-        auto expval = refs_.load();
-        if (0 == (expval & handled_flag_value)) return false; // already some way handled
-        if (refs_.compare_exchange_strong(expval, expval & ~handled_flag_value)) break;
-    }
-    task_->on_cancel();
     return true;
 }
 
-void task_entry::run()
+void basic_scheduler_task_handle_impl::reschedule(uintptr_t cookie, when_t when, time_duration_t td)
 {
-    for (;;) {
-        auto expval = refs_.load();
-        if (0 == (expval & handled_flag_value)) return; // already some way handled
-        if (refs_.compare_exchange_strong(expval, expval & ~handled_flag_value)) break;
+    auto * s = sched(cookie);
+    time_duration_t now = s->relative_now();
+    time_duration_t const* wtd = boost::get<time_duration_t>(&when);
+    uint64_t dwhen = (wtd ? (*wtd + now) : now).count();
+
+    priority_queue_entry * pe;
+    if (entry_->is_priority_type()) {
+        pe = static_cast<priority_queue_entry*>(entry_);
+        if (!s->unlink(*pe)) {
+            entry_->set_skipped();
+            priority_queue_entry * new_pe = s->priority_queue_entry_pool_.new_object(dwhen, td.count(), entry_->task);
+            entry_->release_ref(s);
+            entry_ = pe = new_pe;
+        } else {
+            pe->time = dwhen;
+            pe->rival = td.count();
+        }
+    } else {
+        s->unlink(*entry_);
+        entry_->set_skipped();
+        pe = s->priority_queue_entry_pool_.new_object(dwhen, td.count(), entry_->task);
+        entry_->release_ref(s);
+        entry_ = pe;
     }
-    task_->run();
-}
 
-basic_task_handle::basic_task_handle(shared_ptr<basic_scheduler> s, task_entry * task)
-    : scheduler_(std::move(s)), task_(task)
-{
-    task_->add_ref();
-}
-
-basic_task_handle::~basic_task_handle()
-{
-    scheduler_->release_task_ref(task_);
-}
-
-void basic_task_handle::release_ref()
-{
-    if (0 == --refs_) {
-        scheduler_->free_task_handle(this);
+    pe->add_ref();
+    if (!td.count() && (!when.which() || (wtd && !wtd->count()))) {
+        s->push(*pe);
+    } else if (wtd) {
+        s->schedule_task(*pe, now);
     }
 }
 
-bool basic_task_handle::cancel()
+void basic_scheduler_task_handle_impl::destroy(uintptr_t cookie)
 {
-    return scheduler_->unlink_and_cancel(task_);
+    entry_->release_ref(sched(cookie));
+}
+
+///////////////
+void queue_entry::add_ref()
+{
+    ++flags_and_refs_;
+}
+
+void queue_entry::release_ref(basic_scheduler * s) noexcept
+{
+    if (1 == (refs_bits & flags_and_refs_.fetch_sub(1))) {
+        s->free_entry(this);
+    }
+}
+
+void queue_entry::set_skipped() noexcept
+{
+    flags_and_refs_.fetch_or(skip_bit);
+}
+
+void queue_entry::run(basic_scheduler * s)
+{
+    task->run();
+    if (is_priority_type()) {
+        auto * pe = static_cast<priority_queue_entry*>(this);
+        if (pe->rival) {
+            time_duration_t now = s->relative_now();
+            pe->time = now.count() + pe->rival;
+            s->schedule_task(*pe, now);
+        }
+    }
+}
+
+void queue_entry::on_cancel(basic_scheduler * s)
+{
+    task->on_cancel();
 }
 
 } // namespace sonia::scheduler_detail
@@ -75,16 +108,18 @@ bool basic_task_handle::cancel()
 using namespace ::sonia::scheduler_detail;
 
 basic_scheduler::basic_scheduler(uint32_t thr_cnt, uint32_t fb_cnt)
-    : thr_cnt_(thr_cnt), fb_cnt_(fb_cnt), stopping_(true)
-    , task_pool_(SONIA_TASK_POOL_INITIAL_SIZE)
-    , handle_pool_(SONIA_TASK_HANDLE_POOL_INITIAL_SIZE)
+    : thr_cnt_{thr_cnt}, fb_cnt_{fb_cnt}, stopping_{true}
+    , queue_entry_pool_{SONIA_TASK_POOL_INITIAL_SIZE}
+    , priority_queue_entry_pool_{SONIA_TASK_POOL_INITIAL_SIZE}
+    , tp_steady_start_{std::chrono::steady_clock::now()}
 {
-
+    timer_ = services::timer{[this]{ on_priority_timer(); }};
 }
 
 basic_scheduler::~basic_scheduler()
 {
-
+    timer_.disarm();
+    timer_ = services::timer{};
 }
 
 std::string basic_scheduler::thread_name() const
@@ -111,12 +146,29 @@ void basic_scheduler::start()
 
 void basic_scheduler::stop()
 {
+    // stop timer
+    timer_.disarm();
+
     {
         lock_guard lck(queue_mtx_);
         if (stopping_) return;
         stopping_ = true;
         queue_cond_.notify_all();
     }
+
+    // deal with priority queue
+    {
+        lock_guard lck(priority_mtx_);
+        while (!priority_set_.empty())
+        {
+            auto it = priority_set_.begin();
+            priority_queue_entry & pe = *it;
+            priority_set_.erase(it);
+            pe.on_cancel(this);
+            pe.release_ref(this);
+        }
+    }
+
 
     // fiber friendly thread join procedure
     unique_lock lk(close_mtx_);
@@ -178,12 +230,11 @@ void basic_scheduler::fiber_proc(fibers::mutex & mtx)
 {
     for (;;)
     {
-        ///*
         try
         {
             bool stopping = false;
             bool has_more = false;
-            task_entry * pe;
+            queue_entry * pe;
             {
                 //LOG_TRACE(logger()) << "before acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
                 //lock_guard guard(mtx);
@@ -197,87 +248,86 @@ void basic_scheduler::fiber_proc(fibers::mutex & mtx)
                 }
                 stopping = stopping_;
                 pe = queue_not_safe_pop_next();
-                has_more = queue_not_safe_empty();
+                has_more = !queue_not_safe_empty();
             }
-            SCOPE_EXIT([this, pe] { release_task_ref(pe); });
+            
             if (has_more) queue_cond_.notify_one();
-            if (BOOST_LIKELY(!stopping)) {
-                pe->run();
-            } else {
-                pe->cancel();
+            SCOPE_EXIT([this, pe]{ pe->release_ref(this); });
+            if (!pe->is_skipped()) {
+                if (BOOST_LIKELY(!stopping)) {
+                    pe->run(this); // pe ownership is moving to run();
+                } else {
+                    pe->on_cancel(this); // pe ownership is moving to on_cancel();
+                }
             }
         } catch (...) {
             LOG_ERROR(logger()) << boost::current_exception_diagnostic_information();
         }
-        //*/
-        //this_thread::sleep(boost::chrono::milliseconds(100));
     }
 }
 
-template <class ... ArgsT>
-task_handle_ptr basic_scheduler::do_post(bool wh, ArgsT && ... args)
+//template <class ... ArgsT>
+//task_handle_ptr basic_scheduler::do_post(bool wh, ArgsT && ... args)
+//{
+//    task_handle_ptr result;
+//    task_entry * pe = task_pool_.new_object(std::forward<ArgsT>(args) ...);
+//    if (wh) {
+//        try {
+//            result.reset(handle_pool_.new_object(shared_from_this(), pe), false);
+//        } catch (...) {
+//            release_task_ref(pe);
+//            throw;
+//        }
+//    }
+//    {
+//        lock_guard guard(queue_mtx_);
+//        tasks_.push_front(*pe);
+//    }
+//    queue_cond_.notify_one();
+//    return std::move(result);
+//}
+
+void basic_scheduler::push(queue_entry & e, bool front) noexcept
 {
-    task_handle_ptr result;
-    task_entry * pe = task_pool_.new_object(std::forward<ArgsT>(args) ...);
-    if (wh) {
-        try {
-            result.reset(handle_pool_.new_object(shared_from_this(), pe), false);
-        } catch (...) {
-            release_task_ref(pe);
-            throw;
-        }
-    }
+    bool first;
     {
         lock_guard guard(queue_mtx_);
-        entries_.push_front(*pe);
-    }
-    queue_cond_.notify_one();
-    return std::move(result);
-}
-
-void basic_scheduler::post(when_t when, scheduler_task_t && t)
-{
-    time_duration_t const* td = boost::get<time_duration_t>(&when);
-    if (td && !td->count()) {
-        task_entry * pe = task_pool_.new_object(std::move(t));
-        {
-            lock_guard guard(queue_mtx_);
-            entries_.push_front(*pe);
+        if (e.is_linked()) return;
+        first = entries_.empty();
+        if (front) {
+            entries_.push_front(e);
+        } else {
+            entries_.push_back(e);
         }
+    }
+    if (first) {
         queue_cond_.notify_one();
-    } else {
-        throw;
     }
 }
 
-task_handle_ptr basic_scheduler::handled_post(when_t when, scheduler_task_t &&)
+scheduler_task_handle basic_scheduler::post(scheduler_task_t && t, when_t when, time_duration_t td)
 {
-    throw;
-}
-
-task_handle_ptr basic_scheduler::post_and_repeat(time_duration_t interval, scheduler_task_t &&)
-{
-    throw;
-}
-
-//task_handle_ptr basic_scheduler::post(function<void()> const& task, bool wh)
-//{
-//    return do_post(wh, in_place_type<function_call_scheduler_task<function<void()>>>, task);
-//}
-//
-//task_handle_ptr basic_scheduler::post(scheduler_task_t && task, bool wh)
-//{
-//    return do_post(wh, std::move(task));
-//}
-
-void basic_scheduler::release_task_ref(task_entry * te)
-{
-    te->release_ref(task_pool_);
-}
-
-void basic_scheduler::free_task_handle(basic_task_handle * th)
-{
-    handle_pool_.delete_object(th);
+    queue_entry * qe;
+    time_duration_t const* wtd = boost::get<time_duration_t>(&when);
+    if (!td.count() && (!when.which() || (wtd && !wtd->count()))) {
+        qe = queue_entry_pool_.new_object(std::move(t));
+        qe->add_ref();
+        push(*qe);
+    } else if (wtd) {
+        time_duration_t now = relative_now();
+        time_duration_t dwhen = *wtd + now;
+        priority_queue_entry * pe = priority_queue_entry_pool_.new_object(dwhen.count(), td.count(), std::move(t));
+        pe->add_ref();
+        if (!wtd->count()) { // when = now
+            push(*pe);
+        } else {
+            schedule_task(*pe, now);
+        }
+        qe = pe;
+    } else {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+    return scheduler_task_handle{reinterpret_cast<uintptr_t>(this), in_place_type<basic_scheduler_task_handle_impl>, qe}; // no qe->add_ref() inside
 }
 
 bool basic_scheduler::queue_not_safe_empty() const
@@ -285,21 +335,99 @@ bool basic_scheduler::queue_not_safe_empty() const
     return entries_.empty();
 }
 
-task_entry * basic_scheduler::queue_not_safe_pop_next()
+queue_entry * basic_scheduler::queue_not_safe_pop_next()
 {
-    task_entry * pe = &entries_.back();
+    queue_entry * pe = &entries_.back();
     entries_.pop_back();
     return pe;
 }
 
-bool basic_scheduler::unlink_and_cancel(scheduler_detail::task_entry * te)
+bool basic_scheduler::unlink(queue_entry & e)
 {
-    if (lock_guard guard(queue_mtx_); BOOST_UNLIKELY(te->is_linked())) {
-        entries_.erase(entry_list_t::s_iterator_to(*te));
+    if (lock_guard guard(queue_mtx_); e.is_linked()) {
+        entries_.erase(entry_list_t::s_iterator_to(e));
+        e.release_ref(this);
+        return true;
     } else {
         return false;
     }
-    return te->cancel();
+}
+
+bool basic_scheduler::unlink(priority_queue_entry & e)
+{
+    if (unique_lock lck(priority_mtx_); e.set_hook_.is_linked()) {
+        auto beg_it = priority_set_.begin();
+        auto e_it = priority_set_t::s_iterator_to(e);
+        bool is_b = beg_it == e_it;
+        priority_set_.erase(e_it);
+        e.release_ref(this);
+        lck.unlock();
+        if (is_b) {
+            //LOG_INFO(logger()) << "unlink on_priority_timer call";
+            on_priority_timer();
+        }
+        return true;
+    } else {
+        return unlink(static_cast<queue_entry&>(e));
+    }
+}
+
+void basic_scheduler::schedule_task(priority_queue_entry & e, time_duration_t now)
+{
+    if (lock_guard guard(priority_mtx_); !e.set_hook_.is_linked()) {
+        auto it = priority_set_.insert(e);
+        try {
+            schedule_timer(it, now.count());
+        } catch (...) {
+            priority_set_.erase(it);
+            throw;
+        }
+    }
+}
+
+void basic_scheduler::schedule_timer(priority_set_t::iterator it, int64_t now)
+{
+    priority_queue_entry & e = *it;
+    if (priority_lowest_ > e.time) {
+        priority_lowest_ = e.time;
+        int64_t resched_duration = priority_lowest_ - now;
+        if (resched_duration < 1) { // (time_duration_t)1 resolution
+            priority_set_.erase(it);
+            push(e, false);
+            priority_lowest_ = priority_max_val_;
+        } else {
+            //LOG_INFO(logger()) << "timer_.set " << resched_duration;
+            timer_.set(time_duration_t{resched_duration});
+        }
+    }
+}
+
+void basic_scheduler::on_priority_timer()
+{
+    //LOG_INFO(logger()) << "on_priority_timer";
+    time_duration_t now = relative_now();
+    lock_guard guard(priority_mtx_);
+    priority_lowest_ = priority_max_val_;
+    while (!priority_set_.empty()) {
+        auto beg_it = priority_set_.begin();
+        schedule_timer(beg_it, now.count());
+        if (priority_lowest_ != priority_max_val_) break;
+    }
+    // if (priority_lowest_ == priority_max_val_) timer_.disarm();
+}
+
+basic_scheduler::time_duration_t basic_scheduler::relative_now() const
+{
+    return std::chrono::duration_cast<scheduler::time_duration_t>(std::chrono::steady_clock().now() - tp_steady_start_);
+}
+
+void basic_scheduler::free_entry(queue_entry * e) noexcept
+{
+    if (e->is_priority_type()) {
+        priority_queue_entry_pool_.delete_object(static_cast<priority_queue_entry*>(e));
+    } else {
+        queue_entry_pool_.delete_object(e);
+    }
 }
 
 }

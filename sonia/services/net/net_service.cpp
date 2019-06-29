@@ -19,8 +19,6 @@ namespace sonia::services {
 using sonia::io::tcp_socket;
 using sonia::io::udp_socket;
 
-using namespace std::chrono_literals;
-
 struct tcp_acceptor_listener : net_service::listener
 {
     shared_ptr<net::tcp_connector> cn;
@@ -45,7 +43,7 @@ public:
         : al_(std::move(al)), sched_(std::move(sched))
     {}
 
-    void run() override
+    void run() noexcept override
     {
 #if 1
         SCOPE_EXIT([this]{--al_->workers_count;});
@@ -57,7 +55,7 @@ public:
             // if there is no waiting workers and current number of workers is less than configured max count then create a new worker
             if (0 == al_->sock.accepting_count()) {
                 if (al_->workers_max > al_->workers_count.fetch_add(1)) {
-                    sched_->post(0ms, scheduler_task_t(in_place_type_t<acceptor_task>(), al_, sched_));
+                    sched_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), al_, sched_));
                 } else {
                     --al_->workers_count;
                 }
@@ -70,7 +68,7 @@ public:
             if (al_->closed.load()) break;
         } catch (closed_exception const&) {
             //GLOBAL_LOG_TRACE() << "acceptor_task accept closed_exception";
-            throw;
+            break;
         } catch (...) {
             GLOBAL_LOG_TRACE() << "acceptor error: " << boost::trim_right_copy(boost::current_exception_diagnostic_information());
             if (al_->closed.load()) break;
@@ -97,10 +95,17 @@ public:
 #endif
     }
 
-    polymorphic_movable* move(void* address, size_t sz) override
+    polymorphic_clonable_and_movable* move(void* address, size_t sz) override
     {
         BOOST_ASSERT(sz >= sizeof(acceptor_task));
         new (address) acceptor_task(std::move(*this));
+        return reinterpret_cast<acceptor_task*>(address);
+    }
+
+    polymorphic_clonable_and_movable* clone(void* address, size_t sz) const override
+    {
+        BOOST_ASSERT(sz >= sizeof(acceptor_task));
+        new (address) acceptor_task(*this);
         return reinterpret_cast<acceptor_task*>(address);
     }
 };
@@ -115,7 +120,7 @@ public:
         : al_(std::move(al)), sched_(std::move(sched))
     {}
 
-    void run() override
+    void run() noexcept override
     {
         SCOPE_EXIT([this]{--al_->workers_count;});
         GLOBAL_LOG_TRACE() << "new udp listener socket threadid: " << this_thread::get_id() << ", fiberid: " << this_fiber::get_id() << ", buff: " << al_->buffer_size;
@@ -129,7 +134,7 @@ public:
                 if (!res.has_value()) throw eof_exception(res.error().message());
                 if (0 == al_->sock.waiting_count()) {
                     if (al_->workers_max > al_->workers_count.fetch_add(1)) {
-                        sched_->post(0ms, scheduler_task_t(in_place_type_t<listener_task>(), al_, sched_));
+                        sched_->post(scheduler_task_t(in_place_type_t<listener_task>(), al_, sched_));
                     } else {
                         --al_->workers_count;
                     }
@@ -150,10 +155,17 @@ public:
         }
     }
 
-    polymorphic_movable* move(void* address, size_t sz) override
+    polymorphic_clonable_and_movable* move(void* address, size_t sz) override
     {
         BOOST_ASSERT(sz >= sizeof(listener_task));
         new (address) listener_task(std::move(*this));
+        return reinterpret_cast<listener_task*>(address);
+    }
+
+    polymorphic_clonable_and_movable* clone(void* address, size_t sz) const override
+    {
+        BOOST_ASSERT(sz >= sizeof(listener_task));
+        new (address) listener_task(*this);
         return reinterpret_cast<listener_task*>(address);
     }
 };
@@ -180,7 +192,7 @@ void net_service::open()
                 ls->workers_max = lc.workers_count;
                 ls->buffer_size = lc.buffer_size;
                 ls->sock = tcp_server_socket_factory_->create_server_socket(to_string_view(lc.address), lc.port, lc.family);
-                scheduler_->post(0ms, scheduler_task_t(in_place_type_t<acceptor_task>(), ls, scheduler_));
+                scheduler_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), ls, scheduler_));
                 
                 listeners_.push_back(std::move(ls));
             } else if (net::listener_type::UDP == lc.type) {
@@ -194,7 +206,7 @@ void net_service::open()
                 ls->buffer_size = lc.buffer_size;
                 ls->sock = udp_socket_factory_->create_udp_socket(lc.family);
                 ls->sock.bind(lc.address, lc.port);
-                scheduler_->post(0ms, scheduler_task_t(in_place_type_t<listener_task>(), ls, scheduler_));
+                scheduler_->post(scheduler_task_t(in_place_type_t<listener_task>(), ls, scheduler_));
                 
                 listeners_.push_back(std::move(ls));
             }

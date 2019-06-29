@@ -275,7 +275,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         std::atomic<long> tasks(0);
         for (int i = 0; i < max_pass_count; ++i) {
             ++tasks;
-            async->post(0ms, [tnum = i, &tasks, &maincopy, &ival, &str, ctl_proxy, calls_count](){
+            async->post([tnum = i, &tasks, &maincopy, &ival, &str, ctl_proxy, calls_count](){
                 try {
                     std::vector<std::string> result = maincopy;
                     for (int i = 0; i < calls_count; ++i)

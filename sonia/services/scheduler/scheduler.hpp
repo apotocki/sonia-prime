@@ -21,39 +21,70 @@
 #   define SONIA_SCHEDULER_TASK_SZ (std::max)((size_t)64, sizeof(function<void()>) + sizeof(void*))
 #endif
 
-namespace sonia {
+namespace sonia { namespace scheduler_detail {
 
-class scheduler_task : public polymorphic_movable
+using time_point_t = std::chrono::time_point<std::chrono::system_clock>;
+using time_duration_t = std::chrono::milliseconds;
+using when_t = boost::variant<null_t, time_duration_t, time_point_t>;
+
+class scheduler_task_handle_impl : public polymorphic_movable 
+{
+public:
+    virtual bool cancel(uintptr_t cookie) = 0; // returns true if cancelled
+    virtual void reschedule(uintptr_t cookie, when_t when, time_duration_t repeat_interval) = 0;
+
+    virtual void destroy(uintptr_t cookie) = 0;
+};
+
+}
+
+class scheduler_task : public polymorphic_clonable_and_movable
 {
 public:
     virtual void on_cancel() noexcept {}
-    virtual void run() = 0;
+    virtual void run() noexcept = 0;
 };
 
 using scheduler_task_t = automatic_polymorphic<scheduler_task, SONIA_SCHEDULER_TASK_SZ>;
 
 class scheduler_task_handle
 {
-    virtual void add_ref() = 0;
-    virtual void release_ref() = 0;
+    automatic_polymorphic<scheduler_detail::scheduler_task_handle_impl, 2 * sizeof(void*)> impl_;
+    uintptr_t cookie_;
 
 public:
-    virtual ~scheduler_task_handle() = default;
+    using time_duration_t = scheduler_detail::time_duration_t;
+    using when_t = scheduler_detail::when_t;
 
-    virtual bool cancel() = 0; // returns true if cancelled
+    template <typename T, class ... ArgsT>
+    scheduler_task_handle(uintptr_t cookie, in_place_type_t<T> ipt, ArgsT&& ... args) : impl_{ipt, std::forward<ArgsT>(args) ...}, cookie_{cookie} {}
 
-    friend void intrusive_ptr_add_ref(scheduler_task_handle * p)
+    ~scheduler_task_handle()
     {
-        p->add_ref();
+        if (cookie_) impl_->destroy(cookie_);
     }
 
-    friend void intrusive_ptr_release(scheduler_task_handle * p)
+    scheduler_task_handle(scheduler_task_handle const&) = delete;
+    scheduler_task_handle(scheduler_task_handle && rhs) : impl_{std::move(rhs.impl_)}, cookie_{rhs.cookie_}
     {
-        p->release_ref();
+        rhs.cookie_ = 0;
     }
+    scheduler_task_handle& operator= (scheduler_task_handle const&) = delete;
+    scheduler_task_handle& operator= (scheduler_task_handle && rhs)
+    {
+        if (this != &rhs) {
+            if (cookie_) impl_->destroy(cookie_);
+            cookie_ = 0;
+            impl_ = std::move(rhs.impl_);
+            cookie_ = rhs.cookie_;
+            rhs.cookie_ = 0;
+        }
+        return *this;
+    }
+
+    bool cancel() { return impl_->cancel(cookie_); } // returns true if cancelled
+    void reschedule(when_t when = null_t{}, time_duration_t repeat_interval = time_duration_t{0}) { impl_->reschedule(cookie_, when, repeat_interval); }
 };
-
-using task_handle_ptr = boost::intrusive_ptr<scheduler_task_handle>;
 
 
 template <typename FunctionT>
@@ -65,20 +96,31 @@ public:
         : func_{std::forward<ArgT>(arg)}
     {}
 
-    function_call_scheduler_task(function_call_scheduler_task const&) = delete;
+    function_call_scheduler_task(function_call_scheduler_task const&) = default;
     function_call_scheduler_task(function_call_scheduler_task &&) = default;
-    function_call_scheduler_task & operator= (function_call_scheduler_task const&) = delete;
+    function_call_scheduler_task & operator= (function_call_scheduler_task const&) = default;
     function_call_scheduler_task & operator= (function_call_scheduler_task &&) = default;
 
-    void run() override
+    void run() noexcept override
     {
-        func_();
+        try {
+            func_();
+        } catch (...) {
+            GLOBAL_LOG_ERROR() << boost::current_exception_diagnostic_information();
+        }
     }
 
-    polymorphic_movable* move(void* address, size_t sz) override
+    polymorphic_clonable_and_movable* move(void* address, size_t sz) override
     {
         BOOST_ASSERT(sz >= sizeof(function_call_scheduler_task));
         new (address) function_call_scheduler_task(std::move(*this));
+        return reinterpret_cast<function_call_scheduler_task*>(address);
+    }
+
+    polymorphic_clonable_and_movable* clone(void* address, size_t sz) const override
+    {
+        BOOST_ASSERT(sz >= sizeof(function_call_scheduler_task));
+        new (address) function_call_scheduler_task(*this);
         return reinterpret_cast<function_call_scheduler_task*>(address);
     }
 
@@ -100,22 +142,15 @@ class scheduler
 public:
     virtual ~scheduler() = default;
 
-    using time_point_t = std::chrono::time_point<std::chrono::system_clock>;
-    using time_duration_t = std::chrono::microseconds;
-    using when_t = boost::variant<time_duration_t, time_point_t>;
+    using time_duration_t = scheduler_detail::time_duration_t;
+    using when_t = scheduler_detail::when_t;
 
-    virtual void post(when_t when, scheduler_task_t &&) = 0;
-    [[nodiscard]] virtual task_handle_ptr handled_post(when_t when, scheduler_task_t &&) = 0;
-    [[nodiscard]] virtual task_handle_ptr post_and_repeat(time_duration_t interval, scheduler_task_t &&) = 0;
+    virtual scheduler_task_handle post(scheduler_task_t &&, when_t when = null_t{}, time_duration_t repeat_interval = time_duration_t{0}) = 0;
 
-    void post(when_t when, function<void()> const& f) { post(when, make_scheduler_task(f)); }
-    task_handle_ptr handled_post(when_t when, function<void()> const& f) { return handled_post(when, make_scheduler_task(f)); }
-    task_handle_ptr post_and_repeat(time_duration_t interval, function<void()> const& f) { return post_and_repeat(interval, make_scheduler_task(f)); }
-
-    //virtual task_handle_ptr post(scheduler_task_t &&, bool with_handle = true) = 0;
-    //virtual task_handle_ptr post(function<void()> const&, bool with_handle = true) = 0;
-    //virtual task_handle_ptr post(std::chrono::milliseconds delay, function<void()> const&, bool with_handle = true) = 0;
-    //virtual task_handle_ptr post_repeated(std::chrono::milliseconds interval, function<void()> const&, bool with_handle = true) = 0;
+    scheduler_task_handle post(function<void()> const& f, when_t when = null_t{}, time_duration_t repeat_interval = time_duration_t{0})
+    {
+        return post(make_scheduler_task(f), when, repeat_interval);
+    }
 };
 
 }

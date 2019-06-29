@@ -36,8 +36,16 @@ public:
     virtual polymorphic_movable* move(void* address, size_t sz) { throw not_supported_operation_error("move"); }
 };
 
-template <typename T> struct is_polymorphic_clonable : public is_base_of<polymorphic_clonable, T> {};
-template <typename T> struct is_polymorphic_movable : public is_base_of<polymorphic_movable, T> {};
+class polymorphic_clonable_and_movable
+{
+public:
+    virtual ~polymorphic_clonable_and_movable() = default;
+    virtual polymorphic_clonable_and_movable* clone(void* address, size_t sz) const { throw not_supported_operation_error("copy"); }
+    virtual polymorphic_clonable_and_movable* move(void* address, size_t sz) { throw not_supported_operation_error("move"); }
+};
+
+template <typename T> struct is_polymorphic_clonable : public bool_constant<is_base_of_v<polymorphic_clonable, T> || is_base_of_v<polymorphic_clonable_and_movable, T>> {};
+template <typename T> struct is_polymorphic_movable : public bool_constant<is_base_of_v<polymorphic_movable, T> || is_base_of_v<polymorphic_clonable_and_movable, T>> {};
 
 template <typename T> constexpr bool is_polymorphic_clonable_v = is_polymorphic_clonable<T>::value;
 template <typename T> constexpr bool is_polymorphic_movable_v = is_polymorphic_movable<T>::value;

@@ -23,7 +23,8 @@
 namespace sonia {
 
 template <class DerivedT>
-class thread_manager : public virtual loggable {
+class thread_manager : public virtual loggable
+{
 public:
     thread_manager(uint32_t thr_cnt, uint32_t fb_cnt);
 

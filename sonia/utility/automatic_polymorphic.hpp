@@ -226,9 +226,12 @@ private:
 
     void clone(polymorphic_clonable const& sample)
     {
-        PolymorphicT * p = static_cast<PolymorphicT*>(sample.clone(this->buffer_, SizeV));
-        int offset = static_cast<int>(reinterpret_cast<char*>(p) - std::launder(reinterpret_cast<char*>(this->buffer_)));
-        this->set_offset(offset);
+        do_clone(sample);
+    }
+
+    void clone(polymorphic_clonable_and_movable const& sample)
+    {
+        do_clone(sample);
     }
 
     void move(automatic_polymorphic && rhs)
@@ -241,6 +244,25 @@ private:
     }
 
     void move(polymorphic_movable && sample)
+    {
+        do_move(sample);
+    }
+    
+    void move(polymorphic_clonable_and_movable && sample)
+    {
+        do_move(sample);
+    }
+
+    template <class PolymorphicClonableT>
+    void do_clone(PolymorphicClonableT const& sample)
+    {
+        PolymorphicT * p = static_cast<PolymorphicT*>(sample.clone(this->buffer_, SizeV));
+        int offset = static_cast<int>(reinterpret_cast<char*>(p) - std::launder(reinterpret_cast<char*>(this->buffer_)));
+        this->set_offset(offset);
+    }
+
+    template <class PolymorphicMovableT>
+    void do_move(PolymorphicMovableT & sample)
     {
         PolymorphicT * p = static_cast<PolymorphicT*>(sample.move(this->buffer_, SizeV));
         int offset = static_cast<int>(reinterpret_cast<char*>(p) - std::launder(reinterpret_cast<char*>(this->buffer_)));

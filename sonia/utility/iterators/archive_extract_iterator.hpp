@@ -101,9 +101,8 @@ public:
                 delete[] p;
                 throw;
             }
-        } else {
-            ptr->increment();
         }
+        ptr->increment();
     }
     
     explicit operator bool() const { return !!ptr; }

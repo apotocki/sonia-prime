@@ -84,7 +84,6 @@ private:
 
     spin_mutex host_mtx_;
     boost::unordered_set<shared_ptr<host_impl>, host_hasher> hosts_;
-    shared_ptr<type_registry> type_registry_;
     shared_ptr<service_registry> registry_;
     shared_ptr<basic_service_factory> factory_;
 
@@ -107,10 +106,6 @@ private:
     >;
     type_id_map_type type_id_map_;
     std::atomic<uint32_t> type_id_counter_;
-
-    //sonia::fibers::rw_mutex type_durable_id_mtx_;
-    //mutable spin_mutex type_durable_id_mtx_;
-    //type_id_map_type type_durable_id_map_;
 
     singleton_locator slocator_;
 

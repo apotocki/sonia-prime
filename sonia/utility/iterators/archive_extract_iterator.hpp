@@ -44,7 +44,8 @@ class archive_iterator_polymorphic
 {
 public:
     archive_iterator_polymorphic() = default;
-    archive_iterator_polymorphic(archive_iterator_polymorphic const&) = default;
+    archive_iterator_polymorphic(archive_iterator_polymorphic const&) {}
+    archive_iterator_polymorphic(archive_iterator_polymorphic &&) = delete;
 
     virtual bool next(archive_iterator &) = 0;
     virtual std::string const& name() const = 0;
@@ -76,7 +77,7 @@ public:
     {
         char * p = new char[sizeof(T)];
         try {
-            new (p) T(std::forward<ArgsT>(args)...);
+            new (p) T{std::forward<ArgsT>(args)...};
         } catch (...) {
             delete[] p;
             throw;
@@ -100,8 +101,9 @@ public:
                 delete[] p;
                 throw;
             }
+        } else {
+            ptr->increment();
         }
-        ptr->increment();
     }
     
     explicit operator bool() const { return !!ptr; }
@@ -197,7 +199,7 @@ public:
     array_view<const char> dereference() const override final { return *base_type::base; }
     size_t get_sizeof() const override final { return sizeof(extract_iterator_polymorpic_adapter); }
     polymorphic_clonable * clone(void * address, size_t sz) const override final { return base_type::do_clone(this, address, sz); }
-    polymorphic_movable * move(void * address, size_t sz) override final { return base_type::do_move(this, address, sz); }
+    //polymorphic_movable * move(void * address, size_t sz) override final { return base_type::do_move(this, address, sz); }
 
     archive_iterator * pbase() override final
     {

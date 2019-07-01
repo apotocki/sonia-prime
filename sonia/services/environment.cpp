@@ -52,6 +52,7 @@ environment::environment() : log_initialized_(false)
     options_.add_options()
         ("log", po::value<std::string>()->default_value("log.conf"), "the logging subsystem configuration file")
         ("cfg,c", po::value<std::string>()->default_value("config.json"), "configuration (json) file paths")
+        ("base-path,b", po::value<std::string>()->default_value(""), "base path")
         ("service-registry-file,r", po::value<std::string>()->default_value(".services"), "services registry file")
         ("type-registry-file,t", po::value<std::string>()->default_value(".types"), "types registry file")
         ("version,v", "display version and exit")
@@ -169,12 +170,14 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
         GLOBAL_LOG_INFO() << version_msg_;
     }
 
+    std::string const& base_path = vm["base-path"].as<std::string>();
+
     std::string const& srfile = vm["service-registry-file"].as<std::string>();
-    shared_ptr<persister> psrp = make_shared<file_persister>(srfile);
+    shared_ptr<persister> psrp = make_shared<file_persister>(base_path + srfile);
     registry_ = make_shared<local_service_registry>(psrp);
 
     std::string const& trfile = vm["type-registry-file"].as<std::string>();
-    shared_ptr<persister> ptrp = make_shared<file_persister>(trfile);
+    shared_ptr<persister> ptrp = make_shared<file_persister>(base_path + trfile);
     set_type_registry(make_shared<local_type_registry>(ptrp));
 
     factory_ = make_shared<basic_service_factory>();

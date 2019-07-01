@@ -19,11 +19,15 @@ public:
     scoped_services(scoped_services const&) = delete;
     scoped_services& operator=(scoped_services const&) = delete;
 
-    explicit scoped_services(int argc = 0, char const* argv[] = nullptr)
+    explicit scoped_services(int argc = 0, char const* argv[] = nullptr, std::istream * cfgstream = nullptr)
     {
         pre_initialize(argc, argv);
-        sonia::services::initialize(argc, argv);
+        sonia::services::initialize(argc, argv, cfgstream);
     }
+
+    explicit scoped_services(std::istream & cfgstream)
+        : scoped_services{0, nullptr, &cfgstream}
+    {}
 
     ~scoped_services()
     {

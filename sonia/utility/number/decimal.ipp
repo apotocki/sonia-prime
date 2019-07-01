@@ -140,6 +140,25 @@ std::string decimal_string(SignificandT const& v, ExponentT const& e)
     }
 }
 
+template <typename SignificandT, typename ExponentT>
+std::string decimal_scientific_string(SignificandT const& v, ExponentT const& e)
+{
+    if (v == 0) return "0.0E0";
+    std::string result = boost::lexical_cast<std::string>(v);
+    ExponentT sc_e = e;
+    for (; result.back() == '0'; result.pop_back(), ++sc_e);
+
+    int pos = v < 0 ? 1 : 0;
+
+    sc_e += (ExponentT)(result.size() - 1);
+    sc_e -= pos;
+    
+    result.insert(result.begin() + 1 + pos, '.');
+    result.push_back('E');
+    result.append(std::to_string(sc_e));
+    return result;
+}
+
 template <typename LSignificandT, typename LExponentT, typename RSignificandT, typename RExponentT>
 bool decimal_less(LSignificandT const& lv, LExponentT const& le, RSignificandT const& rv, RExponentT const& re)
 {

@@ -134,6 +134,54 @@ private:
     function<T(json_value const& v)> jh_;
 };
 
+template <typename T>
+class reference_value_descriptor : public value_descriptor
+{
+public:
+    using target_type = T;
+    //using optional_target_type = conditional_t<is_optional_v<T>, T, optional<T>>;
+    //using normilized_target_type = typename optional_target_type::value_type;
+    using bound_type = T;
+    using parameters_description_type = parameters_description<bound_type>;
+
+    using binder_type = parameters_description<T>;
+
+    reference_value_descriptor(const char * name, shared_ptr<binder_type> b)
+        : value_descriptor(name), binder_(std::move(b))
+    {}
+
+    bool has_default() const override final { return true; }
+    
+    void set_default_json(json_value) override
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+
+    void assign(json_value const& val, std::type_info const& ti, void* obj) const override final
+    {
+        T & ref = member(ti, obj);
+        binder_->apply(val.get_object(), &ref);
+    }
+
+    void assign_default(std::type_info const& ti, void* obj) const
+    {
+        T & ref = member(ti, obj);
+        binder_->apply(json_object(), &ref);
+    }
+
+protected:
+    T& member(std::type_info const& ti, void* obj) const
+    {
+        if (ti == typeid(T)) {
+            return *reinterpret_cast<T*>(obj);
+        } else {
+            THROW_INTERNAL_ERROR("attempt to use an incompatible type %1% instead of %2%"_fmt % ti.name() % typeid(T).name());
+        }
+    }
+
+    shared_ptr<binder_type> binder_;
+};
+
 template <typename T, typename BoundT>
 class collection_value_descriptor : public typed_value_descriptor<T, BoundT>
 {
@@ -220,6 +268,8 @@ protected:
 public:
     template <typename ET, class T>
     parameter_options<simple_value_descriptor<ET, BoundT>> variable(const char * name, ET T::* elem, enable_if_t<is_base_of_v<T, BoundT>, const char> * descr = nullptr);
+
+    parameter_options<reference_value_descriptor<BoundT>> rebinder(const char * name, parameters_binding<BoundT> const&);
 
     template <typename ET, class T>
     parameter_options<collection_value_descriptor<ET, BoundT>> array(const char * name, ET T::* elem, enable_if_t<is_base_of_v<T, BoundT>, const char> * descr = nullptr);
@@ -375,6 +425,14 @@ parameter_options<map_value_descriptor<ET, BoundT>> parameters_binding<BoundT>::
     if (descr) vd->set_description(descr);
     pd_->descriptors().push_back(vd);
     return parameter_options<map_value_descriptor<ET, BoundT>>(pd_, vd.get());
+}
+
+template <class BoundT>
+parameter_options<reference_value_descriptor<BoundT>> parameters_binding<BoundT>::rebinder(const char * name, parameters_binding<BoundT> const& pb)
+{
+    auto vd = sonia::make_shared<reference_value_descriptor<BoundT>>(name, sonia::make_shared<parameters_description<BoundT>>(pb.description()));
+    pd_->descriptors().push_back(vd);
+    return parameter_options<reference_value_descriptor<BoundT>>(pd_, vd.get());
 }
 
 template <class VDT>

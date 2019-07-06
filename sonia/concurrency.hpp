@@ -103,6 +103,14 @@ private:
     rw_type rwt_;
 };
 
+
+// tarits
+struct fiber_traits
+{
+    using mutex_type = fibers::mutex;
+    using condition_variable_type = fibers::condition_variable;
+};
+
 }
 
 #endif // SONIA_CONCURRENCY_HPP

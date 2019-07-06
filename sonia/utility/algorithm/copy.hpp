@@ -40,6 +40,15 @@ auto copy_not_more(
 }
 
 template <typename ForwardInputIteratorT, typename ForwardOutputIteratorT>
+ForwardOutputIteratorT copy(ForwardInputIteratorT ib, ForwardInputIteratorT ie, ForwardOutputIteratorT ob)
+{
+    for (; ib != ie; ++ib, ++ob) {
+        *ob = *ib;
+    }
+    return ob;
+}
+
+template <typename ForwardInputIteratorT, typename ForwardOutputIteratorT>
 auto copy(ForwardInputIteratorT ib, ForwardInputIteratorT ie, ForwardOutputIteratorT ob, ForwardOutputIteratorT oe)
 {
     for (; ib != ie && ob != oe; ++ib, ++ob) {

@@ -39,10 +39,10 @@ shared_ptr<service> service_locator::get(service::id id, string_view name)
             if (!name) name = sr_->get_name(id);
                 
             auto creature = sf_->create(name);
-            creature->open();
-            service_access::set_name(*creature, to_string(name));
             creature->set_log_attribute("Name", name);
             creature->set_log_attribute("Host", services::get_host()->get_name());
+            service_access::set_name(*creature, to_string(name));
+            creature->open();
             LOG_TRACE(logger()) << "service " << name << "(id: " << id << ") is started";
             return creature;
         }));

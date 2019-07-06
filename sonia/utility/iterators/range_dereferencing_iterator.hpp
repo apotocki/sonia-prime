@@ -44,6 +44,11 @@ public:
         : base{std::move(it)}
     {}
 
+    range_dereferencing_iterator_state(range_dereferencing_iterator_state const&) = default;
+    range_dereferencing_iterator_state(range_dereferencing_iterator_state &&) = default;
+    range_dereferencing_iterator_state& operator= (range_dereferencing_iterator_state const&) = default;
+    range_dereferencing_iterator_state& operator= (range_dereferencing_iterator_state &&) = default;
+
     bool empty() const
     {
         if (BOOST_LIKELY(!!state_)) return false;
@@ -89,6 +94,11 @@ public:
     subrange_iterator unsafe_begin() const
     {
         return std::get<0>(*state_);
+    }
+
+    void reload()
+    {
+        state_.reset();
     }
 
     void flush()
@@ -152,7 +162,7 @@ class range_dereferencing_iterator
 
     bool equal(range_dereferencing_iterator const& rhs) const
     {
-        if (empty()) return rhs.empty();
+        if (state_t::empty()) return rhs.empty();
         if (rhs.empty()) return false;
         return state_t::unsafe_begin() == rhs.unsafe_begin();
     }
@@ -181,18 +191,18 @@ public:
         : state_t{std::move(it)}
     {}
 
-    ~range_dereferencing_iterator() = default; // no flush call on exit!
+    range_dereferencing_iterator(range_dereferencing_iterator const&) = default;
+    range_dereferencing_iterator(range_dereferencing_iterator &&) = default;
+    range_dereferencing_iterator& operator= (range_dereferencing_iterator const&) = default;
+    range_dereferencing_iterator& operator= (range_dereferencing_iterator &&) = default;
 
-    bool empty() const { return state_t::empty(); }
+    ~range_dereferencing_iterator() noexcept = default; // no flush call on exit!
 
-    void flush()
+    template <typename T = IteratorT>
+    enable_if_t<iterators::has_method_close_v<T, void()>> close()
     {
         state_t::flush();
-    }
-
-    void flush_position()
-    {
-        state_t::flush_position();
+        this->base.close();
     }
 };
 

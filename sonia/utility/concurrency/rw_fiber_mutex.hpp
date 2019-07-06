@@ -17,7 +17,7 @@
 #include <boost/fiber/mutex.hpp>
 #include <boost/fiber/condition_variable.hpp>
 
-namespace sonia { namespace fibers {
+namespace sonia::fibers {
 
 class rw_mutex
 {
@@ -124,6 +124,6 @@ public:
     }
 };
 
-}}
+}
 
 #endif // SONIA_FIBERS_RW_MUTEX_HPP

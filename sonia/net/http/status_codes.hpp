@@ -58,7 +58,9 @@ namespace sonia::http {
     ((BAD_GATEWAY, "Bad Gateway", 502))                                         \
     ((SERVICE_UNAVAILABLE, "Service Unavailable", 503))                         \
     ((GATEWAY_TIMEOUT, "Gateway Timeout", 504))                                 \
-    ((HTTP_VERSION_NOT_SUPPORTED, "HTTP Version Not Supported", 505))
+    ((HTTP_VERSION_NOT_SUPPORTED, "HTTP Version Not Supported", 505))           \
+    ((CONNECTION_TIMED_OUT, "Connection Timed Out", 522))                       \
+    ((A_TIMEOUT_OCCURRED, "A Timeout Occurred", 524)) 
 
 #define SONIA_PRINT_TYPE_ENUM(r, data, i, elem) BOOST_PP_TUPLE_ELEM(3, 0, elem) = BOOST_PP_TUPLE_ELEM(3, 2, elem),
 

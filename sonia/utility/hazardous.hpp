@@ -29,18 +29,18 @@ public:
     using value_type = T;
 
     hazardous() {}
-    ~hazardous() {}
+    ~hazardous() noexcept = default;
 
     template <typename ArgT>
     T & emplace(ArgT && arg)
     {
-        if constexpr (is_base_of_v<boost::in_place_factory_base, remove_cvref_t<ArgT>>) {
-            arg.template apply<T>(get_pointer());
+        T * place = get_pointer();
+        if constexpr (is_in_place_factory_v<remove_cvref_t<ArgT>>) {
+            arg.template apply<T>(place);
         } else {
-            T * place = get_pointer();
             new (place) T(std::forward<ArgT>(arg));
-            return *place;
         }
+        return *place;
     }
 
     template <typename ArgT0, typename ArgT1, typename ... ArgsT>

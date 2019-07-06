@@ -55,6 +55,9 @@ public:
     template <typename T = IteratorT>
     enable_if_t<iterators::has_method_flush_v<T, void()>> flush() { base_->flush(); }
 
+    template <typename T = IteratorT>
+    enable_if_t<iterators::has_method_close_v<T, void()>> close() { base_->close(); }
+
 private:
     IteratorT * base_;
 };

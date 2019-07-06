@@ -19,7 +19,8 @@
 
 namespace sonia {
 
-class rw_fiber_mutex_ext {
+class rw_fiber_mutex_ext
+{
     static const size_t log_half_rng = (sizeof(intptr_t) * CHAR_BIT - 1) / 2;
     static const intptr_t state_pos_value = (intptr_t)1 << log_half_rng; // intptr_t::max / state_pos_value = ~ wr and state_pos_value r locks simultaneously
     std::atomic<intptr_t> state_{0};
@@ -130,6 +131,5 @@ private:
 };
 
 }
-
 
 #endif // SONIA_RW_FIBER_MUTEX_EXT_HPP

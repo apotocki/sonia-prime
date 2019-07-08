@@ -159,7 +159,7 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
     std::string const& logcfg = vm["log"].as<std::string>();
 
     if (!fs::is_regular_file(logcfg)) {
-        throw exception("Can not find log configuration file: %1%"_fmt % logcfg);
+        throw exception("Can not find the log configuration file: %1%"_fmt % fs::absolute(logcfg));
     }
 
     std::ifstream logcdfgis(logcfg.c_str());

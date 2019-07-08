@@ -28,6 +28,8 @@ class bundle
     , public services::builder
 {
 public:
+    using service_factory_ftor_t = function<shared_ptr<service>(json_object const&)>;
+
     bundle();
     ~bundle() override = default;
 
@@ -46,7 +48,7 @@ protected:
 
 protected:
     void * libhandle_;
-    boost::unordered_map<std::string, function<shared_ptr<service>(json_object const&)>, hasher> builders_;
+    boost::unordered_map<std::string, service_factory_ftor_t, hasher> builders_;
 };
 
 }

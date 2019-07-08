@@ -77,6 +77,47 @@ RangeWriteInputIteratorT copy_range(SrcRangeT rng, RangeWriteInputIteratorT it)
     return std::move(it);
 }
 
+template <typename ForwardInputIteratorT, typename ForwardOutputIteratorT>
+ForwardInputIteratorT copy_ranges_to_ranges(ForwardInputIteratorT irngs, ForwardOutputIteratorT & orngs)
+{
+    using in_range_type = iterator_value_t<ForwardInputIteratorT>;
+    using out_range_type = iterator_value_t<ForwardOutputIteratorT>;
+    if (irngs.empty()) return std::move(irngs);
+
+    in_range_type irng = *irngs;
+    auto ib = boost::begin(irng);
+    auto ie = boost::end(irng);
+    
+    out_range_type orng = *orngs;
+    auto ob = boost::begin(orng);
+    auto oe = boost::end(orng);
+    auto initial_ob = ob;
+
+    for (;;)
+    {
+        if (ib == ie) {
+            ++irngs;
+            if (irngs.empty()) {
+                *orngs = out_range_type(initial_ob, ob);
+                return std::move(irngs);
+            }
+            irng = *irngs;
+            ib = boost::begin(irng);
+            ie = boost::end(irng);
+            continue;
+        }
+
+        while (ob == oe) {
+            ++orngs;
+            orng = *orngs;
+            initial_ob = ob = boost::begin(orng);
+            auto oe = boost::end(orng);
+        }
+
+        std::tie(ib, ob) = sonia::copy(ib, ie, ob, oe);
+    }
+}
+
 }
 
 #endif // SONIA_ALGORITHM_COPY_HPP

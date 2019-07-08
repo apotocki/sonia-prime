@@ -9,7 +9,7 @@
 #include <boost/exception/diagnostic_information.hpp>
 
 #include "applied/scoped_services.hpp"
-#include "sonia/utility/posix/signals.hpp"
+#include "sonia/sys/linux/signals.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/concurrency.hpp"
 #include "sonia/exceptions.hpp"
@@ -56,7 +56,7 @@ int main(int argc, char const* argv[])
 
         serv_.store(&s);
 
-        sonia::posix::set_interruption_handler(&interuption_handler);
+        sonia::linux::set_interruption_handler(&interuption_handler);
 
         s.run();
     } catch (sonia::closed_exception const& e) {

@@ -90,6 +90,11 @@ public:
         size_ += dist;
     }
 
+    constexpr void resize(size_type sz)
+    {
+        size_ = sz;
+    }
+
     constexpr void reset() noexcept { data_ = nullptr; size_ = 0; }
 
     constexpr reference operator[](size_type ind) const noexcept { return data_[ind]; }

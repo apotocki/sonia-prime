@@ -28,7 +28,7 @@ shared_ptr<T> make_clone(shared_ptr<T> const& ptr)
 {
     if (!ptr) return ptr;
     size_t sz = ptr->get_sizeof();
-    void * charptr = new char[sz];
+    char * charptr = new char[sz];
     try {
         ptr->clone(charptr, sz);
         return shared_ptr<T>(std::launder(reinterpret_cast<T*>(charptr)), [](T * p) { p->~T();  delete[] reinterpret_cast<char*>(p); });
@@ -41,7 +41,7 @@ shared_ptr<T> make_clone(shared_ptr<T> const& ptr)
 template <class T, class FactoryT>
 shared_ptr<T> construct_shared(FactoryT const& f)
 {
-    void * charptr = new char[sizeof(T)];
+    char * charptr = new char[sizeof(T)];
     try {
         f.template apply<T>(charptr);
         return shared_ptr<T>(std::launder(reinterpret_cast<T*>(charptr)), [](T * p) { p->~T();  delete[] reinterpret_cast<char*>(p); });

@@ -26,7 +26,7 @@
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/exceptions.hpp"
 
-namespace sonia { namespace utility { namespace basic_local_registry_detail {
+namespace sonia::utility { namespace basic_local_registry_detail {
 
 struct persisted_flag
 {
@@ -188,6 +188,6 @@ private:
     mutable fibers::mutex backup_mtx_;
 };
 
-}}
+}
 
 #endif // SONIA_BASIC_LOCAL_REGISTRY_HPP

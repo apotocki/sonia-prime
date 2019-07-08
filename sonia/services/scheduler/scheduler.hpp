@@ -15,6 +15,7 @@
 #include <boost/variant.hpp>
 
 #include "sonia/function.hpp"
+#include "sonia/logger/logger.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
 
 #ifndef SONIA_SCHEDULER_TASK_SZ
@@ -56,6 +57,8 @@ public:
     using time_duration_t = scheduler_detail::time_duration_t;
     using when_t = scheduler_detail::when_t;
 
+    scheduler_task_handle() : cookie_{0} {}
+
     template <typename T, class ... ArgsT>
     scheduler_task_handle(uintptr_t cookie, in_place_type_t<T> ipt, ArgsT&& ... args) : impl_{ipt, std::forward<ArgsT>(args) ...}, cookie_{cookie} {}
 
@@ -82,10 +85,9 @@ public:
         return *this;
     }
 
-    bool cancel() { return impl_->cancel(cookie_); } // returns true if cancelled
-    void reschedule(when_t when = null_t{}, time_duration_t repeat_interval = time_duration_t{0}) { impl_->reschedule(cookie_, when, repeat_interval); }
+    bool cancel() { if (cookie_) return impl_->cancel(cookie_); else return true; } // returns true if cancelled
+    void reschedule(when_t when = null_t{}, time_duration_t repeat_interval = time_duration_t{0}) { if (cookie_) impl_->reschedule(cookie_, when, repeat_interval); }
 };
-
 
 template <typename FunctionT>
 class function_call_scheduler_task : public scheduler_task

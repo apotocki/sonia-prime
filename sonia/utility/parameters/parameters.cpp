@@ -7,10 +7,11 @@
 
 #include <algorithm>
 
-namespace sonia { namespace parameters {
+namespace sonia::parameters {
 
-void value_descriptor::set_default_json_string(std::string const& jstr) {
-    throw not_implemented_error("value_descriptor::set_default_json_string");
+void value_descriptor::set_default_json_string(std::string const& jstr)
+{
+    THROW_NOT_IMPLEMENTED_ERROR("value_descriptor::set_default_json_string");
 }
 
-}}
+}

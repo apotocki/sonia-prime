@@ -13,7 +13,7 @@
 //#   define SONIA_MM_ITEM_POOL_SIZE 128
 //#endif
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 host_impl::host_impl(std::string name)
     : name_(std::move(name))
@@ -70,8 +70,9 @@ void host_impl::attach_to_current_thread()
     (new thread_descriptor(shared_from_this()))->set();
 }
 
-void host_impl::dettach_from_current_thread() {
+void host_impl::dettach_from_current_thread()
+{
     thread_descriptor::reset();
 }
 
-}}
+}

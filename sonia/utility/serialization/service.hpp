@@ -14,7 +14,7 @@
 
 #include "integral.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <typename TagT, class T>
 class coder<TagT, T, enable_if_t<is_base_of_v<service, T>>>
@@ -62,6 +62,6 @@ public:
     }
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_SERVICE_HPP

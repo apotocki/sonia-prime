@@ -13,6 +13,7 @@
 
 #include "sonia/array_view.hpp"
 #include "sonia/utility/algorithm/pull.hpp"
+#include "sonia/utility/algorithm/copy.hpp"
 #include "serialization.hpp"
 
 namespace sonia { namespace serialization {
@@ -27,7 +28,7 @@ public:
     OutputIteratorT encode(type const& value, OutputIteratorT oi) const
     {
         if constexpr (is_trivial_v<T> && sizeof(T) == 1) {
-            return std::copy(value.begin(), value.end(), std::move(oi));
+            return sonia::copy(value.begin(), value.end(), std::move(oi));
         } else {
             coder<TagT, remove_cv_t<T>> enc;
             for (auto const& e : value) {

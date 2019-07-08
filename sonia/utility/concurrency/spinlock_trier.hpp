@@ -19,7 +19,8 @@
 
 namespace sonia {
 
-class spinlock_trier {
+class spinlock_trier
+{
     std::atomic<boost::fibers::detail::spinlock_status> state_{boost::fibers::detail::spinlock_status::unlocked};
     size_t attempts_;
 
@@ -28,7 +29,8 @@ public:
     spinlock_trier(spinlock_trier const&) = delete;
     spinlock_trier & operator=(spinlock_trier const&) = delete;
 
-    bool try_lock() noexcept {
+    bool try_lock() noexcept
+    {
 #if defined(BOOST_FIBERS_SPIN_SINGLE_CORE)
         return single_try_lock();
 #else
@@ -60,11 +62,13 @@ public:
         }
     }
 
-    bool single_try_lock() noexcept {
+    bool single_try_lock() noexcept
+    {
         return boost::fibers::detail::spinlock_status::unlocked == state_.exchange(boost::fibers::detail::spinlock_status::locked, std::memory_order_acquire);
     }
 
-    void unlock() noexcept {
+    void unlock() noexcept
+    {
         state_.store(boost::fibers::detail::spinlock_status::unlocked, std::memory_order_release);
     }
 };

@@ -33,6 +33,7 @@ shared_ptr<T> make_clone(shared_ptr<T> const& ptr)
         ptr->clone(charptr, sz);
         return shared_ptr<T>(std::launder(reinterpret_cast<T*>(charptr)), [](T * p) { p->~T();  delete[] reinterpret_cast<char*>(p); });
     } catch (...) {
+        delete[] charptr;
         throw;
     }
 }
@@ -45,6 +46,7 @@ shared_ptr<T> construct_shared(FactoryT const& f)
         f.template apply<T>(charptr);
         return shared_ptr<T>(std::launder(reinterpret_cast<T*>(charptr)), [](T * p) { p->~T();  delete[] reinterpret_cast<char*>(p); });
     } catch (...) {
+        delete[] charptr;
         throw;
     }
 }

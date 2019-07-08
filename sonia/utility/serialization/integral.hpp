@@ -17,10 +17,11 @@
 
 #include "sonia/type_traits.hpp"
 #include "sonia/utility/algorithm/pull.hpp"
+#include "sonia/utility/algorithm/copy.hpp"
 
 #include "serialization.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <typename TagT>
 class coder<TagT, bool>
@@ -42,7 +43,7 @@ public:
         return std::move(ii);
     }
 
-    template <typename ArgT, typename InputIteratorT>
+    template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, bool * val) const
     {
         return decode(std::move(ii), *val);
@@ -116,7 +117,7 @@ public:
     OutputIteratorT encode(ArgT val, OutputIteratorT oi) const
     {
         auto it = reinterpret_cast<char const*>(&val), eit = it + sizeof(ArgT);
-        return std::copy(it, eit, oi);
+        return sonia::copy(it, eit, std::move(oi));
     }
 
     template <typename ArgT, typename InputIteratorT>
@@ -324,6 +325,6 @@ class coder<ordered_t, T, enable_if_t<is_integral_v<T> && !is_signed_v<T> && !in
     : public coder<sized_t<sizeof(T), ordered_t>, T>
 {};
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_INTEGRAL_HPP

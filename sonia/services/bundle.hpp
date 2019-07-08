@@ -44,7 +44,7 @@ protected:
     template <typename ServiceT>
     void install(string_view nm);
 
-private:
+protected:
     void * libhandle_;
     boost::unordered_map<std::string, function<shared_ptr<service>(json_object const&)>, hasher> builders_;
 };

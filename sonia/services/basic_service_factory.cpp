@@ -19,7 +19,7 @@ shared_ptr<service> basic_service_factory::create(string_view nm) const
         try {
             return func();
         } catch (std::exception const& e) {
-            throw internal_error("Error occurred during building '%1%' service\n%2%"_fmt % nm % e.what());
+            throw internal_error("Error occurred during starting '%1%' service\n%2%"_fmt % nm % e.what());
         }
     }
 

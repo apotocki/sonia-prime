@@ -64,6 +64,11 @@ public:
         if (this->size_ > sz) return 1;
         return 0;
     }
+
+    bool starts_with(basic_string_view prefix) const
+    {
+        return base_t::starts_with(prefix);
+    }
 };
 
 template <typename CharT, class TraitsT = std::char_traits<CharT>>

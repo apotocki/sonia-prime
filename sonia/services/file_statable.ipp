@@ -33,6 +33,8 @@ void file_statable<DerivedT>::open()
     } else {
         THROW_INTERNAL_ERROR("no state path defined");
     }
+
+    derived().restore();
 }
 
 template <typename DerivedT>

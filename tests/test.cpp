@@ -286,6 +286,7 @@ BOOST_AUTO_TEST_CASE (multimethod_test)
 
 #endif
 
+#if 0
 #include <iostream>
 #include <fstream>
 #include "sonia/exceptions.hpp"
@@ -342,3 +343,27 @@ std::string get_enum_name(std::string const& v)
 }
 
 
+#endif
+
+#include "sonia/utility/iterators/file_region_iterator.hpp"
+#include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
+#include "sonia/utility/iterators/archive_extract_iterator.hpp"
+
+BOOST_AUTO_TEST_CASE (tmp_test)
+{
+    using namespace sonia;
+
+    std::string filename = "k:\\projects\\ai4bd\\data\\test0.ttl";
+
+    int cnt = 0;
+    archive_iterator ar_it =
+        make_archive_extract_iterator(filename, file_region_iterator<const char>(filename, 0, 65536), 65536);
+
+    auto it = range_dereferencing_iterator(std::move(ar_it)), eit = range_dereferencing_iterator<archive_iterator>();
+    auto it2 = it;
+    for (; it != eit; ++it) {
+        //std::cout << *it;
+        std::cout << cnt++ << "\n";
+        it2 = it;
+    }
+}

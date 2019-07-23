@@ -9,8 +9,6 @@
 #   pragma once
 #endif
 
-#include "sonia/logger/loggable.hpp"
-
 #include "singleton_locator.hpp"
 #include "service.hpp"
 
@@ -18,7 +16,6 @@ namespace sonia {
 
 class service_locator 
     : public singleton_locator
-    , public loggable
 {
 public:
     service_locator(shared_ptr<service_registry> sr, shared_ptr<service_factory> sf);

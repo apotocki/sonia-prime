@@ -105,7 +105,7 @@ private:
         boost::bimaps::unordered_set_of<uint32_t>
     >;
     type_id_map_type type_id_map_;
-    std::atomic<uint32_t> type_id_counter_;
+    std::atomic<uint32_t> type_id_counter_{0};
 
     singleton_locator slocator_;
 

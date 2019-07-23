@@ -16,16 +16,19 @@
 #include "sonia/type_traits.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/function.hpp"
-
+#include "sonia/logger/loggable.hpp"
 #include "sonia/services/singleton.hpp"
 
 namespace sonia {
     
 DECLARE_EXCEPTION(circular_dependency_error, "circular dependency error", internal_error)
 
-class singleton_locator
+class singleton_locator : public loggable
 {
 public:
+    singleton_locator() { set_log_attribute("Type", "singleton_locator"); }
+    explicit singleton_locator(null_t) {}
+
     shared_ptr<singleton> get(singleton::id id, function<shared_ptr<singleton>()> const& factory);
 
     void shutdown(shared_ptr<singleton>);

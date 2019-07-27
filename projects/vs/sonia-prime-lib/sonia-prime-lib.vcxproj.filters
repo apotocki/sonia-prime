@@ -753,6 +753,21 @@
     <ClInclude Include="..\..\..\sonia\utility\concurrency\barrier.hpp">
       <Filter>sonia.utility\concurrency</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\push_back.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\push_front.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\fold.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\begin.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\next.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

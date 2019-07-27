@@ -16,8 +16,8 @@
 #include <boost/range/end.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
-#include "sonia/optional.hpp"
 #include "sonia/iterator_traits.hpp"
+#include "sonia/utility/hazardous.hpp"
 
 namespace sonia {
 
@@ -35,37 +35,69 @@ class range_dereferencing_iterator_state
         std::tuple<subrange_iterator, subrange_iterator, subrange_iterator>,
         std::tuple<subrange_iterator, subrange_iterator>
     >;
-    mutable optional<state_t> state_;
+    mutable hazardous<state_t> state_;
+    mutable uint8_t state_initialized_ : 1;
 
 public:
-    range_dereferencing_iterator_state() = default;
-
-    explicit range_dereferencing_iterator_state(IteratorT it)
-        : base{std::move(it)}
+    range_dereferencing_iterator_state()
+        : state_initialized_{0}
     {}
 
-    range_dereferencing_iterator_state(range_dereferencing_iterator_state const&) = default;
-    range_dereferencing_iterator_state(range_dereferencing_iterator_state &&) = default;
-    range_dereferencing_iterator_state& operator= (range_dereferencing_iterator_state const&) = default;
-    range_dereferencing_iterator_state& operator= (range_dereferencing_iterator_state &&) = default;
+    explicit range_dereferencing_iterator_state(IteratorT it)
+        : base{std::move(it)}, state_initialized_{0}
+    {}
+
+    range_dereferencing_iterator_state(range_dereferencing_iterator_state const& rhs)
+        : base{rhs.base}, state_initialized_{rhs.state_initialized_}
+    {
+        hazardous_copy_as_optional(rhs.state_, !!rhs.state_initialized_, state_, false);
+    }
+
+    range_dereferencing_iterator_state(range_dereferencing_iterator_state && rhs)
+        : base{std::move(rhs.base)}, state_initialized_{rhs.state_initialized_}
+    {
+        hazardous_move_as_optional(rhs.state_, !!rhs.state_initialized_, state_, false);
+    }
+
+    range_dereferencing_iterator_state& operator= (range_dereferencing_iterator_state const& rhs)
+    {
+        base = rhs.base;
+        hazardous_copy_as_optional(rhs.state_, !!rhs.state_initialized_, state_, state_initialized_);
+        state_initialized_ = rhs.state_initialized_;
+        return *this;
+    }
+
+    range_dereferencing_iterator_state& operator= (range_dereferencing_iterator_state && rhs)
+    {
+        base = std::move(rhs.base);
+        hazardous_move_as_optional(rhs.state_, !!rhs.state_initialized_, state_, state_initialized_);
+        state_initialized_ = rhs.state_initialized_;
+        return *this;
+    }
+
+    ~range_dereferencing_iterator_state()
+    {
+        hazardous_destroy_as_optional(state_, !!state_initialized_);
+    }
 
     bool empty() const
     {
-        if (BOOST_LIKELY(!!state_)) return false;
+        if (BOOST_LIKELY(!!state_initialized_)) return false;
         if (sonia::empty(base)) return true;
         init_state();
-        return !state_;
+        return !state_initialized_;
     }
 
     void increment()
     {
         ++base;
-        state_.reset();
+        hazardous_destroy_as_optional(state_, !!state_initialized_);
+        state_initialized_ = 0;
     }
 
     void decrement_one()
     {
-        if (!state_ || std::get<0>(*state_) == std::get<2>(*state_)) {
+        if (!state_initialized_ || std::get<0>(*state_) == std::get<2>(*state_)) {
             decrement();
         }
         BOOST_ASSERT(std::get<0>(*state_) != std::get<2>(*state_)); // retrieved range must not be empty
@@ -75,9 +107,11 @@ public:
     void decrement()
     {
         --base;
-        state_.reset();
+        hazardous_destroy_as_optional(state_, !!state_initialized_);
+        state_initialized_ = 0;
         iterator_dereferenced_range_t<IteratorT> rng = *base;
         state_.emplace(boost::end(rng), boost::end(rng), boost::begin(rng));
+        state_initialized_ = 1;
     }
 
     /*
@@ -85,7 +119,7 @@ public:
     */
     state_t & get() const
     {
-        if (!state_) {
+        if (!state_initialized_) {
             init_state();
         }
         return *state_;
@@ -98,29 +132,32 @@ public:
 
     void reload()
     {
-        state_.reset();
+        hazardous_destroy_as_optional(state_, !!state_initialized_);
+        state_initialized_ = 0;
     }
 
     void flush()
     {
-        if (state_) {
+        if (state_initialized_) {
             iterator_dereferenced_range_t<IteratorT> rng = *base;
             *base = array_view(boost::begin(rng), std::get<0>(*state_));
             ++base;
-            state_.reset();
+            hazardous_destroy_as_optional(state_, !!state_initialized_);
+            state_initialized_ = 0;
         }
     }
 
     void flush_position()
     {
-        if (state_) {
+        if (state_initialized_) {
             *base = std::get<0>(*state_);
             ++base;
-            state_.reset();
+            hazardous_destroy_as_optional(state_, !!state_initialized_);
+            state_initialized_ = 0;
         }
     }
 
-    IteratorT base;
+    mutable IteratorT base;
 
 private:
     void init_state() const
@@ -133,9 +170,10 @@ private:
                 } else {
                     state_.emplace(boost::begin(rng), boost::end(rng));
                 }
+                state_initialized_ = 1;
                 return;
             }
-            ++const_cast<IteratorT&>(base);
+            ++base;
         } while (!sonia::empty(base));
     }
 };

@@ -15,7 +15,7 @@
 #include "array.hpp"
 #include "integral.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <typename TagT, typename T>
 class coder<TagT, T, enable_if_t<
@@ -71,7 +71,7 @@ public:
     }
 
     template <typename InputIteratorT>
-    static elem_t decode_elem(InputIteratorT & ii)
+    static inline elem_t decode_elem(InputIteratorT & ii)
     {
         if constexpr (is_trivial_v<elem_t> && sizeof(elem_t) == 1)
         {
@@ -159,6 +159,6 @@ public:
     }
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_STRING_HPP

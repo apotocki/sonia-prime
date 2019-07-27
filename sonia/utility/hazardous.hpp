@@ -28,7 +28,7 @@ class hazardous
 public:
     using value_type = T;
 
-    hazardous() {}
+    hazardous() = default;
     ~hazardous() noexcept = default;
 
     template <typename ArgT>
@@ -89,6 +89,43 @@ std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, Trait
 
 template <typename T> T * get_pointer(hazardous<T> & p) { return p.get_pointer(); }
 template <typename T> T const* get_pointer(hazardous<T> const& p) { return p.get_pointer(); }
+
+template <typename T>
+void hazardous_copy_as_optional(hazardous<T> const& src, bool has_src, hazardous<T> & dest, bool has_dest)
+{
+    if (has_dest) {
+        if (has_src) {
+            *dest = *src;
+        } else {
+            dest.destroy();
+        }
+    } else if (has_src) {
+        dest.emplace(*src);
+    }
+}
+
+template <typename T>
+void hazardous_move_as_optional(hazardous<T> & src, bool has_src, hazardous<T> & dest, bool has_dest)
+{
+    if (has_dest) {
+        if (has_src) {
+            *dest = std::move(*src);
+        } else {
+            dest.destroy();
+        }
+    }
+    if (has_src) {
+        dest.emplace(std::move(*src));
+    }
+}
+
+template <typename T>
+void hazardous_destroy_as_optional(hazardous<T> & target, bool has_target)
+{
+    if (has_target) {
+        target.destroy();
+    }
+}
 
 }
 

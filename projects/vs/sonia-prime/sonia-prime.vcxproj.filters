@@ -80,6 +80,12 @@
     <ClCompile Include="..\..\..\sonia\services\net\http\http_static_application_builder.cpp">
       <Filter>sonia.services\net\http</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\registry\registry_service.cpp">
+      <Filter>sonia.services\registry</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\registry\registry_service_builder.cpp">
+      <Filter>sonia.services\registry</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -105,6 +111,9 @@
     </Filter>
     <Filter Include="sonia.services\net\http">
       <UniqueIdentifier>{a82c12bf-9c1d-4d99-a116-8215bf6c8dff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services\registry">
+      <UniqueIdentifier>{835b5fdf-684f-4ffe-9747-8067e7f629e9}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -230,6 +239,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\timer.hpp">
       <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\registry.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\registry\registry_service.hpp">
+      <Filter>sonia.services\registry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\registry\registry_service_builder.hpp">
+      <Filter>sonia.services\registry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\registry\registry_service_configuration.hpp">
+      <Filter>sonia.services\registry</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

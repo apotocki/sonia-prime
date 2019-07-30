@@ -2,8 +2,8 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICES_FILE_STATABLE_HPP
-#define SONIA_SERVICES_FILE_STATABLE_HPP
+#ifndef SONIA_UTILITY_FILE_STATABLE_HPP
+#define SONIA_UTILITY_FILE_STATABLE_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
@@ -15,7 +15,7 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/utility/persister.hpp"
 
-namespace sonia::services {
+namespace sonia::utility {
 
 template <typename DerivedT>
 class file_statable
@@ -47,4 +47,4 @@ protected:
 
 }
 
-#endif // SONIA_SERVICES_FILE_STATABLE_HPP
+#endif // SONIA_UTILITY_FILE_STATABLE_HPP

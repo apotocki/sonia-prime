@@ -9,7 +9,7 @@
 
 #include "applied/scoped_services.hpp"
 
-#if 0
+#if 1
 #if BOOST_OS_WINDOWS
 #include "sonia/sys/windows/thread_pool.hpp"
 BOOST_AUTO_TEST_CASE (windows_timer_test)

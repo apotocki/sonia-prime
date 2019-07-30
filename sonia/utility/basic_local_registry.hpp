@@ -95,11 +95,6 @@ class basic_local_registry
         >
     >;
 
-    void bootstrap()
-    {
-        counter_ = 0;
-    }
-
     IDT increment_fetch_counter()
     {
         return ++counter_;
@@ -109,9 +104,16 @@ class basic_local_registry
     DerivedT const& derived() const { return static_cast<DerivedT const&>(*this); }
 
 protected:
+    IDT counter_;
+
+    void bootstrap()
+    {
+        counter_ = 0;
+    }
+
     void backup() const
     {
-        state_persister_->write_stream([this](std::ostream & os) {
+        derived().get_state_persister().write_stream([this](std::ostream & os) {
             boost::archive::xml_oarchive oa(os);
             const_cast<DerivedT&>(derived()).serialize(oa);
         });
@@ -119,7 +121,7 @@ protected:
 
     void restore()
     {
-        if (!state_persister_->read_stream([this](std::istream & is) {
+        if (!derived().get_state_persister().read_stream([this](std::istream & is) {
             boost::archive::xml_iarchive ia(is);
             derived().serialize(ia);
         })) {
@@ -128,9 +130,6 @@ protected:
     }
 
 public:
-    explicit basic_local_registry(shared_ptr<persister> sp)
-        : state_persister_(std::move(sp))
-    {}
 
     IDT get_id(string_view name, string_view meta)
     {
@@ -154,7 +153,7 @@ public:
         if (BOOST_UNLIKELY(!pitm->persisted.load())) {
             lock_guard bguard(backup_mtx_);
             if (!pitm->persisted.load()) {
-                backup();
+                derived().backup();
                 for (auto & itm : registry_) {
                     itm.persisted.store(true);
                 }
@@ -170,19 +169,33 @@ public:
         return get_data(id).first;
     }
 
+    std::string const* lookup_name(IDT id) const
+    {
+        if (reg_item const* ritm = get_data_item(id); ritm) {
+            return &ritm->name;
+        }
+        return nullptr;
+    }
+
     std::pair<string_view, string_view> get_data(IDT id) const
     {
-        shared_lock_guard guard(mtx_);
-        auto it = registry_.template get<1>().find(id);
-        if (it != registry_.template get<1>().end() && it->persisted.load()) {
-            return {it->name, it->meta};
+        if (reg_item const* ritm = get_data_item(id); ritm) {
+            return {ritm->name, ritm->meta};
         }
         THROW_INTERNAL_ERROR("no registry item with id: %1%"_fmt % id);
     }
 
 private:
-    IDT counter_;
-    shared_ptr<persister> state_persister_;
+    reg_item const* get_data_item(IDT id) const
+    {
+        shared_lock_guard guard(mtx_);
+        auto it = registry_.template get<1>().find(id);
+        if (it != registry_.template get<1>().end() && it->persisted.load()) {
+            return &*it;
+        }
+        return nullptr;
+    }
+private:
     registry_t registry_;
     mutable fibers::rw_mutex mtx_;
     mutable fibers::mutex backup_mtx_;

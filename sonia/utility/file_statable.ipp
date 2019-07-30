@@ -20,7 +20,7 @@
 #   define SONIA_FILE_STATABLE_NVP_TAG_NAME "state"
 #endif
 
-namespace sonia::services {
+namespace sonia::utility {
 
 template <typename DerivedT>
 void file_statable<DerivedT>::open()

@@ -9,7 +9,7 @@
 #include "sonia/utility/type_durable_id.hpp"
 #include "durable_type_registry.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 uint32_t durable_type_registry::register_durable_id(string_view nm, string_view servnm, std::type_index ti)
 {
@@ -54,7 +54,7 @@ std::type_index durable_type_registry::get_durable_type_index(uint32_t id)
         return *res;
     }
 
-    throw internal_error("durable type %1% is not registered"_fmt % id);
+    THROW_INTERNAL_ERROR("durable type %1% is not registered"_fmt % id);
 }
 
-}}
+}

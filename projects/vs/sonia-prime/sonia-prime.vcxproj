@@ -44,6 +44,8 @@
     <ClCompile Include="..\..\..\sonia\services\net\net_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\net_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\prime_bundle.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\registry\registry_service.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\registry\registry_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\scheduler_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\scheduler_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\services.cpp" />
@@ -86,6 +88,10 @@
     <ClInclude Include="..\..\..\sonia\services\net\net_service_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\registry\registry_service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\registry\registry_service_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\registry\registry_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service.hpp" />

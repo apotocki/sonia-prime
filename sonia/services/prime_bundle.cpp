@@ -15,6 +15,7 @@
 #include "sonia/services/transceiver/transceiver_builder.hpp"
 #include "sonia/services/io/io_service_builder.hpp"
 #include "sonia/services/io/io_cache_service_builder.hpp"
+#include "sonia/services/registry/registry_service_builder.hpp"
 
 namespace sonia::services {
 
@@ -37,6 +38,7 @@ public:
         install<io_cache_service_builder>("io-cache");
         install<echo_connector_builder>("echo");
         install<transceiver_service_builder>("transceiver");
+        install<registry_service_builder>("registry");
     }
 };
 

@@ -45,9 +45,9 @@ SONIA_PRIME_API shared_ptr<service> locate(string_view);
 SONIA_PRIME_API shared_ptr<service> locate(service::id);
 
 template <class ServiceT, typename IdT>
-shared_ptr<ServiceT> locate(IdT id)
+shared_ptr<ServiceT> locate(IdT && id)
 {
-    shared_ptr<ServiceT> rval = dynamic_pointer_cast<ServiceT>(locate(id));
+    shared_ptr<ServiceT> rval = dynamic_pointer_cast<ServiceT>(locate(std::forward<IdT>(id)));
     if (!rval) {
         throw exception("'%1%' service is not compatible with %2%"_fmt % id % typeid(ServiceT).name());
     }
@@ -55,9 +55,9 @@ shared_ptr<ServiceT> locate(IdT id)
 }
 
 template <class ServiceT, typename IdT>
-void locate(IdT id, shared_ptr<ServiceT> & serv)
+void locate(IdT && id, shared_ptr<ServiceT> & serv)
 {
-    serv = locate<ServiceT>(id);
+    serv = locate<ServiceT>(std::forward<IdT>(id));
 }
 
 SONIA_PRIME_API void register_service_factory(string_view, function<shared_ptr<service>()> const&);

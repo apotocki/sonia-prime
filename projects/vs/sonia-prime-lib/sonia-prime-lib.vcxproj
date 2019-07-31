@@ -79,8 +79,6 @@
     <ClInclude Include="..\..\..\sonia\services\service_locator.hpp" />
     <ClInclude Include="..\..\..\sonia\services\singleton.hpp" />
     <ClInclude Include="..\..\..\sonia\services\singleton_locator.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\file_statable.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\file_statable.ipp" />
     <ClInclude Include="..\..\..\sonia\services\transceiver.hpp" />
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
     <ClInclude Include="..\..\..\sonia\singleton.hpp" />
@@ -109,6 +107,8 @@
     <ClInclude Include="..\..\..\sonia\utility\caches\clock.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\utility.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\barrier.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\file_statable.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\file_statable.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\equal\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\hazardous.hpp" />

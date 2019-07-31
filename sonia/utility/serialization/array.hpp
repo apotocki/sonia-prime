@@ -66,7 +66,7 @@ public:
     }
 
     template <typename InputIteratorT>
-    InputIteratorT decode(InputIteratorT ii, type value) const
+    InputIteratorT decode(InputIteratorT ii, type & value) const
     {
         return sonia::decode<TagT>(std::move(ii), to_array_view(value));
     }

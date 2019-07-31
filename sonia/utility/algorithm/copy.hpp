@@ -57,24 +57,30 @@ auto copy(ForwardInputIteratorT ib, ForwardInputIteratorT ie, ForwardOutputItera
     return std::pair{ib, ob};
 }
 
-template <typename SrcRangeT, typename RangeWriteInputIteratorT>
-RangeWriteInputIteratorT copy_range(SrcRangeT rng, RangeWriteInputIteratorT it)
+template <typename SrcIteratorT, typename RangeWriteInputIteratorT>
+RangeWriteInputIteratorT copy_range(SrcIteratorT b, SrcIteratorT e, RangeWriteInputIteratorT it)
 {
-    auto iit0 = boost::begin(rng);
     for (;;) {
         iterator_value_t<RangeWriteInputIteratorT> orng = *it;
-        auto[iit, oit] = copy(iit0, boost::end(rng), boost::begin(orng), boost::end(orng));
-        if (iit == boost::end(rng)) {
-            if (oit != boost::end(orng)) {
-                *it = iterator_value_t<RangeWriteInputIteratorT>{boost::begin(orng), oit};
+        auto orngb = boost::begin(orng), ornge = boost::end(orng);
+        auto[iit, oit] = copy(b, e, orngb, ornge);
+        if (iit == e) {
+            if (oit != ornge) {
+                *it = iterator_value_t<RangeWriteInputIteratorT>{orngb, oit};
             }
             ++it;
             return std::move(it);
         }
         ++it;
-        iit0 = iit;
+        b = iit;
     }
     return std::move(it);
+}
+
+template <typename SrcRangeT, typename RangeWriteInputIteratorT>
+RangeWriteInputIteratorT copy_range(SrcRangeT rng, RangeWriteInputIteratorT it)
+{
+    return copy_range(boost::begin(rng), boost::end(rng), std::move(it));
 }
 
 template <typename ForwardInputIteratorT, typename ForwardOutputIteratorT>

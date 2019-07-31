@@ -18,7 +18,7 @@ class local_service_registry
     : public service_registry
     , utility::basic_local_registry<local_service_registry, service::id>
 {
-    typedef utility::basic_local_registry<local_service_registry, service::id> base_t;
+    using base_t = utility::basic_local_registry<local_service_registry, service::id>;
     friend base_t;
 
 public:
@@ -26,6 +26,11 @@ public:
 
     service::id get_id(string_view) override;
     string_view get_name(service::id) const override;
+
+    persister & get_state_persister() const { return *state_persister_; }
+
+private:
+    shared_ptr<persister> state_persister_;
 };
 
 }

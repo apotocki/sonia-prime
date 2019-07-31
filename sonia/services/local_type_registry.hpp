@@ -26,6 +26,11 @@ public:
 
     uint32_t get_type_id(string_view, string_view) override;
     std::pair<string_view, string_view> get_type_description(uint32_t) const override;
+
+    persister & get_state_persister() const { return *state_persister_; }
+
+private:
+    shared_ptr<persister> state_persister_;
 };
 
 }

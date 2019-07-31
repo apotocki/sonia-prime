@@ -13,6 +13,8 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/service_locator.cpp
     ${BUNDLE_HOME}/sonia/services/basic_service_factory.cpp
     ${BUNDLE_HOME}/sonia/services/local_service_registry.cpp
+    ${BUNDLE_HOME}/sonia/services/registry/registry_service_builder.cpp
+    ${BUNDLE_HOME}/sonia/services/registry/registry_service.cpp
     ${BUNDLE_HOME}/sonia/services/scheduler/scheduler_service_builder.cpp
     ${BUNDLE_HOME}/sonia/services/scheduler/scheduler_service.cpp
     ${BUNDLE_HOME}/sonia/services/io/io_service_builder.cpp

@@ -744,14 +744,14 @@
     <ClInclude Include="..\..\..\sonia\services\on_close.hpp">
       <Filter>sonia.services</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\file_statable.hpp">
-      <Filter>sonia.services</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\file_statable.ipp">
-      <Filter>sonia.services</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\concurrency\barrier.hpp">
       <Filter>sonia.utility\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\file_statable.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\file_statable.ipp">
+      <Filter>sonia.utility</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

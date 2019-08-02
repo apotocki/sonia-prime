@@ -9,8 +9,8 @@
 #   pragma once
 #endif
 
-#include <utility>
 #include <boost/utility/in_place_factory.hpp>
+#include "sonia/type_traits.hpp"
 #include "sonia/utility/serialization/serialization_fwd.hpp"
 
 namespace sonia {

@@ -20,7 +20,7 @@ namespace sonia::services {
 struct service_configuration
 {
     std::string factory;
-    int layer;
+    int layer{0};
     json_object parameters;
 };
 

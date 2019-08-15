@@ -591,9 +591,6 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\maybe_array.hpp">
       <Filter>sonia.utility\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\iterators\type_as_iterator.hpp">
-      <Filter>sonia.utility\iterators</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\io\udp_socket.hpp">
       <Filter>sonia.services.io</Filter>
     </ClInclude>
@@ -752,6 +749,12 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\file_statable.ipp">
       <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\value_as_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\boost\json_value.hpp">
+      <Filter>sonia.utility\serialization\boost</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

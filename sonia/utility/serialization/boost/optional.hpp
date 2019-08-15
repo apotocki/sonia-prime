@@ -13,7 +13,7 @@
 
 #include <boost/serialization/optional.hpp>
 
-namespace boost { namespace serialization {
+namespace boost::serialization {
 
 template <class ArchiveT, class T>
 void save(ArchiveT & ar, const std::optional<T> & t, const unsigned int /*version*/)
@@ -56,6 +56,6 @@ void serialize(ArchiveT & ar, std::optional<T> & t, const unsigned int version)
     boost::serialization::split_free(ar, t, version);
 }
 
-}}
+}
 
 #endif // SONIA_BOOST_SERIALIZATION_OPTIONAL_HPP

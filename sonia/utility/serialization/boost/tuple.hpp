@@ -12,7 +12,7 @@
 #include <tuple>
 #include <string>
 
-namespace boost { namespace serialization {
+namespace boost::serialization {
 
 template <size_t ... I, class ArchiveT, class TupleT>
 void do_save(std::index_sequence<I ...>, ArchiveT & ar, TupleT const& t)
@@ -44,6 +44,6 @@ void serialize(ArchiveT & ar, std::tuple<Ts...> & t, const unsigned int version)
     boost::serialization::split_free(ar, t, version);
 }
 
-}}
+}
 
 #endif // SONIA_BOOST_SERIALIZATION_TUPLE_HPP

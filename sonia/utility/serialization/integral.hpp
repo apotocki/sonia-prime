@@ -292,7 +292,7 @@ public:
         }
 
         for (int i = realsz - 1; i >= 0; --i) {
-            *oi = (value >> CHAR_BIT * i) & ((1 << 8) - 1);
+            *oi = (value >> (CHAR_BIT * i)) & ((1 << 8) - 1);
             ++oi;
         }
 

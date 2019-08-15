@@ -69,19 +69,23 @@ BOOST_AUTO_TEST_CASE (bookkeeper_test)
         BOOST_CHECK (!bk->get("bool_key0"));
         BOOST_CHECK_EQUAL(bk->get("bool_key1")->get_bool(), true);
 
-        BOOST_CHECK(!bk->compare_and_swap("bool_key0", &json_value(false), &json_value("value0")));
+        json_value jv0{false};
+        json_value jv1;
+        json_value jv2{true};
+
+        BOOST_CHECK(!bk->compare_and_swap("bool_key0", json_value{false}, json_value("value0")));
         BOOST_CHECK (!bk->get("bool_key0"));
 
-        BOOST_CHECK(bk->compare_and_swap("bool_key0", nullptr, &json_value("value1")));
+        BOOST_CHECK(bk->compare_and_swap("bool_key0", nullptr, json_value("value1")));
         BOOST_CHECK_EQUAL(bk->get("bool_key0")->get_string(), "value1");
 
-        BOOST_CHECK(!bk->compare_and_swap("bool_key1", nullptr, &json_value("value2")));
+        BOOST_CHECK(!bk->compare_and_swap("bool_key1", nullptr, json_value("value2")));
         BOOST_CHECK_EQUAL(bk->get("bool_key1")->get_bool(), true);
 
-        BOOST_CHECK(!bk->compare_and_swap("bool_key1", &json_value(), &json_value("value3")));
+        BOOST_CHECK(!bk->compare_and_swap("bool_key1", json_value{}, json_value("value3")));
         BOOST_CHECK_EQUAL(bk->get("bool_key1")->get_bool(), true);
 
-        BOOST_CHECK(bk->compare_and_swap("bool_key1", &json_value(true), &json_value("value4")));
+        BOOST_CHECK(bk->compare_and_swap("bool_key1", json_value(true), json_value("value4")));
         BOOST_CHECK_EQUAL(bk->get("bool_key1")->get_string(), "value4");
 
         BOOST_CHECK(bk->compare_and_swap("arr_key0", nullptr, &jsarr));

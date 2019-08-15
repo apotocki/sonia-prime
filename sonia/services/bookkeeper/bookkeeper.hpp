@@ -24,6 +24,21 @@ public:
     virtual void erase(string_view key) = 0;
 
     virtual bool compare_and_swap(string_view key, json_value const* expected, json_value const* newval) = 0;
+
+    bool compare_and_swap(string_view key, json_value const* expected, json_value const& newval)
+    {
+        return compare_and_swap(key, expected, &newval);
+    }
+
+    bool compare_and_swap(string_view key, json_value const& expected, json_value const* newval)
+    {
+        return compare_and_swap(key, &expected, newval);
+    }
+
+    bool compare_and_swap(string_view key, json_value const& expected, json_value const& newval)
+    {
+        return compare_and_swap(key, &expected, &newval);
+    }
 };
 
 }

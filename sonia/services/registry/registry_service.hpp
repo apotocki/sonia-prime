@@ -9,7 +9,6 @@
 #   pragma once
 #endif
 
-#include <list>
 #include "sonia/concurrency.hpp"
 #include "sonia/services/service.hpp"
 #include "sonia/services/registry.hpp"

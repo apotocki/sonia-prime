@@ -153,7 +153,7 @@ public:
         auto usebits = order * bits_per_order;
         
         if (BOOST_UNLIKELY(order > ((uint8_t)1 << order_bit_cnt))) {
-            throw internal_error("ordered_compressed_encode_integral : value (%1%) is too big to fit storage"_fmt % value);
+            THROW_INTERNAL_ERROR("ordered_compressed_encode_integral : value (%1%) is too big to fit storage"_fmt % value);
         }
         oi = encode_bits(order - 1, order_bit_cnt, bitshift, accum, std::move(oi));
         return encode_bits(value, usebits, bitshift, accum, std::move(oi));

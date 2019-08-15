@@ -86,6 +86,12 @@
     <ClCompile Include="..\..\..\sonia\services\registry\registry_service_builder.cpp">
       <Filter>sonia.services\registry</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service.cpp">
+      <Filter>sonia.services\bookkeeper</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_builder.cpp">
+      <Filter>sonia.services\bookkeeper</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -114,6 +120,9 @@
     </Filter>
     <Filter Include="sonia.services\registry">
       <UniqueIdentifier>{835b5fdf-684f-4ffe-9747-8067e7f629e9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services\bookkeeper">
+      <UniqueIdentifier>{13119c36-1d46-44d8-a92d-c17c43c16ef0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -251,6 +260,18 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\registry\registry_service_configuration.hpp">
       <Filter>sonia.services\registry</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper.hpp">
+      <Filter>sonia.services\bookkeeper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service.hpp">
+      <Filter>sonia.services\bookkeeper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_builder.hpp">
+      <Filter>sonia.services\bookkeeper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_configuration.hpp">
+      <Filter>sonia.services\bookkeeper</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

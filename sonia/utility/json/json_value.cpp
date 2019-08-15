@@ -281,6 +281,13 @@ json_value::json_value(bool val)
     set_uint(val ? 1 : 0);
 }
 
+json_value::json_value(int val)
+{
+    using number_t = optimized_decimal_impl<holder_t>;
+    number_t::set(this, decimal{val});
+    set_service_cookie((size_t)json_value_type::number);
+}
+
 json_value::json_value(decimal val)
 {
     using number_t = optimized_decimal_impl<holder_t>;
@@ -299,6 +306,13 @@ json_value::json_value(array_view<json_value> val)
 {
     using array_t = optimized_array_impl<json_value, holder_t>;
     array_t::init(this, val | boost::adaptors::transformed(mover()), val.size());
+    set_service_cookie((size_t)json_value_type::array);
+}
+
+json_value::json_value(std::initializer_list<json_value> l)
+{
+    using array_t = optimized_array_impl<json_value, holder_t>;
+    array_t::init(this, l | boost::adaptors::transformed(mover()), l.size());
     set_service_cookie((size_t)json_value_type::array);
 }
 
@@ -327,7 +341,7 @@ bool compare(json_value const& lhs, json_value const& rhs, OpT const& op)
     case json_value_type::object:
         return op(lhs.get_object(), rhs.get_object());
     default:
-        throw internal_error("unexpected json_value type (%1%)"_fmt % (int)lhs.type());
+        THROW_INTERNAL_ERROR("unexpected json_value type (%1%)"_fmt % (int)lhs.type());
     }
 }
 
@@ -396,7 +410,7 @@ std::ostream & operator<< (std::ostream& os, json_value const& val)
         return os << '}';
     }
     default:
-        throw internal_error("unexpected json_value type (%1%)"_fmt % (int)val.type());
+        THROW_INTERNAL_ERROR("unexpected json_value type (%1%)"_fmt % (int)val.type());
     }
 }
 

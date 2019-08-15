@@ -10,12 +10,14 @@
 #endif
 
 #include <boost/unordered_map.hpp>
+#include <boost/serialization/boost_unordered_map.hpp>
 
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/concurrency/rw_fiber_mutex.hpp"
 #include "sonia/services/service.hpp"
 #include "sonia/services/registry.hpp"
 #include "sonia/utility/file_statable.ipp"
+#include "sonia/utility/serialization/boost/json_value.hpp"
 #include "bookkeeper.hpp"
 #include "bookkeeper_service_configuration.hpp"
 
@@ -26,7 +28,15 @@ class bookkeeper_service
     , public service
     , public utility::file_statable<bookkeeper_service>
 {
+    friend class boost::serialization::access;
+
     using statable_t = utility::file_statable<bookkeeper_service>;
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int = 0)
+    {
+        ar & boost::serialization::make_nvp("registry", map_);
+    }
 
 public:
     explicit bookkeeper_service(bookkeeper_service_configuration const&);
@@ -36,9 +46,9 @@ public:
     path_ref_t get_state_dir() const { if (cfg_.dir) return *cfg_.dir; else return statable_t::get_state_dir(); }
 
     void set(string_view key, json_value const&) override;
-    json_value const* get(string_view key) override;
+    optional<json_value> get(string_view key) const override;
     void erase(string_view key) override;
-    bool compare_and_change(string_view key, json_value const* expected, json_value const* newval) override;
+    bool compare_and_swap(string_view key, json_value const* expected, json_value const* newval) override;
 
     //persister & get_state_persister() const { return *statable_t::state_persister_; }
 
@@ -49,7 +59,7 @@ public:
 private:
     bookkeeper_service_configuration cfg_;
     boost::unordered_map<std::string, json_value, hasher> map_;
-    fibers::rw_mutex mtx_;
+    mutable fibers::rw_mutex mtx_;
 };
 
 }

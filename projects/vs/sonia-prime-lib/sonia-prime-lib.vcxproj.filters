@@ -753,6 +753,9 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\value_as_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\boost\json_value.hpp">
+      <Filter>sonia.utility\serialization\boost</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

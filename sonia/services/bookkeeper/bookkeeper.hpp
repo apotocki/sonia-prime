@@ -9,6 +9,7 @@
 #   pragma once
 #endif
 
+#include "sonia/optional.hpp"
 #include "sonia/utility/json/value.hpp"
 
 namespace sonia::services {
@@ -19,10 +20,10 @@ public:
     virtual ~bookkeeper() = default;
     
     virtual void set(string_view key, json_value const&) = 0;
-    virtual json_value const* get(string_view key) = 0;
+    virtual optional<json_value> get(string_view key) const = 0;
     virtual void erase(string_view key) = 0;
 
-    virtual bool compare_and_change(string_view key, json_value const* expected, json_value const* newval) = 0;
+    virtual bool compare_and_swap(string_view key, json_value const* expected, json_value const* newval) = 0;
 };
 
 }

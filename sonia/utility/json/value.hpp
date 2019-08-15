@@ -121,9 +121,13 @@ class json_value : json_detail::holder_t
     json_value();
 
     explicit json_value(bool);
+    explicit json_value(int);
     explicit json_value(decimal);
     explicit json_value(string_view);
     explicit json_value(array_view<json_value>);
+    
+    json_value(std::initializer_list<json_value>);
+
     json_value(array_view<const std::string>, array_view<const json_value>);
 
     explicit json_value(const char* val) : json_value(string_view(val)) {}

@@ -200,6 +200,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\array.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\bit_coder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\bind_command.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\boost\json_value.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost_serialization_tuple.hpp" />

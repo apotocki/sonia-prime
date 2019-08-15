@@ -20,24 +20,57 @@ void bookkeeper_service::open()
     restore();
 }
 
-void bookkeeper_service::set(string_view key, json_value const&)
+void bookkeeper_service::set(string_view key, json_value const& val)
 {
-    THROW_NOT_IMPLEMENTED_ERROR();
+    lock_guard wguard(mtx_);
+    auto it = map_.find(key, hasher(), string_equal_to());
+    if (it != map_.end()) {
+        it->second = val;
+    } else {
+        map_.insert(it, std::pair{to_string(key), val});
+    }
+    backup();
 }
 
-json_value const* bookkeeper_service::get(string_view key)
+optional<json_value> bookkeeper_service::get(string_view key) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR();
+    shared_lock_guard sguard(mtx_);
+    auto it = map_.find(key, hasher(), string_equal_to());
+    return (it != map_.end()) ? optional{it->second} : optional<json_value>{};
 }
 
 void bookkeeper_service::erase(string_view key)
 {
-    THROW_NOT_IMPLEMENTED_ERROR();
+    lock_guard wguard(mtx_);
+    auto it = map_.find(key, hasher(), string_equal_to());
+    if (it != map_.end()) {
+        map_.erase(it);
+    }
+    backup();
 }
 
-bool bookkeeper_service::compare_and_change(string_view key, json_value const* expected, json_value const* newval)
+bool bookkeeper_service::compare_and_swap(string_view key, json_value const* expected, json_value const* newval)
 {
-    THROW_NOT_IMPLEMENTED_ERROR();
+    lock_guard wguard(mtx_);
+    auto it = map_.find(key, hasher(), string_equal_to());
+    if (it != map_.end()) {
+        if (expected && it->second == *expected) {
+            if (newval) {
+                it->second = *newval;
+            } else {
+                map_.erase(it);
+            }
+            backup();
+            return true;
+        }
+    } else if (!expected) {
+        if (newval) {
+            map_.insert(it, std::pair{to_string(key), *newval});
+            backup();
+        }
+        return true;
+    }
+    return false;
 }
 
 }

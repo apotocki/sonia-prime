@@ -16,6 +16,7 @@
 #include "sonia/services/io/io_service_builder.hpp"
 #include "sonia/services/io/io_cache_service_builder.hpp"
 #include "sonia/services/registry/registry_service_builder.hpp"
+#include "sonia/services/bookkeeper/bookkeeper_service_builder.hpp"
 
 namespace sonia::services {
 
@@ -39,6 +40,7 @@ public:
         install<echo_connector_builder>("echo");
         install<transceiver_service_builder>("transceiver");
         install<registry_service_builder>("registry");
+        install<bookkeeper_service_builder>("bookkeeper");
     }
 };
 

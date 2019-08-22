@@ -10,6 +10,7 @@
 #endif
 
 #include "sonia/services/builder.hpp"
+#include "scheduler_service.hpp"
 
 namespace sonia::services {
 

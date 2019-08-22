@@ -47,7 +47,6 @@
     <ClInclude Include="..\..\..\sonia\sal_types.hpp" />
     <ClInclude Include="..\..\..\sonia\services.hpp" />
     <ClInclude Include="..\..\..\sonia\services\builder.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\builder.ipp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.ipp" />
     <ClInclude Include="..\..\..\sonia\services\durable_type_registry.hpp" />

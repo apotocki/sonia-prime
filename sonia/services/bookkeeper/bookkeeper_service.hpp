@@ -15,7 +15,6 @@
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/concurrency/rw_fiber_mutex.hpp"
 #include "sonia/services/service.hpp"
-#include "sonia/services/registry.hpp"
 #include "sonia/utility/file_statable.ipp"
 #include "sonia/utility/serialization/boost/json_value.hpp"
 #include "bookkeeper.hpp"
@@ -50,11 +49,8 @@ public:
     void erase(string_view key) override;
     bool compare_and_swap(string_view key, json_value const* expected, json_value const* newval) override;
 
-    //persister & get_state_persister() const { return *statable_t::state_persister_; }
-
     using statable_t::backup;
     using statable_t::restore;
-    //using service::get_name;
 
 private:
     bookkeeper_service_configuration cfg_;

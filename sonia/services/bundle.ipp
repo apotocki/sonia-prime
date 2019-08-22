@@ -19,8 +19,8 @@ void bundle::install(string_view nm)
 {
     auto it = builders_.find(nm, hasher(), string_equal_to());
     if (it == builders_.end()) {
-        builders_.insert(it, std::pair(to_string(nm), [](json_object const&) {
-            return make_shared<ServiceT>();
+        builders_.insert(it, std::pair(to_string(nm), [](json_object const& props) {
+            return make_shared<ServiceT>(props);
         }));
     } else {
         THROW_INTERNAL_ERROR("builder for the service '%1%' is already installed"_fmt % nm);

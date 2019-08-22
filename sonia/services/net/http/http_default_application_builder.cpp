@@ -3,15 +3,12 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "sonia/services/builder.ipp"
 #include "http_default_application_builder.hpp"
-#include "http_default_application.hpp"
 
 namespace sonia::services {
 
-http_default_application_builder::http_default_application_builder()
+void http_default_application_builder::open()
 {
-    set_log_attribute("Type", "builder");
     parameters_.bind()
         .variable("response-code", &http_default_application_configuration::response_code, "response code").default_value(http::status::OK)
             .binder([](json_value const& v)->http::status {

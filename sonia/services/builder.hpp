@@ -37,7 +37,7 @@ class basic_builder
     , public builder
 {
 public:
-    explicit basic_builder(json_value const& props) : props_{props}
+    explicit basic_builder(json_object const& props) : props_{props}
     {
         set_log_attribute("Type", "builder");
     }
@@ -52,21 +52,21 @@ public:
     }
 
 protected:
-    json_value props_;
-    sonia::parameters::parameters_description<ConfT> parameters_;
+    json_object props_;
+    parameters::parameters_description<ConfT> parameters_;
 
     using basic_builder_t = basic_builder;
 };
 
 }
 
-#define DECLARE_PARTICULAR_BUILDER(name)                                         \
-class name##_builder                                                             \
-    : public sonia::services::basic_builder<name, name##_configuration>          \
-{                                                                                \
-public:                                                                          \
-    explicit name##_builder(json_value const& props) : basic_builder_t{props} {} \
-    void open() override final;                                                  \
+#define DECLARE_PARTICULAR_BUILDER(name)                                          \
+class name##_builder                                                              \
+    : public sonia::services::basic_builder<name, name##_configuration>           \
+{                                                                                 \
+public:                                                                           \
+    explicit name##_builder(json_object const& props) : basic_builder_t{props} {} \
+    void open() override final;                                                   \
 };
 
 #endif // SONIA_SERVICE_BUILDER_HPP

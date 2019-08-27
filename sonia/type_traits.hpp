@@ -263,6 +263,20 @@ template <class T> constexpr bool is_typed_in_place_factory_v = is_typed_in_plac
 template <class TargetT, typename TagT>
 using apply_t = typename TargetT::template apply<TagT>;
 
+
+template <typename ... ArgsT> struct switchable;
+template <typename ... ArgsT> using switchable_t = typename switchable<ArgsT...>::type;
+
+template <typename DT, typename ... ArgsT> struct switchable1 { using type = DT; };
+
+template <typename CT, typename RT, typename ... ArgsT>
+struct switchable2 : conditional<CT::value, RT, switchable_t<ArgsT ...>> {};
+
+template <typename ... ArgsT> struct switchable2_lazy : switchable2<ArgsT...> {};
+
+template <typename ... ArgsT>
+struct switchable : conditional_t<2 < sizeof...(ArgsT), switchable2_lazy<ArgsT...>, switchable1<ArgsT...>> {};
+
 }
 
 #endif // SONIA_TYPE_TRAITS_HPP

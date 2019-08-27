@@ -73,10 +73,10 @@ struct object_item_less
 template <class HolderT>
 struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
 {
-    typedef optimized_array_impl<object_item_t, HolderT> base_t;
-    typedef typename base_t::allocator_t allocator_t;
-    typedef typename base_t::optimized_collection_base_t optimized_collection_base_t;
-    typedef typename base_t::optimized_collection_t optimized_collection_t;
+    using base_t = optimized_array_impl<object_item_t, HolderT>;
+    using allocator_t = typename base_t::allocator_t;
+    using optimized_collection_base_t = typename base_t::optimized_collection_base_t;
+    using optimized_collection_t = typename base_t::optimized_collection_t;
 
     static void init(HolderT * self, array_view<const std::string> keys, array_view<const json_value> vals)
     {
@@ -115,14 +115,14 @@ struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
 
 std::pair<string_view, json_value&> json_object_item_iterator_dereference(json_object & obj, size_t pos)
 {
-    typedef optimized_object_impl<holder_t> object_t;
+    using object_t = optimized_object_impl<holder_t>;
     auto& item = object_t::get(&json_value_holder_accessor::holder(obj))[pos];
     return {string_view(item.first.begin(), item.first.size()), item.second};
 }
 
 bool operator==(json_object const& lhs, json_object const& rhs)
 {
-    typedef optimized_object_impl<holder_t> object_t;
+    using object_t = optimized_object_impl<holder_t>;
     auto litems = object_t::get(&lhs);
     auto ritems = object_t::get(&rhs);
     return litems == ritems;
@@ -130,7 +130,7 @@ bool operator==(json_object const& lhs, json_object const& rhs)
 
 bool operator<(json_object const& lhs, json_object const& rhs)
 {
-    typedef optimized_object_impl<holder_t> object_t;
+    using object_t = optimized_object_impl<holder_t>;
     auto litems = object_t::get(&lhs);
     auto ritems = object_t::get(&rhs);
     return litems < ritems;
@@ -147,7 +147,7 @@ bool json_value::get_bool() const
 int json_value::get_int() const
 {
     if (json_value_type::number == type()) {
-        typedef optimized_decimal_impl<holder_t> number_t;
+        using number_t = optimized_decimal_impl<holder_t>;
         return number_t::get<int>(this);
     }
     throw exception("json_value (%1%) is not a number"_fmt % to_string(*this));
@@ -156,7 +156,7 @@ int json_value::get_int() const
 int64_t json_value::get_int64() const
 {
     if (json_value_type::number == type()) {
-        typedef optimized_decimal_impl<holder_t> number_t;
+        using number_t = optimized_decimal_impl<holder_t>;
         return number_t::get<int64_t>(this);
     }
     throw exception("json_value (%1%) is not a number"_fmt % to_string(*this));
@@ -165,7 +165,7 @@ int64_t json_value::get_int64() const
 decimal json_value::get_number() const
 {
     if (json_value_type::number == type()) {
-        typedef optimized_decimal_impl<holder_t> number_t;
+        using number_t = optimized_decimal_impl<holder_t>;
         return number_t::get(this);
     }
     throw exception("json_value (%1%) is not a number"_fmt % to_string(*this));
@@ -174,7 +174,7 @@ decimal json_value::get_number() const
 string_view json_value::get_string() const
 {
     if (json_value_type::string == type()) {
-        typedef optimized_array_impl<char, holder_t> string_t;
+        using string_t = optimized_array_impl<char, holder_t>;
         return string_t::get(this);
     }
     throw exception("json_value (%1%) is not a string"_fmt % to_string(*this));
@@ -183,7 +183,7 @@ string_view json_value::get_string() const
 array_view<const json_value> json_value::get_array() const
 {
     if (json_value_type::array == type()) {
-        typedef optimized_array_impl<json_value, holder_t> array_t;
+        using array_t = optimized_array_impl<json_value, holder_t>;
         return array_t::get(this);
     }
     throw exception("json_value (%1%) is not an array"_fmt % to_string(*this));
@@ -192,7 +192,7 @@ array_view<const json_value> json_value::get_array() const
 array_view<json_value> json_value::get_array()
 {
     if (json_value_type::array == type()) {
-        typedef optimized_array_impl<json_value, holder_t> array_t;
+        using array_t = optimized_array_impl<json_value, holder_t>;
         return array_t::get(this);
     }
     throw exception("json_value (%1%) is not an array"_fmt % to_string(*this));
@@ -229,31 +229,31 @@ json_object& json_object::operator=(json_object const& rhs)
 
 json_value const* json_object::operator[](string_view key) const noexcept
 {
-    typedef optimized_object_impl<holder_t> object_t;
+    using object_t = optimized_object_impl<holder_t>;
     return object_t::get(this, key);
 }
 
 json_value * json_object::operator[](string_view key) noexcept
 {
-    typedef optimized_object_impl<holder_t> object_t;
+    using object_t = optimized_object_impl<holder_t>;
     return object_t::get(this, key);
 }
 
 json_object::const_item_range_t json_object::items() const noexcept
 {
-    typedef json_object_item_iterator<true> const_iterator;
+    using const_iterator = json_object_item_iterator<true>;
     return const_item_range_t(const_iterator(*this), const_iterator(*this, size()));
 }
 
 json_object::item_range_t json_object::items() noexcept
 {
-    typedef json_object_item_iterator<false> iterator;
+    using iterator = json_object_item_iterator<false>;
     return item_range_t(iterator(*this), iterator(*this, size()));
 }
 
 size_t json_object::size() const noexcept
 {
-    typedef optimized_object_impl<holder_t> object_t;
+    using object_t = optimized_object_impl<holder_t>;
     return object_t::size(this);
 }
 

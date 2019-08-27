@@ -77,7 +77,7 @@ BOOST_AUTO_TEST_CASE (aio_test)
     fs::remove_all(TEST_FOLDER);
 
     try {
-        scoped_services ss;
+        scoped_services ss{"base-path=" TEST_FOLDER "/"};
         services::load_configuration(*get_configuration());
 
         auto ff = services::locate<io::file_factory>("aio.serv");

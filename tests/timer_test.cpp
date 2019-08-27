@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE (service_timer_test)
     using namespace sonia;
     using namespace std::chrono_literals;
 
-    scoped_services ss;
+    scoped_services ss{"base-path=" TEST_FOLDER "/"};
 
     std::atomic<int> check = 0;
     services::timer tmr{ [&check]{ check |= 2; } };

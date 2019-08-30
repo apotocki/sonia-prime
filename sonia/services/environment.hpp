@@ -96,8 +96,6 @@ private:
 
     optional<std::string> start_conf_;
 
-    mutable mutex cfg_mutex_;
-
     // type_id support
     mutable spin_mutex type_id_mtx_;
     using type_id_map_type = boost::bimap<

@@ -65,8 +65,8 @@ public:
     void pre_initialize(int& argc, char const**& argv);
 
 private:
-    sonia::mutex mtx_;
-    sonia::condition_variable var_;
+    sonia::threads::mutex mtx_;
+    sonia::threads::condition_variable var_;
     bool run_;
 };
 

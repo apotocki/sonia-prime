@@ -63,8 +63,8 @@ public:
 
 private:
     group_host & group_;
-    mutex mtx_;
-    condition_variable cnd_;
+    threads::mutex mtx_;
+    threads::condition_variable cnd_;
     simple_queue<boost::fibers::context*, spin_mutex> rqueue_{1024};
     uint8_t flag_ : 1;
     uint8_t suspend_ : 1;
@@ -102,8 +102,8 @@ public:
 
 private:
     group_host & group_;
-    mutex mtx_;
-    condition_variable cnd_;
+    threads::mutex mtx_;
+    threads::condition_variable cnd_;
     simple_queue<boost::fibers::context*, spin_mutex> rqueue_{2};
     uint8_t flag_ : 1;
     uint8_t suspend_ : 1;

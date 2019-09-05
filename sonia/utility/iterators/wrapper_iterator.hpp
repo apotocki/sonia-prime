@@ -113,6 +113,16 @@ public:
         }
     }
 
+    void close()
+    {
+        if constexpr (iterators::has_method_close_v<ImplT, void()>)
+        {
+            impl.close();
+        } else {
+            impl->close();
+        }
+    }
+
     ImplT impl;
 };
 

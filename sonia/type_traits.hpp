@@ -276,6 +276,8 @@ template <class T> constexpr bool is_in_place_factory_v = is_in_place_factory<T>
 template <class T> struct is_typed_in_place_factory : is_base_of<boost::typed_in_place_factory_base, T> {};
 template <class T> constexpr bool is_typed_in_place_factory_v = is_typed_in_place_factory<T>::value;
 
+template <class T> constexpr bool is_factory_v = is_in_place_factory_v<T> || is_typed_in_place_factory_v<T>;
+
 // meta programming
 template <class TargetT, typename TagT>
 using apply_t = typename TargetT::template apply<TagT>;

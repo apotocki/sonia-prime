@@ -34,6 +34,25 @@ struct callable_constructor
     void * place_;
 };
 
+template <typename FunctorT>
+struct in_place_functor_factory
+    : public boost::in_place_factory_base
+{
+public:
+    explicit in_place_functor_factory(FunctorT const& f) : ftor_{f} {}
+
+    template <typename ProductT> void * apply(void * vplace) const
+    {
+        ProductT * place = reinterpret_cast<ProductT*>(vplace);
+        ftor_(place);
+        return vplace;
+    }
+
+private:
+    FunctorT ftor_;
+};
+
+
 template <typename ... ArgsT>
 struct in_place_factory_impl : bind_tuple_t<ArgsT ...>
 {

@@ -13,7 +13,6 @@
 #include <utility>
 
 #include "sonia/type_traits.hpp"
-#include "sonia/reference_wrapper.hpp"
 
 namespace sonia {
 

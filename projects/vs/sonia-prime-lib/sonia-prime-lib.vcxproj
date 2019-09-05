@@ -41,7 +41,6 @@
     <ClInclude Include="..\..\..\sonia\net\uri.hpp" />
     <ClInclude Include="..\..\..\sonia\net\uri.ipp" />
     <ClInclude Include="..\..\..\sonia\optional.hpp" />
-    <ClInclude Include="..\..\..\sonia\reference_wrapper.hpp" />
     <ClInclude Include="..\..\..\sonia\sal.hpp" />
     <ClInclude Include="..\..\..\sonia\sal\net.hpp" />
     <ClInclude Include="..\..\..\sonia\sal_types.hpp" />
@@ -88,7 +87,6 @@
     <ClInclude Include="..\..\..\sonia\sys\windows\main_api.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\windows\thread_pool.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\windows\thread_pool_api.hpp" />
-    <ClInclude Include="..\..\..\sonia\throw.hpp" />
     <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\algorithm\construct.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\algorithm\copy.hpp" />
@@ -148,6 +146,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_reference.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\proxy.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\reference_wrapper_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\single_value_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_input_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_write_input_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\tar_iterator.hpp" />

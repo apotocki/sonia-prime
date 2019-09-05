@@ -138,9 +138,6 @@
     <ClInclude Include="..\..\..\sonia\utility\in_place_factory.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\reference_wrapper.hpp">
-      <Filter>sonia</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\optional.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
@@ -690,9 +687,6 @@
     <ClInclude Include="..\..\..\sonia\services\io\ssl_configuration.hpp">
       <Filter>sonia.services.io</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\throw.hpp">
-      <Filter>sonia</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\boost_stacktrace.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
@@ -752,6 +746,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost\json_value.hpp">
       <Filter>sonia.utility\serialization\boost</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\single_value_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

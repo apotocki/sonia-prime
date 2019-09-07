@@ -150,7 +150,7 @@ bool hexinteger(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsig
 }
 
 template <typename IteratorT, typename IntegerT>
-bool integer(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsigned int maxdigits, IntegerT& result) noexcept
+unsigned int integer(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsigned int maxdigits, IntegerT& result) noexcept
 {
     IteratorT pos = b;
     using char_type = iterator_value_t<IteratorT>;
@@ -165,10 +165,10 @@ bool integer(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsigned
         }
     }
     if (dc < mindigits) {
-        return false;
+        return 0;
     }
     b = pos;
-    return true;
+    return dc;
 }
 
 template <typename OutputIteratorT>

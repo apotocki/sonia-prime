@@ -12,9 +12,10 @@
 namespace sonia {
 
 service_locator::service_locator(shared_ptr<service_registry> sr, shared_ptr<service_factory> sf)
-    : sr_(std::move(sr)), sf_(std::move(sf))
+    : singleton_locator{null}, sr_{std::move(sr)}, sf_{std::move(sf)}
 {
     set_log_attribute("Host", services::get_host()->get_name());
+    set_log_attribute("Type", "service_locator");
 }
 
 service_locator::~service_locator() noexcept

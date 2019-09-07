@@ -8,7 +8,7 @@
 namespace sonia {
 
 local_type_registry::local_type_registry(shared_ptr<persister> sp)
-    : base_t(std::move(sp))
+    : state_persister_{std::move(sp)}
 {
     base_t::restore();
 }

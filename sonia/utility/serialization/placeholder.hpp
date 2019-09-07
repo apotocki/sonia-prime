@@ -15,7 +15,7 @@
 namespace sonia::serialization {
 
 template <typename TagT, class T>
-class coder<TagT, T, enable_if_t<is_placeholder_v<T>>>
+class coder<TagT, T, enable_if_t<0 != is_placeholder_v<T>>>
 {
 public:
     template <typename OutputIteratorT>

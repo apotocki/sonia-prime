@@ -17,14 +17,14 @@
 
 #include "sonia/iterator_traits.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <class IteratorT, typename ElemT, class TraitsT>
 class istreambuf : public std::basic_streambuf<ElemT, TraitsT>
 {
-    typedef std::basic_streambuf<ElemT, TraitsT> base_t;
-    typedef typename base_t::traits_type traits_type;
-    typedef typename base_t::int_type int_type;
+    using base_t = std::basic_streambuf<ElemT, TraitsT>;
+    using traits_type = typename base_t::traits_type;
+    using int_type = typename base_t::int_type;
 
     static const bool is_read = !is_output_iterator_v<IteratorT>;
         
@@ -167,8 +167,8 @@ class istream
     : private boost::base_from_member<istreambuf<InputIteratorT, ElemT, TraitsT>>
     , public std::basic_istream<ElemT, TraitsT>
 {
-    typedef istreambuf<InputIteratorT, ElemT, TraitsT> streambuf_t;
-    typedef boost::base_from_member<streambuf_t> pbase_type;
+    using streambuf_t = istreambuf<InputIteratorT, ElemT, TraitsT>;
+    using pbase_type = boost::base_from_member<streambuf_t>;
 
 public:
     explicit istream(InputIteratorT it) 
@@ -182,8 +182,8 @@ class ostream
     : protected boost::base_from_member<ostreambuf<OutputIteratorT, ElemT, TraitsT>>
     , public std::basic_ostream<ElemT, TraitsT>
 {
-    typedef ostreambuf<OutputIteratorT, ElemT, TraitsT> streambuf_t;
-    typedef boost::base_from_member<streambuf_t> pbase_type;
+    using streambuf_t = ostreambuf<OutputIteratorT, ElemT, TraitsT>;
+    using pbase_type = boost::base_from_member<streambuf_t>;
 
 public:
     explicit ostream(OutputIteratorT it)
@@ -192,6 +192,6 @@ public:
     {}
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_IOSTREAM_HPP

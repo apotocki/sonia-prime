@@ -1,6 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
+#define TEST_FOLDER "timer-test"
 
 #include "sonia/config.hpp"
 #include <thread>
@@ -9,7 +10,7 @@
 
 #include "applied/scoped_services.hpp"
 
-#if 0
+#if 1
 #if BOOST_OS_WINDOWS
 #include "sonia/sys/windows/thread_pool.hpp"
 BOOST_AUTO_TEST_CASE (windows_timer_test)
@@ -80,7 +81,7 @@ BOOST_AUTO_TEST_CASE (service_timer_test)
     using namespace sonia;
     using namespace std::chrono_literals;
 
-    scoped_services ss;
+    scoped_services ss{"base-path=" TEST_FOLDER "/"};
 
     std::atomic<int> check = 0;
     services::timer tmr{ [&check]{ check |= 2; } };
@@ -101,7 +102,6 @@ BOOST_AUTO_TEST_CASE (service_timer_test)
 
 #endif
 
-#include <sstream>
 #include "sonia/services/scheduler/scheduler.hpp"
 
 namespace {
@@ -137,10 +137,11 @@ BOOST_AUTO_TEST_CASE (scheduler_timer_test)
     using namespace sonia;
     using namespace std::chrono_literals;
 
-    scoped_services ss;
+    scoped_services ss{"base-path=" TEST_FOLDER "/"};
+
     std::stringstream cfgss;
     get_configuration(cfgss);
-    services::load_configuration(cfgss);
+    sonia::services::load_configuration(cfgss);
 
     auto sched = services::locate<scheduler>("scheduler.serv");
 

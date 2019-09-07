@@ -3,15 +3,12 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "sonia/services/builder.ipp"
 #include "net_service_builder.hpp"
-#include "net_service.hpp"
 
 namespace sonia::services {
 
-net_service_builder::net_service_builder()
+void net_service_builder::open()
 {
-    set_log_attribute("Type", "builder");
     parameters_.bind()
         .variable("tcp-server-socket-factory", &net_service_configuration::tcp_server_socket_factory, "tcp server socket factory name")
         .variable("udp-socket-factory", &net_service_configuration::udp_socket_factory, "udp socket factory name")

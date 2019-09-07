@@ -22,6 +22,7 @@
 #include <boost/utility/typed_in_place_factory.hpp>
 
 #include "utility/expected.hpp"
+#include "utility/variadic.hpp"
 
 #define typeidx(t) std::type_index(typeid(t))
 
@@ -67,8 +68,6 @@ using std::false_type;
 using std::void_t;
 
 using std::enable_if;
-using std::enable_if_t;
-
 using std::enable_if_t;
 
 using std::is_integral;
@@ -175,8 +174,20 @@ using std::add_rvalue_reference;
 using std::add_rvalue_reference_t;
 
 // placeholders
-template <int I> struct arg_c { static constexpr int value = I; };
-template <class VT> struct arg { using type = arg_c<VT::value>; static constexpr int value = VT::value; };
+template <int I> struct arg_c
+{
+    static constexpr int value = I;
+    
+    //template <typename ... ArgsT> struct apply : type_at<I, AtgsT...> {};
+    template <typename ... ArgsT> using apply = variadic::type_at<I - 1, ArgsT...>;
+    template <typename ... ArgsT> using apply_t = typename apply<ArgsT...>::type;
+};
+
+template <class VT> struct arg
+{
+    using type = arg_c<VT::value>;
+    static constexpr int value = VT::value;
+};
 
 template <class T> struct is_arg : integral_constant<int, 0> {};
 template <class T> struct is_arg<arg<T>> : integral_constant<int, T::VT::value> {};
@@ -189,6 +200,14 @@ template <class T> constexpr int is_placeholder_v = is_placeholder<T>::value;
 template <class T, class Enabler = void> struct size_of : integral_constant<int, sizeof(T)> {};
 template <class T> struct size_of<T, enable_if_t<is_void_v<T>>> : integral_constant<int, 0> {};
 template <class T> constexpr size_t size_of_v = size_of<T>::value;
+
+namespace mpl {
+using _1 = arg_c<1>;
+using _2 = arg_c<2>;
+using _3 = arg_c<3>;
+using _4 = arg_c<4>;
+using _5 = arg_c<5>;
+}
 
 using std::in_place;
 using std::in_place_t;
@@ -208,6 +227,9 @@ template <class T> using remove_cvref_t = typename remove_cvref<T>::type;
 
 template <bool Test, class T = void> using disable_if = enable_if<!Test, T>;
 template <bool Test, class T = void> using disable_if_t = enable_if_t<!Test, T>;
+
+template <class T, class TestT, class RT = void> using enable_if_same_ref = enable_if<is_same_v<T, remove_cvref_t<TestT>>, RT>;
+template <class T, class TestT, class RT = void> using enable_if_same_ref_t = typename enable_if_same_ref<T, TestT, RT>::type;
 
 template <class T, class TestT, class RT = void> using disable_if_same_ref = disable_if<is_same_v<T, remove_cvref_t<TestT>>, RT>;
 template <class T, class TestT, class RT = void> using disable_if_same_ref_t = typename disable_if_same_ref<T, TestT, RT>::type;
@@ -264,6 +286,20 @@ template <class T> constexpr bool is_typed_in_place_factory_v = is_typed_in_plac
 // meta programming
 template <class TargetT, typename TagT>
 using apply_t = typename TargetT::template apply<TagT>;
+
+
+template <typename ... ArgsT> struct switchable;
+template <typename ... ArgsT> using switchable_t = typename switchable<ArgsT...>::type;
+
+template <typename DT, typename ... ArgsT> struct switchable1 { using type = DT; };
+
+template <typename CT, typename RT, typename ... ArgsT>
+struct switchable2 : conditional<CT::value, RT, switchable_t<ArgsT ...>> {};
+
+template <typename ... ArgsT> struct switchable2_lazy : switchable2<ArgsT...> {};
+
+template <typename ... ArgsT>
+struct switchable : conditional_t<2 < sizeof...(ArgsT), switchable2_lazy<ArgsT...>, switchable1<ArgsT...>> {};
 
 }
 

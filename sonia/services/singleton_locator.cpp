@@ -59,7 +59,7 @@ void singleton_locator::shutdown()
             break;
         }
 
-        //GLOBAL_LOG_TRACE() << "singleton_locator: scheduled " << fibers.size() << " shutdowns, layer: " << layer << " join...";
+        //LOG_TRACE(logger()) << "singleton_locator: scheduled " << fibers.size() << " shutdowns, layer: " << layer << " join...";
 
         for (fiber & f : fibers) {
             f.join();
@@ -70,7 +70,7 @@ void singleton_locator::shutdown()
 
 void singleton_locator::shutdown(shared_ptr<singleton> s)
 {
-    GLOBAL_LOG_TRACE() << "singleton_locator::shutdown: " << s->get_name();
+    LOG_TRACE(logger()) << "terminating " << s->get_name() << "(" << s->get_id() << ") ...";
     unique_lock cache_lock(cache_mtx_);
     
     auto it = cache_.find(s->get_id());

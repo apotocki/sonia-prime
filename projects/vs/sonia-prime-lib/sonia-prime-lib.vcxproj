@@ -29,11 +29,16 @@
     <ClInclude Include="..\..\..\sonia\iterator_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\loggable.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\logger.hpp" />
+    <ClInclude Include="..\..\..\sonia\mpl\apply_wrap.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\begin.hpp" />
+    <ClInclude Include="..\..\..\sonia\mpl\bind.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\fold.hpp" />
+    <ClInclude Include="..\..\..\sonia\mpl\lambda.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\next.hpp" />
+    <ClInclude Include="..\..\..\sonia\mpl\protect.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\push_back.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\push_front.hpp" />
+    <ClInclude Include="..\..\..\sonia\mpl\quote.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\sequence.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\transform_view.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\application.hpp" />
@@ -52,7 +57,6 @@
     <ClInclude Include="..\..\..\sonia\sal_types.hpp" />
     <ClInclude Include="..\..\..\sonia\services.hpp" />
     <ClInclude Include="..\..\..\sonia\services\builder.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\builder.ipp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.ipp" />
     <ClInclude Include="..\..\..\sonia\services\durable_type_registry.hpp" />
@@ -84,8 +88,6 @@
     <ClInclude Include="..\..\..\sonia\services\service_locator.hpp" />
     <ClInclude Include="..\..\..\sonia\services\singleton.hpp" />
     <ClInclude Include="..\..\..\sonia\services\singleton_locator.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\file_statable.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\file_statable.ipp" />
     <ClInclude Include="..\..\..\sonia\services\transceiver.hpp" />
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
     <ClInclude Include="..\..\..\sonia\singleton.hpp" />
@@ -114,6 +116,8 @@
     <ClInclude Include="..\..\..\sonia\utility\caches\clock.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\utility.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\barrier.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\file_statable.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\file_statable.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\equal\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\hazardous.hpp" />
@@ -159,7 +163,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\tar_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_write_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_output_iterator.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\iterators\type_as_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\value_as_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp" />
@@ -205,6 +209,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\array.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\bit_coder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\bind_command.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\boost\json_value.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost_serialization_tuple.hpp" />

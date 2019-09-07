@@ -10,6 +10,7 @@
 #endif
 
 #include "sonia/services/builder.hpp"
+#include "transceiver_service.hpp"
 
 namespace sonia::services {
 

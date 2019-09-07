@@ -109,10 +109,8 @@ environment::~environment() noexcept
     slocator_.shutdown();
 #endif
     hosts_.clear();
-    if (log_initialized_) {
-        GLOBAL_LOG_INFO() << "environment terminated";
-        logger::deinitialize();
-    }
+    registry_.reset();
+    factory_.reset();
 
 #ifdef BOOST_WINDOWS
     threadpool_.reset();
@@ -120,6 +118,10 @@ environment::~environment() noexcept
     linux::stop_watchers();
 #endif
 
+    if (log_initialized_) {
+        GLOBAL_LOG_INFO() << "environment terminated";
+        logger::deinitialize();
+    }
 }
 
 void environment::open(int argc, char const* argv[], std::istream * cfgstream)
@@ -159,7 +161,7 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
     std::string const& logcfg = vm["log"].as<std::string>();
 
     if (!fs::is_regular_file(logcfg)) {
-        throw exception("Can not find log configuration file: %1%"_fmt % logcfg);
+        throw exception("Can not find the log configuration file: %1%"_fmt % fs::absolute(logcfg));
     }
 
     std::ifstream logcdfgis(logcfg.c_str());

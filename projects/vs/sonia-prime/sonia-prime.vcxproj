@@ -21,6 +21,8 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\applied\dllmain.cpp" />
     <ClCompile Include="..\..\..\sonia\services\basic_service_factory.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\environment.cpp" />
     <ClCompile Include="..\..\..\sonia\services\io\io_cache_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\io\io_cache_service_builder.cpp" />
@@ -44,6 +46,8 @@
     <ClCompile Include="..\..\..\sonia\services\net\net_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\net_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\prime_bundle.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\registry\registry_service.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\registry\registry_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\scheduler_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\scheduler_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\services.cpp" />
@@ -59,6 +63,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\prime_config.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.hpp" />
     <ClInclude Include="..\..\..\sonia\services\environment.hpp" />
     <ClInclude Include="..\..\..\sonia\services\host.hpp" />
@@ -86,6 +94,10 @@
     <ClInclude Include="..\..\..\sonia\services\net\net_service_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\registry\registry_service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\registry\registry_service_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\registry\registry_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\scheduler_service.hpp" />

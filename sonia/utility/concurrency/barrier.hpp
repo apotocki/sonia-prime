@@ -22,7 +22,7 @@ template <class TraitsT>
 class barrier
 {
     using mutex_t = typename TraitsT::mutex_type;
-    using condition_variable_t = typename typename TraitsT::condition_variable_type;
+    using condition_variable_t = typename TraitsT::condition_variable_type;
 
 public:
     explicit barrier(uint32_t maxthreads = 1, std::chrono::milliseconds timeout = (std::numeric_limits<long long>::max)())

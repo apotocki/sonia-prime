@@ -10,6 +10,7 @@
 #endif
 
 #include "sonia/services/builder.hpp"
+#include "echo_connector.hpp"
 
 namespace sonia::services {
 

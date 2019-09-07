@@ -9,7 +9,7 @@
 #   pragma once
 #endif
 
-namespace sonia { namespace variadic {
+namespace sonia::variadic {
 
 template <size_t N, typename ArgT0, typename ... ArgsT> struct type_at : type_at<N - 1, ArgsT ...> {};
 template <typename ArgT0, typename ... ArgsT> struct type_at<0, ArgT0, ArgsT ...> { using type = ArgT0; };
@@ -33,6 +33,6 @@ auto&& forward_at(ArgsT&& ... args)
     return forward_at_impl<N, ArgsT...>()(std::forward<ArgsT>(args) ...);
 }
 
-}}
+}
 
 #endif // SONIA_UTILITY_VARIADIC_HPP

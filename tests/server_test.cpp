@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE (server_test)
     fs::remove_all(TEST_FOLDER);
 
     try {
-        scoped_services ss;
+        scoped_services ss{"base-path=" TEST_FOLDER "/"};
 
         services::register_service_factory("asd", []() -> shared_ptr<service> {
             return make_shared<test_service0>();

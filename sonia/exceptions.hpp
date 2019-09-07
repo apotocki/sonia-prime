@@ -67,20 +67,20 @@ using trace_info = boost::error_info<struct tag_stacktrace, boost::stacktrace::s
     throw boost::enable_error_info(cl(__VA_ARGS__)) << boost::throw_function(current_function) \
         << boost::throw_file(file) \
         << boost::throw_line(line) \
-        << trace_info(boost::stacktrace::stacktrace())
+        << sonia::trace_info(boost::stacktrace::stacktrace())
 
 #define THROW_PARTICULAR_ERROR_RAW2(err, current_function, file, line) \
     throw boost::enable_error_info(err) << boost::throw_function(current_function) \
         << boost::throw_file(file) \
         << boost::throw_line(line) \
-        << trace_info(boost::stacktrace::stacktrace())
+        << sonia::trace_info(boost::stacktrace::stacktrace())
 
 #define THROW_ERROR(err) THROW_PARTICULAR_ERROR_RAW2(err, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__)
 
-#define THROW_INTERNAL_ERROR(...) THROW_PARTICULAR_ERROR_RAW2(internal_error(__VA_ARGS__), BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__)
-#define THROW_NOT_IMPLEMENTED_ERROR(...) THROW_PARTICULAR_ERROR_RAW(not_implemented_error, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
-#define THROW_NOT_SUPPORTED_ERROR(...) THROW_PARTICULAR_ERROR_RAW(not_supported_operation_error, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
-#define THROW_FATAL_ERROR(...) THROW_PARTICULAR_ERROR_RAW2(fatal_error(__VA_ARGS__), BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__)
+#define THROW_INTERNAL_ERROR(...) THROW_PARTICULAR_ERROR_RAW2(sonia::internal_error(__VA_ARGS__), BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__)
+#define THROW_NOT_IMPLEMENTED_ERROR(...) THROW_PARTICULAR_ERROR_RAW(sonia::not_implemented_error, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
+#define THROW_NOT_SUPPORTED_ERROR(...) THROW_PARTICULAR_ERROR_RAW(sonia::not_supported_operation_error, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
+#define THROW_FATAL_ERROR(...) THROW_PARTICULAR_ERROR_RAW2(sonia::fatal_error(__VA_ARGS__), BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__)
 
 }
 

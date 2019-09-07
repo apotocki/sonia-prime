@@ -18,7 +18,7 @@ template <typename SeqT, typename T> using push_back_t = typename push_back<SeqT
 
 template <typename ... ArgsT, typename T> struct push_back<std::tuple<ArgsT ...>, T>
 {
-    using type = std::tuple<T, ArgsT ..., T>;
+    using type = std::tuple<ArgsT ..., T>;
 };
 
 }

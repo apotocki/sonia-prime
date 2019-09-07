@@ -31,7 +31,9 @@ struct singleton_wrapper
     {
         std::call_once(once_flag_, [f = in_place_factory(std::forward<ArgsT>(args) ...)]() {
             instance_ = static_cast<T*>(&services::locate_singleton(typeid(T), [&f]() -> shared_ptr<singleton> {
-                return construct_shared<T>(f);
+                shared_ptr<singleton> s = construct_shared<T>(f);
+                singleton_access::set_name(*s, typeid(T).name());
+                return s;
             }));
         });
         services::on_close([]{instance_ = nullptr; std::destroy_at(&once_flag_), new(&once_flag_) std::once_flag{}; });

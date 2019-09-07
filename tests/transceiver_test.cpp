@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
     //std::cout << typeid(ts_some_method::stub_tuple_t).name();
     //return;
     try {
-        scoped_services ss;
+        scoped_services ss{"base-path=" TEST_FOLDER "/"};
         SONIA_REGISTER_BINDING_TAG(ts_empty_method, "ts_empty_method", "test_service");
         SONIA_REGISTER_BINDING_TAG(ts_exception_method, "ts_exception_method", "test_service");
         SONIA_REGISTER_BINDING_TAG(ts_some_method, "ts_some_method", "test_service");
@@ -294,7 +294,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
                     --tasks;
                     throw;
                 }
-                GLOBAL_LOG_INFO() << "finished: " << tnum;
+                GLOBAL_LOG_TRACE() << "finished: " << tnum;
             });
         }
 

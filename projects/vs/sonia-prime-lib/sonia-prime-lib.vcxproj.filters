@@ -591,9 +591,6 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\maybe_array.hpp">
       <Filter>sonia.utility\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\iterators\type_as_iterator.hpp">
-      <Filter>sonia.utility\iterators</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\io\udp_socket.hpp">
       <Filter>sonia.services.io</Filter>
     </ClInclude>
@@ -641,9 +638,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\singleton.hpp">
       <Filter>sonia</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\builder.ipp">
-      <Filter>sonia.services</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\net\uri.hpp">
       <Filter>sonia.net</Filter>
@@ -744,12 +738,6 @@
     <ClInclude Include="..\..\..\sonia\services\on_close.hpp">
       <Filter>sonia.services</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\file_statable.hpp">
-      <Filter>sonia.services</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\file_statable.ipp">
-      <Filter>sonia.services</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\concurrency\barrier.hpp">
       <Filter>sonia.utility\concurrency</Filter>
     </ClInclude>
@@ -766,6 +754,33 @@
       <Filter>sonia.mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\mpl\next.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\file_statable.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\file_statable.ipp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\value_as_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\boost\json_value.hpp">
+      <Filter>sonia.utility\serialization\boost</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\quote.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\apply_wrap.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\bind.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\protect.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\lambda.hpp">
       <Filter>sonia.mpl</Filter>
     </ClInclude>
   </ItemGroup>

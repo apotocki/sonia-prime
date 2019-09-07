@@ -84,7 +84,7 @@ public:
     {}
 
     template <typename ArgT>
-    explicit wrapper_iterator(ArgT && arg, enable_if_t<is_same_v<remove_cvref_t<ArgT>, wrapper_iterator>> * enabler = nullptr) 
+    explicit wrapper_iterator(ArgT && arg, enable_if_t<is_base_of_v<wrapper_iterator, remove_cvref_t<ArgT>>> * enabler = nullptr) 
         : impl{std::forward<ArgT>(arg).impl}
     {}
 

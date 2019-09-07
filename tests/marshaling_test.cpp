@@ -8,13 +8,13 @@
 
 #include <vector>
 
-#include "sonia/utility/marshaling/marshaling.hpp"
-#include "sonia/utility/marshaling/string.hpp"
-
-#include "sonia/utility/serialization/reference.hpp"
 #include "sonia/utility/serialization/placeholder.hpp"
+#include "sonia/utility/serialization/reference.hpp"
 #include "sonia/utility/serialization/integral.hpp"
 #include "sonia/utility/serialization/string.hpp"
+
+#include "sonia/utility/marshaling/marshaling.hpp"
+#include "sonia/utility/marshaling/string.hpp"
 
 using namespace sonia;
 

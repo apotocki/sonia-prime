@@ -130,14 +130,14 @@ template <typename ValueT, typename SetValueT = ValueT>
 class polymorphic_proxy_backend
 {
 public:
-    virtual ~polymorphic_proxy_backend() noexcept = default;
+    virtual ~polymorphic_proxy_backend() = default;
 
-    virtual ValueT get_dereference() const
+    [[noreturn]] virtual ValueT get_dereference() const
     {
         THROW_NOT_SUPPORTED_ERROR("polymorphic_proxy_backend::get_dereference");
     }
 
-    virtual void set_dereference(SetValueT)
+    [[noreturn]] virtual void set_dereference(SetValueT)
     {
         THROW_NOT_SUPPORTED_ERROR("polymorphic_proxy_backend::set_dereference");
     }
@@ -155,38 +155,38 @@ protected:
     using iterator_polymorphic_t = iterator_polymorphic;
 
 public:
-    virtual ~iterator_polymorphic() noexcept = default;
+    virtual ~iterator_polymorphic() = default;
 
     virtual bool equal(iterator_polymorphic const& rhs) const = 0;
     virtual ReferenceT dereference() const = 0;
     virtual void increment() = 0;
 
-    virtual void decrement()
+    [[noreturn]] virtual void decrement()
     {
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::decrement");
     }
 
-    virtual void advance(DifferenceT dif)
+    [[noreturn]] virtual void advance(DifferenceT dif)
     {
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::advance");
     }
 
-    virtual bool empty() const
+    [[noreturn]] virtual bool empty() const
     {
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::empty");
     }
 
-    virtual void flush()
+    [[noreturn]] virtual void flush()
     {
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::flush");
     }
 
-    virtual void close()
+    [[noreturn]] virtual void close()
     {
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::close");
     }
 
-    virtual size_t get_sizeof() const
+    [[noreturn]] virtual size_t get_sizeof() const
     {
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::get_sizeof");
     }

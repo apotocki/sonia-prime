@@ -9,23 +9,46 @@
 
 #include "sonia/type_traits.hpp"
 
+// sequences
 #include "sonia/mpl/vector.hpp"
+#include "sonia/mpl/transform_view.hpp"
+#include "sonia/mpl/zip_view.hpp"
 
+// iterators
 #include "sonia/mpl/iterator.hpp"
+
+// builders
 #include "sonia/mpl/push_back.hpp"
 #include "sonia/mpl/fold.hpp"
 
-#include "sonia/mpl/lambda.hpp"
-#include "sonia/mpl/apply_wrap.hpp"
+// quering
+#include "sonia/mpl/max_element.hpp"
+#include "sonia/mpl/contains.hpp"
+#include "sonia/mpl/equal.hpp"
+#include "sonia/mpl/find_if.hpp"
 
+// metafunctions
+#include "sonia/mpl/lambda.hpp"
+#include "sonia/mpl/bind.hpp"
+#include "sonia/mpl/apply.hpp"
+#include "sonia/mpl/apply_wrap.hpp"
+#include "sonia/mpl/unpack_args.hpp"
 #include "sonia/mpl/less.hpp"
 #include "sonia/mpl/plus.hpp"
+
 
 using namespace sonia;
 
 namespace sonia::mpl {
 
 /////////////////////
+template <typename T0, typename T1>
+struct smart_equal : conditional_t<
+    is_mpl_sequence_v<T0> && is_mpl_sequence_v<T1>,
+    equal<T0, T1>,
+    is_same<T0, T1>
+>
+{};
 
 /////////////////////
 
@@ -128,6 +151,7 @@ namespace static_compile_test_iter_fold
 }
 #endif
 
+
 namespace static_compile_test_iter_fold1
 {
 using namespace sonia::mpl;
@@ -186,11 +210,95 @@ using result = fold_t<
 static_assert(result::value == 18);
 
 }
+
+namespace static_compile_test_max_element
+{
+    using namespace sonia::mpl;
+    using numbers = vector_c<int,5,-1,0,9,2,0,-5,4>;
+
+    using max_elem = deref_t<max_element_t<numbers>>;
+
+    static_assert(max_elem::value == 9);
+}
+
+namespace static_compile_test_contains
+{
+    using namespace sonia::mpl;
+    using numbers = vector_c<int,5,-1,0,9,2,0,-5,4>;
+
+    using has4_t = contains_t<numbers, integral_constant<int, 4>>;
+    using has5_t = contains_t<numbers, integral_constant<int, 15>>;
+
+    static_assert(has4_t::value);
+    static_assert(!has5_t::value);
+}
+
+#include "sonia/mpl/transform_view.hpp"
+namespace static_compile_test_transform_view
+{
+    using namespace sonia::mpl;
+    using types = vector<int,long,char,char[50],double>;
+    using iter = max_element_t<
+      transform_view< types, size_of<_1> >
+    >;
+
+    static_assert(deref_t<iter>::value == 50);
+}
+
+namespace static_compile_test_zip_view
+{
+    using namespace sonia::mpl;
+    using v1 = vector_c<int,1,2,3,4,5>;
+    using v2 = vector_c<int,5,4,3,2,1>;
+    using v3 = vector_c<int,1,1,1,1,1>;
+
+    using r = vector<
+        vector_c<int, 1,5,1>,
+        vector_c<int, 2,4,1>,
+        vector_c<int, 3,3,1>,
+        vector_c<int, 4,2,1>,
+        vector_c<int, 5,1,1>
+    >;
+
+    using tv1 = transform_view<v1, identity<_1>>;
+    static_assert(equal_t<v1, tv1>::value);
+
+    using zv = zip_view<vector<v1, v2, v3>>;
+    static_assert(size_v<zv> == 5);
+
+    static_assert (equal_t<at_c_t<zv, 0>, vector_c<int,1,5,1>>::value);
+    static_assert (equal_t<at_c_t<zv, 1>, vector_c<int,2,4,1>>::value);
+    static_assert (equal_t<at_c_t<zv, 2>, vector_c<int,3,3,1>>::value);
+    static_assert (equal_t<at_c_t<zv, 3>, vector_c<int,4,2,1>>::value);
+    static_assert (equal_t<at_c_t<zv, 4>, vector_c<int,5,1,1>>::value);
+
+    static_assert (equal_t<r, zv, smart_equal<_1, _2>>::value);
+
+    using sum = transform_view<
+          zip_view< vector<v1,v2,v3> >
+        , unpack_args< plus<_1,_2,_3> >
+    >;
+    static_assert(size_v<sum> == 5);
+
+    static_assert(mpl::apply_t<unpack_args<is_same<_1, _2>>, vector<int,int>>::value);
+    static_assert(mpl::apply_t<unpack_args<plus<_1, _2>>, vector_c<int, 1, 2>>::value == 3);
+    static_assert(mpl::apply_t<unpack_args< plus<_1,_2,_3> >, at_c_t<zv, 0>>::value==7);
+    
+    static_assert(at_c_t<sum, 0>::value == 7);
+    static_assert(at_c_t<sum, 1>::value == 7);
+    static_assert(at_c_t<sum, 2>::value == 7);
+    static_assert(at_c_t<sum, 3>::value == 7);
+    static_assert(at_c_t<sum, 4>::value == 7);
+
+    static_assert(equal_t<sum, vector_c<int,7,7,7,7,7>>::value);
+}
+
 #endif
+
 #include <iostream>
 BOOST_AUTO_TEST_CASE (mpl_test)
 {
-    std::cout << typeid(static_compile_test_iter_fold3::result).name() << "\n";
+    //std::cout << typeid(static_compile_test_zip_view::s0).name() << "\n";
     //std::cout << static_compile_test_iter_fold::i2::pos << "\n";
     //using types = std::tuple<long, float, short, double, float, long, long double>;
     //using number_of_floats = mpl::fold_t<

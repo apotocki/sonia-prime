@@ -21,15 +21,16 @@ namespace sonia::fibers {
 
 class rw_mutex
 {
-    static const size_t log_half_rng = (sizeof(intptr_t) * CHAR_BIT - 1) / 2;
-    static const intptr_t state_pos_value = (intptr_t)1 << log_half_rng; // intptr_t::max / state_pos_value = ~ wr and state_pos_value r locks simultaneously
+    static constexpr size_t log_half_rng = (sizeof(intptr_t) * CHAR_BIT - 1) / 2;
+    static constexpr intptr_t state_pos_value = (intptr_t)1 << log_half_rng; // intptr_t::max / state_pos_value = ~ wr and state_pos_value r locks simultaneously
     std::atomic<intptr_t> state_{0};
 
-    typedef boost::fibers::mutex mutex_t;
+    using mutex_t = boost::fibers::mutex;
     mutex_t mtx_;
 
     typedef boost::fibers::detail::spinlock spinlock_t;
     spinlock_t smtx_;
+    //mutex_t smtx_;
 
     boost::fibers::condition_variable_any rvar_;
 
@@ -46,10 +47,16 @@ public:
             }
 
             intptr_t stateval = state_.fetch_add(1, std::memory_order_relaxed);
-
+            
             if (stateval < 0) continue;
 
             BOOST_ASSERT(stateval != 0);
+
+            // another fiber can be waiting on rvar at this point
+            if ((stateval + 1) > 0 && 0 == ((stateval + 1) % state_pos_value)) {
+                std::lock_guard guard(smtx_);
+                rvar_.notify_one();
+            }
 
             mtx_.lock();
             mtx_.unlock();
@@ -60,7 +67,7 @@ public:
     {
         intptr_t stateval = 1 + state_.fetch_add(1, std::memory_order_release);
         if (stateval > 0 && 0 == (stateval % state_pos_value)) {
-            std::lock_guard<spinlock_t> guard(smtx_);
+            std::lock_guard guard(smtx_);
             rvar_.notify_one();
         }
     }
@@ -74,7 +81,7 @@ public:
             return;
         } else if (stateval < 0) { // there is another shared lock at the moment
             mtx_.lock();
-            std::unique_lock<spinlock_t> rnext_lock(smtx_);
+            std::unique_lock rnext_lock(smtx_);
             rvar_.wait(smtx_, [this]() { return 0 == state_.load(std::memory_order_relaxed) % state_pos_value; });
             return;
         }
@@ -82,7 +89,7 @@ public:
         // so release shared lock and acquire lock
         stateval = state_.fetch_sub(state_pos_value, std::memory_order_relaxed) - state_pos_value;
         if (stateval > 0 && 0 == (stateval % state_pos_value)) {
-            std::lock_guard<spinlock_t> guard(smtx_);
+            std::lock_guard guard(smtx_);
             rvar_.notify_one();
         }
         lock();
@@ -97,7 +104,7 @@ public:
                 return;
             } else if (stateval < 0) { // there is a shared lock at the moemnt
                 mtx_.lock();
-                std::unique_lock<spinlock_t> rnext_lock(smtx_);
+                std::unique_lock rnext_lock(smtx_);
                 rvar_.wait(smtx_, [this]() { return 0 == state_.load(std::memory_order_relaxed) % state_pos_value; });
                 return;
             }

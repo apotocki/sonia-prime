@@ -9,45 +9,31 @@
 #   pragma once
 #endif
 
-#include <tuple>
+#include "sonia/mpl/sequence.hpp"
 
 namespace sonia::mpl {
 
-template <int PosV, typename SeqT> struct iterator{};
+template <size_t PosV, typename SeqT> struct iterator{};
 
 template <typename IteratorT> struct deref { using type = void; };
 template <typename IteratorT> using deref_t = typename deref<IteratorT>::type;
-template <size_t PosV, typename ... ArgsT> struct deref<iterator<PosV, std::tuple<ArgsT...>>>
+template <size_t PosV, typename SeqT> struct deref<iterator<PosV, SeqT>>
 {
-    using type = std::tuple_element_t<PosV, std::tuple<ArgsT...>>;
+    using type = at_c_t<SeqT, PosV>;
 };
 
 template <typename IteratorT> struct next { using type = void; };
 template <typename IteratorT> using next_t = typename next<IteratorT>::type;
-template <size_t PosV, typename ... ArgsT> struct next<iterator<PosV, std::tuple<ArgsT...>>>
+template <size_t PosV, typename SeqT> struct next<iterator<PosV, SeqT>>
 {
-    using type = iterator<PosV + 1, std::tuple<ArgsT...>>;
+    using type = iterator<PosV + 1, SeqT>;
 };
 
 template <typename IteratorT> struct prior { using type = void; };
 template <typename IteratorT> using prior_t = typename next<IteratorT>::type;
-template <size_t PosV, typename ... ArgsT> struct prior<iterator<PosV, std::tuple<ArgsT...>>>
+template <size_t PosV, typename SeqT> struct prior<iterator<PosV, SeqT>>
 {
-    using type = iterator<PosV - 1, std::tuple<ArgsT...>>;
-};
-
-template <typename SeqT> struct begin { using type = void; };
-template <typename SeqT> using begin_t = typename begin<SeqT>::type;
-template <typename ... ArgsT> struct begin<std::tuple<ArgsT...>>
-{
-    using type = iterator<0, std::tuple<ArgsT...>>;
-};
-
-template <typename SeqT> struct end { using type = void; };
-template <typename SeqT> using end_t = typename end<SeqT>::type;
-template <typename ... ArgsT> struct end<std::tuple<ArgsT...>>
-{
-    using type = iterator<sizeof ...(ArgsT), std::tuple<ArgsT...>>;
+    using type = iterator<PosV - 1, SeqT>;
 };
 
 }

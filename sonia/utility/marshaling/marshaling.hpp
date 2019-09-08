@@ -42,7 +42,7 @@
 #include "sonia/utility/serialization/mpl_sequence.hpp"
 #include "sonia/utility/serialization/reference.hpp"
 
-#include "sonia/mpl/sequence.hpp"
+//#include "sonia/mpl/sequence.hpp"
 #include "stub_parameter.hpp"
 
 namespace sonia {
@@ -75,7 +75,7 @@ struct result_transformer
     template <typename T, size_t I>
     struct apply
     {
-        using arg_type = sonia::mpl::at_t<RealArgTypesT, I>;
+        using arg_type = sonia::mpl::at_c_t<RealArgTypesT, I>;
         constexpr static bool is_fwd_v = stub_bound_parameter<arg_type>::is_modifiable;
         using type = conditional_t<is_fwd_v, T, null_t const&>;
 

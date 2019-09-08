@@ -162,7 +162,7 @@ bool operator< (T const& lhs, basic_decimal<LSignificandT, LExponentT> const& rh
 MAKE_FREE_COMPARISON_OPERATORS(is_decimal_v)
 
 template <class OStreamT, typename SignificandT, typename ExponentT>
-OStreamT & operator<< (OStreamT & os, basic_decimal<SignificandT, ExponentT> const& val)
+auto & operator<< (OStreamT & os, basic_decimal<SignificandT, ExponentT> const& val)
 {
     return os << to_string(val);
 }

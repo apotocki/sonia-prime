@@ -111,7 +111,7 @@ public:
         ordered_compressed_encode_integral(T value, uint8_t order_bit_cnt, uint8_t & bitshift, uint8_t & accum, OutputIteratorT oi)
     {
         if (order_bit_cnt) {
-            BOOST_ASSERT(value <= (((uint64_t)1) << (1 << order_bit_cnt)));
+            BOOST_ASSERT(value <= (((((uint64_t)1) << ((1 << order_bit_cnt) - 1)) - 1) << 1) + 1);
         } else {
             order_bit_cnt = boost::static_log2<sizeof(T) * CHAR_BIT>::value;
         }

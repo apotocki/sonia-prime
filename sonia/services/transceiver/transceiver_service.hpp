@@ -44,7 +44,7 @@ private:
     shared_ptr<sonia::io::tcp_socket_factory_type> soc_factory_;
 
     fibers::mutex mtx;
-    std::list<sonia::io::tcp_socket> using_set_;
+    std::list<io::tcp_socket> using_set_;
     bool closed_{false};
 };
 

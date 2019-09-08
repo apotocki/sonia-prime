@@ -2,6 +2,10 @@
 
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
 
+<Type Name="sonia::null_t">
+    <DisplayString>null</DisplayString>
+</Type>
+  
 <Type Name="sonia::array_view&lt;*&gt;">
     <Intrinsic Name="size" Expression="size_" />
     <Intrinsic Name="data" Expression="data_" />

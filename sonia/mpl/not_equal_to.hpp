@@ -2,23 +2,17 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_REFERENCE_WRAPPER_HPP
-#define SONIA_REFERENCE_WRAPPER_HPP
+#ifndef SONIA_MPL_NOT_EQUAL_TO_HPP
+#define SONIA_MPL_NOT_EQUAL_TO_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
 #endif
 
-#include <utility>
-#include <functional>
-#include "sonia/type_traits.hpp"
+namespace sonia::mpl {
 
-namespace sonia {
-
-using std::reference_wrapper;
-using std::ref;
-using std::cref;
+template <typename LHS, typename RHS> struct not_equal_to : bool_constant<(LHS::value != RHS::value)> {};
 
 }
 
-#endif // SONIA_REFERENCE_WRAPPER_HPP
+#endif // SONIA_MPL_NOT_EQUAL_TO_HPP

@@ -9,13 +9,15 @@
 #   pragma once
 #endif
 
+#include "sonia/type_traits.hpp"
+
 namespace sonia::mpl {
 
 template <typename ... ArgsT> struct plus
 {
     static constexpr auto calculate() { return (ArgsT::value + ...); }
     static constexpr auto value = calculate();
-    using type = integral_constant<decltype(value), value>;
+    using type = integral_constant<remove_cv_t<decltype(value)>, value>;
 };
 
 }

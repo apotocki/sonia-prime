@@ -39,7 +39,7 @@ protected:
     {
         using hook_type = boost::intrusive::set_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>;
 
-        mutex mtx;
+        fibers::mutex mtx;
         fiber::id fid;
         shared_ptr<singleton> object;
         hook_type layer_hook;

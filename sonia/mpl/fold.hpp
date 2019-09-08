@@ -9,7 +9,8 @@
 #   pragma once
 #endif
 
-#include "sonia/mpl/iterator.hpp"
+#include "sonia/mpl/sequence.hpp"
+#include "sonia/mpl/iterator.hpp" // deref
 #include "sonia/mpl/lambda.hpp"
 #include "sonia/mpl/apply_wrap.hpp"
 

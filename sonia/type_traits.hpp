@@ -13,7 +13,7 @@
 #include <utility>
 #include <type_traits>
 #include <typeindex>
-#include <functional> // is_placeholder
+#include <functional> // is_placeholder, reference_wrapper
 #include <boost/is_placeholder.hpp>
 #include <boost/mpl/identity.hpp>
 #include <boost/range.hpp>
@@ -163,6 +163,12 @@ using std::as_const;
 using std::is_convertible;
 using std::is_convertible_v;
 
+using std::is_object;
+using std::is_object_v;
+
+using std::is_function;
+using std::is_function_v;
+
 template <bool V, typename T>
 using add_const_if_t = conditional_t<V, add_const_t<T>, T>;
 
@@ -173,12 +179,16 @@ using std::add_lvalue_reference_t;
 using std::add_rvalue_reference;
 using std::add_rvalue_reference_t;
 
+using std::reference_wrapper;
+using std::ref;
+using std::cref;
+
 // placeholders
 template <int I> struct arg_c
 {
     static constexpr int value = I;
     
-    //template <typename ... ArgsT> struct apply : type_at<I, AtgsT...> {};
+    //template <typename ... ArgsT> struct apply : variadic::type_at<I - 1, ArgsT...> { };
     template <typename ... ArgsT> using apply = variadic::type_at<I - 1, ArgsT...>;
     template <typename ... ArgsT> using apply_t = typename apply<ArgsT...>::type;
 };
@@ -196,6 +206,10 @@ template <class T> constexpr int is_arg_v = is_arg<T>::value;
 
 template <class T> struct is_placeholder : integral_constant<int, std::is_placeholder_v<T> + boost::is_placeholder<T>::value + is_arg_v<T>> {};
 template <class T> constexpr int is_placeholder_v = is_placeholder<T>::value;
+
+template <class T> struct is_reference_wrapper : false_type{};
+template <class T> struct is_reference_wrapper<reference_wrapper<T>> : true_type{};
+template <class T> constexpr int is_reference_wrapper_v = is_reference_wrapper<T>::value;
 
 template <class T, class Enabler = void> struct size_of : integral_constant<int, sizeof(T)> {};
 template <class T> struct size_of<T, enable_if_t<is_void_v<T>>> : integral_constant<int, 0> {};
@@ -282,6 +296,8 @@ template <class T> constexpr bool is_in_place_factory_v = is_in_place_factory<T>
 
 template <class T> struct is_typed_in_place_factory : is_base_of<boost::typed_in_place_factory_base, T> {};
 template <class T> constexpr bool is_typed_in_place_factory_v = is_typed_in_place_factory<T>::value;
+
+template <class T> constexpr bool is_factory_v = is_in_place_factory_v<T> || is_typed_in_place_factory_v<T>;
 
 // meta programming
 template <class TargetT, typename TagT>

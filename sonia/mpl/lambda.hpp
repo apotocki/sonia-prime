@@ -16,6 +16,7 @@
 namespace sonia::mpl {
 
 template <typename X> struct is_placeholder_expression : false_type {};
+template <typename X> struct is_placeholder_expression<protect<X>> : false_type {};
 template <int I> struct is_placeholder_expression<arg_c<I>> : true_type {};
 template <template <typename ...> class F, typename ... ArgsT> struct is_placeholder_expression<F<ArgsT...>>
 {
@@ -25,6 +26,7 @@ template <template <typename ...> class F, typename ... ArgsT> struct is_placeho
 };
 
 template <typename X> struct placeholder_lambda;
+template <typename X> struct unprotected_placeholder_lambda;
 
 template <typename X> struct lambda
 {
@@ -33,11 +35,21 @@ template <typename X> struct lambda
 
 template <int I> struct lambda<arg_c<I>> { using type = arg_c<I>; };
 
-template <typename X> struct placeholder_lambda;
+template <typename X> struct unprotected_lambda
+{
+    using type = typename conditional_t<is_placeholder_expression<X>::value, unprotected_placeholder_lambda<X>, identity<X>>::type;
+};
+
+template <int I> struct unprotected_lambda<arg_c<I>> { using type = arg_c<I>; };
 
 template <template <typename ...> class F, typename ... ArgsT> struct placeholder_lambda<F<ArgsT...>>
 {
-    using type = protect_t<bind<quote<F>, typename lambda<ArgsT>::type ...>>;
+    using type = protect_t<bind<quote<F>, typename unprotected_lambda<ArgsT>::type ...>>;
+};
+
+template <template <typename ...> class F, typename ... ArgsT> struct unprotected_placeholder_lambda<F<ArgsT...>>
+{
+    using type = bind<quote<F>, typename unprotected_lambda<ArgsT>::type ...>;
 };
 
 template <typename X> using lambda_t = typename lambda<X>::type;

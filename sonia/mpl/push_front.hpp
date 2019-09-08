@@ -18,7 +18,7 @@ template <typename SeqT, typename T> using push_front_t = typename push_front<Se
 
 template <typename ... ArgsT, typename T> struct push_front<std::tuple<ArgsT ...>, T>
 {
-    using type = std::tuple<T, ArgsT ..., T>;
+    using type = std::tuple<T, ArgsT ...>;
 };
 
 }

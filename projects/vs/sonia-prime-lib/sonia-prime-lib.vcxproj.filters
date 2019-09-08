@@ -750,9 +750,6 @@
     <ClInclude Include="..\..\..\sonia\mpl\fold.hpp">
       <Filter>sonia.mpl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\mpl\begin.hpp">
-      <Filter>sonia.mpl</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\mpl\next.hpp">
       <Filter>sonia.mpl</Filter>
     </ClInclude>
@@ -781,6 +778,18 @@
       <Filter>sonia.mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\mpl\lambda.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\iterator.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\less.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\plus.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\vector.hpp">
       <Filter>sonia.mpl</Filter>
     </ClInclude>
   </ItemGroup>

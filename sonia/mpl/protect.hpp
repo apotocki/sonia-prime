@@ -17,8 +17,10 @@ template <typename T> struct protect { using type = T; };
 template <typename ... ArgsT> struct protect<bind<ArgsT...>>
 {
     template <typename ... BArgsT> using apply = typename bind<ArgsT...>::template apply<BArgsT...>;
+    template <typename ... BArgsT> using apply_t = typename apply<BArgsT...>::type;
     using type = protect;
 };
+
 template <typename T> using protect_t = typename protect<T>::type;
 
 }

@@ -9,17 +9,39 @@
 #   pragma once
 #endif
 
-#include <tuple>
+#include "sonia/mpl/iterator.hpp"
+#include "sonia/mpl/lambda.hpp"
+#include "sonia/mpl/apply_wrap.hpp"
 
 namespace sonia::mpl {
 
-template <typename SeqT, typename StateT, typename OpT> struct fold;
-template <typename SeqT, typename StateT, typename OpT> using fold_t = typename fold<SeqT, StateT, OpT>::type;
+template <typename IterT, typename EndIterT, typename StateT, typename OpT>
+struct iter_fold_one
+{
+    using type = typename iter_fold_one<next_t<IterT>, EndIterT, apply_wrap_t<OpT, StateT, IterT>, OpT>::type;
+};
 
-//template <typename ... ArgsT, typename T> struct push_front<std::tuple<ArgsT ...>, T>
-//{
-//    using type = std::tuple<T, ArgsT ..., T>;
-//};
+template <typename IterT, typename StateT, typename OpT>
+struct iter_fold_one<IterT, IterT, StateT, OpT> { using type = StateT; };
+
+template <typename SeqT, typename StateT, typename ForwardOpT>
+struct iter_fold
+{
+    using type = typename iter_fold_one<begin_t<SeqT>, end_t<SeqT>, StateT, lambda_t<ForwardOpT>>::type;
+};
+
+template <typename SeqT, typename StateT, typename ForwardOpT>
+using iter_fold_t = typename iter_fold<SeqT, StateT, ForwardOpT>::type;
+
+
+template <typename SeqT, typename StateT, typename OpT>
+struct fold
+{
+    using type = iter_fold_t<SeqT, StateT, apply_wrap<lambda_t<OpT>, _1, deref<_2>>>;
+};
+
+template <typename SeqT, typename StateT, typename OpT>
+using fold_t = typename fold<SeqT, StateT, OpT>::type;
 
 }
 

@@ -60,6 +60,11 @@ using at_least_traversal_t = conditional_t<
     iterator_category_to_traversal_t<CategoryOrTraversalT>,
     LimitTraversalT>;
 
+template <class LimitTraversalT, class CategoryOrTraversalT>
+using not_more_traversal_t = conditional_t<
+    is_base_of_v<iterator_category_to_traversal_t<CategoryOrTraversalT>, LimitTraversalT>,
+    LimitTraversalT,
+    iterator_category_to_traversal_t<CategoryOrTraversalT>>;
 
 template <class I, typename E = iterator_value_t<I>, typename = void>
 class is_output_iterator : public false_type {};

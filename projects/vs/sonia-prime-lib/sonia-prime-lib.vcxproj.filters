@@ -750,6 +750,93 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\single_value_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\concurrency\debug_mutex.hpp">
+      <Filter>sonia.utility\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\apply.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\apply_wrap.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\as_vector.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\bind.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\boost_mpl.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\contains.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\equal.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\equal_to.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\find.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\find_if.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\fold.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\iterator.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\lambda.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\less.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\max_element.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\min_element.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\next.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\not_equal_to.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\plus.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\protect.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\push_back.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\push_front.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\quote.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\range_c.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\unpack_args.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\vector.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\zip_view.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\http_form_data_read_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

@@ -9,13 +9,15 @@
 #   pragma once
 #endif
 
+#include <boost/fusion/include/at_c.hpp>
 #include "sonia/mpl/sequence.hpp"
 #include "serialization.hpp"
+#include "tuple.hpp"
 
 namespace sonia::serialization {
 
 template <typename TagT, typename SequenceT>
-class coder<TagT, SequenceT, enable_if_t<is_mpl_sequence_v<SequenceT>>>
+class coder<TagT, SequenceT, enable_if_t<is_mpl_sequence_v<SequenceT> && !is_template_instance_v<std::tuple, SequenceT>>> 
 {
 public:
     template <typename OutputIteratorT>
@@ -34,13 +36,13 @@ private:
     template <size_t ... I, typename OutputIteratorT>
     static OutputIteratorT do_encode(std::index_sequence<I ...>, SequenceT const& val, OutputIteratorT oi)
     {
-        return (encoder<TagT, OutputIteratorT>(std::move(oi)) & ... & sonia::mpl::at_c<I>(val));
+        return (encoder<TagT, OutputIteratorT>(std::move(oi)) & ... & at_c<I>(val));
     }
 
     template <size_t ... I, typename InputIteratorT>
     static InputIteratorT do_decode(std::index_sequence<I ...>, InputIteratorT ii, SequenceT & val)
     {
-        return (decoder<TagT, InputIteratorT>(std::move(ii)) & ... & sonia::mpl::at_c<I>(val));
+        return (decoder<TagT, InputIteratorT>(std::move(ii)) & ... & at_c<I>(val));
     }
 };
 

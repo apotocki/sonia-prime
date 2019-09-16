@@ -42,15 +42,14 @@ BOOST_AUTO_TEST_CASE (file_region_iterator_test)
     range_dereferencing_iterator it{file_write_iterator_t{TEST_FOLDER "/test.dat"}};
 
     std::string content = "this is a content";
-    std::copy(content.begin(), content.end(), std::move(it)).flush();
+    std::copy(content.begin(), content.end(), std::move(it)).flush(); // flush to limit file size
     BOOST_CHECK_EQUAL(content.size(), fs::file_size(TEST_FOLDER "/test.dat"));
 
     {
         std::ofstream f{TEST_FOLDER "/test1.dat"};
         file_write_iterator_t fout2{TEST_FOLDER "/test1.dat"};
-        *fout2 = string_view(content);
-        ++fout2;
-        //fout2.flush();
+        fout2.write(string_view(content));
+        // no flush heare because of external data set
     }
     BOOST_CHECK_EQUAL(content.size(), fs::file_size(TEST_FOLDER "/test1.dat"));
 }
@@ -81,6 +80,7 @@ BOOST_AUTO_TEST_CASE( tar_iterator_test )
         } while (!tit.empty());
         content[name] = val;
     }
+    BOOST_CHECK(tit.empty());
     BOOST_CHECK_EQUAL(content.size(), 2);
     BOOST_CHECK_EQUAL(content["file0.txt"], "file0\r\n");
     BOOST_CHECK_EQUAL(content["file1.txt"], "file1\r\n");
@@ -121,6 +121,7 @@ BOOST_AUTO_TEST_CASE(gz_iterator_test)
 		} while (!tit.empty());
 		content[name] = val;
 	}
+    BOOST_CHECK(tit.empty());
 	BOOST_CHECK_EQUAL(content.size(), 2);
 	BOOST_CHECK_EQUAL(content["file0.txt"], "file0\r\n");
 	BOOST_CHECK_EQUAL(content["file1.txt"], "file1\r\n");
@@ -212,7 +213,9 @@ std::map<std::string, std::string> load_archive(fs::path const& p)
         } while (!ait.empty());
         result[name] = val;
     }
-
+    BOOST_CHECK (ait.empty());
+    file_region_iterator<const char> bit = std::move(*reinterpret_cast<file_region_iterator<const char>*>(ait.get_base()));
+    BOOST_CHECK (bit.empty());
     return std::move(result);
 }
 

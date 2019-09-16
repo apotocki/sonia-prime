@@ -21,29 +21,55 @@ constexpr bool is_mpl_sequence_v = is_mpl_sequence<T>::value;
 
 namespace mpl {
  
-template <class SequenceT> struct size;
+template <typename T> struct tag_of { using type = void; };
+template <typename T> struct tag_of<const T> : tag_of<T> {};
+template <typename T> using tag_of_t = typename tag_of<T>::type;
 
+/// size
+template <typename TagT> struct size_impl;
+template <class SequenceT> struct size : size_impl<tag_of_t<SequenceT>>::template apply<SequenceT>{};
 template <class SequenceT> struct size<const SequenceT> : size<SequenceT> {};
+template <class SequenceT> constexpr size_t size_v = size<SequenceT>::value;
 
-template <typename ... Types>
-struct size<std::tuple<Types...>> : std::tuple_size<std::tuple<Types...>> {};
+/// at
+template <typename TagT> struct at_impl;
+template <class SequenceT, class IdxT> struct at : at_impl<tag_of_t<SequenceT>>::template apply<SequenceT, IdxT>{};
+template <class SequenceT, class IdxT> using at_t = typename at<SequenceT, IdxT>::type;
 
-template <class SequenceT>
-constexpr size_t size_v = size<SequenceT>::value;
+template <typename TagT> struct at_c_impl;
+template <class SequenceT, size_t IdxV> struct at_c : at_c_impl<tag_of_t<SequenceT>>::template apply<SequenceT, IdxV>{};
+template <class SequenceT, size_t IdxV> using at_c_t = typename at_c<SequenceT, IdxV>::type;
 
-template <class SequenceT, size_t I> struct at : boost::mpl::at_c<SequenceT, I> {};
+/// begin
+template <typename TagT> struct begin_impl { using type = void; };
+template <class SequenceT> struct begin : begin_impl<tag_of_t<SequenceT>>::template apply<SequenceT>{};
+template <class SequenceT> using begin_t = typename begin<SequenceT>::type;
 
-template <typename ... Types, size_t I>
-struct at<std::tuple<Types...>, I> : std::tuple_element<I, std::tuple<Types...>> {};
+/// end
+template <typename TagT> struct end_impl { using type = void; };
+template <class SequenceT> struct end : end_impl<tag_of_t<SequenceT>>::template apply<SequenceT>{};
+template <class SequenceT> using end_t = typename end<SequenceT>::type;
 
-template <size_t I, typename ... Types>
-decltype(auto) at_c(std::tuple<Types...> & v) { return std::get<I>(v); }
+// empty
+template <class SequenceT> using empty = std::bool_constant<size_v<SequenceT> == 0>;
+template <class SequenceT> static constexpr bool empty_v = size_v<SequenceT> == 0;
 
-template <size_t I, typename ... Types>
-decltype(auto) at_c(std::tuple<Types...> const& v) { return std::get<I>(v); }
+// front
+template <class SequenceT> using front = at_c<SequenceT, 0>;
+template <class SequenceT> using front_t = at_c_t<SequenceT, 0>;
 
-template <class SequenceT, size_t I> using at_t = typename at<SequenceT, I>::type;
+// front
+template <class SequenceT> using back = at_c<SequenceT, size_v<SequenceT> - 1>;
+template <class SequenceT> using back_t = at_c_t<SequenceT, size_v<SequenceT> - 1>;
 
-}}
+}
+
+//template <size_t I, class SeqsT, typename = enable_if_t<is_mpl_sequence_v<SeqsT>>>
+//decltype(auto) at_c(SeqsT const& zv)
+//{
+//    return at_c<SeqsT, I>()(zv)
+//}
+
+}
 
 #endif // SONIA_MPL_SEQUENCE_HPP

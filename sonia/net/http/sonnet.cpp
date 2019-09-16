@@ -37,13 +37,30 @@ void sonnet::handle(request & req, response & resp)
         }
     }
 
+    request_parameters rparams;
+
+    // handle post/form params
+    if (req.method == method_verb::POST) {
+        req.tokenize_header(header::CONTENT_TYPE, [this, &rparams](string_view nm, string_view val, char d) {
+            if (nm == "multipart/form-data") rparams.has_form_data = true;
+            else if (nm == "application/x-www-form-urlencoded") rparams.is_urlencoded = true;
+            else if (nm == "boundary") rparams.form_data_boundary = val;
+            return true;
+        });
+        if (rparams.has_form_data && rparams.is_urlencoded) {
+            throw exception("wrong content type header value");
+        }
+        if (rparams.is_urlencoded) {
+            req.parse_body_as_x_www_form_urlencoded();
+        }
+    }
     //resp.meet_request(req);
     
     try {
         if (handler) {
-            (*handler)(req, resp);
+            (*handler)(req, rparams, resp);
         } else {
-            handle_unhandled(req, resp);
+            handle_unhandled(req, rparams, resp);
         }
     } catch (sonnet_exception const& e) {
         resp.make_custom(e.s, "text/html", e.what());
@@ -52,7 +69,7 @@ void sonnet::handle(request & req, response & resp)
     }
 }
 
-void sonnet::handle_unhandled(request & req, response & resp)
+void sonnet::handle_unhandled(request &, request_parameters const&, response & resp)
 {
     resp.make404();
 }

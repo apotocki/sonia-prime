@@ -65,6 +65,7 @@ file_region_descriptor::~file_region_descriptor()
         boost::intrusive_ptr<file_region_descriptor> tmp = std::move(next_->next_);
         next_ = std::move(tmp);
     }
+    flush();
 }
 
 bool file_region_descriptor::is_cursor_at_the_end_or_null() const
@@ -185,11 +186,10 @@ void file_region_iterator_base::decrement()
     }
 }
 
-void file_region_iterator_base::flush()
+void file_region_iterator_base::flush(char * writ)
 {
     if (region_) {
-        region_->flush();
-        region_.reset();
+        region_->set_cursor(writ);
     }
 }
 
@@ -198,11 +198,12 @@ void file_region_iterator_base::set(array_view<const char> data)
 {
     array_view<char> dest_raw = region_->get();
     size_t bytes_to_write = data.size();
-    if (data.begin() == dest_raw.begin()) {
-        BOOST_ASSERT(bytes_to_write <= dest_raw.size());
-        region_->set_cursor(dest_raw.begin() + bytes_to_write);
-        return;
-    }
+    BOOST_ASSERT (data.begin() != dest_raw.begin());
+    //if (data.begin() == dest_raw.begin()) {
+    //    BOOST_ASSERT(bytes_to_write <= dest_raw.size());
+    //    region_->set_cursor(dest_raw.begin() + bytes_to_write);
+    //    return;
+    //}
 
     char * writ = nullptr;
     for (;;) {

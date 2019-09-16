@@ -242,8 +242,9 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
                 BOOST_CHECK(e.what() == std::string("exception_method"));
             }
         }
-       
+
         //boost::this_thread::sleep(boost::posix_time::milliseconds(300));
+
         ctl_proxy->empty_method();
 
         ///*

@@ -53,8 +53,7 @@ class socket_read_input_iterator
 
     void set_dereference(array_view<const char> span)
     {
-        BOOST_ASSERT(span.begin() == ready_buff_.begin());
-        BOOST_ASSERT(span.end() <= ready_pos_);
+        BOOST_ASSERT(span.is_subset_of(ready_buff_));
         ready_buff_ = span;
     }
 

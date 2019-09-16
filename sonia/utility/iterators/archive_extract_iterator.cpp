@@ -91,12 +91,14 @@ bool extract_iterator_polymorpic_adapter_base::do_next(archive_iterator & ax)
             THROW_INTERNAL_ERROR("unexpected archive type: %1%"_fmt % (int)type_);
         }
     } else {
+        this->finished = true;
         archive_iterator * pbs = ax.pbase();
         if (pbs) { // pop
             archive_iterator tmp(std::move(*pbs));
             ax = std::move(tmp);
         } else { // no more iterators on the stack
-            ax.reset();
+            return true;
+            //ax.reset();
         }
         return false;
     }

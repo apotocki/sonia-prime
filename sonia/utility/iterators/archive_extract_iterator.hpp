@@ -40,7 +40,7 @@ std::pair<string_view, archive_type> split_name(string_view nm);
 class archive_iterator;
 
 class archive_iterator_polymorphic
-    : public iterator_polymorphic<array_view<const char>>
+    : public proxying_iterator_polymorphic<array_view<const char>>
 {
 public:
     archive_iterator_polymorphic() = default;
@@ -50,7 +50,8 @@ public:
     virtual bool next(archive_iterator &) = 0;
     virtual std::string const& name() const = 0;
     virtual archive_iterator * pbase() = 0;
-
+    virtual void * get_base() = 0;
+    virtual bool is_finished() const = 0;
     friend void intrusive_ptr_add_ref(archive_iterator_polymorphic * p)
     {
         ++p->refs;
@@ -131,13 +132,15 @@ public:
     {
         while (impl) {
             bool r = impl->next(*this);
-            if (r || !impl) return r;
+            if (r && impl->is_finished()) return false;
+            if (r) return r;
         }
         return false;
     }
 
     archive_iterator * pbase() { return impl->pbase(); }
 
+    void* get_base() { return impl.ptr->get_base(); }
     void reset() { impl.reset(); }
 };
 
@@ -170,6 +173,8 @@ public:
         if (!part_name_.empty()) return part_name_;
         return full_name_;
     }
+
+    bool finished{false};
 };
 
 template <class IteratorT>
@@ -181,6 +186,8 @@ class extract_iterator_polymorpic_adapter
     , extract_iterator_polymorpic_adapter_base
 {
     using base_type = typename extract_iterator_polymorpic_adapter::adapter_base_t;
+
+    static_assert(is_base_of_v<forward_traversal_tag, iterator_traversal_t<IteratorT>>);
 
 public:
     template <typename ... ArgsT>
@@ -195,10 +202,20 @@ public:
         , extract_iterator_polymorpic_adapter_base{std::move(fullname), std::move(partname), buffsz}
     {}
 
-    array_view<const char> dereference() const override final { return *base_type::base; }
+    array_view<const char> get_dereference() const override final { return *base_type::base; }
+    void set_dereference(array_view<const char> val) override final { *base_type::base = val; }
     size_t get_sizeof() const override final { return sizeof(extract_iterator_polymorpic_adapter); }
     polymorphic_clonable * clone(void * address, size_t sz) const override final { return base_type::do_clone(this, address, sz); }
     //polymorphic_movable * move(void * address, size_t sz) override final { return base_type::do_move(this, address, sz); }
+
+    bool is_finished() const override final { return this->finished; }
+
+    void * get_base()
+    {
+        archive_iterator * pb = pbase();
+        if (pb) return pb->get_base();
+        return &this->base;
+    }
 
     archive_iterator * pbase() override final
     {

@@ -22,6 +22,7 @@
 #include <boost/utility/typed_in_place_factory.hpp>
 
 #include "utility/expected.hpp"
+#include "utility/variadic.hpp"
 
 #define typeidx(t) std::type_index(typeid(t))
 
@@ -30,9 +31,6 @@ namespace sonia {
 struct null_t
 {
     null_t() = default;
-
-    template <typename ... IgnoredArgsT>
-    explicit null_t(IgnoredArgsT && ...) noexcept {}
 
     inline bool operator == (null_t const&) const noexcept { return true; }
     inline bool operator != (null_t const&) const noexcept { return false; }
@@ -63,6 +61,9 @@ using std::integral_constant;
 
 using std::true_type;
 using std::false_type;
+
+template <typename> inline constexpr bool dependent_true_v{ true };
+template <typename> inline constexpr bool dependent_false_v{ false };
 
 using std::void_t;
 
@@ -138,6 +139,9 @@ using std::is_trivially_destructible_v;
 using std::has_virtual_destructor;
 using std::has_virtual_destructor_v;
 
+using std::is_assignable;
+using std::is_assignable_v;
+
 using std::conditional;
 using std::conditional_t;
 
@@ -171,6 +175,9 @@ using std::is_function_v;
 template <bool V, typename T>
 using add_const_if_t = conditional_t<V, add_const_t<T>, T>;
 
+template <typename T, typename RefT>
+using same_const_t = add_const_if_t<is_const_v<RefT>, T>;
+
 using std::add_pointer;
 using std::add_pointer_t;
 using std::add_lvalue_reference;
@@ -183,11 +190,23 @@ using std::ref;
 using std::cref;
 
 // placeholders
-template <int I> struct arg_c { static constexpr int value = I; };
-template <class VT> struct arg { using type = arg_c<VT::value>; static constexpr int value = VT::value; };
+template <int I> struct arg_c
+{
+    static constexpr int value = I;
+    
+    //template <typename ... ArgsT> struct apply : variadic::type_at<I - 1, ArgsT...> { };
+    template <typename ... ArgsT> using apply = variadic::type_at<I - 1, ArgsT...>;
+    template <typename ... ArgsT> using apply_t = typename apply<ArgsT...>::type;
+};
+
+template <class VT> struct arg
+{
+    using type = arg;//arg_c<VT::value>;
+    static constexpr int value = VT::value;
+};
 
 template <class T> struct is_arg : integral_constant<int, 0> {};
-template <class T> struct is_arg<arg<T>> : integral_constant<int, T::VT::value> {};
+template <class T> struct is_arg<arg<T>> : integral_constant<int, T::value> {};
 template <int I> struct is_arg<arg_c<I>> : integral_constant<int, I> {};
 template <class T> constexpr int is_arg_v = is_arg<T>::value;
 
@@ -201,6 +220,14 @@ template <class T> constexpr int is_reference_wrapper_v = is_reference_wrapper<T
 template <class T, class Enabler = void> struct size_of : integral_constant<int, sizeof(T)> {};
 template <class T> struct size_of<T, enable_if_t<is_void_v<T>>> : integral_constant<int, 0> {};
 template <class T> constexpr size_t size_of_v = size_of<T>::value;
+
+namespace mpl {
+using _1 = arg_c<1>;
+using _2 = arg_c<2>;
+using _3 = arg_c<3>;
+using _4 = arg_c<4>;
+using _5 = arg_c<5>;
+}
 
 using std::in_place;
 using std::in_place_t;

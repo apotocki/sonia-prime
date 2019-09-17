@@ -9,8 +9,6 @@
 #   pragma once
 #endif
 
-#include <utility>
-#include <functional>
 #include "sonia/type_traits.hpp"
 
 namespace sonia {
@@ -19,7 +17,7 @@ template <class T>
 class rvalue_reference_wrapper
 {
 public:
-    static_assert(std::is_object_v<T> || std::is_function_v<T>,
+    static_assert(is_object_v<T> || is_function_v<T>,
         "rvalue_reference_wrapper<T> requires T to be an object type "
         "or a function type.");
 
@@ -48,7 +46,7 @@ template <class T>
 class rvalue_wrapper
 {
 public:
-    static_assert(std::is_object_v<T> || std::is_function_v<T>,
+    static_assert(is_object_v<T> || is_function_v<T>,
         "rvalue_wrapper<T> requires T to be an object type "
         "or a function type.");
 
@@ -75,12 +73,14 @@ private:
 
 
 template <typename T>
-enable_if_t<is_rvalue_reference_v<T&&>, rvalue_reference_wrapper<remove_reference_t<T>>> rvref(T && val) {
+enable_if_t<is_rvalue_reference_v<T&&>, rvalue_reference_wrapper<remove_reference_t<T>>> rvref(T && val)
+{
     return rvalue_reference_wrapper<remove_reference_t<T>>(std::forward<T>(val));
 }
 
 template <typename T>
-rvalue_reference_wrapper<T> rvref(T & val) {
+rvalue_reference_wrapper<T> rvref(T & val)
+{
     return rvalue_reference_wrapper<T>(std::move(val));
 }
 

@@ -39,7 +39,8 @@ class socket_read_input_iterator
 
     array_view<const char> get_dereference() const
     {
-        if (!ready_buff_) {
+        BOOST_ASSERT(!empty());
+        if (!ready_buff_.begin()) {
             auto exprsz = psoc_->read_some(buff_);
             if (!exprsz.has_value() || !exprsz.value()) {
                 psoc_ = nullptr;
@@ -53,13 +54,13 @@ class socket_read_input_iterator
 
     void set_dereference(array_view<const char> span)
     {
-        BOOST_ASSERT(span.begin() == ready_buff_.begin());
-        BOOST_ASSERT(span.end() <= ready_pos_);
+        BOOST_ASSERT(span.is_subset_of(ready_buff_));
         ready_buff_ = span;
     }
 
     void increment()
     {
+        BOOST_ASSERT(!empty());
         if (ready_buff_.end() == ready_pos_) {
             ready_buff_.reset();
         } else {
@@ -68,10 +69,10 @@ class socket_read_input_iterator
     }
     
 public:
-    socket_read_input_iterator() : psoc_(nullptr) {}
+    socket_read_input_iterator() : psoc_{nullptr} {}
 
     explicit socket_read_input_iterator(SocketT & soc, array_view<char> buff, size_t rsz = 0) 
-        : psoc_(&soc), buff_(buff), ready_buff_(buff_.begin(), rsz), ready_pos_(rsz ? buff_.begin() + rsz : nullptr)
+        : psoc_{&soc}, buff_{buff}, ready_buff_{buff_.begin(), rsz}, ready_pos_{rsz ? buff_.begin() + rsz : nullptr}
     {
 
     }
@@ -86,7 +87,7 @@ public:
 private:
     mutable SocketT * psoc_;
     array_view<char> buff_;
-    mutable array_view<const char> ready_buff_{};
+    mutable array_view<const char> ready_buff_;
     mutable const char * ready_pos_{nullptr};
 };
 

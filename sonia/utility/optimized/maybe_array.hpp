@@ -9,8 +9,6 @@
 #   pragma once
 #endif
 
-#include <boost/throw_exception.hpp>
-
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/optimized/array.hpp"
 
@@ -94,11 +92,16 @@ public:
         }
     }
 
+    operator array_view<const ElementT>() const noexcept
+    {
+        return to_array_view();
+    }
+
     array_view<value_type> to_array_view()
     {
         if (!holder_t::get_service_cookie()) {
             if constexpr (is_const_v<ElementT>) {
-                BOOST_THROW_EXCEPTION(internal_error("maybe_array: non-const access to const array_view"));
+                THROW_INTERNAL_ERROR("maybe_array: non-const access to const array_view");
             } else {
                 return array_view<value_type>{*view_data(), holder_t::get_uint() & max_size};
             }

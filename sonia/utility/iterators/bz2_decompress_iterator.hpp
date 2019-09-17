@@ -9,9 +9,9 @@
 #   pragma once
 #endif
 
-#include <boost/throw_exception.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
+#include "sonia/exceptions.hpp"
 #include "sonia/array_view.hpp"
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
@@ -70,7 +70,7 @@ class bz2_decompress_iterator
     void increment()
     {
         if (empty()) {
-            BOOST_THROW_EXCEPTION(internal_error("increment an empty iterator"));
+            THROW_INTERNAL_ERROR("increment an empty iterator");
         }
         data_->inflate();
     }
@@ -103,7 +103,7 @@ bz2_decompress_iterator<IteratorT>::strm_data::strm_data(IteratorT it)
     ret_ = BZ2_bzDecompressInit(&strm_, 0, 0);
 
     if (ret_ != BZ_OK) {
-        BOOST_THROW_EXCEPTION(internal_error("bz2 decompressor initialization error #%1% (%2%)"_fmt % ret_ % bz2_detail::err_to_str(ret_)));
+        THROW_INTERNAL_ERROR("bz2 decompressor initialization error #%1% (%2%)"_fmt % ret_ % bz2_detail::err_to_str(ret_));
     }
 }
 
@@ -136,6 +136,14 @@ template <class IteratorT>
 void bz2_decompress_iterator<IteratorT>::strm_data::inflate()
 {
     if (BOOST_UNLIKELY(BZ_STREAM_END == ret_)) {
+        if (!base_.empty()) {
+            array_view<const char> crng = *base_;
+            if (crng.end() == strm_.next_in) {
+                ++base_;
+            } else {
+                *base_ = array_view<const char>{strm_.next_in, crng.end()};
+            }
+        }
         ret_ = BZ_DATA_ERROR;
         return;
     }

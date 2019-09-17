@@ -135,12 +135,15 @@ template <class T, class E> class expected;
 /// \brief Used to represent an expected with no data
 class monostate {};
 
+using std::in_place_t;
+using std::in_place;
+
 /// \brief A tag type to tell expected to construct its value in-place
-struct in_place_t {
-  explicit in_place_t() = default;
-};
-/// \brief A tag to tell expected to construct its value in-place
-static constexpr in_place_t in_place{};
+//struct in_place_t {
+//  explicit in_place_t() = default;
+//};
+///// \brief A tag to tell expected to construct its value in-place
+//static constexpr in_place_t in_place{};
 #endif
 
 /// Used as a wrapper to store the unexpected value

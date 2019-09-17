@@ -122,11 +122,11 @@ class file_region_iterator_base
         return region_ == rhs.region_;
     }
 
+protected:
     void increment();
     void decrement();
 
-protected:
-    void flush();
+    void flush(char*);
     void set(array_view<const char> data);
 
 public:
@@ -148,11 +148,8 @@ class file_region_iterator
             std::bidirectional_iterator_tag,
             boost::bidirectional_traversal_tag
         >,
-        conditional_t<
-            is_const_v<T>,
-            const array_view<T>,
-            wrapper_iterator_proxy<ptr_proxy_wrapper<file_region_iterator<T> const*, const array_view<T>>>
-        >>
+        wrapper_iterator_proxy<ptr_proxy_wrapper<file_region_iterator<T> const*, const array_view<T>>>
+      >
     , public file_region_iterator_base
 {
     friend class boost::iterator_core_access;
@@ -163,26 +160,43 @@ class file_region_iterator
 
     decltype(auto) dereference() const
     {
-        if constexpr (is_readonly) {
-            return get_dereference();
-        } else {
-            return sonia::iterators::make_value_proxy<const array_view<T>>(this);
-        }
+        return sonia::iterators::make_value_proxy<const array_view<T>>(this);
+    }
+
+    void increment()
+    {
+        file_region_iterator_base::increment();
+        init();
+    }
+
+    void decrement()
+    {
+        file_region_iterator_base::decrement();
+        init();
     }
 
     const array_view<T> get_dereference() const
     {
-        array_view<char> raw = region_->get();
-        BOOST_ASSERT(0 == raw.size() % sizeof(T));
-        return array_view<T>((T*)raw.begin(), raw.size() / sizeof(T));
+        return {b_, e_};
     }
 
     void set_dereference(array_view<const T> data)
     {
-        file_region_iterator_base::set(
-            array_view<const char>(reinterpret_cast<const char*>(data.begin()), data.size() * sizeof(T))
-        );
+        BOOST_ASSERT(data.is_subset_of(array_view{b_, e_}));
+        b_ = b_ + (data.begin() - b_);
+        e_ = b_ + data.size();
     }
+
+    void init()
+    {
+        array_view<char> raw = region_->get();
+        BOOST_ASSERT(0 == raw.size() % sizeof(T));
+        b_ = (T*)raw.begin();
+        e_ = b_ + raw.size() / sizeof(T);
+    }
+
+    mutable T * b_ = nullptr;
+    mutable T * e_ = nullptr;
 
 public:
     file_region_iterator() = default;
@@ -190,23 +204,18 @@ public:
     template <typename CharT>
     explicit file_region_iterator(const CharT* name, uint64_t offset = 0, size_t least_region_sz = 1)
         : file_region_iterator_base(is_readonly, name, sizeof(T) * offset, sizeof(T) * least_region_sz)
-    {}
+    {
+        init();
+    }
 
     explicit file_region_iterator(boost::filesystem::path const& fp, uint64_t offset = 0, size_t least_region_sz = 1)
         : file_region_iterator_base(is_readonly, fp.c_str(), sizeof(T) * offset, sizeof(T) * least_region_sz)
-    {}
+    {
+        init();
+    }
 
     file_region_iterator(file_region_iterator const&) = default;
     file_region_iterator(file_region_iterator &&) = default;
-
-    ~file_region_iterator() noexcept
-    {
-        if constexpr(!is_readonly) {
-            try {
-                file_region_iterator_base::flush();
-            } catch (...) { /* ignore*/ }
-        }
-    }
 
     file_region_iterator & operator=(file_region_iterator const& rhs)
     {
@@ -226,10 +235,22 @@ public:
         return *this;
     }
 
-	template <bool IsReadV = is_readonly>
-	enable_if_t<IsReadV == is_readonly && !IsReadV> flush()
+    // write to file from external buffer
+    template <typename ST>
+    void write(array_view<ST> data)
+    {
+        set(array_view((const char*)data.begin(), data.size() * sizeof(ST)));
+        array_view<char> raw = region_->get();
+        BOOST_ASSERT(0 == raw.size() % sizeof(T));
+        b_ = (T*)raw.begin();
+        e_ = b_ + raw.size() / sizeof(T);
+    }
+
+	void flush()
 	{
-		file_region_iterator_base::flush();
+        if constexpr(!is_readonly) {
+		    file_region_iterator_base::flush(static_cast<same_const_t<char, T>*>(b_));
+        }
 	}
 };
 

@@ -14,7 +14,7 @@
 #include "array.hpp"
 #include "sonia/utility/optimized/maybe_array.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <typename TagT, typename ElementT, size_t ByteSzV, typename RefCountT>
 class coder<TagT, maybe_array<ElementT, ByteSzV, RefCountT>>
@@ -36,6 +36,6 @@ public:
     }
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_MAYBE_ARRAY_HPP

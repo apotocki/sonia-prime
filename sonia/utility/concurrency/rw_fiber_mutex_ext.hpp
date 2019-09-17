@@ -83,7 +83,7 @@ public:
         // there is a waiting write lock
 
         //
-        intptr_t stateval = state_.fetch_sub(state_pos_value, std::memory_order_relaxed) - state_pos_value;
+        stateval = state_.fetch_sub(state_pos_value, std::memory_order_relaxed) - state_pos_value;
         if (stateval > 0 && 0 == (stateval % state_pos_value)) {
             std::lock_guard<spinlock_t> guard(smtx_);
             rvar_.notify_one();
@@ -104,7 +104,7 @@ public:
                 return;
             }
 
-            intptr_t stateval = state_.fetch_sub(state_pos_value, std::memory_order_relaxed);
+            stateval = state_.fetch_sub(state_pos_value, std::memory_order_relaxed);
 
             if (stateval == state_pos_value) continue; // no locks at all, try again right away
 

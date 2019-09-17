@@ -14,7 +14,6 @@
 
 #include "sonia/type_traits.hpp"
 #include "sonia/function.hpp"
-#include "sonia/reference_wrapper.hpp"
 #include "sonia/utility/rvalue.hpp"
 #include "sonia/utility/variadic.hpp"
 

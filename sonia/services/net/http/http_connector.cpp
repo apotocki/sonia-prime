@@ -132,8 +132,8 @@ void http_connector::keep_alive_connect(io::tcp_socket soc)
     array_view respbuff{&buff.front(), cfg_.response_buffer_size};
     array_view reqbuff{&buff.front() + cfg_.response_buffer_size, cfg_.request_buffer_size};
 
-    write_iterator oi{in_place, soc, respbuff};
-    read_iterator ii{in_place, soc, reqbuff, (size_t)0};
+    write_iterator oi{soc, respbuff};
+    read_iterator ii{soc, reqbuff, (size_t)0};
 
     static std::atomic<int> keep_alive_connnum{0};
     int curconnection = keep_alive_connnum.fetch_add(1);
@@ -150,8 +150,8 @@ void http_connector::one_shot_connect(sonia::io::tcp_socket soc)
     array_view respbuff{&buff.front(), cfg_.response_buffer_size};
     array_view reqbuff{&buff.front() + cfg_.response_buffer_size, cfg_.request_buffer_size};
 
-    write_iterator oi{in_place, soc, respbuff};
-    read_iterator ii{in_place, soc, reqbuff, (size_t)0};
+    write_iterator oi{soc, respbuff};
+    read_iterator ii{soc, reqbuff, (size_t)0};
 
     do_connection(ii, oi);
 }

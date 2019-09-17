@@ -66,9 +66,10 @@ RangeWriteInputIteratorT copy_range(SrcIteratorT b, SrcIteratorT e, RangeWriteIn
         auto[iit, oit] = copy(b, e, orngb, ornge);
         if (iit == e) {
             if (oit != ornge) {
-                *it = iterator_value_t<RangeWriteInputIteratorT>{orngb, oit};
+                *it = iterator_value_t<RangeWriteInputIteratorT>{oit, ornge};
+            } else {
+                ++it;
             }
-            ++it;
             return std::move(it);
         }
         ++it;

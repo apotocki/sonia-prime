@@ -153,7 +153,7 @@ private:
 
     void do_flush()
     {
-        *it_ = array_view<ElemT>(pbase(), pptr());
+        *it_ = array_view<ElemT>(pptr(), epptr());
         if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
             it_.flush();
         }

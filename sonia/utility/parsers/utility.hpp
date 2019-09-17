@@ -133,7 +133,7 @@ bool hexinteger(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsig
     using char_type = iterator_value_t<IteratorT>;
     result = 0;
     unsigned int dc = 0;
-    for (; b != e && dc < maxdigits; ++pos, ++dc) {
+    for (; pos != e && dc < maxdigits; ++pos, ++dc) {
         const char_type c0 = *pos;
         uint8_t v = get_hexdigit(c0);
         if (v != 0xff) {
@@ -156,7 +156,7 @@ unsigned int integer(IteratorT & b, IteratorT const& e, unsigned int mindigits, 
     using char_type = iterator_value_t<IteratorT>;
     result = 0;
     unsigned int dc = 0;
-    for (; b != e && dc < maxdigits; ++pos, ++dc) {
+    for (; pos != e && dc < maxdigits; ++pos, ++dc) {
         const char_type c = *pos;
         if (c >= '0' && c <= '9') {
             result = result * 10 + (uint8_t)(c - '0');

@@ -23,10 +23,9 @@ class persister
 public:
     virtual ~persister() = default;
 
-    static const size_t iterator_size = 5 * sizeof(void*);
+    static const size_t iterator_size = 6 * sizeof(void*);
 
-    using input_iterator = automatic_polymorphic_iterator<iterator_size, const array_view<const char>, forward_traversal_tag, const array_view<const char>>;
-
+    using input_iterator = automatic_polymorphic_output_iterator<iterator_size, array_view<const char>, forward_traversal_tag, array_view<const char>>;
     using output_iterator = automatic_polymorphic_output_iterator<iterator_size, array_view<char>, forward_traversal_tag, array_view<const char>>;
     
     virtual bool read(function<void(input_iterator)> const& ftor) const = 0; // returns false if persister was unable to read

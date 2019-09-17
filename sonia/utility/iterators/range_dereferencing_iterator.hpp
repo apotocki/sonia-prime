@@ -130,7 +130,7 @@ public:
         return std::get<0>(*state_);
     }
 
-    void reload()
+    void reset()
     {
         hazardous_destroy_as_optional(state_, !!state_initialized_);
         state_initialized_ = 0;
@@ -139,21 +139,8 @@ public:
     void flush()
     {
         if (state_initialized_) {
-            iterator_dereferenced_range_t<IteratorT> rng = *base;
-            *base = array_view(boost::begin(rng), std::get<0>(*state_));
-            ++base;
-            hazardous_destroy_as_optional(state_, !!state_initialized_);
-            state_initialized_ = 0;
-        }
-    }
-
-    void flush_position()
-    {
-        if (state_initialized_) {
-            *base = std::get<0>(*state_);
-            ++base;
-            hazardous_destroy_as_optional(state_, !!state_initialized_);
-            state_initialized_ = 0;
+            *base = array_view(std::get<0>(*state_), std::get<1>(*state_));
+            // no need flush of base iterator here
         }
     }
 
@@ -240,6 +227,7 @@ public:
     enable_if_t<iterators::has_method_close_v<T, void()>> close()
     {
         state_t::flush();
+        state_t::reset();
         this->base.close();
     }
 };

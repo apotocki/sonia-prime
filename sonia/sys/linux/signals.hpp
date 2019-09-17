@@ -22,7 +22,7 @@ class handler_entry
 {
 public:
     user_handler_type handler;
-    mutex mtx;
+    threads::mutex mtx;
 
     explicit handler_entry(user_handler_type const& f) : handler(f) {}
     virtual ~handler_entry() = default;

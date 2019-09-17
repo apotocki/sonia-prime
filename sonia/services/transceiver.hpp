@@ -101,7 +101,9 @@ public:
     {
         range_dereferencing_iterator rit{std::move(wit)};
         rit = encode<sonia::serialization::compressed_t>(sonia::type::durable_id::get<BindingTagT>(), std::move(rit));
-        encode<sonia::serialization::compressed_t>(proxy_tuple_, std::move(rit)).flush();
+        rit = encode<sonia::serialization::compressed_t>(proxy_tuple_, std::move(rit));
+        rit.flush();
+        rit.base.flush();
     }
 
     void deserialize(range_read_iterator rit) override

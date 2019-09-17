@@ -15,8 +15,6 @@
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
 #include "sonia/utility/iterators/buffering_write_input_iterator.hpp"
 
-//#include "sonia/utility/iterators/empty_check_iterator.hpp"
-
 using namespace sonia;
 
 namespace {
@@ -32,8 +30,8 @@ class chunk_iterator
     >
 {
     friend class boost::iterator_core_access;
-    template <class, class> friend class ptr_proxy_wrapper;
-
+    friend class ptr_proxy_wrapper<chunk_iterator const*, array_view<const char>>;
+    
     using proxy_t = wrapper_iterator_proxy<ptr_proxy_wrapper<chunk_iterator const*, array_view<const char>>>;
 
     proxy_t dereference() const

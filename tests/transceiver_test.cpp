@@ -295,7 +295,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
                     --tasks;
                     throw;
                 }
-                GLOBAL_LOG_INFO() << "finished: " << tnum;
+                GLOBAL_LOG_TRACE() << "finished: " << tnum;
             });
         }
 

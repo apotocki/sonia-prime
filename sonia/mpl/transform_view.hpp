@@ -46,17 +46,17 @@ transform_view<const SeqT, F> make_transform_view(SeqT const& s)
 
 template <> struct size_impl<transform_view_tag>
 {
-    template <typename TV> struct apply : size<typename TV::seq_t> {};
+    template <typename TV> using apply = size<typename TV::seq_t>;
 };
 
 template <> struct at_impl<transform_view_tag>
 {
-    template <class TV, class IdxT> struct apply : TV::ftor_t::template apply<at_t<typename TV::seq_t, IdxT>> {};
+    template <class TV, class IdxT> using apply = typename TV::ftor_t::template apply<at_t<typename TV::seq_t, IdxT>>;
 };
 
 template <> struct at_c_impl<transform_view_tag>
 {
-    template <class TV, size_t IdxV> struct apply : TV::ftor_t::template apply<at_c_t<typename TV::seq_t, IdxV>> {};
+    template <class TV, size_t IdxV> using apply = typename TV::ftor_t::template apply<at_c_t<typename TV::seq_t, IdxV>>;
 };
 
 template <> struct begin_impl<transform_view_tag>

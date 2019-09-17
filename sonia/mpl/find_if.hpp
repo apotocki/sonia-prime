@@ -19,7 +19,7 @@ template <typename BIT, typename EIT, typename PredT>
 struct find_if_impl
 {
     using type = typename conditional_t<
-        PredT::template apply_t<deref_t<BIT>>::value,
+        PredT::template apply<deref_t<BIT>>::type::value,
         identity<BIT>,
         find_if_impl<next_t<BIT>, EIT, PredT>
     >::type;
@@ -31,10 +31,7 @@ template <typename EIT, typename PredT> struct find_if_impl<EIT, EIT, PredT>
 };
 
 template <typename SeqT, typename PredT>
-struct find_if
-{
-    using type = typename find_if_impl<begin_t<SeqT>, end_t<SeqT>, lambda_t<PredT>>::type;
-};
+using find_if = find_if_impl<begin_t<SeqT>, end_t<SeqT>, lambda_t<PredT>>;
 
 template <typename SeqT, typename PredT> using find_if_t = typename find_if<SeqT, PredT>::type;
 

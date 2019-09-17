@@ -36,6 +36,11 @@ template <size_t PosV, typename SeqT> struct prior<iterator<PosV, SeqT>>
     using type = iterator<PosV - 1, SeqT>;
 };
 
+template <typename FromIteratorT, typename ToIteratorT> struct distance{};
+template <typename FromIteratorT, typename ToIteratorT> static constexpr size_t distance_v = distance<FromIteratorT, ToIteratorT>::value;
+template <size_t FromV, size_t ToV, typename SeqT> struct distance<iterator<FromV, SeqT>, iterator<ToV, SeqT>> : std::integral_constant<size_t, ToV - FromV>
+{ static_assert(FromV <= ToV); };
+
 }
 
 #endif // SONIA_MPL_BEGIN_HPP

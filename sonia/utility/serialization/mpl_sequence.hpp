@@ -11,11 +11,12 @@
 
 #include "sonia/mpl/sequence.hpp"
 #include "serialization.hpp"
+#include "tuple.hpp"
 
 namespace sonia::serialization {
 
 template <typename TagT, typename SequenceT>
-class coder<TagT, SequenceT, enable_if_t<is_mpl_sequence_v<SequenceT>>>
+class coder<TagT, SequenceT, enable_if_t<is_mpl_sequence_v<SequenceT> && !is_template_instance_v<std::tuple, SequenceT>>>
 {
 public:
     template <typename OutputIteratorT>

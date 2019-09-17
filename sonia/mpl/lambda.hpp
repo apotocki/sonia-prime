@@ -33,7 +33,7 @@ template <typename X> struct lambda
     using type = typename conditional_t<is_placeholder_expression<X>::value, placeholder_lambda<X>, identity<X>>::type;
 };
 
-template <int I> struct lambda<arg_c<I>> { using type = arg_c<I>; };
+template <int I> struct lambda<arg_c<I>> { using type = protect_t<arg_c<I>>; };
 
 template <typename X> struct unprotected_lambda
 {

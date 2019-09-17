@@ -50,6 +50,18 @@ template <typename TagT> struct end_impl { using type = void; };
 template <class SequenceT> struct end : end_impl<tag_of_t<SequenceT>>::template apply<SequenceT>{};
 template <class SequenceT> using end_t = typename end<SequenceT>::type;
 
+// empty
+template <class SequenceT> using empty = std::bool_constant<size_v<SequenceT> == 0>;
+template <class SequenceT> static constexpr bool empty_v = size_v<SequenceT> == 0;
+
+// front
+template <class SequenceT> using front = at_c<SequenceT, 0>;
+template <class SequenceT> using front_t = at_c_t<SequenceT, 0>;
+
+// front
+template <class SequenceT> using back = at_c<SequenceT, size_v<SequenceT> - 1>;
+template <class SequenceT> using back_t = at_c_t<SequenceT, size_v<SequenceT> - 1>;
+
 }}
 
 #endif // SONIA_MPL_SEQUENCE_HPP

@@ -30,11 +30,11 @@ struct zip_view
     SeqOfSeqsT & base;
 };
 
-#if 1
+#if 0
 
 template <> struct size_impl<zip_view_tag>
 {
-    template <class ZV> struct apply : deref_t<min_element_t<transform_view<typename ZV::seqs_t, size<_1>>>>{};
+    template <class ZV> using apply = deref_t<min_element_t<transform_view<typename ZV::seqs_t, size<_1>>>>;
 };
 
 template <> struct at_impl<zip_view_tag>
@@ -42,7 +42,6 @@ template <> struct at_impl<zip_view_tag>
     template <class ZV, class IdxT> struct apply
     {
         using type = transform_view<typename ZV::seqs_t, at<_1, IdxT>>;
-        //using type = transform_view<typename ZV::seqs_t, _1>;
     };
 };
 
@@ -51,7 +50,6 @@ template <> struct at_c_impl<zip_view_tag>
     template <class ZV, size_t IdxV> struct apply
     {
         using type = transform_view<typename ZV::seqs_t, at<_1, integral_constant<size_t, IdxV>>>;
-        //using type = transform_view<typename ZV::seqs_t, at_t<_1, integral_constant<size_t, 0>>>;
     };
 };
 
@@ -67,11 +65,11 @@ template <> struct end_impl<zip_view_tag>
 
 # else
 
-template <class SeqT, class F> struct size<transform_view<SeqT, F>> : size<SeqT> {};
-template <class SeqT, class F, class IdxT> struct at<transform_view<SeqT, F>, IdxT> : lambda_t<F>::template apply<at_t<SeqT, IdxT>> {};
-template <class SeqT, class F, size_t IdxV> struct at_c<transform_view<SeqT, F>, IdxV> : lambda_t<F>::template apply<at_c_t<SeqT, IdxV>> {};
-template <class SeqT, class F> struct begin<transform_view<SeqT, F>> { using type = iterator<0, transform_view<SeqT, F>>; };
-template <class SeqT, class F> struct end<transform_view<SeqT, F>> { using type = iterator<size_v<SeqT>, transform_view<SeqT, F>>; };
+template <class SeqsT> struct size<zip_view<SeqsT>> : deref_t<min_element_t<transform_view<SeqsT, size<_1>>>> {};
+template <class SeqsT, class IdxT> struct at<zip_view<SeqsT>, IdxT> { using type = transform_view<SeqsT, at<_1, IdxT>>; };
+template <class SeqsT, size_t IdxV> struct at_c<zip_view<SeqsT>, IdxV> { using type = transform_view<SeqsT, at<_1, integral_constant<size_t, IdxV>>>; };
+template <class SeqsT> struct begin<zip_view<SeqsT>> { using type = iterator<0, zip_view<SeqsT>>; };
+template <class SeqsT> struct end<zip_view<SeqsT>> { using type = iterator<size_v<zip_view<SeqsT>>, zip_view<SeqsT>>; };
 
 #endif
 

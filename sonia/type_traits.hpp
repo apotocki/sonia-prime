@@ -32,9 +32,6 @@ struct null_t
 {
     null_t() = default;
 
-    template <typename ... IgnoredArgsT>
-    explicit null_t(IgnoredArgsT && ...) noexcept {}
-
     inline bool operator == (null_t const&) const noexcept { return true; }
     inline bool operator != (null_t const&) const noexcept { return false; }
     inline bool operator < (null_t const&) const noexcept { return false; }
@@ -64,6 +61,9 @@ using std::integral_constant;
 
 using std::true_type;
 using std::false_type;
+
+template <typename> inline constexpr bool dependent_true_v{ true };
+template <typename> inline constexpr bool dependent_false_v{ false };
 
 using std::void_t;
 
@@ -139,6 +139,9 @@ using std::is_trivially_destructible_v;
 using std::has_virtual_destructor;
 using std::has_virtual_destructor_v;
 
+using std::is_assignable;
+using std::is_assignable_v;
+
 using std::conditional;
 using std::conditional_t;
 
@@ -195,12 +198,12 @@ template <int I> struct arg_c
 
 template <class VT> struct arg
 {
-    using type = arg_c<VT::value>;
+    using type = arg;//arg_c<VT::value>;
     static constexpr int value = VT::value;
 };
 
 template <class T> struct is_arg : integral_constant<int, 0> {};
-template <class T> struct is_arg<arg<T>> : integral_constant<int, T::VT::value> {};
+template <class T> struct is_arg<arg<T>> : integral_constant<int, T::value> {};
 template <int I> struct is_arg<arg_c<I>> : integral_constant<int, I> {};
 template <class T> constexpr int is_arg_v = is_arg<T>::value;
 

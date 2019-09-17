@@ -97,6 +97,9 @@
     <Filter Include="sonia.sys\linux">
       <UniqueIdentifier>{e136d02d-a1e2-422b-be0a-0dbbbaa3fc0b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.functional">
+      <UniqueIdentifier>{7d223ab4-8a8b-4535-a41b-6415154eafc7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -820,6 +823,15 @@
       <Filter>sonia.mpl</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\mpl\apply.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\range_c.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\functional\function_parameter_types.hpp">
+      <Filter>sonia.functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\find.hpp">
       <Filter>sonia.mpl</Filter>
     </ClInclude>
   </ItemGroup>

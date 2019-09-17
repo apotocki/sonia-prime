@@ -26,6 +26,7 @@
     <ClInclude Include="..\..\..\sonia\config.hpp" />
     <ClInclude Include="..\..\..\sonia\exceptions.hpp" />
     <ClInclude Include="..\..\..\sonia\function.hpp" />
+    <ClInclude Include="..\..\..\sonia\functional\function_parameter_types.hpp" />
     <ClInclude Include="..\..\..\sonia\iterator_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\loggable.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\logger.hpp" />
@@ -36,6 +37,7 @@
     <ClInclude Include="..\..\..\sonia\mpl\contains.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\equal.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\equal_to.hpp" />
+    <ClInclude Include="..\..\..\sonia\mpl\find.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\find_if.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\fold.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\iterator.hpp" />
@@ -50,6 +52,7 @@
     <ClInclude Include="..\..\..\sonia\mpl\push_back.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\push_front.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\quote.hpp" />
+    <ClInclude Include="..\..\..\sonia\mpl\range_c.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\sequence.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\transform_view.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\unpack_args.hpp" />

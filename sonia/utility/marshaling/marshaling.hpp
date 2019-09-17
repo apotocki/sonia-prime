@@ -10,50 +10,44 @@
 #endif
 
 #include <boost/function_types/function_type.hpp>
-#include <boost/function_types/parameter_types.hpp>
 #include <boost/function_types/result_type.hpp>
-
-#include <boost/mpl/range_c.hpp>
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/vector_c.hpp>
-#include <boost/mpl/zip_view.hpp>
-
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/contains.hpp>
-#include <boost/mpl/at.hpp>
-#include <boost/mpl/max_element.hpp>
-#include <boost/mpl/find.hpp>
-#include <boost/mpl/begin.hpp>
-
-#include <boost/mpl/fold.hpp>
-#include <boost/mpl/push_back.hpp>
-#include <boost/mpl/push_front.hpp>
-
-#include <boost/bind/placeholders.hpp>
 
 #include "sonia/optional.hpp"
 
 #include "sonia/mpl/transform_view.hpp"
+#include "sonia/mpl/vector.hpp"
+#include "sonia/mpl/range_c.hpp"
+#include "sonia/mpl/zip_view.hpp"
+
+#include "sonia/mpl/contains.hpp"
+#include "sonia/mpl/max_element.hpp"
+#include "sonia/mpl/find.hpp"
+
+#include "sonia/mpl/fold.hpp"
+#include "sonia/mpl/push_back.hpp"
+#include "sonia/mpl/push_front.hpp"
+
+#include "sonia/mpl/plus.hpp"
+
+#include "sonia/functional/function_parameter_types.hpp"
 
 #include "sonia/utility/bind.hpp"
 #include "sonia/utility/automatic.hpp"
 #include "sonia/utility/type_durable_id.hpp"
-#include "sonia/utility/serialization/tuple.hpp"
 #include "sonia/utility/serialization/mpl_sequence.hpp"
 #include "sonia/utility/serialization/reference.hpp"
 
-//#include "sonia/mpl/sequence.hpp"
 #include "stub_parameter.hpp"
 
 namespace sonia {
 
-template <class SeqT, template <class...> class PredicateT, class IndexSeqT = std::make_index_sequence<boost::mpl::size<SeqT>::value>>
+template <class SeqT, template <class...> class PredicateT, class IndexSeqT = std::make_index_sequence<mpl::size_v<SeqT>>>
 struct compose_tuple;
 
 template <class SeqT, template <class...> class PredicateT, size_t ... I>
 struct compose_tuple<SeqT, PredicateT, std::index_sequence<I...>>
 {
-    using type = std::tuple<typename PredicateT<typename boost::mpl::at_c<SeqT, I>::type>::type ...>;
+    using type = std::tuple<typename PredicateT<mpl::at_c_t<SeqT, I>>::type ...>;
 };
 
 template <class SeqT, template <class...> class PredicateT>
@@ -75,7 +69,7 @@ struct result_transformer
     template <typename T, size_t I>
     struct apply
     {
-        using arg_type = sonia::mpl::at_c_t<RealArgTypesT, I>;
+        using arg_type = mpl::at_c_t<RealArgTypesT, I>;
         constexpr static bool is_fwd_v = stub_bound_parameter<arg_type>::is_modifiable;
         using type = conditional_t<is_fwd_v, T, null_t const&>;
 
@@ -90,7 +84,6 @@ struct result_transformer
 
         //template <typename SomeT>
         //null_t const& operator()(SomeT const&) const { return null; }
-
     };
 };
 
@@ -102,47 +95,47 @@ struct binding_tag_facade
 {
     using f_type = typename boost::function_types::function_type<SigT>::type;
     using result_type = typename boost::function_types::result_type<f_type>::type;
-    using args_type = typename boost::function_types::parameter_types<f_type>::type;
+    using args_type = function_parameter_types_t<f_type>;
 
     using result_transformer_t = result_transformer<args_type>;
 
-    typedef result_type(stub_invoker_type)(typename boost::mpl::at_c<args_type, PlaceHolderIndexVs>::type ...);
+    typedef result_type(stub_invoker_type)(mpl::at_c_t<args_type, PlaceHolderIndexVs> ...);
 
-    using placeholder_indexes_t = boost::mpl::vector_c<int, PlaceHolderIndexVs ...>;
-    using enumerated_args_t = boost::mpl::zip_view<boost::mpl::vector2<args_type, boost::mpl::range_c<int, 0, boost::mpl::size<args_type>::value>>>;
+    using placeholder_indexes_t = mpl::vector_c<int, PlaceHolderIndexVs ...>;
+    using enumerated_args_t = mpl::zip_view<mpl::vector<args_type, mpl::range_c<int, 0, mpl::size_v<args_type>>>>;
 
-    //using placeholder_indexes_auxmin_t = typename boost::mpl::push_back< placeholder_indexes_t, boost::mpl::int_<0>>::type;
-    //static_assert(boost::mpl::deref<typename boost::mpl::min_element<placeholder_indexes_auxmin_t>::type>::type::value >= 0);
-    using placeholder_indexes_auxmax_t = typename boost::mpl::push_back<placeholder_indexes_t, boost::mpl::int_<-1>>::type;
-    static_assert(boost::mpl::deref<typename boost::mpl::max_element<placeholder_indexes_auxmax_t>::type>::type::value < boost::mpl::size<args_type>::value);
+    //using placeholder_indexes_auxmin_t = mpl::push_back_t< placeholder_indexes_t, integral_constant<int, 0>>;
+    //static_assert(mpl::deref_t<mpl::min_element_t<placeholder_indexes_auxmin_t>>::value >= 0);
+    using placeholder_indexes_auxmax_t = mpl::push_back_t<placeholder_indexes_t, integral_constant<int, -1>>;
+    static_assert(mpl::deref_t<mpl::max_element_t<placeholder_indexes_auxmax_t>>::value < int(mpl::size_v<args_type>));
 
-    using proxy_arg_types_t = typename boost::mpl::fold<
+    using proxy_arg_types_t = mpl::fold_t<
         enumerated_args_t,
-        boost::mpl::vector0<>,
-        boost::mpl::if_<
-            boost::mpl::contains<placeholder_indexes_t, boost::mpl::at<boost::mpl::_2, boost::mpl::int_<1>>>,
-            boost::mpl::_1,
-            boost::mpl::push_back<boost::mpl::_1, boost::mpl::at<boost::mpl::_2, boost::mpl::int_<0>>>
+        mpl::vector<>,
+        switchable<
+            mpl::contains<placeholder_indexes_t, mpl::at<mpl::_2, integral_constant<int, 1>>>,
+            mpl::_1,
+            mpl::push_back<mpl::_1, mpl::at<mpl::_2, integral_constant<int, 0>>>
         >
-    >::type;
+    >;
 
-    using proxy_invoker_sig_seq_type = typename boost::mpl::push_front<proxy_arg_types_t, result_type>::type;
-    using proxy_invoker_type = typename boost::function_types::function_type<proxy_invoker_sig_seq_type>::type;
+    using proxy_invoker_sig_seq_type = mpl::push_front_t<proxy_arg_types_t, result_type>;
+    using proxy_invoker_type = synthesize_function_type_t<proxy_invoker_sig_seq_type>;
 
-    using stub_arg_types_t = typename boost::mpl::fold<
+    using stub_arg_types_t = mpl::fold_t<
         enumerated_args_t,
-        boost::mpl::vector0<>,
-        boost::mpl::push_back<boost::mpl::_1,
-            boost::mpl::if_<
-                boost::mpl::contains<placeholder_indexes_t, boost::mpl::at<boost::mpl::_2, boost::mpl::int_<1>>>,
-                arg<boost::mpl::plus<boost::mpl::int_<1>, boost::mpl::distance<
-                    typename boost::mpl::begin<placeholder_indexes_t>::type,
-                    boost::mpl::find<placeholder_indexes_t, boost::mpl::at<boost::mpl::_2, boost::mpl::int_<1>>>
+        mpl::vector<>,
+        mpl::push_back<mpl::_1,
+            switchable<
+                mpl::contains<placeholder_indexes_t, mpl::at<mpl::_2, integral_constant<int, 1>>>,
+                arg<mpl::plus<integral_constant<int, 1>, mpl::distance<
+                    mpl::begin_t<placeholder_indexes_t>,
+                    mpl::find<placeholder_indexes_t, mpl::at<mpl::_2, integral_constant<int, 1>>>
                 >>>,
-                boost::mpl::at<boost::mpl::_2, boost::mpl::int_<0>>
+                mpl::at<mpl::_2, integral_constant<int, 0>>
             >
         >
-    >::type;
+    >;
 
     using stub_tuple_t = composed_tuple_t<stub_arg_types_t, stub_bound_parameter>;
 

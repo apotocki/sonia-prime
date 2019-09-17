@@ -9,12 +9,14 @@
 #   pragma once
 #endif
 
+#include "sonia/type_traits.hpp"
+
 namespace sonia::mpl {
 
 template <template <typename ...> class F>
 struct quote
 {
-    template <typename ... PsT> static true_type check(typename F<PsT...>::type *);
+    template <typename ... PsT> static true_type check(remove_cvref_t<typename F<PsT...>::type> *);
     template <typename ... PsT> static false_type check(...);	
 
     template <typename ... PsT> using apply = conditional_t<

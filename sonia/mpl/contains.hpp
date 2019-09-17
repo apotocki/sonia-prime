@@ -16,10 +16,7 @@
 namespace sonia::mpl {
 
 template <typename SeqT, typename T>
-struct contains
-{
-    using type = bool_constant<!is_same_v<find_if_t<SeqT, is_same<T, _1>>, end_t<SeqT>>>;
-};
+struct contains : bool_constant<!is_same_v<find_if_t<SeqT, is_same<T, _1>>, end_t<SeqT>>> {};
 
 template <typename SeqT, typename T> using contains_t = typename contains<SeqT, T>::type;
 

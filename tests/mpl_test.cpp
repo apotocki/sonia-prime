@@ -13,6 +13,7 @@
 #include "sonia/mpl/vector.hpp"
 #include "sonia/mpl/transform_view.hpp"
 #include "sonia/mpl/zip_view.hpp"
+#include "sonia/mpl/range_c.hpp"
 
 // iterators
 #include "sonia/mpl/iterator.hpp"
@@ -211,6 +212,69 @@ static_assert(result::value == 18);
 
 }
 
+namespace static_compile_test_iter_fold4
+{
+using namespace sonia::mpl;
+
+using vec1 = vector<char, short, int>;
+
+using result = fold_t<
+    vec1,
+    vector<>, 
+    _1
+>;
+
+static_assert(is_same_v<result, vector<>>);
+
+}
+
+namespace static_compile_test_iter_fold5
+{
+    using namespace sonia::mpl;
+
+    using vec1 = vector<vector_c<int, 1, 2>, vector_c<int, 3, 4>>;
+    using result = fold_t<
+        vec1,
+        vector<>, 
+        push_back<_1, at<_2, integral_constant<int, 0>>>
+    >;
+    static_assert(is_same_v<result, vector_c<int, 1, 3>>);
+
+    //(1,3)(2,4) -> (1,2)(3,4)
+    using vec2 = zip_view<vector<vector_c<int, 1, 3>, vector_c<int, 2, 4>>>;
+    using result2 = fold_t<
+        vec2,
+        vector<>, 
+        push_back<_1, at<_2, integral_constant<int, 1>>>
+    >;
+    static_assert(is_same_v<result2, vector_c<int, 2, 4>>);
+
+    using vec3 = vector<range_c<int, 1, 3>, range_c<int, 3, 5>>;
+    using result3 = fold_t<
+        vec3,
+        vector<>, 
+        push_back<_1, at<_2, integral_constant<int, 1>>>
+    >;
+    static_assert(is_same_v<result3, vector_c<int, 2, 4>>);
+
+    //(1,2)(3,4) -> (1,3)(2,4)
+    using vec4 = zip_view<vector<range_c<int, 1, 3>, range_c<int, 3, 5>>>;
+    using result4 = fold_t<
+        vec4,
+        vector<>, 
+        push_back<_1, at<_2, integral_constant<int, 1>>>
+    >;
+    static_assert(is_same_v<result4, vector_c<int, 3, 4>>);
+
+    using vec5 = vector<int&, int, const int&>;
+    using result5 = fold_t<
+        vec5,
+        vector<>, 
+        push_back<_1,_2>
+    >;
+    static_assert(is_same_v<result5, vec5>);
+}
+
 namespace static_compile_test_max_element
 {
     using namespace sonia::mpl;
@@ -293,12 +357,76 @@ namespace static_compile_test_zip_view
     static_assert(equal_t<sum, vector_c<int,7,7,7,7,7>>::value);
 }
 
+namespace static_compile_test_range_c
+{
+    using namespace sonia::mpl;
+
+    using range0 = range_c<int,0,0>;
+    using range1 = range_c<int,0,1>;
+    using range10 = range_c<int,0,10>;
+
+    static_assert( size_v<range0> == 0 );
+    static_assert( size_v<range1> == 1 );
+    static_assert( size_v<range10> == 10 );
+
+    static_assert( empty_v<range0> );
+    static_assert( !empty_v<range1> );
+    static_assert( !empty_v<range10> );
+
+    static_assert( is_same_v< begin_t<range0>, end_t<range0> > );
+    static_assert( !is_same_v< begin_t<range1>, end_t<range1> > );
+    static_assert( !is_same_v< begin_t<range10>, end_t<range10> > );
+
+    static_assert( front_t<range1>::value == 0 );
+    static_assert( back_t<range1>::value == 0 );
+    static_assert( front_t<range10>::value == 0 );
+    static_assert( back_t<range10>::value == 9 );
+}
+
 #endif
 
 #include <iostream>
+
+//#include <boost/function_types/function_type.hpp>
+//#include <boost/function_types/parameter_types.hpp>
+//#include <boost/function_types/result_type.hpp>
+//
+//
+//template <typename SigT>
+//void test()
+//{
+//    using f_type = typename boost::function_types::function_type<SigT>::type;
+//    using result_type = typename boost::function_types::result_type<f_type>::type;
+//    using args_type = typename boost::function_types::parameter_types<f_type>::type;
+//
+//    std::cout << typeid(SigT).name() << "\n\n";
+//    std::cout << typeid(f_type).name() << "\n\n";
+//    //std::cout << typeid(result_type).name() << "\n\n";
+//    std::cout << typeid(args_type).name() << "\n\n";
+//    std::cout << typeid(function_parameter_types_t<f_type>).name() << "\n\n";
+//}
+//
+//int foo(int, std::string, std::string const&, std::string &)
+//{
+//    return 0;
+//}
+//
+//class M
+//{
+//public:
+//    int foo(int, std::string, std::string const&, std::string &) const
+//    {
+//        return 0;
+//    }
+//};
+
 BOOST_AUTO_TEST_CASE (mpl_test)
 {
-    //std::cout << typeid(static_compile_test_zip_view::s0).name() << "\n";
+    //test<decltype(&foo)>();
+    //test<decltype(&M::foo)>();
+    
+    //std::cout << typeid(identity<static_compile_test_iter_fold5::v>).name() << "\n";
+    //std::cout << typeid(boost::mpl::lambda<boost::mpl::_1>::type).name() << "\n";
     //std::cout << static_compile_test_iter_fold::i2::pos << "\n";
     //using types = std::tuple<long, float, short, double, float, long, long double>;
     //using number_of_floats = mpl::fold_t<

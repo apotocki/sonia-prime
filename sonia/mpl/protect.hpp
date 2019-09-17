@@ -14,6 +14,7 @@
 namespace sonia::mpl {
 
 template <typename T> struct protect { using type = T; };
+template <int I> struct protect<arg_c<I>> : arg_c<I> { using type = protect; };
 //template <typename ... ArgsT> struct protect<bind<ArgsT...>>
 //{
 //    template <typename ... BArgsT> struct apply : bind<ArgsT...>::template apply<BArgsT...>{};

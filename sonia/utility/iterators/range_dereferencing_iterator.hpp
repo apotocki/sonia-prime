@@ -140,9 +140,7 @@ public:
     {
         if (state_initialized_) {
             *base = array_view(std::get<0>(*state_), std::get<1>(*state_));
-            if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
-                base.flush();
-            }
+            // no need flush of base iterator here
         }
     }
 

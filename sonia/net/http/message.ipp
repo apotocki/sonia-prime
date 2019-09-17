@@ -38,7 +38,7 @@ void message::build_input_iterator(ReadIteratorT & ii)
         if (hval.size() > 1) {
             throw exception("multiple transfer encodings");
         } else if (!hval.empty() && boost::iequals(hval[0], "chunked")) {
-            input = make_chain_linkable_iterator(http_chunking_read_input_iterator{reference_wrapper_iterator{ii}});
+            input = make_chain_linkable_iterator<std::input_iterator_tag>(http_chunking_read_input_iterator{reference_wrapper_iterator{ii}});
         } else {
             input = make_chain_linkable_iterator(reference_wrapper_iterator{ii});
         }

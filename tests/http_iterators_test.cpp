@@ -9,8 +9,13 @@
 #include "sonia/string.hpp"
 #include "sonia/shared_ptr.hpp"
 
+#include "sonia/utility/iterators/http_chunking_read_input_iterator.hpp"
+#include "sonia/utility/iterators/http_chunking_write_input_iterator.hpp"
 #include "sonia/utility/iterators/http_form_data_read_iterator.hpp"
-#include "sonia/utility/iterators/empty_check_iterator.hpp"
+#include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
+#include "sonia/utility/iterators/buffering_write_input_iterator.hpp"
+
+//#include "sonia/utility/iterators/empty_check_iterator.hpp"
 
 using namespace sonia;
 
@@ -67,6 +72,46 @@ private:
     size_t offset_{0};
 };
 
+class vector_write_output_iterator
+    : public boost::iterator_facade<
+          vector_write_output_iterator
+        , array_view<const char>
+        , std::output_iterator_tag
+        , array_view<const char> &
+    >
+{
+    friend class boost::iterator_core_access;
+    
+    bool equal(vector_write_output_iterator const& rhs) const
+    {
+        return false;
+    }
+
+    array_view<const char> & dereference() const
+    {
+        return buffer_;
+    }
+
+    void increment()
+    {
+        vec_->insert(vec_->end(), buffer_.begin(), buffer_.end());
+        buffer_.reset();
+    }
+
+    mutable array_view<const char> buffer_;
+    std::vector<char> * vec_;
+
+public:
+    vector_write_output_iterator(std::vector<char> & vec)
+        : vec_{&vec}
+    {}
+
+    bool empty() const
+    {
+        return false;
+    }
+};
+
 std::vector<char> to_vector(string_view sw) { return std::vector<char>(sw.begin(), sw.end()); }
 
 void test_data(std::vector<std::vector<char>> & data, string_view boundary, string_view expected, string_view expected2)
@@ -92,8 +137,44 @@ void test_data(std::vector<std::vector<char>> & data, string_view boundary, stri
     }
 }
 
+void test_chunked_data(std::vector<std::vector<char>> & data, string_view expected)
+{
+    chunk_iterator it0{make_shared<data_t>(std::move(data))};
+    http_chunking_read_input_iterator<chunk_iterator> fdit{std::move(it0)};
+    std::string result;
+    while (!fdit.empty()) {
+        range_dereferencing_iterator rdit{std::move(fdit)};
+        result.push_back(*rdit);
+        ++rdit;
+        rdit.flush();
+        fdit = std::move(rdit.base);
+        if (fdit.empty()) break;
+        array_view<const char> c = *fdit;
+        result += std::string(c.begin(), c.end());
+        ++fdit;
+    }
+    BOOST_CHECK_EQUAL(result, expected);
+    BOOST_CHECK(fdit.base.empty());
 }
 
+void test_chunking_data(std::vector<std::vector<char>> & data, size_t buffsz, string_view expected)
+{
+    std::vector<char> store;
+    std::vector<char> buffer(buffsz);
+    http_chunking_write_input_iterator it{buffering_write_input_iterator{vector_write_output_iterator(store), to_array_view(buffer)}};
+    for (auto const& vec : data) {
+        range_dereferencing_iterator rdit{std::move(it)};
+        rdit = std::copy(vec.begin(), vec.end(), std::move(rdit));
+        rdit.flush();
+        it = std::move(rdit.base);
+    }
+    it.close();
+    BOOST_CHECK_EQUAL(string_view(to_array_view(store)), expected);
+}
+
+}
+
+#if 1
 BOOST_AUTO_TEST_CASE(http_form_data_read_iterator_test)
 {
     string_view boundary("\r\n----boundary--");
@@ -168,5 +249,56 @@ BOOST_AUTO_TEST_CASE(http_form_data_read_iterator_test)
         to_vector(std::string("other data")),
     };
     test_data(d8, boundary, "some data8\r\n----boundary!", "other data");
+}
 
+#endif
+
+#if 1
+BOOST_AUTO_TEST_CASE(http_chunking_read_iterator_test)
+{
+    using data_t = std::vector<std::vector<char>>;
+
+    data_t d0{
+        to_vector("9\r\nsome data\r\n0\r\n\r\n")
+    };
+    test_chunked_data(d0, "some data");
+
+    data_t d1{
+        to_vector("0009\r"),
+        to_vector("\nsome data\r"),
+        to_vector("\n00000\r\n\r"),
+        to_vector("\n"),
+    };
+    test_chunked_data(d1, "some data");
+
+    data_t d2{
+        to_vector("0009\r"),
+        to_vector("\nsome "),
+        to_vector("data"),
+        to_vector("\r\n00000\r\n\r"),
+        to_vector("\n"),
+    };
+    test_chunked_data(d2, "some data");
+}
+#endif
+
+BOOST_AUTO_TEST_CASE(http_chunking_write_iterator_test)
+{
+    data_t d0{
+        to_vector("some data")
+    };
+    test_chunking_data(d0, 20, "9\r\nsome data\r\n0\r\n\r\n");
+    test_chunking_data(d0, 21, "09\r\nsome data\r\n0\r\n\r\n");
+
+    data_t d1{
+        to_vector("some"),
+        to_vector("data")
+    };
+    test_chunking_data(d1, 20, "8\r\nsomedata\r\n0\r\n\r\n");
+
+    data_t d2{
+        to_vector("some data "),
+        to_vector("some data ")
+    };
+    test_chunking_data(d2, 20, "F\r\nsome data some \r\n5\r\ndata \r\n0\r\n\r\n");
 }

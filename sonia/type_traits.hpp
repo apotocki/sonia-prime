@@ -51,6 +51,7 @@ inline size_t hash_value(null_t const&) { return 0; }
 constexpr null_t null{};
 
 struct empty_t {};
+struct use_default_t {};
 
 using namespace tl;
 //template <class T, class E> using expected = tl::expected<T, E>;

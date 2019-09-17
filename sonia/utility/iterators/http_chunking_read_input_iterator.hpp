@@ -14,6 +14,7 @@
 #include "sonia/exceptions.hpp"
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
+#include "sonia/utility/parsers/utility.hpp"
 
 namespace sonia {
 
@@ -22,7 +23,7 @@ class http_chunking_read_input_iterator
     : public boost::iterator_facade<
           http_chunking_read_input_iterator<ReadInputIteratorT>
         , array_view<const char>
-        , std::input_iterator_tag
+        , not_more_traversal_t<forward_traversal_tag, iterator_traversal_t<ReadInputIteratorT>>
         , wrapper_iterator_proxy<ptr_proxy_wrapper<http_chunking_read_input_iterator<ReadInputIteratorT> const*, array_view<const char>>>
     >
 {
@@ -41,17 +42,18 @@ class http_chunking_read_input_iterator
     enum class mode {
         START = 0,
         CHUNK_SIZE,
-        CHUNK,
-        STREAM_EOF
+        STREAM_EOF,
+        VALUE_READY
     };
 
     static constexpr size_t modebits = 2;
     mutable size_t chsz_: sizeof(size_t) * CHAR_BIT - modebits;
     mutable size_t mode_: modebits;
 
-    mutable array_view<const char> chunk_;
+    array_view<const char> chunk_;
+    array_view<const char> value_;
 
-    char read_char() const
+    char read_char()
     {
         for (;;) {
             if (chunk_) {
@@ -68,7 +70,7 @@ class http_chunking_read_input_iterator
         }
     }
 
-    void read_delim(char c) const
+    void read_delim(char c)
     {
         if (c != '\r') {
             mode_ = (size_t)mode::STREAM_EOF;
@@ -82,6 +84,19 @@ class http_chunking_read_input_iterator
     }
 
     array_view<const char> get_dereference() const
+    {
+        BOOST_ASSERT ((mode)mode_ == mode::VALUE_READY);
+        return value_;
+    }
+
+    void set_dereference(array_view<const char> span)
+    {
+        BOOST_ASSERT ((mode)mode_ == mode::VALUE_READY);
+        BOOST_ASSERT (span.is_subset_of(value_));
+        value_ = span;
+    }
+
+    void proc()
     {
         switch ((mode)mode_)
         {
@@ -106,17 +121,19 @@ class http_chunking_read_input_iterator
                 read_delim(c);
                 if (0 == chsz_) {
                     read_delim(read_char());
-                    mode_ = (size_t)mode::STREAM_EOF;
-                    if (!chunk_.empty() && !sonia::empty(base)) {
-                        array_view<const char> tmp = *base;
-                        *base = array_view<const char>{tmp.begin(), chunk_.begin()};
+                    if (!sonia::empty(base)) {
+                        if (chunk_.empty()) {
+                            ++base;
+                        } else {
+                            *base = chunk_;
+                        }
                     }
-                    return {};
+                    mode_ = (size_t)mode::STREAM_EOF;
+                    break;
                 }
-                mode_ = (size_t)mode::CHUNK;
             }
 
-            case mode::CHUNK:
+            case mode::VALUE_READY:
                 for (;;) {
                     auto sz = (std::min)(chsz_, chunk_.size());
                     if (0 == sz) {
@@ -127,46 +144,42 @@ class http_chunking_read_input_iterator
                         }
                         chunk_ = *base;
                     } else {
-                        return {chunk_.begin(), sz};
+                        value_ = {chunk_.begin(), sz};
+                        mode_ = (size_t)mode::VALUE_READY;
+                        return;
                     }
                 }
-
-            //case mode::STREAM_EOF:
-            //    return {};
-
             default:
                 THROW_INTERNAL_ERROR("unexpected mode: %1%"_fmt % (int)mode_);
         }
     }
 
-    void set_dereference(array_view<const char> span)
-    {
-        BOOST_ASSERT ((mode)mode_ == mode::CHUNK);
-        BOOST_ASSERT (span.is_subset_of(chunk_));
-
-        array_view<const char> tmp = *base;
-        *base = array_view<const char>{tmp.begin(), span.end()};
-        chunk_ = array_view<const char>{chunk_.begin(), span.end()};
-    }
-
     void increment()
     {
-        //if ((mode)mode_ == mode::STREAM_EOF) return;
-        BOOST_ASSERT ((mode)mode_ == mode::CHUNK);
+        BOOST_ASSERT ((mode)mode_ == mode::VALUE_READY);
+
         auto sz = (std::min)(chsz_, chunk_.size());
-        chsz_ -= sz;
-        chunk_.advance_front(sz);
-        if (0 == chsz_) {
-            read_delim(read_char());
-            mode_ = (size_t)mode::CHUNK_SIZE;
-            get_dereference(); // to test on eof
-            return;
+        if (value_.end() < chunk_.begin() + sz) {
+            value_ = array_view{value_.end(), chunk_.begin() + sz};
+        } else {
+            chsz_ -= sz;
+            chunk_.advance_front(sz);
+            if (0 == chsz_) {
+                read_delim(read_char());
+                mode_ = (size_t)mode::CHUNK_SIZE;
+            }
+            proc();
         }
     }
 
 public:
-    http_chunking_read_input_iterator() = default;
-    explicit http_chunking_read_input_iterator(ReadInputIteratorT base_it) : base(std::move(base_it)), mode_(0) {}
+    http_chunking_read_input_iterator() : mode_{(size_t)mode::STREAM_EOF} {}
+
+    explicit http_chunking_read_input_iterator(ReadInputIteratorT base_it)
+        : base{std::move(base_it)}, mode_{0}
+    {
+        proc();
+    }
     
     bool empty() const
     {

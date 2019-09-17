@@ -837,6 +837,12 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\http_form_data_read_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\range_cacheable_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\range\is_subset_of.hpp">
+      <Filter>sonia.utility\range</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

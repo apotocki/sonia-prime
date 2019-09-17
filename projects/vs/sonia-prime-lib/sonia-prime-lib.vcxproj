@@ -172,6 +172,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\inflate_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\chain_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\iterator_of_ranges_with_limit.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\range_cacheable_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_reference.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\proxy.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\reference_wrapper_iterator.hpp" />
@@ -221,6 +222,7 @@
     <ClInclude Include="..\..\..\sonia\utility\polymorphic_vector.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\range\combine.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\range\hasher.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\range\is_subset_of.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\range\transform.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\rvalue.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\scope_exit.hpp" />

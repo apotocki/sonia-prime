@@ -163,7 +163,7 @@ void test_chunking_data(std::vector<std::vector<char>> & data, size_t buffsz, st
     for (auto const& vec : data) {
         range_dereferencing_iterator rdit{std::move(it)};
         rdit = std::copy(vec.begin(), vec.end(), std::move(rdit));
-        rdit.flush();
+        rdit.fix();
         it = std::move(rdit.base);
     }
     it.close();

@@ -146,6 +146,13 @@ public:
         }
     }
 
+    void fix()
+    {
+        if (state_initialized_) {
+            *base = array_view(std::get<0>(*state_), std::get<1>(*state_));
+        }
+    }
+
     mutable IteratorT base;
 
 private:

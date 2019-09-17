@@ -282,11 +282,9 @@ void transceiver_service::connect(io::tcp_socket soc)
             string_view err{e.what()};
             make_encoder<sonia::serialization::compressed_t>(reference_wrapper_iterator{rwdit}) & err.size() & err;
             rwdit.flush();
-            rwdit.base.flush();
             break; // current socket can not be used any more
         }
         rwdit.flush();
-        rwdit.base.flush();
         rwdit.reset();
     }
 }

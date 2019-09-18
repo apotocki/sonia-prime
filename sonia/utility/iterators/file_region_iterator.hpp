@@ -76,6 +76,7 @@ public:
 
     array_view<char> get() const;
     void update_region_size(size_t);
+    size_t get_region_size() const;
 
     boost::intrusive_ptr<file_region_descriptor> get_next() const { return next_; }
     void set_next(boost::intrusive_ptr<file_region_descriptor> next) { next_ = std::move(next); }

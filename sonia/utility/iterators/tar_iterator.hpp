@@ -130,7 +130,7 @@ class tar_extract_iterator
                 sz = (uint64_t)(eit - bit);
                 if (sz > padding_) {
                     bit += padding_;
-                    rng_state_t::flush();
+                    rng_state_t::fix();
                     closed_ = true;
                     return;
                 }
@@ -194,7 +194,7 @@ public:
             load_header(h);
 
             if (h.is_end()) {
-                rng_state_t::flush();
+                rng_state_t::fix();
                 closed_ = true;
                 return;
             }

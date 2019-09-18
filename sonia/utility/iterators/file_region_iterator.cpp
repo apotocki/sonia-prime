@@ -84,7 +84,7 @@ void file_region_descriptor::update_region_size(size_t sz)
 
 void file_region_descriptor::next_from(file_region_descriptor const& previous)
 {
-    uint64_t nextoffset = previous.get().size() + previous.fileoffset_;
+    uint64_t nextoffset = previous.get_region_size() + previous.fileoffset_;
 	region_ = ipc::mapped_region();
     region_ = create_region(nextoffset, region_size());
     cursor_ = nullptr;
@@ -116,6 +116,11 @@ ipc::mapped_region file_region_descriptor::create_region(uint64_t offset, size_t
     }
 
     return ipc::mapped_region(file_mapping(), mode(), offset, region_size);
+}
+
+size_t file_region_descriptor::get_region_size() const
+{
+    return region_.get_size();
 }
 
 array_view<char> file_region_descriptor::get() const

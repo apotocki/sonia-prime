@@ -118,6 +118,9 @@ public:
             flush({orig.begin(), chunk_.begin()});
             chunk_.reset();
         }
+        if constexpr (iterators::has_method_flush_v<WriteInputIteratorT, void()>) {
+            base.flush();
+        }
     }
 
     void close()
@@ -130,6 +133,9 @@ public:
         std::memcpy(chunk.begin(), estr, 5);
         *base = array_view<char>{chunk.begin(), 5};
         ++base;
+        if constexpr (iterators::has_method_close_v<WriteInputIteratorT, void()>) {
+            base.close();
+        }
     }
 
     WriteInputIteratorT base;

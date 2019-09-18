@@ -843,6 +843,9 @@
     <ClInclude Include="..\..\..\sonia\utility\range\is_subset_of.hpp">
       <Filter>sonia.utility\range</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\range_buffering_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

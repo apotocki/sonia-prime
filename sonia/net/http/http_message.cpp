@@ -214,7 +214,7 @@ void request::parse_body_as_multipart_form_data(string_view boundary, function<v
             return true;
         });
 
-        b.flush();
+        b.fix();
         item.input = http_form_data_read_iterator<message::content_read_iterator_t>(std::move(b.base), extboundary_view);
         handler(item);
         while (!item.input.empty()) {

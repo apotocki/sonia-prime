@@ -21,7 +21,7 @@ namespace sonia {
 template <typename IteratorOfRangesT>
 class range_cacheable_iterator
     : public boost::iterator_facade<
-          DerivedT
+          range_cacheable_iterator<IteratorOfRangesT>
         , iterator_value_t<IteratorOfRangesT>
         , not_more_traversal_t<forward_traversal_tag, iterator_traversal_t<IteratorOfRangesT>>
         , wrapper_iterator_proxy<ptr_proxy_wrapper<range_cacheable_iterator<IteratorOfRangesT> const*, iterator_value_t<IteratorOfRangesT>>>

@@ -172,6 +172,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\inflate_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\chain_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\iterator_of_ranges_with_limit.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\range_buffering_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_cacheable_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_reference.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\proxy.hpp" />

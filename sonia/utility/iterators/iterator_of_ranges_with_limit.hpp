@@ -68,7 +68,10 @@ class iterator_of_ranges_with_limit
 
 	void increment()
 	{
-        BOOST_ASSERT (current_size);
+        if (!current_size) {
+            value_t r = *base;
+            current_size = boost::size(r);
+        }
         limit -= *current_size;
         current_size.reset();
         ++base;

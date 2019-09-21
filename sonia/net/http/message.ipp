@@ -17,7 +17,7 @@
 #include "sonia/utility/iterators/reference_wrapper_iterator.hpp"
 #include "sonia/utility/iterators/iterator_of_ranges_with_limit.hpp"
 #include "sonia/utility/iterators/http_chunking_read_input_iterator.hpp"
-
+#include "sonia/utility/iterators/single_value_iterator.hpp"
 namespace sonia::http {
 
 template <typename ReadIteratorT>
@@ -40,7 +40,7 @@ void message::build_input_iterator(ReadIteratorT & ii)
         } else if (!hval.empty() && boost::iequals(hval[0], "chunked")) {
             input = make_chain_linkable_iterator<std::input_iterator_tag>(http_chunking_read_input_iterator{reference_wrapper_iterator{ii}});
         } else {
-            input = make_chain_linkable_iterator(reference_wrapper_iterator{ii});
+            input = make_chain_linkable_iterator<std::input_iterator_tag>(single_value_iterator{array_view<const char>{}});
         }
     }
 }

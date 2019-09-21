@@ -48,11 +48,6 @@ public:
         : value_{std::move(arg)}, empty_{false}
     {}
 
-    template <typename ArgT>
-    explicit single_value_iterator(ArgT && arg, disable_if_same_ref_t<remove_cvref_t<ArgT>, single_value_iterator> * enabler = nullptr)
-        : value_{std::forward<ArgT>(arg)}, empty_{false}
-    {}
-
     reference operator*() const
     {
         return static_cast<reference>(value_);

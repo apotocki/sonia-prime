@@ -11,7 +11,7 @@
 
 #include "zlib.h"
 
-namespace sonia { namespace zlib_detail {
+namespace sonia::zlib_detail {
 
 inline const char * err_to_str(int err)
 {
@@ -24,6 +24,6 @@ inline const char * err_to_str(int err)
     return "UNKNOWN";
 }
 
-}}
+}
 
 #endif // SONIA_UTILITY_ZLIB_UTIL_HPP

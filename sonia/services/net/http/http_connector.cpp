@@ -12,7 +12,6 @@
 #include "sonia/utility/iterators/socket_write_iterator.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
 #include "sonia/utility/iterators/reference_wrapper_iterator.hpp"
-#include "sonia/utility/iterators/iterator_of_ranges_with_limit.hpp"
 #include "sonia/utility/iterators/chain_iterator.hpp"
 #include "sonia/net/http/message.ipp"
 #include "sonia/utility/serialization/http_request.hpp"

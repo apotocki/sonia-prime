@@ -81,20 +81,23 @@ void header_collection::tokenize_header(any_header_param_t h, function<bool(stri
     for (std::string const& hval : hvals) {
         string_view hvalvw{hval};
         auto start = hvalvw.begin(), it = hvalvw.begin(), eit = hvalvw.end();
+        bool skip_spaces = true;
         while (it != eit) {
-            if (*it == ' ') {
+            if (*it == ' ' && skip_spaces) {
                 ++it;
                 start = it;
                 continue;
             }
-            if (*it == ';' || *it == ',') {
+            if (*it == ';' || *it == ',' || *it == ' ') {
                 if (!handler(string_view{start, it}, string_view{}, *it)) return;
                 ++it;
                 start = it;
+                skip_spaces = true;
                 continue;
             }
             if (*it != '=') {
                 ++it;
+                skip_spaces = false;
                 continue;
             }
             auto valstart = it;
@@ -108,6 +111,7 @@ void header_collection::tokenize_header(any_header_param_t h, function<bool(stri
             }
             ++valit;
             it = start = valit;
+            skip_spaces = true;
         }
         if (start != it) {
             if (!handler(string_view{start, it}, string_view{}, it != eit ? *it : '\0')) return;
@@ -317,25 +321,26 @@ void response::meet_request(request const& r)
     });
 }
 
-void response::make401(string_view realm, string_view opaque, string_view nonce)
+void response::make401(string_view auth_type, string_view realm, string_view opaque, string_view nonce)
 {
     std::ostringstream authval;
-    authval << "Digest realm=\"" << realm << "\"";
+    authval << auth_type << " realm=\"" << realm << "\"";
     authval << ",qop=\"auth\"";
-    authval << ",opaque=\"" << opaque << "\"";
-    authval << ",nonce=\"" << nonce << "\"";
+    if (opaque) authval << ",opaque=\"" << opaque << "\"";
+    if (nonce) authval << ",nonce=\"" << nonce << "\"";
 
     set_header(header::WWW_AUTHENTICATE, authval.str());
     make_custom(status::UNAUTHORIZED, "text/html", "<h1>401 Unauthorized.</h1>");
 }
 
-void response::make404()
+void response::make404(optional<std::string> msg)
 {
     set_header(header::CONTENT_TYPE, "text/html; charset=UTF-8");
     set_header(http::header::TRANSFER_ENCODING, "chunked");
     status_code = status::NOT_FOUND;
-    content_writer = [](http::message::range_write_input_iterator it) {
-        copy_range(string_view("<h1>404 Not Found.</h1>"), it);
+    if (!msg) msg = "<h1>404 Not Found.</h1>";
+    content_writer = [msg = std::move(*msg)](http::message::range_write_input_iterator it) {
+        copy_range(string_view(msg), it);
     };
 }
 

@@ -20,6 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\applied\dllmain.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\auth\auth_service.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\auth\auth_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\basic_service_factory.cpp" />
     <ClCompile Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_builder.cpp" />
@@ -41,6 +43,8 @@
     <ClCompile Include="..\..\..\sonia\services\net\http\http_connector_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_default_application.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_default_application_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_digest_authentication_application.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_static_application.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_static_application_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\net_service_builder.cpp" />
@@ -63,6 +67,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\prime_config.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\auth\authentication.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\auth\auth_service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\auth\auth_service_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\auth\auth_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_builder.hpp" />
@@ -88,6 +96,10 @@
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_route.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application_configuration.hpp" />

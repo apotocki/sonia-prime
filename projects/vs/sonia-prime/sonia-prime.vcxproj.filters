@@ -92,6 +92,18 @@
     <ClCompile Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_builder.cpp">
       <Filter>sonia.services\bookkeeper</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_digest_authentication_application.cpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_builder.cpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\auth\auth_service.cpp">
+      <Filter>sonia.services\auth</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\auth\auth_service_builder.cpp">
+      <Filter>sonia.services\auth</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -123,6 +135,9 @@
     </Filter>
     <Filter Include="sonia.services\bookkeeper">
       <UniqueIdentifier>{13119c36-1d46-44d8-a92d-c17c43c16ef0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.services\auth">
+      <UniqueIdentifier>{77007cb3-76e3-4c88-ad20-b83ade85fe18}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -272,6 +287,30 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_configuration.hpp">
       <Filter>sonia.services\bookkeeper</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_configuration.hpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application.hpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_builder.hpp">
+      <Filter>sonia.services\net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\auth\authentication.hpp">
+      <Filter>sonia.services\auth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\auth\auth_service.hpp">
+      <Filter>sonia.services\auth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\auth\auth_service_builder.hpp">
+      <Filter>sonia.services\auth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\auth\auth_service_configuration.hpp">
+      <Filter>sonia.services\auth</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_route.hpp">
+      <Filter>sonia.services\net\http</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

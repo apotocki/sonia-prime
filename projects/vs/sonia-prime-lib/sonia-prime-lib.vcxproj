@@ -121,6 +121,7 @@
     <ClInclude Include="..\..\..\sonia\utility\allocator_facade.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\automatic.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\automatic_pointer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\base_xx_util.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\basic_local_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bind_command.hpp" />

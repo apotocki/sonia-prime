@@ -154,8 +154,8 @@ public:
 
     void meet_request(request const&);
 
-    void make401(string_view realm, string_view opaque, string_view nonce);
-    void make404();
+    void make401(string_view auth_type, string_view realm, string_view opaque, string_view nonce);
+    void make404(optional<std::string> = nullopt);
     void make_custom(status code, string_view ct, string_view body);
     void make_moved_temporarily_302(string_view location);
 

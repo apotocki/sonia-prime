@@ -3,15 +3,12 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "sonia/services/builder.ipp"
 #include "transceiver_builder.hpp"
-#include "transceiver_service.hpp"
 
 namespace sonia::services {
 
-transceiver_service_builder::transceiver_service_builder()
+void transceiver_service_builder::open()
 {
-    set_log_attribute("Type", "builder");
     parameters_.bind()
         .variable("socket-factory", &transceiver_service_configuration::socket_factory, "a socket factory name").required()
         //.variable("threads", &transceiver_configuration::threads, "threads count").required()

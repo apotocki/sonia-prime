@@ -9,6 +9,8 @@
 #   pragma once
 #endif
 
+#include <sstream>
+
 #include "sonia/concurrency.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/services.hpp"
@@ -28,6 +30,16 @@ public:
     explicit scoped_services(std::istream & cfgstream)
         : scoped_services{0, nullptr, &cfgstream}
     {}
+
+    explicit scoped_services(std::string const& cfgstr)
+    {
+        int argc = 0;
+        char const** argv = nullptr;
+        pre_initialize(argc, argv);
+        std::stringstream cfgss;
+        cfgss.str(cfgstr);
+        sonia::services::initialize(argc, argv, &cfgss);
+    }
 
     ~scoped_services()
     {
@@ -53,8 +65,8 @@ public:
     void pre_initialize(int& argc, char const**& argv);
 
 private:
-    sonia::mutex mtx_;
-    sonia::condition_variable var_;
+    sonia::threads::mutex mtx_;
+    sonia::threads::condition_variable var_;
     bool run_;
 };
 

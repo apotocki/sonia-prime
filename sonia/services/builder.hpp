@@ -20,7 +20,7 @@ namespace sonia::services {
 struct service_configuration
 {
     std::string factory;
-    int layer;
+    int layer{0};
     json_object parameters;
 };
 
@@ -37,22 +37,36 @@ class basic_builder
     , public builder
 {
 public:
-    shared_ptr<service> build(service_configuration const& scfg) override;
+    explicit basic_builder(json_object const& props) : props_{props}
+    {
+        set_log_attribute("Type", "builder");
+    }
+
+    shared_ptr<service> build(service_configuration const& scfg) override
+    {
+        ConfT cfg;
+        parameters_.apply(scfg.parameters, &cfg);
+        auto r = sonia::make_shared<ServT>(cfg);
+        service_access::set_layer(*r, scfg.layer);
+        return r;
+    }
 
 protected:
-    sonia::parameters::parameters_description<ConfT> parameters_;
+    json_object props_;
+    parameters::parameters_description<ConfT> parameters_;
+
+    using basic_builder_t = basic_builder;
 };
 
 }
 
-#define DECLARE_PARTICULAR_BUILDER(name)                                         \
-class name;                                                                      \
-struct name##_configuration;                                                     \
-class name##_builder                                                             \
-    : public sonia::services::basic_builder<name, name##_configuration>          \
-{                                                                                \
-public:                                                                          \
-    name##_builder();                                                            \
+#define DECLARE_PARTICULAR_BUILDER(name)                                          \
+class name##_builder                                                              \
+    : public sonia::services::basic_builder<name, name##_configuration>           \
+{                                                                                 \
+public:                                                                           \
+    explicit name##_builder(json_object const& props) : basic_builder_t{props} {} \
+    void open() override final;                                                   \
 };
 
 #endif // SONIA_SERVICE_BUILDER_HPP

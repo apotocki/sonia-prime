@@ -101,9 +101,12 @@ void http_static_application::handle(http::request & req, http::response & resp)
             resp.status_code = http::status::OK;
             resp.meet_request(req);
 
+            // skip request body if exists
+            for (; !req.input.empty(); ++req.input);
+
             resp.content_writer = [fit = std::move(fit)](http::message::range_write_input_iterator it) mutable {
                 for (; !fit.empty(); ++fit) {
-                    it = copy_range(*fit, it);
+                    it = copy_range(array_view<const char>(*fit), it);
                 }
             };
         } catch (...) {

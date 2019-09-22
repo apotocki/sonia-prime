@@ -81,18 +81,6 @@ using chain_linkable_iterator = wrapper_iterator<
     DifferenceT
 >;
 
-//template <typename ValueT, class CategoryOrTraversal, typename DifferenceT = std::ptrdiff_t>
-//class chain_linkable_iterator
-//    : public wrapper_iterator<
-//        chain_linkable_iterator_impl<ValueT, DifferenceT>,
-//        ValueT,
-//        CategoryOrTraversal,
-//        DifferenceT
-//    >
-//{
-//
-//};
-
 template <class IteratorT, class CategoryOrTraversal, typename DifferenceT>
 class chain_linkable_iterator_polymorpic_adapter
     : public iterator_polymorpic_adapter_base<
@@ -124,11 +112,13 @@ public:
     }
 };
 
-template <class IteratorT, class CategoryOrTraversal = iterator_category_t<IteratorT>, typename DifferenceT = iterator_difference_t<IteratorT>>
-chain_linkable_iterator<iterator_value_t<IteratorT>, CategoryOrTraversal, DifferenceT> make_chain_linkable_iterator(IteratorT it)
+template <typename CategoryOrTraversalT = use_default_t, typename DifferenceT = use_default_t, class IteratorT>
+auto make_chain_linkable_iterator(IteratorT it)
 {
-    using chain_linkable_iterator_t = chain_linkable_iterator<iterator_value_t<IteratorT>, CategoryOrTraversal, DifferenceT>;
-    using adapter_t = chain_linkable_iterator_polymorpic_adapter<IteratorT, CategoryOrTraversal, DifferenceT>;
+    using categ_t = conditional_t<is_same_v<CategoryOrTraversalT, use_default_t>, iterator_category_t<IteratorT>, CategoryOrTraversalT>;
+    using diff_t = conditional_t<is_same_v<DifferenceT, use_default_t>, iterator_difference_t<IteratorT>, DifferenceT>;
+    using chain_linkable_iterator_t = chain_linkable_iterator<iterator_value_t<IteratorT>, categ_t, diff_t>;
+    using adapter_t = chain_linkable_iterator_polymorpic_adapter<IteratorT, categ_t, diff_t>;
     return chain_linkable_iterator_t{in_place_type<adapter_t>, std::move(it)};
 }
 

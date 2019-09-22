@@ -3,19 +3,15 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "sonia/services/builder.ipp"
 #include "http_static_application_builder.hpp"
-#include "http_static_application.hpp"
 
 namespace sonia::services {
 
 namespace sp = sonia::parameters;
 
-http_static_application_builder::http_static_application_builder()
+void http_static_application_builder::open()
 {
     using fwd_pair_t = std::pair<boost::regex, std::string>;
-
-    set_log_attribute("Type", "builder");
     parameters_.bind()
         .variable("www-path", &http_static_application_configuration::www_path, "web path to map").required()
         .variable("sys-path", &http_static_application_configuration::sys_path, "system path to map").required()

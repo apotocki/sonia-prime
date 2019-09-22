@@ -271,7 +271,7 @@ struct win_impl
     void free(acceptor_async_callback * cb) { acceptor_callbacks_.delete_object(cb); }
 
 private:
-    object_pool<win_shared_handle, mutex> handles_;
+    object_pool<win_shared_handle, spin_mutex> handles_;
     object_pool<acceptor_async_callback, fibers::mutex> acceptor_callbacks_;
 };
 

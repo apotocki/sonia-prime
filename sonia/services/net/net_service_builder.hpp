@@ -10,6 +10,7 @@
 #endif
 
 #include "sonia/services/builder.hpp"
+#include "net_service.hpp"
 
 namespace sonia::services {
 

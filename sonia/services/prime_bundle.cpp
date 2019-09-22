@@ -12,10 +12,13 @@
 #include "sonia/services/net/http/http_connector_builder.hpp"
 #include "sonia/services/net/http/http_default_application_builder.hpp"
 #include "sonia/services/net/http/http_static_application_builder.hpp"
+#include "sonia/services/net/http/http_digest_authentication_application_builder.hpp"
+#include "sonia/services/auth/auth_service_builder.hpp"
 #include "sonia/services/transceiver/transceiver_builder.hpp"
 #include "sonia/services/io/io_service_builder.hpp"
 #include "sonia/services/io/io_cache_service_builder.hpp"
 #include "sonia/services/registry/registry_service_builder.hpp"
+#include "sonia/services/bookkeeper/bookkeeper_service_builder.hpp"
 
 namespace sonia::services {
 
@@ -33,12 +36,15 @@ public:
         install<http_connector_builder>("http-server");
         install<http_default_application_builder>("http-default");
         install<http_static_application_builder>("http-static");
+        install<http_digest_authentication_application_builder>("http-auth");
+        install<auth_service_builder>("auth");
         install<io_service_builder>("io");
         install<io_ssl_service_builder>("io-ssl");
         install<io_cache_service_builder>("io-cache");
         install<echo_connector_builder>("echo");
         install<transceiver_service_builder>("transceiver");
         install<registry_service_builder>("registry");
+        install<bookkeeper_service_builder>("bookkeeper");
     }
 };
 

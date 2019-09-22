@@ -11,7 +11,7 @@
 
 #include "bzlib.h"
 
-namespace sonia { namespace bz2_detail {
+namespace sonia::bz2_detail {
 
 inline const char * err_to_str(int err)
 {
@@ -27,6 +27,6 @@ inline const char * err_to_str(int err)
     return "UNKNOWN";
 }
 
-}}
+}
 
 #endif // SONIA_UTILITY_BZ2_UTIL_HPP

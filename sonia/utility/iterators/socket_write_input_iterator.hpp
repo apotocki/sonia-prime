@@ -12,23 +12,20 @@
 #include <boost/iterator/iterator_facade.hpp>
 
 #include "sonia/exceptions.hpp"
-#include "sonia/utility/iterators/proxy.hpp"
 
 namespace sonia {
 
 // provided buffer is used as a circular data buffer
 
-template <class SocketT, size_t MinRngSzV = 128>
+template <class SocketT/*, size_t MinRngSzV = 128*/>
 class socket_write_input_iterator
     : public boost::iterator_facade<
           socket_write_input_iterator<SocketT>
         , array_view<char>
         , std::input_iterator_tag
-        , wrapper_iterator_proxy<ptr_proxy_wrapper<socket_write_input_iterator<SocketT> const*, array_view<char>>>
+        , array_view<char>&
     >
 {
-    using proxy_type = wrapper_iterator_proxy<ptr_proxy_wrapper<socket_write_input_iterator const*, array_view<char>>>;
-
     friend class boost::iterator_core_access;
     template <class, class> friend class ptr_proxy_wrapper;
 
@@ -37,20 +34,10 @@ class socket_write_input_iterator
         return empty() && rhs.empty();
     }
 
-    proxy_type dereference() const { return proxy_type(this); }
-
-    array_view<char> get_dereference() const
+    array_view<char> & dereference() const
     {
         BOOST_ASSERT(wrpos_);
-        BOOST_ASSERT (end_ - begin_ >= MinRngSzV);
-        return {begin_, end_};
-    }
-
-    void set_dereference(array_view<char> span)
-    {
-        BOOST_ASSERT(wrpos_);
-        BOOST_ASSERT(span.begin() == begin_);
-        end_ = span.end();
+        return value_;
     }
 
     void write() noexcept
@@ -64,9 +51,33 @@ class socket_write_input_iterator
         }
     }
 
+    array_view<char> available_buffer()
+    {
+        if (value_.begin() >= wrend_) {
+            return {wrend_, buff_.end()};
+        } else {
+            return {buff_.begin(), wrpos_};
+        }
+    }
+
     void increment()
     {
         BOOST_ASSERT(wrpos_);
+        array_view<char> avlbf = available_buffer();
+
+        if (value_.end() != avlbf.end()) {
+            value_ = {value_.end(), avlbf.end()};
+        } else {
+            if (value_.begin() >= wrend_) {
+                wrend_ = value_.end();
+            }
+            write();
+            value_ = {buff_.begin(), wrpos_};
+            if (wrpos_ == wrend_) {
+                wrpos_ = wrend_ = buff_.begin();
+            }
+        }
+#if 0
         if (begin_ != end_) { // otherwise if set_dereference({begin_, begin_}) was called
             begin_ = end_;
             if (begin_ > wrpos_) {
@@ -93,17 +104,18 @@ class socket_write_input_iterator
                 continue;
             }
         } while (wrpos_);
+#endif
     }
     
 public:
     socket_write_input_iterator() : wrpos_(nullptr) {}
 
     explicit socket_write_input_iterator(SocketT & soc, array_view<char> buff) 
-        : psoc_(&soc), buff_(buff), begin_(buff.begin()), end_(buff.end()), wrpos_(buff.begin()), wrend_(buff.begin())
+        : psoc_(&soc), buff_{buff}, value_{buff}, wrpos_(buff.begin()), wrend_(buff.begin())
     {
-        if (buff.size() < MinRngSzV) {
-            THROW_INTERNAL_ERROR("too small buffer size");
-        }
+        //if (buff.size() < MinRngSzV) {
+        //    THROW_INTERNAL_ERROR("too small buffer size");
+        //}
     }
 
     socket_write_input_iterator(socket_write_input_iterator const&) = delete;
@@ -123,19 +135,31 @@ public:
 
     void flush()
     {
+        if (value_.begin() < wrend_) {
+            while (wrpos_ && wrpos_ != wrend_)
+            {
+                write();
+            }
+            if (wrpos_) wrpos_ = buff_.begin();
+        }
+        
+        wrend_ = value_.begin();
+        
         while (wrpos_ && wrpos_ != wrend_)
         {
             write();
         }
-        wrpos_ = wrend_ = begin_ = buff_.begin();
-        end_ = buff_.end();
+        if (wrpos_) {
+            wrpos_ = wrend_ = buff_.begin();
+            value_ = buff_;
+        }
     }
 
 private:
     SocketT * psoc_;
     mutable array_view<char> buff_;
     // ready for new data interval descriptor {begin_, end_} or {begin_, buff_.end()}V{buff_.begin(), end_}
-    char * begin_, *end_;
+    mutable array_view<char> value_;
     char * wrpos_, *wrend_;
 };
 

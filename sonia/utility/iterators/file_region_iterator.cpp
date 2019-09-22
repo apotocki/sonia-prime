@@ -65,6 +65,7 @@ file_region_descriptor::~file_region_descriptor()
         boost::intrusive_ptr<file_region_descriptor> tmp = std::move(next_->next_);
         next_ = std::move(tmp);
     }
+    flush();
 }
 
 bool file_region_descriptor::is_cursor_at_the_end_or_null() const
@@ -83,7 +84,7 @@ void file_region_descriptor::update_region_size(size_t sz)
 
 void file_region_descriptor::next_from(file_region_descriptor const& previous)
 {
-    uint64_t nextoffset = previous.get().size() + previous.fileoffset_;
+    uint64_t nextoffset = previous.get_region_size() + previous.fileoffset_;
 	region_ = ipc::mapped_region();
     region_ = create_region(nextoffset, region_size());
     cursor_ = nullptr;
@@ -115,6 +116,11 @@ ipc::mapped_region file_region_descriptor::create_region(uint64_t offset, size_t
     }
 
     return ipc::mapped_region(file_mapping(), mode(), offset, region_size);
+}
+
+size_t file_region_descriptor::get_region_size() const
+{
+    return region_.get_size();
 }
 
 array_view<char> file_region_descriptor::get() const
@@ -185,11 +191,10 @@ void file_region_iterator_base::decrement()
     }
 }
 
-void file_region_iterator_base::flush()
+void file_region_iterator_base::flush(char * writ)
 {
     if (region_) {
-        region_->flush();
-        region_.reset();
+        region_->set_cursor(writ);
     }
 }
 
@@ -198,11 +203,12 @@ void file_region_iterator_base::set(array_view<const char> data)
 {
     array_view<char> dest_raw = region_->get();
     size_t bytes_to_write = data.size();
-    if (data.begin() == dest_raw.begin()) {
-        BOOST_ASSERT(bytes_to_write <= dest_raw.size());
-        region_->set_cursor(dest_raw.begin() + bytes_to_write);
-        return;
-    }
+    BOOST_ASSERT (data.begin() != dest_raw.begin());
+    //if (data.begin() == dest_raw.begin()) {
+    //    BOOST_ASSERT(bytes_to_write <= dest_raw.size());
+    //    region_->set_cursor(dest_raw.begin() + bytes_to_write);
+    //    return;
+    //}
 
     char * writ = nullptr;
     for (;;) {

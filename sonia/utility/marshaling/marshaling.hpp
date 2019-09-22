@@ -33,7 +33,9 @@
 
 #include "sonia/optional.hpp"
 
+#include "sonia/mpl/vector.hpp"
 #include "sonia/mpl/transform_view.hpp"
+#include "sonia/mpl/boost_mpl.hpp"
 
 #include "sonia/utility/bind.hpp"
 #include "sonia/utility/automatic.hpp"
@@ -75,7 +77,7 @@ struct result_transformer
     template <typename T, size_t I>
     struct apply
     {
-        using arg_type = sonia::mpl::at_t<RealArgTypesT, I>;
+        using arg_type = sonia::mpl::at_t<RealArgTypesT, integral_constant<size_t, I>>;
         constexpr static bool is_fwd_v = stub_bound_parameter<arg_type>::is_modifiable;
         using type = conditional_t<is_fwd_v, T, null_t const&>;
 

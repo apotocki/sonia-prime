@@ -9,9 +9,9 @@
 #   pragma once
 #endif
 
-#include <boost/throw_exception.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
+#include "sonia/exceptions.hpp"
 #include "sonia/array_view.hpp"
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
@@ -70,7 +70,7 @@ class inflate_iterator
     void increment()
     {
         if (empty()) {
-            BOOST_THROW_EXCEPTION(internal_error("increment an empty iterator"));
+            THROW_INTERNAL_ERROR("increment an empty iterator");
         }
         data_->inflate();
     }
@@ -96,7 +96,7 @@ private:
 
 template <class IteratorT>
 inflate_iterator<IteratorT>::strm_data::strm_data(IteratorT it, bool gzip)
-    : base_(std::move(it))
+    : base_{std::move(it)}
 {
     strm_.zalloc = Z_NULL;
     strm_.zfree = Z_NULL;
@@ -107,7 +107,7 @@ inflate_iterator<IteratorT>::strm_data::strm_data(IteratorT it, bool gzip)
     ret_ = inflateInit2(&strm_, gzip ? 16 + MAX_WBITS : -15);
 
     if (ret_ != Z_OK) {
-        BOOST_THROW_EXCEPTION(internal_error("inflate decompressor initialization error #%1% (%2%)"_fmt % ret_ % zlib_detail::err_to_str(ret_)));
+        THROW_INTERNAL_ERROR("inflate decompressor initialization error #%1% (%2%)"_fmt % ret_ % zlib_detail::err_to_str(ret_));
     }
 }
 
@@ -140,6 +140,15 @@ template <class IteratorT>
 void inflate_iterator<IteratorT>::strm_data::inflate()
 {
     if (BOOST_UNLIKELY(Z_STREAM_END == ret_)) {
+        if (!base_.empty()) {
+            array_view<const char> crng = *base_;
+            const char* pos = reinterpret_cast<char*>(strm_.next_in);
+            if (crng.end() == pos) {
+                ++base_;
+            } else {
+                *base_ = array_view{pos, crng.end()};
+            }
+        }
         ret_ = Z_STREAM_ERROR;
         return;
     }

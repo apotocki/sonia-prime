@@ -20,6 +20,7 @@
 //#endif
 
 #include "sonia/concurrency.hpp"
+#include "sonia/utility/concurrency/debug_mutex.hpp"
 
 namespace sonia {
 
@@ -31,12 +32,14 @@ public:
         friend class fiber_work_stealing_scheduler;
 
         std::vector<boost::intrusive_ptr<fiber_work_stealing_scheduler>> schedulers;
-        spin_mutex mtx;
+        threads::debug_mutex mtx;
         size_t victim_sched_idx = 0;
-
+        std::atomic<long> sleeping_cnt{0};
     public:
         fibers::context * steal(fiber_work_stealing_scheduler * exc);
         void remove(fiber_work_stealing_scheduler *);
+
+        void notify_one();
     };
 
     explicit fiber_work_stealing_scheduler(group_host & g, bool suspend = true);
@@ -61,12 +64,15 @@ public:
 
     fibers::context * steal() noexcept;
 
+    bool try_notify() noexcept;
+
 private:
     group_host & group_;
-    mutex mtx_;
-    condition_variable cnd_;
+    threads::mutex mtx_;
+    threads::condition_variable cnd_;
     simple_queue<boost::fibers::context*, spin_mutex> rqueue_{1024};
     uint8_t flag_ : 1;
+    uint8_t waiting_ : 1;
     uint8_t suspend_ : 1;
 };
 
@@ -102,8 +108,8 @@ public:
 
 private:
     group_host & group_;
-    mutex mtx_;
-    condition_variable cnd_;
+    threads::mutex mtx_;
+    threads::condition_variable cnd_;
     simple_queue<boost::fibers::context*, spin_mutex> rqueue_{2};
     uint8_t flag_ : 1;
     uint8_t suspend_ : 1;

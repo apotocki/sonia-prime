@@ -150,10 +150,14 @@ void deflate_iterator<IteratorT>::strm_data::close()
     if (strm_.next_out) {
         deflate(Z_FINISH);
         array_view<char> outrng = *base_;
-        *base_ = array_view(outrng.begin(), reinterpret_cast<char*>(strm_.next_out));
+        if (reinterpret_cast<char*>(strm_.next_out) != outrng.end()) {
+            *base_ = array_view(reinterpret_cast<char*>(strm_.next_out), outrng.end());
+        } else {
+            ++base_;            
+        }
         strm_.next_out = nullptr;
         strm_.avail_out = 0;
-        ++base_;
+        
         if constexpr (iterators::has_method_close_v<IteratorT, void()>) {
             base_.close();
         }

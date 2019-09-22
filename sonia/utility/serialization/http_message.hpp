@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #ifndef SONIA_SERIALIZATION_HTTP_MESSAGE_HPP
-#define SONIA_SERIALIZATION_HTTP_REQUEST_HPP
+#define SONIA_SERIALIZATION_HTTP_MESSAGE_HPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
@@ -42,6 +42,12 @@ public:
 
     template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, http::message & m) const
+    {
+        return decode_headers(std::move(ii), m.headers);
+    }
+
+    template <typename InputIteratorT>
+    static InputIteratorT decode_headers(InputIteratorT ii, http::headers_t & headers)
     {
         using namespace sonia::http;
 
@@ -86,7 +92,14 @@ public:
                 val.push_back(c);
             }
 
-            m.add_header(h == header::UNKNOWN ? any_header_param_t(hname) : any_header_param_t(h), std::move(val));
+            any_header_param_t hkey = (h == header::UNKNOWN) ? any_header_param_t(hname) : any_header_param_t(h);
+
+            auto it = headers.find(hkey, hasher(), header_equal_to());
+            if (it == headers.end()) {
+                headers.insert(it, std::pair(boost::apply_visitor(header_param_converter(), hkey), std::vector{std::move(val)}));
+            } else {
+                it->second.push_back(std::move(val));
+            }
         }
 
         return std::move(ii);

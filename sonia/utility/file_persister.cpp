@@ -27,7 +27,12 @@ file_persister::~file_persister()
 
 bool file_persister::read(function<void(input_iterator)> const& ftor) const
 {
-    using impl_t = iterator_polymorpic_adapter<file_region_iterator<const char>, forward_traversal_tag>;
+    using impl_t = output_iterator_polymorpic_adapter<
+        file_region_iterator<const char>,
+        forward_traversal_tag,
+        array_view<const char>,
+        array_view<const char>
+    >;
 
     if (fs::exists(fname_)) {
         ftor(input_iterator(in_place_type<impl_t>, fname_));

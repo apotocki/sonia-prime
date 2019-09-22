@@ -13,7 +13,7 @@
 #include <utility>
 #include <type_traits>
 #include <typeindex>
-#include <functional> // is_placeholder
+#include <functional> // is_placeholder, reference_wrapper
 #include <boost/is_placeholder.hpp>
 #include <boost/mpl/identity.hpp>
 #include <boost/range.hpp>
@@ -22,6 +22,7 @@
 #include <boost/utility/typed_in_place_factory.hpp>
 
 #include "utility/expected.hpp"
+#include "utility/variadic.hpp"
 
 #define typeidx(t) std::type_index(typeid(t))
 
@@ -30,9 +31,6 @@ namespace sonia {
 struct null_t
 {
     null_t() = default;
-
-    template <typename ... IgnoredArgsT>
-    explicit null_t(IgnoredArgsT && ...) noexcept {}
 
     inline bool operator == (null_t const&) const noexcept { return true; }
     inline bool operator != (null_t const&) const noexcept { return false; }
@@ -53,6 +51,7 @@ inline size_t hash_value(null_t const&) { return 0; }
 constexpr null_t null{};
 
 struct empty_t {};
+struct use_default_t {};
 
 using namespace tl;
 //template <class T, class E> using expected = tl::expected<T, E>;
@@ -63,6 +62,9 @@ using std::integral_constant;
 
 using std::true_type;
 using std::false_type;
+
+template <typename> inline constexpr bool dependent_true_v{ true };
+template <typename> inline constexpr bool dependent_false_v{ false };
 
 using std::void_t;
 
@@ -138,6 +140,9 @@ using std::is_trivially_destructible_v;
 using std::has_virtual_destructor;
 using std::has_virtual_destructor_v;
 
+using std::is_assignable;
+using std::is_assignable_v;
+
 using std::conditional;
 using std::conditional_t;
 
@@ -162,8 +167,17 @@ using std::as_const;
 using std::is_convertible;
 using std::is_convertible_v;
 
+using std::is_object;
+using std::is_object_v;
+
+using std::is_function;
+using std::is_function_v;
+
 template <bool V, typename T>
 using add_const_if_t = conditional_t<V, add_const_t<T>, T>;
+
+template <typename T, typename RefT>
+using same_const_t = add_const_if_t<is_const_v<RefT>, T>;
 
 using std::add_pointer;
 using std::add_pointer_t;
@@ -172,21 +186,49 @@ using std::add_lvalue_reference_t;
 using std::add_rvalue_reference;
 using std::add_rvalue_reference_t;
 
+using std::reference_wrapper;
+using std::ref;
+using std::cref;
+
 // placeholders
-template <int I> struct arg_c { static constexpr int value = I; };
-template <class VT> struct arg { using type = arg_c<VT::value>; static constexpr int value = VT::value; };
+template <int I> struct arg_c
+{
+    static constexpr int value = I;
+    
+    //template <typename ... ArgsT> struct apply : variadic::type_at<I - 1, ArgsT...> { };
+    template <typename ... ArgsT> using apply = variadic::type_at<I - 1, ArgsT...>;
+    template <typename ... ArgsT> using apply_t = typename apply<ArgsT...>::type;
+};
+
+template <class VT> struct arg
+{
+    using type = arg;//arg_c<VT::value>;
+    static constexpr int value = VT::value;
+};
 
 template <class T> struct is_arg : integral_constant<int, 0> {};
-template <class T> struct is_arg<arg<T>> : integral_constant<int, T::VT::value> {};
+template <class T> struct is_arg<arg<T>> : integral_constant<int, T::value> {};
 template <int I> struct is_arg<arg_c<I>> : integral_constant<int, I> {};
 template <class T> constexpr int is_arg_v = is_arg<T>::value;
 
 template <class T> struct is_placeholder : integral_constant<int, std::is_placeholder_v<T> + boost::is_placeholder<T>::value + is_arg_v<T>> {};
 template <class T> constexpr int is_placeholder_v = is_placeholder<T>::value;
 
+template <class T> struct is_reference_wrapper : false_type{};
+template <class T> struct is_reference_wrapper<reference_wrapper<T>> : true_type{};
+template <class T> constexpr int is_reference_wrapper_v = is_reference_wrapper<T>::value;
+
 template <class T, class Enabler = void> struct size_of : integral_constant<int, sizeof(T)> {};
 template <class T> struct size_of<T, enable_if_t<is_void_v<T>>> : integral_constant<int, 0> {};
 template <class T> constexpr size_t size_of_v = size_of<T>::value;
+
+namespace mpl {
+using _1 = arg_c<1>;
+using _2 = arg_c<2>;
+using _3 = arg_c<3>;
+using _4 = arg_c<4>;
+using _5 = arg_c<5>;
+}
 
 using std::in_place;
 using std::in_place_t;
@@ -206,6 +248,9 @@ template <class T> using remove_cvref_t = typename remove_cvref<T>::type;
 
 template <bool Test, class T = void> using disable_if = enable_if<!Test, T>;
 template <bool Test, class T = void> using disable_if_t = enable_if_t<!Test, T>;
+
+template <class T, class TestT, class RT = void> using enable_if_same_ref = enable_if<is_same_v<T, remove_cvref_t<TestT>>, RT>;
+template <class T, class TestT, class RT = void> using enable_if_same_ref_t = typename enable_if_same_ref<T, TestT, RT>::type;
 
 template <class T, class TestT, class RT = void> using disable_if_same_ref = disable_if<is_same_v<T, remove_cvref_t<TestT>>, RT>;
 template <class T, class TestT, class RT = void> using disable_if_same_ref_t = typename disable_if_same_ref<T, TestT, RT>::type;
@@ -259,9 +304,25 @@ template <class T> constexpr bool is_in_place_factory_v = is_in_place_factory<T>
 template <class T> struct is_typed_in_place_factory : is_base_of<boost::typed_in_place_factory_base, T> {};
 template <class T> constexpr bool is_typed_in_place_factory_v = is_typed_in_place_factory<T>::value;
 
+template <class T> constexpr bool is_factory_v = is_in_place_factory_v<T> || is_typed_in_place_factory_v<T>;
+
 // meta programming
 template <class TargetT, typename TagT>
 using apply_t = typename TargetT::template apply<TagT>;
+
+
+template <typename ... ArgsT> struct switchable;
+template <typename ... ArgsT> using switchable_t = typename switchable<ArgsT...>::type;
+
+template <typename DT, typename ... ArgsT> struct switchable1 { using type = DT; };
+
+template <typename CT, typename RT, typename ... ArgsT>
+struct switchable2 : conditional<CT::value, RT, switchable_t<ArgsT ...>> {};
+
+template <typename ... ArgsT> struct switchable2_lazy : switchable2<ArgsT...> {};
+
+template <typename ... ArgsT>
+struct switchable : conditional_t<2 < sizeof...(ArgsT), switchable2_lazy<ArgsT...>, switchable1<ArgsT...>> {};
 
 }
 

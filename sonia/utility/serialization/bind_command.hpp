@@ -12,20 +12,21 @@
 #include "serialization.hpp"
 #include "sonia/utility/bind_command.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <typename TagT, class BindTupleT, typename R>
 class coder<TagT, bind_command_proxy<BindTupleT, R>>
 {
-    typedef bind_command_proxy<BindTupleT, R>> cmd_type;
+    using cmd_type = bind_command_proxy<BindTupleT, R>>;
 
 public:
     template <typename OutputIteratorT>
-    OutputIteratorT encode(cmd_type const& val, OutputIteratorT oi) const {
+    OutputIteratorT encode(cmd_type const& val, OutputIteratorT oi) const
+    {
         return encode<TagT>(val.btpl_, std::move(oi));
     }
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_BIND_COMMAND_HPP

@@ -9,20 +9,14 @@
 #   pragma once
 #endif
 
-#include <string>
 #include <vector>
-#include <boost/regex.hpp>
+#include "sonia/optional.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/net/http/application.hpp"
 
-namespace sonia::services {
+#include "http_route.hpp"
 
-struct http_route
-{
-    std::string application_name;
-    boost::regex pathre{""};
-    mutable shared_ptr<http::application> application;
-};
+namespace sonia::services {
 
 struct http_connector_configuration
 {

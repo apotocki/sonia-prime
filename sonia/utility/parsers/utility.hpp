@@ -20,13 +20,13 @@
 
 namespace sonia::parsers {
 
-template <typename TokenT>
-bool valid(TokenT const& t) noexcept { return true; } /*t.id != 0; };*/
+template <typename IteratorT>
+bool valid(IteratorT const&) noexcept { return true; } /*t->id != 0; };*/
 
 template <typename IteratorT>
 bool valid(IteratorT const& b, IteratorT const& e) noexcept
 {
-    return b != e && valid(*b);
+    return b != e && valid(b);
 }
 
 template <typename IteratorT>
@@ -133,7 +133,7 @@ bool hexinteger(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsig
     using char_type = iterator_value_t<IteratorT>;
     result = 0;
     unsigned int dc = 0;
-    for (; b != e && dc < maxdigits; ++pos, ++dc) {
+    for (; pos != e && dc < maxdigits; ++pos, ++dc) {
         const char_type c0 = *pos;
         uint8_t v = get_hexdigit(c0);
         if (v != 0xff) {
@@ -150,13 +150,13 @@ bool hexinteger(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsig
 }
 
 template <typename IteratorT, typename IntegerT>
-bool integer(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsigned int maxdigits, IntegerT& result) noexcept
+unsigned int integer(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsigned int maxdigits, IntegerT& result) noexcept
 {
     IteratorT pos = b;
     using char_type = iterator_value_t<IteratorT>;
     result = 0;
     unsigned int dc = 0;
-    for (; b != e && dc < maxdigits; ++pos, ++dc) {
+    for (; pos != e && dc < maxdigits; ++pos, ++dc) {
         const char_type c = *pos;
         if (c >= '0' && c <= '9') {
             result = result * 10 + (uint8_t)(c - '0');
@@ -165,10 +165,10 @@ bool integer(IteratorT & b, IteratorT const& e, unsigned int mindigits, unsigned
         }
     }
     if (dc < mindigits) {
-        return false;
+        return 0;
     }
     b = pos;
-    return true;
+    return dc;
 }
 
 template <typename OutputIteratorT>
@@ -214,12 +214,10 @@ IteratorT parse(ModelT & model, IteratorT b, IteratorT e)
 
     ParserT<lexer_type, ModelT> parser(model);
 
-    try {
-        parser.parse(iter, end);
-    } catch (exception const& err) {
+    auto get_error_str = [&iter, &end, &e](std::string const& msg) {
         std::ostringstream resultss;
         resultss << "parsing error : ";
-        std::string msg(err.what()), tokval;
+        std::string tokval;
         if (iter == end) {
             tokval = "end of input";
         } else {
@@ -228,12 +226,20 @@ IteratorT parse(ModelT & model, IteratorT b, IteratorT e)
         }
         if (msg.empty()) resultss << "token: '" << tokval << "' is not expected";
         else resultss << msg << ", got: '" << tokval << "'";
-
         std::string rest;
-        copy_not_more(iter->first, e, std::back_inserter(rest), 50);
+        copy_not_more(iter->first, e, std::back_inserter(rest), 150);
         resultss << ", stopped at: \"" << rest << "\"";
+        return resultss.str();
+    };
 
-        throw exception(std::move(resultss.str()));
+    try {
+        parser.parse(iter, end);
+    } catch (internal_error const& err) {
+        std::string msg = get_error_str(err.what());
+        msg += "\ncaused by: " + boost::diagnostic_information(err);
+        throw internal_error{msg};
+    } catch (exception const& err) {
+        throw exception(get_error_str(err.what()));
     }
 
     if (iter != end) {

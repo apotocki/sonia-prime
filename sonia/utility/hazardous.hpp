@@ -11,7 +11,6 @@
 
 #include <utility>
 #include <iosfwd>
-#include <boost/utility/in_place_factory.hpp>
 
 #include "sonia/type_traits.hpp"
 
@@ -27,9 +26,17 @@ class hazardous
 
 public:
     using value_type = T;
+    using reference = add_lvalue_reference_t<T>;
+    using const_reference = add_lvalue_reference_t<add_const_t<T>>;
 
     hazardous() = default;
-    ~hazardous() noexcept = default;
+    ~hazardous() = default;
+
+    template <typename ... ArgsT>
+    hazardous(in_place_t, ArgsT&& ... args)
+    {
+        new (get_pointer()) T(std::forward<ArgsT>(args) ...);
+    }
 
     template <typename ArgT>
     T & emplace(ArgT && arg)
@@ -63,15 +70,15 @@ public:
         std::destroy_at(get_pointer());
     }
 
-    T const& get() const& { return *get_pointer(); }
-    T & get() & { return *get_pointer(); }
+    const_reference get() const& { return *get_pointer(); }
+    reference get() & { return *get_pointer(); }
     T && get() && { return std::move(*get_pointer()); }
 
     T const* get_pointer() const { return std::launder(reinterpret_cast<T const*>(buffer_)); }
     T * get_pointer() { return std::launder(reinterpret_cast<T*>(buffer_)); }
 
-    T const& operator*() const& { return get(); }
-    T & operator*() & { return get(); }
+    const_reference operator*() const& { return get(); }
+    reference operator*() & { return get(); }
     T && operator*() && { return get(); }
 
     T const* operator->() const { return get_pointer(); }

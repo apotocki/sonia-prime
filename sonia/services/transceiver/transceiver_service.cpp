@@ -50,12 +50,13 @@ class chunk_write_iterator
     
     array_view<char> get_dereference() const
     {
-        return array_view(buff_.begin() + sizeof(chunk_header), datasz_);
+        return array_view{buff_.begin() + offset_, datasz_};
     }
 
     void set_dereference(array_view<char> span)
     {
-        BOOST_ASSERT(span.begin() == buff_.begin() + sizeof(chunk_header));
+        BOOST_ASSERT(span.is_subset_of(get_dereference()));
+        offset_ = span.begin() - buff_.begin();
         datasz_ = span.size();
     }
 
@@ -70,39 +71,41 @@ public:
     chunk_write_iterator& operator=(chunk_write_iterator const&) = delete;
     chunk_write_iterator& operator=(chunk_write_iterator &&) = default;
 
-    chunk_write_iterator(tcp_socket & soc, array_view<char> buff) : soc_(soc), buff_(buff)
+    chunk_write_iterator(tcp_socket & soc, array_view<char> buff) : soc_{soc}, buff_{buff}
     {
         BOOST_ASSERT(buff.size() > sizeof(chunk_header));
         BOOST_ASSERT(buff.size() <= static_cast<size_t>((std::numeric_limits<uint16_t>::max)()) + sizeof(chunk_header));
+        offset_ = sizeof(chunk_header);
         datasz_ = buff_.size() - sizeof(chunk_header);
     }
 
     void flush()
     {
-        if (datasz_) {
+        if (offset_ != sizeof(chunk_header)) {
 #ifndef NO_CRC_CHECK
-            uint32_t crc = boost::crc<32, 0xBEEF, 0xC001F00D, 0, true, true>(buff_.begin() + sizeof(chunk_header), datasz_);
+            uint32_t crc = boost::crc<32, 0xBEEF, 0xC001F00D, 0, true, true>(buff_.begin() + sizeof(chunk_header), offset_ - sizeof(chunk_header));
 #else
             uint32_t crc = 0;
 #endif
-            make_encoder<sonia::serialization::ordered_t>(buff_.begin()) & crc & (uint16_t)datasz_;
+            make_encoder<sonia::serialization::ordered_t>(buff_.begin()) & crc & (uint16_t)(offset_ - sizeof(chunk_header));
             
-            size_t sz2wr = sizeof(chunk_header) + datasz_;
             char const* bf = buff_.begin();
             for (;;) {
-                auto expsz = soc_.write_some(bf, sz2wr);
+                auto expsz = soc_.write_some(bf, offset_);
                 if (!expsz.has_value() || !expsz.value()) throw eof_exception();
-                sz2wr -= expsz.value();
-                if (!sz2wr) break;
+                offset_ -= expsz.value();
+                if (!offset_) break;
                 bf += expsz.value();
             }
         }
+        offset_ = sizeof(chunk_header);
         datasz_ = buff_.size() - sizeof(chunk_header);
     }
 
 private:
     tcp_socket & soc_;
     array_view<char> buff_;
+    size_t offset_;
     size_t datasz_;
 };
 
@@ -282,6 +285,7 @@ void transceiver_service::connect(io::tcp_socket soc)
             break; // current socket can not be used any more
         }
         rwdit.flush();
+        rwdit.reset();
     }
 }
 

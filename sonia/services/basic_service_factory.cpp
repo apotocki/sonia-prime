@@ -19,11 +19,11 @@ shared_ptr<service> basic_service_factory::create(string_view nm) const
         try {
             return func();
         } catch (std::exception const& e) {
-            throw internal_error("Error occurred during starting '%1%' service\n%2%"_fmt % nm % e.what());
+            THROW_INTERNAL_ERROR("Error occurred during starting '%1%' service\n%2%"_fmt % nm % e.what());
         }
     }
 
-    throw internal_error("can't create unknown service '%1%'"_fmt % nm);
+    THROW_INTERNAL_ERROR("can't create unknown service '%1%'"_fmt % nm);
 }
 
 void basic_service_factory::register_service_factory(string_view nm, function<shared_ptr<service>()> const& fm)
@@ -33,7 +33,7 @@ void basic_service_factory::register_service_factory(string_view nm, function<sh
     if (it == named_factories_.end()) {
         named_factories_.insert(it, factories_type::value_type(to_string(nm), fm));
     } else {
-        throw internal_error("factory for the service '%1%' is already registered"_fmt % nm);
+        THROW_INTERNAL_ERROR("factory for the service '%1%' is already registered"_fmt % nm);
     }
 }
 

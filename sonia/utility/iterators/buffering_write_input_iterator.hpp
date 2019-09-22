@@ -36,9 +36,13 @@ class buffering_write_input_iterator
 
     void increment()
     {
-        *base = span_;
-        ++base;
-        span_ = buffer_;
+        if (span_.end() != buffer_.end()) {
+            span_ = {span_.end(), buffer_.end()};
+        } else {
+            *base = buffer_;
+            ++base;
+            span_ = buffer_;
+        }
     }
 
     mutable array_view<char> span_;
@@ -54,11 +58,23 @@ public:
         return sonia::empty(base);
     }
 
-    template <typename T = WriteOutputIteratorT>
-    enable_if_t<iterators::has_method_close_v<T, void()>> close() { base.close(); }
+    void flush()
+    {
+        *base = array_view<char>{buffer_.begin(), span_.begin()};
+        ++base;
+        if constexpr (iterators::has_method_flush_v<WriteOutputIteratorT, void()>) {
+            base.flush();
+        }
+        span_ = buffer_;
+    }
 
-    template <typename T = WriteOutputIteratorT>
-    enable_if_t<iterators::has_method_flush_v<T, void()>> flush() { base.flush(); }
+    void close()
+    {
+        flush();
+        if constexpr (iterators::has_method_close_v<WriteOutputIteratorT, void()>) {
+            base.close();
+        }
+    }
 
     WriteOutputIteratorT base;
 };

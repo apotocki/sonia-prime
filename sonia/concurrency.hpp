@@ -20,15 +20,18 @@
 namespace sonia {
 
 using boost::thread;
-using std::mutex;
-using std::unique_lock;
-using std::condition_variable;
 
+using std::unique_lock;
 using boost::lock_guard;
 using boost::shared_lock_guard;
 using boost::fibers::fiber;
 
 using spin_mutex = boost::fibers::detail::spinlock;
+
+namespace threads {
+    using std::mutex;
+    using std::condition_variable;
+}
 
 namespace fibers {
     using namespace boost::fibers;
@@ -104,7 +107,7 @@ private:
 };
 
 
-// tarits
+// traits
 struct fiber_traits
 {
     using mutex_type = fibers::mutex;

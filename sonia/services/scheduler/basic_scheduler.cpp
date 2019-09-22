@@ -188,8 +188,8 @@ void basic_scheduler::stop()
 void basic_scheduler::thread_proc()
 {
     //fibers::use_scheduling_algorithm< boost::fibers::algo::shared_work >();
-    //fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler>(gh_, true);
-    fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler2>(gh_, true);
+    fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler>(gh_, true);
+    //fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler2>(gh_, true);
     /*
     fibers::context::active()->get_scheduler()->exthook = [](fibers::context::id fid, int op) {
         switch (op) {
@@ -404,7 +404,7 @@ void basic_scheduler::schedule_timer(priority_set_t::iterator it, int64_t now)
 
 void basic_scheduler::on_priority_timer()
 {
-    //LOG_INFO(logger()) << "on_priority_timer";
+    LOG_INFO(logger()) << "on_priority_timer " << this_thread::get_id();
     time_duration_t now = relative_now();
     lock_guard guard(priority_mtx_);
     priority_lowest_ = priority_max_val_;

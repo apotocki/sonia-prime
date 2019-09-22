@@ -9,26 +9,9 @@
 #include "sonia/net/uri.ipp"
 #include "sonia/utility/functional/hash/variant.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
-
+#include "sonia/utility/serialization/http_message.hpp"
 
 namespace sonia::http {
-
-struct header_param_converter : boost::static_visitor<any_header_t>
-{
-    any_header_t operator()(header h) const { return h; }
-    any_header_t operator()(string_view h) const { return to_string(h); }
-};
-
-struct header_equal_to
-{
-    bool operator()(any_header_param_t const& l, any_header_t const& r) const
-    {
-        if (l.which() != r.which()) return false;
-        header const* lh = boost::get<header>(&l);
-        if (lh) return *lh == boost::get<header>(r);
-        return boost::get<string_view>(l) == boost::get<std::string>(r);
-    }
-};
 
 struct to_rvstring_visitor : boost::static_visitor<std::string>
 {
@@ -47,14 +30,14 @@ std::string header_string(header_value_param_t & v)
     return boost::apply_visitor(to_rvstring_visitor(), v);
 }
 
-string_view message::header_name(any_header_t const& hn)
+string_view header_collection::header_name(any_header_t const& hn)
 {
     header const* h = boost::get<header>(&hn);
     if (h) return to_string(*h);
     return boost::get<std::string>(hn);
 }
 
-void message::set_header(any_header_param_t h, header_value_param_t v)
+void header_collection::set_header(any_header_param_t h, header_value_param_t v)
 {
     auto it = headers.find(h, hasher(), header_equal_to());
     if (it == headers.end()) {
@@ -65,7 +48,7 @@ void message::set_header(any_header_param_t h, header_value_param_t v)
     }
 }
 
-void message::add_header(any_header_param_t h, header_value_param_t v)
+void header_collection::add_header(any_header_param_t h, header_value_param_t v)
 {
     auto it = headers.find(h, hasher(), header_equal_to());
     if (it == headers.end()) {
@@ -75,7 +58,7 @@ void message::add_header(any_header_param_t h, header_value_param_t v)
     }
 }
 
-void message::remove_header(any_header_param_t h)
+void header_collection::remove_header(any_header_param_t h)
 {
     auto it = headers.find(h, hasher(), header_equal_to());
     if (it != headers.end()) {
@@ -83,7 +66,7 @@ void message::remove_header(any_header_param_t h)
     }
 }
 
-array_view<const std::string> message::get_header(any_header_param_t h) const
+array_view<const std::string> header_collection::get_header(any_header_param_t h) const
 {
     auto it = headers.find(h, hasher(), header_equal_to());
     if (it != headers.end()) {
@@ -92,26 +75,29 @@ array_view<const std::string> message::get_header(any_header_param_t h) const
     return array_view<const std::string>{};
 }
 
-void message::tokenize_header(any_header_param_t h, function<bool(string_view, string_view, char)> const& handler) const
+void header_collection::tokenize_header(any_header_param_t h, function<bool(string_view, string_view, char)> const& handler) const
 {
     auto hvals = get_header(h);
     for (std::string const& hval : hvals) {
         string_view hvalvw{hval};
         auto start = hvalvw.begin(), it = hvalvw.begin(), eit = hvalvw.end();
+        bool skip_spaces = true;
         while (it != eit) {
-            if (*it == ' ') {
+            if (*it == ' ' && skip_spaces) {
                 ++it;
                 start = it;
                 continue;
             }
-            if (*it == ';' || *it == ',') {
+            if (*it == ';' || *it == ',' || *it == ' ') {
                 if (!handler(string_view{start, it}, string_view{}, *it)) return;
                 ++it;
                 start = it;
+                skip_spaces = true;
                 continue;
             }
             if (*it != '=') {
                 ++it;
+                skip_spaces = false;
                 continue;
             }
             auto valstart = it;
@@ -125,6 +111,7 @@ void message::tokenize_header(any_header_param_t h, function<bool(string_view, s
             }
             ++valit;
             it = start = valit;
+            skip_spaces = true;
         }
         if (start != it) {
             if (!handler(string_view{start, it}, string_view{}, it != eit ? *it : '\0')) return;
@@ -186,6 +173,59 @@ void request::parse_body_as_x_www_form_urlencoded()
         }
         add_parameter(paramname, paramval);
     } while (!b.empty());
+}
+
+void request::parse_body_as_multipart_form_data(string_view boundary, function<void(form_data_item const&)> const& handler)
+{
+    range_dereferencing_iterator<content_read_iterator_t> b{std::move(input)}, e;
+    
+    std::vector<char> extboundary{'\r', '\n', '-', '-'};
+    extboundary.reserve(boundary.size() + 4);
+    extboundary.insert(extboundary.end(), boundary.begin(), boundary.end());
+    auto extboundary_view = to_array_view(std::as_const(extboundary));
+
+    if (!parsers::string(b, e, string_view{extboundary_view.begin() + 2, extboundary_view.end()})) {
+        throw exception("missed form-data prolog");
+    }
+    for (;;) {
+        if (b.empty()) {
+            throw exception("unexpected eof");
+        }
+        if (*b == '-') {
+            if (parsers::string(b, e, "--\r\n")) {
+                b.flush();
+                input = std::move(b.base);
+                return;
+            }
+            throw exception("missed form-data epilog");
+        }
+        if (!parsers::string(b, e, "\r\n")) {
+            throw exception("form-data ptotocol error");
+        }
+        form_data_item item;
+        b = serialization::coder<serialization::default_t, message>::decode_headers(std::move(b), item.headers);
+        item.tokenize_header(header::CONTENT_DISPOSITION, [&item](string_view nm, string_view val, char) {
+            bool is_name = (nm == "name");
+            bool is_filename = (!is_name && nm == "filename");
+            if (is_name || is_filename) {
+                if (val.size() >= 2 && val.front() == '\"' && val.back() == '\"') {
+                    val.advance_front(1);
+                    val.advance_back(-1);
+                }
+                if (is_name) item.name = val;
+                else if (is_filename) item.filename = val;
+            }
+            return true;
+        });
+
+        b.fix();
+        item.input = http_form_data_read_iterator<message::content_read_iterator_t>(std::move(b.base), extboundary_view);
+        handler(item);
+        while (!item.input.empty()) {
+            ++item.input;
+        }
+        b = range_dereferencing_iterator<content_read_iterator_t>(std::move(item.input.base));
+    }
 }
 
 request::request(string_view requri)
@@ -281,25 +321,26 @@ void response::meet_request(request const& r)
     });
 }
 
-void response::make401(string_view realm, string_view opaque, string_view nonce)
+void response::make401(string_view auth_type, string_view realm, string_view opaque, string_view nonce)
 {
     std::ostringstream authval;
-    authval << "Digest realm=\"" << realm << "\"";
+    authval << auth_type << " realm=\"" << realm << "\"";
     authval << ",qop=\"auth\"";
-    authval << ",opaque=\"" << opaque << "\"";
-    authval << ",nonce=\"" << nonce << "\"";
+    if (opaque) authval << ",opaque=\"" << opaque << "\"";
+    if (nonce) authval << ",nonce=\"" << nonce << "\"";
 
     set_header(header::WWW_AUTHENTICATE, authval.str());
     make_custom(status::UNAUTHORIZED, "text/html", "<h1>401 Unauthorized.</h1>");
 }
 
-void response::make404()
+void response::make404(optional<std::string> msg)
 {
     set_header(header::CONTENT_TYPE, "text/html; charset=UTF-8");
     set_header(http::header::TRANSFER_ENCODING, "chunked");
     status_code = status::NOT_FOUND;
-    content_writer = [](http::message::range_write_input_iterator it) {
-        copy_range(string_view("<h1>404 Not Found.</h1>"), it);
+    if (!msg) msg = "<h1>404 Not Found.</h1>";
+    content_writer = [msg = std::move(*msg)](http::message::range_write_input_iterator it) {
+        copy_range(string_view(msg), it);
     };
 }
 

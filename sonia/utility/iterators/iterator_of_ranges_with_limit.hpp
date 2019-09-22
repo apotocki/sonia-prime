@@ -15,6 +15,7 @@
 #include <boost/range/end.hpp>
 
 #include "sonia/iterator_traits.hpp"
+#include "sonia/optional.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
 
 namespace sonia {
@@ -49,10 +50,13 @@ class iterator_of_ranges_with_limit
         size_t cursz = boost::size(r);
         if (cursz > limit) {
             auto b = boost::begin(r);
-            auto e = boost::begin(r);
+            auto e = b;
             std::advance(e, limit);
-            r = value_t(b, e);
-            *base = r;
+            *base = value_t{e, boost::end(r)};
+            r = value_t{b, e};
+        }
+        if (!current_size) {
+            current_size = boost::size(r);
         }
         return r;
 	}
@@ -64,22 +68,28 @@ class iterator_of_ranges_with_limit
 
 	void increment()
 	{
-		value_t r = *base;
-        size_t cursz = boost::size(r);
-        BOOST_ASSERT (cursz <= limit);
-        limit -= cursz;
+        if (!current_size) {
+            value_t r = *base;
+            current_size = boost::size(r);
+        }
+        limit -= *current_size;
+        current_size.reset();
         ++base;
 	}
 
 public:
-    iterator_of_ranges_with_limit(IteratorT it, size_t limitsz)
-        : base(std::move(it)), limit(limitsz)
+    iterator_of_ranges_with_limit(IteratorT it, uint64_t limitsz)
+        : base{std::move(it)}, limit{limitsz}
     {}
 
     bool empty() const { return !limit; }
 
+    template <typename T = IteratorT>
+    enable_if_t<iterators::has_method_flush_v<T, void()>> flush() { base.flush(); }
+
     IteratorT base;
-    size_t limit;
+    uint64_t limit;
+    mutable optional<size_t> current_size;
 };
 
 }

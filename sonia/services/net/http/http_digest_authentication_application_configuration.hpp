@@ -18,8 +18,8 @@ namespace sonia::services {
 
 struct http_digest_authentication_application_configuration
 {
-    std::string auth_app;
-    //std::string digest_opaque;
+    std::string digest_app;
+    std::string digest_realm;
     std::chrono::seconds digest_nonce_timeout;
     std::chrono::seconds session_idle_lifetime;
     size_t max_sessions_per_user;

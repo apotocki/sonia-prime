@@ -147,9 +147,6 @@ http_digest_authentication_application::http_digest_authentication_application(h
     : cfg_{cfg}, session_pool_{16}
 {
     set_log_attribute("Type", "http-digest-authenticator");
-    locate(cfg_.auth_app, digest_provider_);
-
-    realm_ = to_string(digest_provider_->get_realm());
 
     digest_opaque_ = generate_nonce(32);
 }
@@ -167,8 +164,44 @@ http_digest_authentication_application::~http_digest_authentication_application(
     }
 }
 
+void http_digest_authentication_application::close() noexcept
+{
+    lock_guard guard(closing_mtx_);
+    closing_ = true;
+    digest_provider_.reset();
+}
+
 void http_digest_authentication_application::handle(http::request & req, http::response & resp)
 {
+    shared_ptr<http::application> app;
+    cstring_view uri = req.get_relative_uri();
+    for (auto const& r : cfg_.routes) {
+        if (regex_match(uri.c_str(), r.pathre)) {
+            app = r.application;
+            break;
+        }
+    }
+
+    if (!app && cfg_.page404_application) {
+        app = cfg_.page404_application;
+    } else if (!app) {
+        resp.make404(cfg_.page404_message);
+        return;
+    }
+
+    shared_ptr<authentication::digest_provider> dp;
+
+    if (lock_guard guard(closing_mtx_); !closing_) {
+        if (!digest_provider_) {
+            locate(cfg_.digest_app, digest_provider_);
+        }
+        dp = digest_provider_;
+    }
+
+    if (!dp) {
+        throw closed_exception();
+    }
+
     auto now = std::chrono::steady_clock::now();
 
     // handle expired sessions
@@ -186,22 +219,6 @@ void http_digest_authentication_application::handle(http::request & req, http::r
         }
     }
 
-    shared_ptr<http::application> app;
-    cstring_view uri = req.get_relative_uri();
-    for (auto const& r : cfg_.routes) {
-        if (regex_match(uri.c_str(), r.pathre)) {
-            app = r.application;
-            break;
-        }
-    }
-
-    if (!app && cfg_.page404_application) {
-        app = cfg_.page404_application;
-    } else if (!app) {
-        resp.make404(cfg_.page404_message);
-        return;
-    }
-
     http_digest dig;
     req.tokenize_header(http::header::AUTHORIZATION, [&dig](string_view n, string_view v, char d) {
         dig(n, v);
@@ -209,7 +226,7 @@ void http_digest_authentication_application::handle(http::request & req, http::r
     });
 
     while (dig.has_digest) {
-        if (dig.realm != realm_) {
+        if (dig.realm != cfg_.digest_realm) {
             LOG_TRACE(logger()) << "wrong client realm value: " << dig.realm;
         }
         if (dig.opaque != digest_opaque_) {
@@ -232,7 +249,7 @@ void http_digest_authentication_application::handle(http::request & req, http::r
                 break;
             }
 
-            auto opt_digest = digest_provider_->get_digest_for(dig.username);
+            auto opt_digest = dp->get_digest_for(dig.username);
             if (!opt_digest) {
                 LOG_WARN(logger()) << "unknown user " << dig.username;
                 break;
@@ -316,7 +333,7 @@ void http_digest_authentication_application::handle(http::request & req, http::r
 
     std::string nonce = get_nonce();
     resp.meet_request(req);
-    resp.make401("Digest", realm_, digest_opaque_, nonce);
+    resp.make401("Digest", cfg_.digest_realm, digest_opaque_, nonce);
 }
 
 std::string http_digest_authentication_application::get_nonce()
@@ -347,6 +364,31 @@ bool http_digest_authentication_application::remove_nonce(string_view nval)
         return true;
     }
     return false;
+}
+
+std::string http_digest_authentication_application::get_digest_for(string_view user, string_view password) const
+{
+    md5 hash;
+    md5::digest_type digest;
+
+    std::ostringstream digest_steam_src;
+    digest_steam_src << user << ':' << cfg_.digest_realm << ':' << password;
+    std::string digest_src = digest_steam_src.str();
+    hash.process_bytes(digest_src.data(), digest_src.size());
+    hash.get_digest(digest);
+    const auto digest_bytes = reinterpret_cast<const char *>(&digest);
+    
+    static_assert(sizeof(md5::digest_type) == 16);
+
+    std::string result;
+    result.reserve(32);
+    base16_encode(digest_bytes, digest_bytes + sizeof(md5::digest_type), std::back_inserter(result));
+    return result;
+}
+
+string_view http_digest_authentication_application::get_realm() const
+{
+    return cfg_.digest_realm;
 }
 
 }

@@ -82,12 +82,17 @@ struct http_session
 struct http_digest_authentication_application
     : public service
     , public http::application
+    , public authentication::authenticator
 {
 public:
     explicit http_digest_authentication_application(http_digest_authentication_application_configuration const& cfg);
     ~http_digest_authentication_application() override;
 
+    void close() noexcept override final;
     void handle(http::request & req, http::response & resp) override final;
+
+    std::string get_digest_for(string_view, string_view password) const override final;
+    string_view get_realm() const override final;
 
 private:
     std::string get_nonce();
@@ -97,7 +102,9 @@ private:
     http_digest_authentication_application_configuration cfg_;
     shared_ptr<scheduler> scheduler_;
     shared_ptr<authentication::digest_provider> digest_provider_;
-    std::string realm_, digest_opaque_;
+    std::string digest_opaque_;
+    fibers::mutex closing_mtx_;
+    bool closing_{false};
 
     using sessions_type = boost::intrusive::set<
         http_session,

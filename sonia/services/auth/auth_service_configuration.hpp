@@ -23,7 +23,7 @@ struct auth_service_configuration
     optional<boost::filesystem::path> path;
     optional<boost::filesystem::path> dir;
 
-    std::string digest_realm;
+    std::string authenticator_app;
     std::vector<std::pair<std::string, std::string>> bootstrap_users;
 };
 

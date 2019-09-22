@@ -45,8 +45,6 @@ public:
     path_ref_t get_state_dir() const { if (cfg_.dir) return *cfg_.dir; else return statable_t::get_state_dir(); }
 
     optional<std::string> get_digest_for(string_view) const override final;
-    std::string get_digest_for(string_view, string_view password) const override final;
-    string_view get_realm() const override final;
 
     using statable_t::backup;
     using statable_t::restore;

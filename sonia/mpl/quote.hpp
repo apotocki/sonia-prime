@@ -20,7 +20,7 @@ struct quote
     template <typename ... PsT> static false_type check(...);	
 
     template <typename ... PsT> using apply = conditional_t<
-        decltype(check<PsT...>(nullptr))::value,
+        decltype(quote::check<PsT...>(nullptr))::value,
         F<PsT...>,
         identity<F<PsT...>>
     >;

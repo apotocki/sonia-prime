@@ -117,7 +117,7 @@ public:
         return false;
     }
 
-    IteratorT & get_base() { return std::get<0>((base_holder_t&)*pbuff_); }
+    IteratorT & get_base() { return *std::get<0>((base_holder_t&)*pbuff_); }
 
     template <typename T = IteratorT, typename = enable_if_t<iterators::has_method_flush_v<T, void()>>>
     void flush() { get_base().flush(); }

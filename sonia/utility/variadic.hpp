@@ -36,18 +36,18 @@ auto&& forward_at(ArgsT&& ... args)
     return forward_at_impl<N, ArgsT...>()(std::forward<ArgsT>(args) ...);
 }
 
-template <typename T, size_t PosV, typename ElemT0, typename ... ListT>
+template <typename T, typename PosT, typename ElemT0, typename ... ListT>
 struct find_type_index : std::conditional_t<
         std::is_same_v<ElemT0, T>,
-        std::integral_constant<size_t, PosV>,
-        find_type_index<T, PosV + 1, ListT...>
+        PosT,
+        find_type_index<T, std::integral_constant<typename PosT::value_type, PosT::value + 1>, ListT...>
     >
 {};
 
-template <typename T, size_t PosV, typename ElemT0>
-struct find_type_index<T, PosV, ElemT0> : std::conditional_t<
+template <typename T, typename PosT, typename ElemT0>
+struct find_type_index<T, PosT, ElemT0> : std::conditional_t<
         std::is_same_v<ElemT0, T>,
-        std::integral_constant<size_t, PosV>,
+        PosT,
         boost::mpl::identity<void>
     >
 {};
@@ -55,7 +55,7 @@ struct find_type_index<T, PosV, ElemT0> : std::conditional_t<
 template <typename T, typename ... ArgsT>
 auto&& forward_type(ArgsT&& ... args)
 {
-    return forward_at<find_type_index<T, 0, ArgsT...>::type::value>(args...);
+    return forward_at<find_type_index<T, std::integral_constant<size_t, 0>, ArgsT...>::type::value>(args...);
 }
 
 //template <typename PredicateT, typename FtorT, typename ArgT, typename ... ArgsT> 

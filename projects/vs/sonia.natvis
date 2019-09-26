@@ -79,7 +79,7 @@
     <Expand>
         <Item Name="[size]">size()</Item>
         <Item Condition="!is_on_stack()" Name="adjacent_buffer">heap_buffer()</Item>
-        <Item Condition="!is_on_stack()" Name="begin">begin()</Item>
+        <Item Condition="is_on_stack()" Name="begin">begin()</Item>
         <ArrayItems>
             <Size>size()</Size>
             <ValuePointer>begin()</ValuePointer>

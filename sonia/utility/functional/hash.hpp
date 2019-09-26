@@ -38,7 +38,7 @@ inline void hash_combine(std::size_t& seed, const T& v) noexcept
 struct hasher
 {
     template <typename T>
-    size_t operator()(T && arg) const noexcept
+    size_t operator()(T && arg) const
     {
         return hash<remove_cvref_t<T>>()(std::forward<T>(arg));
     }

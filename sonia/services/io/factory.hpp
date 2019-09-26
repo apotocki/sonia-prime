@@ -36,7 +36,7 @@ class factory
 
 public:
     factory();
-    virtual ~factory() override;
+    ~factory() override;
 
     void open(uint32_t thr_cnt);
     void close() noexcept;
@@ -67,8 +67,6 @@ public:
         using tcp_handle_type = tcp_socket_service_type::tcp_handle_type;
 
     public:
-        virtual ~impl_base() = default;
-
         explicit impl_base(shared_ptr<factory> wr);
         
         impl_base(impl_base const&) = delete;

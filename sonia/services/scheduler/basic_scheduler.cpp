@@ -149,26 +149,20 @@ void basic_scheduler::stop()
     // stop timer
     timer_.disarm();
 
-    {
-        lock_guard lck(queue_mtx_);
-        if (stopping_) return;
+    if (lock_guard lck(queue_mtx_); !stopping_) {
         stopping_ = true;
         queue_cond_.notify_all();
-    }
+    } else return;
 
     // deal with priority queue
+    for (lock_guard lck(priority_mtx_); !priority_set_.empty();)
     {
-        lock_guard lck(priority_mtx_);
-        while (!priority_set_.empty())
-        {
-            auto it = priority_set_.begin();
-            priority_queue_entry & pe = *it;
-            priority_set_.erase(it);
-            pe.on_cancel(this);
-            pe.release_ref(this);
-        }
+        auto it = priority_set_.begin();
+        priority_queue_entry & pe = *it;
+        priority_set_.erase(it);
+        pe.on_cancel(this);
+        pe.release_ref(this);
     }
-
 
     // fiber friendly thread join procedure
     unique_lock lk(close_mtx_);
@@ -185,11 +179,13 @@ void basic_scheduler::stop()
     close_cond_.wait(lk, [this] { return threads_.empty(); });
 }
 
+thread_local fibers::mutex* thread_mtx_;
+
 void basic_scheduler::thread_proc()
 {
     //fibers::use_scheduling_algorithm< boost::fibers::algo::shared_work >();
-    fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler>(gh_, true);
-    //fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler2>(gh_, true);
+    //fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler>(gh_, true);
+    fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler2>(gh_, true);
     /*
     fibers::context::active()->get_scheduler()->exthook = [](fibers::context::id fid, int op) {
         switch (op) {
@@ -207,6 +203,7 @@ void basic_scheduler::thread_proc()
 
     {
         fibers::mutex mtx;
+        thread_mtx_ = &mtx;
         std::vector<fiber> fibers;
         for (size_t f = 0; f < fb_cnt_; ++f) {
             fibers.emplace_back([this, &mtx]() { fiber_proc(mtx); });
@@ -237,7 +234,15 @@ void basic_scheduler::fiber_proc(fibers::mutex & mtx)
             queue_entry * pe;
             {
                 //LOG_TRACE(logger()) << "before acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
-                //lock_guard guard(mtx);
+
+                // A problem:
+                // A fiber of a thread can spawn a queue task.
+                // But if the notify() wakes up some fiber that is belonged to the same thread,
+                // the fiber will not be able to process the spawned task until the thread switches context.
+                // So the spawned task will not be processed despite the potential availability of other threads and fibers for this work.
+                // A poliative solution: try to prevent miltiple fibers of a thread waiting for a task.
+                lock_guard guard(*thread_mtx_); 
+                
                 //LOG_TRACE(logger()) << "acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
                 unique_lock lck(queue_mtx_);
                 //LOG_TRACE(logger()) << "got guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();

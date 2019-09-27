@@ -79,15 +79,17 @@ public:
 
     constexpr size_type size() const noexcept { return size_; }
 
-    constexpr void advance_front(std::ptrdiff_t dist)
+    constexpr array_view& advance_front(std::ptrdiff_t dist)
     {
         size_ -= dist;
         data_ += dist;
+        return *this;
     }
 
-    constexpr void advance_back(std::ptrdiff_t dist)
+    constexpr array_view& advance_back(std::ptrdiff_t dist)
     {
         size_ += dist;
+        return *this;
     }
 
     constexpr void resize(size_type sz)

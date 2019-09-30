@@ -20,6 +20,8 @@ struct contains : bool_constant<!is_same_v<find_if_t<SeqT, is_same<T, _1>>, end_
 
 template <typename SeqT, typename T> using contains_t = typename contains<SeqT, T>::type;
 
+template <typename SeqT, typename T> constexpr bool contains_v = contains<SeqT, T>::value;
+
 }
 
 #endif // SONIA_MPL_CONTAINS_HPP

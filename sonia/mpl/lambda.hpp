@@ -12,12 +12,12 @@
 #include "sonia/mpl/bind.hpp"
 #include "sonia/mpl/protect.hpp"
 #include "sonia/mpl/quote.hpp"
+#include "sonia/mpl/lambda_fwd.hpp"
 
 namespace sonia::mpl {
 
-template <typename X> struct is_placeholder_expression : false_type {};
 template <typename X> struct is_placeholder_expression<protect<X>> : false_type {};
-template <int I> struct is_placeholder_expression<arg_c<I>> : true_type {};
+
 template <template <typename ...> class F, typename ... ArgsT> struct is_placeholder_expression<F<ArgsT...>>
 {
     static constexpr bool test() { return (is_placeholder_expression<ArgsT>::value || ...); }

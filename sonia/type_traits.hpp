@@ -222,14 +222,6 @@ template <class T, class Enabler = void> struct size_of : integral_constant<int,
 template <class T> struct size_of<T, enable_if_t<is_void_v<T>>> : integral_constant<int, 0> {};
 template <class T> constexpr size_t size_of_v = size_of<T>::value;
 
-namespace mpl {
-using _1 = arg_c<1>;
-using _2 = arg_c<2>;
-using _3 = arg_c<3>;
-using _4 = arg_c<4>;
-using _5 = arg_c<5>;
-}
-
 using std::in_place;
 using std::in_place_t;
 using std::in_place_type;

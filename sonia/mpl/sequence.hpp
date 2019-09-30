@@ -11,6 +11,7 @@
 
 #include <tuple>
 #include "sonia/type_traits.hpp"
+#include "sonia/mpl/lambda_fwd.hpp"
 
 namespace sonia {
 
@@ -58,9 +59,11 @@ template <class SequenceT> static constexpr bool empty_v = size_v<SequenceT> == 
 template <class SequenceT> using front = at_c<SequenceT, 0>;
 template <class SequenceT> using front_t = at_c_t<SequenceT, 0>;
 
-// front
-template <class SequenceT> using back = at_c<SequenceT, size_v<SequenceT> - 1>;
+// back
+template <class SequenceT> struct back : at_c<SequenceT, size_v<SequenceT> - 1> {};
 template <class SequenceT> using back_t = at_c_t<SequenceT, size_v<SequenceT> - 1>;
+
+template <int I, size_t IdxV> struct is_placeholder_expression<at_c<arg_c<I>, IdxV>> : true_type {};
 
 }
 

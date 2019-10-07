@@ -4,7 +4,7 @@
 
 #include "sonia/config.hpp"
 #include "file_region_iterator.hpp"
-
+#include "sonia/logger/logger.hpp"
 #include <cstring>
 
 namespace boost { namespace interprocess { namespace detail {} namespace ipcdetail {} } }
@@ -13,9 +13,9 @@ namespace sonia {
 
 namespace ipc = boost::interprocess;
 
-file_mapping_holder::fm_cache::fm_cache(boost::filesystem::path const& path, boost::interprocess::mode_t m)
+file_mapping_holder::fm_cache::fm_cache(boost::filesystem::path const& p, boost::interprocess::mode_t m) : filepath {p}
 {
-    fm = boost::interprocess::file_mapping(path.string().c_str(), m);
+    fm = boost::interprocess::file_mapping(filepath.string().c_str(), m);
 }
 
 file_mapping_holder::file_mapping_holder(boost::filesystem::path const& path, boost::interprocess::mode_t mode, size_t rsz)
@@ -65,7 +65,12 @@ file_region_descriptor::~file_region_descriptor()
         boost::intrusive_ptr<file_region_descriptor> tmp = std::move(next_->next_);
         next_ = std::move(tmp);
     }
-    flush();
+    
+    try {
+        flush();
+    } catch (...) {
+        GLOBAL_LOG_ERROR() << "can't flush file, error: " << boost::current_exception_diagnostic_information();
+    }
 }
 
 bool file_region_descriptor::is_cursor_at_the_end_or_null() const
@@ -75,11 +80,16 @@ bool file_region_descriptor::is_cursor_at_the_end_or_null() const
 
 void file_region_descriptor::update_region_size(size_t sz)
 {
-	if (sz != region_size()) {
-		region_ = ipc::mapped_region();
-		truncate(fileoffset_ + sz);
-		region_ = ipc::mapped_region(file_mapping(), mode(), fileoffset_, sz);
-	}
+    try {
+	    if (sz && sz != region_size()) {
+		    region_ = ipc::mapped_region();
+            truncate(fileoffset_ + sz);
+		    region_ = ipc::mapped_region(file_mapping(), mode(), fileoffset_, sz);
+	    }
+    } catch (...) {
+        GLOBAL_LOG_ERROR() << "can't update_region_size, fileoffset: " << fileoffset_ << ", size: " << sz << ", file: " << file_path().string();
+        throw;
+    }
 }
 
 void file_region_descriptor::next_from(file_region_descriptor const& previous)

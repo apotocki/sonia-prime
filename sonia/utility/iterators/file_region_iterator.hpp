@@ -32,7 +32,7 @@ class file_mapping_holder
         boost::interprocess::file_mapping fm;
         uint64_t size;
         size_t region_size;
-
+        boost::filesystem::path filepath;
         fm_cache(boost::filesystem::path const&, boost::interprocess::mode_t);
     };
 
@@ -41,6 +41,7 @@ public:
 
     boost::interprocess::file_mapping & file_mapping() const { return fmc_->fm; }
     boost::interprocess::mode_t mode() const { return file_mapping().get_mode(); }
+    boost::filesystem::path const& file_path() const { return fmc_->filepath; }
     uint64_t file_size() const { return fmc_->size; }
     uint64_t region_size() const { return fmc_->region_size; }
 

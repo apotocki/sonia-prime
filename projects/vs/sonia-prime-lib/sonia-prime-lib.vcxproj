@@ -49,6 +49,7 @@
     <ClInclude Include="..\..\..\sonia\mpl\next.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\not_equal_to.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\plus.hpp" />
+    <ClInclude Include="..\..\..\sonia\mpl\pop_back.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\pop_front.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\protect.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\push_back.hpp" />

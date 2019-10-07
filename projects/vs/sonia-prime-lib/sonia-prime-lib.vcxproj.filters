@@ -855,6 +855,9 @@
     <ClInclude Include="..\..\..\sonia\mpl\pop_front.hpp">
       <Filter>sonia.mpl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mpl\pop_back.hpp">
+      <Filter>sonia.mpl</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

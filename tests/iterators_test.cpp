@@ -33,6 +33,7 @@ BOOST_AUTO_TEST_CASE (file_region_iterator_test)
     using file_iterator_t = file_region_iterator<const char>;
     using file_write_iterator_t = file_region_iterator<char>;
 
+
     // create the file
     {
         fs::create_directories(TEST_FOLDER);
@@ -52,10 +53,23 @@ BOOST_AUTO_TEST_CASE (file_region_iterator_test)
         // no flush heare because of external data set
     }
     BOOST_CHECK_EQUAL(content.size(), fs::file_size(TEST_FOLDER "/test1.dat"));
+
+    // write exactly 64k test
+    std::vector<char> data;
+    data.resize(65536, 0x22);
+    {
+        file_write_iterator_t it2{TEST_FOLDER "/test.dat"};
+        array_view<char> buff = *it2;
+        std::for_each(buff.begin(), buff.end(), [](char & c) { c = 0x22; });
+        ++it2;
+        it2.flush();
+    }
+
 }
 
 #endif
 
+#if 1
 #if 1
 BOOST_AUTO_TEST_CASE( tar_iterator_test )
 {
@@ -190,8 +204,6 @@ BOOST_AUTO_TEST_CASE(bzip2_iterators_test)
     archiver_test<bz2_compress_iterator, bz2_decompress_iterator>(TEST_FOLDER "/temp.bz2", 1024 * 1024 * 16);
 }
 #endif
-
-#if 1
 
 #include "sonia/utility/iterators/archive_extract_iterator.hpp"
 

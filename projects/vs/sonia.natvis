@@ -23,6 +23,7 @@
     <Intrinsic Name="size" Expression="size_" />
     <Intrinsic Name="data" Expression="data_" />
     <DisplayString>{data(),[size()]s}</DisplayString>
+    <StringView>data(),[size()]s</StringView>
     <Expand>
       <Item Name="[size]" ExcludeView="simple">size()</Item>
       <ArrayItems>
@@ -97,6 +98,7 @@
     <Intrinsic Name="size" Expression="is_on_stack()?on_stack_size():on_heap_size()" />
     <Intrinsic Name="begin" Expression="is_on_stack()?on_stack_begin():on_heap_begin()" />
     <DisplayString>{begin(),[size()]s}</DisplayString>
+    <StringView>begin(),[size()]s</StringView>
     <Expand>
         <Item Name="[on stack]" Condition="is_on_stack()">on_stack_begin()</Item>
         <Item Name="[on heap]" Condition="!is_on_stack()">on_heap_begin()</Item>
@@ -120,6 +122,7 @@
     <Intrinsic Name="size" Expression="is_on_stack()?on_stack_size():on_heap_size()" />
     <Intrinsic Name="begin" Expression="is_on_stack()?on_stack_begin():on_heap_begin()" />
     <DisplayString>{begin(),[size()]s}</DisplayString>
+    <StringView>begin(),[size()]s</StringView>
     <Expand>
         <Item Name="[on stack]" Condition="is_on_stack()">on_stack_begin()</Item>
         <Item Name="[on heap]" Condition="!is_on_stack()">on_heap_begin()</Item>

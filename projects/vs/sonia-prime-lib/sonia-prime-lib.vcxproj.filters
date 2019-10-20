@@ -97,6 +97,9 @@
     <Filter Include="sonia.sys\linux">
       <UniqueIdentifier>{e136d02d-a1e2-422b-be0a-0dbbbaa3fc0b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\parsers\xml">
+      <UniqueIdentifier>{01018742-acea-47b3-8839-dc8517cc0e58}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -858,6 +861,18 @@
     <ClInclude Include="..\..\..\sonia\mpl\pop_back.hpp">
       <Filter>sonia.mpl</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\xml\lexems.hpp">
+      <Filter>sonia.utility\parsers\xml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\xml\lexertl_lexer.hpp">
+      <Filter>sonia.utility\parsers\xml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\xml\model.hpp">
+      <Filter>sonia.utility\parsers\xml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\xml\parser.hpp">
+      <Filter>sonia.utility\parsers\xml</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -988,6 +1003,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sys\linux\signals_api.cpp">
       <Filter>sonia.sys\linux</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\parsers\xml\xml_model.cpp">
+      <Filter>sonia.utility\parsers\xml</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

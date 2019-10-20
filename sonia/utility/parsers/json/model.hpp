@@ -16,7 +16,7 @@
 #include "sonia/utility/json/value.hpp"
 #include "sonia/utility/parsers/utility.hpp"
 
-namespace sonia { namespace parsers { namespace json {
+namespace sonia::parsers::json {
 
 template <typename InputIteratorT, typename OutputIteratorT>
 void normilize_json_string_aux(InputIteratorT & it, InputIteratorT const& eit, OutputIteratorT & oit)
@@ -83,14 +83,16 @@ public:
     void put_array();
     
     template <typename IteratorT>
-    void put_number(IteratorT b, IteratorT e) {
+    void put_number(IteratorT b, IteratorT e)
+    {
         tempstr_.clear();
         std::copy(b, e, std::back_inserter(tempstr_));
         stack_.push_back(json_value(decimal::parse(string_view(&tempstr_.front(), tempstr_.size()))));
     }
 
     template <typename IteratorT>
-    void put_string(IteratorT b, IteratorT e) {
+    void put_string(IteratorT b, IteratorT e)
+    {
         ++b;
         tempstr_.clear();
         normilize_json_string(b, e, std::back_inserter(tempstr_));
@@ -140,6 +142,6 @@ private:
     std::vector<char> tempstr_;
 };
 
-}}}
+}
 
 #endif // SONIA_UTILITY_JSON_MODEL_HPP

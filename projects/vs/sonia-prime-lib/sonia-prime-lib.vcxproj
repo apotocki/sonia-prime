@@ -220,6 +220,10 @@
     <ClInclude Include="..\..\..\sonia\utility\parsers\json\parser.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parsers\lexer.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\parsers\utility.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\xml\lexems.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\xml\lexertl_lexer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\xml\model.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\parsers\xml\parser.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\placement_new.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\persister.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\polymorphic_traits.hpp" />
@@ -392,6 +396,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\parsers\xml\xml_model.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\windows.cpp" />
   </ItemGroup>
   <ItemGroup>

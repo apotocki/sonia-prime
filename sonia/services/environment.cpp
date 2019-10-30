@@ -292,7 +292,7 @@ void environment::load_configuration(std::istream & cfg)
     }
 }
 
-singleton & environment::locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>()> const& f)
+singleton & environment::locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>(singleton::id)> const& f)
 {
     const uint32_t tid = get_type_id(ti);
     return *slocator_.get(tid, f);

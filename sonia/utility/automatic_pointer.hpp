@@ -11,13 +11,11 @@
 
 #include "sonia/shared_ptr.hpp"
 #include "sonia/utility/polymorphic_traits.hpp"
-#include "sonia/utility/explicit_operator_bool.hpp"
 
 namespace sonia {
 
 template <typename T>
 class automatic_pointer;
-
 
 template <typename T>
 class automatic_pointer<shared_ptr<T>>
@@ -59,10 +57,8 @@ public:
 
     automatic_pointer & operator= (automatic_pointer && rhs) = default;
 
-    bool operator!() const noexcept { return !ptr; }
-
-    BOOST_CONSTEXPR_EXPLICIT_OPERATOR_BOOL();
-
+    explicit operator bool() const noexcept { return !!ptr; }
+    
     T * get() const { return ptr.get(); }
     T * operator-> () const { return ptr.get(); }
     T & operator* () const { return *ptr; }

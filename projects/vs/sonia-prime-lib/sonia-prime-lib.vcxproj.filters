@@ -624,9 +624,6 @@
     <ClInclude Include="..\..\..\sonia\mpl\sequence.hpp">
       <Filter>sonia.mpl</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\io\tcp_acceptor_.hpp">
-      <Filter>sonia.services.io</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\caches\utility.hpp">
       <Filter>sonia.utility\caches</Filter>
     </ClInclude>

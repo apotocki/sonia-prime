@@ -159,7 +159,7 @@ void register_service_factory(string_view nm, function<shared_ptr<service>()> co
     env_->register_service_factory(nm, fm);
 }
 
-singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>()> const& f)
+singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>(singleton::id)> const& f)
 {
     return env_->locate_singleton(ti, f);
 }

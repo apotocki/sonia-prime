@@ -89,7 +89,6 @@
     <ClInclude Include="..\..\..\sonia\services\io\socket_address.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\ssl_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\ssl_factory.hpp" />
-    <ClInclude Include="..\..\..\sonia\services\io\tcp_acceptor_.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_read_output_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_socket.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\tcp_write_output_iterator.hpp" />
@@ -396,7 +395,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\parsers\xml\xml_model.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\parsers\xml\xml_model.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\windows.cpp" />
   </ItemGroup>
   <ItemGroup>

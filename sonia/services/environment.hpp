@@ -64,7 +64,7 @@ public:
     void load_configuration(boost::filesystem::path const &);
     void load_configuration(std::istream &);
 
-    singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>()> const&);
+    singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>(singleton::id)> const&);
 
     //std::list<host> const& hosts() const noexcept { return hosts_; }
     // host & host(string_view);

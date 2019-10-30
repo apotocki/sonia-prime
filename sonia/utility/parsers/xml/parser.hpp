@@ -171,7 +171,8 @@ bool parser<LexerT, ModelT>::doctypedecl(iterator & b, iterator const& e) const
 template <class LexerT, class ModelT>
 bool parser<LexerT, ModelT>::prolog(iterator & b, iterator const& e) const
 {
-    using namespace std::placeholders;
+    using std::placeholders::_1;
+    using std::placeholders::_2;
     if (!valid(b, e) || !xml_decl(b, e)) return false;
 
     star(b, e, std::bind(&parser::misc, this, _1, _2));
@@ -184,7 +185,9 @@ bool parser<LexerT, ModelT>::prolog(iterator & b, iterator const& e) const
 template <class LexerT, class ModelT>
 void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
 {
-    using namespace std::placeholders;
+    using std::placeholders::_1;
+    using std::placeholders::_2;
+
     if (!valid(b, e) || !prolog(b, e)) {
         throw exception("expected XMLDecl");
     }
@@ -198,7 +201,8 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
 template <class LexerT, class ModelT>
 bool parser<LexerT, ModelT>::element(iterator & b, iterator const& e) const
 {
-    using namespace std::placeholders;
+    using std::placeholders::_1;
+    using std::placeholders::_2;
 
     if (b->id != ID_OPEN_BROKET) return false;
     if (++b; !valid(b, e) || b->id != ID_NAME) {
@@ -227,7 +231,7 @@ bool parser<LexerT, ModelT>::attribute(iterator & b, iterator const& e) const
 {
     if (b->id != ID_SPACE) return false;
     if (++b; !valid(b, e) || b->id != ID_NAME) return false;
-    mdl_.put_string(b->first, b->second);
+    mdl_.put_string(b->first, b->second, 0);
     mdl_.on_attribute_name();
     if (++b; !valid(b, e) || b->id != ID_EQ) {
         throw exception("'=' is expected");

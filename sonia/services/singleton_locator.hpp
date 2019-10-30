@@ -27,9 +27,10 @@ class singleton_locator : public loggable
 {
 public:
     singleton_locator() { set_log_attribute("Type", "singleton_locator"); }
-    explicit singleton_locator(null_t) {}
 
-    shared_ptr<singleton> get(singleton::id id, function<shared_ptr<singleton>()> const& factory);
+    explicit singleton_locator(null_t) {};
+
+    shared_ptr<singleton> get(singleton::id id, function<shared_ptr<singleton>(singleton::id)> const& factory);
 
     void shutdown(shared_ptr<singleton>);
     void shutdown();

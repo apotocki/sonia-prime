@@ -198,6 +198,43 @@ void decimal_add(SignificandT & lv, ExponentT & le, SignificandT const& rv, Expo
     decimal_normilize(lv, le);
 }
 
+template <typename SignificandT, typename ExponentT>
+void decimal_minus(SignificandT & lv, ExponentT & le, SignificandT const& rv, ExponentT const& re)
+{
+    ExponentT minexp = (std::min)(le, re);
+    if (le != minexp) {
+        lv = lv * pow(SignificandT(10), le - minexp) - rv;
+        le = minexp;
+    } else if (re != minexp) {
+        lv -= rv * pow(SignificandT(10), re - minexp);
+    } else {
+        lv -= rv;
+    }
+    decimal_normilize(lv, le);
+}
+
+template <typename SignificandT, typename ExponentT>
+void decimal_mul(SignificandT & lv, ExponentT & le, SignificandT const& rv, ExponentT const& re)
+{
+    lv *= rv;
+    le += re;
+    decimal_normilize(lv, le);
+}
+
+template <typename SignificandT, typename ExponentT>
+void decimal_divide(SignificandT & lv, ExponentT & le, SignificandT const& rv, ExponentT const& re)
+{
+    auto val = msb(lv);
+    if (val < 63) {
+        int p = (int)log10(pow(2.0, 63 - val));
+        lv = lv * pow(SignificandT(10), p);
+        le -= p;
+    }
+    lv /= rv;
+    le -= re;
+    decimal_normilize(lv, le);
+}
+
 }
 
 #endif // SONIA_UTILITY_DECIMAL_IPP

@@ -16,7 +16,7 @@ namespace sonia {
 //};
 
 
-shared_ptr<singleton> singleton_locator::get(singleton::id id, function<shared_ptr<singleton>()> const& factory)
+shared_ptr<singleton> singleton_locator::get(singleton::id id, function<shared_ptr<singleton>(singleton::id)> const& factory)
 {
     unique_lock cache_lock(cache_mtx_);
     
@@ -31,8 +31,8 @@ shared_ptr<singleton> singleton_locator::get(singleton::id id, function<shared_p
         }
         descr.fid = this_fiber::get_id();
         SCOPE_EXIT([&descr] { descr.fid = fiber::id(); });
-        descr.object = factory();
-        singleton_access::set_id(*descr.object, id);
+        descr.object = factory(id);
+        //singleton_access::set_id(*descr.object, id);
         lock_guard layers_guard(layers_mtx_);
         layers_.insert(descr);
     }

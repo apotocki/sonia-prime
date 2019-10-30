@@ -117,11 +117,20 @@ public:
     bool starts_with(array_view prefix) const
     {
         if (size_ < prefix.size()) return false;
-        if constexpr (is_trivial_v<T>)
-        {
+        if constexpr (is_trivial_v<T>) {
             return 0 == std::memcmp(data_, prefix.data_, prefix.size() * sizeof(T));
         } else {
             return std::equal(prefix.begin(), prefix.end(), data_);
+        }
+    }
+
+    bool ends_with(array_view suffix) const
+    {
+        if (size_ < suffix.size()) return false;
+        if constexpr (is_trivial_v<T>) {
+            return 0 == std::memcmp(end() - suffix.size(), suffix.data_, suffix.size() * sizeof(T));
+        } else {
+            return std::equal(suffix.begin(), suffix.end(), end() - suffix.size());
         }
     }
 

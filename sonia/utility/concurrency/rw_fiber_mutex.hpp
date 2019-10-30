@@ -102,7 +102,7 @@ public:
             if (!stateval) {
                 mtx_.lock();
                 return;
-            } else if (stateval < 0) { // there is a shared lock at the moemnt
+            } else if (stateval < 0) { // there is a shared lock at the moment
                 mtx_.lock();
                 std::unique_lock rnext_lock(smtx_);
                 rvar_.wait(smtx_, [this]() { return 0 == state_.load(std::memory_order_relaxed) % state_pos_value; });

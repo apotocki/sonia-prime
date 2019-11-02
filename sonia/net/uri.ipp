@@ -414,18 +414,20 @@ void canonize_path(string_view path, OutputIteratorT oit)
 template <typename InputIteratorT, typename OutputIteratorT>
 void decode_uri_component(InputIteratorT b, InputIteratorT e, OutputIteratorT oit)
 {
-    for (; b != e; ++b, ++oit) {
+    for (; b != e; ++oit) {
         char c = *b;
         if (c == '%') {
             ++b;
             uint8_t r;
             if (!parsers::hexinteger(b, e, 2, 2, r)) throw exception("wrong urlencoded sequence");
             *oit = r;
+            continue;
         } else if (c == '+') {
             *oit = ' ';
         } else {
             *oit = c;
         }
+        ++b;
     }
 }
 

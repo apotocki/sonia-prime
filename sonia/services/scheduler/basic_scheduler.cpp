@@ -231,18 +231,19 @@ void basic_scheduler::fiber_proc(fibers::mutex & mtx)
         {
             bool stopping = false;
             bool has_more = false;
+
+            // A problem:
+            // A fiber of a thread can spawn a queue task.
+            // But if the notify() wakes up some fiber that is belonged to the same thread,
+            // the fiber will not be able to process the spawned task until the thread switches context.
+            // So the spawned task will not be processed despite the potential availability of other threads and fibers for this work.
+            // A poliative solution: try to prevent miltiple fibers of a thread waiting for a task.
+            lock_guard guard(*thread_mtx_); 
+
             queue_entry * pe;
             {
                 //LOG_TRACE(logger()) << "before acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
 
-                // A problem:
-                // A fiber of a thread can spawn a queue task.
-                // But if the notify() wakes up some fiber that is belonged to the same thread,
-                // the fiber will not be able to process the spawned task until the thread switches context.
-                // So the spawned task will not be processed despite the potential availability of other threads and fibers for this work.
-                // A poliative solution: try to prevent miltiple fibers of a thread waiting for a task.
-                lock_guard guard(*thread_mtx_); 
-                
                 //LOG_TRACE(logger()) << "acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
                 unique_lock lck(queue_mtx_);
                 //LOG_TRACE(logger()) << "got guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
@@ -401,7 +402,7 @@ void basic_scheduler::schedule_timer(priority_set_t::iterator it, int64_t now)
             push(e, false);
             priority_lowest_ = priority_max_val_;
         } else {
-            //LOG_INFO(logger()) << "timer_.set " << resched_duration;
+            LOG_INFO(logger()) << "set timeout: " << resched_duration << " sec";
             timer_.set(time_duration_t{resched_duration});
         }
     }

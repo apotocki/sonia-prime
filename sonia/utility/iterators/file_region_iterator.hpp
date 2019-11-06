@@ -254,6 +254,12 @@ public:
 		    file_region_iterator_base::flush(static_cast<same_const_t<char, T>*>(b_));
         }
 	}
+
+    void close()
+    {
+        region_.reset();
+        b_ = e_ = nullptr;
+    }
 };
 
 }

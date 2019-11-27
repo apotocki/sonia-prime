@@ -22,7 +22,7 @@ template <typename IteratorT>
 inline bool unreserved(IteratorT & b)
 {
     // unreserved    = ALPHA / DIGIT / "-" / "." / "_" / "~"
-    return alpha(b) || digit(b) || character_from(b, string_view("-._~", 4));
+    return alpha(b) || digit(b) || character_from(b, string_view{"-._~", 4});
 }
 
 template <typename IteratorT>
@@ -297,11 +297,12 @@ bool fragment(IteratorT & b, IteratorT const& e, UriPpartsT* result)
 }
 
 template <typename IteratorT, class UriPpartsT>
-bool uri(IteratorT & b, IteratorT const& e, UriPpartsT* result)
+bool uri(IteratorT & it, IteratorT const& e, UriPpartsT* result)
 {
     // URI           = scheme ":" hier-part [ "?" query ] [ "#" fragment ]
 
-    IteratorT pos = b;
+    IteratorT pos = it;
+    IteratorT b = it;
     if (!valid(b, e) || !parsers::scheme(b, e)) return false;
     if (result) result->scheme = {pos, b};
     if (!valid(b, e) || !character(b, ':')) return false;
@@ -313,13 +314,15 @@ bool uri(IteratorT & b, IteratorT const& e, UriPpartsT* result)
         fragment(b, e, result);
     }
     if (result) result->is_absolute = true;
+    it = b;
     return true;
 }
 
 template <typename IteratorT, class UriPpartsT>
-bool relative_ref(IteratorT & b, IteratorT const& e, UriPpartsT* result)
+bool relative_ref(IteratorT & it, IteratorT const& e, UriPpartsT* result)
 {
     // relative-ref  = relative-part [ "?" query ] [ "#" fragment ]
+    IteratorT b = it;
     if (!relative_part(b, e, result)) return false;
     if (valid(b, e) && character(b, '?')) {
         query(b, e, result);
@@ -331,6 +334,7 @@ bool relative_ref(IteratorT & b, IteratorT const& e, UriPpartsT* result)
         result->scheme.reset();
         result->is_absolute = false;
     }
+    it = b;
     return true;
 }
 
@@ -447,6 +451,23 @@ void decode_query(InputIteratorT b, InputIteratorT e, FunctorT const& ftor)
         ftor(std::move(nm), std::move(v));
         if (b == e) return;
         ++b;
+    }
+}
+
+template <typename InputIteratorT, typename OutputIteratorT>
+void encode_uri_component(InputIteratorT b, InputIteratorT e, OutputIteratorT oit)
+{
+    for (; b != e; ++oit, ++b) {
+        char c = *b;
+        if (parsers::is_alpha(c) || parsers::is_digit(c) || parsers::is_character_from(c, string_view{"-_.~", 4})) {
+            *oit = c;
+        } else {
+            *oit = '%'; ++oit;
+            uint8_t v0 = (c >> 4) & 0xf;
+            uint8_t v1 = c & 0xf;
+            *oit = v0 + (v0 < 10 ? '0' : 'A' - 10); ++oit;
+            *oit = v1 + (v1 < 10 ? '0' : 'A' - 10);
+        }
     }
 }
 

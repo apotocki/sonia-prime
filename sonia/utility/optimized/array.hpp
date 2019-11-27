@@ -143,6 +143,26 @@ struct optimized_array_impl
             : array_view(local_begin(self), self->get_uint() & sz_mask);
     }
 
+    static ElementT& front(HolderT * self)
+    {
+        return *begin(self);
+    }
+
+    static element_t const& front(HolderT const* self)
+    {
+        return *begin(self);
+    }
+
+    static ElementT& back(HolderT * self)
+    {
+        return *(end(self) - 1);
+    }
+
+    static element_t const& back(HolderT const* self)
+    {
+        return *(end(self) - 1);
+    }
+
     static size_t size(HolderT const* self)
 	{
         return self->is_ptr() ? ptr(self)->size() : (self->get_uint() & sz_mask);
@@ -271,6 +291,11 @@ public:
     element_t const* cend() const noexcept { return array_t::end(this); }
     element_t const* end() const noexcept { return array_t::end(this); }
     ElementT * end() noexcept { return array_t::end(this); }
+
+    element_t const& front() const noexcept { return array_t::front(this); }
+    ElementT & front() noexcept { return array_t::front(this); }
+    element_t const& back() const noexcept { return array_t::back(this); }
+    ElementT & back() noexcept { return array_t::back(this); }
 
     size_t size() const noexcept { return array_t::size(this); }
 

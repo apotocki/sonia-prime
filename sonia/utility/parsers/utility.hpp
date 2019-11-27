@@ -29,11 +29,36 @@ bool valid(IteratorT const& b, IteratorT const& e) noexcept
     return b != e && valid(b);
 }
 
+inline bool is_alpha(int c) noexcept
+{
+    return (c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A); // A-Z || a-z
+}
+
+inline bool is_digit(int c) noexcept
+{
+    return (c >= 0x30 && c <= 0x39); // 0-9
+}
+
+inline bool is_hexdigit(int c) noexcept
+{
+    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+}
+
+template <typename CharT, class TraitsT>
+inline bool is_character_from(CharT c, basic_string_view<CharT, TraitsT> s)
+{
+    for (CharT tc : s) {
+        if (TraitsT::eq(c, tc)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 template <typename IteratorT>
 inline bool alpha(IteratorT & b)
 {
-    char c = *b;
-    if ((c >= 0x41 && c <= 0x5A) || (c >= 0x61 && c <= 0x7A)) { // A-Z || a-z
+    if (is_alpha(*b)) { // A-Z || a-z
         ++b;
         return true;
     }
@@ -43,8 +68,7 @@ inline bool alpha(IteratorT & b)
 template <typename IteratorT>
 inline bool digit(IteratorT & b)
 {
-    char c = *b;
-    if (c >= 0x30 && c <= 0x39) { // 0-9
+    if (is_digit(*b)) { // 0-9
         ++b;
         return true;
     }
@@ -59,15 +83,12 @@ inline bool character(IteratorT & b, char c)
     return true;
 }
 
-template <typename IteratorT>
-inline bool character_from(IteratorT & b, string_view s)
+template <typename IteratorT, typename CharT, class TraitsT>
+inline bool character_from(IteratorT & b, basic_string_view<CharT, TraitsT> s)
 {
-    char c = *b;
-    for (char tc : s) {
-        if (tc == c) {
-            ++b;
-            return true;
-        }
+    if (is_character_from(*b, s)) {
+        ++b;
+        return true;
     }
     return false;
 }
@@ -86,12 +107,6 @@ inline bool string(IteratorT & b, IteratorT const& e, string_view s)
     }
     b = it;
     return true;
-}
-
-template <typename CharT>
-bool is_hexdigit(CharT c) noexcept
-{
-    return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
 }
 
 template <typename IteratorT>

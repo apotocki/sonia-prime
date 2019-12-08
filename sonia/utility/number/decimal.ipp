@@ -154,6 +154,7 @@ std::string decimal_scientific_string(SignificandT const& v, ExponentT const& e)
     sc_e -= pos;
     
     result.insert(result.begin() + 1 + pos, '.');
+    if (result.back() == '.') result.pop_back();
     result.push_back('E');
     result.append(std::to_string(sc_e));
     return result;

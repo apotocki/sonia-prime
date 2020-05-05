@@ -334,9 +334,9 @@ void win_impl::thread_proc()
         ULONG_PTR key = 0;
         LPOVERLAPPED overlapped = nullptr;
 
-        //LOG_ERROR(wrapper->logger()) << "start listening to QC";
+        //LOG_INFO(wrapper->logger()) << "start listening to QC";
         BOOL r = GetQueuedCompletionStatus(iocp_, &bytes, &key, &overlapped, INFINITE);
-        //LOG_ERROR(wrapper->logger()) << "woke up QC";
+        //LOG_INFO(wrapper->logger()) << "woke up QC";
         DWORD errc = r ? 0 : GetLastError();
         std::error_code err(errc, std::system_category());
 

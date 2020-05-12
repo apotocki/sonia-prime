@@ -154,6 +154,7 @@ std::string decimal_scientific_string(SignificandT const& v, ExponentT const& e)
     sc_e -= pos;
     
     result.insert(result.begin() + 1 + pos, '.');
+    if (result.back() == '.') result.pop_back();
     result.push_back('E');
     result.append(std::to_string(sc_e));
     return result;
@@ -174,6 +175,7 @@ bool decimal_less(LSignificandT const& lv, LExponentT const& le, RSignificandT c
 template <typename LSignificandT, typename LExponentT, typename RSignificandT, typename RExponentT>
 bool decimal_equal(LSignificandT const& lv, LExponentT const& le, RSignificandT const& rv, RExponentT const& re)
 {
+    if (le == (std::numeric_limits<LExponentT>::max)() || re == (std::numeric_limits<RExponentT>::max)()) return false;
     if ((lv < 0 && rv >= 0) || (lv == 0 && rv != 0) || (lv > 0 && rv <= 0)) return false;
     if (lv == 0) return true;
     if (le <= re) {
@@ -224,14 +226,18 @@ void decimal_mul(SignificandT & lv, ExponentT & le, SignificandT const& rv, Expo
 template <typename SignificandT, typename ExponentT>
 void decimal_divide(SignificandT & lv, ExponentT & le, SignificandT const& rv, ExponentT const& re)
 {
-    auto val = msb(lv);
-    if (val < 63) {
-        int p = (int)log10(pow(2.0, 63 - val));
-        lv = lv * pow(SignificandT(10), p);
-        le -= p;
+    if (rv == 0) {
+        le = (std::numeric_limits<ExponentT>::max)();
+    } else if (lv) {
+        auto val = msb(lv);
+        if (val < 63) {
+            int p = (int)log10(pow(2.0, 63 - val));
+            lv = lv * pow(SignificandT(10), p);
+            le -= p;
+        }
+        lv /= rv;
+        le -= re;
     }
-    lv /= rv;
-    le -= re;
     decimal_normilize(lv, le);
 }
 

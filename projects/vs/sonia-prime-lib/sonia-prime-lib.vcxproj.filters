@@ -870,6 +870,9 @@
     <ClInclude Include="..\..\..\sonia\utility\parsers\xml\parser.hpp">
       <Filter>sonia.utility\parsers\xml</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\number\math.hpp">
+      <Filter>sonia.utility\number</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -1003,6 +1006,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\parsers\xml\xml_model.cpp">
       <Filter>sonia.utility\parsers\xml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\number\number_math.cpp">
+      <Filter>sonia.utility\number</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

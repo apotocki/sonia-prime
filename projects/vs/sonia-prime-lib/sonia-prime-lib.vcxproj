@@ -200,6 +200,7 @@
     <ClInclude Include="..\..\..\sonia\utility\number\decimal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\decimal.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\number\integer.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\number\math.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optimized\decimal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optimized\holder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optimized\integer.hpp" />
@@ -385,6 +386,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\number\number_integer.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\number\number_math.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\parameters\parameters.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
@@ -537,7 +539,8 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>
+      </SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>

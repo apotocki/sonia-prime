@@ -2,6 +2,7 @@
 #include <boost/test/unit_test.hpp>
 
 #if 0
+#if 0
 #include <iostream>
 #include <boost/multiprecision/cpp_int.hpp>
 
@@ -366,4 +367,57 @@ BOOST_AUTO_TEST_CASE (tmp_test)
         std::cout << cnt++ << "\n";
         it2 = it;
     }
+}
+#endif
+
+#include <type_traits>
+#include <cassert>
+#include <iostream>
+#include <boost/mpl/quote.hpp>
+
+namespace boost { namespace mpl {
+template<template<typename... Args2>class F>
+struct my_quoteN
+{
+    template<typename... Args>
+    struct apply:quote_impl<F<Args...>,aux::has_type<F<Args...>>::value>{};
+};
+}}
+
+template<typename T>
+struct f1
+{
+    typedef T type;
+};
+
+template<typename T1, typename T2, typename T3, typename T4, typename T5>
+struct f5
+{
+};
+
+template<typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8, typename T9, typename T10>
+struct f10
+{
+};
+
+typedef boost::mpl::quote1<f1>::apply<int>::type t1;
+typedef boost::mpl::quote5<f5>::apply<char,short,int,long,float>::type t5;
+
+typedef boost::mpl::my_quoteN<f1>::apply<int>::type t1_my;
+typedef boost::mpl::my_quoteN<f5>::apply<char,short,int,long,float>::type t5_my;
+typedef boost::mpl::my_quoteN<f10>::apply<char,short,int,long,float,char,short,int,long,float>::type t10_my;
+
+static_assert(std::is_same<t1, int>::value);
+static_assert(std::is_same<t5, f5<char,short,int,long,float>>::value);
+
+BOOST_AUTO_TEST_CASE(test)
+{
+    std::cout << "hello\n";
+    assert(!(std::is_same_v<t1, int>));
+    //assert((std::is_same<t5, f5<char,short,int,long,float>>::value));
+
+    //assert((std::is_same<t1_my,  int>::value));
+    //assert((std::is_same<t5_my,  f5 <char,short,int,long,float>>::value));
+    //assert((std::is_same<t10_my, f10<char,short,int,long,float,char,short,int,long,float>>::value));
+    //assert(!(std::is_same<t5_my, f10<char,short,int,long,float,char,short,int,long,float>>::value));
 }

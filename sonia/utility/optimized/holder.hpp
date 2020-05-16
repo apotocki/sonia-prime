@@ -30,7 +30,7 @@ public:
     optimized_base(optimized_base const& rhs) : service_cookie_(rhs.service_cookie_) {}
     optimized_base(optimized_base && rhs) = delete;
 
-    virtual ~optimized_base() {}
+    virtual ~optimized_base() = default;
 
     optimized_base & operator= (optimized_base const&) = delete;
     optimized_base & operator= (optimized_base &&) = delete;

@@ -112,8 +112,8 @@ struct optimized_holder_base
     void init_not_ptr() noexcept { *data() = 1; }
     void set_not_ptr() noexcept { *data() |= 1; }
 
-    uint8_t const* data() const noexcept { return std::launder(reinterpret_cast<uint8_t const*>(&holder_)); }
-    uint8_t * data() noexcept { return std::launder(reinterpret_cast<uint8_t*>(&holder_)); }
+    uint8_t const* data() const noexcept { return std::launder(reinterpret_cast<uint8_t const*>(holder_)); }
+    uint8_t * data() noexcept { return std::launder(reinterpret_cast<uint8_t*>(holder_)); }
     bool is_ptr() const noexcept { return !(1 & *data()); }
     
     uint8_t const* begin() const { return data() + begin_offs; }

@@ -212,6 +212,7 @@ protected:
     {}
 
 public:
+    using value_type = ElementT;
     using iterator = ElementT *;
     using const_iterator = element_t const*;
     using size_type = size_t;

@@ -81,14 +81,6 @@ public:
         array_view<char>
     >;
 
-    using range_read_impl_type = proxying_iterator_polymorphic<array_view<const char>>;
-    using range_read_input_iterator = wrapper_iterator<
-        range_read_impl_type*,
-        array_view<const char>,
-        std::input_iterator_tag,
-        array_view<const char>
-    >;
-
     using content_read_iterator_t = chain_linkable_iterator<array_view<const char>, std::input_iterator_tag>;
 
     int version{11}; // http protocol version * 10. e.g. 1.1 -> 11

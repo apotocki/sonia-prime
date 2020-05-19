@@ -22,10 +22,6 @@
 #   include "type_traits/is_nothrow_swappable.hpp"
 #endif
 
-#ifndef DO_NOT_USE_AGNOSTIC_OUT_OF_RANGE
-#include "stdexcept/out_of_range.hpp"
-#endif
-
 namespace std {
 
 template <class T, size_t N>
@@ -43,8 +39,6 @@ struct array
     using const_iterator = const_pointer;
     using reverse_iterator = reverse_iterator<iterator>;
     using const_reverse_iterator = reverse_iterator<const_iterator>;
-
-    // no explicit construct/copy/destroy for aggregate type
 
     constexpr void fill(const T& u)
     {
@@ -100,6 +94,30 @@ private:
 
 template<class T, class... U>
 array(T, U...)->array<T, 1 + sizeof...(U)>;
+
+}
+
+#ifndef DO_NOT_USE_AGNOSTIC_OUT_OF_RANGE
+#include "stdexcept/out_of_range.hpp"
+#endif
+
+namespace std {
+
+template <class T, size_t N>
+constexpr typename array<T, N>::reference array<T, N>::at(size_type n)
+{
+    if (N <= n)
+        throw out_of_range();
+    return data_[n];
+}
+
+template <class T, size_t N>
+constexpr typename array<T, N>::const_reference array<T, N>::at(size_type n) const
+{
+    if (N <= n)
+        throw out_of_range();
+    return data_[n];
+}
 
 }
 

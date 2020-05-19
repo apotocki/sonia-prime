@@ -133,7 +133,7 @@ struct optimized_holder_base
     uint32_t get_service_cookie_adv() const
     {
         uint8_t const* src = data();
-        size_t res = first_byte_mask & ((*src) >> 1);
+        uint32_t res = first_byte_mask & ((*src) >> 1);
         size_t sbits = ServiceCookieBitsV - first_byte_bits;
         do {
             size_t next_byte_bits = sbits < CHAR_BIT ? sbits : CHAR_BIT;

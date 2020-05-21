@@ -873,6 +873,9 @@
     <ClInclude Include="..\..\..\sonia\utility\number\math.hpp">
       <Filter>sonia.utility\number</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\functional\hash\tuple.hpp">
+      <Filter>sonia.utility\functional\hash</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

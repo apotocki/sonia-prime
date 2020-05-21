@@ -10,6 +10,7 @@
 #endif
 
 #include <sstream>
+#include <functional>
 
 #include <boost/assert.hpp>
 
@@ -21,12 +22,15 @@
 namespace sonia::parsers {
 
 template <typename IteratorT>
-bool valid(IteratorT const&) noexcept { return true; } /*t->id != 0; };*/
+bool valid(IteratorT const& it) noexcept
+{
+    return !empty(it);
+}
 
 template <typename IteratorT>
 bool valid(IteratorT const& b, IteratorT const& e) noexcept
 {
-    return b != e && valid(b);
+    return b != e;
 }
 
 inline bool is_alpha(int c) noexcept
@@ -117,6 +121,27 @@ inline bool hexdig(IteratorT & b)
     return true;
 }
 
+template <typename TokT>
+auto token_rule(TokT tok) { return [tok](auto & it) -> bool { return it->id == tok; }; }
+
+template <class ClassT, typename IteratorT>
+auto method_rule(ClassT const* p, bool (ClassT::* m)(IteratorT &) const)
+{
+    return std::bind(m, p, std::placeholders::_1);
+}
+
+template <class IteratorT, typename ... RuleFtorTs>
+bool rule(IteratorT &b, RuleFtorTs && ... ftors)
+{
+    IteratorT pin = b;
+    auto elemft = [&pin](auto const& ftor) -> bool { if (valid(pin) && ftor(pin)) { ++pin; return true; } return false; };
+    if ((elemft(ftors) && ...)) {
+        b = pin;
+        return true;
+    }
+    return false;
+}
+
 template <typename IteratorT, typename FunctorT>
 bool star(IteratorT & b, IteratorT const& e, FunctorT const& ftor)
 {
@@ -125,10 +150,25 @@ bool star(IteratorT & b, IteratorT const& e, FunctorT const& ftor)
 }
 
 template <typename IteratorT, typename FunctorT>
+bool star(IteratorT & b, FunctorT const& ftor)
+{
+    while (valid(b) && ftor(b));
+    return true;
+}
+
+template <typename IteratorT, typename FunctorT>
 bool plus(IteratorT & b, IteratorT const& e, FunctorT const& ftor)
 {
     if (!valid(b, e) || !ftor(b, e)) return false;
     while (valid(b, e) && ftor(b, e));
+    return true;
+}
+
+template <typename IteratorT, typename FunctorT>
+bool plus(IteratorT & b, FunctorT const& ftor)
+{
+    if (!valid(b) || !ftor(b)) return false;
+    while (valid(b) && ftor(b));
     return true;
 }
 
@@ -214,6 +254,52 @@ void to_utf8(uint32_t uchar, OutputIteratorT & oit)
     }
 }
 
+template <typename InputIteratorT>
+bool to_utf32(InputIteratorT & it, InputIteratorT const& eit, char32_t& result)
+{
+    char32_t c = *it;
+    if (c < 128) {
+        result = c;
+        ++it;
+    } else {
+        InputIteratorT tmpit = it;
+        ++tmpit;
+        if (tmpit == eit) return false;
+        char32_t c1 = *tmpit;
+        if ((c1 & 0xc0) != 0x80) return false;
+        if ((c & 0xe0) == 0xc0) {
+            if (c == 0xc1 || c == 0xc0) return false;
+            c &= 0x1F; c <<= 6;
+            result = c | (c1 & 0x3F);
+        } else {
+            ++tmpit;
+            if (tmpit == eit) return false;
+            char32_t c2 = *tmpit;
+            if ((c2 & 0xc0) != 0x80) return false;
+            if ((c & 0xf0) == 0xe0) { 
+                c &= 0x0F; c <<= 6; c |= (c1 & 0x3F);
+                c <<= 6;
+                result = c | (c2 & 0x3F);
+            } else {
+                ++tmpit;
+                if (tmpit == eit) return false;
+                char32_t c3 = *tmpit;
+                if ((c3 & 0xc0) != 0x80) return false;
+                if ((c & 0xf8) == 0xf0 && c < 0xf5) {
+                    c &= 0x07; c <<= 6; c |= (c1 & 0x3F);
+                    c <<= 6; c |= (c2 & 0x3F);
+                    c <<= 6;
+                    result = c | (c3 & 0x3F);
+                } else {
+                    return false;
+                }
+            }
+        }
+        it = ++tmpit;
+    }
+    return true;
+}
+
 template <
     template <class> class LexerT,
     template <class, class> class ParserT,
@@ -260,7 +346,7 @@ IteratorT parse(ModelT & model, IteratorT b, IteratorT e)
     if (iter != end) {
         std::string rest;
         copy_not_more(iter->first, e, std::back_inserter(rest), 50);
-        throw exception(fmt("parser error: unexpected token, stopped at: \"%1%\"") % rest);
+        throw exception("parser error: unexpected token, stopped at: \"%1%\""_fmt % rest);
     }
 
     return std::move(iter->first);

@@ -138,6 +138,7 @@
     <ClInclude Include="..\..\..\sonia\utility\file_statable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\file_statable.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\equal\variant.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\hash\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\hazardous.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\command.hpp" />

@@ -151,6 +151,9 @@
     <Filter Include="agnostic\std\algorithm">
       <UniqueIdentifier>{68f60fae-46f9-4211-848b-35fd4e03e91c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="agnostic\std\stdexcept">
+      <UniqueIdentifier>{e0a1e0bf-dfac-4640-b30e-bd8524ec73f4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -1286,6 +1289,42 @@
     </ClInclude>
     <ClInclude Include="..\..\..\agnostic\std\memory\to_address.hpp">
       <Filter>agnostic\std\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\array.hpp">
+      <Filter>agnostic\std</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\fill_n.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm.hpp">
+      <Filter>agnostic\std</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\iter_swap.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\swap.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_move_constructible.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_referenceable.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_swappable.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_swappable_with.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_swappable_with.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\stdexcept\logic_error.hpp">
+      <Filter>agnostic\std\stdexcept</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\stdexcept\out_of_range.hpp">
+      <Filter>agnostic\std\stdexcept</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

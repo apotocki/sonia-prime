@@ -23,6 +23,8 @@
 
 #include "agnostic/optimized/vector.hpp"
 
+#include <span>
+
 namespace {
 
 struct test_element0

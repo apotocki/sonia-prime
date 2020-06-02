@@ -14,6 +14,10 @@
 #   include "type_traits/remove_cv.hpp"
 #endif
 
+#ifndef DO_NOT_USE_AGNOSTIC_REMOVE_REFERENCE
+#   include "type_traits/remove_reference.hpp"
+#endif
+
 #ifndef DO_NOT_USE_AGNOSTIC_TYPE_IDENTITY
 #   include "type_traits/type_identity.hpp"
 #endif
@@ -30,8 +34,31 @@ namespace std {
 
 inline constexpr size_t dynamic_extent = -1;
 
+namespace span_detail {
+
+template <size_t EV>
+struct extent_holder
+{
+    constexpr extent_holder() noexcept = default;
+    constexpr explicit extent_holder(size_t) noexcept {};
+    [[nodiscard]] constexpr size_t size() const noexcept { return EV; }
+};
+
+template <>
+struct extent_holder<dynamic_extent>
+{
+    constexpr extent_holder() noexcept = default;
+    constexpr explicit extent_holder(size_t) noexcept : size_{0} {};
+    [[nodiscard]] constexpr size_t size() const noexcept { return size_; }
+
+private:
+    size_t size_{0};
+};
+
+}
+
 template <class ElementT, size_t Extent = dynamic_extent>
-class span
+class span : span_detail::extent_holder<Extent>
 {
 public:
     // constants and types
@@ -60,13 +87,14 @@ public:
     constexpr span(element_type(&arr)[N]) noexcept : data_{arr}, size_{N} {}
 
     template <class T, size_t N>
-    constexpr span(array<T, N>& arr) noexcept;
+    constexpr span(array<T, N>& arr) noexcept : data_{arr.data()}, size_{N} {}
 
-    template<class T, size_t N>
-    constexpr span(const array<T, N>& arr) noexcept;
+    template <class T, size_t N>
+    constexpr span(const array<T, N>& arr) noexcept : data_{ arr.data() }, size_{ N } {}
 
     template<class R>
-    constexpr explicit(extent != dynamic_extent) span(R&& r);
+    constexpr span(R&& r) : data_ {::std::data(r), }
+
     constexpr span(const span& other) noexcept = default;
     template<class OtherElementT, size_t OtherExtent>
     constexpr explicit(/* see description */)

@@ -4,7 +4,8 @@
 
 namespace agnostic {
 
-template <size_t val, size_t acc>
-constexpr size_t ceiling_v = ((val + acc - 1) / acc) * acc;
+struct uninitialized_t { explicit uninitialized_t() = default; };
+
+static const uninitialized_t uninitialized{  };
 
 }

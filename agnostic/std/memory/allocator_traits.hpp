@@ -1,9 +1,5 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_ALLOCATOR_TRAITS_HPP
-#define AGNOSTIC_STD_ALLOCATOR_TRAITS_HPP
-
 #pragma once
 
 #ifndef DO_NOT_USE_AGNOSTIC_CONSTRUCT_AT
@@ -123,7 +119,7 @@ struct allocator_traits
         construct_at(p, forward<Args>(args)...);
     }
 
-    template< class T >
+    template <class T>
     static constexpr void destroy(Alloc&, T* p)
     {
         destroy_at(p);
@@ -142,5 +138,3 @@ struct allocator_traits
 };
 
 }
-
-#endif // AGNOSTIC_STD_ALLOCATOR_TRAITS_HPP

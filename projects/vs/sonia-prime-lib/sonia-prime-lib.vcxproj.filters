@@ -109,9 +109,6 @@
     <Filter Include="agnostic\intrusive\detail">
       <UniqueIdentifier>{cd5bafc1-02f6-4d0a-b75b-40b23f35e488}</UniqueIdentifier>
     </Filter>
-    <Filter Include="agnostic\optimized">
-      <UniqueIdentifier>{5a06a372-ebc5-40b8-8240-bc83e32f601e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="agnostic\smart_ptr">
       <UniqueIdentifier>{f40868cd-7950-4967-a1d4-a5dacea963c4}</UniqueIdentifier>
     </Filter>
@@ -153,6 +150,15 @@
     </Filter>
     <Filter Include="agnostic\std\stdexcept">
       <UniqueIdentifier>{e0a1e0bf-dfac-4640-b30e-bd8524ec73f4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="agnostic\concepts">
+      <UniqueIdentifier>{3286ebcb-4fef-499f-b2f4-b8390305f000}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="agnostic\allocator">
+      <UniqueIdentifier>{3e0d8a73-d390-45aa-b739-939a5d4cbc79}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="agnostic\ipo">
+      <UniqueIdentifier>{a0a70389-c323-49ab-b76f-a33779c4d798}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -936,9 +942,6 @@
     <ClInclude Include="..\..\..\agnostic\intrusive\detail\intrusive.hpp">
       <Filter>agnostic\intrusive\detail</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\agnostic\optimized\holder.hpp">
-      <Filter>agnostic\optimized</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\agnostic\smart_ptr\intrusive_ptr.hpp">
       <Filter>agnostic\smart_ptr</Filter>
     </ClInclude>
@@ -1239,9 +1242,6 @@
     <ClInclude Include="..\..\..\agnostic\std\utility\declval.hpp">
       <Filter>agnostic\std\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\agnostic\optimized\vector.hpp">
-      <Filter>agnostic\optimized</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\agnostic\std\type_traits\alignment_of.hpp">
       <Filter>agnostic\std\type_traits</Filter>
     </ClInclude>
@@ -1253,9 +1253,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\agnostic\utility\ceiling.hpp">
       <Filter>agnostic\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\agnostic\buffer.hpp">
-      <Filter>agnostic</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\agnostic\std\memory\uninitialized_copy.hpp">
       <Filter>agnostic\std\memory</Filter>
@@ -1325,6 +1322,33 @@
     </ClInclude>
     <ClInclude Include="..\..\..\agnostic\std\stdexcept\out_of_range.hpp">
       <Filter>agnostic\std\stdexcept</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\intrusive\find_option.hpp">
+      <Filter>agnostic\intrusive</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\ipo\holder.hpp">
+      <Filter>agnostic\ipo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\ipo\vector.hpp">
+      <Filter>agnostic\ipo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\ipo\in_place_capacity.hpp">
+      <Filter>agnostic\ipo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\adjacent_buffer.hpp">
+      <Filter>agnostic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\utility\uninitialized.hpp">
+      <Filter>agnostic\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\utility\default_constructed.hpp">
+      <Filter>agnostic\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\allocator\BareAllocator.hpp">
+      <Filter>agnostic\allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\allocator\default_bare_allocator.hpp">
+      <Filter>agnostic\allocator</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

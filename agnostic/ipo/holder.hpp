@@ -1,9 +1,5 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_OPTIMIZED_HOLDER_HPP
-#define AGNOSTIC_OPTIMIZED_HOLDER_HPP
-
 #pragma once
 
 #include "agnostic/std/memory/allocate_new.hpp"
@@ -107,7 +103,7 @@ private:
 };
 
 template <size_t HolderBytesV, size_t ServiceCookieBitsV>
-struct optimized_holder_base
+struct ipo_holder_base
 {
     static constexpr size_t used_bits = ServiceCookieBitsV + 1;
 
@@ -124,16 +120,19 @@ struct optimized_holder_base
     // to be able to store ponters directly in first holder bytes
     alignas(void*) char holder_[HolderBytesV];
 
+    inline void* as_ptr() const noexcept { return *std::launder(reinterpret_cast<void* const*>(holder_)); }
     inline uintptr_t * as_uintptr() noexcept { return std::launder(reinterpret_cast<uintptr_t*>(holder_)); }
     inline uintptr_t const* as_uintptr() const noexcept { return std::launder(reinterpret_cast<uintptr_t const*>(holder_)); }
     inline uint8_t const* data() const noexcept { return std::launder(reinterpret_cast<uint8_t const*>(holder_)); }
     inline uint8_t* data() noexcept { return std::launder(reinterpret_cast<uint8_t*>(holder_)); }
 
-    inline void init_not_ptr() noexcept { *as_uintptr() = 1; }
+    inline void init_not_ptr() noexcept { new (as_uintptr()) uintptr_t{1}; }
     inline void set_not_ptr() noexcept { *as_uintptr() |= 1; }
     inline bool is_ptr() const noexcept { return !(1 & *as_uintptr()); }
+    inline void set_ptr(void* p) noexcept { assert(!(((uintptr_t)p)&1)); *reinterpret_cast<void**>(holder_) = p; }
+    
 
-    uint64_t get_service_cookie() const
+    uint64_t get_service_cookie() const noexcept
     {
         if constexpr (ServiceCookieBitsV <= first_byte_bits) {
             return first_byte_mask & ((*data()) >> 1);
@@ -142,7 +141,7 @@ struct optimized_holder_base
         }
     }
 
-    uint64_t get_service_cookie_adv() const
+    uint64_t get_service_cookie_adv() const noexcept
     {
         uint8_t const* src = data();
         uint64_t res = first_byte_mask & ((*src) >> 1);
@@ -157,14 +156,36 @@ struct optimized_holder_base
         } while (sbits > 0);
         return res;
     }
+
+    void set_service_cookie(uint64_t val) noexcept
+    {
+        if constexpr (ServiceCookieBitsV <= first_byte_bits) {
+            uint8_t* dest = data();
+            *dest = (*dest & ~(first_byte_mask << 1)) | (uint8_t)(val << 1);
+        } else {
+            set_service_cookie_adv(val);
+        }
+    }
+
+    void set_service_cookie_adv(size_t val) noexcept
+    {
+        uint8_t* dest = data();
+        *dest = (uint8_t)(1 | (val >> (ServiceCookieBitsV - CHAR_BIT))); // 1 is 'not a pointer' flag
+        size_t sbits = ServiceCookieBitsV - first_byte_bits;
+        do {
+            size_t next_byte_bits = sbits < CHAR_BIT ? sbits : CHAR_BIT;
+            uint8_t next_byte_mask = (((uint8_t)1) << next_byte_bits) - 1;
+            sbits -= next_byte_bits;
+            ++dest;
+            *dest = (*dest & ~next_byte_mask) | (uint8_t)(next_byte_mask & (val >> sbits));
+        } while (sbits > 0);
+    }
 };
 
 template <size_t HolderBytesV, size_t ServiceCookieBitsV>
-struct optimized_holder : optimized_holder_base<HolderBytesV, ServiceCookieBitsV>
+struct ipo_holder : ipo_holder_base<HolderBytesV, ServiceCookieBitsV>
 {
 
 };
 
 }
-
-#endif // AGNOSTIC_OPTIMIZED_HOLDER_HPP

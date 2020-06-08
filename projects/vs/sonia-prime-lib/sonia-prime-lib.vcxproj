@@ -19,15 +19,19 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\agnostic\allocator\BareAllocator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\allocator\default_bare_allocator.hpp" />
     <ClInclude Include="..\..\..\agnostic\avl_set.hpp" />
-    <ClInclude Include="..\..\..\agnostic\buffer.hpp" />
+    <ClInclude Include="..\..\..\agnostic\adjacent_buffer.hpp" />
     <ClInclude Include="..\..\..\agnostic\dummy_mutex.hpp" />
     <ClInclude Include="..\..\..\agnostic\intrusive\avl.hpp" />
     <ClInclude Include="..\..\..\agnostic\intrusive\bstree.hpp" />
     <ClInclude Include="..\..\..\agnostic\intrusive\detail\intrusive.hpp" />
+    <ClInclude Include="..\..\..\agnostic\intrusive\find_option.hpp" />
+    <ClInclude Include="..\..\..\agnostic\ipo\holder.hpp" />
+    <ClInclude Include="..\..\..\agnostic\ipo\in_place_capacity.hpp" />
+    <ClInclude Include="..\..\..\agnostic\ipo\vector.hpp" />
     <ClInclude Include="..\..\..\agnostic\list.hpp" />
-    <ClInclude Include="..\..\..\agnostic\optimized\holder.hpp" />
-    <ClInclude Include="..\..\..\agnostic\optimized\vector.hpp" />
     <ClInclude Include="..\..\..\agnostic\pool.hpp" />
     <ClInclude Include="..\..\..\agnostic\smart_ptr\intrusive_ptr.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm.hpp" />
@@ -151,6 +155,8 @@
     <ClInclude Include="..\..\..\agnostic\std\utility\move.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\utility\pair.hpp" />
     <ClInclude Include="..\..\..\agnostic\utility\ceiling.hpp" />
+    <ClInclude Include="..\..\..\agnostic\utility\default_constructed.hpp" />
+    <ClInclude Include="..\..\..\agnostic\utility\uninitialized.hpp" />
     <ClInclude Include="..\..\..\agnostic\utility\static_log2.hpp" />
     <ClInclude Include="..\..\..\sonia\array_view.hpp" />
     <ClInclude Include="..\..\..\sonia\build_config.hpp" />

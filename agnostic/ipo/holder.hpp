@@ -4,6 +4,10 @@
 
 #include "agnostic/std/memory/allocate_new.hpp"
 
+#ifndef DO_NOT_USE_AGNOSTIC_IN_PLACE
+#   include "agnostic/std/utility/in_place.hpp"
+#endif
+
 namespace agnostic {
 
 template <typename RefCountT>
@@ -112,10 +116,10 @@ struct ipo_holder_base
 
     //static constexpr size_t begin_offs = 1 + ServiceCookieBitsV / CHAR_BIT;
 
-    static constexpr size_t max_cookie_val = (((uint32_t)1) << ServiceCookieBitsV) - 1;
+    static constexpr size_t max_cookie_val = (((size_t)1) << ServiceCookieBitsV) - 1;
 
     static constexpr int first_byte_bits = ServiceCookieBitsV < (CHAR_BIT - 1) ? ServiceCookieBitsV : (CHAR_BIT - 1);
-    static constexpr uint8_t first_byte_mask = (((uint8_t)1) << first_byte_bits) - 1;
+    static constexpr size_t first_byte_mask = (((size_t)1) << first_byte_bits) - 1;
 
     // to be able to store ponters directly in first holder bytes
     alignas(void*) char holder_[HolderBytesV];
@@ -123,8 +127,8 @@ struct ipo_holder_base
     inline void* as_ptr() const noexcept { return *std::launder(reinterpret_cast<void* const*>(holder_)); }
     inline uintptr_t * as_uintptr() noexcept { return std::launder(reinterpret_cast<uintptr_t*>(holder_)); }
     inline uintptr_t const* as_uintptr() const noexcept { return std::launder(reinterpret_cast<uintptr_t const*>(holder_)); }
-    inline uint8_t const* data() const noexcept { return std::launder(reinterpret_cast<uint8_t const*>(holder_)); }
-    inline uint8_t* data() noexcept { return std::launder(reinterpret_cast<uint8_t*>(holder_)); }
+    inline char const* data() const noexcept { return std::launder(reinterpret_cast<char const*>(holder_)); }
+    inline char* data() noexcept { return std::launder(reinterpret_cast<char*>(holder_)); }
 
     inline void init_not_ptr() noexcept { new (as_uintptr()) uintptr_t{1}; }
     inline void set_not_ptr() noexcept { *as_uintptr() |= 1; }
@@ -132,7 +136,7 @@ struct ipo_holder_base
     inline void set_ptr(void* p) noexcept { assert(!(((uintptr_t)p)&1)); *reinterpret_cast<void**>(holder_) = p; }
     
 
-    uint64_t get_service_cookie() const noexcept
+    unsigned long long get_service_cookie() const noexcept
     {
         if constexpr (ServiceCookieBitsV <= first_byte_bits) {
             return first_byte_mask & ((*data()) >> 1);
@@ -141,9 +145,9 @@ struct ipo_holder_base
         }
     }
 
-    uint64_t get_service_cookie_adv() const noexcept
+    unsigned long long get_service_cookie_adv() const noexcept
     {
-        uint8_t const* src = data();
+        auto const* src = data();
         uint64_t res = first_byte_mask & ((*src) >> 1);
         size_t sbits = ServiceCookieBitsV - first_byte_bits;
         do {
@@ -157,10 +161,10 @@ struct ipo_holder_base
         return res;
     }
 
-    void set_service_cookie(uint64_t val) noexcept
+    void set_service_cookie(unsigned long long val) noexcept
     {
         if constexpr (ServiceCookieBitsV <= first_byte_bits) {
-            uint8_t* dest = data();
+            auto* dest = data();
             *dest = (*dest & ~(first_byte_mask << 1)) | (uint8_t)(val << 1);
         } else {
             set_service_cookie_adv(val);

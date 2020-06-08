@@ -8,7 +8,10 @@
 
 namespace std {
 
-template <typename T>
-add_rvalue_reference_t<T> declval() noexcept;
+template <class From, class To>
+concept convertible_to = __is_convertible_to(From, To)
+    && requires(add_rvalue_reference_t<From>(&Fn)()) {
+        static_cast<To>(Fn());
+};
 
 }

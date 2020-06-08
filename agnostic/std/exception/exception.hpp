@@ -1,9 +1,5 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_EXCEPTION_EXCEPTION_HPP
-#define AGNOSTIC_STD_EXCEPTION_EXCEPTION_HPP
-
 #pragma once
 
 namespace std {
@@ -20,5 +16,3 @@ public:
 };
 
 }
-
-#endif // AGNOSTIC_STD_EXCEPTION_EXCEPTION_HPP

@@ -160,6 +160,15 @@
     <Filter Include="agnostic\ipo">
       <UniqueIdentifier>{a0a70389-c323-49ab-b76f-a33779c4d798}</UniqueIdentifier>
     </Filter>
+    <Filter Include="agnostic\std\compare">
+      <UniqueIdentifier>{d0c3e503-52a8-40da-b705-84610520a1ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="agnostic\std\concepts">
+      <UniqueIdentifier>{9993087d-57c2-4aef-ab9e-9e97d916ce38}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="agnostic\std\limits">
+      <UniqueIdentifier>{1b5694c7-f7d3-49db-9488-835d43d72963}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -1349,6 +1358,36 @@
     </ClInclude>
     <ClInclude Include="..\..\..\agnostic\allocator\default_bare_allocator.hpp">
       <Filter>agnostic\allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\compare\partial_ordering.hpp">
+      <Filter>agnostic\std\compare</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\convertible_to.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\same_as.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\new\nothrow.hpp">
+      <Filter>agnostic\std\new</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\new\launder.hpp">
+      <Filter>agnostic\std\new</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\limits\numeric_limits.hpp">
+      <Filter>agnostic\std\limits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\limits\float_round_style.hpp">
+      <Filter>agnostic\std\limits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\limits\float_denorm_style.hpp">
+      <Filter>agnostic\std\limits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\new\align_val.hpp">
+      <Filter>agnostic\std\new</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\new\bad_alloc.hpp">
+      <Filter>agnostic\std\new</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -36,6 +36,14 @@
 #define DO_NOT_USE_AGNOSTIC_UNINITIALIZED_DEFAULT_CONSTRUCT
 #define DO_NOT_USE_AGNOSTIC_ITERATOR_BEGIN
 #define DO_NOT_USE_AGNOSTIC_ITERATOR_END
+#define DO_NOT_USE_AGNOSTIC_ADD_RVALUE_REFERENCE
+#define DO_NOT_USE_AGNOSTIC_CONVERTIBLE_TO
+#define DO_NOT_USE_AGNOSTIC_SAME_AS
+#define DO_NOT_USE_AGNOSTIC_NOTHROW
+#define DO_NOT_USE_AGNOSTIC_IN_PLACE
+#define DO_NOT_USE_AGNOSTIC_FLOAT_ROUND_STYLE
+#define DO_NOT_USE_AGNOSTIC_FLOAT_DENORM_STYLE
+#define DO_NOT_USE_AGNOSTIC_NUMERIC_LIMITS
 
 #include <compare>
 #include <functional>
@@ -60,6 +68,7 @@ struct test_element0
 class Value
 {
 public:
+    Value() : value_{'Z'} { ++count_; }
     Value(char v) : value_(v) { ++count_; }
     Value(Value const& rhs) : value_(rhs.value_) { ++count_; }
     Value(Value&& rhs) noexcept : value_(rhs.value_) { ++count_; }
@@ -67,21 +76,21 @@ public:
     ~Value() { --count_; }
 
     void operator= (Value const& rhs) { value_ = rhs.value_; }
-    void operator= (Value&& rhs) { value_ = rhs.value_; }
+    void operator= (Value&& rhs) noexcept { value_ = rhs.value_; }
 
     char operator*() const { return value_; }
 
     static int count_;
 
     //std::strong_ordering operator<=>(const Value& rhs) const = default;
-#if 1
+
     auto operator<=>(const Value& rhs) const
     {
         return value_ <=> rhs.value_;
     }
+
     bool operator ==(const Value& rhs) const { return value_ == rhs.value_; }
 
-#endif
 private:
     char value_;
     char filler[63];
@@ -552,6 +561,78 @@ BOOST_AUTO_TEST_CASE(agnostic_vector_test)
         BOOST_CHECK(vec1[1] == 'B');
         BOOST_CHECK(vec1[2] == 'c');
         BOOST_CHECK(vec1[3] == 'D');
+
+        auto errb = vec1.cbegin() + 1;
+        auto erre = vec1.cend() - 1;
+        auto it = vec1.erase(errb, erre);
+        BOOST_CHECK(*it == 'D');
+        BOOST_CHECK(vec1.size() == 2);
+        BOOST_CHECK(vec1[0] == 'a');
+        BOOST_CHECK(vec1[1] == 'D');
+        it = vec1.erase(vec1.cbegin());
+        BOOST_CHECK(*it == 'D');
+        BOOST_CHECK(vec1.size() == 1);
+        BOOST_CHECK(vec1[0] == 'D');
+
+        it = vec1.insert(vec1.begin(), v.begin(), v.end());
+        BOOST_CHECK(*it == 'a');
+        BOOST_CHECK(vec1.size() == 4);
+        BOOST_CHECK(vec1[0] == 'a');
+        BOOST_CHECK(vec1[1] == 'B');
+        BOOST_CHECK(vec1[2] == 'c');
+        BOOST_CHECK(vec1[3] == 'D');
+        it = vec1.insert(vec1.begin() + 2, v.begin(), v.end());
+        BOOST_CHECK(*it == 'a');
+        BOOST_CHECK(vec1.size() == 7);
+        BOOST_CHECK(vec1[0] == 'a');
+        BOOST_CHECK(vec1[1] == 'B');
+        BOOST_CHECK(vec1[2] == 'a');
+        BOOST_CHECK(vec1[3] == 'B');
+        BOOST_CHECK(vec1[4] == 'c');
+        BOOST_CHECK(vec1[5] == 'c');
+        BOOST_CHECK(vec1[6] == 'D');
+        it = vec1.insert(vec1.end(), v.begin(), v.end());
+        BOOST_CHECK(*it == 'a');
+        BOOST_CHECK(vec1.size() == 10);
+        BOOST_CHECK(vec1[0] == 'a');
+        BOOST_CHECK(vec1[1] == 'B');
+        BOOST_CHECK(vec1[2] == 'a');
+        BOOST_CHECK(vec1[3] == 'B');
+        BOOST_CHECK(vec1[4] == 'c');
+        BOOST_CHECK(vec1[5] == 'c');
+        BOOST_CHECK(vec1[6] == 'D');
+        BOOST_CHECK(vec1[7] == 'a');
+        BOOST_CHECK(vec1[8] == 'B');
+        BOOST_CHECK(vec1[9] == 'c');
+
+        vec1.resize(5);
+        BOOST_CHECK(vec1.size() == 5);
+        
+        it = vec1.insert(vec1.end() - 2, l.begin(), l.end());
+        BOOST_CHECK(*it == 'a');
+        BOOST_CHECK(vec1.size() == 9);
+        BOOST_CHECK(vec1[0] == 'a');
+        BOOST_CHECK(vec1[1] == 'B');
+        BOOST_CHECK(vec1[2] == 'a');
+
+        BOOST_CHECK(vec1[3] == 'a');
+        BOOST_CHECK(vec1[4] == 'B');
+        BOOST_CHECK(vec1[5] == 'c');
+        BOOST_CHECK(vec1[6] == 'D');
+
+        BOOST_CHECK(vec1[7] == 'B');
+        BOOST_CHECK(vec1[8] == 'c');
+    }
+    BOOST_CHECK_EQUAL(Value::count_, 0);
+    {
+        // resize test
+        using namespace agnostic;
+        vector<Value, default_bare_allocator, in_place_capacity<2>> vec1;
+        vec1.resize(128);
+        BOOST_CHECK(vec1.size() == 128);
+        for (auto const& v : vec1) {
+            BOOST_CHECK(v == 'Z');
+        }
     }
     BOOST_CHECK_EQUAL(Value::count_, 0);
 

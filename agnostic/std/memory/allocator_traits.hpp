@@ -18,6 +18,14 @@
 #   include "../utility/forward.hpp"
 #endif
 
+#ifndef DO_NOT_USE_AGNOSTIC_MAKE_UNSIGNED
+#   include "../type_traits/make_unsigned.hpp"
+#endif
+
+#ifndef DO_NOT_USE_AGNOSTIC_IS_EMPTY
+#   include "../type_traits/is_empty.hpp"
+#endif
+
 namespace std {
 
 namespace allocator_detail {

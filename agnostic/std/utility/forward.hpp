@@ -1,10 +1,10 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_FORWARD_HPP
-#define AGNOSTIC_STD_FORWARD_HPP
-
 #pragma once
+
+#ifndef DO_NOT_USE_AGNOSTIC_REMOVE_REFERENCE
+#   include "agnostic/std/type_traits/remove_reference.hpp"
+#endif
 
 namespace std {
 
@@ -21,5 +21,3 @@ inline T&& forward(remove_reference_t<T>&& t) noexcept
 }
 
 }
-
-#endif // AGNOSTIC_STD_FORWARD_HPP

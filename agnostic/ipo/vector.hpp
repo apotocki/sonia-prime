@@ -140,8 +140,8 @@ public:
         : AllocatorT{ alloc }
     {
         holder_t::init_not_ptr();
-        value_type* data = do_expand(init.size());
-        std::uninitialized_move(init.begin(), init.end(), data);
+        auto [mf, ml] = do_expand(inplace_begin(), init.size());
+        std::uninitialized_move(init.begin(), init.end(), mf);
     }
 
     template <class InputIt>
@@ -151,10 +151,10 @@ public:
         holder_t::init_not_ptr();
         if constexpr (std::random_access_iterator<InputIt>) {
             size_type sz = last - first;
-            value_type* place = do_expand(sz);
-            std::uninitialized_copy(first, last, place);
+            auto [mf, ml] = do_expand(inplace_begin(), sz);
+            std::uninitialized_copy(first, last, mf);
         } else {
-            value_type* place = do_expand(ipo_capacity_sz);
+            auto [place, ml] = do_expand(inplace_begin(), ipo_capacity_sz);
             for (size_t cnt = 0; cnt != ipo_capacity_sz; ++place) {
                 new (place) value_type{*first};
                 ++first;
@@ -337,7 +337,7 @@ public:
         size_type cursz = size();
         if (cursz < sz) {
             size_type cnt = sz - cursz;
-            value_type* place = do_expand(cnt);
+            auto place = do_expand(end(), cnt).first;
             std::uninitialized_fill(place, place + cnt, c);
         } else if (cursz > sz) {
             do_truncate(cursz - sz);
@@ -349,7 +349,7 @@ public:
         size_type cursz = size();
         if (cursz < sz) {
             size_type cnt = sz - cursz;
-            value_type* place = do_expand(cnt);
+            auto place = do_expand(end(), cnt).first;
             std::uninitialized_value_construct(place, place + cnt);
         } else if (cursz > sz) {
             do_truncate(cursz - sz);
@@ -369,13 +369,71 @@ public:
     template <typename ... ArgsT>
     void emplace_back(ArgsT&& ... args)
     {
-        value_type* place = do_expand(1);
+        auto place = do_expand(end(), 1).first;
         try {
             new (place) value_type(std::forward<ArgsT>(args)...);
         } catch (...) {
             do_update_size(-1);
             throw;
         }
+    }
+    template <typename... ArgsT>
+    iterator emplace(const_iterator pos, ArgsT&&... args)
+    {
+        static_assert(std::is_nothrow_move_constructible_v<value_type>);
+        static_assert(std::is_nothrow_move_assignable_v<value_type>);
+
+        auto [place, ml] = do_expand(const_cast<iterator>(pos), 1);
+        try {
+            if (place != ml) {
+                std::destroy_at(place);
+            }
+            return new (place) value_type(std::forward<ArgsT>(args)...);
+        } catch (...) {
+            if (place != end() - 1) {
+                new (place) value_type(std::move(place[1])); // nothrow
+                std::move_backward(place + 2, end(), end() - 1); // nothrow
+            }
+            do_update_size(-1);
+            throw;
+        }
+    }
+
+    template <class InputIt>
+    iterator insert(const_iterator pos, InputIt first, InputIt last)
+    {
+        iterator mpos = const_cast<iterator>(pos);
+        if constexpr (std::random_access_iterator<InputIt>) {
+            size_type sz = last - first;
+            auto [place, ml] = do_expand(mpos, sz);
+            auto mvcnt = ml - place;
+            std::move(first, first + mvcnt, place);
+            std::uninitialized_copy(first + mvcnt, last, ml);
+            return place;
+        } else {
+            size_type idxpos = mpos - begin();
+            for (; first != last; ++first) {
+                mpos = emplace(mpos, *first);
+                ++mpos;
+            }
+            return begin() + idxpos;
+        }
+    }
+
+    iterator erase(const_iterator b, const_iterator e) noexcept
+    {
+        static_assert(std::is_nothrow_move_assignable_v<value_type>);
+        auto eit = end();
+        auto it = std::move(const_cast<iterator>(e), eit, const_cast<iterator>(b));
+        std::destroy(it, eit);
+        do_update_size(b - e);
+        return const_cast<iterator>(b);
+    }
+
+    iterator erase(const_iterator pos) noexcept
+    {
+        assert(pos != cend());
+        return erase(pos, pos + 1);
     }
 
     inline void pop_back() noexcept
@@ -392,32 +450,64 @@ private:
     value_type* inplace_begin() noexcept { return std::launder(reinterpret_cast<value_type*>(holder_t::data() + helper_t::aligned_offs)); }
     value_type const* inplace_begin() const noexcept { return std::launder(reinterpret_cast<value_type const*>(holder_t::data() + helper_t::aligned_offs)); }
 
-    value_type* do_expand(size_type count)
+
+    // move to [first, second]
+    // constuct from [second, first + count)
+    std::pair<iterator, iterator> do_expand(iterator pos, size_type count)
     {
+        static_assert(std::is_nothrow_move_constructible_v<value_type>);
+        static_assert(std::is_nothrow_move_assignable_v<value_type>);
+
         if (holder_t::is_ptr()) {
-            auto * buff = get_buffer();
+            auto* buff = get_buffer();
             size_type sz = buff->current_size;
             if (buff->capacity() >= sz + count) {
+                iterator eit = buff->data_end();
                 buff->current_size += count;
-                return buff->data_begin() + sz;
+                return do_move_slice(count, pos, eit);
             } else {
-                typename helper_t::vector_buffer* nextbuff = do_create_buffer(sz, count, buff->data_begin(), buff->data_end());
+                pos = do_relocate_slices(sz, count, pos, buff->data_begin(), buff->data_end());
+                buff->current_size = 0; // elements have been already destroyed
                 deallocate_adjacent_buffer(get_allocator(), buff);
-                holder_t::set_ptr(nextbuff);
-                return nextbuff->data_begin() + sz;
             }
         } else {
             auto sz = holder_t::get_service_cookie();
             if (sz + count <= ipo_capacity_sz) {
                 do_update_inplace_size(count);
-                return inplace_begin() + sz;
+                return do_move_slice(count, pos, inplace_begin() + sz);
             } else {
-                typename helper_t::vector_buffer* buff = do_create_buffer(sz, count, inplace_begin(), inplace_begin() + sz);
-                std::destroy(inplace_begin(), inplace_begin() + sz);
-                holder_t::set_ptr(buff);
-                return buff->begin() + sz;
+                pos = do_relocate_slices(sz, count, pos, inplace_begin(), inplace_begin() + sz);
             }
         }
+        return { pos, pos };
+    }
+
+    static std::pair<iterator, iterator> do_move_slice(size_type count, iterator pos, iterator eit)
+    {
+        if (count < static_cast<size_type>(eit - pos)) {
+            std::uninitialized_move(eit - count, eit, eit);
+            std::move(pos, eit - count, pos + count);
+            return {pos, pos + count};
+        } else {
+            std::uninitialized_move(pos, eit, pos + count);
+            return {pos, eit};
+        }
+    }
+
+    inline static size_type get_next_size(size_type cursz, size_type appsz)
+    {
+        return (std::max)(static_cast<size_type>(cursz) * 2, (static_cast<size_type>(MIN_DYNAMIC_STORE_SZ + appsz)));
+    }
+
+    iterator do_relocate_slices(size_type cursz, size_type count, iterator pos, iterator prevb, iterator preve)
+    {
+        size_type nextsz = get_next_size(cursz, count);
+        auto* nextbuff = allocate_adjacent_buffer<value_type, vector_detail::vector_buffer_base<T>>(get_allocator(), nextsz, cursz + count);
+        iterator rit = std::uninitialized_move(prevb, pos, nextbuff->begin());
+        std::uninitialized_move(pos, preve, rit + count);
+        std::destroy(prevb, preve);
+        holder_t::set_ptr(nextbuff);
+        return rit;
     }
 
     void do_truncate(size_type count) noexcept
@@ -433,16 +523,9 @@ private:
         }
     }
 
-    typename helper_t::vector_buffer* do_create_buffer(size_type cursz, size_type appsz, value_type* srcb, value_type* srce)
-    {
-        size_type ressz = (std::max)(static_cast<size_type>(cursz) * 2, (static_cast<size_type>(MIN_DYNAMIC_STORE_SZ + appsz)));
-        typename helper_t::vector_buffer* buff = allocate_adjacent_buffer<value_type, vector_detail::vector_buffer_base<T>>(get_allocator(), ressz, cursz + appsz);
-        static_assert(std::is_nothrow_move_constructible_v<value_type>);
-        std::uninitialized_move(srcb, srce, buff->begin());
-        return buff;
-    }
 
-    void do_update_size(int dsz) noexcept
+    template <typename DSZT>
+    void do_update_size(DSZT dsz) noexcept
     {
         if (holder_t::is_ptr()) {
             get_buffer()->current_size += dsz;

@@ -1,10 +1,10 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_VOID_HPP
-#define AGNOSTIC_STD_IS_VOID_HPP
-
 #pragma once
+
+#ifndef DO_NOT_USE_AGNOSTIC_INTEGRAL_CONSTANT
+#   include "agnostic/std/type_traits/integral_constant.hpp"
+#endif
 
 namespace std {
 
@@ -15,5 +15,3 @@ template <> struct is_void<void> : true_type {};
 template <typename T> constexpr bool is_void_v = is_void<T>::value;
 
 }
-
-#endif // AGNOSTIC_STD_IS_VOID_HPP

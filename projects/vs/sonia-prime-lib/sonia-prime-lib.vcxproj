@@ -41,6 +41,9 @@
     <ClInclude Include="..\..\..\agnostic\std\algorithm\swap.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\array.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\atomic\memory_order.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\compare\partial_ordering.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\convertible_to.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\same_as.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\exception.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\exception\exception.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\functional.hpp" />
@@ -51,6 +54,9 @@
     <ClInclude Include="..\..\..\agnostic\std\iterator\iterator_traits.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\iterator\reverse_iterator.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\iterator\tags.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\limits\float_denorm_style.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\limits\float_round_style.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\limits\numeric_limits.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\memory.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\memory\addressof.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\memory\allocate_new.hpp" />
@@ -72,6 +78,10 @@
     <ClInclude Include="..\..\..\agnostic\std\mutex\try_to_lock.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\mutex\unique_lock.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\new.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\new\align_val.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\new\bad_alloc.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\new\launder.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\new\nothrow.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\new\placement_new.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\span.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\stdexcept\logic_error.hpp" />

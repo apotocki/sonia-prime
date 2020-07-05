@@ -9,20 +9,20 @@ namespace sonia::archive_detail {
 
 archive_type get_archive_type(string_view str)
 {
-    if (str.size() > 3) return archive_type::UNKNOWN;
-
-    char buff[8];
-    char * buff_it = buff;
-    for (char c : str) {
-        if (c >= 'a' && c <= 'z') c -= ('a' - 'A');
-        *buff_it++ = c;
+    if (str.size() <= 3) {
+        char buff[16];
+        char * buff_it = buff;//std::launder(buff);
+        for (char c : str) {
+            if (c >= 'a' && c <= 'z') c -= ('a' - 'A');
+            *buff_it++ = c;
+        }
+        *buff_it = 0;
+        cstring_view ucasestr((char*)buff, buff_it);
+        if (ucasestr == "TAR") return archive_type::TAR;
+        if (ucasestr == "GZ") return archive_type::GZIP;
+        if (ucasestr == "BZ2") return archive_type::BZIP2;
+        if (ucasestr == "TGZ") return archive_type::TGZ;
     }
-    *buff_it = 0;
-    cstring_view ucasestr((char*)buff, buff_it);
-    if (ucasestr == "TAR") return archive_type::TAR;
-    if (ucasestr == "GZ") return archive_type::GZIP;
-    if (ucasestr == "BZ2") return archive_type::BZIP2;
-    if (ucasestr == "TGZ") return archive_type::TGZ;
     return archive_type::UNKNOWN;
 }
 

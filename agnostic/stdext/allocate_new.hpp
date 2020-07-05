@@ -1,20 +1,26 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_ALLOCATE_NEW_HPP
-#define AGNOSTIC_STD_ALLOCATE_NEW_HPP
-
 #pragma once
 
+#ifndef DO_NOT_USE_AGNOSTIC_ENABLE_IF
+#   include "agnostic/std/type_traits/enable_if.hpp"
+#endif
+
+#ifndef DO_NOT_USE_AGNOSTIC_IS_SAME
+#   include "agnostic/std/type_traits/is_same.hpp"
+#endif
+
 #ifndef DO_NOT_USE_AGNOSTIC_ALLOCATOR_TRAITS
-#   include "allocator_traits.hpp"
+#   include "agnostic/std/memory/allocator_traits.hpp"
 #endif
 
 #ifndef DO_NOT_USE_AGNOSTIC_ALLOCATOR_DELETE
-#   include "allocator_delete.hpp"
+#   include "agnostic/std/memory/allocator_delete.hpp"
 #endif
 
-namespace std {
+namespace stdext {
+
+using namespace std;
 
 template <class T, class Alloc, class... Args>
 enable_if_t<
@@ -39,9 +45,7 @@ enable_if_t<
     typename allocator_traits<Alloc>::pointer
 > allocate_new(const Alloc& alloc, Args&&... args)
 {
-    return allocate_new<T, typename allocator_traits<Alloc>::template rebind_alloc<T>>(alloc, std::forward<Args>(args)...);
+    return allocate_new<T, typename allocator_traits<Alloc>::template rebind_alloc<T>>(alloc, forward<Args>(args)...);
 }
 
 }
-
-#endif // AGNOSTIC_STD_ALLOCATE_NEW_HPP

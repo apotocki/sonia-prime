@@ -1,21 +1,16 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_NOTHROW_MOVE_CONSTRUCTIBLE_HPP
-#define AGNOSTIC_STD_IS_NOTHROW_MOVE_CONSTRUCTIBLE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_IS_NOTHROW_MOVE_CONSTRUCTIBLE
 
-#ifndef DO_NOT_USE_AGNOSTIC_INTEGRAL_CONSTANT
-#   include "integral_constant.hpp"
-#endif
+#include "agnostic/std/type_traits/integral_constant.hpp"
 
 #ifdef _MSC_VER
 
 namespace std {
 
 template <typename T>
-struct is_nothrow_move_constructible : integral_constant<bool, __is_nothrow_constructible(T, T)> {};
+struct is_nothrow_move_constructible : bool_constant<__is_nothrow_constructible(T, T)> {};
 template <typename T> constexpr bool is_nothrow_move_constructible_v = __is_nothrow_constructible(T, T);
 
 }
@@ -47,4 +42,6 @@ template <typename T> constexpr bool is_nothrow_move_constructible_v = is_nothro
 }
 #endif
 
-#endif // AGNOSTIC_STD_IS_NOTHROW_MOVE_CONSTRUCTIBLE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

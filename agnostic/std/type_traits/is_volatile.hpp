@@ -1,10 +1,9 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_VOLATILE_HPP
-#define AGNOSTIC_STD_IS_VOLATILE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_IS_VOLATILE
+
+#include "agnostic/std/type_traits/integral_constant.hpp"
 
 namespace std {
 
@@ -16,4 +15,6 @@ template <typename T> constexpr bool is_volatile_v = is_volatile<T>::value;
 
 }
 
-#endif // AGNOSTIC_STD_IS_VOLATILE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

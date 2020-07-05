@@ -21,6 +21,9 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\agnostic\allocator\BareAllocator.hpp" />
     <ClInclude Include="..\..\..\agnostic\allocator\default_bare_allocator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\allocator\basic_fixed_size_allocator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\allocator\default_fised_size_allocator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\allocator\FixedSizeAllocator.hpp" />
     <ClInclude Include="..\..\..\agnostic\avl_set.hpp" />
     <ClInclude Include="..\..\..\agnostic\adjacent_buffer.hpp" />
     <ClInclude Include="..\..\..\agnostic\dummy_mutex.hpp" />
@@ -34,24 +37,69 @@
     <ClInclude Include="..\..\..\agnostic\list.hpp" />
     <ClInclude Include="..\..\..\agnostic\pool.hpp" />
     <ClInclude Include="..\..\..\agnostic\smart_ptr\intrusive_ptr.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\add_qualifiers.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\allocate_new.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\can_reference.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\cond_res.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\copy_cv.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\is_any_of.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\is_character.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\is_character_or_byte.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\is_from_primary.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\is_referenceable.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\is_reference_wrapper.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\iter_concept.hpp" />
+    <ClInclude Include="..\..\..\agnostic\stdext\unwrap_enum.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\compare_3way.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm\copy.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm\fill_n.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm\iter_swap.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\max.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\max_element.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\min.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\min_element.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\mismatch.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\move.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\move_backward.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm\swap.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\swap_ranges.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\array.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\atomic\memory_order.hpp" />
-    <ClInclude Include="..\..\..\agnostic\std\compare\partial_ordering.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\compare\equality.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\compare\ordering.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\assignable_from.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\common_reference_with.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\constructible_from.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\concepts\convertible_to.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\default_initializable.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\derived_from.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\destructible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\integral.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\movable.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\move_constructible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\ranges\swap.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\concepts\same_as.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\signed_integral.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\concepts\swappable.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\exception.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\exception\exception.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\functional.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\functional\less.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\functional\reference_wrapper.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\initializer_list.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\iterator.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\iterator\begin.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\bidirectional_iterator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\forward_iterator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\input_iterator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\input_or_output_iterator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\random_access_iterator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\weakly_incrementable.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\iterator\end.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\incrementable_traits.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\iterator\iterator_traits.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\iter_difference.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\iterator\reverse_iterator.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\iterator\tags.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\limits\float_denorm_style.hpp" />
@@ -59,7 +107,6 @@
     <ClInclude Include="..\..\..\agnostic\std\limits\numeric_limits.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\memory.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\memory\addressof.hpp" />
-    <ClInclude Include="..\..\..\agnostic\std\memory\allocate_new.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\memory\allocate_unique.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\memory\allocator.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\memory\allocator_delete.hpp" />
@@ -70,6 +117,10 @@
     <ClInclude Include="..\..\..\agnostic\std\memory\pointer_traits.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\memory\to_address.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\memory\uninitialized_copy.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\uninitialized_default_construct.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\uninitialized_fill.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\uninitialized_move.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\uninitialized_value_construct.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\memory\unique_ptr.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\mutex.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\mutex\adopt_lock.hpp" />
@@ -95,18 +146,21 @@
     <ClInclude Include="..\..\..\agnostic\std\type_traits\add_volatile.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\alignment_of.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\as_const.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\common_reference.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\common_type.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\conditional.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\conditional_ext.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\conjunction.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\decay.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\disable_if.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\disjunction.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\enable_if.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\extent.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\integral_constant.hpp" />
-    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_any_of.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_arithmetic.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_array.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_assignable.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_base_of.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_class.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_const.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_constructible.hpp" />
@@ -125,6 +179,7 @@
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_constructible.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_copy_constructible.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_default_constructible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_destructible.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_move_assignable.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_move_constructible.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_swappable.hpp" />
@@ -133,7 +188,6 @@
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_object.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_pointer.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_reference.hpp" />
-    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_referenceable.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_rvalue_reference.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_same.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_scalar.hpp" />
@@ -143,20 +197,25 @@
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_trivially_constructible.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_trivially_copyable.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_trivially_copy_assignable.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_trivially_default_constructible.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_union.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_unsigned.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_void.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_volatile.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\make_signed.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\make_unsigned.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\negation.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\rank.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_all_extents.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_const.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_cv.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_cvref.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_extent.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_reference.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_volatile.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\result_of.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\type_identity.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\underlying_type.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\type_traits\void.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\utility.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\utility\declval.hpp" />
@@ -166,6 +225,7 @@
     <ClInclude Include="..\..\..\agnostic\std\utility\pair.hpp" />
     <ClInclude Include="..\..\..\agnostic\utility\ceiling.hpp" />
     <ClInclude Include="..\..\..\agnostic\utility\default_constructed.hpp" />
+    <ClInclude Include="..\..\..\agnostic\utility\dependent_bool.hpp" />
     <ClInclude Include="..\..\..\agnostic\utility\uninitialized.hpp" />
     <ClInclude Include="..\..\..\agnostic\utility\static_log2.hpp" />
     <ClInclude Include="..\..\..\sonia\array_view.hpp" />
@@ -262,7 +322,6 @@
     <ClInclude Include="..\..\..\sonia\sys\linux\signals.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\linux\signals_api.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\linux\timer.hpp" />
-    <ClInclude Include="..\..\..\sonia\sys\windows\main_api.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\windows\thread_pool.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\windows\thread_pool_api.hpp" />
     <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
@@ -491,6 +550,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\singleton_locator.cpp" />
+    <ClCompile Include="..\..\..\sonia\sys\linux\linux.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\sys\linux\linux_timer.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -509,9 +574,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\sys\windows\main_api.cpp" />
     <ClCompile Include="..\..\..\sonia\sys\windows\thread_pool.cpp" />
     <ClCompile Include="..\..\..\sonia\sys\windows\thread_pool_api.cpp" />
+    <ClCompile Include="..\..\..\sonia\sys\windows\windows.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\file_persister.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.cpp">
@@ -527,12 +592,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\linux.cpp">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\number\number_integer.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\number\number_math.cpp" />
@@ -552,7 +611,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\windows.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\sonia.natvis" />

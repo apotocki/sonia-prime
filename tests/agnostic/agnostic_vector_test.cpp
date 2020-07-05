@@ -1,78 +1,36 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
 
-//#include "sonia/config.hpp"
-#include <limits>
+#include <ntifs.h>
 
-#include "agnostic/allocator/BareAllocator.hpp"
-//#include "agnostic/allocator/default_bare_allocator.hpp"
-//#include "agnostic/ipo/vector.hpp"
-//
-//#include "agnostic/std/compare/partial_ordering.hpp"
+#include <cstddef>
+#include <limits.h>
+#include <float.h>
+
+#include "sonia/sys/windows/driver/utility/cassert.hpp"
+
+#include "sonia/sys/windows/driver/utility/memory.hpp"
+
+using default_bare_allocator = sonia::wd::bare_allocator<>;
+
+#include "agnostic/std/array.hpp"
+#include "agnostic/std/compare/ordering.hpp"
+
+#include "agnostic/list.hpp"
+#include "agnostic/allocator/default_fised_size_allocator.hpp"
+
+#define AGNOSTIC_ASSERT(exp) \
+    ((!(exp)) ?              \
+        (RtlAssert((PVOID)#exp, (PVOID)__FILE__, __LINE__, NULL), FALSE) : TRUE)
+
+#define AGNOSTIC_CHECK(x) AGNOSTIC_ASSERT(x)
+#define AGNOSTIC_CHECK_EQUAL(a, b) AGNOSTIC_ASSERT((a) == (b))
 
 namespace std {
 
-class partial_ordering {
-
-};
-
-}
-
-namespace {
-
-class Value
-{
-public:
-    Value() : value_{ 'Z' } { ++count_; }
-    Value(char v) : value_(v) { ++count_; }
-    Value(Value const& rhs) : value_(rhs.value_) { ++count_; }
-    Value(Value&& rhs) noexcept : value_(rhs.value_) { ++count_; }
-
-    ~Value() { --count_; }
-
-    void operator= (Value const& rhs) { value_ = rhs.value_; }
-    void operator= (Value&& rhs) noexcept { value_ = rhs.value_; }
-
-    char operator*() const { return value_; }
-
-    static int count_;
-
-    //std::strong_ordering operator<=>(const Value& rhs) const = default;
-
-    auto operator<=>(const Value& rhs) const
-    {
-        return value_ <=> rhs.value_;
-    }
-
-    bool operator ==(const Value& rhs) const { return value_ == rhs.value_; }
-
-private:
-    char value_;
-    char filler[63];
-};
-
-int Value::count_ = 0;
+template <typename T>
+using list = agnostic::list<T, agnostic::default_fixed_size_allocator_factory>;
 
 }
 
-#define AGNOSTIC_ASSERT(x) assert(x)
-
-void agnostic_vector_test()
-{
-
-    //{
-    //    agnostic::vector<int> vec;
-    //    vec.push_back(1);
-    //    AGNOSTIC_ASSERT(vec.size() == 1);
-    //    AGNOSTIC_ASSERT(vec.front() == 1);
-    //    AGNOSTIC_ASSERT(vec.back() == 1);
-
-    //    size_t cnt = vec.capacity() - vec.size() + 1;
-    //    for (int i = 0; i < cnt; ++i) {
-    //        vec.push_back(i + 2);
-    //        AGNOSTIC_ASSERT(vec.size() == size_t(2) + i);
-    //        AGNOSTIC_ASSERT(vec.front() == 1);
-    //        AGNOSTIC_ASSERT(vec.back() == i + 2);
-    //    }
-    //}
-}
+#include "vector_test.ipp"

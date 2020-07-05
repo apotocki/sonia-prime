@@ -2,33 +2,44 @@
 // You can redistribute it and/or modify it under the terms of the MIT License
 #pragma once
 
-#ifndef DO_NOT_USE_AGNOSTIC_IS_SAME
-#   include "agnostic/std/type_traits/is_same.hpp"
-#endif
+// <type_traits>
+#include "agnostic/std/type_traits/is_same.hpp"
+#include "agnostic/std/type_traits/remove_cv.hpp"
+#include "agnostic/std/type_traits/remove_reference.hpp"
+#include "agnostic/std/type_traits/enable_if.hpp"
+#include "agnostic/std/type_traits/is_nothrow_move_constructible.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_REMOVE_CV
-#   include "agnostic/std/type_traits/remove_cv.hpp"
-#endif
+// <memory>
+#include "agnostic/std/memory/destroy.hpp"
+#include "agnostic/std/memory/uninitialized_fill.hpp"
+#include "agnostic/std/memory/uninitialized_value_construct.hpp"
+#include "agnostic/std/memory/uninitialized_move.hpp"
+#include "agnostic/std/memory/allocator_traits.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_REMOVE_REFERENCE
-#   include "agnostic/std/type_traits/remove_reference.hpp"
-#endif
+// <utility>
+#include "agnostic/std/utility/forward.hpp"
+#include "agnostic/std/utility/move.hpp"
+#include "agnostic/std/utility/pair.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_ENABLE_IF
-#   include "agnostic/std/type_traits/enable_if.hpp"
-#endif
+// <algorithm>
+#include "agnostic/std/algorithm/move.hpp"
+#include "agnostic/std/algorithm/mismatch.hpp"
+#include "agnostic/std/algorithm/max.hpp"
+#include "agnostic/std/algorithm/min.hpp"
+#include "agnostic/std/algorithm/swap_ranges.hpp"
+#include "agnostic/std/algorithm/compare_3way.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_ALIGNMENT_OF
-#   include "agnostic/std/type_traits/alignment_of.hpp"
-#endif
+// <compare>
+#include "agnostic/std/compare/ordering.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_ALLOCATOR_TRAITS
-#   include "agnostic/std/memory/allocator_traits.hpp"
-#endif
+// <iterator>
+#include "agnostic/std/iterator/reverse_iterator.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_REVERSE_ITERATOR
-#   include "agnostic/std/iterator/reverse_iterator.hpp"
-#endif
+// iterator concepts
+#include "agnostic/std/iterator/concepts/random_access_iterator.hpp"
+
+// <initializer_list>
+#include "agnostic/std/initializer_list.hpp"
 
 #include "agnostic/adjacent_buffer.hpp"
 #include "agnostic/utility/static_log2.hpp"
@@ -36,7 +47,6 @@
 
 #include "agnostic/allocator/BareAllocator.hpp"
 #include "agnostic/intrusive/find_option.hpp"
-//#include "agnostic/intrusive/
 
 #include "in_place_capacity.hpp"
 #include "holder.hpp"
@@ -71,7 +81,7 @@ struct helper
     static constexpr size_t ipo_capacity_sz = ipo_descriptor_t::value;
     static constexpr size_t szbits = ipo_capacity_sz ? 1 + static_log2_v<ipo_capacity_sz ? ipo_capacity_sz : 1> : 0;
     static constexpr size_t begin_offs = ((szbits + 1) + (CHAR_BIT - 1)) / CHAR_BIT;
-    static constexpr size_t alv = ipo_capacity_sz ? std::alignment_of_v<T> : 1;
+    static constexpr size_t alv = ipo_capacity_sz ? alignof(T) : 1;
     static constexpr size_t aligned_offs = ceiling_v<begin_offs, alv>;
     static constexpr size_t estimated_holder_sz = aligned_offs + sizeof(T) * ipo_capacity_sz;
     static constexpr size_t holder_sz = estimated_holder_sz < sizeof(uintptr_t) ? sizeof(uintptr_t) : estimated_holder_sz;
@@ -187,7 +197,7 @@ public:
     }
 
     vector(vector && rhs) noexcept
-        : AllocatorT(std::move(rhs.get_allocator()))
+        : AllocatorT(rhs.get_allocator())
     {
         if (rhs.is_ptr()) {
             holder_t::set_ptr(rhs.get_buffer());
@@ -237,7 +247,6 @@ public:
             if (x.is_ptr()) {
                 auto* tmp = x.get_buffer();
                 x.init_not_ptr();
-                auto sz = holder_t::get_service_cookie();
                 std::uninitialized_move(inplace_begin(), inplace_begin() + sz, x.inplace_begin());
                 std::destroy(inplace_begin(), inplace_begin() + sz);
                 x.set_service_cookie(sz);
@@ -384,15 +393,17 @@ public:
         static_assert(std::is_nothrow_move_assignable_v<value_type>);
 
         auto [place, ml] = do_expand(const_cast<iterator>(pos), 1);
+        if (place != ml) {
+            std::destroy_at(place);
+        }
         try {
-            if (place != ml) {
-                std::destroy_at(place);
-            }
             return new (place) value_type(std::forward<ArgsT>(args)...);
         } catch (...) {
-            if (place != end() - 1) {
+            value_type * e = end();
+            if (place != e - 1) {
                 new (place) value_type(std::move(place[1])); // nothrow
-                std::move_backward(place + 2, end(), end() - 1); // nothrow
+                std::move(place + 2, e, place + 1); // nothrow
+                std::destroy_at(e - 1);
             }
             do_update_size(-1);
             throw;
@@ -557,7 +568,7 @@ std::strong_ordering operator<=>(const vector<T, A1, Args1...>& lhs,  const vect
     } else if (rit == re) {
         return std::strong_ordering::greater;
     }
-    return *lit <=> *rit;
+    return std::compare_3way(*lit, *rit);
 }
 
 template <typename T, typename A1, typename A2, typename ... Args1, typename ... Args2>

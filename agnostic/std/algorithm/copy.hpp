@@ -1,18 +1,12 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_ALGORITHM_COPY
 
-#ifndef DO_NOT_USE_AGNOSTIC_ITERATOR_TRAITS
-#   include "../iterator/iterator_traits.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_IS_ASSIGNABLE
-#   include "../type_traits/is_assignable.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_IS_TRIVIAL
-#   include "../type_traits/is_trivial.hpp"
-#endif
+#include "agnostic/std/iterator/iterator_traits.hpp"
+#include "agnostic/std/type_traits/is_assignable.hpp"
+#include "agnostic/std/type_traits/is_trivial.hpp"
+#include "agnostic/std/type_traits/is_pointer.hpp"
 
 namespace std {
 
@@ -37,3 +31,7 @@ OutputIt copy(InputIt first, InputIt last, OutputIt d_first)
 }
 
 }
+
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <algorithm>
+#endif

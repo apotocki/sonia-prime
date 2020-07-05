@@ -1,10 +1,10 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_CONJUNCTION_HPP
-#define AGNOSTIC_STD_CONJUNCTION_HPP
-
 #pragma once
+
+#ifndef DO_NOT_USE_AGNOSTIC_CONDITIONAL
+#   include "../type_traits/conditional.hpp"
+#endif
 
 namespace std {
     
@@ -17,5 +17,3 @@ template <typename... B>
 inline constexpr bool conjunction_v = conjunction<B...>::value;
 
 }
-
-#endif // AGNOSTIC_STD_CONJUNCTION_HPP

@@ -26,7 +26,9 @@
 
 #define typeidx(t) std::type_index(typeid(t))
 
+#include "agnostic/std/type_traits/remove_cvref.hpp"
 #include "agnostic/utility/ceiling.hpp"
+#include "agnostic/utility/dependent_bool.hpp"
 
 namespace sonia {
 
@@ -59,14 +61,14 @@ using namespace tl;
 //template <class T, class E> using expected = tl::expected<T, E>;
 //using make_unexpected = tl::make_unexpected;
 
+using agnostic::dependent_true;
+using agnostic::dependent_false;
+
 using std::bool_constant;
 using std::integral_constant;
 
 using std::true_type;
 using std::false_type;
-
-template <typename> inline constexpr bool dependent_true_v{ true };
-template <typename> inline constexpr bool dependent_false_v{ false };
 
 using std::void_t;
 
@@ -115,8 +117,8 @@ using std::is_lvalue_reference_v;
 using std::is_rvalue_reference;
 using std::is_rvalue_reference_v;
 
-using std::is_pod;
-using std::is_pod_v;
+//using std::is_pod;
+//using std::is_pod_v;
 
 using std::is_trivial;
 using std::is_trivial_v;
@@ -233,12 +235,8 @@ using boost::mpl::identity;
 using boost::mpl::make_identity;
 
 
-
-//using std::remove_cvref;
-//using std::remove_cvref_t;
-
-template <class T> struct remove_cvref : remove_cv<remove_reference_t<T>> {};
-template <class T> using remove_cvref_t = typename remove_cvref<T>::type;
+using std::remove_cvref;
+using std::remove_cvref_t;
 
 template <bool Test, class T = void> using disable_if = enable_if<!Test, T>;
 template <bool Test, class T = void> using disable_if_t = enable_if_t<!Test, T>;

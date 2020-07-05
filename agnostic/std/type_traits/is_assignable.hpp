@@ -1,21 +1,17 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_ASSIGNABLE_HPP
-#define AGNOSTIC_STD_IS_ASSIGNABLE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_IS_ASSIGNABLE
 
-#ifndef DO_NOT_USE_AGNOSTIC_DECLVAL
-#   include "../utility/declval.hpp"
-#endif
+#include "agnostic/std/type_traits/integral_constant.hpp"
+//#include "agnostic/std/utility/declval.hpp"
 
 namespace std {
 
 #if 1
 
 template <typename T, class U>
-struct is_assignable : integral_constant<bool, __is_assignable(T, U)> {};
+struct is_assignable : bool_constant<__is_assignable(T, U)> {};
 
 #else
 
@@ -25,7 +21,7 @@ struct is_assignable_imp
 {
     struct no_type { char padding[8]; };
 
-    template<typename T, typename U, typename = decltype(boost::declval<T>() = boost::declval<U>())>
+    template<typename T, typename U, typename = decltype(declval<T>() = declval<U>())>
     static char test(int);
 
     template<typename, typename>
@@ -53,4 +49,6 @@ template <typename T, typename U> constexpr bool is_assignable_v = is_assignable
 
 }
 
-#endif // AGNOSTIC_STD_IS_ASSIGNABLE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

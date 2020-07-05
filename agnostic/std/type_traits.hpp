@@ -1,9 +1,5 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_TYPE_TRAITS_HPP
-#define AGNOSTIC_STD_TYPE_TRAITS_HPP
-
 #pragma once
 
 #ifndef DO_NOT_USE_AGNOSTIC_INTEGRAL_CONSTANT
@@ -36,10 +32,6 @@
 
 #ifndef DO_NOT_USE_AGNOSTIC_IS_SAME
 #   include "type_traits/is_same.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_IS_ANY_OF
-#   include "type_traits/is_any_of.hpp"
 #endif
 
 #ifndef DO_NOT_USE_AGNOSTIC_IS_VOID
@@ -84,6 +76,10 @@
 
 #ifndef DO_NOT_USE_AGNOSTIC_IS_TRIVIALLY_CONSTRUCTIBLE
 #   include "type_traits/is_trivially_constructible.hpp"
+#endif
+
+#ifndef DO_NOT_USE_AGNOSTIC_IS_TRIVIALLY_DEFAULT_CONSTRUCTIBLE
+#   include "type_traits/is_trivially_default_constructible.hpp"
 #endif
 
 #ifndef DO_NOT_USE_AGNOSTIC_IS_TRIVIALLY_COPYABLE
@@ -213,6 +209,10 @@
 #   include "type_traits/is_nothrow_copy_constructible.hpp"
 #endif
 
+#ifndef DO_NOT_USE_AGNOSTIC_IS_NOTHROW_MOVE_CONSTRUCTIBLE
+#   include "type_traits/is_nothrow_move_constructible.hpp"
+#endif
+
 #ifndef DO_NOT_USE_AGNOSTIC_IS_ASSIGNABLE
 #   include "type_traits/is_assignable.hpp"
 #endif
@@ -290,4 +290,8 @@
 #   include "type_traits/make_unsigned.hpp"
 #endif
 
-#endif // AGNOSTIC_STD_TYPE_TRAITS_HPP
+#ifndef DO_NOT_USE_AGNOSTIC_UNDERLYING_TYPE
+#   include "type_traits/underlying_type.hpp"
+#endif
+
+#include "type_traits/is_nothrow_destructible.hpp"

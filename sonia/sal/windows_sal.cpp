@@ -11,7 +11,7 @@
 #include "sonia/exceptions.hpp"
 
 #include <process.h>
-
+#include <WS2tcpip.h>
 namespace sonia::sal {
 
 namespace winapi = sonia::windows;

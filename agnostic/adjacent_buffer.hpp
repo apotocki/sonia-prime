@@ -2,21 +2,19 @@
 // You can redistribute it and/or modify it under the terms of the MIT License
 #pragma once
 
-#ifndef DO_NOT_USE_AGNOSTIC_ALIGNMENT_OF
-#   include "agnostic/std/type_traits/alignment_of.hpp"
-#endif
-
 #ifndef DO_NOT_USE_AGNOSTIC_IS_TRIVIALLY_DESTRUCTIBLE
 #   include "agnostic/std/type_traits/is_trivially_destructible.hpp"
 #endif
 
-#ifndef DO_NOT_USE_AGNOSTIC_FORWARD
-#   include "agnostic/std/utility/forward.hpp"
-#endif
+#include "agnostic/std/utility/forward.hpp"
 
 #ifndef DO_NOT_USE_AGNOSTIC_UNINITIALIZED_COPY
 #   include "agnostic/std/memory/uninitialized_copy.hpp"
 #endif
+
+
+#include "agnostic/std/new/launder.hpp"
+
 
 #ifndef DO_NOT_USE_AGNOSTIC_UNINITIALIZED_DEFAULT_CONSTRUCT
 #   include "agnostic/std/memory/uninitialized_default_construct.hpp"
@@ -46,7 +44,7 @@ class adjacent_buffer : public BaseT
 public:
     using value_type = T;
     using size_type = size_t;
-    static constexpr size_t type_alignment = std::alignment_of_v<T>;
+    static constexpr size_t type_alignment = alignof(T);
 
     template <typename ... ArgsT>
     adjacent_buffer(uninitialized_t, size_type sz, ArgsT&& ... args)
@@ -106,7 +104,7 @@ public:
 };
 
 template <typename T, typename BaseT, BareAllocator AllocatorT, typename ... ArgsT>
-adjacent_buffer<T, BaseT>* allocate_adjacent_buffer(AllocatorT alloc, size_t sz, ArgsT&& ... args)
+[[nodiscard]] adjacent_buffer<T, BaseT>* allocate_adjacent_buffer(AllocatorT alloc, size_t sz, ArgsT&& ... args)
 {
     assert(sz);
 

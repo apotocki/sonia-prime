@@ -1,10 +1,10 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_NOTHROW_COPY_CONSTRUCTIBLE_HPP
-#define AGNOSTIC_STD_IS_NOTHROW_COPY_CONSTRUCTIBLE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_IS_NOTHROW_COPY_CONSTRUCTIBLE
+
+#include "agnostic/std/type_traits/add_rvalue_reference.hpp"
+#include "agnostic/std/type_traits/add_const.hpp"
 
 namespace std {
 
@@ -14,4 +14,6 @@ template <typename T> constexpr bool is_nothrow_copy_constructible_v = is_nothro
 
 }
 
-#endif // AGNOSTIC_STD_IS_NOTHROW_COPY_CONSTRUCTIBLE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

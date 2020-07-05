@@ -1,9 +1,5 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_MEMORY_HPP
-#define AGNOSTIC_STD_MEMORY_HPP
-
 #pragma once
 
 #include "utility.hpp"
@@ -23,6 +19,10 @@
 
 #ifndef DO_NOT_USE_AGNOSTIC_DESTROY_AT
 #   include "memory/destroy_at.hpp"
+#endif
+
+#ifndef DO_NOT_USE_AGNOSTIC_DESTROY
+#   include "memory/destroy.hpp"
 #endif
 
 #ifndef DO_NOT_USE_AGNOSTIC_POINTER_TRAITS
@@ -57,4 +57,18 @@
 #   include "memory/uninitialized_copy.hpp"
 #endif
 
-#endif // AGNOSTIC_STD_MEMORY_HPP
+#ifndef DO_NOT_USE_AGNOSTIC_UNINITIALIZED_DEFAULT_CONSTRUCT
+#   include "memory/uninitialized_default_construct.hpp"
+#endif
+
+#ifndef DO_NOT_USE_AGNOSTIC_UNINITIALIZEDVALUE_CONSTRUCT
+#   include "memory/uninitialized_value_construct.hpp"
+#endif
+
+#ifndef DO_NOT_USE_AGNOSTIC_UNINITIALIZED_FILL
+#   include "memory/uninitialized_fill.hpp"
+#endif
+
+#ifndef DO_NOT_USE_AGNOSTIC_UNINITIALIZED_MOVE
+#   include "memory/uninitialized_move.hpp"
+#endif

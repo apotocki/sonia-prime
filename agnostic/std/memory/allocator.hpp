@@ -1,9 +1,5 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_ALLOCATOR_HPP
-#define AGNOSTIC_STD_ALLOCATOR_HPP
-
 #pragma once
 
 namespace std {
@@ -34,7 +30,7 @@ struct allocator
     template <class... Args>
     void construct(pointer p, Args&& ... args)
     {
-        ::new(p) T(std::forward<Args>(args)...);
+        ::new(p) T(forward<Args>(args)...);
     }
 
     void destroy(pointer p)
@@ -44,5 +40,3 @@ struct allocator
 };
 
 }
-
-#endif // AGNOSTIC_STD_ALLOCATOR_HPP

@@ -1,10 +1,7 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_RVALUE_REFERENCE_HPP
-#define AGNOSTIC_STD_IS_RVALUE_REFERENCE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_IS_RVALUE_REFERENCE
 
 namespace std {
 
@@ -15,4 +12,6 @@ template <typename T> constexpr bool is_rvalue_reference_v = is_rvalue_reference
 
 }
 
-#endif // AGNOSTIC_STD_IS_RVALUE_REFERENCE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

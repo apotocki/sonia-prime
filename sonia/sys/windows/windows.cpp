@@ -4,6 +4,12 @@
 
 #include "sonia/config.hpp"
 #include "sonia/utility/windows.hpp"
+
+//#include <winsock2.h>
+#include <WS2tcpip.h>
+//#include <mswsock.h>
+#include <winioctl.h>
+
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/optimized/array.hpp"
@@ -15,6 +21,97 @@
 const DWORD MS_VC_EXCEPTION=0x406D1388;
 
 namespace sonia::windows {
+
+#pragma pack(push,8)
+typedef struct tagTHREADNAME_INFO
+{
+    DWORD dwType; // Must be 0x1000.
+    LPCSTR szName; // Pointer to name (in user addr space).
+    DWORD dwThreadID; // Thread ID (-1=caller thread).
+    DWORD dwFlags; // Reserved for future use, must be zero.
+} THREADNAME_INFO;
+#pragma pack(pop)
+
+void set_thread_name(DWORD dwThreadId, char const* threadName)
+{
+    // is needed and works only on Windows for VS Debugger
+#if !defined(__MINGW32__) && !defined(__MINGW64__)
+    THREADNAME_INFO info;
+    info.dwType = 0x1000;
+    info.szName = threadName;
+    info.dwThreadID = dwThreadId;
+    info.dwFlags = 0;
+
+    __try
+    {
+        RaiseException(MS_VC_EXCEPTION, 0, sizeof(info) / sizeof(ULONG_PTR), (ULONG_PTR*)&info);
+    }
+    __except (EXCEPTION_EXECUTE_HANDLER)
+    {
+    }
+#endif
+}
+
+void set_thread_name(boost::thread::id tid, char const* threadName)
+{
+    unsigned int dwThreadId;
+    std::stringstream ss;
+    ss << std::hex << tid;
+    ss >> dwThreadId;
+    set_thread_name(dwThreadId, threadName);
+}
+
+std::wstring utf8_to_utf16(string_view str)
+{
+    std::wstring result;
+    result.resize(str.size() + 1);
+    int len = MultiByteToWideChar(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size());
+    if (len > result.size()) {
+        result.resize((size_t)len);
+        len = MultiByteToWideChar(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size());
+        BOOST_ASSERT(len <= result.size());
+    }
+    return std::move(result);
+}
+
+std::string utf16_to_utf8(wstring_view str)
+{
+    std::string result;
+    result.resize(str.size());
+    int len = WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size(), NULL, NULL);
+    if (len > result.size()) {
+        result.resize((size_t)len);
+        int len = WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size(), NULL, NULL);
+        BOOST_ASSERT(len <= result.size());
+    }
+    return std::move(result);
+}
+
+std::string error_message(DWORD errcode)
+{
+    LPWSTR pBuffer = nullptr;
+    DWORD num = FormatMessageW(
+        FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        errcode,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPWSTR)&pBuffer,
+        0,
+        NULL);
+
+    if (pBuffer) {
+        SCOPE_EXIT([&pBuffer]() { LocalFree(pBuffer); });
+
+        int slength = (int)num + 1;
+        int len = WideCharToMultiByte(CP_ACP, 0, pBuffer, slength, 0, 0, 0, 0);
+        std::vector<char> buf(len);
+        WideCharToMultiByte(CP_ACP, 0, pBuffer, slength, &buf[0], len, 0, 0);
+        while (!buf.empty() && (buf.back() == '\0' || buf.back() == '\r' || buf.back() == '\n')) buf.pop_back();
+        return std::string(buf.begin(), buf.end());
+    }
+
+    return to_string("unknown error, errcode: %1%"_fmt % errcode);
+}
 
 wsa_scope::wsa_scope()
 {
@@ -228,6 +325,24 @@ LPFN_ACCEPTEX get_accept_function(SOCKET soc)
     return lpfnAcceptEx;
 }
 
+HANDLE create_file(
+    const wchar_t* file_name,
+    DWORD desired_access,
+    DWORD share_mode,
+    LPSECURITY_ATTRIBUTES security_attributes,
+    DWORD creation_disposition,
+    DWORD flags_and_attributes,
+    HANDLE template_file)
+{
+    HANDLE result = CreateFileW(file_name, desired_access, share_mode, security_attributes, creation_disposition, flags_and_attributes, template_file);
+    if (INVALID_HANDLE_VALUE == result)
+    {
+        DWORD err = GetLastError();
+        throw exception(error_message(err));
+    }
+    return result;
+}
+
 std::string get_file_name(HANDLE hFile)
 {
     std::vector<WCHAR> buf(64);
@@ -279,6 +394,23 @@ void async_write_file(HANDLE handle, uint64_t fileoffset, void const * buff, siz
         if (ERROR_IO_PENDING != err) {
             throw exception("write file error : %1%"_fmt % error_message(err));
         }
+    }
+}
+
+void ioctl(
+    HANDLE device,
+    DWORD io_control_code,
+    LPVOID in_buffer,
+    DWORD in_buffer_size,
+    LPVOID out_buffer,
+    DWORD out_buffer_size,
+    LPDWORD bytes_returned,
+    LPOVERLAPPED overlapped
+)
+{
+    if (!DeviceIoControl(device, io_control_code, in_buffer, in_buffer_size, out_buffer, out_buffer_size, bytes_returned, overlapped)) {
+        DWORD err = GetLastError();
+        throw exception(error_message(err));
     }
 }
 

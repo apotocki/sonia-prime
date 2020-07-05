@@ -1,10 +1,10 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_MEMBER_POINTER_HPP
-#define AGNOSTIC_STD_IS_MEMBER_POINTER_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_IS_MEMBER_POINTER
+
+#include "agnostic/std/type_traits/integral_constant.hpp"
+#include "agnostic/std/type_traits/remove_cv.hpp"
 
 namespace std {
 
@@ -20,4 +20,6 @@ template <typename T> constexpr bool is_member_pointer_v = is_member_pointer<T>:
 
 }
 
-#endif // AGNOSTIC_STD_IS_MEMBER_POINTER_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

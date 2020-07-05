@@ -169,6 +169,15 @@
     <Filter Include="agnostic\std\limits">
       <UniqueIdentifier>{1b5694c7-f7d3-49db-9488-835d43d72963}</UniqueIdentifier>
     </Filter>
+    <Filter Include="agnostic\stdext">
+      <UniqueIdentifier>{2bebf616-ce2f-4372-9a13-960aa3412f02}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="agnostic\std\iterator\concepts">
+      <UniqueIdentifier>{70699733-7af2-430c-85d9-b3147df70193}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="agnostic\std\concepts\ranges">
+      <UniqueIdentifier>{68ead0d7-e137-48f3-8b66-8909f0a36f88}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -783,9 +792,6 @@
     <ClInclude Include="..\..\..\sonia\sys\linux\signals.hpp">
       <Filter>sonia.sys\linux</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\sys\windows\main_api.hpp">
-      <Filter>sonia.sys\windows</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\sys\windows\thread_pool.hpp">
       <Filter>sonia.sys\windows</Filter>
     </ClInclude>
@@ -1026,9 +1032,6 @@
     <ClInclude Include="..\..\..\agnostic\std\memory\default_delete.hpp">
       <Filter>agnostic\std\memory</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\agnostic\std\memory\allocate_new.hpp">
-      <Filter>agnostic\std\memory</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\agnostic\std\memory\allocate_unique.hpp">
       <Filter>agnostic\std\memory</Filter>
     </ClInclude>
@@ -1176,9 +1179,6 @@
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_copy_constructible.hpp">
       <Filter>agnostic\std\type_traits</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_any_of.hpp">
-      <Filter>agnostic\std\type_traits</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_arithmetic.hpp">
       <Filter>agnostic\std\type_traits</Filter>
     </ClInclude>
@@ -1314,9 +1314,6 @@
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_move_constructible.hpp">
       <Filter>agnostic\std\type_traits</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_referenceable.hpp">
-      <Filter>agnostic\std\type_traits</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_swappable.hpp">
       <Filter>agnostic\std\type_traits</Filter>
     </ClInclude>
@@ -1359,9 +1356,6 @@
     <ClInclude Include="..\..\..\agnostic\allocator\default_bare_allocator.hpp">
       <Filter>agnostic\allocator</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\agnostic\std\compare\partial_ordering.hpp">
-      <Filter>agnostic\std\compare</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\agnostic\std\concepts\convertible_to.hpp">
       <Filter>agnostic\std\concepts</Filter>
     </ClInclude>
@@ -1388,6 +1382,198 @@
     </ClInclude>
     <ClInclude Include="..\..\..\agnostic\std\new\bad_alloc.hpp">
       <Filter>agnostic\std\new</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\initializer_list.hpp">
+      <Filter>agnostic\std</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\memory\uninitialized_move.hpp">
+      <Filter>agnostic\std\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\move.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\max.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\max_element.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\compare\ordering.hpp">
+      <Filter>agnostic\std\compare</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\compare_3way.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\compare\equality.hpp">
+      <Filter>agnostic\std\compare</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\utility\dependent_bool.hpp">
+      <Filter>agnostic\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\allocator\FixedSizeAllocator.hpp">
+      <Filter>agnostic\allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\allocator\basic_fixed_size_allocator.hpp">
+      <Filter>agnostic\allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\allocator\default_fised_size_allocator.hpp">
+      <Filter>agnostic\allocator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\memory\uninitialized_default_construct.hpp">
+      <Filter>agnostic\std\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\memory\uninitialized_value_construct.hpp">
+      <Filter>agnostic\std\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_trivially_default_constructible.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\memory\uninitialized_fill.hpp">
+      <Filter>agnostic\std\memory</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\unwrap_enum.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\underlying_type.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\is_character.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\is_character_or_byte.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\allocate_new.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\min.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\min_element.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\swap_ranges.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\is_referenceable.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\mismatch.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\random_access_iterator.hpp">
+      <Filter>agnostic\std\iterator\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\is_any_of.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\bidirectional_iterator.hpp">
+      <Filter>agnostic\std\iterator\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\forward_iterator.hpp">
+      <Filter>agnostic\std\iterator\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\input_iterator.hpp">
+      <Filter>agnostic\std\iterator\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\input_or_output_iterator.hpp">
+      <Filter>agnostic\std\iterator\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\iterator\concepts\weakly_incrementable.hpp">
+      <Filter>agnostic\std\iterator\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\default_initializable.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\constructible_from.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\destructible.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_destructible.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\move_constructible.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\movable.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\assignable_from.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\common_reference_with.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\common_reference.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\copy_cv.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\cond_res.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\add_qualifiers.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_cvref.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\common_type.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\decay.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\can_reference.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\signed_integral.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\integral.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\iterator\incrementable_traits.hpp">
+      <Filter>agnostic\std\iterator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\make_signed.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\iterator\iter_difference.hpp">
+      <Filter>agnostic\std\iterator</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\is_from_primary.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\iter_concept.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\derived_from.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_base_of.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\swappable.hpp">
+      <Filter>agnostic\std\concepts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\concepts\ranges\swap.hpp">
+      <Filter>agnostic\std\concepts\ranges</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\move_backward.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\result_of.hpp">
+      <Filter>agnostic\std\type_traits</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\stdext\is_reference_wrapper.hpp">
+      <Filter>agnostic\stdext</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\functional\reference_wrapper.hpp">
+      <Filter>agnostic\std\functional</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -1425,9 +1611,6 @@
       <Filter>sonia.utility\number</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp">
-      <Filter>sonia.utility</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\windows.cpp">
       <Filter>sonia.utility</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sal\windows_sal.cpp">
@@ -1475,9 +1658,6 @@
     <ClCompile Include="..\..\..\sonia\services\io\io_factory.cpp">
       <Filter>sonia.services.io</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\linux.cpp">
-      <Filter>sonia.utility</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\socket_address.cpp">
       <Filter>sonia.services.io</Filter>
     </ClCompile>
@@ -1505,9 +1685,6 @@
     <ClCompile Include="..\..\..\sonia\sys\linux\signals.cpp">
       <Filter>sonia.sys\linux</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\sys\windows\main_api.cpp">
-      <Filter>sonia.sys\windows</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\sys\windows\thread_pool.cpp">
       <Filter>sonia.sys\windows</Filter>
     </ClCompile>
@@ -1525,6 +1702,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\number\number_math.cpp">
       <Filter>sonia.utility\number</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\linux\linux.cpp">
+      <Filter>sonia.sys\linux</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\windows\windows.cpp">
+      <Filter>sonia.sys\windows</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

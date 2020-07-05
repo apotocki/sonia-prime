@@ -1,10 +1,7 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_ENABLE_IF_HPP
-#define AGNOSTIC_STD_ENABLE_IF_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_ENABLE_IF
 
 namespace std {
 
@@ -16,4 +13,6 @@ template <bool B, typename T = void> using enable_if_t = typename enable_if<B, T
 
 }
 
-#endif // AGNOSTIC_STD_ENABLE_IF_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

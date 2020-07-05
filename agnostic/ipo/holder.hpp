@@ -2,11 +2,8 @@
 // You can redistribute it and/or modify it under the terms of the MIT License
 #pragma once
 
-#include "agnostic/std/memory/allocate_new.hpp"
-
-#ifndef DO_NOT_USE_AGNOSTIC_IN_PLACE
-#   include "agnostic/std/utility/in_place.hpp"
-#endif
+#include "agnostic/stdext/allocate_new.hpp"
+#include "agnostic/std/utility/in_place.hpp"
 
 namespace agnostic {
 
@@ -99,7 +96,7 @@ public:
 
     optimized_wrapper * clone() const override
     {
-        return std::allocate_new<optimized_wrapper>(static_cast<allocator_t const&>(*this), *this);
+        return stdext::allocate_new<optimized_wrapper>(static_cast<allocator_t const&>(*this), *this);
     }
 
 private:
@@ -165,7 +162,7 @@ struct ipo_holder_base
     {
         if constexpr (ServiceCookieBitsV <= first_byte_bits) {
             auto* dest = data();
-            *dest = (*dest & ~(first_byte_mask << 1)) | (uint8_t)(val << 1);
+            *dest = (*dest & ~(first_byte_mask << 1)) | (unsigned char)(val << 1);
         } else {
             set_service_cookie_adv(val);
         }

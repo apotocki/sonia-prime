@@ -18,9 +18,9 @@ struct default_bare_allocator
     }
 
 #ifdef _MSC_VER
-    [[nodiscard]] void* allocate(std::align_val_t al, size_t sz, std::nothrow_t) noexcept
+    [[nodiscard]] char* allocate(std::align_val_t al, size_t sz, std::nothrow_t) noexcept
     {
-        return _aligned_malloc(sz, static_cast<size_t>(al));
+        return reinterpret_cast<value_type*>(_aligned_malloc(sz, static_cast<size_t>(al)));
     }
 
     void deallocate(void* ptr, size_t) noexcept
@@ -29,9 +29,9 @@ struct default_bare_allocator
     }
 
 #else
-    [[nodiscard]] void* allocate(std::align_val_t al, size_t sz, std::nothrow_t) noexcept
+    [[nodiscard]] char* allocate(std::align_val_t al, size_t sz, std::nothrow_t) noexcept
     {
-        return aligned_alloc(static_cast<size_t>(al), sz);
+        return reinterpret_cast<value_type*>(aligned_alloc(static_cast<size_t>(al), sz));
     }
 
     void deallocate(void* ptr, size_t) noexcept
@@ -40,7 +40,7 @@ struct default_bare_allocator
     }
 #endif
 
-    bool is_equal(default_bare_allocator const& ta) const { return true; }
+    constexpr bool is_equal(default_bare_allocator const&) const noexcept { return true; }
 };
 
 }

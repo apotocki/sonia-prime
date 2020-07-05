@@ -37,8 +37,8 @@ struct array
     using difference_type = ptrdiff_t;
     using iterator = pointer;
     using const_iterator = const_pointer;
-    using reverse_iterator = reverse_iterator<iterator>;
-    using const_reverse_iterator = reverse_iterator<const_iterator>;
+    using reverse_iterator = std::reverse_iterator<iterator>;
+    using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     constexpr void fill(const T& u)
     {
@@ -55,40 +55,39 @@ struct array
     }
 
     // iterators
-    constexpr iterator               begin() noexcept { return data_; }
-    constexpr const_iterator         begin() const noexcept { return data_; }
-    constexpr iterator               end() noexcept { return data_ + N; }
-    constexpr const_iterator         end() const noexcept { return data_ + N; }
+    [[nodiscard]] constexpr iterator               begin() noexcept { return data_; }
+    [[nodiscard]] constexpr const_iterator         begin() const noexcept { return data_; }
+    [[nodiscard]] constexpr iterator               end() noexcept { return data_ + N; }
+    [[nodiscard]] constexpr const_iterator         end() const noexcept { return data_ + N; }
 
-    constexpr reverse_iterator       rbegin() noexcept { return reverse_iterator(end()); }
-    constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
-    constexpr reverse_iterator       rend() noexcept { return reverse_iterator(begin()); }
-    constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
+    [[nodiscard]] constexpr reverse_iterator       rbegin() noexcept { return reverse_iterator(end()); }
+    [[nodiscard]] constexpr const_reverse_iterator rbegin() const noexcept { return const_reverse_iterator(end()); }
+    [[nodiscard]] constexpr reverse_iterator       rend() noexcept { return reverse_iterator(begin()); }
+    [[nodiscard]] constexpr const_reverse_iterator rend() const noexcept { return const_reverse_iterator(begin()); }
 
-    constexpr const_iterator         cbegin() const noexcept { return data_; }
-    constexpr const_iterator         cend() const noexcept { return data_ + N; }
-    constexpr const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
-    constexpr const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
+    [[nodiscard]] constexpr const_iterator         cbegin() const noexcept { return data_; }
+    [[nodiscard]] constexpr const_iterator         cend() const noexcept { return data_ + N; }
+    [[nodiscard]] constexpr const_reverse_iterator crbegin() const noexcept { return const_reverse_iterator(end()); }
+    [[nodiscard]] constexpr const_reverse_iterator crend() const noexcept { return const_reverse_iterator(begin()); }
 
     // capacity
     [[nodiscard]] constexpr bool empty() const noexcept { return !N; }
-    constexpr size_type size() const noexcept { return N; }
-    constexpr size_type max_size() const noexcept { return N; }
+    [[nodiscard]] constexpr size_type size() const noexcept { return N; }
+    [[nodiscard]] constexpr size_type max_size() const noexcept { return N; }
 
     // element access
-    constexpr reference       operator[](size_type n) noexcept { return data_[n]; }
-    constexpr const_reference operator[](size_type n) const noexcept { return data_[n]; }
-    constexpr reference       at(size_type n) { if (N <= n) throw out_of_range(); return data_[n]; }
-    constexpr const_reference at(size_type n) const { if (N <= n) throw out_of_range(); return data_[n]; }
-    constexpr reference       front() noexcept { return *data_; }
-    constexpr const_reference front() const noexcept { return *data_; }
-    constexpr reference       back() noexcept { return data_[N - 1]; }
-    constexpr const_reference back() const noexcept { return data_[N - 1]; }
+    [[nodiscard]] constexpr reference       operator[](size_type n) noexcept { return data_[n]; }
+    [[nodiscard]] constexpr const_reference operator[](size_type n) const noexcept { return data_[n]; }
+    [[nodiscard]] constexpr reference       at(size_type n);
+    [[nodiscard]] constexpr const_reference at(size_type n) const;
+    [[nodiscard]] constexpr reference       front() noexcept { return *data_; }
+    [[nodiscard]] constexpr const_reference front() const noexcept { return *data_; }
+    [[nodiscard]] constexpr reference       back() noexcept { return data_[N - 1]; }
+    [[nodiscard]] constexpr const_reference back() const noexcept { return data_[N - 1]; }
 
-    constexpr T* data() noexcept { return data_; }
-    constexpr const T* data() const noexcept { return data_; }
+    [[nodiscard]] constexpr T* data() noexcept { return data_; }
+    [[nodiscard]] constexpr const T* data() const noexcept { return data_; }
 
-private:
     T data_[N];
 };
 

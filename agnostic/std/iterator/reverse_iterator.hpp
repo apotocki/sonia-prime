@@ -1,22 +1,11 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_REVERSE_ITERATOR_HPP
-#define AGNOSTIC_STD_REVERSE_ITERATOR_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_REVERSE_ITERATOR
 
-#ifndef DO_NOT_USE_AGNOSTIC_ITERATOR_TRAITS
-#   include "iterator_traits.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_MOVE
-#   include "../utility/move.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_IS_POINTER
-#   include "../type_traits/is_pointer.hpp"
-#endif
+#include "agnostic/std/iterator/iterator_traits.hpp"
+#include "agnostic/std/type_traits/is_pointer.hpp"
+#include "agnostic/std/utility/move.hpp"
 
 namespace std {
 
@@ -158,4 +147,6 @@ constexpr std::reverse_iterator<Iter> make_reverse_iterator(Iter i)
 
 }
 
-#endif // AGNOSTIC_STD_REVERSE_ITERATOR_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <iterator>
+#endif

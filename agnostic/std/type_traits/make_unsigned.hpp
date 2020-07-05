@@ -1,10 +1,12 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_MAKE_UNSIGNED_HPP
-#define AGNOSTIC_STD_MAKE_UNSIGNED_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_MAKE_UNSIGNED
+
+#include "agnostic/std/type_traits/is_integral.hpp"
+#include "agnostic/std/type_traits/is_same.hpp"
+#include "agnostic/std/type_traits/remove_cv.hpp"
+#include "agnostic/std/type_traits/is_enum.hpp"
 
 namespace std {
 
@@ -28,8 +30,10 @@ template <typename T> struct make_unsigned {
     using type = typename make_unsigned_detail::make_unsigned_impl<T>::type;
 };
 
-template <typename T> using make_unsigned_t = typename make_unsigned<T>::type;
+template <typename T> using make_unsigned_t = typename make_unsigned<remove_cv_t<T>>::type;
 
 }
 
-#endif // AGNOSTIC_STD_MAKE_UNSIGNED_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

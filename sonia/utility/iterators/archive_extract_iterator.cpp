@@ -11,7 +11,7 @@ archive_type get_archive_type(string_view str)
 {
     if (str.size() <= 3) {
         char buff[16];
-        char * buff_it = buff;//std::launder(buff);
+        char * buff_it = buff;
         for (char c : str) {
             if (c >= 'a' && c <= 'z') c -= ('a' - 'A');
             *buff_it++ = c;

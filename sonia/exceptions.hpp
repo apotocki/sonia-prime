@@ -75,13 +75,13 @@ using trace_info = boost::error_info<struct tag_stacktrace, boost::stacktrace::s
         << boost::throw_line(line) \
         << sonia::trace_info(boost::stacktrace::stacktrace())
 
-#define THROW_ERROR(err) THROW_PARTICULAR_ERROR_RAW2(err, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__)
+#define THROW_ERROR(err) THROW_PARTICULAR_ERROR_RAW2(err, BOOST_CURRENT_FUNCTION ,__FILE__,__LINE__)
 
-#define THROW_INTERNAL_ERROR(...) THROW_PARTICULAR_ERROR_RAW2(sonia::internal_error(__VA_ARGS__), BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__)
-#define THROW_NOT_IMPLEMENTED_ERROR(...) THROW_PARTICULAR_ERROR_RAW(sonia::not_implemented_error, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
-#define THROW_NOT_SUPPORTED_ERROR(...) THROW_PARTICULAR_ERROR_RAW(sonia::not_supported_operation_error, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
-#define THROW_EOF_ERROR(...) THROW_PARTICULAR_ERROR_RAW(sonia::eof_exception, BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
-#define THROW_FATAL_ERROR(...) THROW_PARTICULAR_ERROR_RAW2(sonia::fatal_error(__VA_ARGS__), BOOST_THROW_EXCEPTION_CURRENT_FUNCTION,__FILE__,__LINE__)
+#define THROW_INTERNAL_ERROR(...) THROW_PARTICULAR_ERROR_RAW2(sonia::internal_error(__VA_ARGS__), BOOST_CURRENT_FUNCTION,__FILE__,__LINE__)
+#define THROW_NOT_IMPLEMENTED_ERROR(...) THROW_PARTICULAR_ERROR_RAW(sonia::not_implemented_error, BOOST_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
+#define THROW_NOT_SUPPORTED_ERROR(...) THROW_PARTICULAR_ERROR_RAW(sonia::not_supported_operation_error, BOOST_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
+#define THROW_EOF_ERROR(...) THROW_PARTICULAR_ERROR_RAW(sonia::eof_exception, BOOST_CURRENT_FUNCTION,__FILE__,__LINE__,##__VA_ARGS__)
+#define THROW_FATAL_ERROR(...) THROW_PARTICULAR_ERROR_RAW2(sonia::fatal_error(__VA_ARGS__), BOOST_CURRENT_FUNCTION,__FILE__,__LINE__)
 
 }
 

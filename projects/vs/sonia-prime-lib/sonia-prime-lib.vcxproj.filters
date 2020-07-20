@@ -178,6 +178,21 @@
     <Filter Include="agnostic\std\concepts\ranges">
       <UniqueIdentifier>{68ead0d7-e137-48f3-8b66-8909f0a36f88}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.fibers">
+      <UniqueIdentifier>{b4ac75d2-0de3-46e9-a08a-349b00a4b323}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.fibers\detail">
+      <UniqueIdentifier>{829caa52-88e7-4090-b8d6-3eee7b468fe5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.fibers\future">
+      <UniqueIdentifier>{3c9958ac-a1be-4542-a709-3f90f8b23f07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.fibers\future\detail">
+      <UniqueIdentifier>{f7a324e2-bfb0-439c-b0f2-db97ad160f8c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.fibers\algo">
+      <UniqueIdentifier>{8b924cf8-f2a5-4b58-89b6-5479ba2f8a0c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -1575,6 +1590,123 @@
     <ClInclude Include="..\..\..\agnostic\std\functional\reference_wrapper.hpp">
       <Filter>agnostic\std\functional</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\future.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\config.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\exceptions.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\future\future.hpp">
+      <Filter>sonia.fibers\future</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\future\async.hpp">
+      <Filter>sonia.fibers\future</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\future\detail\shared_state.hpp">
+      <Filter>sonia.fibers\future\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\future\future_status.hpp">
+      <Filter>sonia.fibers\future</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\condition_variable.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\context.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\data.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\spinlock.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\spinlock_ttas_adaptive.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\cpu_relax.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\spinlock_status.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\spinlock_ttas.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\spinlock_ttas_adaptive_futex.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\futex.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\spinlock_ttas_futex.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\decay_copy.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\fss.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\fixedsize_stack.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\policy.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\properties.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\segmented_stack.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\type.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\convert.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\mutex.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\operations.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\algo\algorithm.hpp">
+      <Filter>sonia.fibers\algo</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\fiber.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\detail\disable_overload.hpp">
+      <Filter>sonia.fibers\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\scheduler.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\future\packaged_task.hpp">
+      <Filter>sonia.fibers\future</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\future\detail\task_base.hpp">
+      <Filter>sonia.fibers\future\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\future\detail\task_object.hpp">
+      <Filter>sonia.fibers\future\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\future\promise.hpp">
+      <Filter>sonia.fibers\future</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\future\detail\shared_state_object.hpp">
+      <Filter>sonia.fibers\future\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\barrier.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\algo\round_robin.hpp">
+      <Filter>sonia.fibers\algo</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -1708,6 +1840,33 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sys\windows\windows.cpp">
       <Filter>sonia.sys\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\mutex.cpp">
+      <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\context.cpp">
+      <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\condition_variable.cpp">
+      <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\future.cpp">
+      <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\scheduler.cpp">
+      <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\fiber.cpp">
+      <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\barrier.cpp">
+      <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\algo\algorithm.cpp">
+      <Filter>sonia.fibers\algo</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\algo\round_robin.cpp">
+      <Filter>sonia.fibers\algo</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

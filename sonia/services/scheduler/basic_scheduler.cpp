@@ -8,7 +8,6 @@
 
 #include "basic_scheduler.hpp"
 
-#include <boost/fiber/all.hpp>
 
 #ifndef SONIA_TASK_POOL_INITIAL_SIZE
 #   define SONIA_TASK_POOL_INITIAL_SIZE 1024

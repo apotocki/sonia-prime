@@ -4,7 +4,7 @@
 
 #include "sonia/config.hpp"
 
-#include "boost/fiber/type.hpp"
+#include "sonia/fibers/type.hpp"
 #include <boost/context/detail/prefetch.hpp>
 #include <iostream>
 

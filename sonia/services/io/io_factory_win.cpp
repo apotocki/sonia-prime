@@ -10,12 +10,11 @@
 #include <iostream>
 
 #include <boost/integer_traits.hpp>
-#include <boost/fiber/mutex.hpp>
-#include <boost/fiber/condition_variable.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
 #include "sonia/optional.hpp"
 #include "sonia/exceptions.hpp"
+#include "sonia/concurrency.hpp"
 
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/utility/object_pool.hpp"

@@ -14,8 +14,11 @@
 #include <boost/thread/lock_guard.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
 
-#include <boost/fiber/detail/spinlock.hpp>
-#include <boost/fiber/all.hpp>
+#include "sonia/fibers/future.hpp"
+#include "sonia/fibers/fiber.hpp"
+#include "sonia/fibers/barrier.hpp"
+
+//#include <boost/fiber/all.hpp>
 
 namespace sonia {
 
@@ -24,20 +27,20 @@ using boost::thread;
 using std::unique_lock;
 using boost::lock_guard;
 using boost::shared_lock_guard;
-using boost::fibers::fiber;
+using fibers::fiber;
 
-using spin_mutex = boost::fibers::detail::spinlock;
+using spin_mutex = fibers::detail::spinlock;
 
 namespace threads {
     using std::mutex;
     using std::condition_variable;
 }
 
-namespace fibers {
-    using namespace boost::fibers;
-}
+//namespace fibers {
+//    using namespace boost::fibers;
+//}
 
-namespace this_fiber = boost::this_fiber;
+//namespace this_fiber = boost::this_fiber;
 
 namespace this_thread {
     using namespace boost::this_thread;
@@ -108,11 +111,11 @@ private:
 
 
 // traits
-struct fiber_traits
-{
-    using mutex_type = fibers::mutex;
-    using condition_variable_type = fibers::condition_variable;
-};
+//struct fiber_traits
+//{
+//    using mutex_type = fibers::mutex;
+//    using condition_variable_type = fibers::condition_variable;
+//};
 
 }
 

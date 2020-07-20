@@ -1,21 +1,15 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_FIBERS_RW_MUTEX_HPP
-#define SONIA_FIBERS_RW_MUTEX_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <atomic>
 #include <mutex>
 
 #include <boost/assert.hpp>
 #include <boost/integer_traits.hpp>
-#include <boost/fiber/mutex.hpp>
-#include <boost/fiber/condition_variable.hpp>
+#include "sonia/fibers/mutex.hpp"
+#include "sonia/fibers/condition_variable.hpp"
 
 namespace sonia::fibers {
 
@@ -25,14 +19,14 @@ class rw_mutex
     static constexpr intptr_t state_pos_value = (intptr_t)1 << log_half_rng; // intptr_t::max / state_pos_value = ~ wr and state_pos_value r locks simultaneously
     std::atomic<intptr_t> state_{0};
 
-    using mutex_t = boost::fibers::mutex;
+    using mutex_t = mutex;
     mutex_t mtx_;
 
-    typedef boost::fibers::detail::spinlock spinlock_t;
+    using spinlock_t = detail::spinlock;
     spinlock_t smtx_;
     //mutex_t smtx_;
 
-    boost::fibers::condition_variable_any rvar_;
+    condition_variable_any rvar_;
 
 public:
     rw_mutex() = default;
@@ -132,5 +126,3 @@ public:
 };
 
 }
-
-#endif // SONIA_FIBERS_RW_MUTEX_HPP

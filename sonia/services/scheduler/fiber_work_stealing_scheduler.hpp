@@ -13,18 +13,12 @@
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include "sonia/utility/simple_queue.hpp"
 
-//#ifdef BOOST_FIBERS_USE_SPMC_QUEUE
-//#   include <boost/fiber/detail/context_spmc_queue.hpp>
-//#else
-//#   include <boost/fiber/detail/context_spinlock_queue.hpp>
-//#endif
-
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/concurrency/debug_mutex.hpp"
 
 namespace sonia {
 
-class fiber_work_stealing_scheduler : public boost::fibers::algo::algorithm
+class fiber_work_stealing_scheduler : public fibers::algo::algorithm
 {
 public:
     class group_host
@@ -70,20 +64,20 @@ private:
     group_host & group_;
     threads::mutex mtx_;
     threads::condition_variable cnd_;
-    simple_queue<boost::fibers::context*, spin_mutex> rqueue_{1024};
+    simple_queue<fibers::context*, spin_mutex> rqueue_{1024};
     uint8_t flag_ : 1;
     uint8_t waiting_ : 1;
     uint8_t suspend_ : 1;
 };
 
-class fiber_work_stealing_scheduler2 : public boost::fibers::algo::algorithm
+class fiber_work_stealing_scheduler2 : public fibers::algo::algorithm
 {
 public:
     struct group_host
     {
         spin_mutex mtx;
         std::vector<boost::intrusive_ptr<fiber_work_stealing_scheduler2>> schedulers;
-        simple_queue<boost::fibers::context*, spin_mutex> rqueue_{1024};
+        simple_queue<fibers::context*, spin_mutex> rqueue_{1024};
     };
 
     explicit fiber_work_stealing_scheduler2(group_host & g, bool suspend = true);
@@ -110,7 +104,7 @@ private:
     group_host & group_;
     threads::mutex mtx_;
     threads::condition_variable cnd_;
-    simple_queue<boost::fibers::context*, spin_mutex> rqueue_{2};
+    simple_queue<fibers::context*, spin_mutex> rqueue_{2};
     uint8_t flag_ : 1;
     uint8_t suspend_ : 1;
 };

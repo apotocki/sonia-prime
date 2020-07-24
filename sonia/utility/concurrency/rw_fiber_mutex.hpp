@@ -8,8 +8,7 @@
 
 #include <boost/assert.hpp>
 #include <boost/integer_traits.hpp>
-#include "sonia/fibers/mutex.hpp"
-#include "sonia/fibers/condition_variable.hpp"
+#include "sonia/concurrency.hpp"
 
 namespace sonia::fibers {
 
@@ -22,9 +21,7 @@ class rw_mutex
     using mutex_t = mutex;
     mutex_t mtx_;
 
-    using spinlock_t = detail::spinlock;
-    spinlock_t smtx_;
-    //mutex_t smtx_;
+    spin_mutex smtx_;
 
     condition_variable_any rvar_;
 

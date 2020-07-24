@@ -69,6 +69,10 @@ struct context_initializer {
     static thread_local context *   active_;
     static thread_local std::size_t counter_;
 
+    static BOOST_NOINLINE context** get_pactive() noexcept {
+        return &active_;
+    }
+
     context_initializer() {
         if ( 0 == counter_++) {
             // main fiber context of this thread
@@ -80,13 +84,13 @@ struct context_initializer {
             // create and attach dispatcher context to scheduler
             sched->attach_dispatcher_context( make_dispatcher_context() );
             // make main context to active context
-            active_ = main_ctx;
+            *get_pactive() = main_ctx;
         }
     }
 
     ~context_initializer() {
         if ( 0 == --counter_) {
-            context * main_ctx = active_;
+            context * main_ctx = *get_pactive();
             BOOST_ASSERT( main_ctx->is_context( type::main_context) );
             scheduler * sched = main_ctx->get_scheduler();
             delete sched;
@@ -103,12 +107,12 @@ context *
 context::active() noexcept {
     // initialized the first time control passes; per thread
     thread_local static context_initializer ctx_initializer;
-    return context_initializer::active_;
+    return *context_initializer::get_pactive();
 }
 
 void
 context::reset_active() noexcept {
-    context_initializer::active_ = nullptr;
+    *context_initializer::get_pactive() = nullptr;
 }
 
 context::~context() {
@@ -144,7 +148,7 @@ context::resume() noexcept {
     context * prev = this;
     // context_initializer::active_ will point to `this`
     // prev will point to previous active context
-    std::swap( context_initializer::active_, prev);
+    std::swap(*context_initializer::get_pactive(), prev);
     // pass pointer to the context that resumes `this`
     std::move( c_).resume_with([prev](boost::context::fiber && c){
                 prev->c_ = std::move( c);
@@ -157,7 +161,7 @@ context::resume( detail::spinlock_lock & lk) noexcept {
     context * prev = this;
     // context_initializer::active_ will point to `this`
     // prev will point to previous active context
-    std::swap( context_initializer::active_, prev);
+    std::swap(*context_initializer::get_pactive(), prev);
     // pass pointer to the context that resumes `this`
     std::move( c_).resume_with([prev,&lk](boost::context::fiber && c){
                 prev->c_ = std::move( c);
@@ -171,7 +175,7 @@ context::resume( context * ready_ctx) noexcept {
     context * prev = this;
     // context_initializer::active_ will point to `this`
     // prev will point to previous active context
-    std::swap( context_initializer::active_, prev);
+    std::swap(*context_initializer::get_pactive(), prev);
     // pass pointer to the context that resumes `this`
     std::move( c_).resume_with([prev,ready_ctx](boost::context::fiber && c){
                 prev->c_ = std::move( c);
@@ -220,7 +224,7 @@ context::suspend_with_cc() noexcept {
     context * prev = this;
     // context_initializer::active_ will point to `this`
     // prev will point to previous active context
-    std::swap( context_initializer::active_, prev);
+    std::swap(*context_initializer::get_pactive(), prev);
     // pass pointer to the context that resumes `this`
     return std::move( c_).resume_with([prev](boost::context::fiber && c){
                 prev->c_ = std::move( c);

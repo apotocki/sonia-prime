@@ -8,6 +8,15 @@ set (BUNDLE_HOME ${BUNDLES}/sonia-prime)
 set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/logger/logger.cpp
     ${BUNDLE_HOME}/sonia/services/bundle.cpp
+    ${BUNDLE_HOME}/sonia/fibers/context.cpp
+    ${BUNDLE_HOME}/sonia/fibers/scheduler.cpp
+    ${BUNDLE_HOME}/sonia/fibers/mutex.cpp
+    ${BUNDLE_HOME}/sonia/fibers/future.cpp
+    ${BUNDLE_HOME}/sonia/fibers/fiber.cpp
+    ${BUNDLE_HOME}/sonia/fibers/condition_variable.cpp
+    ${BUNDLE_HOME}/sonia/fibers/barrier.cpp
+    ${BUNDLE_HOME}/sonia/fibers/algo/algorithm.cpp
+    ${BUNDLE_HOME}/sonia/fibers/algo/round_robin.cpp
     ${BUNDLE_HOME}/sonia/sal/sal.cpp
     ${BUNDLE_HOME}/sonia/net/uri.cpp
     ${BUNDLE_HOME}/sonia/net/http/http.cpp

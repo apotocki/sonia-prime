@@ -1841,25 +1841,25 @@
     <ClCompile Include="..\..\..\sonia\sys\windows\windows.cpp">
       <Filter>sonia.sys\windows</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\fibers\mutex.cpp">
-      <Filter>sonia.fibers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\fibers\context.cpp">
+    <ClCompile Include="..\..\..\sonia\fibers\barrier.cpp">
       <Filter>sonia.fibers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\fibers\condition_variable.cpp">
       <Filter>sonia.fibers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\fibers\future.cpp">
-      <Filter>sonia.fibers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\fibers\scheduler.cpp">
+    <ClCompile Include="..\..\..\sonia\fibers\context.cpp">
       <Filter>sonia.fibers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\fibers\fiber.cpp">
       <Filter>sonia.fibers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\fibers\barrier.cpp">
+    <ClCompile Include="..\..\..\sonia\fibers\future.cpp">
+      <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\mutex.cpp">
+      <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\scheduler.cpp">
       <Filter>sonia.fibers</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\fibers\algo\algorithm.cpp">

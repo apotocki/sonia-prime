@@ -182,6 +182,7 @@ thread_local fibers::mutex* thread_mtx_;
 
 void basic_scheduler::thread_proc()
 {
+    //LOG_TRACE(logger()) << "start thread proc, thread: " << this_thread::get_id();
     //fibers::use_scheduling_algorithm< boost::fibers::algo::shared_work >();
     //fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler>(gh_, true);
     fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler2>(gh_, true);
@@ -237,18 +238,25 @@ void basic_scheduler::fiber_proc(fibers::mutex & mtx)
             // the fiber will not be able to process the spawned task until the thread switches context.
             // So the spawned task will not be processed despite the potential availability of other threads and fibers for this work.
             // A poliative solution: try to prevent miltiple fibers of a thread waiting for a task.
+            
+            //auto fid = this_fiber::get_id();
+            //LOG_TRACE(logger()) << "before thread_mtx_ guard, fiber: " << fid << ", thread: " << this_thread::get_id();
+            //fid = this_fiber::get_id();
             lock_guard guard(*thread_mtx_); 
-
+            //LOG_TRACE(logger()) << "after thread_mtx_ guard, fiber: " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
             queue_entry * pe;
             {
                 //LOG_TRACE(logger()) << "before acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
-
+                //LOG_TRACE(logger()) << "acquire guard fiber " << this_fiber::get_id() << "," << sonia::fibers::context::active2() << ", thread: " << this_thread::get_id();
                 //LOG_TRACE(logger()) << "acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
                 unique_lock lck(queue_mtx_);
-                //LOG_TRACE(logger()) << "got guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
+                //LOG_TRACE(logger()) << "got guard fiber " << this_fiber::get_id() << "," << sonia::fibers::context::active2() << ", thread: " << this_thread::get_id() << ", stopping: " << stopping_;
+                //auto fid = this_fiber::get_id();
+                //LOG_TRACE(logger()) << "got guard fiber " << fid << ", thread: " << this_thread::get_id() << ", stopping: " << stopping_;
                 queue_cond_.wait(lck, [this]() { return !queue_not_safe_empty() || stopping_; });
                 if (stopping_ && queue_not_safe_empty()) {
                     //LOG_TRACE(logger()) << "return0 from fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
+                    //LOG_TRACE(logger()) << "return0 from fiber " << this_fiber::get_id() << "," << sonia::fibers::context::active2() << ", thread: " << this_thread::get_id();
                     return;
                 }
                 stopping = stopping_;

@@ -139,6 +139,12 @@
     <Filter Include="sonia.services\auth">
       <UniqueIdentifier>{77007cb3-76e3-4c88-ad20-b83ade85fe18}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.fibers">
+      <UniqueIdentifier>{f4ffb33d-5f04-4eb5-9d67-c262cfa58e4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.fibers\algo">
+      <UniqueIdentifier>{57d16a7c-9cad-42ee-9580-e4df7a2977b5}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\services\environment.hpp">

@@ -20,8 +20,7 @@
 // https://software.intel.com/en-us/articles/benefitting-power-and-performance-sleep-loops
 // https://software.intel.com/en-us/articles/long-duration-spin-wait-loops-on-hyper-threading-technology-enabled-intel-processors
 
-namespace sonia::fibers {
-namespace detail {
+namespace sonia::fibers::detail {
 
 class spinlock_ttas_adaptive {
 private:
@@ -117,4 +116,4 @@ public:
     }
 };
 
-}}
+}

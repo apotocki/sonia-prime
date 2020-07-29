@@ -232,7 +232,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         this_thread::attach_host("client");
         auto ctl_proxy = services::locate<itest_service>("test_service");
         //this_thread::attach_host("server");
-
+#if 1
         try {
             ctl_proxy->exception_method();
             BOOST_CHECK (false);
@@ -246,14 +246,14 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         //boost::this_thread::sleep(boost::posix_time::milliseconds(300));
 
         ctl_proxy->empty_method();
-
+#endif
         ///*
         int ival = 10;
         std::string str = "asd";
         std::vector<std::string> result;
         result.push_back("123"); result.push_back("234"); result.push_back("345");
         std::vector<std::string> maincopy = result;
-
+#if 1
         for (int i = 0; i < 50; ++i)
         {
             std::vector<std::string> copy = result;
@@ -263,9 +263,10 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
             BOOST_CHECK_EQUAL (main_result.first,  str);
             result.push_back(to_string("xxx%1%"_fmt % i));
         }
+#endif
 #if 1
 #ifdef _DEBUG
-    const int calls_count = 300;
+    const int calls_count = 30;
     const size_t max_pass_count = 32;
 #else
     const int calls_count = 1500;

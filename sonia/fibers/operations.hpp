@@ -75,8 +75,8 @@ bool has_ready_fibers() noexcept {
 
 template< typename SchedAlgo, typename ... Args >
 void use_scheduling_algorithm( Args && ... args) noexcept {
-    sonia::fibers::context::active()->get_scheduler()
-        ->set_algo( new SchedAlgo( std::forward< Args >( args) ... ) );
+    context::active()->get_scheduler()->
+        set_algo(new SchedAlgo(std::forward< Args >(args) ...));
 }
 
 }

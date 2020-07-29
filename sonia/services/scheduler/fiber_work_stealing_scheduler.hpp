@@ -10,6 +10,8 @@
 #endif
 
 #include <vector>
+#include <atomic>
+
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include "sonia/utility/simple_queue.hpp"
 
@@ -73,12 +75,34 @@ private:
 class fiber_work_stealing_scheduler2 : public fibers::algo::algorithm
 {
 public:
-    struct group_host
+    struct group_host : public fibers::scheduler_group
     {
-        spin_mutex mtx;
+    private:
+        spin_mutex schedulers_mtx;
         std::vector<boost::intrusive_ptr<fiber_work_stealing_scheduler2>> schedulers;
-        simple_queue<fibers::context*, spin_mutex> rqueue_{1024};
+        simple_queue<fibers::context*, spin_mutex> rqueue_{ 1024 };
+
+        std::atomic<long> rqueue_size_{ 0 };
+
+        threads::mutex mtx_;
+        threads::condition_variable cnd_;
+        std::atomic<long> notify_reservation_count_{ 0 };
+
+    public:
+        void put_scheduler(fiber_work_stealing_scheduler2 *);
+
+        void push(fibers::context* ctx) noexcept;
+        fibers::context* pop() noexcept;
+
+        bool empty() const noexcept { return rqueue_.empty(); }
+
+        template <typename PredicateT>
+        void suspend_until(std::chrono::steady_clock::time_point const&, PredicateT const&) noexcept;
+
+        void notify() noexcept;
+        void notify_all() noexcept;
     };
+
 
     explicit fiber_work_stealing_scheduler2(group_host & g, bool suspend = true);
 
@@ -93,19 +117,19 @@ public:
 
     bool has_ready_fibers() const noexcept override final
     {
-        return !rqueue_.empty() || !group_.rqueue_.empty();
+        return !rqueue_.empty() || !group_.empty();
     }
 
     void suspend_until(std::chrono::steady_clock::time_point const&) noexcept override final;
 
     void notify() noexcept override final;
 
+    fibers::scheduler_group* get_group() const noexcept override { return &group_; }
+
 private:
     group_host & group_;
-    threads::mutex mtx_;
-    threads::condition_variable cnd_;
+    
     simple_queue<fibers::context*, spin_mutex> rqueue_{2};
-    uint8_t flag_ : 1;
     uint8_t suspend_ : 1;
 };
 

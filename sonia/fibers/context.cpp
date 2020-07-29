@@ -140,9 +140,6 @@ context::active() noexcept {
         pd->active_ = pd->main_ = main_ctx;
     }
     return pd->active_;
-    
-    //thread_local static context_initializer ctx_initializer;
-    //return *context_initializer::get_pactive();
 }
 
 void
@@ -308,25 +305,31 @@ context::wait_until( std::chrono::steady_clock::time_point const& tp,
 
 void
 context::schedule( context * ctx) noexcept {
-    //BOOST_ASSERT( nullptr != ctx);
+    BOOST_ASSERT( nullptr != ctx);
     BOOST_ASSERT( this != ctx);
     BOOST_ASSERT( nullptr != get_scheduler() );
     BOOST_ASSERT( nullptr != ctx->get_scheduler() );
-#if ! defined(SONIA_FIBERS_NO_ATOMICS)
+
+    auto ctxsched = ctx->get_scheduler();
+    if (ctxsched->has_direct_foreign_scheduling() || scheduler_ == ctxsched) {
+        ctxsched->schedule(ctx);
+    } else {
+        // remote
+        ctxsched->schedule_from_remote(ctx);
+    }
     // FIXME: comparing scheduler address' must be synchronized?
     //        what if ctx is migrated between threads
     //        (other scheduler assigned)
-    if ( scheduler_ == ctx->get_scheduler() ) {
-        // local
-        get_scheduler()->schedule( ctx);
-    } else {
-        // remote
-        ctx->get_scheduler()->schedule_from_remote( ctx);
-    }
-#else
-    BOOST_ASSERT( get_scheduler() == ctx->get_scheduler() );
-    get_scheduler()->schedule( ctx);
-#endif
+    //if ( scheduler_ == ctx->get_scheduler() ) {
+    //    // local
+    //    get_scheduler()->schedule( ctx);
+    //} else if (scheduler_group_ && scheduler_group_ == ctx->scheduler_group_ &&
+    //    !ctx->is_context(fibers::type::pinned_context)) {
+    //    scheduler_group_->schedule(ctx);
+    //} else {
+    //    // remote
+    //    ctx->get_scheduler()->schedule_from_remote( ctx);
+    //}
 }
 
 void *
@@ -367,10 +370,10 @@ context::set_properties( fiber_properties * props) noexcept {
     properties_ = props;
 }
 
-bool
-context::worker_is_linked() const noexcept {
-    return worker_hook_.is_linked();
-}
+//bool
+//context::worker_is_linked() const noexcept {
+//    return worker_hook_.is_linked();
+//}
 
 bool
 context::ready_is_linked() const noexcept {
@@ -397,11 +400,11 @@ context::wait_is_linked() const noexcept {
     return wait_hook_.is_linked();
 }
 
-void
-context::worker_unlink() noexcept {
-    BOOST_ASSERT( worker_is_linked() );
-    worker_hook_.unlink();
-}
+//void
+//context::worker_unlink() noexcept {
+//    BOOST_ASSERT( worker_is_linked() );
+//    worker_hook_.unlink();
+//}
 
 void
 context::ready_unlink() noexcept {

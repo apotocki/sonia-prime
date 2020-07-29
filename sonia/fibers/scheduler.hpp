@@ -58,12 +58,12 @@ private:
         boost::intrusive::compare< timepoint_less >
     >;
 
-    using worker_queue_type = boost::intrusive::list<
-        context,
-        boost::intrusive::member_hook<
-            context, detail::worker_hook, & context::worker_hook_ >,
-        boost::intrusive::constant_time_size< false >
-    >;
+    //using worker_queue_type = boost::intrusive::list<
+    //    context,
+    //    boost::intrusive::member_hook<
+    //        context, detail::worker_hook, & context::worker_hook_ >,
+    //    boost::intrusive::constant_time_size< false >
+    //>;
 
     using terminated_queue_type = boost::intrusive::slist<
         context,
@@ -81,12 +81,11 @@ private:
         boost::intrusive::cache_last< true >
     >;
 
-#if ! defined(SONIA_FIBERS_NO_ATOMICS)
     // remote ready-queue contains context' signaled by schedulers
     // running in other threads
     detail::spinlock                                            remote_ready_splk_{};
     remote_ready_queue_type                                     remote_ready_queue_{};
-#endif
+
     algo::algorithm::ptr_t             algo_;
     // sleep-queue contains context' which have been called
     // scheduler::wait_until()
@@ -94,18 +93,17 @@ private:
     // worker-queue contains all context' mananged by this scheduler
     // except main-context and dispatcher-context
     // unlink happens on destruction of a context
-    worker_queue_type                                           worker_queue_{};
+    //worker_queue_type                                           worker_queue_{};
     // terminated-queue contains context' which have been terminated
     terminated_queue_type                                       terminated_queue_{};
     boost::intrusive_ptr< context >                             dispatcher_ctx_{};
     context                                                 *   main_ctx_{ nullptr };
     bool                                                        shutdown_{ false };
-
+    bool direct_foreign_scheduling_{ false };
+         
     void release_terminated_() noexcept;
 
-#if ! defined(SONIA_FIBERS_NO_ATOMICS)
     void remote_ready2ready_() noexcept;
-#endif
 
     void sleep2ready_() noexcept;
 
@@ -119,9 +117,7 @@ public:
 
     void schedule( context *) noexcept;
 
-#if ! defined(SONIA_FIBERS_NO_ATOMICS)
     void schedule_from_remote( context *) noexcept;
-#endif
 
     boost::context::fiber dispatch() noexcept;
 
@@ -149,6 +145,15 @@ public:
     void attach_worker_context( context *) noexcept;
 
     void detach_worker_context( context *) noexcept;
+
+    bool has_direct_foreign_scheduling() const noexcept { return direct_foreign_scheduling_; }
+};
+
+class scheduler_group {
+public:
+    virtual ~scheduler_group() = default;
+
+    void schedule(context* ctx) noexcept;
 };
 
 }

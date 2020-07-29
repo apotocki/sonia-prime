@@ -58,6 +58,7 @@ namespace sonia::fibers {
 class context;
 class fiber;
 class scheduler;
+class scheduler_group;
 
 namespace detail {
 
@@ -102,13 +103,13 @@ using sleep_hook = boost::intrusive::set_member_hook<
     >
 >;
 
-struct worker_tag;
-using worker_hook = boost::intrusive::list_member_hook<
-    boost::intrusive::tag< worker_tag >,
-    boost::intrusive::link_mode<
-        boost::intrusive::auto_unlink
-    >
->;
+//struct worker_tag;
+//using worker_hook = boost::intrusive::list_member_hook<
+//    boost::intrusive::tag< worker_tag >,
+//    boost::intrusive::link_mode<
+//        boost::intrusive::auto_unlink
+//    >
+//>;
 
 struct terminated_tag;
 using terminated_hook = boost::intrusive::slist_member_hook<
@@ -162,29 +163,26 @@ private:
 
     typedef std::map< uintptr_t, fss_data >             fss_data_t;
 
-#if ! defined(SONIA_FIBERS_NO_ATOMICS)
+
     std::atomic< std::size_t >                          use_count_;
-#else
-    std::size_t                                         use_count_;
-#endif
-#if ! defined(SONIA_FIBERS_NO_ATOMICS)
     detail::remote_ready_hook                           remote_ready_hook_{};
-#endif
+
     detail::spinlock                                    splk_{};
     bool                                                terminated_{ false };
     wait_queue_t                                        wait_queue_{};
+
 public:
     detail::wait_hook                                   wait_hook_{};
-#if ! defined(SONIA_FIBERS_NO_ATOMICS)
     std::atomic< std::intptr_t >                        twstatus{ 0 };
-#endif
+
 private:
     scheduler                                       *   scheduler_{ nullptr };
+
     fss_data_t                                          fss_data_{};
     detail::sleep_hook                                  sleep_hook_{};
     detail::ready_hook                                  ready_hook_{};
     detail::terminated_hook                             terminated_hook_{};
-    detail::worker_hook                                 worker_hook_{};
+    //detail::worker_hook                                 worker_hook_{};
     fiber_properties                                *   properties_{ nullptr };
     boost::context::fiber                               c_{};
     std::chrono::steady_clock::time_point               tp_;
@@ -329,7 +327,7 @@ public:
         return policy_;
     }
 
-    bool worker_is_linked() const noexcept;
+    //bool worker_is_linked() const noexcept;
 
     bool ready_is_linked() const noexcept;
 
@@ -341,12 +339,12 @@ public:
 
     bool wait_is_linked() const noexcept;
 
-    template< typename List >
-    void worker_link( List & lst) noexcept {
-        static_assert( std::is_same< typename List::value_traits::hook_type, detail::worker_hook >::value, "not a worker-queue");
-        BOOST_ASSERT( ! worker_is_linked() );
-        lst.push_back( * this);
-    }
+    //template< typename List >
+    //void worker_link( List & lst) noexcept {
+    //    static_assert( std::is_same< typename List::value_traits::hook_type, detail::worker_hook >::value, "not a worker-queue");
+    //    BOOST_ASSERT( ! worker_is_linked() );
+    //    lst.push_back( * this);
+    //}
 
     template< typename List >
     void ready_link( List & lst) noexcept {
@@ -383,7 +381,7 @@ public:
         lst.push_back( * this);
     }
 
-    void worker_unlink() noexcept;
+    //void worker_unlink() noexcept;
 
     void ready_unlink() noexcept;
 

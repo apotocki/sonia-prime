@@ -312,5 +312,8 @@
     <ClInclude Include="..\..\..\sonia\services\net\http\http_route.hpp">
       <Filter>sonia.services\net\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\diagnostic.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

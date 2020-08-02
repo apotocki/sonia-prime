@@ -18,17 +18,14 @@
 
 namespace sonia::io {
 
-void factory::open(uint32_t thr_cnt)
+void factory::open()
 {
     unique_lock lk(close_mtx_);
 
-    initialize_impl(thr_cnt);
+    initialize_impl();
 
-    threads_.reserve(thr_cnt);
-
-    for (size_t i = 0; i < thr_cnt; ++i) {
-        threads_.emplace_back(thread([impl = impl_holder_] { impl->thread_proc(); }));
-        sonia::sal::set_thread_name(threads_.back().get_id(), ("%1% factory thread #%2%"_fmt % name() % i).str());
+    for (size_t i = 0; i < thread_count_; ++i) {
+        scheduler_->post(scheduler_task_t(in_place_type_t<listener_task>(), impl_holder_));
     }
 }
 
@@ -45,23 +42,23 @@ void factory::close() noexcept
         impl_holder_.reset();
 
         // fiber friendly thread join procedure
-        thread([this] {
-            for (thread & t : threads_) {
-                t.join();
-            }
-            {
-                unique_lock lk(close_mtx_);
-                threads_.clear();
-            }
-            close_cond_.notify_one();
-        }).detach();
-        close_cond_.wait(lk, [this] { return threads_.empty(); });
+        //thread([this] {
+        //    for (thread & t : threads_) {
+        //        t.join();
+        //    }
+        //    {
+        //        unique_lock lk(close_mtx_);
+        //        threads_.clear();
+        //    }
+        //    close_cond_.notify_one();
+        //}).detach();
+        //close_cond_.wait(lk, [this] { return threads_.empty(); });
     }
 }
 
 size_t factory::thread_count() const
 {
-    return threads_.size();
+    return thread_count_;
 }
 
 factory::impl_base::impl_base(shared_ptr<factory> wr)
@@ -77,6 +74,13 @@ void factory::impl_base::close() noexcept
             park_threads();
         }
     }
+}
+
+std::string factory::get_diagnostic_info()
+{
+    std::ostringstream ss;
+    ss << "pending [reads, writes]: " << pending_reads_ << ", " << pending_writes_;
+    return ss.str();
 }
 
 void factory::impl_base::on_add_callback()

@@ -92,7 +92,13 @@ public:
             char const* bf = buff_.begin();
             for (;;) {
                 auto expsz = soc_.write_some(bf, offset_);
-                if (!expsz.has_value() || !expsz.value()) throw eof_exception();
+                if (!expsz.has_value()) {
+                    try { std::rethrow_exception(expsz.error()); }
+                    catch (std::exception const& e) { throw eof_exception(e.what()); }
+                }
+                if (!expsz.value()) {
+                    throw eof_exception();
+                }
                 offset_ -= expsz.value();
                 if (!offset_) break;
                 bf += expsz.value();
@@ -130,7 +136,11 @@ class chunk_read_iterator
             }
             char * bf = buff_.begin() + rdsz_;
             auto expsz = soc_.read_some(bf, sz2rd);
-            if (!expsz.has_value() || !expsz.value()) {
+            if (!expsz.has_value()) {
+                try { std::rethrow_exception(expsz.error()); }
+                catch (std::exception const& e) { throw eof_exception(e.what()); }
+            }
+            if (!expsz.value()) {
                 throw eof_exception();
             }
             rdsz_ += expsz.value();

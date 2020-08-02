@@ -11,6 +11,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/fibers/context.cpp
     ${BUNDLE_HOME}/sonia/fibers/scheduler.cpp
     ${BUNDLE_HOME}/sonia/fibers/mutex.cpp
+    ${BUNDLE_HOME}/sonia/fibers/postponer.cpp
     ${BUNDLE_HOME}/sonia/fibers/future.cpp
     ${BUNDLE_HOME}/sonia/fibers/fiber.cpp
     ${BUNDLE_HOME}/sonia/fibers/condition_variable.cpp

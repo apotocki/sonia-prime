@@ -76,6 +76,7 @@
     <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\diagnostic.hpp" />
     <ClInclude Include="..\..\..\sonia\services\environment.hpp" />
     <ClInclude Include="..\..\..\sonia\services\host.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\io_cache_service.hpp" />

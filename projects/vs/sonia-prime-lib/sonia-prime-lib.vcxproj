@@ -269,6 +269,7 @@
     <ClInclude Include="..\..\..\sonia\fibers\mutex.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\operations.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\policy.hpp" />
+    <ClInclude Include="..\..\..\sonia\fibers\postponer.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\properties.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\scheduler.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\segmented_stack.hpp" />
@@ -577,6 +578,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\postponer.cpp" />
     <ClCompile Include="..\..\..\sonia\fibers\scheduler.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>

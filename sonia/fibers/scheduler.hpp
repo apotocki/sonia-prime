@@ -34,6 +34,13 @@
 
 namespace sonia::fibers {
 
+class scheduler_group {
+public:
+    virtual ~scheduler_group() = default;
+
+    void schedule(context* ctx) noexcept;
+};
+
 class scheduler {
 public:
     struct timepoint_less {
@@ -147,14 +154,11 @@ public:
     void detach_worker_context( context *) noexcept;
 
     bool has_direct_foreign_scheduling() const noexcept { return direct_foreign_scheduling_; }
+
+    scheduler_group* get_group() const noexcept { return algo_->get_group(); }
 };
 
-class scheduler_group {
-public:
-    virtual ~scheduler_group() = default;
 
-    void schedule(context* ctx) noexcept;
-};
 
 }
 

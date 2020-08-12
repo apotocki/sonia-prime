@@ -1,10 +1,10 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_REMOVE_CV_HPP
-#define AGNOSTIC_STD_REMOVE_CV_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_REMOVE_CV
+
+#include "remove_const.hpp"
+#include "remove_volatile.hpp"
 
 namespace std {
 
@@ -13,4 +13,6 @@ template <typename T> using remove_cv_t = typename remove_cv<T>::type;
 
 }
 
-#endif // AGNOSTIC_STD_REMOVE_CV_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

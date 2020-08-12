@@ -96,6 +96,7 @@ BOOST_AUTO_TEST_CASE (server_test)
         services::load_configuration("host.json");
 
         auto s0 = services::locate("scheduler.serv");
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 
     } catch (closed_exception const& e) {
         std::cout << e.what() << "\n";

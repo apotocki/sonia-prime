@@ -1,26 +1,15 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_ALLOCATOR_TRAITS_HPP
-#define AGNOSTIC_STD_ALLOCATOR_TRAITS_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_ALLOCATOR_TRAITS
 
-#ifndef DO_NOT_USE_AGNOSTIC_CONSTRUCT_AT
-#   include "construct_at.hpp"
-#endif
+#include "agnostic/std/memory/construct_at.hpp"
+#include "agnostic/std/memory/destroy_at.hpp"
+#include "agnostic/std/memory/pointer_traits.hpp"
+#include "agnostic/std/utility/forward.hpp"
+#include "agnostic/std/type_traits/make_unsigned.hpp"
+#include "agnostic/std/type_traits/is_empty.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_DESTROY_AT
-#   include "destroy_at.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_POINTER_TRAITS
-#   include "pointer_traits.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_FORWARD
-#   include "../utility/forward.hpp"
-#endif
 
 namespace std {
 
@@ -123,7 +112,7 @@ struct allocator_traits
         construct_at(p, forward<Args>(args)...);
     }
 
-    template< class T >
+    template <class T>
     static constexpr void destroy(Alloc&, T* p)
     {
         destroy_at(p);
@@ -143,4 +132,6 @@ struct allocator_traits
 
 }
 
-#endif // AGNOSTIC_STD_ALLOCATOR_TRAITS_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <memory>
+#endif

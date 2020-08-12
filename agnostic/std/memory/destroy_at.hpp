@@ -1,18 +1,10 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_DESTROY_AT_HPP
-#define AGNOSTIC_STD_DESTROY_AT_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_DESTROY_AT
 
-#ifndef DO_NOT_USE_AGNOSTIC_IS_ARRAY
-#   include "../type_traits/is_array.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_ADDRESSOF
-#   include "addressof.hpp"
-#endif
+#include "agnostic/std/type_traits/is_array.hpp"
+#include "agnostic/std/memory/addressof.hpp"
 
 namespace std {
 
@@ -30,4 +22,6 @@ constexpr void destroy_at(T* p)
 
 }
 
-#endif // AGNOSTIC_STD_DESTROY_AT_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <memory>
+#endif

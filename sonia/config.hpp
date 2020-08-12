@@ -59,4 +59,19 @@
 #   error "Outdated compiler (no variadic templates)"
 #endif
 
+#define DO_NOT_USE_AGNOSTIC_REMOVE_CONST
+#define DO_NOT_USE_AGNOSTIC_REMOVE_VOLATILE
+#define DO_NOT_USE_AGNOSTIC_REMOVE_CV
+#define DO_NOT_USE_AGNOSTIC_REMOVE_REFERENCE
+
+#if __cplusplus > 201703L
+#   define DO_NOT_USE_AGNOSTIC_REMOVE_CVREF
+#endif
+
+//#if defined(_MSC_VER)
+//#   define DO_NOT_USE_AGNOSTIC_REMOVE_CONST
+//#else
+//
+//#endif
+
 #endif // SONIA_CONFIG_HPP

@@ -1,18 +1,24 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_ADD_RVALUE_REFERENCE_HPP
-#define AGNOSTIC_STD_ADD_RVALUE_REFERENCE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_ADD_RVALUE_REFERENCE
 
-namespace std {
+#include "agnostic/std/type_traits/type_identity.hpp"
 
-template <typename T> struct add_rvalue_reference { using type = T&; };
-template <typename T> struct add_rvalue_reference<T&> { using type = T&; };
-template <typename T> struct add_rvalue_reference<T&&> { using type = T&&; };
+namespace std { namespace add_rvalue_reference_detail {
+
+template <typename T> auto try_add_rvalue_reference(int)->type_identity<T&&>;
+template <typename T> auto try_add_rvalue_reference(...)->type_identity<T>;
+
+}
+
+template <typename T>
+struct add_rvalue_reference : decltype(add_rvalue_reference_detail::try_add_rvalue_reference<T>(0)) {};
+
 template <typename T> using add_rvalue_reference_t = typename add_rvalue_reference<T>::type;
 
 }
 
-#endif // AGNOSTIC_STD_ADD_RVALUE_REFERENCE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

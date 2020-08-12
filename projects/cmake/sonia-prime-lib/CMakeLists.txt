@@ -8,6 +8,16 @@ set (BUNDLE_HOME ${BUNDLES}/sonia-prime)
 set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/logger/logger.cpp
     ${BUNDLE_HOME}/sonia/services/bundle.cpp
+    ${BUNDLE_HOME}/sonia/fibers/context.cpp
+    ${BUNDLE_HOME}/sonia/fibers/scheduler.cpp
+    ${BUNDLE_HOME}/sonia/fibers/mutex.cpp
+    ${BUNDLE_HOME}/sonia/fibers/postponer.cpp
+    ${BUNDLE_HOME}/sonia/fibers/future.cpp
+    ${BUNDLE_HOME}/sonia/fibers/fiber.cpp
+    ${BUNDLE_HOME}/sonia/fibers/condition_variable.cpp
+    ${BUNDLE_HOME}/sonia/fibers/barrier.cpp
+    ${BUNDLE_HOME}/sonia/fibers/algo/algorithm.cpp
+    ${BUNDLE_HOME}/sonia/fibers/algo/round_robin.cpp
     ${BUNDLE_HOME}/sonia/sal/sal.cpp
     ${BUNDLE_HOME}/sonia/net/uri.cpp
     ${BUNDLE_HOME}/sonia/net/http/http.cpp
@@ -36,19 +46,18 @@ set (BUNDLE_SOURCES
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
-        ${BUNDLE_HOME}/sonia/sys/windows/main_api.cpp
+        ${BUNDLE_HOME}/sonia/sys/windows/windows.cpp
         ${BUNDLE_HOME}/sonia/sys/windows/thread_pool_api.cpp
         ${BUNDLE_HOME}/sonia/sys/windows/thread_pool.cpp
         ${BUNDLE_HOME}/sonia/sal/windows_sal.cpp
-        ${BUNDLE_HOME}/sonia/utility/windows.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory_win.cpp
     )
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        ${BUNDLE_HOME}/sonia/sys/linux/linux.cpp
         ${BUNDLE_HOME}/sonia/sys/linux/signals_api.cpp
         ${BUNDLE_HOME}/sonia/sys/linux/linux_timer.cpp
         ${BUNDLE_HOME}/sonia/sal/linux_sal.cpp
-        ${BUNDLE_HOME}/sonia/utility/linux.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory_linux.cpp
     )
 endif ()

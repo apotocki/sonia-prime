@@ -1,10 +1,16 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_PAIR_HPP
-#define AGNOSTIC_STD_PAIR_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_PAIR
+
+#include "agnostic/std/type_traits/is_default_constructible.hpp"
+#include "agnostic/std/type_traits/is_implicitly_default_constructible.hpp"
+#include "agnostic/std/type_traits/is_nothrow_default_constructible.hpp"
+#include "agnostic/std/type_traits/is_copy_constructible.hpp"
+#include "agnostic/std/type_traits/is_nothrow_copy_constructible.hpp"
+#include "agnostic/std/type_traits/is_convertible.hpp"
+#include "agnostic/std/type_traits/is_constructible.hpp"
+#include "agnostic/std/type_traits/is_nothrow_constructible.hpp"
 
 namespace std {
 
@@ -248,4 +254,6 @@ pair(T1, T2)->pair<T1, T2>;
 
 }
 
-#endif // AGNOSTIC_STD_PAIR_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <utility>
+#endif

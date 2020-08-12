@@ -1,14 +1,11 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_CONSTRUCTIBLE_HPP
-#define AGNOSTIC_STD_IS_CONSTRUCTIBLE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_IS_CONSTRUCTIBLE
 
-#ifndef DO_NOT_USE_AGNOSTIC_DECLVAL
-#   include "../utility/declval.hpp"
-#endif
+#include "agnostic/std/type_traits/integral_constant.hpp"
+#include "agnostic/std/type_traits/void.hpp"
+#include "agnostic/std/utility/declval.hpp"
 
 namespace std {
 
@@ -28,4 +25,6 @@ template <typename T, typename... Args> constexpr bool is_constructible_v = is_c
 
 }
 
-#endif // AGNOSTIC_STD_IS_CONSTRUCTIBLE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

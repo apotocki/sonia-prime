@@ -1,20 +1,14 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_NOTHROW_MOVE_ASSIGNABLE_HPP
-#define AGNOSTIC_STD_IS_NOTHROW_MOVE_ASSIGNABLE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_IS_NOTHROW_MOVE_ASSIGNABLE
 
-#ifndef DO_NOT_USE_AGNOSTIC_INTEGRAL_CONSTANT
-#   include "integral_constant.hpp"
-#endif
+#include "agnostic/std/type_traits/integral_constant.hpp"
+
 
 #ifdef _MSC_VER
 
-#ifndef DO_NOT_USE_AGNOSTIC_ADD_LVALUE_REFERENCE
-#   include "add_lvalue_reference.hpp"
-#endif
+#include "agnostic/std/type_traits/add_lvalue_reference.hpp"
 
 namespace std {
 
@@ -26,17 +20,14 @@ template <typename T> constexpr bool is_nothrow_move_assignable_v = __is_nothrow
 
 #else
 
-#include "is_referenceable.hpp"
-
-#ifndef DO_NOT_USE_AGNOSTIC_IS_NOTHROW_ASSIGNABLE
-#   include "is_nothrow_assignable.hpp"
-#endif
+#include "agnostic/stdext/is_referenceable.hpp"
+#include "agnostic/std/type_traits/is_nothrow_assignable.hpp"
 
 namespace std {
 
 namespace detail {
 
-template <typename T, bool = is_referenceable<T>::value>
+template <typename T, bool = stdext::is_referenceable<T>::value>
 struct is_nothrow_move_assignable_impl : false_type {};
 
 template <typename T>
@@ -52,4 +43,6 @@ template <typename T> constexpr bool is_nothrow_move_assignable_v = is_nothrow_m
 
 #endif
 
-#endif // AGNOSTIC_STD_IS_NOTHROW_MOVE_ASSIGNABLE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

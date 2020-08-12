@@ -1,10 +1,10 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_ADD_POINTER_HPP
-#define AGNOSTIC_STD_ADD_POINTER_HPP
-
 #pragma once
+
+#ifndef DO_NOT_USE_AGNOSTIC_IS_FUNCTION
+#   include "is_function.hpp"
+#endif
 
 #ifndef DO_NOT_USE_AGNOSTIC_REMOVE_REFERENCE
 #   include "remove_reference.hpp"
@@ -26,5 +26,3 @@ template <typename T> struct add_pointer : detail::add_pointer<T, is_function_v<
 template <typename T> using add_pointer_t = typename add_pointer<T>::type;
 
 }
-
-#endif // AGNOSTIC_STD_ADD_POINTER_HPP

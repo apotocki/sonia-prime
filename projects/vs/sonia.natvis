@@ -55,7 +55,38 @@
 		<ExpandedItem>*((value_type*)&amp;buffer_)</ExpandedItem>
 	</Expand>
 </Type>
-  
+
+<Type Name="agnostic::ipo_holder&lt;*&gt;">
+    <Intrinsic Name="is_on_stack" Expression="1 &amp; *(char*)&amp;holder_"/>
+    <Intrinsic Name="heap_ptr" Expression="(void*)(*(uintptr_t*)&amp;holder_)"/>
+    <DisplayString Condition="is_on_stack()"> on stack</DisplayString>
+    <DisplayString Condition="!is_on_stack()"> on heap = {heap_ptr()}</DisplayString>
+</Type>
+
+<Type Name="agnostic::vector&lt;*&gt;">
+    <Intrinsic Name="is_on_stack" Expression="1 &amp; *(char*)&amp;holder_"/>
+    <Intrinsic Name="heap_buffer" Expression="*(helper_t::vector_buffer**)holder_"/>
+    <Intrinsic Name="on_stack_size" Expression="max_cookie_val &amp; (*(uint64_t*)holder_ &gt;&gt; 1)"/>
+    <Intrinsic Name="on_heap_size" Expression="heap_buffer()-&gt;current_size" />
+    <Intrinsic Name="on_heap_capacity" Expression="heap_buffer()-&gt;sz_" />
+    <Intrinsic Name="on_stack_begin" Expression="(value_type*)(((char*)&amp;holder_) + helper_t::aligned_offs)" />
+    <Intrinsic Name="on_heap_begin" Expression="(value_type*)(heap_buffer()-&gt;first_)" />
+    <Intrinsic Name="size" Expression="is_on_stack()?on_stack_size():on_heap_size()" />
+    <Intrinsic Name="begin" Expression="is_on_stack()?on_stack_begin():on_heap_begin()" />
+    <DisplayString Condition="is_on_stack()"> inplace size={on_stack_size()} capacity={ipo_capacity_sz}</DisplayString>
+    <DisplayString Condition="!is_on_stack()"> heap size={on_heap_size()} capacity={on_heap_capacity()}</DisplayString>
+    <Expand>
+        <Item Name="[size]">size()</Item>
+        <Item Condition="!is_on_stack()" Name="adjacent_buffer">heap_buffer()</Item>
+        <Item Condition="is_on_stack()" Name="begin">begin()</Item>
+        <ArrayItems>
+            <Size>size()</Size>
+            <ValuePointer>begin()</ValuePointer>
+        </ArrayItems>
+    </Expand>
+    <!---->
+</Type>
+    
 <Type Name="sonia::optimized_holder&lt;*&gt;">
   <Intrinsic Name="is_on_stack" Expression="1 &amp; *(char*)&amp;holder_"/>
   <Intrinsic Name="heap_ptr" Expression="(optimized_base_t*)(*(uintptr_t*)&amp;holder_)"/>

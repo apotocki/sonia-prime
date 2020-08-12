@@ -1,20 +1,15 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_NOTHROW_CONSTRUCTIBLE_HPP
-#define AGNOSTIC_STD_IS_NOTHROW_CONSTRUCTIBLE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_IS_NOTHROW_CONSTRUCTIBLE
 
-#ifndef DO_NOT_USE_AGNOSTIC_DECLVAL
-#   include "../utility/declval.hpp"
-#endif
+#include "agnostic/std/type_traits/integral_constant.hpp"
 
 namespace std {
 
 #ifdef _MSC_VER
 template <typename T, typename... Args>
-struct is_nothrow_constructible : integral_constant<bool, __is_nothrow_constructible(T, Args...)> {};
+struct is_nothrow_constructible : bool_constant<__is_nothrow_constructible(T, Args...)> {};
 #else
 
 namespace detail {
@@ -58,4 +53,6 @@ template <typename T, typename... Args> constexpr bool is_nothrow_constructible_
 
 }
 
-#endif // AGNOSTIC_STD_IS_NOTHROW_CONSTRUCTIBLE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

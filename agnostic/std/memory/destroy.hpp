@@ -1,23 +1,15 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_DESTROY_HPP
-#define AGNOSTIC_STD_DESTROY_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_DESTROY
 
-#ifndef DO_NOT_USE_AGNOSTIC_DESTROY_AT
-#   include "destroy_at.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_ADDRESSOF
-#   include "addressof.hpp"
-#endif
+#include "agnostic/std/memory/destroy_at.hpp"
+#include "agnostic/std/memory/addressof.hpp"
 
 namespace std {
 
 template <class ForwardIt>
-constexpr void destroy_at(ForwardIt first, ForwardIt last)
+constexpr void destroy(ForwardIt first, ForwardIt last)
 {
     for (; first != last; ++first)
         std::destroy_at(addressof(*first));
@@ -25,4 +17,6 @@ constexpr void destroy_at(ForwardIt first, ForwardIt last)
 
 }
 
-#endif // AGNOSTIC_STD_DESTROY_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <memory>
+#endif

@@ -1,14 +1,11 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_CONVERTIBLE_HPP
-#define AGNOSTIC_STD_IS_CONVERTIBLE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_IS_CONVERTIBLE
 
-#ifndef DO_NOT_USE_AGNOSTIC_DECLVAL
-#   include "../utility/declval.hpp"
-#endif
+#include "agnostic/std/type_traits/integral_constant.hpp"
+#include "agnostic/std/type_traits/is_void.hpp"
+#include "agnostic/std/utility/declval.hpp"
 
 namespace std {
 
@@ -33,7 +30,7 @@ auto test_nonvoid_convertible(...)->false_type;
 }
 
 template <typename From, typename To>
-using is_convertible = integral_constant<bool,
+using is_convertible = bool_constant<
     (decltype(detail::test_returnable<To>(0))::value &&
         decltype(detail::test_nonvoid_convertible<From, To>(0))::value) ||
     (is_void_v<From> && is_void_v<To>)
@@ -43,4 +40,6 @@ template <typename From, typename To> constexpr bool is_convertible_v = is_conve
 
 }
 
-#endif // AGNOSTIC_STD_IS_CONVERTIBLE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

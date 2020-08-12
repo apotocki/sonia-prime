@@ -1,14 +1,27 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_LIST_HPP
-#define AGNOSTIC_LIST_HPP
-
 #pragma once
+
+// <utility>
+#ifndef DO_NOT_USE_AGNOSTIC_IN_PLACE
+#   include "agnostic/std/utility/in_place.hpp"
+#endif
+
+// <type_traits>
+#ifndef DO_NOT_USE_AGNOSTIC_ADD_POINTER
+#   include "agnostic/std/type_traits/add_pointer.hpp"
+#endif
+
+
+
+/// <initializer_list>
+#ifndef DO_NOT_USE_AGNOSTIC_INITIALIZER_LIST
+#   include "agnostic/std/initializer_list.hpp"
+#endif
 
 namespace agnostic {
 
-template <typename T, class AllocatorT> class list;
+template <typename T, class AllocatorFactoryT> class list;
 
 namespace list_detail {
 
@@ -99,11 +112,11 @@ private:
 
 } // namespace list_detail
 
-template <typename T, class AllocatorT>
-class list : private AllocatorT::template rebind<list_detail::dbl_linked_list_elem<T>>::other
+template <typename T, class FixedSizeAllocatorFactoryT>
+class list : private FixedSizeAllocatorFactoryT::template allocator_type<sizeof(list_detail::dbl_linked_list_elem<T>), (std::align_val_t) alignof(list_detail::dbl_linked_list_elem<T>)>
 {
     using elem_t = list_detail::dbl_linked_list_elem<T>;
-    using allocator_t = typename AllocatorT::template rebind<elem_t>::other;
+    using allocator_t = typename FixedSizeAllocatorFactoryT::template allocator_type<sizeof(elem_t), (std::align_val_t) alignof(elem_t)>;
     
 public:
     using iterator = list_detail::dbl_linked_list_iterator<T>;
@@ -111,10 +124,18 @@ public:
 
     list() : size_{0} {}
 
-    explicit list(AllocatorT const& alloc)
-        : AllocatorT(alloc)
+    explicit list(FixedSizeAllocatorFactoryT const& alloc)
+        : allocator_t(alloc)
         , size_{0}
     {}
+
+    list(std::initializer_list<T> init)
+        : size_{ 0 }
+    {
+        for (T const& val : init) {
+            push_back(val);
+        }
+    }
 
     ~list()
     {
@@ -182,8 +203,8 @@ public:
     void pop_front() noexcept
     {
         elem_t* new_head = head_->next;
-        allocator_t::destroy(head_);
-        allocator_t::deallocate(head_, 1);
+        std::destroy_at(head_);
+        allocator_t::deallocate(head_);
         if (new_head) {
             new_head->prev = nullptr;
         }
@@ -235,12 +256,12 @@ private:
     template <typename... ArgsT>
     elem_t * create_element(ArgsT&& ... args)
     {
-        elem_t* r = allocator_t::allocate(1);
+        elem_t* r = reinterpret_cast<elem_t*>(allocator_t::allocate());
         try {
-            allocator_t::construct(r, std::in_place, std::forward<ArgsT>(args)...);
+            ::new (r) elem_t(std::in_place, std::forward<ArgsT>(args)...);
             return r;
         } catch (...) {
-            allocator_t::deallocate(r, 1);
+            allocator_t::deallocate(r);
             throw;
         }
     }
@@ -252,5 +273,3 @@ private:
 };
 
 }
-
-#endif // AGNOSTIC_LIST_HPP

@@ -1,10 +1,9 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_IS_DEFAULT_CONSTRUCTIBLE_HPP
-#define AGNOSTIC_STD_IS_DEFAULT_CONSTRUCTIBLE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_IS_DEFAULT_CONSTRUCTIBLE
+
+#include "agnostic/std/type_traits/is_constructible.hpp"
 
 namespace std {
 
@@ -14,4 +13,6 @@ template <typename T> constexpr bool is_default_constructible_v = is_default_con
 
 }
 
-#endif // AGNOSTIC_STD_IS_DEFAULT_CONSTRUCTIBLE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

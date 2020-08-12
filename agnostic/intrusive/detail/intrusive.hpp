@@ -1,10 +1,9 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
 
-#ifndef AGNOSTIC_INTRUSIVE_DETAIL_INTRUSIVE_HPP
-#define AGNOSTIC_INTRUSIVE_DETAIL_INTRUSIVE_HPP
-
 #pragma once
+
+#include "../find_option.hpp"
 
 namespace agnostic::intrusive {
 
@@ -14,19 +13,6 @@ struct constant_time_size_tag {};
 struct size_type_tag {};
 struct hook_tag {};
 struct compare_tag{};
-
-template <class TagT, class DefaultT, class ... OptionsT> struct find_option;
-template <class TagT, class DefaultT, class ... OptionsT> using find_option_t = typename find_option<TagT, DefaultT, OptionsT...>::type;
-
-template <class TagT, class DefaultT> struct find_option<TagT, DefaultT> { using type = DefaultT; };
-template <class TagT, class DefaultT, class OT0, class ... OptionsT> struct find_option<TagT, DefaultT, OT0, OptionsT...>
-{
-    using type = typename std::conditional_t<
-        std::is_same_v<typename OT0::tag, TagT>,
-        std::type_identity<OT0>,
-        find_option<TagT, DefaultT, OptionsT...>
-    >::type;
-};
 
 template <typename SizeT, bool EnabledV>
 struct size_plugin
@@ -68,4 +54,3 @@ template <typename SizeT> struct size_type { using tag = detail::size_type_tag; 
 
 }
 
-#endif // AGNOSTIC_INTRUSIVE_DETAIL_INTRUSIVE_HPP

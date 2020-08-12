@@ -4,7 +4,8 @@
 
 #include "sonia/config.hpp"
 
-#include "boost/fiber/type.hpp"
+#include "sonia/fibers/type.hpp"
+
 #include <boost/context/detail/prefetch.hpp>
 #include <iostream>
 
@@ -68,6 +69,8 @@ void fiber_work_stealing_scheduler::awakened(fibers::context* ctx) noexcept
         rqueue_.push(ctx);
     }
 }
+
+
 
 fibers::context * fiber_work_stealing_scheduler::pick_next() noexcept
 {
@@ -167,62 +170,124 @@ void fiber_work_stealing_scheduler::group_host::notify_one()
 }
 //////////////////////////////////
 fiber_work_stealing_scheduler2::fiber_work_stealing_scheduler2(group_host & g, bool suspend)
-    : group_(g), flag_(0), suspend_(suspend ? 1 : 0)
+    : group_(g), suspend_(suspend ? 1 : 0)
 {
-    lock_guard guard(group_.mtx);
-    group_.schedulers.emplace_back(this);
+    group_.put_scheduler(this);
 }
 
 void fiber_work_stealing_scheduler2::awakened(fibers::context* ctx) noexcept
 {
     if (!ctx->is_context(fibers::type::pinned_context)) {
-        ctx->detach();
-        group_.rqueue_.push(ctx);
+        group_.push(ctx);
+        group_.notify();
     } else {
         rqueue_.push(ctx);
+        group_.notify_all();
     }
 }
 
 fibers::context * fiber_work_stealing_scheduler2::pick_next() noexcept
 {
+#if 0
     fibers::context * victim = rqueue_.pop();
-    if (victim) {
-        boost::context::detail::prefetch_range(victim, sizeof(fibers::context));
-        BOOST_ASSERT(victim->is_context(fibers::type::pinned_context));
-    } else {
-        victim = group_.rqueue_.pop();
+    if (!victim) {
+        victim = group_.pop();
         if (victim) {
-            boost::context::detail::prefetch_range(victim, sizeof(fibers::context));
-            BOOST_ASSERT(!victim->is_context(fibers::type::pinned_context));
+            //boost::context::detail::prefetch_range(victim, sizeof(fibers::context));
+            //BOOST_ASSERT(!victim->is_context(fibers::type::pinned_context));
             fibers::context::active()->attach(victim);
         }
+    } else {
+        //boost::context::detail::prefetch_range(victim, sizeof(fibers::context));
     }
+#else
+    fibers::context* victim = group_.pop();
+    if (victim) {
+        //boost::context::detail::prefetch_range(victim, sizeof(fibers::context));
+        //BOOST_ASSERT(!victim->is_context(fibers::type::pinned_context));
+        fibers::context::active()->attach(victim);
+    } else {
+        victim = rqueue_.pop();
+        //if (victim) {
+        //    boost::context::detail::prefetch_range(victim, sizeof(fibers::context));
+        //    BOOST_ASSERT(victim->is_context(fibers::type::pinned_context));
+        //}
+    }
+
+#endif
     return victim;
 }
 
 void fiber_work_stealing_scheduler2::suspend_until(std::chrono::steady_clock::time_point const& tp) noexcept
 {
-    if ( suspend_) {
-        if ((std::chrono::steady_clock::time_point::max)() == tp) {
-            unique_lock lk(mtx_);
-            cnd_.wait( lk, [this](){ return !!flag_; });
-            flag_ = 0;
-        } else {
-            unique_lock lk(mtx_);
-            cnd_.wait_until(lk, tp, [this](){ return !!flag_; });
-            flag_ = 0;
-        }
+    if (suspend_) {
+        group_.suspend_until(tp, [this]() {
+            return !rqueue_.empty();
+        });
     }
 }
 
 void fiber_work_stealing_scheduler2::notify() noexcept
 {
     if (suspend_) {
-        mtx_.lock();
-        flag_ = 1;
-        mtx_.unlock();
-        cnd_.notify_all();
+        if (rqueue_.empty()) {
+            group_.notify();
+        } else {
+            group_.notify_all(); // to be sure that a thread with a pinned context wakes up
+        }
     }
+}
+
+void fiber_work_stealing_scheduler2::group_host::put_scheduler(fiber_work_stealing_scheduler2* s)
+{
+    lock_guard guard(schedulers_mtx);
+    schedulers.emplace_back(s);
+}
+
+template <typename PredicateT>
+void fiber_work_stealing_scheduler2::group_host::suspend_until(std::chrono::steady_clock::time_point const& tp, PredicateT const& pr) noexcept
+{
+    if ((std::chrono::steady_clock::time_point::max)() == tp) {
+        unique_lock lk(mtx_);
+        cnd_.wait(lk, [this, &pr]() {
+            return notify_reservation_count_.load() > 0 || pr();
+        });
+    } else {
+        unique_lock lk(mtx_);
+        cnd_.wait_until(lk, tp, [this, &pr]() {
+            return notify_reservation_count_.load() > 0 || pr();
+        });
+    }
+    if (notify_reservation_count_.fetch_sub(1) > 1) {
+        cnd_.notify_one();
+    }
+}
+
+void fiber_work_stealing_scheduler2::group_host::push(fibers::context* ctx) noexcept
+{
+    ctx->detach();
+    rqueue_.push(ctx);
+    ++rqueue_size_;
+}
+
+fibers::context* fiber_work_stealing_scheduler2::group_host::pop() noexcept
+{
+    fibers::context* r = rqueue_.pop();
+    if (r) {
+        --rqueue_size_;
+    }
+    return r;
+}
+
+void fiber_work_stealing_scheduler2::group_host::notify() noexcept
+{
+    notify_reservation_count_.store(rqueue_size_.load());
+    cnd_.notify_one();
+}
+
+void fiber_work_stealing_scheduler2::group_host::notify_all() noexcept
+{
+    cnd_.notify_all();
 }
 
 }

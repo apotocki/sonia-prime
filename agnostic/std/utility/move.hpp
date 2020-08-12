@@ -1,10 +1,9 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_MOVE_HPP
-#define AGNOSTIC_STD_MOVE_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_MOVE
+
+#include "agnostic/std/type_traits/remove_reference.hpp"
 
 namespace std {
 
@@ -16,4 +15,6 @@ inline T&& move(T& t) noexcept
 
 }
 
-#endif // AGNOSTIC_STD_MOVE_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <utility>
+#endif

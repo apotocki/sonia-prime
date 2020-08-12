@@ -156,7 +156,7 @@ public:
 private:
     virtual std::string thread_name() const;
     void thread_proc();
-    void fiber_proc(fibers::mutex & mtx);
+    void fiber_proc();
 
     bool unlink(scheduler_detail::queue_entry &);
     bool unlink(scheduler_detail::priority_queue_entry &);

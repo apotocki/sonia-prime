@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_SCHEDULER_HPP
-#define SONIA_SCHEDULER_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 #include <chrono>
@@ -44,6 +38,25 @@ class scheduler_task : public polymorphic_clonable_and_movable
 public:
     virtual void on_cancel() noexcept {}
     virtual void run() noexcept = 0;
+};
+
+template <typename DerivedT>
+class scheduler_task_adapter : public scheduler_task
+{
+public:
+    polymorphic_clonable_and_movable* move(void* address, size_t sz) override
+    {
+        BOOST_ASSERT(sz >= sizeof(DerivedT));
+        new (address) DerivedT(std::move(static_cast<DerivedT&>(*this)));
+        return reinterpret_cast<DerivedT*>(address);
+    }
+
+    polymorphic_clonable_and_movable* clone(void* address, size_t sz) const override
+    {
+        BOOST_ASSERT(sz >= sizeof(DerivedT));
+        new (address) DerivedT(static_cast<DerivedT const&>(*this));
+        return reinterpret_cast<DerivedT*>(address);
+    }
 };
 
 using scheduler_task_t = automatic_polymorphic<scheduler_task, SONIA_SCHEDULER_TASK_SZ>;
@@ -156,5 +169,3 @@ public:
 };
 
 }
-
-#endif // SONIA_SCHEDULER_HPP

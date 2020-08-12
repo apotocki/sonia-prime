@@ -2,26 +2,21 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SPIN_LOCK_TRIER_HPP
-#define SONIA_SPIN_LOCK_TRIER_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <atomic>
 #include <algorithm>
 #include <random>
 
-#include <boost/fiber/detail/config.hpp>
-#include <boost/fiber/detail/cpu_relax.hpp>
-#include <boost/fiber/detail/spinlock_status.hpp>
+#include "sonia/fibers/detail/config.hpp"
+#include "sonia/fibers/detail/cpu_relax.hpp"
+#include "sonia/fibers/detail/spinlock_status.hpp"
 
 namespace sonia {
 
 class spinlock_trier
 {
-    std::atomic<boost::fibers::detail::spinlock_status> state_{boost::fibers::detail::spinlock_status::unlocked};
+    std::atomic<fibers::detail::spinlock_status> state_{fibers::detail::spinlock_status::unlocked};
     size_t attempts_;
 
 public:
@@ -38,7 +33,7 @@ public:
         std::size_t collisions = 0 ;
         for (;;) {
             size_t retries = 0;
-            while (boost::fibers::detail::spinlock_status::locked == state_.load(std::memory_order_relaxed)) {
+            while (fibers::detail::spinlock_status::locked == state_.load(std::memory_order_relaxed)) {
                 if (attempts_ > retries) {
                     ++retries;
                     cpu_relax();
@@ -47,7 +42,7 @@ public:
                 }
             }
 #endif
-            if (boost::fibers::detail::spinlock_status::locked == state_.exchange(boost::fibers::detail::spinlock_status::locked, std::memory_order_acquire)) {
+            if (fibers::detail::spinlock_status::locked == state_.exchange(fibers::detail::spinlock_status::locked, std::memory_order_acquire)) {
                 std::uniform_int_distribution<size_t > distribution{0, static_cast<size_t>(1) << (std::min)(collisions, 8)};
                 const size_t z = distribution(generator);
                 ++collisions;
@@ -64,15 +59,13 @@ public:
 
     bool single_try_lock() noexcept
     {
-        return boost::fibers::detail::spinlock_status::unlocked == state_.exchange(boost::fibers::detail::spinlock_status::locked, std::memory_order_acquire);
+        return fibers::detail::spinlock_status::unlocked == state_.exchange(fibers::detail::spinlock_status::locked, std::memory_order_acquire);
     }
 
     void unlock() noexcept
     {
-        state_.store(boost::fibers::detail::spinlock_status::unlocked, std::memory_order_release);
+        state_.store(fibers::detail::spinlock_status::unlocked, std::memory_order_release);
     }
 };
 
 }
-
-#endif // SONIA_SPIN_LOCK_TRIER_HPP

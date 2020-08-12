@@ -26,6 +26,8 @@
 
 #define typeidx(t) std::type_index(typeid(t))
 
+#include "agnostic/utility/ceiling.hpp"
+
 namespace sonia {
 
 struct null_t
@@ -284,8 +286,7 @@ enum class endian
 #endif
 };
 
-template <size_t val, size_t acc>
-constexpr size_t ceiling_v = ((val + acc - 1) / acc) * acc;
+using agnostic::ceiling_v;
 
 template <typename T> T * get_pointer(T * ptr) { return ptr; }
 

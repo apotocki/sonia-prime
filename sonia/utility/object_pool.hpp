@@ -32,7 +32,7 @@ class object_pool
     object_pool(object_pool const&) = delete;
     object_pool& operator= (object_pool const&) = delete;
 
-    typedef boost::pool<AllocatorT> pool_t;
+    using pool_t = boost::pool<AllocatorT>;
 
 public:
     explicit object_pool(size_t start_reserve_size, size_t max_reserve_size = 0)

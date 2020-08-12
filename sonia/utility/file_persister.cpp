@@ -6,15 +6,14 @@
 #include "file_persister.hpp"
 
 #include <fstream>
-#include <boost/filesystem.hpp>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 #include "sonia/utility/iterators/file_region_iterator.hpp"
 
 namespace sonia {
 
-file_persister::file_persister(boost::filesystem::path fname)
+file_persister::file_persister(fs::path fname)
     : fname_(std::move(fname))
 {
 
@@ -37,7 +36,7 @@ bool file_persister::read(function<void(input_iterator)> const& ftor) const
     if (fs::exists(fname_)) {
         ftor(input_iterator(in_place_type<impl_t>, fname_));
     } else {
-        boost::filesystem::path tmpfile = fname_.string() + ".tmp";
+        fs::path tmpfile = fname_.string() + ".tmp";
         if (!fs::exists(tmpfile)) return false;
 
         ftor(input_iterator(in_place_type<impl_t>, tmpfile));
@@ -56,7 +55,7 @@ void file_persister::write(function<void(output_iterator)> const& ftor)
 
     // firstly write into a temp file, then rename it
 
-    boost::filesystem::path tmpfile = fname_.string() + ".tmp";
+    fs::path tmpfile = fname_.string() + ".tmp";
     if (fs::exists(tmpfile)) {
         fs::remove(tmpfile);
     }

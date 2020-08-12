@@ -6,7 +6,7 @@
 #include "sonia/utility/algorithm/copy.hpp"
 #include "http_static_application.hpp"
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/algorithm/string/trim.hpp>
 
 #include <fstream>
@@ -24,9 +24,9 @@ http_static_application::http_static_application(http_static_application_configu
 {
     set_log_attribute("Type", "http-static-application");
 
-    sys_path_ = boost::filesystem::canonical(cfg.sys_path);
+    sys_path_ = std::filesystem::canonical(cfg.sys_path);
 
-    auto mmpath = boost::filesystem::canonical(cfg.mime_mapping_file_path);
+    auto mmpath = std::filesystem::canonical(cfg.mime_mapping_file_path);
     std::ifstream mmfile(mmpath.string());
     if (!mmfile.is_open()) {
         throw exception("can't open the mime-mapping file '%1%'"_fmt % mmpath);
@@ -93,9 +93,9 @@ void http_static_application::handle(http::request & req, http::response & resp)
         }
 
         try {
-            auto abspath = boost::filesystem::canonical(sys_path_ / relpath.c_str());
+            auto abspath = std::filesystem::canonical(sys_path_ / relpath.c_str());
             resp.set_header(http::header::TRANSFER_ENCODING, "chunked");
-            //resp.set_header(http::header::CONTENT_LENGTH, std::to_string(boost::filesystem::file_size(abspath)));
+            //resp.set_header(http::header::CONTENT_LENGTH, std::to_string(std::filesystem::file_size(abspath)));
             file_region_iterator<const char> fit{abspath};
 
             resp.status_code = http::status::OK;

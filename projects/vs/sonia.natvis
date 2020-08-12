@@ -72,7 +72,7 @@
     <Intrinsic Name="on_stack_size" Expression="array_t::sz_mask &amp; (*(uint_t*)&amp;holder_ &gt;&gt; 1)" />
     <Intrinsic Name="on_heap_size" Expression="heap_buffer()-&gt;sz_" />
     <Intrinsic Name="on_stack_begin" Expression="($T1*)(((char*)&amp;holder_) + array_t::aligned_byte_offs)" />
-    <Intrinsic Name="on_heap_begin" Expression="($T1*)(char*)heap_buffer() + sizeof(array_t::optimized_collection_t)" />
+    <Intrinsic Name="on_heap_begin" Expression="($T1*)((char*)heap_buffer() + sizeof(array_t::optimized_collection_t))" />
     <Intrinsic Name="size" Expression="is_on_stack()?on_stack_size():on_heap_size()" />
     <Intrinsic Name="begin" Expression="is_on_stack()?on_stack_begin():on_heap_begin()" />
     <DisplayString Condition="is_on_stack()"> stack size={on_stack_size()}</DisplayString>
@@ -94,7 +94,7 @@
     <Intrinsic Name="on_stack_size" Expression="array_t::sz_mask &amp; (*(uint_t*)&amp;holder_ &gt;&gt; 1)" />
     <Intrinsic Name="on_heap_size" Expression="heap_buffer()-&gt;sz_" />
     <Intrinsic Name="on_stack_begin" Expression="(((char*)&amp;holder_) + array_t::aligned_byte_offs)" />
-    <Intrinsic Name="on_heap_begin" Expression="(char*)heap_buffer() + sizeof(array_t::optimized_collection_t)" />
+    <Intrinsic Name="on_heap_begin" Expression="((char*)heap_buffer() + sizeof(array_t::optimized_collection_t)" />
     <Intrinsic Name="size" Expression="is_on_stack()?on_stack_size():on_heap_size()" />
     <Intrinsic Name="begin" Expression="is_on_stack()?on_stack_begin():on_heap_begin()" />
     <DisplayString>{begin(),[size()]s}</DisplayString>
@@ -138,7 +138,7 @@
 
 <Type Name="sonia::adjacent_buffer&lt;*&gt;">
     <Intrinsic Name="size" Expression="sz_" />
-    <Intrinsic Name="data" Expression="(char*)this + sizeof(*this)" />
+    <Intrinsic Name="data" Expression="(value_type*)((char*)this + sizeof(*this))" />
     <DisplayString>size={size()}</DisplayString>
     <Expand>
       <Item Name="[size]" ExcludeView="simple">size()</Item>

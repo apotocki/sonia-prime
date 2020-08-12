@@ -9,10 +9,11 @@
 #   pragma once
 #endif
 
+#include <filesystem>
+
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include "sonia/shared_ptr.hpp"
@@ -32,16 +33,16 @@ class file_mapping_holder
         boost::interprocess::file_mapping fm;
         uint64_t size;
         size_t region_size;
-        boost::filesystem::path filepath;
-        fm_cache(boost::filesystem::path const&, boost::interprocess::mode_t);
+        std::filesystem::path filepath;
+        fm_cache(std::filesystem::path const&, boost::interprocess::mode_t);
     };
 
 public:
-    file_mapping_holder(boost::filesystem::path const& path, boost::interprocess::mode_t mode, size_t rsz);
+    file_mapping_holder(std::filesystem::path const& path, boost::interprocess::mode_t mode, size_t rsz);
 
     boost::interprocess::file_mapping & file_mapping() const { return fmc_->fm; }
     boost::interprocess::mode_t mode() const { return file_mapping().get_mode(); }
-    boost::filesystem::path const& file_path() const { return fmc_->filepath; }
+    std::filesystem::path const& file_path() const { return fmc_->filepath; }
     uint64_t file_size() const { return fmc_->size; }
     uint64_t region_size() const { return fmc_->region_size; }
 
@@ -69,7 +70,7 @@ class file_region_descriptor
     file_region_descriptor& operator=(file_region_descriptor const&) = delete;
 
 public:
-    file_region_descriptor(boost::filesystem::path const& path, boost::interprocess::mode_t mode, uint64_t offset, size_t region_sz);
+    file_region_descriptor(std::filesystem::path const& path, boost::interprocess::mode_t mode, uint64_t offset, size_t region_sz);
 
     file_region_descriptor(boost::intrusive_ptr<file_region_descriptor> prev);
 
@@ -135,7 +136,7 @@ public:
     bool empty() const { return !region_ || region_->empty(); }
 
     file_region_iterator_base() = default;
-    file_region_iterator_base(bool readonly, boost::filesystem::path const& path, uint64_t offset, size_t least_region_sz);
+    file_region_iterator_base(bool readonly, std::filesystem::path const& path, uint64_t offset, size_t least_region_sz);
 
 protected:
     boost::intrusive_ptr<file_region_descriptor> region_;
@@ -210,7 +211,7 @@ public:
         init();
     }
 
-    explicit file_region_iterator(boost::filesystem::path const& fp, uint64_t offset = 0, size_t least_region_sz = 1)
+    explicit file_region_iterator(std::filesystem::path const& fp, uint64_t offset = 0, size_t least_region_sz = 1)
         : file_region_iterator_base(is_readonly, fp.c_str(), sizeof(T) * offset, sizeof(T) * least_region_sz)
     {
         init();

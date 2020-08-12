@@ -19,6 +19,127 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\agnostic\avl_set.hpp" />
+    <ClInclude Include="..\..\..\agnostic\buffer.hpp" />
+    <ClInclude Include="..\..\..\agnostic\dummy_mutex.hpp" />
+    <ClInclude Include="..\..\..\agnostic\intrusive\avl.hpp" />
+    <ClInclude Include="..\..\..\agnostic\intrusive\bstree.hpp" />
+    <ClInclude Include="..\..\..\agnostic\intrusive\detail\intrusive.hpp" />
+    <ClInclude Include="..\..\..\agnostic\list.hpp" />
+    <ClInclude Include="..\..\..\agnostic\optimized\holder.hpp" />
+    <ClInclude Include="..\..\..\agnostic\optimized\vector.hpp" />
+    <ClInclude Include="..\..\..\agnostic\pool.hpp" />
+    <ClInclude Include="..\..\..\agnostic\smart_ptr\intrusive_ptr.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\copy.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\atomic\memory_order.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\exception.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\exception\exception.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\functional.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\functional\less.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\begin.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\end.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\iterator_traits.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\reverse_iterator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\iterator\tags.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\addressof.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\allocate_new.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\allocate_unique.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\allocator.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\allocator_delete.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\allocator_traits.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\construct_at.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\default_delete.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\destroy_at.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\pointer_traits.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\to_address.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\uninitialized_copy.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\memory\unique_ptr.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\mutex.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\mutex\adopt_lock.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\mutex\defer_lock.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\mutex\lock_guard.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\mutex\try_to_lock.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\mutex\unique_lock.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\new.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\new\placement_new.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\span.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\add_const.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\add_cv.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\add_lvalue_reference.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\add_pointer.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\add_rvalue_reference.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\add_volatile.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\alignment_of.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\as_const.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\conditional.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\conditional_ext.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\conjunction.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\disable_if.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\disjunction.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\enable_if.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\extent.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\integral_constant.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_any_of.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_arithmetic.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_array.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_assignable.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_class.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_const.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_constructible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_convertible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_copy_constructible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_default_constructible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_empty.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_enum.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_floating_point.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_function.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_implicitly_default_constructible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_integral.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_lvalue_reference.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_member_pointer.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_assignable.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_constructible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_copy_constructible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_default_constructible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_nothrow_move_assignable.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_null_pointer.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_object.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_pointer.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_reference.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_rvalue_reference.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_same.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_scalar.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_trivial.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_trivially_assignable.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_trivially_constructible.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_trivially_copyable.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_trivially_copy_assignable.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_union.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_unsigned.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_void.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\is_volatile.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\make_unsigned.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\negation.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\rank.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_all_extents.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_const.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_cv.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_extent.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_reference.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\remove_volatile.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\type_identity.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\type_traits\void.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\utility.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\utility\declval.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\utility\forward.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\utility\in_place.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\utility\move.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\utility\pair.hpp" />
+    <ClInclude Include="..\..\..\agnostic\utility\ceiling.hpp" />
+    <ClInclude Include="..\..\..\agnostic\utility\static_log2.hpp" />
     <ClInclude Include="..\..\..\sonia\array_view.hpp" />
     <ClInclude Include="..\..\..\sonia\build_config.hpp" />
     <ClInclude Include="..\..\..\sonia\concurrency.hpp" />
@@ -138,6 +259,7 @@
     <ClInclude Include="..\..\..\sonia\utility\file_statable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\file_statable.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\equal\variant.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\hash\pair.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\hazardous.hpp" />
@@ -240,6 +362,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\bit_coder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\bind_command.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost\json_value.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\boost\optimized.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost_serialization_tuple.hpp" />
@@ -261,6 +384,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\serialization_fwd.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\service.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\std\path.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\string.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\type_durable_id.hpp" />
@@ -414,34 +538,38 @@
     <ProjectGuid>{C98DCAAF-BA4A-4500-B111-CF0773EB0A38}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>soniaprimelib</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>NotSet</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>NotSet</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>NotSet</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -540,7 +668,8 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
+      <SDLCheck>
+      </SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>

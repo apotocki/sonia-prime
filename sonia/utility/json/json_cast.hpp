@@ -9,6 +9,7 @@
 #   pragma once
 #endif
 
+#include <filesystem>
 #include "sonia/exceptions.hpp"
 #include "sonia/optional.hpp"
 #include "value.hpp"
@@ -53,6 +54,13 @@ struct json_cast_impl<optional<T>> {
 template <>
 struct json_cast_impl<std::string> {
     std::string operator()(json_value const& jv) const {
+        return to_string(jv.get_string());
+    }
+};
+
+template <>
+struct json_cast_impl<std::filesystem::path> {
+    std::filesystem::path operator()(json_value const& jv) const {
         return to_string(jv.get_string());
     }
 };

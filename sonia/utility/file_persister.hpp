@@ -9,7 +9,7 @@
 #   pragma once
 #endif
 
-#include <boost/filesystem/path.hpp>
+#include <filesystem>
 #include "sonia/utility/persister.hpp"
 
 namespace sonia {
@@ -17,7 +17,7 @@ namespace sonia {
 class file_persister : public persister
 {
 public:
-    explicit file_persister(boost::filesystem::path fname);
+    explicit file_persister(std::filesystem::path fname);
 
     ~file_persister() override;
 
@@ -25,7 +25,7 @@ public:
     void write(function<void(output_iterator)> const& ftor) override;
 
 private:
-    boost::filesystem::path fname_;
+    std::filesystem::path fname_;
 };
 
 }

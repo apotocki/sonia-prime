@@ -212,6 +212,7 @@ protected:
     {}
 
 public:
+    using value_type = ElementT;
     using iterator = ElementT *;
     using const_iterator = element_t const*;
     using size_type = size_t;
@@ -297,6 +298,9 @@ public:
     element_t const& back() const noexcept { return array_t::back(this); }
     ElementT & back() noexcept { return array_t::back(this); }
 
+    element_t const& operator[] (size_t idx) const noexcept { return cbegin()[idx]; }
+    ElementT & operator[] (size_t idx) noexcept { return begin()[idx]; }
+
     size_t size() const noexcept { return array_t::size(this); }
 
     bool empty() const noexcept { return !array_t::size(this); }
@@ -376,6 +380,12 @@ template <typename CharT, class TraitsT, typename ElementT, size_t ByteSzV, type
 std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, shared_optimized_array<ElementT, ByteSzV, RefCountT> const& arr)
 {
     return os << arr.to_array_view();
+}
+
+template <typename ElementT, size_t ByteSzV, typename RefCountT>
+inline size_t hash_value(shared_optimized_array<ElementT, ByteSzV, RefCountT> const& sa)
+{
+    return hasher()(to_array_view(sa));
 }
 
 }

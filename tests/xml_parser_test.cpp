@@ -3,20 +3,19 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 #include "sonia/config.hpp"
 
+#include <fstream>
+#include <iterator>
+#include <filesystem>
+
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/unordered_map.hpp>
 
 #include "sonia/utility/parsers/xml/lexertl_lexer.hpp"
 #include "sonia/utility/parsers/xml/model.hpp"
 #include "sonia/utility/parsers/xml/parser.hpp"
 
 using namespace sonia;
-namespace fs = boost::filesystem;
-
-#include <fstream>
-#include <iterator>
-
-#include <boost/unordered_map.hpp>
+namespace fs = std::filesystem;
 
 #if 0
 BOOST_AUTO_TEST_CASE(xml_parse_test)

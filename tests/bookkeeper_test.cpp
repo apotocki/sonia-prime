@@ -6,6 +6,8 @@
 
 #include "sonia/config.hpp"
 #include <sstream>
+#include <filesystem>
+
 #include <boost/test/unit_test.hpp>
 #include "sonia/utility/scope_exit.hpp"
 
@@ -46,7 +48,7 @@ BOOST_AUTO_TEST_CASE (bookkeeper_test)
 {
     using namespace sonia;
     
-    boost::filesystem::remove_all(TEST_FOLDER);
+    std::filesystem::remove_all(TEST_FOLDER);
 
     json_value jsarr = {json_value(), json_value(true), json_value(false), json_value(42), json_value("string")};
 

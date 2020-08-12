@@ -5,11 +5,11 @@
 #include "sonia/config.hpp"
 
 #include <iostream>
+#include <filesystem>
 
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 #define TEST_FOLDER "server_test"
 

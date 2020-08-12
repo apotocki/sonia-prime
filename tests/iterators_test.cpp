@@ -6,11 +6,12 @@
 
 #include <map>
 #include <string>
+#include <fstream>
+#include <filesystem>
 
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 #define TEST_FOLDER "iterators_test"
 
 #include "sonia/string.hpp"
@@ -212,7 +213,8 @@ namespace {
 std::map<std::string, std::string> load_archive(fs::path const& p)
 {
     std::map<std::string, std::string> result;
-    archive_iterator ait = make_archive_extract_iterator(p.leaf().string(), file_region_iterator<const char>(p, 0, 65536));
+    
+    archive_iterator ait = make_archive_extract_iterator(p.filename().string(), file_region_iterator<const char>(p, 0, 65536));
     
     while (ait.next()) {
         std::string name = ait.name();

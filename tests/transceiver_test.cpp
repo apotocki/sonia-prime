@@ -268,7 +268,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
     const int calls_count = 30;
     const size_t max_pass_count = 32;
 #else
-    const int calls_count = 1500;// 1500;
+    const int calls_count = 1500;
     const size_t max_pass_count = 32;
 #endif
 
@@ -307,7 +307,7 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         }
 
         while (tasks.load() > 0) {
-            boost::thread::sleep(boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds(10000));
+            boost::thread::sleep(boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds(100000));
             // print diagnostic
             /*
             std::ostringstream oss;

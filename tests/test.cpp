@@ -1,14 +1,11 @@
 #include "maat/config.hpp"
+#include <filesystem>
+
 #include <boost/test/unit_test.hpp>
 
-<<<<<<< HEAD
-#include <boost/filesystem.hpp>
-=======
-#if 0
 #if 0
 #include <iostream>
 #include <boost/multiprecision/cpp_int.hpp>
->>>>>>> 06be7ee824223ef393122a3b2a228ed14bde3210
 
 #include "maat/parsers/maat/lexertl_lexer.hpp"
 #include "maat/parsers/maat/model.hpp"
@@ -17,7 +14,7 @@
 #include "llvm/ADT/APFloat.h"
 
 using namespace maat;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 BOOST_AUTO_TEST_CASE (tmp_test)
 {
@@ -30,13 +27,11 @@ BOOST_AUTO_TEST_CASE (tmp_test)
 
     parsers::maat::model model;
 
-<<<<<<< HEAD
     parsers::parse<
         parsers::xml::lexertl_lexer,
         parsers::xml::parser
     >(model, text.c_str(), text.c_str() + text.size());
 }
-=======
     auto it = range_dereferencing_iterator(std::move(ar_it)), eit = range_dereferencing_iterator<archive_iterator>();
     auto it2 = it;
     for (; it != eit; ++it) {
@@ -98,4 +93,3 @@ BOOST_AUTO_TEST_CASE(test)
     //assert((std::is_same<t10_my, f10<char,short,int,long,float,char,short,int,long,float>>::value));
     //assert(!(std::is_same<t5_my, f10<char,short,int,long,float,char,short,int,long,float>>::value));
 }
->>>>>>> 06be7ee824223ef393122a3b2a228ed14bde3210

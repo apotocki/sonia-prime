@@ -12,7 +12,6 @@
 #include <boost/iterator/iterator_traits.hpp>
 #include <boost/iterator/iterator_categories.hpp>
 
-#include <boost/range.hpp>
 #include <boost/range/has_range_iterator.hpp>
 
 #include "sonia/type_traits.hpp"

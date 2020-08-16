@@ -795,7 +795,7 @@
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -815,7 +815,7 @@
       <PreprocessorDefinitions>_DEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -837,7 +837,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
@@ -861,7 +861,7 @@
       <PreprocessorDefinitions>NDEBUG;_LIB;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>

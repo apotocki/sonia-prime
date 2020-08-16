@@ -16,7 +16,7 @@
 #include <functional> // is_placeholder, reference_wrapper
 #include <boost/is_placeholder.hpp>
 #include <boost/mpl/identity.hpp>
-#include <boost/range.hpp>
+
 #include <boost/call_traits.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>

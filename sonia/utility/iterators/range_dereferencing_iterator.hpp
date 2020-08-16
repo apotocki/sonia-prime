@@ -1,19 +1,14 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_UTILITY_RANGE_DEREFERENCING_ITERATOR_HPP
-#define SONIA_UTILITY_RANGE_DEREFERENCING_ITERATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 
 #include <boost/assert.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
+#include <boost/range/empty.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
 #include "sonia/iterator_traits.hpp"
@@ -21,7 +16,6 @@
 
 namespace sonia {
 
-#if 1
 template <class IteratorT, class CategoryOrTraversalT = iterator_traversal_t<IteratorT>>
 class range_dereferencing_iterator_state
 {
@@ -174,11 +168,6 @@ private:
     }
 };
 
-#else
-
-
-#endif
-
 template <class IteratorT, class CategoryOrTraversal = iterator_category_t<IteratorT>>
 class range_dereferencing_iterator 
     : public boost::iterator_facade<
@@ -242,5 +231,3 @@ public:
 };
 
 }
-
-#endif // SONIA_UTILITY_RANGE_DEREFERENCING_ITERATOR_HPP

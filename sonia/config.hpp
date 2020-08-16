@@ -68,10 +68,4 @@
 #   define DO_NOT_USE_AGNOSTIC_REMOVE_CVREF
 #endif
 
-//#if defined(_MSC_VER)
-//#   define DO_NOT_USE_AGNOSTIC_REMOVE_CONST
-//#else
-//
-//#endif
-
 #endif // SONIA_CONFIG_HPP

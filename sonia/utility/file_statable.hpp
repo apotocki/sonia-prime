@@ -9,7 +9,8 @@
 #   pragma once
 #endif
 
-#include <boost/filesystem/path.hpp>
+#include <filesystem>
+
 #include <boost/variant.hpp>
 
 #include "sonia/shared_ptr.hpp"
@@ -22,7 +23,7 @@ class file_statable
 {
 public:
     using name_ref_t = boost::variant<std::string, std::string const&>;
-    using path_ref_t = boost::variant<null_t, boost::filesystem::path, boost::filesystem::path const&>;
+    using path_ref_t = boost::variant<null_t, std::filesystem::path, std::filesystem::path const&>;
 
     //template <class ArchiveT> void serialize(ArchiveT & ar, const unsigned int = 0)
     //{

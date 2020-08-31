@@ -9,8 +9,8 @@
 #   pragma once
 #endif
 
-#include <utility>
 #include <boost/utility/in_place_factory.hpp>
+#include "sonia/type_traits.hpp"
 #include "sonia/utility/serialization/serialization_fwd.hpp"
 
 namespace sonia {
@@ -76,7 +76,7 @@ template <typename TagT, typename IteratorT>
 struct in_place_decoder_factory<TagT, IteratorT&>
     : boost::in_place_factory_base
 {
-    explicit in_place_decoder_factory(IteratorT & it) : ii_(it) {}
+    explicit in_place_decoder_factory(IteratorT & it) : ii_{it} {}
 
     template <class T>
     void apply(void* address) const

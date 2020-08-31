@@ -2,8 +2,8 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICES_FILE_STATABLE_IPP
-#define SONIA_SERVICES_FILE_STATABLE_IPP
+#ifndef SONIA_UTILITY_FILE_STATABLE_IPP
+#define SONIA_UTILITY_FILE_STATABLE_IPP
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #   pragma once
@@ -21,14 +21,14 @@
 #endif
 
 namespace sonia::utility {
-
+    
 template <typename DerivedT>
 void file_statable<DerivedT>::open()
 {
     path_ref_t sp = derived().get_state_path();
-    if (auto * psp = boost::get<boost::filesystem::path>(&sp); psp) {
+    if (auto * psp = boost::get<std::filesystem::path>(&sp); psp) {
         state_persister_ = sonia::make_shared<file_persister>(*psp);
-    } else if (auto * psp = boost::get<boost::filesystem::path const&>(&sp); psp) {
+    } else if (auto * psp = boost::get<std::filesystem::path const&>(&sp); psp) {
         state_persister_ = sonia::make_shared<file_persister>(*psp);
     } else {
         THROW_INTERNAL_ERROR("no state path defined");
@@ -51,14 +51,14 @@ typename file_statable<DerivedT>::path_ref_t file_statable<DerivedT>::get_state_
     if (!psnm) {
         psnm = &boost::get<std::string const&>(snm);
     }
-    boost::filesystem::path path;
+    std::filesystem::path path;
     path_ref_t dir = derived().get_state_dir();
-    if (auto * pdir = boost::get<boost::filesystem::path>(&dir); pdir) {
+    if (auto * pdir = boost::get<std::filesystem::path>(&dir); pdir) {
         return *pdir / *psnm;
-    } else if (auto * pdir = boost::get<boost::filesystem::path const&>(&dir); pdir) {
+    } else if (auto * pdir = boost::get<std::filesystem::path const&>(&dir); pdir) {
         return *pdir / *psnm;
     } else {
-        return boost::filesystem::path{*psnm};
+        return std::filesystem::path{*psnm};
     }
 }
 
@@ -84,4 +84,4 @@ void file_statable<DerivedT>::backup() const
 
 }
 
-#endif // SONIA_SERVICES_FILE_STATABLE_IPP
+#endif // SONIA_UTILITY_FILE_STATABLE_IPP

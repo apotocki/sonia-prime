@@ -3,26 +3,22 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "sonia/services/builder.ipp"
 #include "io_service_builder.hpp"
-#include "io_service.hpp"
 
 namespace sonia::services {
 
 namespace sp = sonia::parameters;
 
-io_service_builder::io_service_builder()
+void io_service_builder::open()
 {
-    set_log_attribute("Type", "builder");
     parameters_.bind()
-        .variable("threads", &io_service_configuration::threads, "threads count").required()
-        //.variable("fibers", &scheduler_configuration::fibers, "fibers count per thread").default_value(0)
+        .variable("scheduler", &io_service_configuration::scheduler, "scheduler service name").required()
+        .variable("threads", &io_service_configuration::threads, "listening for async events threads count").required()
     ;
 }
 
-io_ssl_service_builder::io_ssl_service_builder()
+void io_ssl_service_builder::open()
 {
-    set_log_attribute("Type", "builder");
     auto media_type_handler = [](json_value const& v)->io::ssl_media_type {
         const string_view sv = v.get_string();
         if (sv == "string") return io::ssl_media_type::STRING;

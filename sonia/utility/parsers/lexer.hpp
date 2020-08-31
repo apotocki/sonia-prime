@@ -20,13 +20,13 @@
 
 namespace sonia {
 
-template <class LexerT, typename IteratorT>
+template <class LexerT, typename IteratorT, typename ValueT>
 class lexertl_iterator
     : public boost::iterator_facade<
-          lexertl_iterator<LexerT, IteratorT>
-        , lexertl::match_results<IteratorT>
+          lexertl_iterator<LexerT, IteratorT, ValueT>
+        , ValueT
         , boost::forward_traversal_tag
-        , lexertl::match_results<IteratorT> const&>
+        , ValueT const&>
 {
     friend class boost::iterator_core_access;
 
@@ -68,17 +68,16 @@ private:
     typename lexertl_iterator::value_type const& dereference() const { return *token_; }
 
     LexerT const* plex_;
-    optional<typename lexertl_iterator::value_type> token_;
+    optional<ValueT> token_;
 };
 
-template <typename DerivedT, typename IteratorT>
+template <typename DerivedT, typename IteratorT, bool RecursiveV = false>
 class lexer_base
 {
 public:
     using char_t = iterator_value_t<IteratorT>;
-
-    using iterator = lexertl_iterator<DerivedT, IteratorT>;
-    using token_type = lexertl::match_results<IteratorT> ;
+    using token_type = conditional_t<RecursiveV, lexertl::recursive_match_results<IteratorT>, lexertl::match_results<IteratorT>>;
+    using iterator = lexertl_iterator<DerivedT, IteratorT, token_type>;
 
     lexer_base()
     {
@@ -97,7 +96,7 @@ public:
 
     iterator end() const { return iterator(); }
 
-    void lookup(lexertl::match_results<IteratorT> & result) const
+    void lookup(token_type & result) const
     {
         lexertl::lookup(state_machine_, result);
     }

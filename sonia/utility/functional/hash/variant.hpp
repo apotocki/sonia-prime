@@ -27,7 +27,7 @@ struct variant_hash_visitor : boost::static_visitor<size_t>
 template <typename ... Ts>
 struct hash<boost::variant<Ts...>>
 {
-    size_t operator()(boost::variant<Ts...> const& v) const noexcept
+    size_t operator()(boost::variant<Ts...> const& v) const
     {
         return boost::apply_visitor(variant_hash_visitor(), v);
     }

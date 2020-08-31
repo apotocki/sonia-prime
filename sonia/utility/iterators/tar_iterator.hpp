@@ -17,6 +17,7 @@
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
 #include "sonia/utility/iterators/range_reference.hpp"
+#include "sonia/utility/iterators/proxy.hpp"
 #include "sonia/utility/algorithm/copy.hpp"
 
 namespace sonia {
@@ -59,24 +60,38 @@ class tar_extract_iterator
         tar_extract_iterator<IteratorT>,
         range_reference_t<iterator_value_t<IteratorT>>,
         iterator_traversal_t<IteratorT>,
-        range_reference_t<iterator_value_t<IteratorT>>>
+        wrapper_iterator_proxy<
+            ptr_proxy_wrapper<
+                tar_extract_iterator<IteratorT> const*,
+                range_reference_t<iterator_value_t<IteratorT>>
+            >
+        >
+      >
     , range_dereferencing_iterator_state<IteratorT>
 {
     friend class boost::iterator_core_access;
+    template <class, class> friend class ptr_proxy_wrapper;
+
     using rng_state_t = range_dereferencing_iterator_state<IteratorT>;
-    using reference_type = range_reference_t<iterator_value_t<IteratorT>>;
+    using value_t = range_reference_t<iterator_value_t<IteratorT>>;
+    using proxy_t = wrapper_iterator_proxy<ptr_proxy_wrapper<tar_extract_iterator const*, value_t>>;
 
     std::string current_name_;
     uint64_t current_size_;
     uint16_t padding_;
-    bool closed_;
+    bool closed_{true};
 
     bool equal(tar_extract_iterator const& rhs) const
     {
         return std::get<0>(rng_state_t::get()) == std::get<0>(rhs.get());
     }
 
-    reference_type dereference() const
+    proxy_t dereference() const
+    {
+        return iterators::make_value_proxy<array_view<const char>>(this);
+    }
+
+    value_t get_dereference() const
     {
         auto & rng = rng_state_t::get();
         auto eit = std::get<1>(rng);
@@ -85,6 +100,22 @@ class tar_extract_iterator
             eit = std::get<0>(rng) + current_size_;
         }
         return range_reference<iterator_value_t<IteratorT>>::make(std::get<0>(rng), eit);
+    }
+
+    void set_dereference(value_t v)
+    {
+        auto & rng = rng_state_t::get();
+        auto eit = std::get<1>(rng);
+        ptrdiff_t sz = eit - std::get<0>(rng);
+        if ((uint64_t)sz > current_size_) sz = current_size_;
+        BOOST_ASSERT (v.size() <= (uint64_t)sz);
+        if (v.end() == std::get<0>(rng) + sz) {
+            sz -= v.size();
+            std::get<0>(rng) += sz;
+            current_size_ -= sz;
+        } else {
+            THROW_NOT_IMPLEMENTED_ERROR();
+        }
     }
 
     void increment()
@@ -99,6 +130,7 @@ class tar_extract_iterator
                 sz = (uint64_t)(eit - bit);
                 if (sz > padding_) {
                     bit += padding_;
+                    rng_state_t::fix();
                     closed_ = true;
                     return;
                 }
@@ -116,7 +148,7 @@ public:
     using base_iterator_type = IteratorT;
 
     explicit tar_extract_iterator(IteratorT it)
-        : rng_state_t(std::move(it)), closed_(true)
+        : rng_state_t{std::move(it)}
     {
         
     }
@@ -126,6 +158,8 @@ public:
     uint64_t current_size() const { return current_size_; }
 
     bool empty() const { return closed_; }
+    
+    void flush() {}
 
     IteratorT & base() { return rng_state_t::base; }
     IteratorT const& base() const { return rng_state_t::base; }
@@ -160,6 +194,7 @@ public:
             load_header(h);
 
             if (h.is_end()) {
+                rng_state_t::fix();
                 closed_ = true;
                 return;
             }

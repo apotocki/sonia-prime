@@ -5,9 +5,10 @@
 #include "sonia/config.hpp"
 #include "model.hpp"
 
-namespace sonia { namespace parsers { namespace json {
+namespace sonia::parsers::json {
 
-model::model() {
+model::model()
+{
     stack_.reserve(16);
     strings_.reserve(16);
     state_stack_.reserve(16);
@@ -15,19 +16,23 @@ model::model() {
 
 model::~model() {}
 
-void model::push_state(state s) {
+void model::push_state(state s)
+{
     state_stack_.emplace_back(s, stack_.size());
 }
 
-void model::put_null() {
+void model::put_null()
+{
     stack_.push_back(json_value());
 }
 
-void model::put_boolean(bool v) {
+void model::put_boolean(bool v)
+{
     stack_.push_back(json_value(v));
 }
 
-void model::put_object() {
+void model::put_object()
+{
     size_t cnt = stack_.size() - state_stack_.back().second;
     array_view<json_value> values(&stack_[stack_.size() - cnt], cnt);
     array_view<std::string> names(&strings_[strings_.size() - cnt], cnt);
@@ -39,7 +44,8 @@ void model::put_object() {
     state_stack_.pop_back();
 }
 
-void model::put_array() {
+void model::put_array()
+{
     size_t cnt = stack_.size() - state_stack_.back().second;
     array_view<json_value> values(&stack_[stack_.size() - cnt], cnt);
     json_value obj(values);
@@ -49,4 +55,4 @@ void model::put_array() {
     state_stack_.pop_back();
 }
 
-}}}
+}

@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_SINGLETON_LOCATOR_HPP
-#define SONIA_SINGLETON_LOCATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/unordered_map.hpp>
 
@@ -27,9 +21,10 @@ class singleton_locator : public loggable
 {
 public:
     singleton_locator() { set_log_attribute("Type", "singleton_locator"); }
-    explicit singleton_locator(null_t) {}
 
-    shared_ptr<singleton> get(singleton::id id, function<shared_ptr<singleton>()> const& factory);
+    explicit singleton_locator(null_t) {};
+
+    shared_ptr<singleton> get(singleton::id id, function<shared_ptr<singleton>(singleton::id)> const& factory);
 
     void shutdown(shared_ptr<singleton>);
     void shutdown();
@@ -39,7 +34,7 @@ protected:
     {
         using hook_type = boost::intrusive::set_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>;
 
-        mutex mtx;
+        fibers::mutex mtx;
         fiber::id fid;
         shared_ptr<singleton> object;
         hook_type layer_hook;
@@ -71,5 +66,3 @@ protected:
 };
 
 }
-
-#endif // SONIA_SINGLETON_LOCATOR_HPP

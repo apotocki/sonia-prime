@@ -111,7 +111,7 @@ public:
         ordered_compressed_encode_integral(T value, uint8_t order_bit_cnt, uint8_t & bitshift, uint8_t & accum, OutputIteratorT oi)
     {
         if (order_bit_cnt) {
-            BOOST_ASSERT(value <= (((uint64_t)1) << (1 << order_bit_cnt)));
+            BOOST_ASSERT(value <= (((((uint64_t)1) << ((1 << order_bit_cnt) - 1)) - 1) << 1) + 1);
         } else {
             order_bit_cnt = boost::static_log2<sizeof(T) * CHAR_BIT>::value;
         }
@@ -153,7 +153,7 @@ public:
         auto usebits = order * bits_per_order;
         
         if (BOOST_UNLIKELY(order > ((uint8_t)1 << order_bit_cnt))) {
-            throw internal_error("ordered_compressed_encode_integral : value (%1%) is too big to fit storage"_fmt % value);
+            THROW_INTERNAL_ERROR("ordered_compressed_encode_integral : value (%1%) is too big to fit storage"_fmt % value);
         }
         oi = encode_bits(order - 1, order_bit_cnt, bitshift, accum, std::move(oi));
         return encode_bits(value, usebits, bitshift, accum, std::move(oi));

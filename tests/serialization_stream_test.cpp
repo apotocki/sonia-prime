@@ -7,9 +7,10 @@
 #include <map>
 #include <vector>
 #include <fstream>
+#include <filesystem>
 
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/nvp.hpp>
@@ -17,7 +18,7 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/lexical_cast.hpp>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 #define TEST_FOLDER "serialization_stream_test"
 
 #include "sonia/string.hpp"

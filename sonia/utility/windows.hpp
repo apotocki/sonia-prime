@@ -4,18 +4,34 @@
 
 #pragma once
 
-#include "sonia/sys/windows/main_api.hpp"
+#define WIN32_LEAN_AND_MEAN
+#ifndef UNICODE
+#   define UNICODE
+#endif
+//#define WINVER 0x0600
+#ifndef _WIN32_WINNT
+#   define _WIN32_WINNT 0x0600
+#endif
 
-#include <winsock2.h>
 #include <Windows.h>
+#include <winsock2.h>
 #include <WS2tcpip.h>
 #include <mswsock.h>
+
 
 #include <boost/thread/thread.hpp>
 #include "sonia/string.hpp"
 #include "sonia/function.hpp"
 
 namespace sonia::windows {
+
+void set_thread_name(DWORD dwThreadId, char const* threadName);
+void set_thread_name(boost::thread::id tid, char const* threadName);
+
+std::wstring utf8_to_utf16(string_view);
+std::string utf16_to_utf8(wstring_view);
+
+std::string error_message(DWORD errcode);
 
 class wsa_scope final
 {
@@ -45,9 +61,30 @@ void    assign_completion_port(HANDLE h, HANDLE iocp, ULONG_PTR key);
 void    post_completion_port(HANDLE cp, DWORD btransf, ULONG_PTR key, OVERLAPPED * pov = nullptr);
 
 // file operations
+HANDLE create_file(
+    const wchar_t* file_name,
+    DWORD desired_access,
+    DWORD share_mode,
+    LPSECURITY_ATTRIBUTES security_attributes,
+    DWORD creation_disposition,
+    DWORD flags_and_attributes,
+    HANDLE template_file = 0);
+
 std::string get_file_name(HANDLE hFile); // returns utf8 string
 void delete_file(wchar_t const * path, char const* optutf8path = nullptr);
 void async_read_file(HANDLE, uint64_t fileoffset, void * buff, size_t sz, OVERLAPPED * pov);
 void async_write_file(HANDLE, uint64_t fileoffset, void const* buff, size_t sz, OVERLAPPED * pov);
+
+
+void ioctl(
+    HANDLE device,
+    DWORD io_control_Code,
+    LPVOID in_buffer,
+    DWORD in_buffer_size,
+    LPVOID out_buffer,
+    DWORD out_buffer_size,
+    LPDWORD bytes_returned,
+    LPOVERLAPPED overlapped = nullptr
+);
 
 }

@@ -17,9 +17,6 @@
 
 #include "sonia/utility/iterators/socket_read_input_iterator.hpp"
 #include "sonia/utility/iterators/socket_write_input_iterator.hpp"
-#include "sonia/utility/iterators/empty_check_iterator.hpp"
-//#include "sonia/utility/iterators/socket_write_iterator.hpp"
-//#include "sonia/utility/iterators/buffering_mediator_iterator.hpp"
 
 #include "http_connector_configuration.hpp"
 
@@ -40,11 +37,10 @@ public:
     void one_shot_connect(sonia::io::tcp_socket soc);
 
 private:
-    using read_iterator = empty_check_iterator<socket_read_input_iterator<io::tcp_socket>>;
-    using write_iterator = empty_check_iterator<socket_write_input_iterator<io::tcp_socket>>;
+    using read_iterator = socket_read_input_iterator<io::tcp_socket>;
+    using write_iterator = socket_write_input_iterator<io::tcp_socket>;
 
     bool do_connection(read_iterator &, write_iterator &); // returns true if keep alive
-
 
     http_connector_configuration cfg_;
 

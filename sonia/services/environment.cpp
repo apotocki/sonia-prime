@@ -56,7 +56,7 @@ environment::environment() : log_initialized_(false)
     options_.add_options()
         ("log", po::value<std::string>()->default_value("log.conf"), "the logging subsystem configuration file")
         ("cfg,c", po::value<std::string>()->default_value("config.json"), "configuration (json) file paths")
-        ("base-path,b", po::value<std::string>()->default_value(""), "base path")
+        ("base-path,b", po::value<std::string>()->default_value(get_default_base_path() ? *get_default_base_path() : ""), "base path")
         ("service-registry-file,r", po::value<std::string>()->default_value(".services"), "services registry file")
         ("type-registry-file,t", po::value<std::string>()->default_value(".types"), "types registry file")
         ("version,v", "display version and exit")
@@ -300,7 +300,7 @@ void environment::load_configuration(std::istream & cfg)
     }
 }
 
-singleton & environment::locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>()> const& f)
+singleton & environment::locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>(singleton::id)> const& f)
 {
     const uint32_t tid = get_type_id(ti);
     return *slocator_.get(tid, f);

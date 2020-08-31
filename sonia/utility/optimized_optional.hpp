@@ -56,7 +56,7 @@ public:
         return *this;
     }
 
-    constexpr explicit operator bool() const noexcept { return value_; }
+    constexpr explicit operator bool() const noexcept { return !value_.begin(); }
 
     constexpr array_view<T> & get() noexcept { return value_; }
     constexpr array_view<T> get() const noexcept{ return value_; }

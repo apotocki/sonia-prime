@@ -20,7 +20,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\applied\dllmain.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\auth\auth_service.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\auth\auth_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\basic_service_factory.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\environment.cpp" />
     <ClCompile Include="..\..\..\sonia\services\io\io_cache_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\io\io_cache_service_builder.cpp" />
@@ -39,6 +43,8 @@
     <ClCompile Include="..\..\..\sonia\services\net\http\http_connector_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_default_application.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_default_application_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_digest_authentication_application.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_static_application.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\http\http_static_application_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\net_service_builder.cpp" />
@@ -61,7 +67,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\prime_config.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\auth\authentication.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\auth\auth_service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\auth\auth_service_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\auth\auth_service_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\bookkeeper\bookkeeper_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\bundle.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\diagnostic.hpp" />
     <ClInclude Include="..\..\..\sonia\services\environment.hpp" />
     <ClInclude Include="..\..\..\sonia\services\host.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\io_cache_service.hpp" />
@@ -82,6 +97,10 @@
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\http_route.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application_configuration.hpp" />
@@ -111,34 +130,36 @@
     <ProjectGuid>{AA72585C-37C3-430C-8E09-634F201BD396}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>soniaprime</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v141</PlatformToolset>
+    <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
+    <SpectreMitigation>false</SpectreMitigation>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -176,12 +197,13 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;SONIA_PRIME_EXPORTS;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;SONIA_PRIME_EXPORTS;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -201,7 +223,8 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>Async</ExceptionHandling>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -222,7 +245,8 @@
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>Async</ExceptionHandling>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -239,13 +263,17 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;SONIA_PRIME_EXPORTS;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;BOOST_FIBERS_STATIC_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>
+      </SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;SONIA_PRIME_EXPORTS;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
-      <LanguageStandard>stdcpp17</LanguageStandard>
+      <LanguageStandard>stdcpplatest</LanguageStandard>
+      <StringPooling>true</StringPooling>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <AdditionalOptions>/Zc:__cplusplus %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

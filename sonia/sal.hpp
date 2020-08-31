@@ -24,8 +24,10 @@
 
 namespace sonia::sal {
 
-void set_thread_name(sonia::thread::id, string_view name);
-void set_thread_name(sonia::thread::id, std::string const& name);
+void set_thread_name(thread::id, string_view name);
+void set_thread_name(thread::id, std::string const& name);
+
+int get_pid();
 
 shared_ptr<sonia::services::bundle> load_bundle(sonia::services::bundle_configuration const&);
 

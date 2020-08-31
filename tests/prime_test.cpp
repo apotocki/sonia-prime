@@ -46,7 +46,6 @@ BOOST_AUTO_TEST_CASE (prime_test)
 
 #endif
 
-#include "sonia/reference_wrapper.hpp"
 #include "sonia/utility/variadic.hpp"
 
 //template <typename Op, typename Indexes, typename ... Args> struct tuple_builder_helper {};

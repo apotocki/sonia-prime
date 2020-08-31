@@ -4,7 +4,7 @@
 
 #include "sonia/config.hpp"
 #include "file_region_iterator.hpp"
-
+#include "sonia/logger/logger.hpp"
 #include <cstring>
 
 namespace boost { namespace interprocess { namespace detail {} namespace ipcdetail {} } }
@@ -13,12 +13,12 @@ namespace sonia {
 
 namespace ipc = boost::interprocess;
 
-file_mapping_holder::fm_cache::fm_cache(boost::filesystem::path const& path, boost::interprocess::mode_t m)
+file_mapping_holder::fm_cache::fm_cache(std::filesystem::path const& p, boost::interprocess::mode_t m) : filepath {p}
 {
-    fm = boost::interprocess::file_mapping(path.string().c_str(), m);
+    fm = boost::interprocess::file_mapping(filepath.string().c_str(), m);
 }
 
-file_mapping_holder::file_mapping_holder(boost::filesystem::path const& path, boost::interprocess::mode_t mode, size_t rsz)
+file_mapping_holder::file_mapping_holder(std::filesystem::path const& path, boost::interprocess::mode_t mode, size_t rsz)
 {
     using namespace ipc::detail;
     using namespace ipc::ipcdetail;
@@ -45,7 +45,7 @@ void file_mapping_holder::truncate(uint64_t sz)
     fmc_->size = sz;
 }
 
-file_region_descriptor::file_region_descriptor(boost::filesystem::path const& path, boost::interprocess::mode_t mode, uint64_t offset, size_t region_sz)
+file_region_descriptor::file_region_descriptor(std::filesystem::path const& path, boost::interprocess::mode_t mode, uint64_t offset, size_t region_sz)
     : file_mapping_holder(path, mode, region_sz), fileoffset_(offset)
 {
     region_ = create_region(offset, region_size());
@@ -65,6 +65,12 @@ file_region_descriptor::~file_region_descriptor()
         boost::intrusive_ptr<file_region_descriptor> tmp = std::move(next_->next_);
         next_ = std::move(tmp);
     }
+    
+    try {
+        flush();
+    } catch (...) {
+        GLOBAL_LOG_ERROR() << "can't flush file, error: " << boost::current_exception_diagnostic_information();
+    }
 }
 
 bool file_region_descriptor::is_cursor_at_the_end_or_null() const
@@ -74,16 +80,21 @@ bool file_region_descriptor::is_cursor_at_the_end_or_null() const
 
 void file_region_descriptor::update_region_size(size_t sz)
 {
-	if (sz != region_size()) {
-		region_ = ipc::mapped_region();
-		truncate(fileoffset_ + sz);
-		region_ = ipc::mapped_region(file_mapping(), mode(), fileoffset_, sz);
-	}
+    try {
+	    if (sz && sz != region_size()) {
+		    region_ = ipc::mapped_region();
+            truncate(fileoffset_ + sz);
+		    region_ = ipc::mapped_region(file_mapping(), mode(), fileoffset_, sz);
+	    }
+    } catch (...) {
+        GLOBAL_LOG_ERROR() << "can't update_region_size, fileoffset: " << fileoffset_ << ", size: " << sz << ", file: " << file_path().string();
+        throw;
+    }
 }
 
 void file_region_descriptor::next_from(file_region_descriptor const& previous)
 {
-    uint64_t nextoffset = previous.get().size() + previous.fileoffset_;
+    uint64_t nextoffset = previous.get_region_size() + previous.fileoffset_;
 	region_ = ipc::mapped_region();
     region_ = create_region(nextoffset, region_size());
     cursor_ = nullptr;
@@ -117,6 +128,11 @@ ipc::mapped_region file_region_descriptor::create_region(uint64_t offset, size_t
     return ipc::mapped_region(file_mapping(), mode(), offset, region_size);
 }
 
+size_t file_region_descriptor::get_region_size() const
+{
+    return region_.get_size();
+}
+
 array_view<char> file_region_descriptor::get() const
 {
     if (cursor_) {
@@ -138,7 +154,7 @@ void file_region_descriptor::flush()
     }
 }
 
-file_region_iterator_base::file_region_iterator_base(bool readonly, boost::filesystem::path const& path, uint64_t offset, size_t least_region_sz)
+file_region_iterator_base::file_region_iterator_base(bool readonly, std::filesystem::path const& path, uint64_t offset, size_t least_region_sz)
 {
     namespace ipc = boost::interprocess;
 
@@ -185,11 +201,10 @@ void file_region_iterator_base::decrement()
     }
 }
 
-void file_region_iterator_base::flush()
+void file_region_iterator_base::flush(char * writ)
 {
     if (region_) {
-        region_->flush();
-        region_.reset();
+        region_->set_cursor(writ);
     }
 }
 
@@ -198,11 +213,12 @@ void file_region_iterator_base::set(array_view<const char> data)
 {
     array_view<char> dest_raw = region_->get();
     size_t bytes_to_write = data.size();
-    if (data.begin() == dest_raw.begin()) {
-        BOOST_ASSERT(bytes_to_write <= dest_raw.size());
-        region_->set_cursor(dest_raw.begin() + bytes_to_write);
-        return;
-    }
+    BOOST_ASSERT (data.begin() != dest_raw.begin());
+    //if (data.begin() == dest_raw.begin()) {
+    //    BOOST_ASSERT(bytes_to_write <= dest_raw.size());
+    //    region_->set_cursor(dest_raw.begin() + bytes_to_write);
+    //    return;
+    //}
 
     char * writ = nullptr;
     for (;;) {

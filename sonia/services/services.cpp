@@ -27,6 +27,7 @@ thread_local thread_descriptor * tdesc_ = nullptr;
 
 post_initialize_fn post_initialize_fn_;
 
+std::string * default_base_path_ = nullptr;
 std::string * version_message_ = nullptr;
 environment * env_ = nullptr;
 
@@ -44,6 +45,20 @@ void thread_descriptor::set()
         sonia::this_thread::at_thread_exit([] { thread_descriptor::reset(); });
     }
     tdesc_ = this;
+}
+
+void set_default_base_path(std::string val)
+{
+    if (!default_base_path_) {
+        default_base_path_ = new std::string(std::move(val));
+    } else {
+        *default_base_path_ = std::move(val);
+    }
+}
+
+std::string const* get_default_base_path()
+{
+    return default_base_path_;
 }
 
 void set_version_message(std::string msg)
@@ -95,6 +110,10 @@ void shutdown()
         delete version_message_;
         version_message_ = nullptr;
     }
+    if (default_base_path_) {
+        delete default_base_path_;
+        default_base_path_ = nullptr;
+    }
 }
 
 shared_ptr<host> get_host()
@@ -140,7 +159,7 @@ void register_service_factory(string_view nm, function<shared_ptr<service>()> co
     env_->register_service_factory(nm, fm);
 }
 
-singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>()> const& f)
+singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>(singleton::id)> const& f)
 {
     return env_->locate_singleton(ti, f);
 }

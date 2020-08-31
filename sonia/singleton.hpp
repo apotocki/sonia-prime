@@ -19,7 +19,7 @@
 
 namespace sonia { namespace services {
     
-SONIA_PRIME_API singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>()> const&);
+SONIA_PRIME_API singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>(singleton::id)> const&);
 
 }
 
@@ -30,9 +30,10 @@ struct singleton_wrapper
     explicit singleton_wrapper(ArgsT&& ... args)
     {
         std::call_once(once_flag_, [f = in_place_factory(std::forward<ArgsT>(args) ...)]() {
-            instance_ = static_cast<T*>(&services::locate_singleton(typeid(T), [&f]() -> shared_ptr<singleton> {
+            instance_ = static_cast<T*>(&services::locate_singleton(typeid(T), [&f](singleton::id sid) -> shared_ptr<singleton> {
                 shared_ptr<singleton> s = construct_shared<T>(f);
                 singleton_access::set_name(*s, typeid(T).name());
+                singleton_access::set_id(*s, sid);
                 return s;
             }));
         });

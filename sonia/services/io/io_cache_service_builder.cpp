@@ -3,15 +3,12 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "sonia/services/builder.ipp"
 #include "io_cache_service_builder.hpp"
-#include "io_cache_service.hpp"
 
 namespace sonia::services {
 
-io_cache_service_builder::io_cache_service_builder()
+void io_cache_service_builder::open()
 {
-    set_log_attribute("Type", "builder");
     parameters_.bind()
         .variable("tcp-socket-factory", &io_cache_service_configuration::tcp_socket_factory, "tcp socket factory name")
         //.variable("udp-socket-factory", &io_cache_service_configuration::udp_socket_factory, "udp socket factory name")

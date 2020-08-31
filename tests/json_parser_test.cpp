@@ -3,18 +3,18 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 #include "sonia/config.hpp"
 
+#include <fstream>
+#include <iterator>
+#include <filesystem>
+
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
 
 #include "sonia/utility/parsers/json/lexertl_lexer.hpp"
 #include "sonia/utility/parsers/json/model.hpp"
 #include "sonia/utility/parsers/json/parser.hpp"
 
 using namespace sonia;
-namespace fs = boost::filesystem;
-
-#include <fstream>
-#include <iterator>
+namespace fs = std::filesystem;
 
 #include <boost/any.hpp>
 #include <boost/unordered_map.hpp>
@@ -120,8 +120,6 @@ BOOST_AUTO_TEST_CASE(json_test)
 
 BOOST_AUTO_TEST_CASE(json_suite_test)
 {
-    namespace fs = boost::filesystem;
-
     char const* path = std::getenv("SONIA_PRIME_HOME");
     BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
     fs::path sonia_prime_home{path};

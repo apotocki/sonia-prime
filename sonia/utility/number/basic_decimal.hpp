@@ -71,6 +71,9 @@ public:
     static basic_decimal parse(string_view);
 
     void operator += (basic_decimal const& rhs);
+    void operator -= (basic_decimal const& rhs);
+    void operator *= (basic_decimal const& rhs);
+    void operator /= (basic_decimal const& rhs);
 
 private:
     SignificandT value_;
@@ -162,7 +165,7 @@ bool operator< (T const& lhs, basic_decimal<LSignificandT, LExponentT> const& rh
 MAKE_FREE_COMPARISON_OPERATORS(is_decimal_v)
 
 template <class OStreamT, typename SignificandT, typename ExponentT>
-OStreamT & operator<< (OStreamT & os, basic_decimal<SignificandT, ExponentT> const& val)
+auto & operator<< (OStreamT & os, basic_decimal<SignificandT, ExponentT> const& val)
 {
     return os << to_string(val);
 }
@@ -186,6 +189,24 @@ void basic_decimal<SignificandT, ExponentT>::operator += (basic_decimal<Signific
 }
 
 template <typename SignificandT, typename ExponentT>
+void basic_decimal<SignificandT, ExponentT>::operator -= (basic_decimal<SignificandT, ExponentT> const& rhs)
+{
+    decimal_minus(value_, exponent_10_, rhs.value_, rhs.exponent_10_);
+}
+
+template <typename SignificandT, typename ExponentT>
+void basic_decimal<SignificandT, ExponentT>::operator *= (basic_decimal<SignificandT, ExponentT> const& rhs)
+{
+    decimal_mul(value_, exponent_10_, rhs.value_, rhs.exponent_10_);
+}
+
+template <typename SignificandT, typename ExponentT>
+void basic_decimal<SignificandT, ExponentT>::operator /= (basic_decimal<SignificandT, ExponentT> const& rhs)
+{
+    decimal_divide(value_, exponent_10_, rhs.value_, rhs.exponent_10_);
+}
+
+template <typename SignificandT, typename ExponentT>
 basic_decimal<SignificandT, ExponentT> operator+ (basic_decimal<SignificandT, ExponentT> const& lhs, basic_decimal<SignificandT, ExponentT> const& rhs)
 {
     basic_decimal<SignificandT, ExponentT> result{lhs};
@@ -193,7 +214,30 @@ basic_decimal<SignificandT, ExponentT> operator+ (basic_decimal<SignificandT, Ex
     return result;
 }
 
+template <typename SignificandT, typename ExponentT>
+basic_decimal<SignificandT, ExponentT> operator- (basic_decimal<SignificandT, ExponentT> const& lhs, basic_decimal<SignificandT, ExponentT> const& rhs)
+{
+    basic_decimal<SignificandT, ExponentT> result{lhs};
+    result -= rhs;
+    return result;
 }
 
+template <typename SignificandT, typename ExponentT>
+basic_decimal<SignificandT, ExponentT> operator* (basic_decimal<SignificandT, ExponentT> const& lhs, basic_decimal<SignificandT, ExponentT> const& rhs)
+{
+    basic_decimal<SignificandT, ExponentT> result{lhs};
+    result *= rhs;
+    return result;
+}
+
+template <typename SignificandT, typename ExponentT>
+basic_decimal<SignificandT, ExponentT> operator/ (basic_decimal<SignificandT, ExponentT> const& lhs, basic_decimal<SignificandT, ExponentT> const& rhs)
+{
+    basic_decimal<SignificandT, ExponentT> result{lhs};
+    result /= rhs;
+    return result;
+}
+
+}
 
 #endif // SONIA_UTILITY_BASIC_DECIMAL_HPP

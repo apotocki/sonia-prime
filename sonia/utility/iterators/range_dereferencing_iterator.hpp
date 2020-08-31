@@ -1,19 +1,14 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_UTILITY_RANGE_DEREFERENCING_ITERATOR_HPP
-#define SONIA_UTILITY_RANGE_DEREFERENCING_ITERATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 
 #include <boost/assert.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
+#include <boost/range/empty.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 
 #include "sonia/iterator_traits.hpp"
@@ -21,7 +16,6 @@
 
 namespace sonia {
 
-#if 1
 template <class IteratorT, class CategoryOrTraversalT = iterator_traversal_t<IteratorT>>
 class range_dereferencing_iterator_state
 {
@@ -130,7 +124,7 @@ public:
         return std::get<0>(*state_);
     }
 
-    void reload()
+    void reset()
     {
         hazardous_destroy_as_optional(state_, !!state_initialized_);
         state_initialized_ = 0;
@@ -139,21 +133,17 @@ public:
     void flush()
     {
         if (state_initialized_) {
-            iterator_dereferenced_range_t<IteratorT> rng = *base;
-            *base = array_view(boost::begin(rng), std::get<0>(*state_));
-            ++base;
-            hazardous_destroy_as_optional(state_, !!state_initialized_);
-            state_initialized_ = 0;
+            *base = array_view(std::get<0>(*state_), std::get<1>(*state_));
+            if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
+                base.flush();
+            }
         }
     }
 
-    void flush_position()
+    void fix()
     {
         if (state_initialized_) {
-            *base = std::get<0>(*state_);
-            ++base;
-            hazardous_destroy_as_optional(state_, !!state_initialized_);
-            state_initialized_ = 0;
+            *base = array_view(std::get<0>(*state_), std::get<1>(*state_));
         }
     }
 
@@ -177,11 +167,6 @@ private:
         } while (!sonia::empty(base));
     }
 };
-
-#else
-
-
-#endif
 
 template <class IteratorT, class CategoryOrTraversal = iterator_category_t<IteratorT>>
 class range_dereferencing_iterator 
@@ -240,10 +225,9 @@ public:
     enable_if_t<iterators::has_method_close_v<T, void()>> close()
     {
         state_t::flush();
+        state_t::reset();
         this->base.close();
     }
 };
 
 }
-
-#endif // SONIA_UTILITY_RANGE_DEREFERENCING_ITERATOR_HPP

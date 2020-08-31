@@ -5,11 +5,11 @@
 #include "sonia/config.hpp"
 
 #include <iostream>
+#include <filesystem>
 
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 #define TEST_FOLDER "server_test"
 
@@ -79,7 +79,7 @@ BOOST_AUTO_TEST_CASE (server_test)
     fs::remove_all(TEST_FOLDER);
 
     try {
-        scoped_services ss;
+        scoped_services ss{"base-path=" TEST_FOLDER "/"};
 
         services::register_service_factory("asd", []() -> shared_ptr<service> {
             return make_shared<test_service0>();
@@ -96,6 +96,7 @@ BOOST_AUTO_TEST_CASE (server_test)
         services::load_configuration("host.json");
 
         auto s0 = services::locate("scheduler.serv");
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 
     } catch (closed_exception const& e) {
         std::cout << e.what() << "\n";

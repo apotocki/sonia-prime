@@ -10,9 +10,16 @@
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/exceptions.hpp"
 
+#include <process.h>
+#include <WS2tcpip.h>
 namespace sonia::sal {
 
 namespace winapi = sonia::windows;
+
+int get_pid()
+{
+    return _getpid();
+}
 
 void set_thread_name(sonia::thread::id tid, string_view name)
 {

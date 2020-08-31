@@ -13,7 +13,8 @@ using namespace sonia;
 
 BOOST_AUTO_TEST_CASE (optimized_holder_test)
 {
-    typedef optimized_holder<8, 4> opt0_t;
+    char buff[256];
+    using opt0_t = optimized_holder<8, 4>;
 
     opt0_t v0;
     *v0.data() = 1;
@@ -30,7 +31,7 @@ BOOST_AUTO_TEST_CASE (optimized_holder_test)
         BOOST_CHECK_EQUAL(cv, v0.get_service_cookie());
     }
 
-    typedef optimized_holder<10, 9> opt1_t;
+    using opt1_t = optimized_holder<10, 9>;
     opt1_t v1;
     *v1.data() = 1;
     BOOST_CHECK(!v1.is_ptr());

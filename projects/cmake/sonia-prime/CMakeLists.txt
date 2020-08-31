@@ -15,6 +15,8 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/local_service_registry.cpp
     ${BUNDLE_HOME}/sonia/services/registry/registry_service_builder.cpp
     ${BUNDLE_HOME}/sonia/services/registry/registry_service.cpp
+    ${BUNDLE_HOME}/sonia/services/bookkeeper/bookkeeper_service_builder.cpp
+    ${BUNDLE_HOME}/sonia/services/bookkeeper/bookkeeper_service.cpp
     ${BUNDLE_HOME}/sonia/services/scheduler/scheduler_service_builder.cpp
     ${BUNDLE_HOME}/sonia/services/scheduler/scheduler_service.cpp
     ${BUNDLE_HOME}/sonia/services/io/io_service_builder.cpp
@@ -33,6 +35,10 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/net/http/http_default_application.cpp
     ${BUNDLE_HOME}/sonia/services/net/http/http_static_application_builder.cpp
     ${BUNDLE_HOME}/sonia/services/net/http/http_static_application.cpp
+    ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application_builder.cpp
+    ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application.cpp
+    ${BUNDLE_HOME}/sonia/services/auth/auth_service_builder.cpp
+    ${BUNDLE_HOME}/sonia/services/auth/auth_service.cpp
     ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
 )
 
@@ -52,5 +58,5 @@ if ("${LIBRARY_TYPE}" STREQUAL "STATIC")
 endif ()
 
 add_library(${BUNDLE_NAME} ${LIBRARY_TYPE} ${BUNDLE_SOURCES})
-target_link_libraries(${BUNDLE_NAME} sonia-prime-lib ${OPENSSL} ${ZLIB} ${BOOST_LOG} ${BOOST_LOG_SETUP} ${BOOST_SERIALIZATION} ${BOOST_FILESYSTEM} ${BOOST_FIBERS} ${BOOST_THREAD} ${BOOST_PROGRAM_OPTIONS} ${BOOST_CONTEXT} ${BOOST_REGEX} ${BOOST_STACKTRACE} ${PLATFORM_LIBS})
+target_link_libraries(${BUNDLE_NAME} sonia-prime-lib ${OPENSSL} ${ZLIB} ${BOOST_LOG} ${BOOST_LOG_SETUP} ${BOOST_SERIALIZATION} ${BOOST_FILESYSTEM} ${BOOST_THREAD} ${BOOST_PROGRAM_OPTIONS} ${BOOST_CONTEXT} ${BOOST_REGEX} ${BOOST_STACKTRACE} ${BOOST_RANDOM} ${PLATFORM_LIBS})
 set_target_properties(${BUNDLE_NAME} PROPERTIES FOLDER "libs")

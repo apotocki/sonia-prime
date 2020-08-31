@@ -18,11 +18,11 @@ namespace sonia::parsers::json {
 template <class LexerT, class ModelT>
 class parser
 {
-    typedef typename LexerT::iterator iterator;
-    typedef typename LexerT::token_type token_type;
+    using iterator = typename LexerT::iterator;
+    using token_type = typename LexerT::token_type;
 
 public:
-    explicit parser(ModelT & mdl) : mdl_(mdl) {}
+    explicit parser(ModelT & mdl) : mdl_{mdl} {}
 
     void parse(iterator & b, iterator const& e) const;
 

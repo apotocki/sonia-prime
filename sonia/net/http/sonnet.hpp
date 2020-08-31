@@ -23,13 +23,19 @@ class sonnet : public application
 public:
     void handle(request & req, response & resp) override;
 
+    struct request_parameters
+    {
+        bool is_urlencoded{false};
+        bool has_form_data{false};
+        string_view form_data_boundary;
+    };
+
 protected:
-    using method_handler_type = function<void(request &, response &)>;
+    using method_handler_type = function<void(request &, request_parameters const&, response &)>;
     void bind_handler(string_view, method_handler_type const&);
     void handle_json_callback(request & req, response & resp, function<void(message::range_write_input_iterator)> const& writer);
 
-    virtual void handle_unhandled(request & req, response & resp);
-
+    virtual void handle_unhandled(request & req, request_parameters const&, response & resp);
 
     boost::unordered_map<std::string, method_handler_type, hasher> handlers_;
     std::string path_base_;

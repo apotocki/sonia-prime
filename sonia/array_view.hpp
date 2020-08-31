@@ -42,6 +42,8 @@ public:
     using reverse_iterator = std::reverse_iterator<iterator>;
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
+    static constexpr size_type npos = size_type(-1);
+
     // potentially unsafe
     explicit constexpr array_view(null_t) {}
 
@@ -79,15 +81,17 @@ public:
 
     constexpr size_type size() const noexcept { return size_; }
 
-    constexpr void advance_front(std::ptrdiff_t dist)
+    constexpr array_view& advance_front(std::ptrdiff_t dist)
     {
         size_ -= dist;
         data_ += dist;
+        return *this;
     }
 
-    constexpr void advance_back(std::ptrdiff_t dist)
+    constexpr array_view& advance_back(std::ptrdiff_t dist)
     {
         size_ += dist;
+        return *this;
     }
 
     constexpr void resize(size_type sz)
@@ -115,12 +119,29 @@ public:
     bool starts_with(array_view prefix) const
     {
         if (size_ < prefix.size()) return false;
-        if constexpr (is_trivial_v<T>)
-        {
+        if constexpr (is_trivial_v<T>) {
             return 0 == std::memcmp(data_, prefix.data_, prefix.size() * sizeof(T));
         } else {
             return std::equal(prefix.begin(), prefix.end(), data_);
         }
+    }
+
+    bool ends_with(array_view suffix) const
+    {
+        if (size_ < suffix.size()) return false;
+        if constexpr (is_trivial_v<T>) {
+            return 0 == std::memcmp(end() - suffix.size(), suffix.data_, suffix.size() * sizeof(T));
+        } else {
+            return std::equal(suffix.begin(), suffix.end(), end() - suffix.size());
+        }
+    }
+
+    size_type find(array_view v, size_t pos = 0) const
+    {
+        BOOST_ASSERT(size_ >= pos);
+        const T * it = std::search(data_ + pos, data_ + size_, v.begin(), v.end());
+        if (it == data_ + size_) return npos;
+        return (it == data_ + size_) ? npos : it - (data_ + pos);
     }
 
     template <typename OffsT>

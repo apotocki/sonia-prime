@@ -9,7 +9,7 @@
 #   pragma once
 #endif
 
-#include "sonia/reference_wrapper.hpp"
+#include "sonia/type_traits.hpp"
 #include "sonia/utility/rvalue.hpp"
 #include "serialization.hpp"
 

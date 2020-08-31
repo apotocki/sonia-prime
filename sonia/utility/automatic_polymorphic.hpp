@@ -15,6 +15,7 @@
 
 #include "sonia/cstdint.hpp"
 #include "sonia/type_traits.hpp"
+#include "sonia/exceptions.hpp"
 #include "sonia/utility/polymorphic_traits.hpp"
 
 namespace sonia {
@@ -104,7 +105,7 @@ public:
         } else if constexpr (is_reference_v<T&&>) {
             clone(arg);
         } else {
-            BOOST_THROW_EXCEPTION(internal_error("automatic_polymorphic"));
+            THROW_INTERNAL_ERROR("automatic_polymorphic");
         }
     }
 

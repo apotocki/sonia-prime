@@ -25,7 +25,7 @@ auto copy_not_more(
 {
     using item_t = iterator_value_t<ForwardInputIteratorT>;
 
-    if constexpr (is_pod_v<item_t> && is_pointer_v<ForwardInputIteratorT> && is_pointer_v<ForwardOutputIteratorT>) {
+    if constexpr (std::is_trivial_v<item_t> && is_pointer_v<ForwardInputIteratorT> && is_pointer_v<ForwardOutputIteratorT>) {
         static_assert(is_same_v <item_t, iterator_value_t<ForwardOutputIteratorT>>);
         size_t sz = (std::min)(static_cast<size_t>(e - b) / sizeof(item_t), n);
         std::memcpy(oit, b, sz * sizeof(item_t));
@@ -66,9 +66,10 @@ RangeWriteInputIteratorT copy_range(SrcIteratorT b, SrcIteratorT e, RangeWriteIn
         auto[iit, oit] = copy(b, e, orngb, ornge);
         if (iit == e) {
             if (oit != ornge) {
-                *it = iterator_value_t<RangeWriteInputIteratorT>{orngb, oit};
+                *it = iterator_value_t<RangeWriteInputIteratorT>{oit, ornge};
+            } else {
+                ++it;
             }
-            ++it;
             return std::move(it);
         }
         ++it;

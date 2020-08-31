@@ -135,12 +135,15 @@ template <class T, class E> class expected;
 /// \brief Used to represent an expected with no data
 class monostate {};
 
+using std::in_place_t;
+using std::in_place;
+
 /// \brief A tag type to tell expected to construct its value in-place
-struct in_place_t {
-  explicit in_place_t() = default;
-};
-/// \brief A tag to tell expected to construct its value in-place
-static constexpr in_place_t in_place{};
+//struct in_place_t {
+//  explicit in_place_t() = default;
+//};
+///// \brief A tag to tell expected to construct its value in-place
+//static constexpr in_place_t in_place{};
 #endif
 
 /// Used as a wrapper to store the unexpected value
@@ -1223,7 +1226,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) &;
   template <class F>
   TL_EXPECTED_11_CONSTEXPR auto
-  and_then(F &&f) & -> decltype(and_then_impl(*this, std::forward<F>(f))) {
+  and_then(F &&f) & -> decltype(and_then_impl(std::declval<expected>(), std::forward<F>(f))) {
     return and_then_impl(*this, std::forward<F>(f));
   }
 
@@ -1231,7 +1234,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) &&;
   template <class F>
   TL_EXPECTED_11_CONSTEXPR auto and_then(F &&f) && -> decltype(
-      and_then_impl(std::move(*this), std::forward<F>(f))) {
+      and_then_impl(std::move(std::declval<expected>()), std::forward<F>(f))) {
     return and_then_impl(std::move(*this), std::forward<F>(f));
   }
 
@@ -1239,7 +1242,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) const &;
   template <class F>
   constexpr auto and_then(F &&f) const & -> decltype(
-      and_then_impl(*this, std::forward<F>(f))) {
+      and_then_impl(std::declval<expected>(), std::forward<F>(f))) {
     return and_then_impl(*this, std::forward<F>(f));
   }
 
@@ -1248,7 +1251,7 @@ public:
   /// \synopsis template <class F>\nconstexpr auto and_then(F &&f) const &&;
   template <class F>
   constexpr auto and_then(F &&f) const && -> decltype(
-      and_then_impl(std::move(*this), std::forward<F>(f))) {
+      and_then_impl(std::move(std::declval<expected>()), std::forward<F>(f))) {
     return and_then_impl(std::move(*this), std::forward<F>(f));
   }
 #endif

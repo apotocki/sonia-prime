@@ -39,42 +39,57 @@ class http_chunking_write_input_iterator
 
     proxy_type dereference() const { return proxy_type(this); }
 
+    array_view<char> get_chunk() const
+    {
+        BOOST_ASSERT(!empty());
+        array_view<char> chunk = *base;
+        uint8_t max_hex_digit_count = get_max_hex_digit_count(chunk.size() - 5); // lets suppose 1 digit for size, 2 for prolog "\r\n" and 2 for epilog "\r\n"
+        BOOST_ASSERT (chunk.size() > max_hex_digit_count + 4); // size digits + 2 for prolog "\r\n" + 2 for epilog "\r\n"
+        chunk.advance_front(max_hex_digit_count + 2); // size digits + 2 for prolog "\r\n"
+        chunk.advance_back(-2); // 2 for epilog "\r\n"
+        return chunk;
+    }
+
     array_view<char> get_dereference() const
     {
         if (chunk_.empty()) {
-            chunk_ = *base;
-            uint8_t max_hex_digit_count = get_max_hex_digit_count(chunk_.size() - 3);
-            BOOST_ASSERT (chunk_.size() > max_hex_digit_count + 4);
-            chunk_.advance_front(max_hex_digit_count + 2); // +reserved \r\n
-            chunk_.advance_back(-2);
+            max_hex_digit_count_ = 0;
+            chunk_ = get_chunk();
         }
         return chunk_;
     }
 
     void set_dereference(array_view<char> span)
     {
-        BOOST_ASSERT (max_hex_digit_count_);
-        BOOST_ASSERT (span.begin() == chunk_.begin());
+        BOOST_ASSERT (span.is_subset_of(chunk_));
         chunk_ = span;
     }
 
-    void increment()
+    void flush(array_view<char> val)
     {
-        BOOST_ASSERT (max_hex_digit_count_);
-        size_t chunksz = chunk_.size();
-        char * buffpos = chunk_.begin() - max_hex_digit_count_ - 2;
+        size_t chunksz = val.size();
+        char * buffpos = val.begin() - max_hex_digit_count_ - 2;
         for (uint8_t d = max_hex_digit_count_; d > 0; --d) {
             uint8_t dval = (0xf & (chunksz >> 4 * (d - 1)));
             *buffpos++ = dval < 10 ? '0' + dval : 'A' + dval - 10;
         }
         *buffpos++ = '\r'; *buffpos++ = '\n';
-        BOOST_ASSERT (buffpos == chunk_.begin());
-        buffpos = chunk_.end();
+        BOOST_ASSERT (buffpos == val.begin());
+        buffpos = val.end();
         *buffpos++ = '\r'; *buffpos++ = '\n';
-        *base = array_view(chunk_.begin() - max_hex_digit_count_ - 2, buffpos);
+        *base = array_view(val.begin() - max_hex_digit_count_ - 2, buffpos);
         ++base;
-        chunk_.reset();
-        max_hex_digit_count_ = 0;
+    }
+
+    void increment()
+    {
+        array_view<char> orig  = get_chunk();
+        if (chunk_.end() != orig.end()) {
+            chunk_ = array_view{chunk_.end(), orig.end()};
+        } else {
+            flush(orig);
+            chunk_.reset();
+        }
     }
 
     int8_t get_max_hex_digit_count(size_t sz) const
@@ -96,8 +111,21 @@ public:
         return sonia::empty(base);
     }
 
+    void flush()
+    {
+        if (chunk_) {
+            array_view<char> orig  = get_chunk();
+            flush({orig.begin(), chunk_.begin()});
+            chunk_.reset();
+        }
+        if constexpr (iterators::has_method_flush_v<WriteInputIteratorT, void()>) {
+            base.flush();
+        }
+    }
+
     void close()
     {
+        flush();
         if (empty()) return;
         array_view<char> chunk = *base;
         BOOST_ASSERT (chunk.size() >= 5);
@@ -105,13 +133,10 @@ public:
         std::memcpy(chunk.begin(), estr, 5);
         *base = array_view<char>{chunk.begin(), 5};
         ++base;
-        if constexpr (iterators::has_method_flush_v<WriteInputIteratorT, void()>) {
-            base.flush();
+        if constexpr (iterators::has_method_close_v<WriteInputIteratorT, void()>) {
+            base.close();
         }
     }
-
-    template <typename T = WriteInputIteratorT>
-    enable_if_t<iterators::has_method_flush_v<T, void()>> flush() { base.flush(); }
 
     WriteInputIteratorT base;
 };

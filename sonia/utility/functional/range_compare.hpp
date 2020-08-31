@@ -45,13 +45,12 @@ struct range_compare
     }
 
     template <typename T>
-    constexpr bool operator()(T const* lb, T const* le, T const* rb, T const* re) const
+    constexpr int operator()(T const* lb, T const* le, T const* rb, T const* re) const
     {
         const size_t lsz = le - lb;
         const size_t rsz = re - rb;
         if constexpr (is_integral_v<T> && 1 == sizeof(T)) {
-            const int res = std::memcmp(lb, rb, (std::min)(lsz, rsz)); // bytes are interpreted as unsigned chars
-            return (!res) ? lsz < rsz : res < 0;
+            return std::memcmp(lb, rb, (std::min)(lsz, rsz)); // bytes are interpreted as unsigned chars
         } else {
             return std::lexicographical_compare(lb, le, rb, re);
         }

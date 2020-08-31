@@ -36,13 +36,14 @@ shared_ptr<service> service_locator::get(service::id id)
 shared_ptr<service> service_locator::get(service::id id, string_view name)
 {
     try {
-        return static_pointer_cast<service>(get(id, [this, id, name]() mutable {
+        return static_pointer_cast<service>(get(id, [this, name](singleton::id id) mutable {
             if (!name) name = sr_->get_name(id);
                 
             auto creature = sf_->create(name);
             creature->set_log_attribute("Name", name);
             creature->set_log_attribute("Host", services::get_host()->get_name());
             service_access::set_name(*creature, to_string(name));
+            singleton_access::set_id(*creature, id);
             creature->open();
             LOG_TRACE(logger()) << "service " << name << "(id: " << id << ") is started";
             return creature;

@@ -16,7 +16,7 @@
 #include "sonia/utility/algorithm/copy.hpp"
 #include "serialization.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <typename TagT, typename T>
 class coder<TagT, array_view<T>>
@@ -110,6 +110,6 @@ struct vector_coder
     }
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_ARRAY_HPP

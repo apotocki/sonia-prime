@@ -14,27 +14,41 @@
 #include <boost/thread/lock_guard.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
 
-#include <boost/fiber/detail/spinlock.hpp>
-#include <boost/fiber/all.hpp>
+#if 1
+#include "sonia/fibers/future.hpp"
+#include "sonia/fibers/fiber.hpp"
+#include "sonia/fibers/barrier.hpp"
+namespace sonia {
+    using fibers::fiber;
+    using spin_mutex = fibers::detail::spinlock;
+}
+#else
+#include <boost/fiber/future.hpp>
+#include <boost/fiber/fiber.hpp>
+#include <boost/fiber/barrier.hpp>
+namespace sonia {
+    using boost::fibers::fiber;
+    using spin_mutex = boost::fibers::detail::spinlock;
+    namespace fibers {
+        using namespace boost::fibers;
+    }
+    namespace this_fiber = boost::this_fiber;
+}
+
+#endif
 
 namespace sonia {
 
 using boost::thread;
-using std::mutex;
-using std::unique_lock;
-using std::condition_variable;
 
+using std::unique_lock;
 using boost::lock_guard;
 using boost::shared_lock_guard;
-using boost::fibers::fiber;
 
-using spin_mutex = boost::fibers::detail::spinlock;
-
-namespace fibers {
-    using namespace boost::fibers;
+namespace threads {
+    using std::mutex;
+    using std::condition_variable;
 }
-
-namespace this_fiber = boost::this_fiber;
 
 namespace this_thread {
     using namespace boost::this_thread;
@@ -104,12 +118,12 @@ private:
 };
 
 
-// tarits
-struct fiber_traits
-{
-    using mutex_type = fibers::mutex;
-    using condition_variable_type = fibers::condition_variable;
-};
+// traits
+//struct fiber_traits
+//{
+//    using mutex_type = fibers::mutex;
+//    using condition_variable_type = fibers::condition_variable;
+//};
 
 }
 

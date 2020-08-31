@@ -43,6 +43,9 @@ void decode_uri_component(InputIteratorT b, InputIteratorT e, OutputIteratorT oi
 template <typename InputIteratorT, typename FunctorT>
 void decode_query(InputIteratorT b, InputIteratorT e, FunctorT const& ftor);
 
+template <typename InputIteratorT, typename OutputIteratorT>
+void encode_uri_component(InputIteratorT b, InputIteratorT e, OutputIteratorT oit);
+
 uint16_t default_scheme_port(string_view);
 
 }

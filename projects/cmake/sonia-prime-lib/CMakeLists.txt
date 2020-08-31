@@ -5,6 +5,7 @@ include_directories(${BUNDLES}/sonia-prime)
 
 set (BUNDLE_NAME sonia-prime-lib)
 set (BUNDLE_HOME ${BUNDLES}/sonia-prime)
+
 set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/logger/logger.cpp
     ${BUNDLE_HOME}/sonia/services/bundle.cpp
@@ -49,6 +50,13 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         ${BUNDLE_HOME}/sonia/sal/linux_sal.cpp
         ${BUNDLE_HOME}/sonia/utility/linux.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory_linux.cpp
+    )
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        ${BUNDLE_HOME}/sonia/sys/macos/dispatch.cpp
+        ${BUNDLE_HOME}/sonia/sal/macos_sal.cpp
+        ${BUNDLE_HOME}/sonia/utility/linux.cpp
+        ${BUNDLE_HOME}/sonia/services/io/io_factory_macos.cpp
     )
 endif ()
 

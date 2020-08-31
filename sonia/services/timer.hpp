@@ -18,6 +18,8 @@
 #   include "sonia/sys/windows/thread_pool.hpp"
 #elif defined (__linux__)
 #   include "sonia/sys/linux/timer.hpp"
+#elif defined (__APPLE__)
+#   include "sonia/sys/macos/timer.hpp"
 #endif
 
 namespace sonia::services {
@@ -43,6 +45,8 @@ private:
 };
 #elif defined (__linux__)
 using timer = linux::timer;
+#elif defined (__APPLE__)
+using timer = macos::timer;
 #endif
 
 }

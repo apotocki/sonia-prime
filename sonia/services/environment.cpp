@@ -35,6 +35,10 @@
 #   include "sonia/sys/linux/signals.hpp"
 #endif
 
+#ifdef __APPLE__
+#   include "sonia/sys/macos/dispatch.hpp"
+#endif
+
 namespace sonia::services {
 
 namespace po = boost::program_options;
@@ -116,6 +120,8 @@ environment::~environment() noexcept
     threadpool_.reset();
 #elif defined (__linux__)
     linux::stop_watchers();
+#elif defined (__APPLE__)
+    macos::stop_queue();
 #endif
 
     if (log_initialized_) {
@@ -192,6 +198,8 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
     threadpool_.reset(new windows::threadpool);
 #elif defined (__linux__)
     linux::run_watchers(1);
+#elif defined (__APPLE__)
+    macos::run_queue();
 #endif
 }
 

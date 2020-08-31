@@ -40,6 +40,8 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
         ${BUNDLE_HOME}/sonia/sys/linux/signals.cpp
     )
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    #set (BUNDLE_SOURCES ${BUNDLE_HOME}/sonia/sys/macos/dispatch.cpp    )
 endif ()
 
 add_definitions(-DSONIA_PRIME_EXPORTS)

@@ -148,7 +148,6 @@
     <Filter Include="agnostic\std\algorithm">
       <UniqueIdentifier>{68f60fae-46f9-4211-848b-35fd4e03e91c}</UniqueIdentifier>
     </Filter>
-
     <Filter Include="sonia.utility\serialization\std">
       <UniqueIdentifier>{f6b891f9-a12e-4473-932c-18916baa253f}</UniqueIdentifier>
     </Filter>
@@ -196,6 +195,9 @@
     </Filter>
     <Filter Include="sonia.fibers\algo">
       <UniqueIdentifier>{8b924cf8-f2a5-4b58-89b6-5479ba2f8a0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.sys\macos">
+      <UniqueIdentifier>{513fba6c-e3a1-492a-a745-c25291d054ad}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1726,6 +1728,12 @@
     <ClInclude Include="..\..\..\sonia\fibers\postponer.hpp">
       <Filter>sonia.fibers</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\macos\dispatch.hpp">
+      <Filter>sonia.sys\macos</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\macos\timer.hpp">
+      <Filter>sonia.sys\macos</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -1889,6 +1897,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\fibers\postponer.cpp">
       <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sal\macos_sal.cpp">
+      <Filter>sonia.sal</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\macos\dispatch.cpp">
+      <Filter>sonia.sys\macos</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -362,6 +362,8 @@
     <ClInclude Include="..\..\..\sonia\sys\linux\signals.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\linux\signals_api.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\linux\timer.hpp" />
+    <ClInclude Include="..\..\..\sonia\sys\macos\dispatch.hpp" />
+    <ClInclude Include="..\..\..\sonia\sys\macos\timer.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\windows\thread_pool.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\windows\thread_pool_api.hpp" />
     <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
@@ -600,6 +602,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sal\macos_sal.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\sal\sal.cpp" />
     <ClCompile Include="..\..\..\sonia\sal\windows_sal.cpp" />
     <ClCompile Include="..\..\..\sonia\services\bundle.cpp" />
@@ -672,6 +680,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sys\linux\signals_api.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\macos\dispatch.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>

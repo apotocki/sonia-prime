@@ -78,10 +78,11 @@ BOOST_AUTO_TEST_CASE (apple_timer_test)
     using namespace std::chrono_literals;
 
     run_queue();
+
     SCOPE_EXIT([]{ stop_queue(); });
 
     std::atomic<int> check = 0;
-    timer tmr{ [&check]{ check |= 2; } };
+    timer tmr{ [&check]{ check |= 2;  } };
     tmr.set(50ms); // must be ignored
     tmr.set(60ms);
     timer tmr2{ [&check]{ check |= 4; } };
@@ -93,12 +94,13 @@ BOOST_AUTO_TEST_CASE (apple_timer_test)
     }
     tmr2 = timer{ [&check]{ check |= 16; } };
     tmr2.set(30ms);
+
     std::this_thread::sleep_for(100ms);
     BOOST_CHECK_EQUAL(check.load(), 18);
 }
 #endif
 
-#if 0
+#if 1
 #include "sonia/services/timer.hpp"
 BOOST_AUTO_TEST_CASE (service_timer_test)
 {
@@ -156,7 +158,7 @@ void get_configuration(std::ostream & os)
 
 }
 
-#if 0
+#if 1
 BOOST_AUTO_TEST_CASE (scheduler_timer_test)
 {
     using namespace sonia;

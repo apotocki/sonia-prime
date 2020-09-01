@@ -5,13 +5,14 @@
 #include "sonia/config.hpp"
 #include "dispatch.hpp"
 #include "sonia/exceptions.hpp"
+
 namespace sonia::macos {
 
 dispatch_queue_t global_queue_{nullptr};
 
 void run_queue()
 {
-	global_queue_ = dispatch_queue_create("timerQueue", 0);
+	global_queue_ = dispatch_queue_create("timerQueue", DISPATCH_QUEUE_CONCURRENT);
 
 }
 
@@ -32,7 +33,10 @@ void timer_descriptor::create(bool realtime)
 		THROW_NOT_IMPLEMENTED_ERROR("monotonic is not supported");
 	}
 	auto self = shared_from_this();
-	dispatch_source_set_event_handler(timer_, ^{ self->handler_(); });
+	dispatch_source_set_event_handler(timer_, ^{
+		self->disarm();
+		self->handler_();
+	});
 }
 
 timer_descriptor::~timer_descriptor()
@@ -44,27 +48,27 @@ void timer_descriptor::set(std::chrono::milliseconds ms)
 {
 	uint64_t interval = (uint64_t)ms.count() * 1000000;
 	dispatch_source_set_timer(timer_, DISPATCH_TIME_NOW, interval, 0);
-	dispatch_resume(timer_);
-	while (disarmed_cnt_.load()) {
-		--disarmed_cnt_;
+	lock_guard guard(mtx_);
+	if (disarmed_) {
 		dispatch_resume(timer_);
+		disarmed_ = false;
 	}
 }
 
 void timer_descriptor::disarm()
 {
-	dispatch_suspend(timer_);
-	++disarmed_cnt_;
+	lock_guard guard(mtx_);
+	if (!disarmed_) {
+		dispatch_suspend(timer_);
+		disarmed_ = true;
+	}
 }
 
 
 void timer_descriptor::release()
 {
 	if (timer_) {
-		while (disarmed_cnt_.load()) {
-			--disarmed_cnt_;
-			dispatch_resume(timer_);
-		}
+		disarm();
 		dispatch_source_cancel(timer_);
 		timer_ = nullptr;
 	}

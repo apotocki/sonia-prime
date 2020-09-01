@@ -1,19 +1,14 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_UTILTIY_MACOS_DISPATCH_HPP
-#define SONIA_UTILTIY_MACOS_DISPATCH_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <chrono>
 #include <dispatch/dispatch.h>
 
 #include "sonia/function.hpp"
 #include "sonia/shared_ptr.hpp"
+#include "sonia/concurrency.hpp"
 
 namespace sonia::macos {
 
@@ -34,13 +29,11 @@ public:
     void create(bool realtime);
     void release();
 
-
 private:
     dispatch_source_t timer_;
     function<void()> handler_;
-    std::atomic<uint32_t> disarmed_cnt_{0};
+    spin_mutex mtx_;
+    bool disarmed_{true};
 };
 
 }
-
-#endif // SONIA_UTILTIY_MACOS_DISPATCH_HPP

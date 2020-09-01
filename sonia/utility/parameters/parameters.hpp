@@ -163,7 +163,7 @@ public:
         binder_->apply(val.get_object(), &ref);
     }
 
-    void assign_default(std::type_info const& ti, void* obj) const
+    void assign_default(std::type_info const& ti, void* obj) const override
     {
         T & ref = member(ti, obj);
         binder_->apply(json_object(), &ref);

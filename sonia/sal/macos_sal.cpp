@@ -11,6 +11,7 @@
 
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 
 #include <dlfcn.h>
 #include <signal.h>
@@ -39,15 +40,8 @@ typedef sonia::services::bundle*(get_bundle_fn)();
 
 shared_ptr<sonia::services::bundle> load_bundle(sonia::services::bundle_configuration const& cfg)
 {
-    std::string libname = "lib" + to_string(cfg.lib) + ".so";
-    void * handle = dlopen(
-#ifndef __ANDROID__
-        libname.c_str(),
-#else 
-        (bundles_path + libname).c_str(), // Android requires fullpath
-#endif
-        RTLD_LAZY
-    );
+    std::string libname = "lib" + to_string(cfg.lib) + ".dylib";
+    void * handle = dlopen(libname.c_str(), RTLD_LAZY);
 
     if (!handle) {
         throw internal_error("Cannot load bundle: %1%\n%2%"_fmt % libname % dlerror());

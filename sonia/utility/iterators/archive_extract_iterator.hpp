@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_UTILITY_ARCHIVE_EXTRACT_ITERATOR_HPP
-#define SONIA_UTILITY_ARCHIVE_EXTRACT_ITERATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/intrusive_ptr.hpp>
@@ -210,7 +204,7 @@ public:
 
     bool is_finished() const override final { return this->finished; }
 
-    void * get_base()
+    void * get_base() override
     {
         archive_iterator * pb = pbase();
         if (pb) return pb->get_base();
@@ -268,5 +262,3 @@ archive_iterator make_archive_extract_iterator(std::string name, IteratorT && it
 }
 
 }
-
-#endif // SONIA_UTILITY_ARCHIVE_EXTRACT_ITERATOR_HPP

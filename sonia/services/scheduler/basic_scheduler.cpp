@@ -112,7 +112,10 @@ basic_scheduler::basic_scheduler(uint32_t thr_cnt, uint32_t fb_cnt)
     , priority_queue_entry_pool_{SONIA_TASK_POOL_INITIAL_SIZE}
     , tp_steady_start_{std::chrono::steady_clock::now()}
 {
-    timer_ = services::timer{[this]{ on_priority_timer(); }};
+    timer_ = services::timer{[this]{
+        LOG_TRACE(logger()) << "on_priority_timer " << this_thread::get_id();
+        on_priority_timer();
+    }};
 }
 
 basic_scheduler::~basic_scheduler()
@@ -371,15 +374,15 @@ void basic_scheduler::schedule_timer(priority_set_t::iterator it, int64_t now)
             push(e, false);
             priority_lowest_ = priority_max_val_;
         } else {
-            LOG_INFO(logger()) << "set timeout: " << resched_duration << " ms";
-            timer_.set(time_duration_t{resched_duration});
+            time_duration_t td{resched_duration};
+            LOG_TRACE(logger()) << "set timeout: " << td.count() << " ms";
+            timer_.set(td);
         }
     }
 }
 
 void basic_scheduler::on_priority_timer()
 {
-    LOG_INFO(logger()) << "on_priority_timer " << this_thread::get_id();
     time_duration_t now = relative_now();
     lock_guard guard(priority_mtx_);
     priority_lowest_ = priority_max_val_;

@@ -21,7 +21,7 @@ BOOST_AUTO_TEST_CASE(tls_crash_test1)
 {
     std::thread([]
     {
-        s;
+        (void)s;
     }).join();
     BOOST_CHECK(true);
 }

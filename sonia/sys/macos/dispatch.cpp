@@ -12,8 +12,7 @@ dispatch_queue_t global_queue_{nullptr};
 
 void run_queue()
 {
-	global_queue_ = dispatch_queue_create("timerQueue", DISPATCH_QUEUE_CONCURRENT);
-
+	global_queue_ = dispatch_queue_create("sonia.timer_queue", DISPATCH_QUEUE_CONCURRENT);
 }
 
 void stop_queue()
@@ -34,8 +33,8 @@ void timer_descriptor::create(bool realtime)
 	}
 	auto self = shared_from_this();
 	dispatch_source_set_event_handler(timer_, ^{
-		self->disarm();
-		self->handler_();
+			self->disarm();
+			self->handler_();
 	});
 }
 
@@ -46,8 +45,8 @@ timer_descriptor::~timer_descriptor()
 
 void timer_descriptor::set(std::chrono::milliseconds ms)
 {
-	uint64_t interval = (uint64_t)ms.count() * 1000000;
-	dispatch_source_set_timer(timer_, DISPATCH_TIME_NOW, interval, 0);
+	uint64_t interval = (uint64_t)ms.count() * NSEC_PER_MSEC;
+	dispatch_source_set_timer(timer_, dispatch_time(DISPATCH_TIME_NOW, interval), interval, NSEC_PER_MSEC);
 	lock_guard guard(mtx_);
 	if (disarmed_) {
 		dispatch_resume(timer_);

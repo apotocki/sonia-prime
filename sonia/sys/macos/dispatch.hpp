@@ -34,6 +34,7 @@ private:
     function<void()> handler_;
     spin_mutex mtx_;
     bool disarmed_{true};
+    bool skip_{true};
 };
 
 }

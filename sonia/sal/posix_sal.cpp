@@ -36,7 +36,12 @@ using get_bundle_fn = sonia::services::bundle* ();
 
 shared_ptr<sonia::services::bundle> load_bundle(sonia::services::bundle_configuration const& cfg)
 {
-    std::string libname = "lib" + to_string(cfg.lib) + ".so";
+    std::string libname = "lib" + to_string(cfg.lib) + 
+#if defined (__APPLE__)
+        ".dylib";
+#else
+        ".so";
+#endif
     void* handle = dlopen(
 #ifndef __ANDROID__
         libname.c_str(),

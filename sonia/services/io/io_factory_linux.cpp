@@ -27,7 +27,7 @@
 #include "sonia/utility/automatic_polymorphic.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/utility/object_pool.hpp"
-#include "sonia/utility/linux.hpp"
+#include "sonia/sys/posix/posix.hpp"
 #include "sonia/sys/linux/signals.hpp"
 
 #ifndef MAX_EPOLL_EVENTS
@@ -47,11 +47,8 @@ namespace sonia::io {
 static constexpr bool IO_DEBUG = false;
 static constexpr uint64_t epool_exit_cookie_v = (std::numeric_limits<uint64_t>::max)();
 
-namespace linapi = sonia::linux;
-
 struct lin_impl;
 struct lin_shared_handle;
-
 
 #if 0
 struct unique_fd
@@ -344,7 +341,7 @@ bool acceptor_callback::operator()(lin_shared_handle & sh, bool eof) noexcept
         LOG_TRACE(sh.impl->wrapper->logger()) << hbuf << " " << sbuf;
     }
 
-    linapi::append_descriptor_flags(infd, O_NONBLOCK);
+    posix::append_descriptor_flags(infd, O_NONBLOCK);
     promise_.set_value(sh.create_tcp_socket(infd));
 
     return true;
@@ -370,7 +367,7 @@ lin_impl::lin_impl(shared_ptr<factory> itself)
         throw exception("can't create a contorl pipe instance, error: %1%"_fmt % strerror(err));
     }
 
-    linapi::append_descriptor_flags(ctl_pipe[0], O_NONBLOCK); // read
+    posix::append_descriptor_flags(ctl_pipe[0], O_NONBLOCK); // read
 
     epoll_event ev;
     ev.data.u64 = epool_exit_cookie_v;
@@ -380,7 +377,7 @@ lin_impl::lin_impl(shared_ptr<factory> itself)
         throw exception("can't start watching the controll pipe, error: %1%"_fmt % strerror(err));
     }
 
-    auto[a, b, c] = sonia::linux::kernel_version();
+    auto[a, b, c] = posix::kernel_version();
     LOG_INFO(wrapper->logger()) << "KERNEL: " << a << "." << b << "." << c;
 }
 
@@ -451,7 +448,7 @@ void lin_impl::delete_callback(lin_shared_handle::callback_t * cb) noexcept
 
 lin_shared_handle * lin_impl::do_create_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
 {
-    linapi::append_descriptor_flags(s, O_NONBLOCK);
+    posix::append_descriptor_flags(s, O_NONBLOCK);
     lin_shared_handle* sh = new_socket_handle(s, dt);
     epoll_ctl_add(efd, *sh, [this, sh](const char* msg) {
         if (sh->close(efd)) {
@@ -692,7 +689,7 @@ tcp_acceptor factory::create_tcp_acceptor(cstring_view address, uint16_t port, t
     std::ostringstream errmsgs;
     for (; !!rp; rp = rp->ai_next) {
         try {
-            int sockfd = linapi::socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
+            int sockfd = posix::socket(rp->ai_family, rp->ai_socktype, rp->ai_protocol);
             int pinsockfd = sockfd;
             SCOPE_EXIT([&pinsockfd]() { if (pinsockfd >= 0) { ::close(pinsockfd); }});
         
@@ -702,11 +699,11 @@ tcp_acceptor factory::create_tcp_acceptor(cstring_view address, uint16_t port, t
                 throw exception("can't set socket(SO_REUSEADDR), error: %1%"_fmt % strerror(err));
             }
 
-            linapi::bind_socket(sockfd, rp->ai_addr, rp->ai_addrlen));
+            posix::bind_socket(sockfd, rp->ai_addr, rp->ai_addrlen));
                 
-            linapi::append_descriptor_flags(sockfd, O_NONBLOCK);
+            posix::append_descriptor_flags(sockfd, O_NONBLOCK);
 
-            linapi::listen(sockfd, SOMAXCONN);
+            posix::listen(sockfd, SOMAXCONN);
 
             acceptor_socket_handle * sh = dataptr->new_acceptor_handle(sockfd, handler);
 

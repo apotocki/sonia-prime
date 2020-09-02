@@ -364,8 +364,10 @@
     <ClInclude Include="..\..\..\sonia\sys\linux\timer.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\macos\dispatch.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\macos\timer.hpp" />
+    <ClInclude Include="..\..\..\sonia\sys\posix\posix.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\windows\thread_pool.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\windows\thread_pool_api.hpp" />
+    <ClInclude Include="..\..\..\sonia\sys\windows\windows.hpp" />
     <ClInclude Include="..\..\..\sonia\type_traits.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\algorithm\construct.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\algorithm\copy.hpp" />
@@ -442,7 +444,6 @@
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\linux.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\marshaling\marshaling.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\marshaling\service.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\marshaling\string.hpp" />
@@ -528,7 +529,6 @@
     <ClInclude Include="..\..\..\sonia\utility\type_durable_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\type_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\variadic.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\windows.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\zlib_util.hpp" />
   </ItemGroup>
   <ItemGroup>
@@ -603,6 +603,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sal\macos_sal.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sal\posix_sal.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
@@ -691,6 +697,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\posix\posix.cpp" />
     <ClCompile Include="..\..\..\sonia\sys\windows\thread_pool.cpp" />
     <ClCompile Include="..\..\..\sonia\sys\windows\thread_pool_api.cpp" />
     <ClCompile Include="..\..\..\sonia\sys\windows\windows.cpp" />

@@ -354,9 +354,6 @@
     <ClInclude Include="..\..\..\sonia\utility\optimized\array.hpp">
       <Filter>sonia.utility\optimized</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\windows.hpp">
-      <Filter>sonia.utility</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\sal.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
@@ -674,9 +671,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp">
       <Filter>sonia.utility\functional\hash</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\linux.hpp">
-      <Filter>sonia.utility</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_write_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
@@ -1734,6 +1728,12 @@
     <ClInclude Include="..\..\..\sonia\sys\macos\timer.hpp">
       <Filter>sonia.sys\macos</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\posix\posix.hpp">
+      <Filter>sonia.sys\posix</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\windows\windows.hpp">
+      <Filter>sonia.sys\windows</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -1903,6 +1903,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sys\macos\dispatch.cpp">
       <Filter>sonia.sys\macos</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\posix\posix.cpp">
+      <Filter>sonia.sys\posix</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sal\posix_sal.cpp">
+      <Filter>sonia.sal</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

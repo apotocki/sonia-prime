@@ -371,7 +371,7 @@ void basic_scheduler::schedule_timer(priority_set_t::iterator it, int64_t now)
             push(e, false);
             priority_lowest_ = priority_max_val_;
         } else {
-            LOG_INFO(logger()) << "set timeout: " << resched_duration << " sec";
+            LOG_INFO(logger()) << "set timeout: " << resched_duration << " ms";
             timer_.set(time_duration_t{resched_duration});
         }
     }

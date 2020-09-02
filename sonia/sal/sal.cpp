@@ -4,15 +4,6 @@
 
 #include "sonia/config.hpp"
 
-#ifdef BOOST_WINDOWS
-#   include "sonia/utility/windows.hpp"
-namespace winapi = sonia::windows;
-#else
-#   include <netinet/in.h>
-#   include "sonia/utility/linux.hpp"
-namespace linapi = sonia::linux;
-#endif
-
 #include "sonia/sal.hpp"
 #include "sonia/sal/net.hpp"
 

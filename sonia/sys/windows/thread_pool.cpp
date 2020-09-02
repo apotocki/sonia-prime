@@ -3,13 +3,11 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "sonia/utility/windows.hpp"
+#include "sonia/sys/windows/windows.hpp"
 
 #include "thread_pool.hpp"
 
 #include "boost/thread/thread.hpp"
-
-
 
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/logger/logger.hpp"

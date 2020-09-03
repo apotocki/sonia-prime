@@ -25,7 +25,7 @@ public:
 
     virtual ~loggable() = default;
 
-    logger::logger_ptr logger() { return logger_; }
+    logger::logger_ptr logger() const { return logger_; }
 
     void set_log_attribute(std::string const& name, string_view value) const
     {

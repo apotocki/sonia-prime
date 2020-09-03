@@ -89,6 +89,7 @@ public:
         std::atomic<long> qsz{0};
 
         scheduler& get_scheduler() const { return *wrapper->scheduler_; }
+        logger::logger_ptr logger() const { return wrapper->logger(); }
     };
     
     class listener_task : public scheduler_task_adapter<factory::listener_task>

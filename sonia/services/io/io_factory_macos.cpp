@@ -6,6 +6,8 @@
 #include "factory.hpp"
 
 #include <fcntl.h>
+#include <sys/types.h>
+#include <sys/event.h>
 
 #include <atomic>
 #include <sstream>
@@ -20,8 +22,8 @@
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/utility/object_pool.hpp"
 
-#ifndef MAX_EPOLL_EVENTS
-#   define MAX_EPOLL_EVENTS 5
+#ifndef MAX_KQUEUE_EVENTS
+#   define MAX_KQUEUE_EVENTS 5
 #endif
 
 #ifndef SOCKET_POOL_SIZE
@@ -37,73 +39,8 @@ namespace sonia::io {
 static constexpr bool IO_DEBUG = false;
 static constexpr uint64_t epool_exit_cookie_v = (std::numeric_limits<uint64_t>::max)();
 
-//namespace macosapi = sonia::macos;
-
 struct macos_impl;
 struct macos_shared_handle;
-
-#if 0
-template <typename OnErrorHandlerT>
-void epoll_ctl(int efd, int fd, uint64_t cookie, uint32_t evflags, OnErrorHandlerT const& errh)
-{
-    epoll_event ev;
-    ev.data.u64 = cookie;
-    ev.events = evflags;
-    if (-1 == ::epoll_ctl(efd, EPOLL_CTL_ADD, fd, &ev)) {
-        int err = errno;
-        errh(strerror(err));
-    }
-}
-#endif
-#if 0
-struct unique_fd
-{
-    explicit unique_fd(int fd = -1) noexcept : value(fd) {}
-    unique_fd(unique_fd const&) = delete;
-    unique_fd(unique_fd && rhs) noexcept : value(rhs.value) { rhs.value = -1; }
-    unique_fd & operator=(unique_fd const&) = delete;
-    unique_fd & operator=(unique_fd && rhs) noexcept
-    {
-        if (value != rhs.value) {
-            if (value >= 0) do_close();
-            value = rhs.value;
-            rhs.value = -1;
-        }
-        return *this;
-    }
-
-    ~unique_fd()
-    {
-        if (value >= 0) do_close();
-    }
-
-    int get() const noexcept { return value; }
-    int operator*() const noexcept { return value; }
-    int detach() noexcept
-    {
-        int ret = value;
-        value = -1;
-        return ret;
-    }
-
-    void close()
-    {
-        do_close();
-        value = -1;
-    }
-
-    int value;
-
-private:
-    void do_close() noexcept
-    {
-        if (0 != ::close(value)) {
-            int err = errno;
-            GLOBAL_LOG_ERROR() << "errror while closing socket: " << strerror(err);
-        }
-    }
-};
-#endif
 
 struct callback : boost::intrusive::list_base_hook<>
 {
@@ -125,9 +62,9 @@ struct acceptor_callback : callback
     void free(macos_shared_handle & sh) override;
 };
 
-struct macos_shared_handle : shared_handle<socket_handle_traits>
+struct macos_shared_handle : macos_shared_handle<socket_handle_traits>
 {
-    using base_type = shared_handle<socket_handle_traits>;
+    using base_type = macos_shared_handle<socket_handle_traits>;
 
     using callback_t = automatic_polymorphic<callback, sizeof(acceptor_callback)>;
     using callback_list_t = boost::intrusive::list<callback>;
@@ -183,13 +120,13 @@ private:
     callback_list_t callback_list_;
 };
 
-struct lin_shared_handle_hasher
+struct shared_handle_hasher
 {
     size_t operator()(macos_shared_handle * ph) const { return ph->bkid(); }
     size_t operator()(uint32_t id) const { return id; }
 };
 
-struct lin_shared_handle_equal_to
+struct shared_handle_equal_to
 {
     size_t operator()(macos_shared_handle * lhs, macos_shared_handle * rhs) const { return lhs == rhs; }
     size_t operator()(macos_shared_handle * lhs, uint32_t rhs) const { return lhs->bkid() == rhs; }
@@ -201,16 +138,14 @@ struct macos_impl
     , public enable_shared_from_this<macos_impl>
 {
     friend class factory;
-#if 0
-    int ctl_pipe[2];
 
-    int efd;
+    int kq;
+    int ctl_pipe[2];
 
     sonia::spin_mutex bk_mtx_;
     std::atomic<uint32_t> bkid_cnt_{0};
-    boost::unordered_set<lin_shared_handle*, lin_shared_handle_hasher> book_keeper_;
+    boost::unordered_set<macos_shared_handle*, shared_handle_hasher> book_keeper_;
 
-#endif
     object_pool<macos_shared_handle, spin_mutex> sockets_;
     object_pool<macos_shared_handle::callback_t, spin_mutex> callbacks_;
 
@@ -227,28 +162,25 @@ struct macos_impl
     void park_threads() noexcept override
     {
         LOG_TRACE(wrapper->logger()) << "parking threads...";
-        #if 0
         char ch = 'e';
         if (int r = ::write(ctl_pipe[1], &ch, 1); 1 != r) {
             int err = errno;
             LOG_ERROR(wrapper->logger()) << "can't park threads, error: " << strerror(err);
         }
-        #endif
     }
-#if 0
+
     ~macos_impl() override
     {
         LOG_TRACE(wrapper->logger()) << "descruction of macos_impl";
         ::close(ctl_pipe[0]);
         ::close(ctl_pipe[1]);
-        ::close(efd);
+        ::close(kq);
     }
 
-#endif
     void thread_proc() override;
-    #if 0
-    lin_shared_handle* do_create_socket(sonia::sal::socket_handle, sonia::sal::net_family_type);
-#endif
+
+    macos_shared_handle* do_create_socket(sonia::sal::socket_handle, sonia::sal::net_family_type);
+
     tcp_server_socket do_create_tcp_server_socket(sonia::sal::socket_handle, sonia::sal::net_family_type) override final;
     tcp_socket do_create_tcp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type) override;
     udp_socket do_create_udp_socket(sonia::sal::socket_handle, sonia::sal::net_family_type) override;
@@ -278,13 +210,12 @@ struct macos_impl
     void free_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override final;
 };
 
-#if 0
-tcp_socket lin_shared_handle::create_tcp_socket(int fd)
+tcp_socket macos_shared_handle::create_tcp_socket(int fd)
 {
     return impl->do_create_tcp_socket(fd, family());
 }
 
-void lin_shared_handle::handle_callbacks(bool eof)
+void macos_shared_handle::handle_callbacks(bool eof)
 {
     for (auto it = callback_list_.begin(), eit = callback_list_.end(); it != eit; it) {
         callback & cb = *it;
@@ -299,10 +230,15 @@ void lin_shared_handle::handle_callbacks(bool eof)
     }
 }
 
-bool lin_shared_handle::close(int efd)
+bool macos_shared_handle::close(int kq)
 {
     if (lock_guard guard(mtx); handle != -1) {
-        ::epoll_ctl(efd, EPOLL_CTL_DEL, handle, NULL);
+        struct kevent ev;
+        EV_SET(&ev, epool_exit_cookie_v, EVFILT_READ | EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
+        if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
+            int err = errno;
+            LOG_WARN(impl->logger()) << ("can't start watching the controll pipe, error: %1%"_fmt % strerror(err)).str();
+        }
         ::close(handle);
         handle = -1;
         handle_callbacks(true);
@@ -311,7 +247,7 @@ bool lin_shared_handle::close(int efd)
     return false;
 }
 
-bool acceptor_callback::operator()(lin_shared_handle & sh, bool eof) noexcept
+bool acceptor_callback::operator()(macos_shared_handle & sh, bool eof) noexcept
 {
     if (eof) {
         promise_.set_exception(std::make_exception_ptr(eof_exception()));
@@ -338,29 +274,25 @@ bool acceptor_callback::operator()(lin_shared_handle & sh, bool eof) noexcept
         LOG_TRACE(sh.impl->wrapper->logger()) << hbuf << " " << sbuf;
     }
 
-    linapi::append_descriptor_flags(infd, O_NONBLOCK);
+    posix::append_descriptor_flags(infd, O_NONBLOCK);
     promise_.set_value(sh.create_tcp_socket(infd));
 
     return true;
 }
 
-void acceptor_callback::free(lin_shared_handle & sh)
+void acceptor_callback::free(macos_shared_handle & sh)
 {
-    sh.impl->delete_callback(reinterpret_cast<lin_shared_handle::callback_t*>(this));
+    sh.impl->delete_callback(reinterpret_cast<macos_shared_handle::callback_t*>(this));
 }
      
-#endif
-
 macos_impl::macos_impl(shared_ptr<factory> itself)
     : factory::impl_base(std::move(itself))
     , sockets_(SOCKET_POOL_SIZE)
     , callbacks_(CALLBACK_POOL_SIZE)
 {
-    THROW_NOT_IMPLEMENTED_ERROR();
-    #if 0
-    if (efd = epoll_create1(0); efd == -1) {
+    if (kq = kqueue(); kq == -1) {
         int err = errno;
-        throw exception("can't create epoll instance, error: %1%"_fmt % strerror(err));
+        throw exception("can't create kqueue instance, error: %1%"_fmt % strerror(err));
     }
 
     if (int r = ::pipe(ctl_pipe); r != 0) {
@@ -368,48 +300,44 @@ macos_impl::macos_impl(shared_ptr<factory> itself)
         throw exception("can't create a contorl pipe instance, error: %1%"_fmt % strerror(err));
     }
 
-    linapi::append_descriptor_flags(ctl_pipe[0], O_NONBLOCK); // read
+    posix::append_descriptor_flags(ctl_pipe[0], O_NONBLOCK); // read
 
-    epoll_event ev;
-    ev.data.u64 = epool_exit_cookie_v;
-    ev.events = EPOLLIN;
-    if (-1 == ::epoll_ctl(efd, EPOLL_CTL_ADD, ctl_pipe[0], &ev)) {
+    struct kevent ev;
+    EV_SET(&ev, epool_exit_cookie_v, EVFILT_READ, EV_ADD, 0, 0, nullptr);
+    if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
         int err = errno;
         throw exception("can't start watching the controll pipe, error: %1%"_fmt % strerror(err));
     }
 
-    auto[a, b, c] = sonia::linux::kernel_version();
+    auto[a, b, c] = posix::kernel_version();
     LOG_INFO(wrapper->logger()) << "KERNEL: " << a << "." << b << "." << c;
-    #endif
 }
 
 void macos_impl::thread_proc()
 {
-    THROW_NOT_IMPLEMENTED_ERROR();
-    #if 0
-    epoll_event events[MAX_EPOLL_EVENTS];
+    struct kevent events[MAX_KQUEUE_EVENTS];
     for (;;) {
-        if constexpr (IO_DEBUG) LOG_INFO(wrapper->logger()) << "before epoll_wait, thread: " << this_thread::get_id();
-        int n = epoll_wait(efd, events, MAX_EPOLL_EVENTS, -1);
+        if constexpr (IO_DEBUG) LOG_INFO(wrapper->logger()) << "before kevent, thread: " << this_thread::get_id();
+        int n = kevent(kq, nullptr, 0, events, MAX_KQUEUE_EVENTS, nullptr);
         if constexpr (IO_DEBUG) LOG_INFO(wrapper->logger()) << "woke up thread: " << this_thread::get_id();
         if (-1 == n) {
             int err = errno;
-            LOG_ERROR(wrapper->logger()) << "epoll interrupted: " << strerror(err) ;
+            LOG_ERROR(wrapper->logger()) << "kevent interrupted: " << strerror(err) ;
             return;
         }
         if (n == 0) {
-            LOG_ERROR(wrapper->logger()) << "epoll WRONG WOKE UP";
+            LOG_ERROR(wrapper->logger()) << "kevent WRONG WOKE UP";
         }
         for (int i = 0; i < n; i++) {
-            if (epool_exit_cookie_v == events[i].data.u64) return; // close event
-            uint32_t bkid = events[i].data.u32;
+            if (epool_exit_cookie_v == (uint64_t)events[i].ident) return; // close event
+            uint32_t bkid = (uint32_t)events[i].ident;
 
-            lin_shared_handle* h;
+            macos_shared_handle* h;
             {
                 lock_guard guard(bk_mtx_);
-                auto it = book_keeper_.find(bkid, lin_shared_handle_hasher(), lin_shared_handle_equal_to());
+                auto it = book_keeper_.find(bkid, shared_handle_hasher(), shared_handle_equal_to());
                 if (it == book_keeper_.end()) continue; // skip obsoleted descriptor event
-                h = static_cast<lin_shared_handle*>(*it);
+                h = static_cast<macos_shared_handle*>(*it);
                 h->add_weakref();
             }
 
@@ -419,14 +347,12 @@ void macos_impl::thread_proc()
             }
         }
     }
-    #endif
 }
 
-#if 0
-lin_shared_handle * lin_impl::new_socket_handle(int sockfd, sonia::sal::net_family_type ft)
+macos_shared_handle * macos_impl::new_socket_handle(int sockfd, sonia::sal::net_family_type ft)
 {
     for (;;) {
-        lin_shared_handle *ph = sockets_.new_object(shared_from_this(), sockfd, bkid_cnt_.fetch_add(1), ft);
+        macos_shared_handle *ph = sockets_.new_object(shared_from_this(), sockfd, bkid_cnt_.fetch_add(1), ft);
         lock_guard guard(bk_mtx_);
         if (BOOST_LIKELY(book_keeper_.insert(ph).second)) {
             ph->add_weakref();
@@ -435,7 +361,6 @@ lin_shared_handle * lin_impl::new_socket_handle(int sockfd, sonia::sal::net_fami
         sockets_.delete_object(ph);
     }
 }
-#endif
 
 void macos_impl::delete_socket_handle(macos_shared_handle * h) noexcept
 {
@@ -455,54 +380,53 @@ void macos_impl::delete_callback(macos_shared_handle::callback_t * cb) noexcept
 
 tcp_server_socket macos_impl::do_create_tcp_server_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
 {
-    THROW_NOT_IMPLEMENTED_ERROR();
-    #if 0
-    linapi::append_descriptor_flags(s, O_NONBLOCK);
+    posix::append_descriptor_flags(s, O_NONBLOCK);
 
-    lin_shared_handle * sh = new_socket_handle(s, dt);
+    macos_shared_handle * sh = new_socket_handle(s, dt);
     
-    epoll_ctl(efd, s, sh->bkid(), EPOLLIN | EPOLLOUT | EPOLLET, [this, sh](const char * msg) {
+    struct kevent ev;
+    EV_SET(&ev, sh->bkid(), EVFILT_READ, EV_ADD, 0, 0, nullptr);
+    if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
+        int err = errno;
         delete_socket_handle(sh);
-        throw exception("can't watch socket, error: %1%"_fmt % msg);
+        throw exception("can't watch socket, error: %1%"_fmt % strerror(err));
     });
 
     return tcp_socket_access::create_tcp_server_socket<socket_traits>(shared_from_this(), sh);
-    #endif
 }
-
 
 tcp_socket macos_impl::do_create_tcp_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
 {
-    THROW_NOT_IMPLEMENTED_ERROR();
-    #if 0
-    linapi::append_descriptor_flags(s, O_NONBLOCK);
+    posix::append_descriptor_flags(s, O_NONBLOCK);
 
-    lin_shared_handle * sh = new_socket_handle(s, dt);
+    macos_shared_handle * sh = new_socket_handle(s, dt);
     
-    epoll_ctl(efd, s, sh->bkid(), EPOLLIN | EPOLLOUT | EPOLLET, [this, sh](const char * msg) {
+    struct kevent ev;
+    EV_SET(&ev, sh->bkid(), EVFILT_READ | EVFILT_WRITE, EV_ADD, 0, 0, nullptr);
+    if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
+        int err = errno;
         delete_socket_handle(sh);
-        throw exception("can't watch socket, error: %1%"_fmt % msg);
+        throw exception("can't watch socket, error: %1%"_fmt % strerror(err));
     });
 
     return tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), sh);
-    #endif
 }
 
 udp_socket macos_impl::do_create_udp_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
 {
-    THROW_NOT_IMPLEMENTED_ERROR();
-    #if 0
-    linapi::append_descriptor_flags(s, O_NONBLOCK);
+    posix::append_descriptor_flags(s, O_NONBLOCK);
 
-    lin_shared_handle * sh = new_socket_handle(s, dt);
+    macos_shared_handle * sh = new_socket_handle(s, dt);
     
-    epoll_ctl(efd, s, sh->bkid(), EPOLLIN | EPOLLOUT | EPOLLET, [this, sh](const char * msg) {
+    struct kevent ev;
+    EV_SET(&ev, sh->bkid(), EVFILT_READ | EVFILT_WRITE, EV_ADD, 0, 0, nullptr);
+    if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
+        int err = errno;
         delete_socket_handle(sh);
-        throw exception("can't watch socket, error: %1%"_fmt % msg);
+        throw exception("can't watch socket, error: %1%"_fmt % strerror(err));
     });
 
     return udp_socket_access::create_udp_socket<socket_traits>(shared_from_this(), sh);
-    #endif
 }
 
 
@@ -525,9 +449,7 @@ std::string factory::name() const
 
 fibers::future<tcp_socket> macos_impl::tcp_server_socket_accept(tcp_handle_type handle)
 {
-    THROW_NOT_IMPLEMENTED_ERROR();
-    #if 0
-    auto * sh = static_cast<lin_shared_handle*>(handle);
+    auto * sh = static_cast<macos_shared_handle*>(handle);
     SCOPE_EXIT([&sh]() { if (sh) --sh->waiting_cnt; });
     ++sh->waiting_cnt;
 
@@ -545,7 +467,6 @@ fibers::future<tcp_socket> macos_impl::tcp_server_socket_accept(tcp_handle_type 
     }
         
     return std::move(ftr);
-    #endif
 }
 
 size_t macos_impl::tcp_server_socket_accepting_count(tcp_handle_type handle) const
@@ -586,12 +507,8 @@ expected<size_t, std::exception_ptr> macos_impl::tcp_socket_read_some(tcp_handle
         int err = errno;
         if (BOOST_UNLIKELY(EAGAIN != err)) return make_unexpected(std::make_exception_ptr(exception(strerror(err))));
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) read waiting..."_fmt % sh->handle);
-        #if 0
         sh->wait(lck);
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) woke up"_fmt % sh->handle);
-        #else
-        return make_unexpected(std::make_exception_ptr(exception(strerror(err))));
-        #endif
     }
 }
 
@@ -611,12 +528,8 @@ expected<size_t, std::exception_ptr> macos_impl::tcp_socket_write_some(tcp_handl
         int err = errno;
         if (BOOST_UNLIKELY(EAGAIN != err)) return make_unexpected(std::make_exception_ptr(exception(strerror(err))));
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write waiting..."_fmt % sh->handle);
-        #if 0
         sh->wait(lck);
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) woke up"_fmt % sh->handle);
-        #else
-        return make_unexpected(std::make_exception_ptr(exception(strerror(err))));
-        #endif
     }
 }
 
@@ -624,13 +537,11 @@ void macos_impl::close_handle(identity<tcp_socket_service_type>, tcp_handle_type
 {
     auto * sh = static_cast<macos_shared_handle*>(h);
     if (sh) {
-        #if 0
-        if (sh->close(efd)) {
+        if (sh->close(kq)) {
             lock_guard guard(bk_mtx_);
             BOOST_VERIFY(1 == book_keeper_.erase(sh));
             sh->release_weak((tcp_socket_service_type*)this);
         }
-        #endif
         sh->cnd.notify_all();
     }
 }

@@ -1910,6 +1910,9 @@
     <ClCompile Include="..\..\..\sonia\sal\posix_sal.cpp">
       <Filter>sonia.sal</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_factory_macos.cpp">
+      <Filter>sonia.services.io</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\sonia.natvis" />

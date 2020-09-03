@@ -9,6 +9,11 @@
 #include <sys/types.h>
 #include <sys/event.h>
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+//#include <arpa/inet.h>
+#include <netdb.h>
+
 #include <atomic>
 #include <sstream>
 
@@ -21,6 +26,7 @@
 #include "sonia/utility/automatic_polymorphic.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/utility/object_pool.hpp"
+#include "sonia/sys/posix/posix.hpp"
 
 #ifndef MAX_KQUEUE_EVENTS
 #   define MAX_KQUEUE_EVENTS 5
@@ -62,9 +68,9 @@ struct acceptor_callback : callback
     void free(macos_shared_handle & sh) override;
 };
 
-struct macos_shared_handle : macos_shared_handle<socket_handle_traits>
+struct macos_shared_handle : shared_handle<socket_handle_traits>
 {
-    using base_type = macos_shared_handle<socket_handle_traits>;
+    using base_type = shared_handle<socket_handle_traits>;
 
     using callback_t = automatic_polymorphic<callback, sizeof(acceptor_callback)>;
     using callback_list_t = boost::intrusive::list<callback>;
@@ -86,7 +92,7 @@ struct macos_shared_handle : macos_shared_handle<socket_handle_traits>
 
     void handle_callbacks(bool eof = false);
 
-    uint32_t bkid() const { return bkid_; }
+    uint64_t bkid() const { return bkid_; }
     sonia::sal::net_family_type family() { return family_; }
 
     virtual void on_event() noexcept
@@ -112,7 +118,7 @@ struct macos_shared_handle : macos_shared_handle<socket_handle_traits>
         cnd.wait(lck);
     }
 
-    bool close(int efd); // return true if book_keeper needs updating
+    bool close(int kq); // return true if book_keeper needs updating
 
 private:
     uint32_t bkid_;
@@ -217,7 +223,7 @@ tcp_socket macos_shared_handle::create_tcp_socket(int fd)
 
 void macos_shared_handle::handle_callbacks(bool eof)
 {
-    for (auto it = callback_list_.begin(), eit = callback_list_.end(); it != eit; it) {
+    for (auto it = callback_list_.begin(), eit = callback_list_.end(); it != eit;) {
         callback & cb = *it;
         if (cb(*this, eof)) {
             --waiting_cnt;
@@ -234,10 +240,10 @@ bool macos_shared_handle::close(int kq)
 {
     if (lock_guard guard(mtx); handle != -1) {
         struct kevent ev;
-        EV_SET(&ev, epool_exit_cookie_v, EVFILT_READ | EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
+        EV_SET(&ev, handle, EVFILT_READ | EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
         if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
             int err = errno;
-            LOG_WARN(impl->logger()) << ("can't start watching the controll pipe, error: %1%"_fmt % strerror(err)).str();
+            LOG_WARN(impl->logger()) << ("can't unwatch handle, error: %1%"_fmt % strerror(err)).str();
         }
         ::close(handle);
         handle = -1;
@@ -303,7 +309,7 @@ macos_impl::macos_impl(shared_ptr<factory> itself)
     posix::append_descriptor_flags(ctl_pipe[0], O_NONBLOCK); // read
 
     struct kevent ev;
-    EV_SET(&ev, epool_exit_cookie_v, EVFILT_READ, EV_ADD, 0, 0, nullptr);
+    EV_SET(&ev, ctl_pipe[0], EVFILT_READ, EV_ADD, 0, 0, (void*)epool_exit_cookie_v);
     if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
         int err = errno;
         throw exception("can't start watching the controll pipe, error: %1%"_fmt % strerror(err));
@@ -329,8 +335,9 @@ void macos_impl::thread_proc()
             LOG_ERROR(wrapper->logger()) << "kevent WRONG WOKE UP";
         }
         for (int i = 0; i < n; i++) {
-            if (epool_exit_cookie_v == (uint64_t)events[i].ident) return; // close event
-            uint32_t bkid = (uint32_t)events[i].ident;
+            uint64_t udata = (uint64_t)events[i].udata;
+            if (epool_exit_cookie_v == udata) return; // close event
+            uint32_t bkid = static_cast<uint32_t>(udata);
 
             macos_shared_handle* h;
             {
@@ -378,54 +385,40 @@ void macos_impl::delete_callback(macos_shared_handle::callback_t * cb) noexcept
     callbacks_.delete_object(cb);
 }
 
-tcp_server_socket macos_impl::do_create_tcp_server_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
+macos_shared_handle * macos_impl::do_create_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
 {
     posix::append_descriptor_flags(s, O_NONBLOCK);
-
-    macos_shared_handle * sh = new_socket_handle(s, dt);
-    
+    macos_shared_handle* sh = new_socket_handle(s, dt);
     struct kevent ev;
-    EV_SET(&ev, sh->bkid(), EVFILT_READ, EV_ADD, 0, 0, nullptr);
+    EV_SET(&ev, sh->handle, EVFILT_READ | EVFILT_WRITE, EV_ADD, 0, 0, (void*)sh->bkid());
     if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
         int err = errno;
+        if (sh->close(kq)) {
+            lock_guard guard(bk_mtx_);
+            BOOST_VERIFY(1 == book_keeper_.erase(sh));
+            sh->release_weak((tcp_socket_service_type*)this);
+        }
         delete_socket_handle(sh);
         throw exception("can't watch socket, error: %1%"_fmt % strerror(err));
-    });
+    };
+    return sh;
+}
 
+tcp_server_socket macos_impl::do_create_tcp_server_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
+{
+    macos_shared_handle* sh = do_create_socket(s, dt);
     return tcp_socket_access::create_tcp_server_socket<socket_traits>(shared_from_this(), sh);
 }
 
 tcp_socket macos_impl::do_create_tcp_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
 {
-    posix::append_descriptor_flags(s, O_NONBLOCK);
-
-    macos_shared_handle * sh = new_socket_handle(s, dt);
-    
-    struct kevent ev;
-    EV_SET(&ev, sh->bkid(), EVFILT_READ | EVFILT_WRITE, EV_ADD, 0, 0, nullptr);
-    if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
-        int err = errno;
-        delete_socket_handle(sh);
-        throw exception("can't watch socket, error: %1%"_fmt % strerror(err));
-    });
-
+    macos_shared_handle* sh = do_create_socket(s, dt);
     return tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), sh);
 }
 
 udp_socket macos_impl::do_create_udp_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
 {
-    posix::append_descriptor_flags(s, O_NONBLOCK);
-
-    macos_shared_handle * sh = new_socket_handle(s, dt);
-    
-    struct kevent ev;
-    EV_SET(&ev, sh->bkid(), EVFILT_READ | EVFILT_WRITE, EV_ADD, 0, 0, nullptr);
-    if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
-        int err = errno;
-        delete_socket_handle(sh);
-        throw exception("can't watch socket, error: %1%"_fmt % strerror(err));
-    });
-
+    macos_shared_handle* sh = do_create_socket(s, dt);
     return udp_socket_access::create_udp_socket<socket_traits>(shared_from_this(), sh);
 }
 

@@ -32,10 +32,7 @@ void timer_descriptor::create(bool realtime)
 		THROW_NOT_IMPLEMENTED_ERROR("monotonic is not supported");
 	}
 	auto self = shared_from_this();
-	dispatch_source_set_event_handler(timer_, ^{
-			self->disarm();
-			self->handler_();
-	});
+	dispatch_source_set_event_handler(timer_, ^{ self->handler_(); });
 }
 
 timer_descriptor::~timer_descriptor()
@@ -46,9 +43,8 @@ timer_descriptor::~timer_descriptor()
 void timer_descriptor::set(std::chrono::milliseconds ms)
 {
 	uint64_t interval = (uint64_t)ms.count() * NSEC_PER_MSEC;
-	dispatch_source_set_timer(timer_, dispatch_time(DISPATCH_TIME_NOW, interval), interval, NSEC_PER_MSEC);
-	lock_guard guard(mtx_);
-	if (disarmed_) {
+	dispatch_source_set_timer(timer_, dispatch_time(DISPATCH_TIME_NOW, interval), DISPATCH_TIME_FOREVER, NSEC_PER_MSEC);
+	if (lock_guard guard(mtx_); disarmed_) {
 		dispatch_resume(timer_);
 		disarmed_ = false;
 	}
@@ -56,8 +52,7 @@ void timer_descriptor::set(std::chrono::milliseconds ms)
 
 void timer_descriptor::disarm()
 {
-	lock_guard guard(mtx_);
-	if (!disarmed_) {
+	if (lock_guard guard(mtx_); !disarmed_) {
 		dispatch_suspend(timer_);
 		disarmed_ = true;
 	}

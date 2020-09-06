@@ -203,6 +203,11 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
 #endif
 }
 
+void environment::add_load_bundle_hook(lbhook_t const& h)
+{
+    lbhooks_.push_back(h);
+}
+
 void environment::start()
 {
     if (start_conf_) {
@@ -254,7 +259,7 @@ void environment::load_configuration(std::istream & cfg)
     }
 
     for (auto const& pair : ecfg.bundles) {
-        factory_->register_service_factory(pair.first, [cfg = std::move(pair.second)]() {
+        factory_->register_service_factory(pair.first, [this, cfg = std::move(pair.second)]() {
             return environment::create_bundle_service(cfg);
         });
     }
@@ -347,6 +352,10 @@ shared_ptr<service> environment::create_service(service_configuration const& cfg
 
 shared_ptr<service> environment::create_bundle_service(bundle_configuration const& cfg)
 {
+    for (lbhook_t const& h : lbhooks_) {
+        shared_ptr<service> r = h(cfg);
+        if (r) return r;
+    }
     return sonia::sal::load_bundle(cfg);
 }
 

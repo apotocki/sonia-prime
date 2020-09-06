@@ -107,6 +107,7 @@
     <ClInclude Include="..\..\..\sonia\services\net\net_service_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\net_service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\prime_bundle.hpp" />
     <ClInclude Include="..\..\..\sonia\services\registry.hpp" />
     <ClInclude Include="..\..\..\sonia\services\registry\registry_service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\registry\registry_service_builder.hpp" />

@@ -25,7 +25,7 @@ namespace sonia::services {
 
 thread_local thread_descriptor * tdesc_ = nullptr;
 
-post_initialize_fn post_initialize_fn_;
+post_initialize_fn * post_initialize_fn_ = nullptr;
 
 std::string * default_base_path_ = nullptr;
 std::string * version_message_ = nullptr;
@@ -75,7 +75,7 @@ std::string const* get_version_message()
     return version_message_;
 }
 
-void set_post_initialize(post_initialize_fn fn)
+void set_post_initialize(post_initialize_fn* fn)
 {
     post_initialize_fn_ = fn;
 }
@@ -90,7 +90,7 @@ void initialize(int argc, char const* argv[], std::istream * cfgstream)
     try {
         env_->open(argc, argv, cfgstream);
         if (post_initialize_fn_) {
-            post_initialize_fn_();
+            post_initialize_fn_(env_);
         }
         env_->start();
     } catch (...) {

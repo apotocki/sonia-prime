@@ -1,18 +1,13 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_SERVICES_ENVIRONMENT_HPP
-#define SONIA_SERVICES_ENVIRONMENT_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <iosfwd>
 #include <list>
 #include <atomic>
 #include <typeindex>
+#include <vector>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem.hpp>
@@ -54,6 +49,7 @@ struct environment_configuration
 class environment
     : public durable_type_registry
 {
+    using lbhook_t = function<shared_ptr<service>(bundle_configuration const&)>;
 public:
     environment();
     ~environment() noexcept;
@@ -71,6 +67,8 @@ public:
     shared_ptr<host_impl> get_host(string_view);
     shared_ptr<host_impl> default_host();
 
+    void add_load_bundle_hook(lbhook_t const&);
+
     void register_service_factory(string_view, function<shared_ptr<service>()> const&);
 
     // type_id api
@@ -80,7 +78,8 @@ private:
     struct host_hasher { size_t operator()(shared_ptr<host_impl> const& ph) const { return hasher()(ph->get_name()); } };
 
     static shared_ptr<service> create_service(service_configuration const& cfg);
-    static shared_ptr<service> create_bundle_service(bundle_configuration const& cfg);
+    
+    shared_ptr<service> create_bundle_service(bundle_configuration const& cfg);
 
     spin_mutex host_mtx_;
     boost::unordered_set<shared_ptr<host_impl>, host_hasher> hosts_;
@@ -106,6 +105,7 @@ private:
     std::atomic<uint32_t> type_id_counter_{0};
 
     singleton_locator slocator_;
+    std::vector<lbhook_t> lbhooks_;
 
 #ifdef BOOST_WINDOWS
 public:
@@ -117,5 +117,3 @@ private:
 };
 
 }
-
-#endif // SONIA_SERVICES_ENVIRONMENT_HPP

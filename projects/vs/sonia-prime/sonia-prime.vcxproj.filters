@@ -315,5 +315,8 @@
     <ClInclude Include="..\..\..\sonia\services\diagnostic.hpp">
       <Filter>sonia.services</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\prime_bundle.hpp">
+      <Filter>sonia.services</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

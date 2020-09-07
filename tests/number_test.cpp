@@ -4,14 +4,14 @@
 
 #include "sonia/config.hpp"
 
-#include <boost/test/unit_test.hpp>
-
 #include "sonia/utility/number/decimal.ipp"
 #include "sonia/utility/number/decimal.hpp"
 
+#include "applied/sonia_test.hpp"
+
 using namespace sonia;
 
-BOOST_AUTO_TEST_CASE (decimal_test)
+void decimal_test()
 {
     int64_t v;
     int32_t e;
@@ -95,3 +95,12 @@ BOOST_AUTO_TEST_CASE (decimal_test)
     BOOST_CHECK_NE(hash<decimal>()(d0), hash<decimal>()(d1));
     BOOST_CHECK_EQUAL(hash<decimal>()(d0), hash<decimal>()(d2));
 }
+
+void number_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&decimal_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(number_test_registrar)
+#endif

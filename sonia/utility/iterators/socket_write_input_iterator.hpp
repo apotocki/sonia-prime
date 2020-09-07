@@ -133,6 +133,11 @@ public:
 
     bool empty() const { return !wrpos_; }
 
+    void close()
+    {
+        flush();
+    }
+
     void flush()
     {
         if (value_.begin() < wrend_) {

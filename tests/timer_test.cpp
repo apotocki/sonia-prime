@@ -5,15 +5,14 @@
 
 #include "sonia/config.hpp"
 #include <thread>
-#include <boost/test/unit_test.hpp>
 #include "sonia/utility/scope_exit.hpp"
 
+#include "applied/sonia_test.hpp"
 #include "applied/scoped_services.hpp"
 
-#if 1
 #if BOOST_OS_WINDOWS
 #include "sonia/sys/windows/thread_pool.hpp"
-BOOST_AUTO_TEST_CASE (windows_timer_test)
+void windows_timer_test()
 {
     using namespace sonia;
     using namespace sonia::windows;
@@ -41,7 +40,7 @@ BOOST_AUTO_TEST_CASE (windows_timer_test)
 #ifdef __linux__
 #include "sonia/sys/linux/timer.hpp"
 #include "sonia/sys/linux/signals.hpp"
-BOOST_AUTO_TEST_CASE (linux_timer_test)
+void linux_timer_test()
 {
     using namespace sonia;
     using namespace sonia::linux;
@@ -71,7 +70,7 @@ BOOST_AUTO_TEST_CASE (linux_timer_test)
 #ifdef __APPLE__
 #include "sonia/sys/macos/timer.hpp"
 #include "sonia/sys/macos/dispatch.hpp"
-BOOST_AUTO_TEST_CASE (apple_timer_test)
+void apple_timer_test()
 {
     using namespace sonia;
     using namespace sonia::macos;
@@ -100,9 +99,8 @@ BOOST_AUTO_TEST_CASE (apple_timer_test)
 }
 #endif
 
-#if 1
 #include "sonia/services/timer.hpp"
-BOOST_AUTO_TEST_CASE (service_timer_test)
+void service_timer_test()
 {
     using namespace sonia;
     using namespace std::chrono_literals;
@@ -125,8 +123,6 @@ BOOST_AUTO_TEST_CASE (service_timer_test)
     std::this_thread::sleep_for(100ms);
     BOOST_CHECK_EQUAL(check.load(), 18);
 }
-#endif
-#endif
 
 #include "sonia/services/scheduler/scheduler.hpp"
 
@@ -158,8 +154,7 @@ void get_configuration(std::ostream & os)
 
 }
 
-#if 1
-BOOST_AUTO_TEST_CASE (scheduler_timer_test)
+void scheduler_timer_test()
 {
     using namespace sonia;
     using namespace std::chrono_literals;
@@ -183,4 +178,21 @@ BOOST_AUTO_TEST_CASE (scheduler_timer_test)
     std::this_thread::sleep_for(70ms);
     BOOST_CHECK_EQUAL(check.load(), 18);
 }
+
+void timer_test_registrar()
+{
+#if BOOST_OS_WINDOWS
+    register_test(BOOST_TEST_CASE(&windows_timer_test));
+#elif defined(__linux__)
+    register_test(BOOST_TEST_CASE_NAME(&linux_timer_test));
+#elif defined(__APPLE__)
+    register_test(BOOST_TEST_CASE_NAME(&apple_timer_test));
+#endif
+    register_test(BOOST_TEST_CASE(&service_timer_test));
+    register_test(BOOST_TEST_CASE(&scheduler_timer_test));
+}
+
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(timer_test_registrar)
 #endif

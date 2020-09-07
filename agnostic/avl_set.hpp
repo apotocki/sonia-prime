@@ -1,9 +1,5 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_AVL_SET_HPP
-#define AGNOSTIC_AVL_SET_HPP
-
 #pragma once
 
 #include "intrusive/avl.hpp"
@@ -130,13 +126,12 @@ template <
     class CompareT = std::less<KeyT>,
     class AllocatorT = std::allocator<KeyT>
 >
-class avl_set : 
-    AllocatorT::template rebind<
+class avl_set : std::allocator_traits<AllocatorT>::template rebind_alloc<
         avl_set_detail::element<KeyT, CompareT>
-    >::other
+    >
 {
     using element_t = avl_set_detail::element<KeyT, CompareT>;
-    using allocator_t = typename AllocatorT::template rebind<element_t>::other;
+    using allocator_t = typename std::allocator_traits<AllocatorT>::template rebind_alloc<element_t>;
 
     using tree_t = intrusive::avl_tree<
         element_t,
@@ -174,7 +169,7 @@ public:
         element_t* nd = impl_.leftmost();
         while (nd) {
             element_t* p = impl_.unlink_without_rebalance(nd);
-            this->destroy(nd);
+            std::destroy_at(nd);
             this->deallocate(nd, 1);
             nd = tree_t::bstree_t::leftmost(p);
         }
@@ -213,11 +208,11 @@ public:
         }
         element_t* e = this->allocate(1);
         try {
-            this->construct(e, std::forward<T>(value));
+            new(e) element_t(std::forward<T>(value));
             try {
                 return { iterator{impl_.insert_before(lb, *e)}, true};
             } catch (...) {
-                this->destroy(e);
+                std::destroy_at(e);
                 throw;
             }
         } catch (...) {
@@ -256,7 +251,7 @@ private:
     iterator do_erase(element_t* n2r)
     {
         element_t* n = impl_.remove_node(*n2r);
-        this->destroy(n2r);
+        std::destroy_at(n2r);
         this->deallocate(n2r, 1);
         return create_iterator(n);
     }
@@ -265,5 +260,3 @@ private:
 };
 
 }
-
-#endif // AGNOSTIC_AVL_SET_HPP

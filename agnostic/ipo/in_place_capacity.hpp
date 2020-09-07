@@ -8,7 +8,7 @@ struct in_place_capacity_tag{};
 
 template <size_t SzV> struct in_place_capacity
 {
-    using option_tag = in_place_capacity_tag;
+    using tag = in_place_capacity_tag;
     static constexpr size_t value = SzV;
 };
 

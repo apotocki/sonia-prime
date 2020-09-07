@@ -3,11 +3,17 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 #include "sonia/config.hpp"
 
-#include <boost/test/unit_test.hpp>
+#include "applied/sonia_test.hpp"
 
 #include <type_traits>
 #include <utility>
 #include <list>
+
+#define DO_NOT_USE_AGNOSTIC_TYPE_IDENTITY
+#define DO_NOT_USE_AGNOSTIC_ADDRESSOF
+#define DO_NOT_USE_AGNOSTIC_CONDITIONAL
+#define DO_NOT_USE_AGNOSTIC_IS_SAME
+
 #include "agnostic/std/type_traits/type_identity.hpp"
 #include "agnostic/intrusive/avl.hpp"
 
@@ -127,7 +133,7 @@ BOOST_AUTO_TEST_CASE(primitive_avl_test)
 
 #include "agnostic/avl_set.hpp"
 
-BOOST_AUTO_TEST_CASE(avl_set_test)
+void avl_set_test()
 {
     using avl_set_t = agnostic::avl_set<int>;
 
@@ -207,3 +213,12 @@ BOOST_AUTO_TEST_CASE(avl_set_test)
 #endif
    }
 }
+
+void agnostic_avl_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&avl_set_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(agnostic_avl_test_registrar)
+#endif

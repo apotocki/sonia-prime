@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_HTTP_CHUNKING_READ_INPUT_ITERATOR_HPP
-#define SONIA_HTTP_CHUNKING_READ_INPUT_ITERATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/iterator/iterator_facade.hpp>
 
@@ -157,7 +151,6 @@ class http_chunking_read_input_iterator
     void increment()
     {
         BOOST_ASSERT ((mode)mode_ == mode::VALUE_READY);
-
         auto sz = (std::min)(chsz_, chunk_.size());
         if (value_.end() < chunk_.begin() + sz) {
             value_ = array_view{value_.end(), chunk_.begin() + sz};
@@ -190,5 +183,3 @@ public:
 };
 
 }
-
-#endif // SONIA_HTTP_CHUNKING_READ_INPUT_ITERATOR_HPP

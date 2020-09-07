@@ -568,7 +568,7 @@ std::strong_ordering operator<=>(const vector<T, A1, Args1...>& lhs,  const vect
     } else if (rit == re) {
         return std::strong_ordering::greater;
     }
-    return std::compare_3way(*lit, *rit);
+    return std::compare_three_way{}(*lit, *rit);
 }
 
 template <typename T, typename A1, typename A2, typename ... Args1, typename ... Args2>

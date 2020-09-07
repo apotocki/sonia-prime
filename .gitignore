@@ -4,3 +4,4 @@
 /projects/vs/sonia-prime/x64
 /projects/vs/**/*.user
 /**/.DS_Store
+/tests/all_tests_registrar.cpp

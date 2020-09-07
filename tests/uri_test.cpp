@@ -4,10 +4,10 @@
 
 #include "sonia/config.hpp"
 
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
+#include <fstream>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 #include "sonia/string.hpp"
 
@@ -15,11 +15,13 @@ namespace fs = boost::filesystem;
 #include "sonia/utility/parsers/json/model.hpp"
 #include "sonia/utility/parsers/json/parser.hpp"
 
+#include "applied/sonia_test.hpp"
+
 using namespace sonia;
 
 #include "sonia/net/uri.hpp"
 
-BOOST_AUTO_TEST_CASE (uri_test)
+void uri_test()
 {
     char const* path = std::getenv("SONIA_PRIME_HOME");
     BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
@@ -71,3 +73,12 @@ BOOST_AUTO_TEST_CASE (uri_test)
         BOOST_CHECK_MESSAGE(is_absolute == parts.is_absolute, to_string("wrong is_absolute('%1%' != '%2%'), uri: %3%"_fmt % is_absolute % parts.is_absolute % urival));
     }
 }
+
+void uri_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&uri_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(uri_test_registrar)
+#endif

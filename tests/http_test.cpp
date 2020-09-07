@@ -4,10 +4,9 @@
 
 #include "sonia/config.hpp"
 
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 #define TEST_FOLDER "http_test"
 
@@ -18,6 +17,8 @@ namespace fs = boost::filesystem;
 #include "sonia/type_traits.hpp"
 #include "sonia/services.hpp"
 #include "sonia/net/http/message.ipp"
+
+#include "applied/sonia_test.hpp"
 
 using namespace sonia;
 
@@ -37,7 +38,7 @@ void get_configuration(std::ostream & os)
         "       io.serv: {"
         "           factory: 'io-factory',"
         "           layer: 16,"
-        "           parameters: { threads: 4 }"
+        "           parameters: { scheduler: 'scheduler.serv', threads: 4 }"
         "       },"
         "       io-cache.serv: {"
         "           factory: 'io-cache-factory',"
@@ -126,7 +127,7 @@ public:
     }
 };
 
-BOOST_AUTO_TEST_CASE (http_service_test)
+void http_service_test()
 {
     scoped_services ss;
 
@@ -214,4 +215,13 @@ BOOST_AUTO_TEST_CASE (http_test)
         BOOST_CHECK(false);
     }
 }
+#endif
+
+void http_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&http_service_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(http_test_registrar)
 #endif

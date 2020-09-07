@@ -37,32 +37,29 @@
 namespace agnostic {
 
 template <typename T, typename BaseT>
-class adjacent_buffer : public BaseT
+struct adjacent_buffer : BaseT
 {
-    using base_t = BaseT;
-
-public:
     using value_type = T;
     using size_type = size_t;
     static constexpr size_t type_alignment = alignof(T);
 
     template <typename ... ArgsT>
     adjacent_buffer(uninitialized_t, size_type sz, ArgsT&& ... args)
-        : base_t{std::forward<ArgsT>(args) ...}, sz_(sz)
+        : BaseT{std::forward<ArgsT>(args) ...}, sz_(sz)
     {
 
     }
 
     template <typename ... ArgsT>
     adjacent_buffer(default_constructed_t, size_type sz, ArgsT&& ... args)
-        : base_t(std::forward<ArgsT>(args) ...), sz_(sz)
+        : BaseT(std::forward<ArgsT>(args) ...), sz_(sz)
     {
         std::uninitialized_default_construct(begin(), end());
     }
 
     template <typename RngT, typename ... ArgsT>
     adjacent_buffer(RngT&& rng, size_type sz, ArgsT&& ... args)
-        : base_t(std::forward<ArgsT>(args) ...), sz_(sz)
+        : BaseT(std::forward<ArgsT>(args) ...), sz_(sz)
     {
         std::uninitialized_copy(std::begin(rng), std::end(rng), begin());
     }
@@ -74,7 +71,7 @@ public:
 
     ~adjacent_buffer() noexcept
     {
-        base_t::destroy();
+        BaseT::destroy();
     }
 
     T* begin() noexcept { return std::launder(reinterpret_cast<T*>(first_)); }
@@ -99,6 +96,7 @@ public:
     inline bool empty() const noexcept { return !sz_; }
     inline explicit operator bool() const noexcept { return !empty(); }
 
+private:
     size_type sz_;
     alignas(T) char first_[sizeof(T)];
 };
@@ -110,12 +108,13 @@ template <typename T, typename BaseT, BareAllocator AllocatorT, typename ... Arg
 
     using buffer_t = adjacent_buffer<T, BaseT>;
 
-    const size_t allocsz = offsetof(buffer_t, first_) + sizeof(T) * sz;
+    //const size_t allocsz = offsetof(buffer_t, first_) + sizeof(T) * sz;
+    const size_t allocsz = sizeof(buffer_t) + sizeof(T) * (sz - 1);
 
     buffer_t* ptr = reinterpret_cast<buffer_t*>(alloc.allocate((std::align_val_t)alignof(buffer_t), allocsz));
 
     try {
-        return new (ptr) buffer_t(uninitialized_t{}, sz, std::forward<ArgsT>(args) ...);
+        return new (ptr) buffer_t{ uninitialized_t{}, sz, std::forward<ArgsT>(args) ... };
     } catch (...) {
         alloc.deallocate(ptr, allocsz);
         throw;
@@ -126,7 +125,9 @@ template <BareAllocator AllocatorT, typename T, typename BaseT>
 void deallocate_adjacent_buffer(AllocatorT alloc, adjacent_buffer<T, BaseT>* ptr) noexcept
 {
     using buffer_t = adjacent_buffer<T, BaseT>;
-    const size_t allocsz = offsetof(buffer_t, first_) + sizeof(T) * ptr->capacity();
+    //const size_t allocsz = offsetof(buffer_t, first_) + sizeof(T) * ptr->capacity();
+    const size_t allocsz = sizeof(buffer_t) + sizeof(T) * (ptr->capacity() - 1);
+
     std::destroy_at(ptr);
     alloc.deallocate(reinterpret_cast<char*>(ptr), allocsz);
 }

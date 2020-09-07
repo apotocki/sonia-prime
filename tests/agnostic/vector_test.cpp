@@ -3,7 +3,7 @@
 
 #include "sonia/config.hpp"
 
-#include <boost/test/unit_test.hpp>
+#include "applied/sonia_test.hpp"
 
 #define DO_NOT_USE_AGNOSTIC_INTEGRAL_CONSTANT
 #define DO_NOT_USE_AGNOSTIC_ALIGNMENT_OF
@@ -84,6 +84,9 @@
 #define DO_NOT_USE_AGNOSTIC_ALGORITHM_MISMATCH
 #define DO_NOT_USE_AGNOSTIC_SAME_AS_CONCEPT
 #define DO_NOT_USE_AGNOSTIC_RANDOM_ACCESS_ITERATOR_CONCEPT
+#define DO_NOT_USE_AGNOSTIC_DECLVAL
+#define DO_NOT_USE_AGNOSTIC_ALGORITHM_COMPARE_3WAY
+#define DO_NOT_USE_AGNOSTIC_ORDERING
 
 #include <compare>
 #include <functional>
@@ -104,10 +107,11 @@
 
 #include "vector_test.ipp"
 
-BOOST_AUTO_TEST_CASE(agnostic_vector_test)
+void agnostic_vector_test_registrar()
 {
-    //std::make_signed
-    //shell<int> v;
-    //std::RandomAccessIterator
-    agnostic_vector_test_impl();
+    register_test(BOOST_TEST_CASE(&agnostic_vector_test));
 }
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(agnostic_vector_test_registrar)
+#endif

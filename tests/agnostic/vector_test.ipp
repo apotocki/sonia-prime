@@ -46,7 +46,7 @@ int Value::count_ = 0;
 
 }
 
-void agnostic_vector_test_impl()
+void agnostic_vector_test()
 {
     using vec0_helper_t = agnostic::vector_detail::helper<int, agnostic::in_place_capacity<0>>;
     static_assert(vec0_helper_t::begin_offs == 1);

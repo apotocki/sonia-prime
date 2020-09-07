@@ -9,8 +9,6 @@
 #include <fstream>
 #include <filesystem>
 
-#include <boost/test/unit_test.hpp>
-
 namespace fs = std::filesystem;
 #define TEST_FOLDER "iterators_test"
 
@@ -24,10 +22,11 @@ namespace fs = std::filesystem;
 #include "sonia/utility/iterators/bz2_decompress_iterator.hpp"
 #include "sonia/utility/iterators/bz2_compress_iterator.hpp"
 
+#include "applied/sonia_test.hpp"
+
 using namespace sonia;
 
-#if 1
-BOOST_AUTO_TEST_CASE (file_region_iterator_test)
+void file_region_iterator_test()
 {
     fs::remove_all(TEST_FOLDER);
 
@@ -68,11 +67,7 @@ BOOST_AUTO_TEST_CASE (file_region_iterator_test)
 
 }
 
-#endif
-
-#if 1
-#if 1
-BOOST_AUTO_TEST_CASE( tar_iterator_test )
+void tar_iterator_test()
 {
     char const* path = std::getenv("SONIA_PRIME_HOME");
     BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
@@ -101,10 +96,7 @@ BOOST_AUTO_TEST_CASE( tar_iterator_test )
     BOOST_CHECK_EQUAL(content["file1.txt"], "file1\r\n");
 }
 
-#endif
-
-#if 1
-BOOST_AUTO_TEST_CASE(gz_iterator_test)
+void gz_iterator_test()
 {
     char const* path = std::getenv("SONIA_PRIME_HOME");
     BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
@@ -142,9 +134,7 @@ BOOST_AUTO_TEST_CASE(gz_iterator_test)
 	BOOST_CHECK_EQUAL(content["file1.txt"], "file1\r\n");
 
 }
-#endif
 
-#if 1
 template <
     template <class> class compress_iterator,
     template <class> class decompress_iterator,
@@ -189,7 +179,7 @@ void archiver_test(const char* fname, size_t fsz, ArgsT && ... args)
     BOOST_CHECK_EQUAL(rfsz, fsz);
 }
 
-BOOST_AUTO_TEST_CASE(gzip_iterators_test)
+void gzip_iterators_test()
 {
     //fs::remove_all(TEST_FOLDER);
     fs::create_directories(TEST_FOLDER);
@@ -197,14 +187,13 @@ BOOST_AUTO_TEST_CASE(gzip_iterators_test)
     archiver_test<deflate_iterator, inflate_iterator>(TEST_FOLDER "/temp.gz", 1024 * 1024 * 128, true);
 }
 
-BOOST_AUTO_TEST_CASE(bzip2_iterators_test)
+void bzip2_iterators_test()
 {
     //fs::remove_all(TEST_FOLDER);
     fs::create_directories(TEST_FOLDER);
 
     archiver_test<bz2_compress_iterator, bz2_decompress_iterator>(TEST_FOLDER "/temp.bz2", 1024 * 1024 * 16);
 }
-#endif
 
 #include "sonia/utility/iterators/archive_extract_iterator.hpp"
 
@@ -235,7 +224,7 @@ std::map<std::string, std::string> load_archive(fs::path const& p)
 
 }
 
-BOOST_AUTO_TEST_CASE (archive_extract_iterator_test)
+void archive_extract_iterator_test()
 {
     char const* path = std::getenv("SONIA_PRIME_HOME");
     BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
@@ -322,4 +311,18 @@ BOOST_AUTO_TEST_CASE (archive_extract_iterator_test)
     
 #endif
 }
+
+
+void iterators_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&file_region_iterator_test));
+    register_test(BOOST_TEST_CASE(&tar_iterator_test));
+    register_test(BOOST_TEST_CASE(&gz_iterator_test));
+    register_test(BOOST_TEST_CASE(&gzip_iterators_test));
+    register_test(BOOST_TEST_CASE(&bzip2_iterators_test));
+    register_test(BOOST_TEST_CASE(&archive_extract_iterator_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(iterators_test_registrar)
 #endif

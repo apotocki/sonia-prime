@@ -1,15 +1,10 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_UTILITY_BUFFER_HPP
-#define SONIA_UTILITY_BUFFER_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
+#include <memory>
 
 #include "sonia/type_traits.hpp"
 #include "sonia/array_view.hpp"
@@ -97,7 +92,7 @@ private:
 template <typename T, typename BaseT, typename AllocatorT, typename ... ArgsT>
 adjacent_buffer<T, BaseT> * allocate_adjacent_buffer(AllocatorT const& alloc, size_t sz, ArgsT&& ... args)
 {
-    using allocator_type = typename AllocatorT::template rebind<char>::other;
+    using allocator_type = typename std::allocator_traits<AllocatorT>::template rebind_alloc<char>;
     using buffer_t = adjacent_buffer<T, BaseT>;
 
 	allocator_type a{alloc};
@@ -114,7 +109,7 @@ adjacent_buffer<T, BaseT> * allocate_adjacent_buffer(AllocatorT const& alloc, si
 template <typename AllocatorT, typename T, typename BaseT>
 void deallocate_adjacent_buffer(AllocatorT const& alloc, adjacent_buffer<T, BaseT> * ptr) noexcept
 {
-    using allocator_type = typename AllocatorT::template rebind<char>::other;
+    using allocator_type = typename std::allocator_traits<AllocatorT>::template rebind_alloc<char>;
     using buffer_t = adjacent_buffer<T, BaseT>;
 	size_t sz = adjacent_buffer_offset_v<buffer_t> + ptr->size() * sizeof(T);
 	std::destroy_at(ptr);
@@ -124,4 +119,3 @@ void deallocate_adjacent_buffer(AllocatorT const& alloc, adjacent_buffer<T, Base
 
 }
 
-#endif // SONIA_UTILITY_BUFFER_HPP

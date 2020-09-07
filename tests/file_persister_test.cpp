@@ -4,14 +4,15 @@
 
 #include "sonia/config.hpp"
 
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 #define TEST_FOLDER "file_persister_test"
 
 #include "sonia/utility/file_persister.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
+
+#include "applied/sonia_test.hpp"
 
 using namespace sonia;
 
@@ -19,7 +20,7 @@ using namespace sonia;
 
 #include "sonia/utility/iterators/file_region_iterator.hpp"
 
-BOOST_AUTO_TEST_CASE(file_persister_test)
+void file_persister_test()
 {
     fs::remove_all(TEST_FOLDER);
 
@@ -42,3 +43,12 @@ BOOST_AUTO_TEST_CASE(file_persister_test)
 
     BOOST_CHECK_EQUAL(result, text);
 }
+
+void file_persister_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&file_persister_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(file_persister_test_registrar)
+#endif

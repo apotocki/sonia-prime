@@ -6,7 +6,6 @@
 
 #include <vector>
 
-#include <boost/test/unit_test.hpp>
 #include <boost/filesystem.hpp>
 #include "sonia/services.hpp"
 
@@ -26,6 +25,8 @@
 #include "sonia/utility/serialization/string.hpp"
 #include "sonia/utility/serialization/vector.hpp"
 #include <boost/exception/diagnostic_information.hpp>
+
+#include "applied/sonia_test.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -191,7 +192,7 @@ void get_configuration(std::ostream & os)
 
 }
 
-BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
+void cmd_transceiver_test()
 {
     using namespace sonia;
     fs::remove_all(TEST_FOLDER);
@@ -327,3 +328,12 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         BOOST_REQUIRE(false);
     }
 }
+
+void transceiver_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&cmd_transceiver_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(transceiver_test_registrar)
+#endif

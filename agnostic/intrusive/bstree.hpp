@@ -1,9 +1,5 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_INTRUSIVE_BSTREE_HPP
-#define AGNOSTIC_INTRUSIVE_BSTREE_HPP
-
 #pragma once
 
 namespace agnostic::intrusive {
@@ -149,7 +145,7 @@ NodeT* bstree<NodeT, HookT>::previous(NodeT* nd) noexcept
 
 template <typename NodeT, typename HookT>
 template <typename KeyT, typename CompareT>
-static NodeT* bstree<NodeT, HookT>::find(NodeT* from, KeyT const& key, CompareT const& cftor)
+NodeT* bstree<NodeT, HookT>::find(NodeT* from, KeyT const& key, CompareT const& cftor)
 {
     while (from) {
         int cmp = cftor(key, *from);
@@ -165,7 +161,7 @@ static NodeT* bstree<NodeT, HookT>::find(NodeT* from, KeyT const& key, CompareT 
 
 template <typename NodeT, typename HookT>
 template <typename KeyT, typename CompareT>
-static NodeT* bstree<NodeT, HookT>::lower_bound(NodeT* from, KeyT const& key, CompareT const& cftor)
+NodeT* bstree<NodeT, HookT>::lower_bound(NodeT* from, KeyT const& key, CompareT const& cftor)
 {
     NodeT* lb = nullptr;
     while (from) {
@@ -185,5 +181,3 @@ static NodeT* bstree<NodeT, HookT>::lower_bound(NodeT* from, KeyT const& key, Co
 }
 
 }
-
-#endif // AGNOSTIC_INTRUSIVE_BSTREE_HPP

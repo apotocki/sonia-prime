@@ -17,7 +17,7 @@ struct default_bare_allocator
         throw std::bad_alloc{};
     }
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) || defined(__MINGW32__)
     [[nodiscard]] char* allocate(std::align_val_t al, size_t sz, std::nothrow_t) noexcept
     {
         return reinterpret_cast<value_type*>(_aligned_malloc(sz, static_cast<size_t>(al)));

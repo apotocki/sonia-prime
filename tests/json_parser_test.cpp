@@ -7,8 +7,6 @@
 #include <iterator>
 #include <filesystem>
 
-#include <boost/test/unit_test.hpp>
-
 #include "sonia/utility/parsers/json/lexertl_lexer.hpp"
 #include "sonia/utility/parsers/json/model.hpp"
 #include "sonia/utility/parsers/json/parser.hpp"
@@ -19,8 +17,10 @@ namespace fs = std::filesystem;
 #include <boost/any.hpp>
 #include <boost/unordered_map.hpp>
 
+#include "applied/sonia_test.hpp"
+
 #if 0
-BOOST_AUTO_TEST_CASE(json_parse_test)
+void json_parse_test()
 {
     std::string text;
     std::ifstream file("");
@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(json_parse_test)
 #endif
 
 #if 1
-BOOST_AUTO_TEST_CASE(json_test)
+void json_test()
 {
     char const* path = std::getenv("SONIA_PRIME_HOME");
     BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
@@ -118,7 +118,7 @@ BOOST_AUTO_TEST_CASE(json_test)
 
 #if 1
 
-BOOST_AUTO_TEST_CASE(json_suite_test)
+void json_suite_test()
 {
     char const* path = std::getenv("SONIA_PRIME_HOME");
     BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
@@ -166,4 +166,14 @@ BOOST_AUTO_TEST_CASE(json_suite_test)
     });
 
 }
+#endif
+
+void json_parser_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&json_test));
+    register_test(BOOST_TEST_CASE(&json_suite_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(json_parser_test_registrar)
 #endif

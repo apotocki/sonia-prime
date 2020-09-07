@@ -7,8 +7,6 @@
 #include <iostream>
 #include <filesystem>
 
-#include <boost/test/unit_test.hpp>
-
 namespace fs = std::filesystem;
 
 #define TEST_FOLDER "server_test"
@@ -17,6 +15,8 @@ namespace fs = std::filesystem;
 #include "sonia/string.hpp"
 #include "sonia/type_traits.hpp"
 #include "sonia/services.hpp"
+
+#include "applied/sonia_test.hpp"
 
 using namespace sonia;
 
@@ -74,7 +74,7 @@ public:
 
 #include "applied/scoped_services.hpp"
 
-BOOST_AUTO_TEST_CASE (server_test)
+void server_test()
 {
     fs::remove_all(TEST_FOLDER);
 
@@ -105,3 +105,12 @@ BOOST_AUTO_TEST_CASE (server_test)
         BOOST_REQUIRE(false);
     }
 }
+
+void server_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&server_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(server_test_registrar)
+#endif

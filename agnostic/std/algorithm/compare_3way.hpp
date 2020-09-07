@@ -52,5 +52,5 @@ auto compare_3way(L const& l, R const& r)
 }
 
 #elif !defined(DO_NO_USE_STL_HEADERS)
-#   include <compare>
+#   include <algorithm>
 #endif

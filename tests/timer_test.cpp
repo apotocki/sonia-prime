@@ -184,9 +184,9 @@ void timer_test_registrar()
 #if BOOST_OS_WINDOWS
     register_test(BOOST_TEST_CASE(&windows_timer_test));
 #elif defined(__linux__)
-    register_test(BOOST_TEST_CASE_NAME(&linux_timer_test));
+    register_test(BOOST_TEST_CASE(&linux_timer_test));
 #elif defined(__APPLE__)
-    register_test(BOOST_TEST_CASE_NAME(&apple_timer_test));
+    register_test(BOOST_TEST_CASE(&apple_timer_test));
 #endif
     register_test(BOOST_TEST_CASE(&service_timer_test));
     register_test(BOOST_TEST_CASE(&scheduler_timer_test));

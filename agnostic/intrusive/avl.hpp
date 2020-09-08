@@ -100,7 +100,7 @@ public:
 template <class T, class ... OptionsT>
 struct tree_taits
 {
-    using size_type_trait = find_option_t<size_type_tag, size_type<size_t>, OptionsT...>;
+    using size_type_trait = find_option_t<size_type_tag, intrusive::size_type<size_t>, OptionsT...>;
     using size_type = typename size_type_trait::type;
 
     using constant_time_size_trait = find_option_t<constant_time_size_tag, constant_time_size<true>, OptionsT...>;

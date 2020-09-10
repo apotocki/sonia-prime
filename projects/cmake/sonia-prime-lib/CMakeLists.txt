@@ -63,7 +63,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
         #${BUNDLE_HOME}/sonia/sal/linux_sal.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory_linux.cpp
     )
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "iOS")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
         ${BUNDLE_HOME}/sonia/sys/posix/posix.cpp
         ${BUNDLE_HOME}/sonia/sys/macos/dispatch.cpp

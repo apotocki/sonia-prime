@@ -31,7 +31,7 @@ SONIA_PRIME_API char const* bundles_path();
 SONIA_PRIME_API void set_default_base_path(std::string);
 SONIA_PRIME_API std::string const* get_default_base_path();
 
-SONIA_PRIME_API void set_version_message(std::string);
+SONIA_PRIME_API void set_version_message(std::string const*);
 SONIA_PRIME_API std::string const* get_version_message();
 
 SONIA_PRIME_API void set_post_initialize(post_initialize_fn*);

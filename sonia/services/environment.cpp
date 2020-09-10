@@ -55,7 +55,7 @@ environment::environment() : log_initialized_(false)
 {
     options_.add_options()
         ("log", po::value<std::string>()->default_value("log.conf"), "the logging subsystem configuration file")
-        ("cfg,c", po::value<std::string>()->default_value("config.json"), "configuration (json) file paths")
+        ("cfg,c", po::value<std::string>(), "configuration (json) file paths")
         ("base-path,b", po::value<std::string>()->default_value(get_default_base_path() ? *get_default_base_path() : ""), "base path")
         ("service-registry-file,r", po::value<std::string>()->default_value(".services"), "services registry file")
         ("type-registry-file,t", po::value<std::string>()->default_value(".types"), "types registry file")
@@ -89,7 +89,7 @@ environment::environment() : log_initialized_(false)
         std::ostringstream version_ss;
         version_ss << "[Version " SONIA_ONE_VERSION " (" << BUILD_NAME << " " << BUILD_DATETIME ")]" HELLO_MESSAGE;
         version_msg_ = version_ss.str();
-        set_version_message(version_msg_);
+        set_version_message(&version_msg_);
     } else {
         version_msg_ = *vmsg;
     }
@@ -128,6 +128,8 @@ environment::~environment() noexcept
         GLOBAL_LOG_INFO() << "environment terminated";
         logger::deinitialize();
     }
+
+    set_version_message(nullptr);
 }
 
 void environment::open(int argc, char const* argv[], std::istream * cfgstream)
@@ -166,12 +168,13 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
 
     std::string const& logcfg = vm["log"].as<std::string>();
 
-    if (!fs::is_regular_file(logcfg)) {
-        throw exception("Can not find the log configuration file: %1%"_fmt % fs::absolute(logcfg));
+    if (fs::is_regular_file(logcfg)) {
+        std::ifstream logcdfgis(logcfg.c_str());
+        logger::initialize(logcdfgis);
+    } else {
+        GLOBAL_LOG_ERROR() << ("Can not find the log configuration file: %1%"_fmt % fs::absolute(logcfg)).str();
     }
 
-    std::ifstream logcdfgis(logcfg.c_str());
-    logger::initialize(logcdfgis);
     log_initialized_ = true;
 
     if (verbose_) {

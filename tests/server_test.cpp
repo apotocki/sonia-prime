@@ -78,6 +78,9 @@ void server_test()
 {
     fs::remove_all(TEST_FOLDER);
 
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path data_path{ path ? fs::path(path) / "testdata" : fs::path("testdata") };
+
     try {
         scoped_services ss{"base-path=" TEST_FOLDER "/"};
 
@@ -93,7 +96,7 @@ void server_test()
             BOOST_CHECK(false);
         } catch (internal_error const&) {}
 
-        services::load_configuration("host.json");
+        services::load_configuration((data_path / "host.json").string());
 
         auto s0 = services::locate("scheduler.serv");
         boost::this_thread::sleep(boost::posix_time::milliseconds(100));

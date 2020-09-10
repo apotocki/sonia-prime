@@ -69,15 +69,13 @@ void file_region_iterator_test()
 
 void tar_iterator_test()
 {
-    char const* path = std::getenv("SONIA_PRIME_HOME");
-    BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
-
-    fs::path sonia_prime_home(path);
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path data_path{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "archives" };
 
     using file_iterator_t = file_region_iterator<const char>;
     using tar_iterator_t = tar_extract_iterator<file_iterator_t>;
 
-    tar_iterator_t tit{file_iterator_t{sonia_prime_home / "tests" / "data" / "archives" / "files.tar", 0, 65536}};
+    tar_iterator_t tit{file_iterator_t{data_path / "files.tar", 0, 65536}};
 
     std::map<std::string, std::string> content;
     while (tit.next()) {
@@ -98,11 +96,8 @@ void tar_iterator_test()
 
 void gz_iterator_test()
 {
-    char const* path = std::getenv("SONIA_PRIME_HOME");
-    BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
-
-    fs::path sonia_prime_home(path);
-    fs::path files_base_path = sonia_prime_home / "tests" / "data" / "archives";
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path files_base_path{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "archives" };
 
     using file_iterator_t = file_region_iterator<const char>;
 
@@ -226,11 +221,8 @@ std::map<std::string, std::string> load_archive(fs::path const& p)
 
 void archive_extract_iterator_test()
 {
-    char const* path = std::getenv("SONIA_PRIME_HOME");
-    BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
-
-    fs::path sonia_prime_home{ path };
-    fs::path archive_test_home{ sonia_prime_home / "tests" / "data" / "archives"};
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path archive_test_home{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "archives" };
     std::map<std::string, std::string> cnt;
 
 #if 1

@@ -28,7 +28,7 @@ thread_local thread_descriptor * tdesc_ = nullptr;
 post_initialize_fn * post_initialize_fn_ = nullptr;
 
 std::string * default_base_path_ = nullptr;
-std::string * version_message_ = nullptr;
+std::string const* version_message_ = nullptr;
 environment * env_ = nullptr;
 
 void thread_descriptor::reset()
@@ -61,13 +61,9 @@ std::string const* get_default_base_path()
     return default_base_path_;
 }
 
-void set_version_message(std::string msg)
+void set_version_message(std::string const* msg)
 {
-    if (!version_message_) {
-        version_message_ = new std::string(std::move(msg));
-    } else {
-        *version_message_ = std::move(msg);
-    }
+    version_message_ = msg;
 }
 
 std::string const* get_version_message()
@@ -106,10 +102,6 @@ void shutdown()
     GLOBAL_LOG_INFO() << "terminating...";
     delete env_;
     env_ = nullptr;
-    if (version_message_) {
-        delete version_message_;
-        version_message_ = nullptr;
-    }
     if (default_base_path_) {
         delete default_base_path_;
         default_base_path_ = nullptr;

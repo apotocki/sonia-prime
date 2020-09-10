@@ -23,12 +23,11 @@ using namespace sonia;
 
 void uri_test()
 {
-    char const* path = std::getenv("SONIA_PRIME_HOME");
-    BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
-    fs::path sonia_prime_home{ path };
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path data_path{ path ? fs::path(path) / "testdata" : fs::path("testdata") };
 
     std::string text;
-    std::ifstream file((sonia_prime_home / "tests" / "data" / "uri_test.json").string().c_str());
+    std::ifstream file((data_path / "uri_test.json").string().c_str());
     std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(text));
 
     parsers::json::model model;

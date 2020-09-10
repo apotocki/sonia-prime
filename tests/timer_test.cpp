@@ -168,14 +168,14 @@ void scheduler_timer_test()
     auto sched = services::locate<scheduler>("scheduler.serv");
 
     std::atomic<int> check = 0;
-    auto hndl = sched->post([&check]{ check |= 2; }, 150ms);
-    hndl.reschedule(100ms);
+    auto hndl = sched->post([&check]{ check |= 2; }, 50ms);
+    hndl.reschedule(200ms);
     auto hndl2 = sched->post([&check]{ check |= 4; }, 70ms); // must be ignored
     hndl2.cancel();
     sched->post([&check]{ check |= 16; }, 30ms);
     std::this_thread::sleep_for(50ms);
     BOOST_CHECK_EQUAL(check.load(), 16);
-    std::this_thread::sleep_for(70ms);
+    std::this_thread::sleep_for(200ms);
     BOOST_CHECK_EQUAL(check.load(), 18);
 }
 

@@ -39,12 +39,11 @@ void json_parse_test()
 #if 1
 void json_test()
 {
-    char const* path = std::getenv("SONIA_PRIME_HOME");
-    BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
-    fs::path sonia_prime_home{ path };
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path data_path{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) };
 
     std::string text;
-    std::ifstream file((sonia_prime_home / "tests" / "data" / "json_test.json").string().c_str());
+    std::ifstream file((data_path / "json_test.json").string().c_str());
     std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(text));
 
     parsers::json::model model;
@@ -120,11 +119,8 @@ void json_test()
 
 void json_suite_test()
 {
-    char const* path = std::getenv("SONIA_PRIME_HOME");
-    BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
-    fs::path sonia_prime_home{path};
-
-    fs::path suitedir(sonia_prime_home / "tests" / "data" / "json-test-suite");
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path suitedir{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "json-test-suite" };
 
     std::for_each(fs::directory_iterator(suitedir), fs::directory_iterator(), [](auto const& p) {
         if (!fs::is_regular_file(p)) return;

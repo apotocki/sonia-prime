@@ -45,7 +45,7 @@ void all_tests_registrar();
 #endif
 
 std::vector<boost::unit_test::test_case*> * tests_ = nullptr;
-
+bool master_test_suite_initialized_ = false;
 void register_test(boost::unit_test::test_case* ptc)
 {
     if (!tests_) {
@@ -57,18 +57,21 @@ void register_test(boost::unit_test::test_case* ptc)
 
 bool init_unit_test()
 {
+    if (!master_test_suite_initialized_) {
 #ifndef AUTO_TEST_REGISTRATION
-    all_tests_registrar();
+        all_tests_registrar();
 #endif
-    using namespace boost::unit_test;
-    int r = 0;
-    if (tests_) {
-        for (test_case* ptf : *tests_) {
-            framework::master_test_suite().add(ptf);
+        using namespace boost::unit_test;
+        if (tests_) {
+            for (test_case* ptf : *tests_) {
+                framework::master_test_suite().add(ptf);
+            }
+            delete tests_;
+            tests_ = nullptr;
         }
-        delete tests_;
+        master_test_suite_initialized_ = true;
+        return true;
     }
-    return true;
 }
 
 boost::unit_test::test_suite* init_unit_test_suite(int /*argc*/, char* /*argv*/[])

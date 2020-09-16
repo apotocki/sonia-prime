@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\applied\dllmain.cpp" />
+    <ClCompile Include="..\..\..\applied\embedded.cpp" />
     <ClCompile Include="..\..\..\sonia\services\auth\auth_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\auth\auth_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\basic_service_factory.cpp" />
@@ -66,6 +67,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\applied\embedded.hpp" />
     <ClInclude Include="..\..\..\sonia\prime_config.hpp" />
     <ClInclude Include="..\..\..\sonia\services\auth\authentication.hpp" />
     <ClInclude Include="..\..\..\sonia\services\auth\auth_service.hpp" />

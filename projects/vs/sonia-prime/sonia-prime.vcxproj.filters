@@ -4,7 +4,6 @@
     <ClCompile Include="..\..\..\sonia\services\services.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\applied\dllmain.cpp" />
     <ClCompile Include="..\..\..\sonia\services\environment.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
@@ -104,6 +103,10 @@
     <ClCompile Include="..\..\..\sonia\services\auth\auth_service_builder.cpp">
       <Filter>sonia.services\auth</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\applied\dllmain.cpp" />
+    <ClCompile Include="..\..\..\applied\embedded.cpp">
+      <Filter>sonia.applied</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -138,6 +141,9 @@
     </Filter>
     <Filter Include="sonia.services\auth">
       <UniqueIdentifier>{77007cb3-76e3-4c88-ad20-b83ade85fe18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.applied">
+      <UniqueIdentifier>{1d697cd3-38d9-4f82-83ac-f7a985212f56}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -317,6 +323,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\prime_bundle.hpp">
       <Filter>sonia.services</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\applied\embedded.hpp">
+      <Filter>sonia.applied</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

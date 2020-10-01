@@ -70,8 +70,8 @@ bool init_unit_test()
             tests_ = nullptr;
         }
         master_test_suite_initialized_ = true;
-        return true;
     }
+    return true;
 }
 
 boost::unit_test::test_suite* init_unit_test_suite(int /*argc*/, char* /*argv*/[])

@@ -17,7 +17,7 @@
 
 extern "C" {
 
-SONIA_PRIME_API void start_environment(char const* cfgstr)
+SONIA_PRIME_API void start_environment(char const* proc_cfgstr, char const* app_cfg)
 {
 #ifdef SONIA_PRIME_STATIC
 	using namespace sonia::services;
@@ -34,10 +34,14 @@ SONIA_PRIME_API void start_environment(char const* cfgstr)
 	int argc = 0;
 	char const** argv = nullptr;
 
-	std::stringstream cfgss;
-	cfgss.str(cfgstr);
+	std::stringstream proc_cfgss;
+	proc_cfgss.str(proc_cfgstr);
 
-	sonia::services::initialize(argc, argv, &cfgss);
+	sonia::services::initialize(argc, argv, &proc_cfgss);
+
+	std::stringstream cfgss;
+	cfgss.str(app_cfg);
+	sonia::services::load_configuration(cfgss);
 
 }
 

@@ -45,7 +45,7 @@ SONIA_PRIME_API void start_environment(char const* proc_cfgstr, char const* app_
 
 }
 
-SONIA_PRIME_API void stop_environment(char const* cfgstr)
+SONIA_PRIME_API void stop_environment()
 {
 	sonia::services::shutdown();
 }

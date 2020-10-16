@@ -615,7 +615,7 @@ void lin_impl::free_handle(identity<tcp_socket_service_type>, tcp_handle_type h)
 sal::socket_handle lin_impl::system_handle(tcp_handle_type h) noexcept
 {
     auto* sh = static_cast<lin_shared_handle*>(h);
-    return sh ? sh->socket() : -1;
+    return sh ? sh->handle : -1;
 }
 
 #if 0

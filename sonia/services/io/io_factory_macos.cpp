@@ -169,7 +169,7 @@ struct macos_impl
     {
         LOG_TRACE(wrapper->logger()) << "parking threads...";
         char ch = 'e';
-        if (int r = ::write(ctl_pipe[1], &ch, 1); 1 != r) {
+        if (auto r = ::write(ctl_pipe[1], &ch, 1); 1 != r) {
             int err = errno;
             LOG_ERROR(wrapper->logger()) << "can't park threads, error: " << strerror(err);
         }
@@ -553,7 +553,7 @@ void macos_impl::free_handle(identity<tcp_socket_service_type>, tcp_handle_type 
 sal::socket_handle macos_impl::system_handle(tcp_handle_type h) noexcept
 {
     auto* sh = static_cast<macos_shared_handle*>(h);
-    return sh ? sh->socket() : -1;
+    return sh ? sh->handle : -1;
 }
 
 void macos_impl::udp_socket_bind(udp_handle_type handle, cstring_view address, uint16_t port)

@@ -195,4 +195,10 @@ void io_cache_service::connection_cache::free_handle(identity<io::tcp_socket_ser
     item_pool_.delete_object(ci);
 }
 
+sal::socket_handle io_cache_service::connection_cache::system_handle(tcp_handle_type h) noexcept
+{
+    auto* ci = static_cast<cache_item*>(h);
+    return ci->sock.system_handle();
+}
+
 }

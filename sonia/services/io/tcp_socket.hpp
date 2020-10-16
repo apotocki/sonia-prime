@@ -50,6 +50,8 @@ public:
     virtual void close_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
     virtual void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
     virtual void free_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
+
+    virtual sal::socket_handle system_handle(tcp_handle_type) noexcept = 0;
 };
 
 template <class DerivedT, class TraitsT>
@@ -117,6 +119,8 @@ public:
     {
         impl().close_handle(identity<service_type>(), handle());
     }
+
+    sal::socket_handle system_handle() noexcept { return impl().system_handle(handle()); }
 
 private:
     service_type & impl() const { return *static_cast<DerivedT const*>(this)->impl_; }

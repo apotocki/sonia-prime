@@ -260,6 +260,7 @@ struct lin_impl
     void close_handle(identity<tcp_server_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_server_socket_service>, tcp_handle_type) noexcept override final;
     void free_handle(identity<tcp_server_socket_service_type>, tcp_handle_type) noexcept override final;
+    sal::socket_handle system_handle(tcp_handle_type) noexcept override final;
 
     // tcp socket service
     expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept override final;

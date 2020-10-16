@@ -218,6 +218,7 @@ struct win_impl
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
     void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
+    sal::socket_handle system_handle(tcp_handle_type) noexcept override final;
 
     // udp socket service
     void udp_socket_bind(udp_handle_type, cstring_view address, uint16_t port) override final;
@@ -484,6 +485,12 @@ void win_impl::close_handle(identity<tcp_socket_service_type>, tcp_handle_type h
             wh->handle = INVALID_SOCKET;
         }
     }
+}
+
+sal::socket_handle win_impl::system_handle(tcp_handle_type h) noexcept
+{
+    auto* wh = static_cast<win_shared_handle*>(h);
+    return wh ? wh->socket() : INVALID_SOCKET;
 }
 
 void win_impl::release_handle(identity<tcp_socket_service_type>, tcp_handle_type h) noexcept

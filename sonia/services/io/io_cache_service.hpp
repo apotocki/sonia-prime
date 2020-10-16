@@ -149,6 +149,7 @@ private:
         void close_handle(identity<io::tcp_socket_service_type>, tcp_handle_type) noexcept override final;
         void release_handle(identity<io::tcp_socket_service_type>, tcp_handle_type h) noexcept override final;
         void free_handle(identity<io::tcp_socket_service_type>, tcp_handle_type) noexcept override final;
+        sal::socket_handle system_handle(tcp_handle_type) noexcept override final;
 
         spin_mutex lru_mtx_;
         //fibers::mutex lru_mtx_;

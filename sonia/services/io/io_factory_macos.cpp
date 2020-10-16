@@ -204,6 +204,7 @@ struct macos_impl
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
     void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
+    sal::socket_handle system_handle(tcp_handle_type) noexcept override final;
 
     // udp socket service
     void udp_socket_bind(udp_handle_type, cstring_view address, uint16_t port) override final;
@@ -547,6 +548,12 @@ void macos_impl::release_handle(identity<tcp_socket_service_type>, tcp_handle_ty
 void macos_impl::free_handle(identity<tcp_socket_service_type>, tcp_handle_type h) noexcept
 {
     delete_socket_handle(static_cast<macos_shared_handle*>(h));
+}
+
+sal::socket_handle macos_impl::system_handle(tcp_handle_type h) noexcept
+{
+    auto* sh = static_cast<macos_shared_handle*>(h);
+    return sh ? sh->socket() : -1;
 }
 
 void macos_impl::udp_socket_bind(udp_handle_type handle, cstring_view address, uint16_t port)

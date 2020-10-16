@@ -260,14 +260,14 @@ struct lin_impl
     void close_handle(identity<tcp_server_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_server_socket_service>, tcp_handle_type) noexcept override final;
     void free_handle(identity<tcp_server_socket_service_type>, tcp_handle_type) noexcept override final;
-    sal::socket_handle system_handle(tcp_handle_type) noexcept override final;
-
+    
     // tcp socket service
     expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept override final;
     expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept override final;
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
     void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
+    sal::socket_handle system_handle(tcp_handle_type) noexcept override final;
 
     // udp socket service
     void udp_socket_bind(udp_handle_type, cstring_view address, uint16_t port) override final;
@@ -610,6 +610,12 @@ void lin_impl::release_handle(identity<tcp_socket_service_type>, tcp_handle_type
 void lin_impl::free_handle(identity<tcp_socket_service_type>, tcp_handle_type h) noexcept
 {
     delete_socket_handle(static_cast<lin_shared_handle*>(h));
+}
+
+sal::socket_handle lin_impl::system_handle(tcp_handle_type h) noexcept
+{
+    auto* sh = static_cast<lin_shared_handle*>(h);
+    return sh ? sh->socket() : -1;
 }
 
 #if 0

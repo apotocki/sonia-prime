@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_SERVICES_HOST_IMPL_HPP
-#define SONIA_SERVICES_HOST_IMPL_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <vector>
 
@@ -21,7 +15,7 @@
 #include "host.hpp"
 #include "multimethod_registry.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
 
 class host_impl 
     : public host
@@ -55,6 +49,4 @@ private:
     std::vector<function<void()>> on_close_handlers_;
 };
 
-}}
-
-#endif // SONIA_SERVICES_HOST_HPP
+}

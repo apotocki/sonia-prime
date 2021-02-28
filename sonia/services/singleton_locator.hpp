@@ -63,6 +63,7 @@ protected:
     fibers::mutex cache_mtx_, layers_mtx_;
     boost::unordered_map<singleton::id, singleton_descriptor> cache_;
     layer_set_t layers_;
+    int shutdown_layer_threshold_ = (std::numeric_limits<int>::max)();
 };
 
 }

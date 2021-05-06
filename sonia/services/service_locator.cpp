@@ -45,7 +45,7 @@ shared_ptr<service> service_locator::get(service::id id, string_view name)
             service_access::set_name(*creature, to_string(name));
             singleton_access::set_id(*creature, id);
             creature->open();
-            LOG_TRACE(logger()) << "service " << name << "(id: " << id << ") is started";
+            LOG_TRACE(creature->logger()) << "started";
             return creature;
         }));
     } catch (circular_dependency_error const&) {

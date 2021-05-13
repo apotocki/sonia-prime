@@ -125,7 +125,7 @@ environment::~environment() noexcept
 #endif
 
     if (log_initialized_) {
-        GLOBAL_LOG_INFO() << "environment terminated";
+        GLOBAL_LOG_INFO() << "environment has been terminated";
         logger::deinitialize();
     }
 

@@ -74,7 +74,7 @@ public:
 };
 
 template <typename TargetT>
-class coder<json_t, TargetT, typename enable_if_t<is_integral_v<TargetT>>>
+class coder<json_t, TargetT, enable_if_t<is_integral_v<TargetT>>>
 {
 public:
     template <typename ArgT, typename OutputIteratorT>
@@ -116,7 +116,7 @@ private:
         }
     }
 
-    template <typename T> void error()
+    template <typename T> static void error()
     {
         // unexpected integer type
         static_assert(is_integral_v<T>);

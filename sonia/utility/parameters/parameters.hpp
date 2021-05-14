@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_PARAMETERS_HPP
-#define SONIA_UTILITY_PARAMETERS_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <typeinfo>
 
@@ -353,7 +348,7 @@ public:
 
     parameters_binding<BoundT> bind() { return parameters_binding<BoundT>(this); }
 
-    void apply(json_object const& jo, BoundT * obj);
+    void apply(json_object const& jo, BoundT * obj); // json -> object
 
 private:
     shared_ptr<descriptors_t> vds_;
@@ -488,5 +483,3 @@ void parameters_description<BoundT>::apply(json_object const& jo, BoundT * obj)
 }
 
 }
-
-#endif // SONIA_UTILITY_PARAMETERS_HPP

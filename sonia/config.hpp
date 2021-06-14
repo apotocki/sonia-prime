@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_CONFIG_HPP
-#define SONIA_CONFIG_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-# pragma once
-#endif
+#pragma once
 
 #ifndef BOOST_ENABLE_ASSERT_HANDLER
 #   define BOOST_ENABLE_ASSERT_HANDLER
@@ -67,5 +62,3 @@
 #if __cplusplus > 201703L
 #   define DO_NOT_USE_AGNOSTIC_REMOVE_CVREF
 #endif
-
-#endif // SONIA_CONFIG_HPP

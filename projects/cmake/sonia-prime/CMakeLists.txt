@@ -19,28 +19,36 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/bookkeeper/bookkeeper_service.cpp
     ${BUNDLE_HOME}/sonia/services/scheduler/scheduler_service_builder.cpp
     ${BUNDLE_HOME}/sonia/services/scheduler/scheduler_service.cpp
-    ${BUNDLE_HOME}/sonia/services/io/io_service_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/io/io_service.cpp
-    ${BUNDLE_HOME}/sonia/services/io/io_cache_service_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/io/io_cache_service.cpp
-    ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_service.cpp
-    ${BUNDLE_HOME}/sonia/services/net/net_service_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/net/net_service.cpp
-    ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector.cpp
-    ${BUNDLE_HOME}/sonia/services/net/http/http_connector_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/net/http/http_connector.cpp
-    ${BUNDLE_HOME}/sonia/services/net/http/http_default_application_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/net/http/http_default_application.cpp
-    ${BUNDLE_HOME}/sonia/services/net/http/http_static_application_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/net/http/http_static_application.cpp
-    ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application.cpp
     ${BUNDLE_HOME}/sonia/services/auth/auth_service_builder.cpp
     ${BUNDLE_HOME}/sonia/services/auth/auth_service.cpp
     ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
 )
+
+if (NOT DEFINED NO_NET)
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        ${BUNDLE_HOME}/sonia/services/io/io_service_builder.cpp
+        ${BUNDLE_HOME}/sonia/services/io/io_service.cpp
+        ${BUNDLE_HOME}/sonia/services/io/io_cache_service_builder.cpp
+        ${BUNDLE_HOME}/sonia/services/io/io_cache_service.cpp
+        ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_builder.cpp
+        ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_service.cpp
+        ${BUNDLE_HOME}/sonia/services/net/net_service_builder.cpp
+        ${BUNDLE_HOME}/sonia/services/net/net_service.cpp
+        ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector_builder.cpp
+        ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector.cpp
+        ${BUNDLE_HOME}/sonia/services/net/http/http_connector_builder.cpp
+        ${BUNDLE_HOME}/sonia/services/net/http/http_connector.cpp
+        ${BUNDLE_HOME}/sonia/services/net/http/http_default_application_builder.cpp
+        ${BUNDLE_HOME}/sonia/services/net/http/http_default_application.cpp
+        ${BUNDLE_HOME}/sonia/services/net/http/http_static_application_builder.cpp
+        ${BUNDLE_HOME}/sonia/services/net/http/http_static_application.cpp
+        ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application_builder.cpp
+        ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application.cpp
+        
+    )
+else()
+    add_definitions(-DSONIA_NO_NET)
+endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}

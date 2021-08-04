@@ -1,18 +1,17 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
 
-#ifndef AGNOSTIC_POOL_HPP
-#define AGNOSTIC_POOL_HPP
-
 #pragma once
+
+#include "agnostic/std/mutex/lock_guard.hpp"
 
 namespace agnostic {
 
 template <class AllocatorT>
 class IN_PAGE_SEG pool
-    : private AllocatorT::rebind<char>::other
+    : private AllocatorT::template rebind<char>::other
 {
-    using allocator_t = typename AllocatorT::rebind<char>::other;
+    using allocator_t = typename AllocatorT::template rebind<char>::other;
 
 public:
     template <typename ... AllocatorArgsT>
@@ -98,14 +97,14 @@ private:
 
     void* prepare_chunk(size_t sz)
     {
-        void* chunk = allocator_t::allocate(element_sz * sz + sizeof(void*));
+        void* chunk = allocator_t::allocate(element_sz_ * sz + sizeof(void*));
         void** pnext_chunk = reinterpret_cast<void**>(chunk);
         *pnext_chunk = nullptr;
         ++pnext_chunk;
 
-        size_t element_sz_in_ptr = element_sz / sizeof(void*);
+        size_t element_sz_in_ptr = element_sz_ / sizeof(void*);
         
-        void** end = begin + element_sz_in_ptr * sz;
+        void** end = pnext_chunk + element_sz_in_ptr * sz;
         for (; pnext_chunk != end; pnext_chunk+= element_sz_in_ptr) {
             *pnext_chunk = free_element_;
             free_element_ = pnext_chunk;
@@ -114,7 +113,7 @@ private:
     }
 
 private:
-    size_t element_sz_, start_reserve_size_, max_reserve_size_;
+    size_t element_sz_, start_reserve_size_, next_reserve_size_, max_reserve_size_;
     void * free_element_{nullptr};
     void * current_chunk_{nullptr};
     void * first_chunk_{nullptr};
@@ -147,14 +146,13 @@ public:
     {
         T* result;
         {
-            lock_guard<MutexT> guard(*this);
+            std::lock_guard<MutexT> guard(*this);
             result = reinterpret_cast<T*>(do_malloc());
         }
         try {
             return new (result) T(std::forward<ArgsT>(args) ...);
-        }
-        catch (...) {
-            lock_guard<MutexT> guard(*this);
+        } catch (...) {
+            std::lock_guard<MutexT> guard(*this);
             do_free(result);
             throw;
         }
@@ -162,7 +160,7 @@ public:
 
     void delete_object(T* obj) noexcept
     {
-        lock_guard<MutexT> guard(*this);
+        std::lock_guard<MutexT> guard(*this);
         obj->~T();
         pool_t::free(obj);
     }
@@ -186,7 +184,7 @@ struct pool_allocator : private pool<BaseAllocatorT>
 
     using pool_t = pool<BaseAllocatorT>;
 
-    template <class U> struct rebind { typedef allocator<U> other; };
+    template <class U> struct rebind { using other = pool_allocator<U, BaseAllocatorT> ; };
 
     template <typename ... BaseAllocatorArgsT>
     explicit pool_allocator(size_t start_reserve_size, size_t next_reserve_size, BaseAllocatorArgsT&& ... args)
@@ -206,7 +204,7 @@ struct pool_allocator : private pool<BaseAllocatorT>
     template <class... Args>
     void construct(pointer p, Args&& ... args)
     {
-        ::new(p) T(forward<Args>(args)...);
+        ::new(p) T(std::forward<Args>(args)...);
     }
 
     void destroy(pointer p)
@@ -216,5 +214,3 @@ struct pool_allocator : private pool<BaseAllocatorT>
 };
 
 }
-
-#endif // AGNOSTIC_POOL_HPP

@@ -1,14 +1,10 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_LOCK_GUARD_HPP
-#define AGNOSTIC_STD_LOCK_GUARD_HPP
-
 #pragma once
 
-#ifndef DO_NOT_USE_AGNOSTIC_ADOPT_LOCK
-#   include "adopt_lock.hpp"
-#endif
+#ifndef DO_NOT_USE_AGNOSTIC_LOCK_GUARD
+
+#include "adopt_lock.hpp"
 
 namespace std {
 
@@ -33,4 +29,6 @@ private:
 
 }
 
-#endif // AGNOSTIC_STD_LOCK_GUARD_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <mutex>
+#endif

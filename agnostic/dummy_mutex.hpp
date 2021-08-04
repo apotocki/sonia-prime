@@ -1,9 +1,5 @@
 /// @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_DUMMY_MUTEX_HPP
-#define AGNOSTIC_DUMMY_MUTEX_HPP
-
 #pragma once
 
 namespace agnostic {
@@ -17,5 +13,3 @@ struct dummy_mutex
 };
 
 }
-
-#endif // AGNOSTIC_DUMMY_MUTEX_HPP

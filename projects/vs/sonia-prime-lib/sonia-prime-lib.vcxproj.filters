@@ -1734,6 +1734,9 @@
     <ClInclude Include="..\..\..\sonia\sys\windows\windows.hpp">
       <Filter>sonia.sys\windows</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\fss.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

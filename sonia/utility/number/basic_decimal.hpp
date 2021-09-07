@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_UTILITY_BASIC_DECIMAL_HPP
-#define SONIA_UTILITY_BASIC_DECIMAL_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/string.hpp"
 #include "sonia/utility/functional/hash.hpp"
@@ -39,6 +33,8 @@ public:
         this->operator= (std::move(val));
     }
 
+    basic_decimal(basic_decimal const&) = default;
+
     template <typename SomeSignificandT, typename SomeExponentT>
     basic_decimal & operator= (basic_decimal<SomeSignificandT, SomeExponentT> const& rhs)
     {
@@ -65,7 +61,7 @@ public:
     template <typename T>
     T get() const;
 
-    template <typename T>
+    template <typename T, typename = enable_if_t<!is_same_v<T, basic_decimal>>>
     explicit operator T() const { return get<T>(); }
 
     static basic_decimal parse(string_view);
@@ -239,5 +235,3 @@ basic_decimal<SignificandT, ExponentT> operator/ (basic_decimal<SignificandT, Ex
 }
 
 }
-
-#endif // SONIA_UTILITY_BASIC_DECIMAL_HPP

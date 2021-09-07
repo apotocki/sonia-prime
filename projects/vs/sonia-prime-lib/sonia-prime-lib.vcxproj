@@ -256,6 +256,7 @@
     <ClInclude Include="..\..\..\sonia\fibers\exceptions.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\fiber.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\fixedsize_stack.hpp" />
+    <ClInclude Include="..\..\..\sonia\fibers\fss.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\future.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\future\async.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\future\detail\shared_state.hpp" />

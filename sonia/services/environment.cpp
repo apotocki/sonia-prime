@@ -12,6 +12,10 @@
 #include <tuple>
 #include <vector>
 
+#if HAS_ICU
+#   include <unicode/uclean.h>
+#endif
+
 #include <boost/assert.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/thread/future.hpp>
@@ -124,6 +128,9 @@ environment::~environment() noexcept
     macos::stop_queue();
 #endif
 
+#if HAS_ICU
+    u_cleanup();
+#endif
     if (log_initialized_) {
         GLOBAL_LOG_INFO() << "environment has been terminated";
         logger::deinitialize();

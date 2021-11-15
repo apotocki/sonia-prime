@@ -108,7 +108,7 @@ private:
 
 // start of chain handler
 template <typename ProviderTagT, typename CustomerTagT>
-typename enable_if_t<is_base_of_v<cvt_tag, ProviderTagT>, custom_converter<null_converter<ProviderTagT>, CustomerTagT>>
+enable_if_t<is_base_of_v<cvt_tag, ProviderTagT>, custom_converter<null_converter<ProviderTagT>, CustomerTagT>>
 operator >> (ProviderTagT const& p, CustomerTagT const& c)
 {
     return custom_converter<null_converter<ProviderTagT>, CustomerTagT>(p, c);

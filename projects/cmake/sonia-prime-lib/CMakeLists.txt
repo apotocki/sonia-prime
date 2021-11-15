@@ -30,6 +30,10 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/iterators/tar_iterator.cpp
     ${BUNDLE_HOME}/sonia/utility/iterators/archive_extract_iterator.cpp
     ${BUNDLE_HOME}/sonia/utility/number/number_math.cpp
+    ${BUNDLE_HOME}/sonia/utility/conversion/base16/base16.cpp
+	${BUNDLE_HOME}/sonia/utility/conversion/base64/base64.cpp
+	${BUNDLE_HOME}/sonia/utility/conversion/utf32/unicode_simple_folding.cpp
+	${BUNDLE_HOME}/sonia/utility/conversion/utf7/utf7.cpp
     ${BUNDLE_HOME}/sonia/services/singleton_locator.cpp
     ${BUNDLE_HOME}/sonia/services/local_type_registry.cpp
     ${BUNDLE_HOME}/sonia/services/durable_type_registry.cpp

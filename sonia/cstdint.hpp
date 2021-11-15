@@ -23,6 +23,15 @@ using std::uint64_t;
 using std::intmax_t;
 using std::uintmax_t;
 
+using std::int_least16_t;
+using std::int_least16_t;
+
+using std::int_least32_t;
+using std::uint_least32_t;
+
+using std::int_fast32_t;
+using std::uint_fast32_t;
+
 using float_t = float;
 using double_t = long double;
 

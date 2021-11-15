@@ -26,6 +26,10 @@ set (MAIN_TESTS
     http_iterators_test
     http_test
     uri_test
+    utf_test
+    rc5_test
+    compound_cvt_test
+    base64_test
 )
 
 set (AGNOSTIC_TESTS

@@ -229,6 +229,7 @@ using std::in_place_type_t;
 using boost::mpl::identity;
 using boost::mpl::make_identity;
 
+template <typename T> using identity_t = typename identity<T>::type;
 
 using std::remove_cvref;
 using std::remove_cvref_t;

@@ -18,7 +18,8 @@
 namespace sonia {
 
 template <typename ElementT, class MutexT, class AllocatorT = std::allocator<ElementT>>
-class simple_queue : private AllocatorT {
+class simple_queue : private AllocatorT
+{
     typedef std::lock_guard<MutexT> guard_type;
     typedef std::conditional_t<is_pointer_v<ElementT>, ElementT, optional<ElementT>> opt_t;
 public:
@@ -30,7 +31,7 @@ public:
     }
 
     ~simple_queue() {
-        if constexpr (is_pod_v<ElementT>) {
+        if constexpr (std::is_trivial_v<ElementT>) {
             AllocatorT::deallocate(slots_, capacity_);
         } else {
             destruct_(slots_);
@@ -106,7 +107,7 @@ private:
         slots_ = AllocatorT::allocate(2 * capacity_);
         size_t offset = capacity_ - cidx_;
 
-        if constexpr (is_pod_v<ElementT>) {
+        if constexpr (std::is_trivial_v<ElementT>) {
             std::memcpy(slots_, old_slots + cidx_, offset * sizeof(ElementT));
             if ( 0 < cidx_) {
                 std::memcpy(slots_ + offset, old_slots, pidx_ * sizeof( ElementT) );

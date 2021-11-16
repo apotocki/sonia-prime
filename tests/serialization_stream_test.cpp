@@ -7,9 +7,8 @@
 #include <map>
 #include <vector>
 #include <fstream>
+#include <filesystem>
 
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/serialization/nvp.hpp>
@@ -17,16 +16,18 @@
 #include <boost/serialization/vector.hpp>
 #include <boost/lexical_cast.hpp>
 
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 #define TEST_FOLDER "serialization_stream_test"
 
 #include "sonia/string.hpp"
 #include "sonia/utility/serialization/iostream.hpp"
 #include "sonia/utility/iterators/file_region_iterator.hpp"
 
+#include "applied/sonia_test.hpp"
+
 using namespace sonia;
 
-BOOST_AUTO_TEST_CASE(serialization_stream_test)
+void serialization_stream_test()
 {
     fs::remove_all(TEST_FOLDER);
 
@@ -63,3 +64,12 @@ BOOST_AUTO_TEST_CASE(serialization_stream_test)
 
     BOOST_CHECK(data == data2);
 }
+
+void serialization_stream_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&serialization_stream_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(serialization_stream_test_registrar)
+#endif

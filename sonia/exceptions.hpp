@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_EXCEPTIONS_HPP
-#define SONIA_EXCEPTIONS_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <stdexcept>
 #include <utility>
@@ -84,5 +79,3 @@ using trace_info = boost::error_info<struct tag_stacktrace, boost::stacktrace::s
 #define THROW_FATAL_ERROR(...) THROW_PARTICULAR_ERROR_RAW2(sonia::fatal_error(__VA_ARGS__), BOOST_CURRENT_FUNCTION,__FILE__,__LINE__)
 
 }
-
-#endif // SONIA_EXCEPTIONS_HPP

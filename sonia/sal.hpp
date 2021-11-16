@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SAL_HPP
-#define SONIA_SAL_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #ifdef _MSC_VER
 #   include <Intrin.h>
@@ -26,6 +21,8 @@ namespace sonia::sal {
 
 void set_thread_name(thread::id, string_view name);
 void set_thread_name(thread::id, std::string const& name);
+
+int get_pid();
 
 shared_ptr<sonia::services::bundle> load_bundle(sonia::services::bundle_configuration const&);
 
@@ -74,5 +71,3 @@ inline uint8_t log2(uint64_t x)
 #endif
 
 }
-
-#endif // SONIA_SAL_HPP

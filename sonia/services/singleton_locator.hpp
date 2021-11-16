@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_SINGLETON_LOCATOR_HPP
-#define SONIA_SINGLETON_LOCATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/unordered_map.hpp>
 
@@ -67,10 +61,9 @@ protected:
     >;
 
     fibers::mutex cache_mtx_, layers_mtx_;
-    std::unordered_map<singleton::id, singleton_descriptor> cache_;
+    boost::unordered_map<singleton::id, singleton_descriptor> cache_;
     layer_set_t layers_;
+    int shutdown_layer_threshold_ = (std::numeric_limits<int>::max)();
 };
 
 }
-
-#endif // SONIA_SINGLETON_LOCATOR_HPP

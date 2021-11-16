@@ -2,13 +2,9 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_JSON_CAST_HPP
-#define SONIA_UTILITY_JSON_CAST_HPP
+#pragma once
 
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
-
+#include <filesystem>
 #include "sonia/exceptions.hpp"
 #include "sonia/optional.hpp"
 #include "value.hpp"
@@ -58,6 +54,13 @@ struct json_cast_impl<std::string> {
 };
 
 template <>
+struct json_cast_impl<std::filesystem::path> {
+    std::filesystem::path operator()(json_value const& jv) const {
+        return to_string(jv.get_string());
+    }
+};
+
+template <>
 struct json_cast_impl<json_value> {
     json_value operator()(json_value const& jv) const {
         return jv;
@@ -77,5 +80,3 @@ T json_cast(json_value const& val) {
 }
 
 }
-
-#endif // SONIA_UTILITY_JSON_CAST_HPP

@@ -3,16 +3,23 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "sonia/utility/windows.hpp"
+#include "sonia/sys/windows/windows.hpp"
 #include "sonia/sal.hpp"
 #include "sonia/sal/net.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/exceptions.hpp"
 
+#include <process.h>
+#include <WS2tcpip.h>
 namespace sonia::sal {
 
 namespace winapi = sonia::windows;
+
+int get_pid()
+{
+    return _getpid();
+}
 
 void set_thread_name(sonia::thread::id tid, string_view name)
 {

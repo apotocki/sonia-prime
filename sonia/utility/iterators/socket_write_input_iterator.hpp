@@ -36,7 +36,9 @@ class socket_write_input_iterator
 
     array_view<char> & dereference() const
     {
-        BOOST_ASSERT(wrpos_);
+        if (!wrpos_) {
+            throw closed_exception();
+        }
         return value_;
     }
 
@@ -62,7 +64,9 @@ class socket_write_input_iterator
 
     void increment()
     {
-        BOOST_ASSERT(wrpos_);
+        if (!wrpos_) {
+            throw closed_exception();
+        }
         array_view<char> avlbf = available_buffer();
 
         if (value_.end() != avlbf.end()) {
@@ -72,9 +76,11 @@ class socket_write_input_iterator
                 wrend_ = value_.end();
             }
             write();
-            value_ = {buff_.begin(), wrpos_};
-            if (wrpos_ == wrend_) {
-                wrpos_ = wrend_ = buff_.begin();
+            if (wrpos_) {
+                value_ = {buff_.begin(), wrpos_};
+                if (wrpos_ == wrend_) {
+                    wrpos_ = wrend_ = buff_.begin();
+                }
             }
         }
 #if 0
@@ -132,6 +138,11 @@ public:
     }
 
     bool empty() const { return !wrpos_; }
+
+    void close()
+    {
+        flush();
+    }
 
     void flush()
     {

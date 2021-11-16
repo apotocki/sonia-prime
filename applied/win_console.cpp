@@ -1,7 +1,6 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
 #include "sonia/config.hpp"
 
 #include <windows.h>
@@ -59,6 +58,10 @@ void unexpected_impl()
 
 int main(int argc, char const* argv[])
 {
+    _CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+    _CrtSetReportMode (_CRT_WARN, _CRTDBG_MODE_FILE);
+    _CrtSetReportFile (_CRT_WARN, _CRTDBG_FILE_STDOUT);
+    
     SetConsoleCtrlHandler(TermhandlerRoutine, TRUE);
     SetConsoleOutputCP(65001);
 

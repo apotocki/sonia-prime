@@ -12,8 +12,8 @@ namespace sp = sonia::parameters;
 void io_service_builder::open()
 {
     parameters_.bind()
-        .variable("threads", &io_service_configuration::threads, "threads count").required()
-        //.variable("fibers", &scheduler_configuration::fibers, "fibers count per thread").default_value(0)
+        .variable("scheduler", &io_service_configuration::scheduler, "scheduler service name").required()
+        .variable("threads", &io_service_configuration::threads, "listening for async events threads count").required()
     ;
 }
 

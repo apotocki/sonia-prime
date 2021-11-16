@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_HTTP_MESSAGE_HPP
-#define SONIA_HTTP_MESSAGE_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <vector>
 
@@ -79,14 +74,6 @@ public:
         array_view<char>,
         std::input_iterator_tag,
         array_view<char>
-    >;
-
-    using range_read_impl_type = proxying_iterator_polymorphic<array_view<const char>>;
-    using range_read_input_iterator = wrapper_iterator<
-        range_read_impl_type*,
-        array_view<const char>,
-        std::input_iterator_tag,
-        array_view<const char>
     >;
 
     using content_read_iterator_t = chain_linkable_iterator<array_view<const char>, std::input_iterator_tag>;
@@ -164,5 +151,3 @@ public:
 };
 
 }
-
-#endif // SONIA_HTTP_MESSAGE_HPP

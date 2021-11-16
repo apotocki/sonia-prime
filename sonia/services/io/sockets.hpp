@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_IO_SOCKETS_HPP
-#define SONIA_IO_SOCKETS_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/sal/net.hpp"
 #include "sonia/utility/shared_handle.hpp"
@@ -103,5 +98,3 @@ using udp_socket_service_type = udp_socket_service<socket_traits>;
 using udp_socket_factory_type = udp_socket_factory<socket_traits>;
 
 }
-
-#endif // SONIA_IO_SOCKETS_HPP

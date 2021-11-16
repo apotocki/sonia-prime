@@ -2,19 +2,13 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICES_IO_CACHE_SERVICE_HPP
-#define SONIA_SERVICES_IO_CACHE_SERVICE_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <tuple>
 #include <boost/intrusive/unordered_set.hpp>
 #include <boost/intrusive/list.hpp>
 
 #include "sonia/services/service.hpp"
-#include "sonia/services/io/factory.hpp"
 #include "sonia/services/io/io_cache_service_configuration.hpp"
 
 #include "sonia/utility/object_pool.hpp"
@@ -155,6 +149,7 @@ private:
         void close_handle(identity<io::tcp_socket_service_type>, tcp_handle_type) noexcept override final;
         void release_handle(identity<io::tcp_socket_service_type>, tcp_handle_type h) noexcept override final;
         void free_handle(identity<io::tcp_socket_service_type>, tcp_handle_type) noexcept override final;
+        sal::socket_handle system_handle(tcp_handle_type) noexcept override final;
 
         spin_mutex lru_mtx_;
         //fibers::mutex lru_mtx_;
@@ -167,5 +162,3 @@ private:
 };
 
 }
-
-#endif // SONIA_SERVICES_IO_CACHE_SERVICE_HPP

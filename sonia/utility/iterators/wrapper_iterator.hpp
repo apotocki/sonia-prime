@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_WRAPPER_ITERATOR_HPP
-#define SONIA_UTILITY_WRAPPER_ITERATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 #include <iterator>
@@ -399,7 +394,7 @@ public:
     }
 };
 
-template <size_t SizeV, typename ValueT, class CategoryOrTraversal, typename ReferenceT = ValueT&, typename DifferenceT = std::ptrdiff_t, typename OffsetT = void>
+template <size_t SizeV, typename ValueT, class CategoryOrTraversal, typename ReferenceT = ValueT const&, typename DifferenceT = std::ptrdiff_t, typename OffsetT = void>
 using automatic_polymorphic_iterator =
     wrapper_iterator<
         automatic_polymorphic<iterator_polymorphic<ReferenceT, DifferenceT>, SizeV, OffsetT>,
@@ -413,5 +408,3 @@ using automatic_polymorphic_output_iterator =
         ValueT, CategoryOrTraversal, DifferenceT
     >;
 }
-
-#endif // SONIA_UTILITY_POLYMORPHIC_ITERATOR_HPP

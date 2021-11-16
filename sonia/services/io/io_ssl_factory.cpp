@@ -503,4 +503,10 @@ void ssl_factory::free_handle(identity<io::tcp_socket_service_type>, tcp_handle_
     pool_.delete_object(ci);
 }
 
+sal::socket_handle ssl_factory::system_handle(tcp_handle_type h) noexcept
+{
+    auto* ci = static_cast<ssl_descriptor*>(h);
+    return ci->sock.system_handle();
+}
+
 }

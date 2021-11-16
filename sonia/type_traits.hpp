@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_TYPE_TRAITS_HPP
-#define SONIA_TYPE_TRAITS_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <iosfwd>
 #include <utility>
@@ -16,7 +11,7 @@
 #include <functional> // is_placeholder, reference_wrapper
 #include <boost/is_placeholder.hpp>
 #include <boost/mpl/identity.hpp>
-#include <boost/range.hpp>
+
 #include <boost/call_traits.hpp>
 #include <boost/utility/in_place_factory.hpp>
 #include <boost/utility/typed_in_place_factory.hpp>
@@ -25,6 +20,10 @@
 #include "utility/variadic.hpp"
 
 #define typeidx(t) std::type_index(typeid(t))
+
+#include "agnostic/std/type_traits/remove_cvref.hpp"
+#include "agnostic/utility/ceiling.hpp"
+#include "agnostic/utility/dependent_bool.hpp"
 
 namespace sonia {
 
@@ -57,14 +56,14 @@ using namespace tl;
 //template <class T, class E> using expected = tl::expected<T, E>;
 //using make_unexpected = tl::make_unexpected;
 
+using agnostic::dependent_true;
+using agnostic::dependent_false;
+
 using std::bool_constant;
 using std::integral_constant;
 
 using std::true_type;
 using std::false_type;
-
-template <typename> inline constexpr bool dependent_true_v{ true };
-template <typename> inline constexpr bool dependent_false_v{ false };
 
 using std::void_t;
 
@@ -113,8 +112,8 @@ using std::is_lvalue_reference_v;
 using std::is_rvalue_reference;
 using std::is_rvalue_reference_v;
 
-using std::is_pod;
-using std::is_pod_v;
+//using std::is_pod;
+//using std::is_pod_v;
 
 using std::is_trivial;
 using std::is_trivial_v;
@@ -230,13 +229,10 @@ using std::in_place_type_t;
 using boost::mpl::identity;
 using boost::mpl::make_identity;
 
+template <typename T> using identity_t = typename identity<T>::type;
 
-
-//using std::remove_cvref;
-//using std::remove_cvref_t;
-
-template <class T> struct remove_cvref : remove_cv<remove_reference_t<T>> {};
-template <class T> using remove_cvref_t = typename remove_cvref<T>::type;
+using std::remove_cvref;
+using std::remove_cvref_t;
 
 template <bool Test, class T = void> using disable_if = enable_if<!Test, T>;
 template <bool Test, class T = void> using disable_if_t = enable_if_t<!Test, T>;
@@ -284,8 +280,7 @@ enum class endian
 #endif
 };
 
-template <size_t val, size_t acc>
-constexpr size_t ceiling_v = ((val + acc - 1) / acc) * acc;
+using agnostic::ceiling_v;
 
 template <typename T> T * get_pointer(T * ptr) { return ptr; }
 
@@ -317,5 +312,3 @@ template <typename ... ArgsT>
 struct switchable : conditional_t<2 < sizeof...(ArgsT), switchable2_lazy<ArgsT...>, switchable1<ArgsT...>> {};
 
 }
-
-#endif // SONIA_TYPE_TRAITS_HPP

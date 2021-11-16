@@ -3,25 +3,36 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include <boost/test/unit_test.hpp>
 
 #include <vector>
 #include <thread>
 
+#include "applied/sonia_test.hpp"
+
 // based on https://sourceforge.net/p/mingw-w64/bugs/527/
 
-BOOST_AUTO_TEST_CASE(tls_crash_test0)
+void tls_crash_test0()
 {
     static const thread_local std::vector<int> two(2, 3);
     BOOST_CHECK_EQUAL(2, two.size());
 }
 
 thread_local std::string s("Hello");
-BOOST_AUTO_TEST_CASE(tls_crash_test1)
+void tls_crash_test1()
 {
     std::thread([]
     {
-        s;
+        (void)s;
     }).join();
     BOOST_CHECK(true);
 }
+
+void tls_crash_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&tls_crash_test0));
+    register_test(BOOST_TEST_CASE(&tls_crash_test1));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(tls_crash_test_registrar)
+#endif

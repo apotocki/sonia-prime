@@ -4,8 +4,6 @@
 
 #include "sonia/config.hpp"
 
-#include <boost/test/unit_test.hpp>
-
 #include <vector>
 
 #include "sonia/utility/serialization/placeholder.hpp"
@@ -15,6 +13,8 @@
 
 #include "sonia/utility/marshaling/marshaling.hpp"
 #include "sonia/utility/marshaling/string.hpp"
+
+#include "applied/sonia_test.hpp"
 
 using namespace sonia;
 
@@ -27,7 +27,7 @@ std::string test_function0(int iv, std::string const& v)
 
 }
 
-BOOST_AUTO_TEST_CASE(marshaling_test)
+void marshaling_test()
 {
     SONIA_DECLARE_BINDING_TAG(tag0_type, &test_function0);
     SONIA_DECLARE_BINDING_TAG(tag1_type, &test_function0, 0);
@@ -48,3 +48,12 @@ BOOST_AUTO_TEST_CASE(marshaling_test)
     std::string res3 = tag2_type::stub_invoke<serialization::compressed_t>(data.begin(), std::string("2"), 2);
     BOOST_CHECK_EQUAL(res3, "2_2");
 }
+
+void marshaling_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&marshaling_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(marshaling_test_registrar)
+#endif

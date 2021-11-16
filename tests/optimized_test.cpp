@@ -4,16 +4,16 @@
 
 #include "sonia/config.hpp"
 
-#include <boost/test/unit_test.hpp>
-
 #include "sonia/utility/optimized/holder.hpp"
 #include "sonia/utility/optimized/integer.hpp"
 
+#include "applied/sonia_test.hpp"
+
 using namespace sonia;
 
-BOOST_AUTO_TEST_CASE (optimized_holder_test)
+void optimized_holder_test()
 {
-    typedef optimized_holder<8, 4> opt0_t;
+    using opt0_t = optimized_holder<8, 4>;
 
     opt0_t v0;
     *v0.data() = 1;
@@ -30,7 +30,7 @@ BOOST_AUTO_TEST_CASE (optimized_holder_test)
         BOOST_CHECK_EQUAL(cv, v0.get_service_cookie());
     }
 
-    typedef optimized_holder<10, 9> opt1_t;
+    using opt1_t = optimized_holder<10, 9>;
     opt1_t v1;
     *v1.data() = 1;
     BOOST_CHECK(!v1.is_ptr());
@@ -48,10 +48,10 @@ BOOST_AUTO_TEST_CASE (optimized_holder_test)
     }
 }
 
-BOOST_AUTO_TEST_CASE (optimized_integer_test)
+void optimized_integer_test()
 {
-    typedef optimized_holder<8, 4> holder_t;
-    typedef optimized_integer_impl<holder_t> oint_t;
+    using holder_t = optimized_holder<8, 4>;
+    using oint_t = optimized_integer_impl<holder_t>;
 
     holder_t h0;
     oint_t::init(&h0, 0);
@@ -86,3 +86,13 @@ BOOST_AUTO_TEST_CASE (optimized_integer_test)
     BOOST_CHECK_EQUAL(15, h1.get_service_cookie());
     BOOST_CHECK(h1.is_ptr());
 }
+
+void optimized_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&optimized_holder_test));
+    register_test(BOOST_TEST_CASE(&optimized_integer_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(optimized_test_registrar)
+#endif

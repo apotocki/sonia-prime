@@ -3,22 +3,24 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "sonia/utility/windows.hpp"
+#include "sonia/sys/windows/windows.hpp"
 
 #include <cstddef>
 #include <memory>
 #include <iostream>
+#include <atomic>
 
 #include <boost/integer_traits.hpp>
-#include <boost/fiber/mutex.hpp>
-#include <boost/fiber/condition_variable.hpp>
 #include <boost/algorithm/string/trim.hpp>
 
 #include "sonia/optional.hpp"
 #include "sonia/exceptions.hpp"
+#include "sonia/concurrency.hpp"
 
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/utility/object_pool.hpp"
+
+#include "sonia/fibers/postponer.hpp"
 
 #include "factory.hpp"
 
@@ -27,10 +29,6 @@
 namespace sonia::io {
 
 namespace winapi = sonia::windows;
-
-//using tcp_server_socket_service_type = tcp_server_socket_service<socket_traits>;
-//using tcp_socket_service_type = tcp_socket_service<socket_traits>;
-//using udp_socket_service_type = udp_socket_service<socket_traits>;
 
 struct win_impl;
 
@@ -72,7 +70,7 @@ struct callback : callback_base<OvT>
 {
     explicit callback(shared_ptr<win_impl>);
     
-    virtual void on_op(std::error_code const&, size_t) = 0;
+    virtual void on_op(std::error_code const&, size_t) noexcept = 0;
 
     static callback * get(OvT * pov) { return static_cast<callback*>(callback_base<OvT>::get(pov)); }
 
@@ -102,95 +100,56 @@ struct acceptor_async_callback
 
     ~acceptor_async_callback();
 
-    void on_op(std::error_code const& err, size_t sz) override;
+    void on_op(std::error_code const& err, size_t sz) noexcept override;
 };
 
 template <typename OvT>
-struct sync_callback
+struct sync_callback 
     : callback<OvT>
     , private unique_lock<fibers::mutex>
 {
     using base_type = callback<OvT>;
     using lock_type = unique_lock<fibers::mutex>;
 
+    fibers::postponer postponer_;
+    spin_mutex opmtx_;
+
     size_t handlsz;
     optional<std::error_code> code;
-    fibers::mutex mtx;
-    fibers::condition_variable_any cnd;
 
-    explicit sync_callback(shared_ptr<win_impl>p, fibers::mutex & m)
-        : base_type{std::move(p)}, lock_type{m}
-    {}
+    sync_callback(shared_ptr<win_impl> p, fibers::mutex & m) noexcept
+        : base_type{ std::move(p) }, lock_type{ m }
+    { }
 
-    void on_op(std::error_code const& err, size_t sz) override
+    void on_op(std::error_code const& err, size_t sz) noexcept override
     {
+        std::unique_lock oplck(opmtx_);
         handlsz = sz;
-        //GLOBAL_LOG_TRACE() << "notify waiters";
-        unique_lock lck(mtx);
         code = err;
-        if (err) {
-            auto msg = err.message();
+        if (postponer_) {
+            oplck.unlock();
+#if 1
+            postponer_.schedule();
+#else            
+            postponer_.resume_or_schedule();
+#endif
         }
-        //cnd.notify_one();
-
-        cnd.notify_all();
     }
 
-    expected<size_t, std::error_code> wait() noexcept
+    expected<size_t, std::exception_ptr> wait() noexcept
     {
         this->unlock();
-        unique_lock lck{mtx};
-        //GLOBAL_LOG_TRACE() << "before wait";
-        cnd.wait(lck, [this] { return !!code; });
-        //GLOBAL_LOG_TRACE() << "after wait";
-        if (*code) {
-            return make_unexpected(*code);
+        std::unique_lock oplck(opmtx_);
+        if (!code) { // result has not been ready yet
+            postponer_.postpone(oplck);
+            //GLOBAL_LOG_TRACE() << "after resume: " << this;
         }
-        return handlsz;
-    }
-
-    expected<size_t, std::exception_ptr> wait2() noexcept
-    {
-        this->unlock();
-        unique_lock lck{mtx};
-        //GLOBAL_LOG_TRACE() << "before wait";
-        cnd.wait(lck, [this] { return !!code; });
-        //GLOBAL_LOG_TRACE() << "after wait";
         if (*code) {
             return make_unexpected(std::make_exception_ptr(exception(code->message())));
         }
         return handlsz;
     }
 };
-
-/*
-struct listener_callback : callback<WSAOVERLAPPED>
-{
-    using base_type = callback<WSAOVERLAPPED>;
-
-    win_shared_handle * sh_;
-    win_impl * impl_;
-    function<void(udp_connection_handler_t<socket_traits> const&)> handler_;
-    udp_connector_t<socket_traits> conn_;
-    socket_address sender_addr_;
-    
-    template <typename HandlerT>
-    listener_callback(win_impl * impl, win_shared_handle * sh, HandlerT const& h)
-        : base_type(impl), sh_(sh), impl_(impl), handler_(h)
-    {
-        prepare();
-        sh_->add_ref();
-    }
-
-    ~listener_callback();
-
-    void prepare();
-
-    void on_op(std::error_code const& err, size_t sz) override;
-
-    //void free(win_impl * impl) override;
-};
-*/
 
 struct win_impl 
     : public factory::impl_base
@@ -200,11 +159,12 @@ struct win_impl
 
     winapi::wsa_scope ws_;
     HANDLE iocp_;
-    
-    explicit win_impl(shared_ptr<factory> wr, uint32_t thr_cnt)
+    std::atomic<bool> stopping_{ false };
+
+    explicit win_impl(shared_ptr<factory> wr)
         : factory::impl_base(std::move(wr)), handles_(256), acceptor_callbacks_(16)
     {
-        iocp_ = winapi::create_completion_port(thr_cnt);
+        iocp_ = winapi::create_completion_port((uint32_t)wrapper->thread_count());
     }
 
     ~win_impl() override
@@ -227,6 +187,7 @@ struct win_impl
 
     void park_threads() noexcept override
     {
+        stopping_.store(true);
         LOG_TRACE(wrapper->logger()) << "parking threads...";
         size_t tc = wrapper->thread_count();
         for (uint32_t c = 0; c < tc; ++c) {
@@ -257,13 +218,14 @@ struct win_impl
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
     void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
+    sal::socket_handle system_handle(tcp_handle_type) noexcept override final;
 
     // udp socket service
     void udp_socket_bind(udp_handle_type, cstring_view address, uint16_t port) override final;
     size_t udp_socket_waiting_count(udp_handle_type) override final;
-    expected<size_t, std::error_code> udp_socket_read_some(udp_handle_type, void * buff, size_t sz, sonia::sal::socket_address* addr) override final;
-    expected<size_t, std::error_code> udp_socket_write_some(udp_handle_type, sonia::sal::socket_address const&, void const* buff, size_t sz) override final;
-    expected<size_t, std::error_code> udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz) override final;
+    expected<size_t, std::exception_ptr> udp_socket_read_some(udp_handle_type, void * buff, size_t sz, sonia::sal::socket_address* addr) override final;
+    expected<size_t, std::exception_ptr> udp_socket_write_some(udp_handle_type, sonia::sal::socket_address const&, void const* buff, size_t sz) override final;
+    expected<size_t, std::exception_ptr> udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz) override final;
     void close_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override final;
     void release_handle(identity<udp_socket_service_type>, tcp_handle_type) noexcept override final;
     void free_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override final;
@@ -278,13 +240,16 @@ private:
 #if 0
 void win_impl::thread_proc()
 {
-    for (;;)
+    while (!stopping_.load())
     {
         OVERLAPPED_ENTRY overlapped_arr[1];
 
         ULONG rnum;
         BOOL r = GetQueuedCompletionStatusEx(iocp_, overlapped_arr, sizeof(overlapped_arr)/sizeof(OVERLAPPED_ENTRY), &rnum, INFINITE, TRUE);
         DWORD errc = GetLastError();
+        if (errc == ERROR_IO_PENDING) {
+            errc = 0;
+        }
         std::error_code err(errc, std::system_category());
         
         for (ULONG i = 0; i < rnum; ++i) {
@@ -292,55 +257,6 @@ void win_impl::thread_proc()
             ULONG_PTR key = overlapped_arr[i].lpCompletionKey;
             DWORD bytes = overlapped_arr[i].dwNumberOfBytesTransferred;
 
-            try {
-                if (overlapped) {
-                    switch ((completion_port)key) {
-                    case completion_port::socket_callback_key:
-                    {
-                        auto * cb = callback<WSAOVERLAPPED>::get(overlapped);
-                        cb->on_op(err, (size_t)bytes);
-                        break;
-                    }
-                    case completion_port::file_callback_key:
-                    {
-                        auto* cb = callback<OVERLAPPED>::get(overlapped);
-                        cb->on_op(err, (size_t)bytes);
-                        break;
-                    }
-                    default:
-                        LOG_ERROR(wrapper->logger()) << "completion port unknown key: " << (int)key;
-                    }
-                } else {
-                    if (!r) {
-                        LOG_ERROR(wrapper->logger()) << "completion port errror: " << winapi::error_message(errc);
-                    } else if (key == (ULONG_PTR)completion_port::close_key) {
-                        break;
-                    } else {
-                        LOG_ERROR(wrapper->logger()) << "completion port unknown key: " << (int)key;
-                    }
-                }
-            } catch (std::exception const& e) {
-                LOG_ERROR(wrapper->logger()) << e.what();
-            }
-        }
-    }
-}
-#else
-void win_impl::thread_proc()
-{
-    for (;;)
-    {
-        DWORD bytes;
-        ULONG_PTR key = 0;
-        LPOVERLAPPED overlapped = nullptr;
-
-        //LOG_ERROR(wrapper->logger()) << "start listening to QC";
-        BOOL r = GetQueuedCompletionStatus(iocp_, &bytes, &key, &overlapped, INFINITE);
-        //LOG_ERROR(wrapper->logger()) << "woke up QC";
-        DWORD errc = r ? 0 : GetLastError();
-        std::error_code err(errc, std::system_category());
-
-        try {
             if (overlapped) {
                 switch ((completion_port)key) {
                 case completion_port::socket_callback_key:
@@ -367,8 +283,48 @@ void win_impl::thread_proc()
                     LOG_ERROR(wrapper->logger()) << "completion port unknown key: " << (int)key;
                 }
             }
-        } catch (std::exception const& e) {
-            LOG_ERROR(wrapper->logger()) << e.what();
+        }
+    }
+}
+#else
+void win_impl::thread_proc()
+{
+    while (!stopping_.load()) {
+        DWORD bytes;
+        ULONG_PTR key = 0;
+        LPOVERLAPPED overlapped = nullptr;
+
+        //LOG_INFO(wrapper->logger()) << "start listening to QC";
+        BOOL r = GetQueuedCompletionStatus(iocp_, &bytes, &key, &overlapped, INFINITE);
+        //LOG_INFO(wrapper->logger()) << "woke up QC";
+        DWORD errc = r ? 0 : GetLastError();
+        std::error_code err(errc, std::system_category());
+
+        if (overlapped) {
+            switch ((completion_port)key) {
+            case completion_port::socket_callback_key:
+            {
+                auto* cb = callback<WSAOVERLAPPED>::get(overlapped);
+                cb->on_op(err, (size_t)bytes);
+                break;
+            }
+            case completion_port::file_callback_key:
+            {
+                auto* cb = callback<OVERLAPPED>::get(overlapped);
+                cb->on_op(err, (size_t)bytes);
+                break;
+            }
+            default:
+                LOG_ERROR(wrapper->logger()) << "completion port unknown key: " << (int)key;
+            }
+        } else {
+            if (!r) {
+                LOG_ERROR(wrapper->logger()) << "completion port errror: " << winapi::error_message(errc);
+            } else if (key == (ULONG_PTR)completion_port::close_key) {
+                break;
+            } else {
+                LOG_ERROR(wrapper->logger()) << "completion port unknown key: " << (int)key;
+            }
         }
     }
 }
@@ -411,7 +367,7 @@ acceptor_async_callback::~acceptor_async_callback()
     if (sock2accept != INVALID_SOCKET) closesocket(sock2accept); 
 }
 
-void acceptor_async_callback::on_op(std::error_code const& err, size_t sz)
+void acceptor_async_callback::on_op(std::error_code const& err, size_t sz) noexcept
 {
     SCOPE_EXIT([this](){ impl_->free(this); });
     --acceptor_->waiting_cnt;
@@ -426,105 +382,17 @@ void acceptor_async_callback::on_op(std::error_code const& err, size_t sz)
     }
 }
 
-//void async_callback::free(win_impl * impl)
-//{
-//    impl->delete_async_callback(this);
-//}
-
-#if 0
-void acceptor_callback::prepare()
-{
-    SOCKET accept_sock = winapi::create_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-    SCOPE_EXIT([&accept_sock]() { if (accept_sock != INVALID_SOCKET) closesocket(accept_sock); });
-
-    winapi::assign_completion_port((HANDLE)accept_sock, impl_->iocp(), (ULONG_PTR)completion_port::socket_callback_key);
-    socket = accept_sock;
-    handler_([this](array_view<char> buff, tcp_connector_t<socket_traits> const& conn) {
-        this->conn_ = conn;
-        this->accept(buff);
-    });
-    accept_sock = INVALID_SOCKET;
-}
-
-void acceptor_callback::on_op(std::error_code const& err, size_t bytes)
-{
-    if (!err) {
-        conn_(tcp_socket_access::create_tcp_socket<socket_traits>(impl_->wrapper, impl_->new_socket_handle(socket)), (size_t)bytes);
-        try {
-            prepare();
-            ++refs;
-        } catch (...) {
-            GLOBAL_LOG_ERROR() << "acceptor closed unexpectedly, errror: " << boost::current_exception_diagnostic_information();
-        }
-    } else if (err.value() != ERROR_OPERATION_ABORTED) {
-        GLOBAL_LOG_WARN() << "acceptor closed: " << boost::trim_right_copy(err.message());
-    }
-}
-
-void acceptor_callback::free(win_impl * impl)
-{
-    impl->delete_acceptor_callback(this);
-}
-
-acceptor_callback::~acceptor_callback()
-{
-    ah_->release((tcp_socket_service_type*) impl_->wrapper.get());
-}
-#endif
-
-//void listener_callback::prepare()
-//{
-//    handler_([this](array_view<char> buff, udp_connector_t<socket_traits> const& conn) {
-//        this->conn_ = conn;
-//        sender_addr_.reset();
-//        int sz = sender_addr_.size();
-//        winapi::async_recvfrom(sh_->socket(), buff.begin(), buff.size(), sender_addr_.addr<SOCKADDR>(), &sz, &overlapped);
-//    });
-//}
-//
-//void listener_callback::on_op(std::error_code const& err, size_t bytes)
-//{
-//    if (!err) {
-//        conn_(bytes, sender_addr_, udp_socket_access::create_udp_socket<socket_traits::weak_traits_type>(impl_->wrapper, sh_));
-//        try {
-//            prepare();
-////            ++refs;
-//        } catch (...) {
-//            GLOBAL_LOG_ERROR() << "udp listener closed unexpectedly, errror: " << boost::current_exception_diagnostic_information();
-//        }
-//    } else if (err.value() != ERROR_OPERATION_ABORTED) {
-//        GLOBAL_LOG_WARN() << "listener socket closed: " << boost::trim_right_copy(err.message());
-//    }
-//}
-
-//void listener_callback::free(win_impl * impl)
-//{
-//    impl->delete_listener_callback(this);
-//}
-
-//listener_callback::~listener_callback()
-//{
-//    sh_->release((udp_socket_service_type*)impl_->wrapper.get());
-//}
-
-//inline shared_ptr<win_impl> get_dataptr2(weak_ptr<factory::impl_base> const& wptr)
-//{
-//    shared_ptr<win_impl> r = static_pointer_cast<win_impl>(wptr.lock());
-//    if (!r) throw closed_exception();
-//    return r;
-//}
-
 #define dataptr static_pointer_cast<win_impl>(get_dataptr())
 
 factory::factory() {}
 
-void factory::initialize_impl(uint32_t thr_cnt)
+void factory::initialize_impl()
 {
     if (impl_holder_) {
         THROW_INTERNAL_ERROR("io factory is already initialized");
     }
     
-    impl_holder_ = make_shared<win_impl>(shared_from_this(), thr_cnt);
+    impl_holder_ = make_shared<win_impl>(shared_from_this());
     impl_ = impl_holder_;
 }
 
@@ -532,93 +400,6 @@ std::string factory::name() const
 {
     return std::string("windows");
 }
-
-// tcp_socket_factory
-#if 0
-tcp_socket factory::create_tcp_socket(tcp_socket_type dt)
-{
-    SOCKET sock = winapi::create_socket(af_value(dt), SOCK_STREAM, IPPROTO_TCP);
-    SOCKET pinsock = sock;
-    SCOPE_EXIT([&pinsock]() { if (pinsock != INVALID_SOCKET) closesocket(pinsock); });
-
-    winapi::assign_completion_port((HANDLE)sock, dataptr->iocp_, (ULONG_PTR)completion_port::socket_callback_key);
-    win_shared_handle * sh = dataptr->new_socket_handle(sock);
-
-    pinsock = INVALID_SOCKET; // detach
-    return tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), sh);
-}
-#endif
-
-/*
-tcp_socket factory::create_connected_tcp_socket(cstring_view address, uint16_t port, sonia::sal::net_family_type dt)
-{
-    std::ostringstream errmsgs;
-    win_shared_handle * sh;
-    if (!winapi::parse_address(af_value(dt), SOCK_STREAM, IPPROTO_TCP, address, port, [&errmsgs, &sh, dataptr = get_dataptr(impl_data_)](ADDRINFOW * r)->bool {
-        try {
-            SOCKET soc = winapi::create_socket(r->ai_family, r->ai_socktype, r->ai_protocol);
-            SOCKET pinsoc = soc;
-            SCOPE_EXIT([&pinsoc]() { if (pinsoc != INVALID_SOCKET) closesocket(pinsoc); });
-
-            //int enable = 1;
-            //if (setsockopt(soc, SOL_SOCKET, SO_REUSEADDR, (const char*)&enable, sizeof(int)) < 0) {
-            //    DWORD err = WSAGetLastError();
-            //    throw exception("can't set SO_REUSEADDR, error: %1%"_fmt % winapi::error_message(err));
-            //}
-
-            winapi::connect_socket(soc, r->ai_addr, (int)r->ai_addrlen);
-            winapi::assign_completion_port((HANDLE)soc, dataptr->iocp_, (ULONG_PTR)completion_port::socket_callback_key);
-            sh = dataptr->new_socket_handle(soc);
-            pinsoc = INVALID_SOCKET; // detach
-            return true;
-        } catch (std::exception const& e) {
-            if (!errmsgs.str().empty()) errmsgs << '\n';
-            errmsgs << e.what();
-        }
-        return false;
-    })) {
-        throw exception("can't connect socket to the address: '%1%:%2%', error(s): %3%"_fmt % address % port % errmsgs.str());
-    }
-    return tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), sh);
-    
-}
-*/
-
-#if 0
-tcp_socket factory::bind_tcp_socket(cstring_view address, uint16_t port, tcp_socket_type dt)
-{
-    /*
-    win_shared_handle * sh;
-    if (!winapi::parse_address(af_value(dt), SOCK_STREAM, IPPROTO_TCP, address, port, [this, &errmsgs, &sh](ADDRINFOW * r)->bool {
-        try {
-            SOCKET soc = winapi::create_socket(r->ai_family, r->ai_socktype, r->ai_protocol);
-            SOCKET pinsoc = soc;
-            SCOPE_EXIT([&pinsoc]() { if (pinsoc != INVALID_SOCKET) closesocket(pinsoc); });
-
-            int enable = 1;
-            if (setsockopt(soc, SOL_SOCKET, SO_REUSEADDR, (const char*)&enable, sizeof(int)) < 0) {
-                DWORD err = WSAGetLastError();
-                throw exception("can't set SO_REUSEADDR, error: %1%"_fmt % winapi::error_message(err));
-            }
-
-            winapi::bind_socket(soc, r->ai_addr, (int)r->ai_addrlen);
-            winapi::listen_socket(soc, SOMAXCONN);
-            winapi::assign_completion_port((HANDLE)soc, dataptr->iocp_, (ULONG_PTR)completion_port::socket_callback_key);
-            sh = dataptr->new_socket_handle(soc);
-            pinsoc = INVALID_SOCKET; // detach
-            return true;
-        } catch (std::exception const& e) {
-            if (!errmsgs.str().empty()) errmsgs << '\n';
-            errmsgs << e.what();
-        }
-        return false;
-    })) {
-        throw exception("can't bind socket to the address: '%1%:%2%', error(s): %3%"_fmt % address % port % errmsgs.str());
-    }
-    return tcp_socket_access::create_tcp_socket<socket_traits>(shared_from_this(), sh);
-    */
-}
-#endif
 
 // tcp_socket_service
 fibers::future<tcp_socket> win_impl::tcp_server_socket_accept(tcp_handle_type handle)
@@ -681,7 +462,7 @@ expected<size_t, std::exception_ptr> win_impl::tcp_socket_read_some(tcp_handle_t
     sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
     std::error_code err = winapi::async_recv(wh->socket(), buff, sz, &scb.overlapped);
     if (err) return make_unexpected(std::make_exception_ptr(exception(err.message())));
-    return scb.wait2(); // noexcept
+    return scb.wait(); // noexcept
 }
 
 expected<size_t, std::exception_ptr> win_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz) noexcept
@@ -690,7 +471,7 @@ expected<size_t, std::exception_ptr> win_impl::tcp_socket_write_some(tcp_handle_
     sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
     std::error_code err = winapi::async_send(wh->socket(), buff, sz, &scb.overlapped);
     if (err) return make_unexpected(std::make_exception_ptr(exception(err.message())));
-    return scb.wait2(); // noexcept
+    return scb.wait(); // noexcept
 }
 
 void win_impl::close_handle(identity<tcp_socket_service_type>, tcp_handle_type h) noexcept
@@ -706,6 +487,12 @@ void win_impl::close_handle(identity<tcp_socket_service_type>, tcp_handle_type h
     }
 }
 
+sal::socket_handle win_impl::system_handle(tcp_handle_type h) noexcept
+{
+    auto* wh = static_cast<win_shared_handle*>(h);
+    return wh ? wh->socket() : INVALID_SOCKET;
+}
+
 void win_impl::release_handle(identity<tcp_socket_service_type>, tcp_handle_type h) noexcept
 {
     close_handle(identity<tcp_socket_service_type>(), h);
@@ -715,62 +502,6 @@ void win_impl::free_handle(identity<tcp_socket_service_type>, tcp_handle_type h)
 { 
     delete_socket_handle(static_cast<win_shared_handle*>(h));
 }
-
-#if 0
-void factory::tcp_acceptor_on_close(acceptor_handle_type) noexcept
-{}
-
-void factory::free_handle(identity<tcp_acceptor_service_type>, acceptor_handle_type h) noexcept
-{
-    dataptr->delete_socket_handle(static_cast<win_shared_handle*>(h));
-}
-
-tcp_acceptor factory::create_tcp_acceptor(cstring_view address, uint16_t port, tcp_socket_type dt, function<void(tcp_acceptor_handler_type const&)> const& handler)
-{
-    std::ostringstream errmsgs;
-    SOCKET sock;
-    if (!winapi::parse_address(SOCK_STREAM, IPPROTO_TCP, address, port, [this, &errmsgs, &sock](ADDRINFOW * r)->bool {
-        try {
-            sock = winapi::create_socket(r->ai_family, r->ai_socktype, r->ai_protocol);
-            SOCKET pinsock = sock;
-            SCOPE_EXIT([&pinsock]() { if (pinsock != INVALID_SOCKET) closesocket(pinsock); });
-
-            winapi::bind_socket(sock, r->ai_addr, (int)r->ai_addrlen);
-            pinsock = INVALID_SOCKET; // detach
-            return true;
-        } catch (std::exception const& e) {
-            if (!errmsgs.str().empty()) errmsgs << '\n';
-            errmsgs << e.what();
-        }
-        return false;
-    })) {
-        throw exception("can't bind socket at the address: '%1%' and port: '%2%', error(s): %3%"_fmt % address % port % errmsgs.str());
-    }
-
-    SOCKET pinsock = sock;
-    SCOPE_EXIT([&pinsock]() { if (pinsock != INVALID_SOCKET) closesocket(pinsock); });
-
-    if (int iResult = ::listen(sock, SOMAXCONN); SOCKET_ERROR == iResult) {
-        DWORD err = WSAGetLastError();
-        throw exception("can't listen to socket, error: %1%"_fmt % winapi::error_message(err));
-    }
-
-    winapi::assign_completion_port((HANDLE)sock, dataptr->iocp_, (ULONG_PTR)completion_port::socket_callback_key);
-
-    LPFN_ACCEPTEX lpfnAcceptEx = winapi::get_accept_function(sock);
-
-    win_shared_handle * wsh = dataptr->new_socket_handle(sock);
-
-    for (size_t i = 0, tc = thread_count(); i < tc; ++i) {
-        dataptr->new_acceptor_callback(wsh, lpfnAcceptEx, handler);
-    }
-    
-    pinsock = INVALID_SOCKET; // detach
-
-    return tcp_acceptor_access::create_tcp_acceptor<socket_traits>(shared_from_this(), wsh);
-}
-
-#endif
 
 void win_impl::udp_socket_bind(udp_handle_type handle, cstring_view address, uint16_t port)
 {
@@ -783,7 +514,7 @@ void win_impl::udp_socket_bind(udp_handle_type handle, cstring_view address, uin
     }
 }
 
-expected<size_t, std::error_code> win_impl::udp_socket_read_some(udp_handle_type handle, void * buff, size_t sz, sonia::sal::socket_address* addr)
+expected<size_t, std::exception_ptr> win_impl::udp_socket_read_some(udp_handle_type handle, void * buff, size_t sz, sonia::sal::socket_address* addr)
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
     sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
@@ -796,7 +527,7 @@ expected<size_t, std::error_code> win_impl::udp_socket_read_some(udp_handle_type
     return scb.wait();
 }
 
-expected<size_t, std::error_code> win_impl::udp_socket_write_some(udp_handle_type handle, sonia::sal::socket_address const& address, void const* buff, size_t sz)
+expected<size_t, std::exception_ptr> win_impl::udp_socket_write_some(udp_handle_type handle, sonia::sal::socket_address const& address, void const* buff, size_t sz)
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
     sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
@@ -805,9 +536,9 @@ expected<size_t, std::error_code> win_impl::udp_socket_write_some(udp_handle_typ
     return scb.wait();
 }
 
-expected<size_t, std::error_code> win_impl::udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz)
+expected<size_t, std::exception_ptr> win_impl::udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz)
 {
-    expected<size_t, std::error_code> wrsz;
+    expected<size_t, std::exception_ptr> wrsz;
     auto params = std::tie(handle, wrsz, buff, sz);
     if (!winapi::parse_address(0, SOCK_DGRAM, IPPROTO_UDP, address, port, [this, &params](ADDRINFOW * r)->bool {
         auto&[handle, wrsz, buff, sz] = params;

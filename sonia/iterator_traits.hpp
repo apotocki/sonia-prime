@@ -2,17 +2,11 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_ITERATOR_TRAITS_HPP
-#define SONIA_ITERATOR_TRAITS_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/iterator/iterator_traits.hpp>
 #include <boost/iterator/iterator_categories.hpp>
 
-#include <boost/range.hpp>
 #include <boost/range/has_range_iterator.hpp>
 
 #include "sonia/type_traits.hpp"
@@ -113,5 +107,3 @@ bool empty(IteratorT const& it)
 }
 
 }
-
-#endif // SONIA_ITERATOR_TRAITS_HPP

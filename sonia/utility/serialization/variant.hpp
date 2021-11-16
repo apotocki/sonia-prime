@@ -13,12 +13,12 @@
 
 #include "serialization.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <typename TagT, typename IteratorT>
 struct variant_encoder_visitor : boost::static_visitor<IteratorT>
 {
-    explicit variant_encoder_visitor(IteratorT it) : it_(it) {}
+    explicit variant_encoder_visitor(IteratorT it) : it_{it} {}
 
     template <typename T>
     IteratorT operator()(T const& val) const
@@ -32,14 +32,12 @@ struct variant_encoder_visitor : boost::static_visitor<IteratorT>
 template <typename TagT, typename IteratorT>
 struct variant_decoder_visitor : boost::static_visitor<IteratorT>
 {
-    explicit variant_decoder_visitor(IteratorT it) : it_(it) {}
+    explicit variant_decoder_visitor(IteratorT it) : it_{it} {}
 
     template <typename T>
     IteratorT operator()(T & val) const
     {
-        sonia::automatic<T> temp(sonia::in_place_decode<TagT>(it_));
-        val = std::move(*val);
-        return std::move(it_);
+        return decode<TagT, T>(it_, val);
     }
 
     mutable IteratorT it_;
@@ -64,6 +62,6 @@ public:
     }
 };
 
-}}
+}
 
 #endif // SONIA_SERIALIZATION_VARIANT_HPP

@@ -4,15 +4,6 @@
 
 #include "sonia/config.hpp"
 
-#ifdef BOOST_WINDOWS
-#   include "sonia/utility/windows.hpp"
-namespace winapi = sonia::windows;
-#else
-#   include <netinet/in.h>
-#   include "sonia/utility/linux.hpp"
-namespace linapi = sonia::linux;
-#endif
-
 #include "socket_address.hpp"
 
 #include <boost/spirit/include/qi.hpp>
@@ -23,7 +14,7 @@ namespace linapi = sonia::linux;
 
 #include "sonia/exceptions.hpp"
 
-namespace sonia { namespace io {
+namespace sonia::io {
 
 #define SONIA_PRINT_IO_PROTOCOL_TYPE_CASE(r, data, i, elem) \
     if (lcasestr == BOOST_STRINGIZE(BOOST_PP_TUPLE_ELEM(2, 1, elem))) { pt = protocol_type::BOOST_PP_TUPLE_ELEM(2, 0, elem); } else 
@@ -67,4 +58,4 @@ std::tuple<protocol_type, std::string, uint16_t> parse_address(string_view sv)
     return {pt, to_string(address_str), port};
 }
 
-}}
+}

@@ -34,6 +34,11 @@ shared_ptr<singleton> singleton_locator::get(singleton::id id, function<shared_p
         descr.object = factory(id);
         //singleton_access::set_id(*descr.object, id);
         lock_guard layers_guard(layers_mtx_);
+        if (descr.object->get_layer() >= shutdown_layer_threshold_) {
+            descr.object->close();
+            descr.object.reset();
+            throw closed_exception();
+        }
         layers_.insert(descr);
     }
     return descr.object;
@@ -41,7 +46,6 @@ shared_ptr<singleton> singleton_locator::get(singleton::id id, function<shared_p
 
 void singleton_locator::shutdown()
 {
-    int layer = (std::numeric_limits<int>::max)();
     std::vector<fiber> fibers;
 
     for (;;)
@@ -49,8 +53,8 @@ void singleton_locator::shutdown()
         if (lock_guard layers_guard(layers_mtx_); !layers_.empty()) {
             for (auto it = layers_.end(), bit = layers_.begin(); it != bit;) {
                 --it;
-                if (it->object->get_layer() < layer) {
-                    layer = it->object->get_layer();
+                if (it->object->get_layer() < shutdown_layer_threshold_) {
+                    shutdown_layer_threshold_ = it->object->get_layer();
                     break;
                 }
                 fibers.emplace_back([this, s = it->object]() mutable { shutdown(std::move(s)); });

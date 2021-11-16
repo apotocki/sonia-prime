@@ -6,7 +6,7 @@
     http://www.boost.org/LICENSE_1_0.txt)
 ==============================================================================*/
 #include "sonia/config.hpp"
-#include <boost/test/unit_test.hpp>
+
 #include <iostream>
 
 #include "sonia/utility/conversion/utf8/utf8.hpp"
@@ -19,6 +19,8 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/range/value_type.hpp>
 #include <boost/range/size.hpp>
+
+#include "applied/sonia_test.hpp"
 
 namespace cvt = sonia::conversion;
 
@@ -133,7 +135,7 @@ BOOST_AUTO_TEST_CASE( compound_cvt_test_temp )
 }
 */
 
-BOOST_AUTO_TEST_CASE( compound_cvt_test )
+void compound_cvt_test()
 {
     const std::wstring text = L"Man is distinguished, not only by his reason, but by this singular "
 		L"passion from other animals, which is a lust of the mind, that by a perseverance of delight "
@@ -188,3 +190,12 @@ BOOST_AUTO_TEST_CASE( compound_cvt_test )
 		);
 	}
 }
+
+void compound_cvt_test_registrar()
+{
+	register_test(BOOST_TEST_CASE(&compound_cvt_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(compound_cvt_test_registrar)
+#endif

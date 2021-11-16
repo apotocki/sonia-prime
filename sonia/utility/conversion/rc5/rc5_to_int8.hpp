@@ -66,7 +66,7 @@ private:
             for (i = 0; i < u; ++i) base_type::customer_put(st.popA(), out, s);
             for (; i < 2 * u; ++i) base_type::customer_put(st.popB(), out, s);
             st.A = st.B = 0;
-            assert(st.size == 0);
+            BOOST_ASSERT(st.size == 0);
         }
     }
 

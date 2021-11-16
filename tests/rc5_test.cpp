@@ -6,7 +6,7 @@
     http://www.boost.org/LICENSE_1_0.txt)
 ==============================================================================*/
 #include "sonia/config.hpp"
-#include <boost/test/unit_test.hpp>
+
 #include <iostream>
 
 #include "sonia/utility/conversion/rc5/rc5.hpp"
@@ -15,6 +15,8 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/range/value_type.hpp>
 #include <boost/range/size.hpp>
+
+#include "applied/sonia_test.hpp"
 
 namespace cvt = sonia::conversion;
 
@@ -328,7 +330,7 @@ void rc5_32_12_8_bonus()
 	conv_push_test(cvt::rc5<32, 12, 8>(password, iv, '\x8') >> cvt::int8(), boost::make_iterator_range(rc5_32_12_8_cipher), boost::make_iterator_range(message), "[rc5_32_12_8b_dec]");
 }
 
-BOOST_AUTO_TEST_CASE( rc5_test )
+void rc5_test()
 {
     rc5_32_12_5();
 	rc5_32_12_6();
@@ -344,6 +346,15 @@ BOOST_AUTO_TEST_CASE( rc5_test )
 	rc5_32_12_16();
 	rc5_32_12_8_bonus();
 }
+
+void rc5_test_registrar()
+{
+	register_test(BOOST_TEST_CASE(&rc5_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(rc5_test_registrar)
+#endif
 
 /*
 #include <fstream>

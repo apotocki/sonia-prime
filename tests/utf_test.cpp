@@ -6,7 +6,7 @@
     http://www.boost.org/LICENSE_1_0.txt)
 ==============================================================================*/
 #include "sonia/config.hpp"
-#include <boost/test/unit_test.hpp>
+
 #include <iostream>
 
 #include "sonia/utility/conversion/utf32/utf32.hpp"
@@ -20,6 +20,8 @@
 #include <boost/range/iterator_range.hpp>
 #include <boost/range/value_type.hpp>
 #include <boost/range/size.hpp>
+
+#include "applied/sonia_test.hpp"
 
 namespace cvt = sonia::conversion;
 
@@ -337,7 +339,7 @@ void utf16_to_utf7_test(customConverterT const& enc)
 	conv_push_test(enc, boost::make_iterator_range(utf16text), boost::make_iterator_range(utf7text), "[utf16_to_utf7_test]");
 }
 
-BOOST_AUTO_TEST_CASE( utf_test )
+void utf_test()
 {
     utf8_to_utf16_test( cvt::utf8() >> cvt::utf32() >> cvt::utf16() );
     utf16_to_utf8_test( cvt::utf16() >> cvt::utf32() >> cvt::utf8() );
@@ -377,3 +379,12 @@ BOOST_AUTO_TEST_CASE( utf_test )
 	*/
 #endif
 }
+
+void utf_test_registrar()
+{
+	register_test(BOOST_TEST_CASE(&utf_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(utf_test_registrar)
+#endif

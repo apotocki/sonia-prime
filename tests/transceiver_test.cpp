@@ -6,7 +6,7 @@
 
 #include <vector>
 
-#include <boost/filesystem.hpp>
+#include "sonia/filesystem.hpp"
 #include "sonia/services.hpp"
 
 #include "applied/scoped_services.hpp"
@@ -28,7 +28,7 @@
 
 #include "applied/sonia_test.hpp"
 
-namespace fs = boost::filesystem;
+namespace fs = sonia::fs;
 
 #define TEST_FOLDER "cmd_transceiver_test"
 

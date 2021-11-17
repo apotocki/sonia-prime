@@ -5,12 +5,12 @@
 #pragma once
 
 #include <iosfwd>
-#include <boost/filesystem.hpp>
 
 #include "prime_config.hpp"
 #include "sonia/function.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/exceptions.hpp"
+#include "sonia/filesystem.hpp"
 #include "sonia/services/service.hpp"
 #include "sonia/services/host.hpp"
 
@@ -61,7 +61,7 @@ void locate(IdT && id, shared_ptr<ServiceT> & serv)
 }
 
 SONIA_PRIME_API void register_service_factory(string_view, function<shared_ptr<service>()> const&);
-SONIA_PRIME_API void load_configuration(boost::filesystem::path const &);
+SONIA_PRIME_API void load_configuration(fs::path const &);
 SONIA_PRIME_API void load_configuration(std::istream &);
 
 }

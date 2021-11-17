@@ -122,7 +122,9 @@ tcp_server_socket factory::create_server_socket(cstring_view address, uint16_t p
     std::ostringstream errmsgs;
 
     auto addrsrc = parse_net_address(ft, SOCK_STREAM, 0, address, port);
-    for (sonia::sal::addrinfo const*& ai : addrsrc) {
+    for (auto it = std::begin(addrsrc), eit = std::end(addrsrc); it != eit; ++it) {
+        sonia::sal::addrinfo const*& ai = *it;
+    //for (sonia::sal::addrinfo const*& ai : addrsrc) {
         try {
             socket_handle sock = create_socket(ai->family(), ai->ai_socktype(), ai->ai_protocol());
             SCOPE_EXIT([&sock]() { if (sock != not_initialized_socket_v) close_socket(sock); });
@@ -159,7 +161,9 @@ tcp_socket factory::create_connected_tcp_socket(cstring_view address, uint16_t p
 
     std::ostringstream errmsgs;
     auto addrsrc = parse_net_address(ft, SOCK_STREAM, 0, address, port);
-    for (sonia::sal::addrinfo const*& ai : addrsrc) {
+    for (auto it = std::begin(addrsrc), eit = std::end(addrsrc); it != eit; ++it) {
+        sonia::sal::addrinfo const*& ai = *it;
+    //for (sonia::sal::addrinfo const*& ai : addrsrc) {
         try {
             socket_handle sock = create_socket(ai->family(), ai->ai_socktype(), ai->ai_protocol());
             SCOPE_EXIT([&sock]() { if (sock != not_initialized_socket_v) close_socket(sock); });

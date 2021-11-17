@@ -4,10 +4,9 @@
 
 #pragma once
 
-#include <filesystem>
-
 #include <boost/variant.hpp>
 
+#include "sonia/filesystem.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/utility/persister.hpp"
 
@@ -18,7 +17,7 @@ class file_statable
 {
 public:
     using name_ref_t = boost::variant<std::string, std::string const&>;
-    using path_ref_t = boost::variant<null_t, std::filesystem::path, std::filesystem::path const&>;
+    using path_ref_t = boost::variant<null_t, fs::path, fs::path const&>;
 
     //template <class ArchiveT> void serialize(ArchiveT & ar, const unsigned int = 0)
     //{

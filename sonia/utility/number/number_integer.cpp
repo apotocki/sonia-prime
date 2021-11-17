@@ -3,6 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
+#include "sonia/utility/functional/has.hpp"
 #include "integer.hpp"
 
 namespace sonia {
@@ -19,7 +20,7 @@ public:
     template <typename T>
     void operator= (T const& val)
     {
-        boost::hash_combine(*value_, val);
+        sonia::hash_combine(*value_, val);
     };
 
     size_t get() const { return *value_; }

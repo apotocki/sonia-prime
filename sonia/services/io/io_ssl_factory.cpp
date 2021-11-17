@@ -7,18 +7,16 @@
 
 #include <sstream>
 #include <fstream>
-#include <boost/filesystem.hpp>
 
 #include "sonia/singleton.hpp"
 #include "sonia/exceptions.hpp"
+#include "sonia/filesystem.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
 #pragma comment(lib, "libcrypto.lib")
 #pragma comment(lib, "libssl.lib")
 
 namespace sonia::io {
-
-namespace fs = boost::filesystem;
 
 int ssl_errstr_cb(const char *str, size_t len, void *u)
 {

@@ -11,7 +11,7 @@
 
 #include <utility>
 #include <vector>
-#include <boost/filesystem/path.hpp>
+#include <filesystem>
 
 #include "sonia/optional.hpp"
 #include "sonia/string.hpp"
@@ -20,8 +20,8 @@ namespace sonia::services {
 
 struct auth_service_configuration
 {
-    optional<boost::filesystem::path> path;
-    optional<boost::filesystem::path> dir;
+    optional<std::filesystem::path> path;
+    optional<std::filesystem::path> dir;
 
     std::string authenticator_app;
     std::vector<std::pair<std::string, std::string>> bootstrap_users;

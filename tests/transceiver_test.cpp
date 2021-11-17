@@ -6,8 +6,7 @@
 
 #include <vector>
 
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
+#include "sonia/filesystem.hpp"
 #include "sonia/services.hpp"
 
 #include "applied/scoped_services.hpp"
@@ -16,6 +15,7 @@
 #include "sonia/utility/marshaling/service.hpp"
 #include "sonia/utility/marshaling/string.hpp"
 
+#include "sonia/services/diagnostic.hpp"
 #include "sonia/services/transceiver.hpp"
 #include "sonia/services/scheduler/scheduler.hpp"
 #include "sonia/utility/streaming/vector.hpp"
@@ -26,7 +26,9 @@
 #include "sonia/utility/serialization/vector.hpp"
 #include <boost/exception/diagnostic_information.hpp>
 
-namespace fs = boost::filesystem;
+#include "applied/sonia_test.hpp"
+
+namespace fs = sonia::fs;
 
 #define TEST_FOLDER "cmd_transceiver_test"
 
@@ -153,7 +155,7 @@ void get_configuration(std::ostream & os)
         "       io.serv: {"
         "           factory: 'io-factory',"
         "           layer: 8,"
-        "           parameters: { threads: 4 }"
+        "           parameters: { scheduler: 'scheduler.serv', threads: 4 }"
         "       },"
         "       io-cache.serv: {"
         "           factory: 'io-cache-factory',"
@@ -174,12 +176,7 @@ void get_configuration(std::ostream & os)
         "       scheduler.serv: {"
         "           factory: 'scheduler-factory',"
         "           layer: 4,"
-        "           parameters: { threads: 8, fibers: 10 }"
-        "       },"
-        "       test-scheduler.serv: {"
-        "           factory: 'scheduler-factory',"
-        "           layer: 16,"
-        "           parameters: { threads: 8, fibers: 10 }"
+        "           parameters: { threads: 20, fibers: 8 }"
         "       },"
         "       transceiver-factory: { factory: 'prime', layer: 0, parameters: {name: 'transceiver'} },"
         "       net-server-factory: { factory: 'prime', layer: 0, parameters: { name: 'net-server' } },"
@@ -195,7 +192,7 @@ void get_configuration(std::ostream & os)
 
 }
 
-BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
+void cmd_transceiver_test()
 {
     using namespace sonia;
     fs::remove_all(TEST_FOLDER);
@@ -229,10 +226,13 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         get_configuration(cfgss);
         services::load_configuration(cfgss);
 
+        this_thread::attach_host("server");
+        shared_ptr<diagnostic> serv_iodiag = services::locate<diagnostic>("io.serv");
+
         this_thread::attach_host("client");
         auto ctl_proxy = services::locate<itest_service>("test_service");
         //this_thread::attach_host("server");
-
+#if 1
         try {
             ctl_proxy->exception_method();
             BOOST_CHECK (false);
@@ -246,14 +246,14 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         //boost::this_thread::sleep(boost::posix_time::milliseconds(300));
 
         ctl_proxy->empty_method();
-
+#endif
         ///*
         int ival = 10;
         std::string str = "asd";
         std::vector<std::string> result;
         result.push_back("123"); result.push_back("234"); result.push_back("345");
         std::vector<std::string> maincopy = result;
-
+#if 1
         for (int i = 0; i < 50; ++i)
         {
             std::vector<std::string> copy = result;
@@ -263,26 +263,34 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
             BOOST_CHECK_EQUAL (main_result.first,  str);
             result.push_back(to_string("xxx%1%"_fmt % i));
         }
+#endif
 #if 1
 #ifdef _DEBUG
-    const int calls_count = 300;
+    const int calls_count = 30;
     const size_t max_pass_count = 32;
 #else
     const int calls_count = 1500;
     const size_t max_pass_count = 32;
 #endif
 
-        shared_ptr<scheduler> async = services::locate<scheduler>("test-scheduler.serv");
+        shared_ptr<diagnostic> iodiag = services::locate<diagnostic>("io.serv");
+
+        shared_ptr<scheduler> async = services::locate<scheduler>("scheduler.serv");
         std::atomic<long> tasks(0);
+        std::unique_ptr<int[]> curs(new int[max_pass_count] {-1});
+
         for (int i = 0; i < max_pass_count; ++i) {
             ++tasks;
-            async->post([tnum = i, &tasks, &maincopy, &ival, &str, ctl_proxy, calls_count](){
+            async->post([tnum = i, &tasks, &maincopy, &ival, &str, ctl_proxy, calls_count, &curs](){
                 try {
                     std::vector<std::string> result = maincopy;
                     for (int i = 0; i < calls_count; ++i)
                     {
+                        curs[tnum] = i;
                         std::vector<std::string> copy = result;
+                        //GLOBAL_LOG_TRACE() << "client " << tnum << ", before call " << i;
                         auto main_result = ctl_proxy->some_method(ival, str, result);
+                        //GLOBAL_LOG_TRACE() << "client " << tnum << ", after call " << i;
                         BOOST_ASSERT (main_result.second == copy);
                         BOOST_ASSERT (result.back() == std::to_string(ival));
                         BOOST_ASSERT (main_result.first == str);
@@ -300,7 +308,17 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         }
 
         while (tasks.load() > 0) {
-            boost::thread::sleep(boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds(1000));
+            boost::thread::sleep(boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds(100000));
+            // print diagnostic
+            /*
+            std::ostringstream oss;
+            for (int i = 0; i < max_pass_count; ++i) {
+                oss << "task: " << i << ", sursor: " << curs[i] << ", from: " << calls_count << "\n";
+            }
+            oss << "client: " << iodiag->get_diagnostic_info() << "\n";
+            oss << "server: " << serv_iodiag->get_diagnostic_info();
+            GLOBAL_LOG_TRACE() << "DIAGNOSTIC:\n" << oss.str();
+            */
         }
 #endif
     } catch (closed_exception const& e) {
@@ -310,3 +328,12 @@ BOOST_AUTO_TEST_CASE (cmd_transceiver_test)
         BOOST_REQUIRE(false);
     }
 }
+
+void transceiver_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&cmd_transceiver_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(transceiver_test_registrar)
+#endif

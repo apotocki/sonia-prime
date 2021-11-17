@@ -33,7 +33,7 @@ struct udp_socket_listener : net_service::listener
     void close() override { closed.store(true); sock.close(); }
 };
 
-class acceptor_task : public scheduler_task
+class acceptor_task : public scheduler_task_adapter<acceptor_task>
 {
     shared_ptr<tcp_acceptor_listener> al_;
     shared_ptr<scheduler> sched_;
@@ -59,6 +59,8 @@ public:
                 } else {
                     --al_->workers_count;
                 }
+            } else {
+                GLOBAL_LOG_TRACE() << "!!! WAITING WORKERS: " << al_->sock.accepting_count();
             }
 
             al_->cn->connect(std::move(sock));
@@ -94,23 +96,9 @@ public:
         }
 #endif
     }
-
-    polymorphic_clonable_and_movable* move(void* address, size_t sz) override
-    {
-        BOOST_ASSERT(sz >= sizeof(acceptor_task));
-        new (address) acceptor_task(std::move(*this));
-        return reinterpret_cast<acceptor_task*>(address);
-    }
-
-    polymorphic_clonable_and_movable* clone(void* address, size_t sz) const override
-    {
-        BOOST_ASSERT(sz >= sizeof(acceptor_task));
-        new (address) acceptor_task(*this);
-        return reinterpret_cast<acceptor_task*>(address);
-    }
 };
 
-class listener_task : public scheduler_task
+class listener_task : public scheduler_task_adapter<listener_task>
 {
     shared_ptr<udp_socket_listener> al_;
     shared_ptr<scheduler> sched_;
@@ -131,7 +119,8 @@ public:
             for (;;) {
                 sonia::sal::socket_address sa;
                 auto res = al_->sock.read_some(buffstart, buff.size(), sa);
-                if (!res.has_value()) throw eof_exception(res.error().message());
+                if (!res.has_value())
+                    throw eof_exception();
                 if (0 == al_->sock.waiting_count()) {
                     if (al_->workers_max > al_->workers_count.fetch_add(1)) {
                         sched_->post(scheduler_task_t(in_place_type_t<listener_task>(), al_, sched_));
@@ -153,20 +142,6 @@ public:
         } catch (...) {
             GLOBAL_LOG_ERROR() << "acceptor terminated unexpectedly, cause: " << boost::trim_right_copy(boost::current_exception_diagnostic_information());
         }
-    }
-
-    polymorphic_clonable_and_movable* move(void* address, size_t sz) override
-    {
-        BOOST_ASSERT(sz >= sizeof(listener_task));
-        new (address) listener_task(std::move(*this));
-        return reinterpret_cast<listener_task*>(address);
-    }
-
-    polymorphic_clonable_and_movable* clone(void* address, size_t sz) const override
-    {
-        BOOST_ASSERT(sz >= sizeof(listener_task));
-        new (address) listener_task(*this);
-        return reinterpret_cast<listener_task*>(address);
     }
 };
 

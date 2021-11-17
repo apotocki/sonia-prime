@@ -71,7 +71,7 @@ public:
     chunk_write_iterator& operator=(chunk_write_iterator const&) = delete;
     chunk_write_iterator& operator=(chunk_write_iterator &&) = default;
 
-    chunk_write_iterator(tcp_socket & soc, array_view<char> buff) : soc_{soc}, buff_{buff}
+    chunk_write_iterator(tcp_socket & soc, array_view<char> buff) : psoc_{&soc}, buff_{buff}
     {
         BOOST_ASSERT(buff.size() > sizeof(chunk_header));
         BOOST_ASSERT(buff.size() <= static_cast<size_t>((std::numeric_limits<uint16_t>::max)()) + sizeof(chunk_header));
@@ -91,8 +91,14 @@ public:
             
             char const* bf = buff_.begin();
             for (;;) {
-                auto expsz = soc_.write_some(bf, offset_);
-                if (!expsz.has_value() || !expsz.value()) throw eof_exception();
+                auto expsz = psoc_->write_some(bf, offset_);
+                if (!expsz.has_value()) {
+                    try { std::rethrow_exception(expsz.error()); }
+                    catch (std::exception const& e) { throw eof_exception(e.what()); }
+                }
+                if (!expsz.value()) {
+                    throw eof_exception();
+                }
                 offset_ -= expsz.value();
                 if (!offset_) break;
                 bf += expsz.value();
@@ -103,7 +109,7 @@ public:
     }
 
 private:
-    tcp_socket & soc_;
+    tcp_socket * psoc_;
     array_view<char> buff_;
     size_t offset_;
     size_t datasz_;
@@ -129,8 +135,12 @@ class chunk_read_iterator
                 THROW_INTERNAL_ERROR("the buffer is too small");
             }
             char * bf = buff_.begin() + rdsz_;
-            auto expsz = soc_.read_some(bf, sz2rd);
-            if (!expsz.has_value() || !expsz.value()) {
+            auto expsz = psoc_->read_some(bf, sz2rd);
+            if (!expsz.has_value()) {
+                try { std::rethrow_exception(expsz.error()); }
+                catch (std::exception const& e) { throw eof_exception(e.what()); }
+            }
+            if (!expsz.value()) {
                 throw eof_exception();
             }
             rdsz_ += expsz.value();
@@ -177,11 +187,11 @@ public:
     chunk_read_iterator& operator=(chunk_read_iterator &&) = default;
 
     chunk_read_iterator(tcp_socket & soc, array_view<char> buff, size_t rdsz = 0)
-        : soc_(soc), buff_(buff), rdsz_(rdsz)
+        : psoc_(&soc), buff_(buff), rdsz_(rdsz)
     { }
 
 private:
-    tcp_socket & soc_;
+    tcp_socket * psoc_;
     array_view<char> buff_;
     mutable size_t rdsz_;
     mutable array_view<const char> data_;

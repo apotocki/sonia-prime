@@ -4,17 +4,17 @@
 
 #include "sonia/config.hpp"
 
-#include <boost/test/unit_test.hpp>
-
 #include "sonia/cstdint.hpp"
 #include "sonia/string.hpp"
 #include "sonia/utility/functional/range_less.hpp"
 #include "sonia/utility/functional/range_equal.hpp"
 #include "sonia/utility/functional/range_compare.hpp"
 
+#include "applied/sonia_test.hpp"
+
 using namespace sonia;
 
-BOOST_AUTO_TEST_CASE( integer_compare_test )
+void integer_compare_test()
 {
     BOOST_CHECK(!less_f((unsigned int)0xffffffff, (int)-1));
     BOOST_CHECK(less_f((int)-1, (unsigned int)0xffffffff));
@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_CASE( integer_compare_test )
     BOOST_CHECK(less_f((int)-1, (short)100));
 }
 
-BOOST_AUTO_TEST_CASE( range_compare_test )
+void range_compare_test()
 {
     std::string s1 = "abc1";
     std::string s2 = "abc2";
@@ -65,7 +65,7 @@ BOOST_AUTO_TEST_CASE( range_compare_test )
     BOOST_CHECK(!string_view("abcdefgh").starts_with(string_view("abcdefgha")));
 }
 
-BOOST_AUTO_TEST_CASE( default_compare_nature_test )
+void default_compare_nature_test()
 {
     unsigned char rng0[] = { 129 };
     unsigned char rng1[] = { 130 };
@@ -73,3 +73,14 @@ BOOST_AUTO_TEST_CASE( default_compare_nature_test )
     BOOST_CHECK(less_f(rng0, rng1));
     BOOST_CHECK(less_f(rng2, rng0));
 }
+
+void cmp_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&integer_compare_test));
+    register_test(BOOST_TEST_CASE(&range_compare_test));
+    register_test(BOOST_TEST_CASE(&default_compare_nature_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(cmp_test_registrar)
+#endif

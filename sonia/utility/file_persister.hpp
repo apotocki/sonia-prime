@@ -2,14 +2,9 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_FILE_PERSISTER_HPP
-#define SONIA_UTILITY_FILE_PERSISTER_HPP
+#pragma once
 
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
-
-#include <boost/filesystem/path.hpp>
+#include <filesystem>
 #include "sonia/utility/persister.hpp"
 
 namespace sonia {
@@ -17,7 +12,7 @@ namespace sonia {
 class file_persister : public persister
 {
 public:
-    explicit file_persister(boost::filesystem::path fname);
+    explicit file_persister(std::filesystem::path fname);
 
     ~file_persister() override;
 
@@ -25,9 +20,7 @@ public:
     void write(function<void(output_iterator)> const& ftor) override;
 
 private:
-    boost::filesystem::path fname_;
+    std::filesystem::path fname_;
 };
 
 }
-
-#endif // SONIA_UTILITY_FILE_PERSISTER_HPP

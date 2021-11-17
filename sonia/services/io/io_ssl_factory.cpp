@@ -7,18 +7,16 @@
 
 #include <sstream>
 #include <fstream>
-#include <boost/filesystem.hpp>
 
 #include "sonia/singleton.hpp"
 #include "sonia/exceptions.hpp"
+#include "sonia/filesystem.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
 #pragma comment(lib, "libcrypto.lib")
 #pragma comment(lib, "libssl.lib")
 
 namespace sonia::io {
-
-namespace fs = boost::filesystem;
 
 int ssl_errstr_cb(const char *str, size_t len, void *u)
 {
@@ -501,6 +499,12 @@ void ssl_factory::free_handle(identity<io::tcp_socket_service_type>, tcp_handle_
 {
     auto * ci = static_cast<ssl_descriptor*>(h);
     pool_.delete_object(ci);
+}
+
+sal::socket_handle ssl_factory::system_handle(tcp_handle_type h) noexcept
+{
+    auto* ci = static_cast<ssl_descriptor*>(h);
+    return ci->sock.system_handle();
 }
 
 }

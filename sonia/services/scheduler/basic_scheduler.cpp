@@ -8,7 +8,6 @@
 
 #include "basic_scheduler.hpp"
 
-#include <boost/fiber/all.hpp>
 
 #ifndef SONIA_TASK_POOL_INITIAL_SIZE
 #   define SONIA_TASK_POOL_INITIAL_SIZE 1024
@@ -113,7 +112,10 @@ basic_scheduler::basic_scheduler(uint32_t thr_cnt, uint32_t fb_cnt)
     , priority_queue_entry_pool_{SONIA_TASK_POOL_INITIAL_SIZE}
     , tp_steady_start_{std::chrono::steady_clock::now()}
 {
-    timer_ = services::timer{[this]{ on_priority_timer(); }};
+    timer_ = services::timer{[this]{
+        LOG_TRACE(logger()) << "on_priority_timer " << this_thread::get_id();
+        on_priority_timer();
+    }};
 }
 
 basic_scheduler::~basic_scheduler()
@@ -179,51 +181,31 @@ void basic_scheduler::stop()
     close_cond_.wait(lk, [this] { return threads_.empty(); });
 }
 
-thread_local fibers::mutex* thread_mtx_;
-
 void basic_scheduler::thread_proc()
 {
-    //fibers::use_scheduling_algorithm< boost::fibers::algo::shared_work >();
+    //LOG_TRACE(logger()) << "start thread proc, thread: " << this_thread::get_id();
     //fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler>(gh_, true);
     fibers::use_scheduling_algorithm<fiber_work_stealing_scheduler2>(gh_, true);
-    /*
-    fibers::context::active()->get_scheduler()->exthook = [](fibers::context::id fid, int op) {
-        switch (op) {
-        case 0:
-            GLOBAL_LOG_TRACE() << "fiber pushed into remote_queue " << fid << ", thread " << this_thread::get_id();
-            break;
-        case 1:
-            GLOBAL_LOG_TRACE() << "fiber popped from remote_queue " << fid << ", thread " << this_thread::get_id();
-            break;
-        default:
-            GLOBAL_LOG_TRACE() << "fiber" << fid << ", thread " << this_thread::get_id() << " unknown op " << op;
-        }
-    };
-    */
-
     {
-        fibers::mutex mtx;
-        thread_mtx_ = &mtx;
         std::vector<fiber> fibers;
         for (size_t f = 0; f < fb_cnt_; ++f) {
-            fibers.emplace_back([this, &mtx]() { fiber_proc(mtx); });
+            fibers.emplace_back([this]() { fiber_proc(); });
         }
 
-        fiber_proc(mtx);
-
-        //auto ctid = this_thread::get_id();
-
+        // DO NOT USE MAIN CONTEXT FOR THE REAL WORK (due to performance penalty during the scheduling routine for pinned contexts)
+        // fiber_proc();
+        
         for (fiber & f : fibers) {
-            //auto fid = f.get_id();
             f.join();
-            //LOG_TRACE(logger()) << "fiber finished " << fid << ", thread " << ctid;
+            //LOG_TRACE(logger()) << "fiber finished " << this_fiber::get_id() << ", thread " << this_thread::get_id();
         }
+        //LOG_TRACE(logger()) << "all fibers finished, thread " << this_thread::get_id();
         tbarrier_->wait();
         //LOG_TRACE(logger()) << "barrier finished " << ", thread " << ctid;
     }
 }
 
-void basic_scheduler::fiber_proc(fibers::mutex & mtx)
+void basic_scheduler::fiber_proc()
 {
     for (;;)
     {
@@ -232,21 +214,11 @@ void basic_scheduler::fiber_proc(fibers::mutex & mtx)
             bool stopping = false;
             bool has_more = false;
 
-            // A problem:
-            // A fiber of a thread can spawn a queue task.
-            // But if the notify() wakes up some fiber that is belonged to the same thread,
-            // the fiber will not be able to process the spawned task until the thread switches context.
-            // So the spawned task will not be processed despite the potential availability of other threads and fibers for this work.
-            // A poliative solution: try to prevent miltiple fibers of a thread waiting for a task.
-            lock_guard guard(*thread_mtx_); 
-
             queue_entry * pe;
             {
                 //LOG_TRACE(logger()) << "before acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
-
-                //LOG_TRACE(logger()) << "acquire guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
                 unique_lock lck(queue_mtx_);
-                //LOG_TRACE(logger()) << "got guard fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
+                //LOG_TRACE(logger()) << "got guard fiber " << this_fiber::get_id() << "," << sonia::fibers::context::active2() << ", thread: " << this_thread::get_id() << ", stopping: " << stopping_;
                 queue_cond_.wait(lck, [this]() { return !queue_not_safe_empty() || stopping_; });
                 if (stopping_ && queue_not_safe_empty()) {
                     //LOG_TRACE(logger()) << "return0 from fiber " << this_fiber::get_id() << ", thread: " << this_thread::get_id();
@@ -402,15 +374,15 @@ void basic_scheduler::schedule_timer(priority_set_t::iterator it, int64_t now)
             push(e, false);
             priority_lowest_ = priority_max_val_;
         } else {
-            LOG_INFO(logger()) << "set timeout: " << resched_duration << " sec";
-            timer_.set(time_duration_t{resched_duration});
+            time_duration_t td{resched_duration};
+            LOG_TRACE(logger()) << "set timeout: " << td.count() << " ms";
+            timer_.set(td);
         }
     }
 }
 
 void basic_scheduler::on_priority_timer()
 {
-    LOG_INFO(logger()) << "on_priority_timer " << this_thread::get_id();
     time_duration_t now = relative_now();
     lock_guard guard(priority_mtx_);
     priority_lowest_ = priority_max_val_;

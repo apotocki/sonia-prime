@@ -11,6 +11,7 @@
 
 #include <new>
 #include <atomic>
+#include <cstring>
 
 #include <boost/assert.hpp>
 #include <boost/integer/static_log2.hpp> 
@@ -30,7 +31,7 @@ public:
     optimized_base(optimized_base const& rhs) : service_cookie_(rhs.service_cookie_) {}
     optimized_base(optimized_base && rhs) = delete;
 
-    virtual ~optimized_base() {}
+    virtual ~optimized_base() = default;
 
     optimized_base & operator= (optimized_base const&) = delete;
     optimized_base & operator= (optimized_base &&) = delete;
@@ -112,8 +113,8 @@ struct optimized_holder_base
     void init_not_ptr() noexcept { *data() = 1; }
     void set_not_ptr() noexcept { *data() |= 1; }
 
-    uint8_t const* data() const noexcept { return std::launder(reinterpret_cast<uint8_t const*>(&holder_)); }
-    uint8_t * data() noexcept { return std::launder(reinterpret_cast<uint8_t*>(&holder_)); }
+    uint8_t const* data() const noexcept { return std::launder(reinterpret_cast<uint8_t const*>(holder_)); }
+    uint8_t * data() noexcept { return std::launder(reinterpret_cast<uint8_t*>(holder_)); }
     bool is_ptr() const noexcept { return !(1 & *data()); }
     
     uint8_t const* begin() const { return data() + begin_offs; }
@@ -133,7 +134,7 @@ struct optimized_holder_base
     uint32_t get_service_cookie_adv() const
     {
         uint8_t const* src = data();
-        size_t res = first_byte_mask & ((*src) >> 1);
+        uint32_t res = first_byte_mask & ((*src) >> 1);
         size_t sbits = ServiceCookieBitsV - first_byte_bits;
         do {
             size_t next_byte_bits = sbits < CHAR_BIT ? sbits : CHAR_BIT;

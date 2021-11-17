@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_AUTOMATIC_POLYMORPHIC_HPP
-#define SONIA_UTILITY_AUTOMATIC_POLYMORPHIC_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 #include <boost/assert.hpp>
@@ -275,5 +270,3 @@ template <typename T, size_t SizeV, typename OffsetT> T * get_pointer(automatic_
 template <typename T, size_t SizeV, typename OffsetT> T const* get_pointer(automatic_polymorphic<T, SizeV, OffsetT> const& p) { return p.get_pointer(); }
 
 }
-
-#endif // SONIA_UTILITY_AUTOMATIC_POLYMORPHIC_HPP

@@ -2,14 +2,9 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SAL_TYPES_HPP
-#define SONIA_SAL_TYPES_HPP
+#pragma once
 
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
-
-namespace sonia { namespace sal {
+namespace sonia::sal {
 
 #ifdef BOOST_WINDOWS
 using file_handle_type = void*;
@@ -17,6 +12,4 @@ using file_handle_type = void*;
 using file_handle_type = int;
 #endif
 
-}}
-
-#endif // SONIA_SAL_HPP
+}

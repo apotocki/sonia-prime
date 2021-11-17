@@ -12,6 +12,10 @@
 #include <tuple>
 #include <vector>
 
+#if HAS_ICU
+#   include <unicode/uclean.h>
+#endif
+
 #include <boost/assert.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/thread/future.hpp>
@@ -35,10 +39,13 @@
 #   include "sonia/sys/linux/signals.hpp"
 #endif
 
+#ifdef __APPLE__
+#   include "sonia/sys/macos/dispatch.hpp"
+#endif
+
 namespace sonia::services {
 
 namespace po = boost::program_options;
-namespace fs = boost::filesystem;
 namespace sp = sonia::parameters;
 
 struct host_equal_to
@@ -51,7 +58,7 @@ environment::environment() : log_initialized_(false)
 {
     options_.add_options()
         ("log", po::value<std::string>()->default_value("log.conf"), "the logging subsystem configuration file")
-        ("cfg,c", po::value<std::string>()->default_value("config.json"), "configuration (json) file paths")
+        ("cfg,c", po::value<std::string>(), "configuration (json) file paths")
         ("base-path,b", po::value<std::string>()->default_value(get_default_base_path() ? *get_default_base_path() : ""), "base path")
         ("service-registry-file,r", po::value<std::string>()->default_value(".services"), "services registry file")
         ("type-registry-file,t", po::value<std::string>()->default_value(".types"), "types registry file")
@@ -85,7 +92,7 @@ environment::environment() : log_initialized_(false)
         std::ostringstream version_ss;
         version_ss << "[Version " SONIA_ONE_VERSION " (" << BUILD_NAME << " " << BUILD_DATETIME ")]" HELLO_MESSAGE;
         version_msg_ = version_ss.str();
-        set_version_message(version_msg_);
+        set_version_message(&version_msg_);
     } else {
         version_msg_ = *vmsg;
     }
@@ -116,12 +123,19 @@ environment::~environment() noexcept
     threadpool_.reset();
 #elif defined (__linux__)
     linux::stop_watchers();
+#elif defined (__APPLE__)
+    macos::stop_queue();
 #endif
 
+#if HAS_ICU
+    u_cleanup();
+#endif
     if (log_initialized_) {
-        GLOBAL_LOG_INFO() << "environment terminated";
+        GLOBAL_LOG_INFO() << "environment has been terminated";
         logger::deinitialize();
     }
+
+    set_version_message(nullptr);
 }
 
 void environment::open(int argc, char const* argv[], std::istream * cfgstream)
@@ -160,12 +174,13 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
 
     std::string const& logcfg = vm["log"].as<std::string>();
 
-    if (!fs::is_regular_file(logcfg)) {
-        throw exception("Can not find the log configuration file: %1%"_fmt % fs::absolute(logcfg));
+    if (fs::is_regular_file(logcfg)) {
+        std::ifstream logcdfgis(logcfg.c_str());
+        logger::initialize(logcdfgis);
+    } else {
+        GLOBAL_LOG_ERROR() << ("Can not find the log configuration file: %1%"_fmt % fs::absolute(logcfg)).str();
     }
 
-    std::ifstream logcdfgis(logcfg.c_str());
-    logger::initialize(logcdfgis);
     log_initialized_ = true;
 
     if (verbose_) {
@@ -192,13 +207,20 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
     threadpool_.reset(new windows::threadpool);
 #elif defined (__linux__)
     linux::run_watchers(1);
+#elif defined (__APPLE__)
+    macos::run_queue();
 #endif
+}
+
+void environment::add_load_bundle_hook(lbhook_t const& h)
+{
+    lbhooks_.push_back(h);
 }
 
 void environment::start()
 {
     if (start_conf_) {
-        load_configuration(boost::filesystem::path(*start_conf_));
+        load_configuration(fs::path(*start_conf_));
         //for (std::string const& f : vm["cfg"].as<std::vector<std::string>>()) {
         //    load_configuration(boost::filesystem::path(f));
         //}
@@ -208,7 +230,7 @@ void environment::start()
     //vm["handling-system-failure"].as<bool>();
 }
 
-void environment::load_configuration(boost::filesystem::path const & fpath)
+void environment::load_configuration(fs::path const & fpath)
 {
     if (!fs::is_regular_file(fpath)) {
         throw exception("Can not find the configuration file: %1%"_fmt % fs::absolute(fpath));
@@ -246,7 +268,7 @@ void environment::load_configuration(std::istream & cfg)
     }
 
     for (auto const& pair : ecfg.bundles) {
-        factory_->register_service_factory(pair.first, [cfg = std::move(pair.second)]() {
+        factory_->register_service_factory(pair.first, [this, cfg = std::move(pair.second)]() {
             return environment::create_bundle_service(cfg);
         });
     }
@@ -339,6 +361,10 @@ shared_ptr<service> environment::create_service(service_configuration const& cfg
 
 shared_ptr<service> environment::create_bundle_service(bundle_configuration const& cfg)
 {
+    for (lbhook_t const& h : lbhooks_) {
+        shared_ptr<service> r = h(cfg);
+        if (r) return r;
+    }
     return sonia::sal::load_bundle(cfg);
 }
 

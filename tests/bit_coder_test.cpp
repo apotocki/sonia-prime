@@ -3,11 +3,11 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include <boost/test/unit_test.hpp>
+#include "applied/sonia_test.hpp"
 #include "sonia/utility/serialization/bit_coder.hpp"
 #include "sonia/utility/streaming/vector.hpp"
 
-BOOST_AUTO_TEST_CASE(bit_coder_test)
+void bit_coder_test()
 {
     using namespace sonia::serialization;
 
@@ -105,3 +105,12 @@ BOOST_AUTO_TEST_CASE(bit_coder_test)
         BOOST_CHECK_EQUAL(l, v);
     }
 }
+
+void bit_coder_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&bit_coder_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(bit_coder_test_registrar)
+#endif

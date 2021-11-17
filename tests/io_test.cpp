@@ -5,9 +5,6 @@
 #include "sonia/config.hpp"
 
 #include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
-
-namespace fs = boost::filesystem;
 
 #define TEST_FOLDER "aio_test"
 
@@ -17,8 +14,10 @@ namespace fs = boost::filesystem;
 #include "sonia/string.hpp"
 #include "sonia/type_traits.hpp"
 #include "sonia/services.hpp"
+#include "sonia/filesystem.hpp"
 
 using namespace sonia;
+namespace fs = sonia::fs;
 
 namespace {
 

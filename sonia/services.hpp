@@ -2,20 +2,15 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICES_HPP
-#define SONIA_SERVICES_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <iosfwd>
-#include <boost/filesystem.hpp>
 
 #include "prime_config.hpp"
 #include "sonia/function.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/exceptions.hpp"
+#include "sonia/filesystem.hpp"
 #include "sonia/services/service.hpp"
 #include "sonia/services/host.hpp"
 
@@ -28,17 +23,19 @@ SONIA_PRIME_API void detach_host();
 
 namespace sonia::services {
 
-typedef void (*post_initialize_fn)();
+class environment;
+
+using post_initialize_fn = void(environment*);
 
 SONIA_PRIME_API char const* bundles_path();
 
 SONIA_PRIME_API void set_default_base_path(std::string);
 SONIA_PRIME_API std::string const* get_default_base_path();
 
-SONIA_PRIME_API void set_version_message(std::string);
+SONIA_PRIME_API void set_version_message(std::string const*);
 SONIA_PRIME_API std::string const* get_version_message();
 
-SONIA_PRIME_API void set_post_initialize(post_initialize_fn);
+SONIA_PRIME_API void set_post_initialize(post_initialize_fn*);
 
 SONIA_PRIME_API void initialize(int argc = 0, char const* argv[] = nullptr, std::istream * cfgstream = nullptr);
 SONIA_PRIME_API void shutdown();
@@ -64,9 +61,7 @@ void locate(IdT && id, shared_ptr<ServiceT> & serv)
 }
 
 SONIA_PRIME_API void register_service_factory(string_view, function<shared_ptr<service>()> const&);
-SONIA_PRIME_API void load_configuration(boost::filesystem::path const &);
+SONIA_PRIME_API void load_configuration(fs::path const &);
 SONIA_PRIME_API void load_configuration(std::istream &);
 
 }
-
-#endif // SONIA_SERVICES_HPP

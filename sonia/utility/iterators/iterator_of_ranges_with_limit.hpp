@@ -46,6 +46,9 @@ class iterator_of_ranges_with_limit
 
     value_t get_dereference() const
 	{
+        if (!limit) {
+            THROW_EOF_ERROR();
+        }
 		value_t r = *base;
         size_t cursz = boost::size(r);
         if (cursz > limit) {

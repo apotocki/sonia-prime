@@ -1,27 +1,22 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_SERVICES_ENVIRONMENT_HPP
-#define SONIA_SERVICES_ENVIRONMENT_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <iosfwd>
 #include <list>
 #include <atomic>
 #include <typeindex>
+#include <vector>
 
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 
 #include "sonia/optional.hpp"
 #include "sonia/concurrency.hpp"
+#include "sonia/filesystem.hpp"
 
 #include "host_impl.hpp"
 #include "service_factory.hpp"
@@ -54,6 +49,7 @@ struct environment_configuration
 class environment
     : public durable_type_registry
 {
+    using lbhook_t = function<shared_ptr<service>(bundle_configuration const&)>;
 public:
     environment();
     ~environment() noexcept;
@@ -61,7 +57,7 @@ public:
     void open(int argc, char const* argv[], std::istream * cfgstream = nullptr);
     void start();
 
-    void load_configuration(boost::filesystem::path const &);
+    void load_configuration(fs::path const &);
     void load_configuration(std::istream &);
 
     singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>(singleton::id)> const&);
@@ -70,6 +66,8 @@ public:
     // host & host(string_view);
     shared_ptr<host_impl> get_host(string_view);
     shared_ptr<host_impl> default_host();
+
+    void add_load_bundle_hook(lbhook_t const&);
 
     void register_service_factory(string_view, function<shared_ptr<service>()> const&);
 
@@ -80,7 +78,8 @@ private:
     struct host_hasher { size_t operator()(shared_ptr<host_impl> const& ph) const { return hasher()(ph->get_name()); } };
 
     static shared_ptr<service> create_service(service_configuration const& cfg);
-    static shared_ptr<service> create_bundle_service(bundle_configuration const& cfg);
+    
+    shared_ptr<service> create_bundle_service(bundle_configuration const& cfg);
 
     spin_mutex host_mtx_;
     boost::unordered_set<shared_ptr<host_impl>, host_hasher> hosts_;
@@ -106,6 +105,7 @@ private:
     std::atomic<uint32_t> type_id_counter_{0};
 
     singleton_locator slocator_;
+    std::vector<lbhook_t> lbhooks_;
 
 #ifdef BOOST_WINDOWS
 public:
@@ -117,5 +117,3 @@ private:
 };
 
 }
-
-#endif // SONIA_SERVICES_ENVIRONMENT_HPP

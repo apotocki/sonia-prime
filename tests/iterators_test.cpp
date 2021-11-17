@@ -6,11 +6,10 @@
 
 #include <map>
 #include <string>
+#include <fstream>
+#include <filesystem>
 
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
-
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 #define TEST_FOLDER "iterators_test"
 
 #include "sonia/string.hpp"
@@ -23,10 +22,11 @@ namespace fs = boost::filesystem;
 #include "sonia/utility/iterators/bz2_decompress_iterator.hpp"
 #include "sonia/utility/iterators/bz2_compress_iterator.hpp"
 
+#include "applied/sonia_test.hpp"
+
 using namespace sonia;
 
-#if 1
-BOOST_AUTO_TEST_CASE (file_region_iterator_test)
+void file_region_iterator_test()
 {
     fs::remove_all(TEST_FOLDER);
 
@@ -67,21 +67,15 @@ BOOST_AUTO_TEST_CASE (file_region_iterator_test)
 
 }
 
-#endif
-
-#if 1
-#if 1
-BOOST_AUTO_TEST_CASE( tar_iterator_test )
+void tar_iterator_test()
 {
-    char const* path = std::getenv("SONIA_PRIME_HOME");
-    BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
-
-    fs::path sonia_prime_home(path);
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path data_path{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "archives" };
 
     using file_iterator_t = file_region_iterator<const char>;
     using tar_iterator_t = tar_extract_iterator<file_iterator_t>;
 
-    tar_iterator_t tit{file_iterator_t{sonia_prime_home / "tests" / "data" / "archives" / "files.tar", 0, 65536}};
+    tar_iterator_t tit{file_iterator_t{data_path / "files.tar", 0, 65536}};
 
     std::map<std::string, std::string> content;
     while (tit.next()) {
@@ -100,16 +94,10 @@ BOOST_AUTO_TEST_CASE( tar_iterator_test )
     BOOST_CHECK_EQUAL(content["file1.txt"], "file1\r\n");
 }
 
-#endif
-
-#if 1
-BOOST_AUTO_TEST_CASE(gz_iterator_test)
+void gz_iterator_test()
 {
-    char const* path = std::getenv("SONIA_PRIME_HOME");
-    BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
-
-    fs::path sonia_prime_home(path);
-    fs::path files_base_path = sonia_prime_home / "tests" / "data" / "archives";
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path files_base_path{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "archives" };
 
     using file_iterator_t = file_region_iterator<const char>;
 
@@ -141,9 +129,7 @@ BOOST_AUTO_TEST_CASE(gz_iterator_test)
 	BOOST_CHECK_EQUAL(content["file1.txt"], "file1\r\n");
 
 }
-#endif
 
-#if 1
 template <
     template <class> class compress_iterator,
     template <class> class decompress_iterator,
@@ -188,7 +174,7 @@ void archiver_test(const char* fname, size_t fsz, ArgsT && ... args)
     BOOST_CHECK_EQUAL(rfsz, fsz);
 }
 
-BOOST_AUTO_TEST_CASE(gzip_iterators_test)
+void gzip_iterators_test()
 {
     //fs::remove_all(TEST_FOLDER);
     fs::create_directories(TEST_FOLDER);
@@ -196,14 +182,13 @@ BOOST_AUTO_TEST_CASE(gzip_iterators_test)
     archiver_test<deflate_iterator, inflate_iterator>(TEST_FOLDER "/temp.gz", 1024 * 1024 * 128, true);
 }
 
-BOOST_AUTO_TEST_CASE(bzip2_iterators_test)
+void bzip2_iterators_test()
 {
     //fs::remove_all(TEST_FOLDER);
     fs::create_directories(TEST_FOLDER);
 
     archiver_test<bz2_compress_iterator, bz2_decompress_iterator>(TEST_FOLDER "/temp.bz2", 1024 * 1024 * 16);
 }
-#endif
 
 #include "sonia/utility/iterators/archive_extract_iterator.hpp"
 
@@ -212,7 +197,8 @@ namespace {
 std::map<std::string, std::string> load_archive(fs::path const& p)
 {
     std::map<std::string, std::string> result;
-    archive_iterator ait = make_archive_extract_iterator(p.leaf().string(), file_region_iterator<const char>(p, 0, 65536));
+    
+    archive_iterator ait = make_archive_extract_iterator(p.filename().string(), file_region_iterator<const char>(p, 0, 65536));
     
     while (ait.next()) {
         std::string name = ait.name();
@@ -233,13 +219,10 @@ std::map<std::string, std::string> load_archive(fs::path const& p)
 
 }
 
-BOOST_AUTO_TEST_CASE (archive_extract_iterator_test)
+void archive_extract_iterator_test()
 {
-    char const* path = std::getenv("SONIA_PRIME_HOME");
-    BOOST_REQUIRE_MESSAGE(path, "SONIA_PRIME_HOME must be set");
-
-    fs::path sonia_prime_home{ path };
-    fs::path archive_test_home{ sonia_prime_home / "tests" / "data" / "archives"};
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path archive_test_home{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "archives" };
     std::map<std::string, std::string> cnt;
 
 #if 1
@@ -320,4 +303,18 @@ BOOST_AUTO_TEST_CASE (archive_extract_iterator_test)
     
 #endif
 }
+
+
+void iterators_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&file_region_iterator_test));
+    register_test(BOOST_TEST_CASE(&tar_iterator_test));
+    register_test(BOOST_TEST_CASE(&gz_iterator_test));
+    register_test(BOOST_TEST_CASE(&gzip_iterators_test));
+    register_test(BOOST_TEST_CASE(&bzip2_iterators_test));
+    register_test(BOOST_TEST_CASE(&archive_extract_iterator_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(iterators_test_registrar)
 #endif

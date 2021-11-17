@@ -2,16 +2,11 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_FILE_STATABLE_HPP
-#define SONIA_UTILITY_FILE_STATABLE_HPP
+#pragma once
 
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
-
-#include <boost/filesystem/path.hpp>
 #include <boost/variant.hpp>
 
+#include "sonia/filesystem.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/utility/persister.hpp"
 
@@ -22,7 +17,7 @@ class file_statable
 {
 public:
     using name_ref_t = boost::variant<std::string, std::string const&>;
-    using path_ref_t = boost::variant<null_t, boost::filesystem::path, boost::filesystem::path const&>;
+    using path_ref_t = boost::variant<null_t, fs::path, fs::path const&>;
 
     //template <class ArchiveT> void serialize(ArchiveT & ar, const unsigned int = 0)
     //{
@@ -46,5 +41,3 @@ protected:
 };
 
 }
-
-#endif // SONIA_UTILITY_FILE_STATABLE_HPP

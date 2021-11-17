@@ -3,7 +3,6 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include <boost/test/unit_test.hpp>
 
 #include <vector>
 #include "sonia/string.hpp"
@@ -14,6 +13,8 @@
 #include "sonia/utility/iterators/http_form_data_read_iterator.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
 #include "sonia/utility/iterators/buffering_write_input_iterator.hpp"
+
+#include "applied/sonia_test.hpp"
 
 using namespace sonia;
 
@@ -172,8 +173,7 @@ void test_chunking_data(std::vector<std::vector<char>> & data, size_t buffsz, st
 
 }
 
-#if 1
-BOOST_AUTO_TEST_CASE(http_form_data_read_iterator_test)
+void http_form_data_read_iterator_test()
 {
     string_view boundary("\r\n----boundary--");
     
@@ -249,10 +249,7 @@ BOOST_AUTO_TEST_CASE(http_form_data_read_iterator_test)
     test_data(d8, boundary, "some data8\r\n----boundary!", "other data");
 }
 
-#endif
-
-#if 1
-BOOST_AUTO_TEST_CASE(http_chunking_read_iterator_test)
+void http_chunking_read_iterator_test()
 {
     using data_t = std::vector<std::vector<char>>;
 
@@ -278,9 +275,8 @@ BOOST_AUTO_TEST_CASE(http_chunking_read_iterator_test)
     };
     test_chunked_data(d2, "some data");
 }
-#endif
 
-BOOST_AUTO_TEST_CASE(http_chunking_write_iterator_test)
+void http_chunking_write_iterator_test()
 {
     data_t d0{
         to_vector("some data")
@@ -300,3 +296,14 @@ BOOST_AUTO_TEST_CASE(http_chunking_write_iterator_test)
     };
     test_chunking_data(d2, 20, "F\r\nsome data some \r\n5\r\ndata \r\n0\r\n\r\n");
 }
+
+void http_iterators_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&http_form_data_read_iterator_test));
+    register_test(BOOST_TEST_CASE(&http_chunking_read_iterator_test));
+    register_test(BOOST_TEST_CASE(&http_chunking_write_iterator_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(http_iterators_test_registrar)
+#endif

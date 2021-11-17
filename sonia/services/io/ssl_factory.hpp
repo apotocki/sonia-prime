@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_IO_SSL_FACTORY_HPP
-#define SONIA_IO_SSL_FACTORY_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <openssl/ssl.h>
 #include <openssl/bio.h>
@@ -136,6 +131,7 @@ public:
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service_type>, tcp_handle_type h) noexcept override final;
     void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
+    sal::socket_handle system_handle(tcp_handle_type) noexcept override final;
 
 protected:
     shared_ptr<tcp_socket_factory_type> base_socket_factory_;
@@ -148,5 +144,3 @@ private:
 };
 
 }
-
-#endif // SONIA_IO_SSL_FACTORY_HPP

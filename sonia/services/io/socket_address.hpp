@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_IO_SOCKET_ADDRESS_HPP
-#define SONIA_IO_SOCKET_ADDRESS_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <tuple>
 #include <boost/preprocessor/seq/for_each_i.hpp>
@@ -18,7 +12,7 @@
 
 #include "sonia/sal/net.hpp"
 
-namespace sonia { namespace io {
+namespace sonia::io {
 
 enum class socket_type : uint8_t
 {
@@ -66,6 +60,4 @@ using sonia::sal::socket_address;
 //    uint16_t port_;
 //};
 
-}}
-
-#endif // SONIA_IO_SOCKET_ADDRESS_HPP
+}

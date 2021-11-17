@@ -2,20 +2,35 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_CONCURRENCY_HPP
-#define SONIA_CONCURRENCY_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
 #include <boost/thread/shared_lock_guard.hpp>
 
-#include <boost/fiber/detail/spinlock.hpp>
-#include <boost/fiber/all.hpp>
+#if 1
+#include "sonia/fibers/future.hpp"
+#include "sonia/fibers/fiber.hpp"
+#include "sonia/fibers/barrier.hpp"
+namespace sonia {
+    using fibers::fiber;
+    using spin_mutex = fibers::detail::spinlock;
+}
+#else
+#include <boost/fiber/future.hpp>
+#include <boost/fiber/fiber.hpp>
+#include <boost/fiber/barrier.hpp>
+namespace sonia {
+    using boost::fibers::fiber;
+    using spin_mutex = boost::fibers::detail::spinlock;
+    namespace fibers {
+        using namespace boost::fibers;
+    }
+    namespace this_fiber = boost::this_fiber;
+}
+
+#endif
 
 namespace sonia {
 
@@ -24,20 +39,11 @@ using boost::thread;
 using std::unique_lock;
 using boost::lock_guard;
 using boost::shared_lock_guard;
-using boost::fibers::fiber;
-
-using spin_mutex = boost::fibers::detail::spinlock;
 
 namespace threads {
     using std::mutex;
     using std::condition_variable;
 }
-
-namespace fibers {
-    using namespace boost::fibers;
-}
-
-namespace this_fiber = boost::this_fiber;
 
 namespace this_thread {
     using namespace boost::this_thread;
@@ -108,12 +114,10 @@ private:
 
 
 // traits
-struct fiber_traits
-{
-    using mutex_type = fibers::mutex;
-    using condition_variable_type = fibers::condition_variable;
-};
+//struct fiber_traits
+//{
+//    using mutex_type = fibers::mutex;
+//    using condition_variable_type = fibers::condition_variable;
+//};
 
 }
-
-#endif // SONIA_CONCURRENCY_HPP

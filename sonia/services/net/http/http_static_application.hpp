@@ -9,7 +9,7 @@
 #   pragma once
 #endif
 
-#include <boost/filesystem/path.hpp>
+#include <filesystem>
 
 #include "sonia/string.hpp"
 #include "sonia/services/service.hpp"
@@ -34,7 +34,7 @@ public:
 private:
     mime_mapping_type mime_map_;
     std::string www_path_;
-    boost::filesystem::path sys_path_;
+    std::filesystem::path sys_path_;
     std::vector<std::pair<boost::regex, std::string>> forwards_;
     shared_ptr<http::application> app404_;
 };

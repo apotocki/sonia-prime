@@ -6,9 +6,11 @@
 
 #include "sonia/config.hpp"
 #include <sstream>
-#include <boost/test/unit_test.hpp>
+#include <filesystem>
+
 #include "sonia/utility/scope_exit.hpp"
 
+#include "applied/sonia_test.hpp"
 #include "applied/scoped_services.hpp"
 
 #include "sonia/services/bookkeeper/bookkeeper.hpp"
@@ -42,11 +44,11 @@ void get_configuration(std::ostream & os)
 
 }
 
-BOOST_AUTO_TEST_CASE (bookkeeper_test)
+void bookkeeper_test()
 {
     using namespace sonia;
     
-    boost::filesystem::remove_all(TEST_FOLDER);
+    std::filesystem::remove_all(TEST_FOLDER);
 
     json_value jsarr = {json_value(), json_value(true), json_value(false), json_value(42), json_value("string")};
 
@@ -105,3 +107,12 @@ BOOST_AUTO_TEST_CASE (bookkeeper_test)
         BOOST_CHECK_EQUAL(*bk->get("arr_key0"), jsarr);
     }
 }
+
+void bookkeeper_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&bookkeeper_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(bookkeeper_test_registrar)
+#endif

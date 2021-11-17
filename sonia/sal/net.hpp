@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_SAL_NET_HPP
-#define SONIA_SAL_NET_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/coroutine2/coroutine.hpp>
 
@@ -76,5 +70,3 @@ struct addrinfo
 boost::coroutines2::coroutine<addrinfo const*&>::pull_type parse_net_address(net_family_type, int hint_type, int hint_protocol, cstring_view address, uint16_t port);
 
 }
-
-#endif // SONIA_SAL_NET_HPP

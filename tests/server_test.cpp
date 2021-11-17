@@ -5,11 +5,9 @@
 #include "sonia/config.hpp"
 
 #include <iostream>
+#include <filesystem>
 
-#include <boost/test/unit_test.hpp>
-#include <boost/filesystem.hpp>
-
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 
 #define TEST_FOLDER "server_test"
 
@@ -17,6 +15,8 @@ namespace fs = boost::filesystem;
 #include "sonia/string.hpp"
 #include "sonia/type_traits.hpp"
 #include "sonia/services.hpp"
+
+#include "applied/sonia_test.hpp"
 
 using namespace sonia;
 
@@ -74,9 +74,12 @@ public:
 
 #include "applied/scoped_services.hpp"
 
-BOOST_AUTO_TEST_CASE (server_test)
+void server_test()
 {
     fs::remove_all(TEST_FOLDER);
+
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path data_path{ path ? fs::path(path) / "testdata" : fs::path("testdata") };
 
     try {
         scoped_services ss{"base-path=" TEST_FOLDER "/"};
@@ -93,9 +96,10 @@ BOOST_AUTO_TEST_CASE (server_test)
             BOOST_CHECK(false);
         } catch (internal_error const&) {}
 
-        services::load_configuration("host.json");
+        services::load_configuration((data_path / "host.json").string());
 
         auto s0 = services::locate("scheduler.serv");
+        boost::this_thread::sleep(boost::posix_time::milliseconds(100));
 
     } catch (closed_exception const& e) {
         std::cout << e.what() << "\n";
@@ -104,3 +108,12 @@ BOOST_AUTO_TEST_CASE (server_test)
         BOOST_REQUIRE(false);
     }
 }
+
+void server_test_registrar()
+{
+    register_test(BOOST_TEST_CASE(&server_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(server_test_registrar)
+#endif

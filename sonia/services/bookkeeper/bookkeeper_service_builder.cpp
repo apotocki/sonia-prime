@@ -11,9 +11,9 @@ void bookkeeper_service_builder::open()
 {
     parameters_.bind()
         .variable("path", &bookkeeper_service_configuration::path, "path used to store the bookkeeper state")
-            .binder([](json_value const& v) { return boost::filesystem::path(to_string(v.get_string())); })
+            .binder([](json_value const& v) { return std::filesystem::path(to_string(v.get_string())); })
         .variable("dir", &bookkeeper_service_configuration::dir, "dir used to store the bookkeeper state")
-            .binder([](json_value const& v) { return boost::filesystem::path(to_string(v.get_string())); })
+            .binder([](json_value const& v) { return std::filesystem::path(to_string(v.get_string())); })
     ;
 }
 

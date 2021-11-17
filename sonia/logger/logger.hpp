@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_LOGGER_HPP
-#define SONIA_LOGGER_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <istream>
 #include <ostream>
@@ -24,7 +19,7 @@
 #include "sonia/string.hpp"
 
 // implementation is based on boost/log/trivial.hpp example
-namespace sonia { namespace logger {
+namespace sonia::logger {
 
 #define SONIA_LOG_SEVERITY_LEVEL_SEQ  \
     ((trace, TRACE))     \
@@ -88,7 +83,3 @@ BOOST_LOG_INLINE_GLOBAL_LOGGER_CTOR_ARGS(global_logger, boost::log::sources::sev
 #define GLOBAL_LOG_WARN()  BOOST_LOG_SEV(sonia::logger::global_logger::get(), sonia::logger::severity_level::warning)
 #define GLOBAL_LOG_ERROR() BOOST_LOG_SEV(sonia::logger::global_logger::get(), sonia::logger::severity_level::error)
 #define GLOBAL_LOG_FATAL() BOOST_LOG_SEV(sonia::logger::global_logger::get(), sonia::logger::severity_level::fatal)
-
-}
-
-#endif // SONIA_LOGGER_HPP

@@ -7,8 +7,6 @@
 #include <tuple>
 #include <iostream>
 
-#include <boost/test/unit_test.hpp>
-
 #include "sonia/utility/automatic.hpp"
 #include "sonia/utility/serialization/serialization.hpp"
 #include "sonia/utility/serialization/integral.hpp"
@@ -16,10 +14,12 @@
 #include "sonia/logger/logger.hpp"
 #include <mutex>
 
+#include "applied/sonia_test.hpp"
+
 using namespace sonia;
 
 #if 0
-BOOST_AUTO_TEST_CASE (prime_test)
+void prime_test()
 {
     std::vector<char> vec;
     encode<serialization::default_t, int>(10, std::back_inserter(vec));
@@ -110,7 +110,7 @@ void test_tuple(T && bind_tuple) {
     apply_placeholders(&test_foo, bind_tuple, vec, std::vector<char>({2, 3, 4}));
 }
 
-BOOST_AUTO_TEST_CASE (bind_test)
+void bind_test()
 {
     std::string s0 = "123";
     const std::string s1 = "234";
@@ -147,7 +147,7 @@ struct test_component
     }
 };
 
-BOOST_AUTO_TEST_CASE (in_place_factory_test)
+void in_place_factory_test()
 {
     std::string s0 = "123";
     const std::string s1 = "234";
@@ -169,3 +169,14 @@ exec_hierarchy_context
 hierarchy context for on_close and etc.
 
 */
+
+void prime_test_registrar()
+{
+    //register_test(BOOST_TEST_CASE(&prime_test));
+    register_test(BOOST_TEST_CASE(&bind_test));
+    register_test(BOOST_TEST_CASE(&in_place_factory_test));
+}
+
+#ifdef AUTO_TEST_REGISTRATION
+AUTOTEST(prime_test_registrar)
+#endif

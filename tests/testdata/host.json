@@ -1,0 +1,67 @@
+{
+    //home: "k:/projects/",
+    hosts: [
+        {
+            services: [ "scheduler.serv" ]
+        }
+    ],
+    services: {
+        "scheduler.serv": {
+            factory: "scheduler-factory",
+            layer: 16,
+            parameters: {
+                threads: 30,
+                fibers: 300
+            }
+        },
+        "io.serv": {
+            factory: "io-factory",
+            layer: 16,
+            parameters: {
+                threads: 8
+            }
+        },
+        net.serv: {
+            factory: "net-factory",
+            layer: 16,
+            parameters: {
+                acceptor-factory: 'io.serv',
+                listeners: [
+                    {
+                        connector: 'cmd.serv',
+                        address: '0.0.0.0',
+                        port: 2222,
+                        type: 'tcp'
+                    }
+                ]
+            }
+        },
+        // factories
+        scheduler-factory: {
+            factory: "prime",
+            layer: 0,
+            parameters: { name: "scheduler" }
+        },
+        io-factory: {
+            factory: "prime",
+            layer: 0,
+            parameters: { name: "io" }
+        },
+        net-factory: {
+            factory: "prime",
+            layer: 0,
+            parameters: { name: "net" }
+        }
+    },
+    bundles: {
+        "prime": {lib: "sonia-prime"}
+        //"net": {lib: "sonia-net"}
+    }
+}
+/*
+{
+    hosts: [],
+    factories2: [],
+    bundles: []
+}
+*/

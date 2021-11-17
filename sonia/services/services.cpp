@@ -7,8 +7,8 @@
 #include <fstream>
 
 #include <boost/throw_exception.hpp>
-#include <boost/filesystem.hpp>
 
+#include "sonia/filesystem.hpp"
 #include "sonia/singleton.hpp"
 #include "sonia/services.hpp"
 #include "sonia/exceptions.hpp"
@@ -25,10 +25,10 @@ namespace sonia::services {
 
 thread_local thread_descriptor * tdesc_ = nullptr;
 
-post_initialize_fn post_initialize_fn_;
+post_initialize_fn * post_initialize_fn_ = nullptr;
 
 std::string * default_base_path_ = nullptr;
-std::string * version_message_ = nullptr;
+std::string const* version_message_ = nullptr;
 environment * env_ = nullptr;
 
 void thread_descriptor::reset()
@@ -61,13 +61,9 @@ std::string const* get_default_base_path()
     return default_base_path_;
 }
 
-void set_version_message(std::string msg)
+void set_version_message(std::string const* msg)
 {
-    if (!version_message_) {
-        version_message_ = new std::string(std::move(msg));
-    } else {
-        *version_message_ = std::move(msg);
-    }
+    version_message_ = msg;
 }
 
 std::string const* get_version_message()
@@ -75,7 +71,7 @@ std::string const* get_version_message()
     return version_message_;
 }
 
-void set_post_initialize(post_initialize_fn fn)
+void set_post_initialize(post_initialize_fn* fn)
 {
     post_initialize_fn_ = fn;
 }
@@ -90,7 +86,7 @@ void initialize(int argc, char const* argv[], std::istream * cfgstream)
     try {
         env_->open(argc, argv, cfgstream);
         if (post_initialize_fn_) {
-            post_initialize_fn_();
+            post_initialize_fn_(env_);
         }
         env_->start();
     } catch (...) {
@@ -106,10 +102,6 @@ void shutdown()
     GLOBAL_LOG_INFO() << "terminating...";
     delete env_;
     env_ = nullptr;
-    if (version_message_) {
-        delete version_message_;
-        version_message_ = nullptr;
-    }
     if (default_base_path_) {
         delete default_base_path_;
         default_base_path_ = nullptr;
@@ -164,7 +156,7 @@ singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<sing
     return env_->locate_singleton(ti, f);
 }
 
-void load_configuration(boost::filesystem::path const & fnm)
+void load_configuration(fs::path const & fnm)
 {
     BOOST_ASSERT(env_);
     env_->load_configuration(fnm);

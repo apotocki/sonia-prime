@@ -12,11 +12,13 @@ io_service::io_service(io_service_configuration cfg)
     : cfg_(cfg)
 {
     set_log_attribute("Type", "io");
+    locate(cfg.scheduler, scheduler_);
+    thread_count_ = cfg_.threads;
 }
 
 void io_service::open()
 {
-    sonia::io::factory::open(cfg_.threads);
+    sonia::io::factory::open();
 }
 
 void io_service::close() noexcept

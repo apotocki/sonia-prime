@@ -7,8 +7,8 @@
 #include <fstream>
 
 #include <boost/throw_exception.hpp>
-#include <boost/filesystem.hpp>
 
+#include "sonia/filesystem.hpp"
 #include "sonia/singleton.hpp"
 #include "sonia/services.hpp"
 #include "sonia/exceptions.hpp"
@@ -156,7 +156,7 @@ singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<sing
     return env_->locate_singleton(ti, f);
 }
 
-void load_configuration(boost::filesystem::path const & fnm)
+void load_configuration(fs::path const & fnm)
 {
     BOOST_ASSERT(env_);
     env_->load_configuration(fnm);

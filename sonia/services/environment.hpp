@@ -10,13 +10,13 @@
 #include <vector>
 
 #include <boost/program_options.hpp>
-#include <boost/filesystem.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/bimap.hpp>
 #include <boost/bimap/unordered_set_of.hpp>
 
 #include "sonia/optional.hpp"
 #include "sonia/concurrency.hpp"
+#include "sonia/filesystem.hpp"
 
 #include "host_impl.hpp"
 #include "service_factory.hpp"
@@ -57,7 +57,7 @@ public:
     void open(int argc, char const* argv[], std::istream * cfgstream = nullptr);
     void start();
 
-    void load_configuration(boost::filesystem::path const &);
+    void load_configuration(fs::path const &);
     void load_configuration(std::istream &);
 
     singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>(singleton::id)> const&);

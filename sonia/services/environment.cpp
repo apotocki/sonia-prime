@@ -46,7 +46,6 @@
 namespace sonia::services {
 
 namespace po = boost::program_options;
-namespace fs = boost::filesystem;
 namespace sp = sonia::parameters;
 
 struct host_equal_to
@@ -221,7 +220,7 @@ void environment::add_load_bundle_hook(lbhook_t const& h)
 void environment::start()
 {
     if (start_conf_) {
-        load_configuration(boost::filesystem::path(*start_conf_));
+        load_configuration(fs::path(*start_conf_));
         //for (std::string const& f : vm["cfg"].as<std::vector<std::string>>()) {
         //    load_configuration(boost::filesystem::path(f));
         //}
@@ -231,7 +230,7 @@ void environment::start()
     //vm["handling-system-failure"].as<bool>();
 }
 
-void environment::load_configuration(boost::filesystem::path const & fpath)
+void environment::load_configuration(fs::path const & fpath)
 {
     if (!fs::is_regular_file(fpath)) {
         throw exception("Can not find the configuration file: %1%"_fmt % fs::absolute(fpath));

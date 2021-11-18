@@ -2046,6 +2046,9 @@
     <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\state.hpp">
       <Filter>sonia.utility\conversion\xmlenc</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\new.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

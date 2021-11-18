@@ -321,6 +321,7 @@
     <ClInclude Include="..\..\..\sonia\net\http\status_codes.hpp" />
     <ClInclude Include="..\..\..\sonia\net\uri.hpp" />
     <ClInclude Include="..\..\..\sonia\net\uri.ipp" />
+    <ClInclude Include="..\..\..\sonia\new.hpp" />
     <ClInclude Include="..\..\..\sonia\optional.hpp" />
     <ClInclude Include="..\..\..\sonia\sal.hpp" />
     <ClInclude Include="..\..\..\sonia\sal\net.hpp" />

@@ -268,15 +268,6 @@ template<class Ch, class Tr, class Alloc>
 std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> const && fmt) { return fmt.str(); }
 
 template <typename CharT, class TraitsT>
-array_view<const CharT> to_array_view(basic_string_view<CharT, TraitsT> sv) noexcept { return sv; }
-
-template <typename CharT, class TraitsT>
-array_view<const CharT> to_array_view(std::basic_string<CharT, TraitsT> const& str) noexcept { return array_view(str.data(), str.size()); }
-
-template <typename CharT, class TraitsT>
-array_view<CharT> to_array_view(std::basic_string<CharT, TraitsT> & str) noexcept { return array_view(str.data(), str.size()); }
-
-template <typename CharT, class TraitsT>
 std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, basic_string_view<CharT, TraitsT> s)
 {
     return os.write(s.begin(), s.size());

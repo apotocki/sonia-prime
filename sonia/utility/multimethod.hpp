@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_UTILITY_MULTIMETHOD_HPP
-#define SONIA_UTILITY_MULTIMETHOD_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 #include <array>
@@ -85,7 +79,7 @@ void register_multimethod(function<SigT> const& f)
 {
     using sig_t = multimethod_detail::multimethod_sig<MethodIDT, SigT>;
     std::array<std::type_index, 1 + sizeof ...(TS)> tis{sig_t::ti(), typeid(TS) ...};
-    sonia::services::register_multimethod(concrete_multimethod<SigT>(in_place, f), to_array_view(tis));
+    sonia::services::register_multimethod(concrete_multimethod<SigT>(in_place, f), tis);
 }
 
 template <typename MethodIDT, typename SigT, size_t ... I, class ArrT>
@@ -93,7 +87,7 @@ void register_multimethod(function<SigT> const& f, std::index_sequence<I ...>, A
 {
     using sig_t = multimethod_detail::multimethod_sig<MethodIDT, SigT>;
     std::array<std::type_index, 1 + sizeof ...(I)> tis{sig_t::ti(), arr[I] ...};
-    sonia::services::register_multimethod(concrete_multimethod<SigT>(in_place, f), to_array_view(tis));
+    sonia::services::register_multimethod(concrete_multimethod<SigT>(in_place, f), tis);
 }
 
 template <typename MethodIDT, typename SigT, size_t N>
@@ -107,7 +101,7 @@ function<SigT> const* get_multimethod()
 {
     using sig_t = multimethod_detail::multimethod_sig<MethodIDT, SigT>;
     std::array<std::type_index, 1 + sizeof ...(TS)> tis{sig_t::ti(), typeid(TS) ...};
-    multimethod const* mm = sonia::services::get_multimethod(to_array_view(tis));
+    multimethod const* mm = sonia::services::get_multimethod(tis);
     return mm ? &static_cast<concrete_multimethod<SigT> const&>(*mm)() : nullptr;
 }
 
@@ -116,7 +110,7 @@ function<SigT> const* get_multimethod(std::index_sequence<I ...>, ArrT const& ar
 {
     using sig_t = multimethod_detail::multimethod_sig<MethodIDT, SigT>;
     std::array<std::type_index, 1 + sizeof ...(I)> tis{sig_t::ti(), arr[I] ...};
-    multimethod const* mm = sonia::services::get_multimethod(to_array_view(tis));
+    multimethod const* mm = sonia::services::get_multimethod(tis);
     return mm ? &static_cast<concrete_multimethod<SigT> const&>(*mm)() : nullptr;
 }
 
@@ -151,7 +145,7 @@ function<SigT> const* get_multimethod(const std::type_info (&tis_)[N])
 //
 //    std::array<std::type_index, 1 + l.size()> tis{sig_t::ti(), tis ...};
 //
-//    multimethod const* mm = sonia::services::get_multimethod(to_array_view(tis));
+//    multimethod const* mm = sonia::services::get_multimethod(tis);
 //
 //    return mm ? &static_cast<concrete_multimethod<SigT> const&>(*mm)() : nullptr;
 //    */
@@ -161,5 +155,3 @@ function<SigT> const* get_multimethod(const std::type_info (&tis_)[N])
 //multimethod_apply()
 
 }
-
-#endif // SONIA_UTILITY_MULTIMETHOD_HPP

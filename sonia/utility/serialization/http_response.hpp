@@ -94,7 +94,7 @@ public:
                         deflate_iterator{
                             http_chunking_write_input_iterator{std::move(oi)}
                             , is_gzip
-                        }, to_array_view(buff)
+                        }, buff
                     }
                 );
             }

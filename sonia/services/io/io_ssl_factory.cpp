@@ -228,11 +228,11 @@ void ssl_factory::open(ssl_configuration const& cf)
     ctx_ = as_singleton<openssl_support>()->create_context();
 
     std::vector<char> certificate = load_media(cf.certificate, cf.certificate_media_type);
-    auto cert = make_shared<openssl_x509>(to_array_view(certificate), cf.certificate_type);
+    auto cert = make_shared<openssl_x509>(certificate, cf.certificate_type);
     ctx_->use(cert);
 
     std::vector<char> private_key = load_media(cf.private_key, cf.private_key_media_type);
-    auto pk = make_shared<openssl_key>(to_array_view(private_key), cf.private_key_type, cf.private_key_password);
+    auto pk = make_shared<openssl_key>(private_key, cf.private_key_type, cf.private_key_password);
     ctx_->use(pk);
 }
 
@@ -267,7 +267,7 @@ void ssl_factory::ssl_descriptor::write_from_bio_to_sock(size_t sz)
         int rdsz = BIO_read(net_bio_, &net_read_buff_.front(), (int)net_read_buff_.size());
         if (rdsz <= 0) throw exception("can't read from BIO object, error: %1%"_fmt % get_ssl_error());
         net_read_buff_.resize((size_t)rdsz);
-        auto net_read_data = to_array_view(net_read_buff_);
+        auto net_read_data = array_view(net_read_buff_);
         while (!net_read_data.empty()) {
             auto ressz = sock.write_some(net_read_data);
             if (!ressz.has_value() || ressz.value() == 0) {

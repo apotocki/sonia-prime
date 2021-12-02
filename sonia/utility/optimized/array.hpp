@@ -364,12 +364,6 @@ public:
     using base_t::operator=;
 };
 
-template <typename ElementT, size_t ByteSzV, typename RefCountT>
-auto to_array_view(shared_optimized_array<ElementT, ByteSzV, RefCountT> const& sa) { return sa.to_array_view(); }
-
-template <typename ElementT, size_t ByteSzV, typename RefCountT>
-auto to_array_view(shared_optimized_array<ElementT, ByteSzV, RefCountT> & sa) { return sa.to_array_view(); }
-
 template <typename CharT, class TraitsT, typename ElementT, size_t ByteSzV, typename RefCountT>
 std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, shared_optimized_array<ElementT, ByteSzV, RefCountT> const& arr)
 {
@@ -379,7 +373,7 @@ std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, Trait
 template <typename ElementT, size_t ByteSzV, typename RefCountT>
 inline size_t hash_value(shared_optimized_array<ElementT, ByteSzV, RefCountT> const& sa)
 {
-    return hasher()(to_array_view(sa));
+    return hasher()(sa.to_array_view());
 }
 
 }

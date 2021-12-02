@@ -12,18 +12,20 @@
 #include "input_iterator.hpp" 
 #include "output_iterator.hpp" 
 
-#include "boost/range/const_iterator.hpp"
-#include "boost/range/begin.hpp"
-#include "boost/range/end.hpp"
+#include "sonia/iterator_traits.hpp"
+
+//#include "boost/range/const_iterator.hpp"
+//#include "boost/range/begin.hpp"
+//#include "boost/range/end.hpp"
 
 namespace sonia::conversion {
 
 template <typename InputRangeT, typename OutputIteratorT, typename ConverterT>
 void pull(InputRangeT const& rng, OutputIteratorT oit, ConverterT const& enc)
 {
-    typedef typename boost::range_iterator<const InputRangeT>::type InputIteratorT;
-    typedef convert_input_iterator<ConverterT, InputIteratorT> it_t;
-    typedef typename it_t::state_type state_type;
+    using InputIteratorT = range_iterator_t<const InputRangeT>;
+    using it_t = convert_input_iterator<ConverterT, InputIteratorT>;
+    using state_type = typename it_t::state_type;
 
     state_type state;
     std::copy(it_t(enc, state, boost::begin(rng), boost::end(rng)), it_t(), oit);

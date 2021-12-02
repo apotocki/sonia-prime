@@ -129,7 +129,7 @@ public:
                     }
                 }
                 try {
-                    al_->cn->connect(to_array_view(buff), res.value(), sa, al_->sock);
+                    al_->cn->connect(buff, res.value(), sa, al_->sock);
                 } catch (eof_exception const&) { // on socket closing
                 } catch (closed_exception const&) { // on host termination
                 } catch (...) {

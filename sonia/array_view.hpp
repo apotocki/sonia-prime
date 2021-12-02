@@ -8,6 +8,7 @@
 #include <functional>
 #include <vector>
 #include <array>
+#include <string>
 #include <iterator>
 
 #include <boost/assert.hpp>
@@ -42,11 +43,29 @@ public:
     // potentially unsafe
     explicit constexpr array_view(null_t) {}
 
-    constexpr array_view() noexcept : data_(nullptr), size_(0) {}
-    constexpr array_view(T * d, size_type sz) noexcept : data_(d), size_(sz) {}
+    constexpr array_view() noexcept : data_{nullptr}, size_{0} {}
+    constexpr array_view(T * d, size_type sz) noexcept : data_{d}, size_{sz} {}
 
     template <size_t N>
-    constexpr array_view(T(&arr)[N]) noexcept : data_(arr), size_(N) {}
+    constexpr array_view(T(&arr)[N]) noexcept : data_{arr}, size_{N} {}
+
+    template <typename VT, class AllocatorT, typename Enabler = enable_if_t<is_same_v<T, VT> && !is_const_v<VT>>>
+    array_view(std::vector<VT, AllocatorT>& v) noexcept : data_{ v.empty() ? nullptr : &v.front() }, size_{ v.size() } {}
+
+    template <typename VT, class AllocatorT, typename Enabler = enable_if_t<is_same_v<value_type, remove_cv_t<VT>> && is_const_v<T>>>
+    array_view(std::vector<VT, AllocatorT> const& v) noexcept : data_{ v.empty() ? nullptr : &v.front() }, size_{ v.size() } {}
+
+    template <typename VT, size_t SzV, typename Enabler = enable_if_t<is_same_v<T, VT> && !is_const_v<VT>>>
+    array_view(std::array<VT, SzV> & v) noexcept : data_{ SzV ? &v.front() : nullptr }, size_{ SzV } {}
+
+    template <typename VT, size_t SzV, typename Enabler = enable_if_t<is_same_v<value_type, remove_cv_t<VT>>&& is_const_v<T>>>
+    array_view(std::array<VT, SzV> const& v) noexcept : data_{ SzV ? &v.front() : nullptr }, size_{ SzV } {}
+
+    template <typename CharT, class TraitsT, typename Enabler = enable_if_t<is_same_v<T, CharT> && !is_const_v<CharT>>>
+    array_view(std::basic_string<CharT, TraitsT> & s) noexcept : data_{ s.data() }, size_{ s.size() } {}
+
+    template <typename CharT, class TraitsT, typename Enabler = enable_if_t<is_same_v<value_type, CharT>&& is_const_v<T>>>
+    array_view(std::basic_string<CharT, TraitsT> const& s) noexcept : data_{ s.c_str() }, size_{ s.size() } {}
 
     constexpr array_view(T * b, T * e) noexcept
         : data_(b), size_(e - b)
@@ -150,6 +169,24 @@ protected:
     size_t size_;
 };
 
+template <typename VT, class AllocatorT>
+array_view(std::vector<VT, AllocatorT> const&) noexcept -> array_view<add_const_t<VT>>;
+
+template <typename VT, class AllocatorT>
+array_view(std::vector<VT, AllocatorT> &) noexcept -> array_view<VT>;
+
+template <typename VT, size_t SzV>
+array_view(std::array<VT, SzV> const&) noexcept -> array_view<add_const_t<VT>>;
+
+template <typename VT, size_t SzV>
+array_view(std::array<VT, SzV> &) noexcept -> array_view<VT>;
+
+template <typename CharT, class TraitsT>
+array_view(std::basic_string<CharT, TraitsT> const& s) noexcept -> array_view<add_const_t<CharT>>;
+
+template <typename CharT, class TraitsT>
+array_view(std::basic_string<CharT, TraitsT>& s) noexcept -> array_view<CharT>;
+
 using byte_array_view = array_view<uint8_t>;
 
 template <class T> struct is_array_view : false_type {};
@@ -172,39 +209,6 @@ template <typename T>
 bool operator< (array_view<T> const& lhs, array_view<T> const& rhs)
 {
     return range_less()(lhs, rhs);
-}
-
-template <typename T>
-array_view<T> to_array_view(array_view<T> av) { return av; }
-
-template <typename T, size_t N>
-array_view<T> to_array_view(T(&arr)[N])
-{
-    return array_view<T>(arr, N);
-}
-
-template <typename T, class AllocatorT>
-array_view<T> to_array_view(std::vector<T, AllocatorT> & v)
-{
-    return array_view<T>(v.empty() ? nullptr : &v.front(), v.size());
-}
-
-template <typename T, class AllocatorT>
-array_view<const T> to_array_view(std::vector<T, AllocatorT> const& v)
-{
-    return array_view<const T>(v.empty() ? nullptr : &v.front(), v.size());
-}
-
-template <typename T, size_t SzV>
-array_view<T> to_array_view(std::array<T, SzV> & v)
-{
-    return array_view<T>(SzV ? &v.front() : nullptr, SzV);
-}
-
-template <typename T, size_t SzV>
-array_view<const T> to_array_view(std::array<T, SzV> const& v)
-{
-    return array_view<const T>(SzV ? &v.front() : nullptr, SzV);
 }
 
 template <typename ArrayT, typename OffsT>
@@ -271,7 +275,7 @@ size_t hash_value(array_view<T> arr)
         }
     } else {
         for (T const& item : arr) {
-            hash_combine(hash_value, item);
+            sonia::hash_combine(hash_value, item);
         }
     }
     return hash_value;

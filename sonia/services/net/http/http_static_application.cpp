@@ -71,7 +71,7 @@ void http_static_application::handle(http::request & req, http::response & resp)
 
     if (canuri.size() >= www_path_.size() && std::equal(www_path_.begin(), www_path_.end(), canuri.begin())) {
         canuri.push_back('\0');
-        cstring_view relpath = to_array_view(canuri);
+        cstring_view relpath = array_view(canuri);
         relpath.advance_front(www_path_.size());
 
         // forwarding

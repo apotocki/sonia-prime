@@ -229,7 +229,7 @@ void transceiver_service::transmit_and_receive(string_view dest, serializable_pr
         boost::forward_traversal_tag,
         array_view<char>,
         array_view<char>
-    > writimpl(soc, to_array_view(tmp_buff));
+    > writimpl(soc, tmp_buff);
 
     obj.serialize(serializable::range_write_iterator{&writimpl});
         
@@ -237,7 +237,7 @@ void transceiver_service::transmit_and_receive(string_view dest, serializable_pr
         chunk_read_iterator,
         boost::forward_traversal_tag,
         array_view<const char>
-    > rditimpl(soc, to_array_view(tmp_buff));
+    > rditimpl(soc, tmp_buff);
 
     obj.deserialize(serializable::range_read_iterator{&rditimpl});
 }
@@ -263,13 +263,13 @@ void transceiver_service::connect(io::tcp_socket soc)
         chunk_read_iterator,
         boost::forward_traversal_tag,
         array_view<const char>
-    > rditimpl(soc, to_array_view(buff), 0);
+    > rditimpl(soc, buff, 0);
 
     output_iterator_polymorpic_adapter<
         chunk_write_iterator,
         boost::forward_traversal_tag,
         array_view<char>
-    > writimpl(soc, to_array_view(buff));
+    > writimpl(soc, buff);
 
     serializable::range_write_iterator wit(&writimpl);
     

@@ -168,6 +168,13 @@ context::~context() {
     }
     BOOST_ASSERT( wait_queue_.empty() );
     delete properties_;
+
+    // my fix 24.11.2021
+    for (fss_data_t::value_type& data : fss_data_) {
+        data.second.do_cleanup();
+    }
+    fss_data_.clear();
+    // my fix end 24.11.2021
 }
 
 context::id

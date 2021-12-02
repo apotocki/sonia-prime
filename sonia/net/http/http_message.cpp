@@ -70,7 +70,7 @@ array_view<const std::string> header_collection::get_header(any_header_param_t h
 {
     auto it = headers.find(h, hasher(), header_equal_to());
     if (it != headers.end()) {
-        return to_array_view(it->second);
+        return it->second;
     }
     return array_view<const std::string>{};
 }
@@ -182,7 +182,7 @@ void request::parse_body_as_multipart_form_data(string_view boundary, function<v
     std::vector<char> extboundary{'\r', '\n', '-', '-'};
     extboundary.reserve(boundary.size() + 4);
     extboundary.insert(extboundary.end(), boundary.begin(), boundary.end());
-    auto extboundary_view = to_array_view(std::as_const(extboundary));
+    auto extboundary_view = array_view(std::as_const(extboundary));
 
     if (!parsers::string(b, e, string_view{extboundary_view.begin() + 2, extboundary_view.end()})) {
         throw exception("missed form-data prolog");
@@ -279,7 +279,7 @@ array_view<std::string const> request::get_parameter(string_view name) const
 {
     auto it = parameters.find(name, hasher(), string_equal_to());
     if (it == parameters.end() || it->second.empty()) return array_view<std::string const>();
-    return to_array_view(it->second);
+    return it->second;
 }
 
 void request::set_property(string_view name, json_value value)

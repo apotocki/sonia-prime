@@ -171,12 +171,15 @@ struct hash<basic_decimal<SignificandT, ExponentT>>
 {
     size_t operator()(basic_decimal<SignificandT, ExponentT> const& s) const
     {
-        size_t hash_value = 0;
-        hash_combine(hash_value, s.raw_value());
-        hash_combine(hash_value, s.raw_exp());
-        return hash_value;
+        return hasher()(s.raw_value(), s.raw_exp());
     }
 };
+
+template <typename SignificandT, typename ExponentT>
+inline size_t hash_value(basic_decimal<SignificandT, ExponentT> const& v)
+{
+    return hash<basic_decimal<SignificandT, ExponentT>>()(v);
+}
 
 template <typename SignificandT, typename ExponentT>
 void basic_decimal<SignificandT, ExponentT>::operator += (basic_decimal<SignificandT, ExponentT> const& rhs)

@@ -12,7 +12,7 @@ namespace std {
 template <typename CharT, class TraitsT, typename T, class AllocatorT>
 basic_ostream<CharT, TraitsT> & operator<< (basic_ostream<CharT, TraitsT> & os, vector<T, AllocatorT> const& vec)
 {
-    return os << array_view(vec);
+    return os << sonia::array_view(vec);
 }
 
 }

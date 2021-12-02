@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_UTILITY_OPTIMIZED_MAYBE_ARRAY_HPP
-#define SONIA_UTILITY_OPTIMIZED_MAYBE_ARRAY_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/optimized/array.hpp"
@@ -147,12 +141,4 @@ bool operator< (maybe_array<T, ByteSzV0, RefCountT0> const& lhs, maybe_array<T, 
     return range_less()(lhs, rhs);
 }
 
-template <typename T, size_t ByteSzV, typename RefCountT>
-array_view<const T> to_array_view(maybe_array<T, ByteSzV, RefCountT> const& sa) { return sa.to_array_view(); }
-
-template <typename T, size_t ByteSzV, typename RefCountT>
-auto to_array_view(maybe_array<T, ByteSzV, RefCountT> & sa) { return sa.to_array_view(); }
-
 }
-
-#endif // SONIA_UTILITY_OPTIMIZED_MAYBE_ARRAY_HPP

@@ -157,9 +157,9 @@ void udp_echo_test(io::udp_socket soc)
     // sync test
     std::string test_str("This is a test meassage.");
 
-    soc.write_some("127.0.0.1", 2224, to_array_view(test_str));
+    soc.write_some("127.0.0.1", 2224, array_view{test_str});
     std::vector<char> result(1024);
-    auto szres = soc.read_some(to_array_view(result));
+    auto szres = soc.read_some(array_view{result});
     BOOST_REQUIRE(szres.has_value() && szres.value());
     BOOST_CHECK_EQUAL(test_str, std::string(&result[0], szres.value()));
 
@@ -201,7 +201,8 @@ void tcp_echo_test(io::tcp_socket soc)
     while (tested_sz != test_sz) {
         auto rsz = soc.read_some(rbuff, sizeof(rbuff));
         if (!rsz.has_value()) {
-            throw exception("read error: %1%"_fmt % rsz.error().message());
+            throw exception("read error");
+            //throw exception("read error: %1%"_fmt % rsz.error().message());
         }
         if (!rsz.value()) throw exception("echo mismatch, no enough data");
         for (uint8_t c : array_view(rbuff, rsz.value())) {

@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_SERIALIZATION_OPTIMIZED_ARRAY_HPP
-#define SONIA_SERIALIZATION_OPTIMIZED_ARRAY_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/utility/optimized/array.hpp"
 
@@ -25,7 +19,7 @@ public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(type const& value, OutputIteratorT oi) const
     {
-        return sonia::encode<TagT>(to_array_view(value),
+        return sonia::encode<TagT>(value.to_array_view(),
             sonia::encode<TagT>(value.size(), std::move(oi))
         );
     }
@@ -56,5 +50,3 @@ public:
 };
 
 }
-
-#endif // SONIA_SERIALIZATION_OPTIMIZED_ARRAY_HPP

@@ -43,14 +43,14 @@ class chunk_iterator
     array_view<const char> get_dereference() const
     {
         auto const& chunk = (*data_)[pos_];
-        auto r = to_array_view(chunk);
+        auto r = array_view(chunk);
         r.advance_front(offset_);
         return r;
     }
 
     void set_dereference(array_view<const char> rng)
     {
-        BOOST_ASSERT (rng.is_subset_of(to_array_view((*data_)[pos_])));
+        BOOST_ASSERT (rng.is_subset_of(array_view((*data_)[pos_])));
         offset_ = static_cast<size_t>(rng.begin() - &(*data_)[pos_].front());
     }
 
@@ -160,7 +160,7 @@ void test_chunking_data(std::vector<std::vector<char>> & data, size_t buffsz, st
 {
     std::vector<char> store;
     std::vector<char> buffer(buffsz);
-    http_chunking_write_input_iterator it{buffering_write_input_iterator{vector_write_output_iterator(store), to_array_view(buffer)}};
+    http_chunking_write_input_iterator it{buffering_write_input_iterator{vector_write_output_iterator(store), buffer}};
     for (auto const& vec : data) {
         range_dereferencing_iterator rdit{std::move(it)};
         rdit = std::copy(vec.begin(), vec.end(), std::move(rdit));
@@ -168,7 +168,7 @@ void test_chunking_data(std::vector<std::vector<char>> & data, size_t buffsz, st
         it = std::move(rdit.base);
     }
     it.close();
-    BOOST_CHECK_EQUAL(string_view(to_array_view(store)), expected);
+    BOOST_CHECK_EQUAL(string_view(array_view(store)), expected);
 }
 
 }

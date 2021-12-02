@@ -21,10 +21,10 @@ BOOST_AUTO_TEST_CASE (server_socket_test)
 
     io::tcp_acceptor soc = f->create_tcp_acceptor("localhost", 80);
 
-    //sio::tcp_socket client_soc = soc.accept_and_read_some(to_array_view(buffer));
+    //sio::tcp_socket client_soc = soc.accept_and_read_some(array_view(buffer));
 
     std::vector<char> buffer(1024);
-    soc.async_accept_and_read_some(to_array_view(buffer),
+    soc.async_accept_and_read_some(array_view(buffer),
         [&buffer](std::error_code const& err, size_t rsz, sio::tcp_socket soc, io::tcp_acceptor::renew_functor const& rf) {
         size_t tsz = buffer.size();
             if (err) {

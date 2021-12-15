@@ -394,17 +394,17 @@ public:
     }
 };
 
-template <size_t SizeV, typename ValueT, class CategoryOrTraversal, typename ReferenceT = ValueT const&, typename DifferenceT = std::ptrdiff_t, typename OffsetT = void>
+template <size_t SizeV, typename ValueT, class CategoryOrTraversal, typename ReferenceT = ValueT const&, typename DifferenceT = std::ptrdiff_t, size_t AlignmentV = std::alignment_of_v<iterator_polymorphic<ReferenceT, DifferenceT>>, typename OffsetT = void>
 using automatic_polymorphic_iterator =
     wrapper_iterator<
-        automatic_polymorphic<iterator_polymorphic<ReferenceT, DifferenceT>, SizeV, OffsetT>,
+        automatic_polymorphic<iterator_polymorphic<ReferenceT, DifferenceT>, SizeV, AlignmentV, OffsetT>,
         ValueT, CategoryOrTraversal, DifferenceT
     >;
 
-template <size_t SizeV, typename ValueT, class CategoryOrTraversal, typename SetValueT, typename DifferenceT = std::ptrdiff_t, typename OffsetT = void>
+template <size_t SizeV, typename ValueT, class CategoryOrTraversal, typename SetValueT, typename DifferenceT = std::ptrdiff_t, size_t AlignmentV = std::alignment_of_v<proxying_iterator_polymorphic<ValueT, SetValueT, DifferenceT>>, typename OffsetT = void>
 using automatic_polymorphic_output_iterator =
     wrapper_iterator<
-        automatic_polymorphic<proxying_iterator_polymorphic<ValueT, SetValueT, DifferenceT>, SizeV, OffsetT>,
+        automatic_polymorphic<proxying_iterator_polymorphic<ValueT, SetValueT, DifferenceT>, SizeV, AlignmentV, OffsetT>,
         ValueT, CategoryOrTraversal, DifferenceT
     >;
 }

@@ -15,7 +15,7 @@
 
 namespace sonia {
 
-template <typename PolymorphicT, size_t SizeV, typename OffsetT>
+template <typename PolymorphicT, size_t SizeV, size_t AlignmentV, typename OffsetT>
 class automatic_polymorphic_base
 {
 public:
@@ -39,13 +39,13 @@ protected:
         offset_ = static_cast<OffsetT>(offset);
     }
 
-    alignas(PolymorphicT) char buffer_[SizeV];
+    alignas(AlignmentV) char buffer_[SizeV];
     OffsetT offset_;
 };
 
 
-template <typename PolymorphicT, size_t SizeV>
-class automatic_polymorphic_base<PolymorphicT, SizeV, void>
+template <typename PolymorphicT, size_t SizeV, size_t AlignmentV>
+class automatic_polymorphic_base<PolymorphicT, SizeV, AlignmentV, void>
 {
 public:
     PolymorphicT * get_pointer() noexcept { return std::launder(reinterpret_cast<PolymorphicT*>(buffer_)); }
@@ -59,14 +59,14 @@ protected:
         BOOST_ASSERT (0 == offset);
     }
 
-    alignas(PolymorphicT) char buffer_[SizeV];
+    alignas(AlignmentV) char buffer_[SizeV];
 };
 
-template <class PolymorphicT, size_t SizeV, typename OffsetT = void>
+template <class PolymorphicT, size_t SizeV, size_t AlignmentV = std::alignment_of_v<PolymorphicT>, typename OffsetT = void>
 class automatic_polymorphic 
-    : public automatic_polymorphic_base<PolymorphicT, SizeV, OffsetT>
+    : public automatic_polymorphic_base<PolymorphicT, SizeV, AlignmentV, OffsetT>
 {
-    using base_t = automatic_polymorphic_base<PolymorphicT, SizeV, OffsetT>;
+    using base_t = automatic_polymorphic_base<PolymorphicT, SizeV, AlignmentV, OffsetT>;
 
 public:
     using value_type = PolymorphicT;
@@ -186,6 +186,9 @@ public:
         do_reset();
     }
 
+    operator PolymorphicT&() { BOOST_ASSERT(*this); return *get_pointer(); }
+    operator const PolymorphicT&() const { BOOST_ASSERT(*this); return *get_pointer(); }
+
     PolymorphicT const& get() const { BOOST_ASSERT(*this); return *get_pointer(); }
     PolymorphicT & get() { BOOST_ASSERT(*this); return *get_pointer(); }
 
@@ -266,7 +269,19 @@ private:
     }
 };
 
-template <typename T, size_t SizeV, typename OffsetT> T * get_pointer(automatic_polymorphic<T, SizeV, OffsetT> & p) { return p.get_pointer(); }
-template <typename T, size_t SizeV, typename OffsetT> T const* get_pointer(automatic_polymorphic<T, SizeV, OffsetT> const& p) { return p.get_pointer(); }
+template <typename T, size_t SizeV, size_t AlignmentV, typename OffsetT> T * get_pointer(automatic_polymorphic<T, SizeV, AlignmentV, OffsetT> & p) { return p.get_pointer(); }
+template <typename T, size_t SizeV, size_t AlignmentV, typename OffsetT> T const* get_pointer(automatic_polymorphic<T, SizeV, AlignmentV, OffsetT> const& p) { return p.get_pointer(); }
+
+template <class PolymorphicT, size_t SizeV, size_t AlignmentV, typename OffsetT>
+inline size_t hash_value(automatic_polymorphic<PolymorphicT, SizeV, AlignmentV, OffsetT> const& v)
+{
+    return hash_value(*v);
+}
+
+template <class LPolymorphicT, size_t LSizeV, size_t LAlignmentV, typename LOffsetT, class RPolymorphicT, size_t RSizeV, size_t RAlignmentV, typename ROffsetT>
+inline bool operator== (automatic_polymorphic<LPolymorphicT, LSizeV, LAlignmentV, LOffsetT> const& l, automatic_polymorphic<RPolymorphicT, RSizeV, RAlignmentV, ROffsetT> const& r)
+{
+    return *l == *r;
+}
 
 }

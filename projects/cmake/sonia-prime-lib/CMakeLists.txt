@@ -3,6 +3,7 @@ include (${COMMON_INCLUDE})
 include_directories(${BUNDLES})
 include_directories(${BUNDLES}/sonia-prime)
 
+
 set (BUNDLE_NAME sonia-prime-lib)
 set (BUNDLE_HOME ${BUNDLES}/sonia-prime)
 

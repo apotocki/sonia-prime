@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <malloc.h>
-
 #include <boost/mpl/min_max.hpp>
 #include <boost/mpl/size_t.hpp>
 

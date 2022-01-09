@@ -284,7 +284,7 @@ public:
             if constexpr (is_trivial_v<element_t>) {
                 holder_t::operator= (static_cast<holder_t const&>(rhs));
             } else {
-                static_assert(dependent_false);
+                static_assert(dependent_false<element_t>);
             }
         }
         return *this;
@@ -296,7 +296,7 @@ public:
             if constexpr (is_trivial_v<element_t>) {
                 holder_t::operator= (std::move(static_cast<holder_t&>(rhs)));
             } else {
-                static_assert(dependent_false);
+                static_assert(dependent_false<element_t>);
             }
         }
         return *this;

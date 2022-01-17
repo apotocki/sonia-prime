@@ -1,10 +1,7 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
-
-#ifndef AGNOSTIC_STD_REMOVE_EXTENT_HPP
-#define AGNOSTIC_STD_REMOVE_EXTENT_HPP
-
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_REMOVE_EXTENT_HPP
 
 namespace std {
 
@@ -18,4 +15,6 @@ template <typename T, unsigned N = 0> using remove_extent_t = typename remove_ex
 
 }
 
-#endif // AGNOSTIC_STD_REMOVE_EXTENT_HPP
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

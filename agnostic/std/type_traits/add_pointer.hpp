@@ -1,14 +1,10 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_ADD_POINTER
 
-#ifndef DO_NOT_USE_AGNOSTIC_IS_FUNCTION
-#   include "is_function.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_REMOVE_REFERENCE
-#   include "remove_reference.hpp"
-#endif
+#include "is_function.hpp"
+#include "remove_reference.hpp"
 
 namespace std {
 
@@ -26,3 +22,7 @@ template <typename T> struct add_pointer : detail::add_pointer<T, is_function_v<
 template <typename T> using add_pointer_t = typename add_pointer<T>::type;
 
 }
+
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <type_traits>
+#endif

@@ -11,7 +11,6 @@
 #include "agnostic/std/type_traits/is_function.hpp"
 #include "agnostic/std/type_traits/add_pointer.hpp"
 
-
 namespace std {
 
 template <typename T>

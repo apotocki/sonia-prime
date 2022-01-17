@@ -1,14 +1,10 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_NUMERIC_LIMITS
 
-#ifndef DO_NOT_USE_AGNOSTIC_FLOAT_ROUND_STYLE
-#   include "float_round_style.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_FLOAT_DENORM_STYLE
-#   include "float_denorm_style.hpp"
-#endif
+#include "float_round_style.hpp"
+#include "float_denorm_style.hpp"
 
 namespace std::limits_detail {
 
@@ -481,3 +477,7 @@ public:
 };
 
 }
+
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <limits>
+#endif

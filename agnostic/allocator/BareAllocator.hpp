@@ -2,33 +2,14 @@
 // You can redistribute it and/or modify it under the terms of the MIT License
 #pragma once
 
-#ifndef DO_NOT_USE_AGNOSTIC_INTEGRAL_CONSTANT
-#   include "agnostic/std/type_traits/integral_constant.hpp"
-#endif
+#include "agnostic/std/type_traits/integral_constant.hpp"
+#include "agnostic/std/type_traits/is_same.hpp"
+#include "agnostic/std/utility/declval.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_IS_SAME
-#   include "agnostic/std/type_traits/is_same.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_DECLVAL
-#   include "agnostic/std/utility/declval.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_CONVERTIBLE_TO
-#   include "agnostic/std/concepts/convertible_to.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_SAME_AS
-#   include "agnostic/std/concepts/same_as.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_NOTHROW
-#   include "agnostic/std/new/nothrow.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_NUMERIC_LIMITS
-#   include "agnostic/std/limits/numeric_limits.hpp"
-#endif
+#include "agnostic/std/concepts/convertible_to.hpp"
+#include "agnostic/std/concepts/same_as.hpp"
+#include "agnostic/std/new/nothrow.hpp"
+#include "agnostic/std/limits/numeric_limits.hpp"
 
 namespace agnostic {
 
@@ -68,9 +49,7 @@ struct stl_allocator_adapter : private BA
 
 }
 
-#ifndef DO_NOT_USE_AGNOSTIC_ALLOCATOR_TRAITS
-#   include "agnostic/std/memory/allocator_traits.hpp"
-#endif
+#include "agnostic/std/memory/allocator_traits.hpp"
 
 namespace std {
 

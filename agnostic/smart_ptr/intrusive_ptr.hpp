@@ -1,9 +1,6 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
 
-#ifndef AGNOSTIC_INTRUSIVE_PTR_HPP
-#define AGNOSTIC_INTRUSIVE_PTR_HPP
-
 #pragma once
 
 //  Relies on unqualified calls to
@@ -179,5 +176,3 @@ inline bool operator<(intrusive_ptr<T> const& a, intrusive_ptr<T> const& b) noex
 }
 
 }
-
-#endif // AGNOSTIC_INTRUSIVE_PTR_HPP

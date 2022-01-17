@@ -152,7 +152,7 @@
 
 // fixes
 #if defined(BOOST_WINDOWS)
-#   undef DO_NOT_USE_AGNOSTIC_REMOVE_CVREF
+#   define DO_NOT_USE_AGNOSTIC_REMOVE_CVREF
 #endif
 
 #if defined(__clang__) && __clang_major__ <= 13 && __clang_minor__ == 0

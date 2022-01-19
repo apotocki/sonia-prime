@@ -36,7 +36,7 @@ public:
     template <typename SomeCharT>
     constexpr basic_string_view(array_view<SomeCharT> arr) noexcept : base_t(arr) {}
 
-    basic_string_view(char_ct * str) noexcept : base_t(str, TraitsT::length(str)) {}
+    basic_string_view(char_ct * str) noexcept : base_t(str, str ? TraitsT::length(str) : 0) {}
 
     template <class AllocT>
     basic_string_view(std::basic_string<CharT, TraitsT, AllocT> const& str) noexcept : base_t(str.c_str(), str.size()) {}

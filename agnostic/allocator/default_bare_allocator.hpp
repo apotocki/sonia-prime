@@ -31,7 +31,8 @@ struct default_bare_allocator
 #else
     [[nodiscard]] char* allocate(std::align_val_t al, size_t sz, std::nothrow_t) noexcept
     {
-        return reinterpret_cast<value_type*>(aligned_alloc(static_cast<size_t>(al), sz));
+        size_t alval = static_cast<size_t>(al);
+        return reinterpret_cast<value_type*>(aligned_alloc(alval, ((sz + alval - 1) / alval) * alval));
     }
 
     void deallocate(void* ptr, size_t) noexcept

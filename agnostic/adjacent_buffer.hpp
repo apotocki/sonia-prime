@@ -61,7 +61,7 @@ struct basic_adjacent_buffer_traits
         alignas(T) char first_[sizeof(T)];
 
         template <typename ... ArgsT>
-        explicit base_t(size_type sz, ArgsT&& ... args) : BaseT(std::forward<ArgsT>(args)), size_{ sz } {}
+        explicit base_t(size_type sz, ArgsT&& ... args) : BaseT(std::forward<ArgsT>(args) ...), size_{ sz } {}
     };
 
     static constexpr size_type first = offsetof(base_t, first_);
@@ -134,11 +134,10 @@ template <typename TraitsT, BareAllocator AllocatorT, typename ... ArgsT>
 [[nodiscard]] adjacent_buffer<TraitsT>* allocate_adjacent_buffer(AllocatorT alloc, typename TraitsT::size_type sz, ArgsT&& ... args)
 {
     assert(sz);
-
     using buffer_t = adjacent_buffer<TraitsT>;
     constexpr size_t buffsz = sizeof(buffer_t);
     //const size_t allocsz = offsetof(buffer_t, first_) + sizeof(T) * sz;
-    const size_t allocsz = (std::max)(buffsz, typename TraitsT::first + sizeof(typename TraitsT::value_type) * sz);
+    const size_t allocsz = (std::max)(buffsz, TraitsT::first + sizeof(typename TraitsT::value_type) * sz);
     
     buffer_t* ptr = reinterpret_cast<buffer_t*>(alloc.allocate((std::align_val_t)alignof(buffer_t), allocsz));
 

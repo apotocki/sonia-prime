@@ -3,6 +3,8 @@
 #pragma once
 #include <stdlib.h>
 
+//#include "sonia/logger/logger.hpp"
+
 namespace agnostic {
 
 struct default_bare_allocator
@@ -31,8 +33,14 @@ struct default_bare_allocator
 #else
     [[nodiscard]] char* allocate(std::align_val_t al, size_t sz, std::nothrow_t) noexcept
     {
+#ifdef __APPLE__
+        size_t alval = (std::max)(sizeof(void*), static_cast<size_t>(al));
+#else
         size_t alval = static_cast<size_t>(al);
-        return reinterpret_cast<value_type*>(aligned_alloc(alval, ((sz + alval - 1) / alval) * alval));
+#endif
+        size_t size = ((sz + alval - 1) / alval) * alval;
+        //GLOBAL_LOG_INFO() << "ALLIGN: " << alval << ", SIZE: " << sz << ", ALSIZE: " << size;
+        return reinterpret_cast<value_type*>(aligned_alloc(alval, size));
     }
 
     void deallocate(void* ptr, size_t) noexcept

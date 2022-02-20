@@ -22,13 +22,14 @@ struct utf8_tag : cvt_tag
     ErrorHandlerT errh_;
 };
 
-inline utf8_tag<throw_error_handler> utf8() {
-    return utf8_tag<throw_error_handler>();
-}
+inline const utf8_tag<throw_error_handler> utf8;
+//inline utf8_tag<throw_error_handler> utf8() {
+//    return utf8_tag<throw_error_handler>();
+//}
 
-template <typename ErrorHandlerT>
-inline utf8_tag<ErrorHandlerT> utf8(ErrorHandlerT const& err) {
-    return utf8_tag<ErrorHandlerT>(err);
-}
+//template <typename ErrorHandlerT>
+//inline utf8_tag<ErrorHandlerT> utf8(ErrorHandlerT const& err) {
+//    return utf8_tag<ErrorHandlerT>(err);
+//}
 
 }

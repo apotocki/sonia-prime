@@ -49,13 +49,13 @@ foreach(ITEM ${MAIN_TESTS})
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${BUNDLES}/sonia-prime/tests/${ITEM}.cpp)
 endforeach()
     
-if (NOT (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "iOS"))
+#if (NOT (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "iOS"))
 foreach(ITEM ${AGNOSTIC_TESTS})
     set (FWD_TEST_DECLS "${FWD_TEST_DECLS}void agnostic_${ITEM}_registrar();\n")
     set (TEST_LIST "${TEST_LIST}    agnostic_${ITEM}_registrar();\n")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${BUNDLES}/sonia-prime/tests/agnostic/${ITEM}.cpp)
 endforeach()
-endif()
+#endif()
 
 configure_file (
     "${BUNDLES}/sonia-prime/tests/all_tests_registrar.cpp.in"

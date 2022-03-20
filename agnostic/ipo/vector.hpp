@@ -89,7 +89,7 @@ struct helper
 
     using holder_t = ipo_holder<holder_sz, szbits>;
 
-    using buffer_traits_t = basic_adjacent_buffer_traits<T, vector_detail::vector_buffer_base<T>>;
+    using buffer_traits_t = basic_adjacent_buffer_traits<T, vector_buffer_base<T>>;
     using vector_buffer = adjacent_buffer<buffer_traits_t>;
 };
 
@@ -106,6 +106,7 @@ class vector
 {
     using helper_t = vector_detail::helper<T, OptionsT...>;
     using holder_t = typename helper_t::holder_t;
+    using buffer_traits_t = typename helper_t::buffer_traits_t;
     static constexpr size_t ipo_capacity_sz = helper_t::ipo_capacity_sz;
     static constexpr size_t MIN_DYNAMIC_STORE_SZ = 15;
 
@@ -187,7 +188,7 @@ public:
     {
         if (rhs.is_ptr()) {
             auto * rhsbuff = rhs.get_buffer();
-            typename helper_t::vector_buffer* buff = allocate_adjacent_buffer<value_type, vector_detail::vector_buffer_base<T>>(get_allocator(), rhsbuff->capacity(), rhsbuff->current_size);
+            typename helper_t::vector_buffer* buff = allocate_adjacent_buffer<buffer_traits_t>(get_allocator(), rhsbuff->capacity(), rhsbuff->current_size);
             std::uninitialized_copy(rhsbuff->data_begin(), rhsbuff->data_end(), buff->begin());
             holder_t::set_ptr(buff);
         } else {
@@ -336,7 +337,7 @@ public:
             if (buff->capacity() >= at_least_sz) return;
         } else if (ipo_capacity_sz < at_least_sz) {
             auto sz = holder_t::get_service_cookie();
-            auto * buff = allocate_adjacent_buffer<value_type, vector_detail::vector_buffer_base<T>>(get_allocator(), at_least_sz, sz);
+            auto * buff = allocate_adjacent_buffer<buffer_traits_t>(get_allocator(), at_least_sz, sz);
             std::uninitialized_move(inplace_begin(), inplace_begin() + sz, buff->begin());
             std::destroy(inplace_begin(), inplace_begin() + sz);
             holder_t::set_ptr(buff);
@@ -515,7 +516,7 @@ private:
     iterator do_relocate_slices(size_type cursz, size_type count, iterator pos, iterator prevb, iterator preve)
     {
         size_type nextsz = get_next_size(cursz, count);
-        auto* nextbuff = allocate_adjacent_buffer<typename helper_t::buffer_traits_t>(get_allocator(), nextsz, cursz + count);
+        auto* nextbuff = allocate_adjacent_buffer<buffer_traits_t>(get_allocator(), nextsz, cursz + count);
         iterator rit = std::uninitialized_move(prevb, pos, nextbuff->begin());
         std::uninitialized_move(pos, preve, rit + count);
         std::destroy(prevb, preve);

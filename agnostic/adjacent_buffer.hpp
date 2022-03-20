@@ -2,31 +2,19 @@
 // You can redistribute it and/or modify it under the terms of the MIT License
 #pragma once
 
-#ifndef DO_NOT_USE_AGNOSTIC_IS_TRIVIALLY_DESTRUCTIBLE
-#   include "agnostic/std/type_traits/is_trivially_destructible.hpp"
-#endif
+#include "agnostic/std/type_traits/is_trivially_destructible.hpp"
 
 #include "agnostic/std/utility/forward.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_UNINITIALIZED_COPY
-#   include "agnostic/std/memory/uninitialized_copy.hpp"
-#endif
-
+#include "agnostic/std/memory/uninitialized_copy.hpp"
 
 #include "agnostic/std/new/launder.hpp"
 
+#include "agnostic/std/memory/uninitialized_default_construct.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_UNINITIALIZED_DEFAULT_CONSTRUCT
-#   include "agnostic/std/memory/uninitialized_default_construct.hpp"
-#endif
+#include "agnostic/std/iterator/begin.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_ITERATOR_BEGIN
-#   include "agnostic/std/iterator/begin.hpp"
-#endif
-
-#ifndef DO_NOT_USE_AGNOSTIC_ITERATOR_END
-#   include "agnostic/std/iterator/end.hpp"
-#endif
+#include "agnostic/std/iterator/end.hpp"
 
 #include "agnostic/utility/ceiling.hpp"
 #include "agnostic/utility/uninitialized.hpp"
@@ -66,7 +54,12 @@ struct basic_adjacent_buffer_traits
 
     static constexpr size_type first = offsetof(base_t, first_);
     static inline size_type size(base_t const& self) noexcept { return self.size_; }
-    static inline void destroy(base_t&) noexcept { }
+    static inline void destroy(base_t& ref) noexcept
+    {
+        if constexpr (requires{ref.destroy();}) {
+            ref.destroy();
+        }
+    }
 };
 
 template <typename TraitsT>

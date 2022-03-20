@@ -118,6 +118,7 @@ void agnostic_vector_test()
         AGNOSTIC_CHECK_EQUAL(vec0.capacity(), 3);
         AGNOSTIC_CHECK_EQUAL(Value::count_, 0);
     }
+
     {
         // reserve test
         using namespace agnostic;

@@ -1,26 +1,17 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_UNINITIALIZED_DEFAULT_CONSTRUCT
 
-#ifndef DO_NOT_USE_AGNOSTIC_ITERATOR_TRAITS
-#   include "../iterator/iterator_traits.hpp"
-#endif
+#include "../iterator/iterator_traits.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_IS_TRIVIALLY_DEFAULT_CONSTRUCTIBLE
-#   include "../type_traits/is_trivially_default_constructible.hpp"
-#endif
+#include "../type_traits/is_trivially_default_constructible.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_PLACEMENT_NEW
-#   include "../new/placement_new.hpp"
-#endif
+#include "../new/placement_new.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_ADDRESSOF
-#   include "addressof.hpp"
-#endif
+#include "addressof.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_DESTROY
-#   include "destroy.hpp"
-#endif
+#include "destroy.hpp"
 
 namespace std {
 
@@ -43,3 +34,7 @@ void uninitialized_default_construct(ForwardIt first, ForwardIt last)
 }
 
 }
+
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <memory>
+#endif

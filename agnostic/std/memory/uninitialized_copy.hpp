@@ -1,30 +1,19 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
 #pragma once
+#ifndef DO_NOT_USE_AGNOSTIC_UNINITIALIZED_COPY
 
-#ifndef DO_NOT_USE_AGNOSTIC_ITERATOR_TRAITS
-#   include "../iterator/iterator_traits.hpp"
-#endif
+#include "../iterator/iterator_traits.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_IS_ASSIGNABLE
-#   include "../type_traits/is_assignable.hpp"
-#endif
+#include "../type_traits/is_assignable.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_IS_TRIVIAL
-#   include "../type_traits/is_trivial.hpp"
-#endif
+#include "../type_traits/is_trivial.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_ALGORITHM_COPY
-#   include "../algorithm/copy.hpp"
-#endif
+#include "../algorithm/copy.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_PLACEMENT_NEW
-#   include "../new/placement_new.hpp"
-#endif
+#include "../new/placement_new.hpp"
 
-#ifndef DO_NOT_USE_AGNOSTIC_ADDRESSOF
-#   include "addressof.hpp"
-#endif
+#include "addressof.hpp"
 
 namespace std {
 
@@ -53,3 +42,7 @@ ForwardIt uninitialized_copy(InputIt first, InputIt last, ForwardIt d_first)
 }
 
 }
+
+#elif !defined(DO_NO_USE_STL_HEADERS)
+#   include <memory>
+#endif

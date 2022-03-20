@@ -60,6 +60,8 @@ struct vector_buffer_base
 {
     size_t current_size;
 
+    explicit vector_buffer_base(size_t sz) : current_size{sz} {}
+    
     void destroy() noexcept
     {
         std::destroy(derived().begin(), derived().begin() + current_size);

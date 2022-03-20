@@ -160,24 +160,24 @@ void compound_cvt_test()
 	unsigned char key[8] = {1, 2, 3, 4, 5, 6, 7, 8};
 	//typedef cvt::encoder<wchar_t, char> encoder_t;
 
-	auto coder = cvt::utf16() >> cvt::utf32() >> cvt::utf8() / cvt::int8() >> cvt::rc5<32,12,8>(key) / cvt::int8() >> cvt::base64();
+	auto coder = cvt::utf16() >> cvt::utf32() >> cvt::utf8 / cvt::int8() >> cvt::rc5<32,12,8>(key) / cvt::int8() >> cvt::base64();
     conv_pull_test(coder, boost::make_iterator_range(text), boost::make_iterator_range(encoded_text), "[polymorphic: utf16->utf8->rc5->base64]");
 	conv_push_test(coder, boost::make_iterator_range(text), boost::make_iterator_range(encoded_text), "[polymorphic: utf16->utf8->rc5->base64]");
 
 	conv_pull_test(
-		cvt::utf16() >> cvt::utf32() >> cvt::utf8() / cvt::int8() >> cvt::rc5<32,12,8>(key) / cvt::int8() >> cvt::base64(),
+		cvt::utf16() >> cvt::utf32() >> cvt::utf8 / cvt::int8() >> cvt::rc5<32,12,8>(key) / cvt::int8() >> cvt::base64(),
 		boost::make_iterator_range(text),
 		boost::make_iterator_range(encoded_text),
 		"[utf16->utf8->rc5->base64]");
 
 	//typedef cvt::encoder<char, char> encoder2_t;
-	auto coder2 = cvt::base64() >> cvt::int8() / cvt::rc5<32,12,8>(key) >> cvt::int8() / cvt::utf8();
+	auto coder2 = cvt::base64() >> cvt::int8() / cvt::rc5<32,12,8>(key) >> cvt::int8() / cvt::utf8;
 	conv_pull_test(coder2, boost::make_iterator_range(encoded_text), boost::make_iterator_range(ctext), "[base64->rc5->utf8]");
 
 	{
 		std::string input("abcd"); // some character range with known encoding
 		//typedef cvt::encoder<char, char32_t> encoder_t; // polymorphic encoder type declaration
-		auto enc = cvt::utf8() >> cvt::utf32(); //concrete encoder instantiation, supported utf8, utf16, utf16le, utf16be, and locale string base encodings
+		auto enc = cvt::utf8 >> cvt::utf32(); //concrete encoder instantiation, supported utf8, utf16, utf16le, utf16be, and locale string base encodings
         typedef decltype(enc) encoder_t;
 		typedef cvt::convert_input_iterator<encoder_t, std::string::const_iterator> it_t;
 

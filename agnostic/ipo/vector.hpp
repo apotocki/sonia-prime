@@ -69,7 +69,8 @@ struct vector_buffer_base
     inline T* data_end() noexcept { return derived().begin() + current_size; }
 
 private:
-    using derived_t = adjacent_buffer<T, vector_buffer_base>;
+    using buffer_traits_t = basic_adjacent_buffer_traits<T, vector_buffer_base>;
+    using derived_t = adjacent_buffer<buffer_traits_t>;
     inline derived_t& derived() noexcept { return static_cast<derived_t&>(*this); }
 };
 
@@ -88,7 +89,8 @@ struct helper
 
     using holder_t = ipo_holder<holder_sz, szbits>;
 
-    using vector_buffer = adjacent_buffer<T, vector_detail::vector_buffer_base<T>>;
+    using buffer_traits_t = basic_adjacent_buffer_traits<T, vector_detail::vector_buffer_base<T>>;
+    using vector_buffer = adjacent_buffer<buffer_traits_t>;
 };
 
 }
@@ -513,7 +515,7 @@ private:
     iterator do_relocate_slices(size_type cursz, size_type count, iterator pos, iterator prevb, iterator preve)
     {
         size_type nextsz = get_next_size(cursz, count);
-        auto* nextbuff = allocate_adjacent_buffer<value_type, vector_detail::vector_buffer_base<T>>(get_allocator(), nextsz, cursz + count);
+        auto* nextbuff = allocate_adjacent_buffer<typename helper_t::buffer_traits_t>(get_allocator(), nextsz, cursz + count);
         iterator rit = std::uninitialized_move(prevb, pos, nextbuff->begin());
         std::uninitialized_move(pos, preve, rit + count);
         std::destroy(prevb, preve);
@@ -568,7 +570,8 @@ std::strong_ordering operator<=>(const vector<T, A1, Args1...>& lhs,  const vect
     } else if (rit == re) {
         return std::strong_ordering::greater;
     }
-    return std::compare_three_way{}(*lit, *rit);
+    return *lit <=> *rit;
+    //return std::compare_three_way{}(*lit, *rit);
 }
 
 template <typename T, typename A1, typename A2, typename ... Args1, typename ... Args2>

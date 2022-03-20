@@ -10,6 +10,7 @@
 #include <array>
 #include <string>
 #include <iterator>
+#include <span>
 
 #include <boost/assert.hpp>
 
@@ -45,6 +46,9 @@ public:
 
     constexpr array_view() noexcept : data_{nullptr}, size_{0} {}
     constexpr array_view(T * d, size_type sz) noexcept : data_{d}, size_{sz} {}
+
+
+    constexpr array_view(std::span<T> sp) noexcept : data_{ sp.data() }, size_{ sp.size() } {}
 
     template <size_t N>
     constexpr array_view(T(&arr)[N]) noexcept : data_{arr}, size_{N} {}

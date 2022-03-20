@@ -3,15 +3,16 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 #pragma once
 
-#include <vector>
+#include <span>
+#include "stub_parameter.hpp"
 
-#include "array.hpp"
+namespace sonia {
 
-namespace sonia::serialization {
-
-template <typename TagT, typename T, class AllocT>
-class coder<TagT, std::vector<T, AllocT>>
-    : public vector_coder<TagT, std::vector<T, AllocT>>
-{};
+template <typename T>
+struct stub_bound_parameter<std::span<T>>
+{
+    using type = std::vector<remove_cv_t<T>>;
+    static constexpr bool is_modifiable = false;
+};
 
 }

@@ -341,10 +341,10 @@ void utf16_to_utf7_test(customConverterT const& enc)
 
 void utf_test()
 {
-    utf8_to_utf16_test( cvt::utf8() >> cvt::utf32() >> cvt::utf16() );
-    utf16_to_utf8_test( cvt::utf16() >> cvt::utf32() >> cvt::utf8() );
-    utf8_to_utf16_test( cvt::utf8() >> cvt::utf16() );
-    utf16_to_utf8_test( cvt::utf16() >> cvt::utf8() );
+    utf8_to_utf16_test( cvt::utf8 >> cvt::utf32() >> cvt::utf16() );
+    utf16_to_utf8_test( cvt::utf16() >> cvt::utf32() >> cvt::utf8 );
+    utf8_to_utf16_test( cvt::utf8 >> cvt::utf16() );
+    utf16_to_utf8_test( cvt::utf16() >> cvt::utf8 );
 
     utf16_to_utf16le_test(cvt::utf16() >> cvt::utf16le());
     utf16le_to_utf16_test(cvt::utf16le() >> cvt::utf16());

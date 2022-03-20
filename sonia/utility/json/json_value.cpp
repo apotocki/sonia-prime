@@ -56,7 +56,7 @@ struct object_item_less
 {
     inline string_view to_string_view(object_item_t const& v) const
     {
-        return (string_view)((array_view<const char>)v.first);
+        return (string_view)(v.first.to_array_view());
     }
 
     bool operator()(object_item_t const& l, object_item_t const& r)
@@ -99,7 +99,7 @@ struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
         if (!self->is_ptr()) return nullptr;
         optimized_collection_t const* ptr = base_t::ptr(self);
         object_item_t const* it = std::lower_bound(ptr->begin(), ptr->end(), key, object_item_less());
-        if (it == ptr->end() || (string_view)((array_view<const char>)it->first) != key) return nullptr;
+        if (it == ptr->end() || (string_view)(it->first.to_array_view()) != key) return nullptr;
         return &it->second;
     }
 
@@ -108,7 +108,7 @@ struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
         if (!self->is_ptr()) return nullptr;
         optimized_collection_t * ptr = base_t::ptr(self);
         object_item_t * it = std::lower_bound(ptr->begin(), ptr->end(), key, object_item_less());
-        if (it == ptr->end() || (string_view)((array_view<const char>)it->first) != key) return nullptr;
+        if (it == ptr->end() || (string_view)(it->first.to_array_view()) != key) return nullptr;
         return &it->second;
     }
 };

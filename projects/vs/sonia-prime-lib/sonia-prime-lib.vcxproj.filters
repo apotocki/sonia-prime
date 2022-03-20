@@ -2049,6 +2049,12 @@
     <ClInclude Include="..\..\..\sonia\new.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\marshaling\span.hpp">
+      <Filter>sonia.utility\marshaling</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\span.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

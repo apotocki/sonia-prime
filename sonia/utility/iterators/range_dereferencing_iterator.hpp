@@ -147,6 +147,23 @@ public:
         }
     }
 
+    std::ptrdiff_t position()
+    {
+        if (state_initialized_) {
+            iterator_dereferenced_range_t<IteratorT> rng = *base;
+            return std::get<0>(*state_) - boost::begin(rng);
+        }
+        return 0;
+    }
+
+    std::ptrdiff_t span_size()
+    {
+        if (state_initialized_) {
+            return std::get<1>(*state_) - std::get<0>(*state_);
+        }
+        return 0;
+    }
+
     mutable IteratorT base;
 
 private:

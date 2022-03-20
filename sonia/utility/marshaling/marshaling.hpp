@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_UTILITY_MARSHALING_HPP
-#define SONIA_UTILITY_MARSHALING_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/function_types/function_type.hpp>
 #include <boost/function_types/parameter_types.hpp>
@@ -203,5 +197,3 @@ template <class ... tags> struct tagnm : ::sonia::binding_tag_facade<decltype(fu
 
 #define SONIA_REGISTER_BINDING_TAG(tag, tagnm, serv) \
 ::sonia::services::register_durable_id(tagnm, serv, typeid(tag))
-
-#endif // SONIA_UTILITY_MARSHALING_HPP

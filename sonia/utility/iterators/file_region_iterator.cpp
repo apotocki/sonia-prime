@@ -13,12 +13,12 @@ namespace sonia {
 
 namespace ipc = boost::interprocess;
 
-file_mapping_holder::fm_cache::fm_cache(std::filesystem::path const& p, boost::interprocess::mode_t m) : filepath {p}
+file_mapping_holder::fm_cache::fm_cache(fs::path const& p, boost::interprocess::mode_t m) : filepath {p}
 {
     fm = boost::interprocess::file_mapping(filepath.string().c_str(), m);
 }
 
-file_mapping_holder::file_mapping_holder(std::filesystem::path const& path, boost::interprocess::mode_t mode, size_t rsz)
+file_mapping_holder::file_mapping_holder(fs::path const& path, boost::interprocess::mode_t mode, size_t rsz)
 {
     using namespace ipc::detail;
     using namespace ipc::ipcdetail;
@@ -45,7 +45,7 @@ void file_mapping_holder::truncate(uint64_t sz)
     fmc_->size = sz;
 }
 
-file_region_descriptor::file_region_descriptor(std::filesystem::path const& path, boost::interprocess::mode_t mode, uint64_t offset, size_t region_sz)
+file_region_descriptor::file_region_descriptor(fs::path const& path, boost::interprocess::mode_t mode, uint64_t offset, size_t region_sz)
     : file_mapping_holder(path, mode, region_sz), fileoffset_(offset)
 {
     region_ = create_region(offset, region_size());
@@ -154,7 +154,7 @@ void file_region_descriptor::flush()
     }
 }
 
-file_region_iterator_base::file_region_iterator_base(bool readonly, std::filesystem::path const& path, uint64_t offset, size_t least_region_sz)
+file_region_iterator_base::file_region_iterator_base(bool readonly, fs::path const& path, uint64_t offset, size_t least_region_sz)
 {
     namespace ipc = boost::interprocess;
 

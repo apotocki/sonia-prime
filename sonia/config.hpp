@@ -27,6 +27,11 @@
 #	define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS // boost::circular_buffer
 #endif
 
+#if defined(_MSC_VER)
+#   define _WIN32_WINNT 0x0602
+#   define WINVER _WIN32_WINNT
+#endif
+
 #if (defined(__MINGW32__) || defined(__MINGW64__))
 #   ifndef _WIN32_WINNT
 #       define _WIN32_WINNT 0x0601 // Windows 7
@@ -153,6 +158,8 @@
 // fixes
 #if defined(BOOST_WINDOWS)
 #   define DO_NOT_USE_AGNOSTIC_REMOVE_CVREF
+#   define BOOST_DETAIL_NO_CONTAINER_FWD
+#   define BOOST_USE_WINAPI_VERSION _WIN32_WINNT
 #endif
 
 #if defined(__clang__) && __clang_major__ <= 13 && __clang_minor__ == 0

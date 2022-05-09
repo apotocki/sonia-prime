@@ -16,6 +16,18 @@
 
 namespace sonia {
 
+template <typename IteratorT>
+struct range_dereferencing_iterator_equal
+{
+    bool operator()(IteratorT const& l, IteratorT const& r) const
+    {
+        if (l.empty()) return r.empty();
+        if (r.empty()) return false;
+        return l.unsafe_begin() == r.unsafe_begin();
+    }
+};
+
+
 template <class IteratorT, class CategoryOrTraversalT = iterator_traversal_t<IteratorT>>
 class range_dereferencing_iterator_state
 {
@@ -147,7 +159,7 @@ public:
         }
     }
 
-    std::ptrdiff_t position()
+    std::ptrdiff_t position() const
     {
         if (state_initialized_) {
             iterator_dereferenced_range_t<IteratorT> rng = *base;
@@ -202,9 +214,7 @@ class range_dereferencing_iterator
 
     bool equal(range_dereferencing_iterator const& rhs) const
     {
-        if (state_t::empty()) return rhs.empty();
-        if (rhs.empty()) return false;
-        return state_t::unsafe_begin() == rhs.unsafe_begin();
+        return range_dereferencing_iterator_equal<range_dereferencing_iterator>()(*this, rhs);
     }
 
     reference_type dereference() const

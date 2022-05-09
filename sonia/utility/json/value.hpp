@@ -4,7 +4,7 @@
 
 #pragma once
 
-//#include <boost/iterator.hpp>
+#include <iterator>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/range/iterator_range_core.hpp>
 

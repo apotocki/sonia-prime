@@ -2,14 +2,9 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_JSON_VALUE_HPP
-#define SONIA_UTILITY_JSON_VALUE_HPP
+#pragma once
 
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
-
-#include <boost/iterator.hpp>
+//#include <boost/iterator.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/range/iterator_range_core.hpp>
 
@@ -183,5 +178,3 @@ std::string to_string(json_value const&);
 std::ostream & operator<< (std::ostream &, json_value const&);
 
 }
-
-#endif // SONIA_UTILITY_JSON_VALUE_HPP

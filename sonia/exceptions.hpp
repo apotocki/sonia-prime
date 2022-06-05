@@ -20,7 +20,7 @@ class exception : public std::runtime_error
 {
 public:
     template <typename ... ArgsT>
-    exception(ArgsT && ... args) : std::runtime_error(construct(std::forward<ArgsT>(args) ...)) {}
+    explicit exception(ArgsT && ... args) : std::runtime_error(construct(std::forward<ArgsT>(args) ...)) {}
 
 private:
     static std::string construct() { return "error"; }
@@ -39,9 +39,9 @@ public:                                                                         
 private:                                                                        \
     static base construct() { return base{msg}; }                               \
     static base const& construct(name & e) { return e; }                        \
-    template <class ArgT> base construct(ArgT && arg)                           \
+    template <class ArgT> static base construct(ArgT && arg)                    \
     { return base{std::forward<ArgT>(arg)}; }                                   \
-    template <class ... ArgsT> base construct(ArgsT && ... args)                \
+    template <class ... ArgsT> static base construct(ArgsT && ... args)         \
     { return base{std::forward<ArgsT>(args) ...}; }                             \
 };
 

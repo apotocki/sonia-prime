@@ -75,6 +75,7 @@ class basic_cstring_view : public basic_string_view<CharT, TraitsT>
 public:
     using size_type = typename base_type::size_type;
 
+    basic_cstring_view() noexcept : base_type{zerostr} {}
     constexpr basic_cstring_view(char_ct * str) noexcept : base_type(str) {}
     constexpr basic_cstring_view(char_ct * str, size_type sz) : base_type(str, sz) { BOOST_ASSERT(str[sz] == 0); }
     constexpr basic_cstring_view(char_ct * bstr, char_ct * estr) : base_type(bstr, estr) { BOOST_ASSERT(*estr == 0); }
@@ -86,7 +87,12 @@ public:
     constexpr basic_cstring_view(array_view<SomeCharT> arr) noexcept : base_type(arr) { BOOST_ASSERT(!arr.empty() && arr[arr.size() - 1] == 0); this->advance_back(-1); }
 
     const char* c_str() const noexcept { return this->data(); }
+
+    static CharT zerostr[1];
 };
+
+template <typename CharT, class TraitsT>
+CharT basic_cstring_view<CharT, TraitsT>::zerostr[1] = {0};
 
 template <typename CharT, class TraitsT>
 basic_string_view<CharT, TraitsT> to_string_view(basic_string_view<CharT, TraitsT> sv) { return sv; }

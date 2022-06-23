@@ -345,10 +345,11 @@ public:
     {}
 
     descriptors_t & descriptors() { return *vds_; }
+    descriptors_t const& descriptors() const { return *vds_; }
 
     parameters_binding<BoundT> bind() { return parameters_binding<BoundT>(this); }
 
-    void apply(json_object const& jo, BoundT * obj); // json -> object
+    void apply(json_object const& jo, BoundT * obj) const; // json -> object
 
 private:
     shared_ptr<descriptors_t> vds_;
@@ -453,7 +454,7 @@ parameter_options<VDT> & parameter_options<VDT>::binder(parameters_binding<NextB
 }
 
 template <class BoundT>
-void parameters_description<BoundT>::apply(json_object const& jo, BoundT * obj)
+void parameters_description<BoundT>::apply(json_object const& jo, BoundT * obj) const
 {
     try {
         boost::unordered_set<std::string, hasher> used_names;

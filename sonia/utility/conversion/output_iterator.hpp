@@ -54,8 +54,9 @@ public:
             state_ = rhs.state_;
         }
 
-        inline void unshift() {
+        inline OutputIteratorT unshift() {
             converter_t::unshift(output_, *state_);
+            return std::move(output_);
         }
 
     private:
@@ -63,7 +64,7 @@ public:
         OutputIteratorT output_;
     };
 
-    inline void unshift() { proxy_.unshift(); }
+    inline auto unshift() { return proxy_.unshift(); }
 
     inline output_proxy& operator*() { return proxy_; }
     inline convert_output_iterator& operator++() { return *this; } 

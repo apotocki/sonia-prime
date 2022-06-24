@@ -57,7 +57,7 @@ public:
     }
 
     template <class ForwardWritableIterator>
-    void unshift(ForwardWritableIterator& out, dyn_state& s) const
+    auto unshift(ForwardWritableIterator& out, dyn_state& s) const
     {
         auxilary::concrete_nc_output_iterator_reference<dest_t, ForwardWritableIterator> from(out);
         auxilary::dyn_ref_fwd_output_iterator<dest_t> ref_it(from);

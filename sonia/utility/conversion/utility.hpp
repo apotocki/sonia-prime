@@ -53,13 +53,13 @@ void push(InputRangeT const& rng, OutputIteratorT oit, ConverterT const& enc)
 }
 
 template <typename InputIteratorT, typename OutputIteratorT, typename ConverterT>
-void push(InputIteratorT b, InputIteratorT e, OutputIteratorT oit, ConverterT const& enc)
+OutputIteratorT push(InputIteratorT b, InputIteratorT e, OutputIteratorT oit, ConverterT const& enc)
 {
     typedef convert_output_iterator<ConverterT, OutputIteratorT> it_t;
     typedef typename it_t::state_type state_type;
 
     state_type state;
-    std::copy(b, e, it_t(enc, state, oit)).unshift();
+    return std::copy(b, e, it_t(enc, state, oit)).unshift();
 }
 
 }

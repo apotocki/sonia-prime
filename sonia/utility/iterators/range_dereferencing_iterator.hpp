@@ -53,6 +53,11 @@ public:
         : base{std::move(it)}, state_initialized_{0}
     {}
 
+    template <typename ... IteratorArgsT>
+    explicit range_dereferencing_iterator_state(in_place_t, IteratorArgsT && ... args)
+        : base{std::forward<IteratorArgsT>(args) ...}, state_initialized_{0}
+    {}
+
     range_dereferencing_iterator_state(range_dereferencing_iterator_state const& rhs)
         : base{rhs.base}, state_initialized_{rhs.state_initialized_}
     {
@@ -239,6 +244,11 @@ public:
 
     explicit range_dereferencing_iterator(IteratorT it)
         : state_t{std::move(it)}
+    {}
+
+    template <typename ... IteratorArgsT>
+    explicit range_dereferencing_iterator(in_place_t, IteratorArgsT && ... args)
+        : state_t{ in_place, std::forward<IteratorArgsT>(args) ... }
     {}
 
     range_dereferencing_iterator(range_dereferencing_iterator const&) = default;

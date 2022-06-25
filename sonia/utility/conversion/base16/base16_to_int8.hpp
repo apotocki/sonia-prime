@@ -45,8 +45,16 @@ protected:
 
 private:
     template <typename StateT>
-    inline static void do_clear(base16_tag<ErrorHandlerT> const& parg, int8_tag const&, StateT& st) {
+    inline static void do_clear(base16_tag<ErrorHandlerT> const& parg, int8_tag const&, StateT& st)
+    {
         st.clear(parg.errh_);
+    }
+
+    static std::string unexpected_char_error_message(char c)
+    {
+        std::ostringstream errss;
+        errss << "Unexpected character code 0x" << std::hex << (uint32_t)(uint8_t)c;
+        return errss.str();
     }
 
     template <class ForwardWritableIterator, class StateT>
@@ -62,14 +70,14 @@ private:
         } else if (c >= 'a' && c <= 'f') {
             r = c - 'a' + 0x0a;
         } else {
-            st.error(c, (std::string("Bad input character '") + c + "'").c_str());
+            st.error(c, unexpected_char_error_message(c).c_str(), out);
             return;
         }
 
         if (st.get() == 0) {
             st.get() = (r << 4) | 0x0f;
         } else {
-            base_type::customer_put((st.get() & 0xF0 | r), out, s);
+            base_type::customer_put(((st.get() & 0xF0) | r), out, s);
             st.get() = 0;
         }
     }
@@ -79,7 +87,7 @@ private:
     {
         auto c = base_type::pstate(s).get();
         if (c) {
-            base_type::pstate(s).error(c, "Unexpected eof");
+            base_type::pstate(s).error(c, "Unexpected eof", out);
         }
     }
 
@@ -98,13 +106,13 @@ private:
         } else if (c0 >= 'a' && c0 <= 'f') {
             r0 = c0 - 'a' + 0x0a;
         } else {
-            st.error(c0, (std::string("Bad input character '") + c0 + "'").c_str());
+            st.error(c0, unexpected_char_error_message(c0).c_str(), in);
             return false;
         }
 
         char c1, r1;
         if (!base_type::provider_get(in, s, &c1)) {
-            st.error(c0, "Unexpected eof");
+            st.error(c0, "Unexpected eof", in);
             return false;
         }
         if (c1 >= '0' && c1 <= '9') {
@@ -114,8 +122,8 @@ private:
         } else if (c1 >= 'a' && c1 <= 'f') {
             r1 = c1 - 'a' + 0x0a;
         } else {
-            st.error(c1, (std::string("Bad input character '") + c1 + "'").c_str());
-            return;
+            st.error(c1, unexpected_char_error_message(c1).c_str(), in);
+            return false;
         }
 
         *result = (c0 << 4) | c1;

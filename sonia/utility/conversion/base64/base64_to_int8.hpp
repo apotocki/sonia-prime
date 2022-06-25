@@ -50,13 +50,20 @@ private:
         st.clear(parg.errh_);
     }
 
+    static std::string unexpected_char_error_message(char c)
+    {
+        std::ostringstream errss;
+        errss << "Unexpected character code 0x" << std::hex << (uint32_t)(uint8_t)c;
+        return errss.str();
+    }
+
     template <class ForwardWritableIterator, class StateT>
     static void do_put(char c, ForwardWritableIterator& out, StateT& s)
     {
         auto & st = base_type::pstate(s);
         if (c == PaddingCV) { // padding
             if (st.bit == 0) {
-                st.error(c, (std::string("Bad input character '") + c + "'").c_str());
+                st.error(c, unexpected_char_error_message(c).c_str(), out);
             } else {
                 st.bit -= 2;
             }
@@ -66,7 +73,7 @@ private:
         unsigned char v = base64constants::base64_matrix[static_cast<unsigned char>(c)];
         
         if (v == 0xff) {
-            st.error(c, (std::string("Bad input character '") + c + "'").c_str());
+            st.error(c, unexpected_char_error_message(c).c_str(), out);
             return;
         } else {
             st.cache <<= 6;
@@ -98,12 +105,12 @@ private:
 
         if (c == PaddingCV) { // padding
             if (st.bit == 0) {
-                st.error(c, (std::string("Bad input character '") + c + "'").c_str());
+                st.error(c, unexpected_char_error_message(c).c_str(), in);
             } else if (st.bit == 4) {
                 if (!base_type::provider_get(in, s, &c)) {
                     st.error(c, "Unexpected eof");
                 } else if (c != PaddingCV) {
-                    st.error(c, (std::string("Bad input character '") + c + "', expected padding character.").c_str());
+                    st.error(c, (unexpected_char_error_message(c) + ", expected padding character.").c_str(), in);
                 }
             }
             st.bit = 0;
@@ -113,7 +120,7 @@ private:
         unsigned char v = base64constants::base64_matrix[static_cast<unsigned char>(c)];
         
         if (v == 0xff) {
-            st.error(c, (std::string("Bad input character '") + c + "'").c_str());
+            st.error(c, unexpected_char_error_message(c).c_str(), in);
             return false;
         } else {
             st.cache <<= 6;
@@ -129,7 +136,7 @@ private:
             unsigned char v = base64constants::base64_matrix[static_cast<unsigned char>(c)];
             // padding character is error in that place.
             if (v == 0xff) {
-                st.error(c, (std::string("Bad input character '") + c + "'").c_str());
+                st.error(c, unexpected_char_error_message(c).c_str(), in);
                 return false;
             }
             st.cache <<= 6;

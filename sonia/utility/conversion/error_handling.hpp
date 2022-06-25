@@ -19,6 +19,12 @@ struct throw_error_handler
     {
         BOOST_THROW_EXCEPTION(exception(errmsg));
     }
+
+    template <typename DataT, typename StateT, typename IteratorT>
+    void operator()(DataT&, StateT&, const char *errmsg, IteratorT&) const
+    {
+        BOOST_THROW_EXCEPTION(exception(errmsg));
+    }
 };
 
 }

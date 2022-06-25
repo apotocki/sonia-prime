@@ -30,8 +30,9 @@ struct bits_state_t : private ErrorHandlerT
         return r;
     }
 
-    inline void error(char c, const char *errmsg) {
-        ErrorHandlerT::operator()(c, *this, errmsg);
+    template <typename IteratorT>
+    inline void error(char c, const char *errmsg, IteratorT & it) {
+        ErrorHandlerT::operator()(c, *this, errmsg, it);
     }
 };
 

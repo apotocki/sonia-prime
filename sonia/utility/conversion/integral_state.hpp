@@ -27,6 +27,11 @@ struct integral_state : private ErrorHandlerT
         ErrorHandlerT::operator()(std::forward<VT>(v), *this, errmsg);
     }
 
+    template <typename VT, typename IteratorT>
+    inline void error(VT&& v, const char *errmsg, IteratorT & it) {
+        ErrorHandlerT::operator()(std::forward<VT>(v), *this, errmsg, it);
+    }
+
     inline T const& get() const { return value_; }
     inline T & get() { return value_; }
 
@@ -46,6 +51,11 @@ struct integral_state<void, ErrorHandlerT> : private ErrorHandlerT
     template <typename VT>
     inline void error(VT&& v, const char *errmsg) {
         ErrorHandlerT::operator()(std::forward<VT>(v), *this, errmsg);
+    }
+
+    template <typename VT, typename IteratorT>
+    inline void error(VT&& v, const char *errmsg, IteratorT & it) {
+        ErrorHandlerT::operator()(std::forward<VT>(v), *this, errmsg, it);
     }
 
     inline bool operator== (integral_state const& rhs) const { return true; }

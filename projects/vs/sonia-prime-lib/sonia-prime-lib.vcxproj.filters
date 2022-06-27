@@ -241,6 +241,9 @@
     <Filter Include="sonia.utility\conversion\xmlenc">
       <UniqueIdentifier>{82872170-7c1c-4b15-b295-401b41dad414}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\conversion\base32">
+      <UniqueIdentifier>{423d78bc-0bf1-4aee-94d8-e9ebb0cd27df}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -2055,6 +2058,24 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\span.hpp">
       <Filter>sonia.utility\serialization</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\state.hpp">
+      <Filter>sonia.utility\conversion\base32</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\int8_to_base32.hpp">
+      <Filter>sonia.utility\conversion\base32</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\constants.hpp">
+      <Filter>sonia.utility\conversion\base32</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32_to_int8.hpp">
+      <Filter>sonia.utility\conversion\base32</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32_tag.hpp">
+      <Filter>sonia.utility\conversion\base32</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32.hpp">
+      <Filter>sonia.utility\conversion\base32</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2245,6 +2266,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\conversion\utf7\utf7.cpp">
       <Filter>sonia.utility\conversion\utf7</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\conversion\base32\base32.cpp">
+      <Filter>sonia.utility\conversion\base32</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

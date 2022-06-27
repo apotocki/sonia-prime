@@ -398,6 +398,12 @@
     <ClInclude Include="..\..\..\sonia\utility\conversion\base16\base16_to_int8.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\conversion\base16\constants.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\conversion\base16\int8_to_base16.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32_tag.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32_to_int8.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\constants.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\int8_to_base32.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\state.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\conversion\base64\base64.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\conversion\base64\base64_tag.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\conversion\base64\base64_to_int8.hpp" />
@@ -807,6 +813,7 @@
     <ClCompile Include="..\..\..\sonia\sys\windows\windows.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\conversion\base16\base16.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\conversion\base32\base32.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\conversion\base64\base64.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\conversion\utf32\unicode_simple_folding.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\conversion\utf7\utf7.cpp" />

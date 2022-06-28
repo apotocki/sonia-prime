@@ -33,6 +33,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/number/number_math.cpp
     ${BUNDLE_HOME}/sonia/utility/conversion/base16/base16.cpp
 	${BUNDLE_HOME}/sonia/utility/conversion/base64/base64.cpp
+    ${BUNDLE_HOME}/sonia/utility/conversion/base32/base32.cpp
 	${BUNDLE_HOME}/sonia/utility/conversion/utf32/unicode_simple_folding.cpp
 	${BUNDLE_HOME}/sonia/utility/conversion/utf7/utf7.cpp
     ${BUNDLE_HOME}/sonia/services/singleton_locator.cpp

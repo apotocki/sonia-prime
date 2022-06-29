@@ -299,15 +299,17 @@ public:
         return *this;
     }
 
+    /*
     parameter_options & default_value(target_type & val)
     {
-        vd_->set_default_value(T(val));
+        vd_->set_default_value(val);
         return *this;
     }
+*/
 
     parameter_options & default_value(target_type const& val)
     {
-        vd_->set_default_value(T(val));
+        vd_->set_default_value(target_type{val});
         return *this;
     }
 

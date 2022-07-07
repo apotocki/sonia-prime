@@ -4,6 +4,7 @@
 #pragma once
 
 #include <utility>
+#include <span>
 
 #include <boost/assert.hpp>
 #include <boost/range/begin.hpp>
@@ -150,7 +151,7 @@ public:
     void flush()
     {
         if (state_initialized_) {
-            *base = array_view(std::get<0>(*state_), std::get<1>(*state_));
+            *base = iterator_dereferenced_range_t<IteratorT>{std::get<0>(*state_), std::get<1>(*state_)};
             if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
                 base.flush();
             }
@@ -160,7 +161,7 @@ public:
     void fix()
     {
         if (state_initialized_) {
-            *base = array_view(std::get<0>(*state_), std::get<1>(*state_));
+            *base = iterator_dereferenced_range_t<IteratorT>{std::get<0>(*state_), std::get<1>(*state_)};
         }
     }
 
@@ -188,7 +189,7 @@ private:
     {
         do {
             iterator_dereferenced_range_t<IteratorT> rng = *base;
-            if (!boost::empty(rng)) {
+            if (!std::empty(rng)) {
                 if constexpr (is_bidirectional_v) {
                     state_.emplace(boost::begin(rng), boost::end(rng), boost::begin(rng));
                 } else {

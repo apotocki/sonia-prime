@@ -34,8 +34,10 @@ class range_dereferencing_iterator_state
 {
     using traversal_t = iterator_category_to_traversal_t<CategoryOrTraversalT>;
     static constexpr bool is_bidirectional_v = is_base_of_v<boost::bidirectional_traversal_tag, traversal_t>;
-    
-    using subrange_iterator = iterator_dereferenced_range_iterator_t<IteratorT>;
+
+    using range_t = typename std::iterator_traits<IteratorT>::value_type;
+    using subrange_iterator = std::ranges::iterator_t<range_t>;
+    //using subrange_iterator = iterator_dereferenced_range_iterator_t<IteratorT>;
 
     using state_t = conditional_t<
         is_bidirectional_v,
@@ -151,7 +153,7 @@ public:
     void flush()
     {
         if (state_initialized_) {
-            *base = iterator_dereferenced_range_t<IteratorT>{std::get<0>(*state_), std::get<1>(*state_)};
+            *base = range_t{std::get<0>(*state_), std::get<1>(*state_)};
             if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
                 base.flush();
             }
@@ -161,7 +163,7 @@ public:
     void fix()
     {
         if (state_initialized_) {
-            *base = iterator_dereferenced_range_t<IteratorT>{std::get<0>(*state_), std::get<1>(*state_)};
+            *base = range_t{std::get<0>(*state_), std::get<1>(*state_)};
         }
     }
 

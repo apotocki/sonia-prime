@@ -162,6 +162,10 @@
 #   define BOOST_USE_WINAPI_VERSION _WIN32_WINNT
 #endif
 
+#if defined(__clang__)
+#   define _LIBCPP_ABI_SPAN_POINTER_ITERATORS
+#endif
+
 #if defined(__clang__) && __clang_major__ <= 13 && __clang_minor__ == 0
 #   undef DO_NOT_USE_AGNOSTIC_CONVERTIBLE_TO_CONCEPT
 #   undef DO_NOT_USE_AGNOSTIC_RANDOM_ACCESS_ITERATOR_CONCEPT

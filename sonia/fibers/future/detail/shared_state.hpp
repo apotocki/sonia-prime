@@ -154,14 +154,14 @@ public:
 template< typename R >
 class shared_state : public shared_state_base {
 private:
-    typename std::aligned_storage< sizeof( R), alignof( R) >::type  storage_{};
+    alignas(alignof(R)) char storage_[sizeof(R)];
 
     void set_value_( R const& value, std::unique_lock< mutex > & lk) {
         BOOST_ASSERT( lk.owns_lock() );
         if ( BOOST_UNLIKELY( ready_) ) {
             throw promise_already_satisfied{};
         }
-        ::new ( static_cast< void * >( std::addressof( storage_) ) ) R( value );
+        ::new ( static_cast< void * >( storage_ ) ) R( value );
         mark_ready_and_notify_( lk);
     }
 
@@ -170,7 +170,7 @@ private:
         if ( BOOST_UNLIKELY( ready_) ) {
             throw promise_already_satisfied{};
         }
-        ::new ( static_cast< void * >( std::addressof( storage_) ) ) R( std::move( value) );
+        ::new ( static_cast< void * >( storage_ ) ) R( std::move( value) );
         mark_ready_and_notify_( lk);
     }
 
@@ -180,7 +180,7 @@ private:
         if ( except_) {
             std::rethrow_exception( except_);
         }
-        return * reinterpret_cast< R * >( std::addressof( storage_) );
+        return * reinterpret_cast< R * >( storage_ );
     }
 
 public:
@@ -190,7 +190,7 @@ public:
 
     virtual ~shared_state() {
         if ( ready_ && ! except_) {
-            reinterpret_cast< R * >( std::addressof( storage_) )->~R();
+            reinterpret_cast< R * >( storage_ )->~R();
         }
     }
 

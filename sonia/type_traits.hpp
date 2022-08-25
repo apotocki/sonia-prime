@@ -145,8 +145,6 @@ using std::is_assignable_v;
 using std::conditional;
 using std::conditional_t;
 
-using std::aligned_storage;
-using std::aligned_storage_t;
 using std::alignment_of;
 using std::alignment_of_v;
 

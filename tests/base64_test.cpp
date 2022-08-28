@@ -9,6 +9,7 @@
 
 #include <iostream>
 
+#include "sonia/utility/conversion/ascii85/ascii85.hpp"
 #include "sonia/utility/conversion/base64/base64.hpp"
 #include "sonia/utility/conversion/base32/base32.hpp"
 #include "sonia/utility/conversion/utility.hpp"
@@ -103,6 +104,21 @@ struct base32hex_decode_test_set
 	const char* expresults[7] = { "", "f", "fo", "foo", "foob", "fooba", "foobar" };
 };
 
+///////////////
+struct ascii85_encode_test_set
+{
+	//const char* testtext[1] = { "D" };
+	//const char* expresults[1] = { "6i" };
+	const char* testtext[6] = { "!", "!2", "!2Z", "!2Z0", "R!2Z0", "R!2Z    X" };
+	const char* expresults[6] = { "+T", "+Yj", "+Ym4", "+Ym4T", ";B[f!0E", ";B[f!+<VdL=9" };
+};
+
+struct ascii85_decode_test_set
+{
+	const char* testtext[6] = { "+T", "+Yj", "+Ym4", "+Ym4T", ";B[f!0E", ";B[f!+<VdL=9" };
+	const char* expresults[6] = { "!", "!2", "!2Z", "!2Z0", "R!2Z0", "R!2Z    X" };
+};
+
 void base64_test()
 {
 	encode_base_test(base64_encode_test_set{}, cvt::int8() >> cvt::base64<'='>() );
@@ -121,12 +137,19 @@ void base32hex_test()
 	decode_base_test(base32hex_decode_test_set{}, cvt::base32hex() >> cvt::int8());
 }
 
+void ascii85_test()
+{
+	encode_base_test(ascii85_encode_test_set{}, cvt::int8() >> cvt::ascii85);
+	decode_base_test(ascii85_decode_test_set{}, cvt::ascii85 >> cvt::int8());
+}
+
 void generate_matric();
 void base64_test_registrar()
 {
 	register_test(BOOST_TEST_CASE(&base64_test));
 	register_test(BOOST_TEST_CASE(&base32_test));
 	register_test(BOOST_TEST_CASE(&base32hex_test));
+	register_test(BOOST_TEST_CASE(&ascii85_test));
 	//generate_matric();
 }
 

@@ -390,6 +390,11 @@
     <ClInclude Include="..\..\..\sonia\utility\caches\utility.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\barrier.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\debug_mutex.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\ascii85.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\ascii85_tag.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\ascii85_to_int8.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\states.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\int8_to_ascii85.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\conversion\auxilary\dyn_input_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\conversion\auxilary\dyn_output_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\conversion\auxilary\dyn_state.hpp" />

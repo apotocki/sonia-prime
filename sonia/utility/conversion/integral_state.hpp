@@ -63,4 +63,31 @@ struct integral_state<void, ErrorHandlerT> : private ErrorHandlerT
     inline void reset() {}
 };
 
+template <typename T, typename ErrorHandlerT>
+struct inherited_integral_state : public T, private ErrorHandlerT
+{
+    using T::clear;
+
+    template <typename ArgT>
+    inline void clear(ArgT&& arg) {
+        static_cast<ErrorHandlerT&>(*this) = std::forward<ArgT>(arg);
+        T::clear();
+    }
+
+    template <typename VT>
+    inline void error(VT&& v, const char* errmsg) {
+        ErrorHandlerT::operator()(std::forward<VT>(v), *this, errmsg);
+    }
+
+    template <typename VT, typename IteratorT>
+    inline void error(VT&& v, const char* errmsg, IteratorT& it) {
+        ErrorHandlerT::operator()(std::forward<VT>(v), *this, errmsg, it);
+    }
+
+    inline T const& get() const { return *this; }
+    inline T& get() { return *this; }
+
+    inline bool operator== (inherited_integral_state const& rhs) const { return get() == rhs.get(); }
+};
+
 }

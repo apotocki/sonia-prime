@@ -486,6 +486,11 @@
     <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\xmlenc.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\xmlenc_tag.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\xmlenc_to_utf8.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\int8_to_z85.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\states.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85_tag.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85_to_int8.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\file_statable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\file_statable.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\equal\variant.hpp" />

@@ -9,6 +9,7 @@
 
 #include <iostream>
 
+#include "sonia/utility/conversion/z85/z85.hpp"
 #include "sonia/utility/conversion/ascii85/ascii85.hpp"
 #include "sonia/utility/conversion/base64/base64.hpp"
 #include "sonia/utility/conversion/base32/base32.hpp"
@@ -119,6 +120,21 @@ struct ascii85_decode_test_set
 	const char* expresults[6] = { "!", "!2", "!2Z", "!2Z0", "R!2Z0", "R!2Z    X" };
 };
 
+///////////////
+struct z85_encode_test_set
+{
+	//const char* testtext[1] = { "D" };
+	//const char* expresults[1] = { "6i" };
+	const char* testtext[6] = { "!", "!2", "!2Z", "!2Z0", "R!2Z0", "R!2Z    X" };
+	const char* expresults[6] = { "aP", "aU<", "aU)j", "aU)jP", "qxW/0fA", "qxW/0arR^Hso" };
+};
+
+struct z85_decode_test_set
+{
+	const char* testtext[6] = { "aP", "aU<", "aU)j", "aU)jP", "qxW/0fA", "qxW/0arR^Hso" };
+	const char* expresults[6] = { "!", "!2", "!2Z", "!2Z0", "R!2Z0", "R!2Z    X" };
+};
+
 void base64_test()
 {
 	encode_base_test(base64_encode_test_set{}, cvt::int8() >> cvt::base64<'='>() );
@@ -143,13 +159,22 @@ void ascii85_test()
 	decode_base_test(ascii85_decode_test_set{}, cvt::ascii85 >> cvt::int8());
 }
 
+void z85_test()
+{
+	encode_base_test(z85_encode_test_set{}, cvt::int8() >> cvt::z85);
+	decode_base_test(z85_decode_test_set{}, cvt::z85 >> cvt::int8());
+}
+
 void generate_matric();
 void base64_test_registrar()
 {
+	///*
 	register_test(BOOST_TEST_CASE(&base64_test));
 	register_test(BOOST_TEST_CASE(&base32_test));
 	register_test(BOOST_TEST_CASE(&base32hex_test));
 	register_test(BOOST_TEST_CASE(&ascii85_test));
+	register_test(BOOST_TEST_CASE(&z85_test));
+	//*/
 	//generate_matric();
 }
 
@@ -161,7 +186,8 @@ AUTOTEST(base64_test_registrar)
 void generate_matric()
 {
 	//const char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
-	const char alphabet[] = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+	//const char alphabet[] = "0123456789ABCDEFGHIJKLMNOPQRSTUV";
+	const char alphabet[] = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ.-:+=^!/*?&<>()[]{}@%$#";
 	uint8_t matrix[256];
 	std::fill(matrix, matrix + sizeof(matrix), 255);
 	for (size_t i = 0; i < sizeof(alphabet) - 1; ++i) {

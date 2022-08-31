@@ -247,6 +247,9 @@
     <Filter Include="sonia.utility\conversion\ascii85">
       <UniqueIdentifier>{2fa59c35-717b-4862-9361-e35bc7f033f3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\conversion\z85">
+      <UniqueIdentifier>{46bbb882-6e15-4731-99ac-e127fb04c645}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -2093,6 +2096,21 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\int8_to_ascii85.hpp">
       <Filter>sonia.utility\conversion\ascii85</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\int8_to_z85.hpp">
+      <Filter>sonia.utility\conversion\z85</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\states.hpp">
+      <Filter>sonia.utility\conversion\z85</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85.hpp">
+      <Filter>sonia.utility\conversion\z85</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85_tag.hpp">
+      <Filter>sonia.utility\conversion\z85</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85_to_int8.hpp">
+      <Filter>sonia.utility\conversion\z85</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

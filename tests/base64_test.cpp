@@ -123,16 +123,18 @@ struct ascii85_decode_test_set
 ///////////////
 struct z85_encode_test_set
 {
-	//const char* testtext[1] = { "D" };
-	//const char* expresults[1] = { "6i" };
-	const char* testtext[6] = { "!", "!2", "!2Z", "!2Z0", "R!2Z0", "R!2Z    X" };
-	const char* expresults[6] = { "aP", "aU<", "aU)j", "aU)jP", "qxW/0fA", "qxW/0arR^Hso" };
+	//const char* testtext[1] = { "\xd0\xa0\xd0\xa1" };
+	//const char* expresults[1] = { "^4F:V" };
+	const char* testtext[7] = { "\xd0\xa0\xd0\xa1", "!", "!2", "!2Z", "!2Z0", "R!2Z0", "R!2Z    X" };
+	const char* expresults[7] = { "^4F:V", "aP", "aU<", "aU)j", "aU)jP", "qxW/0fA", "qxW/0arR^Hso" };
 };
 
 struct z85_decode_test_set
 {
-	const char* testtext[6] = { "aP", "aU<", "aU)j", "aU)jP", "qxW/0fA", "qxW/0arR^Hso" };
-	const char* expresults[6] = { "!", "!2", "!2Z", "!2Z0", "R!2Z0", "R!2Z    X" };
+	//const char* testtext[1] = { "^4F:V" }; 
+	//const char* expresults[1] = { "\xd0\xa0\xd0\xa1" };
+	const char* testtext[7] = { "^4F:V", "aP", "aU<", "aU)j", "aU)jP", "qxW/0fA", "qxW/0arR^Hso" };
+	const char* expresults[7] = { "\xd0\xa0\xd0\xa1", "!", "!2", "!2Z", "!2Z0", "R!2Z0", "R!2Z    X" };
 };
 
 void base64_test()

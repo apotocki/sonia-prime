@@ -65,7 +65,7 @@ private:
     BOOST_FORCEINLINE static void do_put(char c, ForwardWritableIterator& out, StateT& s)
     {
         auto& st = base_type::pstate(s);
-        st.tuple |= ((uint32_t)c) << ((3 - st.count++) * 8);
+        st.tuple |= ((uint32_t)(uint8_t)c) << ((3 - st.count++) * 8);
         if (st.count < 4) return;
 
         if (st.tuple == 0) {
@@ -96,7 +96,7 @@ private:
             do {
                 char v;
                 if (!base_type::provider_get(in, s, &v)) break;
-                tuple |= ((uint32_t)v) << ((3 - st.count++) * 8);
+                tuple |= ((uint32_t)(uint8_t)v) << ((3 - st.count++) * 8);
             } while (st.count < 4);
 
             if (tuple == 0 && st.count == 4) {

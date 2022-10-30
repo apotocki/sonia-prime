@@ -212,6 +212,14 @@ void transceiver_service::close() noexcept
     }
 }
 
+void transceiver_service::close_connections() noexcept
+{
+    lock_guard guard(mtx);
+    for (auto& soc : using_set_) {
+        soc.close();
+    }
+}
+
 void transceiver_service::transmit_and_receive(string_view dest, serializable_proxy_object & obj)
 {
     if (!soc_factory_) {

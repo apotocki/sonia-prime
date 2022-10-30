@@ -52,6 +52,14 @@ void http_connector::close() noexcept
     }
 }
 
+void http_connector::close_connections() noexcept
+{
+    lock_guard guard(mtx);
+    for (auto& soc : using_set_) {
+        soc.close();
+    }
+}
+
 void http_connector::connect(sonia::io::tcp_socket soc)
 {
     std::list<io::tcp_socket>::iterator soc_it;
@@ -139,7 +147,7 @@ void http_connector::keep_alive_connect(io::tcp_socket soc)
 
     while (do_connection(ii, oi)) {
         oi.flush();
-        LOG_TRACE(logger()) << "next keep alive connection: " << curconnection;
+        LOG_TRACE(logger()) << "next keep alive connection: " << curconnection << ", total: " << keep_alive_count_.load();
     }
 }
 

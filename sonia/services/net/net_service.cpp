@@ -19,14 +19,14 @@ namespace sonia::services {
 using sonia::io::tcp_socket;
 using sonia::io::udp_socket;
 
-struct tcp_acceptor_listener : net_service::listener
+struct tcp_acceptor_listener : net_service_impl::listener
 {
     shared_ptr<net::tcp_connector> cn;
     sonia::io::tcp_server_socket sock;
     void close() override { closed.store(true); sock.close(); }
 };
 
-struct udp_socket_listener : net_service::listener
+struct udp_socket_listener : net_service_impl::listener
 {
     shared_ptr<net::udp_connector> cn;
     sonia::io::udp_socket sock;
@@ -145,22 +145,28 @@ public:
     }
 };
 
-net_service::net_service(net_service_configuration const& cfg)
-    : cfg_(cfg)
+net_service_impl::net_service_impl(net_service_configuration const& cfg)
 {
+    configuration = cfg;
     set_log_attribute("Type", "net-server");
     locate(cfg.scheduler, scheduler_);
 }
 
-void net_service::open()
+void net_service_impl::open()
 {
-    listeners_.reserve(cfg_.listeners.size());
+    reload();
+}
+
+void net_service_impl::reload()
+{
+    close();
+    listeners_.reserve(configuration.listeners.size());
     try {
-        for (net::listener_configuration const& lc : cfg_.listeners)
+        for (net::listener_configuration const& lc : configuration.listeners)
         {
             if (net::listener_type::TCP == lc.type || net::listener_type::SSL == lc.type) {
                 if (!tcp_server_socket_factory_) {
-                    locate(cfg_.tcp_server_socket_factory, tcp_server_socket_factory_);
+                    locate(configuration.tcp_server_socket_factory, tcp_server_socket_factory_);
                 }
                 shared_ptr<tcp_acceptor_listener> ls = make_shared<tcp_acceptor_listener>();
                 locate(lc.connector, ls->cn);
@@ -172,7 +178,7 @@ void net_service::open()
                 listeners_.push_back(std::move(ls));
             } else if (net::listener_type::UDP == lc.type) {
                 if (!udp_socket_factory_) {
-                    locate(cfg_.udp_socket_factory, udp_socket_factory_);
+                    locate(configuration.udp_socket_factory, udp_socket_factory_);
                 }
 
                 shared_ptr<udp_socket_listener> ls = make_shared<udp_socket_listener>();
@@ -192,7 +198,7 @@ void net_service::open()
     }
 }
 
-void net_service::close() noexcept
+void net_service_impl::close() noexcept
 {
     for (auto & lp : listeners_) {
         lp->close();

@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICES_NET_SERVICE_CONFIGURATION_HPP
-#define SONIA_SERVICES_NET_SERVICE_CONFIGURATION_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <vector>
 
@@ -15,7 +10,7 @@
 #include "sonia/string.hpp"
 #include "sonia/sal/net.hpp"
 
-namespace sonia::services { namespace net {
+namespace sonia::services::net {
 
 enum class listener_type
 {
@@ -37,6 +32,8 @@ struct listener_configuration
 
 }
 
+namespace sonia::services {
+
 struct net_service_configuration
 {
     std::string udp_socket_factory;
@@ -46,5 +43,3 @@ struct net_service_configuration
 };
 
 }
-
-#endif // SONIA_SERVICES_NET_SERVICE_CONFIGURATION_HPP

@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICES_IO_SSL_CONFIGURATION_HPP
-#define SONIA_SERVICES_IO_SSL_CONFIGURATION_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/cstdint.hpp"
 #include "sonia/string.hpp"
@@ -45,5 +40,3 @@ struct ssl_configuration
 };
 
 }
-
-#endif // SONIA_SERVICES_IO_SSL_CONFIGURATION_HPP

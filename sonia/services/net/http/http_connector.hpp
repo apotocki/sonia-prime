@@ -36,6 +36,8 @@ public:
     void keep_alive_connect(sonia::io::tcp_socket soc);
     void one_shot_connect(sonia::io::tcp_socket soc);
 
+    void close_connections() noexcept override;
+
 private:
     using read_iterator = socket_read_input_iterator<io::tcp_socket>;
     using write_iterator = socket_write_input_iterator<io::tcp_socket>;

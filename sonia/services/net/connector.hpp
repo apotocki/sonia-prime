@@ -21,6 +21,7 @@ public:
     virtual ~tcp_connector() = default;
 
     virtual void connect(io::tcp_socket) = 0;
+    virtual void close_connections() noexcept = 0;
 };
 
 class udp_connector

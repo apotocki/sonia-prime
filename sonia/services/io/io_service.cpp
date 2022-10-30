@@ -4,6 +4,7 @@
 
 #include "sonia/config.hpp"
 #include "io_service.hpp"
+#include "io_ssl_service.hpp"
 #include "sonia/services.hpp"
 
 namespace sonia::services {

@@ -55,11 +55,14 @@ protected:
 
 }
 
-#define DECLARE_PARTICULAR_BUILDER(name)                                          \
-class name##_builder                                                              \
-    : public sonia::services::basic_builder<name, name##_configuration>           \
+#define DECLARE_PARTICULAR_CUSTOM_BUILDER(builder_name, service_name, cfg_name)   \
+class builder_name                                                                \
+    : public sonia::services::basic_builder<service_name, cfg_name>               \
 {                                                                                 \
 public:                                                                           \
-    explicit name##_builder(json_object const& props) : basic_builder_t{props} {} \
+    explicit builder_name(json_object const& props) : basic_builder_t{props} {}   \
     void open() override final;                                                   \
 };
+
+#define DECLARE_PARTICULAR_BUILDER(name)                                          \
+DECLARE_PARTICULAR_CUSTOM_BUILDER(name##_builder, name, name##_configuration)

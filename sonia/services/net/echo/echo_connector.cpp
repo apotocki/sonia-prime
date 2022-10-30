@@ -26,6 +26,9 @@ void echo_connector::open()
 void echo_connector::close() noexcept
 {}
 
+void echo_connector::close_connections() noexcept
+{}
+
 void echo_connector::connect(sonia::io::tcp_socket soc)
 {
     socket_write_iterator wit{soc};

@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICES_ECHO_CONNECTOR_HPP
-#define SONIA_SERVICES_ECHO_CONNECTOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/services/service.hpp"
 #include "sonia/services/net/connector.hpp"
@@ -30,10 +25,10 @@ public:
     void connect(sonia::io::tcp_socket) override;
     void connect(array_view<char> buff, size_t, sonia::sal::socket_address const&, sonia::io::udp_socket&) override;
 
+    void close_connections() noexcept override;
+
 private:
     echo_connector_configuration cfg_;
 };
 
 }
-
-#endif // SONIA_SERVICES_ECHO_CONNECTOR_HPP

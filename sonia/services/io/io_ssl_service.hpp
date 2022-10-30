@@ -5,23 +5,23 @@
 #pragma once
 
 #include "sonia/services/service.hpp"
-#include "sonia/services/io/factory.hpp"
+#include "sonia/services/io/ssl_factory.hpp"
 #include "sonia/services/io/io_service_configuration.hpp"
 
 namespace sonia::services {
 
-class io_service 
+class io_ssl_service 
     : public service
-    , public sonia::io::factory
+    , public sonia::io::ssl_factory
 {
 public:
-    explicit io_service(io_service_configuration cfg);
+    explicit io_ssl_service(io_ssl_service_configuration cfg);
 
     void open() override;
     void close() noexcept override;
 
 private:
-    io_service_configuration cfg_;
+    io_ssl_service_configuration cfg_;
 };
 
 }

@@ -87,6 +87,7 @@
     <ClInclude Include="..\..\..\sonia\services\io\io_service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\io_service_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\services\io\io_service_configuration.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\io\io_ssl_service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\basic_connector.hpp" />
     <ClInclude Include="..\..\..\sonia\services\net\connector.hpp" />

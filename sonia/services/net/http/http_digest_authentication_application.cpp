@@ -8,19 +8,18 @@
 #include <boost/unordered_map.hpp>
 #include <boost/random/random_device.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
-#include <boost/uuid/detail/md5.hpp>
+
+#include <boost/conversion/hashes/md5.hpp>
+#include <boost/conversion/base_xx/base16.hpp>
+#include <boost/conversion/push_iterator.hpp>
 
 #include "sonia/utility/functional/hash.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
-#include "sonia/utility/base_xx_util.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/singleton.hpp"
 #include "sonia/services.hpp"
 
 namespace sonia::services {
-
-using boost::uuids::detail::md5;
-static_assert(sizeof(md5::digest_type) == 16);
 
 namespace {
 
@@ -64,7 +63,8 @@ public:
     void set(T& obj, string_view val) const override final
     {
         if (val.size() != 2 * N) return;
-        base16_decode(val, obj.*ref_);
+        using namespace boost::conversion;
+        (cvt_push_iterator{ base16l | int8, static_cast<uint8_t*>(obj.*ref_) } << val).flush();
     }
 
     SONIA_POLYMORPHIC_MOVABLE_IMPL(base16_value_reference)
@@ -74,8 +74,6 @@ struct http_digest
 {
     bool has_digest{false};
     uint8_t response[16];
-
-    static_assert (sizeof(md5::digest_type) == sizeof(response));
 
     //uint8_t ncnum[4];
     string_view username, nonce, nc, cnonce, realm, opaque, uri, qop;
@@ -220,8 +218,10 @@ void http_digest_authentication_application::handle(http::request & req, http::r
     }
 
     http_digest dig;
-    req.tokenize_header(http::header::AUTHORIZATION, [&dig](string_view n, string_view v, char d) {
-        dig(n, v);
+    req.tokenize_header(http::header::AUTHORIZATION, [this, &dig](string_view n, string_view v, char d) {
+        if (!dig(n, v)) {
+            LOG_WARN(logger()) << "unparsed auth token: " << n << "=" << v;
+        }
         return true;
     });
 
@@ -257,36 +257,23 @@ void http_digest_authentication_application::handle(http::request & req, http::r
             ha1 = std::move(*opt_digest);
         }
 
-        std::ostringstream ha2ss;
-        ha2ss << to_string(req.method) << ':' << dig.uri;
-        std::string ha2str = ha2ss.str();
+        using namespace boost::conversion;
 
-        md5 hash;
-        hash.process_bytes(ha2str.data(), ha2str.size());
-        md5::digest_type digest;
-        hash.get_digest(digest);
-        const auto digest_bytes = reinterpret_cast<const uint8_t*>(&digest);
+        std::array<uint8_t, 32> ha2str;
+        auto ha2_it = cvt_push_iterator{ int8 | md5 | base16l, ha2str.begin() };
+        ha2_it << to_string(req.method) << ':' << dig.uri;
+        ha2_it.flush();
 
-        std::string response_vec;
-        response_vec.reserve(256);
-        std::copy(ha1.begin(), ha1.end(), std::back_inserter(response_vec));
-        response_vec.push_back(':');
-        std::copy(dig.nonce.begin(), dig.nonce.end(), std::back_inserter(response_vec));
-        response_vec.push_back(':');
+        std::array<uint8_t, 16> response;
+        auto resp_it = cvt_push_iterator{ int8 | md5, response.begin() };
+        resp_it << ha1 << ':' << dig.nonce << ':';
         if (dig.qop == "auth" || dig.qop == "auth-int") {
-            std::copy(dig.nc.begin(), dig.nc.end(), std::back_inserter(response_vec));
-            response_vec.push_back(':');
-            std::copy(dig.cnonce.begin(), dig.cnonce.end(), std::back_inserter(response_vec));
-            response_vec.push_back(':');
-            std::copy(dig.qop.begin(), dig.qop.end(), std::back_inserter(response_vec));
-            response_vec.push_back(':');
+            resp_it << dig.nc << ':' << dig.cnonce << ':' << dig.qop << ':';
         }
-        base16_encode(digest_bytes, digest_bytes + sizeof(md5::digest_type), std::back_inserter(response_vec));
-        md5 hash_resp;
-        hash_resp.process_bytes(response_vec.data(), response_vec.size());
-        hash_resp.get_digest(digest);
-        
-        bool eq = std::equal(dig.response, dig.response + sizeof(dig.response), digest_bytes);
+        resp_it << ha2str;
+        resp_it.flush();
+
+        bool eq = std::equal(dig.response, dig.response + sizeof(dig.response), response.begin());
         if (!eq) {
             LOG_WARN(logger()) << "wrong digest response";
             break;
@@ -368,21 +355,11 @@ bool http_digest_authentication_application::remove_nonce(string_view nval)
 
 std::string http_digest_authentication_application::get_digest_for(string_view user, string_view password) const
 {
-    md5 hash;
-    md5::digest_type digest;
-
-    std::ostringstream digest_steam_src;
-    digest_steam_src << user << ':' << cfg_.digest_realm << ':' << password;
-    std::string digest_src = digest_steam_src.str();
-    hash.process_bytes(digest_src.data(), digest_src.size());
-    hash.get_digest(digest);
-    const auto digest_bytes = reinterpret_cast<const char *>(&digest);
-    
-    static_assert(sizeof(md5::digest_type) == 16);
-
+    using namespace boost::conversion;
     std::string result;
     result.reserve(32);
-    base16_encode(digest_bytes, digest_bytes + sizeof(md5::digest_type), std::back_inserter(result));
+    auto cvt_it = cvt_push_iterator{ int8 | md5 | base16l, std::back_inserter(result) };
+    (cvt_it << user << ':' << cfg_.digest_realm << ':' << password).flush();
     return result;
 }
 

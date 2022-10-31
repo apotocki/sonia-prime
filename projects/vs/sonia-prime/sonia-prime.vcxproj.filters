@@ -107,6 +107,9 @@
     <ClCompile Include="..\..\..\applied\embedded.cpp">
       <Filter>sonia.applied</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\io\io_ssl_service_builder.cpp">
+      <Filter>sonia.services\io</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -328,6 +331,9 @@
       <Filter>sonia.applied</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\io\io_ssl_service.hpp">
+      <Filter>sonia.services\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\io\io_ssl_service_builder.hpp">
       <Filter>sonia.services\io</Filter>
     </ClInclude>
   </ItemGroup>

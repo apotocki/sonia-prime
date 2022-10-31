@@ -24,6 +24,10 @@
 #include "sonia/services/io/io_service_builder.hpp"
 #include "sonia/services/io/io_cache_service_builder.hpp"
 
+#ifndef SONIA_NO_SSL
+#   include "sonia/services/io/io_ssl_service_builder.hpp"
+#endif
+
 #endif
 namespace sonia::services {
 
@@ -43,11 +47,15 @@ void prime_bundle::init()
     install<http_digest_authentication_application_builder>("http-auth");
     
     install<io_service_builder>("io");
-    install<io_ssl_service_builder>("io-ssl");
+
     install<io_cache_service_builder>("io-cache");
     install<echo_connector_builder>("echo");
     install<transceiver_service_builder>("transceiver");
-#endif  
+
+#   ifndef SONIA_NO_SSL
+    install<io_ssl_service_builder>("io-ssl");
+#   endif
+#endif
 }
 
 }

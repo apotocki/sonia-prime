@@ -4,7 +4,6 @@
 
 #include "sonia/config.hpp"
 #include "io_service.hpp"
-#include "io_ssl_service.hpp"
 #include "sonia/services.hpp"
 
 namespace sonia::services {
@@ -26,6 +25,13 @@ void io_service::close() noexcept
 {
     sonia::io::factory::close();
 }
+
+} // sonia::services
+
+#ifndef SONIA_NO_SSL
+#include "io_ssl_service.hpp"
+
+namespace sonia::services {
 
 io_ssl_service::io_ssl_service(io_ssl_service_configuration cfg)
     : cfg_(std::move(cfg))
@@ -49,4 +55,6 @@ void io_ssl_service::close() noexcept
 
 }
 
-}
+} // sonia::services
+
+#endif

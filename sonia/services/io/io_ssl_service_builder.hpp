@@ -5,10 +5,10 @@
 #pragma once
 
 #include "sonia/services/builder.hpp"
-#include "io_service.hpp"
+#include "io_ssl_service.hpp"
 
 namespace sonia::services {
 
-DECLARE_PARTICULAR_BUILDER(io_service)
+DECLARE_PARTICULAR_BUILDER(io_ssl_service)
 
 }

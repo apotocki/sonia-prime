@@ -44,8 +44,15 @@ if (NOT DEFINED NO_NET)
         ${BUNDLE_HOME}/sonia/services/net/http/http_static_application.cpp
         ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application_builder.cpp
         ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application.cpp
-        
     )
+
+    if (NOT DEFINED NO_SSL)
+        set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+            ${BUNDLE_HOME}/sonia/services/io/io_ssl_service_builder.cpp
+        )
+    else()
+        add_definitions(-DSONIA_NO_SSL)
+    endif()
 else()
     add_definitions(-DSONIA_NO_NET)
 endif ()

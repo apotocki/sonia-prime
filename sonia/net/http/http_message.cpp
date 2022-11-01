@@ -66,13 +66,13 @@ void header_collection::remove_header(any_header_param_t h)
     }
 }
 
-array_view<const std::string> header_collection::get_header(any_header_param_t h) const
+std::span<const std::string> header_collection::get_header(any_header_param_t h) const
 {
     auto it = headers.find(h, hasher(), header_equal_to());
     if (it != headers.end()) {
         return it->second;
     }
-    return array_view<const std::string>{};
+    return {};
 }
 
 void header_collection::tokenize_header(any_header_param_t h, function<bool(string_view, string_view, char)> const& handler) const
@@ -275,10 +275,10 @@ void request::add_parameter(parameter_arg_t name, parameter_arg_t value)
     }
 }
 
-array_view<std::string const> request::get_parameter(string_view name) const
+std::span<const std::string> request::get_parameter(string_view name) const
 {
     auto it = parameters.find(name, hasher(), string_equal_to());
-    if (it == parameters.end() || it->second.empty()) return array_view<std::string const>();
+    if (it == parameters.end() || it->second.empty()) return {};
     return it->second;
 }
 

@@ -27,7 +27,7 @@ class array_view
 {
 public:
     // range resembling
-    using value_type = remove_cv_t<T>;
+    using value_type = T; // remove_cv_t<T>;
     using const_value_type = add_const_t<T>;
     using pointer = add_pointer_t<T>;
     using reference = add_lvalue_reference_t<T>;
@@ -53,22 +53,28 @@ public:
     template <size_t N>
     constexpr array_view(T(&arr)[N]) noexcept : data_{arr}, size_{N} {}
 
-    template <typename VT, class AllocatorT, typename Enabler = enable_if_t<is_same_v<T, VT> && !is_const_v<VT>>>
+    template <typename VT, class AllocatorT>
+    requires(is_same_v<value_type, VT> && !is_const_v<VT>)
     array_view(std::vector<VT, AllocatorT>& v) noexcept : data_{ v.empty() ? nullptr : &v.front() }, size_{ v.size() } {}
 
-    template <typename VT, class AllocatorT, typename Enabler = enable_if_t<is_same_v<value_type, remove_cv_t<VT>> && is_const_v<T>>>
+    template <typename VT, class AllocatorT>
+    requires(is_same_v<value_type, add_const_t<VT>>)
     array_view(std::vector<VT, AllocatorT> const& v) noexcept : data_{ v.empty() ? nullptr : &v.front() }, size_{ v.size() } {}
 
-    template <typename VT, size_t SzV, typename Enabler = enable_if_t<is_same_v<T, VT> && !is_const_v<VT>>>
+    template <typename VT, size_t SzV>
+    requires(is_same_v<value_type, VT> && !is_const_v<VT>)
     array_view(std::array<VT, SzV> & v) noexcept : data_{ SzV ? &v.front() : nullptr }, size_{ SzV } {}
 
-    template <typename VT, size_t SzV, typename Enabler = enable_if_t<is_same_v<value_type, remove_cv_t<VT>>&& is_const_v<T>>>
+    template <typename VT, size_t SzV>
+    requires(is_same_v<value_type, add_const_t<VT>>)
     array_view(std::array<VT, SzV> const& v) noexcept : data_{ SzV ? &v.front() : nullptr }, size_{ SzV } {}
 
-    template <typename CharT, class TraitsT, typename Enabler = enable_if_t<is_same_v<T, CharT> && !is_const_v<CharT>>>
+    template <typename CharT, class TraitsT>
+    requires(is_same_v<value_type, CharT> && !is_const_v<CharT>)
     array_view(std::basic_string<CharT, TraitsT> & s) noexcept : data_{ s.data() }, size_{ s.size() } {}
 
-    template <typename CharT, class TraitsT, typename Enabler = enable_if_t<is_same_v<value_type, CharT>&& is_const_v<T>>>
+    template <typename CharT, class TraitsT>
+    requires(is_same_v<value_type, add_const_t<CharT>>)
     array_view(std::basic_string<CharT, TraitsT> const& s) noexcept : data_{ s.c_str() }, size_{ s.size() } {}
 
     constexpr array_view(T * b, T * e) noexcept

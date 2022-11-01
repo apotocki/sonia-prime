@@ -49,7 +49,7 @@ class header_collection
 public:
     headers_t headers;
 
-    array_view<const std::string> get_header(any_header_param_t) const;
+    std::span<const std::string> get_header(any_header_param_t) const;
 
     void tokenize_header(any_header_param_t, function<bool(string_view, string_view, char)> const& handler) const;
 
@@ -113,7 +113,7 @@ public:
     using parameter_arg_t = boost::variant<string_view, std::string>;
 
     void add_parameter(parameter_arg_t name, parameter_arg_t value);
-    array_view<std::string const> get_parameter(string_view name) const;
+    std::span<const std::string> get_parameter(string_view name) const;
 
     void set_property(string_view name, json_value value);
     json_value const* get_property(string_view name) const;

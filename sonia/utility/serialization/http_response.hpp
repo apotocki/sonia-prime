@@ -77,7 +77,7 @@ public:
             std::vector<char> buff;
             bool is_gzip = true;
             hvals = r.get_header(http::header::CONTENT_ENCODING);
-            if (!hvals) {
+            if (hvals.empty()) {
                 roimpl.emplace<chunking_output_iterator>(http_chunking_write_input_iterator{std::move(oi)});
             } else if (hvals[0] == "gzip") {
                 is_gzip = true;

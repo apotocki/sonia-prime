@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_XML_LEXER_HPP
-#define SONIA_UTILITY_XML_LEXER_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/utility/parsers/lexer.hpp"
 
@@ -66,5 +61,3 @@ class lexertl_lexer : public lexertl_lexer_base<lexertl_lexer<IteratorT>, Iterat
 {};
 
 }
-
-#endif // SONIA_UTILITY_XML_LEXER_HPP

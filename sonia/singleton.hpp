@@ -12,11 +12,13 @@
 #include "sonia/services/on_close.hpp"
 #include "sonia/utility/in_place_factory.hpp"
 
-namespace sonia { namespace services {
+namespace sonia::services {
     
 SONIA_PRIME_API singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>(singleton::id)> const&);
 
 }
+
+namespace sonia {
 
 template <typename T>
 struct singleton_wrapper

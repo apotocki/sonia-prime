@@ -25,6 +25,7 @@ public:
     //~model_base(){}
 
     // XML Decl
+    bool is_xml_decl_optional() const { return false; }
     void on_encoding() {}
     void on_version() {}
     void on_standalone()
@@ -45,11 +46,11 @@ public:
     void on_system_literal() {}
     void on_pubid_literal() {}
 
-    void on_begin_element() { element_name_ = std::move(tempstr_); }
+    void on_begin_element() { element_name_.swap(tempstr_); }
     void on_end_element() { } // on '>'
     void on_close_element() { } // on '/>'
     void on_close_tag() { } // on '</' name
-    void on_attribute_name() { attr_name_ = std::move(tempstr_); }
+    void on_attribute_name() { attr_name_.swap(tempstr_); }
     void on_attribute_value() {}
     void on_char_data() {}
 

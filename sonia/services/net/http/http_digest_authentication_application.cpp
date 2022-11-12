@@ -60,7 +60,7 @@ class base16_value_reference : public value_reference<T>
     ref_t ref_;
 public:
     explicit base16_value_reference(ref_t val) : ref_{val} {}
-    void set(T& obj, string_view val) const override final
+    void set(T& obj, const string_view val) const override final
     {
         if (val.size() != 2 * N) return;
         using namespace boost::conversion;

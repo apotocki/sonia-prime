@@ -64,6 +64,11 @@ public:
     {
         return base_t::starts_with(prefix);
     }
+
+    bool ends_with(basic_string_view prefix) const
+    {
+        return base_t::ends_with(prefix);
+    }
 };
 
 template <typename CharT, class TraitsT = std::char_traits<CharT>>

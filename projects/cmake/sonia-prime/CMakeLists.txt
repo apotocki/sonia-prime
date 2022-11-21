@@ -3,6 +3,7 @@ include (${COMMON_INCLUDE})
 include_directories(${BUNDLES})
 include_directories(${BUNDLES}/sonia-prime)
 include_directories(${TPLS}/lexertl14/include)
+message("lexertl14 include: ${TPLS}/lexertl14/include")
 
 set (BUNDLE_NAME sonia-prime)
 set (BUNDLE_HOME ${BUNDLES}/sonia-prime)

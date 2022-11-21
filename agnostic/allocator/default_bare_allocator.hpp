@@ -1,7 +1,8 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
 #pragma once
-#include <stdlib.h>
+#include <cstdlib>
+#include "sonia/new.hpp"
 
 //#include "sonia/logger/logger.hpp"
 
@@ -19,35 +20,15 @@ struct default_bare_allocator
         throw std::bad_alloc{};
     }
 
-#if defined(_MSC_VER) || defined(__MINGW32__)
     [[nodiscard]] char* allocate(std::align_val_t al, size_t sz, std::nothrow_t) noexcept
     {
-        return reinterpret_cast<value_type*>(_aligned_malloc(sz, static_cast<size_t>(al)));
+        return reinterpret_cast<char*>(::sonia::allocate_buffer(static_cast<size_t>(al), sz));
     }
 
     void deallocate(void* ptr, size_t) noexcept
     {
-        _aligned_free(ptr);
+        ::sonia::free_buffer(ptr);
     }
-
-#else
-    [[nodiscard]] char* allocate(std::align_val_t al, size_t sz, std::nothrow_t) noexcept
-    {
-#ifdef __APPLE__
-        size_t alval = (std::max)(sizeof(void*), static_cast<size_t>(al));
-#else
-        size_t alval = static_cast<size_t>(al);
-#endif
-        size_t size = ((sz + alval - 1) / alval) * alval;
-        //GLOBAL_LOG_INFO() << "ALLIGN: " << alval << ", SIZE: " << sz << ", ALSIZE: " << size;
-        return reinterpret_cast<value_type*>(aligned_alloc(alval, size));
-    }
-
-    void deallocate(void* ptr, size_t) noexcept
-    {
-        free(ptr);
-    }
-#endif
 
     constexpr bool is_equal(default_bare_allocator const&) const noexcept { return true; }
 };

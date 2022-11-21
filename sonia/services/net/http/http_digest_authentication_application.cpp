@@ -9,6 +9,7 @@
 #include <boost/random/random_device.hpp>
 #include <boost/random/uniform_int_distribution.hpp>
 
+#include "agnostic/std/concepts/integral.hpp"
 #include <boost/conversion/hashes/md5.hpp>
 #include <boost/conversion/base_xx/base16.hpp>
 #include <boost/conversion/push_iterator.hpp>
@@ -18,6 +19,7 @@
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/singleton.hpp"
 #include "sonia/services.hpp"
+
 
 namespace sonia::services {
 

@@ -6,6 +6,10 @@
 #include <utility>
 #include <span>
 
+#ifndef __ANDROID__
+#   include <ranges>
+#endif
+
 #include <boost/assert.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
@@ -35,9 +39,13 @@ class range_dereferencing_iterator_state
     using traversal_t = iterator_category_to_traversal_t<CategoryOrTraversalT>;
     static constexpr bool is_bidirectional_v = is_base_of_v<boost::bidirectional_traversal_tag, traversal_t>;
 
+#ifdef __ANDROID__
+    using range_t = iterator_dereferenced_range_t<IteratorT>;
+    using subrange_iterator = iterator_dereferenced_range_iterator_t<IteratorT>;
+#else
     using range_t = typename std::iterator_traits<IteratorT>::value_type;
     using subrange_iterator = std::ranges::iterator_t<range_t>;
-    //using subrange_iterator = iterator_dereferenced_range_iterator_t<IteratorT>;
+#endif
 
     using state_t = conditional_t<
         is_bidirectional_v,

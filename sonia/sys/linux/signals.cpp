@@ -25,6 +25,7 @@ namespace sonia::linux {
 static const bool SIGNAL_DEBUG = true;
 
 int user_signal_ = SIGRTMIN;
+
 user_handler_type interruption_handler_;
 
 struct watch_descriptor
@@ -57,11 +58,14 @@ struct watch_descriptor
 
     ~watch_descriptor()
     {
+        if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "~watch_descriptor";
         {
             lock_guard guard(entries_mtx);
             if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "watch_descriptor : entry count: " << entries.size();
             entries.clear();
         }
+
+        if (threads.empty()) return;
 
         sigval val;
         val.sival_ptr = 0;
@@ -77,14 +81,38 @@ struct watch_descriptor
                 }
                 return;
             }
+            GLOBAL_LOG_TRACE() << "after sigqueue";
         }
         for (thread & t : threads) {
             t.join();
         }
+        GLOBAL_LOG_TRACE() << "~watch_descriptor";
     }
 };
 
-std::atomic<watch_descriptor *> wd_{nullptr};
+std::atomic <long> wd_refs_{ 0 };
+std::atomic<watch_descriptor *> awd_{nullptr};
+
+watch_descriptor* lock_wd() {
+    for (;;) {
+        long expected = wd_refs_.load();
+        if (!expected) return nullptr;
+        if (wd_refs_.compare_exchange_strong(expected, expected + 1)) break;
+    }
+    return awd_.load();
+}
+
+void unlock_wd() {
+    if (wd_refs_.fetch_sub(1) == 1) {
+        watch_descriptor* exp = awd_.load();
+        if (!exp) return;
+        if (!awd_.compare_exchange_strong(exp, nullptr)) {
+            return;
+        }
+
+        delete exp;
+    }
+}
 
 void set_user_signal(int val)
 {
@@ -99,6 +127,27 @@ int get_user_signal()
 void set_interruption_handler(user_handler_type const& ih)
 {
     interruption_handler_ = ih;
+}
+
+void invoke_handler(void* fptr)
+{
+    if (!fptr) return;
+    uintptr_t fid = (uintptr_t)fptr;
+    if (0 != (fid & 1)) { // odd => fid
+        if (watch_descriptor* wd = lock_wd(); wd) {
+            SCOPE_EXIT([] { unlock_wd(); });
+            shared_ptr<handler_entry> he = wd->get_entry(fid);
+            if (he) {
+                lock_guard eguard(he->mtx);
+                if (he->handler) he->handler();
+                if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "a handler " << fid << " has been invoked";
+            } else {
+                if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "a handler " << fid << " is obsoleted";
+            }
+        }
+    } else {
+        (*reinterpret_cast<user_handler_type*>(fptr))();
+    }
 }
 
 void watcher_proc(int num)
@@ -132,19 +181,7 @@ void watcher_proc(int num)
                 if (SI_QUEUE == code || SI_ASYNCIO == code || SI_TIMER == code) {
                     void * fptr = siginfo.si_value.sival_ptr;
                     if (!fptr) break; // stop_watchers
-                    uintptr_t fid = (uintptr_t)fptr;
-                    if (0 != fid & 1) { // odd => fid
-                        shared_ptr<handler_entry> he = wd_.load()->get_entry(fid);
-                        if (he) {
-                            lock_guard eguard(he->mtx);
-                            if (he->handler) he->handler();
-                            if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "a handler has been invoked";
-                        } else {
-                            if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "a handler is obsoleted";
-                        }
-                    } else {
-                        (*reinterpret_cast<user_handler_type*>(fptr))();
-                    }
+                    invoke_handler(fptr);
                 } else {
                     if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << ("user signal %1% is ignored"_fmt % sig).str();
                 }
@@ -185,45 +222,58 @@ void raise_user_signal(user_handler_type const& pfunc)
 
 void run_watchers(int count)
 {
+    auto wdptr = std::make_unique<watch_descriptor>();
+    wdptr->threads.reserve(count);
+    watch_descriptor* exp = nullptr;
+    if (!awd_.compare_exchange_strong(exp, wdptr.get())) {
+        return;
+    }
+    wd_refs_.store(1);
+
+#ifndef __ANDROID__
     sigset_t new_mask;
     sigfillset(&new_mask);
     sigdelset(&new_mask, SIGSEGV);
     sigdelset(&new_mask, SIGBUS);
     pthread_sigmask(SIG_BLOCK, &new_mask, nullptr);
 
-    auto wd = std::make_unique<watch_descriptor>();
-    wd->threads.reserve(count);
-    watch_descriptor* exp = nullptr;
-    if (!wd_.compare_exchange_strong(exp, wd.get())) {
-        return;
-    }
-    wd.release(); // unpin
+    watch_descriptor* wd = wdptr.release(); // unpin
+    lock_wd();
+    SCOPE_EXIT([] { unlock_wd(); });
     for (int c = 0; c < count; ++c) {
-        wd_.load()->threads.emplace_back([c] { watcher_proc(c); });
+        wd->threads.emplace_back([c] { watcher_proc(c); });
     }
-    if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "signal watchers are started, user signal: " << user_signal_;
+    if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "signal watchers have been started, user signal: " << user_signal_;
+#else
+    wdptr.release(); // unpin
+    if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "signal 'watcher' has been started";
+#endif
 }
 
 void stop_watchers() noexcept
 {
-    watch_descriptor * exp = wd_.load();
-    if (!exp) return;
-    if (!wd_.compare_exchange_strong(exp, nullptr)) {
-        return;
-    }
-
-    delete exp;
+    unlock_wd();
 }
 
 intptr_t register_handler(shared_ptr<handler_entry> e)
 {
-    return wd_.load()->new_entry(std::move(e));
+    if (watch_descriptor * wd = lock_wd(); wd) {
+        SCOPE_EXIT([] { unlock_wd(); });
+        intptr_t id = wd->new_entry(std::move(e));
+        if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "register handler entry: " << id;
+        return id;
+    }
+    
+    return 0;
 }
 
 void unregister_handler(intptr_t id)
 {
-     wd_.load()->delete_entry(id);
-     if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "deleted handler entry: " << id;
+    if (watch_descriptor* wd = lock_wd(); wd) {
+        SCOPE_EXIT([] { unlock_wd(); });
+        wd->delete_entry(id);
+        if constexpr (SIGNAL_DEBUG) GLOBAL_LOG_TRACE() << "deleted handler entry: " << id;
+    }
 }
 
 }

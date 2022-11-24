@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_IO_FILE_HPP
-#define SONIA_IO_FILE_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 #include "sonia/cstdint.hpp"
@@ -15,27 +10,31 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/sal_types.hpp"
 
-namespace sonia { namespace io {
+namespace sonia::io {
 
-enum class file_open_mode {
+enum class file_open_mode
+{
     create,
     create_or_open,
     open
 };
 
-enum class file_access_mode {
+enum class file_access_mode
+{
     read,
     write
 };
 
-enum class file_bufferring_mode {
+enum class file_bufferring_mode
+{
     not_buffered,
     buffered
 };
 
-class file_service {
+class file_service
+{
 public:
-    virtual ~file_service() {}
+    virtual ~file_service() = default;
 
     virtual size_t file_read(sonia::sal::file_handle_type handle, uint64_t fileoffset, array_view<char> dest) = 0;
     virtual size_t file_write(sonia::sal::file_handle_type handle, uint64_t fileoffset, array_view<const char> src) = 0;
@@ -78,16 +77,19 @@ private:
     sonia::sal::file_handle_type fh_;
 };
 
-class file_access {
+class file_access
+{
 public:
-    static file open_file(shared_ptr<file_service> impl, sonia::sal::file_handle_type handle, string_view path = string_view()) {
+    static file open_file(shared_ptr<file_service> impl, sonia::sal::file_handle_type handle, string_view path = string_view())
+    {
         return file(std::move(impl), handle, path);
     }
 };
 
-class file_factory {
+class file_factory
+{
 public:
-    virtual ~file_factory() {}
+    virtual ~file_factory() = default;
     virtual file open_file(
         cstring_view path,
         file_open_mode fom = file_open_mode::open,
@@ -95,6 +97,4 @@ public:
         file_bufferring_mode fbm = file_bufferring_mode::not_buffered) = 0;
 };
 
-}}
-
-#endif // SONIA_IO_FILE_HPP
+}

@@ -4,7 +4,9 @@
 
 #include "sonia/config.hpp"
 #include "timer.hpp"
-#include "sonia/sys/linux/signals.hpp"
+
+#include "sonia/logger/logger.hpp"
+#include "sonia/sys/linux/signals_api.hpp"
 
 namespace sonia::linux {
 
@@ -16,22 +18,43 @@ void timer::timer_descriptor::create(bool realtime)
 {
     hid_ = register_handler(shared_from_this());
     sigevent sev;
+#ifdef __ANDROID__
+    sev.sigev_notify = SIGEV_THREAD;
+    sev.sigev_notify_function = [](union sigval arg) {
+        invoke_handler(arg.sival_ptr);
+    };
+    sev.sigev_notify_attributes = 0;
+#else
     sev.sigev_notify = SIGEV_SIGNAL;
     sev.sigev_signo = get_user_signal();
+#endif
     sev.sigev_value.sival_ptr = (void*)hid_;
-    linux::timer_create(realtime ? CLOCK_REALTIME : CLOCK_MONOTONIC, &sev, &timerid_);
+
+    try {
+        linux::timer_create(realtime ? CLOCK_REALTIME : CLOCK_MONOTONIC, &sev, &timerid_);
+    } catch (...) {
+        unregister_handler(hid_);
+        hid_ = 0;
+        throw;
+    }
 }
 
 void timer::timer_descriptor::release()
 {
-    unregister_handler(hid_);
-    linux::timer_delete(timerid_);
+    if (hid_) {
+        GLOBAL_LOG_INFO() << "timer::timer_descriptor::release hid_ " << hid_;
+        unregister_handler(hid_);
+        linux::timer_delete(timerid_);
+        hid_ = 0;
+    }
     lock_guard guard(mtx);
     handler = std::nullptr_t{};
 }
 
 void timer::timer_descriptor::set(std::chrono::milliseconds ms)
 {
+    if (!hid_) return;
+
     int64_t ns = ms.count() * 1000000;
     
     itimerspec its;
@@ -45,6 +68,8 @@ void timer::timer_descriptor::set(std::chrono::milliseconds ms)
 
 void timer::timer_descriptor::disarm()
 {
+    if (!hid_) return;
+
     itimerspec its;
     its.it_value.tv_sec = 0;
     its.it_value.tv_nsec = 0;

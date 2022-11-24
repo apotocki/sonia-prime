@@ -42,6 +42,9 @@ shared_ptr<sonia::services::bundle> load_bundle(sonia::services::bundle_configur
 #else
         ".so";
 #endif
+#ifdef __ANDROID__
+    std::string bundles_path = "/data/app-lib/efs/";
+#endif
     void* handle = dlopen(
 #ifndef __ANDROID__
         libname.c_str(),

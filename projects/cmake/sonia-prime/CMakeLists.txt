@@ -3,7 +3,6 @@ include (${COMMON_INCLUDE})
 include_directories(${BUNDLES})
 include_directories(${BUNDLES}/sonia-prime)
 include_directories(${TPLS}/lexertl14/include)
-message("lexertl14 include: ${TPLS}/lexertl14/include")
 
 set (BUNDLE_NAME sonia-prime)
 set (BUNDLE_HOME ${BUNDLES}/sonia-prime)
@@ -58,14 +57,6 @@ else()
     add_definitions(-DSONIA_NO_NET)
 endif ()
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
-        ${BUNDLE_HOME}/sonia/sys/linux/signals.cpp
-    )
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-    #set (BUNDLE_SOURCES ${BUNDLE_HOME}/sonia/sys/macos/dispatch.cpp    )
-endif ()
-
 add_definitions(-DSONIA_PRIME_EXPORTS)
 
 if ("${LIBRARY_TYPE}" STREQUAL "STATIC")
@@ -74,5 +65,11 @@ if ("${LIBRARY_TYPE}" STREQUAL "STATIC")
 endif ()
 
 add_library(${BUNDLE_NAME} ${LIBRARY_TYPE} ${BUNDLE_SOURCES})
-target_link_libraries(${BUNDLE_NAME} sonia-prime-lib ${OPENSSL} ${ZLIB} ${BZLIB} ${BOOST_LOG_SETUP} ${BOOST_LOG} ${BOOST_SERIALIZATION} ${BOOST_FILESYSTEM} ${BOOST_THREAD} ${BOOST_PROGRAM_OPTIONS} ${BOOST_CONTEXT} ${BOOST_REGEX} ${BOOST_STACKTRACE} ${BOOST_RANDOM} ${PLATFORM_LIBS})
+target_link_libraries(${BUNDLE_NAME} sonia-prime-lib ${ZLIB} ${BZLIB} ${BOOST_LOG_SETUP} ${BOOST_LOG} ${BOOST_SERIALIZATION} ${BOOST_FILESYSTEM} ${BOOST_THREAD} ${BOOST_PROGRAM_OPTIONS} ${BOOST_CONTEXT} ${BOOST_REGEX} ${BOOST_STACKTRACE} ${BOOST_RANDOM} ${PLATFORM_LIBS})
+if (NOT DEFINED NO_SSL)
+    target_link_libraries(${BUNDLE_NAME} ${OPENSSL})
+endif ()
+if (CMAKE_SYSTEM_NAME STREQUAL "Android")
+    target_link_libraries(${BUNDLE_NAME} log)
+endif()
 set_target_properties(${BUNDLE_NAME} PROPERTIES FOLDER "libs")

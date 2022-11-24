@@ -46,9 +46,12 @@ void linux_timer_test()
     using namespace sonia::linux;
     using namespace std::chrono_literals;
 
+#ifdef __ANDROID__
+    scoped_services ss{ "base-path=" TEST_FOLDER "/" };
+#else
     run_watchers(1);
-    SCOPE_EXIT([]{ stop_watchers(); });
-
+    SCOPE_EXIT([] { stop_watchers(); });
+#endif
     std::atomic<int> check = 0;
     timer tmr{ [&check]{ check |= 2; } };
     tmr.set(50ms); // must be ignored

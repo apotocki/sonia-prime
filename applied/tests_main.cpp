@@ -8,5 +8,7 @@
 
 int main(int argc, char* argv[])
 {
-    return run_tests(argc, argv);
+    const char* argv_[] = { "tests", "--no_color_output", "--log_level=test_suite" };
+    return run_tests(3, (char**)argv_);
+    //return run_tests(argc, argv);
 }

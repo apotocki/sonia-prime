@@ -71,6 +71,7 @@ bool init_unit_test()
         }
         master_test_suite_initialized_ = true;
     }
+    
     return true;
 }
 
@@ -92,4 +93,3 @@ int run_tests(int argc, char* argv[])
 }
 
 }
-

@@ -39,23 +39,22 @@ inline void free_buffer(void* buff) {
 #elif (defined(__ANDROID__) && !defined(_LIBCPP_HAS_ALIGNED_ALLOC))
 namespace sonia {
 
-inline void* allocate_buffer(size_t alignment, size_t size) {
-    void* p1, * p2;
+inline void* allocate_buffer(size_t alignment, size_t size)
+{
+    void* p1 = malloc(size + alignment + sizeof(void*));
+    if (!p1) return p1;
 
-    if (p1 = (void*)malloc(size + alignment + sizeof(size_t)); !p1)
-        return p1;
+    uintptr_t addr = (uintptr_t)p1 + alignment + sizeof(void*);
 
-    size_t addr = (size_t)p1 + alignment + sizeof(size_t);
+    void* p2 = (void*)(addr - (addr % alignment));
 
-    p2 = (void*)(addr - (addr % alignment));
-
-    *((size_t*)p2 - 1) = (size_t)p1;
+    *((void**)p2 - 1) = p1;
 
     return p2;
 }
 
 inline void free_buffer(void* buff) {
-    free((void*)(*((size_t*)buff - 1)));
+    free((void*)(*((void**)buff - 1)));
 }
 
 }

@@ -5,7 +5,10 @@
 #include "sonia/config.hpp"
 #include "factory.hpp"
 
-#include <aio.h>
+#ifndef __ANDROID__
+#   include <aio.h>
+#endif
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -835,6 +838,7 @@ file factory::open_file(cstring_view path, file_open_mode fom, file_access_mode 
     return file_access::open_file(shared_from_this(), h, path);
 }
 
+#ifndef __ANDROID__
 struct file_callback
 {
     aiocb cb;
@@ -912,8 +916,19 @@ size_t factory::file_write(int handle, uint64_t fileoffset, array_view<const cha
         int err = errno;
         throw exception("write file error : %1%"_fmt % strerror(err));
     }
-
     return (size_t)rsz;
 }
+#else
+size_t factory::file_read(sonia::sal::file_handle_type, uint64_t fileoffset, array_view<char> dest)
+{
+    THROW_NOT_IMPLEMENTED_ERROR("io_factory::file_read");
+}
+
+size_t factory::file_write(sonia::sal::file_handle_type, uint64_t fileoffset, array_view<const char> src)
+{
+    THROW_NOT_IMPLEMENTED_ERROR("io_factory::file_write");
+}
+
+#endif
 
 }

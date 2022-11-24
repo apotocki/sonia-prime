@@ -2112,6 +2112,9 @@
     <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85_to_int8.hpp">
       <Filter>sonia.utility\conversion\z85</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\logger\android_sink.hpp">
+      <Filter>sonia.logger</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2305,6 +2308,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\conversion\base32\base32.cpp">
       <Filter>sonia.utility\conversion\base32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\logger\android_sink.cpp">
+      <Filter>sonia.logger</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

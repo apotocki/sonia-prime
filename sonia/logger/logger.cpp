@@ -6,13 +6,18 @@
 #include "sonia/logger/logger.hpp"
 
 #include <boost/preprocessor/stringize.hpp>
-
 #include <boost/log/utility/setup/common_attributes.hpp>
 #include <boost/log/utility/setup/filter_parser.hpp>
 #include <boost/log/utility/setup/formatter_parser.hpp>
 #include <boost/log/utility/setup/from_stream.hpp>
 
-namespace sonia { namespace logger {
+#ifdef __ANDROID__
+#   include "android_sink.hpp"
+#endif
+
+namespace sonia::logger {
+
+using namespace boost::log;
 
 #define SONIA_PRINT_CASE(r, data, i, elem) case severity_level::BOOST_PP_TUPLE_ELEM(2, 0, elem): return BOOST_PP_STRINGIZE(BOOST_PP_TUPLE_ELEM(2, 1, elem));
 
@@ -36,7 +41,9 @@ severity_level from_string(std::string const& str)
 
 void initialize(std::istream & s)
 {
-    using namespace boost::log;
+#ifdef __ANDROID__
+    register_sink_factory("AndroidLog", boost::make_shared<android_sink_factory>());
+#endif
 
     add_common_attributes(); // (LineID, TimeStamp, ProcessID, ThreadID)
     register_simple_filter_factory<severity_level>("Severity");
@@ -53,4 +60,4 @@ void deinitialize()
     core->remove_all_sinks();
 }
 
-}}
+}

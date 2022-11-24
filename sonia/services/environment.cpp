@@ -126,7 +126,6 @@ environment::~environment() noexcept
 #elif defined (__APPLE__)
     macos::stop_queue();
 #endif
-
 #if HAS_ICU
     u_cleanup();
 #endif
@@ -206,7 +205,7 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
 #ifdef BOOST_WINDOWS
     threadpool_.reset(new windows::threadpool);
 #elif defined (__linux__)
-    linux::run_watchers(1);
+    linux::run_watchers(1); // the thread count will be ignored for android
 #elif defined (__APPLE__)
     macos::run_queue();
 #endif

@@ -74,16 +74,20 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
         ${BUNDLE_HOME}/sonia/sal/windows_sal.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory_win.cpp
     )
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Android")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
         ${BUNDLE_HOME}/sonia/sys/posix/posix.cpp
         #${BUNDLE_HOME}/sonia/sys/linux/linux.cpp
         ${BUNDLE_HOME}/sonia/sys/linux/signals_api.cpp
+        ${BUNDLE_HOME}/sonia/sys/linux/signals.cpp
         ${BUNDLE_HOME}/sonia/sys/linux/linux_timer.cpp
         ${BUNDLE_HOME}/sonia/sal/posix_sal.cpp
         #${BUNDLE_HOME}/sonia/sal/linux_sal.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory_linux.cpp
     )
+    if (CMAKE_SYSTEM_NAME STREQUAL "Android")
+        set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${BUNDLE_HOME}/sonia/logger/android_sink.cpp)
+    endif ()
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "iOS")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
         ${BUNDLE_HOME}/sonia/sys/posix/posix.cpp

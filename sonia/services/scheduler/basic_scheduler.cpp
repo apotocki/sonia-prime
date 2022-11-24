@@ -138,10 +138,12 @@ void basic_scheduler::start()
     }
 
     threads_.reserve(thr_cnt_);
-    tbarrier_.emplace(thr_cnt_);
+    if (thr_cnt_) {
+        tbarrier_.emplace(thr_cnt_);
+    }
 
     for (size_t t = 0; t < thr_cnt_; ++t) {
-        threads_.push_back(thread([this]() { on_new_thread(); thread_proc(); }));
+        threads_.emplace_back([this]() { on_new_thread(); thread_proc(); });
         sal::set_thread_name(threads_.back().get_id(), ("%1% #%2%"_fmt % thread_name() % t).str());
     }
 }
@@ -166,6 +168,7 @@ void basic_scheduler::stop()
         pe.release_ref(this);
     }
 
+    if (threads_.empty()) return;
     // fiber friendly thread join procedure
     unique_lock lk(close_mtx_);
     thread([this] {
@@ -175,8 +178,8 @@ void basic_scheduler::stop()
         {
             unique_lock lk(close_mtx_);
             threads_.clear();
+            close_cond_.notify_one();
         }
-        close_cond_.notify_one();
     }).detach();
     close_cond_.wait(lk, [this] { return threads_.empty(); });
 }

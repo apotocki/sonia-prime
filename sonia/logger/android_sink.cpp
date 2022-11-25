@@ -19,7 +19,7 @@ using namespace boost::log;
 
 android_sink::android_sink()
 {
-    
+  
 }
 
 void android_sink::consume(boost::log::record_view const& rec, string_type const& message)

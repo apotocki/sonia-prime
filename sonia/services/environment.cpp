@@ -13,6 +13,7 @@
 #include <vector>
 
 #if HAS_ICU
+#   include <unicode/putil.h>
 #   include <unicode/uclean.h>
 #endif
 
@@ -126,7 +127,7 @@ environment::~environment() noexcept
 #elif defined (__APPLE__)
     macos::stop_queue();
 #endif
-#if HAS_ICU
+#ifdef HAS_ICU
     u_cleanup();
 #endif
     if (log_initialized_) {
@@ -201,6 +202,19 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
     if (vm.count("cfg")) {
         start_conf_ = vm["cfg"].as<std::string>();
     }
+
+#if defined(HAS_ICU)
+    u_setDataDirectory("data");
+#endif
+#if defined(HAS_ICU)
+
+    UErrorCode errCode = U_ZERO_ERROR;
+    u_init(&errCode);
+    if (U_FAILURE(errCode)) {
+        throw exception("can't initialize ICU library, err: %1%"_fmt % (int)errCode);
+    }
+
+#endif
 
 #ifdef BOOST_WINDOWS
     threadpool_.reset(new windows::threadpool);

@@ -141,6 +141,7 @@ class tar_extract_iterator
         } else {
             current_size_ -= sz;
             rng_state_t::increment();
+            closed_ = rng_state_t::empty();
         }
     }
 

@@ -17,7 +17,8 @@ void run_queue()
 
 void stop_queue()
 {
-	dispatch_release(global_queue_);
+    if (global_queue_)
+	    dispatch_release(global_queue_);
 }
 
 timer_descriptor::timer_descriptor(function<void()> const& h)

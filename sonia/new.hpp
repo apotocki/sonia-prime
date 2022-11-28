@@ -24,6 +24,7 @@ namespace sonia {
 
 inline void* allocate_buffer(size_t alignment, size_t size) {
     void* ptr;
+    alignment = (std::max)(alignment, sizeof(void *));
     if (posix_memalign(&ptr, alignment, size)) {
         ptr = nullptr;
     }

@@ -20,6 +20,7 @@ namespace sonia::services {
 class http_connector
     : public service
     , public net::tcp_connector
+    , public route_selector
 {
 public:
     explicit http_connector(http_connector_configuration cfg);
@@ -32,6 +33,9 @@ public:
     void one_shot_connect(sonia::io::tcp_socket soc);
 
     void close_connections() noexcept override;
+
+    // route selector api
+    void enable_route(string_view routeid, bool enable_val) override;
 
 private:
     using read_iterator = socket_read_input_iterator<io::tcp_socket>;

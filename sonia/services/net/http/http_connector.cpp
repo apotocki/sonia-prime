@@ -109,7 +109,7 @@ bool http_connector::do_connection(read_iterator & ii, write_iterator & oi)
     
     cstring_view uri = req.get_relative_uri();
     for (auto const& r : cfg_.routes) {
-        if (regex_match(uri.c_str(), r.pathre)) {
+        if (r.enabled && regex_match(uri.c_str(), r.pathre)) {
             http::response resp;
             r.application->handle(req, resp);
             encode<serialization::default_t>(resp, reference_wrapper_iterator(oi));
@@ -161,6 +161,18 @@ void http_connector::one_shot_connect(sonia::io::tcp_socket soc)
     read_iterator ii{soc, reqbuff, (size_t)0};
 
     do_connection(ii, oi);
+}
+
+void http_connector::enable_route(string_view routeid, bool enable_val)
+{
+    for (auto const& r : cfg_.routes) {
+        if (r.id == routeid) {
+            r.enabled = enable_val;
+            return;
+        }
+    }
+
+    throw exception("route with id: '%1%' is not found"_fmt % routeid);
 }
 
 }

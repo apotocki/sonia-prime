@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include <string>
 #include <boost/regex.hpp>
+#include "sonia/string.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/net/http/application.hpp"
 
@@ -13,9 +13,19 @@ namespace sonia::services {
 
 struct http_route
 {
+    optional<std::string> id;
     std::string application_name;
     boost::regex pathre{""};
     mutable shared_ptr<http::application> application;
+    mutable bool enabled;
+};
+
+class route_selector
+{
+public:
+    virtual ~route_selector() = default;
+
+    virtual void enable_route(string_view routeid, bool enable_val) = 0;
 };
 
 }

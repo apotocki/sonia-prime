@@ -21,6 +21,8 @@ void http_connector_builder::open()
         .variable("404-application", &http_connector_configuration::page404_application_name, "the application that handles 404 event")
         .array("routes", &http_connector_configuration::routes, "routes")
             .binder(sp::parameters_description<http_route>().bind()
+                .variable("id", &http_route::id, "route id").default_value(nullopt)
+                .variable("enabled", &http_route::enabled, "is enable").default_value(true)
                 .variable("application", &http_route::application_name, "http application name").required()
                 .variable("pathre", &http_route::pathre, "path regexp").required()
                     .binder([](json_value const& v)->boost::regex {

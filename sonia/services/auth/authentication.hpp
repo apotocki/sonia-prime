@@ -21,7 +21,6 @@ class digest_provider
 {
 public:
     virtual ~digest_provider() = default;
-
     virtual optional<std::string> get_digest_for(string_view) const = 0;
 };
 

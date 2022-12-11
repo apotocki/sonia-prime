@@ -99,6 +99,7 @@ private:
     shared_ptr<scheduler> scheduler_;
     shared_ptr<authentication::digest_provider> digest_provider_;
     std::string digest_opaque_;
+    mutable fibers::mutex routes_mutex_;
     fibers::mutex closing_mtx_;
     bool closing_{false};
 

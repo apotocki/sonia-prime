@@ -45,7 +45,8 @@ private:
 
     http_connector_configuration cfg_;
 
-    fibers::mutex mtx;
+    mutable fibers::mutex routes_mutex_;
+    mutable fibers::mutex mtx;
     std::list<sonia::io::tcp_socket> using_set_;
     bool closed_{false};
 

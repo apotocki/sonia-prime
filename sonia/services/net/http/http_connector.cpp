@@ -38,9 +38,6 @@ void http_connector::open()
     } else {
         cfg_.page404_message = to_string("HTTP/1.1 404 Not Found\r\nContent-Type: text/html\r\nContent-Length: %1%\r\n\r\n%2%"_fmt % cfg_.page404_message.size() % cfg_.page404_message);
     }
-    for (auto const& r : cfg_.routes) {
-         locate(r.application_name, r.application);
-    }
 }
 
 void http_connector::close() noexcept
@@ -110,6 +107,9 @@ bool http_connector::do_connection(read_iterator & ii, write_iterator & oi)
     cstring_view uri = req.get_relative_uri();
     for (auto const& r : cfg_.routes) {
         if (r.enabled && regex_match(uri.c_str(), r.pathre)) {
+            if (lock_guard guard(routes_mutex_); !r.application) {
+                locate(r.application_name, r.application);
+            }
             http::response resp;
             r.application->handle(req, resp);
             encode<serialization::default_t>(resp, reference_wrapper_iterator(oi));

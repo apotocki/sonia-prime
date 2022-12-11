@@ -177,6 +177,9 @@ void http_digest_authentication_application::handle(http::request & req, http::r
     cstring_view uri = req.get_relative_uri();
     for (auto const& r : cfg_.routes) {
         if (regex_match(uri.c_str(), r.pathre)) {
+            if (lock_guard guard(routes_mutex_); !r.application) {
+                locate(r.application_name, r.application);
+            }
             app = r.application;
             break;
         }

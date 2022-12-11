@@ -28,8 +28,8 @@ void http_digest_authentication_application_builder::open()
             .binder([](json_value const& v) { return locate<http::application>(v.get_string()); })
         .array("routes", &http_digest_authentication_application_configuration::routes, "routes")
             .binder(sp::parameters_description<http_route>().bind()
-                .variable("application", &http_route::application, "http application name").required()
-                    .binder([](json_value const& v) { return locate<http::application>(v.get_string()); })
+                .variable("id", &http_route::id, "route id")
+                .variable("application", &http_route::application_name, "http application name").required()
                 .variable("pathre", &http_route::pathre, "path regexp").required()
                     .binder([](json_value const& v)->boost::regex {
                         return boost::regex(to_string(v.get_string()));

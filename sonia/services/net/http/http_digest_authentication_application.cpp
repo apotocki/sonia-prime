@@ -370,4 +370,10 @@ string_view http_digest_authentication_application::get_realm() const
     return cfg_.digest_realm;
 }
 
+void http_digest_authentication_application::clear_sessions()
+{
+    lock_guard session_guard(nonce_mutex_);
+    sessions_.clear();
+}
+
 }

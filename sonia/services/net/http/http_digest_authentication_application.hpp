@@ -88,6 +88,7 @@ public:
 
     std::string get_digest_for(string_view, string_view password) const override final;
     string_view get_realm() const override final;
+    void clear_sessions() override final;
 
 private:
     std::string get_nonce();

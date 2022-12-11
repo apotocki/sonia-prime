@@ -15,6 +15,7 @@ public:
     virtual ~authenticator() = default;
     virtual std::string get_digest_for(string_view, string_view password) const = 0;
     virtual string_view get_realm() const = 0;
+    virtual void clear_sessions() = 0;
 };
 
 class digest_provider

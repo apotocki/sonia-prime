@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <span>
 #include <array>
+#include <vector>
 
 #include <boost/throw_exception.hpp>
 #include <boost/spirit/include/karma_uint.hpp>
@@ -179,9 +180,15 @@ public:
 
 template <typename ElemT, typename AllocatorT>
 class coder<json_t, std::vector<ElemT, AllocatorT>>
-    : public coder<json_t, std::span<ElemT>>
 {
+    using vec_t = std::vector<ElemT, AllocatorT>;
 
+public:
+    template <typename OutputIteratorT>
+    inline OutputIteratorT encode(vec_t const& value, OutputIteratorT oi) const
+    {
+        return coder<json_t, std::span<ElemT>>().encode(std::span{value.data(), value.size()}, std::move(oi));
+    }
 };
 
 template <typename MapContainerT> class map_view;

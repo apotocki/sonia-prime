@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_STD_SERIALIZATION_PATH_HPP
-#define SONIA_STD_SERIALIZATION_PATH_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <filesystem>
 
@@ -35,5 +30,3 @@ void serialize(ArchiveT & ar, std::filesystem::path & p, const unsigned int vers
 }
 
 }
-
-#endif // SONIA_STD_SERIALIZATION_PATH_HPP

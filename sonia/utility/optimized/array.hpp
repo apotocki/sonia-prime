@@ -350,6 +350,9 @@ public:
     element_t const& back() const noexcept { return array_t::back(this); }
     ElementT & back() noexcept { return array_t::back(this); }
 
+    ElementT* data() noexcept { return array_t::begin(this); }
+    ElementT const* data() const noexcept { return array_t::begin(this); }
+
     element_t const& operator[] (size_t idx) const noexcept { return cbegin()[idx]; }
     ElementT & operator[] (size_t idx) noexcept { return begin()[idx]; }
 

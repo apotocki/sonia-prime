@@ -6,25 +6,14 @@
 
 #include <filesystem>
 
-/*
-#ifdef BOOST_WINDOWS
-#   include "sonia/sys/windows/path.hpp"
-#endif
-*/
-
-#include "string.hpp"
-
 namespace sonia::fs {
 
-using namespace std::filesystem;
-
-}
-
-namespace sonia {
-
-inline fs::path operator / (fs::path const& p, u8string_view l)
+class path: public std::filesystem::path
 {
-    return p / std::u8string_view(l.data(), l.size());
-}
+    using base_t = std::filesystem::path;
+
+public:
+    path() = default;
+};
 
 }

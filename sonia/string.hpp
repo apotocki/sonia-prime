@@ -41,6 +41,12 @@ public:
     template <class AllocT>
     basic_string_view(std::basic_string<CharT, TraitsT, AllocT> const& str) noexcept : base_t(str.c_str(), str.size()) {}
 
+    template <typename SrcCharT, class SrcTraitsT, class AllocT>
+    requires (!is_same_v<CharT, SrcCharT>)
+    explicit basic_string_view(std::basic_string<SrcCharT, SrcTraitsT, AllocT> const& str) noexcept
+        : base_t(reinterpret_cast<const CharT*>(str.data()), str.size())
+    {}
+
     constexpr bool is_equal(basic_string_view const& rhs) const noexcept
     {
         return this->size_ == rhs.size_ && TraitsT::compare(this->data_, rhs.data_, rhs.size_) == 0;
@@ -188,8 +194,10 @@ constexpr bool operator< (std::basic_string<CharT, TraitsT> const& lhs, basic_st
 MAKE_FREE_COMPARISON_OPERATORS(is_string_view_v)
 
 using string_view = basic_string_view<char>;
+using u8string_view = basic_string_view<char8_t>;
 using wstring_view = basic_string_view<wchar_t>;
 using cstring_view = basic_cstring_view<char>;
+using u8cstring_view = basic_cstring_view<char8_t>;
 
 struct string_equal_to
 {
@@ -260,6 +268,12 @@ std::basic_string<CharT, TraitsT> to_string(basic_string_view<CharT, TraitsT> sv
     return std::basic_string<CharT, TraitsT>(sv.cbegin(), sv.cend());
 }
 
+template <typename CharT, typename SrcCharT, class SrcTraitsT>
+std::basic_string<CharT> to_string(basic_string_view<SrcCharT, SrcTraitsT> sv)
+{
+    return std::basic_string<CharT>(reinterpret_cast<const CharT*>(sv.data()), sv.size());
+}
+
 template <typename CharT, class AllocatorT>
 std::basic_string<CharT> to_string(std::vector<CharT, AllocatorT> const& v)
 {
@@ -278,11 +292,12 @@ std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> && fmt) {
 template<class Ch, class Tr, class Alloc>
 std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> const && fmt) { return fmt.str(); }
 
-template <typename CharT, class TraitsT>
-std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, basic_string_view<CharT, TraitsT> s)
+template <typename CharT, template<class> class TraitsT, typename SrcCharT>
+std::basic_ostream<CharT, TraitsT<CharT>>& operator<< (std::basic_ostream<CharT, TraitsT<CharT>>& os, basic_string_view<SrcCharT, TraitsT<SrcCharT>> s)
 {
-    return os.write(s.begin(), s.size());
+    return os.write(reinterpret_cast<CharT const*>(s.data()), s.size());
 }
+
 
 inline boost::basic_format<char> operator "" _fmt(const char* str, std::size_t)
 {
@@ -330,3 +345,4 @@ auto as_cstring(basic_string_view<CharT, TraitsT> sv, FtorT const& ftor)
 }
 
 }
+

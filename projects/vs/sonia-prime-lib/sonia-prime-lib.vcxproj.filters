@@ -2115,6 +2115,9 @@
     <ClInclude Include="..\..\..\sonia\logger\android_sink.hpp">
       <Filter>sonia.logger</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\windows\path.hpp">
+      <Filter>sonia.sys\windows</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2311,6 +2314,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\logger\android_sink.cpp">
       <Filter>sonia.logger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\sys\windows\path.cpp">
+      <Filter>sonia.sys\windows</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

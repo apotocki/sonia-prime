@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_NET_HTTP_SONNET_HPP
-#define SONIA_NET_HTTP_SONNET_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/unordered_map.hpp>
 
@@ -33,7 +28,7 @@ public:
 protected:
     using method_handler_type = function<void(request &, request_parameters const&, response &)>;
     void bind_handler(string_view, method_handler_type const&);
-    void handle_json_callback(request & req, response & resp, function<void(message::range_write_input_iterator)> const& writer);
+    void handle_json_callback(request & req, response & resp, function<void(message::range_write_input_iterator)> writer);
 
     virtual void handle_unhandled(request & req, request_parameters const&, response & resp);
 
@@ -51,5 +46,3 @@ public:
 };
 
 }
-
-#endif // SONIA_NET_HTTP_SONNET_HPP

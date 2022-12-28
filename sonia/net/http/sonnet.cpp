@@ -9,6 +9,8 @@
 #include "sonia/net/uri.hpp"
 #include "sonia/net/uri.ipp"
 
+#include "sonia/logger/loggable.hpp"
+
 namespace sonia::http {
 
 void sonnet::handle(request & req, response & resp)
@@ -54,7 +56,7 @@ void sonnet::handle(request & req, response & resp)
             req.parse_body_as_x_www_form_urlencoded();
         }
     }
-    //resp.meet_request(req);
+    resp.meet_request(req);
     
     try {
         if (handler) {
@@ -65,7 +67,13 @@ void sonnet::handle(request & req, response & resp)
     } catch (sonnet_exception const& e) {
         resp.make_custom(e.s, "text/html", e.what());
     } catch (...) {
-        resp.make_custom(status::INTERNAL_SERVER_ERROR, "text/html", boost::current_exception_diagnostic_information());
+        auto dinfo = boost::current_exception_diagnostic_information();
+        if (loggable* lp = dynamic_cast<loggable*>(this); lp) {
+            LOG_TRACE(lp->logger()) << dinfo;
+        } else {
+            GLOBAL_LOG_TRACE() << dinfo;
+        }
+        resp.make_custom(status::INTERNAL_SERVER_ERROR, "text/html", dinfo);
     }
 }
 
@@ -82,7 +90,7 @@ void sonnet::bind_handler(string_view path, method_handler_type const& h)
     }
 }
 
-void sonnet::handle_json_callback(request & req, response & resp, function<void(message::range_write_input_iterator)> const& writer)
+void sonnet::handle_json_callback(request & req, response & resp, function<void(message::range_write_input_iterator)> writer)
 {
     auto callback = req.get_parameter("callback");
     if (callback.size() > 1) {
@@ -92,7 +100,7 @@ void sonnet::handle_json_callback(request & req, response & resp, function<void(
     resp.status_code = status::OK;
     resp.set_header(header::CONTENT_TYPE, "application/json");
 
-    resp.content_writer = [callback, &writer](message::range_write_input_iterator it) {
+    resp.content_writer = [callback, writer = std::move(writer)](message::range_write_input_iterator it) {
         if (!callback.empty()) {
             copy_range(callback[0], it);
             copy_range(string_view("("), it);

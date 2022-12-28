@@ -68,6 +68,7 @@ endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        ${BUNDLE_HOME}/sonia/sys/windows/path.cpp
         ${BUNDLE_HOME}/sonia/sys/windows/windows.cpp
         ${BUNDLE_HOME}/sonia/sys/windows/thread_pool_api.cpp
         ${BUNDLE_HOME}/sonia/sys/windows/thread_pool.cpp

@@ -269,6 +269,7 @@ std::basic_string<CharT, TraitsT> to_string(basic_string_view<CharT, TraitsT> sv
 }
 
 template <typename CharT, typename SrcCharT, class SrcTraitsT>
+requires(!is_same_v<CharT, SrcCharT> && sizeof(CharT) == sizeof(SrcCharT))
 std::basic_string<CharT> to_string(basic_string_view<SrcCharT, SrcTraitsT> sv)
 {
     return std::basic_string<CharT>(reinterpret_cast<const CharT*>(sv.data()), sv.size());

@@ -349,7 +349,8 @@ void response::make_custom(status code, string_view ct, string_view body)
     status_code = code;
     set_header(header::CONTENT_TYPE, ct);
     if (!body.empty()) {
-        set_header(http::header::CONTENT_LENGTH, std::to_string(body.size()));
+        set_header(http::header::TRANSFER_ENCODING, "chunked");
+        //set_header(http::header::CONTENT_LENGTH, std::to_string(body.size()));
         content_writer = [body = to_string(body)](http::message::range_write_input_iterator it) {
             copy_range(body, it);
         };

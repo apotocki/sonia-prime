@@ -349,6 +349,7 @@
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\services\local_type_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\services\multimethod_registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\net\http\mime_mapping.hpp" />
     <ClInclude Include="..\..\..\sonia\services\on_close.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\basic_scheduler.hpp" />
     <ClInclude Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.hpp" />
@@ -765,6 +766,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\multimethod_registry.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\net\http\mime_mapping.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\basic_scheduler.cpp" />
     <ClCompile Include="..\..\..\sonia\services\scheduler\fiber_work_stealing_scheduler.cpp" />
     <ClCompile Include="..\..\..\sonia\services\services_host.cpp">

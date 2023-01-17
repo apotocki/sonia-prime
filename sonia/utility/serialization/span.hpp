@@ -9,9 +9,9 @@
 
 namespace sonia::serialization {
 
-template <typename TagT, typename T>
-class coder<TagT, std::span<T>>
-    : public vector_coder<TagT, std::span<T>>
+template <typename TagT, typename T, size_t EV>
+class coder<TagT, std::span<T, EV>>
+    : public vector_coder<TagT, std::span<T, EV>>
 {};
 
 }

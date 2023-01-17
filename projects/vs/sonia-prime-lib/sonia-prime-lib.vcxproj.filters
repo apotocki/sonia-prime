@@ -2118,6 +2118,9 @@
     <ClInclude Include="..\..\..\sonia\sys\windows\path.hpp">
       <Filter>sonia.sys\windows</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\services\net\http\mime_mapping.hpp">
+      <Filter>sonia.net\http</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2317,6 +2320,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sys\windows\path.cpp">
       <Filter>sonia.sys\windows</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\net\http\mime_mapping.cpp">
+      <Filter>sonia.net\http</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

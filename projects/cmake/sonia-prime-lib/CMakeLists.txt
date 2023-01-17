@@ -50,6 +50,7 @@ if (NOT DEFINED NO_NET)
         ${BUNDLE_HOME}/sonia/net/http/http.cpp
         ${BUNDLE_HOME}/sonia/net/http/http_message.cpp
         ${BUNDLE_HOME}/sonia/net/http/sonnet.cpp
+        ${BUNDLE_HOME}/sonia/net/http/mime_mapping.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory.cpp
         ${BUNDLE_HOME}/sonia/services/io/socket_address.cpp
     )

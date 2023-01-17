@@ -6,9 +6,6 @@
 #include "sonia/utility/algorithm/copy.hpp"
 #include "http_static_application.hpp"
 
-#include <filesystem>
-#include <boost/algorithm/string/trim.hpp>
-
 #include <fstream>
 
 #include "sonia/net/uri.hpp"
@@ -20,31 +17,13 @@
 namespace sonia::services {
 
 http_static_application::http_static_application(http_static_application_configuration cfg)
-    : www_path_(std::move(cfg.www_path)), forwards_(std::move(cfg.forward_mapping))
+    : www_path_(std::move(cfg.www_path))
+    , forwards_(std::move(cfg.forward_mapping))
+    , mime_map_{ fs::canonical(cfg.mime_mapping_file_path) }
 {
     set_log_attribute("Type", "http-static-application");
 
-    sys_path_ = std::filesystem::canonical(cfg.sys_path);
-
-    auto mmpath = std::filesystem::canonical(cfg.mime_mapping_file_path);
-    std::ifstream mmfile(mmpath.string());
-    if (!mmfile.is_open()) {
-        throw exception("can't open the mime-mapping file '%1%'"_fmt % mmpath);
-    }
-    
-    while (!mmfile.eof()) {
-        char line[256];
-        mmfile.getline(line, sizeof(line));
-        std::string rule(line);
-        if (!rule.empty() && rule[0] == '#') continue;
-        auto delit = std::find(rule.begin(), rule.end(), ',');
-        if (delit == rule.end()) {
-            continue;
-        }
-        std::string ext = boost::trim_copy(std::string{rule.begin(), delit});
-        std::string mt = boost::trim_copy(std::string{delit + 1, rule.end()});
-        mime_map_[ext] = mt;
-    }
+    sys_path_ = fs::canonical(cfg.sys_path);
 
     if (cfg.page404app) {
         locate(*cfg.page404app, app404_);
@@ -84,12 +63,12 @@ void http_static_application::handle(http::request & req, http::response & resp)
 
         auto extdelimit = std::find(relpath.rbegin(), relpath.rend(), '.');
         string_view ext{extdelimit.base() == relpath.begin() ? relpath.end() : extdelimit.base(), relpath.end()};
-        auto extit = mime_map_.find(ext, hasher(), string_equal_to());
-        if (extit == mime_map_.end()) {
+        
+        if (auto const* ptype = mime_map_.find(ext); ptype) {
+            resp.set_header(http::header::CONTENT_TYPE, *ptype + std::string("; charset=UTF-8"));
+        } else {
             LOG_WARN(logger()) << "undefined mime type for extension: '" << ext << "', path: '" << uri << "'";
             resp.set_header(http::header::CONTENT_TYPE, "text/html; charset=UTF-8");
-        } else {
-            resp.set_header(http::header::CONTENT_TYPE, extit->second + std::string("; charset=UTF-8"));
         }
 
         try {

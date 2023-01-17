@@ -145,6 +145,18 @@ private:
     }
 };
 
+template <>
+class coder<json_t, bool>
+{
+public:
+    template <typename OutputIteratorT>
+    OutputIteratorT encode(bool value, OutputIteratorT oi) const
+    {
+        string_view strval = value ? string_view("true", 4) : string_view("false", 5);
+        return std::copy(strval.begin(), strval.end(), std::move(oi));
+    }
+};
+
 template <typename ElemT, typename TraitsT, typename AllocT>
 class coder<json_t, std::basic_string<ElemT, TraitsT, AllocT>>
 {

@@ -2,17 +2,12 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_BZ2_DECOMPRESS_ITERATOR_HPP
-#define SONIA_UTILITY_BZ2_DECOMPRESS_ITERATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/iterator/iterator_facade.hpp>
 
 #include "sonia/exceptions.hpp"
-#include "sonia/array_view.hpp"
+#include "sonia/span.hpp"
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
 
@@ -24,15 +19,15 @@ template <class IteratorT>
 class bz2_decompress_iterator
     : public boost::iterator_facade<
           bz2_decompress_iterator<IteratorT>
-        , array_view<const char>
+        , std::span<const char>
         , std::output_iterator_tag
-        , wrapper_iterator_proxy<ptr_proxy_wrapper<bz2_decompress_iterator<IteratorT> const*, array_view<const char>>>
+        , wrapper_iterator_proxy<ptr_proxy_wrapper<bz2_decompress_iterator<IteratorT> const*, std::span<const char>>>
     >
 {
     friend class boost::iterator_core_access;
     template <class, class> friend class ptr_proxy_wrapper;
 
-    using proxy_t = wrapper_iterator_proxy<ptr_proxy_wrapper<bz2_decompress_iterator const*, array_view<const char>>>;
+    using proxy_t = wrapper_iterator_proxy<ptr_proxy_wrapper<bz2_decompress_iterator const*, std::span<const char>>>;
 
     struct strm_data
     {
@@ -44,8 +39,8 @@ class bz2_decompress_iterator
         explicit strm_data(IteratorT);
         ~strm_data();
 
-        void set(array_view<char>);
-        array_view<const char> get() const;
+        void set(std::span<char>);
+        std::span<const char> get() const;
 
         bool empty() const;
 
@@ -54,15 +49,15 @@ class bz2_decompress_iterator
 
     proxy_t dereference() const
     {
-        return iterators::make_value_proxy<array_view<const char>>(this);
+        return iterators::make_value_proxy<std::span<const char>>(this);
     }
 
-    array_view<const char> get_dereference() const
+    std::span<const char> get_dereference() const
     {
         return data_->get();
     }
 
-    void set_dereference(array_view<char> rng)
+    void set_dereference(std::span<char> rng)
     {
         data_->set(rng);
     }
@@ -114,14 +109,14 @@ bz2_decompress_iterator<IteratorT>::strm_data::~strm_data()
 }
 
 template <class IteratorT>
-void bz2_decompress_iterator<IteratorT>::strm_data::set(array_view<char> d)
+void bz2_decompress_iterator<IteratorT>::strm_data::set(std::span<char> d)
 {
     strm_.avail_out = static_cast<uInt>(d.size());
-    out_begin = strm_.next_out = d.empty() ? nullptr : &d.front();
+    out_begin = strm_.next_out = d.data();
 }
 
 template <class IteratorT>
-array_view<const char> bz2_decompress_iterator<IteratorT>::strm_data::get() const
+std::span<const char> bz2_decompress_iterator<IteratorT>::strm_data::get() const
 {
     return {reinterpret_cast<char*>(out_begin), static_cast<size_t>(strm_.next_out - out_begin)};
 }
@@ -137,11 +132,11 @@ void bz2_decompress_iterator<IteratorT>::strm_data::inflate()
 {
     if (BOOST_UNLIKELY(BZ_STREAM_END == ret_)) {
         if (!base_.empty()) {
-            array_view<const char> crng = *base_;
-            if (crng.end() == strm_.next_in) {
+            std::span<const char> crng = *base_;
+            if (data_end(crng) == strm_.next_in) {
                 ++base_;
             } else {
-                *base_ = array_view<const char>{strm_.next_in, crng.end()};
+                *base_ = std::span<const char>{strm_.next_in, data_end(crng)};
             }
         }
         ret_ = BZ_DATA_ERROR;
@@ -154,18 +149,18 @@ void bz2_decompress_iterator<IteratorT>::strm_data::inflate()
             return;
         }
 
-        array_view<const char> crng = *base_;
+        std::span<const char> crng = *base_;
         strm_.avail_in = static_cast<unsigned int>(crng.size());
-        strm_.next_in = const_cast<char*>(crng.begin());
+        strm_.next_in = const_cast<char*>(crng.data());
     }
 
     do {
         while (!strm_.avail_in && !base_.empty()) {
             ++base_;
             if (base_.empty()) break;
-            array_view<const char> crng = *base_;
+            std::span<const char> crng = *base_;
             strm_.avail_in = static_cast<unsigned int>(crng.size());
-            strm_.next_in = const_cast<char*>(crng.begin());
+            strm_.next_in = const_cast<char*>(crng.data());
         }
 
         bool no_input = !strm_.avail_in;
@@ -179,5 +174,3 @@ void bz2_decompress_iterator<IteratorT>::strm_data::inflate()
 }
 
 }
-
-#endif // SONIA_UTILITY_BZ2_DECOMPRESS_ITERATOR_HPP

@@ -4,13 +4,13 @@
 
 #pragma once
 
+#include <span>
 #include <vector>
 
 #include <boost/variant.hpp>
 #include <boost/unordered_map.hpp>
 
 #include "sonia/optional.hpp"
-#include "sonia/array_view.hpp"
 #include "sonia/function.hpp"
 #include "sonia/utility/json/value.hpp"
 #include "sonia/utility/iterators/wrapper_iterator.hpp"
@@ -68,15 +68,15 @@ class message : public header_collection
 public:
     virtual ~message() = default;
 
-    using range_write_impl_type = proxying_iterator_polymorphic<array_view<char>>;
+    using range_write_impl_type = proxying_iterator_polymorphic<std::span<char>>;
     using range_write_input_iterator = wrapper_iterator<
         range_write_impl_type*,
-        array_view<char>,
+        std::span<char>,
         std::input_iterator_tag,
-        array_view<char>
+        std::span<char>
     >;
 
-    using content_read_iterator_t = chain_linkable_iterator<array_view<const char>, std::input_iterator_tag>;
+    using content_read_iterator_t = chain_linkable_iterator<std::span<const char>, std::input_iterator_tag>;
 
     int version{11}; // http protocol version * 10. e.g. 1.1 -> 11
 

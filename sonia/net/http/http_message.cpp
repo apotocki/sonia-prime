@@ -123,7 +123,7 @@ std::string message::get_body_as_string()
 {
     std::string result;
     while (!input.empty()) {
-        array_view<const char> rng = *input; ++input;
+        std::span<const char> rng = *input; ++input;
         result.insert(result.end(), boost::begin(rng), boost::end(rng));
     }
     return result;

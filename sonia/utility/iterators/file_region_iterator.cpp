@@ -7,7 +7,7 @@
 #include "sonia/logger/logger.hpp"
 #include <cstring>
 
-namespace boost { namespace interprocess { namespace detail {} namespace ipcdetail {} } }
+namespace boost::interprocess::detail::ipcdetail {}
 
 namespace sonia {
 
@@ -133,7 +133,7 @@ size_t file_region_descriptor::get_region_size() const
     return region_.get_size();
 }
 
-array_view<char> file_region_descriptor::get() const
+std::span<char> file_region_descriptor::get() const
 {
     if (cursor_) {
         return {cursor_, (size_t)(reinterpret_cast<char*>(region_.get_address()) + region_.get_size() - cursor_)};
@@ -209,11 +209,11 @@ void file_region_iterator_base::flush(char * writ)
 }
 
 // post condition: region_->cursor_ != nullptr; it's important for the correctness of increment()
-void file_region_iterator_base::set(array_view<const char> data)
+void file_region_iterator_base::set(std::span<const char> data)
 {
-    array_view<char> dest_raw = region_->get();
+    std::span<char> dest_raw = region_->get();
     size_t bytes_to_write = data.size();
-    BOOST_ASSERT (data.begin() != dest_raw.begin());
+    BOOST_ASSERT (data.data() != dest_raw.data());
     //if (data.begin() == dest_raw.begin()) {
     //    BOOST_ASSERT(bytes_to_write <= dest_raw.size());
     //    region_->set_cursor(dest_raw.begin() + bytes_to_write);
@@ -223,11 +223,11 @@ void file_region_iterator_base::set(array_view<const char> data)
     char * writ = nullptr;
     for (;;) {
         size_t cnt = (std::min)(bytes_to_write, dest_raw.size());
-        writ = (char*)std::memmove(dest_raw.begin(), data.begin(), cnt) + cnt;
+        writ = (char*)std::memmove(dest_raw.data(), data.data(), cnt) + cnt;
         region_->set_cursor(writ);
         bytes_to_write -= cnt;
         if (!bytes_to_write) break;
-        data.advance_front(cnt);
+        data = data.subspan(cnt);
         increment();
         dest_raw = region_->get();
     }

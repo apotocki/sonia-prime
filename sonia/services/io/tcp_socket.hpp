@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "sonia/span.hpp"
 #include "sonia/array_view.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/string.hpp"
@@ -95,6 +96,12 @@ public:
         return impl().tcp_socket_read_some(handle(), buff.begin(), buff.size() * sizeof(T));
     }
 
+    template <typename T, size_t EV>
+    expected<size_t, std::exception_ptr> read_some(std::span<T, EV> buff) noexcept
+    {
+        return impl().tcp_socket_read_some(handle(), buff.data(), buff.size() * sizeof(T));
+    }
+
     template <typename T>
     expected<size_t, std::exception_ptr> read_some(T * buff, size_t sz) noexcept
     {
@@ -106,6 +113,12 @@ public:
     expected<size_t, std::exception_ptr> write_some(array_view<T> buff) noexcept
     {
         return impl().tcp_socket_write_some(handle(), buff.begin(), buff.size() * sizeof(T));
+    }
+
+    template <typename T, size_t EV>
+    expected<size_t, std::exception_ptr> write_some(std::span<T, EV> buff) noexcept
+    {
+        return impl().tcp_socket_write_some(handle(), buff.data(), buff.size() * sizeof(T));
     }
 
     template <typename T>

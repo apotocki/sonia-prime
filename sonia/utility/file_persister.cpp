@@ -7,8 +7,6 @@
 
 #include <fstream>
 
-namespace fs = std::filesystem;
-
 #include "sonia/utility/iterators/file_region_iterator.hpp"
 
 namespace sonia {
@@ -29,8 +27,8 @@ bool file_persister::read(function<void(input_iterator)> const& ftor) const
     using impl_t = output_iterator_polymorpic_adapter<
         file_region_iterator<const char>,
         forward_traversal_tag,
-        array_view<const char>,
-        array_view<const char>
+        std::span<const char>,
+        std::span<const char>
     >;
 
     if (fs::exists(fname_)) {
@@ -49,8 +47,8 @@ void file_persister::write(function<void(output_iterator)> const& ftor)
     using impl_t = output_iterator_polymorpic_adapter<
         file_region_iterator<char>,
         forward_traversal_tag,
-        array_view<char>,
-        array_view<const char>
+        std::span<char>,
+        std::span<char>
     >;
 
     // firstly write into a temp file, then rename it

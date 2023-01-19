@@ -2,18 +2,13 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_BZ2_COMPRESS_ITERATOR_HPP
-#define SONIA_UTILITY_BZ2_COMPRESS_ITERATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 
-#include "sonia/array_view.hpp"
+#include "sonia/span.hpp"
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
 
@@ -43,8 +38,8 @@ class bz2_compress_iterator
 		explicit strm_data(WriteInputIteratorT, int blockSize100k, int workFactor);
 		~strm_data();
 
-		void set(array_view<const char>);
-		array_view<const char> get() const;
+		void set(std::span<const char>);
+		std::span<const char> get() const;
 
 		void deflate(int flag = BZ_RUN);
 		void close();
@@ -55,7 +50,7 @@ class bz2_compress_iterator
 		return iterators::make_value_proxy(this);
 	}
 
-	void set_dereference(array_view<const char> rng)
+	void set_dereference(std::span<const char> rng)
 	{
 		data_->set(rng);
 	}
@@ -102,14 +97,14 @@ bz2_compress_iterator<WriteInputIteratorT>::strm_data::~strm_data()
 }
 
 template <class WriteInputIteratorT>
-void bz2_compress_iterator<WriteInputIteratorT>::strm_data::set(array_view<const char> d)
+void bz2_compress_iterator<WriteInputIteratorT>::strm_data::set(std::span<const char> d)
 {
 	strm_.avail_in = static_cast<unsigned int>(d.size());
 	strm_.next_in = const_cast<char*>(d.empty() ? nullptr : &d.front());
 }
 
 template <class WriteInputIteratorT>
-array_view<const char> bz2_compress_iterator<WriteInputIteratorT>::strm_data::get() const
+std::span<const char> bz2_compress_iterator<WriteInputIteratorT>::strm_data::get() const
 {
 	return {reinterpret_cast<char*>(out_begin), static_cast<size_t>(strm_.next_out - out_begin)};
 }
@@ -118,17 +113,17 @@ template <class WriteInputIteratorT>
 void bz2_compress_iterator<WriteInputIteratorT>::strm_data::deflate(int flag)
 {
 	if (!strm_.next_out) { // first call
-		array_view<char> outrng = *base_;
+		std::span<char> outrng = *base_;
 		strm_.avail_out = static_cast<unsigned int>(outrng.size());
-		strm_.next_out = outrng.begin();
+		strm_.next_out = outrng.data();
 	}
 
 	while (strm_.avail_in || (flag == BZ_FINISH && ret_ != BZ_STREAM_END)) {
 		while (!strm_.avail_out) {
 			++base_;
-			array_view<char> outrng = *base_;
+			std::span<char> outrng = *base_;
 			strm_.avail_out = static_cast<unsigned int>(outrng.size());
-			strm_.next_out = outrng.begin();
+			strm_.next_out = outrng.data();
 		}
 
 		ret_ = BZ2_bzCompress(&strm_, flag);
@@ -145,8 +140,8 @@ void bz2_compress_iterator<WriteInputIteratorT>::strm_data::close()
 {
     if (strm_.next_out) {
         deflate(BZ_FINISH);
-        array_view<char> outrng = *base_;
-        *base_ = array_view(outrng.begin(), reinterpret_cast<char*>(strm_.next_out));
+		std::span<char> outrng = *base_;
+        *base_ = std::span(outrng.data(), reinterpret_cast<char*>(strm_.next_out));
         strm_.next_out = nullptr;
         strm_.avail_out = 0;
         ++base_;
@@ -157,5 +152,3 @@ void bz2_compress_iterator<WriteInputIteratorT>::strm_data::close()
 }
 
 }
-
-#endif // SONIA_UTILITY_BZ2_COMPRESS_ITERATOR_HPP

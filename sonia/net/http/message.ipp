@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_HTTP_MESSAGE_IPP
-#define SONIA_HTTP_MESSAGE_IPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/algorithm/string/predicate.hpp>
 
@@ -23,7 +18,7 @@ namespace sonia::http {
 template <typename ReadIteratorT>
 void message::build_input_iterator(ReadIteratorT & ii)
 {
-    array_view<const std::string> hval = get_header(header::CONTENT_LENGTH);
+    std::span<const std::string> hval = get_header(header::CONTENT_LENGTH);
     if (hval.size() > 1) {
         throw exception("multiple content lengths");
     } else if (!hval.empty()) {
@@ -40,11 +35,9 @@ void message::build_input_iterator(ReadIteratorT & ii)
         } else if (!hval.empty() && boost::iequals(hval[0], "chunked")) {
             input = make_chain_linkable_iterator<std::input_iterator_tag>(http_chunking_read_input_iterator{reference_wrapper_iterator{ii}});
         } else {
-            input = make_chain_linkable_iterator<std::input_iterator_tag>(single_value_iterator{array_view<const char>{}});
+            input = make_chain_linkable_iterator<std::input_iterator_tag>(single_value_iterator{std::span<const char>{}});
         }
     }
 }
 
 }
-
-#endif // SONIA_HTTP_MESSAGE_IPP

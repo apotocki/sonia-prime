@@ -2,13 +2,9 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_BUFFERING_WRITE_INPUT_ITERATOR_HPP
-#define SONIA_UTILITY_BUFFERING_WRITE_INPUT_ITERATOR_HPP
+#pragma once
 
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
-
+#include "sonia/span.hpp"
 #include "sonia/iterator_traits.hpp"
 
 namespace sonia {
@@ -17,9 +13,9 @@ template <typename WriteOutputIteratorT>
 class buffering_write_input_iterator
     : public boost::iterator_facade<
           buffering_write_input_iterator<WriteOutputIteratorT>
-        , array_view<char>
+        , std::span<char>
         , std::input_iterator_tag
-        , array_view<char> &
+        , std::span<char> &
     >
 {
     friend class boost::iterator_core_access;
@@ -29,7 +25,7 @@ class buffering_write_input_iterator
         return empty() && rhs.empty();
     }
 
-    array_view<char> & dereference() const
+    std::span<char> & dereference() const
     {
         return span_;
     }
@@ -37,7 +33,7 @@ class buffering_write_input_iterator
     void increment()
     {
         if (span_.end() != buffer_.end()) {
-            span_ = {span_.end(), buffer_.end()};
+            span_ = {data_end(span_), data_end(buffer_)};
         } else {
             *base = buffer_;
             ++base;
@@ -45,11 +41,11 @@ class buffering_write_input_iterator
         }
     }
 
-    mutable array_view<char> span_;
-    array_view<char> buffer_;
+    mutable std::span<char> span_;
+    std::span<char> buffer_;
 
 public:
-    buffering_write_input_iterator(WriteOutputIteratorT it, array_view<char> buff)
+    buffering_write_input_iterator(WriteOutputIteratorT it, std::span<char> buff)
         : base{std::move(it)}, buffer_{buff}, span_{buff}
     {}
 
@@ -60,7 +56,7 @@ public:
 
     void flush()
     {
-        *base = array_view<char>{buffer_.begin(), span_.begin()};
+        *base = std::span<char>{buffer_.data(), span_.data()};
         ++base;
         if constexpr (iterators::has_method_flush_v<WriteOutputIteratorT, void()>) {
             base.flush();
@@ -80,5 +76,3 @@ public:
 };
 
 }
-
-#endif // SONIA_UTILITY_BUFFERING_WRITE_INPUT_ITERATOR_HPP

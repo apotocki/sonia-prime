@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERIALIZATION_IOSTREAM_HPP
-#define SONIA_SERIALIZATION_IOSTREAM_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 #include <istream>
@@ -16,6 +11,7 @@
 #include <boost/utility/base_from_member.hpp>
 
 #include "sonia/iterator_traits.hpp"
+#include "sonia/span.hpp"
 
 namespace sonia::serialization {
 
@@ -92,7 +88,7 @@ private:
     {
         if (!it_.empty()) {
             iterator_value_t<IteratorT> buff = *it_;
-            ElemT * b = (ElemT*)(buff.begin()), *e = (ElemT*)(buff.end());
+            ElemT * b = (ElemT*)(buff.data()), *e = (ElemT*)(buff.data() + buff.size());
             setg(b, b, e);
         } else {
             setg(nullptr, nullptr, nullptr);
@@ -147,13 +143,13 @@ private:
     void init_pointers()
     {
         iterator_value_t<IteratorT> buff = *it_;
-        ElemT * b = (ElemT*)(buff.begin()), *e = (ElemT*)(buff.end());
+        ElemT * b = (ElemT*)(buff.data()), *e = (ElemT*)(buff.data() + buff.size());
         setp(b, e - 1);
     }
 
     void do_flush()
     {
-        *it_ = array_view<ElemT>(pptr(), epptr());
+        *it_ = std::span<ElemT>(pptr(), epptr());
         if constexpr (iterators::has_method_flush_v<IteratorT, void()>) {
             it_.flush();
         }
@@ -193,5 +189,3 @@ public:
 };
 
 }
-
-#endif // SONIA_SERIALIZATION_IOSTREAM_HPP

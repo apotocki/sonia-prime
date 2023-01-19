@@ -2,15 +2,11 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_SOCKET_WRITE_INPUT_ITERATOR_HPP
-#define SONIA_UTILITY_SOCKET_WRITE_INPUT_ITERATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/iterator/iterator_facade.hpp>
 
+#include "sonia/span.hpp"
 #include "sonia/exceptions.hpp"
 
 namespace sonia {
@@ -21,9 +17,9 @@ template <class SocketT/*, size_t MinRngSzV = 128*/>
 class socket_write_input_iterator
     : public boost::iterator_facade<
           socket_write_input_iterator<SocketT>
-        , array_view<char>
+        , std::span<char>
         , std::input_iterator_tag
-        , array_view<char>&
+        , std::span<char>&
     >
 {
     friend class boost::iterator_core_access;
@@ -34,7 +30,7 @@ class socket_write_input_iterator
         return empty() && rhs.empty();
     }
 
-    array_view<char> & dereference() const
+    std::span<char> & dereference() const
     {
         if (!wrpos_) {
             throw closed_exception();
@@ -45,7 +41,7 @@ class socket_write_input_iterator
     void write() noexcept
     {
         BOOST_ASSERT (wrpos_ != wrend_);
-        auto r = psoc_->write_some(array_view<const char>{wrpos_, wrend_});
+        auto r = psoc_->write_some(std::span<const char>{wrpos_, wrend_});
         if (r.has_value() && r.value()) {
             wrpos_ += r.value();
         } else {
@@ -53,12 +49,12 @@ class socket_write_input_iterator
         }
     }
 
-    array_view<char> available_buffer()
+    std::span<char> available_buffer()
     {
-        if (value_.begin() >= wrend_) {
-            return {wrend_, buff_.end()};
+        if (value_.data() >= wrend_) {
+            return {wrend_, data_end(buff_)};
         } else {
-            return {buff_.begin(), wrpos_};
+            return {buff_.data(), wrpos_};
         }
     }
 
@@ -67,19 +63,19 @@ class socket_write_input_iterator
         if (!wrpos_) {
             throw closed_exception();
         }
-        array_view<char> avlbf = available_buffer();
+        std::span<char> avlbf = available_buffer();
 
         if (value_.end() != avlbf.end()) {
             value_ = {value_.end(), avlbf.end()};
         } else {
-            if (value_.begin() >= wrend_) {
-                wrend_ = value_.end();
+            if (value_.data() >= wrend_) {
+                wrend_ = value_.data() + value_.size();
             }
             write();
             if (wrpos_) {
-                value_ = {buff_.begin(), wrpos_};
+                value_ = {buff_.data(), wrpos_};
                 if (wrpos_ == wrend_) {
-                    wrpos_ = wrend_ = buff_.begin();
+                    wrpos_ = wrend_ = buff_.data();
                 }
             }
         }
@@ -116,8 +112,8 @@ class socket_write_input_iterator
 public:
     socket_write_input_iterator() : wrpos_(nullptr) {}
 
-    explicit socket_write_input_iterator(SocketT & soc, array_view<char> buff) 
-        : psoc_(&soc), buff_{buff}, value_{buff}, wrpos_(buff.begin()), wrend_(buff.begin())
+    explicit socket_write_input_iterator(SocketT & soc, std::span<char> buff)
+        : psoc_(&soc), buff_{buff}, value_{buff}, wrpos_{buff.data()}, wrend_{buff.data()}
     {
         //if (buff.size() < MinRngSzV) {
         //    THROW_INTERNAL_ERROR("too small buffer size");
@@ -146,34 +142,32 @@ public:
 
     void flush()
     {
-        if (value_.begin() < wrend_) {
+        if (value_.data() < wrend_) {
             while (wrpos_ && wrpos_ != wrend_)
             {
                 write();
             }
-            if (wrpos_) wrpos_ = buff_.begin();
+            if (wrpos_) wrpos_ = buff_.data();
         }
         
-        wrend_ = value_.begin();
+        wrend_ = value_.data();
         
         while (wrpos_ && wrpos_ != wrend_)
         {
             write();
         }
         if (wrpos_) {
-            wrpos_ = wrend_ = buff_.begin();
+            wrpos_ = wrend_ = buff_.data();
             value_ = buff_;
         }
     }
 
 private:
     SocketT * psoc_;
-    mutable array_view<char> buff_;
+    mutable std::span<char> buff_;
     // ready for new data interval descriptor {begin_, end_} or {begin_, buff_.end()}V{buff_.begin(), end_}
-    mutable array_view<char> value_;
+    mutable std::span<char> value_;
     char * wrpos_, *wrend_;
 };
 
 }
-
-#endif // SONIA_UTILITY_SOCKET_WRITE_INPUT_ITERATOR_HPP

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <filesystem>
+#include "sonia/filesystem.hpp"
 #include "sonia/utility/persister.hpp"
 
 namespace sonia {
@@ -12,7 +12,7 @@ namespace sonia {
 class file_persister : public persister
 {
 public:
-    explicit file_persister(std::filesystem::path fname);
+    explicit file_persister(fs::path fname);
 
     ~file_persister() override;
 
@@ -20,7 +20,7 @@ public:
     void write(function<void(output_iterator)> const& ftor) override;
 
 private:
-    std::filesystem::path fname_;
+    fs::path fname_;
 };
 
 }

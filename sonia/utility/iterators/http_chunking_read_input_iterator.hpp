@@ -1,10 +1,12 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
+
 #pragma once
 
 #include <boost/iterator/iterator_facade.hpp>
 
+#include "sonia/span.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
@@ -16,12 +18,12 @@ template <typename ReadInputIteratorT>
 class http_chunking_read_input_iterator
     : public boost::iterator_facade<
           http_chunking_read_input_iterator<ReadInputIteratorT>
-        , array_view<const char>
+        , std::span<const char>
         , not_more_traversal_t<forward_traversal_tag, iterator_traversal_t<ReadInputIteratorT>>
-        , wrapper_iterator_proxy<ptr_proxy_wrapper<http_chunking_read_input_iterator<ReadInputIteratorT> const*, array_view<const char>>>
+        , wrapper_iterator_proxy<ptr_proxy_wrapper<http_chunking_read_input_iterator<ReadInputIteratorT> const*, std::span<const char>>>
     >
 {
-    using proxy_type = wrapper_iterator_proxy<ptr_proxy_wrapper<http_chunking_read_input_iterator const*, array_view<const char>>>;
+    using proxy_type = wrapper_iterator_proxy<ptr_proxy_wrapper<http_chunking_read_input_iterator const*, std::span<const char>>>;
 
     friend class boost::iterator_core_access;
     template <class, class> friend class ptr_proxy_wrapper;
@@ -44,15 +46,15 @@ class http_chunking_read_input_iterator
     mutable size_t chsz_: sizeof(size_t) * CHAR_BIT - modebits;
     mutable size_t mode_: modebits;
 
-    array_view<const char> chunk_;
-    array_view<const char> value_;
+    std::span<const char> chunk_;
+    std::span<const char> value_;
 
     char read_char()
     {
         for (;;) {
-            if (chunk_) {
+            if (!chunk_.empty()) {
                 char r = chunk_.front();
-                chunk_.advance_front(1);
+                chunk_ = chunk_.subspan(1);
                 return r;
             }
             ++base;
@@ -77,16 +79,16 @@ class http_chunking_read_input_iterator
         }
     }
 
-    array_view<const char> get_dereference() const
+    std::span<const char> get_dereference() const
     {
         BOOST_ASSERT ((mode)mode_ == mode::VALUE_READY);
         return value_;
     }
 
-    void set_dereference(array_view<const char> span)
+    void set_dereference(std::span<const char> span)
     {
         BOOST_ASSERT ((mode)mode_ == mode::VALUE_READY);
-        BOOST_ASSERT (span.is_subset_of(value_));
+        //BOOST_ASSERT (span.is_subset_of(value_));
         value_ = span;
     }
 
@@ -153,10 +155,10 @@ class http_chunking_read_input_iterator
         BOOST_ASSERT ((mode)mode_ == mode::VALUE_READY);
         auto sz = (std::min)(chsz_, chunk_.size());
         if (value_.end() < chunk_.begin() + sz) {
-            value_ = array_view{value_.end(), chunk_.begin() + sz};
+            value_ = std::span{data_end(value_), chunk_.data() + sz};
         } else {
             chsz_ -= sz;
-            chunk_.advance_front(sz);
+            chunk_ = chunk_.subspan(sz);
             if (0 == chsz_) {
                 read_delim(read_char());
                 mode_ = (size_t)mode::CHUNK_SIZE;

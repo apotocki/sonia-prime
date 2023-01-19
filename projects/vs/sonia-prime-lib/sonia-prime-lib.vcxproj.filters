@@ -2121,6 +2121,9 @@
     <ClInclude Include="..\..\..\sonia\services\net\http\mime_mapping.hpp">
       <Filter>sonia.net\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\span.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

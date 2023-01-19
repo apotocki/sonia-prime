@@ -1,6 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
+
 #pragma once
 
 #include <boost/iterator/iterator_facade.hpp>
@@ -34,7 +35,7 @@ std::pair<string_view, archive_type> split_name(string_view nm);
 class archive_iterator;
 
 class archive_iterator_polymorphic
-    : public proxying_iterator_polymorphic<array_view<const char>>
+    : public proxying_iterator_polymorphic<std::span<const char>>
 {
 public:
     archive_iterator_polymorphic() = default;
@@ -111,7 +112,7 @@ public:
 class archive_iterator
     : public wrapper_iterator<
         archive_iterator_impl,
-        array_view<const char>,
+        std::span<const char>,
         std::forward_iterator_tag
     >
 {
@@ -196,8 +197,8 @@ public:
         , extract_iterator_polymorpic_adapter_base{std::move(fullname), std::move(partname), buffsz}
     {}
 
-    array_view<const char> get_dereference() const override final { return *base_type::base; }
-    void set_dereference(array_view<const char> val) override final { *base_type::base = val; }
+    std::span<const char> get_dereference() const override final { return *base_type::base; }
+    void set_dereference(std::span<const char> val) override final { *base_type::base = val; }
     size_t get_sizeof() const override final { return sizeof(extract_iterator_polymorpic_adapter); }
     polymorphic_clonable * clone(void * address, size_t sz) const override final { return base_type::do_clone(this, address, sz); }
     //polymorphic_movable * move(void * address, size_t sz) override final { return base_type::do_move(this, address, sz); }

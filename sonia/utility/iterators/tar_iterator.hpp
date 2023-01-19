@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_TAR_EXTRACT_ITERATOR_HPP
-#define SONIA_UTILITY_TAR_EXTRACT_ITERATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/iterator/iterator_facade.hpp>
 
@@ -15,6 +10,7 @@
 #include "sonia/string.hpp"
 #include "sonia/optional.hpp"
 #include "sonia/exceptions.hpp"
+#include "sonia/span.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
 #include "sonia/utility/iterators/range_reference.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
@@ -88,7 +84,7 @@ class tar_extract_iterator
 
     proxy_t dereference() const
     {
-        return iterators::make_value_proxy<array_view<const char>>(this);
+        return iterators::make_value_proxy<std::span<const char>>(this);
     }
 
     value_t get_dereference() const
@@ -228,5 +224,3 @@ public:
 };
 
 }
-
-#endif // SONIA_UTILITY_TAR_EXTRACT_ITERATOR_HPP

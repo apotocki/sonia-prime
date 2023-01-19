@@ -7,12 +7,11 @@
 #include <map>
 #include <string>
 #include <fstream>
-#include <filesystem>
 
-namespace fs = std::filesystem;
 #define TEST_FOLDER "iterators_test"
 
 #include "sonia/string.hpp"
+#include "sonia/filesystem.hpp"
 #include "sonia/utility/iterators/file_region_iterator.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
 #include "sonia/utility/iterators/tar_iterator.hpp"
@@ -49,7 +48,7 @@ void file_region_iterator_test()
     {
         std::ofstream f{TEST_FOLDER "/test1.dat"};
         file_write_iterator_t fout2{TEST_FOLDER "/test1.dat"};
-        fout2.write(string_view(content));
+        fout2.write(std::span{content.c_str(), content.size()});
         // no flush heare because of external data set
     }
     BOOST_CHECK_EQUAL(content.size(), fs::file_size(TEST_FOLDER "/test1.dat"));
@@ -59,7 +58,7 @@ void file_region_iterator_test()
     data.resize(65536, 0x22);
     {
         file_write_iterator_t it2{TEST_FOLDER "/test.dat"};
-        array_view<char> buff = *it2;
+        std::span<char> buff = *it2;
         std::for_each(buff.begin(), buff.end(), [](char & c) { c = 0x22; });
         ++it2;
         it2.flush();
@@ -82,7 +81,7 @@ void tar_iterator_test()
         std::string name = tit.name();
         std::string val;
         do {
-            array_view<const char> rng = *tit;
+            std::span<const char> rng = *tit;
             val += std::string(rng.begin(), rng.end());
             ++tit;
         } while (!tit.empty());
@@ -117,7 +116,7 @@ void gz_iterator_test()
 		std::string name = tit.name();
 		std::string val;
 		do {
-			array_view<const char> rng = *tit;
+            std::span<const char> rng = *tit;
 			val += std::string(rng.begin(), rng.end());
 			++tit;
 		} while (!tit.empty());
@@ -146,7 +145,7 @@ void archiver_test(const char* fname, size_t fsz, ArgsT && ... args)
         for (size_t k = 0; k < sz; ++k) {
             buff[k] = (char)((idx + k) & 0xff);
         }
-        *oit = array_view(buff, sz);
+        *oit = std::span{buff, sz};
         ++oit;
         idx += sz;
     }
@@ -159,7 +158,7 @@ void archiver_test(const char* fname, size_t fsz, ArgsT && ... args)
     size_t rfsz = 0;
     char checkv = 0;
     for (; !iit.empty(); ++iit) {
-        array_view<const char> arr = *iit;
+        std::span<const char> arr = *iit;
         for (char c : arr) {
             if (c != checkv++) {
                 BOOST_CHECK_EQUAL(c, checkv - 1);
@@ -205,7 +204,7 @@ std::map<std::string, std::string> load_archive(fs::path const& p)
         std::string val;
 
         do {
-            array_view<const char> rng = *ait;
+            std::span<const char> rng = *ait;
             val += std::string(rng.begin(), rng.end());
             ++ait;
         } while (!ait.empty());

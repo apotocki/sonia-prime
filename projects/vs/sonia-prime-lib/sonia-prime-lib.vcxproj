@@ -363,6 +363,7 @@
     <ClInclude Include="..\..\..\sonia\services\transceiver.hpp" />
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
     <ClInclude Include="..\..\..\sonia\singleton.hpp" />
+    <ClInclude Include="..\..\..\sonia\span.hpp" />
     <ClInclude Include="..\..\..\sonia\string.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\linux\signals.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\linux\signals_api.hpp" />

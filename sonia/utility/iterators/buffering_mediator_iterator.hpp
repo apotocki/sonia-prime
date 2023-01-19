@@ -10,7 +10,7 @@
 
 #include "sonia/iterator_traits.hpp"
 #include "sonia/shared_ptr.hpp"
-#include "sonia/array_view.hpp"
+#include "sonia/span.hpp"
 #include "sonia/utility/linked_buffers.hpp"
 
 namespace sonia {
@@ -20,12 +20,12 @@ template <class IteratorT, class CategoryOrTraversalT = forward_traversal_tag>
 class buffering_mediator_iterator
 	: public boost::iterator_facade<
 		  buffering_mediator_iterator<IteratorT, CategoryOrTraversalT>
-		, array_view<remove_pointer_t<iterator_dereferenced_range_iterator_pointer_t<IteratorT>>>
+		, std::span<remove_pointer_t<iterator_dereferenced_range_iterator_pointer_t<IteratorT>>>
 		, CategoryOrTraversalT
         , wrapper_iterator_proxy<
             ptr_proxy_wrapper<
                 buffering_mediator_iterator<IteratorT, CategoryOrTraversalT> const*,
-                array_view<remove_pointer_t<iterator_dereferenced_range_iterator_pointer_t<IteratorT>>>
+                std::span<remove_pointer_t<iterator_dereferenced_range_iterator_pointer_t<IteratorT>>>
             >
           >
 	>
@@ -38,7 +38,7 @@ class buffering_mediator_iterator
 	using allocator_t = std::allocator<char>;
 	using base_holder_t = std::tuple<shared_ptr<IteratorT>, size_t>; // size_t used_buffer_size, =0 if base is not initialized;
 	using buffer_ptr = single_linked_buffer_ptr<buff_elem_t, base_holder_t, allocator_t>;
-    using proxy_t = wrapper_iterator_proxy<ptr_proxy_wrapper<buffering_mediator_iterator const*, array_view<elem_t>>>;
+    using proxy_t = wrapper_iterator_proxy<ptr_proxy_wrapper<buffering_mediator_iterator const*, std::span<elem_t>>>;
 
 	buffer_ptr pbuff_;
     mutable buff_elem_t * begin_{ nullptr };
@@ -118,19 +118,19 @@ class buffering_mediator_iterator
 
     proxy_t dereference() const
     {
-        return iterators::make_value_proxy<array_view<const char>>(this);
+        return iterators::make_value_proxy<std::span<const char>>(this);
     }
 
-	array_view<elem_t> get_dereference() const
+    std::span<elem_t> get_dereference() const
     {
         BOOST_ASSERT(begin_);
 		return {begin_, size_};
     }
 
-    void set_dereference(array_view<elem_t> d)
+    void set_dereference(std::span<elem_t> d)
     {
-        d.is_subset_of(get_dereference());
-        begin_ += (d.begin() - begin_);
+        is_subset_of(d, get_dereference());
+        begin_ += (d.data() - begin_);
         size_ = d.size();
     }
 	
@@ -159,11 +159,11 @@ public:
         size_t offset = begin_ - buff_begin;
         if (used_buffer_size == offset) {
 			if (pit->empty()) return true;
-            **pit = array_view{begin_, pbuff_->end()};
+            **pit = std::span{begin_, pbuff_->end()};
 			++(*pit);
 			if (pit->empty()) return true;
-			array_view<elem_t> r = **pit;
-            BOOST_ASSERT(r.begin() == begin_);
+            std::span<elem_t> r = **pit;
+            BOOST_ASSERT(r.data() == begin_);
             size_ = r.size();
             used_buffer_size += size_;
         } else { // another part changed used_buffer_size, update available size_

@@ -2,18 +2,13 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_DEFLATE_ITERATOR_HPP
-#define SONIA_UTILITY_DEFLATE_ITERATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 
-#include "sonia/array_view.hpp"
+#include "sonia/span.hpp"
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
 
@@ -43,8 +38,8 @@ class deflate_iterator
 		strm_data(IteratorT, bool);
 		~strm_data();
 
-		void set(array_view<const char>);
-		array_view<const char> get() const;
+		void set(std::span<const char>);
+		std::span<const char> get() const;
 
 		void deflate(int flag = Z_SYNC_FLUSH);
 		void close();
@@ -55,7 +50,7 @@ class deflate_iterator
 		return iterators::make_value_proxy(this);
 	}
 
-	void set_dereference(array_view<const char> rng)
+	void set_dereference(std::span<const char> rng)
 	{
 		data_->set(rng);
 	}
@@ -106,14 +101,14 @@ deflate_iterator<IteratorT>::strm_data::~strm_data()
 }
 
 template <class IteratorT>
-void deflate_iterator<IteratorT>::strm_data::set(array_view<const char> d)
+void deflate_iterator<IteratorT>::strm_data::set(std::span<const char> d)
 {
 	strm_.avail_in = static_cast<uInt>(d.size());
-	strm_.next_in = const_cast<Bytef*>(reinterpret_cast<Bytef const*>(d.empty() ? nullptr : &d.front()));
+	strm_.next_in = const_cast<Bytef*>(reinterpret_cast<Bytef const*>(d.data()));
 }
 
 template <class IteratorT>
-array_view<const char> deflate_iterator<IteratorT>::strm_data::get() const
+std::span<const char> deflate_iterator<IteratorT>::strm_data::get() const
 {
 	return {reinterpret_cast<char*>(out_begin), static_cast<size_t>(strm_.next_out - out_begin)};
 }
@@ -122,17 +117,17 @@ template <class IteratorT>
 void deflate_iterator<IteratorT>::strm_data::deflate(int flag)
 {
 	if (!strm_.next_out) { // first call
-		array_view<char> outrng = *base_;
+		std::span<char> outrng = *base_;
 		strm_.avail_out = static_cast<uInt>(outrng.size());
-		strm_.next_out = reinterpret_cast<Bytef*>(outrng.begin());
+		strm_.next_out = reinterpret_cast<Bytef*>(outrng.data());
 	}
 
 	while (strm_.avail_in || (flag == Z_FINISH && ret_ != Z_STREAM_END)) {
 		while (!strm_.avail_out) {
 			++base_;
-			array_view<char> outrng = *base_;
+			std::span<char> outrng = *base_;
 			strm_.avail_out = static_cast<uInt>(outrng.size());
-			strm_.next_out = reinterpret_cast<Bytef*>(outrng.begin());
+			strm_.next_out = reinterpret_cast<Bytef*>(outrng.data());
 		}
 
 		ret_ = ::deflate(&strm_, flag);
@@ -149,9 +144,9 @@ void deflate_iterator<IteratorT>::strm_data::close()
 {
     if (strm_.next_out) {
         deflate(Z_FINISH);
-        array_view<char> outrng = *base_;
-        if (reinterpret_cast<char*>(strm_.next_out) != outrng.end()) {
-            *base_ = array_view(reinterpret_cast<char*>(strm_.next_out), outrng.end());
+		std::span<char> outrng = *base_;
+        if (reinterpret_cast<char*>(strm_.next_out) != data_end(outrng)) {
+            *base_ = std::span(reinterpret_cast<char*>(strm_.next_out), data_end(outrng));
         } else {
             ++base_;            
         }
@@ -165,5 +160,3 @@ void deflate_iterator<IteratorT>::strm_data::close()
 }
 
 }
-
-#endif // SONIA_UTILITY_DEFLATE_ITERATOR_HPP

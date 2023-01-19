@@ -6,12 +6,11 @@
 
 #include <boost/interprocess/file_mapping.hpp>
 #include <boost/interprocess/mapped_region.hpp>
-#include <boost/iterator/iterator_facade.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include "sonia/filesystem.hpp"
 #include "sonia/shared_ptr.hpp"
-#include "sonia/array_view.hpp"
+#include "sonia/span.hpp"
 #include "sonia/type_traits.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
@@ -70,7 +69,7 @@ public:
 
     ~file_region_descriptor();
 
-    array_view<char> get() const;
+    std::span<char> get() const;
     void update_region_size(size_t);
     size_t get_region_size() const;
 
@@ -110,24 +109,21 @@ private:
 
 class file_region_iterator_base
 {
-    friend class boost::iterator_core_access;
-
-    bool equal(file_region_iterator_base const& rhs) const
-    {
-        if (empty()) return rhs.empty();
-        if (rhs.empty()) return false;
-        return region_ == rhs.region_;
-    }
-
 protected:
     void increment();
     void decrement();
 
     void flush(char*);
-    void set(array_view<const char> data);
+    void set(std::span<const char> data);
 
 public:
     bool empty() const { return !region_ || region_->empty(); }
+
+    bool operator==(file_region_iterator_base const& rhs) const
+    {
+        if (empty()) return rhs.empty();
+        return !rhs.empty() && region_ == rhs.region_;
+    }
 
     file_region_iterator_base() = default;
     file_region_iterator_base(bool readonly, fs::path const& path, uint64_t offset, size_t least_region_sz);
@@ -137,58 +133,43 @@ protected:
 };
 
 template <typename T>
-class file_region_iterator 
-    : public boost::iterator_facade<
-        file_region_iterator<T>, array_view<T>,
-        conditional_t <
-            is_const_v<T>,
-            std::bidirectional_iterator_tag,
-            boost::bidirectional_traversal_tag
-        >,
-        wrapper_iterator_proxy<ptr_proxy_wrapper<file_region_iterator<T> const*, const array_view<T>>>
-      >
-    , public file_region_iterator_base
+class file_region_iterator
+    : public file_region_iterator_base
 {
-    friend class boost::iterator_core_access;
+public:
+    using value_type = std::span<T>;
+    using iterator_category = conditional_t <
+        is_const_v<T>,
+        std::bidirectional_iterator_tag,
+        boost::bidirectional_traversal_tag
+    >;
+    using difference_type = std::ptrdiff_t;
+    using pointer = value_type*;
+    using reference = value_type;
 
-	template <class, class> friend class ptr_proxy_wrapper;
+    template <class, class> friend class ptr_proxy_wrapper;
+
+    using proxy_t = wrapper_iterator_proxy<ptr_proxy_wrapper<file_region_iterator const*, value_type>>;
 
     static constexpr bool is_readonly = is_const_v<T>;
 
-    decltype(auto) dereference() const
-    {
-        return sonia::iterators::make_value_proxy<const array_view<T>>(this);
-    }
-
-    void increment()
-    {
-        file_region_iterator_base::increment();
-        init();
-    }
-
-    void decrement()
-    {
-        file_region_iterator_base::decrement();
-        init();
-    }
-
-    const array_view<T> get_dereference() const
+    std::span<T> get_dereference() const
     {
         return {b_, e_};
     }
 
-    void set_dereference(array_view<const T> data)
+    void set_dereference(std::span<const T> data)
     {
-        BOOST_ASSERT(data.is_subset_of(array_view{b_, e_}));
-        b_ = b_ + (data.begin() - b_);
+        BOOST_ASSERT(is_subset_of(data, std::span<const T>{b_, e_}));
+        b_ = b_ + (data.data() - b_);
         e_ = b_ + data.size();
     }
 
     void init()
     {
-        array_view<char> raw = region_->get();
+        std::span<char> raw = region_->get();
         BOOST_ASSERT(0 == raw.size() % sizeof(T));
-        b_ = (T*)raw.begin();
+        b_ = (T*)raw.data();
         e_ = b_ + raw.size() / sizeof(T);
     }
 
@@ -232,11 +213,30 @@ public:
         return *this;
     }
 
+    proxy_t operator* () const
+    {
+        return iterators::make_value_proxy<value_type>(this);
+    }
+
+    file_region_iterator& operator++()
+    {
+        file_region_iterator_base::increment();
+        init();
+        return *this;
+    }
+
+    file_region_iterator& operator--()
+    {
+        file_region_iterator_base::decrement();
+        init();
+        return *this;
+    }
+
     // write to file from external buffer
     template <typename ST>
-    void write(array_view<ST> data)
+    void write(std::span<ST> data)
     {
-        set(array_view((const char*)data.begin(), data.size() * sizeof(ST)));
+        set(std::span((const char*)data.data(), data.size() * sizeof(ST)));
         array_view<char> raw = region_->get();
         BOOST_ASSERT(0 == raw.size() % sizeof(T));
         b_ = (T*)raw.begin();

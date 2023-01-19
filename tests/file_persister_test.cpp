@@ -4,9 +4,6 @@
 
 #include "sonia/config.hpp"
 
-#include <filesystem>
-
-namespace fs = std::filesystem;
 #define TEST_FOLDER "file_persister_test"
 
 #include "sonia/utility/file_persister.hpp"

@@ -5,12 +5,10 @@
 #include "sonia/config.hpp"
 
 #include <iostream>
-#include <filesystem>
-
-namespace fs = std::filesystem;
 
 #define TEST_FOLDER "server_test"
 
+#include "sonia/filesystem.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/string.hpp"
 #include "sonia/type_traits.hpp"

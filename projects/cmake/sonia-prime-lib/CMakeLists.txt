@@ -95,7 +95,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "iOS")
         ${BUNDLE_HOME}/sonia/sys/posix/posix.cpp
         ${BUNDLE_HOME}/sonia/sys/macos/dispatch.cpp
         ${BUNDLE_HOME}/sonia/sal/posix_sal.cpp
-        #${BUNDLE_HOME}/sonia/sal/macos_sal.cpp
+        ${BUNDLE_HOME}/sonia/sal/macos_sal.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory_macos.cpp
     )
 endif ()

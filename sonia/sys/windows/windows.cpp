@@ -65,10 +65,10 @@ std::wstring utf8_to_utf16(string_view str)
 {
     std::wstring result;
     result.resize(str.size() + 1);
-    int len = MultiByteToWideChar(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size());
+    int len = MultiByteToWideChar(CP_UTF8, 0, str.data(), (int)str.size(), result.data(), (int)result.size());
     if (len > result.size()) {
         result.resize((size_t)len);
-        len = MultiByteToWideChar(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size());
+        len = MultiByteToWideChar(CP_UTF8, 0, str.data(), (int)str.size(), result.data(), (int)result.size());
         BOOST_ASSERT(len <= result.size());
     }
     return std::move(result);

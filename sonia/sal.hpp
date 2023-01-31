@@ -30,6 +30,13 @@ shared_ptr<sonia::services::bundle> load_bundle(sonia::services::bundle_configur
 uint64_t file_size(file_handle_type h);
 void delete_file(cstring_view path);
 
+struct disk_info
+{
+    uint64_t free_size;
+    uint64_t total_size;
+};
+
+void get_disk_info(u8string_view path, disk_info&);
 
 #ifdef __GNUC__
 inline uint8_t log2(uint64_t x)

@@ -7,4 +7,9 @@
 
 namespace sonia::sal {
 
+void get_disk_info(u8string_view path, disk_info& di)
+{
+
+}
+
 }

@@ -12,6 +12,8 @@
 
 #include <process.h>
 #include <WS2tcpip.h>
+#include <winioctl.h>
+
 namespace sonia::sal {
 
 namespace winapi = sonia::windows;
@@ -73,6 +75,85 @@ void delete_file(cstring_view path)
 {
     std::wstring wfname = winapi::utf8_to_utf16(path);
     winapi::delete_file(wfname.c_str(), path.c_str());
+}
+
+void get_disk_info(u8string_view path, disk_info& di)
+{
+    using namespace boost::conversion;
+    std::wstring wfname = winapi::utf8_to_utf16(string_view{(const char*)path.data(), path.size()});
+
+    ULARGE_INTEGER ulFreeSpace;
+    ULARGE_INTEGER ulTotalSpace;
+    ULARGE_INTEGER ulTotalFreeSpace;
+    if (!GetDiskFreeSpaceExW(wfname.data(), &ulFreeSpace, &ulTotalSpace, &ulTotalFreeSpace)) {
+        DWORD err = GetLastError();
+        throw exception("get_disk_info error : %1%"_fmt % winapi::error_message(err));
+    }
+
+    di.total_size = ulTotalSpace.QuadPart;
+    di.free_size = ulFreeSpace.QuadPart;
+
+    return;
+    /*
+    WCHAR volMntPt[256];
+    memcpy(volMntPt, L"\\\\.\\", 4 * sizeof(WCHAR));
+    if (!GetVolumePathNameW(wfname.c_str(), volMntPt + 4, sizeof(volMntPt)/sizeof(WCHAR) - 4)) {
+        DWORD err = GetLastError();
+        throw exception("get_disk_info error : %1%"_fmt % winapi::error_message(err));
+    }
+    std::span<WCHAR> volMntPtSp(volMntPt, wcslen(volMntPt));
+    while (!volMntPtSp.empty() && volMntPtSp.back() == '\\') {
+        volMntPtSp.back() = '\0';
+        volMntPtSp = volMntPtSp.subspan(0, volMntPtSp.size() - 1);
+    }
+    */
+    /*
+    WCHAR volName[256];
+    DWORD r = QueryDosDeviceW(volMntPtSp.data(), volName, sizeof(volName) / sizeof(WCHAR));
+    if (!r) {
+        DWORD err = GetLastError();
+        throw exception("get_disk_info error : %1%"_fmt % winapi::error_message(err));
+    }
+    
+    
+    if (!GetVolumeNameForVolumeMountPointW(volMntPt, volName, sizeof(volName) / sizeof(WCHAR))) {
+        DWORD err = GetLastError();
+        throw exception("get_disk_info error : %1%"_fmt % winapi::error_message(err));
+    }
+    */
+
+/*
+    HANDLE hDevice = CreateFileW(volMntPtSp.data(),          // drive to open
+        0,                // no access to the drive
+        FILE_SHARE_READ | // share mode
+        FILE_SHARE_WRITE,
+        NULL,             // default security attributes
+        OPEN_EXISTING,    // disposition
+        0,                // file attributes
+        NULL);            // do not copy file attributes
+    
+    if (hDevice == INVALID_HANDLE_VALUE) {
+        DWORD err = GetLastError();
+        throw exception("get_disk_info error : %1%"_fmt % winapi::error_message(err));
+    }
+
+    SCOPE_EXIT([hDevice]{
+        CloseHandle(hDevice);
+    });
+    
+    DISK_GEOMETRY dg;
+    DWORD junk = 0;                     // discard results
+    if (!DeviceIoControl(hDevice,        // device to be queried
+        IOCTL_DISK_GET_DRIVE_GEOMETRY, // operation to perform
+        NULL, 0,                       // no input buffer
+        &dg, sizeof(DISK_GEOMETRY),    // output buffer
+        &junk,                         // # bytes returned
+        (LPOVERLAPPED)NULL))
+    {
+        DWORD err = GetLastError();
+        throw exception("get_disk_info error : %1%"_fmt % winapi::error_message(err));
+    }
+    */
 }
 
 // net

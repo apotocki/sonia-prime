@@ -245,6 +245,26 @@ private:
     map_t map_;
 };
 
+template <typename KeyT, typename ValueT>
+class map_view<std::vector<std::pair<KeyT, ValueT>>>
+{
+    using pair_t = std::pair<KeyT, ValueT>;
+    using map_t = std::vector<std::pair<KeyT, ValueT>>;
+
+public:
+    using key_type = KeyT;
+    using value_type = ValueT;
+
+    auto begin() const { return map_.begin(); }
+    auto end() const { return map_.end(); }
+
+    map_t& container() { return map_; }
+    map_t const& container() const { return map_; }
+
+private:
+    map_t map_;
+};
+
 template <typename PairT, size_t EV>
 map_view(std::span<PairT, EV>) -> map_view<std::span<const PairT, EV>>;
 

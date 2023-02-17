@@ -160,6 +160,21 @@ struct binding_tag_facade
         return apply_placeholders(FuncV, *stub_tuple, std::forward<ArgsT>(args)...);
     }
 
+    template <typename TupleT, typename ... ArgsT>
+    inline static expected<result_type, std::string> apply_placeholders_ext(TupleT&& tpl, ArgsT&& ... args)
+    {
+        try {
+            if constexpr (!is_void_v<result_type>) {
+                return apply_placeholders(FuncV, std::forward<TupleT>(tpl), std::forward<ArgsT>(args)...);
+            } else {
+                apply_placeholders(FuncV, std::forward<TupleT>(tpl), std::forward<ArgsT>(args)...);
+                return {};
+            }
+        } catch (std::exception const& e) {
+            return make_unexpected(e.what());
+        }
+    }
+
     template <typename CoderTagT, typename InputIteratorT, typename OutputIteratorT, typename ... ArgsT>
     static void stub_invoke_and_encode(InputIteratorT & ii, OutputIteratorT & oi, ArgsT && ... args)
     {
@@ -168,22 +183,16 @@ struct binding_tag_facade
 
         automatic<stub_tuple_t> stub_tuple{in_place_decode<CoderTagT>(ii)};
         
-        auto error_handler = [&oi](std::exception const& e) {
-            string_view err{e.what()};
-            oi = (make_encoder<CoderTagT>(std::move(oi)) & err.size() & err).iterator();
-        };
-
-        if constexpr (!is_void_v<result_type>)
-        {
-            optional<conditional_t<is_void_v<result_type>, void*, result_type>> r;
-            try { r = apply_placeholders(FuncV, *stub_tuple, std::forward<ArgsT>(args)...); } catch (std::exception const& e) { error_handler(e); return; }
+        auto r = apply_placeholders_ext(*stub_tuple, std::forward<ArgsT>(args)...);
+        if (r.has_value()) {
             oi = sonia::encode<CoderTagT, size_t>(0, std::move(oi));
-            oi = sonia::encode<CoderTagT>(*r, std::move(oi));
+            if constexpr (!is_void_v<result_type>) {
+                oi = sonia::encode<CoderTagT>(r.value(), std::move(oi));
+            }
+            oi = sonia::encode<CoderTagT>(sonia::mpl::make_transform_view<result_transformer_t>(*stub_tuple), std::move(oi));
         } else {
-            try { apply_placeholders(FuncV, *stub_tuple, std::forward<ArgsT>(args)...); } catch (std::exception const& e) { error_handler(e); return; }
-            oi = sonia::encode<CoderTagT, size_t>(0, std::move(oi));
+            oi = (make_encoder<CoderTagT>(std::move(oi)) & r.error().size() & string_view { r.error() }).iterator();
         }
-        oi = sonia::encode<CoderTagT>(sonia::mpl::make_transform_view<result_transformer_t>(*stub_tuple), std::move(oi));
     }
 };
 

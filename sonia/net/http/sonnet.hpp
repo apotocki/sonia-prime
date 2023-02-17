@@ -40,8 +40,10 @@ class sonnet_exception : public exception
 {
 public:
     template <typename ... ArgsT>
-    explicit sonnet_exception(status s, ArgsT&& ... args) : exception(std::forward<ArgsT>(args) ...) {}
-
+    explicit sonnet_exception(status sval, ArgsT&& ... args) 
+        : exception(std::forward<ArgsT>(args) ...)
+        , s{ sval }
+    {}
     status s;
 };
 

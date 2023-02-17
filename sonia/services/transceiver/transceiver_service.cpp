@@ -62,7 +62,8 @@ class chunk_write_iterator
 
     void increment()
     {
-        flush();
+        offset_ = buff_.size();
+        write_chunk();
     }
 
 public:
@@ -79,33 +80,38 @@ public:
         datasz_ = buff_.size() - sizeof(chunk_header);
     }
 
-    void flush()
+    void write_chunk()
     {
-        if (offset_ != sizeof(chunk_header)) {
 #ifndef NO_CRC_CHECK
-            uint32_t crc = boost::crc<32, 0xBEEF, 0xC001F00D, 0, true, true>(buff_.begin() + sizeof(chunk_header), offset_ - sizeof(chunk_header));
+        uint32_t crc = boost::crc<32, 0xBEEF, 0xC001F00D, 0, true, true>(buff_.begin() + sizeof(chunk_header), offset_ - sizeof(chunk_header));
 #else
-            uint32_t crc = 0;
+        uint32_t crc = 0;
 #endif
-            make_encoder<sonia::serialization::ordered_t>(buff_.begin()) & crc & (uint16_t)(offset_ - sizeof(chunk_header));
-            
-            char const* bf = buff_.begin();
-            for (;;) {
-                auto expsz = psoc_->write_some(bf, offset_);
-                if (!expsz.has_value()) {
-                    try { std::rethrow_exception(expsz.error()); }
-                    catch (std::exception const& e) { throw eof_exception(e.what()); }
-                }
-                if (!expsz.value()) {
-                    throw eof_exception();
-                }
-                offset_ -= expsz.value();
-                if (!offset_) break;
-                bf += expsz.value();
+        make_encoder<sonia::serialization::ordered_t>(buff_.begin())& crc& (uint16_t)(offset_ - sizeof(chunk_header));
+
+        char const* bf = buff_.begin();
+        for (;;) {
+            auto expsz = psoc_->write_some(bf, offset_);
+            if (!expsz.has_value()) {
+                try { std::rethrow_exception(expsz.error()); }
+                catch (std::exception const& e) { throw eof_exception(e.what()); }
             }
+            if (!expsz.value()) {
+                throw eof_exception();
+            }
+            offset_ -= expsz.value();
+            if (!offset_) break;
+            bf += expsz.value();
         }
         offset_ = sizeof(chunk_header);
         datasz_ = buff_.size() - sizeof(chunk_header);
+    }
+
+    void flush()
+    {
+        if (offset_ != sizeof(chunk_header)) {
+            write_chunk();
+        }
     }
 
 private:
@@ -126,7 +132,7 @@ class chunk_read_iterator
     friend class boost::iterator_core_access;
 
     bool equal(chunk_read_iterator const& rhs) const { return false; }
-
+    
     void read(size_t limit) const
     {
         while (rdsz_ < limit) {
@@ -189,6 +195,8 @@ public:
     chunk_read_iterator(tcp_socket & soc, array_view<char> buff, size_t rdsz = 0)
         : psoc_(&soc), buff_(buff), rdsz_(rdsz)
     { }
+
+    bool empty() const { return false; }
 
 private:
     tcp_socket * psoc_;
@@ -287,18 +295,20 @@ void transceiver_service::connect(io::tcp_socket soc)
     for (;;)
     {
         automatic<sonia::type::durable_id> btid(in_place_decode<sonia::serialization::compressed_t>(rdit));
-
+        optional<std::string> err;
         try {
             auto * pfunc = sonia::get_multimethod<process_taged_object, void(stub_read_iterator&, stub_write_iterator&)>({btid->ti()});
-            if (!pfunc) {
-                throw exception("transceiver exceptor error: object invoker is not defined for: %1%"_fmt % btid);
+            if (pfunc) {
+                (*pfunc)(rdit, rwdit);
+            } else {
+                err.emplace(("transceiver exceptor error: object invoker is not defined for: %1%"_fmt % btid).str());
             }
-
-            (*pfunc)(rdit, rwdit);
-            
         } catch (std::exception const& e) {
-            string_view err{e.what()};
-            make_encoder<sonia::serialization::compressed_t>(reference_wrapper_iterator{rwdit}) & err.size() & err;
+            err.emplace(e.what());
+        }
+
+        if (err) {
+            make_encoder<sonia::serialization::compressed_t>(reference_wrapper_iterator{rwdit}) & err->size() & string_view{*err};
             rwdit.flush();
             break; // current socket can not be used any more
         }

@@ -25,7 +25,7 @@
 #include <boost/context/detail/apply.hpp>
 #endif
 #include <boost/context/fiber.hpp>
-#include <boost/context/stack_context.hpp>
+//#include <boost/context/stack_context.hpp>
 #include <boost/intrusive/list.hpp>
 #include <boost/intrusive/parent_from_member.hpp>
 #include <boost/intrusive_ptr.hpp>

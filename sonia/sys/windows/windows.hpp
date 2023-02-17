@@ -30,6 +30,7 @@ void set_thread_name(boost::thread::id tid, char const* threadName);
 
 std::wstring utf8_to_utf16(string_view);
 std::string utf16_to_utf8(wstring_view);
+std::string win_ansi_to_utf8(string_view);
 
 std::string error_message(DWORD errcode);
 

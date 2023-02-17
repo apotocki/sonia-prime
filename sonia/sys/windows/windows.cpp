@@ -78,13 +78,23 @@ std::string utf16_to_utf8(wstring_view str)
 {
     std::string result;
     result.resize(str.size());
-    int len = WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size(), NULL, NULL);
-    if (len > result.size()) {
-        result.resize((size_t)len);
-        int len = WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size(), NULL, NULL);
-        BOOST_ASSERT(len <= result.size());
-    }
+    int len = WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), nullptr, 0, NULL, NULL);
+    result.resize((size_t)len);
+    WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size(), NULL, NULL);
     return std::move(result);
+}
+
+std::string win_ansi_to_utf8(string_view str)
+{
+    std::wstring wresult;
+    wresult.resize(str.size() + 1);
+    int len = MultiByteToWideChar(CP_ACP, 0, str.data(), (int)str.size(), wresult.data(), (int)wresult.size());
+    if (len > wresult.size()) {
+        wresult.resize((size_t)len);
+        int len = MultiByteToWideChar(CP_ACP, 0, str.data(), (int)str.size(), wresult.data(), (int)wresult.size());
+        BOOST_ASSERT(len <= wresult.size());
+    }
+    return utf16_to_utf8(wresult);
 }
 
 std::string error_message(DWORD errcode)

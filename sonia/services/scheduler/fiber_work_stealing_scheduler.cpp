@@ -282,11 +282,13 @@ fibers::context* fiber_work_stealing_scheduler2::group_host::pop() noexcept
 void fiber_work_stealing_scheduler2::group_host::notify() noexcept
 {
     notify_reservation_count_.store(rqueue_size_.load());
+    unique_lock lk(mtx_);
     cnd_.notify_one();
 }
 
 void fiber_work_stealing_scheduler2::group_host::notify_all() noexcept
 {
+    unique_lock lk(mtx_);
     cnd_.notify_all();
 }
 

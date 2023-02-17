@@ -11,6 +11,8 @@
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
 #include "sonia/utility/serialization/http_message.hpp"
 
+#include "sonia/logger/logger.hpp"
+
 namespace sonia::http {
 
 struct to_rvstring_visitor : boost::static_visitor<std::string>
@@ -127,6 +129,17 @@ std::string message::get_body_as_string()
         result.insert(result.end(), boost::begin(rng), boost::end(rng));
     }
     return result;
+}
+
+size_t message::eat_body()
+{
+    size_t total = 0;
+    while (!input.empty()) {
+        std::span<const char> rng = *input;
+        total += rng.size();
+        ++input;
+    }
+    return total;
 }
 
 template <typename InputIterator>
@@ -351,6 +364,7 @@ void response::make_custom(status code, string_view ct, string_view body)
     if (!body.empty()) {
         set_header(http::header::TRANSFER_ENCODING, "chunked");
         //set_header(http::header::CONTENT_LENGTH, std::to_string(body.size()));
+        
         content_writer = [body = to_string(body)](http::message::range_write_input_iterator it) {
             copy_range(body, it);
         };

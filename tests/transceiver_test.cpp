@@ -190,10 +190,39 @@ void get_configuration(std::ostream & os)
         "}";
 }
 
+struct pause_alloc_hook {
+    _CRT_ALLOC_HOOK newhook_;
+    pause_alloc_hook() : newhook_(_CrtSetAllocHook(0)) { }
+
+    ~pause_alloc_hook() {
+        _CrtSetAllocHook(newhook_);
+    }
+};
+
+int AllocHook(int allocType, void* userData, size_t size, int
+    blockType, long requestNumber, const unsigned char* filename, int
+    lineNumber)
+{
+    /*
+    if (size == 131072) {
+        pause_alloc_hook guard_;
+        std::cout << size << "\n";
+    }
+    
+    if (!size) return TRUE;
+    pause_alloc_hook guard_;
+    std::cout << size << "\n";
+    */
+    return TRUE;
+}
+
 }
 
 void cmd_transceiver_test()
 {
+    //_CrtSetAllocHook(AllocHook);
+    //_CrtSetBreakAlloc(10282);
+
     using namespace sonia;
     fs::remove_all(TEST_FOLDER);
 
@@ -201,6 +230,7 @@ void cmd_transceiver_test()
     //return;
     try {
         scoped_services ss{"base-path=" TEST_FOLDER "/"};
+#if 1
         SONIA_REGISTER_BINDING_TAG(ts_empty_method, "ts_empty_method", "test_service");
         SONIA_REGISTER_BINDING_TAG(ts_exception_method, "ts_exception_method", "test_service");
         SONIA_REGISTER_BINDING_TAG(ts_some_method, "ts_some_method", "test_service");
@@ -232,6 +262,7 @@ void cmd_transceiver_test()
         this_thread::attach_host("client");
         auto ctl_proxy = services::locate<itest_service>("test_service");
         //this_thread::attach_host("server");
+#endif
 #if 1
         try {
             ctl_proxy->exception_method();
@@ -266,7 +297,7 @@ void cmd_transceiver_test()
 #endif
 #if 1
 #ifdef _DEBUG
-    const int calls_count = 30;
+    const int calls_count = 300;
     const size_t max_pass_count = 32;
 #else
     const int calls_count = 1500;
@@ -288,9 +319,9 @@ void cmd_transceiver_test()
                     {
                         curs[tnum] = i;
                         std::vector<std::string> copy = result;
-                        //GLOBAL_LOG_TRACE() << "client " << tnum << ", before call " << i;
+                        //    GLOBAL_LOG_TRACE() << "client " << tnum << ", before call " << i;
                         auto main_result = ctl_proxy->some_method(ival, str, result);
-                        //GLOBAL_LOG_TRACE() << "client " << tnum << ", after call " << i;
+                        //    GLOBAL_LOG_TRACE() << "client " << tnum << ", after call " << i;
                         BOOST_ASSERT (main_result.second == copy);
                         BOOST_ASSERT (result.back() == std::to_string(ival));
                         BOOST_ASSERT (main_result.first == str);

@@ -120,6 +120,7 @@ thread_local context_initializer::context_descriptor context_initializer::contex
 //thread_local context * context_initializer::active_{ nullptr };
 //thread_local std::size_t context_initializer::counter_{ 0 };
 
+// to free resources
 thread_local static context_initializer ctx_initializer;
 
 context *

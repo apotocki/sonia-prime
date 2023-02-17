@@ -58,6 +58,7 @@ void sonnet::handle(request & req, response & resp)
     }
     resp.meet_request(req);
     
+    optional<sonnet_exception> excpt;
     try {
         if (handler) {
             (*handler)(req, rparams, resp);
@@ -65,7 +66,7 @@ void sonnet::handle(request & req, response & resp)
             handle_unhandled(req, rparams, resp);
         }
     } catch (sonnet_exception const& e) {
-        resp.make_custom(e.s, "text/html", e.what());
+        excpt = e;
     } catch (...) {
         auto dinfo = boost::current_exception_diagnostic_information();
         if (loggable* lp = dynamic_cast<loggable*>(this); lp) {
@@ -73,7 +74,13 @@ void sonnet::handle(request & req, response & resp)
         } else {
             GLOBAL_LOG_TRACE() << dinfo;
         }
-        resp.make_custom(status::INTERNAL_SERVER_ERROR, "text/html", dinfo);
+        excpt = sonnet_exception(status::INTERNAL_SERVER_ERROR, dinfo);
+    }
+
+    // can't handle exception in catch due to possible fiber stack unwind issues
+    if (excpt) {
+        req.eat_body();
+        resp.make_custom(excpt->s, "text/html", excpt->what());
     }
 }
 

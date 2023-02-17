@@ -87,6 +87,7 @@ public:
     void build_input_iterator(ReadIteratorT & ii);
 
     std::string get_body_as_string();
+    size_t eat_body();
 };
 
 struct form_data_item : header_collection

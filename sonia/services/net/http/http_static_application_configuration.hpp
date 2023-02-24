@@ -24,6 +24,7 @@ struct http_static_application_configuration
 	using forward_mapping_type = std::vector<std::pair<boost::regex, std::string>>;
 
 	forward_mapping_type forward_mapping;
+    std::string cache_contol_header;
 };
 
 }

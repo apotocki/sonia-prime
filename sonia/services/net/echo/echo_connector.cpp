@@ -48,7 +48,7 @@ void echo_connector::connect(sonia::io::tcp_socket soc)
 
 void echo_connector::connect(array_view<char> buff, size_t rsz, sonia::sal::socket_address const& addr, sonia::io::udp_socket & soc)
 {
-    LOG_TRACE(logger()) << "udp connection from: " << addr.str();
+    LOG_TRACE(logger()) << "udp connection from: " << (const char*)addr.str().c_str();
     BOOST_VERIFY(rsz == soc.write_some(addr, buff.subview(0, rsz)));
 }
 

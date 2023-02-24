@@ -40,7 +40,7 @@ public:
 
     void reset();
     
-    std::string str() const;
+    std::u8string str() const;
     uint16_t port() const;
 
     std::pair<const char*, size_t> in_addr() const;

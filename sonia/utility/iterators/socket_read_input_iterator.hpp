@@ -49,7 +49,9 @@ public:
 
     value_type get_dereference() const
     {
-        BOOST_ASSERT(psoc_);
+        if (!psoc_) {
+            throw eof_exception();
+        }
         if (ready_buff_.empty()) {
             auto exprsz = psoc_->read_some(buff_);
             if (!exprsz.has_value() || !exprsz.value()) {

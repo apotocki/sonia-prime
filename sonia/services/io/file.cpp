@@ -98,10 +98,10 @@ cstring_view file::path() const {
         try {
             path_ = get_file_name(fh_);
         } catch (...) {
-            path_ = "file name is not available";
+            path_ = u8"file name is not available";
         }
     }
-    return path_;
+    return cstring_view{(const char*)path_.c_str(), path_.size()};
 }
 
 void file::set_size(uint64_t sz) {

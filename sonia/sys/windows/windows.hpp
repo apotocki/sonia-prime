@@ -29,8 +29,8 @@ void set_thread_name(DWORD dwThreadId, char const* threadName);
 void set_thread_name(boost::thread::id tid, char const* threadName);
 
 std::wstring utf8_to_utf16(string_view);
-std::string utf16_to_utf8(wstring_view);
-std::string win_ansi_to_utf8(string_view);
+std::u8string utf16_to_utf8(wstring_view);
+std::u8string win_ansi_to_utf8(string_view);
 
 std::string error_message(DWORD errcode);
 
@@ -44,7 +44,7 @@ public:
 LPFN_ACCEPTEX get_accept_function(SOCKET);
 bool parse_address(int hint_af, int hint_type, int hint_protocol, string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc);
 
-std::string inet_ntoa(sockaddr const* addr, DWORD sz, LPWSAPROTOCOL_INFOW);
+std::u8string inet_ntoa(sockaddr const* addr, DWORD sz, LPWSAPROTOCOL_INFOW);
 
 SOCKET create_socket(int af, int type, int protocol);
 void connect_socket(SOCKET soc, sockaddr * name, int namelen);
@@ -71,8 +71,8 @@ HANDLE create_file(
     DWORD flags_and_attributes,
     HANDLE template_file = 0);
 
-std::string get_file_name(HANDLE hFile); // returns utf8 string
-void delete_file(wchar_t const * path, char const* optutf8path = nullptr);
+std::u8string get_file_name(HANDLE hFile);
+void delete_file(wchar_t const * path);
 void async_read_file(HANDLE, uint64_t fileoffset, void * buff, size_t sz, OVERLAPPED * pov);
 void async_write_file(HANDLE, uint64_t fileoffset, void const* buff, size_t sz, OVERLAPPED * pov);
 

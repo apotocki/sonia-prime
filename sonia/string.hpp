@@ -299,10 +299,14 @@ std::basic_ostream<CharT, TraitsT<CharT>>& operator<< (std::basic_ostream<CharT,
     return os.write(reinterpret_cast<CharT const*>(s.data()), s.size());
 }
 
-
 inline boost::basic_format<char> operator "" _fmt(const char* str, std::size_t)
 {
     return boost::format(str);
+}
+
+inline boost::basic_format<char8_t> operator "" _u8fmt(const char* str, std::size_t)
+{
+    return boost::basic_format<char8_t>(reinterpret_cast<char8_t const*>(str));
 }
 
 template <typename CharT, size_t N>

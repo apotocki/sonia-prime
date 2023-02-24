@@ -20,4 +20,9 @@ void get_disk_info(u8string_view path, disk_info& di)
     di.free_size = (int64_t)s.f_frsize * (int64_t)s.f_bfree;
 }
 
+std::u8string reencode_system_message(string_view message)
+{
+    return std::u8string((const char8_t*)message.data(), message.size());
+}
+
 }

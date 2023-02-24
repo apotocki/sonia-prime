@@ -47,7 +47,7 @@ class file
     file(file const&) = delete;
     file& operator=(file const&) = delete;
 
-    file(shared_ptr<file_service> s, sonia::sal::file_handle_type handle, string_view path = string_view())
+    file(shared_ptr<file_service> s, sonia::sal::file_handle_type handle, u8string_view path = u8string_view())
         : impl_(std::move(s)), path_(to_string(path)), fh_(handle)
     {}
 
@@ -73,14 +73,14 @@ public:
 
 private:
     shared_ptr<file_service> impl_;
-    mutable std::string path_;
+    mutable std::u8string path_;
     sonia::sal::file_handle_type fh_;
 };
 
 class file_access
 {
 public:
-    static file open_file(shared_ptr<file_service> impl, sonia::sal::file_handle_type handle, string_view path = string_view())
+    static file open_file(shared_ptr<file_service> impl, sonia::sal::file_handle_type handle, u8string_view path = u8string_view())
     {
         return file(std::move(impl), handle, path);
     }

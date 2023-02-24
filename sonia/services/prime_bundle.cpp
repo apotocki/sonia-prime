@@ -10,25 +10,38 @@
 #include "bundle.ipp"
 #include "sonia/services/scheduler/scheduler_service_builder.hpp"
 #include "sonia/services/auth/auth_service_builder.hpp"
-#include "sonia/services/registry/registry_service_builder.hpp"
-#include "sonia/services/bookkeeper/bookkeeper_service_builder.hpp"
+
+#ifndef SONIA_NO_REGISTRY
+#   include "sonia/services/registry/registry_service_builder.hpp"
+#endif
+
+#ifndef SONIA_NO_BOOKKEEPER
+#   include "sonia/services/bookkeeper/bookkeeper_service_builder.hpp"
+#endif
 
 #ifndef SONIA_NO_NET
-#include "sonia/services/net/net_service_builder.hpp"
-#include "sonia/services/net/echo/echo_connector_builder.hpp"
-#include "sonia/services/net/http/http_connector_builder.hpp"
-#include "sonia/services/net/http/http_default_application_builder.hpp"
-#include "sonia/services/net/http/http_static_application_builder.hpp"
-#include "sonia/services/net/http/http_digest_authentication_application_builder.hpp"
-#include "sonia/services/transceiver/transceiver_builder.hpp"
-#include "sonia/services/io/io_service_builder.hpp"
-#include "sonia/services/io/io_cache_service_builder.hpp"
-
-#ifndef SONIA_NO_SSL
-#   include "sonia/services/io/io_ssl_service_builder.hpp"
+#   include "sonia/services/io/io_service_builder.hpp"
+#   include "sonia/services/net/net_service_builder.hpp"
+#   ifndef SONIA_NO_ECHO
+#       include "sonia/services/net/echo/echo_connector_builder.hpp"
+#   endif
+#   include "sonia/services/net/http/http_connector_builder.hpp"
+#   include "sonia/services/net/http/http_static_application_builder.hpp"
+#   include "sonia/services/net/http/http_digest_authentication_application_builder.hpp"
+#   ifndef SONIA_NO_HTTP_DEFAULT
+#   include "sonia/services/net/http/http_default_application_builder.hpp"
+#   endif
+#   ifndef SONIA_NO_TRANSCEIVER
+#       include "sonia/services/transceiver/transceiver_builder.hpp"
+#   endif
+#   ifndef SONIA_NO_IO_CACHE
+#       include "sonia/services/io/io_cache_service_builder.hpp"
+#   endif
+#   ifndef SONIA_NO_SSL
+#       include "sonia/services/io/io_ssl_service_builder.hpp"
+#   endif
 #endif
 
-#endif
 namespace sonia::services {
 
 string_view prime_bundle::build_id() const noexcept { return BUILD_ID; }
@@ -37,24 +50,34 @@ void prime_bundle::init()
 {
     install<scheduler_service_builder>("scheduler");
     install<auth_service_builder>("auth");
+#ifndef SONIA_NO_REGISTRY
     install<registry_service_builder>("registry");
+#endif
+#ifndef SONIA_NO_BOOKKEEPER
     install<bookkeeper_service_builder>("bookkeeper");
+#endif
 #ifndef SONIA_NO_NET
+    install<io_service_builder>("io");
     install<net_service_builder>("net-server");
     install<http_connector_builder>("http-server");
-    install<http_default_application_builder>("http-default");
     install<http_static_application_builder>("http-static");
     install<http_digest_authentication_application_builder>("http-auth");
-    
-    install<io_service_builder>("io");
-
+#ifndef SONIA_NO_HTTP_DEFAULT
+    install<http_default_application_builder>("http-default");
+#endif
+#ifndef SONIA_NO_IO_CACHE
     install<io_cache_service_builder>("io-cache");
+#endif
+#ifndef SONIA_NO_ECHO
     install<echo_connector_builder>("echo");
+#endif
+#ifndef SONIA_NO_TRANSCEIVER
     install<transceiver_service_builder>("transceiver");
-
-#   ifndef SONIA_NO_SSL
+#endif
+#ifndef SONIA_NO_SSL
     install<io_ssl_service_builder>("io-ssl");
-#   endif
+#endif
+
 #endif
 }
 

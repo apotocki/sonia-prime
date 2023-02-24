@@ -7,4 +7,9 @@
 
 namespace sonia::sal {
 
+std::u8string reencode_system_message(string_view message)
+{
+    return std::u8string((const char8_t*)message.data(), message.size());
+}
+
 }

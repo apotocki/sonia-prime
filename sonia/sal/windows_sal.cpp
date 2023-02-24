@@ -33,6 +33,11 @@ void set_thread_name(sonia::thread::id tid, std::string const& name)
     winapi::set_thread_name(tid, name.c_str());
 }
 
+std::u8string reencode_system_message(string_view message)
+{
+    return winapi::win_ansi_to_utf8(message);
+}
+
 typedef sonia::services::bundle*(get_bundle_fn)();
 
 shared_ptr<sonia::services::bundle> load_bundle(sonia::services::bundle_configuration const& cfg)
@@ -74,7 +79,7 @@ uint64_t file_size(HANDLE h)
 void delete_file(cstring_view path)
 {
     std::wstring wfname = winapi::utf8_to_utf16(path);
-    winapi::delete_file(wfname.c_str(), path.c_str());
+    winapi::delete_file(wfname.c_str());
 }
 
 void get_disk_info(u8string_view path, disk_info& di)
@@ -212,7 +217,7 @@ void listen_socket(socket_handle s, int bl)
     return winapi::listen_socket((SOCKET)s, bl);
 }
 
-std::string socket_address::str() const
+std::u8string socket_address::str() const
 {
     return winapi::inet_ntoa(reinterpret_cast<::sockaddr const*>(buffer_), (DWORD)sz_, NULL);
 }

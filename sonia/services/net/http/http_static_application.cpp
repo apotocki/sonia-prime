@@ -19,6 +19,7 @@ namespace sonia::services {
 http_static_application::http_static_application(http_static_application_configuration cfg)
     : www_path_(std::move(cfg.www_path))
     , forwards_(std::move(cfg.forward_mapping))
+    , cache_contol_header(std::move(cfg.cache_contol_header))
     , mime_map_{ fs::canonical(cfg.mime_mapping_file_path) }
 {
     set_log_attribute("Type", "http-static-application");
@@ -72,9 +73,49 @@ void http_static_application::handle(http::request & req, http::response & resp)
         }
 
         try {
-            auto abspath = std::filesystem::canonical(sys_path_ / relpath.c_str());
+            auto abspath = fs::canonical(sys_path_ / relpath.c_str());
+
+            if (!fs::exists(abspath) || !fs::is_regular_file(abspath)) {
+                handle404(req, resp);
+                return;
+            }
+
+            /*
+            time_t now = time(NULL);
+            if (now != -1) {
+                if (tm* ptm = gmtime(&now); ptm) {
+                    resp.set_header(http::header::DATE, sonia::http::http_date(ptm));
+                }
+            }
+            
+            int64_t dt = 0; // 100 nanoseconds intervals since Jan 1 1970 UTC
+            fs::file_time_type ft = fs::last_write_time(abspath);
+#ifdef BOOST_WINDOWS
+            dt = clock_cast<std::chrono::utc_clock>(ft).time_since_epoch().count();
+#else
+            //dt = clock_cast<std::chrono::utc_clock>(ft).time_since_epoch().count();
+            dt = ft.time_since_epoch().count() / 100;
+#endif
+            
+            dt /= 10000000; // to seconds
+            if (tm* ptm = gmtime(&dt); ptm) {
+                resp.set_header(http::header::LAST_MODIFIED, sonia::http::http_date(ptm));
+            }
+            */
+            if (!cache_contol_header.empty()) {
+                resp.set_header(http::header::CACHE_CONTROL, cache_contol_header);
+            }
+
             resp.set_header(http::header::TRANSFER_ENCODING, "chunked");
-            //resp.set_header(http::header::CONTENT_LENGTH, std::to_string(std::filesystem::file_size(abspath)));
+            
+            
+            
+
+            //Last - Modified: Tue, 22 Feb 2022 22 : 00 : 00 GMT
+            //Cache - Control : max - age = 3600
+
+            //resp.set_header(http::header::CONTENT_LENGTH, std::to_string(fs::file_size(abspath)));
+
             file_region_iterator<const char> fit{abspath};
 
             resp.status_code = http::status::OK;

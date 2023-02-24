@@ -2,18 +2,13 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERIALIZATION_PAIR_HPP
-#define SONIA_SERIALIZATION_PAIR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 
 #include "serialization.hpp"
 
-namespace sonia { namespace serialization {
+namespace sonia::serialization {
 
 template <typename TagT, typename FT, typename ST >
 class coder<TagT, std::pair<FT, ST>>
@@ -38,6 +33,4 @@ public:
     }
 };
 
-}}
-
-#endif // SONIA_SERIALIZATION_PAIR_HPP
+}

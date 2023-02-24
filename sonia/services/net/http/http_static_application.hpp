@@ -27,6 +27,7 @@ public:
 private:
     mime_mapping mime_map_;
     std::string www_path_;
+    std::string cache_contol_header;
     fs::path sys_path_;
     std::vector<std::pair<boost::regex, std::string>> forwards_;
     shared_ptr<http::application> app404_;

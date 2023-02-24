@@ -67,7 +67,7 @@ void sonnet::handle(request & req, response & resp)
         }
     } catch (sonnet_exception const& e) {
         excpt = e;
-    } catch (...) {
+     } catch (...) {
         auto dinfo = boost::current_exception_diagnostic_information();
         if (loggable* lp = dynamic_cast<loggable*>(this); lp) {
             LOG_TRACE(lp->logger()) << dinfo;

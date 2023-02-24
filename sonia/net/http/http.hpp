@@ -5,6 +5,7 @@
 #pragma once
 
 #include <iosfwd>
+#include <time.h>
 
 #include "sonia/string.hpp"
 
@@ -41,6 +42,8 @@ std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, Trait
 {
     return os << to_string(mv);
 }
+
+std::string http_date(tm* tm);
 
 #undef SONIA_PRINT_TYPE_ENUM
 

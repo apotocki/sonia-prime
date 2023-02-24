@@ -74,17 +74,17 @@ std::wstring utf8_to_utf16(string_view str)
     return std::move(result);
 }
 
-std::string utf16_to_utf8(wstring_view str)
+std::u8string utf16_to_utf8(wstring_view str)
 {
-    std::string result;
+    std::u8string result;
     result.resize(str.size());
     int len = WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), nullptr, 0, NULL, NULL);
     result.resize((size_t)len);
-    WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), result.data(), (int)result.size(), NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), (char*)result.data(), (int)result.size(), NULL, NULL);
     return std::move(result);
 }
 
-std::string win_ansi_to_utf8(string_view str)
+std::u8string win_ansi_to_utf8(string_view str)
 {
     std::wstring wresult;
     wresult.resize(str.size() + 1);
@@ -164,7 +164,7 @@ bool parse_address(int hint_af, int hint_type, int hint_protocol, string_view ad
     return false;
 }
 
-std::string inet_ntoa(sockaddr const* addr, DWORD addrsz, LPWSAPROTOCOL_INFOW lpProtocolInfo)
+std::u8string inet_ntoa(sockaddr const* addr, DWORD addrsz, LPWSAPROTOCOL_INFOW lpProtocolInfo)
 {
     using arr_type = shared_optimized_array<wchar_t, 48, uint16_t>;
     arr_type temparr{(size_t)46};
@@ -353,7 +353,7 @@ HANDLE create_file(
     return result;
 }
 
-std::string get_file_name(HANDLE hFile)
+std::u8string get_file_name(HANDLE hFile)
 {
     std::vector<WCHAR> buf(64);
     DWORD dwRet = GetFinalPathNameByHandleW(hFile, &buf.front(), (DWORD)buf.size(), FILE_NAME_NORMALIZED);
@@ -369,11 +369,11 @@ std::string get_file_name(HANDLE hFile)
     return utf16_to_utf8(wstring_view(&buf.front(), dwRet));
 }
 
-void delete_file(wchar_t const * path, char const* optutf8path)
+void delete_file(wchar_t const * path)
 {
     if (!DeleteFileW(path)) {
         DWORD err = GetLastError();
-        throw exception("can't delete file %1%, error : %2%"_fmt % (optutf8path ? optutf8path : utf16_to_utf8(path).c_str()) % error_message(err));
+        throw exception("can't delete file %1%, error : %2%"_fmt % (const char*)utf16_to_utf8(path).c_str() % error_message(err));
     }
 }
 

@@ -127,7 +127,7 @@ void file::flush() const {
 #else // else POSIX
 
 cstring_view file::path() const {
-    return path_;
+    return {reinterpret_cast<const char*>(path_.c_str()), path_.size()};
 }
 
 void file::set_size(uint64_t sz) {

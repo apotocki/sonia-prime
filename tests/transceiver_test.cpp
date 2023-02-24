@@ -190,6 +190,7 @@ void get_configuration(std::ostream & os)
         "}";
 }
 
+#ifdef BOOST_WINDOWS
 struct pause_alloc_hook {
     _CRT_ALLOC_HOOK newhook_;
     pause_alloc_hook() : newhook_(_CrtSetAllocHook(0)) { }
@@ -215,7 +216,7 @@ int AllocHook(int allocType, void* userData, size_t size, int
     */
     return TRUE;
 }
-
+#endif
 }
 
 void cmd_transceiver_test()

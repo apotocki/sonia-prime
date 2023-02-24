@@ -40,7 +40,7 @@ std::tuple<int, int, int> kernel_version()
     return result;
 }
 
-std::string inet_ntoa(sockaddr_in const* addr)
+std::u8string inet_ntoa(sockaddr_in const* addr)
 {
     char buff[INET6_ADDRSTRLEN];
     const char* r = inet_ntop(
@@ -55,7 +55,7 @@ std::string inet_ntoa(sockaddr_in const* addr)
         int err = errno;
         throw exception("can't retrieve the address, error : %1%"_fmt % strerror(err));
     }
-    return std::string(r);
+    return std::u8string(reinterpret_cast<const char8_t*>(r));
 }
 
 int create_socket(int af, int type, int protocol)

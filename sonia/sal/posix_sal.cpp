@@ -142,7 +142,7 @@ void listen_socket(socket_handle s, int bl)
     posix::listen(s, bl);
 }
 
-std::string socket_address::str() const
+std::u8string socket_address::str() const
 {
     return posix::inet_ntoa(reinterpret_cast<sockaddr_in const*>(buffer_));
 }

@@ -12,7 +12,7 @@ namespace sonia::posix {
 
 std::tuple<int, int, int> kernel_version();
 
-std::string inet_ntoa(sockaddr_in const* addr);
+std::u8string inet_ntoa(sockaddr_in const* addr);
 
 int create_socket(int af, int type, int protocol);
 void connect(int s, const sockaddr* addr, socklen_t addrlen);

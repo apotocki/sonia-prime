@@ -85,7 +85,7 @@ public:
     }
 
     template <typename OtherT>
-    constexpr array_view(array_view<OtherT> arr) : data_(arr.begin()), size_(arr.size())
+    constexpr array_view(array_view<OtherT> arr) : data_{reinterpret_cast<T*>(arr.data())}, size_{arr.size()}
     {
         static_assert(sizeof(T) == sizeof(OtherT));
     }

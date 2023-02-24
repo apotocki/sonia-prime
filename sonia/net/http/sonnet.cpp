@@ -56,7 +56,7 @@ void sonnet::handle(request & req, response & resp)
             req.parse_body_as_x_www_form_urlencoded();
         }
     }
-    resp.meet_request(req);
+    //resp.meet_request(req);
     
     optional<sonnet_exception> excpt;
     try {

@@ -67,7 +67,8 @@ void sonnet::handle(request & req, response & resp)
         }
     } catch (sonnet_exception const& e) {
         excpt = e;
-     } catch (...) {
+    } catch (...) {
+        req.keep_alive = false;
         auto dinfo = boost::current_exception_diagnostic_information();
         if (loggable* lp = dynamic_cast<loggable*>(this); lp) {
             LOG_TRACE(lp->logger()) << dinfo;
@@ -77,6 +78,10 @@ void sonnet::handle(request & req, response & resp)
         excpt = sonnet_exception(status::INTERNAL_SERVER_ERROR, dinfo);
     }
 
+    if (req.keep_alive.value_or(false)) {
+        resp.set_header(header::CONNECTION, "close");
+        req.keep_alive = false;
+    }
     // can't handle exception in catch due to possible fiber stack unwind issues
     if (excpt) {
         req.eat_body();

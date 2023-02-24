@@ -79,6 +79,7 @@ public:
     using content_read_iterator_t = chain_linkable_iterator<std::span<const char>, std::input_iterator_tag>;
 
     int version{11}; // http protocol version * 10. e.g. 1.1 -> 11
+    optional<bool> keep_alive;
 
     function<void(range_write_input_iterator)> content_writer;
     content_read_iterator_t input;

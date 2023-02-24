@@ -41,7 +41,7 @@ private:
     using read_iterator = socket_read_input_iterator<io::tcp_socket>;
     using write_iterator = socket_write_input_iterator<io::tcp_socket>;
 
-    bool do_connection(read_iterator &, write_iterator &); // returns true if keep alive
+    bool do_connection(read_iterator &, write_iterator &, bool keep_alive); // returns true if keep alive
 
     http_connector_configuration cfg_;
 

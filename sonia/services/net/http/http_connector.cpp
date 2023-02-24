@@ -95,10 +95,11 @@ void http_connector::connect(sonia::io::tcp_socket soc)
     }
 }
 
-bool http_connector::do_connection(read_iterator & ii, write_iterator & oi)
+bool http_connector::do_connection(read_iterator & ii, write_iterator & oi, bool keep_alive)
 {
     bool handled = false;
     http::request req;
+    req.keep_alive = keep_alive;
     auto it = decode<serialization::default_t>(range_dereferencing_iterator{reference_wrapper_iterator{ii}}, req);
     it.flush();
 
@@ -112,7 +113,7 @@ bool http_connector::do_connection(read_iterator & ii, write_iterator & oi)
             }
             http::response resp;
             r.application->handle(req, resp);
-            encode<serialization::default_t>(resp, reference_wrapper_iterator(oi));
+            encode<serialization::default_t>(resp, reference_wrapper_iterator(oi)).flush();
             handled = true;
             break;
         }
@@ -121,16 +122,14 @@ bool http_connector::do_connection(read_iterator & ii, write_iterator & oi)
         if (cfg_.page404_application) {
             http::response resp;
             cfg_.page404_application->handle(req, resp);
-            encode<serialization::default_t>(resp, reference_wrapper_iterator(oi));
+            encode<serialization::default_t>(resp, reference_wrapper_iterator(oi)).flush();
         } else {
             copy_range(string_view(cfg_.page404_message), std::move(oi)).flush();
             return false;
         }
     }
 
-    auto hvals = req.get_header(http::header::CONNECTION);
-    //return false;
-    return (hvals.size() == 1 && boost::iequals(hvals[0], "keep-alive"));
+    return req.keep_alive.value_or(false);
 }
 
 void http_connector::keep_alive_connect(io::tcp_socket soc)
@@ -145,8 +144,7 @@ void http_connector::keep_alive_connect(io::tcp_socket soc)
     static std::atomic<int> keep_alive_connnum{0};
     int curconnection = keep_alive_connnum.fetch_add(1);
 
-    while (do_connection(ii, oi)) {
-        oi.flush();
+    while (do_connection(ii, oi, true)) {
         LOG_TRACE(logger()) << "next keep alive connection: " << curconnection << ", total: " << keep_alive_count_.load();
     }
 }
@@ -160,7 +158,7 @@ void http_connector::one_shot_connect(sonia::io::tcp_socket soc)
     write_iterator oi{soc, respbuff};
     read_iterator ii{soc, reqbuff, (size_t)0};
 
-    do_connection(ii, oi);
+    do_connection(ii, oi, false);
 }
 
 void http_connector::enable_route(string_view routeid, bool enable_val)

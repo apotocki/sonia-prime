@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERIALIZATION_HTTP_REQUEST_HPP
-#define SONIA_SERIALIZATION_HTTP_REQUEST_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/type_traits.hpp"
 #include "serialization.hpp"
@@ -67,10 +62,17 @@ public:
         }
         
         // decode headers
-        return base_type::decode(std::move(ii), req);
+        ii = base_type::decode(std::move(ii), req);
+        if (!req.keep_alive) {
+            auto hvals = req.get_header(http::header::CONNECTION);
+            if (req.version == 10) {
+                req.keep_alive = false;
+            } else {
+                req.keep_alive = !(hvals.size() == 1 && boost::iequals(hvals[0], "close"));
+            }
+        }
+        return std::move(ii);
     }
 };
 
 }
-
-#endif // SONIA_SERIALIZATION_HTTP_REQUEST_HPP

@@ -28,23 +28,56 @@ if (NOT DEFINED NO_NET)
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
         ${BUNDLE_HOME}/sonia/services/io/io_service_builder.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_service.cpp
-        ${BUNDLE_HOME}/sonia/services/io/io_cache_service_builder.cpp
-        ${BUNDLE_HOME}/sonia/services/io/io_cache_service.cpp
-        ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_builder.cpp
-        ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_service.cpp
+
+
+
         ${BUNDLE_HOME}/sonia/services/net/net_service_builder.cpp
         ${BUNDLE_HOME}/sonia/services/net/net_service.cpp
-        ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector_builder.cpp
-        ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector.cpp
+
         ${BUNDLE_HOME}/sonia/services/net/http/http_connector_builder.cpp
         ${BUNDLE_HOME}/sonia/services/net/http/http_connector.cpp
-        ${BUNDLE_HOME}/sonia/services/net/http/http_default_application_builder.cpp
-        ${BUNDLE_HOME}/sonia/services/net/http/http_default_application.cpp
+
         ${BUNDLE_HOME}/sonia/services/net/http/http_static_application_builder.cpp
         ${BUNDLE_HOME}/sonia/services/net/http/http_static_application.cpp
         ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application_builder.cpp
         ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application.cpp
     )
+
+    if (NOT DEFINED NO_IO_CACHE)
+        set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+            ${BUNDLE_HOME}/sonia/services/io/io_cache_service.cpp
+            ${BUNDLE_HOME}/sonia/services/io/io_cache_service_builder.cpp
+        )
+    else()
+        add_definitions(-DSONIA_NO_IO_CACHE)
+    endif()
+
+    if (NOT DEFINED NO_ECHO)
+        set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+            ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector_builder.cpp
+            ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector.cpp
+        )
+    else()
+        add_definitions(-DSONIA_NO_ECHO)
+    endif()
+
+    if (NOT DEFINED NO_HTTP_DEFAULT)
+        set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+            ${BUNDLE_HOME}/sonia/services/net/http/http_default_application_builder.cpp
+            ${BUNDLE_HOME}/sonia/services/net/http/http_default_application.cpp
+        )
+    else()
+        add_definitions(-DSONIA_NO_HTTP_DEFAULT)
+    endif()
+
+    if (NOT DEFINED NO_TRANSCEIVER)
+        set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+            ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_builder.cpp
+            ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_service.cpp
+        )
+    else()
+        add_definitions(-DSONIA_NO_TRANSCEIVER)
+    endif()
 
     if (NOT DEFINED NO_SSL)
         set (BUNDLE_SOURCES ${BUNDLE_SOURCES}

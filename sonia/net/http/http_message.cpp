@@ -334,6 +334,13 @@ void response::meet_request(request const& r)
     });
 }
 
+void response::meet_keep_alive(request const& req)
+{
+    if (!req.keep_alive.value_or(false)) {
+        set_header(header::CONNECTION, "close");
+    }
+}
+
 void response::make401(string_view auth_type, string_view realm, string_view opaque, string_view nonce)
 {
     std::ostringstream authval;

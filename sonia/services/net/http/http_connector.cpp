@@ -113,6 +113,7 @@ bool http_connector::do_connection(read_iterator & ii, write_iterator & oi, bool
             }
             http::response resp;
             r.application->handle(req, resp);
+            resp.meet_keep_alive(req);
             encode<serialization::default_t>(resp, reference_wrapper_iterator(oi)).flush();
             handled = true;
             break;
@@ -122,6 +123,7 @@ bool http_connector::do_connection(read_iterator & ii, write_iterator & oi, bool
         if (cfg_.page404_application) {
             http::response resp;
             cfg_.page404_application->handle(req, resp);
+            resp.meet_keep_alive(req);
             encode<serialization::default_t>(resp, reference_wrapper_iterator(oi)).flush();
         } else {
             copy_range(string_view(cfg_.page404_message), std::move(oi)).flush();

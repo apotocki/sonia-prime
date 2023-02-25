@@ -142,6 +142,7 @@ public:
     explicit response(status code = status::OK, optional<std::string> status_str = nullopt);
 
     void meet_request(request const&);
+    void meet_keep_alive(request const&);
 
     void make401(string_view auth_type, string_view realm, string_view opaque, string_view nonce);
     void make404(optional<std::string> = nullopt);

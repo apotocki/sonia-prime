@@ -78,10 +78,6 @@ void sonnet::handle(request & req, response & resp)
         excpt = sonnet_exception(status::INTERNAL_SERVER_ERROR, dinfo);
     }
 
-    if (req.keep_alive.value_or(false)) {
-        resp.set_header(header::CONNECTION, "close");
-        req.keep_alive = false;
-    }
     // can't handle exception in catch due to possible fiber stack unwind issues
     if (excpt) {
         req.eat_body();

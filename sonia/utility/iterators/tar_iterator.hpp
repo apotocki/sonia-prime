@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <boost/iterator/iterator_facade.hpp>
-
 #include "sonia/cstdint.hpp"
 #include "sonia/string.hpp"
 #include "sonia/optional.hpp"
@@ -52,42 +50,34 @@ struct tar_header
 
 template <class IteratorT>
 class tar_extract_iterator
-    : public boost::iterator_facade<
-        tar_extract_iterator<IteratorT>,
-        range_reference_t<iterator_value_t<IteratorT>>,
-        iterator_traversal_t<IteratorT>,
-        wrapper_iterator_proxy<
-            ptr_proxy_wrapper<
-                tar_extract_iterator<IteratorT> const*,
-                range_reference_t<iterator_value_t<IteratorT>>
-            >
-        >
-      >
-    , range_dereferencing_iterator_state<IteratorT>
+    : range_dereferencing_iterator_state<IteratorT>
 {
-    friend class boost::iterator_core_access;
-    template <class, class> friend class ptr_proxy_wrapper;
+public:
+    using value_type = range_reference_t<iterator_value_t<IteratorT>>;
+    using pointer = value_type*;
+    using reference = wrapper_iterator_proxy<ptr_proxy_wrapper<tar_extract_iterator const*, value_type>>;
+    using difference_type = ptrdiff_t;
+    using iterator_category = std::forward_iterator_tag; // iterator_traversal_t<IteratorT>;
 
     using rng_state_t = range_dereferencing_iterator_state<IteratorT>;
-    using value_t = range_reference_t<iterator_value_t<IteratorT>>;
-    using proxy_t = wrapper_iterator_proxy<ptr_proxy_wrapper<tar_extract_iterator const*, value_t>>;
+    
 
-    std::string current_name_;
-    uint64_t current_size_;
-    uint16_t padding_;
-    bool closed_{true};
-
-    bool equal(tar_extract_iterator const& rhs) const
+    bool operator==(tar_extract_iterator const& rhs) const
     {
         return std::get<0>(rng_state_t::get()) == std::get<0>(rhs.get());
     }
 
-    proxy_t dereference() const
+    bool operator!=(tar_extract_iterator const& rhs) const
+    {
+        return !this->operator==(rhs);
+    }
+
+    reference operator*() const
     {
         return iterators::make_value_proxy<std::span<const char>>(this);
     }
 
-    value_t get_dereference() const
+    value_type get_dereference() const
     {
         auto & rng = rng_state_t::get();
         auto eit = std::get<1>(rng);
@@ -98,7 +88,7 @@ class tar_extract_iterator
         return range_reference<iterator_value_t<IteratorT>>::make(std::get<0>(rng), eit);
     }
 
-    void set_dereference(value_t v)
+    void set_dereference(value_type v)
     {
         auto & rng = rng_state_t::get();
         auto eit = std::get<1>(rng);
@@ -114,7 +104,7 @@ class tar_extract_iterator
         }
     }
 
-    void increment()
+    tar_extract_iterator& operator++()
     {
         auto & rng = rng_state_t::get();
         auto & bit = std::get<0>(rng);
@@ -128,10 +118,14 @@ class tar_extract_iterator
                     bit += padding_;
                     rng_state_t::fix();
                     closed_ = true;
-                    return;
+                    break;
                 }
                 padding_ -= (uint16_t)sz;
                 rng_state_t::increment();
+                closed_ = rng_state_t::empty();
+                if (closed_) {
+                    throw exception("tar_extract_iterator : unexpected eof");
+                }
                 rng = rng_state_t::get();
             }
         } else {
@@ -139,9 +133,9 @@ class tar_extract_iterator
             rng_state_t::increment();
             closed_ = rng_state_t::empty();
         }
+        return *this;
     }
 
-public:
     using base_iterator_type = IteratorT;
 
     explicit tar_extract_iterator(IteratorT it)
@@ -167,6 +161,7 @@ public:
         return !closed_;
     }
 
+private:
     void load_header(tar_header &h)
     {
         char * h_it = reinterpret_cast<char*>(&h), *h_eit = h_it + sizeof(tar_header);
@@ -221,6 +216,12 @@ public:
             }
         }
     }
+
+private:
+    std::string current_name_;
+    uint64_t current_size_;
+    uint16_t padding_;
+    bool closed_{ true };
 };
 
 }

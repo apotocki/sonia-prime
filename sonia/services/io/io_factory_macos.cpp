@@ -310,7 +310,7 @@ macos_impl::macos_impl(shared_ptr<factory> itself)
     posix::append_descriptor_flags(ctl_pipe[0], O_NONBLOCK); // read
 
     struct kevent ev;
-    EV_SET(&ev, ctl_pipe[0], EVFILT_READ, EV_ADD, 0, 0, (void*)epool_exit_cookie_v);
+    EV_SET(&ev, ctl_pipe[0], EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, (void*)epool_exit_cookie_v);
     if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
         int err = errno;
         throw exception("can't start watching the controll pipe, error: %1%"_fmt % strerror(err));
@@ -397,9 +397,9 @@ macos_shared_handle * macos_impl::do_create_socket(sonia::sal::socket_handle s, 
         if (sh->close(kq)) {
             lock_guard guard(bk_mtx_);
             BOOST_VERIFY(1 == book_keeper_.erase(sh));
-            sh->release_weak((tcp_socket_service_type*)this);
         }
-        delete_socket_handle(sh);
+        sh->release_weak((tcp_socket_service_type*)this);
+        //delete_socket_handle(sh); // ? already called free in release_weak
         throw exception("can't watch socket, error: %1%"_fmt % strerror(err));
     };
     return sh;

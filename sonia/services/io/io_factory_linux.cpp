@@ -458,9 +458,9 @@ lin_shared_handle * lin_impl::do_create_socket(sonia::sal::socket_handle s, soni
         if (sh->close(efd)) {
             lock_guard guard(bk_mtx_);
             BOOST_VERIFY(1 == book_keeper_.erase(sh));
-            sh->release_weak((tcp_socket_service_type*)this);
         }
-        delete_socket_handle(sh);
+        sh->release_weak((tcp_socket_service_type*)this);
+        //delete_socket_handle(sh);
         throw exception("can't watch socket, error: %1%"_fmt % msg);
     });
     return sh;

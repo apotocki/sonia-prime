@@ -310,7 +310,7 @@ macos_impl::macos_impl(shared_ptr<factory> itself)
     posix::append_descriptor_flags(ctl_pipe[0], O_NONBLOCK); // read
 
     struct kevent ev;
-    EV_SET(&ev, ctl_pipe[0], EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, (void*)epool_exit_cookie_v);
+    EV_SET(&ev, ctl_pipe[0], EVFILT_READ, EV_ADD, 0, 0, (void*)epool_exit_cookie_v);
     if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
         int err = errno;
         throw exception("can't start watching the controll pipe, error: %1%"_fmt % strerror(err));
@@ -391,7 +391,7 @@ macos_shared_handle * macos_impl::do_create_socket(sonia::sal::socket_handle s, 
     posix::append_descriptor_flags(s, O_NONBLOCK);
     macos_shared_handle* sh = new_socket_handle(s, dt);
     struct kevent ev;
-    EV_SET(&ev, sh->handle, EVFILT_READ | EVFILT_WRITE, EV_ADD, 0, 0, (void*)sh->bkid());
+    EV_SET(&ev, sh->handle, EVFILT_READ | EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, (void*)sh->bkid());
     if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
         int err = errno;
         if (sh->close(kq)) {

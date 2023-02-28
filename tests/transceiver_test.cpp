@@ -155,7 +155,7 @@ void get_configuration(std::ostream & os)
         "       io.serv: {"
         "           factory: 'io-factory',"
         "           layer: 8,"
-        "           parameters: { scheduler: 'scheduler.serv', threads: 4 }"
+        "           parameters: { scheduler: 'scheduler.serv', threads: 1 }"
         "       },"
         "       io-cache.serv: {"
         "           factory: 'io-cache-factory',"
@@ -301,15 +301,16 @@ void cmd_transceiver_test()
     const int calls_count = 300;
     const size_t max_pass_count = 32;
 #else
-    const int calls_count = 1500;
-    const size_t max_pass_count = 8;
+    const int calls_count = 1;
+    const size_t max_pass_count = 32;
 #endif
 
         shared_ptr<diagnostic> iodiag = services::locate<diagnostic>("io.serv");
 
         shared_ptr<scheduler> async = services::locate<scheduler>("scheduler.serv");
         std::atomic<long> tasks(0);
-        std::unique_ptr<int[]> curs(new int[max_pass_count] {-1});
+        std::unique_ptr<int[]> curs(new int[max_pass_count]);
+        std::fill(curs.get(), curs.get() + max_pass_count, -1);
 
         for (int i = 0; i < max_pass_count; ++i) {
             ++tasks;
@@ -318,7 +319,7 @@ void cmd_transceiver_test()
                     std::vector<std::string> result = maincopy;
                     for (int i = 0; i < calls_count; ++i)
                     {
-                        curs[tnum] = i;
+                        //curs[tnum] = i;
                         std::vector<std::string> copy = result;
                         //    GLOBAL_LOG_TRACE() << "client " << tnum << ", before call " << i;
                         auto main_result = ctl_proxy->some_method(ival, str, result);
@@ -329,6 +330,7 @@ void cmd_transceiver_test()
                         std::ostringstream ss;
                         ss << "xxx" << i;
                         result.push_back(ss.str());
+                        curs[tnum] = i + 1;
                     }
                     --tasks;
                 } catch (...) {
@@ -345,7 +347,7 @@ void cmd_transceiver_test()
             //*
             std::ostringstream oss;
             for (int i = 0; i < max_pass_count; ++i) {
-                oss << "task: " << i << ", sursor: " << curs[i] << ", from: " << calls_count << "\n";
+                oss << "task: " << i << ", cursor: " << curs[i] << ", from: " << calls_count << "\n";
             }
             oss << "client: " << iodiag->get_diagnostic_info() << "\n";
             oss << "server: " << serv_iodiag->get_diagnostic_info();

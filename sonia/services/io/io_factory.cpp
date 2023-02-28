@@ -79,7 +79,9 @@ void factory::impl_base::close() noexcept
 std::string factory::get_diagnostic_info()
 {
     std::ostringstream ss;
-    ss << "pending [reads, writes]: " << pending_reads_ << ", " << pending_writes_;
+    if (auto pinned = impl_.lock(); pinned) {
+        ss << "pending [reads, writes]: " << pinned->pending_reads << ", " << pinned->pending_writes;
+    }
     return ss.str();
 }
 

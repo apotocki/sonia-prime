@@ -88,6 +88,9 @@ public:
         shared_ptr<factory> wrapper;
         std::atomic<long> qsz{0};
 
+        // diagnostic
+        std::atomic<int> pending_reads{ 0 }, pending_writes{ 0 };
+
         scheduler& get_scheduler() const { return *wrapper->scheduler_; }
         logger::logger_ptr logger() const { return wrapper->logger(); }
     };
@@ -126,10 +129,6 @@ private:
     fibers::condition_variable close_cond_;
     shared_ptr<impl_base> impl_holder_;
     weak_ptr<impl_base> impl_;
-
-public:
-    // diagnostic
-    std::atomic<int> pending_reads_{ 0 }, pending_writes_{ 0 };
 };
 
 }

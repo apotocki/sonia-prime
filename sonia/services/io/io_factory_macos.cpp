@@ -487,8 +487,9 @@ void macos_impl::free_handle(identity<tcp_server_socket_service>, tcp_handle_typ
 expected<size_t, std::exception_ptr> macos_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz) noexcept
 {
     auto * sh = static_cast<macos_shared_handle*>(handle);
-    SCOPE_EXIT([&sh]() { --sh->waiting_cnt; });
+    SCOPE_EXIT([&sh, this]() { --sh->waiting_cnt; --pending_reads; });
     ++sh->waiting_cnt;
+    ++pending_reads;
     unique_lock lck(sh->mtx);
 
     for (;;)
@@ -509,8 +510,9 @@ expected<size_t, std::exception_ptr> macos_impl::tcp_socket_read_some(tcp_handle
 expected<size_t, std::exception_ptr> macos_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz) noexcept
 {
     auto * sh = static_cast<macos_shared_handle*>(handle);
-    SCOPE_EXIT([&sh]() { --sh->waiting_cnt; });
+    SCOPE_EXIT([&sh, this]() { --sh->waiting_cnt; --pending_writes });
     ++sh->waiting_cnt;
+    ++pending_writes;
     unique_lock lck(sh->mtx);
 
     for (;;)

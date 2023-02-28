@@ -302,7 +302,7 @@ void cmd_transceiver_test()
     const size_t max_pass_count = 32;
 #else
     const int calls_count = 1500;
-    const size_t max_pass_count = 32;
+    const size_t max_pass_count = 8;
 #endif
 
         shared_ptr<diagnostic> iodiag = services::locate<diagnostic>("io.serv");
@@ -340,9 +340,9 @@ void cmd_transceiver_test()
         }
 
         while (tasks.load() > 0) {
-            boost::thread::sleep(boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds(100000));
+            boost::thread::sleep(boost::posix_time::microsec_clock::universal_time() + boost::posix_time::microseconds(2000000));
             // print diagnostic
-            /*
+            //*
             std::ostringstream oss;
             for (int i = 0; i < max_pass_count; ++i) {
                 oss << "task: " << i << ", sursor: " << curs[i] << ", from: " << calls_count << "\n";
@@ -350,7 +350,7 @@ void cmd_transceiver_test()
             oss << "client: " << iodiag->get_diagnostic_info() << "\n";
             oss << "server: " << serv_iodiag->get_diagnostic_info();
             GLOBAL_LOG_TRACE() << "DIAGNOSTIC:\n" << oss.str();
-            */
+            //*/
         }
 #endif
     } catch (closed_exception const& e) {

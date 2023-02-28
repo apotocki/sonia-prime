@@ -259,6 +259,7 @@ void fiber_work_stealing_scheduler2::group_host::suspend_until(std::chrono::stea
         });
     }
     if (notify_reservation_count_.fetch_sub(1) > 1) {
+        unique_lock lk(mtx_);
         cnd_.notify_one();
     }
 }

@@ -76,8 +76,12 @@ struct macos_shared_handle : shared_handle<socket_handle_traits>
     using callback_list_t = boost::intrusive::list<callback>;
 
     shared_ptr<macos_impl> impl;
-    fibers::mutex mtx;
+    //using mutex_t = threads::mutex;
+    //threads::condition_variable cnd;
+    using mutex_t = fibers::mutex;
+    mutex_t mtx;
     fibers::condition_variable_any cnd;
+
     sonia::sal::socket_handle handle;
 
     macos_shared_handle(shared_ptr<macos_impl> p, sonia::sal::socket_handle h, uint32_t id, sonia::sal::net_family_type ftval)
@@ -113,7 +117,7 @@ struct macos_shared_handle : shared_handle<socket_handle_traits>
 
     std::atomic<size_t> waiting_cnt{0};
 
-    void wait(unique_lock<fibers::mutex> & lck)
+    void wait(unique_lock<mutex_t> & lck)
     {
         cnd.wait(lck);
     }
@@ -227,7 +231,6 @@ void macos_shared_handle::handle_callbacks(bool eof)
     for (auto it = callback_list_.begin(), eit = callback_list_.end(); it != eit;) {
         callback & cb = *it;
         if (cb(*this, eof)) {
-            --waiting_cnt;
             it = callback_list_.erase(it);
             cb.free(*this);
         } else {
@@ -267,6 +270,7 @@ bool acceptor_callback::operator()(macos_shared_handle & sh, bool eof) noexcept
     if (infd == -1) {
         int err = errno;
         if (err == EAGAIN) return false;
+        --sh.waiting_cnt;
         promise_.set_exception(std::make_exception_ptr(eof_exception("accept error: %1%"_fmt % strerror(err))));
         return true;
     }
@@ -282,6 +286,7 @@ bool acceptor_callback::operator()(macos_shared_handle & sh, bool eof) noexcept
     }
 
     posix::append_descriptor_flags(infd, O_NONBLOCK);
+    --sh.waiting_cnt;
     promise_.set_value(sh.create_tcp_socket(infd));
 
     return true;
@@ -444,20 +449,18 @@ std::string factory::name() const
 fibers::future<tcp_socket> macos_impl::tcp_server_socket_accept(tcp_handle_type handle)
 {
     auto * sh = static_cast<macos_shared_handle*>(handle);
-    SCOPE_EXIT([&sh]() { if (sh) --sh->waiting_cnt; });
-    ++sh->waiting_cnt;
 
     auto * pcb = new_callback(in_place_type<acceptor_callback>);
     SCOPE_EXIT([this, &pcb]() { if (pcb) delete_callback(pcb); });
 
     auto ftr = static_cast<acceptor_callback*>(pcb->get_pointer())->get_future();
 
+    ++sh->waiting_cnt;
     unique_lock lck(sh->mtx);
-    
+
     if (!(**pcb)(*sh, false)) {
         sh->add_callback(pcb->get_pointer());
         pcb = nullptr; // unpin
-        sh = nullptr; // unpin
     }
         
     return std::move(ftr);
@@ -495,7 +498,7 @@ expected<size_t, std::exception_ptr> macos_impl::tcp_socket_read_some(tcp_handle
     for (;;)
     {
         if (sh->handle == -1) return 0;
-        ssize_t n = ::read(sh->handle, buff, sz);
+        ssize_t n = ::recv(sh->handle, buff, sz, 0);
 
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) read %2% bytes"_fmt % sh->handle % n);
         if (n >= 0) return (size_t)n;
@@ -510,7 +513,7 @@ expected<size_t, std::exception_ptr> macos_impl::tcp_socket_read_some(tcp_handle
 expected<size_t, std::exception_ptr> macos_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz) noexcept
 {
     auto * sh = static_cast<macos_shared_handle*>(handle);
-    SCOPE_EXIT([&sh, this]() { --sh->waiting_cnt; --pending_writes });
+    SCOPE_EXIT([&sh, this]() { --sh->waiting_cnt; --pending_writes; });
     ++sh->waiting_cnt;
     ++pending_writes;
     unique_lock lck(sh->mtx);
@@ -518,7 +521,7 @@ expected<size_t, std::exception_ptr> macos_impl::tcp_socket_write_some(tcp_handl
     for (;;)
     {
         if (sh->handle == -1) return 0;
-        ssize_t n = ::write(sh->handle, buff, sz);
+        ssize_t n = ::send(sh->handle, buff, sz, 0);
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write %2% bytes"_fmt % sh->handle % n);
         if (n >= 0) return (size_t)n;
         int err = errno;

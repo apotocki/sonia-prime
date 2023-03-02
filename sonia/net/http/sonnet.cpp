@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "sonia/build_config.hpp"
+#include "build_config.hpp"
 #include "sonnet.hpp"
 #include "sonia/exceptions.hpp"
 

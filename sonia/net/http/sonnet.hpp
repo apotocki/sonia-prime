@@ -16,6 +16,8 @@ namespace sonia::http {
 class sonnet : public application
 {
 public:
+    sonnet();
+
     void handle(request & req, response & resp) override;
 
     struct request_parameters
@@ -34,6 +36,7 @@ protected:
 
     boost::unordered_map<std::string, method_handler_type, hasher> handlers_;
     std::string path_base_;
+    std::string cached_server_header_;
 };
 
 class sonnet_exception : public exception

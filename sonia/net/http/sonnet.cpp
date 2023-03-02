@@ -3,6 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
+#include "sonia/build_config.hpp"
 #include "sonnet.hpp"
 #include "sonia/exceptions.hpp"
 
@@ -13,8 +14,16 @@
 
 namespace sonia::http {
 
+sonnet::sonnet()
+{
+    std::ostringstream sn;
+    sn << "Sonia/" << REVISION_NAME;
+    cached_server_header_ = sn.str();
+}
+
 void sonnet::handle(request & req, response & resp)
 {
+    resp.set_header(header::SERVER, string_view{cached_server_header_});
     resp.set_header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*");
     resp.set_header(header::ACCESS_CONTROL_ALLOW_HEADERS, "Pragma");
 

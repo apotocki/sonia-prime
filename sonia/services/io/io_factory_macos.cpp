@@ -260,6 +260,7 @@ bool macos_shared_handle::close(int kq)
 bool acceptor_callback::operator()(macos_shared_handle & sh, bool eof) noexcept
 {
     if (eof) {
+        --sh.waiting_cnt;
         promise_.set_exception(std::make_exception_ptr(eof_exception()));
         return true;
     }

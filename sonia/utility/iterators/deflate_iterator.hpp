@@ -4,10 +4,6 @@
 
 #pragma once
 
-#include <boost/iterator/iterator_facade.hpp>
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
-
 #include "sonia/span.hpp"
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/iterators/proxy.hpp"
@@ -18,16 +14,28 @@ namespace sonia {
 
 template <class IteratorT>
 class deflate_iterator
-	: public boost::iterator_facade<
-		  deflate_iterator<IteratorT>
-		, void
-		, std::output_iterator_tag
-		, wrapper_iterator_proxy<ptr_proxy_wrapper<deflate_iterator<IteratorT> const*, void>>
-	>
 {
-	friend class boost::iterator_core_access;
 	template <class, class> friend class ptr_proxy_wrapper;
 
+public:
+	using value_type = void;
+	using pointer = void;
+	using reference = wrapper_iterator_proxy<ptr_proxy_wrapper<deflate_iterator<IteratorT> const*, void>>;
+	using difference_type = ptrdiff_t;
+	using iterator_category = std::output_iterator_tag;
+
+	reference operator*() const
+	{
+		return iterators::make_value_proxy(this);
+	}
+
+	deflate_iterator& operator++()
+	{
+		data_->deflate();
+		return *this;
+	}
+
+private:
 	struct strm_data
 	{
 		IteratorT base_;
@@ -45,19 +53,9 @@ class deflate_iterator
 		void close();
 	};
 
-	decltype(auto) dereference() const
-	{
-		return iterators::make_value_proxy(this);
-	}
-
 	void set_dereference(std::span<const char> rng)
 	{
 		data_->set(rng);
-	}
-
-	void increment()
-	{
-		data_->deflate();
 	}
 
 public:
@@ -117,6 +115,7 @@ template <class IteratorT>
 void deflate_iterator<IteratorT>::strm_data::deflate(int flag)
 {
 	if (!strm_.next_out) { // first call
+		if (sonia::empty(base_)) return;
 		std::span<char> outrng = *base_;
 		strm_.avail_out = static_cast<uInt>(outrng.size());
 		strm_.next_out = reinterpret_cast<Bytef*>(outrng.data());
@@ -125,6 +124,10 @@ void deflate_iterator<IteratorT>::strm_data::deflate(int flag)
 	while (strm_.avail_in || (flag == Z_FINISH && ret_ != Z_STREAM_END)) {
 		while (!strm_.avail_out) {
 			++base_;
+			if (sonia::empty(base_)) {
+				strm_.next_out = nullptr;
+				return;
+			}
 			std::span<char> outrng = *base_;
 			strm_.avail_out = static_cast<uInt>(outrng.size());
 			strm_.next_out = reinterpret_cast<Bytef*>(outrng.data());

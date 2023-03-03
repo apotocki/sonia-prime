@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_ITERATORS_PROXY_HPP
-#define SONIA_UTILITY_ITERATORS_PROXY_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 #include "sonia/type_traits.hpp"
@@ -79,5 +74,3 @@ wrapper_iterator_proxy<ptr_proxy_wrapper<T*, ReferenceT>> make_value_proxy(T * p
 }
 
 }}
-
-#endif // SONIA_UTILITY_ITERATORS_PROXY_HPP

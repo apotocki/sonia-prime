@@ -98,6 +98,7 @@ public:
     void flush()
     {
         if (wre_ == db_) {
+            db_ = wre_ = value_.data();
             flush_wre_db();
         } else {
             for (;;) {

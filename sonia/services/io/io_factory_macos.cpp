@@ -394,11 +394,16 @@ void macos_impl::delete_callback(macos_shared_handle::callback_t * cb) noexcept
 
 macos_shared_handle * macos_impl::do_create_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
 {
+    int set = 1;
+    setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE, (void *)&set, sizeof(int));
+    // posix::setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE)
     posix::append_descriptor_flags(s, O_NONBLOCK);
+
     macos_shared_handle* sh = new_socket_handle(s, dt);
-    struct kevent ev;
-    EV_SET(&ev, sh->handle, EVFILT_READ | EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, (void*)sh->bkid());
-    if (-1 == kevent(kq, &ev, 1, NULL, 0, NULL)) {
+    struct kevent ev[2];
+    EV_SET(ev, sh->handle, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, (void*)sh->bkid());
+    EV_SET(ev + 1, sh->handle, EVFILT_WRITE, EV_ADD | EV_CLEAR | EV_RECEIPT, 0, 0, (void*)sh->bkid());
+    if (-1 == kevent(kq, ev, 2, NULL, 0, NULL)) {
         int err = errno;
         if (sh->close(kq)) {
             lock_guard guard(bk_mtx_);

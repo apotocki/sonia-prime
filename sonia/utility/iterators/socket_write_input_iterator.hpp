@@ -65,8 +65,8 @@ class socket_write_input_iterator
         }
         std::span<char> avlbf = available_buffer();
 
-        if (value_.end() != avlbf.end()) {
-            value_ = {value_.end(), avlbf.end()};
+        if (data_end(value_) != data_end(avlbf)) {
+            value_ = {data_end(value_), data_end(avlbf)};
         } else {
             if (value_.data() >= wrend_) {
                 wrend_ = value_.data() + value_.size();

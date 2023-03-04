@@ -452,6 +452,8 @@ void lin_impl::delete_callback(lin_shared_handle::callback_t * cb) noexcept
 
 lin_shared_handle * lin_impl::do_create_socket(sonia::sal::socket_handle s, sonia::sal::net_family_type dt)
 {
+    //todo:
+    // https://stackoverflow.com/questions/108183/how-to-prevent-sigpipes-or-handle-them-properly
     posix::append_descriptor_flags(s, O_NONBLOCK);
     lin_shared_handle* sh = new_socket_handle(s, dt);
     epoll_ctl_add(efd, *sh, [this, sh](const char* msg) {

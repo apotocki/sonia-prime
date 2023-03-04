@@ -49,7 +49,7 @@ private:
 		void set(std::span<const char>);
 		std::span<const char> get() const;
 
-		void deflate(int flag = Z_SYNC_FLUSH);
+		void deflate(int flag = Z_NO_FLUSH);
 		void close();
 	};
 

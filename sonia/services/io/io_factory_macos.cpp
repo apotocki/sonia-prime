@@ -79,8 +79,8 @@ struct macos_shared_handle : shared_handle<socket_handle_traits>
     //using mutex_t = threads::mutex;
     //threads::condition_variable cnd;
     using mutex_t = fibers::mutex;
-    mutex_t mtx;
-    fibers::condition_variable_any cnd;
+    mutex_t mtx, wrmtx;
+    fibers::condition_variable_any cnd, wrcnd;
 
     sonia::sal::socket_handle handle;
 
@@ -99,13 +99,17 @@ struct macos_shared_handle : shared_handle<socket_handle_traits>
     uint64_t bkid() const { return bkid_; }
     sonia::sal::net_family_type family() { return family_; }
 
-    virtual void on_event() noexcept
+    virtual void on_event(int filter) noexcept
     {
         {
             unique_lock lck(mtx);
             handle_callbacks(false);
+            if (filter == EVFILT_WRITE) {
+                wrcnd.notify_all();
+            } else {
+                cnd.notify_all();
+            }
         }
-        cnd.notify_all();
     };
 
     void add_callback(callback * cb)
@@ -120,6 +124,11 @@ struct macos_shared_handle : shared_handle<socket_handle_traits>
     void wait(unique_lock<mutex_t> & lck)
     {
         cnd.wait(lck);
+    }
+
+    void wrwait(unique_lock<mutex_t> & lck)
+    {
+        wrcnd.wait(lck);
     }
 
     bool close(int kq); // return true if book_keeper needs updating
@@ -356,7 +365,7 @@ void macos_impl::thread_proc()
             }
 
             if (h) {
-                h->on_event(); // noexcept
+                h->on_event(events[i].filter); // noexcept
                 h->release_weak((tcp_socket_service_type*)this);
             }
         }
@@ -402,7 +411,7 @@ macos_shared_handle * macos_impl::do_create_socket(sonia::sal::socket_handle s, 
     macos_shared_handle* sh = new_socket_handle(s, dt);
     struct kevent ev[2];
     EV_SET(ev, sh->handle, EVFILT_READ, EV_ADD | EV_CLEAR, 0, 0, (void*)sh->bkid());
-    EV_SET(ev + 1, sh->handle, EVFILT_WRITE, EV_ADD | EV_CLEAR | EV_RECEIPT, 0, 0, (void*)sh->bkid());
+    EV_SET(ev + 1, sh->handle, EVFILT_WRITE, EV_ADD | EV_CLEAR, 0, 0, (void*)sh->bkid());
     if (-1 == kevent(kq, ev, 2, NULL, 0, NULL)) {
         int err = errno;
         if (sh->close(kq)) {
@@ -522,18 +531,21 @@ expected<size_t, std::exception_ptr> macos_impl::tcp_socket_write_some(tcp_handl
     SCOPE_EXIT([&sh, this]() { --sh->waiting_cnt; --pending_writes; });
     ++sh->waiting_cnt;
     ++pending_writes;
-    unique_lock lck(sh->mtx);
+    unique_lock lck(sh->wrmtx);
 
     for (;;)
     {
         if (sh->handle == -1) return 0;
         ssize_t n = ::send(sh->handle, buff, sz, 0);
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write %2% bytes"_fmt % sh->handle % n);
+        if (n != sz) {
+            return (size_t)n;
+        }
         if (n >= 0) return (size_t)n;
         int err = errno;
         if (BOOST_UNLIKELY(EAGAIN != err)) return make_unexpected(std::make_exception_ptr(exception(strerror(err))));
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write waiting..."_fmt % sh->handle);
-        sh->wait(lck);
+        sh->wrwait(lck);
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) woke up"_fmt % sh->handle);
     }
 }

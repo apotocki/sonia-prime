@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <boost/iterator/iterator_facade.hpp>
-
 #include "sonia/span.hpp"
 #include "sonia/exceptions.hpp"
 
@@ -13,127 +11,84 @@ namespace sonia {
 
 // provided buffer is used as a circular data buffer
 
-template <class SocketT/*, size_t MinRngSzV = 128*/>
+template <class SocketT, size_t MinInputRngSzV = 128, size_t MinSocketWriteRngSzV = 1024>
 class socket_write_input_iterator
-    : public boost::iterator_facade<
-          socket_write_input_iterator<SocketT>
-        , std::span<char>
-        , std::input_iterator_tag
-        , std::span<char>&
-    >
 {
-    friend class boost::iterator_core_access;
-    template <class, class> friend class ptr_proxy_wrapper;
+public:
+    using value_type = std::span<char>;
+    using pointer = value_type*;
+    using reference = std::span<char>&;
+    using difference_type = ptrdiff_t;
+    using iterator_category = std::input_iterator_tag;
 
-    bool equal(socket_write_input_iterator const& rhs) const
+    socket_write_input_iterator() : wrb_(nullptr) {}
+
+    // (db_ , de_] - interval for data placing
+    explicit socket_write_input_iterator(SocketT& soc, std::span<char> buff)
+        : psoc_{ &soc }, buff_{ buff }, value_{ buff }, db_{ buff.data() }, de_{ data_end(buff) }, wrb_{ buff.data() }, wre_{ buff.data() }
+    {
+        // here value === (db_ , de_] 
+        
+        if (buff.size() < MinInputRngSzV + MinSocketWriteRngSzV) {
+            THROW_INTERNAL_ERROR("too small buffer size");
+        }
+    }
+
+    socket_write_input_iterator(socket_write_input_iterator const&) = delete;
+    socket_write_input_iterator(socket_write_input_iterator&& rhs) = default;
+    socket_write_input_iterator& operator= (socket_write_input_iterator const&) = delete;
+    socket_write_input_iterator& operator= (socket_write_input_iterator&& rhs) = default;
+
+    bool empty() const { return !wrb_; }
+
+    bool operator== (socket_write_input_iterator const& rhs) const
     {
         return empty() && rhs.empty();
     }
 
-    std::span<char> & dereference() const
+    bool operator!=(socket_write_input_iterator const& rhs) const
     {
-        if (!wrpos_) {
-            throw closed_exception();
-        }
+        return !this->operator==(rhs);
+    }
+
+    reference operator*() const
+    {
+        BOOST_ASSERT(wrb_);
         return value_;
     }
 
-    void write() noexcept
+    socket_write_input_iterator& operator++()
     {
-        BOOST_ASSERT (wrpos_ != wrend_);
-        auto r = psoc_->write_some(std::span<const char>{wrpos_, wrend_});
-        if (r.has_value() && r.value()) {
-            wrpos_ += r.value();
+        BOOST_ASSERT(wrb_);
+        value_ = std::span{ data_end(value_), de_ };
+        // (db_, data_end(value_)] - interval that can be append to sending data
+        // ? wre_ == db_ || wrb_ == de_
+        if (wre_ == db_) {
+            db_ = wre_ = value_.data();
+            return inc_wre_db();
         } else {
-            wrpos_ = nullptr;
-        }
-    }
-
-    std::span<char> available_buffer()
-    {
-        if (value_.data() >= wrend_) {
-            return {wrend_, data_end(buff_)};
-        } else {
-            return {buff_.data(), wrpos_};
-        }
-    }
-
-    void increment()
-    {
-        if (!wrpos_) {
-            throw closed_exception();
-        }
-        std::span<char> avlbf = available_buffer();
-
-        if (data_end(value_) != data_end(avlbf)) {
-            value_ = {data_end(value_), data_end(avlbf)};
-        } else {
-            if (value_.data() >= wrend_) {
-                wrend_ = value_.data() + value_.size();
-            }
-            write();
-            if (wrpos_) {
-                value_ = {buff_.data(), wrpos_};
-                if (wrpos_ == wrend_) {
-                    wrpos_ = wrend_ = buff_.data();
+            BOOST_ASSERT(wrb_ == de_);
+            BOOST_ASSERT(db_ == buff_.data() + MinSocketWriteRngSzV);
+            while (value_.size() < MinInputRngSzV)
+            {
+                size_t wrsz = wre_ - wrb_;
+                if (wrsz < MinSocketWriteRngSzV) {
+                    db_ -= wrsz;
+                    std::memcpy(db_, wrb_, wrsz);
+                    wrb_ = db_;
+                    db_ = wre_ = value_.data();
+                    de_ = data_end(buff_);
+                    value_ = std::span{ db_, de_ };
+                    return inc_wre_db();
                 }
-            }
-        }
-#if 0
-        if (begin_ != end_) { // otherwise if set_dereference({begin_, begin_}) was called
-            begin_ = end_;
-            if (begin_ > wrpos_) {
-                wrend_ = begin_;
-            }
-        }
-
-        do {
-            if (wrpos_ == wrend_) { // all data was written
-                wrpos_ = wrend_ = begin_ = buff_.begin();
-                end_ = buff_.end();
-                return;
-            } else if (begin_ < wrpos_) {
-                end_ = wrpos_;
-                if (end_ - begin_ >= MinRngSzV) return;
                 write();
-                continue;
-            } else if ((buff_.end() - begin_) >= MinRngSzV) {
-                end_ = buff_.end();
-                return;
-            } else { // (buff_.end() - begin_) < MinRngSzV
-                write();
-                begin_ = buff_.begin();
-                continue;
+                if (!wrb_) return *this;
+                de_ = wrb_;
+                value_ = std::span{ value_.data(), de_ };
             }
-        } while (wrpos_);
-#endif
-    }
-    
-public:
-    socket_write_input_iterator() : wrpos_(nullptr) {}
-
-    explicit socket_write_input_iterator(SocketT & soc, std::span<char> buff)
-        : psoc_(&soc), buff_{buff}, value_{buff}, wrpos_{buff.data()}, wrend_{buff.data()}
-    {
-        //if (buff.size() < MinRngSzV) {
-        //    THROW_INTERNAL_ERROR("too small buffer size");
-        //}
-    }
-
-    socket_write_input_iterator(socket_write_input_iterator const&) = delete;
-    socket_write_input_iterator(socket_write_input_iterator && rhs) = default;
-    socket_write_input_iterator& operator= (socket_write_input_iterator const&) = delete;
-    socket_write_input_iterator& operator= (socket_write_input_iterator && rhs) = default;
-
-    ~socket_write_input_iterator() noexcept
-    {
-        while (wrpos_ && wrpos_ != wrend_)
-        {
-            write();
+            return *this;
         }
     }
-
-    bool empty() const { return !wrpos_; }
 
     void close()
     {
@@ -142,32 +97,80 @@ public:
 
     void flush()
     {
-        if (value_.data() < wrend_) {
-            while (wrpos_ && wrpos_ != wrend_)
-            {
+        if (wre_ == db_) {
+            flush_wre_db();
+        } else {
+            for (;;) {
+                size_t wrsz = wre_ - wrb_;
+                if (wrsz < MinSocketWriteRngSzV) {
+                    db_ -= wrsz;
+                    std::memcpy(db_, wrb_, wrsz);
+                    wrb_ = db_;
+                    db_ = wre_ = value_.data();
+                    de_ = data_end(buff_);
+                    value_ = std::span{ db_, de_ };
+                    return flush_wre_db();
+                }
                 write();
+                if (!wrb_) return;
+                de_ = wrb_;
+                value_ = std::span{ value_.data(), de_ };
             }
-            if (wrpos_) wrpos_ = buff_.data();
         }
-        
-        wrend_ = value_.data();
-        
-        while (wrpos_ && wrpos_ != wrend_)
-        {
+    }
+
+private:
+    void write() noexcept
+    {
+        BOOST_ASSERT (wrb_ != wre_);
+        auto r = psoc_->write_some(std::span<const char>{wrb_, wre_});
+        if (r.has_value() && r.value()) {
+            wrb_ += r.value();
+        } else {
+            wrb_ = nullptr;
+        }
+    }
+
+    void flush_wre_db()
+    {
+        while (wre_ != wrb_) {
             write();
+            if (!wrb_) return;
         }
-        if (wrpos_) {
-            wrpos_ = wrend_ = buff_.data();
-            value_ = buff_;
+        db_ = wre_;
+    }
+
+    socket_write_input_iterator& inc_wre_db()
+    {
+        BOOST_ASSERT(wre_ == db_);
+        BOOST_ASSERT(de_ == data_end(buff_));
+
+        if (value_.size() >= MinInputRngSzV) return *this;
+
+        BOOST_ASSERT(wre_ - buff_.data() >= MinInputRngSzV);
+        while (wrb_ - buff_.data() < (MinInputRngSzV + MinSocketWriteRngSzV)) {
+            write();
+            if (!wrb_) return *this;
         }
+        size_t wrsz = wre_ - wrb_;
+        if (wrsz < MinSocketWriteRngSzV) {
+            std::memcpy(buff_.data(), wrb_, wrsz);
+            wrb_ = buff_.data();
+            db_ = wre_ = wrb_ + wrsz;
+            de_ = data_end(buff_);
+        } else {
+            db_ = buff_.data() + MinSocketWriteRngSzV; // reserve space
+            de_ = wrb_;
+        }
+        value_ = std::span{ db_, de_ };
+        return *this;
     }
 
 private:
     SocketT * psoc_;
     mutable std::span<char> buff_;
-    // ready for new data interval descriptor {begin_, end_} or {begin_, buff_.end()}V{buff_.begin(), end_}
     mutable std::span<char> value_;
-    char * wrpos_, *wrend_;
+    char *db_, *de_, *wrb_, *wre_;
 };
 
 }

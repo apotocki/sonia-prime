@@ -27,7 +27,7 @@ public:
     shared_ptr<singleton> get(singleton::id id, function<shared_ptr<singleton>(singleton::id)> const& factory);
 
     void shutdown(shared_ptr<singleton>);
-    void shutdown();
+    void shutdown(int to_level = 0);
 
 protected:
     struct singleton_descriptor

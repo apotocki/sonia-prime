@@ -98,7 +98,7 @@ public:
     void flush()
     {
         if (wre_ == db_) {
-            db_ = wre_ = value_.data();
+            wre_ = value_.data();
             flush_wre_db();
         } else {
             for (;;) {
@@ -107,15 +107,11 @@ public:
                     db_ -= wrsz;
                     std::memcpy(db_, wrb_, wrsz);
                     wrb_ = db_;
-                    db_ = wre_ = value_.data();
-                    de_ = data_end(buff_);
-                    value_ = std::span{ db_, de_ };
+                    wre_ = value_.data();
                     return flush_wre_db();
                 }
                 write();
                 if (!wrb_) return;
-                de_ = wrb_;
-                value_ = std::span{ value_.data(), de_ };
             }
         }
     }
@@ -123,7 +119,6 @@ public:
 private:
     void write() noexcept
     {
-        BOOST_ASSERT (wrb_ != wre_);
         auto r = psoc_->write_some(std::span<const char>{wrb_, wre_});
         if (r.has_value() && r.value()) {
             wrb_ += r.value();
@@ -138,7 +133,9 @@ private:
             write();
             if (!wrb_) return;
         }
-        db_ = wre_;
+        db_ = wre_ = wrb_ = buff_.data();
+        de_ = data_end(buff_);
+        value_ = std::span{ db_, de_ };
     }
 
     socket_write_input_iterator& inc_wre_db()

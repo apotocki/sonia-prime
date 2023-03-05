@@ -73,7 +73,9 @@ public:
     scheduler_task_handle() : cookie_{0} {}
 
     template <typename T, class ... ArgsT>
-    scheduler_task_handle(uintptr_t cookie, in_place_type_t<T> ipt, ArgsT&& ... args) : impl_{ipt, std::forward<ArgsT>(args) ...}, cookie_{cookie} {}
+    scheduler_task_handle(uintptr_t cookie, in_place_type_t<T> ipt, ArgsT&& ... args)
+        : impl_{ipt, std::forward<ArgsT>(args) ...}, cookie_{cookie}
+    {}
 
     ~scheduler_task_handle()
     {

@@ -303,6 +303,70 @@ void archive_extract_iterator_test()
 #endif
 }
 
+#include "sonia/utility/iterators/socket_write_input_iterator.hpp"
+
+namespace {
+
+struct fake_socket
+{
+    std::vector<char> data;
+    size_t sz_to_handle = 1;
+
+    expected<size_t, std::exception_ptr> write_some(std::span<const char> span)
+    {
+        BOOST_CHECK(sz_to_handle <= span.size());
+        std::copy(span.begin(), span.begin() + sz_to_handle, std::back_inserter(data));
+        return sz_to_handle;
+    }
+};
+
+}
+
+void socket_write_input_iterator_test()
+{
+    constexpr size_t MinInputRngSzV = 3;
+    constexpr size_t MinSocketWriteRngSzV = 5;
+    using it_t = socket_write_input_iterator<fake_socket, MinInputRngSzV, MinSocketWriteRngSzV>;
+    fake_socket soc;
+    std::array<char, 16> buff;
+    it_t it{ soc, buff };
+    ///////////////// full buf written to socket
+    std::span<char> r = *it;
+    BOOST_CHECK(r.data() == buff.data() && r.size() == buff.size());
+    soc.sz_to_handle = r.size();
+    ++it;
+    r = *it;
+    BOOST_CHECK(r.data() == buff.data() && r.size() == buff.size());
+    ///////////////// half buf written to socket
+    soc.sz_to_handle = r.size() / 2;
+    ++it;
+    r = *it;
+    BOOST_CHECK(r.data() == buff.data() + MinSocketWriteRngSzV && r.size() == buff.size() / 2 - MinSocketWriteRngSzV);
+    /////////////////
+    /////////////////
+    it = it_t{ soc, buff };
+    soc.sz_to_handle = buff.size() - (MinSocketWriteRngSzV - 1);
+    ++it;
+    r = *it;
+    BOOST_CHECK(r.data() == buff.data() + (MinSocketWriteRngSzV - 1) && data_end(r) == &buff.back() + 1);
+    /////////////////
+    /////////////////
+    it = it_t{ soc, buff };
+    r = *it;
+    *it = std::span<char>{ r.data(), r.size() - 2 };
+    soc.sz_to_handle = r.size() - 2;
+    ++it;
+    r = *it;
+    BOOST_CHECK(r.data() == buff.data() && r.size() == buff.size());
+    /////////////////
+    /////////////////
+    it = it_t{ soc, buff };
+    r = *it;
+    *it = std::span<char>{ r.data() + r.size() - 2, 2 };
+    it.flush();
+    r = *it;
+    BOOST_CHECK(r.data() == buff.data() && r.size() == buff.size());
+}
 
 void iterators_test_registrar()
 {
@@ -312,6 +376,7 @@ void iterators_test_registrar()
     register_test(BOOST_TEST_CASE(&gzip_iterators_test));
     register_test(BOOST_TEST_CASE(&bzip2_iterators_test));
     register_test(BOOST_TEST_CASE(&archive_extract_iterator_test));
+    register_test(BOOST_TEST_CASE(&socket_write_input_iterator_test));
 }
 
 #ifdef AUTO_TEST_REGISTRATION

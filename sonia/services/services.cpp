@@ -145,6 +145,11 @@ shared_ptr<service> locate(service::id id)
     return get_host_impl()->locate(id);
 }
 
+void shutdown(int to_level)
+{
+    get_host_impl()->shutdown(to_level);
+}
+
 void register_service_factory(string_view nm, function<shared_ptr<service>()> const& fm)
 {
     BOOST_ASSERT(env_);

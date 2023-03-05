@@ -117,7 +117,7 @@ struct sync_callback
     size_t handlsz;
     optional<std::error_code> code;
 
-    sync_callback(shared_ptr<win_impl> p, fibers::mutex & m) noexcept
+    sync_callback(shared_ptr<win_impl> p, fibers::mutex & m)
         : base_type{ std::move(p) }, lock_type{ m }
     { }
 
@@ -459,19 +459,27 @@ size_t win_impl::udp_socket_waiting_count(tcp_handle_type handle)
 expected<size_t, std::exception_ptr> win_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz) noexcept
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
-    sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
-    std::error_code err = winapi::async_recv(wh->socket(), buff, sz, &scb.overlapped);
-    if (err) return make_unexpected(std::make_exception_ptr(exception(err.message())));
-    return scb.wait(); // noexcept
+    try {
+        sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
+        std::error_code err = winapi::async_recv(wh->socket(), buff, sz, &scb.overlapped);
+        if (err) return make_unexpected(std::make_exception_ptr(exception(err.message())));
+        return scb.wait(); // noexcept
+    } catch (...) {
+        return make_unexpected(std::current_exception());
+    }
 }
 
 expected<size_t, std::exception_ptr> win_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz) noexcept
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
-    sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
-    std::error_code err = winapi::async_send(wh->socket(), buff, sz, &scb.overlapped);
-    if (err) return make_unexpected(std::make_exception_ptr(exception(err.message())));
-    return scb.wait(); // noexcept
+    try {
+        sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
+        std::error_code err = winapi::async_send(wh->socket(), buff, sz, &scb.overlapped);
+        if (err) return make_unexpected(std::make_exception_ptr(exception(err.message())));
+        return scb.wait(); // noexcept
+    } catch (...) {
+        return make_unexpected(std::current_exception());
+    }
 }
 
 void win_impl::close_handle(identity<tcp_socket_service_type>, tcp_handle_type h) noexcept

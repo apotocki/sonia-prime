@@ -32,6 +32,8 @@ public:
     shared_ptr<service> locate(string_view) const;
     shared_ptr<service> locate(service::id) const;
 
+    void shutdown(int to_level) { locator_->shutdown(to_level); }
+
     void register_on_close(function<void()> const& func);
 
     void run(std::vector<std::string> const& servs);

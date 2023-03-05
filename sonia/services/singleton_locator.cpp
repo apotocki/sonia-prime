@@ -44,6 +44,7 @@ shared_ptr<singleton> singleton_locator::get(singleton::id id, function<shared_p
     return descr.object;
 }
 
+/*
 void singleton_locator::shutdown()
 {
     std::vector<fiber> fibers;
@@ -69,6 +70,41 @@ void singleton_locator::shutdown()
             f.join();
         }
         fibers.clear();
+    }
+}
+*/
+
+void singleton_locator::shutdown(int to_level)
+{
+    std::vector<fiber> fibers;
+
+    for (;;)
+    {
+        if (lock_guard layers_guard(layers_mtx_); !layers_.empty()) {
+            for (auto it = layers_.end(), bit = layers_.begin(); it != bit;) {
+                --it;
+                int l = it->object->get_layer();
+                if (l < to_level) {
+                    shutdown_layer_threshold_ = (std::numeric_limits<int>::max)(); // restore
+                    break;
+                }
+                if (l < shutdown_layer_threshold_) {
+                    shutdown_layer_threshold_ = l;
+                    break;
+                }
+                fibers.emplace_back([this, s = it->object]() mutable { shutdown(std::move(s)); });
+            }
+        } else {
+            break;
+        }
+
+        //LOG_TRACE(logger()) << "singleton_locator: scheduled " << fibers.size() << " shutdowns, layer: " << layer << " join...";
+
+        for (fiber & f : fibers) {
+            f.join();
+        }
+        fibers.clear();
+        if (shutdown_layer_threshold_ == (std::numeric_limits<int>::max)()) break;
     }
 }
 

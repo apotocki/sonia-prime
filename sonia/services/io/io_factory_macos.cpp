@@ -79,8 +79,8 @@ struct macos_shared_handle : shared_handle<socket_handle_traits>
     //using mutex_t = threads::mutex;
     //threads::condition_variable cnd;
     using mutex_t = fibers::mutex;
-    mutex_t mtx, wrmtx;
-    fibers::condition_variable_any cnd, wrcnd;
+    mutex_t mtx;
+    fibers::condition_variable_any cnd;
 
     sonia::sal::socket_handle handle;
 
@@ -104,11 +104,7 @@ struct macos_shared_handle : shared_handle<socket_handle_traits>
         {
             unique_lock lck(mtx);
             handle_callbacks(false);
-            if (filter == EVFILT_WRITE) {
-                wrcnd.notify_all();
-            } else {
-                cnd.notify_all();
-            }
+            cnd.notify_all();
         }
     };
 
@@ -124,11 +120,6 @@ struct macos_shared_handle : shared_handle<socket_handle_traits>
     void wait(unique_lock<mutex_t> & lck)
     {
         cnd.wait(lck);
-    }
-
-    void wrwait(unique_lock<mutex_t> & lck)
-    {
-        wrcnd.wait(lck);
     }
 
     bool close(int kq); // return true if book_keeper needs updating
@@ -190,7 +181,7 @@ struct macos_impl
 
     ~macos_impl() override
     {
-        LOG_TRACE(wrapper->logger()) << "descruction of macos_impl";
+        LOG_TRACE(wrapper->logger()) << "destruction of macos_impl";
         ::close(ctl_pipe[0]);
         ::close(ctl_pipe[1]);
         ::close(kq);
@@ -531,21 +522,18 @@ expected<size_t, std::exception_ptr> macos_impl::tcp_socket_write_some(tcp_handl
     SCOPE_EXIT([&sh, this]() { --sh->waiting_cnt; --pending_writes; });
     ++sh->waiting_cnt;
     ++pending_writes;
-    unique_lock lck(sh->wrmtx);
+    unique_lock lck(sh->mtx);
 
     for (;;)
     {
         if (sh->handle == -1) return 0;
         ssize_t n = ::send(sh->handle, buff, sz, 0);
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write %2% bytes"_fmt % sh->handle % n);
-        if (n != sz) {
-            return (size_t)n;
-        }
         if (n >= 0) return (size_t)n;
         int err = errno;
         if (BOOST_UNLIKELY(EAGAIN != err)) return make_unexpected(std::make_exception_ptr(exception(strerror(err))));
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write waiting..."_fmt % sh->handle);
-        sh->wrwait(lck);
+        sh->wait(lck);
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) woke up"_fmt % sh->handle);
     }
 }

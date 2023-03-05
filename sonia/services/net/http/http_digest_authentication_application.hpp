@@ -36,7 +36,7 @@ struct http_session
     std::string digest;
     std::chrono::steady_clock::time_point start;
 
-    scheduler_task_handle timeout_handler_;
+    //scheduler_task_handle timeout_handler_;
 
     explicit http_session(std::string session_id) 
         : session_id_{std::move(session_id)}

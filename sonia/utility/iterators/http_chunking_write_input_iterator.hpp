@@ -39,6 +39,7 @@ class http_chunking_write_input_iterator
     {
         BOOST_ASSERT(!empty());
         std::span<char> chunk = *base;
+        BOOST_ASSERT(chunk.size() > 5);
         uint8_t max_hex_digit_count = get_max_hex_digit_count(chunk.size() - 5); // lets suppose 1 digit for size, 2 for prolog "\r\n" and 2 for epilog "\r\n"
         BOOST_ASSERT (chunk.size() > max_hex_digit_count + 4); // size digits + 2 for prolog "\r\n" + 2 for epilog "\r\n"
         chunk = chunk.subspan(max_hex_digit_count + 2); // size digits + 2 for prolog "\r\n"
@@ -110,7 +111,7 @@ public:
     void flush()
     {
         if (!chunk_.empty()) {
-            std::span<char> orig  = get_chunk();
+            std::span<char> orig = get_chunk();
             flush({orig.data(), chunk_.data()});
             chunk_ = {};
         }

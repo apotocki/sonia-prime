@@ -39,6 +39,8 @@ SONIA_PRIME_API void set_post_initialize(post_initialize_fn*);
 
 SONIA_PRIME_API void initialize(int argc = 0, char const* argv[] = nullptr, std::istream * cfgstream = nullptr);
 SONIA_PRIME_API void shutdown();
+SONIA_PRIME_API void shutdown(int to_level); // including level
+
 SONIA_PRIME_API shared_ptr<host> get_host();
 
 SONIA_PRIME_API shared_ptr<service> locate(string_view);

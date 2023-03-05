@@ -242,7 +242,7 @@ void http_digest_authentication_application::handle(http::request & req, http::r
         std::string ha1;
         ha1.reserve(32);
 
-        unique_lock session_lck(nonce_mutex_);
+        unique_lock session_lck(session_mutex_);
         auto it = sessions_.find(dig.nonce, nonce_comparer());
         if (it != sessions_.end()) {
             ha1 = it->digest;
@@ -303,12 +303,22 @@ void http_digest_authentication_application::handle(http::request & req, http::r
             http_session * ps_pin3 = ps;
             SCOPE_EXIT([this, &ps_pin3]{ if (ps_pin3) lifetimes_.erase(*ps_pin3); } );
             users_.insert(*ps);
+            ps_pin3 = ps_pin2 = ps_pin = nullptr;
             size_t scnt = users_.count(*ps);
             if (scnt > cfg_.max_sessions_per_user) {
                 LOG_WARN(logger()) << to_string("allowed sessions exceeded, user: '%1%', sessions: %2%"_fmt % dig.username % scnt);
-                break;
+                //break;
+                //removing the most old session
+                for (auto lit = lifetimes_.begin(); lit != lifetimes_.end(); ++lit) {
+                    http_session* s = &*lit;
+                    if (s->user != dig.username) continue;
+                    sessions_.erase(*s);
+                    lifetimes_.erase(lit);
+                    users_.erase(*s);
+                    session_pool_.delete_object(s);
+                    break;
+                }
             }
-            ps_pin3 = ps_pin2 = ps_pin = nullptr;
         }
         session_lck.unlock();
 
@@ -375,8 +385,16 @@ string_view http_digest_authentication_application::get_realm() const
 
 void http_digest_authentication_application::clear_sessions()
 {
-    lock_guard session_guard(nonce_mutex_);
-    sessions_.clear();
+    lock_guard session_guard(session_mutex_);
+    while (!lifetimes_.empty()) {
+        auto lit = lifetimes_.begin();
+        http_session* s = &*lit;
+        LOG_TRACE(logger()) << "session: " << s->session_id_ << " has been closed";
+        sessions_.erase(*s);
+        lifetimes_.erase(lit);
+        users_.erase(*s);
+        session_pool_.delete_object(s);
+    }
 }
 
 }

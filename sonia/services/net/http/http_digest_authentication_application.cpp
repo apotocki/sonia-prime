@@ -331,7 +331,9 @@ void http_digest_authentication_application::handle(http::request & req, http::r
     }
 
     // skip request body if exists
+    //req.input.close();
     for (; !req.input.empty(); ++req.input);
+    //req.keep_alive = false;
 
     std::string nonce = get_nonce();
     resp.meet_request(req);

@@ -63,6 +63,8 @@ public:
 
     bool empty() const { return empty_; }
 
+    void close() {}
+
 private:
     mutable stored_t value_;
     bool empty_;

@@ -215,6 +215,7 @@ struct win_impl
     // tcp socket service
     expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept override final;
     expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept override final;
+    void shutdown_handle(identity<tcp_socket_service_type>, tcp_handle_type, shutdown_opt) noexcept override final;
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
     void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
@@ -372,6 +373,11 @@ void acceptor_async_callback::on_op(std::error_code const& err, size_t sz) noexc
     SCOPE_EXIT([this](){ impl_->free(this); });
     --acceptor_->waiting_cnt;
     if (!err) try {
+        if (SOCKET_ERROR == ::setsockopt(sock2accept, SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, (char*)&acceptor_->handle, sizeof(SOCKET))) {
+            DWORD err = WSAGetLastError();
+            auto errstr = winapi::error_message(err);
+            promise.set_exception(std::make_exception_ptr(exception("can't set options for accept socket, error: %1%"_fmt % errstr)));
+        }
         auto newh = impl_->new_socket_handle(sock2accept, acceptor_->family);
         promise.set_value(tcp_socket_access::create_tcp_socket<socket_traits>(impl_, newh));
         sock2accept = INVALID_SOCKET;
@@ -424,7 +430,7 @@ fibers::future<tcp_socket> win_impl::tcp_server_socket_accept(tcp_handle_type ha
             throw exception("can't accept socket, error: %1%"_fmt % winapi::error_message(err));
         }
     }
-    
+
     acb = nullptr; // unpin
     return std::move(fres);
 }
@@ -479,6 +485,32 @@ expected<size_t, std::exception_ptr> win_impl::tcp_socket_write_some(tcp_handle_
         return scb.wait(); // noexcept
     } catch (...) {
         return make_unexpected(std::current_exception());
+    }
+}
+
+void win_impl::shutdown_handle(identity<tcp_socket_service_type>, tcp_handle_type h, shutdown_opt opt) noexcept
+{
+    auto* wh = static_cast<win_shared_handle*>(h);
+    if (wh) {
+        lock_guard guard(wh->mtx);
+        if (wh->socket() != INVALID_SOCKET) {
+            int r = SOCKET_ERROR;
+            switch (opt) {
+            case shutdown_opt::read:
+                r = ::shutdown(wh->socket(), SD_RECEIVE);
+                break;
+            case shutdown_opt::write:
+                r = ::shutdown(wh->socket(), SD_SEND);
+                break;
+            default:
+                r = ::shutdown(wh->socket(), SD_BOTH);
+            }
+            if (SOCKET_ERROR == r) {
+                int err = WSAGetLastError();
+                std::string errstr = windows::error_message(err);
+                GLOBAL_LOG_ERROR() << errstr;
+            }
+        }
     }
 }
 

@@ -81,6 +81,15 @@ public:
         return *this;
     }
 
+    SocketT* socket() { return psoc_; }
+
+    void close()
+    {
+        if (psoc_) {
+            psoc_->shutdown(io::shutdown_opt::read);
+        }
+    }
+
 private:
     mutable SocketT * psoc_;
     std::span<char> buff_;

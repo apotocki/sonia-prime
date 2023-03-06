@@ -20,6 +20,11 @@ namespace sonia::io {
 template <class DerivedT, class TraitsT> class tcp_socket_adapter;
 template <class DerivedT, class TraitsT> class tcp_server_socket_adapter;
 
+enum class shutdown_opt
+{
+    read = 1, write = 2, both = 3
+};
+
 template <typename TraitsT>
 class tcp_server_socket_service
 {
@@ -48,6 +53,7 @@ public:
 
     virtual expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept = 0;
     virtual expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept = 0;
+    virtual void shutdown_handle(identity<tcp_socket_service>, tcp_handle_type, shutdown_opt) noexcept = 0;
     virtual void close_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
     virtual void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
     virtual void free_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
@@ -126,6 +132,11 @@ public:
     {
         constexpr size_t elem_sz = is_void_v<T> ? 1 : size_of_v<T>;
         return impl().tcp_socket_write_some(handle(), buff, sz * elem_sz);
+    }
+
+    void shutdown(shutdown_opt opt = shutdown_opt::both)
+    {
+        impl().shutdown_handle(identity<service_type>(), handle(), opt);
     }
 
     void close() noexcept

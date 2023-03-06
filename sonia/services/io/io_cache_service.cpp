@@ -162,6 +162,12 @@ expected<size_t, std::exception_ptr> io_cache_service::connection_cache::tcp_soc
     return ci->sock.write_some(buff, sz);
 }
 
+void io_cache_service::connection_cache::shutdown_handle(identity<io::tcp_socket_service_type>, tcp_handle_type h, io::shutdown_opt opt) noexcept
+{
+    auto* ci = static_cast<cache_item*>(h);
+    ci->sock.shutdown(opt);
+}
+
 void io_cache_service::connection_cache::close_handle(identity<io::tcp_socket_service_type>, tcp_handle_type h) noexcept
 {
     auto * ci = static_cast<cache_item*>(h);

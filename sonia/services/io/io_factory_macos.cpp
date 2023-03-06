@@ -205,6 +205,7 @@ struct macos_impl
     // tcp socket service
     expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept override final;
     expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept override final;
+    void shutdown_handle(identity<tcp_socket_service_type>, tcp_handle_type, shutdown_opt) noexcept override final;
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
     void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
@@ -535,6 +536,28 @@ expected<size_t, std::exception_ptr> macos_impl::tcp_socket_write_some(tcp_handl
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write waiting..."_fmt % sh->handle);
         sh->wait(lck);
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) woke up"_fmt % sh->handle);
+    }
+}
+
+void macos_impl::shutdown_handle(identity<tcp_socket_service_type>, tcp_handle_type h, shutdown_opt opt) noexcept
+{
+    auto* sh = static_cast<macos_shared_handle*>(h);
+    if (sh && sh->handle != -1) {
+        int r = -1;
+        switch (opt) {
+        case shutdown_opt::read:
+            r = ::shutdown(sh->handle, SHUT_RD);
+            break;
+        case shutdown_opt::write:
+            r = ::shutdown(sh->handle, SHUT_WR);
+            break;
+        default:
+            r = ::shutdown(sh->handle, SHUT_RDWR);
+        }
+        if (-1 == r) {
+            int err = errno;
+            LOG_ERROR(wrapper->logger()) << ("can't shutdown handle, error: %1%"_fmt % strerror(err)).str();
+        }
     }
 }
 

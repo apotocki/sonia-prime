@@ -79,7 +79,17 @@ public:
 
     template <typename T = IteratorT>
     requires(iterators::has_method_flush_v<T, void()>)
-    void flush() { base.flush(); }
+    void flush()
+    {
+        base.flush();
+    }
+
+    template <typename T = IteratorT>
+    requires(iterators::has_method_close_v<T, void()>)
+    void close()
+    {
+        base.close();
+    }
 
     IteratorT base;
     uint64_t limit;

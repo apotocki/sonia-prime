@@ -484,6 +484,12 @@ expected<size_t, std::exception_ptr> ssl_factory::tcp_socket_write_some(tcp_hand
     }
 }
 
+void ssl_factory::shutdown_handle(identity<io::tcp_socket_service_type>, tcp_handle_type h, io::shutdown_opt opt) noexcept
+{
+    auto* ci = static_cast<ssl_descriptor*>(h);
+    ci->sock.shutdown(opt);
+}
+
 void ssl_factory::close_handle(identity<io::tcp_socket_service_type>, tcp_handle_type h) noexcept
 {
     auto * ci = static_cast<ssl_descriptor*>(h);

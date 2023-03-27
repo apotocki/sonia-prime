@@ -66,7 +66,7 @@ public:
     {
         if (val.size() != 2 * N) return;
         using namespace boost::conversion;
-        (cvt_push_iterator{ base16l | int8, static_cast<uint8_t*>(obj.*ref_) } << val).flush();
+        (cvt_push_iterator{ base16l | int8, static_cast<uint8_t*>(obj.*ref_) } << val).finish();
     }
 
     SONIA_POLYMORPHIC_MOVABLE_IMPL(base16_value_reference)
@@ -267,7 +267,7 @@ void http_digest_authentication_application::handle(http::request & req, http::r
         std::array<uint8_t, 32> ha2str;
         auto ha2_it = cvt_push_iterator{ int8 | md5 | base16l, ha2str.begin() };
         ha2_it << to_string(req.method) << ':' << dig.uri;
-        ha2_it.flush();
+        ha2_it.finish();
 
         std::array<uint8_t, 16> response;
         auto resp_it = cvt_push_iterator{ int8 | md5, response.begin() };
@@ -276,7 +276,7 @@ void http_digest_authentication_application::handle(http::request & req, http::r
             resp_it << dig.nc << ':' << dig.cnonce << ':' << dig.qop << ':';
         }
         resp_it << ha2str;
-        resp_it.flush();
+        resp_it.finish();
 
         bool eq = std::equal(dig.response, dig.response + sizeof(dig.response), response.begin());
         if (!eq) {
@@ -376,7 +376,7 @@ std::string http_digest_authentication_application::get_digest_for(string_view u
     std::string result;
     result.reserve(32);
     auto cvt_it = cvt_push_iterator{ int8 | md5 | base16l, std::back_inserter(result) };
-    (cvt_it << user << ':' << cfg_.digest_realm << ':' << password).flush();
+    (cvt_it << user << ':' << cfg_.digest_realm << ':' << password).finish();
     return result;
 }
 

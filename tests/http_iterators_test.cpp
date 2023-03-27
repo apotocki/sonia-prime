@@ -119,7 +119,7 @@ void test_data(std::vector<std::vector<char>> & data, string_view boundary, stri
     http_form_data_read_iterator<chunk_iterator> fdit{std::move(it0), boundary};
     std::string result;
     while (!fdit.empty()) {
-        array_view<const char> c = *fdit;
+        std::span<const char> c = *fdit;
         result += std::string(c.begin(), c.end());
         ++fdit;
     }
@@ -148,7 +148,7 @@ void test_chunked_data(std::vector<std::vector<char>> & data, string_view expect
         rdit.flush();
         fdit = std::move(rdit.base);
         if (fdit.empty()) break;
-        array_view<const char> c = *fdit;
+        std::span<const char> c = *fdit;
         result += std::string(c.begin(), c.end());
         ++fdit;
     }

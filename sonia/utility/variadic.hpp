@@ -2,15 +2,9 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_VARIADIC_HPP
-#define SONIA_UTILITY_VARIADIC_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <type_traits>
-#include <boost/mpl/identity.hpp>
 
 namespace sonia::variadic {
 
@@ -48,7 +42,7 @@ template <typename T, typename PosT, typename ElemT0>
 struct find_type_index<T, PosT, ElemT0> : std::conditional_t<
         std::is_same_v<ElemT0, T>,
         PosT,
-        boost::mpl::identity<void>
+        std::type_identity<void>
     >
 {};
 
@@ -84,7 +78,7 @@ template <typename PredicateT, size_t CI, size_t ... IndxV, typename ArgT, typen
     using type = typename std::conditional_t<
         sizeof ...(ArgsT) != 0,
         index_filter<PredicateT, CI + 1, next_v_t, ArgsT...>,
-        boost::mpl::identity<next_v_t>
+        std::type_identity<next_v_t>
     >::type;
 };
 
@@ -108,5 +102,3 @@ decltype(auto) reorder(FtorT && ftor, ArgsT&& ... args)
 }
 
 }
-
-#endif // SONIA_UTILITY_VARIADIC_HPP

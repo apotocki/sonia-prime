@@ -283,12 +283,14 @@ void archive_extract_iterator_test()
     BOOST_CHECK_EQUAL(cnt["fileset1/files5/file0.txt"], "file0\r\n");
     BOOST_CHECK_EQUAL(cnt["fileset1/files5/file1.txt"], "file1\r\n");
 #endif
+
 #if 1
     // gzipped tar files of different items
     cnt = load_archive(archive_test_home / "fileset.tgz");
-    BOOST_CHECK_EQUAL(cnt.size(), 12);
+    BOOST_CHECK_EQUAL(cnt.size(), 13);
     BOOST_CHECK_EQUAL(cnt["fileset/file0.txt"], "file0");
     BOOST_CHECK_EQUAL(cnt["fileset/file1.txt"], "file1");
+    BOOST_CHECK_EQUAL(cnt["fileset/filexz.txt"], "filexz");
     BOOST_CHECK_EQUAL(cnt["fileset/files5/file0.txt"], "file0\r\n");
     BOOST_CHECK_EQUAL(cnt["fileset/files5/file1.txt"], "file1\r\n");
     BOOST_CHECK_EQUAL(cnt["fileset/files2/file2.txt"], "file2");

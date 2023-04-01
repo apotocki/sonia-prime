@@ -21,6 +21,7 @@ archive_type get_archive_type(string_view str)
         if (ucasestr == "TAR") return archive_type::TAR;
         if (ucasestr == "GZ") return archive_type::GZIP;
         if (ucasestr == "BZ2") return archive_type::BZIP2;
+        if (ucasestr == "XZ") return archive_type::XZ;
         if (ucasestr == "TGZ") return archive_type::TGZ;
     }
     return archive_type::UNKNOWN;
@@ -65,6 +66,12 @@ bool extract_iterator_polymorpic_adapter_base::do_next(archive_iterator & ax)
             return false;
         case archive_type::BZIP2:
             replace<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<bz2_decompress_iterator<archive_iterator>>>>(
+                ax,
+                std::move(name_wo_ext_str), buffsz_, in_place, buffsz_, std::move(ax)
+            );
+            return false;
+        case archive_type::XZ:
+            replace<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<lzma_decompress_iterator<archive_iterator>>>>(
                 ax,
                 std::move(name_wo_ext_str), buffsz_, in_place, buffsz_, std::move(ax)
             );

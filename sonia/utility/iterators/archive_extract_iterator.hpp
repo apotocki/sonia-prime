@@ -11,6 +11,7 @@
 #include "sonia/utility/iterators/buffering_mediator_iterator.hpp"
 #include "sonia/utility/iterators/inflate_iterator.hpp"
 #include "sonia/utility/iterators/bz2_decompress_iterator.hpp"
+#include "sonia/utility/iterators/lzma_decompress_iterator.hpp"
 #include "sonia/utility/iterators/tar_iterator.hpp"
 
 #ifndef DEFAULT_ARCHIVER_INTERNAL_BUFFER_SIZE
@@ -25,6 +26,7 @@ enum class archive_type
     TAR,        // tar
     GZIP,       // gz
     BZIP2,      // bz2
+    XZ,         // lzma2
     TGZ,        // gzipped tar
     UNKNOWN
 };

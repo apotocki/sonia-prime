@@ -17,17 +17,34 @@
 
 namespace sonia::fibers {
 
-#if defined(BOOST_MSVC) && (_MSC_VER >= 1911 && _MSVC_LANG >= 201703)
+//#if defined(BOOST_MSVC) && (_MSC_VER >= 1911 && _MSVC_LANG >= 201703)
+//template <typename>
+//struct result_of;
+//template <typename F, typename... Args>
+//struct result_of<F(Args...)> : std::invoke_result<F, Args...> {};
+//#else
+//using std::result_of;
+//#endif
+
 template <typename>
 struct result_of;
 template <typename F, typename... Args>
 struct result_of<F(Args...)> : std::invoke_result<F, Args...> {};
-#else
-using std::result_of;
-#endif
-
 
 template< typename Fn, typename ... Args >
+future<std::invoke_result_t<std::decay_t<Fn>, std::decay_t<Args> ...>>
+async( Fn && fn, Args ... args) requires (detail::is_launch_policy<std::decay_t<Fn>>::value)
+{
+    using result_type = std::invoke_result_t<std::decay_t<Fn>, std::decay_t<Args> ...>;
+    packaged_task< result_type( typename std::decay< Args >::type ... ) > pt{
+            std::forward< Fn >( fn) };
+    future< result_type > f{ pt.get_future() };
+    fiber{ std::move( pt), std::forward< Args >( args) ... }.detach();
+    return f;
+}
+/*
+template< typename Fn, typename ... Args >
+
 future<
     typename result_of<
         typename std::enable_if<
@@ -47,7 +64,7 @@ async( Fn && fn, Args ... args) {
     fiber{ std::move( pt), std::forward< Args >( args) ... }.detach();
     return f;
 }
-
+*/
 template< typename Policy, typename Fn, typename ... Args >
 future<
     typename result_of<

@@ -27,7 +27,7 @@ public:
     socket_read_input_iterator() : psoc_{nullptr} {}
 
     socket_read_input_iterator(SocketT & soc, std::span<char> buff, size_t rsz = 0)
-        : psoc_{&soc}, buff_{buff}, ready_buff_{rsz ? buff_.data() : nullptr, rsz}, ready_pos_{rsz ? buff_.data() + rsz : nullptr}
+        : psoc_{&soc}, buff_{buff}, ready_buff_{rsz ? buff_.data() : nullptr, rsz}, ready_pos_{rsz ? buff_.begin() + rsz : buff_.end()}
     {}
 
     socket_read_input_iterator(socket_read_input_iterator const&) = delete;

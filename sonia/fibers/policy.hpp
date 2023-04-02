@@ -16,20 +16,22 @@
 
 namespace sonia::fibers {
 
-enum class launch {
+enum class launch
+{
     dispatch,
     post
 };
 
 namespace detail {
 
-template< typename Fn >
-struct is_launch_policy : public std::false_type {
-};
+template <typename Fn>
+struct is_launch_policy : public std::false_type {};
 
-template<>
-struct is_launch_policy< sonia::fibers::launch > : public std::true_type {
-};
+template <>
+struct is_launch_policy<sonia::fibers::launch> : public std::true_type {};
+
+template <typename Fn>
+constexpr bool is_launch_policy_v = is_launch_policy<Fn>::value_type;
 
 }
 

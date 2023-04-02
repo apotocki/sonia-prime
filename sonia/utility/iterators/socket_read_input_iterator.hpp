@@ -27,8 +27,11 @@ public:
     socket_read_input_iterator() : psoc_{nullptr} {}
 
     socket_read_input_iterator(SocketT & soc, std::span<char> buff, size_t rsz = 0)
-        : psoc_{&soc}, buff_{buff}, ready_buff_{rsz ? buff_.data() : nullptr, rsz}, ready_pos_{rsz ? buff_.begin() + rsz : buff_.end()}
-    {}
+        : psoc_{&soc}, buff_{buff}, ready_buff_{rsz ? buff_.data() : nullptr, rsz}
+        , ready_pos_{rsz ? buff_.data() + rsz : nullptr }
+    {
+        
+    }
 
     socket_read_input_iterator(socket_read_input_iterator const&) = delete;
     socket_read_input_iterator(socket_read_input_iterator && rhs) = default;
@@ -59,7 +62,7 @@ public:
                 throw eof_exception();
             } else {
                 ready_buff_ = { buff_.data(), exprsz.value() };
-                ready_pos_ = ready_buff_.end();
+                ready_pos_ = data_end(ready_buff_);
             }
         }
         return ready_buff_;
@@ -73,10 +76,10 @@ public:
     socket_read_input_iterator& operator++()
     {
         BOOST_ASSERT(psoc_);
-        if (ready_buff_.end() == ready_pos_) {
+        if (data_end(ready_buff_) == ready_pos_) {
             ready_buff_ = {};
         } else {
-            ready_buff_ = { ready_buff_.end(), ready_pos_ };
+            ready_buff_ = { data_end(ready_buff_), ready_pos_ };
         }
         return *this;
     }
@@ -94,7 +97,7 @@ private:
     mutable SocketT * psoc_;
     std::span<char> buff_;
     mutable std::span<const char> ready_buff_;
-    mutable std::span<const char>::iterator ready_pos_;
+    mutable const char* ready_pos_;
 };
 
 }

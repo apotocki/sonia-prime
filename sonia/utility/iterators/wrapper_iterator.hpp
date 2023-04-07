@@ -7,7 +7,6 @@
 #include <utility>
 #include <iterator>
 
-#include <boost/iterator/iterator_facade.hpp>
 #include <boost/assert.hpp>
 
 #include "sonia/type_traits.hpp"
@@ -28,49 +27,59 @@ template <
     , class DifferenceT = std::ptrdiff_t
 >
 class wrapper_iterator
-    : public boost::iterator_facade<
-          wrapper_iterator<ImplT, ValueT, CategoryOrTraversal, DifferenceT>
-        , ValueT
-        , CategoryOrTraversal
-        , decltype(std::declval<const ImplT>()->dereference())
-        , DifferenceT
-    >
 {
-    friend class boost::iterator_core_access;
+public:
+    using value_type = ValueT;
+    using pointer = ValueT*;
+    using reference = decltype(std::declval<const ImplT>()->dereference());
+    using difference_type = DifferenceT;
+    using iterator_category = CategoryOrTraversal;
 
-    bool equal(wrapper_iterator const& rhs) const
+    inline bool operator==(wrapper_iterator const& rhs) const
     {
         if (impl) return !!rhs.impl;
         if (rhs.impl) return false;
         return impl->equal(*rhs.impl);
     }
 
-    void increment()
+    inline bool operator!=(wrapper_iterator const& rhs) const
     {
-        if constexpr (iterators::has_method_increment_v<ImplT, void()>) {
+        return !this->operator==(rhs);
+    }
+
+    wrapper_iterator& operator++()
+    {
+        if constexpr (requires{ impl.increment(); }) {
             impl.increment();
         } else {
             impl->increment();
         }
+        return *this;
     }
 
-    void decrement()
+    wrapper_iterator& operator--()
     {
-        if constexpr (iterators::has_method_decrement_v<ImplT, void()>) {
+        if constexpr (requires{ impl.decrement(); }) {
             impl.decrement();
         } else {
             impl->decrement();
         }
+        return *this;
     }
 
-    decltype(auto) dereference() const
+    decltype(auto) operator*() const
     {
         return impl->dereference();
     }
 
+    pointer operator->() const
+    {
+        reference value = impl->dereference();
+        return std::addressof(value);
+    }
+
     void advance(DifferenceT dif) { impl->advance(dif); }
 
-public:
     using wrapper_iterator_t = wrapper_iterator;
 
     template <typename ... ArgsT>
@@ -91,7 +100,7 @@ public:
     bool empty() const
     {
         if (!impl) return true;
-        if constexpr(iterators::has_method_empty_v<ImplT, bool()>) {
+        if constexpr (requires { !impl.empty(); }) {
             return impl.empty();
         } else {
             return impl->empty();
@@ -100,8 +109,7 @@ public:
 
     void flush()
     {
-        if constexpr (iterators::has_method_flush_v<ImplT, void()>)
-        {
+        if constexpr (requires { impl.flush(); }) {
             impl.flush();
         } else {
             impl->flush();
@@ -110,8 +118,7 @@ public:
 
     void close()
     {
-        if constexpr (iterators::has_method_close_v<ImplT, void()>)
-        {
+        if constexpr (requires { impl.close(); }) {
             impl.close();
         } else {
             impl->close();

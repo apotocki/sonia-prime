@@ -35,7 +35,7 @@ enum class method_verb
 };
 
 std::string const& to_string(method_verb);
-method_verb to_method(string_view);
+method_verb to_method(std::string_view);
 
 template <typename CharT, class TraitsT>
 std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, method_verb mv)

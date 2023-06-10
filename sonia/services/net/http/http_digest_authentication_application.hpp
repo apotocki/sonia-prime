@@ -86,13 +86,13 @@ public:
     void close() noexcept override final;
     void handle(http::request & req, http::response & resp) override final;
 
-    std::string get_digest_for(string_view, string_view password) const override final;
-    string_view get_realm() const override final;
+    std::string get_digest_for(std::string_view, std::string_view password) const override final;
+    std::string_view get_realm() const override final;
     void clear_sessions() override final;
 
 private:
     std::string get_nonce();
-    bool remove_nonce(string_view nval);
+    bool remove_nonce(std::string_view nval);
 
 private:
     http_digest_authentication_application_configuration cfg_;

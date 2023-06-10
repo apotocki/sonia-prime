@@ -1,13 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
-
-#ifndef SONIA_HTTP_HEADERS_HPP
-#define SONIA_HTTP_HEADERS_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
@@ -240,12 +234,10 @@ enum class header
 };
 
 std::string const& to_string(header);
-header to_header(string_view);
+header to_header(std::string_view);
 
 inline size_t hash_value(header h) { return (int)h; }
 
 #undef SONIA_PRINT_TYPE_ENUM
 
 }
-
-#endif // SONIA_HTTP_HEADERS_HPP

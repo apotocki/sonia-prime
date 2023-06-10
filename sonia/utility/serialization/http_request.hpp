@@ -39,10 +39,10 @@ public:
             ++ii;
             if (*bit == ' ') break;
         }
-        req.method = http::to_method(string_view(tmpbuff, bit));
+        req.method = http::to_method(std::string_view(tmpbuff, bit));
         
         if (http::method_verb::UNKNOWN == req.method) {
-            throw exception("unknown verb: %1%"_fmt % string_view(tmpbuff, bit));
+            throw exception("unknown verb: %1%"_fmt % std::string_view(tmpbuff, bit));
         }
 
         // get url

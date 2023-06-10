@@ -78,7 +78,7 @@ struct methods_cache
         }
     }
 
-    method_verb to_method(string_view str) const
+    method_verb to_method(std::string_view str) const
     {
         auto it = map_.find(str, hasher(), string_equal_to());
         if (BOOST_LIKELY(it != map_.end())) return it->second;
@@ -104,15 +104,15 @@ struct headers_cache
         }
     }
 
-    header to_header(string_view str) const
+    header to_header(std::string_view str) const
     {
         char buff[64];
         std::string tmp;
         if (sizeof(buff) > str.size()) {
-            str = string_view(buff, to_uc(str, buff));
+            str = std::string_view(buff, to_uc(str, buff));
         } else {
             tmp = to_uc(str);
-            str = to_string_view(tmp);
+            str = tmp;
         }
         auto it = map_.find(str, hasher(), string_equal_to());
         if (BOOST_LIKELY(it != map_.cend())) {
@@ -122,7 +122,7 @@ struct headers_cache
     }
     
     template <class OutputIteratorT>
-    static OutputIteratorT to_uc(string_view sv, OutputIteratorT result)
+    static OutputIteratorT to_uc(std::string_view sv, OutputIteratorT result)
     {
         for (char c : sv) {
             if (c >= 'a' && c <= 'z') c -= ('a' - 'A');
@@ -131,7 +131,7 @@ struct headers_cache
         return result;
     }
 
-    static std::string to_uc(string_view sv)
+    static std::string to_uc(std::string_view sv)
     {
         std::string result;
         result.reserve(sv.size());
@@ -152,7 +152,7 @@ std::string const& to_string(header c)
     return as_singleton<headers_cache>()->to_string(c);
 }
 
-header to_header(string_view str)
+header to_header(std::string_view str)
 {
     return as_singleton<headers_cache>()->to_header(str);
 }
@@ -162,7 +162,7 @@ std::string const& to_string(method_verb m)
     return as_singleton<methods_cache>()->to_string(m);
 }
 
-method_verb to_method(string_view str)
+method_verb to_method(std::string_view str)
 {
     return as_singleton<methods_cache>()->to_method(str);
 }

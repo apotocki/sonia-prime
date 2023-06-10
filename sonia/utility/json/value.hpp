@@ -20,7 +20,7 @@
 namespace sonia {
 
 namespace json_detail {
-    typedef optimized_holder<SONIA_JSON_VALUE_SZ, 3, uint32_t> holder_t;
+    using holder_t = optimized_holder<SONIA_JSON_VALUE_SZ, 3, uint32_t>;
 }
 
 enum class json_value_type
@@ -118,6 +118,7 @@ class json_value : json_detail::holder_t
     explicit json_value(bool);
     explicit json_value(int);
     explicit json_value(decimal);
+    explicit json_value(std::string_view);
     explicit json_value(string_view);
     explicit json_value(array_view<json_value>);
     

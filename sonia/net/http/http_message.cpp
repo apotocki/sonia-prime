@@ -17,14 +17,14 @@ namespace sonia::http {
 
 struct to_rvstring_visitor : boost::static_visitor<std::string>
 {
-    std::string operator()(string_view sv) const { return to_string(sv); }
+    std::string operator()(std::string_view sv) const { return std::string(sv); }
     std::string operator()(std::string& s) const { return std::move(s); }
 };
 
-struct to_string_view_visitor : boost::static_visitor<string_view>
+struct to_string_view_visitor : boost::static_visitor<std::string_view>
 {
-    string_view operator()(string_view sv) const { return sv; }
-    string_view operator()(std::string const& s) const { return s; }
+    std::string_view operator()(std::string_view sv) const { return sv; }
+    std::string_view operator()(std::string const& s) const { return s; }
 };
 
 std::string header_string(header_value_param_t & v)
@@ -77,11 +77,11 @@ std::span<const std::string> header_collection::get_header(any_header_param_t h)
     return {};
 }
 
-void header_collection::tokenize_header(any_header_param_t h, function<bool(string_view, string_view, char)> const& handler) const
+void header_collection::tokenize_header(any_header_param_t h, function<bool(std::string_view, std::string_view, char)> const& handler) const
 {
     auto hvals = get_header(h);
     for (std::string const& hval : hvals) {
-        string_view hvalvw{hval};
+        std::string_view hvalvw{hval};
         auto start = hvalvw.begin(), it = hvalvw.begin(), eit = hvalvw.end();
         bool skip_spaces = true;
         while (it != eit) {
@@ -91,7 +91,7 @@ void header_collection::tokenize_header(any_header_param_t h, function<bool(stri
                 continue;
             }
             if (*it == ';' || *it == ',' || *it == ' ') {
-                if (!handler(string_view{start, it}, string_view{}, *it)) return;
+                if (!handler(std::string_view{start, it}, {}, *it)) return;
                 ++it;
                 start = it;
                 skip_spaces = true;
@@ -106,7 +106,7 @@ void header_collection::tokenize_header(any_header_param_t h, function<bool(stri
             ++valstart;
             auto valit = valstart;
             for (; valit != eit && *valit != ';' && *valit != ','; ++valit);
-            if (!handler(string_view{start, it}, string_view{valstart, valit}, valit != eit ? *valit : '\0')) return;
+            if (!handler(std::string_view{start, it}, std::string_view{valstart, valit}, valit != eit ? *valit : '\0')) return;
             if (valit == eit) {
                 it = start = eit;
                 break;
@@ -116,7 +116,7 @@ void header_collection::tokenize_header(any_header_param_t h, function<bool(stri
             skip_spaces = true;
         }
         if (start != it) {
-            if (!handler(string_view{start, it}, string_view{}, it != eit ? *it : '\0')) return;
+            if (!handler(std::string_view{start, it}, {}, it != eit ? *it : '\0')) return;
         }
     }
 }
@@ -188,7 +188,7 @@ void request::parse_body_as_x_www_form_urlencoded()
     } while (!b.empty());
 }
 
-void request::parse_body_as_multipart_form_data(string_view boundary, function<void(form_data_item const&)> const& handler)
+void request::parse_body_as_multipart_form_data(std::string_view boundary, function<void(form_data_item const&)> const& handler)
 {
     range_dereferencing_iterator<content_read_iterator_t> b{std::move(input)}, e;
     
@@ -217,13 +217,12 @@ void request::parse_body_as_multipart_form_data(string_view boundary, function<v
         }
         form_data_item item;
         b = serialization::coder<serialization::default_t, message>::decode_headers(std::move(b), item.headers);
-        item.tokenize_header(header::CONTENT_DISPOSITION, [&item](string_view nm, string_view val, char) {
+        item.tokenize_header(header::CONTENT_DISPOSITION, [&item](std::string_view nm, std::string_view val, char) {
             bool is_name = (nm == "name");
             bool is_filename = (!is_name && nm == "filename");
             if (is_name || is_filename) {
                 if (val.size() >= 2 && val.front() == '\"' && val.back() == '\"') {
-                    val.advance_front(1);
-                    val.advance_back(-1);
+                    val = val.substr(1, val.size() - 2);
                 }
                 if (is_name) item.name = val;
                 else if (is_filename) item.filename = val;
@@ -276,7 +275,7 @@ void request::set_uri(string_view uri, bool ignore_abs_parts)
 
 void request::add_parameter(parameter_arg_t name, parameter_arg_t value)
 {
-    string_view pname = boost::apply_visitor(to_string_view_visitor(), name);
+    std::string_view pname = boost::apply_visitor(to_string_view_visitor(), name);
     auto it = parameters.find(pname, hasher(), string_equal_to());
     if (it == parameters.end()) {
         parameters.insert(it, std::pair(
@@ -288,24 +287,24 @@ void request::add_parameter(parameter_arg_t name, parameter_arg_t value)
     }
 }
 
-std::span<const std::string> request::get_parameter(string_view name) const
+std::span<const std::string> request::get_parameter(std::string_view name) const
 {
     auto it = parameters.find(name, hasher(), string_equal_to());
     if (it == parameters.end() || it->second.empty()) return {};
     return it->second;
 }
 
-void request::set_property(string_view name, json_value value)
+void request::set_property(std::string_view name, json_value value)
 {
     auto it = properties.find(name, hasher(), string_equal_to());
     if (it == properties.end()) {
-        properties.insert(it, std::pair(to_string(name), value));
+        properties.insert(it, std::pair(std::string(name), value));
     } else {
         it->second = value;
     }
 }
 
-json_value const* request::get_property(string_view name) const
+json_value const* request::get_property(std::string_view name) const
 {
     auto it = properties.find(name, hasher(), string_equal_to());
     if (it == properties.end()) return nullptr;
@@ -320,14 +319,15 @@ response::response(status code, optional<std::string> status_str)
 
 void response::meet_request(request const& r)
 {
-    r.tokenize_header(header::ACCEPT_ENCODING, [this](string_view n, string_view v, char d) {
+    using namespace std::literals::string_view_literals;
+    r.tokenize_header(header::ACCEPT_ENCODING, [this](std::string_view n, std::string_view v, char d) {
         if (!v.empty()) return true;
         if (n == "gzip") {
-            set_header(header::CONTENT_ENCODING, string_view("gzip"));
+            set_header(header::CONTENT_ENCODING, "gzip"sv);
             return false;
         }
         if (n == "deflate") {
-            set_header(header::CONTENT_ENCODING, string_view("deflate"));
+            set_header(header::CONTENT_ENCODING, "deflate"sv);
             return false;
         }
         return true;
@@ -341,13 +341,13 @@ void response::meet_keep_alive(request const& req)
     }
 }
 
-void response::make401(string_view auth_type, string_view realm, string_view opaque, string_view nonce)
+void response::make401(std::string_view auth_type, std::string_view realm, std::string_view opaque, std::string_view nonce)
 {
     std::ostringstream authval;
     authval << auth_type << " realm=\"" << realm << "\"";
     authval << ",qop=\"auth\"";
-    if (opaque) authval << ",opaque=\"" << opaque << "\"";
-    if (nonce) authval << ",nonce=\"" << nonce << "\"";
+    if (!opaque.empty()) authval << ",opaque=\"" << opaque << "\"";
+    if (!nonce.empty()) authval << ",nonce=\"" << nonce << "\"";
 
     set_header(header::WWW_AUTHENTICATE, authval.str());
     make_custom(status::UNAUTHORIZED, "text/html", "<h1>401 Unauthorized.</h1>");
@@ -364,7 +364,7 @@ void response::make404(optional<std::string> msg)
     };
 }
 
-void response::make_custom(status code, string_view ct, string_view body)
+void response::make_custom(status code, std::string_view ct, std::string_view body)
 {
     status_code = code;
     set_header(header::CONTENT_TYPE, ct);
@@ -372,13 +372,13 @@ void response::make_custom(status code, string_view ct, string_view body)
         set_header(http::header::TRANSFER_ENCODING, "chunked");
         //set_header(http::header::CONTENT_LENGTH, std::to_string(body.size()));
         
-        content_writer = [body = to_string(body)](http::message::range_write_input_iterator it) {
+        content_writer = [body = std::string(body)](http::message::range_write_input_iterator it) {
             copy_range(body, it);
         };
     }
 }
 
-void response::make_moved_temporarily_302(string_view location)
+void response::make_moved_temporarily_302(std::string_view location)
 {
     status_code = status::FOUND;
     set_header(http::header::CONTENT_LENGTH, "0");

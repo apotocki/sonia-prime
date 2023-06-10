@@ -23,12 +23,12 @@ sonnet::sonnet()
 
 void sonnet::handle(request & req, response & resp)
 {
-    resp.set_header(header::SERVER, string_view{cached_server_header_});
+    resp.set_header(header::SERVER, std::string_view{cached_server_header_});
     resp.set_header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*");
     resp.set_header(header::ACCESS_CONTROL_ALLOW_HEADERS, "Pragma");
 
     if (req.method == method_verb::OPTIONS) {
-        resp.set_header(header::ALLOW, cstring_view("GET,POST,OPTIONS"));
+        resp.set_header(header::ALLOW, "GET,POST,OPTIONS");
         resp.status_code = status::OK;
         return;
     }
@@ -52,7 +52,7 @@ void sonnet::handle(request & req, response & resp)
 
     // handle post/form params
     if (req.method == method_verb::POST) {
-        req.tokenize_header(header::CONTENT_TYPE, [this, &rparams](string_view nm, string_view val, char d) {
+        req.tokenize_header(header::CONTENT_TYPE, [this, &rparams](std::string_view nm, std::string_view val, char d) {
             if (nm == "multipart/form-data") rparams.has_form_data = true;
             else if (nm == "application/x-www-form-urlencoded") rparams.is_urlencoded = true;
             else if (nm == "boundary") rparams.form_data_boundary = val;

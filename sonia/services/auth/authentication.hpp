@@ -13,8 +13,8 @@ class authenticator
 {
 public:
     virtual ~authenticator() = default;
-    virtual std::string get_digest_for(string_view, string_view password) const = 0;
-    virtual string_view get_realm() const = 0;
+    virtual std::string get_digest_for(std::string_view, std::string_view password) const = 0;
+    virtual std::string_view get_realm() const = 0;
     virtual void clear_sessions() = 0;
 };
 
@@ -22,7 +22,7 @@ class digest_provider
 {
 public:
     virtual ~digest_provider() = default;
-    virtual optional<std::string> get_digest_for(string_view) const = 0;
+    virtual optional<std::string> get_digest_for(std::string_view) const = 0;
 };
 
 }

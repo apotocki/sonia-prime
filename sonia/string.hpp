@@ -220,7 +220,19 @@ struct string_equal_to
     }
 
     template <typename CharT, class TraitsT>
+    bool operator()(std::basic_string_view<CharT, TraitsT> l, std::basic_string<CharT, TraitsT> const& r) const noexcept
+    {
+        return l == r;
+    }
+
+    template <typename CharT, class TraitsT>
     bool operator()(std::basic_string<CharT, TraitsT> const& l, basic_string_view<CharT, TraitsT> r) const noexcept
+    {
+        return r == l;
+    }
+
+    template <typename CharT, class TraitsT>
+    bool operator()(std::basic_string<CharT, TraitsT> const& l, std::basic_string_view<CharT, TraitsT> r) const noexcept
     {
         return r == l;
     }
@@ -305,9 +317,9 @@ inline boost::basic_format<char> operator "" _fmt(const char* str, std::size_t)
 }
 
 /*
-inline boost::basic_format<char8_t> operator "" _u8fmt(const char* str, std::size_t)
+inline boost::basic_format<char8_t> operator "" _fmt(const char8_t* str, std::size_t)
 {
-    return boost::basic_format<char8_t>(reinterpret_cast<char8_t const*>(str));
+    return boost::basic_format<char8_t>(str);
 }
 */
 
@@ -317,6 +329,7 @@ inline boost::basic_format<CharT> fmt(const CharT(&str)[N])
     return boost::format(str);
 }
 
+// template specialization for foreign namespace std
 template <class CharT, class TraitsT, class AllocatorT>
 struct hash<std::basic_string<CharT, TraitsT, AllocatorT>>
 {
@@ -326,6 +339,16 @@ struct hash<std::basic_string<CharT, TraitsT, AllocatorT>>
     }
 };
 
+template <class CharT, class TraitsT>
+struct hash<std::basic_string_view<CharT, TraitsT>>
+{
+    size_t operator()(std::basic_string_view<CharT, TraitsT> str) const noexcept
+    {
+        return hash<array_view<const CharT>>()({str.data(), str.size()});
+    }
+};
+
+// for own namespace just add function definitions to use ADL
 template <class CharT, class TraitsT>
 size_t hash_value(basic_string_view<CharT, TraitsT> sv)
 {

@@ -295,6 +295,13 @@ json_value::json_value(decimal val)
     set_service_cookie((size_t)json_value_type::number);
 }
 
+json_value::json_value(std::string_view val)
+{
+    using string_t = optimized_array_impl<char, holder_t>;
+    string_t::init(this, val);
+    set_service_cookie((size_t)json_value_type::string);
+}
+
 json_value::json_value(string_view val)
 {
     using string_t = optimized_array_impl<char, holder_t>;

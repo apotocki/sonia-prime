@@ -39,7 +39,7 @@ public:
     path_ref_t get_state_path() const { if (cfg_.path) return *cfg_.path; else return statable_t::get_state_path(); }
     path_ref_t get_state_dir() const { if (cfg_.dir) return *cfg_.dir; else return statable_t::get_state_dir(); }
 
-    optional<std::string> get_digest_for(string_view) const override final;
+    optional<std::string> get_digest_for(std::string_view) const override final;
 
     using statable_t::backup;
     using statable_t::restore;
@@ -69,8 +69,8 @@ private:
 
     struct user_data_equal_to
     {
-        bool operator()(user_data const& ud, string_view s) const { return ud.id == s; }
-        bool operator()(string_view s, user_data const& ud) const { return ud.id == s; }
+        bool operator()(user_data const& ud, std::string_view s) const { return ud.id == s; }
+        bool operator()(std::string_view s, user_data const& ud) const { return ud.id == s; }
     };
 
     boost::unordered_set<user_data, user_data_hasher> map_;

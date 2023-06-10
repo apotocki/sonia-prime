@@ -5,6 +5,8 @@
 
 #include <boost/coroutine2/coroutine.hpp>
 
+#include "sonia/string.hpp"
+
 namespace sonia::sal {
 
 #ifdef BOOST_WINDOWS

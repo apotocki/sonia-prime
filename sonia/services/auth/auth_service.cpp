@@ -37,7 +37,7 @@ void auth_service::open()
     backup();
 }
 
-optional<std::string> auth_service::get_digest_for(string_view uid) const
+optional<std::string> auth_service::get_digest_for(std::string_view uid) const
 {
     lock_guard guard(mtx_);
     auto it = map_.find(uid, hasher{}, user_data_equal_to{});

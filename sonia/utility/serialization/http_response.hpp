@@ -29,6 +29,8 @@ public:
     template <typename WriteIteratorT>
     WriteIteratorT encode(http::response const& r, WriteIteratorT oi) const
     {
+        using namespace std::literals::string_view_literals;
+
         auto msg = r.status_string.value_or(to_string(r.status_code));
         std::string start_line = to_string("HTTP/%1%.%2% %3% %4%\r\n"_fmt % (r.version / 10) % (r.version % 10) % (int)r.status_code % msg);
 
@@ -57,7 +59,7 @@ public:
         } else {
             hvals = r.get_header(http::header::TRANSFER_ENCODING);
             if (hvals.size() != 1 || hvals[0] != "chunked") {
-                const_cast<http::response&>(r).set_header(http::header::TRANSFER_ENCODING, string_view("chunked"));
+                const_cast<http::response&>(r).set_header(http::header::TRANSFER_ENCODING, "chunked"sv);
             }
 
             writ = base_type::encode(r, std::move(writ));

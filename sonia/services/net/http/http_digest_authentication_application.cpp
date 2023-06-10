@@ -30,7 +30,7 @@ class value_reference : public polymorphic_movable
 {
 public:
     virtual ~value_reference() = default;
-    virtual void set(T&, string_view) const = 0;
+    virtual void set(T&, std::string_view) const = 0;
 };
 
 template <class T>
@@ -39,7 +39,7 @@ class flag_value_reference : public value_reference<T>
     bool T::* ref_;
 public:
     explicit flag_value_reference(bool T::* val) : ref_{val} {}
-    void set(T& obj, string_view val) const override final { obj.*ref_ = true; }
+    void set(T& obj, std::string_view val) const override final { obj.*ref_ = true; }
 
     SONIA_POLYMORPHIC_MOVABLE_IMPL(flag_value_reference)
 };
@@ -47,10 +47,10 @@ public:
 template <class T>
 class string_value_reference : public value_reference<T>
 {
-    string_view T::* ref_;
+    std::string_view T::* ref_;
 public:
-    explicit string_value_reference(string_view T::* val) : ref_{val} {}
-    void set(T& obj, string_view val) const override final { obj.*ref_ = val; }
+    explicit string_value_reference(std::string_view T::* val) : ref_{val} {}
+    void set(T& obj, std::string_view val) const override final { obj.*ref_ = val; }
 
     SONIA_POLYMORPHIC_MOVABLE_IMPL(string_value_reference)
 };
@@ -62,7 +62,7 @@ class base16_value_reference : public value_reference<T>
     ref_t ref_;
 public:
     explicit base16_value_reference(ref_t val) : ref_{val} {}
-    void set(T& obj, const string_view val) const override final
+    void set(T& obj, std::string_view val) const override final
     {
         if (val.size() != 2 * N) return;
         using namespace boost::conversion;
@@ -78,9 +78,9 @@ struct http_digest
     uint8_t response[16];
 
     //uint8_t ncnum[4];
-    string_view username, nonce, nc, cnonce, realm, opaque, uri, qop;
+    std::string_view username, nonce, nc, cnonce, realm, opaque, uri, qop;
 
-    bool operator()(string_view n, string_view qv);
+    bool operator()(std::string_view n, std::string_view qv);
 };
 
 struct http_digest_map : singleton
@@ -101,7 +101,7 @@ struct http_digest_map : singleton
         map_["response"] = value_ref_t{in_place_type<base16_value_reference<http_digest, 16>>, &http_digest::response};
     }
 
-    bool operator()(http_digest * dig, string_view n, string_view qv) const
+    bool operator()(http_digest * dig, std::string_view n, std::string_view qv) const
     {
         auto it = map_.find(n, hasher{}, string_equal_to{});
         if (it != map_.end()) {
@@ -112,19 +112,18 @@ struct http_digest_map : singleton
     }
 };
 
-bool http_digest::operator()(string_view n, string_view qv)
+bool http_digest::operator()(std::string_view n, std::string_view qv)
 {
     if (qv.size() >= 2 && ((qv.front() == '"' && qv.back() == '"') || (qv.front() == '\'' && qv.back() == '\''))) {
-        qv.advance_front(1);
-        qv.advance_back(-1);
+        qv = qv.substr(1, qv.size() - 2);
     }
     return as_singleton<http_digest_map>()->operator()(this, n, qv);
 }
 
 struct nonce_comparer
 {
-    bool operator()(string_view key, http_session const& s) const { return key < s.session_id_; }
-    bool operator()(http_session const& s, string_view key) const { return s.session_id_ < key; }
+    bool operator()(std::string_view key, http_session const& s) const { return key < s.session_id_; }
+    bool operator()(http_session const& s, std::string_view key) const { return s.session_id_ < key; }
 };
 
 std::string generate_nonce(size_t sz)
@@ -223,7 +222,7 @@ void http_digest_authentication_application::handle(http::request & req, http::r
     }
 
     http_digest dig;
-    req.tokenize_header(http::header::AUTHORIZATION, [this, &dig](string_view n, string_view v, char d) {
+    req.tokenize_header(http::header::AUTHORIZATION, [this, &dig](std::string_view n, std::string_view v, char d) {
         if (!dig(n, v)) {
             LOG_WARN(logger()) << "unparsed auth token: " << n << "=" << v;
         }
@@ -291,11 +290,11 @@ void http_digest_authentication_application::handle(http::request & req, http::r
             it->start = now;
             lifetimes_.insert(*it);
         } else {
-            http_session * ps = session_pool_.new_object(to_string(dig.nonce));
+            http_session * ps = session_pool_.new_object(std::string{dig.nonce});
             http_session * ps_pin = ps;
             SCOPE_EXIT([this, &ps_pin]{ if (ps_pin) session_pool_.delete_object(ps_pin); } );
             ps->digest = std::move(ha1);
-            ps->user = to_string(dig.username);
+            ps->user = std::string{dig.username};
             sessions_.insert(*ps);
             http_session * ps_pin2 = ps;
             SCOPE_EXIT([this, &ps_pin2]{ if (ps_pin2) sessions_.erase(*ps_pin2); } );
@@ -359,7 +358,7 @@ std::string http_digest_authentication_application::get_nonce()
     return std::move(nonce);
 }
 
-bool http_digest_authentication_application::remove_nonce(string_view nval)
+bool http_digest_authentication_application::remove_nonce(std::string_view nval)
 {
     lock_guard guard(nonce_mutex_);
     auto it = nonces_.find(nval, hasher(), string_equal_to());
@@ -370,7 +369,7 @@ bool http_digest_authentication_application::remove_nonce(string_view nval)
     return false;
 }
 
-std::string http_digest_authentication_application::get_digest_for(string_view user, string_view password) const
+std::string http_digest_authentication_application::get_digest_for(std::string_view user, std::string_view password) const
 {
     using namespace boost::conversion;
     std::string result;
@@ -380,7 +379,7 @@ std::string http_digest_authentication_application::get_digest_for(string_view u
     return result;
 }
 
-string_view http_digest_authentication_application::get_realm() const
+std::string_view http_digest_authentication_application::get_realm() const
 {
     return cfg_.digest_realm;
 }

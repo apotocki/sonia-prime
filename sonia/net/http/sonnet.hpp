@@ -24,7 +24,7 @@ public:
     {
         bool is_urlencoded{false};
         bool has_form_data{false};
-        string_view form_data_boundary;
+        std::string_view form_data_boundary;
     };
 
 protected:

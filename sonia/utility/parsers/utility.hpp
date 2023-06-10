@@ -8,6 +8,7 @@
 #include <functional>
 
 #include <boost/assert.hpp>
+#include <boost/exception/diagnostic_information.hpp>
 
 #include "sonia/cstdint.hpp"
 #include "sonia/exceptions.hpp"
@@ -332,7 +333,7 @@ IteratorT parse(ModelT & model, IteratorT b, IteratorT e)
         parser.parse(iter, end);
     } catch (internal_error const& err) {
         std::string msg = get_error_str(err.what());
-        msg += "\ncaused by: " + boost::diagnostic_information(err);
+        msg += "\ncaused by: " + ::boost::diagnostic_information(err);
         throw internal_error{msg};
     } catch (exception const& err) {
         throw exception(get_error_str(err.what()));

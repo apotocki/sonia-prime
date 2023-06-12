@@ -2127,6 +2127,9 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\lzma_decompress_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\path.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

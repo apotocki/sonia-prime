@@ -40,4 +40,28 @@ std::basic_string_view<CharT, TraitsT> extension(std::basic_string_view<CharT, T
     return p.substr(p.size());
 }
 
+template<typename CharT, typename TraitsT>
+std::basic_string_view<CharT, TraitsT> parent_path(std::basic_string_view<CharT, TraitsT> p)
+{
+    for (auto rit = p.rbegin(), erit = p.rend(); rit != erit; ++rit) {
+        CharT c = *rit;
+        if (c == '/') {
+            return p.substr(0, rit.base() - p.begin() - 1);
+        }
+    }
+    return p.substr(0, 0);
+}
+
+template<typename CharT, typename TraitsT>
+std::basic_string_view<CharT, TraitsT> filename(std::basic_string_view<CharT, TraitsT> p)
+{
+    for (auto rit = p.rbegin(), erit = p.rend(); rit != erit; ++rit) {
+        CharT c = *rit;
+        if (c == '/') {
+            return p.substr(rit.base() - p.begin());
+        }
+    }
+    return p;
+}
+
 }

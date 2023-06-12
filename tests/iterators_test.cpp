@@ -370,8 +370,21 @@ void socket_write_input_iterator_test()
     BOOST_CHECK(r.data() == buff.data() && r.size() == buff.size());
 }
 
+#if 0
+void archive_extract_iterator_test2()
+{
+    //char const* path = std::getenv("TESTS_HOME");
+    //fs::path archive_test_home{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "archives" };
+    std::map<std::string, std::string> cnt;
+
+    // just a file
+    cnt = load_archive(fs::path(TEST_FOLDER) / "data.tar.xz");
+}
+#endif
+
 void iterators_test_registrar()
 {
+    //register_test(BOOST_TEST_CASE(&archive_extract_iterator_test2));
     register_test(BOOST_TEST_CASE(&file_region_iterator_test));
     register_test(BOOST_TEST_CASE(&tar_iterator_test));
     register_test(BOOST_TEST_CASE(&gz_iterator_test));
@@ -379,6 +392,7 @@ void iterators_test_registrar()
     register_test(BOOST_TEST_CASE(&bzip2_iterators_test));
     register_test(BOOST_TEST_CASE(&archive_extract_iterator_test));
     register_test(BOOST_TEST_CASE(&socket_write_input_iterator_test));
+    //*/
 }
 
 #ifdef AUTO_TEST_REGISTRATION

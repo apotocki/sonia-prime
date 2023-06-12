@@ -95,7 +95,7 @@ public:
     basic_cstring_view(std::basic_string<CharT, TraitsT, AllocT> const& str) noexcept : base_type(str) {}
 
     template <typename SomeCharT>
-    constexpr basic_cstring_view(array_view<SomeCharT> arr) noexcept : base_type(arr) { BOOST_ASSERT(!arr.empty() && arr[arr.size() - 1] == 0); this->advance_back(-1); }
+    constexpr basic_cstring_view(array_view<SomeCharT> arr) : base_type(arr) { BOOST_ASSERT(!arr.empty() && arr[arr.size() - 1] == 0); this->advance_back(-1); }
 
     const char* c_str() const noexcept { return this->data(); }
 

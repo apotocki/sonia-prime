@@ -21,9 +21,9 @@ template <typename DerivedT>
 void file_statable<DerivedT>::open()
 {
     path_ref_t sp = derived().get_state_path();
-    if (auto * psp = boost::get<std::filesystem::path>(&sp); psp) {
+    if (auto * psp = boost::get<fs::path>(&sp); psp) {
         state_persister_ = sonia::make_shared<file_persister>(*psp);
-    } else if (auto * psp = boost::get<std::filesystem::path const&>(&sp); psp) {
+    } else if (auto * psp = boost::get<fs::path const&>(&sp); psp) {
         state_persister_ = sonia::make_shared<file_persister>(*psp);
     } else {
         THROW_INTERNAL_ERROR("no state path defined");
@@ -35,7 +35,7 @@ void file_statable<DerivedT>::open()
 template <typename DerivedT>
 typename file_statable<DerivedT>::name_ref_t file_statable<DerivedT>::get_state_name() const
 {
-    return std::string{to_string(".%1%.state"_fmt % derived().get_name())};
+    return to_string(".%1%.state"_fmt % derived().get_name());
 }
 
 template <typename DerivedT>
@@ -46,14 +46,14 @@ typename file_statable<DerivedT>::path_ref_t file_statable<DerivedT>::get_state_
     if (!psnm) {
         psnm = &boost::get<std::string const&>(snm);
     }
-    std::filesystem::path path;
+    fs::path path;
     path_ref_t dir = derived().get_state_dir();
-    if (auto * pdir = boost::get<std::filesystem::path>(&dir); pdir) {
+    if (auto * pdir = boost::get<fs::path>(&dir); pdir) {
         return *pdir / *psnm;
-    } else if (auto * pdir = boost::get<std::filesystem::path const&>(&dir); pdir) {
+    } else if (auto * pdir = boost::get<fs::path const&>(&dir); pdir) {
         return *pdir / *psnm;
     } else {
-        return std::filesystem::path{*psnm};
+        return fs::path{*psnm};
     }
 }
 

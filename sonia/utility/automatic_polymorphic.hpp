@@ -70,19 +70,59 @@ class automatic_polymorphic
 
 public:
     using value_type = PolymorphicT;
+    constexpr static bool clonable_v = is_polymorphic_clonable_v<PolymorphicT>;
+    constexpr static bool movable_v = is_polymorphic_movable_v<PolymorphicT>;
 
     automatic_polymorphic()
     {
         do_reset();
     }
 
-    template <class T, class ... ArgsT>
+    template <std::derived_from<PolymorphicT> T, class ... ArgsT>
     explicit automatic_polymorphic(in_place_type_t<T>, ArgsT&& ... args)
     {
         construct<T>(std::forward<ArgsT>(args) ...);
     }
 
-    template <class T>
+    template <typename T>
+    requires(movable_v && is_same_v<T, automatic_polymorphic>)
+    automatic_polymorphic(T && val)
+    {
+        move(std::move(val));
+    }
+
+    template <typename T>
+    requires(clonable_v && is_same_v<T, automatic_polymorphic>)
+    automatic_polymorphic(T const& val)
+    {
+        clone(val);
+    }
+    
+    template <std::derived_from<PolymorphicT> T>
+    requires(is_rvalue_reference_v<T&&> && is_polymorphic_movable_v<remove_cvref_t<T>>)
+    automatic_polymorphic(T&& val)
+    {
+        move(std::move(val));
+    }
+    
+    template <std::derived_from<PolymorphicT> T>
+    requires(is_polymorphic_clonable_v<remove_cvref_t<T>>)
+    automatic_polymorphic(T const& val)
+    {
+        clone(val);
+    }
+    /*
+    {
+        if constexpr (is_rvalue_reference_v<T&&>) {
+            move(std::move(arg));
+        } else if constexpr (is_reference_v<T&&>) {
+            clone(arg);
+        } else {
+            THROW_INTERNAL_ERROR("automatic_polymorphic");
+        }
+    }
+
+    
     automatic_polymorphic(T && arg, enable_if_t<
         (is_same_v<remove_cvref_t<T>, automatic_polymorphic> && is_polymorphic_clonable_v<PolymorphicT>)
         || (is_base_of_v<PolymorphicT, remove_cvref_t<T>> &&
@@ -103,6 +143,8 @@ public:
             THROW_INTERNAL_ERROR("automatic_polymorphic");
         }
     }
+    */
+
 
     automatic_polymorphic(automatic_polymorphic const& rhs)
     {
@@ -203,10 +245,9 @@ public:
 private:
     void do_reset() { *reinterpret_cast<void**>(this->buffer_) = nullptr; }
 
-    template <class T, class ... ArgsT>
+    template <std::derived_from<PolymorphicT> T, class ... ArgsT>
     void construct(ArgsT&& ... args)
     {
-        static_assert(is_base_of_v<PolymorphicT, T>);
         BOOST_MPL_ASSERT_RELATION( sizeof(T), <=, SizeV );
         new (this->buffer_) T(std::forward<ArgsT>(args) ...);
         T * place = std::launder(reinterpret_cast<T*>(this->buffer_));

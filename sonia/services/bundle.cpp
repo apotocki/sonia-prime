@@ -30,7 +30,7 @@ shared_ptr<service> bundle::build(service_configuration const& cfg)
         THROW_INTERNAL_ERROR("bundle factory error: No factory name was found in '%1%'"_fmt % to_string(cfg.parameters));
     }
 
-    string_view name = jnm->get_string();
+    std::string_view name = jnm->get_string();
     auto it = builders_.find(name, hasher(), string_equal_to());
     if (it == builders_.end()) {
         THROW_INTERNAL_ERROR("The '%1%' bundle has no a definition of '%2%' factory"_fmt % typeid(*this).name() % name);

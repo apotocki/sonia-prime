@@ -34,8 +34,8 @@ void model::put_boolean(bool v)
 void model::put_object()
 {
     size_t cnt = stack_.size() - state_stack_.back().second;
-    array_view<json_value> values(&stack_[stack_.size() - cnt], cnt);
-    array_view<std::string> names(&strings_[strings_.size() - cnt], cnt);
+    std::span<json_value> values(&stack_[stack_.size() - cnt], cnt);
+    std::span<std::string> names(&strings_[strings_.size() - cnt], cnt);
     json_value obj(names, values);
     stack_.resize(stack_.size() - cnt);
     strings_.resize(strings_.size() - cnt);
@@ -47,7 +47,7 @@ void model::put_object()
 void model::put_array()
 {
     size_t cnt = stack_.size() - state_stack_.back().second;
-    array_view<json_value> values(&stack_[stack_.size() - cnt], cnt);
+    std::span<json_value> values{&stack_[stack_.size() - cnt], cnt};
     json_value obj(values);
     stack_.resize(stack_.size() - cnt);
     stack_.push_back(std::move(obj));

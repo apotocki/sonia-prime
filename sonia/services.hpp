@@ -16,7 +16,7 @@
 
 namespace sonia::this_thread {
 
-SONIA_PRIME_API void attach_host(string_view);
+SONIA_PRIME_API void attach_host(std::string_view);
 SONIA_PRIME_API void detach_host();
 
 }
@@ -43,7 +43,7 @@ SONIA_PRIME_API void shutdown(int to_level); // including level
 
 SONIA_PRIME_API shared_ptr<host> get_host();
 
-SONIA_PRIME_API shared_ptr<service> locate(string_view);
+SONIA_PRIME_API shared_ptr<service> locate(std::string_view);
 SONIA_PRIME_API shared_ptr<service> locate(service::id);
 
 template <class ServiceT, typename IdT>
@@ -62,7 +62,7 @@ void locate(IdT && id, shared_ptr<ServiceT> & serv)
     serv = locate<ServiceT>(std::forward<IdT>(id));
 }
 
-SONIA_PRIME_API void register_service_factory(string_view, function<shared_ptr<service>()> const&);
+SONIA_PRIME_API void register_service_factory(std::string_view, function<shared_ptr<service>()> const&);
 SONIA_PRIME_API void load_configuration(fs::path const &);
 SONIA_PRIME_API void load_configuration(std::istream &);
 

@@ -13,12 +13,12 @@ local_service_registry::local_service_registry(shared_ptr<persister> sp)
     base_t::restore();
 }
 
-service::id local_service_registry::get_id(string_view name)
+service::id local_service_registry::get_id(std::string_view name)
 {
     return base_t::get_id(name, "");
 }
 
-string_view local_service_registry::get_name(service::id id) const
+std::string_view local_service_registry::get_name(service::id id) const
 {
     return base_t::get_name(id);
 }

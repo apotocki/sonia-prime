@@ -61,7 +61,7 @@ void set_thread_name(boost::thread::id tid, char const* threadName)
     set_thread_name(dwThreadId, threadName);
 }
 
-std::wstring utf8_to_utf16(string_view str)
+std::wstring utf8_to_utf16(std::string_view str)
 {
     std::wstring result;
     result.resize(str.size() + 1);
@@ -74,17 +74,17 @@ std::wstring utf8_to_utf16(string_view str)
     return std::move(result);
 }
 
-std::u8string utf16_to_utf8(wstring_view str)
+std::u8string utf16_to_utf8(std::wstring_view str)
 {
     std::u8string result;
     result.resize(str.size());
-    int len = WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), nullptr, 0, NULL, NULL);
+    int len = WideCharToMultiByte(CP_UTF8, 0, str.data(), (int)str.size(), nullptr, 0, NULL, NULL);
     result.resize((size_t)len);
-    WideCharToMultiByte(CP_UTF8, 0, str.begin(), (int)str.size(), (char*)result.data(), (int)result.size(), NULL, NULL);
+    WideCharToMultiByte(CP_UTF8, 0, str.data(), (int)str.size(), (char*)result.data(), (int)result.size(), NULL, NULL);
     return std::move(result);
 }
 
-std::u8string win_ansi_to_utf8(string_view str)
+std::u8string win_ansi_to_utf8(std::string_view str)
 {
     std::wstring wresult;
     wresult.resize(str.size() + 1);
@@ -138,7 +138,7 @@ wsa_scope::~wsa_scope()
     WSACleanup();
 }
 
-bool parse_address(int hint_af, int hint_type, int hint_protocol, string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc)
+bool parse_address(int hint_af, int hint_type, int hint_protocol, std::string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc)
 {
     std::wstring wadr = utf8_to_utf16(address);
     std::wstring portstr = boost::lexical_cast<std::wstring>(port);
@@ -171,7 +171,7 @@ std::u8string inet_ntoa(sockaddr const* addr, DWORD addrsz, LPWSAPROTOCOL_INFOW 
     for (;;) {
         DWORD sz = (DWORD)temparr.size();
         int r = WSAAddressToStringW(const_cast<sockaddr*>(addr), addrsz, lpProtocolInfo, temparr.begin(), &sz);
-        if (!r) return utf16_to_utf8(temparr.to_array_view().subview(0, sz));
+        if (!r) return utf16_to_utf8((std::wstring_view)temparr.to_span().subspan(0, sz));
         DWORD err = WSAGetLastError();
         if (WSAEFAULT == err) {
             temparr = arr_type(temparr.size() * 2);
@@ -366,7 +366,7 @@ std::u8string get_file_name(HANDLE hFile)
         throw exception("can't retrieve file name from handle, error: %1%"_fmt % error_message(err));
     }
     buf[dwRet] = 0;
-    return utf16_to_utf8(wstring_view(&buf.front(), dwRet));
+    return utf16_to_utf8(std::wstring_view(&buf.front(), dwRet));
 }
 
 void delete_file(wchar_t const * path)

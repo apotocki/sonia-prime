@@ -28,9 +28,9 @@ namespace sonia::windows {
 void set_thread_name(DWORD dwThreadId, char const* threadName);
 void set_thread_name(boost::thread::id tid, char const* threadName);
 
-std::wstring utf8_to_utf16(string_view);
-std::u8string utf16_to_utf8(wstring_view);
-std::u8string win_ansi_to_utf8(string_view);
+std::wstring utf8_to_utf16(std::string_view);
+std::u8string utf16_to_utf8(std::wstring_view);
+std::u8string win_ansi_to_utf8(std::string_view);
 
 std::string error_message(DWORD errcode);
 
@@ -42,7 +42,7 @@ public:
 };
 
 LPFN_ACCEPTEX get_accept_function(SOCKET);
-bool parse_address(int hint_af, int hint_type, int hint_protocol, string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc);
+bool parse_address(int hint_af, int hint_type, int hint_protocol, std::string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc);
 
 std::u8string inet_ntoa(sockaddr const* addr, DWORD sz, LPWSAPROTOCOL_INFOW);
 

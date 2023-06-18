@@ -235,7 +235,7 @@ public:
         json_object jo = val.get_object();
         for (auto const& [name, value] : jo.items()) {
             try {
-                if (!coll.insert(std::pair(to_string(name), cast(value))).second) {
+                if (!coll.insert(std::pair(std::string(name), cast(value))).second) {
                     throw exception("Named item '%1%' is already inserted, previous value: %2%"_fmt % name % to_string(*jo[name]));
                 }
             } catch (std::exception const& ex) {

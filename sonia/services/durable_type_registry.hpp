@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICES_DURABLE_TYPE_REGISTRY_HPP
-#define SONIA_SERVICES_DURABLE_TYPE_REGISTRY_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <typeindex>
 
@@ -30,7 +25,7 @@ class durable_type_registry
     >;
 
 public:
-    uint32_t register_durable_id(string_view nm, string_view servnm, std::type_index);
+    uint32_t register_durable_id(std::string_view nm, std::string_view servnm, std::type_index);
     uint32_t get_durable_id(std::type_index);
     std::type_index get_durable_type_index(uint32_t);
 
@@ -48,5 +43,3 @@ private:
 };
 
 }
-
-#endif // SONIA_SERVICES_DURABLE_TYPE_REGISTRY_HPP

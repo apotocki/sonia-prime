@@ -43,8 +43,8 @@ class service_registry
 public:
     virtual ~service_registry() = default;
 
-    virtual service::id get_id(string_view) = 0;
-    virtual string_view get_name(service::id) const = 0; // throws an exception if the name is undefined for the given id.
+    virtual service::id get_id(std::string_view) = 0;
+    virtual std::string_view get_name(service::id) const = 0; // throws an exception if the name is undefined for the given id.
 };
 
 class service_factory
@@ -52,7 +52,7 @@ class service_factory
 public:
     virtual ~service_factory() = default;
 
-    virtual shared_ptr<service> create(string_view) const = 0;
+    virtual shared_ptr<service> create(std::string_view) const = 0;
 };
 
 }

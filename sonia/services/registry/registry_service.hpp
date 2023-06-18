@@ -28,7 +28,7 @@ public:
     path_ref_t get_state_path() const { if (cfg_.path) return *cfg_.path; else return statable_t::get_state_path(); }
     path_ref_t get_state_dir() const { if (cfg_.dir) return *cfg_.dir; else return statable_t::get_state_dir(); }
 
-    uint32_t lookup(string_view s) override { return impl_t::get_id(s, {}); }
+    uint32_t lookup(std::string_view s) override { return impl_t::get_id(s, {}); }
     std::string const* lookup(uint32_t id) const override { return impl_t::lookup_name(id); }
 
     persister & get_state_persister() const { return *statable_t::state_persister_; }

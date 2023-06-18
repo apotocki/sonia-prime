@@ -23,7 +23,7 @@ void http_static_application_builder::open()
                 .variable("forward", &fwd_pair_t::second, "forward path").required()
                 .variable("pathre", &fwd_pair_t::first, "path regexp to forward").required()
                     .binder([](json_value const& v)->boost::regex {
-                        return boost::regex(to_string(v.get_string()));
+                        return boost::regex(std::string(v.get_string()));
                     })
             )
     ;

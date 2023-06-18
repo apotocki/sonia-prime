@@ -40,7 +40,7 @@ host_impl::~host_impl()
     }
 }
 
-shared_ptr<service> host_impl::locate(string_view nm) const
+shared_ptr<service> host_impl::locate(std::string_view nm) const
 {
     return locator_->get(nm);
 }

@@ -26,7 +26,7 @@ void http_connector_builder::open()
                 .variable("application", &http_route::application_name, "http application name").required()
                 .variable("pathre", &http_route::pathre, "path regexp").required()
                     .binder([](json_value const& v)->boost::regex {
-                        return boost::regex(to_string(v.get_string()));
+                        return boost::regex(std::string(v.get_string()));
                     })
             )
     ;

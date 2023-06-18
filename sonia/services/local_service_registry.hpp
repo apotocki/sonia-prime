@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERVICE_LOCAL_SERVICE_REGISTRY_HPP
-#define SONIA_SERVICE_LOCAL_SERVICE_REGISTRY_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "service.hpp"
 #include "sonia/utility/basic_local_registry.hpp"
@@ -24,8 +19,8 @@ class local_service_registry
 public:
     explicit local_service_registry(shared_ptr<persister> sp);
 
-    service::id get_id(string_view) override;
-    string_view get_name(service::id) const override;
+    service::id get_id(std::string_view) override;
+    std::string_view get_name(service::id) const override;
 
     persister & get_state_persister() const { return *state_persister_; }
 
@@ -34,5 +29,3 @@ private:
 };
 
 }
-
-#endif // SONIA_SERVICE_LOCAL_SERVICE_REGISTRY_HPP

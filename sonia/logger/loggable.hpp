@@ -22,9 +22,9 @@ public:
 
     logger::logger_ptr logger() const { return logger_; }
 
-    void set_log_attribute(std::string const& name, string_view value) const
+    void set_log_attribute(std::string const& name, std::string_view value) const
     {
-        logger_->add_attribute(name, boost::log::attributes::constant<std::string>(to_string(value)));
+        logger_->add_attribute(name, boost::log::attributes::constant<std::string>(std::string(value)));
     }
 
 private:

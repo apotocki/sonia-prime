@@ -23,26 +23,26 @@ service_locator::~service_locator() noexcept
     shutdown();
 }
 
-shared_ptr<service> service_locator::get(string_view name)
+shared_ptr<service> service_locator::get(std::string_view name)
 {
     return get(sr_->get_id(name), name);
 }
 
 shared_ptr<service> service_locator::get(service::id id)
 {
-    return get(id, string_view());
+    return get(id, std::string_view{});
 }
 
-shared_ptr<service> service_locator::get(service::id id, string_view name)
+shared_ptr<service> service_locator::get(service::id id, std::string_view name)
 {
     try {
         return static_pointer_cast<service>(get(id, [this, name](singleton::id id) mutable {
-            if (!name) name = sr_->get_name(id);
+            if (name.empty()) name = sr_->get_name(id);
                 
             auto creature = sf_->create(name);
             creature->set_log_attribute("Name", name);
             creature->set_log_attribute("Host", services::get_host()->get_name());
-            service_access::set_name(*creature, to_string(name));
+            service_access::set_name(*creature, std::string(name));
             singleton_access::set_id(*creature, id);
             creature->open();
             LOG_TRACE(creature->logger()) << "started";
@@ -50,7 +50,7 @@ shared_ptr<service> service_locator::get(service::id id, string_view name)
         }));
     } catch (circular_dependency_error const&) {
         BOOST_THROW_EXCEPTION(circular_dependency_error("found a circular dependency for the service: '%1%' (%2%)"_fmt
-            % (name ? name : sr_->get_name(id)) % id));
+            % (name.empty() ? sr_->get_name(id) : name) % id));
     }
 }
 

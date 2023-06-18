@@ -5,6 +5,7 @@
 
 #include <utility>
 #include <array>
+#include <span>
 
 #include <boost/mpl/size.hpp>
 #include <boost/mpl/vector.hpp>
@@ -14,7 +15,6 @@
 #include "sonia/prime_config.hpp"
 #include "sonia/type_traits.hpp"
 #include "sonia/function.hpp"
-#include "sonia/array_view.hpp"
 #include "sonia/utility/polymorphic_traits.hpp"
 #include "sonia/exceptions.hpp"
 
@@ -28,8 +28,8 @@ public:
 
 namespace services {
 
-SONIA_PRIME_API void register_multimethod(multimethod &&, array_view<const std::type_index>);
-SONIA_PRIME_API multimethod const* get_multimethod(array_view<const std::type_index>);
+SONIA_PRIME_API void register_multimethod(multimethod &&, std::span<const std::type_index>);
+SONIA_PRIME_API multimethod const* get_multimethod(std::span<const std::type_index>);
 
 }
 

@@ -5,6 +5,7 @@
 
 #include <utility>
 #include <memory>
+#include <span>
 
 #include "sonia/type_traits.hpp"
 #include "sonia/array_view.hpp"
@@ -66,8 +67,11 @@ public:
     T& operator[](size_t ind) noexcept { return begin()[ind]; }
     T const& operator[](size_t ind) const noexcept { return begin()[ind]; }
     
-    array_view<T> to_array_view() noexcept { return array_view<T>(begin(), sz_); }
-    array_view<const T> to_array_view() const noexcept { return array_view<const T>(begin(), sz_); }
+    operator std::span<T> () noexcept { return std::span<T>(begin(), sz_); }
+    operator std::span<const T> () const noexcept { return std::span<const T>(begin(), sz_); }
+
+    std::span<T> to_span() noexcept { return std::span<T>(begin(), sz_); }
+    std::span<const T> to_span() const noexcept { return std::span<const T>(begin(), sz_); }
 
     template <typename OffsT>
     array_view<T> subview(OffsT offset) { return to_subview(*this, offset); }

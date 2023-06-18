@@ -11,7 +11,7 @@
 
 namespace sonia::services {
 
-uint32_t durable_type_registry::register_durable_id(string_view nm, string_view servnm, std::type_index ti)
+uint32_t durable_type_registry::register_durable_id(std::string_view nm, std::string_view servnm, std::type_index ti)
 {
     uint32_t result = type_registry_->get_type_id(nm, servnm);
     lock_guard guard(type_durable_id_mtx_);

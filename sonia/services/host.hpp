@@ -13,7 +13,7 @@ public:
     virtual ~host() = default;
     virtual void close() = 0;
 
-    virtual string_view get_name() const = 0;
+    virtual std::string_view get_name() const = 0;
 
     virtual void attach_to_current_thread() = 0;
     virtual void dettach_from_current_thread() = 0;

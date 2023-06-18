@@ -33,7 +33,7 @@ void set_thread_name(sonia::thread::id tid, std::string const& name)
     winapi::set_thread_name(tid, name.c_str());
 }
 
-std::u8string reencode_system_message(string_view message)
+std::u8string reencode_system_message(std::string_view message)
 {
     return winapi::win_ansi_to_utf8(message);
 }
@@ -78,14 +78,14 @@ uint64_t file_size(HANDLE h)
 
 void delete_file(cstring_view path)
 {
-    std::wstring wfname = winapi::utf8_to_utf16(path);
+    std::wstring wfname = winapi::utf8_to_utf16(std::string_view{(const char*)path.data(), path.size()});
     winapi::delete_file(wfname.c_str());
 }
 
 void get_disk_info(u8string_view path, disk_info& di)
 {
     using namespace boost::conversion;
-    std::wstring wfname = winapi::utf8_to_utf16(string_view{(const char*)path.data(), path.size()});
+    std::wstring wfname = winapi::utf8_to_utf16(std::string_view{(const char*)path.data(), path.size()});
 
     ULARGE_INTEGER ulFreeSpace;
     ULARGE_INTEGER ulTotalSpace;
@@ -241,7 +241,7 @@ boost::coroutines2::coroutine<addrinfo const*&>::pull_type parse_net_address(net
     return boost::coroutines2::coroutine<addrinfo const*&>::pull_type
         ([=](boost::coroutines2::coroutine<addrinfo const*&>::push_type & yield)
     {
-        std::wstring wadr = winapi::utf8_to_utf16(address);
+        std::wstring wadr = winapi::utf8_to_utf16(std::string_view{(const char*)address.data(), address.size()});
         std::wstring portstr = std::to_wstring(port);
 
         ADDRINFOW *result = nullptr, hints;

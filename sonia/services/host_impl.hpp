@@ -29,7 +29,7 @@ public:
     void open(shared_ptr<service_registry> r, shared_ptr<service_factory> f);
     void close() override;
 
-    shared_ptr<service> locate(string_view) const;
+    shared_ptr<service> locate(std::string_view) const;
     shared_ptr<service> locate(service::id) const;
 
     void shutdown(int to_level) { locator_->shutdown(to_level); }
@@ -38,7 +38,7 @@ public:
 
     void run(std::vector<std::string> const& servs);
 
-    string_view get_name() const override final { return name_; }
+    std::string_view get_name() const override final { return name_; }
     void attach_to_current_thread() override final;
     void dettach_from_current_thread() override final;
 

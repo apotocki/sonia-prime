@@ -5,11 +5,12 @@
 #pragma once
 
 #include <iterator>
+#include <span>
+
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/range/iterator_range_core.hpp>
 
 #include "sonia/string.hpp"
-#include "sonia/array_view.hpp"
 #include "sonia/type_traits.hpp"
 
 #include "sonia/utility/optimized/holder.hpp"
@@ -64,28 +65,28 @@ public:
 
     size_t size() const noexcept;
 
-    json_value const* operator[](string_view) const noexcept;
-    json_value * operator[](string_view) noexcept;
+    json_value const* operator[](std::string_view) const noexcept;
+    json_value * operator[](std::string_view) noexcept;
 
     const_item_range_t items() const noexcept;
     item_range_t items() noexcept;
 };
 
-std::pair<string_view, json_value&> json_object_item_iterator_dereference(json_object &, size_t pos);
+std::pair<std::string_view, json_value&> json_object_item_iterator_dereference(json_object &, size_t pos);
 
 template <bool IsConstV>
 class json_object_item_iterator
     : public boost::iterator_facade<
         json_object_item_iterator<IsConstV>,
-        std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>>,
+        std::pair<std::string_view, conditional_t<IsConstV, json_value const&, json_value&>>,
         boost::random_access_traversal_tag,
-        std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>>
+        std::pair<std::string_view, conditional_t<IsConstV, json_value const&, json_value&>>
     >
 {
     friend class boost::iterator_core_access;
     friend class json_object;
 
-    typedef std::pair<string_view, conditional_t<IsConstV, json_value const&, json_value&>> value_t;
+    typedef std::pair<std::string_view, conditional_t<IsConstV, json_value const&, json_value&>> value_t;
     mutable json_object obj_;
     size_t pos_;
 
@@ -120,13 +121,13 @@ class json_value : json_detail::holder_t
     explicit json_value(decimal);
     explicit json_value(std::string_view);
     explicit json_value(string_view);
-    explicit json_value(array_view<json_value>);
+    explicit json_value(std::span<json_value>);
     
     json_value(std::initializer_list<json_value>);
 
-    json_value(array_view<const std::string>, array_view<const json_value>);
+    json_value(std::span<const std::string>, std::span<const json_value>);
 
-    explicit json_value(const char* val) : json_value(string_view(val)) {}
+    explicit json_value(const char* val) : json_value(std::string_view(val)) {}
 
     ~json_value();
 
@@ -146,9 +147,10 @@ class json_value : json_detail::holder_t
     int get_int() const;
     int64_t get_int64() const;
     decimal get_number() const;
-    string_view get_string() const;
-    array_view<const json_value> get_array() const;
-    array_view<json_value> get_array();
+    std::string_view get_string() const;
+    std::u8string_view get_u8string() const;
+    std::span<const json_value> get_array() const;
+    std::span<json_value> get_array();
     json_object get_object() const;
 };
 

@@ -15,7 +15,7 @@
 #include "sonia/utility/optimized/decimal.hpp"
 #include "sonia/utility/optimized/array.hpp"
 #include "sonia/utility/functional/mover.hpp"
-#include "sonia/utility/streaming/array_view.hpp"
+#include "sonia/utility/streaming/span.hpp"
 
 namespace sonia {
 
@@ -54,9 +54,9 @@ struct json_object_item_transformer
 
 struct object_item_less
 {
-    inline string_view to_string_view(object_item_t const& v) const
+    inline std::string_view to_string_view(object_item_t const& v) const
     {
-        return (string_view)(v.first.to_array_view());
+        return (std::string_view)(v.first.to_span());
     }
 
     bool operator()(object_item_t const& l, object_item_t const& r)
@@ -64,7 +64,7 @@ struct object_item_less
         return to_string_view(l) < to_string_view(r);
     }
 
-    bool operator()(object_item_t const& l, string_view r)
+    bool operator()(object_item_t const& l, std::string_view r)
     {
         return to_string_view(l) < r;
     }
@@ -94,30 +94,30 @@ struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
 
     using base_t::get;
 
-    static json_value const* get(HolderT const* self, string_view key)
+    static json_value const* get(HolderT const* self, std::string_view key)
     {
         if (!self->is_ptr()) return nullptr;
         optimized_collection_t const* ptr = base_t::ptr(self);
         object_item_t const* it = std::lower_bound(ptr->begin(), ptr->end(), key, object_item_less());
-        if (it == ptr->end() || (string_view)(it->first.to_array_view()) != key) return nullptr;
+        if (it == ptr->end() || (std::string_view)(it->first.to_span()) != key) return nullptr;
         return &it->second;
     }
 
-    static json_value * get(HolderT * self, string_view key)
+    static json_value * get(HolderT * self, std::string_view key)
     {
         if (!self->is_ptr()) return nullptr;
         optimized_collection_t * ptr = base_t::ptr(self);
         object_item_t * it = std::lower_bound(ptr->begin(), ptr->end(), key, object_item_less());
-        if (it == ptr->end() || (string_view)(it->first.to_array_view()) != key) return nullptr;
+        if (it == ptr->end() || (std::string_view)(it->first.to_span()) != key) return nullptr;
         return &it->second;
     }
 };
 
-std::pair<string_view, json_value&> json_object_item_iterator_dereference(json_object & obj, size_t pos)
+std::pair<std::string_view, json_value&> json_object_item_iterator_dereference(json_object & obj, size_t pos)
 {
     using object_t = optimized_object_impl<holder_t>;
     auto& item = object_t::get(&json_value_holder_accessor::holder(obj))[pos];
-    return {string_view(item.first.begin(), item.first.size()), item.second};
+    return {std::string_view(item.first.begin(), item.first.size()), item.second};
 }
 
 bool operator==(json_object const& lhs, json_object const& rhs)
@@ -125,7 +125,7 @@ bool operator==(json_object const& lhs, json_object const& rhs)
     using object_t = optimized_object_impl<holder_t>;
     auto litems = object_t::get(&lhs);
     auto ritems = object_t::get(&rhs);
-    return litems == ritems;
+    return sonia::range_equal()(litems, ritems);
 }
 
 bool operator<(json_object const& lhs, json_object const& rhs)
@@ -133,7 +133,7 @@ bool operator<(json_object const& lhs, json_object const& rhs)
     using object_t = optimized_object_impl<holder_t>;
     auto litems = object_t::get(&lhs);
     auto ritems = object_t::get(&rhs);
-    return litems < ritems;
+    return sonia::range_less()(litems, ritems);
 }
 
 bool json_value::get_bool() const
@@ -171,16 +171,27 @@ decimal json_value::get_number() const
     throw exception("json_value (%1%) is not a number"_fmt % to_string(*this));
 }
 
-string_view json_value::get_string() const
+std::string_view json_value::get_string() const
 {
     if (json_value_type::string == type()) {
         using string_t = optimized_array_impl<char, holder_t>;
-        return string_t::get(this);
+        auto sp = string_t::get(this);
+        return { sp.data(), sp.size() };
     }
     throw exception("json_value (%1%) is not a string"_fmt % to_string(*this));
 }
 
-array_view<const json_value> json_value::get_array() const
+std::u8string_view json_value::get_u8string() const
+{
+    if (json_value_type::string == type()) {
+        using string_t = optimized_array_impl<char, holder_t>;
+        auto sp = string_t::get(this);
+        return { reinterpret_cast<char8_t const*>(sp.data()), sp.size() };
+    }
+    throw exception("json_value (%1%) is not a string"_fmt % to_string(*this));
+}
+
+std::span<const json_value> json_value::get_array() const
 {
     if (json_value_type::array == type()) {
         using array_t = optimized_array_impl<json_value, holder_t>;
@@ -189,7 +200,7 @@ array_view<const json_value> json_value::get_array() const
     throw exception("json_value (%1%) is not an array"_fmt % to_string(*this));
 }
 
-array_view<json_value> json_value::get_array()
+std::span<json_value> json_value::get_array()
 {
     if (json_value_type::array == type()) {
         using array_t = optimized_array_impl<json_value, holder_t>;
@@ -227,13 +238,13 @@ json_object& json_object::operator=(json_object const& rhs)
     return *this;
 }
 
-json_value const* json_object::operator[](string_view key) const noexcept
+json_value const* json_object::operator[](std::string_view key) const noexcept
 {
     using object_t = optimized_object_impl<holder_t>;
     return object_t::get(this, key);
 }
 
-json_value * json_object::operator[](string_view key) noexcept
+json_value * json_object::operator[](std::string_view key) noexcept
 {
     using object_t = optimized_object_impl<holder_t>;
     return object_t::get(this, key);
@@ -309,7 +320,7 @@ json_value::json_value(string_view val)
     set_service_cookie((size_t)json_value_type::string);
 }
 
-json_value::json_value(array_view<json_value> val)
+json_value::json_value(std::span<json_value> val)
 {
     using array_t = optimized_array_impl<json_value, holder_t>;
     array_t::init(this, val | boost::adaptors::transformed(mover()), val.size());
@@ -323,7 +334,7 @@ json_value::json_value(std::initializer_list<json_value> l)
     set_service_cookie((size_t)json_value_type::array);
 }
 
-json_value::json_value(array_view<const std::string> keys, array_view<const json_value> vals)
+json_value::json_value(std::span<const std::string> keys, std::span<const json_value> vals)
 {
     using object_t = optimized_object_impl<holder_t>;
     object_t::init(this, keys, vals);
@@ -352,16 +363,34 @@ bool compare(json_value const& lhs, json_value const& rhs, OpT const& op)
     }
 }
 
+struct json_eq
+{
+    template <typename T>
+    bool operator()(T const& l, T const& r) const { return l == r; }
+
+    template <typename T>
+    bool operator()(std::span<T> const& l, std::span<T> const& r) const { return range_equal()(l, r); }
+};
+
+struct json_less
+{
+    template <typename T>
+    bool operator()(T const& l, T const& r) const { return l < r; }
+
+    template <typename T>
+    bool operator()(std::span<T> const& l, std::span<T> const& r) const { return range_less()(l, r); }
+};
+
 bool operator==(json_value const& lhs, json_value const& rhs)
 {
     if (lhs.type() != rhs.type()) return false;
-    return compare(lhs, rhs, [](auto const& l, auto const& r)->bool { return l == r; });
+    return compare(lhs, rhs, json_eq());
 }
 
 bool operator<(json_value const& lhs, json_value const& rhs)
 {
     if (lhs.type() != rhs.type()) return (int)lhs.type() < (int)rhs.type();
-    return compare(lhs, rhs, [](auto const& l, auto const& r)->bool { return l < r; });
+    return compare(lhs, rhs, json_less());
 }
 
 json_value::~json_value()

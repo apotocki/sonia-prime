@@ -2130,6 +2130,12 @@
     <ClInclude Include="..\..\..\sonia\utility\path.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\streaming\span.hpp">
+      <Filter>sonia.utility\streaming</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\functional\hash\span.hpp">
+      <Filter>sonia.utility\functional\hash</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_TYPE_DURABLE_ID_HPP
-#define SONIA_UTILITY_TYPE_DURABLE_ID_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <mutex> // call_once
 #include <iosfwd>
@@ -24,11 +19,11 @@ namespace sonia {
 
 namespace services {
 
-SONIA_PRIME_API uint32_t register_durable_id(string_view, string_view, std::type_index);
+SONIA_PRIME_API uint32_t register_durable_id(std::string_view, std::string_view, std::type_index);
 SONIA_PRIME_API uint32_t get_durable_id(std::type_index);
 SONIA_PRIME_API std::type_index get_durable_type_index(uint32_t);
 
-void load_durable_id(string_view, string_view);
+void load_durable_id(std::string_view, std::string_view);
 
 }
 
@@ -58,7 +53,7 @@ class durable_id
             });
         }
 
-        cache(string_view nm, string_view servnm)
+        cache(std::string_view nm, std::string_view servnm)
         {
             std::call_once(once_flag_, [nm, servnm]() {
                 cache<T>::cached_val_ = sonia::services::register_durable_id(nm, servnm, typeid(T));
@@ -88,7 +83,7 @@ public:
     }
 
     template <class T>
-    static durable_id get(string_view nm, string_view servnm)
+    static durable_id get(std::string_view nm, std::string_view servnm)
     {
         return cache<T>(nm, servnm).get();
     }
@@ -111,5 +106,3 @@ template <typename T>
 uint32_t durable_id::cache<T>::cached_val_{0};
 
 }}
-
-#endif // SONIA_UTILITY_TYPE_DURABLE_ID_HPP

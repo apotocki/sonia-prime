@@ -499,6 +499,7 @@
     <ClInclude Include="..\..\..\sonia\utility\file_statable.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\equal\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\pair.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\hash\span.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\hazardous.hpp" />
@@ -638,6 +639,7 @@
     <ClInclude Include="..\..\..\sonia\utility\shared_handle.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\simple_queue.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\array_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\streaming\span.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\type_index.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\vector.hpp" />

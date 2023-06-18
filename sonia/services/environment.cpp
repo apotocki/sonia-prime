@@ -52,7 +52,7 @@ namespace sp = sonia::parameters;
 struct host_equal_to
 {
     bool operator()(std::string const& n, shared_ptr<host_impl> const& h) const { return n == h->get_name(); }
-    bool operator()(string_view n, shared_ptr<host_impl> const& h) const { return n == h->get_name(); }
+    bool operator()(std::string_view n, shared_ptr<host_impl> const& h) const { return n == h->get_name(); }
 };
 
 environment::environment() : log_initialized_(false)
@@ -348,12 +348,12 @@ shared_ptr<host_impl> environment::default_host()
         return *hosts_.begin();
     }
 
-    auto it = hosts_.find(string_view(""), hasher(), host_equal_to());
+    auto it = hosts_.find(std::string_view{}, hasher(), host_equal_to());
     if (it != hosts_.end()) return *hosts_.begin();
     return {};
 }
 
-shared_ptr<host_impl> environment::get_host(string_view hnm)
+shared_ptr<host_impl> environment::get_host(std::string_view hnm)
 {
     lock_guard guard(host_mtx_);
     auto it = hosts_.find(hnm, hasher(), host_equal_to());
@@ -363,7 +363,7 @@ shared_ptr<host_impl> environment::get_host(string_view hnm)
     throw exception("host %1% is not found"_fmt % hnm);
 }
 
-void environment::register_service_factory(string_view nm, function<shared_ptr<service>()> const& fm)
+void environment::register_service_factory(std::string_view nm, function<shared_ptr<service>()> const& fm)
 {
     factory_->register_service_factory(nm, fm);
 }

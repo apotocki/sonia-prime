@@ -11,7 +11,7 @@
 
 namespace sonia {
 
-template <typename T, typename Enable = void>
+template <typename T>
 struct json_cast_impl
 {
     T operator()(json_value const& jv) const
@@ -29,8 +29,8 @@ struct json_cast_impl<bool>
     }
 };
 
-template <typename T>
-struct json_cast_impl<T, enable_if_t<is_integral_v<T>>>
+template <std::integral T>
+struct json_cast_impl<T>
 {
     T operator()(json_value const& jv) const
     {
@@ -38,8 +38,8 @@ struct json_cast_impl<T, enable_if_t<is_integral_v<T>>>
     }
 };
 
-template <typename T>
-struct json_cast_impl<T, enable_if_t<is_floating_point_v<T>>>
+template <std::floating_point T>
+struct json_cast_impl<T>
 {
     T operator()(json_value const& jv) const
     {
@@ -62,7 +62,8 @@ struct json_cast_impl<std::basic_string<CharT>>
 {
     std::basic_string<CharT> operator()(json_value const& jv) const
     {
-        return to_string<CharT>(jv.get_string());
+        auto sv = jv.get_string();
+        return std::basic_string<CharT>(std::basic_string_view<CharT>(reinterpret_cast<const CharT*>(sv.data()), sv.size()));
     }
 };
 
@@ -71,7 +72,8 @@ struct json_cast_impl<fs::path>
 {
     fs::path operator()(json_value const& jv) const
     {
-        return to_string(jv.get_string());
+        auto sv = jv.get_string();
+        return std::u8string_view{reinterpret_cast<char8_t const*>(sv.data()), sv.size()};
     }
 };
 

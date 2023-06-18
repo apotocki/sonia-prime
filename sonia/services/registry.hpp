@@ -16,7 +16,7 @@ class registry
 public:
     virtual ~registry() = default;
 
-    virtual uint32_t lookup(string_view) = 0;
+    virtual uint32_t lookup(std::string_view) = 0;
     virtual std::string const* lookup(uint32_t) const = 0;
 };
 

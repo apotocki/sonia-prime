@@ -546,7 +546,7 @@ void win_impl::free_handle(identity<tcp_socket_service_type>, tcp_handle_type h)
 void win_impl::udp_socket_bind(udp_handle_type handle, cstring_view address, uint16_t port)
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
-    if (!winapi::parse_address(0, SOCK_DGRAM, IPPROTO_UDP, address, port, [&wh](ADDRINFOW * r)->bool {
+    if (!winapi::parse_address(0, SOCK_DGRAM, IPPROTO_UDP, std::string_view{address.data(), address.size()}, port, [&wh](ADDRINFOW * r)->bool {
         winapi::bind_socket(wh->socket(), r->ai_addr, (int)r->ai_addrlen);
         return true;
     })) {
@@ -580,7 +580,7 @@ expected<size_t, std::exception_ptr> win_impl::udp_socket_write_some(udp_handle_
 {
     expected<size_t, std::exception_ptr> wrsz;
     auto params = std::tie(handle, wrsz, buff, sz);
-    if (!winapi::parse_address(0, SOCK_DGRAM, IPPROTO_UDP, address, port, [this, &params](ADDRINFOW * r)->bool {
+    if (!winapi::parse_address(0, SOCK_DGRAM, IPPROTO_UDP, std::string_view{address.data(), address.size()}, port, [this, &params](ADDRINFOW * r)->bool {
         auto&[handle, wrsz, buff, sz] = params;
         auto * wh = static_cast<win_shared_handle*>(handle);
         sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
@@ -606,7 +606,7 @@ void win_impl::free_handle(identity<udp_socket_service_type>, udp_handle_type h)
 
 file factory::open_file(cstring_view path, file_open_mode fom, file_access_mode fam, file_bufferring_mode fbm)
 {
-    std::wstring wpath = winapi::utf8_to_utf16(path);
+    std::wstring wpath = winapi::utf8_to_utf16(std::string_view{path.data(), path.size()});
     DWORD dwCreationDisposition;
     switch (fom) {
     case file_open_mode::create:

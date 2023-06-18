@@ -125,7 +125,7 @@ protected:
 
 public:
 
-    IDT get_id(string_view name, string_view meta)
+    IDT get_id(std::string_view name, std::string_view meta)
     {
         rw_lock_guard rwguard(mtx_, rw_type::shared);
         auto it = registry_.find(name, hasher(), string_equal_to());
@@ -137,7 +137,7 @@ public:
             it = registry_.find(name, hasher(), string_equal_to());
             if (it == registry_.end()) {
                 IDT result = derived().increment_fetch_counter();
-                pitm = &*registry_.insert(it, reg_item{to_string(name), result, to_string(meta)});
+                pitm = &*registry_.insert(it, reg_item{std::string(name), result, std::string(meta)});
             } else {
                 pitm = &*it;
             }
@@ -158,7 +158,7 @@ public:
         return pitm->id;
     }
 
-    string_view get_name(IDT id) const
+    std::string_view get_name(IDT id) const
     {
         return get_data(id).first;
     }
@@ -171,7 +171,7 @@ public:
         return nullptr;
     }
 
-    std::pair<string_view, string_view> get_data(IDT id) const
+    std::pair<std::string_view, std::string_view> get_data(IDT id) const
     {
         if (reg_item const* ritm = get_data_item(id); ritm) {
             return {ritm->name, ritm->meta};

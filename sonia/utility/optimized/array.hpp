@@ -5,6 +5,7 @@
 
 #include <iosfwd>
 #include <memory>
+#include <span>
 
 #include "sonia/string.hpp"
 #include "sonia/type_traits.hpp"
@@ -13,6 +14,7 @@
 #include "sonia/utility/functional/mover.hpp"
 #include "sonia/utility/functional/range_equal.hpp"
 #include "sonia/utility/functional/range_less.hpp"
+#include "sonia/utility/functional/hash/span.hpp"
 #include "sonia/utility/serialization/serialization_fwd.hpp"
 
 namespace sonia {
@@ -37,7 +39,7 @@ optimized_base<RefCountT> * optimized_array_base<T, RefCountT, DerivedBaseT, All
     using base_derived_t = conditional_t<is_same_v<void, DerivedBaseT>, optimized_array_base, DerivedBaseT>;
     using derived_t = adjacent_buffer<T, base_derived_t>;
     derived_t const& self = static_cast<derived_t const&>(*this);
-    return allocate_adjacent_buffer<T, base_derived_t>(allocator(), self.size(), self.to_array_view(), self);
+    return allocate_adjacent_buffer<T, base_derived_t>(allocator(), self.size(), self.to_span(), self);
 }
 
 template <typename T, typename RefCountT, class DerivedBaseT, class AllocatorT>
@@ -125,16 +127,16 @@ struct optimized_array_impl
         return self->is_ptr() ? ptr(self)->end() : local_end(self);
     }
 
-    static array_view<ElementT> get(HolderT * self)
+    static std::span<ElementT> get(HolderT * self)
 	{
-        return self->is_ptr() ? array_view<ElementT>{ptr(self)->to_array_view()}
-            : array_view(local_begin(self), self->get_uint() & sz_mask);
+        return self->is_ptr() ? std::span<ElementT>{ptr(self)->to_span()}
+        : std::span{local_begin(self), self->get_uint() & sz_mask};
     }
 
-    static array_view<const element_t> get(HolderT const * self)
+    static std::span<const element_t> get(HolderT const * self)
     {
-        return self->is_ptr() ? ptr(self)->to_array_view()
-            : array_view(local_begin(self), self->get_uint() & sz_mask);
+        return self->is_ptr() ? ptr(self)->to_span()
+            : std::span{local_begin(self), self->get_uint() & sz_mask};
     }
 
     static ElementT& front(HolderT * self)
@@ -169,10 +171,10 @@ struct optimized_array_impl
         return self->is_ptr() ? ptr(self)->begin() : local_ncbegin(self);
     }
 
-    static array_view<element_t> ncget(HolderT * self)
+    static std::span<element_t> ncget(HolderT * self)
     {
-        return self->is_ptr() ? ptr(self)->to_array_view()
-            : array_view(local_ncbegin(self), self->get_uint() & sz_mask);
+        return self->is_ptr() ? ptr(self)->to_span()
+            : std::span{local_ncbegin(self), self->get_uint() & sz_mask};
     }
 
 protected:
@@ -332,11 +334,11 @@ public:
         return *this;
     }
 
-    operator array_view<ElementT>() noexcept { return array_t::get(this); }
-    operator array_view<const element_t>() const noexcept { return array_t::get(this); }
+    operator std::span<ElementT>() noexcept { return array_t::get(this); }
+    operator std::span<const element_t>() const noexcept { return array_t::get(this); }
 
-    array_view<ElementT> to_array_view() noexcept { return array_t::get(this); }
-    array_view<const element_t> to_array_view() const noexcept { return array_t::get(this); }
+    std::span<ElementT> to_span() noexcept { return array_t::get(this); }
+    std::span<const element_t> to_span() const noexcept { return array_t::get(this); }
 
     element_t const* cbegin() const noexcept { return array_t::begin(this); }
     element_t const* begin() const noexcept { return array_t::begin(this); }
@@ -428,13 +430,13 @@ public:
 template <typename CharT, class TraitsT, typename ElementT, size_t ByteSzV, typename RefCountT>
 std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, shared_optimized_array<ElementT, ByteSzV, RefCountT> const& arr)
 {
-    return os << arr.to_array_view();
+    return os << arr.to_span();
 }
 
 template <typename ElementT, size_t ByteSzV, typename RefCountT>
 inline size_t hash_value(shared_optimized_array<ElementT, ByteSzV, RefCountT> const& sa)
 {
-    return hasher()(sa.to_array_view());
+    return hasher()(sa.to_span());
 }
 
 }

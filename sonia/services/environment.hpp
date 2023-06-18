@@ -64,12 +64,12 @@ public:
 
     //std::list<host> const& hosts() const noexcept { return hosts_; }
     // host & host(string_view);
-    shared_ptr<host_impl> get_host(string_view);
+    shared_ptr<host_impl> get_host(std::string_view);
     shared_ptr<host_impl> default_host();
 
     void add_load_bundle_hook(lbhook_t const&);
 
-    void register_service_factory(string_view, function<shared_ptr<service>()> const&);
+    void register_service_factory(std::string_view, function<shared_ptr<service>()> const&);
 
     // type_id api
     uint32_t get_type_id(std::type_index const&);

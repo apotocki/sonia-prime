@@ -135,7 +135,7 @@ shared_ptr<host_impl> get_host_impl()
     return h;
 }
 
-shared_ptr<service> locate(string_view nm)
+shared_ptr<service> locate(std::string_view nm)
 {
     return get_host_impl()->locate(nm);
 }
@@ -150,7 +150,7 @@ void shutdown(int to_level)
     get_host_impl()->shutdown(to_level);
 }
 
-void register_service_factory(string_view nm, function<shared_ptr<service>()> const& fm)
+void register_service_factory(std::string_view nm, function<shared_ptr<service>()> const& fm)
 {
     BOOST_ASSERT(env_);
     env_->register_service_factory(nm, fm);
@@ -184,7 +184,7 @@ uint32_t get_type_id(std::type_index ti)
     return env_->get_type_id(ti);
 }
 
-uint32_t register_durable_id(string_view nm, string_view servnm, std::type_index ti)
+uint32_t register_durable_id(std::string_view nm, std::string_view servnm, std::type_index ti)
 {
     BOOST_ASSERT(env_);
     return env_->register_durable_id(nm, servnm, ti);
@@ -202,18 +202,18 @@ std::type_index get_durable_type_index(uint32_t did)
     return env_->get_durable_type_index(did);
 }
 
-void load_durable_id(string_view name, string_view meta)
+void load_durable_id(std::string_view name, std::string_view meta)
 {
     BOOST_ASSERT(env_);
     locate(meta);
 }
 
-void register_multimethod(multimethod && mm, array_view<const std::type_index> mmid)
+void register_multimethod(multimethod && mm, std::span<const std::type_index> mmid)
 {
     get_host_impl()->register_multimethod(std::move(mm), mmid);
 }
 
-multimethod const* get_multimethod(array_view<const std::type_index> mmid)
+multimethod const* get_multimethod(std::span<const std::type_index> mmid)
 {
     return get_host_impl()->get_multimethod(mmid);
 }
@@ -230,7 +230,7 @@ timer::timer(function<void()> const& f)
 
 namespace sonia::this_thread {
 
-void attach_host(string_view nm)
+void attach_host(std::string_view nm)
 {
     BOOST_ASSERT(sonia::services::env_);
     sonia::services::env_->get_host(nm)->attach_to_current_thread();

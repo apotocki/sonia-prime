@@ -11,7 +11,7 @@
 
 namespace sonia {
 
-template <typename T, typename Enabler = void> struct hash
+template <typename T> struct hash
 {
     size_t operator()(T const& v) const
     {
@@ -19,7 +19,7 @@ template <typename T, typename Enabler = void> struct hash
     }
 };
 
-template <typename T> struct hash<T, enable_if_t<is_integral_v<T>>> : std::hash<T> {};
+template <std::integral T> struct hash<T> : std::hash<T> {};
 
 template <> struct hash<std::type_index> : std::hash<std::type_index> {};
 

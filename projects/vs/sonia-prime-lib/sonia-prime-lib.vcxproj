@@ -544,6 +544,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\range_reference.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\proxy.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\reference_wrapper_iterator.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\iterators\safe_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\single_value_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_read_input_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\socket_write_input_iterator.hpp" />

@@ -2136,6 +2136,9 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\span.hpp">
       <Filter>sonia.utility\functional\hash</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\iterators\safe_iterator.hpp">
+      <Filter>sonia.utility\iterators</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

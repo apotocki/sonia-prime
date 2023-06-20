@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERIALIZATION_TYPE_DURABLE_ID_HPP
-#define SONIA_SERIALIZATION_TYPE_DURABLE_ID_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/utility/type_durable_id.hpp"
 
@@ -46,5 +41,3 @@ public:
 };
 
 }
-
-#endif // SONIA_SERIALIZATION_TYPE_DURABLE_ID_HPP

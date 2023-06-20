@@ -7,14 +7,14 @@
 
 #include "sonia/string.hpp"
 #include "array.hpp"
+#include "span.hpp"
 #include "integral.hpp"
 
 namespace sonia::serialization {
 
 template <typename TagT, typename T>
-class coder<TagT, T, enable_if_t<
-    is_template_instance_v<basic_string_view, T> ||
-    is_template_instance_v<basic_cstring_view, T>>>
+requires(is_template_instance_v<std::basic_string_view, T> || is_template_instance_v<basic_string_view, T> || is_template_instance_v<basic_cstring_view, T>)
+class coder<TagT, T>
 {
     using element_type = add_const_t<typename T::value_type>;
 
@@ -22,14 +22,15 @@ public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(T const& value, OutputIteratorT oi) const
     {
-        return sonia::encode<TagT>(static_cast<array_view<element_type> const&>(value), std::move(oi));
+        return sonia::encode<TagT>(std::span<element_type>{value.data(), value.size()}, std::move(oi));
     }
-
+    /*
     template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, T & value) const
     {
-        return sonia::decode<TagT>(std::move(ii), array_view(const_cast<typename T::value_type*>(value.begin(), value.size())));
+        return sonia::decode<TagT>(std::move(ii), std::span{const_cast<typename T::value_type*>(value.data()), value.size()});
     }
+    */
 };
 
 template <typename T>

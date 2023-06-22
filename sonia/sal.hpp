@@ -22,7 +22,7 @@ namespace sonia::sal {
 void set_thread_name(thread::id, string_view name);
 void set_thread_name(thread::id, std::string const& name);
 
-std::u8string reencode_system_message(string_view message);
+std::u8string reencode_system_message(std::string_view message);
 
 int get_pid();
 

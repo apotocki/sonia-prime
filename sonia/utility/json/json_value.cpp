@@ -56,7 +56,8 @@ struct object_item_less
 {
     inline std::string_view to_string_view(object_item_t const& v) const
     {
-        return (std::string_view)(v.first.to_span());
+        auto span = v.first.to_span();
+        return std::string_view(span.data(), span.size());
     }
 
     bool operator()(object_item_t const& l, object_item_t const& r)
@@ -99,7 +100,8 @@ struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
         if (!self->is_ptr()) return nullptr;
         optimized_collection_t const* ptr = base_t::ptr(self);
         object_item_t const* it = std::lower_bound(ptr->begin(), ptr->end(), key, object_item_less());
-        if (it == ptr->end() || (std::string_view)(it->first.to_span()) != key) return nullptr;
+        auto span = it->first.to_span();
+        if (it == ptr->end() || std::string_view(span.data(), span.size()) != key) return nullptr;
         return &it->second;
     }
 
@@ -108,7 +110,8 @@ struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
         if (!self->is_ptr()) return nullptr;
         optimized_collection_t * ptr = base_t::ptr(self);
         object_item_t * it = std::lower_bound(ptr->begin(), ptr->end(), key, object_item_less());
-        if (it == ptr->end() || (std::string_view)(it->first.to_span()) != key) return nullptr;
+        auto span = it->first.to_span();
+        if (it == ptr->end() || std::string_view(span.data(), span.size()) != key) return nullptr;
         return &it->second;
     }
 };

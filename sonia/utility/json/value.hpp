@@ -5,11 +5,11 @@
 #pragma once
 
 #include <iterator>
-#include <span>
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/range/iterator_range_core.hpp>
 
+#include "sonia/span.hpp"
 #include "sonia/string.hpp"
 #include "sonia/type_traits.hpp"
 

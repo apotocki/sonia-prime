@@ -5,6 +5,7 @@
 #pragma once
 
 #include <span>
+#include <boost/iterator_adaptors.hpp>
 
 namespace std {
 
@@ -33,5 +34,23 @@ inline bool is_subset_of(std::span<T, EVL> l, std::span<T, EVR> r)
     return std::less_equal<T*>()(r.data(), l.data()) && std::less_equal<T*>()(l.data(), data_end(r)) &&
         l.data() - r.data() + l.size() <= r.size();
 }
+
+}
+
+namespace boost {
+
+template <typename T, size_t EV>
+struct range_iterator<const std::span<T, EV>>
+{
+    using type = typename std::span<T, EV>::iterator;;
+};
+
+/*
+template <class T, size_t EV>
+struct range_mutable_iterator<std::span<T, EV>>
+{
+    using type = typename std::span<T, EV>::iterator;
+};
+*/
 
 }

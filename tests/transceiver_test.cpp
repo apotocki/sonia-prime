@@ -271,7 +271,7 @@ void cmd_transceiver_test()
         } catch (std::exception const& e) {
             if (e.what() != std::string("exception_method")) {
                 GLOBAL_LOG_DEBUG() << boost::diagnostic_information(e);
-                BOOST_CHECK(e.what() == std::string("exception_method"));
+                BOOST_CHECK_EQUAL(e.what(), std::string("exception_method"));
             }
         }
 

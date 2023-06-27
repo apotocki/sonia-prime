@@ -5,13 +5,16 @@
 
 #include <algorithm>
 
-#include "sonia/array_view.hpp"
+//#include "sonia/array_view.hpp"
 #include "sonia/utility/algorithm/pull.hpp"
 #include "sonia/utility/algorithm/copy.hpp"
 #include "serialization.hpp"
 
+#include "span.hpp"
+
 namespace sonia::serialization {
 
+/*
 template <typename TagT, typename T>
 class coder<TagT, array_view<T>>
 {
@@ -46,6 +49,9 @@ public:
         }
     }
 };
+*/
+
+
 
 template <typename TagT, typename T, size_t SzV>
 class coder<TagT, std::array<T, SzV>>
@@ -56,13 +62,13 @@ public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(type const& value, OutputIteratorT oi) const
     {
-        return sonia::encode<TagT>(to_array_view(value), std::move(oi));
+        return sonia::encode<TagT>(std::span{value}, std::move(oi));
     }
 
     template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, type & value) const
     {
-        return sonia::decode<TagT>(std::move(ii), array_view(value));
+        return sonia::decode<TagT>(std::move(ii), std::span{value});
     }
 };
 
@@ -74,7 +80,7 @@ struct vector_coder
     template <typename OutputIteratorT>
     OutputIteratorT encode(VectorT const& value, OutputIteratorT oi) const
     {
-        return sonia::encode<TagT>(array_view(value),
+        return sonia::encode<TagT>(std::span{value},
             sonia::encode<TagT, SizeT>(value.size(), std::move(oi))
         );
     }
@@ -85,7 +91,7 @@ struct vector_coder
         SizeT sz;
         ii = sonia::decode<TagT>(std::move(ii), sz);
         value.resize(sz);
-        return sonia::decode<TagT>(std::move(ii), array_view(value));
+        return sonia::decode<TagT>(std::move(ii), std::span{value});
     }
 
     template <typename InputIteratorT>
@@ -96,7 +102,7 @@ struct vector_coder
 
         try {
             new(value) VectorT(sz);
-            return sonia::decode<TagT>(std::move(ii), array_view(*value));
+            return sonia::decode<TagT>(std::move(ii), std::span{*value});
         } catch (...) {
             std::destroy_at(value);
             throw;

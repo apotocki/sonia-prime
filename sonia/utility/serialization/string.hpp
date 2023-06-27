@@ -107,7 +107,7 @@ public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(string_t const& value, OutputIteratorT oi) const
     {
-        return sonia::encode<TagT>(array_view(value),
+        return sonia::encode<TagT>(std::span{value},
             sonia::encode<TagT, size_type>(value.size(), std::move(oi))
         );
     }
@@ -118,7 +118,7 @@ public:
         size_type sz;
         ii = sonia::decode<TagT>(std::move(ii), sz);
         value.resize(sz);
-        return sonia::decode<TagT>(std::move(ii), array_view(value));
+        return sonia::decode<TagT>(std::move(ii), std::span{value});
     }
 
     template <typename InputIteratorT>

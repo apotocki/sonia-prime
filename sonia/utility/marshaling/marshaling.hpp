@@ -93,10 +93,11 @@ struct result_transformer
 //using
 //using proxy_decode_transformer = stub_encode_transformer;
 
-template <typename SigT, SigT FuncV, size_t ... PlaceHolderIndexVs>
+template <auto FuncV, size_t ... PlaceHolderIndexVs>
 struct binding_tag_facade
 {
-    using f_type = typename boost::function_types::function_type<SigT>::type;
+    using sig_t = decltype(FuncV);
+    using f_type = typename boost::function_types::function_type<sig_t>::type;
     using result_type = typename boost::function_types::result_type<f_type>::type;
     using args_type = typename boost::function_types::parameter_types<f_type>::type;
 
@@ -199,10 +200,10 @@ struct binding_tag_facade
 }
 
 #define SONIA_DECLARE_BINDING_TAG(tagnm, func, ...) \
-struct tagnm : ::sonia::binding_tag_facade<decltype(func), func, ## __VA_ARGS__> {};
+struct tagnm : ::sonia::binding_tag_facade<func, ## __VA_ARGS__> {};
 
 #define SONIA_DECLARE_BINDING_PTAG(tags, tagnm, func, ...) \
-template <class ... tags> struct tagnm : ::sonia::binding_tag_facade<decltype(func), func, ## __VA_ARGS__> {};
+template <class ... tags> struct tagnm : ::sonia::binding_tag_facade<func, ## __VA_ARGS__> {};
 
 #define SONIA_REGISTER_BINDING_TAG(tag, tagnm, serv) \
 ::sonia::services::register_durable_id(tagnm, serv, typeid(tag))

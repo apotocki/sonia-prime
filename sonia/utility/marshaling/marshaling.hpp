@@ -192,7 +192,7 @@ struct binding_tag_facade
             }
             oi = sonia::encode<CoderTagT>(sonia::mpl::make_transform_view<result_transformer_t>(*stub_tuple), std::move(oi));
         } else {
-            oi = (make_encoder<CoderTagT>(std::move(oi)) & r.error().size() & string_view { r.error() }).iterator();
+            oi = (make_encoder<CoderTagT>(std::move(oi)) & std::string_view { r.error() }).iterator();
         }
     }
 };

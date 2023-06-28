@@ -5,7 +5,7 @@
 
 #include "sonia/utility/optimized/array.hpp"
 
-#include "array.hpp"
+#include "span.hpp"
 #include "integral.hpp"
 
 namespace sonia::serialization {
@@ -19,9 +19,7 @@ public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(type const& value, OutputIteratorT oi) const
     {
-        return sonia::encode<TagT>(value.to_array_view(),
-            sonia::encode<TagT>(value.size(), std::move(oi))
-        );
+        return sonia::encode<TagT>(value.to_span(), std::move(oi));
     }
 
     template <typename InputIteratorT>
@@ -41,7 +39,7 @@ public:
 
         try {
             new(value) type{sz};
-            return sonia::decode<TagT>(std::move(ii),  type::array_t::ncget(value));
+            return sonia::decode<TagT>(std::move(ii), type::array_t::ncget(value));
         } catch (...) {
             std::destroy_at(value);
             throw;

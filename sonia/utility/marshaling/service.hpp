@@ -11,12 +11,24 @@
 
 namespace sonia {
 
-template <std::derived_from<service> T>
+/*
+template <typename T>
+requires(is_base_of_v<service, remove_cvref_t<T>>)
 struct stub_bound_parameter<T>
 {
     using type = stub_parameter_holder<remove_cvref_t<T>, shared_ptr<remove_cvref_t<T>>>;
 
     static constexpr bool is_modifiable = false;
 };
+*/
+
+template <std::derived_from<service> T>
+struct stub_bound_parameter<T&>
+{
+    using type = stub_parameter_holder<remove_cv_t<T>, shared_ptr<remove_cv_t<T>>>;
+
+    static constexpr bool is_modifiable = false;
+};
 
 }
+

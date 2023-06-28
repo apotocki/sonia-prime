@@ -34,9 +34,8 @@ public:
 };
 
 template <typename T>
-class coder<ordered_t, T, enable_if_t<
-    is_template_instance_v<basic_string_view, T> ||
-    is_template_instance_v<basic_cstring_view, T>>>
+requires(is_template_instance_v<std::basic_string_view, T> || is_template_instance_v<basic_string_view, T> || is_template_instance_v<basic_cstring_view, T>)
+class coder<ordered_t, T>
 {
     using type = T;
     using elem_t = typename T::value_type;
@@ -107,9 +106,7 @@ public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(string_t const& value, OutputIteratorT oi) const
     {
-        return sonia::encode<TagT>(std::span{value},
-            sonia::encode<TagT, size_type>(value.size(), std::move(oi))
-        );
+        return sonia::encode<TagT>(std::span{value}, std::move(oi));
     }
 
     template <typename InputIteratorT>

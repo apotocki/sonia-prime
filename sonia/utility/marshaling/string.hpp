@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_MARSHALING_STUB_PARAMETER_STRING_HPP
-#define SONIA_UTILITY_MARSHALING_STUB_PARAMETER_STRING_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/string.hpp"
 #include "stub_parameter.hpp"
@@ -22,5 +17,3 @@ struct stub_bound_parameter<basic_string_view<CharT, TraitsT>>
 };
 
 }
-
-#endif // SONIA_UTILITY_MARSHALING_STUB_PARAMETER_STRING_HPP

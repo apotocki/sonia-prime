@@ -62,7 +62,7 @@ public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(type const& value, OutputIteratorT oi) const
     {
-        return sonia::encode<TagT>(std::span{value}, std::move(oi));
+        return sonia::encode<TagT>(std::span<T, SzV>{value}, std::move(oi));
     }
 
     template <typename InputIteratorT>
@@ -80,9 +80,7 @@ struct vector_coder
     template <typename OutputIteratorT>
     OutputIteratorT encode(VectorT const& value, OutputIteratorT oi) const
     {
-        return sonia::encode<TagT>(std::span{value},
-            sonia::encode<TagT, SizeT>(value.size(), std::move(oi))
-        );
+        return sonia::encode<TagT>(std::span{value}, std::move(oi));
     }
 
     template <typename InputIteratorT>

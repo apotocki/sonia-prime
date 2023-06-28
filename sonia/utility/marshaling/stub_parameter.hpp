@@ -16,7 +16,7 @@ namespace sonia {
 //    operator ReferenceT() { return value; }
 //};
 
-template <typename T, typename Enabler = void>
+template <typename T>
 struct stub_bound_parameter
 {
     using type = remove_cvref_t<T>;

@@ -16,6 +16,9 @@ public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(type value, OutputIteratorT oi) const
     {
+        if constexpr (EV == std::dynamic_extent) {
+            oi = sonia::encode<TagT, typename type::size_type>(value.size(), std::move(oi));
+        }
         if constexpr (is_trivial_v<T> && sizeof(T) == 1) {
             return sonia::copy(value.begin(), value.end(), std::move(oi));
         } else {

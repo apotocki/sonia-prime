@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_MARSHALING_STUB_PARAMETER_SERVICE_HPP
-#define SONIA_UTILITY_MARSHALING_STUB_PARAMETER_SERVICE_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-# pragma once
-#endif
+#pragma once
 
 #include "sonia/services/service.hpp"
 
@@ -16,8 +11,8 @@
 
 namespace sonia {
 
-template <typename T>
-struct stub_bound_parameter<T, enable_if_t<is_base_of_v<service, remove_cvref_t<T>>>>
+template <std::derived_from<service> T>
+struct stub_bound_parameter<T>
 {
     using type = stub_parameter_holder<remove_cvref_t<T>, shared_ptr<remove_cvref_t<T>>>;
 
@@ -25,5 +20,3 @@ struct stub_bound_parameter<T, enable_if_t<is_base_of_v<service, remove_cvref_t<
 };
 
 }
-
-#endif // SONIA_UTILITY_MARSHALING_STUB_PARAMETER_SERVICE_HPP

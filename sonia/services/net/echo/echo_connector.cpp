@@ -38,7 +38,7 @@ void echo_connector::connect(sonia::io::tcp_socket soc)
 
     try {
         while (!wit.empty()) {
-            *rit = array_view(buff); ++rit;
+            *rit = std::span{buff}; ++rit;
             if (rit.empty()) break;
             auto readybuff = *rit;
             *wit = readybuff; ++wit;

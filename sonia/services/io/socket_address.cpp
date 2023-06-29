@@ -49,7 +49,7 @@ std::tuple<protocol_type, std::string, uint16_t> parse_address(string_view sv)
     }
 
     protocol_type pt = protocol_type::UNKNOWN;
-    string_view lcasestr = to_string_view(protocol_str);
+    std::string_view lcasestr = to_string_view(protocol_str);
     BOOST_PP_SEQ_FOR_EACH_I(SONIA_PRINT_IO_PROTOCOL_TYPE_CASE, _, SONIA_IO_PROTOCOL_TYPE_SEQ)
     {
         throw exception("unknown protocol name: '%1%'"_fmt % lcasestr);

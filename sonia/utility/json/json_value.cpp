@@ -41,12 +41,13 @@ using object_item_t = std::pair<json_item_name_t, json_value>;
 
 struct json_object_item_transformer
 {
-    using result_type = std::pair<array_view<const char>, json_value>;
+    using result_type = std::pair<std::span<const char>, json_value>;
 
     template <typename TplT>
     result_type operator()(TplT&& x) const {
         return result_type(
-            to_string_view(boost::get<0>(x)),
+            //to_string_view(boost::get<0>(x)),
+            boost::get<0>(x),
             boost::get<1>(x)
         );
     }

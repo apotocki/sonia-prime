@@ -84,7 +84,7 @@ void http_connector::connect(sonia::io::tcp_socket soc)
             } else {
                 --one_shot_count_;
                 socket_write_iterator wit{soc};
-                *wit = to_string_view(cfg_.dos_message);
+                *wit = std::span{cfg_.dos_message};
                 wit.flush();
             }
         }

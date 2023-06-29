@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_SOCKET_WRITE_ITERATOR_HPP
-#define SONIA_UTILITY_SOCKET_WRITE_ITERATOR_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <boost/iterator/iterator_facade.hpp>
 
@@ -22,7 +17,7 @@ template <class SocketT>
 class socket_write_iterator
 	: public boost::iterator_facade<
           socket_write_iterator<SocketT>
-		, array_view<const char>
+		, std::span<const char>
 		, std::output_iterator_tag
 		, wrapper_iterator_proxy<ptr_proxy_wrapper<socket_write_iterator<SocketT> const*, void>>
 	>
@@ -35,11 +30,11 @@ class socket_write_iterator
 		return iterators::make_value_proxy(this);
 	}
 
-	void set_dereference(array_view<const char> rng)
+	void set_dereference(std::span<const char> rng)
 	{
         while (!rng.empty()) {
-            if (auto expwsz = psoc_->write_some(rng.begin(), rng.size()); expwsz.has_value()) {
-                rng.advance_front(expwsz.value());
+            if (auto expwsz = psoc_->write_some(rng.data(), rng.size()); expwsz.has_value()) {
+                rng = rng.subspan(expwsz.value());
             } else {
                 empty_ = true;
                 break;
@@ -62,5 +57,3 @@ private:
 };
 
 }
-
-#endif // SONIA_UTILITY_SOCKET_WRITE_ITERATOR_HPP

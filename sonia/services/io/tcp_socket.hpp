@@ -191,7 +191,7 @@ public:
 
     virtual smart_handle_facade<TraitsT, tcp_server_socket_adapter> create_server_socket(cstring_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET) = 0;
 
-    smart_handle_facade<TraitsT, tcp_server_socket_adapter> create_server_socket(string_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
+    smart_handle_facade<TraitsT, tcp_server_socket_adapter> create_server_socket(std::string_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
     {
         return as_cstring<64>(address, [this, port, ft](cstring_view address) { return create_server_socket(address, port, ft); });
     }
@@ -205,7 +205,7 @@ public:
     
     virtual smart_handle_facade<TraitsT, tcp_socket_adapter> create_connected_tcp_socket(cstring_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET) = 0;
     
-    smart_handle_facade<TraitsT, tcp_socket_adapter> create_connected_tcp_socket(string_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
+    smart_handle_facade<TraitsT, tcp_socket_adapter> create_connected_tcp_socket(std::string_view address, uint16_t port = 0, sonia::sal::net_family_type ft = sonia::sal::net_family_type::INET)
     {
         return as_cstring<64>(address, [this, port, ft](cstring_view address) { return create_connected_tcp_socket(address, port, ft); });
     }

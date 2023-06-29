@@ -172,7 +172,7 @@ void net_service_impl::reload()
                 locate(lc.connector, ls->cn);
                 ls->workers_max = lc.workers_count;
                 ls->buffer_size = lc.buffer_size;
-                ls->sock = tcp_server_socket_factory_->create_server_socket(to_string_view(lc.address), lc.port, lc.family);
+                ls->sock = tcp_server_socket_factory_->create_server_socket(cstring_view{lc.address}, lc.port, lc.family);
                 scheduler_->post(scheduler_task_t(in_place_type_t<acceptor_task>(), ls, scheduler_));
                 
                 listeners_.push_back(std::move(ls));

@@ -236,7 +236,7 @@ void transceiver_service::transmit_and_receive(string_view dest, serializable_pr
 
     auto [protocol, address, port] = sonia::io::parse_address(dest);
 
-    auto soc = soc_factory_->create_connected_tcp_socket(to_string_view(address), port);
+    auto soc = soc_factory_->create_connected_tcp_socket(cstring_view{address}, port);
     
     std::vector<char> tmp_buff(65536);
 

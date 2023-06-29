@@ -8,6 +8,7 @@
 #include <boost/format.hpp>
 #include "array_view.hpp"
 #include "sonia/utility/comparison_operators.hpp"
+#include "sonia/utility/functional/hash/span.hpp"
 
 namespace sonia {
 
@@ -106,21 +107,23 @@ template <typename CharT, class TraitsT>
 CharT basic_cstring_view<CharT, TraitsT>::zerostr[1] = {0};
 
 template <typename CharT, class TraitsT>
-basic_string_view<CharT, TraitsT> to_string_view(basic_string_view<CharT, TraitsT> sv) { return sv; }
+std::basic_string_view<CharT, TraitsT> to_string_view(std::basic_string_view<CharT, TraitsT> sv) { return sv; }
 
 template <typename CharT, class TraitsT>
-basic_cstring_view<CharT, TraitsT> to_string_view(basic_cstring_view<CharT, TraitsT> sv) { return sv; }
+std::basic_string_view<CharT, TraitsT> to_string_view(basic_cstring_view<CharT, TraitsT> sv) { return std::basic_string_view<CharT, TraitsT>{sv.data(), sv.size()}; }
 
+/*
 template <typename CharT, class TraitsT, class AllocT>
 basic_cstring_view<CharT, TraitsT> to_string_view(std::basic_string<CharT, TraitsT, AllocT> const& s)
 {
     return basic_cstring_view<CharT, TraitsT>(s);
 }
+*/
 
 template <typename CharT, class AllocatorT>
-basic_string_view<CharT> to_string_view(std::vector<CharT, AllocatorT> const& v)
+std::basic_string_view<CharT> to_string_view(std::vector<CharT, AllocatorT> const& v)
 {
-    return basic_string_view<CharT>(v.empty() ? nullptr : &v.front(), v.size());
+    return std::basic_string_view<CharT>(v.empty() ? nullptr : &v.front(), v.size());
 }
 
 template <typename CharT, class TraitsT>
@@ -335,7 +338,7 @@ struct hash<std::basic_string<CharT, TraitsT, AllocatorT>>
 {
     size_t operator()(std::basic_string<CharT, TraitsT, AllocatorT> const& str) const noexcept
     {
-        return hash<array_view<const CharT>>()(to_string_view(str));
+        return hash<std::span<const CharT>>()({str.data(), str.size()});
     }
 };
 
@@ -344,7 +347,7 @@ struct hash<std::basic_string_view<CharT, TraitsT>>
 {
     size_t operator()(std::basic_string_view<CharT, TraitsT> str) const noexcept
     {
-        return hash<array_view<const CharT>>()({str.data(), str.size()});
+        return hash<std::span<const CharT>>()({str.data(), str.size()});
     }
 };
 

@@ -19,7 +19,7 @@ InputIteratorT decode(InputIteratorT ii, ArgT && arg);
 
 namespace serialization {
 
-template <typename TagT, typename T, typename EnableT = void> class coder;
+template <typename TagT, typename T> class coder;
 
 struct default_t {}; // can be incompatible among systems
 struct compressed_t {};
@@ -43,4 +43,4 @@ template <typename TagT> class coder<TagT, empty_t> : coder<TagT, null_t> {};
 }}
 
 #define SONIA_DECLARE_SERIALIZATION_FRIENDLY \
-template <class, class, class> friend class ::sonia::serialization::coder;
+template <class, class> friend class ::sonia::serialization::coder;

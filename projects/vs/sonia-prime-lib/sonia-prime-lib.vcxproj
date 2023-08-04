@@ -613,6 +613,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\boost_serialization_tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\command.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\floating_point.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\http_message.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\http_request.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\http_response.hpp" />

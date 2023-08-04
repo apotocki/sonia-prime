@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_SERIALIZATION_INTEGRAL_HPP
-#define SONIA_SERIALIZATION_INTEGRAL_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 #include <algorithm>
@@ -50,8 +45,9 @@ public:
     }
 };
 
-template <typename TagT, typename T>
-class coder<TagT, T, enable_if_t<is_integral_v<T> && sizeof(T) == 1 && !is_same_v<bool, T>>>
+template <typename TagT, std::integral T>
+requires (sizeof(T) == 1 && !is_same_v<bool, T>)
+class coder<TagT, T>
 {
 public:
     template <typename OutputIteratorT>
@@ -78,7 +74,8 @@ public:
 };
 
 template <typename TagT, typename T>
-class coder<TagT, T, enable_if_t<is_enum_v<T>>>
+requires(is_enum_v<T>)
+class coder<TagT, T>
 {
     using utype_t = underlying_type_t<T>;
     static inline coder<TagT, utype_t> coder_{};
@@ -109,8 +106,9 @@ template <typename T> constexpr bool is_special = sizeof(T) == 1 || is_same_v<bo
 
 }
 
-template <typename T>
-class coder<default_t, T, enable_if_t<is_integral_v<T> && !integral_detail::is_special<T>>>
+template <std::integral T>
+requires(!integral_detail::is_special<T>)
+class coder<default_t, T>
 {
 public:
     template <typename ArgT, typename OutputIteratorT>
@@ -185,8 +183,9 @@ public:
 //    }
 //};
 
-template <typename T>
-class coder<compressed_t, T, enable_if_t<is_integral_v<T> && !is_signed_v<T> && !integral_detail::is_special<T>>>
+template <std::integral T>
+requires(!is_signed_v<T> && !integral_detail::is_special<T>)
+class coder<compressed_t, T>
 {
     using type = remove_cv_t<T>;
     using traits = boost::integer_traits<type>;
@@ -234,8 +233,9 @@ public:
     }
 };
 
-template <typename T>
-class coder<compressed_t, T, enable_if_t<is_integral_v<T> && is_signed_v<T> && !integral_detail::is_special<T>>>
+template <std::integral T>
+requires(is_signed_v<T> && !integral_detail::is_special<T>)
+class coder<compressed_t, T>
 {
     using type = remove_cv_t<T>;
     using unsigned_t = make_unsigned_t<type>;
@@ -271,8 +271,9 @@ public:
 };
 
 // SzV is the size of an external storage in increments
-template <size_t SzV, typename T>
-class coder<sized_t<SzV, ordered_t>, T, enable_if_t<is_integral_v<T> && !is_signed_v<T> && !integral_detail::is_special<T>>>
+template <size_t SzV, std::integral T>
+requires(!is_signed_v<T> && !integral_detail::is_special<T>)
+class coder<sized_t<SzV, ordered_t>, T>
 {
     static constexpr size_t tsz_in_bytes = sizeof(T) * CHAR_BIT / 8;
     static constexpr bool is_too_big = tsz_in_bytes < SzV;
@@ -320,11 +321,10 @@ public:
     }
 };
 
-template <typename T>
-class coder<ordered_t, T, enable_if_t<is_integral_v<T> && !is_signed_v<T> && !integral_detail::is_special<T>>>
+template <std::integral T>
+requires(!is_signed_v<T> && !integral_detail::is_special<T>)
+class coder<ordered_t, T>
     : public coder<sized_t<sizeof(T), ordered_t>, T>
 {};
 
 }
-
-#endif // SONIA_SERIALIZATION_INTEGRAL_HPP

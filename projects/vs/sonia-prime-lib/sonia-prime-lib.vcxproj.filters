@@ -2139,6 +2139,9 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\safe_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\floating_point.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

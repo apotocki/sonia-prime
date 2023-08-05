@@ -289,24 +289,23 @@ void basic_scheduler::push(queue_entry & e, bool front) noexcept
 scheduler_task_handle basic_scheduler::post(scheduler_task_t && t, when_t when, time_duration_t td)
 {
     queue_entry * qe;
-    time_duration_t const* wtd = boost::get<time_duration_t>(&when);
-    if (!td.count() && (!when.which() || (wtd && !wtd->count()))) {
+    time_duration_t const* optwtd = boost::get<time_duration_t>(&when);
+    if (!td.count() && (!optwtd || (optwtd && !optwtd->count()))) {
         qe = queue_entry_pool_.new_object(std::move(t));
         qe->add_ref();
         push(*qe);
-    } else if (wtd) {
+    } else {
+        time_duration_t wtd = optwtd ? *optwtd : time_duration_t{ 0 };
         time_duration_t now = relative_now();
-        time_duration_t dwhen = *wtd + now;
+        time_duration_t dwhen = wtd + now;
         priority_queue_entry * pe = priority_queue_entry_pool_.new_object(dwhen.count(), td.count(), std::move(t));
-        pe->add_ref();
-        if (!wtd->count()) { // when = now
+        if (!optwtd || !optwtd->count()) { // when = now
+            pe->add_ref();
             push(*pe);
         } else {
             schedule_task(*pe, now);
         }
         qe = pe;
-    } else {
-        THROW_NOT_IMPLEMENTED_ERROR();
     }
     return scheduler_task_handle{reinterpret_cast<uintptr_t>(this), in_place_type<basic_scheduler_task_handle_impl>, qe}; // no qe->add_ref() inside
 }
@@ -357,10 +356,12 @@ void basic_scheduler::schedule_task(priority_queue_entry & e, time_duration_t no
 {
     if (lock_guard guard(priority_mtx_); !e.set_hook_.is_linked()) {
         auto it = priority_set_.insert(e);
+        e.add_ref();
         try {
             schedule_timer(it, now.count());
         } catch (...) {
             priority_set_.erase(it);
+            e.release_ref(this);
             throw;
         }
     }

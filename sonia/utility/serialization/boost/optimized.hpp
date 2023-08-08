@@ -15,7 +15,7 @@ template <class ArchiveT, typename ElementT, size_t ByteSzV, typename RefCountT>
 void save(ArchiveT & ar, sonia::shared_optimized_array<ElementT, ByteSzV, RefCountT> const& jv, const unsigned int /*version*/)
 {
     if constexpr (std::is_same_v<char, remove_cv_t<ElementT>>) {
-        auto str = sonia::to_string(sonia::string_view(jv.to_array_view()));
+        std::string str(jv.begin(), jv.end());
         ar << boost::serialization::make_nvp(nullptr, str);
     } else {
         size_t sz = jv.size();
@@ -32,7 +32,7 @@ void load(ArchiveT & ar, sonia::shared_optimized_array<ElementT, ByteSzV, RefCou
     if constexpr (std::is_same_v<char, remove_cv_t<ElementT>>) {
         std::string value;
         ar >> boost::serialization::make_nvp(nullptr, value);
-        t = sonia::shared_optimized_array<ElementT, ByteSzV, RefCountT>(sonia::to_string_view(value));
+        t = sonia::shared_optimized_array<ElementT, ByteSzV, RefCountT>(std::string_view(value));
     } else {
         size_t sz;
         ar >> boost::serialization::make_nvp("size", sz);

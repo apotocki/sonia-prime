@@ -16,7 +16,7 @@ public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(const T value, OutputIteratorT oi) const
     {
-        const uint8_t* pbytes = std::bit_cast<const uint8_t*>(&value);
+        const uint8_t* pbytes = reinterpret_cast<const uint8_t*>(&value);
         return std::copy(pbytes, pbytes + sizeof(T), std::move(oi));
     }
 

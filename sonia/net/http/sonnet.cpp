@@ -40,9 +40,9 @@ void sonnet::handle(request & req, response & resp)
 
     if (uriparts.path.size() >= path_base_.size() && std::equal(path_base_.begin(), path_base_.end(), uriparts.path.begin())) {
         string_view path = uriparts.path;
-        path.advance_front(path_base_.size());
+        path = path.substr(path_base_.size());
 
-        auto it = handlers_.find(path, hasher(), string_equal_to());
+        auto it = handlers_.find(path, hasher{}, string_equal_to{});
         if (it != handlers_.end()) {
             handler = &it->second;
         }
@@ -101,7 +101,7 @@ void sonnet::handle_unhandled(request &, request_parameters const&, response & r
 
 void sonnet::bind_handler(string_view path, method_handler_type const& h)
 {
-    auto rpair = handlers_.insert(std::pair(to_string(path), h));
+    auto rpair = handlers_.insert(std::pair(std::string{path}, h));
     if (!rpair.second) {
         THROW_INTERNAL_ERROR("path '%1%' is already bound"_fmt % path);
     }

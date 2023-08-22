@@ -7,7 +7,6 @@
 #include "message.hpp"
 #include "sonia/net/uri.hpp"
 #include "sonia/net/uri.ipp"
-#include "sonia/utility/functional/hash/variant.hpp"
 #include "sonia/utility/iterators/range_dereferencing_iterator.hpp"
 #include "sonia/utility/serialization/http_message.hpp"
 
@@ -32,11 +31,11 @@ std::string header_string(header_value_param_t & v)
     return boost::apply_visitor(to_rvstring_visitor(), v);
 }
 
-string_view header_collection::header_name(any_header_t const& hn)
+std::string_view header_collection::header_name(any_header_t const& hn)
 {
-    header const* h = boost::get<header>(&hn);
+    header const* h = get<header>(&hn);
     if (h) return to_string(*h);
-    return boost::get<std::string>(hn);
+    return get<std::string>(hn);
 }
 
 void header_collection::set_header(any_header_param_t h, header_value_param_t v)
@@ -257,13 +256,13 @@ void request::set_uri(string_view uri, bool ignore_abs_parts)
 {
     auto parts = net::parse_uri(uri);
     if (parts.is_absolute && !ignore_abs_parts) {
-        host = to_string(parts.host);
+        host = std::string(parts.host);
         port = parts.port.value_or(net::default_scheme_port(parts.scheme));
         set_header(header::HOST, host);
     }
     relative_uri_.clear();
     net::canonize_path(parts.path, std::back_inserter(relative_uri_));
-    if (parts.query) {
+    if (!parts.query.empty()) {
         relative_uri_.push_back('?');
         std::copy(parts.query.begin(), parts.query.end(), std::back_inserter(relative_uri_));
         net::decode_query(parts.query.begin(), parts.query.end(), [this](std::string nm, std::string val) {

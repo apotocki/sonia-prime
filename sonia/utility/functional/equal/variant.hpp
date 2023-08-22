@@ -2,62 +2,56 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_FUNCTIONAL_EQUAL_VARIANT_HPP
-#define SONIA_FUNCTIONAL_EQUAL_VARIANT_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
+#pragma once
+#ifndef SONIA_VARIANT_DECLARED
+#   error do not include directly, use "sonia/variant.hpp"
 #endif
-
-#include <boost/variant.hpp>
-
+#include <utility>
 #include "sonia/utility/functional/equal.hpp"
 
 namespace sonia {
 
 template <typename ArgT>
-struct variant_equal_visitor : boost::static_visitor<bool>
+struct variant_equal_visitor : static_visitor<bool>
 {
     call_param_t<ArgT> r_;
 
     variant_equal_visitor(call_param_t<ArgT> r) : r_(r) {}
 
     template <typename T>
-    size_t operator()(T && val) const
+    bool operator()(T && val) const
     {
         return equal_f(std::forward<T>(val), r_);
     }
 };
 
 template <typename ... Ts, typename RT>
-struct equal<boost::variant<Ts...>, RT>
+struct equal<variant<Ts...>, RT>
 {
     template <typename T>
-    size_t operator()(boost::variant<Ts...> const& l, T && r) const
+    bool operator()(variant<Ts...> const& l, T && r) const
     {
-        return boost::apply_visitor(variant_hash_visitor<RT>(std::forward<RT>(r)), l);
+        return apply_visitor(variant_equal_visitor<RT>(std::forward<T>(r)), l);
     }
 };
 
-template <typename LT, typename ... Ts>
-struct equal<LT, boost::variant<Ts...>>
+template <typename LT, typename ... RTs>
+struct equal<LT, variant<RTs...>>
 {
     template <typename T>
-    size_t operator()(T && l, boost::variant<Ts...> const& r) const
+    bool operator()(T && l, variant<RTs...> const& r) const
     {
-        return boost::apply_visitor(variant_hash_visitor<LT>(std::forward<RT>(r)), r);
+        return apply_visitor(variant_equal_visitor<LT>(std::forward<T>(l)), r);
     }
 };
 
 template <typename ... LTs, typename ... RTs>
-struct equal<boost::variant<LTs...>, boost::variant<RTs...>>
+struct equal<variant<LTs...>, variant<RTs...>>
 {
-    size_t operator()(boost::variant<LTs...> const& l, boost::variant<RTs...> const& r) const
+    bool operator()(variant<LTs...> const& l, variant<RTs...> const& r) const
     {
-        return boost::apply_visitor(variant_hash_visitor<boost::variant<LTs...>>(l), r);
+        return apply_visitor(variant_equal_visitor<variant<LTs...>>(l), r);
     }
 };
 
 }
-
-#endif // SONIA_FUNCTIONAL_EQUAL_VARIANT_HPP

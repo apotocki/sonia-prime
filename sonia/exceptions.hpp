@@ -25,7 +25,7 @@ public:
 private:
     static std::string construct() { return "error"; }
     static std::runtime_error const& construct(exception & e) { return e; }
-    template <typename ... ArgsT> static std::string construct(ArgsT && ... args) { return (... + sonia::to_string(std::forward<ArgsT>(args))); }
+    template <typename ... ArgsT> static std::string construct(ArgsT && ... args) { return (... + to_string(std::forward<ArgsT>(args))); }
 };
 
 class silence_exception : public exception {};

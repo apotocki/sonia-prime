@@ -4,15 +4,16 @@
 
 #pragma once
 
-#include <vector>
 #include <typeindex>
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/member.hpp>
 
+#include "sonia/span.hpp"
+#include "sonia/small_vector.hpp"
+
 #include "sonia/utility/concurrency/rw_fiber_mutex.hpp"
-#include "sonia/utility/functional/hash/vector.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
 
 #include "sonia/utility/multimethod.hpp"
@@ -21,27 +22,31 @@ namespace sonia::services {
 
 class multimethod_registry
 {
+public:
     using mmholder_t = automatic_polymorphic<multimethod, 2 * sizeof(void*) + sizeof(function<void()>)>;
 
+    using mm_id_stored_elem_t = variant<std::type_index, small_string>;
+
+    using key_set_t = boost::container::small_vector<mm_id_stored_elem_t, 4>;
     struct mm_item
     {
         mmholder_t mm;
-        std::vector<std::type_index> id;
+        key_set_t id;
     };
 
     using mm_set_t = boost::multi_index::multi_index_container<
         mm_item,
         boost::multi_index::indexed_by<
             boost::multi_index::hashed_unique<
-                boost::multi_index::member<mm_item, std::vector<std::type_index>, &mm_item::id>,
-                sonia::hash<std::vector<std::type_index>>
+                boost::multi_index::member<mm_item, key_set_t, &mm_item::id>,
+                sonia::hash<key_set_t>
             >
         >
     >;
 
 public:
-    void register_multimethod(multimethod &&, array_view<const std::type_index>);
-    multimethod const* get_multimethod(array_view<const std::type_index>) const;
+    void register_multimethod(multimethod &&, span<const mm_id_elem_t>);
+    multimethod const* get_multimethod(span<const mm_id_elem_t>) const;
 
 private:
     mutable sonia::fibers::rw_mutex mm_item_mtx_;

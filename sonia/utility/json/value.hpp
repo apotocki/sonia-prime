@@ -119,13 +119,13 @@ class json_value : json_detail::holder_t
     explicit json_value(bool);
     explicit json_value(int);
     explicit json_value(decimal);
-    explicit json_value(std::string_view);
     explicit json_value(string_view);
-    explicit json_value(std::span<json_value>);
+    explicit json_value(cstring_view);
+    explicit json_value(span<json_value>);
     
     json_value(std::initializer_list<json_value>);
 
-    json_value(std::span<const std::string>, std::span<const json_value>);
+    json_value(span<const std::string>, span<const json_value>);
 
     explicit json_value(const char* val) : json_value(std::string_view(val)) {}
 
@@ -149,8 +149,8 @@ class json_value : json_detail::holder_t
     decimal get_number() const;
     std::string_view get_string() const;
     std::u8string_view get_u8string() const;
-    std::span<const json_value> get_array() const;
-    std::span<json_value> get_array();
+    span<const json_value> get_array() const;
+    span<json_value> get_array();
     json_object get_object() const;
 };
 

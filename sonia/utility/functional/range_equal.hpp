@@ -32,7 +32,7 @@ struct range_equal
     template <typename LForwardIteratorT, typename RForwardIteratorT>
     constexpr bool operator()(LForwardIteratorT lb, LForwardIteratorT le, RForwardIteratorT rb, RForwardIteratorT re) const
     {
-        auto pair = std::mismatch(lb, le, rb, re);
+        auto pair = std::mismatch(lb, le, rb, re, equal_to{});
         return pair.first == le && pair.second == re;
     }
 
@@ -51,7 +51,8 @@ struct range_equal
 };
 
 template <typename LT, typename RT>
-struct equal<LT, RT, enable_if_t<has_range_iterator_v<LT> && has_range_iterator_v<RT>>>
+requires(has_range_iterator_v<LT> && has_range_iterator_v<RT>)
+struct equal<LT, RT>
 {
     template <typename LArgT, typename RArgT>
     constexpr bool operator()(LArgT && l, RArgT && r) const

@@ -30,7 +30,7 @@ archive_type get_archive_type(string_view str)
 std::pair<string_view, archive_type> split_name(string_view nm)
 {
     auto rit = std::find(nm.rbegin(), nm.rend(), '.');
-    string_view extstr(rit.base(), nm.end() - rit.base());
+    string_view extstr(rit.base(), nm.end());
     string_view name_wo_ext(nm.begin(), rit.base() - (rit != nm.rend() ? 1 : 0));
     return { name_wo_ext, get_archive_type(extstr) };
 }

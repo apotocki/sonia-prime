@@ -54,7 +54,7 @@ void decimal_parse(string_view str, SignificandT & v, ExponentT & e)
     while (!str.empty())
     {
         bool has_minus = false;
-        char const* p = str.begin();
+        auto p = str.begin();
         if (*p == '+') {
             ++p;
         } else if (*p == '-') {

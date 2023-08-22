@@ -363,6 +363,7 @@
     <ClInclude Include="..\..\..\sonia\services\transceiver.hpp" />
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp" />
     <ClInclude Include="..\..\..\sonia\singleton.hpp" />
+    <ClInclude Include="..\..\..\sonia\small_vector.hpp" />
     <ClInclude Include="..\..\..\sonia\span.hpp" />
     <ClInclude Include="..\..\..\sonia\string.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\linux\signals.hpp" />
@@ -394,107 +395,6 @@
     <ClInclude Include="..\..\..\sonia\utility\caches\utility.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\barrier.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\debug_mutex.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\ascii85.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\ascii85_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\ascii85_to_int8.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\states.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\int8_to_ascii85.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\auxilary\dyn_input_iterator.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\auxilary\dyn_output_iterator.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\auxilary\dyn_state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base16\base16.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base16\base16_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base16\base16_to_int8.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base16\constants.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base16\int8_to_base16.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32_to_int8.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\constants.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\int8_to_base32.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\base64.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\base64_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\base64_to_int8.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\constants.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\int8_to_base64.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\composite.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\concrete_converter.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\converter.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\converter_facade.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\cp\cp.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\cp\cp_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\cp\cp_to_utf16.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\cp\state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\cp\utf16_to_cp.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\error_handling.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\identity_converter.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\input_iterator.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\integral_state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\output_iterator.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\int8_to_rc5.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\rc5.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\rc5wrb.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\rc5_algo.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\rc5_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\rc5_to_int8.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\tags.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\urlenc\state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\urlenc\urlenc.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\urlenc\urlenc_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\urlenc\urlenc_to_utf8.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\urlenc\utf8_to_urlenc.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\constants.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16be_to_utf16.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16le_to_utf16.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_to_utf16be.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_to_utf16le.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_to_utf16le2.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_to_utf32.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_validator.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf32_to_utf16.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\constants.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32be_to_utf32.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32le_to_utf32.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32_simple_folding.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32_to_utf32be.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32_to_utf32le.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\constants.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\utf16_to_utf7.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\utf7.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\utf7_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\utf7_to_utf16.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf16_to_utf8.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf32_to_utf8.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf8.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf8_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf8_to_utf16.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf8_to_utf32.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utility.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utility\buffer.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utility\buffer_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utility\type_to_buffer.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utility\unfold.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\state.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\utf8_to_xmlenc.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\xmlenc.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\xmlenc_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\xmlenc_to_utf8.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\int8_to_z85.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\states.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85_tag.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85_to_int8.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\file_statable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\file_statable.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\equal\variant.hpp" />
@@ -516,7 +416,6 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\forwarder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\has.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\functional\hash\vector.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\is_negative.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\less.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\mover.hpp" />
@@ -524,6 +423,9 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\range_equal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\range_less.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\reference_wrapper.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invokation\invokation.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invokation\registration.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invokation\serializarion.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\buffering_mediator_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\buffering_write_input_iterator.hpp" />
@@ -555,6 +457,7 @@
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lua\lua.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\marshaling\span.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\marshaling\marshaling.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\marshaling\service.hpp" />
@@ -644,11 +547,12 @@
     <ClInclude Include="..\..\..\sonia\utility\streaming\span.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\type_index.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\streaming\vector.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\streaming\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\type_durable_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\type_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\variadic.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\zlib_util.hpp" />
+    <ClInclude Include="..\..\..\sonia\variant.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\fibers\algo\algorithm.cpp">
@@ -840,12 +744,8 @@
     <ClCompile Include="..\..\..\sonia\sys\windows\thread_pool_api.cpp" />
     <ClCompile Include="..\..\..\sonia\sys\windows\windows.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\conversion\base16\base16.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\conversion\base32\base32.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\conversion\base64\base64.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\conversion\utf32\unicode_simple_folding.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\conversion\utf7\utf7.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\file_persister.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\invokation\registration.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
@@ -860,6 +760,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\lua\lua.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\number\number_integer.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\number\number_math.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\parameters\parameters.cpp">
@@ -958,7 +859,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -976,9 +877,9 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -1001,7 +902,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -1023,9 +924,9 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>
       </SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

@@ -4,30 +4,29 @@
 
 #pragma once
 
-#include <span>
 #include <vector>
 
-#include <boost/variant.hpp>
 #include <boost/unordered_map.hpp>
 
 #include "sonia/optional.hpp"
+#include "sonia/variant.hpp"
 #include "sonia/function.hpp"
+#include "sonia/span.hpp"
 #include "sonia/utility/json/value.hpp"
 #include "sonia/utility/iterators/wrapper_iterator.hpp"
 #include "sonia/utility/iterators/chain_iterator.hpp"
 #include "sonia/utility/iterators/http_form_data_read_iterator.hpp"
-#include "sonia/utility/functional/hash/variant.hpp"
 
 #include "http.hpp"
 
 namespace sonia::http {
 
-using any_header_t = boost::variant<header, std::string>;
-using any_header_param_t = boost::variant<header, std::string_view>;
-using header_value_param_t = boost::variant<std::string_view, std::string>;
+using any_header_t = variant<header, std::string>;
+using any_header_param_t = variant<header, std::string_view>;
+using header_value_param_t = variant<std::string_view, std::string>;
 using headers_t = boost::unordered_map<any_header_t, std::vector<std::string>, hasher>;
 
-struct header_param_converter : boost::static_visitor<any_header_t>
+struct header_param_converter : static_visitor<any_header_t>
 {
     any_header_t operator()(header h) const { return h; }
     any_header_t operator()(std::string_view h) const { return std::string(h); }
@@ -38,9 +37,9 @@ struct header_equal_to
     bool operator()(any_header_param_t const& l, any_header_t const& r) const
     {
         if (l.which() != r.which()) return false;
-        header const* lh = boost::get<header>(&l);
-        if (lh) return *lh == boost::get<header>(r);
-        return boost::get<std::string_view>(l) == boost::get<std::string>(r);
+        header const* lh = get<header>(&l);
+        if (lh) return *lh == get<header>(r);
+        return get<std::string_view>(l) == get<std::string>(r);
     }
 };
 
@@ -49,7 +48,7 @@ class header_collection
 public:
     headers_t headers;
 
-    std::span<const std::string> get_header(any_header_param_t) const;
+    span<const std::string> get_header(any_header_param_t) const;
 
     void tokenize_header(any_header_param_t, function<bool(std::string_view, std::string_view, char)> const& handler) const;
 
@@ -60,7 +59,7 @@ public:
     template <size_t N> void set_header(any_header_param_t h, const char(&hv)[N]) { set_header(h, std::string_view{hv, hv[N - 1] ? N : N -1}); }
     template <size_t N> void add_header(any_header_param_t h, const char(&hv)[N]) { add_header(h, std::string_view{hv, hv[N - 1] ? N : N -1}); }
 
-    static string_view header_name(any_header_t const&);
+    static std::string_view header_name(any_header_t const&);
 };
 
 class message : public header_collection
@@ -73,7 +72,7 @@ public:
         range_write_impl_type*,
         std::span<char>,
         std::input_iterator_tag,
-        std::span<char>
+        span<char>
     >;
 
     using content_read_iterator_t = chain_linkable_iterator<std::span<const char>, std::input_iterator_tag>;
@@ -112,7 +111,7 @@ public:
     cstring_view get_relative_uri() const;
     void set_uri(string_view, bool ignore_abs_parts);
 
-    using parameter_arg_t = boost::variant<std::string_view, std::string>;
+    using parameter_arg_t = variant<std::string_view, std::string>;
 
     void add_parameter(parameter_arg_t name, parameter_arg_t value);
     std::span<const std::string> get_parameter(std::string_view name) const;

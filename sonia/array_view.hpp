@@ -10,12 +10,13 @@
 #include <array>
 #include <string>
 #include <iterator>
-#include <span>
+
 
 #include <boost/assert.hpp>
 
 #include "cstdint.hpp"
 #include "type_traits.hpp"
+#include "sonia/span.hpp"
 
 #include "sonia/utility/functional/range_equal.hpp"
 #include "sonia/utility/functional/range_less.hpp"

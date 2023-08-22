@@ -199,56 +199,14 @@
     <Filter Include="sonia.sys\macos">
       <UniqueIdentifier>{513fba6c-e3a1-492a-a745-c25291d054ad}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.utility\conversion">
-      <UniqueIdentifier>{bf5f51bb-c872-4586-b585-1cac7326cecf}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\utf16">
-      <UniqueIdentifier>{a1252817-97fe-4517-8bed-664ae37c4383}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\utf32">
-      <UniqueIdentifier>{aa5e9326-b3ce-4205-b41b-4e827035f4f8}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\utf8">
-      <UniqueIdentifier>{c329c904-1f3f-4283-a1fa-d07cae23dfac}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\auxilary">
-      <UniqueIdentifier>{8a3ac4f2-fa44-42a2-9ba5-31c3e4b903a1}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\base16">
-      <UniqueIdentifier>{689df708-63b9-465c-bd21-d759af5c9ff4}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\base64">
-      <UniqueIdentifier>{1db6dfbc-f94c-4e5c-a2ac-8579a7d8b5cd}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\cp">
-      <UniqueIdentifier>{649f8918-6d7c-4400-85a7-05b0926cf508}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\rc5">
-      <UniqueIdentifier>{cb98ee5e-a476-459e-92d7-e35367078ed3}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.utility\number\meta">
       <UniqueIdentifier>{02cdfbbc-e293-4d92-809b-66054f319fa7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.utility\conversion\urlenc">
-      <UniqueIdentifier>{578832dd-9fbe-452f-80ca-a6a514a9032d}</UniqueIdentifier>
+    <Filter Include="sonia.utility\invokation">
+      <UniqueIdentifier>{72f48ccc-1d69-422c-8d6d-06a96e8caf2e}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.utility\conversion\utf7">
-      <UniqueIdentifier>{80abd1ba-2c1f-48ce-98ab-3380ed1ec8bb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\utility">
-      <UniqueIdentifier>{676b0099-6638-4123-bef3-6900ce4bf9cf}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\xmlenc">
-      <UniqueIdentifier>{82872170-7c1c-4b15-b295-401b41dad414}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\base32">
-      <UniqueIdentifier>{423d78bc-0bf1-4aee-94d8-e9ebb0cd27df}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\ascii85">
-      <UniqueIdentifier>{2fa59c35-717b-4862-9361-e35bc7f033f3}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.utility\conversion\z85">
-      <UniqueIdentifier>{46bbb882-6e15-4731-99ac-e127fb04c645}</UniqueIdentifier>
+    <Filter Include="sonia.utility\lua">
+      <UniqueIdentifier>{f29f4a0d-85b7-462c-92ff-18f406c767fc}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -576,9 +534,6 @@
     <ClInclude Include="..\..\..\sonia\utility\streaming\type_index.hpp">
       <Filter>sonia.utility\streaming</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\functional\hash\vector.hpp">
-      <Filter>sonia.utility\functional\hash</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\concurrency\rw_fiber_mutex.hpp">
       <Filter>sonia.utility\concurrency</Filter>
     </ClInclude>
@@ -599,9 +554,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\serialization\variant.hpp">
       <Filter>sonia.utility\serialization</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\streaming\vector.hpp">
-      <Filter>sonia.utility\streaming</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\streaming\array_view.hpp">
       <Filter>sonia.utility\streaming</Filter>
@@ -1791,201 +1743,6 @@
     <ClInclude Include="..\..\..\sonia\filesystem.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\input_iterator.hpp">
-      <Filter>sonia.utility\conversion</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utility.hpp">
-      <Filter>sonia.utility\conversion</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\tags.hpp">
-      <Filter>sonia.utility\conversion</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\output_iterator.hpp">
-      <Filter>sonia.utility\conversion</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\integral_state.hpp">
-      <Filter>sonia.utility\conversion</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\identity_converter.hpp">
-      <Filter>sonia.utility\conversion</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\error_handling.hpp">
-      <Filter>sonia.utility\conversion</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\converter_facade.hpp">
-      <Filter>sonia.utility\conversion</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\converter.hpp">
-      <Filter>sonia.utility\conversion</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\concrete_converter.hpp">
-      <Filter>sonia.utility\conversion</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\composite.hpp">
-      <Filter>sonia.utility\conversion</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf32_to_utf16.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16le_to_utf16.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16be_to_utf16.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_validator.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_to_utf32.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_to_utf16le2.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_to_utf16le.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_to_utf16be.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16_tag.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\utf16.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\state.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf16\constants.hpp">
-      <Filter>sonia.utility\conversion\utf16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32le_to_utf32.hpp">
-      <Filter>sonia.utility\conversion\utf32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32be_to_utf32.hpp">
-      <Filter>sonia.utility\conversion\utf32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32_to_utf32le.hpp">
-      <Filter>sonia.utility\conversion\utf32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32_to_utf32be.hpp">
-      <Filter>sonia.utility\conversion\utf32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32_tag.hpp">
-      <Filter>sonia.utility\conversion\utf32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32_simple_folding.hpp">
-      <Filter>sonia.utility\conversion\utf32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\utf32.hpp">
-      <Filter>sonia.utility\conversion\utf32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\state.hpp">
-      <Filter>sonia.utility\conversion\utf32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf32\constants.hpp">
-      <Filter>sonia.utility\conversion\utf32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf8_to_utf32.hpp">
-      <Filter>sonia.utility\conversion\utf8</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf8_to_utf16.hpp">
-      <Filter>sonia.utility\conversion\utf8</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf8_tag.hpp">
-      <Filter>sonia.utility\conversion\utf8</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf8.hpp">
-      <Filter>sonia.utility\conversion\utf8</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf32_to_utf8.hpp">
-      <Filter>sonia.utility\conversion\utf8</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\utf16_to_utf8.hpp">
-      <Filter>sonia.utility\conversion\utf8</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf8\state.hpp">
-      <Filter>sonia.utility\conversion\utf8</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\auxilary\dyn_state.hpp">
-      <Filter>sonia.utility\conversion\auxilary</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\auxilary\dyn_output_iterator.hpp">
-      <Filter>sonia.utility\conversion\auxilary</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\auxilary\dyn_input_iterator.hpp">
-      <Filter>sonia.utility\conversion\auxilary</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base16\int8_to_base16.hpp">
-      <Filter>sonia.utility\conversion\base16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base16\constants.hpp">
-      <Filter>sonia.utility\conversion\base16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base16\base16_to_int8.hpp">
-      <Filter>sonia.utility\conversion\base16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base16\base16_tag.hpp">
-      <Filter>sonia.utility\conversion\base16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base16\base16.hpp">
-      <Filter>sonia.utility\conversion\base16</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\state.hpp">
-      <Filter>sonia.utility\conversion\base64</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\int8_to_base64.hpp">
-      <Filter>sonia.utility\conversion\base64</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\constants.hpp">
-      <Filter>sonia.utility\conversion\base64</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\base64_to_int8.hpp">
-      <Filter>sonia.utility\conversion\base64</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\base64_tag.hpp">
-      <Filter>sonia.utility\conversion\base64</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base64\base64.hpp">
-      <Filter>sonia.utility\conversion\base64</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\cp\utf16_to_cp.hpp">
-      <Filter>sonia.utility\conversion\cp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\cp\state.hpp">
-      <Filter>sonia.utility\conversion\cp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\cp\cp_to_utf16.hpp">
-      <Filter>sonia.utility\conversion\cp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\cp\cp_tag.hpp">
-      <Filter>sonia.utility\conversion\cp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\cp\cp.hpp">
-      <Filter>sonia.utility\conversion\cp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\state.hpp">
-      <Filter>sonia.utility\conversion\rc5</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\rc5wrb.hpp">
-      <Filter>sonia.utility\conversion\rc5</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\rc5_to_int8.hpp">
-      <Filter>sonia.utility\conversion\rc5</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\rc5_tag.hpp">
-      <Filter>sonia.utility\conversion\rc5</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\rc5_algo.hpp">
-      <Filter>sonia.utility\conversion\rc5</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\rc5.hpp">
-      <Filter>sonia.utility\conversion\rc5</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\rc5\int8_to_rc5.hpp">
-      <Filter>sonia.utility\conversion\rc5</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\number\fixed_uint.hpp">
       <Filter>sonia.utility\number</Filter>
     </ClInclude>
@@ -1995,66 +1752,6 @@
     <ClInclude Include="..\..\..\sonia\utility\number\meta\uint.hpp">
       <Filter>sonia.utility\number\meta</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\urlenc\utf8_to_urlenc.hpp">
-      <Filter>sonia.utility\conversion\urlenc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\urlenc\urlenc_to_utf8.hpp">
-      <Filter>sonia.utility\conversion\urlenc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\urlenc\urlenc_tag.hpp">
-      <Filter>sonia.utility\conversion\urlenc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\urlenc\urlenc.hpp">
-      <Filter>sonia.utility\conversion\urlenc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\urlenc\state.hpp">
-      <Filter>sonia.utility\conversion\urlenc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\utf7_to_utf16.hpp">
-      <Filter>sonia.utility\conversion\utf7</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\utf7_tag.hpp">
-      <Filter>sonia.utility\conversion\utf7</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\utf7.hpp">
-      <Filter>sonia.utility\conversion\utf7</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\utf16_to_utf7.hpp">
-      <Filter>sonia.utility\conversion\utf7</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\state.hpp">
-      <Filter>sonia.utility\conversion\utf7</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utf7\constants.hpp">
-      <Filter>sonia.utility\conversion\utf7</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utility\unfold.hpp">
-      <Filter>sonia.utility\conversion\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utility\type_to_buffer.hpp">
-      <Filter>sonia.utility\conversion\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utility\buffer_tag.hpp">
-      <Filter>sonia.utility\conversion\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\utility\buffer.hpp">
-      <Filter>sonia.utility\conversion\utility</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\xmlenc_to_utf8.hpp">
-      <Filter>sonia.utility\conversion\xmlenc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\xmlenc_tag.hpp">
-      <Filter>sonia.utility\conversion\xmlenc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\xmlenc.hpp">
-      <Filter>sonia.utility\conversion\xmlenc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\utf8_to_xmlenc.hpp">
-      <Filter>sonia.utility\conversion\xmlenc</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\xmlenc\state.hpp">
-      <Filter>sonia.utility\conversion\xmlenc</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\new.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
@@ -2063,54 +1760,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\serialization\span.hpp">
       <Filter>sonia.utility\serialization</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\state.hpp">
-      <Filter>sonia.utility\conversion\base32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\int8_to_base32.hpp">
-      <Filter>sonia.utility\conversion\base32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\constants.hpp">
-      <Filter>sonia.utility\conversion\base32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32_to_int8.hpp">
-      <Filter>sonia.utility\conversion\base32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32_tag.hpp">
-      <Filter>sonia.utility\conversion\base32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\base32\base32.hpp">
-      <Filter>sonia.utility\conversion\base32</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\ascii85.hpp">
-      <Filter>sonia.utility\conversion\ascii85</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\ascii85_tag.hpp">
-      <Filter>sonia.utility\conversion\ascii85</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\ascii85_to_int8.hpp">
-      <Filter>sonia.utility\conversion\ascii85</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\states.hpp">
-      <Filter>sonia.utility\conversion\ascii85</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\ascii85\int8_to_ascii85.hpp">
-      <Filter>sonia.utility\conversion\ascii85</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\int8_to_z85.hpp">
-      <Filter>sonia.utility\conversion\z85</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\states.hpp">
-      <Filter>sonia.utility\conversion\z85</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85.hpp">
-      <Filter>sonia.utility\conversion\z85</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85_tag.hpp">
-      <Filter>sonia.utility\conversion\z85</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\conversion\z85\z85_to_int8.hpp">
-      <Filter>sonia.utility\conversion\z85</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\logger\android_sink.hpp">
       <Filter>sonia.logger</Filter>
@@ -2141,6 +1790,27 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\serialization\floating_point.hpp">
       <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invokation\invokation.hpp">
+      <Filter>sonia.utility\invokation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invokation\registration.hpp">
+      <Filter>sonia.utility\invokation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invokation\serializarion.hpp">
+      <Filter>sonia.utility\invokation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lua\lua.hpp">
+      <Filter>sonia.utility\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\streaming\variant.hpp">
+      <Filter>sonia.utility\streaming</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\small_vector.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\variant.hpp">
+      <Filter>sonia</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2321,21 +1991,6 @@
     <ClCompile Include="..\..\..\sonia\services\io\io_factory_macos.cpp">
       <Filter>sonia.services.io</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\conversion\utf32\unicode_simple_folding.cpp">
-      <Filter>sonia.utility\conversion\utf32</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\conversion\base16\base16.cpp">
-      <Filter>sonia.utility\conversion\base16</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\conversion\base64\base64.cpp">
-      <Filter>sonia.utility\conversion\base64</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\conversion\utf7\utf7.cpp">
-      <Filter>sonia.utility\conversion\utf7</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\conversion\base32\base32.cpp">
-      <Filter>sonia.utility\conversion\base32</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\logger\android_sink.cpp">
       <Filter>sonia.logger</Filter>
     </ClCompile>
@@ -2344,6 +1999,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\http\mime_mapping.cpp">
       <Filter>sonia.net\http</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invokation\registration.cpp">
+      <Filter>sonia.utility\invokation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\lua\lua.cpp">
+      <Filter>sonia.utility\lua</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

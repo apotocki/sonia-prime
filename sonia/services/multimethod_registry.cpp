@@ -5,7 +5,6 @@
 #include "sonia/config.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/concurrency.hpp"
-#include "sonia/utility/streaming/array_view.hpp"
 #include "sonia/utility/streaming/type_index.hpp"
 
 #include "multimethod_registry.hpp"
@@ -13,25 +12,27 @@
 
 namespace sonia::services {
 
-void multimethod_registry::register_multimethod(multimethod && mm, array_view<const std::type_index> mmid)
+void multimethod_registry::register_multimethod(multimethod && mm, span<const mm_id_elem_t> mmid)
 {
     //GLOBAL_LOG_INFO() << "SET " << mmid;
-    std::vector<std::type_index> vid(mmid.begin(), mmid.end());
+    key_set_t vid(mmid.begin(), mmid.end());
     lock_guard slguard(mm_item_mtx_);
     auto it = mm_set_.find(vid);
     if (it == mm_set_.end()) {
-        mm_set_.insert(it, {mmholder_t(std::move(mm)), std::move(vid)});
+        mm_set_.insert(it, { mmholder_t(std::move(mm)), std::move(vid) });
     } else {
         throw internal_error("multimethod with signature %1% is already registered"_fmt % mmid);
     }
 }
 
-multimethod const* multimethod_registry::get_multimethod(array_view<const std::type_index> mmid) const
+multimethod const* multimethod_registry::get_multimethod(span<const mm_id_elem_t> mmid) const
 {
     //GLOBAL_LOG_INFO() << "GET " << mmid;
     shared_lock_guard slguard(mm_item_mtx_);
     auto it = mm_set_.find(mmid, hasher(), range_equal());
     return (it != mm_set_.cend()) ? it->mm.get_pointer() : nullptr;
+
+    return nullptr;
 }
 
 }

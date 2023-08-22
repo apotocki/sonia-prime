@@ -30,7 +30,7 @@ public:
     void on_version() {}
     void on_standalone()
     {
-        string_view sv = array_view(tempstr_);
+        string_view sv{tempstr_.data(), tempstr_.size()};
         if (sv == "yes") derived().on_standalone(true);
         else if (sv == "no") derived().on_standalone(false);
         else throw exception("wrong standalone value %1%"_fmt % sv);

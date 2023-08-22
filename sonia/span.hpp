@@ -7,6 +7,12 @@
 #include <span>
 #include <boost/iterator_adaptors.hpp>
 
+namespace sonia {
+
+using std::span;
+
+}
+
 namespace std {
 
 template <typename T, size_t EVL, size_t EVR>
@@ -37,12 +43,14 @@ inline bool is_subset_of(std::span<T, EVL> l, std::span<T, EVR> r)
 
 }
 
+#include <boost/range/range_fwd.hpp>
+
 namespace boost {
 
 template <typename T, size_t EV>
-struct range_iterator<const std::span<T, EV>>
+struct range_iterator<const sonia::span<T, EV>, void>
 {
-    using type = typename std::span<T, EV>::iterator;;
+    using type = typename sonia::span<T, EV>::iterator;
 };
 
 /*
@@ -54,3 +62,8 @@ struct range_mutable_iterator<std::span<T, EV>>
 */
 
 }
+
+#define SONIA_SPAN_DECLARED
+
+#include "sonia/utility/functional/hash/span.hpp"
+#include "sonia/utility/streaming/span.hpp"

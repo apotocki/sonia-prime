@@ -208,12 +208,12 @@ void load_durable_id(std::string_view name, std::string_view meta)
     locate(meta);
 }
 
-void register_multimethod(multimethod && mm, std::span<const std::type_index> mmid)
+void register_multimethod(multimethod && mm, std::span<const mm_id_elem_t> mmid)
 {
     get_host_impl()->register_multimethod(std::move(mm), mmid);
 }
 
-multimethod const* get_multimethod(std::span<const std::type_index> mmid)
+multimethod const* get_multimethod(std::span<const mm_id_elem_t> mmid)
 {
     return get_host_impl()->get_multimethod(mmid);
 }

@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_NET_URI_HPP
-#define SONIA_NET_URI_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/string.hpp"
 #include "sonia/optional.hpp"
@@ -30,6 +25,7 @@ struct uri_parts
 };
 
 uri_parts parse_uri(string_view);
+uri_parts parse_uri(cstring_view);
 
 template <typename InputIteratorT, class UriPpartsT>
 bool parse_uri(InputIteratorT & b, InputIteratorT e, UriPpartsT* result = nullptr);
@@ -49,5 +45,3 @@ void encode_uri_component(InputIteratorT b, InputIteratorT e, OutputIteratorT oi
 uint16_t default_scheme_port(string_view);
 
 }
-
-#endif // SONIA_NET_URI_HPP

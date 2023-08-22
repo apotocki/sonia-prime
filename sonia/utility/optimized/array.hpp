@@ -5,8 +5,8 @@
 
 #include <iosfwd>
 #include <memory>
-#include <span>
 
+#include "sonia/span.hpp"
 #include "sonia/string.hpp"
 #include "sonia/type_traits.hpp"
 #include "sonia/utility/buffer.hpp"
@@ -14,7 +14,6 @@
 #include "sonia/utility/functional/mover.hpp"
 #include "sonia/utility/functional/range_equal.hpp"
 #include "sonia/utility/functional/range_less.hpp"
-#include "sonia/utility/functional/hash/span.hpp"
 #include "sonia/utility/serialization/serialization_fwd.hpp"
 
 namespace sonia {
@@ -224,7 +223,8 @@ public:
     }
 
     template <typename RngT>
-    explicit optimized_array(RngT && rng, disable_if_same_ref_t<optimized_array, RngT> * dummy = nullptr)
+    requires(!is_same_v<optimized_array, remove_cvref_t<RngT>>)
+    explicit optimized_array(RngT && rng)
     {
         array_t::init(this, std::forward<RngT>(rng));
     }
@@ -241,7 +241,8 @@ public:
     }
 
     template <typename ET, size_t BSzV, typename RCT, typename SelfET = ElementT>
-    optimized_array(optimized_array<ET, BSzV, RCT> const& rhs, enable_if_t<is_const_v<SelfET> && is_same_v<ET, remove_cv_t<ElementT>>> * enabler = nullptr)
+    requires(is_const_v<SelfET> && is_same_v<ET, remove_cv_t<ElementT>>)
+    optimized_array(optimized_array<ET, BSzV, RCT> const& rhs)
         : holder_t(static_cast<holder_t const&>(rhs))
     {
         static_assert(is_trivial_v<element_t>);

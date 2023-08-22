@@ -18,6 +18,11 @@ uri_parts parse_uri(string_view str)
     return result;
 }
 
+uri_parts parse_uri(cstring_view str)
+{
+    return parse_uri(string_view{ str.data(), str.size() });
+}
+
 uint16_t default_scheme_port(string_view scheme)
 {
     if (scheme == "http") return 80;

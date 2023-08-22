@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_FUNCTIONAL_EQUAL_HPP
-#define SONIA_FUNCTIONAL_EQUAL_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <functional>
 
@@ -15,21 +10,31 @@
 
 namespace sonia {
 
-template <typename LT, typename RT, typename Enabler = void>
+template <typename LT, typename RT>
 struct equal
 {
     template <typename LArgT, typename RArgT>
-    bool operator()(LArgT && l, RArgT && r) const { return std::equal_to<void>()(l, r); } // { return l == r; }
+    inline bool operator()(LArgT && l, RArgT && r) const
+    {
+        if constexpr (is_same_v<LT, RT>) {
+            return std::equal_to<LT>()(l, r);
+        } else if constexpr (requires{ !std::equal_to<>()(std::forward<LArgT>(l), std::forward<RArgT>(r)); }) {
+            return std::equal_to<>()(std::forward<LArgT>(l), std::forward<RArgT>(r));
+        } else {
+            return false;
+        }
+    }
 };
 
 template <typename T>
 struct equal<T*, T*>
 {
-    bool operator()(T const* l, T const* r) const { return std::equal_to<T*>()(l, r); }
+    inline bool operator()(T const* l, T const* r) const { return std::equal_to<T*>()(l, r); }
 };
 
 template <typename LT, typename RT>
-struct equal<LT, RT, enable_if_t<is_integral_v<LT> && is_integral_v<RT>>>
+requires(is_integral_v<LT> && is_integral_v<RT>)
+struct equal<LT, RT>
 {
     bool operator()(LT l, RT r) const noexcept
     {
@@ -62,5 +67,3 @@ struct equal_to
 };
 
 }
-
-#endif // SONIA_FUNCTIONAL_EQUAL_HPP

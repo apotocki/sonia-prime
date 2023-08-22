@@ -22,7 +22,7 @@ using namespace std::filesystem;
 
 namespace sonia {
 
-inline fs::path operator / (fs::path const& p, u8string_view l)
+inline fs::path operator / (fs::path const& p, experimental::basic_string_view<char8_t> l)
 {
     return p / std::u8string_view(l.data(), l.size());
 }

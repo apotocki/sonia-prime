@@ -5,13 +5,119 @@
 #pragma once
 
 #include <string>
+#include <atomic>
 #include <boost/format.hpp>
 #include "array_view.hpp"
+#include "sonia/span.hpp"
 #include "sonia/utility/comparison_operators.hpp"
-#include "sonia/utility/functional/hash/span.hpp"
+#include "sonia/utility/optimized/array.hpp"
 
 namespace sonia {
 
+// immutable string
+template <typename CharT, size_t SzV = (std::max)(8 * sizeof(CharT), sizeof(void*)), class TraitsT = std::char_traits<CharT>>
+class basic_small_string
+{
+    using shared_array_t = shared_optimized_array<const CharT, SzV, std::atomic<uint32_t>>;
+
+public:
+    using value_type = CharT;
+    using pointer = CharT const*;
+    using const_pointer = CharT const*;
+    using reference = CharT const&;
+    using const_reference = CharT const&;
+    using size_type = size_t;
+
+    basic_small_string(std::string_view sv)
+        : array_{sv}
+    {}
+
+    template <size_t N>
+    basic_small_string(const CharT(&arr)[N]) : array_{arr, N} {}
+
+    basic_small_string(basic_small_string const&) = default;
+    basic_small_string(basic_small_string &&) = default;
+    basic_small_string& operator=(basic_small_string const&) = default;
+    basic_small_string& operator=(basic_small_string &&) = default;
+
+    basic_small_string & operator= (std::string_view sv)
+    {
+        array_ = shared_array_t{ sv };
+        return *this;
+    }
+
+    template <size_t EV>
+    bool is_equal(std::span<const CharT, EV> const& rhs) const noexcept
+    {
+        return array_.size() == rhs.size() && TraitsT::compare(data(), rhs.data(), rhs.size()) == 0;
+    }
+
+    operator std::span<const CharT>() const { return array_.to_span(); }
+
+    constexpr reference front() const noexcept { return array_.front(); }
+    constexpr reference back() const { return array_.back(); }
+    const CharT* data() const noexcept { return array_.data(); }
+
+    explicit operator bool() const noexcept { return !empty(); }
+    bool empty() const noexcept { return array_.empty(); }
+    size_t size() const noexcept { return array_.size(); }
+
+    auto begin() const noexcept { return array_.begin(); }
+    auto end() const noexcept { return array_.end(); }
+    auto cbegin() const noexcept { return array_.begin(); }
+    auto cend() const noexcept { return array_.end(); }
+
+private:
+    shared_array_t array_;
+};
+
+template <typename CharT, size_t SzV, class TraitsT>
+inline std::span<const CharT> to_span(basic_small_string<CharT, SzV, TraitsT> const& s)
+{
+    return (std::span<const CharT>)s;
+}
+
+template <typename CharT, size_t SzV1, size_t SzV2, class TraitsT>
+bool operator== (basic_small_string<CharT, SzV1, TraitsT> const& lhs, basic_small_string<CharT, SzV2, TraitsT> const& rhs) noexcept
+{
+    return lhs.is_equal((std::span<const CharT>)rhs);
+}
+
+template <typename CharT, size_t SzV1, size_t SzV2, class TraitsT>
+bool operator== (basic_small_string<CharT, SzV1, TraitsT> const& lhs, std::basic_string_view<CharT, TraitsT> const& rhs) noexcept
+{
+    return lhs.is_equal((std::span<const CharT>)rhs);
+}
+
+template <typename CharT, size_t SzV, class TraitsT>
+bool operator== (std::basic_string_view<CharT, TraitsT> const& lhs, basic_small_string<CharT, SzV, TraitsT> const& rhs) noexcept
+{
+    return rhs.is_equal((std::span<const CharT>)lhs);
+}
+
+template <typename CharT, size_t SzV, class TraitsT>
+bool operator== (basic_small_string<CharT, SzV, TraitsT> const& lhs, std::basic_string<CharT, TraitsT> const& rhs) noexcept
+{
+    return lhs.is_equal((std::span<const CharT>)rhs);
+}
+
+template <typename CharT, size_t SzV, class TraitsT>
+bool operator== (std::basic_string<CharT, TraitsT> const& lhs, basic_small_string<CharT, SzV, TraitsT> const& rhs) noexcept
+{
+    return rhs.is_equal((std::span<const CharT>)lhs);
+}
+
+template <typename CharT, size_t SzV1, typename OtherT>
+constexpr bool operator!= (basic_small_string<CharT, SzV1> const& lhs, OtherT const& rhs) noexcept
+{
+    return !(lhs == rhs);
+}
+
+
+using small_string = basic_small_string<char>;
+using small_wstring = basic_small_string<wchar_t>;
+
+namespace experimental {
 template <typename CharT, class TraitsT = std::char_traits<CharT>>
 class basic_string_view : public array_view<std::add_const_t<CharT>>
 {
@@ -120,31 +226,8 @@ basic_cstring_view<CharT, TraitsT> to_string_view(std::basic_string<CharT, Trait
 }
 */
 
-template <typename CharT, class AllocatorT>
-std::basic_string_view<CharT> to_string_view(std::vector<CharT, AllocatorT> const& v)
-{
-    return std::basic_string_view<CharT>(v.empty() ? nullptr : &v.front(), v.size());
-}
-
 template <typename CharT, class TraitsT>
 basic_cstring_view<CharT, TraitsT> to_cstring_view(basic_cstring_view<CharT, TraitsT> sv) { return sv; }
-
-template <typename CharT, class TraitsT, class AllocT>
-basic_cstring_view<CharT, TraitsT> to_cstring_view(std::basic_string<CharT, TraitsT, AllocT> const& s)
-{
-    return basic_cstring_view<CharT, TraitsT>(s);
-}
-
-template <typename CharT>
-basic_string_view<CharT> to_string_view(CharT * arr) noexcept
-{
-    return basic_string_view<CharT>(arr);
-}
-
-template <class T> struct is_string_view : false_type {};
-template <typename CharT, class TraitsT> struct is_string_view<basic_string_view<CharT, TraitsT>> : true_type {};
-template <typename CharT, class TraitsT> struct is_string_view<basic_cstring_view<CharT, TraitsT>> : true_type {};
-template <class T> constexpr bool is_string_view_v = is_string_view<T>::value;
 
 template <typename CharT, class TraitsT>
 constexpr bool operator== (basic_string_view<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept
@@ -159,15 +242,15 @@ constexpr bool operator== (basic_string_view<CharT, TraitsT> const& lhs, std::ba
 }
 
 template <typename CharT, class TraitsT>
-constexpr bool operator== (std::basic_string<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept
-{
-    return rhs.is_equal(basic_string_view<CharT, TraitsT>(lhs));
-}
-
-template <typename CharT, class TraitsT>
 bool operator== (basic_string_view<CharT, TraitsT> const& lhs, CharT const* rhs) noexcept
 {
     return lhs.is_equal(basic_string_view<CharT, TraitsT>(rhs));
+}
+
+template <typename CharT, class TraitsT>
+constexpr bool operator== (std::basic_string<CharT, TraitsT> const& lhs, basic_string_view<CharT, TraitsT> const& rhs) noexcept
+{
+    return rhs.is_equal(basic_string_view<CharT, TraitsT>(lhs));
 }
 
 template <typename CharT, class TraitsT>
@@ -194,13 +277,61 @@ constexpr bool operator< (std::basic_string<CharT, TraitsT> const& lhs, basic_st
     return rhs.compare(lhs.c_str(), lhs.size()) > 0;
 }
 
+template <typename CharT, template<class> class TraitsT, typename SrcCharT>
+std::basic_ostream<CharT, TraitsT<CharT>>& operator<< (std::basic_ostream<CharT, TraitsT<CharT>>& os, basic_string_view<SrcCharT, TraitsT<SrcCharT>> s)
+{
+    return os.write(reinterpret_cast<CharT const*>(s.data()), s.size());
+}
+
+template <typename CharT, class TraitsT>
+std::basic_string<CharT, TraitsT> to_string(basic_string_view<CharT, TraitsT> sv)
+{
+    return std::basic_string<CharT>(sv.data(), sv.size());
+}
+
+template <typename CharT, class TraitsT>
+std::basic_string<CharT, TraitsT> to_string(basic_cstring_view<CharT, TraitsT> sv)
+{
+    return std::basic_string<CharT>(sv.data(), sv.size());
+}
+
+} // experimental
+
+
+template <typename CharT, class AllocatorT>
+std::basic_string_view<CharT> to_string_view(std::vector<CharT, AllocatorT> const& v)
+{
+    return std::basic_string_view<CharT>(v.empty() ? nullptr : &v.front(), v.size());
+}
+
+template <typename CharT, class TraitsT, class AllocT>
+experimental::basic_cstring_view<CharT, TraitsT> to_cstring_view(std::basic_string<CharT, TraitsT, AllocT> const& s)
+{
+    return basic_cstring_view<CharT, TraitsT>(s);
+}
+
+template <typename CharT>
+experimental::basic_string_view<CharT> to_string_view(CharT * arr) noexcept
+{
+    return basic_string_view<CharT>(arr);
+}
+
+template <class T> struct is_string_view : false_type {};
+template <typename CharT, class TraitsT> struct is_string_view<experimental::basic_string_view<CharT, TraitsT>> : true_type {};
+template <typename CharT, class TraitsT> struct is_string_view<experimental::basic_cstring_view<CharT, TraitsT>> : true_type {};
+template <typename CharT, class TraitsT> struct is_string_view<std::basic_string_view<CharT, TraitsT>> : true_type {};
+template <class T> constexpr bool is_string_view_v = is_string_view<T>::value;
+
+
 MAKE_FREE_COMPARISON_OPERATORS(is_string_view_v)
 
-using string_view = basic_string_view<char>;
-using u8string_view = basic_string_view<char8_t>;
-using wstring_view = basic_string_view<wchar_t>;
-using cstring_view = basic_cstring_view<char>;
-using u8cstring_view = basic_cstring_view<char8_t>;
+using std::basic_string_view;
+using experimental::basic_cstring_view;
+using string_view = std::string_view;
+using u8string_view = std::u8string_view;
+using wstring_view = std::wstring_view;
+using cstring_view = experimental::basic_cstring_view<char>;
+using u8cstring_view = experimental::basic_cstring_view<char8_t>;
 
 struct string_equal_to
 {
@@ -222,11 +353,11 @@ struct string_equal_to
         return l == r;
     }
 
-    template <typename CharT, class TraitsT>
-    bool operator()(std::basic_string_view<CharT, TraitsT> l, std::basic_string<CharT, TraitsT> const& r) const noexcept
-    {
-        return l == r;
-    }
+    //template <typename CharT, class TraitsT>
+    //bool operator()(std::basic_string_view<CharT, TraitsT> l, std::basic_string<CharT, TraitsT> const& r) const noexcept
+    //{
+    //    return l == r;
+    //}
 
     template <typename CharT, class TraitsT>
     bool operator()(std::basic_string<CharT, TraitsT> const& l, basic_string_view<CharT, TraitsT> r) const noexcept
@@ -234,11 +365,11 @@ struct string_equal_to
         return r == l;
     }
 
-    template <typename CharT, class TraitsT>
-    bool operator()(std::basic_string<CharT, TraitsT> const& l, std::basic_string_view<CharT, TraitsT> r) const noexcept
-    {
-        return r == l;
-    }
+    //template <typename CharT, class TraitsT>
+    //bool operator()(std::basic_string<CharT, TraitsT> const& l, std::basic_string_view<CharT, TraitsT> r) const noexcept
+    //{
+    //    return r == l;
+    //}
 };
 
 struct string_less
@@ -283,12 +414,7 @@ std::basic_string<CharT, TraitsT> to_string(basic_string_view<CharT, TraitsT> sv
     return std::basic_string<CharT, TraitsT>(sv.cbegin(), sv.cend());
 }
 
-template <typename CharT, typename SrcCharT, class SrcTraitsT>
-requires(!is_same_v<CharT, SrcCharT> && sizeof(CharT) == sizeof(SrcCharT))
-std::basic_string<CharT> to_string(basic_string_view<SrcCharT, SrcTraitsT> sv)
-{
-    return std::basic_string<CharT>(reinterpret_cast<const CharT*>(sv.data()), sv.size());
-}
+
 
 template <typename CharT, class AllocatorT>
 std::basic_string<CharT> to_string(std::vector<CharT, AllocatorT> const& v)
@@ -308,11 +434,7 @@ std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> && fmt) {
 template<class Ch, class Tr, class Alloc>
 std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> const && fmt) { return fmt.str(); }
 
-template <typename CharT, template<class> class TraitsT, typename SrcCharT>
-std::basic_ostream<CharT, TraitsT<CharT>>& operator<< (std::basic_ostream<CharT, TraitsT<CharT>>& os, basic_string_view<SrcCharT, TraitsT<SrcCharT>> s)
-{
-    return os.write(reinterpret_cast<CharT const*>(s.data()), s.size());
-}
+
 
 inline boost::basic_format<char> operator "" _fmt(const char* str, std::size_t)
 {
@@ -355,13 +477,13 @@ struct hash<std::basic_string_view<CharT, TraitsT>>
 template <class CharT, class TraitsT>
 size_t hash_value(basic_string_view<CharT, TraitsT> sv)
 {
-    return hash<array_view<const CharT>>()(sv);
+    return hash<span<const CharT>>()(sv);
 }
 
 template <class CharT, class TraitsT>
 size_t hash_value(basic_cstring_view<CharT, TraitsT> csv)
 {
-    return hash<array_view<const CharT>>()(csv);
+    return hash<span<const CharT>>()(csv);
 }
 
 template <size_t BuffSzV, class CharT, class TraitsT, typename FtorT>

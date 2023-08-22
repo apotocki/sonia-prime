@@ -15,7 +15,6 @@
 #include "sonia/utility/optimized/decimal.hpp"
 #include "sonia/utility/optimized/array.hpp"
 #include "sonia/utility/functional/mover.hpp"
-#include "sonia/utility/streaming/span.hpp"
 
 namespace sonia {
 
@@ -41,7 +40,7 @@ using object_item_t = std::pair<json_item_name_t, json_value>;
 
 struct json_object_item_transformer
 {
-    using result_type = std::pair<std::span<const char>, json_value>;
+    using result_type = std::pair<span<const char>, json_value>;
 
     template <typename TplT>
     result_type operator()(TplT&& x) const {
@@ -197,7 +196,7 @@ std::u8string_view json_value::get_u8string() const
     throw exception("json_value (%1%) is not a string"_fmt % to_string(*this));
 }
 
-std::span<const json_value> json_value::get_array() const
+span<const json_value> json_value::get_array() const
 {
     if (json_value_type::array == type()) {
         using array_t = optimized_array_impl<json_value, holder_t>;
@@ -206,7 +205,7 @@ std::span<const json_value> json_value::get_array() const
     throw exception("json_value (%1%) is not an array"_fmt % to_string(*this));
 }
 
-std::span<json_value> json_value::get_array()
+span<json_value> json_value::get_array()
 {
     if (json_value_type::array == type()) {
         using array_t = optimized_array_impl<json_value, holder_t>;
@@ -312,13 +311,6 @@ json_value::json_value(decimal val)
     set_service_cookie((size_t)json_value_type::number);
 }
 
-json_value::json_value(std::string_view val)
-{
-    using string_t = optimized_array_impl<char, holder_t>;
-    string_t::init(this, val);
-    set_service_cookie((size_t)json_value_type::string);
-}
-
 json_value::json_value(string_view val)
 {
     using string_t = optimized_array_impl<char, holder_t>;
@@ -326,7 +318,14 @@ json_value::json_value(string_view val)
     set_service_cookie((size_t)json_value_type::string);
 }
 
-json_value::json_value(std::span<json_value> val)
+json_value::json_value(cstring_view val)
+{
+    using string_t = optimized_array_impl<char, holder_t>;
+    string_t::init(this, val);
+    set_service_cookie((size_t)json_value_type::string);
+}
+
+json_value::json_value(span<json_value> val)
 {
     using array_t = optimized_array_impl<json_value, holder_t>;
     array_t::init(this, val | boost::adaptors::transformed(mover()), val.size());
@@ -340,7 +339,7 @@ json_value::json_value(std::initializer_list<json_value> l)
     set_service_cookie((size_t)json_value_type::array);
 }
 
-json_value::json_value(std::span<const std::string> keys, std::span<const json_value> vals)
+json_value::json_value(span<const std::string> keys, span<const json_value> vals)
 {
     using object_t = optimized_object_impl<holder_t>;
     object_t::init(this, keys, vals);
@@ -375,7 +374,7 @@ struct json_eq
     bool operator()(T const& l, T const& r) const { return l == r; }
 
     template <typename T>
-    bool operator()(std::span<T> const& l, std::span<T> const& r) const { return range_equal()(l, r); }
+    bool operator()(span<T> const& l, span<T> const& r) const { return range_equal()(l, r); }
 };
 
 struct json_less
@@ -384,7 +383,7 @@ struct json_less
     bool operator()(T const& l, T const& r) const { return l < r; }
 
     template <typename T>
-    bool operator()(std::span<T> const& l, std::span<T> const& r) const { return range_less()(l, r); }
+    bool operator()(span<T> const& l, span<T> const& r) const { return range_less()(l, r); }
 };
 
 bool operator==(json_value const& lhs, json_value const& rhs)

@@ -25,7 +25,7 @@ int get_pid()
 
 void set_thread_name(sonia::thread::id tid, string_view name)
 {
-    winapi::set_thread_name(tid, (&name.back() + 1) ? to_string(name).c_str() : name.begin());
+    winapi::set_thread_name(tid, std::string{name}.c_str());
 }
 
 void set_thread_name(sonia::thread::id tid, std::string const& name)

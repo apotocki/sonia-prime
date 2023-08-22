@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_NET_URI_IPP
-#define SONIA_NET_URI_IPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/net/uri.hpp"
 #include "sonia/utility/parsers/utility.hpp"
@@ -331,7 +326,7 @@ bool relative_ref(IteratorT & it, IteratorT const& e, UriPpartsT* result)
         fragment(b, e, result);
     }
     if (result) {
-        result->scheme.reset();
+        result->scheme = {};
         result->is_absolute = false;
     }
     it = b;
@@ -352,14 +347,14 @@ bool parse_uri(IteratorT & b, IteratorT e, UriPpartsT* result)
 template <typename OutputIteratorT>
 void canonize_path(string_view path, OutputIteratorT oit)
 {
-    const char* uriit = path.begin(), *urieit = path.end();
+    auto uriit = path.begin(), urieit = path.end();
     std::vector<string_view> parts;
 
-    const char* part_begin = uriit;
+    auto part_begin = uriit;
     while (uriit != urieit) {
         if (*uriit == '/' || *uriit == '\\') {
             if (part_begin != uriit) {
-                parts.push_back(string_view(part_begin, uriit - part_begin));
+                parts.push_back(string_view(part_begin, uriit));
             }
             ++uriit;
             part_begin = uriit;
@@ -393,7 +388,7 @@ void canonize_path(string_view path, OutputIteratorT oit)
         ++uriit;
     }
     if (part_begin != uriit) {
-        parts.push_back(string_view(part_begin, uriit - part_begin));
+        parts.push_back(string_view(part_begin, uriit));
     }
 
     if (!path.empty() && (path[0] == '/' || path[0] == '\\')) {
@@ -472,5 +467,3 @@ void encode_uri_component(InputIteratorT b, InputIteratorT e, OutputIteratorT oi
 }
 
 }
-
-#endif // SONIA_NET_URI_IPP

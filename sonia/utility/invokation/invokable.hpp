@@ -37,8 +37,6 @@ public:
     virtual smart_blob get_property(string_view propname) const;
     virtual void set_property(string_view propname, blob_result&& val);
     virtual void on_propety_change(string_view) {}
-
-    virtual shared_ptr<blob_manager> get_blob_manager() const = 0;
 };
 
 struct method : multimethod
@@ -76,12 +74,7 @@ struct concrete_method : method
             //blob_result br = particular_blob_result(std::apply(FuncV, std::move(argstpl)), self.get_blob_manager());
             //GLOBAL_LOG_INFO() << "do_job returns: " << br;
             //return br;
-            auto pbm = self.get_blob_manager();
-            blob_result br = particular_blob_result(std::apply(FuncV, std::move(argstpl)), pbm.get());
-            if (br.need_unpin) {
-                return smart_blob{ std::move(br), std::move(pbm) };
-            }
-            return smart_blob{ std::move(br) };
+            return smart_blob { particular_blob_result(std::apply(FuncV, std::move(argstpl))) };
         }
     }
 
@@ -152,12 +145,7 @@ struct field_fn_property : fn_property
 
     smart_blob get(invokable const& obj) const override
     {
-        auto pbm = obj.get_blob_manager();
-        blob_result br = particular_blob_result(dynamic_cast<invokable_t const&>(obj).*FieldV, pbm.get());
-        if (br.need_unpin) {
-            return smart_blob{ std::move(br), std::move(pbm) };
-        }
-        return smart_blob{ std::move(br) };
+        return smart_blob { particular_blob_result(dynamic_cast<invokable_t const&>(obj).*FieldV) };
     }
 
     bool set(invokable& obj, blob_result val) const override
@@ -202,12 +190,7 @@ public:
     {
         sonia::services::register_multimethod(concrete_method<FuncV>(), { typeid(DerivedT), name });
     }
-private:
-    void inherit(std::type_index from)
-    {
-        sonia::services::copy_multimethods({ from }, { typeid(DerivedT) });
-    }
-public:
+
     template <typename GetterT>
     void register_readonly_property(string_view name, GetterT && g)
     {
@@ -224,6 +207,12 @@ public:
     void register_property(string_view name)
     {
         sonia::services::register_multimethod(field_fn_property<FieldV>(), { typeid(DerivedT), name });
+    }
+
+private:
+    void inherit(std::type_index from)
+    {
+        sonia::services::copy_multimethods({ from }, { typeid(DerivedT) });
     }
 };
 

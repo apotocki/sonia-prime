@@ -2012,6 +2012,9 @@
     <ClCompile Include="..\..\..\sonia\utility\lua\lua.cpp">
       <Filter>sonia.utility\lua</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invokation\invokation.cpp">
+      <Filter>sonia.utility\invokation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\sonia.natvis" />

@@ -249,7 +249,8 @@ public:
     }
 
     template <typename ET, size_t BSzV, typename RCT, typename SelfET = ElementT>
-    optimized_array(optimized_array<ET, BSzV, RCT> && rhs, enable_if_t<is_const_v<SelfET> && is_same_v<ET, remove_cv_t<ElementT>>> * enabler = nullptr)
+    requires(is_const_v<SelfET>&& is_same_v<ET, remove_cv_t<ElementT>>)
+    optimized_array(optimized_array<ET, BSzV, RCT> && rhs)
         : holder_t(std::move(static_cast<holder_t&>(rhs)))
     {
         static_assert(is_trivial_v<element_t>);
@@ -322,14 +323,16 @@ public:
     }
 
     template <typename ET, size_t BSzV, typename RCT, typename SelfET = ElementT>
-    enable_if_t<is_const_v<SelfET> && is_same_v<ET, remove_cv_t<ElementT>>, optimized_array&> operator=(optimized_array<ET, BSzV, RCT> const& rhs)
+    requires(is_const_v<SelfET>&& is_same_v<ET, remove_cv_t<ElementT>>)
+    optimized_array& operator=(optimized_array<ET, BSzV, RCT> const& rhs)
     {
         holder_t::operator= (static_cast<holder_t const&>(rhs));
         return *this;
     }
 
     template <typename ET, size_t BSzV, typename RCT, typename SelfET = ElementT>
-    enable_if_t<is_const_v<SelfET> && is_same_v<ET, remove_cv_t<ElementT>>, optimized_array&> operator=(optimized_array<ET, BSzV, RCT> && rhs)
+    requires(is_const_v<SelfET>&& is_same_v<ET, remove_cv_t<ElementT>>)
+    optimized_array& operator=(optimized_array<ET, BSzV, RCT> && rhs)
     {
         holder_t::operator= (std::move(static_cast<holder_t&>(rhs)));
         return *this;
@@ -405,7 +408,8 @@ public:
     {}
 
     template <typename ET, size_t BSzV, typename RCT, typename SelfET = ElementT>
-    shared_optimized_array(shared_optimized_array<ET, BSzV, RCT> const& rhs, enable_if_t<is_const_v<SelfET> && is_same_v<ET, remove_cv_t<ElementT>>> * enabler = nullptr)
+    requires(is_const_v<SelfET>&& is_same_v<ET, remove_cv_t<ElementT>>)
+    shared_optimized_array(shared_optimized_array<ET, BSzV, RCT> const& rhs)
         : base_t(in_place_type_t<holder_t>(), ref(rhs.holder()))
     {}
 
@@ -416,7 +420,8 @@ public:
     }
 
     template <typename ET, size_t BSzV, typename RCT, typename SelfET = ElementT>
-    enable_if_t<is_const_v<SelfET> && is_same_v<ET, remove_cv_t<ElementT>>, shared_optimized_array&> operator=(shared_optimized_array<ET, BSzV, RCT> const& rhs)
+    requires(is_const_v<SelfET>&& is_same_v<ET, remove_cv_t<ElementT>>)
+    shared_optimized_array& operator=(shared_optimized_array<ET, BSzV, RCT> const& rhs)
     {
         holder_t::operator= (ref(rhs.holder()));
         return *this;
@@ -426,6 +431,8 @@ public:
     shared_optimized_array& operator=(shared_optimized_array &&) = default;
 
     using base_t::operator=;
+
+    inline bool is_shared() const { return this->is_ptr(); }
 };
 
 template <typename CharT, class TraitsT, typename ElementT, size_t ByteSzV, typename RefCountT>

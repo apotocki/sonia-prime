@@ -110,6 +110,9 @@
     <ClCompile Include="..\..\..\sonia\services\io\io_ssl_service_builder.cpp">
       <Filter>sonia.services\io</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invokation\invokation.cpp">
+      <Filter>sonia.utility.invokation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -147,6 +150,9 @@
     </Filter>
     <Filter Include="sonia.applied">
       <UniqueIdentifier>{1d697cd3-38d9-4f82-83ac-f7a985212f56}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility.invokation">
+      <UniqueIdentifier>{65222d1f-e832-4541-bd15-d57c45118524}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -335,6 +341,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\io\io_ssl_service_builder.hpp">
       <Filter>sonia.services\io</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invokation\invokation.hpp">
+      <Filter>sonia.utility.invokation</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

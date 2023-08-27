@@ -36,9 +36,6 @@ public:
     [[nodiscard]] blob_result eval_inplace(cstring_view name, std::span<const blob_result> args = {}, resolver* r = nullptr);
     [[nodiscard]] blob_result eval(string_view code, resolver* r = nullptr);
     
-    virtual blob_result allocate(blob_result) = 0;
-    virtual void free(blob_result&) = 0;
-
 public:
     int resolve_global();
     int set_global();

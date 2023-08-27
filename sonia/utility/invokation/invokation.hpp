@@ -15,6 +15,8 @@
 #include "sonia/utility/variadic.hpp"
 #include "sonia/shared_ptr.hpp"
 
+#include "sonia/prime_config.hpp"
+
 extern "C" {
 
 enum class blob_type : uint8_t {
@@ -50,6 +52,10 @@ struct blob_result {
 };
 
 }
+
+SONIA_PRIME_API void blob_result_allocate(blob_result *);
+SONIA_PRIME_API void blob_result_pin(blob_result *);
+SONIA_PRIME_API void blob_result_unpin(blob_result *);
 
 inline bool blob_result_equal(sonia::identity<bool>, blob_result const& lhs, blob_result const& rhs)
 {
@@ -142,6 +148,8 @@ inline consteval blob_type blob_type_for()
     return blob_type::unspecified;
 }
 
+/*
+
 class blob_manager
 {
 public:
@@ -152,9 +160,10 @@ public:
     virtual sonia::shared_ptr<uint8_t> unpin(blob_result&) = 0;
     virtual void pin(blob_result b) = 0;
 };
+*/
 
 template <typename T>
-blob_result particular_blob_result(T && value, blob_manager * mng);
+blob_result particular_blob_result(T && value);
 
 inline blob_result nil_blob_result()
 {
@@ -267,9 +276,11 @@ inline blob_result string_blob_result(std::basic_string<CharT> const& value)
 
 template <typename CharT>
 requires (sizeof(CharT) == 1)
-inline blob_result string_blob_result(std::basic_string<CharT> && value, blob_manager* bm)
+inline blob_result string_blob_result(std::basic_string<CharT> && value)
 {
-    return bm->allocate(blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string });
+    blob_result result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string };
+    blob_result_allocate(&result);
+    return result;
 }
 
 template <typename CharT, size_t ET>
@@ -280,47 +291,49 @@ inline blob_result string_blob_result(std::span<const CharT, ET> value)
 }
 
 template <typename T>
-inline blob_result optional_blob_result(sonia::optional<T> const& value, blob_manager* mng)
+inline blob_result optional_blob_result(sonia::optional<T> const& value)
 {
     if (!value) return nil_blob_result();
-    return particular_blob_result(*value, mng);
+    return particular_blob_result(*value);
 }
 
 template <typename FirstT, typename SecondT>
-inline blob_result pair_blob_result(std::pair<FirstT, SecondT> const& value, blob_manager* mng)
+inline blob_result pair_blob_result(std::pair<FirstT, SecondT> const& value)
 {
-    if (!mng) throw sonia::exception("blob_manager is not provided");
-    blob_result data[2] = { particular_blob_result(value.first, mng), nil_blob_result() };
+    blob_result data[2] = { particular_blob_result(value.first), nil_blob_result() };
     try {
-        data[1] = particular_blob_result(value.second, mng);
+        data[1] = particular_blob_result(value.second);
     } catch (...) {
-        mng->unpin(data[0]);
+        blob_result_unpin(&data[0]);
         throw;
     }
-    return mng->allocate(blob_result{ data, static_cast<int32_t>(2 * sizeof(blob_result)), 0, 1, blob_type::blob });
+    blob_result result{ data, static_cast<int32_t>(2 * sizeof(blob_result)), 0, 1, blob_type::blob };
+    blob_result_allocate(&result);
+    return result;
 }
 
 template <size_t ... Is, typename TupleT>
-inline blob_result tuple_blob_result(std::index_sequence<Is...>, TupleT const& value, blob_manager * mng)
+inline blob_result tuple_blob_result(std::index_sequence<Is...>, TupleT const& value)
 {
-    if (!mng) throw sonia::exception("blob_manager is not provided");
     blob_result data[std::tuple_size_v<TupleT>];
     std::fill(data, data + std::tuple_size_v<TupleT>, nil_blob_result());
     try {
-        ([&data, &value, mng] {data[Is] = particular_blob_result(std::get<Is>(value), mng);}(), ...);
+        ([&data, &value] {data[Is] = particular_blob_result(std::get<Is>(value));}(), ...);
     } catch (...) {
         for (blob_result & br : data) {
-            mng->unpin(br);
+            blob_result_unpin(&br);
         }
         throw;
     }
-    return mng->allocate(blob_result{ data, static_cast<int32_t>(std::tuple_size_v<TupleT> * sizeof(blob_result)), 0, 1, blob_type::blob });
+    blob_result result{ data, static_cast<int32_t>(std::tuple_size_v<TupleT> *sizeof(blob_result)), 0, 1, blob_type::blob };
+    blob_result_allocate(&result);
+    return result;
 }
 
 template <typename ... ElementsT>
-inline blob_result tuple_blob_result(std::tuple<ElementsT...> const& value, blob_manager* mng)
+inline blob_result tuple_blob_result(std::tuple<ElementsT...> const& value)
 {
-    return tuple_blob_result(std::make_index_sequence<sizeof ...(ElementsT)>(), value, mng);
+    return tuple_blob_result(std::make_index_sequence<sizeof ...(ElementsT)>(), value);
 }
 
 template <typename T, size_t EV>
@@ -360,7 +373,7 @@ inline blob_result array_blob_result(blob_result(&arr)[N])
 
 
 template <typename ArgT>
-inline blob_result particular_blob_result(ArgT && value, blob_manager * pmng)
+inline blob_result particular_blob_result(ArgT && value)
 {
     using T = sonia::remove_cvref_t<ArgT>;
     if constexpr (std::is_same_v<T, bool>) return bool_blob_result(value);
@@ -375,11 +388,11 @@ inline blob_result particular_blob_result(ArgT && value, blob_manager * pmng)
     else if constexpr (std::is_same_v<T, float>) return float_blob_result(value);
     else if constexpr (std::is_same_v<T, std::string_view>) return string_blob_result(value);
     else if constexpr (std::is_same_v<ArgT&&, std::string const&>) return string_blob_result(std::forward<ArgT>(value));
-    else if constexpr (std::is_same_v<ArgT&&, std::string&&>) return string_blob_result(std::forward<ArgT>(value), pmng);
+    else if constexpr (std::is_same_v<ArgT&&, std::string&&>) return string_blob_result(std::forward<ArgT>(value));
     else if constexpr (std::is_same_v<T, blob_result>) return value;
-    else if constexpr (sonia::is_template_instance_v<sonia::optional, T>) return optional_blob_result(std::forward<ArgT>(value), pmng);
-    else if constexpr (sonia::is_template_instance_v<std::pair, T>) return pair_blob_result(std::forward<ArgT>(value), pmng);
-    else if constexpr (sonia::is_template_instance_v<std::tuple, T>) return tuple_blob_result(std::forward<ArgT>(value), pmng);
+    else if constexpr (sonia::is_template_instance_v<sonia::optional, T>) return optional_blob_result(std::forward<ArgT>(value));
+    else if constexpr (sonia::is_template_instance_v<std::pair, T>) return pair_blob_result(std::forward<ArgT>(value));
+    else if constexpr (sonia::is_template_instance_v<std::tuple, T>) return tuple_blob_result(std::forward<ArgT>(value));
     else {
         static_assert(sonia::dependent_false<T>);
         return nil_blob_result();
@@ -438,7 +451,7 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
                     blob_result const* pelem = reinterpret_cast<blob_result const*>(b.data) + i;
                     os << *pelem;
                 } else {
-                    os << particular_blob_result(*(reinterpret_cast<fstype const *>(b.data) + i), nullptr);
+                    os << particular_blob_result(*(reinterpret_cast<fstype const *>(b.data) + i));
                     //fstype const *pelem = reinterpret_cast<fstype const *>(b.data) + i;
                     //os << *pelem;
                 }
@@ -692,27 +705,19 @@ class smart_blob : blob_result
 {
 public:
     smart_blob() : blob_result{ nil_blob_result() } {}
-    smart_blob(blob_result && b) : blob_result{b}
-    {
-        if (need_unpin) THROW_INTERNAL_ERROR("can't hold pinned blob without blob_manager");
-    }
-
-    smart_blob(blob_result&& b, shared_ptr<blob_manager> bm)
-        : blob_result{ b }, mng_ { bm }
-    {
-        if (need_unpin && !mng_) THROW_INTERNAL_ERROR("can't hold pinned blob without blob_manager");
-    }
+    smart_blob(blob_result && b) : blob_result{ b }
+    {}
 
     smart_blob(smart_blob const& rhs)
-        : blob_result { rhs }, mng_{ rhs.mng_ }
+        : blob_result { rhs }
     {
-        if (need_unpin) mng_->pin(*this);
+        blob_result_pin(this);
     }
 
     smart_blob(smart_blob && rhs) noexcept
-        : blob_result{ rhs }, mng_{ std::move(rhs.mng_) }
+        : blob_result{ rhs }
     {
-        rhs.need_unpin = false;
+        static_cast<blob_result&>(rhs) = nil_blob_result();
     }
 
     smart_blob& operator= (smart_blob const& rhs)
@@ -732,41 +737,28 @@ public:
     inline void swap(smart_blob & rhs) noexcept
     {
         std::swap(static_cast<blob_result&>(*this), static_cast<blob_result&>(rhs));
-        std::swap(mng_, rhs.mng_);
     }
 
     ~smart_blob()
     {
-        if (need_unpin && mng_) mng_->unpin(*this);
+        blob_result_unpin(this);
     }
 
     blob_result const& operator*() const { return *this; }
     blob_result const& get() const { return *this; }
     blob_result const* operator->() const { return this; }
 
-    blob_result detach()
+    void allocate()
     {
-        if (need_unpin && mng_) { mng_.reset(); }
-        return *this;
+        blob_result_allocate(this);
     }
 
-private:
-    shared_ptr<blob_manager> mng_;
+    blob_result detach()
+    {
+        smart_blob tmp;
+        swap(tmp);
+        return tmp;
+    }
 };
 
 }
-
-
-//namespace sonia::invokation {
-//
-//using value_type = boost::make_recursive_variant<
-//    null_t,
-//    bool,
-//    int64_t,
-//    float,
-//    std::string,
-//    std::vector<float>,
-//    std::vector<boost::recursive_variant_>
-//>::type;
-//
-//}

@@ -168,7 +168,7 @@ int language::resolve_global()
     }
     
     blob_result val = resolver_ ? resolver_->index(key) : nil_blob_result();
-    SCOPE_EXIT([this, &val] { free(val); });
+    SCOPE_EXIT([this, &val] { blob_result_unpin(&val); });
     from_blob(val);
 
     return 1;
@@ -268,7 +268,9 @@ blob_result language::to_blob(int index)
         {
             char const* strval = lua_tostring(L, index);
             size_t sz = lua_rawlen(L, index);
-            return allocate(string_blob_result(string_view(strval, sz)));
+            auto result = string_blob_result(string_view(strval, sz));
+            blob_result_allocate(&result);
+            return result;
         }
         break;
 
@@ -299,25 +301,28 @@ blob_result language::to_blob(int index)
             if (keys.empty()) return nil_blob_result();
 
             if (no_unique_v) vtype = blob_type::blob;
-            blob_result blob_values = nil_blob_result();
+            smart_blob blob_values;
             if (vtype == blob_type::flt) {
-                blob_values = this->allocate(blob_result{ nullptr, (int32_t)(vals.size() * sizeof(float)), 0, 1, vtype });
+                blob_values = blob_result{ nullptr, (int32_t)(vals.size() * sizeof(float)), 0, 1, vtype };
+                blob_values.allocate();
                 for (size_t i = 0; i < vals.size(); ++i) {
-                    *(reinterpret_cast<float*>(const_cast<void*>(blob_values.data)) + i) = vals[i].floatvalue;
+                    *(reinterpret_cast<float*>(const_cast<void*>(blob_values->data)) + i) = vals[i].floatvalue;
                 }
             } else if (vtype == blob_type::i64) {
-                blob_values = this->allocate(blob_result{ nullptr, (int32_t)(vals.size() * sizeof(int64_t)), 0, 1, vtype });
+                blob_values = blob_result{ nullptr, (int32_t)(vals.size() * sizeof(int64_t)), 0, 1, vtype };
+                blob_values.allocate();
                 for (size_t i = 0; i < vals.size(); ++i) {
-                    *(reinterpret_cast<int64_t*>(const_cast<void*>(blob_values.data)) + i) = vals[i].i64value;
+                    *(reinterpret_cast<int64_t*>(const_cast<void*>(blob_values->data)) + i) = vals[i].i64value;
                 }
             } else if (vtype == blob_type::string || vtype == blob_type::blob) {
-                blob_values = this->allocate(blob_result{ nullptr, (int32_t)(vals.size() * sizeof(blob_result)), 0, 1, vtype });
+                blob_values = blob_result{ nullptr, (int32_t)(vals.size() * sizeof(blob_result)), 0, 1, vtype };
+                blob_values.allocate();
                 for (size_t i = 0; i < vals.size(); ++i) {
-                    *(reinterpret_cast<blob_result*>(const_cast<void*>(blob_values.data)) + i) = vals[i];
+                    *(reinterpret_cast<blob_result*>(const_cast<void*>(blob_values->data)) + i) = vals[i];
                 }
             } else {
                 // not implemented for now
-                for (blob_result v : vals) free(v);
+                for (blob_result v : vals) blob_result_unpin(&v);
             }
 
             // check if array
@@ -330,18 +335,20 @@ blob_result language::to_blob(int index)
                         break;
                     }
                 }
-                if (is_array) return blob_values;
+                if (is_array) return blob_values.detach();
             }
             
-            blob_result result = this->allocate(blob_result{nullptr, (int32_t)(2 * sizeof(blob_result)), 0, 1, blob_type::blob});
-            blob_result blob_keys = this->allocate(blob_result{nullptr, (int32_t)(keys.size() * sizeof(blob_result)), 0, 1, blob_type::blob});
-            
+            smart_blob result = blob_result{nullptr, (int32_t)(2 * sizeof(blob_result)), 0, 1, blob_type::blob};
+            result.allocate();
+            smart_blob blob_keys = blob_result{nullptr, (int32_t)(keys.size() * sizeof(blob_result)), 0, 1, blob_type::blob};
+            blob_keys.allocate();
+
             for (size_t i = 0; i < keys.size(); ++i) {
-                *(reinterpret_cast<blob_result*>(const_cast<void*>(blob_keys.data)) + i) = keys[i];
+                *(reinterpret_cast<blob_result*>(const_cast<void*>(blob_keys->data)) + i) = keys[i];
             }
-            *reinterpret_cast<blob_result*>(const_cast<void*>(result.data)) = blob_keys;
-            *(reinterpret_cast<blob_result*>(const_cast<void*>(result.data)) + 1) = blob_values;
-            return result;
+            *reinterpret_cast<blob_result*>(const_cast<void*>(result->data)) = blob_keys.detach();
+            *(reinterpret_cast<blob_result*>(const_cast<void*>(result->data)) + 1) = blob_values.detach();
+            return result.detach();
         }
 
         case LUA_TNIL:
@@ -407,21 +414,19 @@ int language::invoke_global()
         //GLOBAL_LOG_INFO() << "argument: " << i << ": " << args.back();
     }
     SCOPE_EXIT([this, &args]{
-        for (auto arg : args) free(arg);
+        for (auto arg : args) blob_result_unpin(&arg);
     });
 
     try {
-        blob_result res = resolver_->invoke(fname, args);
-        if (res.is_array && res.type == blob_type::blob) {
-            size_t cnt = res.size / sizeof(blob_type);
-            for (blob_result r : std::span{ reinterpret_cast<const blob_result*>(res.data), cnt }) {
+        smart_blob res = resolver_->invoke(fname, args);
+        if (res->is_array && res->type == blob_type::blob) {
+            size_t cnt = res->size / sizeof(blob_type);
+            for (blob_result r : std::span{ reinterpret_cast<const blob_result*>(res->data), cnt }) {
                 from_blob(r);
             }
-            free(res);
             return static_cast<int>(cnt);
         }
-        from_blob(res);
-        free(res);
+        from_blob(*res);
         return 1;
     } catch (std::exception const& e) {
         return luaL_error(L, e.what());

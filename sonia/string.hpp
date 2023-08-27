@@ -269,6 +269,8 @@ public:
     inline auto cbegin() const noexcept { return array_.begin(); }
     inline auto cend() const noexcept { return array_.end(); }
 
+    bool is_shared() const { return array_.is_shared(); }
+
 private:
     shared_array_t array_;
 };

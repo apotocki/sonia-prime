@@ -14,7 +14,6 @@ namespace boost::serialization {
 struct blob_result_serialization_helper
 {
     static constexpr void* id = 0;
-    sonia::services::efs::content_view::manager* mng;
 };
 
 template<class ArchiveT>
@@ -70,9 +69,10 @@ void parse(ArchiveT& ar, sonia::string_view str, blob_result& b)
             }
             result.push_back(*it);
         }
-        blob_result_serialization_helper& hlp =
-            ar.template get_helper<blob_result_serialization_helper>(blob_result_serialization_helper::id);
-        b = hlp.mng->allocate(string_blob_result(result));
+        //blob_result_serialization_helper& hlp =
+        //    ar.template get_helper<blob_result_serialization_helper>(blob_result_serialization_helper::id);
+        b = string_blob_result(result);
+        blob_result_allocate(&b);
     } else {
         throw sonia::exception("can't decode blob result: %1%"_fmt % str);
     }

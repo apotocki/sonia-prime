@@ -70,6 +70,8 @@ struct concrete_method : method
         if constexpr (is_void_v<result_type>) {
             std::apply(FuncV, std::move(argstpl));
             return smart_blob{};
+        } else if constexpr (is_same_v<result_type, smart_blob>) {
+            return std::apply(FuncV, std::move(argstpl));
         } else {
             //blob_result br = particular_blob_result(std::apply(FuncV, std::move(argstpl)), self.get_blob_manager());
             //GLOBAL_LOG_INFO() << "do_job returns: " << br;

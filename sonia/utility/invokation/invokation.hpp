@@ -741,8 +741,8 @@ public:
 
     blob_result detach()
     {
-        smart_blob tmp;
-        swap(tmp);
+        blob_result tmp = nil_blob_result();
+        std::swap(static_cast<blob_result&>(*this), tmp);
         return tmp;
     }
 };

@@ -271,7 +271,7 @@ inline blob_result string_blob_result(std::basic_string<CharT> && value)
 
 template <typename CharT, size_t ET>
 requires (sizeof(CharT) == 1)
-inline blob_result string_blob_result(std::span<const CharT, ET> value)
+inline blob_result string_blob_result(std::span<CharT, ET> value)
 {
     return blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string };
 }

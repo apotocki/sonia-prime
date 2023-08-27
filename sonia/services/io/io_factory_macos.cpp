@@ -689,7 +689,7 @@ file factory::open_file(cstring_view path, file_open_mode fom, file_access_mode 
         }
     }
 
-    return file_access::open_file(shared_from_this(), h, path);
+    return file_access::open_file(shared_from_this(), h, u8string_view{ reinterpret_cast<const char8_t*>(path.data()), path.size()});
 }
 
 #if 0

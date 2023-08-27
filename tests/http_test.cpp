@@ -153,7 +153,7 @@ void http_service_test()
     auto sf = services::locate<io::tcp_socket_factory_type>("io-cache.serv");
     http::request req{"http://localhost:2222/web0"};
     io::tcp_socket sock = sf->create_connected_tcp_socket(req.host, req.port, sal::net_family_type::INET);
-    socket_write_input_iterator<io::tcp_socket> oi{sock, array_view<char>(buff)};
+    socket_write_input_iterator<io::tcp_socket> oi{sock, span<char>(buff)};
     encode<serialization::default_t>(req, range_dereferencing_iterator(reference_wrapper_iterator(oi))).flush();
     oi.flush();
 

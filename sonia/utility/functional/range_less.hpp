@@ -44,7 +44,7 @@ struct range_less
             const int res = std::memcmp(lb, rb, (std::min)(lsz, rsz)); // bytes are interpreted as unsigned chars
             return (!res) ? lsz < rsz : res < 0;
         } else {
-            return std::lexicographical_compare(lb, le, rb, re, sonia::less<T, T>);
+            return std::lexicographical_compare(lb, le, rb, re, sonia::less<T, T>{});
         }
     }
 };

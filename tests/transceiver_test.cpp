@@ -18,7 +18,6 @@
 #include "sonia/services/diagnostic.hpp"
 #include "sonia/services/transceiver.hpp"
 #include "sonia/services/scheduler/scheduler.hpp"
-#include "sonia/utility/streaming/vector.hpp"
 
 #include "sonia/utility/serialization/service.hpp"
 #include "sonia/utility/serialization/pair.hpp"

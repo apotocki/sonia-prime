@@ -5,7 +5,6 @@
 #include "sonia/config.hpp"
 #include "applied/sonia_test.hpp"
 #include "sonia/utility/serialization/bit_coder.hpp"
-#include "sonia/utility/streaming/vector.hpp"
 
 void bit_coder_test()
 {

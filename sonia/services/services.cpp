@@ -98,10 +98,10 @@ void initialize(int argc, char const* argv[], std::istream * cfgstream)
 
 void shutdown()
 {
-    sonia::this_thread::detach_host();
     GLOBAL_LOG_INFO() << "terminating...";
     delete env_;
     env_ = nullptr;
+    sonia::this_thread::detach_host();
     if (default_base_path_) {
         delete default_base_path_;
         default_base_path_ = nullptr;
@@ -216,6 +216,11 @@ void register_multimethod(multimethod && mm, std::span<const mm_id_elem_t> mmid)
 multimethod const* get_multimethod(std::span<const mm_id_elem_t> mmid)
 {
     return get_host_impl()->get_multimethod(mmid);
+}
+
+void copy_multimethods(span<const mm_id_elem_t> from, span<const mm_id_elem_t> to)
+{
+    return get_host_impl()->copy_multimethods(from, to);
 }
 
 // timer

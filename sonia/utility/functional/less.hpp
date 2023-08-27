@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_FUNCTIONAL_LESS_HPP
-#define SONIA_FUNCTIONAL_LESS_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <functional>
 
@@ -15,20 +10,32 @@
 
 namespace sonia {
 
-template <typename LT, typename RT, typename Enabler = void>
-struct less
+template <typename LT, typename RT>
+struct less_unrelated
 {
-    constexpr bool operator()(call_param_t<LT> l, call_param_t<RT> r) const { return l < r; }
-};
 
-template <typename T>
-struct less<T*, T*>
-{
-    constexpr bool operator()(T const* l, T const* r) const { return std::less<T*>()(l, r); }
 };
 
 template <typename LT, typename RT>
-struct less<LT, RT, enable_if_t<is_integral_v<LT> && is_integral_v<RT>>>
+struct less
+{
+    template <typename LArgT, typename RArgT>
+    inline bool operator()(LArgT && l, RArgT && r) const
+    {
+        if constexpr (is_same_v<LT, RT>) {
+            return std::less<LT>()(std::forward<LArgT>(l), std::forward<RArgT>(r));
+        } else if constexpr (requires{ !std::less<>()(std::forward<LArgT>(l), std::forward<RArgT>(r)); }) {
+            return std::less<>()(std::forward<LArgT>(l), std::forward<RArgT>(r));
+        } else {
+            // compare unrelated types
+            return less_unrelated<LT, RT>::value;
+        }
+    }
+};
+
+template <typename LT, typename RT>
+requires(is_integral_v<LT> && is_integral_v<RT>)
+struct less<LT, RT>
 {
     constexpr bool operator()(LT l, RT r) const noexcept
     {
@@ -68,5 +75,3 @@ constexpr inline bool greater_equal_f(LT && l, RT && r)
 }
 
 }
-
-#endif // SONIA_FUNCTIONAL_LESS_HPP

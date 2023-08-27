@@ -402,6 +402,7 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\span.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\less\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\hazardous.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\command.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\comparison_operators.hpp" />
@@ -424,7 +425,7 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\range_less.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\reference_wrapper.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invokation\invokation.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\invokation\registration.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invokation\invokable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invokation\serializarion.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\buffering_mediator_iterator.hpp" />
@@ -745,7 +746,7 @@
     <ClCompile Include="..\..\..\sonia\sys\windows\windows.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\file_persister.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\invokation\registration.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\invokation\invokable.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>

@@ -19,5 +19,6 @@ using boost::get;
 #define SONIA_VARIANT_DECLARED
 
 #include "sonia/utility/functional/equal/variant.hpp"
+#include "sonia/utility/functional/less/variant.hpp"
 #include "sonia/utility/functional/hash/variant.hpp"
 #include "sonia/utility/streaming/variant.hpp"

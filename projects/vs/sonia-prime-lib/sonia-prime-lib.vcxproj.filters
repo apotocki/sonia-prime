@@ -208,6 +208,9 @@
     <Filter Include="sonia.utility\lua">
       <UniqueIdentifier>{f29f4a0d-85b7-462c-92ff-18f406c767fc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\functional\less">
+      <UniqueIdentifier>{d4f0c05f-22b0-4979-a39f-de5b5502f54a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -1794,7 +1797,7 @@
     <ClInclude Include="..\..\..\sonia\utility\invokation\invokation.hpp">
       <Filter>sonia.utility\invokation</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invokation\registration.hpp">
+    <ClInclude Include="..\..\..\sonia\utility\invokation\invokable.hpp">
       <Filter>sonia.utility\invokation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\invokation\serializarion.hpp">
@@ -1811,6 +1814,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\variant.hpp">
       <Filter>sonia</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\functional\less\variant.hpp">
+      <Filter>sonia.utility\functional\less</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2000,7 +2006,7 @@
     <ClCompile Include="..\..\..\sonia\services\net\http\mime_mapping.cpp">
       <Filter>sonia.net\http</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\invokation\registration.cpp">
+    <ClCompile Include="..\..\..\sonia\utility\invokation\invokable.cpp">
       <Filter>sonia.utility\invokation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\lua\lua.cpp">

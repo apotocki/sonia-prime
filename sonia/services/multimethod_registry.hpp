@@ -8,6 +8,7 @@
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/member.hpp>
 
 #include "sonia/span.hpp"
@@ -40,6 +41,10 @@ public:
             boost::multi_index::hashed_unique<
                 boost::multi_index::member<mm_item, key_set_t, &mm_item::id>,
                 sonia::hash<key_set_t>
+            >,
+            boost::multi_index::ordered_unique<
+                boost::multi_index::member<mm_item, key_set_t, &mm_item::id>,
+                range_less
             >
         >
     >;
@@ -47,6 +52,8 @@ public:
 public:
     void register_multimethod(multimethod &&, span<const mm_id_elem_t>);
     multimethod const* get_multimethod(span<const mm_id_elem_t>) const;
+
+    void copy_multimethods(span<const mm_id_elem_t> from, span<const mm_id_elem_t> to);
 
 private:
     mutable sonia::fibers::rw_mutex mm_item_mtx_;

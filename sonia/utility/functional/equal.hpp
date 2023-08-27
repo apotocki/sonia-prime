@@ -17,19 +17,13 @@ struct equal
     inline bool operator()(LArgT && l, RArgT && r) const
     {
         if constexpr (is_same_v<LT, RT>) {
-            return std::equal_to<LT>()(l, r);
+            return std::equal_to<LT>()(std::forward<LArgT>(l), std::forward<RArgT>(r));
         } else if constexpr (requires{ !std::equal_to<>()(std::forward<LArgT>(l), std::forward<RArgT>(r)); }) {
             return std::equal_to<>()(std::forward<LArgT>(l), std::forward<RArgT>(r));
         } else {
             return false;
         }
     }
-};
-
-template <typename T>
-struct equal<T*, T*>
-{
-    inline bool operator()(T const* l, T const* r) const { return std::equal_to<T*>()(l, r); }
 };
 
 template <typename LT, typename RT>

@@ -6,12 +6,12 @@
 
 #include <string>
 #include <vector>
-#include <boost/variant.hpp>
 
 #include "sonia/cstdint.hpp"
 #include "sonia/type_traits.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/string.hpp"
+#include "sonia/optional.hpp"
 #include "sonia/utility/variadic.hpp"
 #include "sonia/shared_ptr.hpp"
 
@@ -49,6 +49,69 @@ struct blob_result {
     blob_type type;
 };
 
+}
+
+inline bool blob_result_equal(sonia::identity<bool>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::boolean && lhs.i8value == rhs.i8value;
+}
+
+inline bool blob_result_equal(sonia::identity<int8_t>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::i8 && lhs.i8value == rhs.i8value;
+}
+
+inline bool blob_result_equal(sonia::identity<uint8_t>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::ui8 && lhs.ui8value == rhs.ui8value;
+}
+
+inline bool blob_result_equal(sonia::identity<int16_t>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::i16 && lhs.i16value == rhs.i16value;
+}
+
+inline bool blob_result_equal(sonia::identity<uint16_t>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::ui16 && lhs.ui16value == rhs.ui16value;
+}
+
+inline bool blob_result_equal(sonia::identity<int32_t>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::i32 && lhs.i32value == rhs.i32value;
+}
+
+inline bool blob_result_equal(sonia::identity<uint32_t>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::ui32 && lhs.ui32value == rhs.ui32value;
+}
+
+inline bool blob_result_equal(sonia::identity<int64_t>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::i64 && lhs.i64value == rhs.i64value;
+}
+
+inline bool blob_result_equal(sonia::identity<uint64_t>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::ui64 && lhs.ui64value == rhs.ui64value;
+}
+
+inline bool blob_result_equal(sonia::identity<float>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::flt && lhs.floatvalue == rhs.floatvalue;
+}
+
+inline bool blob_result_equal(sonia::identity<sonia::string_view>, blob_result const& lhs, blob_result const& rhs)
+{
+    if (rhs.type != blob_type::blob || rhs.size != lhs.size) return false;
+    if (lhs.data == rhs.data) return true;
+    return std::memcmp(lhs.data, rhs.data, rhs.size) == 0;
+}
+
+template <typename T>
+inline bool blob_result_equal(sonia::identity<T>, blob_result const& lhs, blob_result const& rhs)
+{
+    return false;
 }
 
 #include "sonia/type_traits.hpp"
@@ -91,7 +154,7 @@ public:
 };
 
 template <typename T>
-blob_result particular_blob_result(T value, blob_manager & mng);
+blob_result particular_blob_result(T && value, blob_manager * mng);
 
 inline blob_result nil_blob_result()
 {
@@ -175,7 +238,7 @@ inline blob_result float_blob_result(float value)
 
 template <typename CharT, size_t N>
 requires (sizeof(CharT) == 1)
-inline blob_result string_blob_result(CharT(&value)[N])
+inline blob_result string_blob_result(const CharT(&value)[N])
 {
     assert(!value[N - 1]);
     return blob_result{ value, static_cast<int32_t>(N - 1), 0, 0, blob_type::string };
@@ -202,20 +265,34 @@ inline blob_result string_blob_result(std::basic_string<CharT> const& value)
     return blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string };
 }
 
+template <typename CharT>
+requires (sizeof(CharT) == 1)
+inline blob_result string_blob_result(std::basic_string<CharT> && value, blob_manager* bm)
+{
+    return bm->allocate(blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string });
+}
+
 template <typename CharT, size_t ET>
 requires (sizeof(CharT) == 1)
-inline blob_result string_blob_result(std::span<CharT, ET> value)
+inline blob_result string_blob_result(std::span<const CharT, ET> value)
 {
     return blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string };
+}
+
+template <typename T>
+inline blob_result optional_blob_result(sonia::optional<T> const& value, blob_manager* mng)
+{
+    if (!value) return nil_blob_result();
+    return particular_blob_result(*value, mng);
 }
 
 template <typename FirstT, typename SecondT>
 inline blob_result pair_blob_result(std::pair<FirstT, SecondT> const& value, blob_manager* mng)
 {
     if (!mng) throw sonia::exception("blob_manager is not provided");
-    blob_result data[2] = { particular_blob_result<FirstT>(value.first, mng), nil_blob_result() };
+    blob_result data[2] = { particular_blob_result(value.first, mng), nil_blob_result() };
     try {
-        data[1] = particular_blob_result<SecondT>(value.second, mng);
+        data[1] = particular_blob_result(value.second, mng);
     } catch (...) {
         mng->unpin(data[0]);
         throw;
@@ -230,7 +307,7 @@ inline blob_result tuple_blob_result(std::index_sequence<Is...>, TupleT const& v
     blob_result data[std::tuple_size_v<TupleT>];
     std::fill(data, data + std::tuple_size_v<TupleT>, nil_blob_result());
     try {
-        ([&data, &value, mng] {data[Is] = particular_blob_result<std::tuple_element_t<Is, TupleT>>(std::get<Is>(value), mng);}(), ...);
+        ([&data, &value, mng] {data[Is] = particular_blob_result(std::get<Is>(value), mng);}(), ...);
     } catch (...) {
         for (blob_result & br : data) {
             mng->unpin(br);
@@ -282,9 +359,10 @@ inline blob_result array_blob_result(blob_result(&arr)[N])
 
 
 
-template <typename T>
-inline blob_result particular_blob_result(T value, blob_manager * pmng)
+template <typename ArgT>
+inline blob_result particular_blob_result(ArgT && value, blob_manager * pmng)
 {
+    using T = sonia::remove_cvref_t<ArgT>;
     if constexpr (std::is_same_v<T, bool>) return bool_blob_result(value);
     else if constexpr (std::is_same_v<T, uint8_t>) return ui8_blob_result(value);
     else if constexpr (std::is_same_v<T, int8_t>) return i8_blob_result(value);
@@ -296,9 +374,12 @@ inline blob_result particular_blob_result(T value, blob_manager * pmng)
     else if constexpr (std::is_same_v<T, int64_t> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == 8)) return i64_blob_result(value);
     else if constexpr (std::is_same_v<T, float>) return float_blob_result(value);
     else if constexpr (std::is_same_v<T, std::string_view>) return string_blob_result(value);
+    else if constexpr (std::is_same_v<ArgT&&, std::string const&>) return string_blob_result(std::forward<ArgT>(value));
+    else if constexpr (std::is_same_v<ArgT&&, std::string&&>) return string_blob_result(std::forward<ArgT>(value), pmng);
     else if constexpr (std::is_same_v<T, blob_result>) return value;
-    else if constexpr (sonia::is_template_instance_v<std::pair, T>) return pair_blob_result(value, pmng);
-    else if constexpr (sonia::is_template_instance_v<std::tuple, T>) return tuple_blob_result(value, pmng);
+    else if constexpr (sonia::is_template_instance_v<sonia::optional, T>) return optional_blob_result(std::forward<ArgT>(value), pmng);
+    else if constexpr (sonia::is_template_instance_v<std::pair, T>) return pair_blob_result(std::forward<ArgT>(value), pmng);
+    else if constexpr (sonia::is_template_instance_v<std::tuple, T>) return tuple_blob_result(std::forward<ArgT>(value), pmng);
     else {
         static_assert(sonia::dependent_false<T>);
         return nil_blob_result();
@@ -331,7 +412,7 @@ auto blob_result_type_selector(blob_result b, FT&& ftor)
     case blob_type::flt:
         return ftor(sonia::identity<float>(), b);
     case blob_type::string:
-        return ftor(sonia::identity<std::string_view>(), b);
+        return ftor(sonia::identity<sonia::string_view>(), b);
     case blob_type::blob:
         return ftor(sonia::identity<blob_result>(), b);
     case blob_type::unspecified:
@@ -357,7 +438,7 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
                     blob_result const* pelem = reinterpret_cast<blob_result const*>(b.data) + i;
                     os << *pelem;
                 } else {
-                    os << particular_blob_result<ftype>(*(reinterpret_cast<fstype const *>(b.data) + i), nullptr);
+                    os << particular_blob_result(*(reinterpret_cast<fstype const *>(b.data) + i), nullptr);
                     //fstype const *pelem = reinterpret_cast<fstype const *>(b.data) + i;
                     //os << *pelem;
                 }
@@ -407,6 +488,18 @@ struct from_blob
         using namespace sonia;
         static_assert(dependent_false<T>);
         THROW_INTERNAL_ERROR("can't convert blob %1% to type %2%"_fmt % val % typeid(T).name());
+    }
+};
+
+template <typename T>
+struct from_blob<sonia::optional<T>>
+{
+    sonia::optional<T> operator()(blob_result val) const {
+        using namespace sonia;
+        if (val.type == blob_type::unspecified && !val.data) {
+            return nullopt;
+        }
+        return from_blob<T>{}(val);
     }
 };
 
@@ -510,11 +603,11 @@ struct from_blob<std::span<T>>
     }
 };
 
-template <typename CharT>
-struct from_blob<std::basic_string_view<CharT>>
+template <typename CharT, typename TraitsT>
+struct from_blob<std::basic_string_view<CharT, TraitsT>>
 {
-    using view_t = std::basic_string_view<CharT>;
-    view_t operator()(blob_result val) const
+    using view_t = std::basic_string_view<CharT, TraitsT>;
+    view_t operator()(blob_result const& val) const
     {
         using namespace sonia;
         if (val.type == blob_type::string) {
@@ -583,20 +676,97 @@ std::tuple<Ts...> from_blobs(std::span<const blob_result> vals)
     return from_blobs<Ts...>(std::make_index_sequence<sizeof ...(Ts)>{}, vals);
 }
 
+inline bool operator== (blob_result const& lhs, blob_result const& rhs)
+{
+    return blob_result_type_selector(lhs, [&rhs](auto id, blob_result const& lhs) { return blob_result_equal(id, lhs, rhs); });
+}
 
+inline bool operator!= (blob_result const& lhs, blob_result const& rhs)
+{
+    return !(lhs == rhs);
+}
 
+namespace sonia {
 
+class smart_blob : blob_result
+{
+public:
+    smart_blob() : blob_result{ nil_blob_result() } {}
+    smart_blob(blob_result && b) : blob_result{b}
+    {
+        if (need_unpin) THROW_INTERNAL_ERROR("can't hold pinned blob without blob_manager");
+    }
 
-namespace sonia::invokation {
+    smart_blob(blob_result&& b, shared_ptr<blob_manager> bm)
+        : blob_result{ b }, mng_ { bm }
+    {
+        if (need_unpin && !mng_) THROW_INTERNAL_ERROR("can't hold pinned blob without blob_manager");
+    }
 
-using value_type = boost::make_recursive_variant<
-    null_t,
-    bool,
-    int64_t,
-    float,
-    std::string,
-    std::vector<float>,
-    std::vector<boost::recursive_variant_>
->::type;
+    smart_blob(smart_blob const& rhs)
+        : blob_result { rhs }, mng_{ rhs.mng_ }
+    {
+        if (need_unpin) mng_->pin(*this);
+    }
+
+    smart_blob(smart_blob && rhs) noexcept
+        : blob_result{ rhs }, mng_{ std::move(rhs.mng_) }
+    {
+        rhs.need_unpin = false;
+    }
+
+    smart_blob& operator= (smart_blob const& rhs)
+    {
+        smart_blob tmp{ rhs };
+        swap(tmp);
+        return *this;
+    }
+
+    smart_blob& operator= (smart_blob && rhs)
+    {
+        smart_blob tmp{ std::move(rhs) };
+        swap(tmp);
+        return *this;
+    }
+
+    inline void swap(smart_blob & rhs) noexcept
+    {
+        std::swap(static_cast<blob_result&>(*this), static_cast<blob_result&>(rhs));
+        std::swap(mng_, rhs.mng_);
+    }
+
+    ~smart_blob()
+    {
+        if (need_unpin && mng_) mng_->unpin(*this);
+    }
+
+    blob_result const& operator*() const { return *this; }
+    blob_result const& get() const { return *this; }
+    blob_result const* operator->() const { return this; }
+
+    blob_result detach()
+    {
+        if (need_unpin && mng_) { mng_.reset(); }
+        return *this;
+    }
+
+private:
+    shared_ptr<blob_manager> mng_;
+};
 
 }
+
+
+//namespace sonia::invokation {
+//
+//using value_type = boost::make_recursive_variant<
+//    null_t,
+//    bool,
+//    int64_t,
+//    float,
+//    std::string,
+//    std::vector<float>,
+//    std::vector<boost::recursive_variant_>
+//>::type;
+//
+//}

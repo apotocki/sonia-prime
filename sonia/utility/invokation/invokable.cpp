@@ -32,7 +32,7 @@ void invokable::set_property(string_view propname, blob_result&& val)
 {
     fn_property const* pp = static_cast<fn_property const*>(sonia::services::get_multimethod({ typeid(*this), propname }));
     if (!pp) THROW_INTERNAL_ERROR("property %1% of %2% is not registered"_fmt % propname % typeid(*this).name());
-    bool updated = pp->set(*this, std::move(val));
+    bool updated = pp->set(*this, smart_blob(std::move(val)));
     if (updated) {
         on_propety_change(propname);
     }

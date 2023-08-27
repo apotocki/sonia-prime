@@ -148,20 +148,6 @@ inline consteval blob_type blob_type_for()
     return blob_type::unspecified;
 }
 
-/*
-
-class blob_manager
-{
-public:
-    virtual ~blob_manager() = default;
-
-    virtual blob_result allocate(blob_result) = 0;
-    virtual void pin(sonia::shared_ptr<uint8_t> pval) = 0;
-    virtual sonia::shared_ptr<uint8_t> unpin(blob_result&) = 0;
-    virtual void pin(blob_result b) = 0;
-};
-*/
-
 template <typename T>
 blob_result particular_blob_result(T && value);
 

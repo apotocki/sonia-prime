@@ -35,7 +35,7 @@ public:
 
     // properties routine
     virtual smart_blob get_property(string_view propname) const;
-    virtual void set_property(string_view propname, blob_result&& val);
+    virtual void set_property(string_view propname, blob_result const& val);
     virtual void on_propety_change(string_view) {}
 };
 
@@ -49,7 +49,7 @@ struct fn_property : multimethod
 {
     virtual ~fn_property() = default;
     virtual smart_blob get(invokable const&) const = 0;
-    virtual bool set(invokable&, smart_blob) const = 0; // returns true if updated
+    virtual bool set(invokable&, blob_result const&) const = 0; // returns true if updated
 };
 
 template <auto FuncV>
@@ -109,7 +109,7 @@ struct concrete_fn_property : fn_property
     {}
 
     smart_blob get(invokable const& obj) const override { return getter_(static_cast<InvokableT const&>(obj)); }
-    bool set(invokable& obj, smart_blob val) const override { return setter_(static_cast<InvokableT &>(obj), std::move(val)); }
+    bool set(invokable& obj, blob_result const& val) const override { return setter_(static_cast<InvokableT &>(obj), val); }
 
     SONIA_POLYMORPHIC_MOVABLE_IMPL(concrete_fn_property);
     SONIA_POLYMORPHIC_CLONABLE_IMPL(concrete_fn_property);
@@ -125,7 +125,7 @@ struct concrete_fn_readonly_property : fn_property
     {}
 
     smart_blob get(invokable const& obj) const override { return getter_(static_cast<InvokableT const&>(obj)); }
-    bool set(invokable& obj, smart_blob val) const override { throw exception("an attempt to set readonly property"); }
+    bool set(invokable& obj, blob_result const& val) const override { throw exception("an attempt to set readonly property"); }
 
     SONIA_POLYMORPHIC_MOVABLE_IMPL(concrete_fn_readonly_property);
     SONIA_POLYMORPHIC_CLONABLE_IMPL(concrete_fn_readonly_property);
@@ -150,10 +150,10 @@ struct field_fn_property : fn_property
         return smart_blob { particular_blob_result(dynamic_cast<invokable_t const&>(obj).*FieldV) };
     }
 
-    bool set(invokable& obj, smart_blob val) const override
+    bool set(invokable& obj, blob_result const& val) const override
     {
         property_type & stored_val = dynamic_cast<invokable_t&>(obj).*FieldV;
-        auto newval = from_blob<property_type>{}(*val);
+        auto newval = from_blob<property_type>{}(val);
         if (stored_val != newval) {
             stored_val = newval;
             return true;

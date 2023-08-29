@@ -734,9 +734,10 @@ public:
     blob_result const& get() const { return *this; }
     blob_result const* operator->() const { return this; }
 
-    void allocate()
+    smart_blob& allocate()
     {
         blob_result_allocate(this);
+        return *this;
     }
 
     blob_result detach()

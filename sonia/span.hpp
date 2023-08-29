@@ -11,10 +11,6 @@ namespace sonia {
 
 using std::span;
 
-}
-
-namespace std {
-
 template <typename T, size_t EVL, size_t EVR>
 inline bool operator== (std::span<T, EVL> l, std::span<T, EVR> r)
 {

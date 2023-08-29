@@ -131,6 +131,7 @@ private:
 
 }
 
+// allocates only top level array!!!
 void blob_result_allocate(blob_result * b)
 {
     if (b->need_unpin == 0 && b->size > 0) {

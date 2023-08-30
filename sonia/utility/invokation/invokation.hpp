@@ -386,7 +386,7 @@ inline blob_result particular_blob_result(ArgT && value)
 }
 
 template <typename FT>
-auto blob_result_type_selector(blob_result b, FT&& ftor)
+auto blob_result_type_selector(blob_result const& b, FT&& ftor)
 {
     switch (b.type)
     {
@@ -521,35 +521,41 @@ struct from_blob<blob_result>
     blob_result operator()(blob_result val) const { return val; }
 };
 
-template <std::integral T>
+template <typename T>
+requires (std::is_integral_v<T> || std::is_floating_point_v<T>)
 struct from_blob<T>
 {
     T operator()(blob_result val) const
     {
         using namespace sonia;
-        switch (val.type)
-        {
-        case blob_type::boolean:
-            return (T)val.i8value;
-        case blob_type::i8:
-            return (T)val.i8value;
-        case blob_type::ui8:
-            return (T)val.ui8value;
-        case blob_type::i16:
-            return (T)val.i16value;
-        case blob_type::ui16:
-            return (T)val.ui16value;
-        case blob_type::i32:
-            return (T)val.i32value;
-        case blob_type::ui32:
-            return (T)val.ui32value;
-        case blob_type::i64:
-            return (T)val.i64value;
-        case blob_type::ui64:
-            return (T)val.ui64value;
-        default:
-            THROW_INTERNAL_ERROR("can't convert blob %1% to %2%"_fmt % val % typeid(T).name());
+        if (!val.is_array) {
+            switch (val.type)
+            {
+            case blob_type::boolean:
+                return (T)val.i8value;
+            case blob_type::i8:
+                return (T)val.i8value;
+            case blob_type::ui8:
+                return (T)val.ui8value;
+            case blob_type::i16:
+                return (T)val.i16value;
+            case blob_type::ui16:
+                return (T)val.ui16value;
+            case blob_type::i32:
+                return (T)val.i32value;
+            case blob_type::ui32:
+                return (T)val.ui32value;
+            case blob_type::i64:
+                return (T)val.i64value;
+            case blob_type::ui64:
+                return (T)val.ui64value;
+            case blob_type::flt:
+                return (T)val.floatvalue;
+            default:
+                break;
+            }
         }
+        THROW_INTERNAL_ERROR("can't convert blob %1% to %2%"_fmt % val % typeid(T).name());
     }
 };
 
@@ -609,7 +615,7 @@ struct from_blob<std::basic_string_view<CharT, TraitsT>>
     view_t operator()(blob_result const& val) const
     {
         using namespace sonia;
-        if (val.type == blob_type::string) {
+        if (!val.is_array && val.type == blob_type::string) {
             return view_t{ reinterpret_cast<const CharT*>(val.data), (size_t)val.size };
         }
         THROW_INTERNAL_ERROR("can't convert blob %1% to std::basic_string_view"_fmt % val);
@@ -623,7 +629,7 @@ struct from_blob<std::basic_string<CharT, CharTraitsT>>
     str_t operator()(blob_result val) const
     {
         using namespace sonia;
-        if (val.type == blob_type::string) {
+        if (!val.is_array && val.type == blob_type::string) {
             return str_t{ reinterpret_cast<const CharT*>(val.data), (size_t)val.size };
         }
         THROW_INTERNAL_ERROR("can't convert blob %1% to std::basic_string"_fmt % val);
@@ -634,7 +640,7 @@ template <typename ... Ts>
 struct from_blob<std::tuple<Ts...>>
 {
     using tuple_t = std::tuple<Ts...>;
-    tuple_t operator()(blob_result val) const
+    tuple_t operator()(blob_result const& val) const
     {
         using namespace sonia;
         if (val.type == blob_type::blob && val.is_array) {
@@ -647,6 +653,47 @@ struct from_blob<std::tuple<Ts...>>
     tuple_t operator()(std::index_sequence<Is...>, blob_result const* data) const
     {
         return { from_blob<std::tuple_element_t<Is, tuple_t>>()(data[Is]) ... };
+    }
+};
+
+template <typename T, size_t SzV>
+struct from_blob<std::array<T, SzV>>
+{
+    std::array<T, SzV> operator()(blob_result const& val) const
+    {
+        using namespace sonia;
+        if (val.is_array) {
+            return blob_result_type_selector(val, [this](auto idt, blob_result const& val)->std::array<T, SzV> {
+                return this->selector(idt, val);
+            });
+        }
+        THROW_INTERNAL_ERROR("can't convert blob %1% to std::tuple"_fmt % val);
+    }
+
+private:
+    template <typename BT>
+    inline std::array<T, SzV> selector(sonia::identity<BT>, blob_result const& val) const
+    {
+        using namespace sonia;
+        if constexpr (is_same_v<T, BT> && (is_integral_v<T> || is_floating_point_v<T>)) {
+            return direct_decode(std::make_index_sequence<SzV>{}, reinterpret_cast<T const*>(val.data));
+        } else if (is_same_v<blob_result, BT> || is_same_v<string_view, BT>) {
+            return decode(std::make_index_sequence<SzV>{}, reinterpret_cast<blob_result const*>(val.data));
+        } else {
+            THROW_INTERNAL_ERROR("can't convert blob %1% to std::array<%2%>"_fmt % val % typeid(T).name());
+        }
+    }
+
+    template <size_t ... Is>
+    inline std::array<T, SzV> direct_decode(std::index_sequence<Is...>, T const* data) const
+    {
+        return { data[Is] ... };
+    }
+
+    template <size_t ... Is>
+    inline std::array<T, SzV> decode(std::index_sequence<Is...>, blob_result const* data) const
+    {
+        return { from_blob<T>{}(data[Is]) ... };
     }
 };
 

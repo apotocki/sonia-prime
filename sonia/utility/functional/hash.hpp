@@ -59,7 +59,8 @@ struct hasher
     }
 
     template <typename ... Ts>
-    enable_if_t<(sizeof...(Ts) > 1), size_t> operator()(Ts const& ... vs) const
+    requires(sizeof...(Ts) > 1)
+    size_t operator()(Ts const& ... vs) const
     {
         size_t seed = hash_init_value();
         return do_work(std::make_index_sequence<sizeof ...(Ts)>(), seed, vs ...);

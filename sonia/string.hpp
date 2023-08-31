@@ -222,6 +222,8 @@ public:
     using const_reference = CharT const&;
     using size_type = size_t;
 
+    basic_small_string() = default;
+
     basic_small_string(std::string_view sv)
         : array_{sv}
     {}

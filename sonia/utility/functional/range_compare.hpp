@@ -2,19 +2,11 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_FUNCTIONAL_RANGE_COMPARE_HPP
-#define SONIA_FUNCTIONAL_RANGE_COMPARE_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <cstring>
 #include <algorithm>
 #include <memory>
-
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
 
 #include "sonia/type_traits.hpp"
 #include "sonia/iterator_traits.hpp"
@@ -30,7 +22,7 @@ struct range_compare
         if constexpr (is_same_v<remove_cvref_t<LR>, remove_cvref_t<RR>>) {
             if (BOOST_UNLIKELY(std::addressof(l) == std::addressof(r))) return 0;
         }
-        return this->operator()(boost::begin(l), boost::end(l), boost::begin(r), boost::end(r));
+        return this->operator()(std::begin(l), std::end(l), std::begin(r), std::end(r));
     }
 
     template <typename LForwardIteratorT, typename RForwardIteratorT>
@@ -68,5 +60,3 @@ struct compare<LT, RT, enable_if_t<has_range_iterator_v<LT> && has_range_iterato
 };
 
 }
-
-#endif // SONIA_FUNCTIONAL_RANGE_COMPARE_HPP

@@ -256,7 +256,7 @@ struct is_template_instance : false_type {};
 template <template <class ...> class TemplateT, class ... Ts>
 struct is_template_instance<TemplateT, TemplateT<Ts...>> : true_type {};
 
-template <template <auto ...> class TemplateT, class T>
+template <template <class ...> class TemplateT, class T>
 constexpr bool is_template_instance_v = is_template_instance<TemplateT, T>::value;
 
 template <typename T>

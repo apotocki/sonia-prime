@@ -277,6 +277,12 @@ private:
     shared_array_t array_;
 };
 
+template <typename CharT, template<class> class TraitsT, size_t SzV>
+std::basic_ostream<CharT, TraitsT<CharT>>& operator<< (std::basic_ostream<CharT, TraitsT<CharT>>& os, basic_small_string<CharT, SzV, TraitsT<CharT>> s)
+{
+    return os.write(reinterpret_cast<CharT const*>(s.data()), s.size());
+}
+
 template <typename CharT, size_t SzV, class TraitsT>
 inline span<const CharT> to_span(basic_small_string<CharT, SzV, TraitsT> const& s)
 {

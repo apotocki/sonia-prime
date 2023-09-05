@@ -222,7 +222,7 @@ public:
 
     void reset() noexcept
     {
-        if (!*this) {
+        if (*this) {
             std::destroy_at(get_pointer());
         }
         do_reset();

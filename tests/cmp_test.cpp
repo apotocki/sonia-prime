@@ -53,8 +53,8 @@ void range_compare_test()
     BOOST_CHECK(!equal_f(s2, s1));
     BOOST_CHECK(equal_f(s1, s1));
 
-    BOOST_CHECK(!equal_f(to_string_view(s2), to_string_view(s1)));
-    BOOST_CHECK(equal_f(to_string_view(s1), to_string_view(s1)));
+    BOOST_CHECK(!equal_f(string_view(s2), string_view(s1)));
+    BOOST_CHECK(equal_f(string_view(s1), string_view(s1)));
 
     //BOOST_CHECK(ends_with("abcdefgh", "fgh"));
     //BOOST_CHECK(!ends_with("abcdefgh", "ffgh"));

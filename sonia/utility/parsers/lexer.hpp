@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_LEXER_UTILITY_HPP
-#define SONIA_LEXER_UTILITY_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "lexertl/generator.hpp"
 #include "lexertl/lookup.hpp"
@@ -108,36 +103,46 @@ private:
 
 }
 
-namespace boost {
-
-template <typename iter, typename id_type, std::size_t flags>
-struct range_iterator<lexertl::match_results<iter, id_type, flags>>
-{
-    using type = iter;
-};
-
-template <typename iter, typename id_type, std::size_t flags>
-struct range_iterator<const lexertl::match_results<iter, id_type, flags>>
-{
-    using type = iter;
-};
-
-}
+//namespace boost {
+//
+//template <typename iter, typename id_type, std::size_t flags>
+//struct range_iterator<lexertl::match_results<iter, id_type, flags>>
+//{
+//    using type = iter;
+//};
+//
+//template <typename iter, typename id_type, std::size_t flags>
+//struct range_iterator<const lexertl::match_results<iter, id_type, flags>>
+//{
+//    using type = iter;
+//};
+//
+//}
 
 namespace lexertl {
 
 template <typename iter, typename id_type, std::size_t flags>
-inline iter range_begin(match_results<iter, id_type, flags> const& mr)
+inline iter begin(match_results<iter, id_type, flags> const& mr)
 {
     return mr.first;
 }
 
 template <typename iter, typename id_type, std::size_t flags>
-inline iter range_end(match_results<iter, id_type, flags> const& mr)
+inline iter end(match_results<iter, id_type, flags> const& mr)
 {
     return mr.second;
 }
 
-}
+//template <typename iter, typename id_type, std::size_t flags>
+//inline iter range_begin(match_results<iter, id_type, flags> const& mr)
+//{
+//    return mr.first;
+//}
+//
+//template <typename iter, typename id_type, std::size_t flags>
+//inline iter range_end(match_results<iter, id_type, flags> const& mr)
+//{
+//    return mr.second;
+//}
 
-#endif // SONIA_LEXER_UTILITY_HPP
+}

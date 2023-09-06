@@ -51,13 +51,13 @@ struct blob_result {
     blob_type type;
 };
 
-}
-
 typedef void(*on_invoke_cv_result_setter)(void*, blob_result*, uint32_t); // cookie, results, result count
 
 SONIA_PRIME_API void blob_result_allocate(blob_result *);
 SONIA_PRIME_API void blob_result_pin(blob_result *);
 SONIA_PRIME_API void blob_result_unpin(blob_result *);
+
+}
 
 inline bool blob_result_equal(sonia::identity<bool>, blob_result const& lhs, blob_result const& rhs)
 {
@@ -375,6 +375,7 @@ inline blob_result particular_blob_result(ArgT && value)
     else if constexpr (std::is_same_v<T, int64_t> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == 8)) return i64_blob_result(value);
     else if constexpr (std::is_same_v<T, float>) return float_blob_result(value);
     else if constexpr (std::is_same_v<T, std::string_view>) return string_blob_result(value);
+    else if constexpr (std::is_same_v<T, sonia::cstring_view>) return string_blob_result(value);
     else if constexpr (std::is_same_v<ArgT&&, std::string const&>) return string_blob_result(std::forward<ArgT>(value));
     else if constexpr (std::is_same_v<ArgT&&, std::string&&>) return string_blob_result(std::forward<ArgT>(value));
     else if constexpr (std::is_same_v<T, blob_result>) return value;

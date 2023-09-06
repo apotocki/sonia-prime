@@ -37,6 +37,12 @@ public:
     virtual smart_blob get_property(string_view propname) const;
     virtual void set_property(string_view propname, blob_result const& val);
     virtual void on_propety_change(string_view) {}
+
+    void set_property(string_view propname, blob_result && val)
+    {
+        set_property(propname, std::as_const(val));
+        blob_result_unpin(&val);
+    }
 };
 
 struct method : multimethod

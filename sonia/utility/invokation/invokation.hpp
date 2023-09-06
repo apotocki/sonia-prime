@@ -53,6 +53,8 @@ struct blob_result {
 
 }
 
+typedef void(*on_invoke_cv_result_setter)(void*, blob_result*, uint32_t); // cookie, results, result count
+
 SONIA_PRIME_API void blob_result_allocate(blob_result *);
 SONIA_PRIME_API void blob_result_pin(blob_result *);
 SONIA_PRIME_API void blob_result_unpin(blob_result *);

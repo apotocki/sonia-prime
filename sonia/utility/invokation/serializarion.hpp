@@ -7,7 +7,6 @@
 #include <sstream>
 
 #include "sonia/utility/invokation/invokation.hpp"
-#include "sonia/services/efs/cviews/content_view.hpp"
 
 namespace boost::serialization {
 

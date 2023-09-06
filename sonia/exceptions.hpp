@@ -50,6 +50,7 @@ DECLARE_EXCEPTION(closed_exception, "closed", exception)
 DECLARE_EXCEPTION(timeout_exception, "timeout", exception)
 DECLARE_EXCEPTION(fatal_error, "fatal error", exception)
 DECLARE_EXCEPTION(client_error, "client error", exception)
+DECLARE_EXCEPTION(cancel_exception, "client error", exception)
 
 DECLARE_EXCEPTION(internal_error, "internal error", exception)
 DECLARE_EXCEPTION(not_implemented_error, "not implemented error", internal_error)

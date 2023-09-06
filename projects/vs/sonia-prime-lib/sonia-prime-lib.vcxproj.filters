@@ -211,6 +211,9 @@
     <Filter Include="sonia.utility\functional\less">
       <UniqueIdentifier>{d4f0c05f-22b0-4979-a39f-de5b5502f54a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\mvvm">
+      <UniqueIdentifier>{14eaa3ce-0483-49bd-95dc-170cfc4adbb1}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -1818,6 +1821,12 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\less\variant.hpp">
       <Filter>sonia.utility\functional\less</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\view_model.hpp">
+      <Filter>sonia.utility\mvvm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\view_model.ipp">
+      <Filter>sonia.utility\mvvm</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2014,6 +2023,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\invokation\invokation.cpp">
       <Filter>sonia.utility\invokation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\mvvm\view_model.cpp">
+      <Filter>sonia.utility\mvvm</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

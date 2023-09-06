@@ -34,6 +34,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/number/number_math.cpp
     ${BUNDLE_HOME}/sonia/utility/lua/lua.cpp
     ${BUNDLE_HOME}/sonia/utility/invokation/invokable.cpp
+    ${BUNDLE_HOME}/sonia/utility/mvvm/view_model.cpp
     ${BUNDLE_HOME}/sonia/services/singleton_locator.cpp
     ${BUNDLE_HOME}/sonia/services/local_type_registry.cpp
     ${BUNDLE_HOME}/sonia/services/durable_type_registry.cpp
@@ -41,6 +42,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/scheduler/basic_scheduler.cpp
     ${BUNDLE_HOME}/sonia/services/scheduler/fiber_work_stealing_scheduler.cpp
     ${BUNDLE_HOME}/sonia/services/io/file.cpp
+    
 )
 
 if (NOT DEFINED NO_NET)

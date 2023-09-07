@@ -89,6 +89,11 @@ void lua_view_model::load_lua(std::string code)
     lua::language::append_code(std::move(code));
 }
 
+cstring_view lua_view_model::append_inplace(string_view code, bool no_return)
+{
+    return lua::language::append_inplace(code, no_return);
+}
+
 smart_blob lua_view_model::eval_lua(string_view code)
 {
     vm_lua_resolver rslv{ *this };

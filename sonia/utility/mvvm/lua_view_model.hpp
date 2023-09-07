@@ -24,6 +24,7 @@ public:
 
     // scripting
     void load_lua(std::string code);
+    cstring_view append_inplace(string_view code, bool no_return);
 
     smart_blob eval_lua(string_view code);
     smart_blob eval_lua(string_view code, resolver* r = nullptr);

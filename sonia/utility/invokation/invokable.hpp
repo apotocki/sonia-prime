@@ -66,13 +66,17 @@ struct concrete_method : method
     using result_type = typename boost::function_types::result_type<f_type>::type;
     using args_type = typename boost::function_types::parameter_types<f_type>::type;
     using pure_args_type = typename boost::mpl::pop_front<args_type>::type;
-    using invokable_t = typename boost::mpl::at_c<args_type, 0>::type;
+    using invokable_t = remove_reference_t<typename boost::mpl::at_c<args_type, 0>::type>;
 
     template <typename InvokableT, size_t ... Is>
     smart_blob do_job(std::index_sequence<Is...>, InvokableT& self, span<const blob_result> args) const
     {
+        invokable_t* pinv = dynamic_cast<invokable_t*>(std::addressof(self));
+        if (!pinv) {
+            THROW_INTERNAL_ERROR("while method invoking can not cast from %1% to %2%"_fmt % typeid(self).name() % typeid(invokable_t).name());
+        }
         std::tuple<invokable_t&, typename boost::mpl::at_c<pure_args_type, Is>::type ...> argstpl{
-            dynamic_cast<invokable_t&>(self), from_blob_at<typename boost::mpl::at_c<pure_args_type, Is>::type>(Is, args) ...};
+            *pinv, from_blob_at<typename boost::mpl::at_c<pure_args_type, Is>::type>(Is, args) ...};
         if constexpr (is_void_v<result_type>) {
             std::apply(FuncV, std::move(argstpl));
             return smart_blob{};

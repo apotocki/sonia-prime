@@ -17,7 +17,7 @@ smart_blob invokable::invoke(string_view methodname, span<const blob_result> arg
 {
     smart_blob result;
     if (!try_invoke(methodname, args, result)) {
-        THROW_INTERNAL_ERROR("method %1% of %2% is not registered"_fmt % methodname % typeid(*this).name());
+        throw exception("method %1% of %2% is not registered"_fmt % methodname % typeid(*this).name());
     }
     return result;
 }

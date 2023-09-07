@@ -1827,6 +1827,9 @@
     <ClInclude Include="..\..\..\sonia\utility\mvvm\view_model.ipp">
       <Filter>sonia.utility\mvvm</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\lua_view_model.hpp">
+      <Filter>sonia.utility\mvvm</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2025,6 +2028,9 @@
       <Filter>sonia.utility\invokation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\mvvm\view_model.cpp">
+      <Filter>sonia.utility\mvvm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\mvvm\lua_view_model.cpp">
       <Filter>sonia.utility\mvvm</Filter>
     </ClCompile>
   </ItemGroup>

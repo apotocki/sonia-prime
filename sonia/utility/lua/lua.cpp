@@ -134,13 +134,22 @@ cstring_view language::append_inplace(string_view code, bool no_return)
     return it->second;
 }
 
+blob_result language::get_global_property(cstring_view name) const
+{
+    lua_State* L = reinterpret_cast<lua_State*>(L_);
+    lua_getglobal(L, name.c_str());
+    blob_result result = to_blob(-1);
+    lua_pop(L, 1);
+    return result;
+}
+
 blob_result language::eval_inplace(cstring_view fn, std::span<const blob_result> args, resolver * r)
 {
     resolver_ = r;
     lua_State* L = reinterpret_cast<lua_State*>(L_);
     lua_getglobal(L, fn.c_str());
     for (blob_result arg : args) {
-        from_blob(arg);
+        push_from_blob(arg);
     }
     if (lua_pcall(L, (int)args.size(), 1, 0)) {
         std::string err = lua_tostring(L, -1);
@@ -169,12 +178,12 @@ int language::resolve_global()
     
     blob_result val = resolver_ ? resolver_->index(key) : nil_blob_result();
     SCOPE_EXIT([this, &val] { blob_result_unpin(&val); });
-    from_blob(val);
+    push_from_blob(val);
 
     return 1;
 }
 
-void language::from_blob(blob_result const& b)
+void language::push_from_blob(blob_result const& b)
 {
     lua_State* L = reinterpret_cast<lua_State*>(L_);
     if (b.type == blob_type::unspecified && !b.data) {
@@ -190,7 +199,7 @@ void language::from_blob(blob_result const& b)
             for (int32_t i = 0; i < b.size / sizeof(fstype); ++i) {
                 lua_pushnumber(L, (lua_Number)(i+1));
                 if constexpr (is_same_v<fstype, string_view> || is_same_v<fstype, blob_result>) {
-                    from_blob(*(reinterpret_cast<blob_result const*>(b.data) + i));
+                    push_from_blob(*(reinterpret_cast<blob_result const*>(b.data) + i));
                 } else {
                     fstype const* pval = reinterpret_cast<fstype const*>(b.data) + i;
                     lua_pushnumber(L, (lua_Number)*pval);
@@ -242,7 +251,7 @@ void language::from_blob(blob_result const& b)
     }
 }
 
-blob_result language::to_blob(int index)
+blob_result language::to_blob(int index) const
 {
     lua_State* L = reinterpret_cast<lua_State*>(L_);
 
@@ -364,9 +373,7 @@ int language::set_global()
     if (!key) {
         return 0;
     }
-    if (resolver_) {
-        resolver_->newindex(key, to_blob(3));
-    } else {
+    if (!resolver_ || !resolver_->newindex(key, to_blob(3))) {
         lua_rawset(L, 1);
     }
     return 0;
@@ -422,11 +429,11 @@ int language::invoke_global()
         if (res->is_array && res->type == blob_type::blob) {
             size_t cnt = res->size / sizeof(blob_type);
             for (blob_result r : std::span{ reinterpret_cast<const blob_result*>(res->data), cnt }) {
-                from_blob(r);
+                push_from_blob(r);
             }
             return static_cast<int>(cnt);
         }
-        from_blob(*res);
+        push_from_blob(*res);
         return 1;
     } catch (std::exception const& e) {
         return luaL_error(L, e.what());

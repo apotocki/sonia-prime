@@ -26,23 +26,23 @@ class invokable
 public:
     virtual ~invokable() = default;
 
-    bool has_method(string_view methodname);
-    smart_blob invoke(string_view methodname, span<const blob_result> args);
+    bool has_method(string_view methodname) const;
+    virtual smart_blob invoke(string_view methodname, span<const blob_result> args);
     smart_blob invoke(string_view name, std::initializer_list<const blob_result> args)
     {
         return invoke(name, span{args});
     }
+    bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result);
 
     // properties routine
     virtual smart_blob get_property(string_view propname) const;
     virtual void set_property(string_view propname, blob_result const& val);
     virtual void on_propety_change(string_view) {}
 
-    void set_property(string_view propname, blob_result && val)
-    {
-        set_property(propname, std::as_const(val));
-        blob_result_unpin(&val);
-    }
+    bool try_get_property(string_view propname, smart_blob& result) const;
+    bool try_set_property(string_view propname, blob_result const& val);
+
+    void set_property(string_view propname, blob_result&& val);
 };
 
 struct method : multimethod
@@ -114,8 +114,8 @@ struct concrete_fn_property : fn_property
         : getter_{ std::move(g) }, setter_{ std::move(s) }
     {}
 
-    smart_blob get(invokable const& obj) const override { return getter_(static_cast<InvokableT const&>(obj)); }
-    bool set(invokable& obj, blob_result const& val) const override { return setter_(static_cast<InvokableT &>(obj), val); }
+    smart_blob get(invokable const& obj) const override { return getter_(dynamic_cast<InvokableT const&>(obj)); }
+    bool set(invokable& obj, blob_result const& val) const override { return setter_(dynamic_cast<InvokableT &>(obj), val); }
 
     SONIA_POLYMORPHIC_MOVABLE_IMPL(concrete_fn_property);
     SONIA_POLYMORPHIC_CLONABLE_IMPL(concrete_fn_property);
@@ -130,7 +130,7 @@ struct concrete_fn_readonly_property : fn_property
         : getter_{ std::move(g) }
     {}
 
-    smart_blob get(invokable const& obj) const override { return getter_(static_cast<InvokableT const&>(obj)); }
+    smart_blob get(invokable const& obj) const override { return getter_(dynamic_cast<InvokableT const&>(obj)); }
     bool set(invokable& obj, blob_result const& val) const override { throw exception("an attempt to set readonly property"); }
 
     SONIA_POLYMORPHIC_MOVABLE_IMPL(concrete_fn_readonly_property);
@@ -217,7 +217,7 @@ public:
         sonia::services::register_multimethod(field_fn_property<FieldV>(), { typeid(DerivedT), name });
     }
 
-private:
+protected:
     void inherit(std::type_index from)
     {
         sonia::services::copy_multimethods({ from }, { typeid(DerivedT) });

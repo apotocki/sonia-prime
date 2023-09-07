@@ -24,7 +24,7 @@ public:
     {
     public:
         virtual blob_result index(string_view key) = 0;
-        virtual void newindex(string_view key, blob_result && value) = 0;
+        virtual bool newindex(string_view key, blob_result && value) = 0;
         virtual blob_result invoke(string_view name, span<const blob_result> args) = 0;
     };
 
@@ -36,12 +36,14 @@ public:
     [[nodiscard]] blob_result eval_inplace(cstring_view name, std::span<const blob_result> args = {}, resolver* r = nullptr);
     [[nodiscard]] blob_result eval(string_view code, resolver* r = nullptr);
     
+    [[nodiscard]] blob_result get_global_property(cstring_view name) const;
+
 public:
     int resolve_global();
     int set_global();
     int invoke_global();
-    blob_result to_blob(int index);
-    void from_blob(blob_result const&);
+    blob_result to_blob(int index) const;
+    void push_from_blob(blob_result const&);
 
 private:
     void* L_;

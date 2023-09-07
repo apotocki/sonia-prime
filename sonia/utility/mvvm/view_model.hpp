@@ -61,7 +61,6 @@ public:
         virtual ~manager() = default;
         virtual scheduler& get_scheduler() const = 0;
 
-        virtual smart_blob eval_function(view_model& ctx, cstring_view name, span<const blob_result> args) = 0;
         virtual void invoke_callback(void* cookie, int32_t cvid, string_view method_name, span<const blob_result>, on_invoke_cv_result_setter setter) = 0;
         virtual int on_change_callback(int32_t cvid, status_type, blob_result arg = nil_blob_result()) = 0;
 

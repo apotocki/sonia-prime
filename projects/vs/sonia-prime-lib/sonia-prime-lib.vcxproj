@@ -465,6 +465,7 @@
     <ClInclude Include="..\..\..\sonia\utility\marshaling\string.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\marshaling\stub_parameter.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\multimethod.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\lua_view_model.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\view_model.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\view_model.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\number\basic_decimal.hpp" />
@@ -770,6 +771,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\lua\lua.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\mvvm\lua_view_model.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\mvvm\view_model.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\number\number_integer.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\number\number_math.cpp" />

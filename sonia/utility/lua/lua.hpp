@@ -37,6 +37,7 @@ public:
     [[nodiscard]] blob_result eval(string_view code, resolver* r = nullptr);
     
     [[nodiscard]] blob_result get_global_property(cstring_view name) const;
+    void set_global_property(cstring_view, blob_result const& val);
 
 public:
     int resolve_global();

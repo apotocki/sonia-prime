@@ -143,6 +143,13 @@ blob_result language::get_global_property(cstring_view name) const
     return result;
 }
 
+void language::set_global_property(cstring_view name, blob_result const& val)
+{
+    lua_State* L = reinterpret_cast<lua_State*>(L_);
+    push_from_blob(val);
+    lua_setglobal(L, name.c_str());
+}
+
 blob_result language::eval_inplace(cstring_view fn, std::span<const blob_result> args, resolver * r)
 {
     resolver_ = r;

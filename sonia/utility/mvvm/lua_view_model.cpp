@@ -77,8 +77,11 @@ smart_blob lua_view_model::get_property(string_view propname) const
 
 void lua_view_model::set_property(string_view propname, blob_result const& val)
 {
-
-    view_model::set_property(propname, val);
+    if (!try_set_property(propname, val)) {
+        as_cstring<32>(propname, [&val, this](cstring_view propname_cstr) {
+            lua::language::set_global_property(propname_cstr, val);
+        });
+    }
 }
 
 void lua_view_model::load_lua(std::string code)

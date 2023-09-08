@@ -47,7 +47,7 @@ public:
         }
     }
 
-    void releaseref(blob_result* b)
+    void releaseref(blob_result* b) noexcept
     {
         lock_guard guard(blobs_mtx_);
         auto it = blobs_.find(b->data);
@@ -57,8 +57,8 @@ public:
                 GLOBAL_LOG_TRACE() << "a blob was unpinned at: " << std::hex << (uint64_t)b->data;
             }
         } else {
-            //GLOBAL_LOG_ERROR() << "a blob was not found for unpinning at: " << std::hex << (uint64_t)b->data;
-            THROW_INTERNAL_ERROR("a blob was not found for unpinning %1%"_fmt % *b);
+            GLOBAL_LOG_ERROR() << "a blob '" << *b << "' was not found for unpinning at: " << std::hex << (uint64_t)b->data;
+            //THROW_INTERNAL_ERROR("a blob was not found for unpinning %1%"_fmt % *b);
         }
     }
 

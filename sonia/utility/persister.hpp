@@ -41,6 +41,7 @@ public:
         write([&ftor](output_iterator oi) {
             serialization::ostream<output_iterator, char> os(std::move(oi));
             ftor(os);
+            os.flush();
         });
     }
 };

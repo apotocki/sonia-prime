@@ -206,19 +206,19 @@ public:
     template <typename GetterT>
     void register_readonly_property(string_view name, GetterT && g)
     {
-        sonia::services::register_multimethod(concrete_fn_readonly_property<DerivedT, remove_cvref_t<GetterT>>(std::forward<GetterT>(g)), { typeid(DerivedT), name });
+        sonia::services::register_multimethod(concrete_fn_readonly_property<DerivedT, remove_cvref_t<GetterT>>(std::forward<GetterT>(g)), { typeid(DerivedT), typeid(fn_property), name });
     }
 
     template <typename GetterT, typename SetterT>
     void register_property(string_view name, GetterT && g, SetterT && s)
     {
-        sonia::services::register_multimethod(concrete_fn_property<DerivedT, remove_cvref_t<GetterT>, remove_cvref_t<SetterT>>(std::forward<GetterT>(g), std::forward<SetterT>(s)), { typeid(DerivedT), name });
+        sonia::services::register_multimethod(concrete_fn_property<DerivedT, remove_cvref_t<GetterT>, remove_cvref_t<SetterT>>(std::forward<GetterT>(g), std::forward<SetterT>(s)), { typeid(DerivedT), typeid(fn_property), name });
     }
 
     template <auto FieldV>
     void register_property(string_view name)
     {
-        sonia::services::register_multimethod(field_fn_property<FieldV>(), { typeid(DerivedT), name });
+        sonia::services::register_multimethod(field_fn_property<FieldV>(), { typeid(DerivedT), typeid(fn_property), name });
     }
 
 protected:

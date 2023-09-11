@@ -30,16 +30,8 @@ public:
     [[noreturn]] virtual polymorphic_movable* move(void* address, size_t sz) { THROW_NOT_SUPPORTED_ERROR("move"); }
 };
 
-class polymorphic_clonable_and_movable
-{
-public:
-    virtual ~polymorphic_clonable_and_movable() = default;
-    [[noreturn]] virtual polymorphic_clonable_and_movable* clone(void* address, size_t sz) const { THROW_NOT_SUPPORTED_ERROR("copy"); }
-    [[noreturn]] virtual polymorphic_clonable_and_movable* move(void* address, size_t sz) { THROW_NOT_SUPPORTED_ERROR("move"); }
-};
-
-template <typename T> struct is_polymorphic_clonable : public bool_constant<is_base_of_v<polymorphic_clonable, T> || is_base_of_v<polymorphic_clonable_and_movable, T>> {};
-template <typename T> struct is_polymorphic_movable : public bool_constant<is_base_of_v<polymorphic_movable, T> || is_base_of_v<polymorphic_clonable_and_movable, T>> {};
+template <typename T> struct is_polymorphic_clonable : public is_base_of<polymorphic_clonable, T> {};
+template <typename T> struct is_polymorphic_movable : public is_base_of<polymorphic_movable, T> {};
 
 template <typename T> constexpr bool is_polymorphic_clonable_v = is_polymorphic_clonable<T>::value;
 template <typename T> constexpr bool is_polymorphic_movable_v = is_polymorphic_movable<T>::value;
@@ -63,14 +55,14 @@ polymorphic_clonable* clone(void* address, size_t sz) const override            
 }
 
 #define SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(clsnm)                                      \
-polymorphic_clonable_and_movable* move(void* address, size_t sz) override                   \
+polymorphic_movable* move(void* address, size_t sz) override                                \
 {                                                                                           \
     BOOST_ASSERT_MSG (sizeof(clsnm) <= sz,                                                  \
         ("%1% <= %2%"_fmt % sizeof(clsnm) % sz).str().c_str());                             \
     new (address) clsnm{std::move(*this)};                                                  \
     return reinterpret_cast<clsnm*>(address);                                               \
 }                                                                                           \
-polymorphic_clonable_and_movable* clone(void* address, size_t sz) const override            \
+polymorphic_clonable* clone(void* address, size_t sz) const override                        \
 {                                                                                           \
     BOOST_ASSERT_MSG (sizeof(clsnm) <= sz,                                                  \
         ("%1% <= %2%"_fmt % sizeof(clsnm) % sz).str().c_str());                             \

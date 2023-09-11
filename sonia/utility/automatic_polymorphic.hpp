@@ -269,10 +269,6 @@ private:
         do_clone(sample);
     }
 
-    void clone(polymorphic_clonable_and_movable const& sample)
-    {
-        do_clone(sample);
-    }
 
     void move(automatic_polymorphic && rhs)
     {
@@ -288,10 +284,6 @@ private:
         do_move(sample);
     }
     
-    void move(polymorphic_clonable_and_movable && sample)
-    {
-        do_move(sample);
-    }
 
     template <class PolymorphicClonableT>
     void do_clone(PolymorphicClonableT const& sample)

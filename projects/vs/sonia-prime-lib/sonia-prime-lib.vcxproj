@@ -555,6 +555,8 @@
     <ClInclude Include="..\..\..\sonia\utility\type_durable_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\type_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\variadic.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\bunch_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\xmlbuilder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\zlib_util.hpp" />
     <ClInclude Include="..\..\..\sonia\variant.hpp" />
   </ItemGroup>
@@ -791,6 +793,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\bunch_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\xmlbuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\sonia.natvis" />

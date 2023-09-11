@@ -43,6 +43,8 @@ struct singleton_wrapper
 
     T & get() const { return *instance_; }
 
+    T& operator*() const { return *instance_; }
+
 private:
     static T * instance_;
     static std::once_flag once_flag_;

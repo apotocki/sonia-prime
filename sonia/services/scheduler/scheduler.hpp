@@ -1,6 +1,7 @@
 //  Sonia.one framework (c) by Alexander A Pototskiy
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
+
 #pragma once
 
 #include <utility>
@@ -13,10 +14,10 @@
 #include "sonia/utility/automatic_polymorphic.hpp"
 
 #ifndef SONIA_SCHEDULER_TASK_SZ
-#   define SONIA_SCHEDULER_TASK_SZ (std::max)((size_t)64, sizeof(function<void()>) + sizeof(void*))
+#   define SONIA_SCHEDULER_TASK_SZ (std::max)((size_t)64, sizeof(function<void()>) + 2 * sizeof(void*))
 #endif
 
-namespace sonia { namespace scheduler_detail {
+namespace sonia::scheduler_detail {
 
 using time_point_t = std::chrono::time_point<std::chrono::system_clock>;
 using time_duration_t = std::chrono::milliseconds;
@@ -33,7 +34,9 @@ public:
 
 }
 
-class scheduler_task : public polymorphic_clonable_and_movable
+namespace sonia {
+
+class scheduler_task : public polymorphic_clonable, public polymorphic_movable
 {
 public:
     virtual void on_cancel() noexcept {}
@@ -44,14 +47,14 @@ template <typename DerivedT>
 class scheduler_task_adapter : public scheduler_task
 {
 public:
-    polymorphic_clonable_and_movable* move(void* address, size_t sz) override
+    polymorphic_movable* move(void* address, size_t sz) override
     {
         BOOST_ASSERT(sz >= sizeof(DerivedT));
         new (address) DerivedT(std::move(static_cast<DerivedT&>(*this)));
         return reinterpret_cast<DerivedT*>(address);
     }
 
-    polymorphic_clonable_and_movable* clone(void* address, size_t sz) const override
+    polymorphic_clonable* clone(void* address, size_t sz) const override
     {
         BOOST_ASSERT(sz >= sizeof(DerivedT));
         new (address) DerivedT(static_cast<DerivedT const&>(*this));
@@ -109,7 +112,8 @@ class function_call_scheduler_task : public scheduler_task
 {
 public:
     template <typename ArgT>
-    explicit function_call_scheduler_task(ArgT && arg, disable_if_same_ref_t<function_call_scheduler_task, ArgT>* dummy = nullptr) 
+    requires(!is_same_v<function_call_scheduler_task, remove_cvref_t<ArgT>>)
+    explicit function_call_scheduler_task(ArgT && arg) 
         : func_{std::forward<ArgT>(arg)}
     {}
 
@@ -127,14 +131,14 @@ public:
         }
     }
 
-    polymorphic_clonable_and_movable* move(void* address, size_t sz) override
+    polymorphic_movable* move(void* address, size_t sz) override
     {
         BOOST_ASSERT(sz >= sizeof(function_call_scheduler_task));
         new (address) function_call_scheduler_task(std::move(*this));
         return reinterpret_cast<function_call_scheduler_task*>(address);
     }
 
-    polymorphic_clonable_and_movable* clone(void* address, size_t sz) const override
+    polymorphic_clonable* clone(void* address, size_t sz) const override
     {
         BOOST_ASSERT(sz >= sizeof(function_call_scheduler_task));
         new (address) function_call_scheduler_task(*this);

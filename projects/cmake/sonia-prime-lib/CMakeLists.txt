@@ -36,6 +36,8 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/invokation/invokable.cpp
     ${BUNDLE_HOME}/sonia/utility/mvvm/view_model.cpp
     ${BUNDLE_HOME}/sonia/utility/mvvm/lua_view_model.cpp
+    ${BUNDLE_HOME}/sonia/utility/xmlbuilder/xmlbuilder.cpp
+    ${BUNDLE_HOME}/sonia/utility/xmlbuilder/bunch_builder.cpp
     ${BUNDLE_HOME}/sonia/services/singleton_locator.cpp
     ${BUNDLE_HOME}/sonia/services/local_type_registry.cpp
     ${BUNDLE_HOME}/sonia/services/durable_type_registry.cpp

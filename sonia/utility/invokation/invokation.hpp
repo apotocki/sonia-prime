@@ -29,7 +29,8 @@ enum class blob_type : uint8_t {
     flt = 11,           // if array, data points to float*, size of array = size / 4
     blob = 12,           // if array, data points to blob_type*, size of array = size / 16
     boolean = 13,
-    function = 14
+    function = 14,
+    object = 15 // draft
 };
 
 struct blob_result {
@@ -161,6 +162,11 @@ inline blob_result nil_blob_result()
 inline blob_result function_blob_result(std::string_view value)
 {
     return blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::function };
+}
+
+inline blob_result object_blob_result(void* value)
+{
+    return blob_result{ value, 0, 0, 0, blob_type::object };
 }
 
 inline blob_result bool_blob_result(bool value)
@@ -479,6 +485,8 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
         return os << "blob";
     case blob_type::function:
         return os << "function";
+    case blob_type::object:
+        return os << "object";
     }
     return os;
 }

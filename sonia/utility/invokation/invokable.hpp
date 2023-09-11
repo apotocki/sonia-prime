@@ -51,12 +51,21 @@ struct method : multimethod
     virtual smart_blob operator()(invokable const&, span<const blob_result> args) const = 0;
 };
 
-struct fn_property : multimethod
+struct fn_property_reader : multimethod
 {
-    virtual ~fn_property() = default;
     virtual smart_blob get(invokable const&) const = 0;
+};
+
+struct fn_property_writer : multimethod
+{
     virtual bool set(invokable&, blob_result const&) const = 0; // returns true if updated
 };
+
+//struct fn_property : multimethod
+//{
+//    virtual smart_blob get(invokable const&) const = 0;
+//    virtual bool set(invokable&, blob_result const&) const = 0; // returns true if updated
+//};
 
 template <auto FuncV>
 struct concrete_method : method
@@ -104,65 +113,68 @@ struct concrete_method : method
         }
     }
 
-    SONIA_POLYMORPHIC_MOVABLE_IMPL(concrete_method);
-    SONIA_POLYMORPHIC_CLONABLE_IMPL(concrete_method);
-};
-
-template <typename InvokableT, typename GetterT, typename SetterT>
-struct concrete_fn_property : fn_property
-{
-    GetterT getter_;
-    SetterT setter_;
-
-    concrete_fn_property(GetterT&& g, SetterT&& s)
-        : getter_{ std::move(g) }, setter_{ std::move(s) }
-    {}
-
-    smart_blob get(invokable const& obj) const override { return getter_(dynamic_cast<InvokableT const&>(obj)); }
-    bool set(invokable& obj, blob_result const& val) const override { return setter_(dynamic_cast<InvokableT &>(obj), val); }
-
-    SONIA_POLYMORPHIC_MOVABLE_IMPL(concrete_fn_property);
-    SONIA_POLYMORPHIC_CLONABLE_IMPL(concrete_fn_property);
+    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(concrete_method);
 };
 
 template <typename InvokableT, typename GetterT>
-struct concrete_fn_readonly_property : fn_property
+struct concrete_fn_property_reader : fn_property_reader
 {
     GetterT getter_;
 
-    explicit concrete_fn_readonly_property(GetterT&& g)
+    concrete_fn_property_reader(GetterT&& g)
         : getter_{ std::move(g) }
     {}
 
     smart_blob get(invokable const& obj) const override { return getter_(dynamic_cast<InvokableT const&>(obj)); }
-    bool set(invokable& obj, blob_result const& val) const override { throw exception("an attempt to set readonly property"); }
 
-    SONIA_POLYMORPHIC_MOVABLE_IMPL(concrete_fn_readonly_property);
-    SONIA_POLYMORPHIC_CLONABLE_IMPL(concrete_fn_readonly_property);
+    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(concrete_fn_property_reader);
+};
+
+template <typename InvokableT, typename SetterT>
+struct concrete_fn_property_writer : fn_property_writer
+{
+    SetterT setter_;
+
+    concrete_fn_property_writer(SetterT&& s)
+        : setter_{ std::move(s) }
+    {}
+
+    bool set(invokable& obj, blob_result const& val) const override { return setter_(dynamic_cast<InvokableT &>(obj), val); }
+
+    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(concrete_fn_property_writer);
 };
 
 template <auto FieldV>
-struct field_fn_property : fn_property
+struct field_fn_property_base
 {
     using sig_t = decltype(FieldV);
     using f_type = typename boost::function_types::function_type<sig_t>::type;
     using property_type = remove_reference_t<typename boost::function_types::result_type<f_type>::type>;
     using args_type = typename boost::function_types::parameter_types<f_type>::type;
     using invokable_t = remove_reference_t<typename boost::mpl::at_c<args_type, 0>::type>;
+};
 
-    //field_fn_property()
-    //{
-    //    GLOBAL_LOG_INFO() << "INV TYPE: " << typeid(invokable_t).name() << ", rtype: " << typeid(property_type).name();
-    //}
-
+template <auto FieldV>
+struct field_fn_property_reader : field_fn_property_base<FieldV>, fn_property_reader
+{
     smart_blob get(invokable const& obj) const override
     {
-        return smart_blob { particular_blob_result(dynamic_cast<invokable_t const&>(obj).*FieldV) };
+        return smart_blob{ particular_blob_result(dynamic_cast<field_fn_property_reader::invokable_t const&>(obj).*FieldV) };
     }
+
+    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(field_fn_property_reader);
+};
+
+template <auto FieldV>
+struct field_fn_property_writer : field_fn_property_base<FieldV>, fn_property_writer
+{
+    using base_t = typename field_fn_property_base<FieldV>;
+    using property_type = typename base_t::property_type;
+    using invokable_t = typename base_t::invokable_t;
 
     bool set(invokable& obj, blob_result const& val) const override
     {
-        property_type & stored_val = dynamic_cast<invokable_t&>(obj).*FieldV;
+        property_type& stored_val = dynamic_cast<invokable_t&>(obj).*FieldV;
         auto newval = from_blob<property_type>{}(val);
         if (stored_val != newval) {
             stored_val = newval;
@@ -171,8 +183,7 @@ struct field_fn_property : fn_property
         return false;
     }
 
-    SONIA_POLYMORPHIC_MOVABLE_IMPL(field_fn_property);
-    SONIA_POLYMORPHIC_CLONABLE_IMPL(field_fn_property);
+    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(field_fn_property_writer);
 };
 
 template <typename DerivedT, typename InheritedT = void>
@@ -206,19 +217,27 @@ public:
     template <typename GetterT>
     void register_readonly_property(string_view name, GetterT && g)
     {
-        sonia::services::register_multimethod(concrete_fn_readonly_property<DerivedT, remove_cvref_t<GetterT>>(std::forward<GetterT>(g)), { typeid(DerivedT), typeid(fn_property), name });
+        sonia::services::register_multimethod(concrete_fn_property_reader<DerivedT, remove_cvref_t<GetterT>>(std::forward<GetterT>(g)), { typeid(DerivedT), typeid(fn_property_reader), name });
+    }
+
+    template <typename SetterT>
+    void register_writeonly_property(string_view name, SetterT&& g)
+    {
+        sonia::services::register_multimethod(concrete_fn_property_writer<DerivedT, remove_cvref_t<SetterT>>(std::forward<SetterT>(g)), { typeid(DerivedT), typeid(fn_property_writer), name });
     }
 
     template <typename GetterT, typename SetterT>
     void register_property(string_view name, GetterT && g, SetterT && s)
     {
-        sonia::services::register_multimethod(concrete_fn_property<DerivedT, remove_cvref_t<GetterT>, remove_cvref_t<SetterT>>(std::forward<GetterT>(g), std::forward<SetterT>(s)), { typeid(DerivedT), typeid(fn_property), name });
+        register_readonly_property(name, std::forward<GetterT>(g));
+        register_writeonly_property(name, std::forward<SetterT>(s));
     }
 
     template <auto FieldV>
     void register_property(string_view name)
     {
-        sonia::services::register_multimethod(field_fn_property<FieldV>(), { typeid(DerivedT), typeid(fn_property), name });
+        sonia::services::register_multimethod(field_fn_property_reader<FieldV>(), { typeid(DerivedT), typeid(fn_property_reader), name });
+        sonia::services::register_multimethod(field_fn_property_writer<FieldV>(), { typeid(DerivedT), typeid(fn_property_writer), name });
     }
 
 protected:

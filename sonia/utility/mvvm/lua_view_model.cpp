@@ -11,6 +11,7 @@ namespace sonia {
 void lua_view_model::do_registration(registrar_type& mr)
 {
     mr.register_method<&lua_view_model::load_lua>("load_lua");
+    mr.register_method<&lua_view_model::load_lua>("load_code");
 
     using eval_lua_t = smart_blob(lua_view_model::*)(string_view);
     mr.register_method<(eval_lua_t)&lua_view_model::eval_lua>("eval_lua");

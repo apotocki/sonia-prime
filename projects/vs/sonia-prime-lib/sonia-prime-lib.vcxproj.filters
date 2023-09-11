@@ -214,6 +214,9 @@
     <Filter Include="sonia.utility\mvvm">
       <UniqueIdentifier>{14eaa3ce-0483-49bd-95dc-170cfc4adbb1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\xmlbuilder">
+      <UniqueIdentifier>{3c0ff55d-aac2-4abf-9ee1-000d7d58c333}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -1830,6 +1833,12 @@
     <ClInclude Include="..\..\..\sonia\utility\mvvm\lua_view_model.hpp">
       <Filter>sonia.utility\mvvm</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\xmlbuilder.hpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\bunch_builder.hpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2032,6 +2041,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\mvvm\lua_view_model.cpp">
       <Filter>sonia.utility\mvvm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\xmlbuilder.cpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\bunch_builder.cpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

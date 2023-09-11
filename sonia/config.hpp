@@ -50,6 +50,11 @@
 
 #ifdef BOOST_WINDOWS
 #   define BOOST_STACKTRACE_USE_WINDBG
+#   define NOVTABLE __declspec(novtable)
+#   define EMPTY_BASES __declspec(empty_bases)
+#else
+#   define NOVTABLE
+#   define EMPTY_BASES
 #endif
 
 #ifndef BOOST_THREAD_VERSION

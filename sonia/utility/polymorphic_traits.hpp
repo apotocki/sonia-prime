@@ -9,21 +9,21 @@
 namespace sonia {
 
 template <class T>
-class polymorphic_factory
+class NOVTABLE polymorphic_factory
 {
 public:
     virtual ~polymorphic_factory() = default;
     virtual T* create(void* address, size_t sz) const = 0;
 };
 
-class polymorphic_clonable
+class NOVTABLE polymorphic_clonable
 {
 public:
     virtual ~polymorphic_clonable() = default;
     [[noreturn]] virtual polymorphic_clonable* clone(void* address, size_t sz) const { THROW_NOT_SUPPORTED_ERROR("copy"); }
 };
 
-class polymorphic_movable
+class NOVTABLE polymorphic_movable
 {
 public:
     virtual ~polymorphic_movable() = default;

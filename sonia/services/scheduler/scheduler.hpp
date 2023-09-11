@@ -36,7 +36,7 @@ public:
 
 namespace sonia {
 
-class scheduler_task : public polymorphic_clonable, public polymorphic_movable
+class NOVTABLE scheduler_task : public polymorphic_clonable, public polymorphic_movable
 {
 public:
     virtual void on_cancel() noexcept {}

@@ -159,7 +159,7 @@ struct field_fn_property_reader : field_fn_property_base<FieldV>, fn_property_re
 {
     smart_blob get(invokable const& obj) const override
     {
-        return smart_blob{ particular_blob_result(dynamic_cast<field_fn_property_reader::invokable_t const&>(obj).*FieldV) };
+        return smart_blob{ particular_blob_result(dynamic_cast<typename field_fn_property_reader::invokable_t const&>(obj).*FieldV) };
     }
 
     SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(field_fn_property_reader);
@@ -168,7 +168,7 @@ struct field_fn_property_reader : field_fn_property_base<FieldV>, fn_property_re
 template <auto FieldV>
 struct field_fn_property_writer : field_fn_property_base<FieldV>, fn_property_writer
 {
-    using base_t = typename field_fn_property_base<FieldV>;
+    using base_t = field_fn_property_base<FieldV>;
     using property_type = typename base_t::property_type;
     using invokable_t = typename base_t::invokable_t;
 

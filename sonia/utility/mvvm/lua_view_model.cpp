@@ -31,7 +31,10 @@ public:
         if (ctx_.has_method(key)) {
             return function_blob_result(key);
         }
-        return ctx_.view_model::get_property(key).detach();
+        smart_blob result;
+        ctx_.view_model::try_get_property(key, result);
+        return result.detach();
+        //return ctx_.view_model::get_property(key).detach();
         /*
         smart_blob result;
         if (ctx_.try_get_property(key, result)) {
@@ -78,10 +81,12 @@ smart_blob lua_view_model::get_property(string_view propname) const
 
 void lua_view_model::set_property(string_view propname, blob_result const& val)
 {
+    //GLOBAL_LOG_INFO() << "lua_view_model:set_property '" << propname << "' with value: " << val;
     if (!try_set_property(propname, val)) {
         as_cstring<32>(propname, [&val, this](cstring_view propname_cstr) {
             lua::language::set_global_property(propname_cstr, val);
         });
+        on_propety_change(propname);
     }
 }
 

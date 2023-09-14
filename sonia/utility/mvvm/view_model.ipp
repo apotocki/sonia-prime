@@ -62,14 +62,14 @@ void view_model::do_serialised_cmd(F&& cmd)
     do_serialised_op([this, &cmd](bool need_cancel) {
         if (need_cancel) return;
         // start operation
-        on_change(status_type::START_OP);
+        on_change(status_type::START_OP, {});
         try {
             cmd();
         } catch (std::exception const& e) {
-            on_change(status_type::OP_ERROR_ST, string_blob_result(string_view(e.what())));
+            on_change(status_type::OP_ERROR_ST, {string_blob_result(string_view(e.what()))});
             return;
         }
-        on_change(status_type::FINISH_OP);
+        on_change(status_type::FINISH_OP, {});
     });
 }
 

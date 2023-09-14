@@ -34,7 +34,7 @@ enum class status_type : int16_t {
     INVALIDATED_ST = 0,
     OBSOLETED_ST = 1,
     READY_ST = 2,
-    DATA_CHANGED_ST = 3, // the particular data should be specified, see div_content_type
+    DATA_CHANGED_ST = 3,
     PROPERTY_CHANGED_ST = 4,
     ASK_ST = 5,
     START_OP = 6,
@@ -62,7 +62,7 @@ public:
         virtual scheduler& get_scheduler() const = 0;
 
         virtual void invoke_callback(void* cookie, int32_t cvid, string_view method_name, span<const blob_result>, on_invoke_cv_result_setter setter) = 0;
-        virtual int on_change_callback(int32_t cvid, status_type, blob_result arg = nil_blob_result()) = 0;
+        virtual int on_change_callback(int32_t cvid, status_type, std::span<const blob_result> args) = 0;
 
         virtual int32_t create_content_view(string_view) = 0;
         virtual int32_t push_content_view(shared_ptr<view_model>) = 0;
@@ -99,7 +99,7 @@ public:
 
     void final_cancel();
 
-    int on_change(status_type st, blob_result arg = nil_blob_result());
+    int on_change(status_type st, std::initializer_list<const blob_result> args);
 
     template <typename F>
     void post(F&& f);

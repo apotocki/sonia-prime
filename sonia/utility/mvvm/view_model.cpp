@@ -93,9 +93,9 @@ void view_model::set_property(std::string_view propname, blob_result && val)
 }
 */
 
-void view_model::on_propety_change(std::string_view propname)
+void view_model::on_propety_change(string_view propname)
 {
-    on_change(status_type::PROPERTY_CHANGED_ST, string_blob_result(propname));
+    on_change(status_type::PROPERTY_CHANGED_ST, {string_blob_result(propname)});
 }
 
 /*
@@ -199,10 +199,10 @@ std::string_view view_model::echo_method(std::string_view arg) const
     return arg;
 }
 
-int view_model::on_change(status_type st, blob_result br)
+int view_model::on_change(status_type st, std::initializer_list<const blob_result> args)
 {
     if (auto mng = get_manager(); mng) {
-        return mng->on_change_callback(id(), st, br);
+        return mng->on_change_callback(id(), st, std::span{args});
     }
     return 1;
 }

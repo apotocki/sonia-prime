@@ -96,8 +96,15 @@ void initialize(int argc, char const* argv[], std::istream * cfgstream)
     }
 }
 
+void assert_environment()
+{
+    if (env_) return;
+    initialize(0, nullptr, nullptr);
+}
+
 void shutdown()
 {
+    if (!env_) return;
     GLOBAL_LOG_INFO() << "terminating...";
     delete env_;
     env_ = nullptr;
@@ -122,7 +129,7 @@ char const* bundles_path()
 
 shared_ptr<host_impl> get_host_impl()
 {
-    BOOST_ASSERT(env_);
+    assert_environment();
     thread_descriptor * td = tdesc_;
     if (td) {
         return td->host;
@@ -152,24 +159,25 @@ void shutdown(int to_level)
 
 void register_service_factory(std::string_view nm, function<shared_ptr<service>()> const& fm)
 {
-    BOOST_ASSERT(env_);
+    assert_environment();
     env_->register_service_factory(nm, fm);
 }
 
 singleton & locate_singleton(std::type_index const& ti, function<shared_ptr<singleton>(singleton::id)> const& f)
 {
+    assert_environment();
     return env_->locate_singleton(ti, f);
 }
 
 void load_configuration(fs::path const & fnm)
 {
-    BOOST_ASSERT(env_);
+    assert_environment();
     env_->load_configuration(fnm);
 }
 
 void load_configuration(std::istream & is)
 {
-    BOOST_ASSERT(env_);
+    assert_environment();
     env_->load_configuration(is);
 }
 
@@ -180,32 +188,38 @@ void on_close(function<void()> const& func)
 
 uint32_t get_type_id(std::type_index ti)
 {
-    BOOST_ASSERT(env_);
+    assert_environment();
     return env_->get_type_id(ti);
 }
 
 uint32_t register_durable_id(std::string_view nm, std::string_view servnm, std::type_index ti)
 {
-    BOOST_ASSERT(env_);
+    assert_environment();
     return env_->register_durable_id(nm, servnm, ti);
 }
 
 uint32_t get_durable_id(std::type_index ti)
 {
-    BOOST_ASSERT(env_);
+    assert_environment();
     return env_->get_durable_id(ti);
 }
 
 std::type_index get_durable_type_index(uint32_t did)
 {
-    BOOST_ASSERT(env_);
+    assert_environment();
     return env_->get_durable_type_index(did);
 }
 
 void load_durable_id(std::string_view name, std::string_view meta)
 {
-    BOOST_ASSERT(env_);
+    assert_environment();
     locate(meta);
+}
+
+bool autorun()
+{
+    assert_environment();
+    return env_->autorun();
 }
 
 void register_multimethod(multimethod && mm, std::span<const mm_id_elem_t> mmid)
@@ -227,7 +241,7 @@ void copy_multimethods(span<const mm_id_elem_t> from, span<const mm_id_elem_t> t
 #ifdef BOOST_WINDOWS
 timer::timer(function<void()> const& f)
 {
-    BOOST_ASSERT(env_);
+    assert_environment();
     impl_ = env_->get_threadpool().create_timer(f);
 }
 #endif
@@ -235,9 +249,9 @@ timer::timer(function<void()> const& f)
 
 namespace sonia::this_thread {
 
-void attach_host(std::string_view nm)
+void attach_host(string_view nm)
 {
-    BOOST_ASSERT(sonia::services::env_);
+    sonia::services::assert_environment();
     sonia::services::env_->get_host(nm)->attach_to_current_thread();
 }
 

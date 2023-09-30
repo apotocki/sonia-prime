@@ -18,11 +18,11 @@ view_model::view_model(int32_t idval)
 
 void view_model::do_registration(registrar_type & mr)
 {
-    mr.register_method<&view_model::async_cancel>("async_cancel");
-    mr.register_method<&view_model::echo_method>("echo");
-    mr.register_method<&view_model::call_method>("call");
-    mr.register_method<&view_model::get_method>("get");
-    mr.register_method<&view_model::set_method>("set");
+    mr.register_method<&view_model::async_cancel>("async_cancel"sv);
+    mr.register_method<&view_model::echo_method>("echo"sv);
+    mr.register_method<&view_model::call_method>("call"sv);
+    mr.register_method<&view_model::get_method>("get"sv);
+    mr.register_method<&view_model::set_method>("set"sv);
 }
 
 void view_model::set(int32_t idval)
@@ -93,7 +93,7 @@ void view_model::set_property(std::string_view propname, blob_result && val)
 }
 */
 
-void view_model::on_propety_change(string_view propname)
+void view_model::on_property_change(string_view propname)
 {
     on_change(status_type::PROPERTY_CHANGED_ST, {string_blob_result(propname)});
 }

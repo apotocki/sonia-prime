@@ -20,7 +20,7 @@ class scope_exit
 {
 public:
     scope_exit(scope_exit const&) = delete;
-    explicit scope_exit(T&& exitScope) : exitScope_(std::forward<T>(exitScope)){}
+    scope_exit(T&& exitScope) : exitScope_(std::forward<T>(exitScope)){}
     ~scope_exit() noexcept
     {
         try {
@@ -47,3 +47,4 @@ scope_exit<T> scope_exit_create(T&& exitScope)
 #define SONIA_UTILITY_EXIT_SCOPE_LINENAME_CAT(name, line) name##line
 #define SONIA_UTILITY_EXIT_SCOPE_LINENAME(name, line) SONIA_UTILITY_EXIT_SCOPE_LINENAME_CAT(name, line)
 #define SCOPE_EXIT(...) const auto& SONIA_UTILITY_EXIT_SCOPE_LINENAME(EXIT, __LINE__) = ::sonia::scope_exit_create(__VA_ARGS__)
+#define defer const ::sonia::scope_exit SONIA_UTILITY_EXIT_SCOPE_LINENAME(EXIT, __LINE__) = [=]

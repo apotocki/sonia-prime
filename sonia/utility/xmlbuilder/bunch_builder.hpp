@@ -11,7 +11,7 @@
 
 namespace sonia::xmlbuilder {
 
-class bunch_builder : public external_builder
+class bunch_builder : public basic_external_builder
 {
 public:
     class factory
@@ -19,6 +19,7 @@ public:
     public:
         virtual ~factory() = default;
         virtual shared_ptr<invokation::invokable> create(string_view type, string_view id) = 0;
+        virtual attribute_resolver& get_attribute_resolver() = 0;
     };
 
     explicit bunch_builder(factory& f) : factory_{f} {}

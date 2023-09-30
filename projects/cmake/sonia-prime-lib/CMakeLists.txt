@@ -38,6 +38,13 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/mvvm/lua_view_model.cpp
     ${BUNDLE_HOME}/sonia/utility/xmlbuilder/xmlbuilder.cpp
     ${BUNDLE_HOME}/sonia/utility/xmlbuilder/bunch_builder.cpp
+    ${BUNDLE_HOME}/sonia/utility/xmlbuilder/attr_parser.cpp
+    ${BUNDLE_HOME}/sonia/utility/xmlbuilder/basic_attribute_resolver.cpp
+    ${BUNDLE_HOME}/sonia/utility/xmlbuilder/ui_attribute_resolver.cpp
+    ${BUNDLE_HOME}/sonia/utility/template-engine/templated_unit.cpp
+    ${BUNDLE_HOME}/sonia/utility/template-engine/templated_bunch.cpp
+    ${BUNDLE_HOME}/sonia/utility/template-engine/foreach_element.cpp
+    ${BUNDLE_HOME}/sonia/utility/template-engine/file_template_element.cpp
     ${BUNDLE_HOME}/sonia/services/singleton_locator.cpp
     ${BUNDLE_HOME}/sonia/services/local_type_registry.cpp
     ${BUNDLE_HOME}/sonia/services/durable_type_registry.cpp

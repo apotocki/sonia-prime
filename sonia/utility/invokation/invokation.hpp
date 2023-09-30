@@ -247,33 +247,15 @@ inline blob_result string_blob_result(const CharT(&value)[N])
     return blob_result{ value, static_cast<int32_t>(N - 1), 0, 0, blob_type::string };
 }
 
-template <typename CharT>
-requires (sizeof(CharT) == 1)
-inline blob_result string_blob_result(sonia::experimental::basic_string_view<CharT> value)
-{
-    return blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string };
-}
-
-template <typename CharT>
-requires (sizeof(CharT) == 1)
-inline blob_result string_blob_result(std::basic_string_view<CharT> value)
-{
-    return blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string };
-}
-
-template <typename CharT>
-requires (sizeof(CharT) == 1)
-inline blob_result string_blob_result(std::basic_string<CharT> const& value)
-{
-    return blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string };
-}
-
-template <typename CharT>
-requires (sizeof(CharT) == 1)
-inline blob_result string_blob_result(std::basic_string<CharT> && value)
+template <typename T>
+requires (sonia::is_string_v<std::remove_cvref_t<T>> && sizeof(typename std::remove_cvref_t<T>::value_type) == 1)
+inline blob_result string_blob_result(T && value)
 {
     blob_result result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string };
-    blob_result_allocate(&result);
+    if constexpr (std::is_rvalue_reference_v<T&&> && sonia::is_template_instance_v<std::basic_string, T>) {
+        blob_result_allocate(&result);
+        static_assert(sonia::dependent_false<T>);
+    }
     return result;
 }
 
@@ -348,8 +330,6 @@ inline blob_result array_blob_result(blob_result(&arr)[N])
 {
     return blob_result{ arr, static_cast<int32_t>(N * sizeof(blob_result)), 0, 1, blob_type::blob };
 }
-
-
 */
 
 //template <size_t N>
@@ -380,10 +360,7 @@ inline blob_result particular_blob_result(ArgT && value)
     else if constexpr (std::is_same_v<T, uint64_t> || (std::is_integral_v<T> && !std::is_signed_v<T> && sizeof(T) == 8)) return ui64_blob_result(value);
     else if constexpr (std::is_same_v<T, int64_t> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == 8)) return i64_blob_result(value);
     else if constexpr (std::is_same_v<T, float>) return float_blob_result(value);
-    else if constexpr (std::is_same_v<T, std::string_view>) return string_blob_result(value);
-    else if constexpr (std::is_same_v<T, sonia::cstring_view>) return string_blob_result(value);
-    else if constexpr (std::is_same_v<ArgT&&, std::string const&>) return string_blob_result(std::forward<ArgT>(value));
-    else if constexpr (std::is_same_v<ArgT&&, std::string&&>) return string_blob_result(std::forward<ArgT>(value));
+    else if constexpr (sonia::is_string_v<T>) return string_blob_result(std::forward<ArgT>(value));
     else if constexpr (std::is_same_v<T, blob_result>) return value;
     else if constexpr (sonia::is_template_instance_v<sonia::optional, T>) return optional_blob_result(std::forward<ArgT>(value));
     else if constexpr (sonia::is_template_instance_v<std::pair, T>) return pair_blob_result(std::forward<ArgT>(value));
@@ -619,6 +596,21 @@ struct from_blob<std::span<T>>
     }
 };
 
+template <sonia::string_type T>
+requires (sizeof(typename T::value_type) == 1)
+struct from_blob<T>
+{
+    using char_t = typename T::value_type;
+    T operator()(blob_result const& val) const
+    {
+        using namespace sonia;
+        if (!val.is_array && val.type == blob_type::string) {
+            return T{ reinterpret_cast<const char_t*>(val.data), (size_t)val.size };
+        }
+        THROW_INTERNAL_ERROR("can't convert blob %1% to %2%"_fmt % val % typeid(T).name());
+    }
+};
+/*
 template <typename CharT, typename TraitsT>
 struct from_blob<std::basic_string_view<CharT, TraitsT>>
 {
@@ -646,6 +638,7 @@ struct from_blob<std::basic_string<CharT, CharTraitsT>>
         THROW_INTERNAL_ERROR("can't convert blob %1% to std::basic_string"_fmt % val);
     }
 };
+*/
 
 template <typename ... Ts>
 struct from_blob<std::tuple<Ts...>>
@@ -678,7 +671,7 @@ struct from_blob<std::array<T, SzV>>
                 return this->selector(idt, val);
             });
         }
-        THROW_INTERNAL_ERROR("can't convert blob %1% to std::tuple"_fmt % val);
+        THROW_INTERNAL_ERROR("can't convert blob %1% to std::array"_fmt % val);
     }
 
 private:
@@ -687,8 +680,10 @@ private:
     {
         using namespace sonia;
         if constexpr (is_same_v<T, BT> && (is_integral_v<T> || is_floating_point_v<T>)) {
+            BOOST_ASSERT(val.size / sizeof(T) >= SzV);
             return direct_decode(std::make_index_sequence<SzV>{}, reinterpret_cast<T const*>(val.data));
-        } else if (is_same_v<blob_result, BT> || is_same_v<string_view, BT>) {
+        } else if constexpr (is_same_v<blob_result, BT> || is_same_v<string_view, BT>) {
+            BOOST_ASSERT(val.size / sizeof(blob_result) >= SzV);
             return decode(std::make_index_sequence<SzV>{}, reinterpret_cast<blob_result const*>(val.data));
         } else {
             THROW_INTERNAL_ERROR("can't convert blob %1% to std::array<%2%>"_fmt % val % typeid(T).name());
@@ -707,6 +702,12 @@ private:
         return { from_blob<T>{}(data[Is]) ... };
     }
 };
+
+template <typename T>
+inline T as(blob_result const& val)
+{
+    return from_blob<T>{}(val);
+}
 
 template <typename T>
 T from_blob_at(size_t index, std::span<const blob_result> vals)

@@ -10,13 +10,13 @@ namespace sonia {
 
 void lua_view_model::do_registration(registrar_type& mr)
 {
-    mr.register_method<&lua_view_model::load_lua>("load_lua");
-    mr.register_method<&lua_view_model::load_lua>("load_code");
+    mr.register_method<&lua_view_model::load_lua>("load_lua"sv);
+    mr.register_method<&lua_view_model::load_lua>("load_code"sv);
 
     using eval_lua_t = smart_blob(lua_view_model::*)(string_view);
-    mr.register_method<(eval_lua_t)&lua_view_model::eval_lua>("eval_lua");
+    mr.register_method<(eval_lua_t)&lua_view_model::eval_lua>("eval_lua"sv);
 
-    mr.register_method<&lua_view_model::append_inplace>("append_inplace");
+    mr.register_method<&lua_view_model::append_inplace>("append_inplace"sv);
 }
 
 class vm_lua_resolver : public lua::language::resolver
@@ -86,7 +86,7 @@ void lua_view_model::set_property(string_view propname, blob_result const& val)
         as_cstring<32>(propname, [&val, this](cstring_view propname_cstr) {
             lua::language::set_global_property(propname_cstr, val);
         });
-        on_propety_change(propname);
+        on_property_change(propname);
     }
 }
 

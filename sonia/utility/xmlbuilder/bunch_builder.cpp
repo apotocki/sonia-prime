@@ -9,7 +9,7 @@ namespace sonia::xmlbuilder {
 
 void bunch_builder::build(string_view xml)
 {
-    parse(xml, *this);
+    parse(xml, *this, factory_.get_attribute_resolver());
 }
 
 shared_ptr<invokation::invokable> bunch_builder::get_element_by(string_view id) const

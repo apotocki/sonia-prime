@@ -42,10 +42,12 @@ public:
 
     void run()
     {
-        run_ = true;
-        sonia::unique_lock lock(mtx_);
-        while (run_) {
-            var_.wait(lock);
+        if (sonia::services::autorun()) {
+            run_ = true;
+            sonia::unique_lock lock(mtx_);
+            while (run_) {
+                var_.wait(lock);
+            }
         }
     }
 

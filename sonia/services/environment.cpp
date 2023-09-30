@@ -60,6 +60,7 @@ environment::environment() : log_initialized_(false)
     options_.add_options()
         ("log", po::value<std::string>()->default_value("log.conf"), "the logging subsystem configuration file")
         ("cfg,c", po::value<std::string>(), "configuration (json) file paths")
+        ("auto,a", po::value<bool>()->default_value(true), "autorun")
         ("icu-data-path", po::value<std::string>()->default_value("data"), "icu data path")
         ("base-path,b", po::value<std::string>()->default_value(get_default_base_path() ? *get_default_base_path() : ""), "base path")
         ("service-registry-file,r", po::value<std::string>()->default_value(".services"), "services registry file")
@@ -203,6 +204,8 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
     if (vm.count("cfg")) {
         start_conf_ = vm["cfg"].as<std::string>();
     }
+    
+    autorun_ = vm["auto"].as<bool>();
 
 #if defined(HAS_ICU)
     std::string const& icu_path = vm["icu-data-path"].as<std::string>();

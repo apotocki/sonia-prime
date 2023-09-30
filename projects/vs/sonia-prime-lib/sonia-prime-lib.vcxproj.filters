@@ -217,6 +217,12 @@
     <Filter Include="sonia.utility\xmlbuilder">
       <UniqueIdentifier>{3c0ff55d-aac2-4abf-9ee1-000d7d58c333}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\template-engine">
+      <UniqueIdentifier>{1d7826f6-64c2-404e-958c-d39c15cde516}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility\parsers\template">
+      <UniqueIdentifier>{c22eab9a-fbe3-4465-96e0-e06fd1e553b2}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -1839,6 +1845,57 @@
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\bunch_builder.hpp">
       <Filter>sonia.utility\xmlbuilder</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\template-engine\templated_unit.hpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\template\parser.hpp">
+      <Filter>sonia.utility\parsers\template</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\template\model.hpp">
+      <Filter>sonia.utility\parsers\template</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\template\lexertl_lexer.hpp">
+      <Filter>sonia.utility\parsers\template</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\parsers\template\lexems.hpp">
+      <Filter>sonia.utility\parsers\template</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\template-engine\templated_bunch.hpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\basic_attribute_resolver.hpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\attr_parser.hpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\attr_parser.ipp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\basic_attribute_resolver.ipp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\ui_attribute_resolver.hpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\template-engine\foreach_element.hpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\template-engine\file_template_element.hpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\template-engine\compound.hpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\template-engine\document_element.hpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\template-engine\lua_build_visitor.hpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\template-engine\code_element.hpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2047,6 +2104,39 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\bunch_builder.cpp">
       <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_unit.cpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_bunch.cpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\basic_attribute_resolver.cpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\attr_parser.cpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\ui_attribute_resolver.cpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\foreach_element.cpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\file_template_element.cpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\document_element.cpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\compound.cpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\lua_build_visitor.cpp">
+      <Filter>sonia.utility\template-engine</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\code_element.cpp">
+      <Filter>sonia.utility\template-engine</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

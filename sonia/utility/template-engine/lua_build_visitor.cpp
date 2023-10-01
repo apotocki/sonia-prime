@@ -76,11 +76,12 @@ void lua_build_visitor::operator()(file_template_element& fte)
         }
         file_region_iterator<const char> it(refpath, 0, 65536);
         for (; !it.empty(); ++it) {
-            filedata.insert_range(filedata.end(), span<const char>{*it});
+            span<const char> sp{*it};
+            filedata.insert(filedata.end(), sp.begin(), sp.end());
         }
     }
     if (!fte.code.empty()) {
-        filedata.insert_range(filedata.end(), fte.code);
+        filedata.insert(filedata.end(), fte.code.begin(), fte.code.end());
     }
 
     if (auto it = installed_ids_.find(fte.id(), hasher{}, string_equal_to{}); it == installed_ids_.end()) {

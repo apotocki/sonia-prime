@@ -22,8 +22,6 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/scheduler/scheduler_service.cpp
     ${BUNDLE_HOME}/sonia/services/auth/auth_service_builder.cpp
     ${BUNDLE_HOME}/sonia/services/auth/auth_service.cpp
-    ${BUNDLE_HOME}/sonia/services/tenger/tenger_service.cpp
-    ${BUNDLE_HOME}/sonia/services/tenger/tenger_service_builder.cpp
     ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
     ${BUNDLE_HOME}/sonia/utility/invokation/invokation.cpp
 )
@@ -93,6 +91,15 @@ if (NOT DEFINED NO_NET)
 else()
     add_definitions(-DSONIA_NO_NET)
 endif ()
+
+if (NOT DEFINED NO_TENGER)
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        ${BUNDLE_HOME}/sonia/services/tenger/tenger_service.cpp
+        ${BUNDLE_HOME}/sonia/services/tenger/tenger_service_builder.cpp
+    )
+else()
+    add_definitions(-DSONIA_NO_TENGER)
+endif()
 
 add_definitions(-DSONIA_PRIME_EXPORTS)
 

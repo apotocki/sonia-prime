@@ -22,7 +22,8 @@ void tenger_service::open()
     std::vector<char> filedata;
     file_region_iterator<const char> it(cfg_.template_path, 0, 65536);
     for (; !it.empty(); ++it) {
-        filedata.insert_range(filedata.end(), span<const char>{*it});
+        span<const char> sp{*it};
+        filedata.insert(filedata.end(), sp.begin(), sp.end());
     }
 
     templated_bunch tb;

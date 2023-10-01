@@ -15,10 +15,13 @@ void ui_attribute_resolver::setup_view(string_view cmp)
     setup_set<std::string>(cmp, { "background-color"sv, "cell-valign", "cell-align" });
     setup_set<std::array<float, 4>>(cmp, { "padding"sv, "margin"sv });
     setup_set<std::array<float, 2>>(cmp, { "weight"sv, "width"sv, "height"sv, "size"sv });
+    setup_set<std::tuple<float, float, std::string>>(cmp, { "border"sv });
 }
 
 ui_attribute_resolver::ui_attribute_resolver()
 {
+    setup_view("div"sv);
+
     setup_view("h-bar"sv);
     setup_set<float>("h-bar"sv, { "spacing"sv });
 
@@ -29,7 +32,8 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_set<float>("flex-bar"sv, { "spacing"sv });
 
     setup_view("label"sv);
-    setup_set<std::string>("label"sv, { "text"sv, "color"sv, "text-align"sv, "text-valign"sv });
+    setup_set<int32_t>("label"sv, {"lines"sv});
+    setup_set<std::string>("label"sv, { "text"sv, "color"sv, "text-align"sv, "text-valign"sv, "font-weight"sv });
     setup_set<std::vector<float>>("label"sv, { "font-size"sv });
 
     setup_view("img"sv);
@@ -40,9 +44,10 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_fset("button"sv, { "on-tap"sv });
     setup_map("button"sv, "img"sv, "img"sv);
     setup_map("button"sv, "txt"sv, "label"sv);
+    setup_map("button"sv, "bar"sv, "h-bar"sv);
 
     setup_view("switch-button"sv);
-    setup_set<bool>("switch-button"sv, { "is_on"sv });
+    setup_set<bool>("switch-button"sv, { "is-on"sv });
     setup_fset("switch-button"sv, { "on-change"sv });
 
     setup_view("text-field"sv);

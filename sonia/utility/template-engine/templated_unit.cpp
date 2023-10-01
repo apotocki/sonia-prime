@@ -56,12 +56,6 @@ void templated_unit::write_escaped(string_view s)
         case '\'':
             result_builder_ << "\\'";
             break;
-        //case '[':
-        //    result_builder_ << "\\[";
-        //    break;
-        //case ']':
-        //    result_builder_ << "\\]";
-        //    break;
         default:
             result_builder_ << c;
         }

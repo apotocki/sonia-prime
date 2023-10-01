@@ -61,7 +61,7 @@ environment::environment() : log_initialized_(false)
         ("log", po::value<std::string>()->default_value("log.conf"), "the logging subsystem configuration file")
         ("cfg,c", po::value<std::string>(), "configuration (json) file paths")
         ("auto,a", po::value<bool>()->default_value(true), "autorun")
-        ("icu-data-path", po::value<std::string>()->default_value("data"), "icu data path")
+        ("icu-data-path", po::value<std::string>(), "icu data path")
         ("base-path,b", po::value<std::string>()->default_value(get_default_base_path() ? *get_default_base_path() : ""), "base path")
         ("service-registry-file,r", po::value<std::string>()->default_value(".services"), "services registry file")
         ("type-registry-file,t", po::value<std::string>()->default_value(".types"), "types registry file")
@@ -208,17 +208,16 @@ void environment::open(int argc, char const* argv[], std::istream * cfgstream)
     autorun_ = vm["auto"].as<bool>();
 
 #if defined(HAS_ICU)
-    std::string const& icu_path = vm["icu-data-path"].as<std::string>();
-    u_setDataDirectory(icu_path.c_str());
-#endif
-#if defined(HAS_ICU)
+    if (vm.count("icu-data-path")) {
+        std::string const& icu_path = vm["icu-data-path"].as<std::string>();
+        u_setDataDirectory(icu_path.c_str());
+    }
 
     UErrorCode errCode = U_ZERO_ERROR;
     u_init(&errCode);
     if (U_FAILURE(errCode)) {
         throw exception("can't initialize ICU library, err: %1%"_fmt % (int)errCode);
     }
-
 #endif
 
 #ifdef BOOST_WINDOWS

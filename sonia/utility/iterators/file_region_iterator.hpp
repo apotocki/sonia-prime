@@ -69,7 +69,7 @@ public:
 
     ~file_region_descriptor();
 
-    std::span<char> get() const;
+    span<char> get() const;
     void update_region_size(size_t);
     size_t get_region_size() const;
 
@@ -114,7 +114,7 @@ protected:
     void decrement();
 
     void flush(char*);
-    void set(std::span<const char> data);
+    void set(span<const char> data);
 
 public:
     bool empty() const { return !region_ || region_->empty(); }
@@ -137,7 +137,7 @@ class file_region_iterator
     : public file_region_iterator_base
 {
 public:
-    using value_type = std::span<T>;
+    using value_type = span<T>;
     using iterator_category = conditional_t <
         is_const_v<T>,
         std::bidirectional_iterator_tag,
@@ -153,21 +153,21 @@ public:
 
     static constexpr bool is_readonly = is_const_v<T>;
 
-    std::span<T> get_dereference() const
+    span<T> get_dereference() const
     {
         return {b_, e_};
     }
 
-    void set_dereference(std::span<const T> data)
+    void set_dereference(span<const T> data)
     {
-        BOOST_ASSERT(is_subset_of(data, std::span<const T>{b_, e_}));
+        BOOST_ASSERT(is_subset_of(data, span<const T>{b_, e_}));
         b_ = b_ + (data.data() - b_);
         e_ = b_ + data.size();
     }
 
     void init()
     {
-        std::span<char> raw = region_->get();
+        span<char> raw = region_->get();
         BOOST_ASSERT(0 == raw.size() % sizeof(T));
         b_ = (T*)raw.data();
         e_ = b_ + raw.size() / sizeof(T);
@@ -234,9 +234,9 @@ public:
 
     // write to file from external buffer
     template <typename ST>
-    void write(std::span<ST> data)
+    void write(span<ST> data)
     {
-        set(std::span((const char*)data.data(), data.size() * sizeof(ST)));
+        set(span((const char*)data.data(), data.size() * sizeof(ST)));
         array_view<char> raw = region_->get();
         BOOST_ASSERT(0 == raw.size() % sizeof(T));
         b_ = (T*)raw.begin();

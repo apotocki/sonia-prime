@@ -83,8 +83,8 @@ void language::append_code(std::string code)
 {
     resolver_ = nullptr;
     lua_State* L = reinterpret_cast<lua_State*>(L_);
-    auto it = codes_.find(code, hasher{}, string_equal_to{});
-    if (it == codes_.end()) {
+    //auto it = codes_.find(code, hasher{}, string_equal_to{});
+    //if (it == codes_.end()) {
         if (luaL_loadbuffer(L, code.data(), code.size(), code.c_str())) {
             std::string err = lua_tostring(L, -1);
             lua_pop(L, 1);
@@ -95,8 +95,8 @@ void language::append_code(std::string code)
             lua_pop(L, 1);
             throw exception("lua applying script error: %1%, script: %2%"_fmt % err % code);
         }
-        codes_.insert(it, std::move(code));
-    }
+        //codes_.insert(it, std::move(code));
+    //}
 }
 
 cstring_view language::append_inplace(string_view code, bool no_return)

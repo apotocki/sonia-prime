@@ -74,6 +74,8 @@ public:
     // type_id api
     uint32_t get_type_id(std::type_index const&);
 
+    bool autorun() const { return autorun_; }
+
 private:
     struct host_hasher { size_t operator()(shared_ptr<host_impl> const& ph) const { return hasher()(ph->get_name()); } };
 
@@ -114,6 +116,7 @@ private:
     shared_ptr<windows::threadpool> threadpool_;
 #endif
 
+    bool autorun_ = true;
 };
 
 }

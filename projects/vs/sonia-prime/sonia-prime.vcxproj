@@ -59,6 +59,8 @@
     <ClCompile Include="..\..\..\sonia\services\services.cpp" />
     <ClCompile Include="..\..\..\sonia\services\services_host.cpp" />
     <ClCompile Include="..\..\..\sonia\services\service_locator.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\tenger\tenger_service.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\tenger\tenger_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\transceiver\transceiver_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\transceiver\transceiver_service.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\invokation\invokation.cpp" />
@@ -125,6 +127,9 @@
     <ClInclude Include="..\..\..\sonia\services\host_impl.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service_factory.hpp" />
     <ClInclude Include="..\..\..\sonia\services\service_locator.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\tenger\tenger_service.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\tenger\tenger_service_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\services\tenger\tenger_service_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\thread_descriptor.hpp" />
     <ClInclude Include="..\..\..\sonia\services\timer.hpp" />
     <ClInclude Include="..\..\..\sonia\services\transceiver\transceiver_builder.hpp" />
@@ -217,8 +222,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib;$(ProjectDir)..\..\..\..\..\tpls\icu\lib64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>zlibd.lib;icuucd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib;$(ProjectDir)..\..\..\..\..\tpls\icu\lib64;$(ProjectDir)..\..\..\..\..\tpls\lua\lib</AdditionalLibraryDirectories>
+      <AdditionalDependencies>zlibd.lib;icuucd.lib;luad.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -290,7 +295,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib;$(ProjectDir)..\..\..\..\..\tpls\icu\lib64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>zlib.lib;icuucd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>zlib.lib;icuucd.lib;lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

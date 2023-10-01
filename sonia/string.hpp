@@ -176,10 +176,16 @@ constexpr bool operator< (std::basic_string<CharT, TraitsT> const& lhs, basic_st
     return rhs.compare(lhs.c_str(), lhs.size()) > 0;
 }
 
-template <typename CharT, template<class> class TraitsT, typename SrcCharT>
-std::basic_ostream<CharT, TraitsT<CharT>>& operator<< (std::basic_ostream<CharT, TraitsT<CharT>>& os, basic_string_view<SrcCharT, TraitsT<SrcCharT>> s)
+template <typename CharT, class TraitsT>
+std::basic_ostream<CharT, TraitsT>& operator<< (std::basic_ostream<CharT, TraitsT>& os, basic_string_view<CharT, TraitsT> s)
 {
-    return os.write(reinterpret_cast<CharT const*>(s.data()), s.size());
+    return os.write(s.data(), s.size());
+}
+
+template <typename CharT, class TraitsT>
+std::basic_ostream<CharT, TraitsT>& operator<< (std::basic_ostream<CharT, TraitsT>& os, basic_cstring_view<CharT, TraitsT> s)
+{
+    return os.write(s.data(), s.size());
 }
 
 template <typename CharT, class TraitsT>
@@ -197,6 +203,8 @@ std::basic_string<CharT, TraitsT> to_string(basic_cstring_view<CharT, TraitsT> s
 } // experimental
 
 namespace sonia {
+
+
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
@@ -224,12 +232,14 @@ public:
 
     basic_small_string() = default;
 
-    basic_small_string(std::string_view sv)
+    basic_small_string(string_view sv)
         : array_{sv}
     {}
 
     template <size_t N>
     basic_small_string(const CharT(&arr)[N]) : array_{arr, N} {}
+
+    basic_small_string(const CharT* str, size_t size) : array_{ string_view{str, size} } {}
 
     basic_small_string(basic_small_string const&) = default;
     basic_small_string(basic_small_string &&) = default;
@@ -273,6 +283,14 @@ public:
 
     bool is_shared() const { return array_.is_shared(); }
 
+    bool starts_with(basic_string_view<CharT, TraitsT> prefix) const
+    {
+        if (size() < prefix.size()) return false;
+        return 0 == std::memcmp(data(), prefix.data(), prefix.size() * sizeof(CharT));
+    }
+
+    reference operator[](size_type ind) const noexcept { return data()[ind]; }
+
 private:
     shared_array_t array_;
 };
@@ -311,6 +329,22 @@ experimental::basic_string_view<CharT> to_string_view(CharT * arr) noexcept
     return basic_string_view<CharT>(arr);
 }
 
+template <class T> struct is_string : false_type {};
+template <class T> constexpr bool is_string_v = is_string<T>::value;
+template <class T> concept string_type = is_string_v<T>;
+
+template <typename CharT, class TraitsT> struct is_string<experimental::basic_string_view<CharT, TraitsT>> : true_type {};
+template <typename CharT, class TraitsT> struct is_string<experimental::basic_cstring_view<CharT, TraitsT>> : true_type {};
+template <typename CharT, class TraitsT> struct is_string<std::basic_string_view<CharT, TraitsT>> : true_type {};
+template <typename CharT, class TraitsT> struct is_string<std::basic_string<CharT, TraitsT>> : true_type {};
+template <typename CharT, size_t SzV, class TraitsT> struct is_string<basic_small_string<CharT, SzV, TraitsT>> : true_type {};
+
+template <class T> struct is_owning_string : false_type {};
+template <class T> constexpr bool is_owning_string_v = is_owning_string<T>::value;
+template <typename CharT, class TraitsT> struct is_owning_string<std::basic_string<CharT, TraitsT>> : true_type {};
+template <typename CharT, size_t SzV, class TraitsT> struct is_owning_string<basic_small_string<CharT, SzV, TraitsT>> : true_type {};
+
+
 template <class T> struct is_string_view : false_type {};
 template <typename CharT, class TraitsT> struct is_string_view<experimental::basic_string_view<CharT, TraitsT>> : true_type {};
 template <typename CharT, class TraitsT> struct is_string_view<experimental::basic_cstring_view<CharT, TraitsT>> : true_type {};
@@ -339,9 +373,16 @@ struct string_equal_to
 
     template <typename CharT, size_t SzV, typename TraitsT, typename OtherT>
     requires(requires{(basic_string_view<CharT, TraitsT>)std::declval<OtherT>(); })
-    inline bool operator() (basic_small_string<CharT, SzV, TraitsT> const& l, OtherT const& r) noexcept
+    inline bool operator() (basic_small_string<CharT, SzV, TraitsT> const& l, OtherT const& r) const noexcept
     {
         return l == r;
+    }
+
+    // pairs
+    template <typename T1, typename T2, typename T3, typename T4>
+    inline bool operator() (std::pair<T1, T2> const& l, std::pair<T3, T4> const& r) const noexcept
+    {
+        return operator()(l.first, r.first) && operator()(l.second, r.second);
     }
 };
 

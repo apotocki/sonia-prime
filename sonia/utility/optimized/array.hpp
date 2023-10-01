@@ -394,7 +394,8 @@ class shared_optimized_array : public optimized_array<ElementT, ByteSzV, RefCoun
 
 public:
     template <typename RngT>
-    explicit shared_optimized_array(RngT && rng, disable_if_same_ref_t<shared_optimized_array, RngT> * dummy = nullptr)
+    requires(is_same_v<shared_optimized_array, remove_cvref_t<RngT>>)
+    explicit shared_optimized_array(RngT && rng)
         : base_t(std::forward<RngT>(rng))
     {}
 

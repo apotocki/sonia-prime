@@ -30,6 +30,12 @@ bool invokable::try_invoke(string_view methodname, span<const blob_result> args,
     return true;
 }
 
+bool invokable::try_invoke(string_view methodname, span<const blob_result> args)
+{
+    smart_blob result;
+    return try_invoke(methodname, args, result);
+}
+
 smart_blob invokable::get_property(string_view propname) const
 {
     smart_blob result;
@@ -58,10 +64,7 @@ bool invokable::try_set_property(string_view propname, blob_result const& val)
 {
     fn_property_writer const* pp = static_cast<fn_property_writer const*>(sonia::services::get_multimethod({ typeid(*this), typeid(fn_property_writer), propname }));
     if (!pp) return false;
-    bool updated = pp->set(*this, val);
-    if (updated) {
-        on_propety_change(propname);
-    }
+    pp->set(*this, propname, val);
     return true;
 }
 

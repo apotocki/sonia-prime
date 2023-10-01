@@ -33,16 +33,19 @@ public:
         return invoke(name, span{args});
     }
     bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result);
+    bool try_invoke(string_view methodname, span<const blob_result> args);
 
     // properties routine
     virtual smart_blob get_property(string_view propname) const;
     virtual void set_property(string_view propname, blob_result const& val);
-    virtual void on_propety_change(string_view) {}
+    virtual void on_property_change(string_view) {}
 
     bool try_get_property(string_view propname, smart_blob& result) const;
     bool try_set_property(string_view propname, blob_result const& val);
 
     void set_property(string_view propname, blob_result&& val);
+
+    virtual shared_ptr<invokable> self_as_invokable_shared() { return {}; }
 };
 
 struct method : multimethod
@@ -58,14 +61,8 @@ struct fn_property_reader : multimethod
 
 struct fn_property_writer : multimethod
 {
-    virtual bool set(invokable&, blob_result const&) const = 0; // returns true if updated
+    virtual void set(invokable& object, string_view propname, blob_result const& value) const = 0;
 };
-
-//struct fn_property : multimethod
-//{
-//    virtual smart_blob get(invokable const&) const = 0;
-//    virtual bool set(invokable&, blob_result const&) const = 0; // returns true if updated
-//};
 
 template <auto FuncV>
 struct concrete_method : method
@@ -139,7 +136,7 @@ struct concrete_fn_property_writer : fn_property_writer
         : setter_{ std::move(s) }
     {}
 
-    bool set(invokable& obj, blob_result const& val) const override { return setter_(dynamic_cast<InvokableT &>(obj), val); }
+    void set(invokable& obj, string_view propname, blob_result const& val) const override { setter_(dynamic_cast<InvokableT &>(obj), val); }
 
     SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(concrete_fn_property_writer);
 };
@@ -172,15 +169,14 @@ struct field_fn_property_writer : field_fn_property_base<FieldV>, fn_property_wr
     using property_type = typename base_t::property_type;
     using invokable_t = typename base_t::invokable_t;
 
-    bool set(invokable& obj, blob_result const& val) const override
+    void set(invokable& obj, string_view propname, blob_result const& val) const override
     {
         property_type& stored_val = dynamic_cast<invokable_t&>(obj).*FieldV;
         auto newval = from_blob<property_type>{}(val);
         if (stored_val != newval) {
             stored_val = newval;
-            return true;
+            obj.on_property_change(propname);
         }
-        return false;
     }
 
     SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(field_fn_property_writer);
@@ -234,10 +230,22 @@ public:
     }
 
     template <auto FieldV>
-    void register_property(string_view name)
+    void register_readonly_property(string_view name)
     {
         sonia::services::register_multimethod(field_fn_property_reader<FieldV>(), { typeid(DerivedT), typeid(fn_property_reader), name });
+    }
+
+    template <auto FieldV>
+    void register_writeonly_property(string_view name)
+    {
         sonia::services::register_multimethod(field_fn_property_writer<FieldV>(), { typeid(DerivedT), typeid(fn_property_writer), name });
+    }
+
+    template <auto FieldV>
+    void register_property(string_view name)
+    {
+        register_readonly_property<FieldV>(name);
+        register_writeonly_property<FieldV>(name);
     }
 
 protected:

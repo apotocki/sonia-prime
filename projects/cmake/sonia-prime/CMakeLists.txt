@@ -92,6 +92,15 @@ else()
     add_definitions(-DSONIA_NO_NET)
 endif ()
 
+if (NOT DEFINED NO_TENGER)
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        ${BUNDLE_HOME}/sonia/services/tenger/tenger_service.cpp
+        ${BUNDLE_HOME}/sonia/services/tenger/tenger_service_builder.cpp
+    )
+else()
+    add_definitions(-DSONIA_NO_TENGER)
+endif()
+
 add_definitions(-DSONIA_PRIME_EXPORTS)
 
 if ("${LIBRARY_TYPE}" STREQUAL "STATIC")

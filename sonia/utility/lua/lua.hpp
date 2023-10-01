@@ -48,7 +48,7 @@ public:
 
 private:
     void* L_;
-    resolver * resolver_;
+    resolver * resolver_ = nullptr;
     boost::unordered_map<std::string, std::string, hasher, string_equal_to> inplace_fns_;
     boost::unordered_set<std::string, hasher, string_equal_to> codes_;
 };

@@ -126,7 +126,8 @@ void templated_bunch::append_element(span<const xmlbuilder::element> parents, xm
     auto v = as_singleton<templated_item_factory>()->create(e.name, e.id);
     auto cmp = dynamic_pointer_cast<templates::compound>(v);
     if (!cmp) {
-        THROW_INTERNAL_ERROR("The element '%1%' is not a template compound"_fmt % typeid(*v).name());
+        auto & obj = *v;
+        THROW_INTERNAL_ERROR("The element '%1%' is not a template compound"_fmt % typeid(obj).name());
     }
 
     if (parents.empty()) {

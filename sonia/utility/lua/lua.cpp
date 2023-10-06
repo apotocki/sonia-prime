@@ -81,7 +81,6 @@ language::~language()
 
 void language::append_code(std::string code)
 {
-    resolver_ = nullptr;
     lua_State* L = reinterpret_cast<lua_State*>(L_);
     //auto it = codes_.find(code, hasher{}, string_equal_to{});
     //if (it == codes_.end()) {
@@ -101,7 +100,6 @@ void language::append_code(std::string code)
 
 cstring_view language::append_inplace(string_view code, bool no_return)
 {
-    resolver_ = nullptr;
     lua_State* L = reinterpret_cast<lua_State*>(L_);
     auto it = inplace_fns_.find(code, hasher{}, string_equal_to{});
     if (it == inplace_fns_.end()) {
@@ -153,6 +151,8 @@ void language::set_global_property(cstring_view name, blob_result const& val)
 blob_result language::eval_inplace(cstring_view fn, std::span<const blob_result> args, resolver * r)
 {
     resolver_ = r;
+    defer{ resolver_ = nullptr; };
+
     lua_State* L = reinterpret_cast<lua_State*>(L_);
     lua_getglobal(L, fn.c_str());
     for (blob_result arg : args) {

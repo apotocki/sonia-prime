@@ -24,8 +24,20 @@ template <typename TagT, typename T> class coder;
 struct default_t {}; // can be incompatible among systems
 struct compressed_t {};
 struct ordered_t {}; // compatible among systems
+struct le_t {}; // little endian
+
 template <size_t sz, class T> struct sized_t {}; // size modifier for serialization with a given size(in increments) of an external storage
 template <size_t sz, class T> struct binary_t {}; // size modifier for serialization with a given binary size
+
+template <std::integral T, size_t sz = sizeof(T)>
+requires(sizeof(T) >= sz)
+struct sized_integral_t
+{
+    T & value;
+};
+
+template <size_t sz, std::integral T>
+inline sized_integral_t<T, sz> sized_integral(T & value) noexcept { return { value }; }
 
 template <typename TagT>
 class coder<TagT, null_t>

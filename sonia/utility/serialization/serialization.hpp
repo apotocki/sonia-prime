@@ -12,31 +12,32 @@ namespace sonia {
 template <typename TagT, typename T, typename OutputIteratorT>
 OutputIteratorT encode(T const& arg, OutputIteratorT oi)
 {
-    return serialization::coder<TagT, T>().encode(arg, std::move(oi));
+    return serialization::coder<TagT, T>{}.encode(arg, std::move(oi));
 }
 
 template <typename TagT, typename T, typename InputIteratorT, typename ArgT>
 InputIteratorT decode(InputIteratorT ii, ArgT && arg)
 {
-    return serialization::coder<TagT, T>().decode(std::move(ii), std::forward<ArgT>(arg));
+    return serialization::coder<TagT, T>{}.decode(std::move(ii), std::forward<ArgT>(arg));
 }
 
 template <typename TagT, typename InputIteratorT, typename T>
 InputIteratorT decode(InputIteratorT ii, T & arg)
 {
-    return serialization::coder<TagT, T>().decode(std::move(ii), arg);
+    return serialization::coder<TagT, T>{}.decode(std::move(ii), arg);
 }
 
 template <typename TagT, typename InputIteratorT, typename T>
 InputIteratorT decode(InputIteratorT ii, T * arg)
 {
-    return serialization::coder<TagT, T>().decode(std::move(ii), arg);
+    return serialization::coder<TagT, T>{}.decode(std::move(ii), arg);
 }
 
 template <typename TagT, typename InputIteratorT, typename T>
-enable_if_t<is_rvalue_reference_v<T&&>, InputIteratorT> decode(InputIteratorT ii, T&& arg)
+requires(is_rvalue_reference_v<T&&>)
+InputIteratorT decode(InputIteratorT ii, T&& arg)
 {
-    return serialization::coder<TagT, T>().decode(std::move(ii), std::move(arg));
+    return serialization::coder<TagT, T>{}.decode(std::move(ii), std::move(arg));
 }
 
 template <typename TagT, typename InputIteratorT, typename T>
@@ -118,7 +119,7 @@ template <typename TagT, class InputIteratorT>
 class decoder
 {
 public:
-    explicit decoder(InputIteratorT it) : ii(std::move(it)) {}
+    explicit decoder(InputIteratorT it) : ii{std::move(it)} {}
 
     template <typename T>
     decoder & operator& (T * arg)

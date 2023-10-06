@@ -4,18 +4,14 @@
 #pragma once
 
 #include <utility>
-#include <span>
 
 #ifndef __ANDROID__
 #   include <ranges>
 #endif
 
 #include <boost/assert.hpp>
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
-#include <boost/range/empty.hpp>
-#include <boost/iterator/iterator_facade.hpp>
 
+#include "sonia/exceptions.hpp"
 #include "sonia/iterator_traits.hpp"
 #include "sonia/utility/hazardous.hpp"
 
@@ -33,11 +29,12 @@ struct range_dereferencing_iterator_equal
 };
 
 
-template <class IteratorT, class CategoryOrTraversalT = iterator_traversal_t<IteratorT>>
+template <class IteratorT, class CategoryOrTraversalT = iterator_category_t<IteratorT>>
 class range_dereferencing_iterator_state
 {
-    using traversal_t = iterator_category_to_traversal_t<CategoryOrTraversalT>;
-    static constexpr bool is_bidirectional_v = is_base_of_v<boost::bidirectional_traversal_tag, traversal_t>;
+public:
+    //using categoty_t = iterator_category_to_traversal_t<CategoryOrTraversalT>;
+    static constexpr bool is_bidirectional_v = is_base_of_v<std::bidirectional_iterator_tag, CategoryOrTraversalT>;
 
 #ifdef __ANDROID__
     using range_t = iterator_dereferenced_range_t<IteratorT>;
@@ -52,10 +49,7 @@ class range_dereferencing_iterator_state
         std::tuple<subrange_iterator, subrange_iterator, subrange_iterator>,
         std::tuple<subrange_iterator, subrange_iterator>
     >;
-    mutable hazardous<state_t> state_;
-    mutable uint8_t state_initialized_ : 1;
 
-public:
     range_dereferencing_iterator_state()
         : state_initialized_{0}
     {}
@@ -117,7 +111,14 @@ public:
         state_initialized_ = 0;
     }
 
-    void decrement_one()
+    void advance_base(std::ptrdiff_t d)
+    {
+        base.advance_offset(d);
+        hazardous_destroy_as_optional(state_, !!state_initialized_);
+        state_initialized_ = 0;
+    }
+
+    void decrement_one() requires(is_bidirectional_v)
     {
         if (!state_initialized_ || std::get<0>(*state_) == std::get<2>(*state_)) {
             decrement();
@@ -126,13 +127,15 @@ public:
         --std::get<0>(*state_);
     }
 
-    void decrement()
+    void decrement() requires(is_bidirectional_v)
     {
+        using std::begin;
+        using std::end;
         --base;
         hazardous_destroy_as_optional(state_, !!state_initialized_);
         state_initialized_ = 0;
         iterator_dereferenced_range_t<IteratorT> rng = *base;
-        state_.emplace(boost::end(rng), boost::end(rng), boost::begin(rng));
+        state_.emplace(end(rng), end(rng), begin(rng));
         state_initialized_ = 1;
     }
 
@@ -175,11 +178,12 @@ public:
         }
     }
 
-    std::ptrdiff_t position() const
+    std::ptrdiff_t offset() const
     {
+        using std::begin;
         if (state_initialized_) {
             iterator_dereferenced_range_t<IteratorT> rng = *base;
-            return std::get<0>(*state_) - boost::begin(rng);
+            return std::get<0>(*state_) - begin(rng);
         }
         return 0;
     }
@@ -197,13 +201,15 @@ public:
 private:
     void init_state() const
     {
+        using std::begin;
+        using std::end;
         do {
             iterator_dereferenced_range_t<IteratorT> rng = *base;
             if (!std::empty(rng)) {
                 if constexpr (is_bidirectional_v) {
-                    state_.emplace(boost::begin(rng), boost::end(rng), boost::begin(rng));
+                    state_.emplace(begin(rng), end(rng), begin(rng));
                 } else {
-                    state_.emplace(boost::begin(rng), boost::end(rng));
+                    state_.emplace(begin(rng), end(rng));
                 }
                 state_initialized_ = 1;
                 return;
@@ -211,43 +217,119 @@ private:
             ++base;
         } while (!sonia::empty(base));
     }
+
+    mutable hazardous<state_t> state_;
+    mutable uint8_t state_initialized_ : 1;
 };
 
 template <class IteratorT, class CategoryOrTraversal = iterator_category_t<IteratorT>>
 class range_dereferencing_iterator 
-    : public boost::iterator_facade<
-        range_dereferencing_iterator<IteratorT, CategoryOrTraversal>,
-        iterator_dereferenced_range_iterator_value_t<IteratorT>,
-        CategoryOrTraversal,
-        iterator_dereferenced_range_iterator_reference_t<IteratorT>>
-    , public range_dereferencing_iterator_state<IteratorT>
+    : public range_dereferencing_iterator_state<IteratorT>
 {
-    friend class boost::iterator_core_access;
+public:
+    using value_type = iterator_dereferenced_range_iterator_value_t<IteratorT>;
+    using pointer = value_type*;
+    using reference = iterator_dereferenced_range_iterator_reference_t<IteratorT>;
+    using difference_type = ptrdiff_t;
+    using iterator_category = CategoryOrTraversal; // iterator_traversal_t<IteratorT>;
 
     using range_iterator_type = iterator_dereferenced_range_iterator_t<IteratorT>;
-    using reference_type = iterator_dereferenced_range_iterator_reference_t<IteratorT>;
     using state_t = range_dereferencing_iterator_state<IteratorT>;
 
-    bool equal(range_dereferencing_iterator const& rhs) const
+    constexpr static bool has_random_access_v = is_base_of_v<std::random_access_iterator_tag, iterator_category>;
+
+    bool operator==(range_dereferencing_iterator const& rhs) const
     {
         return range_dereferencing_iterator_equal<range_dereferencing_iterator>()(*this, rhs);
     }
 
-    reference_type dereference() const
+    reference operator*() const
     {
         return *std::get<0>(state_t::get());
     }
 
-    void increment()
+    range_dereferencing_iterator& operator++()
     {
         auto & st = state_t::get();
-        if (BOOST_LIKELY(++std::get<0>(st) != std::get<1>(st))) return;
-        state_t::increment();
+        if (BOOST_UNLIKELY(++std::get<0>(st) == std::get<1>(st))) {
+            state_t::increment();
+        }
+        return *this;
     }
 
-    void decrement()
+    range_dereferencing_iterator operator++(int)
+    {
+        range_dereferencing_iterator result{ *this };
+        auto& st = state_t::get();
+        if (BOOST_UNLIKELY(++std::get<0>(st) == std::get<1>(st))) {
+            state_t::increment();
+        }
+        return result;
+    }
+
+    range_dereferencing_iterator& operator--() requires(state_t::is_bidirectional_v)
     {
         state_t::decrement_one();
+        return *this;
+    }
+
+    range_dereferencing_iterator operator--(int) requires(state_t::is_bidirectional_v)
+    {
+        range_dereferencing_iterator result{ *this };
+        state_t::decrement_one();
+        return result;
+    }
+
+    range_dereferencing_iterator& operator+=(difference_type d) requires(has_random_access_v)
+    {
+        auto& st = state_t::get();
+        difference_type spansz = std::get<1>(st) - std::get<0>(st);
+        if (spansz > d) {
+            std::get<0>(st) += d;
+        } else {
+            state_t::advance_base(d - spansz);
+        }
+        return *this;
+    }
+
+    range_dereferencing_iterator& operator-=(difference_type) requires(has_random_access_v)
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+        return *this;
+    }
+
+    friend range_dereferencing_iterator operator+(range_dereferencing_iterator it, difference_type d) requires(has_random_access_v)
+    {
+        it += d;
+        return it;
+    }
+
+    friend range_dereferencing_iterator operator+(difference_type d, range_dereferencing_iterator it) requires(has_random_access_v)
+    {
+        it += d;
+        return it;
+    }
+
+    range_dereferencing_iterator operator-(difference_type d) const requires(has_random_access_v)
+    {
+        range_dereferencing_iterator result{ *this };
+        result -= d;
+        return result;
+    }
+
+    friend auto operator-(range_dereferencing_iterator const& l, range_dereferencing_iterator const& r) requires(has_random_access_v)
+    {
+        return l.offset() - r.offset();
+    }
+
+    friend auto operator<=>(range_dereferencing_iterator const& l, range_dereferencing_iterator const& r) requires(has_random_access_v) 
+    {
+        return l.offset() <=> r.offset();
+    }
+
+    reference operator[](difference_type) const requires(has_random_access_v)
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
     }
 
 public:
@@ -269,8 +351,7 @@ public:
 
     ~range_dereferencing_iterator() noexcept = default; // no flush call on exit!
 
-    template <typename T = IteratorT>
-    enable_if_t<iterators::has_method_close_v<T, void()>> close()
+    void close() requires(iterators::has_method_close_v<IteratorT, void()>)
     {
         state_t::flush();
         state_t::reset();

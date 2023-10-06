@@ -321,10 +321,73 @@ public:
     }
 };
 
-template <std::integral T>
+template <size_t SzV, std::integral T>
+requires(!is_signed_v<T> && !is_enum_v<T>)
+class coder<sized_t<SzV, le_t>, T>
+{
+public:
+    template <typename OutputIteratorT>
+    OutputIteratorT encode(T value, OutputIteratorT oi) const
+    {
+        //static constexpr T bytemask = (((std::uintmax_t)1) << CHAR_BIT) - 1;
+        for (int i = SzV; i > 0; --i) {
+            *oi = static_cast<uint8_t>(value);
+            value >>= CHAR_BIT;
+            ++oi;
+        }
+        return std::move(oi);
+    }
+    
+    template <typename InputIteratorT>
+    InputIteratorT decode(InputIteratorT ii, T& value) const
+    {
+        value = 0;
+        for (size_t i = 0; i < SzV; ++i) {
+            T tmp = static_cast<uint8_t>(*ii);
+            tmp <<= CHAR_BIT * i;
+            value |= tmp;
+            ++ii;
+        }
+        return std::move(ii);
+    }
+
+    template <typename InputIteratorT>
+    inline InputIteratorT decode(InputIteratorT ii, T* value) const
+    {
+        return decode(std::move(ii), *value);
+    }
+};
+
+template <typename TagT, std::integral T>
 requires(!is_signed_v<T> && !integral_detail::is_special<T>)
-class coder<ordered_t, T>
-    : public coder<sized_t<sizeof(T), ordered_t>, T>
+class coder<TagT, T>
+    : public coder<sized_t<sizeof(T), TagT>, T>
 {};
+
+template <typename TagT, std::integral T, size_t SzV>
+//requires(!integral_detail::is_special<T>)
+class coder<TagT, sized_integral_t<T, SzV>>
+{
+    using value_t = sized_integral_t<T, SzV>;
+
+public:
+    template <typename OutputIteratorT>
+    inline OutputIteratorT encode(T value, OutputIteratorT oi) const
+    {
+        return coder<sized_t<SzV, TagT>>{}.encode(value.value, std::move(oi));
+    }
+
+    template <typename InputIteratorT>
+    inline InputIteratorT decode(InputIteratorT ii, value_t const& value) const
+    {
+        return coder<sized_t<SzV, TagT>, T>{}.decode(std::move(ii), value.value);
+    }
+
+    template <typename InputIteratorT>
+    inline InputIteratorT decode(InputIteratorT && ii, value_t const* value) const
+    {
+        return coder<sized_t<SzV, TagT>, T>{}.decode(std::move(ii), value->value);
+    }
+};
 
 }

@@ -38,7 +38,7 @@ public:
     fs::path const& file_path() const { return fmc_->filepath; }
     uint64_t file_size() const { return fmc_->size; }
     uint64_t region_size() const { return fmc_->region_size; }
-
+    
     void truncate(uint64_t sz);
 
 private:
@@ -79,10 +79,12 @@ public:
     //boost::intrusive_ptr<file_region_descriptor> get_previous() const { return previous_.lock(); }
     //void set_previous(boost::intrusive_ptr<file_region_descriptor> const& prev) { previous_ = prev; }
 
+    void reset_offset(uint64_t offset);
     void next_from(file_region_descriptor const& previous);
     void previous_from(file_region_descriptor const& next);
 
     bool empty() const;
+    uint64_t offset() const { return fileoffset_; }
 
     bool is_cursor_at_the_end_or_null() const;
     char * get_cursor() const { return cursor_; }
@@ -112,14 +114,17 @@ class file_region_iterator_base
 protected:
     void increment();
     void decrement();
+    size_t advance_offset(std::ptrdiff_t); // returns offset in the applied region
 
     void flush(char*);
     void set(span<const char> data);
 
 public:
     bool empty() const { return !region_ || region_->empty(); }
+    uint64_t offset() const { return region_ ? region_->offset() : 0; }
+    uint64_t max_offset() const { return region_ ? region_->file_size() : 0; }
 
-    bool operator==(file_region_iterator_base const& rhs) const
+    bool operator== (file_region_iterator_base const& rhs) const
     {
         if (empty()) return rhs.empty();
         return !rhs.empty() && region_ == rhs.region_;
@@ -138,11 +143,14 @@ class file_region_iterator
 {
 public:
     using value_type = span<T>;
+    using iterator_category = std::random_access_iterator_tag;
+    /*
     using iterator_category = conditional_t <
         is_const_v<T>,
         std::bidirectional_iterator_tag,
         boost::bidirectional_traversal_tag
     >;
+    */
     using difference_type = std::ptrdiff_t;
     using pointer = value_type*;
     using reference = value_type;
@@ -173,10 +181,6 @@ public:
         e_ = b_ + raw.size() / sizeof(T);
     }
 
-    mutable T * b_ = nullptr;
-    mutable T * e_ = nullptr;
-
-public:
     file_region_iterator() = default;
 
     template <typename CharT>
@@ -232,6 +236,18 @@ public:
         return *this;
     }
 
+    void advance_offset(std::ptrdiff_t d)
+    {
+        if (d >= 0 && e_ - b_ > d) {
+            b_ += d;
+            return;
+        }
+        
+        size_t offs = file_region_iterator_base::advance_offset(d);
+        init();
+        b_ += offs;
+    }
+
     // write to file from external buffer
     template <typename ST>
     void write(span<ST> data)
@@ -255,6 +271,10 @@ public:
         region_.reset();
         b_ = e_ = nullptr;
     }
+
+private:
+    mutable T* b_ = nullptr;
+    mutable T* e_ = nullptr;
 };
 
 }

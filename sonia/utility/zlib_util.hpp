@@ -10,13 +10,15 @@ namespace sonia::zlib_detail {
 
 inline const char * err_to_str(int err)
 {
-    if (Z_ERRNO == err) return "Z_ERRNO";
-    if (Z_STREAM_ERROR == err) return "Z_STREAM_ERROR";
-    if (Z_DATA_ERROR == err) return "Z_DATA_ERROR";
-    if (Z_MEM_ERROR == err) return "Z_MEM_ERROR";
-    if (Z_BUF_ERROR == err) return "Z_BUF_ERROR";
-    if (Z_VERSION_ERROR == err) return "Z_VERSION_ERROR";
-    return "UNKNOWN";
+    switch (err) {
+    case Z_ERRNO: return "Z_ERRNO";
+    case Z_STREAM_ERROR: return "Z_STREAM_ERROR";
+    case Z_DATA_ERROR: return "Z_DATA_ERROR";
+    case Z_MEM_ERROR: return "Z_MEM_ERROR";
+    case Z_BUF_ERROR: return "Z_BUF_ERROR";
+    case Z_VERSION_ERROR: return "Z_VERSION_ERROR";
+    default: return "UNKNOWN";
+    }
 }
 
 }

@@ -574,6 +574,7 @@
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\bunch_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\ui_attribute_resolver.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\xmlbuilder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\zip.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\zlib_util.hpp" />
     <ClInclude Include="..\..\..\sonia\variant.hpp" />
   </ItemGroup>

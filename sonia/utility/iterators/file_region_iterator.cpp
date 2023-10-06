@@ -82,7 +82,7 @@ void file_region_descriptor::update_region_size(size_t sz)
 {
     try {
 	    if (sz && sz != region_size()) {
-		    region_ = ipc::mapped_region();
+            region_ = {};
             truncate(fileoffset_ + sz);
 		    region_ = ipc::mapped_region(file_mapping(), mode(), fileoffset_, sz);
 	    }
@@ -92,13 +92,17 @@ void file_region_descriptor::update_region_size(size_t sz)
     }
 }
 
+void file_region_descriptor::reset_offset(uint64_t offset)
+{
+    region_ = {};
+    region_ = create_region(offset, region_size());
+    cursor_ = nullptr;
+    fileoffset_ = offset;
+}
+
 void file_region_descriptor::next_from(file_region_descriptor const& previous)
 {
-    uint64_t nextoffset = previous.get_region_size() + previous.fileoffset_;
-	region_ = ipc::mapped_region();
-    region_ = create_region(nextoffset, region_size());
-    cursor_ = nullptr;
-    fileoffset_ = nextoffset;
+    reset_offset(previous.get_region_size() + previous.fileoffset_);
 }
 
 void file_region_descriptor::previous_from(file_region_descriptor const& next)
@@ -169,16 +173,38 @@ void file_region_iterator_base::increment()
 {
     if (!region_->is_cursor_at_the_end_or_null()) return;
 
-    boost::intrusive_ptr<file_region_descriptor> next = region_->get_next();
+    auto next = region_->get_next();
     if (next) {
         region_ = next;
     } else if (1 == region_->refs_) {
         region_->next_from(*region_);
     } else {
-        auto nextreg = boost::intrusive_ptr(new file_region_descriptor(region_), false);
+        auto nextreg = boost::intrusive_ptr(new file_region_descriptor{region_}, false);
         nextreg->next_from(*region_);
         region_->set_next(nextreg);
         region_ = std::move(nextreg);
+    }
+}
+
+size_t file_region_iterator_base::advance_offset(std::ptrdiff_t d)
+{
+    if (d < 0) {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+    size_t rsz = region_->get_region_size();
+    BOOST_ASSERT((std::ptrdiff_t)rsz <= d);
+    for (;;) {
+        auto next = region_->get_next();
+        if (next) {
+            region_ = next;
+            d -= rsz;
+            rsz = region_->get_region_size();
+            if ((std::ptrdiff_t)rsz <= d) continue;
+            return rsz;
+        } else {
+            region_->reset_offset(d);
+            return 0;
+        }
     }
 }
 

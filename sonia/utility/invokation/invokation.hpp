@@ -21,16 +21,17 @@ extern "C" {
 
 enum class blob_type : uint8_t {
     unspecified = 0,     // just byte array if size != 0
-    string = 1,          // data points to char*
+    boolean = 1,
     ui8 = 2, i8 = 3,
     ui16 = 4, i16 = 5,
     ui32 = 6, i32 = 7,
     ui64 = 9, i64 = 10, // if array, data points to int64*, size of array = size / 8
     flt = 11,           // if array, data points to float*, size of array = size / 4
-    blob = 12,           // if array, data points to blob_type*, size of array = size / 16
-    boolean = 13,
+    blob = 12,          // if array, data points to blob_type*, size of array = size / 16
+    string = 13,        // data points to char*
     function = 14,
-    object = 15 // draft
+    object = 15, // draft
+    error = 16 // like the string
 };
 
 struct blob_result {
@@ -241,29 +242,35 @@ inline blob_result float_blob_result(float value)
 
 template <typename CharT, size_t N>
 requires (sizeof(CharT) == 1)
-inline blob_result string_blob_result(const CharT(&value)[N])
+inline blob_result string_blob_result(const CharT(&value)[N], blob_type t = blob_type::string)
 {
     assert(!value[N - 1]);
-    return blob_result{ value, static_cast<int32_t>(N - 1), 0, 0, blob_type::string };
+    return blob_result{ value, static_cast<int32_t>(N - 1), 0, 0, t };
 }
 
 template <typename T>
 requires (sonia::is_string_v<std::remove_cvref_t<T>> && sizeof(typename std::remove_cvref_t<T>::value_type) == 1)
-inline blob_result string_blob_result(T && value)
+inline blob_result string_blob_result(T && value, blob_type t = blob_type::string)
 {
-    blob_result result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string };
+    blob_result result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, t };
     if constexpr (std::is_rvalue_reference_v<T&&> && sonia::is_template_instance_v<std::basic_string, T>) {
         blob_result_allocate(&result);
-        static_assert(sonia::dependent_false<T>);
+        //static_assert(sonia::dependent_false<T>);
     }
     return result;
 }
 
 template <typename CharT, size_t ET>
 requires (sizeof(CharT) == 1)
-inline blob_result string_blob_result(std::span<CharT, ET> value)
+inline blob_result string_blob_result(std::span<CharT, ET> value, blob_type t = blob_type::string)
 {
-    return blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::string };
+    return blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, t};
+}
+
+template <typename ArgT>
+inline blob_result error_blob_result(ArgT && arg)
+{
+    return string_blob_result(std::forward<ArgT>(arg), blob_type::error);
 }
 
 template <typename T>
@@ -397,7 +404,7 @@ auto blob_result_type_selector(blob_result const& b, FT&& ftor)
     case blob_type::flt:
         return ftor(sonia::identity<float>(), b);
     case blob_type::string:
-        return ftor(sonia::identity<sonia::string_view>(), b);
+    case blob_type::error:
     case blob_type::blob:
         return ftor(sonia::identity<blob_result>(), b);
     case blob_type::unspecified:
@@ -419,14 +426,14 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
             using fstype = std::conditional_t<std::is_same_v<ftype, bool>, uint8_t, ftype>;
             for (int32_t i = 0; i < b.size / sizeof(fstype); ++i) {
                 os << (i ? "," : "");
-                if constexpr (std::is_same_v<std::string_view, fstype>) {
-                    blob_result const* pelem = reinterpret_cast<blob_result const*>(b.data) + i;
-                    os << *pelem;
-                } else {
+                //if constexpr (std::is_same_v<std::string_view, fstype>) {
+                //    blob_result const* pelem = reinterpret_cast<blob_result const*>(b.data) + i;
+                //    os << *pelem;
+                //} else {
                     os << particular_blob_result(*(reinterpret_cast<fstype const *>(b.data) + i));
                     //fstype const *pelem = reinterpret_cast<fstype const *>(b.data) + i;
                     //os << *pelem;
-                }
+                //}
             }
         });
         return os << "]";
@@ -464,6 +471,8 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
         return os << "function";
     case blob_type::object:
         return os << "object";
+    case blob_type::error:
+        return os << "error: " << sonia::string_view(reinterpret_cast<const char*>(b.data), b.size);
     }
     return os;
 }
@@ -682,7 +691,7 @@ private:
         if constexpr (is_same_v<T, BT> && (is_integral_v<T> || is_floating_point_v<T>)) {
             BOOST_ASSERT(val.size / sizeof(T) >= SzV);
             return direct_decode(std::make_index_sequence<SzV>{}, reinterpret_cast<T const*>(val.data));
-        } else if constexpr (is_same_v<blob_result, BT> || is_same_v<string_view, BT>) {
+        } else if constexpr (is_same_v<blob_result, BT>) {
             BOOST_ASSERT(val.size / sizeof(blob_result) >= SzV);
             return decode(std::make_index_sequence<SzV>{}, reinterpret_cast<blob_result const*>(val.data));
         } else {
@@ -792,6 +801,11 @@ public:
     blob_result const& operator*() const { return *this; }
     blob_result const& get() const { return *this; }
     blob_result const* operator->() const { return this; }
+
+    bool is_nil() const { return type == blob_type::unspecified && !data; }
+
+    template <typename T>
+    auto as() const { return ::as<T>(get()); }
 
     smart_blob& allocate()
     {

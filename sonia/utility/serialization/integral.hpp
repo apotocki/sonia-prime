@@ -372,9 +372,9 @@ class coder<TagT, sized_integral_t<T, SzV>>
 
 public:
     template <typename OutputIteratorT>
-    inline OutputIteratorT encode(T value, OutputIteratorT oi) const
+    inline OutputIteratorT encode(value_t value, OutputIteratorT oi) const
     {
-        return coder<sized_t<SzV, TagT>>{}.encode(value.value, std::move(oi));
+        return coder<sized_t<SzV, TagT>, T>{}.encode(value.value, std::move(oi));
     }
 
     template <typename InputIteratorT>

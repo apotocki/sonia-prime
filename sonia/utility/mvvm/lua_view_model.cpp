@@ -32,7 +32,19 @@ public:
             return function_blob_result(key);
         }
         smart_blob result;
-        ctx_.view_model::try_get_property(key, result);
+        if (!ctx_.try_get_property(key, result)) {
+            blob_result args[] = { string_blob_result(key) };
+            result = ctx_.do_call_method("hasMethod", std::span{args});
+            if (result->type == blob_type::boolean && result.as<bool>()) {
+                return function_blob_result(key);
+            }
+            result = ctx_.do_call_method("hasProperty", std::span{args});
+            if (result->type != blob_type::boolean || !result.as<bool>()) {
+                // GLOBAL_LOG_INFO() << "no property '" << key << "' was found";
+                return nil_blob_result();
+            }
+            result = ctx_.do_call_method("getProperty", std::span{args});
+        }
         return result.detach();
         //return ctx_.view_model::get_property(key).detach();
         /*
@@ -47,12 +59,23 @@ public:
     bool newindex(string_view key, blob_result&& value) override
     {
         SCOPE_EXIT([&value](){  blob_result_unpin(&value); });
-        return ctx_.try_set_property(key, value);
+        if (!ctx_.try_set_property(key, value)) {
+            blob_result args[] = { string_blob_result(key), value };
+            smart_blob result = ctx_.do_call_method("setProperty", std::span{args});
+            if (result->type != blob_type::boolean) return false;
+            return result.as<bool>();
+        }
+        return true;
     }
 
     blob_result invoke(string_view name, std::span<const blob_result> args) override
     {
-        return ctx_.view_model::invoke(name, args).detach();
+        smart_blob result;
+        if (!ctx_.try_invoke(name, args, result)) {
+            //GLOBAL_LOG_INFO() << "callback invoking: " << name;
+            result = ctx_.do_call_method(name, args);
+        }
+        return result.detach();
     }
 };
 
@@ -60,10 +83,12 @@ smart_blob lua_view_model::invoke(string_view methodname, span<const blob_result
 {
     smart_blob result;
     if (!try_invoke(methodname, args, result)) {
+        //GLOBAL_LOG_INFO() << "invoking lua: " << methodname;
         vm_lua_resolver rslv{ *this };
         result = as_cstring<32>(methodname, [args, &rslv, this](cstring_view methodname_cstr) {
             return lua::language::eval_inplace(methodname_cstr, args, &rslv);
         });
+        //GLOBAL_LOG_INFO() << "lua result: " << *result;
     }
     return result;
 }

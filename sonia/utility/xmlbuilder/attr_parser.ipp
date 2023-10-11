@@ -33,7 +33,7 @@ template <typename T>
 std::tuple<blob_result, std::string, bool> particular_attr_parser<T>::parse(string_view value) const
 {
     if (auto r = attr_parser::parse(value); !std::get<1>(r).empty()) return r;
-    if constexpr (is_string_v<T>) {
+    if constexpr (is_string_v<T> || is_same_v<T, blob_result>) {
         auto br = particular_blob_result(value);
         blob_result_allocate(&br);
         return { br, {}, false };

@@ -16,8 +16,7 @@ std::tuple<blob_result, std::string, bool> attr_parser::parse(string_view val) c
         if (code.starts_with("{") && code.ends_with("}")) {
             code = code.substr(1, code.size() - 2);
             no_return = true;
-        }
-        else {
+        } else {
             no_return = false;
         }
         return { nil_blob_result(), std::string{code}, no_return };
@@ -30,7 +29,8 @@ std::tuple<blob_result, std::string, bool> functional_attr_parser::parse(string_
     if (auto r = attr_parser::parse(value); !std::get<1>(r).empty()) {
         return { nil_blob_result(), std::get<1>(r), true };
     }
-    throw exception("can't parse attribute value '%1%' as a function body"_fmt % value);
+    return { nil_blob_result(), std::string{value}, true };
+    //throw exception("can't parse attribute value '%1%' as a function body"_fmt % value);
 }
 
 std::tuple<blob_result, std::string, bool> particular_attr_parser<bool>::parse(string_view value) const

@@ -84,6 +84,10 @@ public:
 
     int32_t id() const { return id_; }
 
+    // properties
+    //smart_blob get_property(string_view propname) const override;
+    //void set_property(string_view propname, blob_result const& val) override;
+
     template<class Archive>
     void serialize_properties(Archive& ar, std::initializer_list<cstring_view> l);
 

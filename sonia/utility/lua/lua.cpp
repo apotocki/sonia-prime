@@ -20,6 +20,8 @@ extern "C" {
 
 namespace sonia::lua {
 
+blob_result to_blob(lua_State* L, int index);
+
 static const char context_key = '_';
 
 int ext_index(lua_State* L)
@@ -42,11 +44,25 @@ int ext_newindex(lua_State* L)
 
 int ext_invoke(lua_State* L)
 {
+    auto fname_index = lua_upvalueindex(1);
+    char const* strval = lua_tostring(L, fname_index);
+    size_t sz = lua_rawlen(L, fname_index);
+    string_view fname{strval, sz};
+
+    int argcount = lua_gettop(L);
+    std::vector<blob_result> args;
+    for (int i = 0; i < argcount; ++i) {
+        args.push_back(to_blob(L, i + 1));
+    }
+    SCOPE_EXIT([&args]{
+        for (auto arg : args) blob_result_unpin(&arg);
+    });
+
     lua_pushlightuserdata(L, (void*)&context_key);
     lua_gettable(L, LUA_REGISTRYINDEX);
     language* lang = (language*)lua_touserdata(L, -1);
-    lua_pop(L, 1);
-    return lang->invoke_global();
+    //lua_pop(L, 1);
+    return lang->invoke_global(fname, args);
 }
 
 language::language()
@@ -57,9 +73,6 @@ language::language()
     lua_pushlightuserdata(L, (void*)&context_key);
     lua_pushlightuserdata(L, this);
     lua_settable(L, LUA_REGISTRYINDEX);
-
-    //lua_pushcfunction(L, ext_invoke);
-    //lua_setglobal(L, "invoke");
 
     luaL_Reg const metamethods[] = {
         { "__index", ext_index },
@@ -112,7 +125,7 @@ cstring_view language::append_inplace(string_view code, bool no_return)
         if (!no_return) {
             fncodess << "return (" << code << ") end";
         } else {
-            fncodess << code << " end";
+            fncodess << code << "\n end";
         }
         std::string codestr = fncodess.str();
 
@@ -150,18 +163,18 @@ void language::set_global_property(cstring_view name, blob_result const& val)
 
 blob_result language::eval_inplace(cstring_view fn, std::span<const blob_result> args, resolver * r)
 {
-    resolver_ = r;
-    defer{ resolver_ = nullptr; };
+    resolvers_.push_back(r);
+    defer{ resolvers_.pop_back(); };
 
     lua_State* L = reinterpret_cast<lua_State*>(L_);
     lua_getglobal(L, fn.c_str());
     for (blob_result arg : args) {
         push_from_blob(arg);
     }
-    if (lua_pcall(L, (int)args.size(), 1, 0)) {
+    if (int res = lua_pcall(L, (int)args.size(), 1, 0); !!res) {
         std::string err = lua_tostring(L, -1);
         lua_pop(L, 1);
-        throw exception("lua evaluation '%2%' script error: %1%"_fmt % err % fn);
+        throw exception("lua evaluation '%2%' script error (%3%): %1%"_fmt % err % fn % res);
     }
     blob_result result = to_blob(-1);
     lua_pop(L, 1);
@@ -178,15 +191,17 @@ int language::resolve_global()
 {
     lua_State* L = reinterpret_cast<lua_State*>(L_);
     char const* key = lua_tostring(L, 2);
+    //GLOBAL_LOG_INFO() << "looking for global key: " << (key ? key : "<nil>");
     if (!key) {
         lua_pushnil(L);
+        //GLOBAL_LOG_INFO() << "no global key found";
         return 1;
     }
     
-    blob_result val = resolver_ ? resolver_->index(key) : nil_blob_result();
-    SCOPE_EXIT([this, &val] { blob_result_unpin(&val); });
+    blob_result val = (!resolvers_.empty() && resolvers_.back())  ? resolvers_.back()->index(key) : nil_blob_result();
+    SCOPE_EXIT([&val] { blob_result_unpin(&val); });
     push_from_blob(val);
-
+    //GLOBAL_LOG_INFO() << "global key found, value: " << val;
     return 1;
 }
 
@@ -258,27 +273,25 @@ void language::push_from_blob(blob_result const& b)
     }
 }
 
-blob_result language::to_blob(int index) const
+blob_result to_blob(lua_State* L, int index)
 {
-    lua_State* L = reinterpret_cast<lua_State*>(L_);
-
     int luavaltype = lua_type(L, index);
     switch (luavaltype) {
         case LUA_TNUMBER:
-        if (lua_isinteger(L, index)) {
-            lua_Integer i = lua_tointeger(L, index);
-            return i64_blob_result(i);
-        } else {
-            lua_Number i = lua_tonumber(L, index);
-            return float_blob_result((float) i);
-        }
+            if (lua_isinteger(L, index)) {
+                lua_Integer i = lua_tointeger(L, index);
+                return i64_blob_result(i);
+            } else {
+                lua_Number i = lua_tonumber(L, index);
+                return float_blob_result((float) i);
+            }
 
         case LUA_TBOOLEAN:
         {
             int bval = lua_toboolean(L, index);
             return bool_blob_result(!!bval);
         }
-        break;
+            break;
 
         case LUA_TSTRING:
         {
@@ -288,7 +301,7 @@ blob_result language::to_blob(int index) const
             blob_result_allocate(&result);
             return result;
         }
-        break;
+            break;
 
         case LUA_TTABLE:
         {
@@ -299,8 +312,8 @@ blob_result language::to_blob(int index) const
             std::vector<blob_result> vals;
             std::vector<blob_result> keys;
             while (lua_next(L, -2) != 0) {
-                keys.push_back(to_blob(-2));
-                vals.push_back(to_blob(-1));
+                keys.push_back(to_blob(L, -2));
+                vals.push_back(to_blob(L, -1));
                 lua_pop(L, 1);
                 if (ktype == blob_type::unspecified) {
                     ktype = keys.back().type;
@@ -346,14 +359,14 @@ blob_result language::to_blob(int index) const
                 bool is_array = true;
                 for (int i = 0; i < keys.size(); ++i) {
                     if (auto kval = keys[i].i64value; kval != (i+1)) {
-                    //if (float fval = keys[i].i64value.floatvalue; fmod(fval, 1.0) > 0.00001 || ((int)fval) != (i+1)) {
+                        //if (float fval = keys[i].i64value.floatvalue; fmod(fval, 1.0) > 0.00001 || ((int)fval) != (i+1)) {
                         is_array = false;
                         break;
                     }
                 }
                 if (is_array) return blob_values.detach();
             }
-            
+
             smart_blob result = blob_result{nullptr, (int32_t)(2 * sizeof(blob_result)), 0, 1, blob_type::blob};
             result.allocate();
             smart_blob blob_keys = blob_result{nullptr, (int32_t)(keys.size() * sizeof(blob_result)), 0, 1, blob_type::blob};
@@ -373,6 +386,12 @@ blob_result language::to_blob(int index) const
     }
 }
 
+blob_result language::to_blob(int index) const
+{
+    lua_State* L = reinterpret_cast<lua_State*>(L_);
+    return sonia::lua::to_blob(L, index);
+}
+
 int language::set_global()
 {
     lua_State* L = reinterpret_cast<lua_State*>(L_);
@@ -380,22 +399,17 @@ int language::set_global()
     if (!key) {
         return 0;
     }
-    if (!resolver_ || !resolver_->newindex(key, to_blob(3))) {
+    if (resolvers_.empty() || !resolvers_.back() || !resolvers_.back()->newindex(key, to_blob(3))) {
         lua_rawset(L, 1);
     }
     return 0;
 }
 
-int language::invoke_global()
+int language::invoke_global(string_view fname, std::span<blob_result> args)
 {
-    if (!resolver_) return 0;
+    if (resolvers_.empty() || !resolvers_.back()) return 0;
 
     lua_State* L = reinterpret_cast<lua_State*>(L_);
-
-    double val = lua_tonumber(L, lua_upvalueindex(1));
-    char const* strval = lua_tostring(L, lua_upvalueindex(1));
-    size_t sz = lua_rawlen(L, lua_upvalueindex(1));
-    string_view fname{strval, sz};
 
     /*
     lua_Debug ar;
@@ -407,32 +421,11 @@ int language::invoke_global()
     } else {
         GLOBAL_LOG_INFO() << "METHOD NAME: NIL";
     }
-    fname = string_view(ar.name)
     */
-    int argcount = lua_gettop(L);
-    //GLOBAL_LOG_INFO() << "invoke_global: METHOD NAME: '" << fname << "', argcount: " << argcount;
-    /*
-    if (!argcount) {
-        return luaL_error(L, "expecting at least 1 argument");
-    }
-    
-    char const* name = lua_tostring(L, 1);
-    if (!name) {
-        return luaL_error(L, "the first argument is not a method name");
-    }
-    size_t sz = lua_rawlen(L, 1);
-    */
-    std::vector<blob_result> args;
-    for (int i = 0; i < argcount; ++i) {
-        args.push_back(to_blob(i + 1));
-        //GLOBAL_LOG_INFO() << "argument: " << i << ": " << args.back();
-    }
-    SCOPE_EXIT([this, &args]{
-        for (auto arg : args) blob_result_unpin(&arg);
-    });
-
     try {
-        smart_blob res = resolver_->invoke(fname, args);
+        //GLOBAL_LOG_INFO() << "lua global invoking '" << fname << "', args: '" << args << "'";
+        smart_blob res = resolvers_.back()->invoke(fname, args);
+        //GLOBAL_LOG_INFO() << "lua global invoked '" << fname << "', result: '" << *res << "'";
         if (res->is_array && res->type == blob_type::blob) {
             size_t cnt = res->size / sizeof(blob_type);
             for (blob_result r : std::span{ reinterpret_cast<const blob_result*>(res->data), cnt }) {
@@ -443,6 +436,7 @@ int language::invoke_global()
         push_from_blob(*res);
         return 1;
     } catch (std::exception const& e) {
+        //GLOBAL_LOG_INFO() << "lua global invoked '" << fname << "', error: '" << e.what() << "'";
         return luaL_error(L, e.what());
     }
 }

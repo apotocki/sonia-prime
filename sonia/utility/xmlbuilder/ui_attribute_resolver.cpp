@@ -12,7 +12,7 @@ void ui_attribute_resolver::setup_view(string_view cmp)
 {
     setup_set<bool>(cmp, { "disabled"sv, "enabled"sv, "hidden"sv });
     setup_set<float>(cmp, { "x-weight"sv, "y-weight" });
-    setup_set<std::string>(cmp, { "background-color"sv, "cell-valign", "cell-align" });
+    setup_set<std::string>(cmp, { "background-color"sv, "cell-valign"sv, "cell-align"sv });
     setup_set<std::array<float, 4>>(cmp, { "padding"sv, "margin"sv });
     setup_set<std::array<float, 2>>(cmp, { "weight"sv, "width"sv, "height"sv, "size"sv });
     setup_set<std::tuple<float, float, std::string>>(cmp, { "border"sv });
@@ -51,10 +51,21 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_fset("switch-button"sv, { "on-change"sv });
 
     setup_view("text-field"sv);
-    setup_set<std::string>("text-field"sv, { "text"sv, "color"sv, "text-align"sv, "text-valign"sv, "placeholder"sv, "autocapitalization"sv, "autocorrection"sv });
+    setup_set<std::string>("text-field"sv, { "value"sv, "color"sv, "space-replacement"sv, "text-align"sv, "text-valign"sv, "placeholder"sv, "content-mode"sv, "autocapitalization"sv, "autocorrection"sv });
     setup_set<std::vector<float>>("text-field"sv, { "font-size"sv });
-    setup_fset("text-field"sv, { "on-change"sv, "on-end" });
+    setup_fset("text-field"sv, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
 
+    setup_view("num-field"sv);
+    setup_set<blob_result>("num-field"sv, { "value"sv, "color"sv, "text-align"sv, "text-valign"sv, "placeholder"sv, "content-mode"sv});
+    setup_set<std::vector<float>>("num-field"sv, { "font-size"sv });
+    setup_fset("num-field"sv, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
+
+    // controllers
+    setup_set<std::string>("form-ctl"sv, { "descriptor"sv });
+    setup_set<std::string>("section"sv, { "title"sv });
+    setup_set<bool>("row", { "highlighted"sv });
+    setup_map("row"sv, "label"sv, "label"sv);
+    setup_map("row"sv, "bar"sv, "h-bar"sv);
     /*
     const char* booleanSet[] = { "is-on" };
         for (const char* attrname : booleanSet) { set<bool>(attrname); }

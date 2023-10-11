@@ -5,6 +5,7 @@
 #include "sonia/config.hpp"
 #include "view_model.hpp"
 #include "view_model.ipp"
+#include <boost/container/small_vector.hpp>
 
 namespace sonia {
 
@@ -29,6 +30,27 @@ void view_model::set(int32_t idval)
 {
     id_ = idval;
 }
+
+/*
+smart_blob view_model::get_property(string_view propname) const
+{
+    smart_blob result;
+    if (!try_get_property(propname, result)) {
+        blob_result args[] = { string_blob_result(propname) };
+        return do_call_method("getProperty", std::span{args});
+    }
+    return result;
+}
+
+void view_model::set_property(string_view propname, blob_result const& val)
+{
+    if (!try_set_property(propname, val)) {
+        blob_result args[] = { string_blob_result(propname), val };
+        smart_blob result = do_call_method("setProperty", std::span{args});
+        //throw exception("property %1% of %2% is not registered"_fmt % propname % typeid(*this).name());
+    }
+}
+*/
 
 /*
 blob_result view_model::get_property(std::string_view propname, bool pin) const
@@ -157,8 +179,16 @@ blob_result view_model::call_method(std::string_view name, blob_result args) con
         } else if (args.type == blob_type::blob) {
             return do_call_method(name, std::span{ reinterpret_cast<blob_result const*>(args.data), args.size / sizeof(blob_result)});
         } else {
-            // to do: rewrite args into array of blobs
-            THROW_NOT_IMPLEMENTED_ERROR("to do: rewrite args into array of blobs");
+            boost::container::small_vector<blob_result, 16> bargs;
+            blob_result_type_selector(args, [&bargs](auto ident, blob_result const& b) {
+                using type = typename decltype(ident)::type;
+                using ftype = std::conditional_t<std::is_void_v<type>, uint8_t, type>;
+                using fstype = std::conditional_t<std::is_same_v<ftype, bool>, uint8_t, ftype>;
+                for (int32_t i = 0; i < b.size / sizeof(fstype); ++i) {
+                    bargs.push_back(particular_blob_result(*(reinterpret_cast<fstype const *>(b.data) + i)));
+                }
+            });
+            return do_call_method(name, std::span{bargs});
         }
     }
 }

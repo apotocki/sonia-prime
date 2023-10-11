@@ -42,13 +42,13 @@ public:
 public:
     int resolve_global();
     int set_global();
-    int invoke_global();
+    int invoke_global(string_view fname, std::span<blob_result> args);
     blob_result to_blob(int index) const;
     void push_from_blob(blob_result const&);
 
 private:
     void* L_;
-    resolver * resolver_ = nullptr;
+    std::vector<resolver*> resolvers_;
     boost::unordered_map<std::string, std::string, hasher, string_equal_to> inplace_fns_;
     boost::unordered_set<std::string, hasher, string_equal_to> codes_;
 };

@@ -52,12 +52,12 @@ ui_attribute_resolver::ui_attribute_resolver()
 
     setup_view("text-field"sv);
     setup_set<std::string>("text-field"sv, { "value"sv, "color"sv, "space-replacement"sv, "text-align"sv, "text-valign"sv, "placeholder"sv, "content-mode"sv, "autocapitalization"sv, "autocorrection"sv });
-    setup_set<std::vector<float>>("text-field"sv, { "font-size"sv });
+    setup_set<std::array<float, 2>>("text-field"sv, { "font-size"sv });
     setup_fset("text-field"sv, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
 
     setup_view("num-field"sv);
     setup_set<blob_result>("num-field"sv, { "value"sv, "color"sv, "text-align"sv, "text-valign"sv, "placeholder"sv, "content-mode"sv});
-    setup_set<std::vector<float>>("num-field"sv, { "font-size"sv });
+    setup_set<std::array<float, 2>>("num-field"sv, { "font-size"sv });
     setup_fset("num-field"sv, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
 
     // controllers
@@ -66,12 +66,16 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_set<bool>("row", { "highlighted"sv });
     setup_map("row"sv, "label"sv, "label"sv);
     setup_map("row"sv, "bar"sv, "h-bar"sv);
+
+    setup_set<bool>("encoding-row", { "highlighted"sv });
+    setup_map("encoding-row"sv, "label"sv, "label"sv);
+    setup_map("encoding-row"sv, "bar"sv, "h-bar"sv);
+    setup_set<std::array<std::string, 2>>("encoding-row"sv, {"value"sv});
+    setup_fset("encoding-row"sv, { "on-change"sv, "on-enter"sv });
+
     /*
     const char* booleanSet[] = { "is-on" };
         for (const char* attrname : booleanSet) { set<bool>(attrname); }
-
-        const char* intSet[] = { "lines" };
-        for (const char* attrname : intSet) { set<int64_t>(attrname); }
 
         const char* floatSet[] = { "progress" };
         for (const char* attrname : floatSet) { set<float>(attrname); }

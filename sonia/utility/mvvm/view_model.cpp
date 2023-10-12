@@ -155,12 +155,12 @@ blob_result view_model::do_call_method(std::string_view name, std::span<const bl
         //GLOBAL_LOG_INFO() << "view_model::do_call_method " << name << ", argscount: " << args.size();
         mng->invoke_callback(&result, id(), name, args,
             [](void* cookie, blob_result* r, uint32_t count) {
+                for (uint32_t i = 0; i < count; ++i) blob_result_pin(r);
                 blob_result * result = reinterpret_cast<blob_result*>(cookie);
                 if (count == 1) {
                     *result = *r;
-                    blob_result_allocate(result);
                 } else if (count > 0) {
-                    *result = blob_result{ r, static_cast<int32_t>(count * sizeof(blob_result)), 0, 1, blob_type::blob };
+                    *result = array_blob_result<blob_result>(std::span{r, (size_t)count}, false);
                     blob_result_allocate(result);
                 }
             }

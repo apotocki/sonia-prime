@@ -220,7 +220,7 @@ void language::push_from_blob(blob_result const& b)
             using fstype = std::conditional_t<std::is_same_v<ftype, bool>, uint8_t, ftype>;
             for (int32_t i = 0; i < b.size / sizeof(fstype); ++i) {
                 lua_pushnumber(L, (lua_Number)(i+1));
-                if constexpr (is_same_v<fstype, string_view> || is_same_v<fstype, blob_result>) {
+                if constexpr (is_same_v<fstype, blob_result>) {
                     push_from_blob(*(reinterpret_cast<blob_result const*>(b.data) + i));
                 } else {
                     fstype const* pval = reinterpret_cast<fstype const*>(b.data) + i;
@@ -364,7 +364,9 @@ blob_result to_blob(lua_State* L, int index)
                         break;
                     }
                 }
-                if (is_array) return blob_values.detach();
+                if (is_array) {
+                    return blob_values.detach();
+                }
             }
 
             smart_blob result = blob_result{nullptr, (int32_t)(2 * sizeof(blob_result)), 0, 1, blob_type::blob};

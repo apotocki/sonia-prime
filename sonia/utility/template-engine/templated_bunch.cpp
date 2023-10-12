@@ -153,7 +153,7 @@ void templated_bunch::close_element(span<const xmlbuilder::element> parents, xml
     for (auto const& func : e.functionals) {
         string_view propname = std::get<0>(func);
         string_view code = std::get<1>(func);
-        bool no_return = std::get<2>(func);
+        xmlbuilder::func_type no_return = std::get<2>(func);
         placeholders.emplace_back(propname, code);
     }
     if (parents.empty()) return;

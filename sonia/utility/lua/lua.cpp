@@ -61,7 +61,7 @@ int ext_invoke(lua_State* L)
     lua_pushlightuserdata(L, (void*)&context_key);
     lua_gettable(L, LUA_REGISTRYINDEX);
     language* lang = (language*)lua_touserdata(L, -1);
-    //lua_pop(L, 1);
+    lua_pop(L, 1);
     return lang->invoke_global(fname, args);
 }
 

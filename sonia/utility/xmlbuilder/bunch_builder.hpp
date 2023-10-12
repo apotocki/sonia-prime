@@ -30,7 +30,7 @@ public:
     void create(string_view type, string_view id) override;
     void set_text(string_view id, string_view text) override;
     void set_property(string_view id, string_view propname, blob_result const& value) override;
-    void set_property_functional(string_view id, string_view propname, string_view code, bool no_return) override;
+    void set_property_functional(string_view id, string_view propname, string_view code, func_type) override;
     void append(string_view parentid, string_view childid) override;
 
     shared_ptr<invokation::invokable> get_element_by(string_view id) const;
@@ -38,7 +38,7 @@ public:
 
 protected:
     virtual void do_set_text(invokation::invokable&, string_view text);
-    virtual void do_set_property_functional(invokation::invokable&, string_view propname, string_view code, bool no_return) = 0;
+    virtual void do_set_property_functional(invokation::invokable&, string_view propname, string_view code, func_type) = 0;
     virtual void do_append(invokation::invokable& parent, invokation::invokable& child);
 
 protected:

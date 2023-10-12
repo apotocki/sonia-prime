@@ -14,7 +14,7 @@ namespace sonia::xmlbuilder {
 class basic_attribute_resolver : public attribute_resolver
 {
 public:
-    std::tuple<blob_result, std::string, bool> operator()(string_view element, string_view attr_name, string_view attr_value) override;
+    std::tuple<blob_result, std::string, func_type> operator()(string_view element, string_view attr_name, string_view attr_value) override;
 
     template <typename AttrT>
     void setup_set(string_view element, std::initializer_list<string_view> names)

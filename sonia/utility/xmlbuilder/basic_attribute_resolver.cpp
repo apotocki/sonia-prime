@@ -8,7 +8,7 @@
 
 namespace sonia::xmlbuilder {
 
-std::tuple<blob_result, std::string, bool> basic_attribute_resolver::operator()(string_view element, string_view attr_name, string_view attr_value)
+std::tuple<blob_result, std::string, func_type> basic_attribute_resolver::operator()(string_view element, string_view attr_name, string_view attr_value)
 {
     for (;;) {
         auto it = std::find(attr_name.begin(), attr_name.end(), '.');

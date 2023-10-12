@@ -50,9 +50,9 @@ void bunch_builder::set_property(string_view id, string_view propname, blob_resu
     get_element_by(id)->set_property(propname, value);
 }
 
-void bunch_builder::set_property_functional(string_view id, string_view propname, string_view code, bool no_return)
+void bunch_builder::set_property_functional(string_view id, string_view propname, string_view code, func_type ft)
 {
-    do_set_property_functional(*get_element_by(id), propname, code, no_return);
+    do_set_property_functional(*get_element_by(id), propname, code, ft);
 }
 
 void bunch_builder::append(string_view parentid, string_view childid)

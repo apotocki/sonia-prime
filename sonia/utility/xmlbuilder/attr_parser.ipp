@@ -30,16 +30,16 @@ std::vector<RangeT> split(RangeT rng, RangeT delim)
 namespace sonia::xmlbuilder {
 
 template <typename T>
-std::tuple<blob_result, std::string, bool> particular_attr_parser<T>::parse(string_view value) const
+std::tuple<blob_result, std::string, func_type> particular_attr_parser<T>::parse(string_view value) const
 {
     if (auto r = attr_parser::parse(value); !std::get<1>(r).empty()) return r;
     if constexpr (is_string_v<T> || is_same_v<T, blob_result>) {
         auto br = particular_blob_result(value);
         blob_result_allocate(&br);
-        return { br, {}, false };
+        return { br, {}, func_type::unspecified };
     } else {
         try {
-            return { particular_blob_result(boost::lexical_cast<T>(value)), {}, false};
+            return { particular_blob_result(boost::lexical_cast<T>(value)), {}, func_type::unspecified};
         } catch (boost::bad_lexical_cast const&) {
             throw exception("can't parse attribute value '%1%' as '%2%'"_fmt % value % typeid(T).name());
         }
@@ -48,7 +48,7 @@ std::tuple<blob_result, std::string, bool> particular_attr_parser<T>::parse(stri
 }
 
 template <typename T, size_t SzV>
-std::tuple<blob_result, std::string, bool> particular_attr_parser<std::array<T, SzV>>::parse(string_view value) const
+std::tuple<blob_result, std::string, func_type> particular_attr_parser<std::array<T, SzV>>::parse(string_view value) const
 {
     if (auto r = attr_parser::parse(value); !std::get<1>(r).empty()) return r;
     std::vector<intermediate_element_t> result;
@@ -73,11 +73,11 @@ std::tuple<blob_result, std::string, bool> particular_attr_parser<std::array<T, 
 
     blob_result r = array_blob_result(std::span{ result });
     blob_result_allocate(&r);
-    return { r , {}, false };
+    return { r , {}, func_type::unspecified };
 }
 
 template <typename T>
-std::tuple<blob_result, std::string, bool> particular_attr_parser<std::vector<T>>::parse(string_view value) const
+std::tuple<blob_result, std::string, func_type> particular_attr_parser<std::vector<T>>::parse(string_view value) const
 {
     if (auto r = attr_parser::parse(value); !std::get<1>(r).empty()) return r;
     std::vector<intermediate_element_t> result;
@@ -92,24 +92,24 @@ std::tuple<blob_result, std::string, bool> particular_attr_parser<std::vector<T>
         }
     }
     if (result.empty()) {
-        return { nil_blob_result(), {}, false };
+        return { nil_blob_result(), {}, func_type::unspecified };
     } else if (result.size() == 1) {
-        return { particular_blob_result(result[0]), {}, false };
+        return { particular_blob_result(result[0]), {}, func_type::unspecified };
     }
     blob_result r = array_blob_result(std::span{ result });
     blob_result_allocate(&r);
-    return { r , {}, false };
+    return { r , {}, func_type::unspecified };
 }
 
 template <typename ... Ts>
-std::tuple<blob_result, std::string, bool> particular_attr_parser<std::tuple<Ts ...>>::parse(string_view value) const
+std::tuple<blob_result, std::string, func_type> particular_attr_parser<std::tuple<Ts ...>>::parse(string_view value) const
 {
     if (auto r = attr_parser::parse(value); !std::get<1>(r).empty()) return r;
     std::vector<blob_result> result;
     do_parse(std::make_index_sequence<sizeof... (Ts)>(), std::views::split(value, " "sv), result);
     blob_result r = array_blob_result(std::span{ result });
     blob_result_allocate(&r);
-    return { r, {}, false };
+    return { r, {}, func_type::unspecified };
 }
 
 }

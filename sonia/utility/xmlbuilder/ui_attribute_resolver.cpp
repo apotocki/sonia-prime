@@ -18,6 +18,14 @@ void ui_attribute_resolver::setup_view(string_view cmp)
     setup_set<std::tuple<float, float, std::string>>(cmp, { "border"sv });
 }
 
+void ui_attribute_resolver::setup_field(string_view cmp)
+{
+    setup_view(cmp);
+    setup_set<std::string>(cmp, { "value"sv, "color"sv, "space-replacement"sv, "text-align"sv, "text-valign"sv, "placeholder"sv, "content-mode"sv, "autocapitalization"sv, "autocorrection"sv });
+    setup_set<std::array<float, 2>>(cmp, { "font-size"sv });
+    setup_fset(cmp, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
+}
+
 ui_attribute_resolver::ui_attribute_resolver()
 {
     setup_view("div"sv);
@@ -50,15 +58,10 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_set<bool>("switch-button"sv, { "is-on"sv });
     setup_fset("switch-button"sv, { "on-change"sv });
 
-    setup_view("text-field"sv);
-    setup_set<std::string>("text-field"sv, { "value"sv, "color"sv, "space-replacement"sv, "text-align"sv, "text-valign"sv, "placeholder"sv, "content-mode"sv, "autocapitalization"sv, "autocorrection"sv });
-    setup_set<std::array<float, 2>>("text-field"sv, { "font-size"sv });
-    setup_fset("text-field"sv, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
+    setup_field("text-field"sv);
 
-    setup_view("num-field"sv);
-    setup_set<blob_result>("num-field"sv, { "value"sv, "color"sv, "text-align"sv, "text-valign"sv, "placeholder"sv, "content-mode"sv});
-    setup_set<std::array<float, 2>>("num-field"sv, { "font-size"sv });
-    setup_fset("num-field"sv, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
+    setup_field("num-field"sv);
+    setup_set<std::string>("num-field"sv, { "min"sv, "max"sv });
 
     // controllers
     setup_set<std::string>("form-ctl"sv, { "descriptor"sv });
@@ -67,11 +70,12 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_map("row"sv, "label"sv, "label"sv);
     setup_map("row"sv, "bar"sv, "h-bar"sv);
 
+    setup_set<std::string>("encoding-row", { "descriptor"sv });
     setup_set<bool>("encoding-row", { "highlighted"sv });
     setup_map("encoding-row"sv, "label"sv, "label"sv);
     setup_map("encoding-row"sv, "bar"sv, "h-bar"sv);
     setup_set<std::array<std::string, 2>>("encoding-row"sv, {"value"sv});
-    setup_fset("encoding-row"sv, { "on-change"sv, "on-enter"sv });
+    setup_fset("encoding-row"sv, { "on-change"sv, "on-enter"sv, "presentation-text"sv, "sample-text"sv });
 
     /*
     const char* booleanSet[] = { "is-on" };

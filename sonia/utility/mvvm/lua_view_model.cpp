@@ -58,7 +58,7 @@ public:
 
     bool newindex(string_view key, blob_result&& value) override
     {
-        SCOPE_EXIT([&value](){  blob_result_unpin(&value); });
+        SCOPE_EXIT([&value](){ blob_result_unpin(&value); });
         if (!ctx_.try_set_property(key, value)) {
             blob_result args[] = { string_blob_result(key), value };
             smart_blob result = ctx_.do_call_method("setProperty", std::span{args});

@@ -31,9 +31,11 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_view("div"sv);
 
     setup_view("h-bar"sv);
+    setup_set<bool>("h-bar"sv, { "scrolling"sv });
     setup_set<float>("h-bar"sv, { "spacing"sv });
 
     setup_view("v-bar"sv);
+    setup_set<bool>("v-bar"sv, { "scrolling"sv });
     setup_set<float>("v-bar"sv, { "spacing"sv });
 
     setup_view("flex-bar"sv);
@@ -49,6 +51,7 @@ ui_attribute_resolver::ui_attribute_resolver()
 
     setup_view("button"sv);
     setup_set<std::string>("button"sv, {"layout"sv, "image"sv, "text"sv, "text-color"sv });
+    setup_set<bool>("button"sv, { "shouldRecognizeSimultaneously"sv} );
     setup_fset("button"sv, { "on-tap"sv });
     setup_map("button"sv, "img"sv, "img"sv);
     setup_map("button"sv, "txt"sv, "label"sv);

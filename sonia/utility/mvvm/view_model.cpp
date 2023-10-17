@@ -24,11 +24,62 @@ void view_model::do_registration(registrar_type & mr)
     mr.register_method<&view_model::call_method>("call"sv);
     mr.register_method<&view_model::get_method>("get"sv);
     mr.register_method<&view_model::set_method>("set"sv);
+    mr.register_method<&view_model::inherit>("inherit"sv);
 }
 
 void view_model::set(int32_t idval)
 {
     id_ = idval;
+}
+
+void view_model::inherit(int32_t baseid)
+{
+    if (baseid == id()) throw exception("can't inherit itself");
+    bases_.insert(baseid);
+}
+
+bool view_model::has_method(string_view methodname) const
+{
+    if (invokable::has_method(methodname)) return true;
+    shared_ptr<manager> mng = get_manager();
+    if (!mng) return false;
+    for (int32_t baseid : bases_) {
+        if (mng->get_content_view(baseid)->has_method(methodname)) return true;
+    }
+    return false;
+}
+
+bool view_model::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result)
+{
+    if (invokable::try_invoke(methodname, args, result)) return true;
+    shared_ptr<manager> mng = get_manager();
+    if (!mng) return false;
+    for (int32_t baseid : bases_) {
+        if (mng->get_content_view(baseid)->try_invoke(methodname, args, result)) return true;
+    }
+    return false;
+}
+
+bool view_model::try_get_property(string_view propname, smart_blob& result) const
+{
+    if (invokable::try_get_property(propname, result)) return true;
+    shared_ptr<manager> mng = get_manager();
+    if (!mng) return false;
+    for (int32_t baseid : bases_) {
+        if (mng->get_content_view(baseid)->try_get_property(propname, result)) return true;
+    }
+    return false;
+}
+
+bool view_model::try_set_property(string_view propname, blob_result const& val)
+{
+    if (invokable::try_set_property(propname, val)) return true;
+    shared_ptr<manager> mng = get_manager();
+    if (!mng) return false;
+    for (int32_t baseid : bases_) {
+        if (mng->get_content_view(baseid)->try_set_property(propname, val)) return true;
+    }
+    return false;
 }
 
 /*

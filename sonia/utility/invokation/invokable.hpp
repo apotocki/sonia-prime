@@ -26,13 +26,13 @@ class invokable
 public:
     virtual ~invokable() = default;
 
-    bool has_method(string_view methodname) const;
+    virtual bool has_method(string_view methodname) const;
     virtual smart_blob invoke(string_view methodname, span<const blob_result> args);
     smart_blob invoke(string_view name, std::initializer_list<const blob_result> args)
     {
         return invoke(name, span{args});
     }
-    bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result);
+    virtual bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result);
     bool try_invoke(string_view methodname, span<const blob_result> args);
 
     // properties routine
@@ -40,8 +40,8 @@ public:
     virtual void set_property(string_view propname, blob_result const& val);
     virtual void on_property_change(string_view) {}
 
-    bool try_get_property(string_view propname, smart_blob& result) const;
-    bool try_set_property(string_view propname, blob_result const& val);
+    virtual bool try_get_property(string_view propname, smart_blob& result) const;
+    virtual bool try_set_property(string_view propname, blob_result const& val);
 
     void set_property(string_view propname, blob_result&& val);
 

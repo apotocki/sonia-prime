@@ -6,6 +6,7 @@
 
 #include <vector>
 #include <atomic>
+#include <set>
 #include <boost/unordered_map.hpp>
 #include <boost/variant.hpp>
 
@@ -83,7 +84,13 @@ public:
     void set(int32_t idval);
 
     int32_t id() const { return id_; }
+    void inherit(int32_t baseid);
 
+    // invokable
+    bool has_method(string_view methodname) const override;
+    bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) override;
+    bool try_get_property(string_view propname, smart_blob& result) const override;
+    bool try_set_property(string_view propname, blob_result const& val) override;
     // properties
     //smart_blob get_property(string_view propname) const override;
     //void set_property(string_view propname, blob_result const& val) override;
@@ -152,6 +159,8 @@ protected:
 
     //mutable fibers::mutex methods_mtx_;
     //boost::unordered_map<std::string, method_holder, hasher> methods_;
+
+    std::set<int32_t> bases_;
 
     scheduler_task_handle th_;
     fibers::mutex opmtx_;

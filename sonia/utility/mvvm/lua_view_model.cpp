@@ -79,6 +79,19 @@ public:
     }
 };
 
+bool lua_view_model::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result)
+{
+    if (view_model::try_invoke(methodname, args, result)) return true;
+    //GLOBAL_LOG_INFO() << "invoking lua: " << methodname;
+    vm_lua_resolver rslv{ *this };
+    result = as_cstring<32>(methodname, [args, &rslv, this](cstring_view methodname_cstr) {
+        return lua::language::eval_inplace(methodname_cstr, args, &rslv);
+    });
+    //GLOBAL_LOG_INFO() << "lua result: " << *result;
+    return true;
+}
+
+/*
 smart_blob lua_view_model::invoke(string_view methodname, span<const blob_result> args)
 {
     smart_blob result;
@@ -92,7 +105,28 @@ smart_blob lua_view_model::invoke(string_view methodname, span<const blob_result
     }
     return result;
 }
+*/
 
+bool lua_view_model::try_get_property(string_view propname, smart_blob& result) const
+{
+    if (view_model::try_get_property(propname, result)) return true;
+    result = as_cstring<32>(propname, [this](cstring_view propname_cstr) {
+        return lua::language::get_global_property(propname_cstr);
+    });
+    return true;
+}
+
+bool lua_view_model::try_set_property(string_view propname, blob_result const& val)
+{
+    if (view_model::try_set_property(propname, val)) return true;
+    as_cstring<32>(propname, [&val, this](cstring_view propname_cstr) {
+        lua::language::set_global_property(propname_cstr, val);
+    });
+    on_property_change(propname);
+    return true;
+}
+
+/*
 smart_blob lua_view_model::get_property(string_view propname) const
 {
     smart_blob result;
@@ -114,6 +148,7 @@ void lua_view_model::set_property(string_view propname, blob_result const& val)
         on_property_change(propname);
     }
 }
+*/
 
 void lua_view_model::load_lua(std::string code)
 {

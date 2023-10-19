@@ -73,10 +73,12 @@ bool view_model::try_get_property(string_view propname, smart_blob& result) cons
 
 bool view_model::try_set_property(string_view propname, blob_result const& val)
 {
+    //GLOBAL_LOG_INFO() << "view_model::try_set_property: " << propname;
     if (invokable::try_set_property(propname, val)) return true;
     shared_ptr<manager> mng = get_manager();
     if (!mng) return false;
     for (int32_t baseid : bases_) {
+        //GLOBAL_LOG_INFO() << "looking in base: " << baseid;
         if (mng->get_content_view(baseid)->try_set_property(propname, val)) return true;
     }
     return false;

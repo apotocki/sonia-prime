@@ -18,6 +18,7 @@ public:
 protected:
     void setup_view(string_view);
     void setup_field(string_view);
+    void setup_row(string_view);
 };
 
 }

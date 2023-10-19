@@ -718,6 +718,8 @@ inline T as(blob_result const& val)
     return from_blob<T>{}(val);
 }
 
+inline bool is_nil(blob_result const& val) { return val.type == blob_type::unspecified && !val.data; }
+
 template <typename T>
 T from_blob_at(size_t index, std::span<const blob_result> vals)
 {

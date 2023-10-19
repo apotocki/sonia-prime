@@ -26,6 +26,13 @@ void ui_attribute_resolver::setup_field(string_view cmp)
     setup_fset(cmp, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
 }
 
+void ui_attribute_resolver::setup_row(string_view cmp)
+{
+    setup_set<bool>(cmp, { "highlighted"sv });
+    setup_map(cmp, "label"sv, "label"sv);
+    setup_map(cmp, "bar"sv, "h-bar"sv);
+}
+
 ui_attribute_resolver::ui_attribute_resolver()
 {
     setup_view("div"sv);
@@ -69,15 +76,22 @@ ui_attribute_resolver::ui_attribute_resolver()
     // controllers
     setup_set<std::string>("form-ctl"sv, { "descriptor"sv });
     setup_set<std::string>("section"sv, { "title"sv });
-    setup_set<bool>("row", { "highlighted"sv });
-    setup_map("row"sv, "label"sv, "label"sv);
-    setup_map("row"sv, "bar"sv, "h-bar"sv);
 
+    setup_row("row");
+
+    setup_row("text-row");
+    setup_map("text-row"sv, "field"sv, "text-field"sv);
+    setup_set<std::string>("text-row"sv, {"value"sv});
+    setup_fset("text-row"sv, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
+
+    setup_row("numeric-row");
+    setup_map("numeric-row"sv, "field"sv, "num-field"sv);
+    setup_set<std::string>("numeric-row"sv, {"value"sv});
+    setup_fset("numeric-row"sv, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
+
+    setup_row("encoding-row");
     setup_set<std::string>("encoding-row", { "descriptor"sv });
-    setup_set<bool>("encoding-row", { "highlighted"sv });
-    setup_map("encoding-row"sv, "label"sv, "label"sv);
-    setup_map("encoding-row"sv, "bar"sv, "h-bar"sv);
-    setup_set<std::array<std::string, 2>>("encoding-row"sv, {"value"sv});
+    setup_set<std::string>("encoding-row"sv, {"value"sv});
     setup_fset("encoding-row"sv, { "on-change"sv, "on-enter"sv, "presentation-text"sv, "sample-text"sv });
 
     /*

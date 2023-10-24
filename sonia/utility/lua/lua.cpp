@@ -10,6 +10,8 @@
 //#include "sonia/singleton.hpp"
 //#include "sonia/services.hpp"
 
+#include "variant_lib.hpp"
+
 extern "C" {
 
 #include <lua.h>
@@ -69,6 +71,8 @@ language::language()
 {
     lua_State* L = luaL_newstate();
     luaL_openlibs(L); /* Load Lua libraries */
+
+    luaopen_variantlib(L);
 
     lua_pushlightuserdata(L, (void*)&context_key);
     lua_pushlightuserdata(L, this);
@@ -213,6 +217,8 @@ void language::push_from_blob(blob_result const& b)
         return;
     }
     if (b.is_array || b.type == blob_type::unspecified) {
+        push_variant(L, b);
+        /*
         lua_newtable(L);
         blob_result_type_selector(b, [L, this](auto ident, blob_result b) {
             using type = typename decltype(ident)::type;
@@ -232,6 +238,7 @@ void language::push_from_blob(blob_result const& b)
                 lua_settable(L, -3);
             }
         });
+        */
         return;
     }
     switch (b.type) {
@@ -294,7 +301,6 @@ blob_result to_blob(lua_State* L, int index)
             int bval = lua_toboolean(L, index);
             return bool_blob_result(!!bval);
         }
-            break;
 
         case LUA_TSTRING:
         {
@@ -304,7 +310,6 @@ blob_result to_blob(lua_State* L, int index)
             blob_result_allocate(&result);
             return result;
         }
-            break;
 
         case LUA_TTABLE:
         {
@@ -384,6 +389,12 @@ blob_result to_blob(lua_State* L, int index)
             *(reinterpret_cast<blob_result*>(const_cast<void*>(result->data)) + 1) = blob_values.detach();
             return result.detach();
         }
+
+        case LUA_TUSERDATA:
+            if (blob_result* br = luaL_check_variant_lib(L, index); br) {
+                blob_result_pin(br);
+                return *br;
+            }
 
         case LUA_TNIL:
         default:

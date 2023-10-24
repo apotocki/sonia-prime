@@ -219,9 +219,12 @@ void language::push_from_blob(blob_result const& b)
             using ftype = std::conditional_t<std::is_void_v<type>, uint8_t, type>;
             using fstype = std::conditional_t<std::is_same_v<ftype, bool>, uint8_t, ftype>;
             for (int32_t i = 0; i < b.size / sizeof(fstype); ++i) {
-                lua_pushnumber(L, (lua_Number)(i+1));
+                lua_pushinteger(L, (lua_Integer)(i+1));
                 if constexpr (is_same_v<fstype, blob_result>) {
                     push_from_blob(*(reinterpret_cast<blob_result const*>(b.data) + i));
+                } else if constexpr (is_integral_v<fstype>) {
+                    fstype const* pval = reinterpret_cast<fstype const*>(b.data) + i;
+                    lua_pushinteger(L, (lua_Integer)*pval);
                 } else {
                     fstype const* pval = reinterpret_cast<fstype const*>(b.data) + i;
                     lua_pushnumber(L, (lua_Number)*pval);

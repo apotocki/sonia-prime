@@ -35,6 +35,8 @@ void ui_attribute_resolver::setup_row(string_view cmp)
 
 ui_attribute_resolver::ui_attribute_resolver()
 {
+    setup_set<std::string>("document"sv, { "root"sv });
+
     setup_view("div"sv);
 
     setup_view("h-bar"sv);
@@ -73,26 +75,40 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_field("num-field"sv);
     setup_set<std::string>("num-field"sv, { "min"sv, "max"sv });
 
+    setup_field("bytes-field"sv);
+    setup_set<std::string>("bytes-field"sv, { "encoding"sv });
+    setup_set<int64_t>("bytes-field"sv, { "max-count"sv });
+
     // controllers
     setup_set<std::string>("form-ctl"sv, { "descriptor"sv });
     setup_set<std::string>("section"sv, { "title"sv });
 
-    setup_row("row");
+    setup_row("row"sv);
 
-    setup_row("text-row");
+    setup_row("text-row"sv);
     setup_map("text-row"sv, "field"sv, "text-field"sv);
     setup_set<std::string>("text-row"sv, {"value"sv});
     setup_fset("text-row"sv, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
 
-    setup_row("numeric-row");
+    setup_row("numeric-row"sv);
     setup_map("numeric-row"sv, "field"sv, "num-field"sv);
     setup_set<std::string>("numeric-row"sv, {"value"sv});
     setup_fset("numeric-row"sv, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
 
-    setup_row("encoding-row");
+    setup_row("bytes-row"sv);
+    setup_map("bytes-row"sv, "field"sv, "bytes-field"sv);
+    setup_set<std::string>("bytes-row"sv, {"value"sv});
+    setup_fset("bytes-row"sv, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv });
+
+    setup_row("encoding-row"sv);
     setup_set<std::string>("encoding-row", { "descriptor"sv });
     setup_set<std::string>("encoding-row"sv, {"value"sv});
     setup_fset("encoding-row"sv, { "on-change"sv, "on-enter"sv, "presentation-text"sv, "sample-text"sv });
+
+    setup_row("algorithm-row"sv);
+    setup_set<std::string>("algorithm-row", { "descriptor"sv });
+    setup_set<std::string>("algorithm-row"sv, {"value"sv});
+    setup_fset("algorithm-row"sv, { "on-change"sv, "on-enter"sv, "presentation-text"sv });
 
     /*
     const char* booleanSet[] = { "is-on" };

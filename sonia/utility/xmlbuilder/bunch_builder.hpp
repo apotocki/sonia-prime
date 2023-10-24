@@ -32,6 +32,7 @@ public:
     void set_property(string_view id, string_view propname, blob_result const& value) override;
     void set_property_functional(string_view id, string_view propname, string_view code, func_type) override;
     void append(string_view parentid, string_view childid) override;
+    void append_to_document(string_view childid) override;
 
     shared_ptr<invokation::invokable> get_element_by(string_view id) const;
     shared_ptr<invokation::invokable> try_get_element_by(string_view id) const noexcept;

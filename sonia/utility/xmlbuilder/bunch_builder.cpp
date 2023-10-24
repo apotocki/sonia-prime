@@ -70,4 +70,9 @@ void bunch_builder::do_append(invokation::invokable& parent, invokation::invokab
     parent.invoke("append", {object_blob_result(&child)});
 }
 
+void bunch_builder::append_to_document(string_view childid)
+{
+
+}
+
 }

@@ -11,9 +11,9 @@ namespace sonia::xmlbuilder {
 void ui_attribute_resolver::setup_view(string_view cmp)
 {
     setup_set<bool>(cmp, { "disabled"sv, "enabled"sv, "hidden"sv });
-    setup_set<float>(cmp, { "x-weight"sv, "y-weight" });
+    setup_set<float>(cmp, { "x-weight"sv, "y-weight", "border-radius"sv });
     setup_set<std::string>(cmp, { "background-color"sv, "cell-valign"sv, "cell-align"sv });
-    setup_set<std::array<float, 4>>(cmp, { "padding"sv, "margin"sv });
+    setup_set<std::array<float, 4>>(cmp, { "padding"sv, "margin"sv, "border-width"sv });
     setup_set<std::array<float, 2>>(cmp, { "weight"sv, "width"sv, "height"sv, "size"sv });
     setup_set<std::tuple<float, float, std::string>>(cmp, { "border"sv });
 }
@@ -109,6 +109,9 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_set<std::string>("algorithm-row", { "descriptor"sv });
     setup_set<std::string>("algorithm-row"sv, {"value"sv});
     setup_fset("algorithm-row"sv, { "on-change"sv, "on-enter"sv, "presentation-text"sv });
+
+    setup_set<std::array<float, 4>>("linear-adjuster"sv, {"height-constraint"sv, "mask"sv});
+    setup_set<std::string>("component-adjuster"sv, {"left"sv, "top"sv, "right"sv, "bottom"sv});
 
     /*
     const char* booleanSet[] = { "is-on" };

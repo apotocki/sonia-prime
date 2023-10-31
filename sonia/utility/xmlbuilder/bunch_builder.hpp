@@ -34,13 +34,15 @@ public:
     void append(string_view parentid, string_view childid) override;
     void append_to_document(string_view childid) override;
 
-    shared_ptr<invokation::invokable> get_element_by(string_view id) const;
-    shared_ptr<invokation::invokable> try_get_element_by(string_view id) const noexcept;
+    shared_ptr<invokation::invokable> get_element_by(string_view id);
+    shared_ptr<invokation::invokable> try_get_element_by(string_view id) noexcept;
 
 protected:
     virtual void do_set_text(invokation::invokable&, string_view text);
     virtual void do_set_property_functional(invokation::invokable&, string_view propname, string_view code, func_type) = 0;
     virtual void do_append(invokation::invokable& parent, invokation::invokable& child);
+
+    virtual shared_ptr<invokation::invokable> root_element() = 0;
 
 protected:
     boost::unordered_map<std::string, shared_ptr<invokation::invokable>, hasher> elements_;

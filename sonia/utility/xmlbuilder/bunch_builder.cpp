@@ -12,15 +12,17 @@ void bunch_builder::build(string_view xml)
     parse(xml, *this, factory_.get_attribute_resolver());
 }
 
-shared_ptr<invokation::invokable> bunch_builder::get_element_by(string_view id) const
+shared_ptr<invokation::invokable> bunch_builder::get_element_by(string_view id)
 {
+    if (id.empty()) return root_element();
     auto it = elements_.find(id, hasher{}, string_equal_to{});
     if (it == elements_.end()) throw exception("An element with identifier '%1%' was not found."_fmt % id);
     return it->second;
 }
 
-shared_ptr<invokation::invokable> bunch_builder::try_get_element_by(string_view id) const noexcept
+shared_ptr<invokation::invokable> bunch_builder::try_get_element_by(string_view id) noexcept
 {
+    if (id.empty()) return root_element();
     auto it = elements_.find(id, hasher{}, string_equal_to{});
     if (it == elements_.end()) return {};
     return it->second;

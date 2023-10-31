@@ -598,8 +598,12 @@ struct from_blob<std::span<T>>
     span_t operator()(blob_result val) const
     {
         using namespace sonia;
-        if (val.type == blob_type_for<T>() && val.is_array) {
-            return span_t{ reinterpret_cast<T*>(val.data), (size_t)val.size / sizeof(T) };
+        if (val.type == blob_type_for<T>()) {
+            if (val.is_array) {
+                return span_t{ reinterpret_cast<T*>(val.data), (size_t)val.size / sizeof(T) };
+            } else {
+                return span_t{ reinterpret_cast<T*>(&val.data), 1 };
+            }
         }
         THROW_INTERNAL_ERROR("can't convert blob %1% to std::span<%2%>"_fmt % val % typeid(T).name());
     }

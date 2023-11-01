@@ -82,6 +82,8 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_set<std::string>("bytes-field"sv, { "encoding"sv });
     setup_set<int64_t>("bytes-field"sv, { "max-count"sv });
 
+    setup_set<std::string>("split"sv, {"first"sv, "second"sv});
+
     // controllers
     setup_set<std::string>("form-ctl"sv, { "descriptor"sv });
     setup_set<std::string>("section"sv, { "title"sv });

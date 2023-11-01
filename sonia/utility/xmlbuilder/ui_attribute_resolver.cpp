@@ -39,6 +39,9 @@ ui_attribute_resolver::ui_attribute_resolver()
 
     setup_view("div"sv);
 
+    setup_set<std::string>("unlimited-spacer"sv, { "background-color"sv });
+    setup_set<std::tuple<float, float, std::string>>("unlimited-spacer"sv, { "border"sv });
+
     setup_view("h-bar"sv);
     setup_set<bool>("h-bar"sv, { "scrolling"sv });
     setup_set<float>("h-bar"sv, { "spacing"sv });

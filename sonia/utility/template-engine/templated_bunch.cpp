@@ -106,7 +106,7 @@ void templated_bunch::set_text(invokation::invokable& obj, string_view text)
     }
 }
 
-void templated_bunch::append_element(span<const xmlbuilder::element> parents, xmlbuilder::element& e)
+void templated_bunch::append_element(span<xmlbuilder::element> parents, xmlbuilder::element& e)
 {
     if (!parents.empty()) {
         // is attribute tag?
@@ -140,7 +140,7 @@ void templated_bunch::append_element(span<const xmlbuilder::element> parents, xm
     elements_.insert(it, { std::string{e.id}, std::move(cmp) });
 }
 
-void templated_bunch::close_element(span<const xmlbuilder::element> parents, xmlbuilder::element& e)
+void templated_bunch::close_element(span<xmlbuilder::element> parents, xmlbuilder::element& e)
 {
     auto child = get_element_by(e.id);
     if (!e.text.empty()) {

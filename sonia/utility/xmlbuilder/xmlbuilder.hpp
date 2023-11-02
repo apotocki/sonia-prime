@@ -36,8 +36,8 @@ class external_builder
 {
 public:
     virtual ~external_builder() = default;
-    virtual void append_element(span<const element> parents, element&) = 0;
-    virtual void close_element(span<const element> parents, element&) = 0;
+    virtual void append_element(span<element> parents, element&) = 0;
+    virtual void close_element(span<element> parents, element&) = 0;
 };
 
 class basic_external_builder : public external_builder
@@ -51,8 +51,8 @@ public:
     virtual void append_to_document(string_view childid) {}
 
     virtual std::string generate_id() const;
-    virtual void append_element(span<const element> parents, element &);
-    virtual void close_element(span<const element> parents, element &);
+    void append_element(span<element> parents, element &) override;
+    void close_element(span<element> parents, element &) override;
 
 protected:
     mutable int id_counter_{ 0 };

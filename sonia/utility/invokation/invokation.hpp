@@ -17,6 +17,8 @@
 
 #include "sonia/prime_config.hpp"
 
+namespace sonia::invokation { class invokable; }
+
 extern "C" {
 
 enum class blob_type : uint8_t {
@@ -37,6 +39,7 @@ enum class blob_type : uint8_t {
 struct blob_result {
     union {
         void const* data;
+        sonia::invokation::invokable* object;
         uint64_t ui64value;
         int64_t i64value;
         float floatvalue;
@@ -165,7 +168,7 @@ inline blob_result function_blob_result(std::string_view value)
     return blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, blob_type::function };
 }
 
-inline blob_result object_blob_result(void* value)
+inline blob_result object_blob_result(sonia::invokation::invokable* value)
 {
     return blob_result{ value, 0, 0, 0, blob_type::object };
 }
@@ -499,6 +502,21 @@ struct from_blob<sonia::optional<T>>
     }
 };
 
+template <std::derived_from<sonia::invokation::invokable> T>
+struct from_blob<T>
+{
+    T& operator()(blob_result val) const
+    {
+        using namespace sonia;
+        if (val.type == blob_type::object) {
+            if (T* result = dynamic_cast<T*>(val.object); result) {
+                return *result;
+            }
+        }
+        THROW_INTERNAL_ERROR("can't convert blob %1% to object %2%"_fmt % val % typeid(T).name());
+    }
+};
+
 template <>
 struct from_blob<bool>
 {
@@ -717,7 +735,7 @@ private:
 };
 
 template <typename T>
-inline T as(blob_result const& val)
+inline auto as(blob_result const& val) -> decltype(from_blob<T>{}(std::declval<blob_result>()))
 {
     return from_blob<T>{}(val);
 }

@@ -23,18 +23,29 @@ std::string basic_external_builder::generate_id() const
     return namess.str();
 }
 
-void basic_external_builder::append_element(span<const element> parents, element & e)
+void basic_external_builder::append_element(span<element> parents, element & e)
 {
     if (parents.empty()) return; // skip root
 
-    // is attribute tag?
-    element const& e_parent = parents.back();
-    
     if (e.id.empty()) {
         e.id = generate_id();
     }
-
+    
     create(e.name, e.id);
+
+    // is parent an attribute tag?
+    if (parents.size() > 1) {
+        element & e_parent = parents.back();
+        element const& e_snd_parent = parents[parents.size() - 2];
+        if (e_parent.name.starts_with(e_snd_parent.name) && e_parent.name.size() > e_snd_parent.name.size() && e_parent.name[e_snd_parent.name.size()] == '.') {
+            if (!e_parent.text.empty()) {
+                e_parent.text.push_back(',');
+            }
+            e_parent.text.push_back('$');
+            e_parent.text.append(e.id);
+            return;
+        }
+    }
     
     if (parents.size() > 1) {
         append(parents.back().id, e.id);
@@ -43,7 +54,7 @@ void basic_external_builder::append_element(span<const element> parents, element
     }
 }
 
-void basic_external_builder::close_element(span<const element> parents, element& e)
+void basic_external_builder::close_element(span<element> parents, element& e)
 {
     // is attribute tag?
     if (!e.text.empty()) {
@@ -114,28 +125,6 @@ void builder_model::on_end_element()
     }
 
     eb.append_element(std::span{ stack_ }.subspan(0, stack_.size() - 1), e);
-    /*
-    if (stack_.size() == 1) return; // skip root
-
-    element& e = stack_.back();
-
-    if (e.id.empty()) {
-        e.id = eb.generate_id();
-    }
-
-    eb.create(e.name, e.id);
-    for (auto const& attr : e.attrs) {
-        eb.set_property(e.id, attr.first, *attr.second);
-    }
-    for (auto const& func : e.functionals) {
-        eb.set_property_functional(e.id, std::get<0>(func), std::get<1>(func), std::get<2>(func));
-    }
-    if (stack_.size() > 2) {
-        eb.append(stack_[stack_.size() - 2].id, e.id);
-    } else  { // stack_.size() == 2
-        eb.append_to_document(e.id);
-    }
-    */
 }
 
 void builder_model::on_close_element()
@@ -181,7 +170,7 @@ void builder_model::do_close_tag()
     }
 
     eb.close_element(std::span{ stack_ }.subspan(0, stack_.size() - 1), e);
-
+    //eb.append_element(std::span{ stack_ }.subspan(0, stack_.size() - 1), e); //see on_end_element
     stack_.pop_back();
 }
 

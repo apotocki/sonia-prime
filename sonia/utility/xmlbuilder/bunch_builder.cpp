@@ -49,6 +49,30 @@ void bunch_builder::do_set_text(invokation::invokable& obj, string_view text)
 
 void bunch_builder::set_property(string_view id, string_view propname, blob_result const& value)
 {
+    if (value.type == blob_type::string) {
+        string_view vstr = as<string_view>(value);
+        std::vector<blob_result> objects;
+        while (!vstr.empty()) {
+            if (vstr.size() < 2 || vstr.front() != '$' || vstr[1] == '$') {
+                objects.clear();
+                break;
+            }
+            size_t pos = vstr.find(',');
+            if (pos == vstr.npos) pos = vstr.size();
+            string_view eid = vstr.substr(1, pos - 1);
+            objects.push_back(object_blob_result(get_element_by(eid).get()));
+            vstr = vstr.substr(pos);
+            if (!vstr.empty()) vstr = vstr.substr(1); // skip comma
+        }
+        if (!objects.empty()) {
+            if (objects.size() == 1) {
+                get_element_by(id)->set_property(propname, objects.front());
+            } else {
+                get_element_by(id)->set_property(propname, array_blob_result(span{objects}));
+            }
+            return;
+        }
+    }
     get_element_by(id)->set_property(propname, value);
 }
 

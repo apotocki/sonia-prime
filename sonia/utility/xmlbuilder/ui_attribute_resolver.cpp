@@ -38,6 +38,7 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_set<std::string>("document"sv, { "root"sv });
 
     setup_view("div"sv);
+    setup_set<std::string>("div"sv, { "fit"sv });
 
     setup_set<std::string>("unlimited-spacer"sv, { "background-color"sv });
     setup_set<std::tuple<float, float, std::string>>("unlimited-spacer"sv, { "border"sv });

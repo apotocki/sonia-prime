@@ -22,7 +22,7 @@ void ui_attribute_resolver::setup_field(string_view cmp)
 {
     setup_view(cmp);
     setup_set<std::string>(cmp, { "value"sv, "color"sv, "space-replacement"sv, "text-align"sv, "text-valign"sv, "placeholder"sv, "content-mode"sv, "autocapitalization"sv, "autocorrection"sv });
-    setup_set<std::array<float, 2>>(cmp, { "font-size"sv });
+    setup_set<std::vector<float>>(cmp, { "font-size"sv });
     setup_fset(cmp, { "on-change"sv, "on-enter"sv, "on-begin"sv, "on-end"sv, "presentation-text"sv });
 }
 

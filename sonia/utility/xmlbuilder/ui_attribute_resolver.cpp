@@ -75,7 +75,8 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_fset("switch-button"sv, { "on-change"sv });
 
     setup_field("text-field"sv);
-
+    setup_set<bool>("text-field"sv, {"editable"sv });
+    
     setup_field("num-field"sv);
     setup_set<std::string>("num-field"sv, { "min"sv, "max"sv });
 

@@ -16,6 +16,9 @@ void ui_attribute_resolver::setup_view(string_view cmp)
     setup_set<std::array<float, 4>>(cmp, { "padding"sv, "margin"sv, "border-width"sv });
     setup_set<std::array<float, 2>>(cmp, { "weight"sv, "width"sv, "height"sv, "size"sv });
     setup_set<std::tuple<float, float, std::string>>(cmp, { "border"sv });
+
+    // object properties
+    setup_set<std::string>(cmp, { "padding-adjuster"sv, "margin-adjuster"sv, "border-width-adjuster"sv });
 }
 
 void ui_attribute_resolver::setup_field(string_view cmp)

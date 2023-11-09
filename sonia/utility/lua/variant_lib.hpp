@@ -11,12 +11,19 @@ extern "C" {
 
 }
 
+#include "lua.hpp"
+
 namespace sonia::lua {
 
-int luaopen_variantlib(lua_State* L);
-    
-blob_result* luaL_check_variant_lib(lua_State* L, int index);
+int luaopen_variantlib(lua_State*);
 
-int push_variant(lua_State* L, blob_result const&);
+void setup_ext(lua_State*, language*);
+
+blob_result* luaL_check_variant_lib(lua_State*, int index);
+
+void push_from_blob(lua_State*, blob_result const&);
+blob_result to_blob(lua_State*, int index);
+
+int push_variant(lua_State*, blob_result const&);
 
 }

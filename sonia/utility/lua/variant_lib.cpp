@@ -46,7 +46,14 @@ int push_variant(lua_State* L, blob_result const& value)
     return 1;
 }
 
-int variant_tostring(lua_State* L) {
+int variant_at_index(lua_State* L)
+{
+    blob_result* br = luaL_check_variant_lib(L, 1);
+    luaL_argcheck(L, !!br, 1, "`variant' expected");
+}
+
+int variant_tostring(lua_State* L)
+{
     blob_result* br = luaL_check_variant_lib(L, 1);
     luaL_argcheck(L, !!br, 1, "`variant' expected");
     std::ostringstream s;

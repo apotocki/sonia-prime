@@ -47,6 +47,13 @@ std::tuple<blob_result, std::string, func_type> particular_attr_parser<T>::parse
     //throw exception("no attribute parser defined for type '%1%' to parse value: '%2%'"_fmt % typeid(T).name() % name);
 }
 
+template <typename T>
+std::tuple<blob_result, std::string, func_type> particular_attr_parser<optional<T>>::parse(string_view value) const
+{
+    if (value.empty()) return {nil_blob_result(), {}, func_type::unspecified };
+    return particular_attr_parser<T>{}.parse(value);
+}
+
 template <typename T, size_t SzV>
 std::tuple<blob_result, std::string, func_type> particular_attr_parser<std::array<T, SzV>>::parse(string_view value) const
 {
@@ -73,7 +80,7 @@ std::tuple<blob_result, std::string, func_type> particular_attr_parser<std::arra
 
     blob_result r = array_blob_result(std::span{ result });
     blob_result_allocate(&r);
-    return { r , {}, func_type::unspecified };
+    return { r, {}, func_type::unspecified };
 }
 
 template <typename T>

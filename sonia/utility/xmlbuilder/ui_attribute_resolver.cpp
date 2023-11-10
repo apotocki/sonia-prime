@@ -14,7 +14,8 @@ void ui_attribute_resolver::setup_view(string_view cmp)
     setup_set<float>(cmp, { "x-weight"sv, "y-weight", "border-radius"sv });
     setup_set<std::string>(cmp, { "background-color"sv, "cell-valign"sv, "cell-align"sv });
     setup_set<std::array<float, 4>>(cmp, { "padding"sv, "margin"sv, "border-width"sv });
-    setup_set<std::array<float, 2>>(cmp, { "weight"sv, "width"sv, "height"sv });
+    setup_set<std::array<float, 2>>(cmp, { "weight"sv });
+    setup_set<optional<std::array<float, 2>>>(cmp, { "width"sv, "height"sv });
     setup_set<std::tuple<float, float, std::string>>(cmp, { "border"sv });
 
     // object properties
@@ -83,6 +84,7 @@ ui_attribute_resolver::ui_attribute_resolver()
     
     setup_field("num-field"sv);
     setup_set<std::string>("num-field"sv, { "min"sv, "max"sv });
+    setup_set<bool>("num-field"sv, { "hex-mode"sv });
 
     setup_field("bytes-field"sv);
     setup_set<std::string>("bytes-field"sv, { "encoding"sv });

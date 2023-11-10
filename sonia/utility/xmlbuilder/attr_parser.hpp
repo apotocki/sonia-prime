@@ -7,6 +7,7 @@
 #include <tuple>
 
 #include "sonia/string.hpp"
+#include "sonia/optional.hpp"
 
 #include "sonia/utility/invokation/invokation.hpp"
 
@@ -40,6 +41,13 @@ public:
 
 template <>
 class particular_attr_parser<bool> : public attr_parser
+{
+public:
+    std::tuple<blob_result, std::string, func_type> parse(string_view value) const override;
+};
+
+template <typename T>
+class particular_attr_parser<optional<T>> : public attr_parser
 {
 public:
     std::tuple<blob_result, std::string, func_type> parse(string_view value) const override;

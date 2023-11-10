@@ -592,16 +592,18 @@ struct from_blob<sonia::basic_string_view<CharT>>
 
 template <typename CharT>
 requires (sizeof(CharT) == 1)
-struct from_blob<std::span<CharT>>
+struct from_blob<std::span<const CharT>>
 {
-    using span_t = std::span<CharT>;
-    span_t operator()(blob_result val) const
+    using span_t = std::span<const CharT>;
+    span_t operator()(blob_result const& val) const
     {
         using namespace sonia;
         if (val.type == blob_type::string ||
             (val.is_array && (val.type == blob_type::unspecified || val.type == blob_type::i8 || val.type == blob_type::ui8)))
         {
-            return span_t{ reinterpret_cast<CharT*>(val.data), (size_t)val.size };
+            return span_t{ reinterpret_cast<CharT const*>(val.data), (size_t)val.size };
+        } else if (!val.is_array && (val.type == blob_type::i8 || val.type == blob_type::ui8)) {
+            return span_t{ reinterpret_cast<CharT const*>(&val.ui8value), (size_t)1 };
         }
         THROW_INTERNAL_ERROR("can't convert blob %1% to std::span<CharT>"_fmt % val);
         //THROW_INTERNAL_ERROR("can't convert blob %1% to std::span<%2%>"_fmt % val % typeid(CharT).name());

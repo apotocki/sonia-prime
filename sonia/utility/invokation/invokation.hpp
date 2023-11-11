@@ -480,6 +480,55 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
     return os;
 }
 
+inline std::ostream& print_type(std::ostream& os, blob_result const& b)
+{
+    if (b.type == blob_type::unspecified && !b.data) {
+        return os << "nil";
+    }
+    if (b.is_array) {
+        os << "[";
+    }
+    switch (b.type)
+    {
+    case blob_type::unspecified:
+        os << "unspecified"; break;
+    case blob_type::boolean:
+        os << "bool"; break;
+    case blob_type::i8:
+        os << "i8"; break;
+    case blob_type::ui8:
+        os << "ui8"; break;
+    case blob_type::i16:
+        os << "i16"; break;
+    case blob_type::ui16:
+        os << "ui16"; break;
+    case blob_type::i32:
+        os << "i32"; break;
+    case blob_type::ui32:
+        os << "ui32"; break;
+    case blob_type::i64:
+        os << "i64"; break;
+    case blob_type::ui64:
+        os << "ui64"; break;
+    case blob_type::flt:
+        os << "float"; break;
+    case blob_type::string:
+        os << "string"; break;
+    case blob_type::blob:
+        os << "variant"; break;
+    case blob_type::function:
+        os << "function"; break;
+    case blob_type::object:
+        os << "object"; break;
+    case blob_type::error:
+        os << "error"; break;
+    }
+    if (b.is_array) {
+        os << "]";
+    }
+    return os;
+}
+
 template <typename T>
 struct from_blob
 {

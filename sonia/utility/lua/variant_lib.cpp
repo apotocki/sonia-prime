@@ -181,10 +181,17 @@ void push_from_blob(lua_State* L, blob_result const& b)
     }
 }
 
-int variant_at_index(lua_State* L)
+int variant_index(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
     luaL_argcheck(L, !!br, 1, "`variant' expected");
+
+    luaL_getmetatable(L, VARIANT_METATABLE_NAME);
+    lua_pushvalue(L, 2);
+    lua_rawget(L, -2);
+
+    if (!lua_isnil(L, -1)) return 1;
+
     auto index = luaL_checkinteger(L, 2);
     if (!br->is_array) { // scalar
         if (index == 1) { // push itself
@@ -214,6 +221,25 @@ int variant_at_index(lua_State* L)
     return 1;
 }
 
+int variant_len(lua_State* L)
+{
+    blob_result* br = luaL_check_variant_lib(L, 1);
+    luaL_argcheck(L, !!br, 1, "`variant' expected");
+
+    if (br->is_array) {
+        lua_Integer count = blob_result_type_selector(*br, [](auto ident, blob_result b) {
+            using type = typename decltype(ident)::type;
+            using ftype = std::conditional_t<std::is_void_v<type>, uint8_t, type>;
+            using fstype = std::conditional_t<std::is_same_v<ftype, bool>, uint8_t, ftype>;
+            return b.size / sizeof(fstype);
+        });
+        lua_pushinteger(L, count);
+    } else {
+        luaL_error(L, "is not an array");
+    }
+    return 1;
+}
+
 int variant_tostring(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
@@ -225,20 +251,56 @@ int variant_tostring(lua_State* L)
     return 1;
 }
 
+template <std::integral T>
+int variant_array(lua_State* L)
+{
+    int argcount = lua_gettop(L);
+    blob_result br{ nullptr, static_cast<int32_t>(argcount * sizeof(T)), 0, 1, blob_type_for<T>() };
+    blob_result_allocate(&br);
+    defer{ blob_result_unpin(&br); };
+    T* arr_data = reinterpret_cast<T*>(const_cast<void*>(br.data));
+    for (int i = 0; i < argcount; ++i) {
+        auto elemval = luaL_checkinteger(L, i + 1);
+        bool check = (std::numeric_limits<T>::min)() <= elemval && (std::numeric_limits<T>::max)() >= elemval;
+        luaL_argcheck(L, check, i + 1, "invalid value");
+        arr_data[i] = static_cast<T>(elemval);
+    }
+    return push_variant(L, br);
+}
+
+int variant_type(lua_State* L)
+{
+    blob_result* br = luaL_check_variant_lib(L, 1);
+    luaL_argcheck(L, !!br, 1, "`variant' expected");
+    std::ostringstream s;
+    print_type(s, *br);
+    std::string result = s.str();
+    lua_pushfstring(L, "%s", result.c_str());
+    return 1;
+}
+
 const struct luaL_Reg variantlib[] = {
-    //{"new", newvariant},
+    {"ui8array", variant_array<uint8_t>},
+    {"i8array", variant_array<int8_t>},
     {NULL, NULL}
 };
 
 const struct luaL_Reg variantlib_m[] = {
     {"__tostring", variant_tostring},
-    {"__index", variant_at_index},
+    {"__index", variant_index},
+    {"__len", variant_len},
+    {"__gc", variant_gc},
+    {NULL, NULL}
+};
+
+const struct luaL_Reg variantlib_f[] = {
+    {"type", variant_type},
     {NULL, NULL}
 };
 
 int luaopen_variantlib(lua_State* L)
 {
-#ifdef MERGE_VARIANT_LIB
+#ifdef MERGE_VARIANT_LIB // hasn't tested
     lua_getglobal(L, VARIANT_LIB_NAME);
     if (lua_isnil(L, -1)) {
         lua_pop(L, 1);
@@ -247,14 +309,9 @@ int luaopen_variantlib(lua_State* L)
     }
 #else
     luaL_newmetatable(L, VARIANT_METATABLE_NAME);
-    lua_pushstring(L, "__gc");
-    lua_pushcfunction(L, variant_gc);
-    lua_settable(L, -3);
-
-    lua_pushstring(L, "__index");
-    lua_pushvalue(L, -2);  /* pushes the metatable */
-    lua_settable(L, -3);  /* metatable.__index = metatable */
     luaL_setfuncs(L, variantlib_m, 0);
+    luaL_setfuncs(L, variantlib_f, 0);
+    lua_pop(L, 1);
 
     lua_newtable(L);
 #endif

@@ -281,22 +281,25 @@ int variant_int(lua_State* L)
 {
     if (lua_isinteger(L, 1)) {
         lua_Integer i = lua_tointeger(L, 1);
-        return push_variant(L, i64_blob_result(i));
+        lua_pushinteger(L, i); // we use native lua integer if equivalent
+        //return push_variant(L, i64_blob_result(i));
     } else if (lua_isstring(L, 1)) {
         char const* strval = lua_tostring(L, 1);
         size_t sz = lua_rawlen(L, 1);
         using integer_type = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>;
         integer_type ival(string_view{ strval, sz });
-        if (ival >= 0 && ival <= (std::numeric_limits<uint64_t>::max)()) {
+        if (ival <= (std::numeric_limits<int64_t>::max)() && ival >= (std::numeric_limits<int64_t>::min)()) {
+            lua_pushinteger(L, ival.convert_to<lua_Integer>()); // we use native lua integer if equivalent
+            //return push_variant(L, i64_blob_result(ival.convert_to<int64_t>()));
+        } else if (ival >= 0 && ival <= (std::numeric_limits<uint64_t>::max)()) {
             return push_variant(L, ui64_blob_result(ival.convert_to<uint64_t>()));
-        } else if (ival <= (std::numeric_limits<int64_t>::max)() && ival >= (std::numeric_limits<int64_t>::min)()) {
-            return push_variant(L, i64_blob_result(ival.convert_to<int64_t>()));
         } else {
             return luaL_error(L, "invalid argument");
         }
     } else {
         return luaL_error(L, "invalid argument");
     }
+    return 1;
 }
 
 int variant_type(lua_State* L)

@@ -17,7 +17,7 @@ namespace sonia {
 class integer
 {
 public:
-    typedef boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>> integer_type;
+    using integer_type = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>;
 
     integer() : value_(0) {}
 

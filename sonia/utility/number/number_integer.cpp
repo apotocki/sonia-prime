@@ -30,7 +30,7 @@ private:
 };
 
 integer::integer(string_view str) 
-    : value_(to_string(str))
+    : value_{str}
 {
 
 }

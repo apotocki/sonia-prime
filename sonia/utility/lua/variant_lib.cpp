@@ -8,6 +8,8 @@
 #include "sonia/utility/scope_exit.hpp"
 #include <sstream>
 
+#include <boost/multiprecision/cpp_int.hpp>
+
 extern "C" {
 
 #include <lua.h>
@@ -268,6 +270,28 @@ int variant_array(lua_State* L)
     return push_variant(L, br);
 }
 
+int variant_int(lua_State* L)
+{
+    if (lua_isinteger(L, 1)) {
+        lua_Integer i = lua_tointeger(L, 1);
+        return push_variant(L, i64_blob_result(i));
+    } else if (lua_isstring(L, 1)) {
+        char const* strval = lua_tostring(L, 1);
+        size_t sz = lua_rawlen(L, 1);
+        using integer_type = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>;
+        integer_type ival(string_view{ strval, sz });
+        if (ival >= 0 && ival <= (std::numeric_limits<uint64_t>::max)()) {
+            return push_variant(L, ui64_blob_result(ival.convert_to<uint64_t>()));
+        } else if (ival <= (std::numeric_limits<int64_t>::max)() && ival >= (std::numeric_limits<int64_t>::min)()) {
+            return push_variant(L, i64_blob_result(ival.convert_to<int64_t>()));
+        } else {
+            return luaL_error(L, "invalid argument");
+        }
+    } else {
+        return luaL_error(L, "invalid argument");
+    }
+}
+
 int variant_type(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
@@ -282,6 +306,7 @@ int variant_type(lua_State* L)
 const struct luaL_Reg variantlib[] = {
     {"ui8array", variant_array<uint8_t>},
     {"i8array", variant_array<int8_t>},
+    {"int", variant_int},
     {NULL, NULL}
 };
 

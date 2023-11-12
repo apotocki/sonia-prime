@@ -162,9 +162,8 @@ void push_from_blob(lua_State* L, blob_result const& b)
         lua_pushinteger(L, (lua_Integer)b.i64value); return;
     case blob_type::ui64:
         if (b.ui64value > (uint64_t)(std::numeric_limits<int64_t>::max)()) {
-            lua_pushnumber(L, (lua_Number)b.ui64value);
-        }
-        else {
+            push_variant(L, b);
+        } else {
             lua_pushinteger(L, (lua_Integer)b.ui64value);
         }
         return;

@@ -241,6 +241,14 @@ int variant_len(lua_State* L)
     return 1;
 }
 
+int variant_equal(lua_State* L)
+{
+    blob_result* br = luaL_check_variant_lib(L, 1);
+    blob_result* br2 = luaL_check_variant_lib(L, 2);
+    lua_pushboolean(L, br && br2 && *br == *br2);
+    return 1;
+}
+
 int variant_tostring(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
@@ -313,6 +321,7 @@ const struct luaL_Reg variantlib_m[] = {
     {"__tostring", variant_tostring},
     {"__index", variant_index},
     {"__len", variant_len},
+    {"__eq", variant_equal},
     {"__gc", variant_gc},
     {NULL, NULL}
 };

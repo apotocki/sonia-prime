@@ -47,6 +47,9 @@ using std::uint_fast64_t;
 using float_t = float;
 using double_t = long double;
 
+static_assert(sizeof(float_t) == 4);
+static_assert(sizeof(double_t) == 8);
+
 template <std::integral DestT, std::integral SrcT>
 inline DestT integral_cast(SrcT val)
 {

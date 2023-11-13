@@ -167,8 +167,10 @@ void push_from_blob(lua_State* L, blob_result const& b)
             lua_pushinteger(L, (lua_Integer)b.ui64value);
         }
         return;
-    case blob_type::flt:
+    case blob_type::flt32:
         lua_pushnumber(L, (lua_Number)b.floatvalue); return;
+    case blob_type::flt64:
+        lua_pushnumber(L, (lua_Number)b.doublevalue); return;
     case blob_type::string:
         lua_pushlstring(L, (const char*)b.data, b.size); return;
         //case blob_type::blob:
@@ -313,10 +315,141 @@ int variant_type(lua_State* L)
     return 1;
 }
 
+template <typename PrinterT>
+std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const& printer)
+{
+    if (b.type == blob_type::unspecified && !b.data) {
+        return os << "nil";
+    }
+    if (b.is_array) {
+        os << "[";
+        blob_result_type_selector(b, [&os, &printer](auto ident, blob_result b) {
+            using type = typename decltype(ident)::type;
+            using ftype = std::conditional_t<std::is_void_v<type>, uint8_t, type>;
+            using fstype = std::conditional_t<std::is_same_v<ftype, bool>, uint8_t, ftype>;
+            for (int32_t i = 0; i < b.size / sizeof(fstype); ++i) {
+                os << (i ? "," : "");
+                fancy_print(os, particular_blob_result(*(reinterpret_cast<fstype const*>(b.data) + i)), printer);
+            }
+        });
+        return os << "]";
+    }
+    switch (b.type)
+    {
+    case blob_type::unspecified:
+        if (!b.data) return os << "nil";
+        return os << "unspecified";
+    case blob_type::boolean:
+        return printer(os, b.type, !!b.i8value);
+    case blob_type::i8:
+        return printer(os, b.type, b.i8value);
+    case blob_type::ui8:
+        return printer(os, b.type, b.ui8value);
+    case blob_type::i16:
+        return printer(os, b.type, b.i16value);
+    case blob_type::ui16:
+        return printer(os, b.type, b.ui16value);
+    case blob_type::i32:
+        return printer(os, b.type, b.i32value);
+    case blob_type::ui32:
+        return printer(os, b.type, b.ui32value);
+    case blob_type::i64:
+        return printer(os, b.type, b.i64value);
+    case blob_type::ui64:
+        return printer(os, b.type, b.ui64value);
+    case blob_type::flt32:
+        return printer(os, b.type, b.floatvalue);
+    case blob_type::flt64:
+        return printer(os, b.type, b.doublevalue);
+    case blob_type::string:
+        return printer(os, b.type, sonia::string_view(reinterpret_cast<const char*>(b.data), b.size));
+    case blob_type::blob:
+        return os << "blob";
+    case blob_type::function:
+        return os << "function";
+    case blob_type::object:
+        return os << "object";
+    case blob_type::error:
+        return os << "error: " << sonia::string_view(reinterpret_cast<const char*>(b.data), b.size);
+    }
+    return os;
+}
+
+int variant_fancy_print(lua_State* L)
+{
+    blob_result br = nil_blob_result();
+    if (lua_isinteger(L, 1)) {
+        br = i64_blob_result(luaL_checkinteger(L, 1));
+    } else {
+        blob_result* pbr = luaL_check_variant_lib(L, 1);
+        luaL_argcheck(L, !!pbr, 1, "`variant' expected");
+        br = *pbr;
+    }
+
+    lua_Integer radix = 10;
+    lua_Integer groupSz = 0;
+    string_view delim = " "sv;
+    int argcount = lua_gettop(L);
+    if (argcount > 1) {
+        radix = luaL_checkinteger(L, 2);
+        if (argcount > 2) {
+            groupSz = luaL_checkinteger(L, 3);
+            if (argcount > 3) {
+                char const* strval = luaL_checkstring(L, 4);
+                size_t sz = lua_rawlen(L, 4);
+                delim = string_view{ strval, sz };
+            }
+        }
+    }
+    
+    // formatting
+    std::ostringstream ss;
+
+    fancy_print(ss, br, [radix, groupSz, delim](std::ostream& s, blob_type bt, auto value) -> std::ostream& {
+        using type = decltype(value);
+        if constexpr (std::is_same_v<type, bool>) {
+            s << (value ? "true"sv : "false"sv);
+        } else if constexpr (std::is_integral_v<type>) {
+            std::ostringstream tempss;
+            if (radix == 16) {
+                if (value < 0) s << '-';
+                s << "0x"sv;
+                
+                tempss << std::hex << std::uppercase;
+                tempss << (value >= 0 ? uint64_t(value) : uint64_t(1-(value + 1)));
+            } else {
+                tempss << value;
+            }
+
+            std::string grouped_val = [groupSz, delim](std::string && val) -> std::string {
+                if (!groupSz) return std::move(val);
+                std::string result;
+                for (size_t i = 0, sz = val.size(); i < sz; ++i) {
+                    result.push_back(val[i]);
+                    if (size_t pos = sz - i - 1; pos && 0 == pos % groupSz) {
+                        std::ranges::copy(delim, std::back_inserter(result));
+                        //std::copy(delim.begin(), delim.end(), std::back_inserter(result));
+                    }
+                }
+                return result;
+            }(tempss.str());
+
+            s << grouped_val;
+        } else {
+            s << value; // ?string
+        }
+        return s;
+    });
+    std::string result = ss.str();
+    lua_pushlstring(L, result.c_str(), result.size());
+    return 1;
+}
+
 const struct luaL_Reg variantlib[] = {
     {"ui8array", variant_array<uint8_t>},
     {"i8array", variant_array<int8_t>},
     {"int", variant_int},
+    {"fancy_print", variant_fancy_print},
     {NULL, NULL}
 };
 
@@ -331,6 +464,7 @@ const struct luaL_Reg variantlib_m[] = {
 
 const struct luaL_Reg variantlib_f[] = {
     {"type", variant_type},
+    {"fancy_print", variant_fancy_print},
     {NULL, NULL}
 };
 
@@ -413,11 +547,11 @@ blob_result to_blob(lua_State* L, int index)
 
             if (no_unique_v) vtype = blob_type::blob;
             smart_blob blob_values;
-            if (vtype == blob_type::flt) {
-                blob_values = blob_result{ nullptr, (int32_t)(vals.size() * sizeof(float)), 0, 1, vtype };
+            if (vtype == blob_type::flt64) {
+                blob_values = blob_result{ nullptr, (int32_t)(vals.size() * sizeof(double_t)), 0, 1, vtype };
                 blob_values.allocate();
                 for (size_t i = 0; i < vals.size(); ++i) {
-                    *(reinterpret_cast<float*>(const_cast<void*>(blob_values->data)) + i) = vals[i].floatvalue;
+                    *(reinterpret_cast<double_t*>(const_cast<void*>(blob_values->data)) + i) = vals[i].doublevalue;
                 }
             } else if (vtype == blob_type::i64) {
                 blob_values = blob_result{ nullptr, (int32_t)(vals.size() * sizeof(int64_t)), 0, 1, vtype };

@@ -473,6 +473,7 @@
     <ClInclude Include="..\..\..\sonia\utility\number\decimal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\decimal.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\number\fixed_uint.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\number\float16.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\integer.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\math.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\meta\for_each_wi.hpp" />

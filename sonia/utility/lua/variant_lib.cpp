@@ -215,9 +215,14 @@ int variant_index(lua_State* L)
             } else if constexpr (is_integral_v<fstype>) {
                 fstype const* pval = reinterpret_cast<fstype const*>(b.data) + c_index;
                 lua_pushinteger(L, (lua_Integer)*pval);
-            } else {
+            } else if constexpr (is_floating_point_v<fstype>) {
                 fstype const* pval = reinterpret_cast<fstype const*>(b.data) + c_index;
                 lua_pushnumber(L, (lua_Number)*pval);
+            } else if (is_same_v<fstype, float16>) {
+                fstype const* pval = reinterpret_cast<fstype const*>(b.data) + c_index;
+                lua_pushnumber(L, (lua_Number)(float)*pval);
+            } else {
+                throw exception("unsupported type %1%"_fmt % typeid(fstype).name());
             }
         }
     });

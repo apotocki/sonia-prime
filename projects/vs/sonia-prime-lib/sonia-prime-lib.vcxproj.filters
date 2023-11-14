@@ -1805,6 +1805,9 @@
     <ClInclude Include="..\..\..\sonia\utility\lua\variant_lib.hpp">
       <Filter>sonia.utility\lua</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\number\float16.hpp">
+      <Filter>sonia.utility\number</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

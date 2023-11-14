@@ -14,7 +14,7 @@
 #include "sonia/optional.hpp"
 #include "sonia/utility/variadic.hpp"
 #include "sonia/shared_ptr.hpp"
-
+#include "sonia/utility/number/float16.hpp"
 #include "sonia/prime_config.hpp"
 
 namespace sonia::invokation { class invokable; }
@@ -46,6 +46,7 @@ struct blob_result {
         uint64_t ui64value;
         int64_t i64value;
         double_t doublevalue;
+        sonia::float16 float16value;
         float_t floatvalue;
         uint32_t ui32value;
         int32_t i32value;
@@ -113,6 +114,12 @@ inline bool blob_result_equal(sonia::identity<uint64_t>, blob_result const& lhs,
     return rhs.type == blob_type::ui64 && lhs.ui64value == rhs.ui64value;
 }
 
+inline bool blob_result_equal(sonia::identity<sonia::float16>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::flt16 && lhs.float16value == rhs.float16value;
+}
+
+
 inline bool blob_result_equal(sonia::identity<float_t>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::flt32 && lhs.floatvalue == rhs.floatvalue;
@@ -156,7 +163,7 @@ inline consteval blob_type blob_type_for()
         if constexpr (sizeof(T) * CHAR_BIT <= 32 && signed_v) return blob_type::i32;
         if constexpr (sizeof(T) * CHAR_BIT <= 32 && !signed_v) return blob_type::ui32;
         return signed_v ? blob_type::i64 : blob_type::ui64;
-    } else if constexpr (std::is_floating_point_v<type> && sizeof(type) == 2) {
+    } else if constexpr (std::is_same_v<type, sonia::float16> || (std::is_floating_point_v<type> && sizeof(type) == 2)) {
         return blob_type::flt16;
     } else if constexpr (std::is_floating_point_v<type> && sizeof(type) == 4) {
         return blob_type::flt32;
@@ -246,6 +253,13 @@ inline blob_result i64_blob_result(int64_t value)
 {
     blob_result result{ nullptr, 0, 0, 0, blob_type::i64 };
     result.i64value = value;
+    return result;
+}
+
+inline blob_result float16_blob_result(sonia::float16 value)
+{
+    blob_result result{ nullptr, 0, 0, 0, blob_type::flt16 };
+    result.float16value = value;
     return result;
 }
 
@@ -389,6 +403,7 @@ inline blob_result particular_blob_result(ArgT && value)
     else if constexpr (std::is_same_v<T, int32_t> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == 4)) return i32_blob_result(value);
     else if constexpr (std::is_same_v<T, uint64_t> || (std::is_integral_v<T> && !std::is_signed_v<T> && sizeof(T) == 8)) return ui64_blob_result(value);
     else if constexpr (std::is_same_v<T, int64_t> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == 8)) return i64_blob_result(value);
+    else if constexpr (std::is_same_v<T, sonia::float16>) return float16_blob_result(value);
     else if constexpr (std::is_same_v<T, float_t>) return float_blob_result(value);
     else if constexpr (std::is_same_v<T, double_t>) return double_blob_result(value);
     else if constexpr (sonia::is_string_v<T>) return string_blob_result(std::forward<ArgT>(value));
@@ -425,6 +440,8 @@ auto blob_result_type_selector(blob_result const& b, FT&& ftor)
         return ftor(sonia::identity<int64_t>(), b);
     case blob_type::ui64:
         return ftor(sonia::identity<uint64_t>(), b);
+    case blob_type::flt16:
+        return ftor(sonia::identity<sonia::float16>(), b);
     case blob_type::flt32:
         return ftor(sonia::identity<float_t>(), b);
     case blob_type::flt64:
@@ -487,6 +504,8 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
         return os << b.i64value << ":i64";
     case blob_type::ui64:
         return os << b.ui64value << ":ui64";
+    case blob_type::flt16:
+        return os << b.float16value << ":float16";
     case blob_type::flt32:
         return os << b.floatvalue << ":float";
     case blob_type::flt64:
@@ -642,6 +661,8 @@ struct from_blob<T>
                 return (T)val.i64value;
             case blob_type::ui64:
                 return (T)val.ui64value;
+            case blob_type::flt16:
+                return (T)(float)val.float16value;
             case blob_type::flt32:
                 return (T)val.floatvalue;
             case blob_type::flt64:

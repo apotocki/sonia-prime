@@ -167,10 +167,12 @@ void push_from_blob(lua_State* L, blob_result const& b)
             lua_pushinteger(L, (lua_Integer)b.ui64value);
         }
         return;
+    case blob_type::flt16:
+        lua_pushnumber(L, (lua_Number)(float_t)b.f16value); return;
     case blob_type::flt32:
-        lua_pushnumber(L, (lua_Number)b.floatvalue); return;
+        lua_pushnumber(L, (lua_Number)b.f32value); return;
     case blob_type::flt64:
-        lua_pushnumber(L, (lua_Number)b.doublevalue); return;
+        lua_pushnumber(L, (lua_Number)b.f64value); return;
     case blob_type::string:
         lua_pushlstring(L, (const char*)b.data, b.size); return;
         //case blob_type::blob:
@@ -362,10 +364,12 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
         return printer(os, b.type, b.i64value);
     case blob_type::ui64:
         return printer(os, b.type, b.ui64value);
+    case blob_type::flt16:
+        return printer(os, b.type, b.f16value);
     case blob_type::flt32:
-        return printer(os, b.type, b.floatvalue);
+        return printer(os, b.type, b.f32value);
     case blob_type::flt64:
-        return printer(os, b.type, b.doublevalue);
+        return printer(os, b.type, b.f64value);
     case blob_type::string:
         return printer(os, b.type, sonia::string_view(reinterpret_cast<const char*>(b.data), b.size));
     case blob_type::blob:
@@ -506,7 +510,7 @@ blob_result to_blob(lua_State* L, int index)
                 return i64_blob_result(i);
             } else {
                 lua_Number i = lua_tonumber(L, index);
-                return float_blob_result((float) i);
+                return f64_blob_result(i);
             }
 
         case LUA_TBOOLEAN:
@@ -556,7 +560,7 @@ blob_result to_blob(lua_State* L, int index)
                 blob_values = blob_result{ nullptr, (int32_t)(vals.size() * sizeof(double_t)), 0, 1, vtype };
                 blob_values.allocate();
                 for (size_t i = 0; i < vals.size(); ++i) {
-                    *(reinterpret_cast<double_t*>(const_cast<void*>(blob_values->data)) + i) = vals[i].doublevalue;
+                    *(reinterpret_cast<double_t*>(const_cast<void*>(blob_values->data)) + i) = vals[i].f64value;
                 }
             } else if (vtype == blob_type::i64) {
                 blob_values = blob_result{ nullptr, (int32_t)(vals.size() * sizeof(int64_t)), 0, 1, vtype };

@@ -45,9 +45,9 @@ struct blob_result {
         sonia::invokation::invokable* object;
         uint64_t ui64value;
         int64_t i64value;
-        double_t doublevalue;
-        sonia::float16 float16value;
-        float_t floatvalue;
+        sonia::float16 f16value;
+        float_t f32value;
+        double_t f64value;
         uint32_t ui32value;
         int32_t i32value;
         uint16_t ui16value;
@@ -116,18 +116,18 @@ inline bool blob_result_equal(sonia::identity<uint64_t>, blob_result const& lhs,
 
 inline bool blob_result_equal(sonia::identity<sonia::float16>, blob_result const& lhs, blob_result const& rhs)
 {
-    return rhs.type == blob_type::flt16 && lhs.float16value == rhs.float16value;
+    return rhs.type == blob_type::flt16 && lhs.f16value == rhs.f16value;
 }
 
 
 inline bool blob_result_equal(sonia::identity<float_t>, blob_result const& lhs, blob_result const& rhs)
 {
-    return rhs.type == blob_type::flt32 && lhs.floatvalue == rhs.floatvalue;
+    return rhs.type == blob_type::flt32 && lhs.f32value == rhs.f32value;
 }
 
 inline bool blob_result_equal(sonia::identity<double_t>, blob_result const& lhs, blob_result const& rhs)
 {
-    return rhs.type == blob_type::flt64 && lhs.doublevalue == rhs.doublevalue;
+    return rhs.type == blob_type::flt64 && lhs.f64value == rhs.f64value;
 }
 
 inline bool blob_result_equal(sonia::identity<sonia::string_view>, blob_result const& lhs, blob_result const& rhs)
@@ -256,24 +256,24 @@ inline blob_result i64_blob_result(int64_t value)
     return result;
 }
 
-inline blob_result float16_blob_result(sonia::float16 value)
+inline blob_result f16_blob_result(sonia::float16 value)
 {
     blob_result result{ nullptr, 0, 0, 0, blob_type::flt16 };
-    result.float16value = value;
+    result.f16value = value;
     return result;
 }
 
-inline blob_result float_blob_result(float_t value)
+inline blob_result f32_blob_result(float_t value)
 {
     blob_result result{ nullptr, 0, 0, 0, blob_type::flt32 };
-    result.floatvalue = value;
+    result.f32value = value;
     return result;
 }
 
-inline blob_result double_blob_result(double_t value)
+inline blob_result f64_blob_result(double_t value)
 {
     blob_result result{ nullptr, 0, 0, 0, blob_type::flt64 };
-    result.doublevalue = value;
+    result.f64value = value;
     return result;
 }
 
@@ -403,9 +403,9 @@ inline blob_result particular_blob_result(ArgT && value)
     else if constexpr (std::is_same_v<T, int32_t> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == 4)) return i32_blob_result(value);
     else if constexpr (std::is_same_v<T, uint64_t> || (std::is_integral_v<T> && !std::is_signed_v<T> && sizeof(T) == 8)) return ui64_blob_result(value);
     else if constexpr (std::is_same_v<T, int64_t> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == 8)) return i64_blob_result(value);
-    else if constexpr (std::is_same_v<T, sonia::float16>) return float16_blob_result(value);
-    else if constexpr (std::is_same_v<T, float_t>) return float_blob_result(value);
-    else if constexpr (std::is_same_v<T, double_t>) return double_blob_result(value);
+    else if constexpr (std::is_same_v<T, sonia::float16>) return f16_blob_result(value);
+    else if constexpr (std::is_same_v<T, float_t>) return f32_blob_result(value);
+    else if constexpr (std::is_same_v<T, double_t>) return f64_blob_result(value);
     else if constexpr (sonia::is_string_v<T>) return string_blob_result(std::forward<ArgT>(value));
     else if constexpr (std::is_same_v<T, blob_result>) return value;
     else if constexpr (sonia::is_template_instance_v<sonia::optional, T>) return optional_blob_result(std::forward<ArgT>(value));
@@ -505,11 +505,11 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
     case blob_type::ui64:
         return os << b.ui64value << ":ui64";
     case blob_type::flt16:
-        return os << b.float16value << ":float16";
+        return os << b.f16value << ":f16";
     case blob_type::flt32:
-        return os << b.floatvalue << ":float";
+        return os << b.f32value << ":f32";
     case blob_type::flt64:
-        return os << b.floatvalue << ":double";
+        return os << b.f64value << ":f64";
     case blob_type::string:
         return os << '"' << sonia::string_view(reinterpret_cast<const char*>(b.data), b.size) << '"';
     case blob_type::blob:
@@ -555,11 +555,11 @@ inline std::ostream& print_type(std::ostream& os, blob_result const& b)
     case blob_type::ui64:
         os << "ui64"; break;
     case blob_type::flt16:
-        os << "float16"; break;
+        os << "f16"; break;
     case blob_type::flt32:
-        os << "float"; break;
+        os << "f32"; break;
     case blob_type::flt64:
-        os << "double"; break;
+        os << "f64"; break;
     case blob_type::string:
         os << "string"; break;
     case blob_type::blob:
@@ -662,11 +662,11 @@ struct from_blob<T>
             case blob_type::ui64:
                 return (T)val.ui64value;
             case blob_type::flt16:
-                return (T)(float)val.float16value;
+                return (T)(float)val.f16value;
             case blob_type::flt32:
-                return (T)val.floatvalue;
+                return (T)val.f32value;
             case blob_type::flt64:
-                return (T)val.doublevalue;
+                return (T)val.f64value;
             default:
                 break;
             }

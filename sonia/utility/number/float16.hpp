@@ -13,6 +13,7 @@ struct float16
     uint16_t data;
 
     float16() = default;
+    explicit float16(uint16_t val) noexcept : data{ val } { }
     explicit float16(float) noexcept;
 
     explicit operator float() const noexcept;

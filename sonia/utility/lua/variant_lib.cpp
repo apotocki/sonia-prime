@@ -181,6 +181,8 @@ void push_from_blob(lua_State* L, blob_result const& b)
         lua_pushcclosure(L, ext_invoke, 1);
         //lua_pushcfunction(L, ext_invoke); 
         return;
+    case blob_type::error:
+        throw exception(std::string((const char*)b.data, b.size));
     default:
         lua_pushnil(L);
     }
@@ -245,7 +247,7 @@ int variant_len(lua_State* L)
         });
         lua_pushinteger(L, count);
     } else {
-        luaL_error(L, "is not an array");
+        return luaL_error(L, "is not an array");
     }
     return 1;
 }
@@ -319,6 +321,21 @@ int variant_type(lua_State* L)
     print_type(s, *br);
     std::string result = s.str();
     lua_pushfstring(L, "%s", result.c_str());
+    return 1;
+}
+
+int variant_parse_float(lua_State* L)
+{
+    blob_result br = nil_blob_result();
+    const char * cstrval = luaL_checkstring(L, 1);
+    size_t sz = lua_rawlen(L, 1);
+    while (sz && std::isspace(cstrval[sz - 1])) --sz;
+    char * pend;
+    double dval = strtod (cstrval, &pend);
+    if (pend != cstrval + sz) {
+        return luaL_error(L, "float parse error");
+    }
+    push_variant(L, f32_blob_result(dval));
     return 1;
 }
 
@@ -459,6 +476,7 @@ const struct luaL_Reg variantlib[] = {
     {"i8array", variant_array<int8_t>},
     {"int", variant_int},
     {"fancy_print", variant_fancy_print},
+    {"f64", variant_parse_float},
     {NULL, NULL}
 };
 

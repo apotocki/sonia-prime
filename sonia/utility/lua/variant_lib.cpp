@@ -340,7 +340,7 @@ int variant_parse_float(lua_State* L)
     return 1;
 }
 
-// iso_date -> java, dos?, mac, unix32/64, oletime
+// iso_date -> java, winfile, dos?, mac, unix32/64, oletime
 int variant_iso_date(lua_State* L)
 {
     const char* cstrval = luaL_checkstring(L, 1);
@@ -350,15 +350,22 @@ int variant_iso_date(lua_State* L)
 
     const char* cstrdest = luaL_checkstring(L, 2);
     size_t destsz = lua_rawlen(L, 2);
-
-    
-    using tag_t = basic_datetime_tag<int64_t, 1000>;
-    tag_t::datetime_type result;
-    parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
+    string_view dttype{ cstrdest, destsz };
+    if (dttype == "java"sv) {
+        using tag_t = basic_datetime_tag<int64_t, 1000>;
+        tag_t::datetime_type result;
+        parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
+        push_from_blob(L, i64_blob_result(result.ticks()));
+    } else if (dttype == "winfile"sv) {
+        using tag_t = basic_datetime_tag<int64_t, 10000000>;
+        tag_t::datetime_type result;
+        parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
+        push_from_blob(L, i64_blob_result(result.ticks() + 11644473600LL * 10000000));
+    }
     if (ecstrval != cstrval) {
         return luaL_error(L, "datetime parse error");
     }
-    push_from_blob(L, i64_blob_result(result.ticks()));
+    
     return 1;
 }
 
@@ -374,6 +381,11 @@ int variant_datetime_string(lua_State* L)
         auto ival = luaL_checkinteger(L, 2);
         using tag_t = basic_datetime_tag<int64_t, 1000>;
         tag_t::datetime_type dt{ ival };
+        result = tag_t::iso_date(dt);
+    } else if(dttype == "winfile"sv) {
+        auto ival = luaL_checkinteger(L, 2);
+        using tag_t = basic_datetime_tag<int64_t, 10000000>;
+        tag_t::datetime_type dt{ ival - 11644473600LL * 10000000 };
         result = tag_t::iso_date(dt);
     } else {
         return luaL_error(L, "unknown datetime type: %s", cstrval);

@@ -211,7 +211,7 @@ struct basic_datetime_tag
     template <typename SecondT = unsigned int>
     static datetime_type construct(int64_t year, unsigned int month = 1, unsigned int day = 1, unsigned int hours = 0, unsigned int minutes = 0, SecondT seconds = 0) noexcept
     {
-        int64_t secs = 0; // since 2000 year
+        TickStorageT secs = 0; // since 2000 year
 
         int64_t dyr = year - 2000;
         secs += (dyr / 400) * seconds_in_400greg_years;
@@ -240,7 +240,7 @@ struct basic_datetime_tag
         secs += (year_day_count(year, month) + day - 1) * seconds_per_day + 3600 * hours + 60 * minutes;
 
         // fix base year
-        int64_t result_secs = secs + seconds_1970_2000;
+        TickStorageT result_secs = secs + seconds_1970_2000;
 
         return datetime_type(result_secs * ticks_per_second + static_cast<int64_t>(round(seconds * ticks_per_second)));
     }
@@ -296,7 +296,11 @@ struct basic_datetime_tag
             ss << std::setw(4);
         }
 
-        ss << (std::abs)(yr) << "-" << std::setw(2) << m << "-" << std::setw(2) << mday << "T" << std::setw(2) << hour(val) << ":" << std::setw(2) << minute(val) << ":" << std::setw(2) << second(val) << "Z";
+        ss << (std::abs)(yr) << "-" << std::setw(2) << m << "-" << std::setw(2) << mday << "T" << std::setw(2) << hour(val) << ":" << std::setw(2) << minute(val) << ":" << std::setw(2) << second(val);
+        if (auto fs = fraqsecond(val); fs) {
+            ss << "." << fs;
+        }
+        ss << "Z";
         return ss.str();
     }
 };

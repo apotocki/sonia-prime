@@ -3,6 +3,9 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #pragma once
+#include <boost/spirit/include/qi_parse.hpp>
+
+#include "sonia/utility/parsers/utility.hpp"
 #include "basic_datetime.hpp"
 
 namespace sonia::parsers::datetime {

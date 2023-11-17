@@ -6,6 +6,8 @@
 #include "variant_lib.hpp"
 #include "sonia/utility/invokation/invokation.hpp"
 #include "sonia/utility/scope_exit.hpp"
+#include "sonia/utility/datetime/iso_parser.hpp"
+
 #include <sstream>
 
 #include <boost/multiprecision/cpp_int.hpp>
@@ -326,7 +328,6 @@ int variant_type(lua_State* L)
 
 int variant_parse_float(lua_State* L)
 {
-    blob_result br = nil_blob_result();
     const char * cstrval = luaL_checkstring(L, 1);
     size_t sz = lua_rawlen(L, 1);
     while (sz && std::isspace(cstrval[sz - 1])) --sz;
@@ -335,7 +336,49 @@ int variant_parse_float(lua_State* L)
     if (pend != cstrval + sz) {
         return luaL_error(L, "float parse error");
     }
-    push_variant(L, f64_blob_result(dval));
+    lua_pushnumber(L, dval);
+    return 1;
+}
+
+// iso_date -> java, dos?, mac, unix32/64, oletime
+int variant_iso_date(lua_State* L)
+{
+    const char* cstrval = luaL_checkstring(L, 1);
+    size_t strsz = lua_rawlen(L, 1);
+    while (strsz && std::isspace(cstrval[strsz - 1])) --strsz;
+    const char* ecstrval = cstrval + strsz;
+
+    const char* cstrdest = luaL_checkstring(L, 2);
+    size_t destsz = lua_rawlen(L, 2);
+
+    
+    using tag_t = basic_datetime_tag<int64_t, 1000>;
+    tag_t::datetime_type result;
+    parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
+    if (ecstrval != cstrval) {
+        return luaL_error(L, "datetime parse error");
+    }
+    push_from_blob(L, i64_blob_result(result.ticks()));
+    return 1;
+}
+
+//(datetime type, val)->string
+int variant_datetime_string(lua_State* L)
+{
+    const char* cstrval = luaL_checkstring(L, 1);
+    size_t strsz = lua_rawlen(L, 1);
+    string_view dttype{ cstrval, strsz };
+    std::string result;
+
+    if (dttype == "java"sv) {
+        auto ival = luaL_checkinteger(L, 2);
+        using tag_t = basic_datetime_tag<int64_t, 1000>;
+        tag_t::datetime_type dt{ ival };
+        result = tag_t::iso_date(dt);
+    } else {
+        return luaL_error(L, "unknown datetime type: %s", cstrval);
+    }
+    lua_pushlstring(L, result.c_str(), result.size());
     return 1;
 }
 
@@ -401,7 +444,7 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
     return os;
 }
 
-int variant_fancy_print(lua_State* L)
+int variant_fancy_string(lua_State* L)
 {
     blob_result br = nil_blob_result();
     if (lua_isinteger(L, 1)) {
@@ -475,8 +518,10 @@ const struct luaL_Reg variantlib[] = {
     {"ui8array", variant_array<uint8_t>},
     {"i8array", variant_array<int8_t>},
     {"int", variant_int},
-    {"fancy_print", variant_fancy_print},
     {"f64", variant_parse_float},
+    {"iso_date", variant_iso_date},
+    {"to_fancy_string", variant_fancy_string},
+    {"to_datetime_string", variant_datetime_string},
     {NULL, NULL}
 };
 
@@ -491,7 +536,7 @@ const struct luaL_Reg variantlib_m[] = {
 
 const struct luaL_Reg variantlib_f[] = {
     {"type", variant_type},
-    {"fancy_print", variant_fancy_print},
+    {"to_fancy_string", variant_fancy_string},
     {NULL, NULL}
 };
 

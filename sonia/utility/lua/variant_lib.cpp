@@ -361,7 +361,15 @@ int variant_iso_date(lua_State* L)
         tag_t::datetime_type result;
         parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
         push_from_blob(L, i64_blob_result(result.ticks() + 11644473600LL * 10000000));
+    } else if (dttype == "unix"sv) {
+        using tag_t = basic_datetime_tag<int64_t, 1>;
+        tag_t::datetime_type result;
+        parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
+        push_from_blob(L, i64_blob_result(result.ticks()));
+    } else {
+        return luaL_error(L, "unknown datetime type: %s", cstrdest);
     }
+
     if (ecstrval != cstrval) {
         return luaL_error(L, "datetime parse error");
     }
@@ -377,15 +385,20 @@ int variant_datetime_string(lua_State* L)
     string_view dttype{ cstrval, strsz };
     std::string result;
 
-    if (dttype == "java"sv) {
+    if (dttype == "java"sv) { // milliseconds since 1970-01-01T00:00:00Z
         auto ival = luaL_checkinteger(L, 2);
         using tag_t = basic_datetime_tag<int64_t, 1000>;
         tag_t::datetime_type dt{ ival };
         result = tag_t::iso_date(dt);
-    } else if(dttype == "winfile"sv) {
+    } else if(dttype == "winfile"sv) { // 100 nanoseconds intervals since 1601-01-01T00:00:00Z
         auto ival = luaL_checkinteger(L, 2);
         using tag_t = basic_datetime_tag<int64_t, 10000000>;
         tag_t::datetime_type dt{ ival - 11644473600LL * 10000000 };
+        result = tag_t::iso_date(dt);
+    } else if (dttype == "unix"sv) { // seconds since 1970-01-01T00:00:00Z
+        auto ival = luaL_checkinteger(L, 2);
+        using tag_t = basic_datetime_tag<int64_t, 1>;
+        tag_t::datetime_type dt{ ival };
         result = tag_t::iso_date(dt);
     } else {
         return luaL_error(L, "unknown datetime type: %s", cstrval);

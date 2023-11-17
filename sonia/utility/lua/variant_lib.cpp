@@ -335,7 +335,7 @@ int variant_parse_float(lua_State* L)
     if (pend != cstrval + sz) {
         return luaL_error(L, "float parse error");
     }
-    push_variant(L, f32_blob_result(dval));
+    push_variant(L, f64_blob_result(dval));
     return 1;
 }
 

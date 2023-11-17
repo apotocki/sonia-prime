@@ -24,7 +24,7 @@ inline bool operator== (float16 const& l, float16 const& r) { return l.data == r
 template <typename E, typename T>
 inline std::basic_ostream<E, T>& operator<<(std::basic_ostream<E, T>& os, float16 const& v)
 {
-    return os << "not implemented float16 print";
+    return os << (float)v;
 }
 
 inline float16::float16(float f32val) noexcept

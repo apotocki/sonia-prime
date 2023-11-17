@@ -360,7 +360,7 @@ int variant_iso_date(lua_State* L)
         using tag_t = basic_datetime_tag<uint64_t, 10000000, 12591158400LL>;
         tag_t::datetime_type result;
         parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
-        push_from_blob(L, i64_blob_result(result.ticks()));
+        push_from_blob(L, ui64_blob_result(result.ticks()));
     } else if (dttype == "unix"sv) {
         using tag_t = basic_datetime_tag<int64_t, 1>;
         tag_t::datetime_type result;

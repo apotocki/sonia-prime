@@ -395,6 +395,9 @@
     <ClInclude Include="..\..\..\sonia\utility\caches\utility.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\barrier.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\debug_mutex.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\datetime\basic_datetime.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\datetime\datetime.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\datetime\iso_parser.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\file_statable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\file_statable.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\equal\variant.hpp" />

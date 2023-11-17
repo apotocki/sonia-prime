@@ -223,6 +223,9 @@
     <Filter Include="sonia.fibers\future\detail">
       <UniqueIdentifier>{e6109ebe-b80e-4e78-be28-9e6561ee551e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\datetime">
+      <UniqueIdentifier>{1147346e-ff5e-4916-96c9-865e3ab3a5ee}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -1904,6 +1907,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\fibers\type.hpp">
       <Filter>sonia.fibers</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\datetime\basic_datetime.hpp">
+      <Filter>sonia.utility\datetime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\datetime\datetime.hpp">
+      <Filter>sonia.utility\datetime</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\datetime\iso_parser.hpp">
+      <Filter>sonia.utility\datetime</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

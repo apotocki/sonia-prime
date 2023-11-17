@@ -68,7 +68,7 @@ struct iso_parser : datetime_parser_base<iso_parser<ParseTimeZoneV>, TagT>
         }
         
         int64_t year = 0;
-        if (!sp::integer(first, last, 4, 5, year) || first == last || *first != '-') return false;
+        if (!sp::integer(first, last, 4, 18, year) || first == last || *first != '-') return false;
         year *= sign;
         ++first;
 

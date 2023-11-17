@@ -26,7 +26,7 @@ struct basic_datetime_tag
     static unsigned int year_days_[2][12];
 
     static constexpr int64_t ticks_per_second = TicksPerSecV;
-
+    
     static constexpr int64_t seconds_in_400greg_years = 12622780800l;
     static constexpr int64_t seconds_in_100greg_years = 3155673600l;
     static constexpr int64_t seconds_in_100greg_years_leap = 3155760000l;
@@ -298,7 +298,9 @@ struct basic_datetime_tag
 
         ss << (std::abs)(yr) << "-" << std::setw(2) << m << "-" << std::setw(2) << mday << "T" << std::setw(2) << hour(val) << ":" << std::setw(2) << minute(val) << ":" << std::setw(2) << second(val);
         if (auto fs = fraqsecond(val); fs) {
-            ss << "." << fs;
+            int fraqwidth = (int)log10(TicksPerSecV);
+            for (; !(fs % 10); fs /= 10, --fraqwidth);
+            ss << "." << std::setw(fraqwidth) << fs;
         }
         ss << "Z";
         return ss.str();

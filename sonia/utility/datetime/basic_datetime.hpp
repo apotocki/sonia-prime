@@ -16,8 +16,8 @@
 
 namespace sonia {
 
-// datetime stores ticks since Jan 1 1970 00:00:00 GMT
-template <typename TickStorageT = int64_t, uint64_t TicksPerSecV = 1000000>
+// datetime stores ticks since epoch(default: Jan 1 1970 00:00:00 GMT)
+template <typename TickStorageT = int64_t, uint64_t TicksPerSecV = 1000000, int64_t EpochTo2000secondsV = 946684800LL>
 struct basic_datetime_tag
 {
     using datetime_type = datetime<TickStorageT>;
@@ -35,7 +35,7 @@ struct basic_datetime_tag
     static constexpr int64_t seconds_in_1greg_year = 31536000;
     static constexpr int64_t seconds_in_1greg_year_leap = 31622400;
 
-    static constexpr int64_t seconds_1970_2000 = 946684800;
+    static constexpr int64_t seconds_epoch_2000 = EpochTo2000secondsV;
     static constexpr int64_t seconds_per_day = 86400;
 
     static constexpr int64_t min_year = -10010; //dt::year(datetime<>::min_value()); // TODO: FIXME!
@@ -117,7 +117,7 @@ struct basic_datetime_tag
     static int64_t year(datetime_type const& val, unsigned int & yday) noexcept
     {
         int64_t result_year = 2000;
-        int64_t secs = (val.ticks() / ticks_per_second) - seconds_1970_2000;
+        int64_t secs = (val.ticks() / ticks_per_second) - seconds_epoch_2000;
 
         result_year += secs / seconds_in_400greg_years * 400;
         secs = secs % seconds_in_400greg_years;
@@ -240,7 +240,7 @@ struct basic_datetime_tag
         secs += (year_day_count(year, month) + day - 1) * seconds_per_day + 3600 * hours + 60 * minutes;
 
         // fix base year
-        TickStorageT result_secs = secs + seconds_1970_2000;
+        TickStorageT result_secs = secs + seconds_epoch_2000;
 
         return datetime_type(result_secs * ticks_per_second + static_cast<int64_t>(round(seconds * ticks_per_second)));
     }
@@ -307,12 +307,12 @@ struct basic_datetime_tag
     }
 };
 
-template <typename StorageT, uint64_t TicksPerSecV>
-unsigned int basic_datetime_tag<StorageT, TicksPerSecV>::month_days_[2][12] = 
+template <typename StorageT, uint64_t TicksPerSecV, int64_t EpochTo2000secondsV>
+unsigned int basic_datetime_tag<StorageT, TicksPerSecV, EpochTo2000secondsV>::month_days_[2][12] =
     {{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}, {31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
 
-template <typename StorageT, uint64_t TicksPerSecV>
-unsigned int basic_datetime_tag<StorageT, TicksPerSecV>::year_days_[2][12] = 
+template <typename StorageT, uint64_t TicksPerSecV, int64_t EpochTo2000secondsV>
+unsigned int basic_datetime_tag<StorageT, TicksPerSecV, EpochTo2000secondsV>::year_days_[2][12] =
     {{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334}, {0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335}};
 }
 

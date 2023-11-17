@@ -357,10 +357,10 @@ int variant_iso_date(lua_State* L)
         parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
         push_from_blob(L, i64_blob_result(result.ticks()));
     } else if (dttype == "winfile"sv) {
-        using tag_t = basic_datetime_tag<int64_t, 10000000>;
+        using tag_t = basic_datetime_tag<uint64_t, 10000000, 12591158400LL>;
         tag_t::datetime_type result;
         parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
-        push_from_blob(L, i64_blob_result(result.ticks() + 11644473600LL * 10000000));
+        push_from_blob(L, i64_blob_result(result.ticks()));
     } else if (dttype == "unix"sv) {
         using tag_t = basic_datetime_tag<int64_t, 1>;
         tag_t::datetime_type result;
@@ -391,9 +391,18 @@ int variant_datetime_string(lua_State* L)
         tag_t::datetime_type dt{ ival };
         result = tag_t::iso_date(dt);
     } else if(dttype == "winfile"sv) { // 100 nanoseconds intervals since 1601-01-01T00:00:00Z
-        auto ival = luaL_checkinteger(L, 2);
-        using tag_t = basic_datetime_tag<int64_t, 10000000>;
-        tag_t::datetime_type dt{ ival - 11644473600LL * 10000000 };
+        uint64_t ival;
+        if (lua_isinteger(L, 2)) {
+            auto argival = luaL_checkinteger(L, 2);
+            luaL_argcheck(L, argival >= 0, 1, "must be not negative");
+            ival = static_cast<uint64_t>(argival);
+        } else {
+            blob_result* pbr = luaL_check_variant_lib(L, 2);
+            luaL_argcheck(L, !!pbr && pbr->type == blob_type::ui64, 1, "`variant.ui64' or integer expected");
+            ival = pbr->ui64value;
+        }
+        using tag_t = basic_datetime_tag<uint64_t, 10000000, 12591158400LL>;
+        tag_t::datetime_type dt{ ival };
         result = tag_t::iso_date(dt);
     } else if (dttype == "unix"sv) { // seconds since 1970-01-01T00:00:00Z
         auto ival = luaL_checkinteger(L, 2);
@@ -476,7 +485,7 @@ int variant_fancy_string(lua_State* L)
         br = i64_blob_result(luaL_checkinteger(L, 1));
     } else {
         blob_result* pbr = luaL_check_variant_lib(L, 1);
-        luaL_argcheck(L, !!pbr, 1, "`variant' expected");
+        luaL_argcheck(L, !!pbr, 1, "`variant' or integer expected");
         br = *pbr;
     }
 

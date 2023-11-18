@@ -340,7 +340,7 @@ int variant_parse_float(lua_State* L)
     return 1;
 }
 
-// iso_date -> java, winfile, dos?, mac, unix32/64, oletime
+// iso_date -> java, winfile, unix, dosdate, dostime, //mac, oletime
 int variant_iso_date(lua_State* L)
 {
     const char* cstrval = luaL_checkstring(L, 1);
@@ -355,7 +355,7 @@ int variant_iso_date(lua_State* L)
         using tag_t = basic_datetime_tag<int64_t, 1000>;
         tag_t::datetime_type result;
         parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
-        push_from_blob(L, i64_blob_result(result.ticks()));
+        lua_pushinteger(L, result.ticks());
     } else if (dttype == "winfile"sv) {
         using tag_t = basic_datetime_tag<uint64_t, 10000000, 12591158400LL>;
         tag_t::datetime_type result;
@@ -365,7 +365,25 @@ int variant_iso_date(lua_State* L)
         using tag_t = basic_datetime_tag<int64_t, 1>;
         tag_t::datetime_type result;
         parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
-        push_from_blob(L, i64_blob_result(result.ticks()));
+        lua_pushinteger(L, result.ticks());
+    } else if (dttype == "dosdate"sv) {
+        using tag_t = basic_datetime_tag<int64_t, 1>;
+        tag_t::datetime_type result;
+        if (!parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result)) {
+            return luaL_error(L, "wrong date string");
+        }
+        auto year = tag_t::year(result);
+        if (year < 1980 || year > 2107) return luaL_error(L, "year is out of bounds");
+        auto resultval = tag_t::month_day(result) + (tag_t::month(result) << 5) + ((year - 1980) << 9);
+        lua_pushinteger(L, resultval);
+    } else if (dttype == "dostime"sv) {
+        using tag_t = basic_datetime_tag<int64_t, 1>;
+        unsigned int hours, minutes, seconds;
+        if (!parsers::datetime::iso_parser<true, tag_t>::do_parse_time(cstrval, ecstrval, hours, minutes, seconds)) {
+            return luaL_error(L, "wrong time string");
+        }
+        auto resultval = seconds / 2 + (minutes << 5) + (hours << 11);
+        lua_pushinteger(L, resultval);
     } else {
         return luaL_error(L, "unknown datetime type: %s", cstrdest);
     }
@@ -389,7 +407,7 @@ int variant_datetime_string(lua_State* L)
         auto ival = luaL_checkinteger(L, 2);
         using tag_t = basic_datetime_tag<int64_t, 1000>;
         tag_t::datetime_type dt{ ival };
-        result = tag_t::iso_date(dt);
+        result = tag_t::iso_datetime(dt);
     } else if(dttype == "winfile"sv) { // 100 nanoseconds intervals since 1601-01-01T00:00:00Z
         uint64_t ival;
         if (lua_isinteger(L, 2)) {
@@ -403,12 +421,40 @@ int variant_datetime_string(lua_State* L)
         }
         using tag_t = basic_datetime_tag<uint64_t, 10000000, 12591158400LL>;
         tag_t::datetime_type dt{ ival };
-        result = tag_t::iso_date(dt);
+        result = tag_t::iso_datetime(dt);
     } else if (dttype == "unix"sv) { // seconds since 1970-01-01T00:00:00Z
         auto ival = luaL_checkinteger(L, 2);
         using tag_t = basic_datetime_tag<int64_t, 1>;
         tag_t::datetime_type dt{ ival };
-        result = tag_t::iso_date(dt);
+        result = tag_t::iso_datetime(dt);
+    } else if (dttype == "dosdate"sv) { // seconds since 1970-01-01T00:00:00Z
+        auto ival = luaL_checkinteger(L, 2);
+        luaL_argcheck(L, ival >= 0 && ival < 65536, 2, "wrong value");
+        uint32_t day = ival & 31;
+        uint32_t month = (ival >> 5) & 15;
+        uint64_t year = 1980 + (ival >> 9);
+
+        //using tag_t = basic_datetime_tag<int64_t, 1>;
+        //tag_t::datetime_type dt = tag_t::construct(year, month, day);
+        //result = tag_t::iso_datetime(dt, false);
+        
+        std::ostringstream s;
+        s << std::setfill('0') << year << "-" << std::setw(2) << month << "-" << std::setw(2) << day;
+        result = s.str();
+
+    } else if (dttype == "dostime"sv) { // seconds since 1970-01-01T00:00:00Z
+        auto ival = luaL_checkinteger(L, 2);
+        luaL_argcheck(L, ival >= 0 && ival < 65536, 2, "wrong value");
+        uint32_t seconds = (ival & 31) * 2;
+        uint32_t minutes = (ival >> 5) & 63;
+        uint32_t hours = (ival >> 11) & 31;
+
+        std::ostringstream s;
+        s << std::setfill('0') << std::setw(2) << hours << ":" << std::setw(2) << minutes << ":" << std::setw(2) << seconds;
+        result = s.str();
+        //using tag_t = basic_datetime_tag<int64_t, 1>;
+        //tag_t::datetime_type dt = tag_t::construct_time(hours, minutes, seconds);
+        //result = tag_t::iso_time(dt);
     } else {
         return luaL_error(L, "unknown datetime type: %s", cstrval);
     }

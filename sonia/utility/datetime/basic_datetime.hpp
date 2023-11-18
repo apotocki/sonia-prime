@@ -276,11 +276,33 @@ struct basic_datetime_tag
         return month > 0 && month <= 12 && day > 0 && month_days_[1][month - 1] >= day;
     }
 
-    static std::string iso_date(datetime_type const& val)
+    template <typename E, typename Tr = std::char_traits<E>>
+    static std::basic_ostream<E, Tr>& iso_time(std::basic_ostream<E, Tr>& s, datetime_type const& val)
+    {
+        s << std::setfill('0');
+        s << std::setw(2) << hour(val) << ":" << std::setw(2) << minute(val) << ":" << std::setw(2) << second(val);
+        if (auto fs = fraqsecond(val); fs) {
+            int fraqwidth = (int)log10(TicksPerSecV);
+            for (; !(fs % 10); fs /= 10, --fraqwidth);
+            s << "." << std::setw(fraqwidth) << fs;
+        }
+        return s;
+    }
+
+    static std::string iso_time(datetime_type const& val)
+    {
+        std::string buf;
+        buf.reserve(32);
+        std::ostringstream ss(std::move(buf));
+        iso_time(ss, val);
+        return ss.str();
+    }
+
+    static std::string iso_datetime(datetime_type const& val, bool showtime = true)
     {
         // Preallocating buffer
         std::string buf;
-        buf.reserve(30);
+        buf.reserve(32);
         std::ostringstream ss(std::move(buf));
     
         int64_t yr;
@@ -296,13 +318,10 @@ struct basic_datetime_tag
             ss << std::setw(4);
         }
 
-        ss << (std::abs)(yr) << "-" << std::setw(2) << m << "-" << std::setw(2) << mday << "T" << std::setw(2) << hour(val) << ":" << std::setw(2) << minute(val) << ":" << std::setw(2) << second(val);
-        if (auto fs = fraqsecond(val); fs) {
-            int fraqwidth = (int)log10(TicksPerSecV);
-            for (; !(fs % 10); fs /= 10, --fraqwidth);
-            ss << "." << std::setw(fraqwidth) << fs;
+        ss << (std::abs)(yr) << "-" << std::setw(2) << m << "-" << std::setw(2) << mday;
+        if (showtime) {
+            iso_time(ss << "T", val) << "Z";
         }
-        ss << "Z";
         return ss.str();
     }
 };

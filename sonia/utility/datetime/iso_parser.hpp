@@ -55,6 +55,50 @@ struct iso_parser : datetime_parser_base<iso_parser<ParseTimeZoneV>, TagT>
     using datetime_type = typename iso_parser::datetime_parser_base_t::datetime_type;
 
     template <typename IteratorT>
+    static bool do_parse_time(IteratorT& first, IteratorT const& last,
+        unsigned int& hour, unsigned int& minute, unsigned int& second,
+        double *pfraqsecond = nullptr, int * pzsign = nullptr, int * pzhour = nullptr, int* pzminute = nullptr)
+    {
+        namespace sp = sonia::parsers;
+
+        if (!sp::integer(first, last, 2, 2, hour) || hour > 23 || first == last || *first != ':') return false;
+        ++first;
+
+        if (!sp::integer(first, last, 2, 2, minute) || minute > 59 || first == last || *first != ':') return false;
+        ++first;
+        
+        if (!sp::integer(first, last, 2, 2, second) || second > 59) return false;
+        
+        if (first != last && *first == '.') {
+            ++first;
+            int64_t partial;
+            static const int maxfraqdigits = 9;
+            unsigned int dcnt = sp::integer(first, last, 0, maxfraqdigits, partial);
+            if (pfraqsecond) {
+                for (unsigned int k = dcnt; k < maxfraqdigits; ++k, partial *= 10);
+                *pfraqsecond = partial / pow(10.0, maxfraqdigits);
+            }
+            // skip other digits
+            while (first != last && sp::digit(first));
+        }
+        
+        if constexpr (ParseTimeZoneV) {
+            if (first != last) {
+                int zhour = 0, zminute = 0;
+                if (*first == 'Z') ++first;
+                else if (*first == '+' || *first == '-') {
+                    if (pzsign) *pzsign = *first == '+' ? 1 : -1;
+                    ++first;
+                    if (!sp::integer(first, last, 2, 2, pzhour ? *pzhour : zhour) || first == last || *first != ':') return false;
+                    ++first;
+                    if (!sp::integer(first, last, 2, 2, pzminute ? *pzminute : zminute)) return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    template <typename IteratorT>
     static bool do_parse(IteratorT& first, IteratorT const& last, datetime_type & result)
     {
         namespace sp = sonia::parsers;
@@ -77,7 +121,7 @@ struct iso_parser : datetime_parser_base<iso_parser<ParseTimeZoneV>, TagT>
         ++first;
 
         unsigned int day;
-        if (!sp::integer(first, last, 2, 2, day) || first == last) return false;
+        if (!sp::integer(first, last, 2, 2, day)) return false;
         
         if (!datetime_tag::check_date(year, month, day)) return false;
 
@@ -87,41 +131,9 @@ struct iso_parser : datetime_parser_base<iso_parser<ParseTimeZoneV>, TagT>
         double fraqsecond = 0;
         int zhour = 0, zminute = 0;
 
-        if (*first == 'T') {
+        if (first != last && *first == 'T') {
             ++first;
-
-            if (!sp::integer(first, last, 2, 2, hour) || hour > 23 || first == last || *first != ':') return false;
-            ++first;
-
-        
-            if (!sp::integer(first, last, 2, 2, minute) || minute > 59 || first == last || *first != ':') return false;
-            ++first;
-        
-            if (!sp::integer(first, last, 2, 2, second) || second > 59) return false;
-        
-            if (first != last && *first == '.') {
-                ++first;
-                int64_t partial;
-                static const int maxfraqdigits = 9;
-                unsigned int dcnt = sp::integer(first, last, 0, maxfraqdigits, partial);
-                for (unsigned int k = dcnt; k < maxfraqdigits; ++k, partial *= 10);
-                fraqsecond = partial / pow(10.0, maxfraqdigits);
-                // skip other digits
-                while (first != last && sp::digit(first));
-            }
-        
-            if constexpr (ParseTimeZoneV) {
-                if (first != last) {
-                    if (*first == 'Z') ++first;
-                    else if (*first == '+' || *first == '-') {
-                        sign = *first == '+' ? 1 : -1;
-                        ++first;
-                        if (!sp::integer(first, last, 2, 2, zhour) || first == last || *first != ':') return false;
-                        ++first;
-                        if (!sp::integer(first, last, 2, 2, zminute)) return false;
-                    }
-                }
-            }
+            if (!do_parse_time(first, last, hour, minute, second, &fraqsecond, &sign, &zhour, &zminute)) return false;
         }
 
         datetime_type temp = datetime_tag::construct(year, month, day, hour, minute, second + fraqsecond);

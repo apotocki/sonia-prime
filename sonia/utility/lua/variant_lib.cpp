@@ -92,6 +92,11 @@ blob_result* luaL_check_variant_lib(lua_State* L, int index)
     return (blob_result*)luaL_checkudata(L, index, VARIANT_METATABLE_NAME);
 }
 
+blob_result* luaL_test_variant_lib(lua_State* L, int index)
+{
+    return (blob_result*)luaL_testudata(L, index, VARIANT_METATABLE_NAME);
+}
+
 int variant_gc(lua_State* L)
 {
     blob_result* br = (blob_result*)lua_touserdata(L, 1);
@@ -707,7 +712,7 @@ blob_result to_blob(lua_State* L, int index)
         }
 
         case LUA_TUSERDATA:
-            if (blob_result* br = luaL_check_variant_lib(L, index); br) {
+            if (blob_result* br = luaL_test_variant_lib(L, index); br) {
                 blob_result_pin(br);
                 return *br;
             }

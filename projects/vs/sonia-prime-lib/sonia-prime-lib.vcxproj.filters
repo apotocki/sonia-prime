@@ -1917,6 +1917,12 @@
     <ClInclude Include="..\..\..\sonia\utility\datetime\iso_parser.hpp">
       <Filter>sonia.utility\datetime</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invokation\value_decoder.hpp">
+      <Filter>sonia.utility\invokation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invokation\value_encoder.hpp">
+      <Filter>sonia.utility\invokation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2161,6 +2167,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\fibers\scheduler.cpp">
       <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invokation\value_decoder.cpp">
+      <Filter>sonia.utility\invokation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invokation\value_encoder.cpp">
+      <Filter>sonia.utility\invokation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

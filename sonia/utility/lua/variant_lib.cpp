@@ -5,6 +5,8 @@
 #include "sonia/config.hpp"
 #include "variant_lib.hpp"
 #include "sonia/utility/invokation/invokation.hpp"
+#include "sonia/utility/invokation/value_encoder.hpp"
+#include "sonia/utility/invokation/value_decoder.hpp"
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/utility/datetime/iso_parser.hpp"
 
@@ -193,7 +195,7 @@ void push_from_blob(lua_State* L, blob_result const& b)
 int variant_index(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
-    luaL_argcheck(L, !!br, 1, "`variant' expected");
+    luaL_argcheck(L, !!br, 1, "`variant' is expected");
 
     luaL_getmetatable(L, VARIANT_METATABLE_NAME);
     lua_pushvalue(L, 2);
@@ -238,7 +240,7 @@ int variant_index(lua_State* L)
 int variant_len(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
-    luaL_argcheck(L, !!br, 1, "`variant' expected");
+    luaL_argcheck(L, !!br, 1, "`variant' is expected");
 
     if (br->is_array) {
         lua_Integer count = blob_result_type_selector(*br, [](auto ident, blob_result b) {
@@ -265,7 +267,7 @@ int variant_equal(lua_State* L)
 int variant_tostring(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
-    luaL_argcheck(L, !!br, 1, "`variant' expected");
+    luaL_argcheck(L, !!br, 1, "`variant' is expected");
     std::ostringstream s;
     s << *br;
     std::string result = s.str();
@@ -318,7 +320,7 @@ int variant_int(lua_State* L)
 int variant_type(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
-    luaL_argcheck(L, !!br, 1, "`variant' expected");
+    luaL_argcheck(L, !!br, 1, "`variant' is expected");
     std::ostringstream s;
     print_type(s, *br);
     std::string result = s.str();
@@ -328,8 +330,8 @@ int variant_type(lua_State* L)
 
 int variant_parse_float(lua_State* L)
 {
-    const char * cstrval = luaL_checkstring(L, 1);
-    size_t sz = lua_rawlen(L, 1);
+    size_t sz;
+    const char * cstrval = luaL_checklstring(L, 1, &sz);
     while (sz && std::isspace(cstrval[sz - 1])) --sz;
     char * pend;
     double dval = strtod (cstrval, &pend);
@@ -343,13 +345,15 @@ int variant_parse_float(lua_State* L)
 // iso_date -> java, winfile, unix, dosdate, dostime, //mac, oletime
 int variant_iso_date(lua_State* L)
 {
-    const char* cstrval = luaL_checkstring(L, 1);
-    size_t strsz = lua_rawlen(L, 1);
+    size_t strsz;
+    const char* cstrval = luaL_checklstring(L, 1, &strsz);
+    
     while (strsz && std::isspace(cstrval[strsz - 1])) --strsz;
     const char* ecstrval = cstrval + strsz;
 
-    const char* cstrdest = luaL_checkstring(L, 2);
-    size_t destsz = lua_rawlen(L, 2);
+    size_t destsz;
+    const char* cstrdest = luaL_checklstring(L, 2, &destsz);
+    
     string_view dttype{ cstrdest, destsz };
     if (dttype == "java"sv) {
         using tag_t = basic_datetime_tag<int64_t, 1000>;
@@ -398,8 +402,9 @@ int variant_iso_date(lua_State* L)
 //(datetime type, val)->string
 int variant_datetime_string(lua_State* L)
 {
-    const char* cstrval = luaL_checkstring(L, 1);
-    size_t strsz = lua_rawlen(L, 1);
+    size_t strsz;
+    const char* cstrval = luaL_checklstring(L, 1, &strsz);
+    
     string_view dttype{ cstrval, strsz };
     std::string result;
 
@@ -531,7 +536,7 @@ int variant_fancy_string(lua_State* L)
         br = i64_blob_result(luaL_checkinteger(L, 1));
     } else {
         blob_result* pbr = luaL_check_variant_lib(L, 1);
-        luaL_argcheck(L, !!pbr, 1, "`variant' or integer expected");
+        luaL_argcheck(L, !!pbr, 1, "`variant' or integer is expected");
         br = *pbr;
     }
 
@@ -544,8 +549,8 @@ int variant_fancy_string(lua_State* L)
         if (argcount > 2) {
             groupSz = luaL_checkinteger(L, 3);
             if (argcount > 3) {
-                char const* strval = luaL_checkstring(L, 4);
-                size_t sz = lua_rawlen(L, 4);
+                size_t sz;
+                char const* strval = luaL_checklstring(L, 4, &sz);
                 delim = string_view{ strval, sz };
             }
         }
@@ -591,55 +596,6 @@ int variant_fancy_string(lua_State* L)
     });
     std::string result = ss.str();
     lua_pushlstring(L, result.c_str(), result.size());
-    return 1;
-}
-
-const struct luaL_Reg variantlib[] = {
-    {"ui8array", variant_array<uint8_t>},
-    {"i8array", variant_array<int8_t>},
-    {"int", variant_int},
-    {"f64", variant_parse_float},
-    {"iso_date", variant_iso_date},
-    {"to_fancy_string", variant_fancy_string},
-    {"to_datetime_string", variant_datetime_string},
-    {NULL, NULL}
-};
-
-const struct luaL_Reg variantlib_m[] = {
-    {"__tostring", variant_tostring},
-    {"__index", variant_index},
-    {"__len", variant_len},
-    {"__eq", variant_equal},
-    {"__gc", variant_gc},
-    {NULL, NULL}
-};
-
-const struct luaL_Reg variantlib_f[] = {
-    {"type", variant_type},
-    {"to_fancy_string", variant_fancy_string},
-    {NULL, NULL}
-};
-
-int luaopen_variantlib(lua_State* L)
-{
-#ifdef MERGE_VARIANT_LIB // hasn't tested
-    lua_getglobal(L, VARIANT_LIB_NAME);
-    if (lua_isnil(L, -1)) {
-        lua_pop(L, 1);
-        luaL_newmetatable(L, VARIANT_METATABLE_NAME);
-        lua_newtable(L);
-    }
-#else
-    luaL_newmetatable(L, VARIANT_METATABLE_NAME);
-    luaL_setfuncs(L, variantlib_m, 0);
-    luaL_setfuncs(L, variantlib_f, 0);
-    lua_pop(L, 1);
-
-    lua_newtable(L);
-#endif
-    luaL_setfuncs(L, variantlib, 0);
-    lua_setglobal(L, VARIANT_LIB_NAME);
-
     return 1;
 }
 
@@ -760,6 +716,88 @@ blob_result to_blob(lua_State* L, int index)
         default:
             return nil_blob_result();
     }
+}
+
+// arguments: bytearray: variant, type: string, endianness: string
+// types: i8, ui8, i16, ui16, i32, ui32, i64, ui64
+// endianness: le, be
+int variant_decode(lua_State* L)
+{
+    blob_result* br = luaL_check_variant_lib(L, 1);
+    luaL_argcheck(L, !!br, 1, "`variant' is expected");
+
+    span<const uint8_t> sp;
+    try {
+        sp = as<span<const uint8_t>>(*br);
+    } catch (std::exception const&) {
+        return luaL_argerror(L, 1, "byte array is expected");
+    }
+    
+    size_t typestrsz;
+    const char* typestr = luaL_checklstring(L, 2, &typestrsz);
+    
+    size_t estrsz;
+    const char* estr = luaL_checklstring(L, 3, &estrsz);
+
+    blob_result res;
+    try {
+        res = as_singleton<invokation::value_decoder>()->decode(sp, { typestr, typestrsz }, { estr, estrsz });
+    } catch (std::exception const& e) {
+        return luaL_error(L, e.what());
+    }
+
+    push_from_blob(L, res);
+    return 1;
+}
+
+const struct luaL_Reg variantlib[] = {
+    {"ui8array", variant_array<uint8_t>},
+    {"i8array", variant_array<int8_t>},
+    {"int", variant_int},
+    {"f64", variant_parse_float},
+    {"iso_date", variant_iso_date},
+    {"to_fancy_string", variant_fancy_string},
+    {"to_datetime_string", variant_datetime_string},
+    {NULL, NULL}
+};
+
+const struct luaL_Reg variantlib_m[] = {
+    {"__tostring", variant_tostring},
+    {"__index", variant_index},
+    {"__len", variant_len},
+    {"__eq", variant_equal},
+    {"__gc", variant_gc},
+    {NULL, NULL}
+};
+
+const struct luaL_Reg variantlib_f[] = {
+    {"type", variant_type},
+    {"to_fancy_string", variant_fancy_string},
+    {"decode", variant_decode},
+    {NULL, NULL}
+};
+
+int luaopen_variantlib(lua_State* L)
+{
+#ifdef MERGE_VARIANT_LIB // hasn't tested
+    lua_getglobal(L, VARIANT_LIB_NAME);
+    if (lua_isnil(L, -1)) {
+        lua_pop(L, 1);
+        luaL_newmetatable(L, VARIANT_METATABLE_NAME);
+        lua_newtable(L);
+    }
+#else
+    luaL_newmetatable(L, VARIANT_METATABLE_NAME);
+    luaL_setfuncs(L, variantlib_m, 0);
+    luaL_setfuncs(L, variantlib_f, 0);
+    lua_pop(L, 1);
+
+    lua_newtable(L);
+#endif
+    luaL_setfuncs(L, variantlib, 0);
+    lua_setglobal(L, VARIANT_LIB_NAME);
+
+    return 1;
 }
 
 }

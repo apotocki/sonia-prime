@@ -195,7 +195,7 @@ void push_from_blob(lua_State* L, blob_result const& b)
 int variant_index(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
-    luaL_argcheck(L, !!br, 1, "`variant' is expected");
+    luaL_argcheck(L, !!br, 1, "`variant' expected");
 
     luaL_getmetatable(L, VARIANT_METATABLE_NAME);
     lua_pushvalue(L, 2);
@@ -240,7 +240,7 @@ int variant_index(lua_State* L)
 int variant_len(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
-    luaL_argcheck(L, !!br, 1, "`variant' is expected");
+    luaL_argcheck(L, !!br, 1, "`variant' expected");
 
     if (br->is_array) {
         lua_Integer count = blob_result_type_selector(*br, [](auto ident, blob_result b) {
@@ -320,7 +320,7 @@ int variant_int(lua_State* L)
 int variant_type(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
-    luaL_argcheck(L, !!br, 1, "`variant' is expected");
+    luaL_argcheck(L, !!br, 1, "`variant' expected");
     std::ostringstream s;
     print_type(s, *br);
     std::string result = s.str();
@@ -724,29 +724,74 @@ blob_result to_blob(lua_State* L, int index)
 int variant_decode(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
-    luaL_argcheck(L, !!br, 1, "`variant' is expected");
+    luaL_argcheck(L, !!br, 1, "`variant' expected");
 
     span<const uint8_t> sp;
     try {
         sp = as<span<const uint8_t>>(*br);
     } catch (std::exception const&) {
-        return luaL_argerror(L, 1, "byte array is expected");
+        return luaL_argerror(L, 1, "byte array expected");
     }
     
     size_t typestrsz;
     const char* typestr = luaL_checklstring(L, 2, &typestrsz);
     
-    size_t estrsz;
-    const char* estr = luaL_checklstring(L, 3, &estrsz);
+    string_view endianness;
+    int argcount = lua_gettop(L);
+    if (argcount > 2) {
+        size_t estrsz;
+        const char* estr = luaL_checklstring(L, 3, &estrsz);
+        endianness = string_view{ estr, estrsz };
+    } else {
+        endianness = std::endian::native == std::endian::little ? "le"sv : "be"sv;
+    }
 
     blob_result res;
     try {
-        res = as_singleton<invokation::value_decoder>()->decode(sp, { typestr, typestrsz }, { estr, estrsz });
+        res = as_singleton<invokation::value_decoder>()->decode(sp, { typestr, typestrsz }, endianness);
     } catch (std::exception const& e) {
         return luaL_error(L, e.what());
     }
 
     push_from_blob(L, res);
+    return 1;
+}
+
+int variant_encode(lua_State* L)
+{
+    blob_result input;
+    if (lua_isinteger(L, 1)) {
+        input = i64_blob_result(lua_tointeger(L, 1));
+    } else {
+        blob_result *br = luaL_check_variant_lib(L, 1);
+        luaL_argcheck(L, !!br, 1, "`variant' or integer expected");
+        input = *br;
+    }
+
+    size_t typestrsz;
+    const char* typestr = luaL_checklstring(L, 2, &typestrsz);
+    
+    string_view endianness;
+    int argcount = lua_gettop(L);
+    if (argcount > 2) {
+        size_t estrsz;
+        const char* estr = luaL_checklstring(L, 3, &estrsz);
+        endianness = string_view{ estr, estrsz };
+    } else {
+        endianness = std::endian::native == std::endian::little ? "le"sv : "be"sv;
+    }
+
+    try {
+        as_singleton<invokation::value_encoder>()->encode(input, { typestr, typestrsz }, endianness, [L](span<const uint8_t> sp) {
+            blob_result br{ sp.data(), static_cast<int32_t>(sp.size()), 0, 1, blob_type::ui8 };
+            blob_result_allocate(&br);
+            defer{ blob_result_unpin(&br); };
+            push_variant(L, br);
+        });
+    } catch (std::exception const& e) {
+        return luaL_error(L, e.what());
+    }
+
     return 1;
 }
 

@@ -803,6 +803,7 @@ const struct luaL_Reg variantlib[] = {
     {"iso_date", variant_iso_date},
     {"to_fancy_string", variant_fancy_string},
     {"to_datetime_string", variant_datetime_string},
+    {"encode", variant_encode},
     {NULL, NULL}
 };
 

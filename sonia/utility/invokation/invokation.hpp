@@ -49,16 +49,6 @@ enum class blob_type : uint8_t {
     
 };
 
-inline blob_type operator | (blob_type l, blob_type r) noexcept
-{
-    return (blob_type)((uint8_t)l | (uint8_t)r);
-}
-
-inline auto operator <=> (blob_type l, blob_type r) noexcept
-{
-    return ((uint8_t)l) <=> ((uint8_t)r);
-}
-
 /*
 struct blob_result {
     union {
@@ -124,6 +114,16 @@ SONIA_PRIME_API void blob_result_allocate(blob_result *);
 SONIA_PRIME_API void blob_result_pin(blob_result *);
 SONIA_PRIME_API void blob_result_unpin(blob_result *);
 
+}
+
+inline blob_type operator | (blob_type l, blob_type r) noexcept
+{
+    return (blob_type)((uint8_t)l | (uint8_t)r);
+}
+
+inline auto operator <=> (blob_type l, blob_type r) noexcept
+{
+    return ((uint8_t)l) <=> ((uint8_t)r);
 }
 
 inline bool is_basic_integral(blob_type val) noexcept { return val >= blob_type::ui8 && val <= blob_type::i64; }
@@ -414,7 +414,7 @@ template <typename CharT, size_t ET>
 requires (sizeof(CharT) == 1)
 inline blob_result string_blob_result(std::span<CharT, ET> value, blob_type t = blob_type::string)
 {
-    return blob_result{ value.data(), static_cast<int32_t>(value.size()), 0, 0, t};
+    return make_blob_result(t, value.data(), static_cast<uint32_t>(value.size()));
 }
 
 template <typename ArgT>
@@ -527,6 +527,8 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
     case blob_type::string:
     case blob_type::error:
         return ftor(sonia::identity<char>(), b);
+        default:
+            break;
     }
     blob_type decayed_type = (blob_type)(((uint8_t)b.type) & 0x7f);
     switch (decayed_type)
@@ -559,6 +561,8 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
         return ftor(sonia::identity<double_t>(), b);
     case blob_type::tuple:
         return ftor(sonia::identity<blob_result>(), b);
+    default:
+        break;
     }
     return ftor(sonia::identity<void>(), b);
 }
@@ -590,6 +594,8 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
         return os << "nil";
     case blob_type::boolean:
         return os << (b.bp.i8value ? "true" : "false");
+    case blob_type::c8:
+        return os << '\'' << (char)b.bp.i8value<< '\'';
     case blob_type::i8:
         return os << (int)b.bp.i8value << ":i8";
     case blob_type::ui8:
@@ -620,8 +626,9 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
         return os << "object";
     case blob_type::error:
         return os << "error: " << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
+    default:
+        return os << "unknown";
     }
-    return os;
 }
 
 inline std::ostream& print_type(std::ostream& os, blob_result const& b)

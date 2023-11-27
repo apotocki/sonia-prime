@@ -528,8 +528,9 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
         return os << "object";
     case blob_type::error:
         return os << "error: " << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
+    default:
+        return os << "unknown";
     }
-    return os;
 }
 
 int variant_fancy_string(lua_State* L)
@@ -607,20 +608,24 @@ template <typename T>
 blob_result to_blob_array(blob_type elemtype, span<const blob_result> sp)
 {
     blob_result values = make_blob_result(elemtype | blob_type::is_array, nullptr, (int32_t)(sp.size() * sizeof(T)));
-    if (sp.size() == 1) {
-        *reinterpret_cast<T*>(values.ui8array) = as<T>(sp[0]);
-        values.inplace_size = sizeof(T);
-    } else {
-        blob_result_allocate(&values);
-        T* pobj = mutable_data_of<T>(values);
-        for (size_t i = 0; i < sp.size(); ++i) {
-            *(pobj + i) = as<T>(sp[i]);
-            // already pinned
-            //if constexpr(std::is_same_v<T, blob_result>) {
-            //    blob_result_pin(pobj);
-            //}
+    if constexpr (!is_same_v<blob_result, T>) {
+        if (sp.size() == 1) {
+            *reinterpret_cast<T*>(values.ui8array) = as<T>(sp[0]);
+            values.inplace_size = static_cast<uint8_t>(sizeof(T));
+            return values;
         }
     }
+
+    blob_result_allocate(&values);
+    T* pobj = mutable_data_of<T>(values);
+    for (size_t i = 0; i < sp.size(); ++i) {
+        *(pobj + i) = as<T>(sp[i]);
+        // already pinned
+        //if constexpr(std::is_same_v<T, blob_result>) {
+        //    blob_result_pin(pobj);
+        //}
+    }
+
     return values;
 }
 

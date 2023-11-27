@@ -23,17 +23,17 @@ void save(ArchiveT& ar, blob_result& b, const unsigned int version)
     std::ostringstream valuess;
     switch (b.type)
     {
-    case blob_type::unspecified:
+    case blob_type::nil:
         valuess << "nil";
         //if (!b.data) ar << "nil";
         // to do: save byte array
         break;
     case blob_type::boolean:
-        valuess << (b.i8value ? "true" : "false");
+        valuess << (b.bp.i8value ? "true" : "false");
         break;
     case blob_type::string:
         valuess << '"';
-        for (char c : sonia::string_view(reinterpret_cast<const char*>(b.data), b.size)) {
+        for (char c : sonia::string_view(data_of<const char>(b), array_size_of<char>(b))) {
             if (c == '"' || c == '\\') {
                 valuess << '\\';
             }

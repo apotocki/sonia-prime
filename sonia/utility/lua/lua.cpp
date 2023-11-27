@@ -188,9 +188,9 @@ int language::invoke_global(string_view fname, std::span<blob_result> args)
         //GLOBAL_LOG_INFO() << "lua global invoking '" << fname << "', args: '" << args << "'";
         smart_blob res = resolvers_.back()->invoke(fname, args);
         //GLOBAL_LOG_INFO() << "lua global invoked '" << fname << "', result: '" << *res << "'";
-        if (res->is_array && res->type == blob_type::blob) {
-            size_t cnt = res->size / sizeof(blob_type);
-            for (blob_result r : std::span{ reinterpret_cast<const blob_result*>(res->data), cnt }) {
+        if (res->type == blob_type::tuple) {
+            size_t cnt = array_size_of<blob_result>(*res);
+            for (blob_result r : std::span{ data_of<blob_result>(*res), cnt }) {
                 push_from_blob(L, r);
             }
             return static_cast<int>(cnt);

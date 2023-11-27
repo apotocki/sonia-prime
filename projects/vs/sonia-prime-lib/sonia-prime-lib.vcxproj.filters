@@ -1692,7 +1692,7 @@
     <ClInclude Include="..\..\..\sonia\utility\invokation\invokable.hpp">
       <Filter>sonia.utility\invokation</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invokation\serializarion.hpp">
+    <ClInclude Include="..\..\..\sonia\utility\invokation\serialization.hpp">
       <Filter>sonia.utility\invokation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\lua\lua.hpp">

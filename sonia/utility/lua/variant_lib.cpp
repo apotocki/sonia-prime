@@ -120,11 +120,8 @@ int push_variant(lua_State* L, blob_result const& value)
 
 void push_from_blob(lua_State* L, blob_result const& b)
 {
-    if (b.type == blob_type::unspecified && !b.data) {
-        lua_pushnil(L);
-        return;
-    }
-    if (b.is_array || b.type == blob_type::unspecified) {
+#if 0
+    if (is_array(b).is_array || b.type == blob_type::unspecified) {
         push_variant(L, b);
         /*
         lua_newtable(L);
@@ -149,51 +146,48 @@ void push_from_blob(lua_State* L, blob_result const& b)
         */
         return;
     }
+#endif
     switch (b.type) {
+    case blob_type::nil:
+        lua_pushnil(L); break;
     case blob_type::boolean:
-        lua_pushboolean(L, (int)b.ui8value);
-        return;
-
-    case blob_type::unspecified:
+        lua_pushboolean(L, (int)b.bp.ui8value); break;
     case blob_type::i8:
-        lua_pushinteger(L, (lua_Integer)b.i8value); return;
     case blob_type::ui8:
-        lua_pushinteger(L, (lua_Integer)b.ui8value); return;
     case blob_type::i16:
-        lua_pushinteger(L, (lua_Integer)b.i16value); return;
     case blob_type::ui16:
-        lua_pushinteger(L, (lua_Integer)b.ui16value); return;
     case blob_type::i32:
-        lua_pushinteger(L, (lua_Integer)b.i32value); return;
     case blob_type::ui32:
-        lua_pushinteger(L, (lua_Integer)b.ui32value); return;
     case blob_type::i64:
-        lua_pushinteger(L, (lua_Integer)b.i64value); return;
+        lua_pushinteger(L, from_blob<lua_Integer>{}(b)); break;
     case blob_type::ui64:
-        if (b.ui64value > (uint64_t)(std::numeric_limits<int64_t>::max)()) {
-            push_variant(L, b);
+        if (uint64_t val = from_blob<lua_Integer>{}(b); val <= (uint64_t)(std::numeric_limits<int64_t>::max)()) {
+            lua_pushinteger(L, (lua_Integer)val);
         } else {
-            lua_pushinteger(L, (lua_Integer)b.ui64value);
+            push_variant(L, b);
         }
-        return;
+        break;
+    case blob_type::c8:
+        lua_pushlstring(L, (const char*)b.bp.data, 1); break;
     case blob_type::flt16:
-        lua_pushnumber(L, (lua_Number)(float_t)b.f16value); return;
     case blob_type::flt32:
-        lua_pushnumber(L, (lua_Number)b.f32value); return;
     case blob_type::flt64:
-        lua_pushnumber(L, (lua_Number)b.f64value); return;
-    case blob_type::string:
-        lua_pushlstring(L, (const char*)b.data, b.size); return;
-        //case blob_type::blob:
+        lua_pushnumber(L, from_blob<lua_Number>{}(b)); break;
     case blob_type::function:
-        lua_pushlstring(L, (const char*)b.data, b.size);
+        lua_pushlstring(L, data_of<char>(b), array_size_of<char>(b));
         lua_pushcclosure(L, ext_invoke, 1);
         //lua_pushcfunction(L, ext_invoke); 
-        return;
+        break;
+    case blob_type::string:
+        lua_pushlstring(L, data_of<char>(b), array_size_of<char>(b)); break;
     case blob_type::error:
-        throw exception(std::string((const char*)b.data, b.size));
+        throw exception(std::string(data_of<char>(b), array_size_of<char>(b)));
     default:
-        lua_pushnil(L);
+        if (is_array(b)) {
+            push_variant(L, b);
+        } else {
+            lua_pushnil(L);
+        }
     }
 }
 
@@ -209,33 +203,38 @@ int variant_index(lua_State* L)
     if (!lua_isnil(L, -1)) return 1;
 
     auto index = luaL_checkinteger(L, 2);
-    if (!br->is_array) { // scalar
+    if (!is_array(*br)) { // scalar
         if (index == 1) { // push itself
             return push_variant(L, *br);
         }
         lua_pushnil(L);
     }
-    blob_result_type_selector(*br, [L, c_index = index - 1](auto ident, blob_result b) {
+    blob_type_selector(*br, [L, c_index = index - 1](auto ident, blob_result b) {
         using type = typename decltype(ident)::type;
-        using ftype = std::conditional_t<std::is_void_v<type>, uint8_t, type>;
-        using fstype = std::conditional_t<std::is_same_v<ftype, bool>, uint8_t, ftype>;
+        if constexpr (std::is_void_v<type>) { lua_pushnil(L); return; }
+        else {
+            using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
 
-        if (c_index < 0 || b.size / sizeof(fstype) <= (size_t)c_index) {
-            lua_pushnil(L);
-        } else {
-            if constexpr (is_same_v<fstype, blob_result>) {
-                push_from_blob(L, *(reinterpret_cast<blob_result const*>(b.data) + c_index));
-            } else if constexpr (is_integral_v<fstype>) {
-                fstype const* pval = reinterpret_cast<fstype const*>(b.data) + c_index;
-                lua_pushinteger(L, (lua_Integer)*pval);
-            } else if constexpr (is_floating_point_v<fstype>) {
-                fstype const* pval = reinterpret_cast<fstype const*>(b.data) + c_index;
-                lua_pushnumber(L, (lua_Number)*pval);
-            } else if (is_same_v<fstype, float16>) {
-                fstype const* pval = reinterpret_cast<fstype const*>(b.data) + c_index;
-                lua_pushnumber(L, (lua_Number)(float)*pval);
+            fstype const* begin_ptr = data_of<fstype>(b);
+            size_t sz = array_size_of<fstype>(b);
+
+            if (c_index < 0 || sz <= (size_t)c_index) {
+                lua_pushnil(L);
             } else {
-                throw exception("unsupported type %1%"_fmt % typeid(fstype).name());
+                if constexpr (is_same_v<fstype, blob_result>) {
+                    push_from_blob(L, *(begin_ptr + c_index));
+                } else if constexpr (is_integral_v<fstype>) {
+                    fstype const* pval = begin_ptr + c_index;
+                    lua_pushinteger(L, (lua_Integer)*pval);
+                } else if constexpr (is_floating_point_v<fstype>) {
+                    fstype const* pval = begin_ptr + c_index;
+                    lua_pushnumber(L, (lua_Number)*pval);
+                } else if (is_same_v<fstype, float16>) {
+                    fstype const* pval = begin_ptr + c_index;
+                    lua_pushnumber(L, (lua_Number)(float)*pval);
+                } else {
+                    throw exception("unsupported type %1%"_fmt % typeid(fstype).name());
+                }
             }
         }
     });
@@ -247,12 +246,14 @@ int variant_len(lua_State* L)
     blob_result* br = luaL_check_variant_lib(L, 1);
     luaL_argcheck(L, !!br, 1, "`variant' expected");
 
-    if (br->is_array) {
-        lua_Integer count = blob_result_type_selector(*br, [](auto ident, blob_result b) {
+    if (is_array(*br)) {
+        lua_Integer count = blob_type_selector(*br, [](auto ident, blob_result b) -> size_t {
             using type = typename decltype(ident)::type;
-            using ftype = std::conditional_t<std::is_void_v<type>, uint8_t, type>;
-            using fstype = std::conditional_t<std::is_same_v<ftype, bool>, uint8_t, ftype>;
-            return b.size / sizeof(fstype);
+            if constexpr (std::is_void_v<type>) { return 0; }
+            else {
+                using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
+                return array_size_of<fstype>(b);
+            }
         });
         lua_pushinteger(L, count);
     } else {
@@ -284,10 +285,10 @@ template <std::integral T>
 int variant_array(lua_State* L)
 {
     int argcount = lua_gettop(L);
-    blob_result br{ nullptr, static_cast<int32_t>(argcount * sizeof(T)), 0, 1, blob_type_for<T>() };
+    blob_result br = make_blob_result( blob_type_for<T>() | blob_type::is_array, nullptr, static_cast<int32_t>(argcount * sizeof(T)));
     blob_result_allocate(&br);
     defer{ blob_result_unpin(&br); };
-    T* arr_data = reinterpret_cast<T*>(const_cast<void*>(br.data));
+    T* arr_data = mutable_data_of<T>(br);
     for (int i = 0; i < argcount; ++i) {
         auto elemval = luaL_checkinteger(L, i + 1);
         bool check = (std::numeric_limits<T>::min)() <= elemval && (std::numeric_limits<T>::max)() >= elemval;
@@ -427,7 +428,7 @@ int variant_datetime_string(lua_State* L)
         } else {
             blob_result* pbr = luaL_check_variant_lib(L, 2);
             luaL_argcheck(L, !!pbr && pbr->type == blob_type::ui64, 1, "`variant.ui64' or integer expected");
-            ival = pbr->ui64value;
+            ival = as<uint64_t>(*pbr);
         }
         using tag_t = basic_datetime_tag<uint64_t, 10000000, 12591158400LL>;
         tag_t::datetime_type dt{ ival };
@@ -475,61 +476,58 @@ int variant_datetime_string(lua_State* L)
 template <typename PrinterT>
 std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const& printer)
 {
-    if (b.type == blob_type::unspecified && !b.data) {
-        return os << "nil";
-    }
-    if (b.is_array) {
+    if (is_array(b) && !contains_string(b)) {
         os << "[";
-        blob_result_type_selector(b, [&os, &printer](auto ident, blob_result b) {
+        blob_type_selector(b, [&os, &printer](auto ident, blob_result b) {
             using type = typename decltype(ident)::type;
-            using ftype = std::conditional_t<std::is_void_v<type>, uint8_t, type>;
-            using fstype = std::conditional_t<std::is_same_v<ftype, bool>, uint8_t, ftype>;
-            for (int32_t i = 0; i < b.size / sizeof(fstype); ++i) {
-                os << (i ? "," : "");
-                fancy_print(os, particular_blob_result(*(reinterpret_cast<fstype const*>(b.data) + i)), printer);
+            if constexpr (std::is_void_v<type>) { os << "unknown"; }
+            else {
+                using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
+                fstype const* begin_ptr = data_of<fstype>(b);
+                for (auto* p = begin_ptr, *e = begin_ptr + array_size_of<fstype>(b); p != e; ++p) {
+                    os << ((p != begin_ptr) ? "," : "");
+                    fancy_print(os, particular_blob_result((type)*p), printer);
+                }
             }
         });
         return os << "]";
     }
     switch (b.type)
     {
-    case blob_type::unspecified:
-        if (!b.data) return os << "nil";
-        return os << "unspecified";
+    case blob_type::nil:
+        return os << "nil";
     case blob_type::boolean:
-        return printer(os, b.type, !!b.i8value);
+        return printer(os, b.type, !!b.bp.i8value);
     case blob_type::i8:
-        return printer(os, b.type, b.i8value);
+        return printer(os, b.type, b.bp.i8value);
     case blob_type::ui8:
-        return printer(os, b.type, b.ui8value);
+        return printer(os, b.type, b.bp.ui8value);
     case blob_type::i16:
-        return printer(os, b.type, b.i16value);
+        return printer(os, b.type, b.bp.i16value);
     case blob_type::ui16:
-        return printer(os, b.type, b.ui16value);
+        return printer(os, b.type, b.bp.ui16value);
     case blob_type::i32:
-        return printer(os, b.type, b.i32value);
+        return printer(os, b.type, b.bp.i32value);
     case blob_type::ui32:
-        return printer(os, b.type, b.ui32value);
+        return printer(os, b.type, b.bp.ui32value);
     case blob_type::i64:
-        return printer(os, b.type, b.i64value);
+        return printer(os, b.type, b.bp.i64value);
     case blob_type::ui64:
-        return printer(os, b.type, b.ui64value);
+        return printer(os, b.type, b.bp.ui64value);
     case blob_type::flt16:
-        return printer(os, b.type, b.f16value);
+        return printer(os, b.type, b.bp.f16value);
     case blob_type::flt32:
-        return printer(os, b.type, b.f32value);
+        return printer(os, b.type, b.bp.f32value);
     case blob_type::flt64:
-        return printer(os, b.type, b.f64value);
+        return printer(os, b.type, b.bp.f64value);
     case blob_type::string:
-        return printer(os, b.type, sonia::string_view(reinterpret_cast<const char*>(b.data), b.size));
-    case blob_type::blob:
-        return os << "blob";
+        return printer(os, b.type, sonia::string_view{ data_of<char>(b), array_size_of<char>(b) });
     case blob_type::function:
         return os << "function";
     case blob_type::object:
         return os << "object";
     case blob_type::error:
-        return os << "error: " << sonia::string_view(reinterpret_cast<const char*>(b.data), b.size);
+        return os << "error: " << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
     }
     return os;
 }
@@ -604,6 +602,28 @@ int variant_fancy_string(lua_State* L)
     return 1;
 }
 
+// blobs in sp are supposed already pinned
+template <typename T>
+blob_result to_blob_array(blob_type elemtype, span<const blob_result> sp)
+{
+    blob_result values = make_blob_result(elemtype | blob_type::is_array, nullptr, (int32_t)(sp.size() * sizeof(T)));
+    if (sp.size() == 1) {
+        *reinterpret_cast<T*>(values.ui8array) = as<T>(sp[0]);
+        values.inplace_size = sizeof(T);
+    } else {
+        blob_result_allocate(&values);
+        T* pobj = mutable_data_of<T>(values);
+        for (size_t i = 0; i < sp.size(); ++i) {
+            *(pobj + i) = as<T>(sp[i]);
+            // already pinned
+            //if constexpr(std::is_same_v<T, blob_result>) {
+            //    blob_result_pin(pobj);
+            //}
+        }
+    }
+    return values;
+}
+
 blob_result to_blob(lua_State* L, int index)
 {
     int luavaltype = lua_type(L, index);
@@ -636,78 +656,66 @@ blob_result to_blob(lua_State* L, int index)
         {
             lua_pushvalue(L, index);
             lua_pushnil(L);
-            blob_type ktype = blob_type::unspecified, vtype = blob_type::unspecified;
-            bool no_unique_k = false, no_unique_v = false;
+            blob_type ktype = blob_type::nil, vtype = blob_type::nil;
+            bool keys_are_array_indices = false, no_unique_v = false;
+            bool is_basic_integral_v = false, has_negative_v = false, has_i64unlimit_value_v = false;
+
             std::vector<blob_result> vals;
             std::vector<blob_result> keys;
             while (lua_next(L, -2) != 0) {
                 keys.push_back(to_blob(L, -2));
-                vals.push_back(to_blob(L, -1));
+                vals.push_back(to_blob(L, -1)); //i64, f64, bool, string, tuple
                 lua_pop(L, 1);
-                if (ktype == blob_type::unspecified) {
+                if (ktype == blob_type::nil) {
                     ktype = keys.back().type;
+                    keys_are_array_indices = ktype == blob_type::i64 && as<int64_t>(keys.back()) == 1;
                 } else if (ktype != keys.back().type) {
-                    no_unique_k = true;
+                    keys_are_array_indices = false;
+                } else if (keys_are_array_indices) {
+                    keys_are_array_indices = ktype == blob_type::i64 && as<int64_t>(keys.back()) == (int64_t)keys.size();
                 }
-                if (vtype == blob_type::unspecified) {
+                if (vtype == blob_type::nil) {
                     vtype = vals.back().type;
-                } else if (vtype != vals.back().type) {
+                    is_basic_integral_v = is_basic_integral(vtype);
+                    if (is_basic_integral_v) {
+                        has_negative_v = (vtype != blob_type::ui64) && as<int64_t>(vals.back()) < 0;
+                        has_i64unlimit_value_v = (vtype == blob_type::ui64) && as<uint64_t>(vals.back()) > (uint64_t)(std::numeric_limits<int64_t>::max)();
+                    }
+                } else if (no_unique_v || vtype != vals.back().type) {
                     no_unique_v = true;
+                    vtype = vals.back().type;
+                    is_basic_integral_v = is_basic_integral_v && is_basic_integral(vtype);
+                    if (is_basic_integral_v) {
+                        has_negative_v = has_negative_v || (vtype != blob_type::ui64) && as<int64_t>(vals.back()) < 0;
+                        has_i64unlimit_value_v = has_i64unlimit_value_v || (vtype == blob_type::ui64) && as<uint64_t>(vals.back()) > (uint64_t)(std::numeric_limits<int64_t>::max)();
+                    }
                 }
             }
             lua_pop(L, 1);
             if (keys.empty()) return nil_blob_result();
 
-            if (no_unique_v) vtype = blob_type::blob;
             smart_blob blob_values;
-            if (vtype == blob_type::flt64) {
-                blob_values = blob_result{ nullptr, (int32_t)(vals.size() * sizeof(double_t)), 0, 1, vtype };
-                blob_values.allocate();
-                for (size_t i = 0; i < vals.size(); ++i) {
-                    *(reinterpret_cast<double_t*>(const_cast<void*>(blob_values->data)) + i) = vals[i].f64value;
-                }
-            } else if (vtype == blob_type::i64) {
-                blob_values = blob_result{ nullptr, (int32_t)(vals.size() * sizeof(int64_t)), 0, 1, vtype };
-                blob_values.allocate();
-                for (size_t i = 0; i < vals.size(); ++i) {
-                    *(reinterpret_cast<int64_t*>(const_cast<void*>(blob_values->data)) + i) = vals[i].i64value;
-                }
-            } else if (vtype == blob_type::string || vtype == blob_type::blob) {
-                blob_values = blob_result{ nullptr, (int32_t)(vals.size() * sizeof(blob_result)), 0, 1, vtype };
-                blob_values.allocate();
-                for (size_t i = 0; i < vals.size(); ++i) {
-                    *(reinterpret_cast<blob_result*>(const_cast<void*>(blob_values->data)) + i) = vals[i];
-                }
+            if (is_basic_integral_v && !has_i64unlimit_value_v) {
+                blob_values = to_blob_array<int64_t>(blob_type::i64, vals);
+            } else if (is_basic_integral_v && !has_negative_v) {
+                blob_values = to_blob_array<uint64_t>(blob_type::ui64, vals);
+            } else if (!no_unique_v && vtype == blob_type::flt64) {
+                blob_values = to_blob_array<double_t>(vtype, vals);
             } else {
-                // not implemented for now
-                for (blob_result v : vals) blob_result_unpin(&v);
+                blob_values = to_blob_array<blob_result>(blob_type::tuple, vals);
             }
 
-            // check if array
-            if (!no_unique_k && ktype == blob_type::i64) {
-                bool is_array = true;
-                for (int i = 0; i < keys.size(); ++i) {
-                    if (auto kval = keys[i].i64value; kval != (i+1)) {
-                        //if (float fval = keys[i].i64value.floatvalue; fmod(fval, 1.0) > 0.00001 || ((int)fval) != (i+1)) {
-                        is_array = false;
-                        break;
-                    }
-                }
-                if (is_array) {
-                    return blob_values.detach();
-                }
+            if (keys_are_array_indices) {
+                return blob_values.detach();
             }
-
-            smart_blob result = blob_result{nullptr, (int32_t)(2 * sizeof(blob_result)), 0, 1, blob_type::blob};
+            
+            smart_blob result = make_blob_result(blob_type::tuple, nullptr, (uint32_t)(2 * sizeof(blob_result)));
             result.allocate();
-            smart_blob blob_keys = blob_result{nullptr, (int32_t)(keys.size() * sizeof(blob_result)), 0, 1, blob_type::blob};
-            blob_keys.allocate();
 
-            for (size_t i = 0; i < keys.size(); ++i) {
-                *(reinterpret_cast<blob_result*>(const_cast<void*>(blob_keys->data)) + i) = keys[i];
-            }
-            *reinterpret_cast<blob_result*>(const_cast<void*>(result->data)) = blob_keys.detach();
-            *(reinterpret_cast<blob_result*>(const_cast<void*>(result->data)) + 1) = blob_values.detach();
+            smart_blob blob_keys = to_blob_array<blob_result>(blob_type::tuple, keys);
+            
+            *reinterpret_cast<blob_result*>(const_cast<void*>(result.data())) = blob_keys.detach();
+            *(reinterpret_cast<blob_result*>(const_cast<void*>(result.data())) + 1) = blob_values.detach();
             return result.detach();
         }
 
@@ -790,7 +798,7 @@ int variant_encode(lua_State* L)
 
     try {
         as_singleton<invokation::value_encoder>()->encode(input, { typestr, typestrsz }, endianness, [L](span<const uint8_t> sp) {
-            blob_result br{ sp.data(), static_cast<int32_t>(sp.size()), 0, 1, blob_type::ui8 };
+            blob_result br = make_blob_result(blob_type::ui8 | blob_type::is_array, sp.data(), static_cast<uint32_t>(sp.size()));
             blob_result_allocate(&br);
             defer{ blob_result_unpin(&br); };
             push_variant(L, br);

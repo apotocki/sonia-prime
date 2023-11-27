@@ -429,7 +429,7 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\reference_wrapper.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invokation\invokation.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invokation\invokable.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\invokation\serializarion.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invokation\serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invokation\value_decoder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invokation\value_encoder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.hpp" />

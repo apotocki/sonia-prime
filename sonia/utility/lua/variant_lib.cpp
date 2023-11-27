@@ -712,11 +712,13 @@ blob_result to_blob(lua_State* L, int index)
         }
 
         case LUA_TUSERDATA:
+            GLOBAL_LOG_INFO() << "to_blob from userdata";
             if (blob_result* br = luaL_test_variant_lib(L, index); br) {
+                GLOBAL_LOG_INFO() << "to_blob from userdata found variant!";
                 blob_result_pin(br);
                 return *br;
             }
-
+            GLOBAL_LOG_INFO() << "to_blob from userdata, unknown userdata";
         case LUA_TNIL:
         default:
             return nil_blob_result();

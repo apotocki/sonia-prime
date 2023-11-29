@@ -463,6 +463,7 @@
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lua\bigint_lib.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lua\lua.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lua\variant_lib.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\marshaling\span.hpp" />
@@ -799,6 +800,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\lua\bigint_lib.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\lua\lua.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\lua\variant_lib.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\mvvm\lua_view_model.cpp" />

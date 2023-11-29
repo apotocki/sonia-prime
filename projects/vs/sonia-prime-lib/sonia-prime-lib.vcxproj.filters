@@ -1923,6 +1923,9 @@
     <ClInclude Include="..\..\..\sonia\utility\invokation\value_encoder.hpp">
       <Filter>sonia.utility\invokation</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lua\bigint_lib.hpp">
+      <Filter>sonia.utility\lua</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2173,6 +2176,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\invokation\value_encoder.cpp">
       <Filter>sonia.utility\invokation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\lua\bigint_lib.cpp">
+      <Filter>sonia.utility\lua</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

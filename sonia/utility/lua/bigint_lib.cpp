@@ -5,11 +5,10 @@
 #include "sonia/config.hpp"
 #include "bigint_lib.hpp"
 
-#include <boost/multiprecision/cpp_int.hpp>
+#include "sonia/string.hpp"
 
 extern "C" {
 
-#include <lua.h>
 #include <lauxlib.h>
 #include <lualib.h> 
 
@@ -20,28 +19,21 @@ extern "C" {
 
 namespace sonia::lua {
 
-struct biginit_header
-{
-    uint64_t size : 63;
-    uint64_t sign : 1;
-};
-
-using integer_type = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>;
 using limb_type = boost::multiprecision::limb_type;
 
-biginit_header* luaL_check_bigint_lib(lua_State* L, int index)
+bigint_header* luaL_check_bigint_lib(lua_State* L, int index)
 {
-    return (biginit_header*)luaL_checkudata(L, index, BIGINT_METATABLE_NAME);
+    return (bigint_header*)luaL_checkudata(L, index, BIGINT_METATABLE_NAME);
 }
 
-biginit_header* luaL_test_bigint_lib(lua_State* L, int index)
+bigint_header* luaL_test_bigint_lib(lua_State* L, int index)
 {
-    return (biginit_header*)luaL_testudata(L, index, BIGINT_METATABLE_NAME);
+    return (bigint_header*)luaL_testudata(L, index, BIGINT_METATABLE_NAME);
 }
 
 int bigint_index(lua_State* L)
 {
-    biginit_header* bh = luaL_test_bigint_lib(L, 1);
+    bigint_header* bh = luaL_test_bigint_lib(L, 1);
     luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
 
     luaL_getmetatable(L, BIGINT_METATABLE_NAME);
@@ -49,24 +41,13 @@ int bigint_index(lua_State* L)
     lua_rawget(L, -2);
 
     return 1;
-    /*
-    if (!lua_isnil(L, -1)) return 1;
-
-    auto index = luaL_checkinteger(L, 2);
-    if (!is_array(*br)) { // scalar
-        if (index == 1) { // push itself
-            return push_variant(L, *br);
-        }
-        lua_pushnil(L);
-    }
-    */
 }
 
 int push_bigint(lua_State* L, integer_type const& value)
 {
     size_t sz = value.backend().size();
     size_t datasz = sz * sizeof(limb_type);
-    biginit_header* br = (biginit_header*)lua_newuserdata(L, sizeof(biginit_header) + datasz);
+    bigint_header* br = (bigint_header*)lua_newuserdata(L, sizeof(bigint_header) + datasz);
     br->size = sz;
     br->sign = value.backend().sign() ? 1 : 0;
     memcpy(br + 1, value.backend().limbs(), datasz);
@@ -95,7 +76,7 @@ int bigint_create(lua_State* L)
     }
 }
 
-void restore_bigint(biginit_header* bh, integer_type & ival)
+void restore_bigint(bigint_header* bh, integer_type & ival)
 {
     ival.backend().resize(bh->size, bh->size);
     memcpy(ival.backend().limbs(), bh + 1, bh->size * sizeof(limb_type));
@@ -104,7 +85,7 @@ void restore_bigint(biginit_header* bh, integer_type & ival)
 
 int bigint_tostring(lua_State* L)
 {
-    biginit_header* bh = luaL_test_bigint_lib(L, 1);
+    bigint_header* bh = luaL_test_bigint_lib(L, 1);
     luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
     integer_type ival;
     restore_bigint(bh, ival);
@@ -117,7 +98,7 @@ int bigint_tostring(lua_State* L)
 
 int bigint_fancy_string(lua_State* L)
 {
-    biginit_header* bh = luaL_test_bigint_lib(L, 1);
+    bigint_header* bh = luaL_test_bigint_lib(L, 1);
     luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
     integer_type ival;
     restore_bigint(bh, ival);
@@ -170,7 +151,7 @@ int bigint_fancy_string(lua_State* L)
 int bigint_to_integer(lua_State* L)
 {
     integer_type val;
-    biginit_header* bh = luaL_test_bigint_lib(L, 1);
+    bigint_header* bh = luaL_test_bigint_lib(L, 1);
     luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
     restore_bigint(bh, val);
     luaL_argcheck(L, val >= (std::numeric_limits<lua_Integer>::min)() &&
@@ -181,7 +162,7 @@ int bigint_to_integer(lua_State* L)
 
 void bigint_binary_operator(lua_State* L, integer_type & l_val, integer_type& r_val)
 {
-    biginit_header* blh = luaL_test_bigint_lib(L, 1);
+    bigint_header* blh = luaL_test_bigint_lib(L, 1);
     if (blh) { 
         restore_bigint(blh, l_val);
     } else if (lua_isinteger(L, 1)) {
@@ -190,7 +171,7 @@ void bigint_binary_operator(lua_State* L, integer_type & l_val, integer_type& r_
         luaL_argerror(L, 1, "`bigint' or integer expected");
     }
 
-    biginit_header* brh = luaL_test_bigint_lib(L, 2);
+    bigint_header* brh = luaL_test_bigint_lib(L, 2);
     if (brh) {
         restore_bigint(brh, r_val);
     } else if (lua_isinteger(L, 2)) {
@@ -203,7 +184,7 @@ void bigint_binary_operator(lua_State* L, integer_type & l_val, integer_type& r_
 int bigint_unary_minus(lua_State* L)
 {
     integer_type val;
-    biginit_header* bh = luaL_test_bigint_lib(L, 1);
+    bigint_header* bh = luaL_test_bigint_lib(L, 1);
     luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
     restore_bigint(bh, val);
     return push_bigint(L, -val);
@@ -317,7 +298,7 @@ int bigint_bxor(lua_State* L)
 int bigint_unary_not(lua_State* L)
 {
     integer_type val;
-    biginit_header* bh = luaL_test_bigint_lib(L, 1);
+    bigint_header* bh = luaL_test_bigint_lib(L, 1);
     luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
     restore_bigint(bh, val);
     return push_bigint(L, ~val);
@@ -347,10 +328,6 @@ int bigint_shr(lua_State* L)
 
 const struct luaL_Reg bigintlib[] = {
     {"create", bigint_create},
-    /*
-    {"to_datetime_string", variant_datetime_string},
-    {"encode", variant_encode},
-    */
     {NULL, NULL}
 };
 
@@ -373,21 +350,12 @@ const struct luaL_Reg bigintlib_m[] = {
     {"__bnot", bigint_unary_not},
     {"__shl", bigint_shl},
     {"__shr", bigint_shr},
-    /*
-    {"__len", variant_len},
-    
-    {"__gc", variant_gc},
-    */
     {NULL, NULL}
 };
 
 const struct luaL_Reg bigintlib_f[] = {
     {"to_fancy_string", bigint_fancy_string},
     {"to_integer", bigint_to_integer},
-    /*
-    {"type", variant_type},
-    {"decode", variant_decode},
-    */
     {NULL, NULL}
 };
 

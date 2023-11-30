@@ -226,7 +226,7 @@ blob_result view_model::call_method(std::string_view name, blob_result args) con
 {
     if (is_nil(args)) {
         return do_call_method(name, {});
-    } else if (!is_array(args)) {
+    } else if (!is_array(args) || contains_string(args) || args.type == blob_type::bigint) {
         return do_call_method(name, std::span{&args, 1});
     } else if (args.type == blob_type::tuple) {
         return do_call_method(name, std::span{ data_of<blob_result const>(args), array_size_of<blob_result>(args) });
@@ -234,7 +234,7 @@ blob_result view_model::call_method(std::string_view name, blob_result args) con
         boost::container::small_vector<blob_result, 16> bargs;
         blob_type_selector(args, [&bargs](auto ident, blob_result const& b) {
             using type = typename decltype(ident)::type;
-            if constexpr (std::is_void_v<type>) { bargs.push_back(nil_blob_result()); }
+            if constexpr (std::is_void_v<type> || std::is_same_v<integer, type>) { bargs.push_back(nil_blob_result()); }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);

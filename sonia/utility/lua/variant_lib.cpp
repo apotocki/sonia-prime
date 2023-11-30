@@ -8,11 +8,12 @@
 #include "sonia/utility/invokation/value_encoder.hpp"
 #include "sonia/utility/invokation/value_decoder.hpp"
 #include "sonia/utility/scope_exit.hpp"
-#include "sonia/utility/datetime/iso_parser.hpp"
 
 #include <sstream>
 
 #include <boost/multiprecision/cpp_int.hpp>
+
+#include "bigint_lib.hpp"
 
 extern "C" {
 
@@ -120,33 +121,6 @@ int push_variant(lua_State* L, blob_result const& value)
 
 void push_from_blob(lua_State* L, blob_result const& b)
 {
-#if 0
-    if (is_array(b).is_array || b.type == blob_type::unspecified) {
-        push_variant(L, b);
-        /*
-        lua_newtable(L);
-        blob_result_type_selector(b, [L, this](auto ident, blob_result b) {
-            using type = typename decltype(ident)::type;
-            using ftype = std::conditional_t<std::is_void_v<type>, uint8_t, type>;
-            using fstype = std::conditional_t<std::is_same_v<ftype, bool>, uint8_t, ftype>;
-            for (int32_t i = 0; i < b.size / sizeof(fstype); ++i) {
-                lua_pushinteger(L, (lua_Integer)(i+1));
-                if constexpr (is_same_v<fstype, blob_result>) {
-                    push_from_blob(*(reinterpret_cast<blob_result const*>(b.data) + i));
-                } else if constexpr (is_integral_v<fstype>) {
-                    fstype const* pval = reinterpret_cast<fstype const*>(b.data) + i;
-                    lua_pushinteger(L, (lua_Integer)*pval);
-                } else {
-                    fstype const* pval = reinterpret_cast<fstype const*>(b.data) + i;
-                    lua_pushnumber(L, (lua_Number)*pval);
-                }
-                lua_settable(L, -3);
-            }
-        });
-        */
-        return;
-    }
-#endif
     switch (b.type) {
     case blob_type::nil:
         lua_pushnil(L); break;
@@ -159,12 +133,12 @@ void push_from_blob(lua_State* L, blob_result const& b)
     case blob_type::i32:
     case blob_type::ui32:
     case blob_type::i64:
-        lua_pushinteger(L, from_blob<lua_Integer>{}(b)); break;
+        lua_pushinteger(L, as<lua_Integer>(b)); break;
     case blob_type::ui64:
-        if (uint64_t val = from_blob<lua_Integer>{}(b); val <= (uint64_t)(std::numeric_limits<int64_t>::max)()) {
+        if (uint64_t val = as<uint64_t>(b); val <= (uint64_t)(std::numeric_limits<int64_t>::max)()) {
             lua_pushinteger(L, (lua_Integer)val);
         } else {
-            push_variant(L, b);
+            push_bigint(L, integer_type{ val });
         }
         break;
     case blob_type::c8:
@@ -180,6 +154,8 @@ void push_from_blob(lua_State* L, blob_result const& b)
         break;
     case blob_type::string:
         lua_pushlstring(L, data_of<char>(b), array_size_of<char>(b)); break;
+    case blob_type::bigint:
+        push_bigint(L, as<integer>(b).raw()); break;
     case blob_type::error:
         throw exception(std::string(data_of<char>(b), array_size_of<char>(b)));
     default:
@@ -193,7 +169,7 @@ void push_from_blob(lua_State* L, blob_result const& b)
 
 int variant_index(lua_State* L)
 {
-    blob_result* br = luaL_check_variant_lib(L, 1);
+    blob_result* br = luaL_test_variant_lib(L, 1);
     luaL_argcheck(L, !!br, 1, "`variant' expected");
 
     luaL_getmetatable(L, VARIANT_METATABLE_NAME);
@@ -212,6 +188,7 @@ int variant_index(lua_State* L)
     blob_type_selector(*br, [L, c_index = index - 1](auto ident, blob_result b) {
         using type = typename decltype(ident)::type;
         if constexpr (std::is_void_v<type>) { lua_pushnil(L); return; }
+        else if constexpr (std::is_same_v<type, sonia::integer>) { lua_pushnil(L); return; }
         else {
             using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
 
@@ -229,7 +206,7 @@ int variant_index(lua_State* L)
                 } else if constexpr (is_floating_point_v<fstype>) {
                     fstype const* pval = begin_ptr + c_index;
                     lua_pushnumber(L, (lua_Number)*pval);
-                } else if (is_same_v<fstype, float16>) {
+                } else if constexpr (is_same_v<fstype, float16>) {
                     fstype const* pval = begin_ptr + c_index;
                     lua_pushnumber(L, (lua_Number)(float)*pval);
                 } else {
@@ -243,7 +220,7 @@ int variant_index(lua_State* L)
 
 int variant_len(lua_State* L)
 {
-    blob_result* br = luaL_check_variant_lib(L, 1);
+    blob_result* br = luaL_test_variant_lib(L, 1);
     luaL_argcheck(L, !!br, 1, "`variant' expected");
 
     if (is_array(*br)) {
@@ -281,48 +258,6 @@ int variant_tostring(lua_State* L)
     return 1;
 }
 
-template <std::integral T>
-int variant_array(lua_State* L)
-{
-    int argcount = lua_gettop(L);
-    blob_result br = make_blob_result( blob_type_for<T>() | blob_type::is_array, nullptr, static_cast<int32_t>(argcount * sizeof(T)));
-    blob_result_allocate(&br);
-    defer{ blob_result_unpin(&br); };
-    T* arr_data = mutable_data_of<T>(br);
-    for (int i = 0; i < argcount; ++i) {
-        auto elemval = luaL_checkinteger(L, i + 1);
-        bool check = (std::numeric_limits<T>::min)() <= elemval && (std::numeric_limits<T>::max)() >= elemval;
-        luaL_argcheck(L, check, i + 1, "invalid value");
-        arr_data[i] = static_cast<T>(elemval);
-    }
-    return push_variant(L, br);
-}
-
-int variant_int(lua_State* L)
-{
-    if (lua_isinteger(L, 1)) {
-        lua_Integer i = lua_tointeger(L, 1);
-        lua_pushinteger(L, i); // we use native lua integer if equivalent
-        //return push_variant(L, i64_blob_result(i));
-    } else if (lua_isstring(L, 1)) {
-        char const* strval = lua_tostring(L, 1);
-        size_t sz = lua_rawlen(L, 1);
-        using integer_type = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>;
-        integer_type ival(string_view{ strval, sz });
-        if (ival <= (std::numeric_limits<int64_t>::max)() && ival >= (std::numeric_limits<int64_t>::min)()) {
-            lua_pushinteger(L, ival.convert_to<lua_Integer>()); // we use native lua integer if equivalent
-            //return push_variant(L, i64_blob_result(ival.convert_to<int64_t>()));
-        } else if (ival >= 0 && ival <= (std::numeric_limits<uint64_t>::max)()) {
-            return push_variant(L, ui64_blob_result(ival.convert_to<uint64_t>()));
-        } else {
-            return luaL_error(L, "invalid argument");
-        }
-    } else {
-        return luaL_error(L, "invalid argument");
-    }
-    return 1;
-}
-
 int variant_type(lua_State* L)
 {
     blob_result* br = luaL_check_variant_lib(L, 1);
@@ -334,153 +269,29 @@ int variant_type(lua_State* L)
     return 1;
 }
 
-int variant_parse_float(lua_State* L)
-{
-    size_t sz;
-    const char * cstrval = luaL_checklstring(L, 1, &sz);
-    while (sz && std::isspace(cstrval[sz - 1])) --sz;
-    char * pend;
-    double dval = strtod (cstrval, &pend);
-    if (pend != cstrval + sz) {
-        return luaL_error(L, "float parse error");
-    }
-    lua_pushnumber(L, dval);
-    return 1;
-}
-
-// iso_date -> java, winfile, unix, dosdate, dostime, //mac, oletime
-int variant_iso_date(lua_State* L)
-{
-    size_t strsz;
-    const char* cstrval = luaL_checklstring(L, 1, &strsz);
-    
-    while (strsz && std::isspace(cstrval[strsz - 1])) --strsz;
-    const char* ecstrval = cstrval + strsz;
-
-    size_t destsz;
-    const char* cstrdest = luaL_checklstring(L, 2, &destsz);
-    
-    string_view dttype{ cstrdest, destsz };
-    if (dttype == "java"sv) {
-        using tag_t = basic_datetime_tag<int64_t, 1000>;
-        tag_t::datetime_type result;
-        parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
-        lua_pushinteger(L, result.ticks());
-    } else if (dttype == "winfile"sv) {
-        using tag_t = basic_datetime_tag<uint64_t, 10000000, 12591158400LL>;
-        tag_t::datetime_type result;
-        parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
-        push_from_blob(L, ui64_blob_result(result.ticks()));
-    } else if (dttype == "unix"sv) {
-        using tag_t = basic_datetime_tag<int64_t, 1>;
-        tag_t::datetime_type result;
-        parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result);
-        lua_pushinteger(L, result.ticks());
-    } else if (dttype == "dosdate"sv) {
-        using tag_t = basic_datetime_tag<int64_t, 1>;
-        tag_t::datetime_type result;
-        if (!parsers::datetime::iso_parser<true, tag_t>::do_parse(cstrval, ecstrval, result)) {
-            return luaL_error(L, "wrong date string");
-        }
-        auto year = tag_t::year(result);
-        if (year < 1980 || year > 2107) return luaL_error(L, "year is out of bounds");
-        auto resultval = tag_t::month_day(result) + (tag_t::month(result) << 5) + ((year - 1980) << 9);
-        lua_pushinteger(L, resultval);
-    } else if (dttype == "dostime"sv) {
-        using tag_t = basic_datetime_tag<int64_t, 1>;
-        unsigned int hours, minutes, seconds;
-        if (!parsers::datetime::iso_parser<true, tag_t>::do_parse_time(cstrval, ecstrval, hours, minutes, seconds)) {
-            return luaL_error(L, "wrong time string");
-        }
-        auto resultval = seconds / 2 + (minutes << 5) + (hours << 11);
-        lua_pushinteger(L, resultval);
-    } else {
-        return luaL_error(L, "unknown datetime type: %s", cstrdest);
-    }
-
-    if (ecstrval != cstrval) {
-        return luaL_error(L, "datetime parse error");
-    }
-    
-    return 1;
-}
-
-//(datetime type, val)->string
-int variant_datetime_string(lua_State* L)
-{
-    size_t strsz;
-    const char* cstrval = luaL_checklstring(L, 1, &strsz);
-    
-    string_view dttype{ cstrval, strsz };
-    std::string result;
-
-    if (dttype == "java"sv) { // milliseconds since 1970-01-01T00:00:00Z
-        auto ival = luaL_checkinteger(L, 2);
-        using tag_t = basic_datetime_tag<int64_t, 1000>;
-        tag_t::datetime_type dt{ ival };
-        result = tag_t::iso_datetime(dt);
-    } else if(dttype == "winfile"sv) { // 100 nanoseconds intervals since 1601-01-01T00:00:00Z
-        uint64_t ival;
-        if (lua_isinteger(L, 2)) {
-            auto argival = luaL_checkinteger(L, 2);
-            luaL_argcheck(L, argival >= 0, 1, "must be not negative");
-            ival = static_cast<uint64_t>(argival);
-        } else {
-            blob_result* pbr = luaL_check_variant_lib(L, 2);
-            luaL_argcheck(L, !!pbr && pbr->type == blob_type::ui64, 1, "`variant.ui64' or integer expected");
-            ival = as<uint64_t>(*pbr);
-        }
-        using tag_t = basic_datetime_tag<uint64_t, 10000000, 12591158400LL>;
-        tag_t::datetime_type dt{ ival };
-        result = tag_t::iso_datetime(dt);
-    } else if (dttype == "unix"sv) { // seconds since 1970-01-01T00:00:00Z
-        auto ival = luaL_checkinteger(L, 2);
-        using tag_t = basic_datetime_tag<int64_t, 1>;
-        tag_t::datetime_type dt{ ival };
-        result = tag_t::iso_datetime(dt);
-    } else if (dttype == "dosdate"sv) { // seconds since 1970-01-01T00:00:00Z
-        auto ival = luaL_checkinteger(L, 2);
-        luaL_argcheck(L, ival >= 0 && ival < 65536, 2, "wrong value");
-        uint32_t day = ival & 31;
-        uint32_t month = (ival >> 5) & 15;
-        uint64_t year = 1980 + (ival >> 9);
-
-        //using tag_t = basic_datetime_tag<int64_t, 1>;
-        //tag_t::datetime_type dt = tag_t::construct(year, month, day);
-        //result = tag_t::iso_datetime(dt, false);
-        
-        std::ostringstream s;
-        s << std::setfill('0') << year << "-" << std::setw(2) << month << "-" << std::setw(2) << day;
-        result = s.str();
-
-    } else if (dttype == "dostime"sv) { // seconds since 1970-01-01T00:00:00Z
-        auto ival = luaL_checkinteger(L, 2);
-        luaL_argcheck(L, ival >= 0 && ival < 65536, 2, "wrong value");
-        uint32_t seconds = (ival & 31) * 2;
-        uint32_t minutes = (ival >> 5) & 63;
-        uint32_t hours = (ival >> 11) & 31;
-
-        std::ostringstream s;
-        s << std::setfill('0') << std::setw(2) << hours << ":" << std::setw(2) << minutes << ":" << std::setw(2) << seconds;
-        result = s.str();
-        //using tag_t = basic_datetime_tag<int64_t, 1>;
-        //tag_t::datetime_type dt = tag_t::construct_time(hours, minutes, seconds);
-        //result = tag_t::iso_time(dt);
-    } else {
-        return luaL_error(L, "unknown datetime type: %s", cstrval);
-    }
-    lua_pushlstring(L, result.c_str(), result.size());
-    return 1;
-}
+//int variant_parse_float(lua_State* L)
+//{
+//    size_t sz;
+//    const char * cstrval = luaL_checklstring(L, 1, &sz);
+//    while (sz && std::isspace(cstrval[sz - 1])) --sz;
+//    char * pend;
+//    double dval = strtod (cstrval, &pend);
+//    if (pend != cstrval + sz) {
+//        return luaL_error(L, "float parse error");
+//    }
+//    lua_pushnumber(L, dval);
+//    return 1;
+//}
 
 template <typename PrinterT>
 std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const& printer)
 {
-    if (is_array(b) && !contains_string(b)) {
+    if (is_array(b) && !contains_string(b) && b.type != blob_type::bigint) {
         os << "[";
         blob_type_selector(b, [&os, &printer](auto ident, blob_result b) {
             using type = typename decltype(ident)::type;
             if constexpr (std::is_void_v<type>) { os << "unknown"; }
+            else if constexpr (std::is_same_v<type, sonia::integer>) { os << "bigint"; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);
@@ -522,6 +333,8 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
         return printer(os, b.type, b.bp.f64value);
     case blob_type::string:
         return printer(os, b.type, sonia::string_view{ data_of<char>(b), array_size_of<char>(b) });
+    case blob_type::bigint:
+        return printer(os, b.type, as<integer>(b));
     case blob_type::function:
         return os << "function";
     case blob_type::object:
@@ -607,7 +420,7 @@ int variant_fancy_string(lua_State* L)
 template <typename T>
 blob_result to_blob_array(blob_type elemtype, span<const blob_result> sp)
 {
-    blob_result values = make_blob_result(elemtype | blob_type::is_array, nullptr, (int32_t)(sp.size() * sizeof(T)));
+    blob_result values = make_blob_result(arrayify(elemtype), nullptr, (int32_t)(sp.size() * sizeof(T)));
     if constexpr (!is_same_v<blob_result, T>) {
         if (sp.size() == 1) {
             *reinterpret_cast<T*>(values.ui8array) = as<T>(sp[0]);
@@ -725,11 +538,15 @@ blob_result to_blob(lua_State* L, int index)
         }
 
         case LUA_TUSERDATA:
-            //GLOBAL_LOG_INFO() << "to_blob from userdata";
             if (blob_result* br = luaL_test_variant_lib(L, index); br) {
-                //GLOBAL_LOG_INFO() << "to_blob from userdata found variant!";
                 blob_result_pin(br);
                 return *br;
+            } else if (bigint_header * bh = luaL_test_bigint_lib(L, index); bh) {
+                using limb_type = boost::multiprecision::limb_type;
+                blob_result result = make_blob_result(blob_type::bigint, bh + 1, static_cast<uint32_t>(bh->size * sizeof(limb_type)));
+                result.reserved = static_cast<uint8_t>(bh->sign);
+                blob_result_allocate(&result);
+                return result;
             }
             GLOBAL_LOG_WARN() << "to_blob from userdata, unknown userdata";
         case LUA_TNIL:
@@ -743,7 +560,7 @@ blob_result to_blob(lua_State* L, int index)
 // endianness: le, be
 int variant_decode(lua_State* L)
 {
-    blob_result* br = luaL_check_variant_lib(L, 1);
+    blob_result* br = luaL_test_variant_lib(L, 1);
     luaL_argcheck(L, !!br, 1, "`variant' expected");
 
     span<const uint8_t> sp;
@@ -803,7 +620,7 @@ int variant_encode(lua_State* L)
 
     try {
         as_singleton<invokation::value_encoder>()->encode(input, { typestr, typestrsz }, endianness, [L](span<const uint8_t> sp) {
-            blob_result br = make_blob_result(blob_type::ui8 | blob_type::is_array, sp.data(), static_cast<uint32_t>(sp.size()));
+            blob_result br = make_blob_result(arrayify(blob_type::ui8), sp.data(), static_cast<uint32_t>(sp.size()));
             blob_result_allocate(&br);
             defer{ blob_result_unpin(&br); };
             push_variant(L, br);
@@ -816,13 +633,8 @@ int variant_encode(lua_State* L)
 }
 
 const struct luaL_Reg variantlib[] = {
-    {"ui8array", variant_array<uint8_t>},
-    {"i8array", variant_array<int8_t>},
-    {"int", variant_int},
-    {"f64", variant_parse_float},
-    {"iso_date", variant_iso_date},
+    //{"f64", variant_parse_float},
     {"to_fancy_string", variant_fancy_string},
-    {"to_datetime_string", variant_datetime_string},
     {"encode", variant_encode},
     {NULL, NULL}
 };

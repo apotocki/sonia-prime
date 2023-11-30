@@ -15,6 +15,7 @@
 #include "sonia/utility/variadic.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/utility/number/float16.hpp"
+#include "sonia/utility/number/integer.hpp"
 #include "sonia/prime_config.hpp"
 
 namespace sonia::invokation { class invokable; }
@@ -25,28 +26,57 @@ extern "C" {
 // | |- subtype
 // |- is array
 
+//common:
+// X XX XXXXX
+//    |-------- plane: default =0, aux0 =1(0x20)
+// |----------- is array
+// 
+// default plane:
+// X XX XXX XX
+//        |  |- size exp: size = 2 ^ xx: 1, 2, 4, 8 bytes
+//        |---- type: nil=0, bool=1, character=2, unsigned integral=3, signed integral =4, floating point=5, bigint=6
+//   |--------- plane: default=0
+// |----------- is array
+
+// aux plane:
+// X XX XXXXX
+//          |-- type: tuple =0, function=1, error=2
+//    |-------- plane: aux0 =1(0x20)
+// |----------- is array
+
+
+
+#define DEFAULT_BTVAL(isarr, type, sze) isarr * 0x80 + type * 0x4 + sze
+#define AUX0_BTVAL(isarr, type) 0x20 + isarr * 0x80 + type
+
 enum class blob_type : uint8_t {
-    nil = 0,
-    boolean = 1,
-    c8 = 2,
-    ui8 = 3, i8 = 4,
-    ui16 = 5, i16 = 6,
-    ui32 = 7, i32 = 8,
-    ui64 = 9, i64 = 10,
-    flt16 = 11,
-    flt32 = 12,
-    flt64 = 13,
-    //flt80 = 14,
-    object = 15, // pointer to object unowned if need_unpin = 0
-    //weakobject = 0x10, //pointer to object?
-    //blob = 0x13, // used only as a decayed tuple type
-    is_array = 0x80,
-    string = 0x82, // isarray | c8
-    tuple = 0x93, // isarray | 0x13
-    // flt128, bigint, decimal as array types
-    function = 0xb4, // like the string
-    error = 0xc4, // like the string
+    nil = DEFAULT_BTVAL(0, 0, 0),
+    boolean = DEFAULT_BTVAL(0, 1, 0),
+    //boolvec = DEFAULT_BTVAL(1, 1, 0),
+    c8 = DEFAULT_BTVAL(0, 2, 2),
+    ui8 = DEFAULT_BTVAL(0, 3, 0),
+    i8 = DEFAULT_BTVAL(0, 4, 0),
+    ui16 = DEFAULT_BTVAL(0, 3, 1),
+    i16 = DEFAULT_BTVAL(0, 4, 1),
+    ui32 = DEFAULT_BTVAL(0, 3, 2),
+    i32 = DEFAULT_BTVAL(0, 4, 2),
+    ui64 = DEFAULT_BTVAL(0, 3, 3),
+    i64 = DEFAULT_BTVAL(0, 4, 3),
+    flt16 = DEFAULT_BTVAL(0, 5, 1),
+    flt32 = DEFAULT_BTVAL(0, 5, 2),
+    flt64 = DEFAULT_BTVAL(0, 5, 3),
     
+    bigint = DEFAULT_BTVAL(1, 6, 2),
+    object = DEFAULT_BTVAL(0, 7, 3),
+    //objvec = DEFAULT_BTVAL(1, 7, 3),
+    
+    string = DEFAULT_BTVAL(1, 2, 0),
+    //string16 = DEFAULT_BTVAL(1, 2, 1),
+    //string32 = DEFAULT_BTVAL(1, 2, 2),
+    
+    tuple = AUX0_BTVAL(1, 0),
+    function = AUX0_BTVAL(1, 2),
+    error = AUX0_BTVAL(1, 3)
 };
 
 /*
@@ -101,7 +131,8 @@ struct alignas(8) blob_result
         uint8_t ui8array[14];
     };
     uint8_t inplace_size : 4;
-    uint8_t need_unpin : 4;
+    uint8_t need_unpin : 1;
+    uint8_t reserved : 3;
     blob_type type;
 };
 #pragma pack(pop)
@@ -116,9 +147,9 @@ SONIA_PRIME_API void blob_result_unpin(blob_result *);
 
 }
 
-inline blob_type operator | (blob_type l, blob_type r) noexcept
+inline blob_type arrayify(blob_type l) noexcept
 {
-    return (blob_type)((uint8_t)l | (uint8_t)r);
+    return (blob_type)((uint8_t)l | (uint8_t)0x80);
 }
 
 inline auto operator <=> (blob_type l, blob_type r) noexcept
@@ -126,7 +157,22 @@ inline auto operator <=> (blob_type l, blob_type r) noexcept
     return ((uint8_t)l) <=> ((uint8_t)r);
 }
 
-inline bool is_basic_integral(blob_type val) noexcept { return val >= blob_type::ui8 && val <= blob_type::i64; }
+inline bool is_basic_integral(blob_type val) noexcept
+{
+    switch(val) {
+    case blob_type::i8:
+    case blob_type::ui8:
+    case blob_type::i16:
+    case blob_type::ui16:
+    case blob_type::i32:
+    case blob_type::ui32:
+    case blob_type::i64:
+    case blob_type::ui64:
+        return true;
+    default:
+        return false;
+    }
+}
 
 inline bool is_nil(blob_result const& val) noexcept { return val.type == blob_type::nil; }
 
@@ -275,7 +321,7 @@ blob_result particular_blob_result(T && value);
 
 inline blob_result make_blob_result(blob_type bt, void const* data = nullptr, uint32_t size = 0)
 {
-    return blob_result { data, /*size*/ size, /*reserved*/ 0, /*inplace_size*/ 0, /*need_unpin*/ 0, bt };
+    return blob_result { data, /*size*/ size, /*reserved*/ 0, /*inplace_size*/ 0, /*need_unpin*/ 0, /*reserved*/ 0, bt };
 }
 
 inline blob_result nil_blob_result()
@@ -423,6 +469,19 @@ inline blob_result error_blob_result(ArgT && arg)
     return string_blob_result(std::forward<ArgT>(arg), blob_type::error);
 }
 
+template <typename ArgT>
+inline blob_result bigint_blob_result(ArgT && arg)
+{
+    using namespace sonia;
+    integer ival{ std::forward<ArgT>(arg) };
+    using limb_type = remove_cvref_t<decltype(*ival.data())>;
+    static_assert(sizeof(limb_type) == sizeof(uint32_t));
+    blob_result result = make_blob_result(blob_type::bigint, ival.data(), static_cast<uint32_t>(ival.data_size() * sizeof(limb_type)));
+    result.reserved = ival < 0 ? 1 : 0;
+    blob_result_allocate(&result);
+    return result;
+}
+
 template <typename T>
 inline blob_result optional_blob_result(sonia::optional<T> const& value)
 {
@@ -434,14 +493,14 @@ template <typename T, size_t EV>
 requires(std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_same_v<blob_result, std::remove_cv_t<T>>)
 inline blob_result array_blob_result(std::span<T, EV> arr)
 {
-    return make_blob_result(blob_type_for<T>() | blob_type::is_array, arr.data(), static_cast<uint32_t>(arr.size() * sizeof(T)));
+    return make_blob_result(arrayify(blob_type_for<T>()), arr.data(), static_cast<uint32_t>(arr.size() * sizeof(T)));
 }
 
 template <typename T, size_t N>
 requires(std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_same_v<blob_result, std::remove_cv_t<T>>)
 inline blob_result array_blob_result(T(&arr)[N])
 {
-    return make_blob_result(blob_type_for<T>() | blob_type::is_array, arr, static_cast<uint32_t>(N * sizeof(T)));
+    return make_blob_result(arrayify(blob_type_for<T>()), arr, static_cast<uint32_t>(N * sizeof(T)));
 }
 
 template <typename FirstT, typename SecondT>
@@ -505,6 +564,7 @@ inline blob_result particular_blob_result(ArgT && value)
     else if constexpr (std::is_same_v<T, uint64_t> || (std::is_integral_v<T> && !std::is_signed_v<T> && sizeof(T) == 8)) return ui64_blob_result(value);
     else if constexpr (std::is_same_v<T, int64_t> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == 8)) return i64_blob_result(value);
     else if constexpr (std::is_same_v<T, sonia::float16>) return f16_blob_result(value);
+    else if constexpr (std::is_same_v<T, sonia::integer>) return bigint_blob_result(value);
     else if constexpr (std::is_same_v<T, float_t>) return f32_blob_result(value);
     else if constexpr (std::is_same_v<T, double_t>) return f64_blob_result(value);
     else if constexpr (sonia::is_string_v<T>) return string_blob_result(std::forward<ArgT>(value));
@@ -524,6 +584,8 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
     switch (b.type) {
     case blob_type::tuple:
         return ftor(sonia::identity<blob_result>(), b);
+    case blob_type::bigint:
+        return ftor(sonia::identity<sonia::integer>(), b);
     case blob_type::string:
     case blob_type::error:
         return ftor(sonia::identity<char>(), b);
@@ -577,6 +639,7 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
         blob_type_selector(b, [&os](auto ident, blob_result b) {
             using type = typename decltype(ident)::type;
             if constexpr (std::is_void_v<type>) { os << "unknown"; }
+            else if constexpr (std::is_same_v<type, sonia::integer>) { os << "bigint"; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);
@@ -831,6 +894,36 @@ struct from_blob<std::span<T>>
 #else
         THROW_INTERNAL_ERROR("can't convert blob %1% to std::span<T>"_fmt % val);
 #endif
+    }
+};
+
+template <>
+struct from_blob<sonia::integer>
+{
+    sonia::integer operator()(blob_result const& val) const
+    {
+        using namespace sonia;
+        integer ival;
+        if (is_basic_integral(val.type)) {
+            if (val.type == blob_type::ui64) {
+                ival = from_blob<uint64_t>{}(val);
+            } else {
+                ival = from_blob<int64_t>{}(val);
+            }
+        } else if (val.type == blob_type::bigint) {
+            using limb_type = remove_cvref_t<decltype(*ival.data())>;
+            static_assert(sizeof(limb_type) == sizeof(uint32_t));
+            size_t sz = array_size_of<limb_type>(val);
+            ival.raw().backend().resize(sz, sz);
+            
+            std::memcpy(ival.data(), data_of<const limb_type>(val), sz * sizeof(limb_type));
+            if (val.reserved) {
+                ival.raw().backend().negate();
+            }
+        } else {
+            THROW_INTERNAL_ERROR("can't convert blob %1% to integer"_fmt % val);
+        }
+        return ival;
     }
 };
 

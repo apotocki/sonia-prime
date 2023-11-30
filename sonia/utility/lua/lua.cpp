@@ -22,6 +22,7 @@ extern "C" {
 
 #include "bigint_lib.hpp"
 #include "variant_lib.hpp"
+#include "sonia_lib.hpp"
 
 namespace sonia::lua {
 
@@ -32,7 +33,7 @@ language::language()
 
     luaopen_variantlib(L);
     luaopen_bigintlib(L);
-    
+    luaopen_sonialib(L);
 
     setup_ext(L, this);
 

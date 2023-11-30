@@ -69,7 +69,7 @@ struct basic_datetime_tag
 
     static uint64_t day_ticks(datetime_type const& val) noexcept
     {
-        int64_t dts = val.ticks() % (seconds_per_day * ticks_per_second);
+        int64_t dts = (int64_t)(val.ticks() % (seconds_per_day * ticks_per_second));
         if (dts < 0) dts += seconds_per_day * ticks_per_second;
         return static_cast<uint64_t>(dts);
     }
@@ -117,7 +117,7 @@ struct basic_datetime_tag
     static int64_t year(datetime_type const& val, unsigned int & yday) noexcept
     {
         int64_t result_year = 2000;
-        int64_t secs = (val.ticks() / ticks_per_second) - seconds_epoch_2000;
+        int64_t secs = (int64_t)(val.ticks() / ticks_per_second) - seconds_epoch_2000;
 
         result_year += secs / seconds_in_400greg_years * 400;
         secs = secs % seconds_in_400greg_years;

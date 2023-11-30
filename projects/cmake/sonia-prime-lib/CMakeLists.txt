@@ -35,6 +35,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/lua/lua.cpp
     ${BUNDLE_HOME}/sonia/utility/lua/variant_lib.cpp
     ${BUNDLE_HOME}/sonia/utility/lua/bigint_lib.cpp
+    ${BUNDLE_HOME}/sonia/utility/lua/sonia_lib.cpp
     ${BUNDLE_HOME}/sonia/utility/invokation/invokable.cpp
     ${BUNDLE_HOME}/sonia/utility/invokation/value_encoder.cpp
     ${BUNDLE_HOME}/sonia/utility/invokation/value_decoder.cpp

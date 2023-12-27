@@ -294,7 +294,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib;$(ProjectDir)..\..\..\..\..\tpls\icu\lib64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib;$(ProjectDir)..\..\..\..\..\tpls\icu\lib64;$(ProjectDir)..\..\..\..\..\tpls\lua\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>zlib.lib;icuucd.lib;lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>

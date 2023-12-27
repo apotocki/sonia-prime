@@ -28,9 +28,9 @@ set (MAIN_TESTS
     http_test
     uri_test
     utf_test
-    rc5_test
     compound_cvt_test
     base64_test
+    mp_test
 )
 
 set (AGNOSTIC_TESTS

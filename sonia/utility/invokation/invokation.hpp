@@ -34,13 +34,13 @@ extern "C" {
 // default plane:
 // X XX XXX XX
 //        |  |- size exp: size = 2 ^ xx: 1, 2, 4, 8 bytes
-//        |---- type: nil=0, bool=1, character=2, unsigned integral=3, signed integral =4, floating point=5, bigint=6
+//        |---- type: character=0, unsigned integral=1, signed integral =2, floating point=3, object=4
 //   |--------- plane: default=0
 // |----------- is array
 
 // aux plane:
 // X XX XXXXX
-//          |-- type: tuple =0, function=1, error=2
+//          |-- type: nil=0, bool=1, bigint=2, tuple =3, function=4, error=5
 //    |-------- plane: aux0 =1(0x20)
 // |----------- is array
 
@@ -50,33 +50,33 @@ extern "C" {
 #define AUX0_BTVAL(isarr, type) 0x20 + isarr * 0x80 + type
 
 enum class blob_type : uint8_t {
-    nil = DEFAULT_BTVAL(0, 0, 0),
-    boolean = DEFAULT_BTVAL(0, 1, 0),
-    //boolvec = DEFAULT_BTVAL(1, 1, 0),
-    c8 = DEFAULT_BTVAL(0, 2, 2),
-    ui8 = DEFAULT_BTVAL(0, 3, 0),
-    i8 = DEFAULT_BTVAL(0, 4, 0),
-    ui16 = DEFAULT_BTVAL(0, 3, 1),
-    i16 = DEFAULT_BTVAL(0, 4, 1),
-    ui32 = DEFAULT_BTVAL(0, 3, 2),
-    i32 = DEFAULT_BTVAL(0, 4, 2),
-    ui64 = DEFAULT_BTVAL(0, 3, 3),
-    i64 = DEFAULT_BTVAL(0, 4, 3),
-    flt16 = DEFAULT_BTVAL(0, 5, 1),
-    flt32 = DEFAULT_BTVAL(0, 5, 2),
-    flt64 = DEFAULT_BTVAL(0, 5, 3),
+    nil = AUX0_BTVAL(0, 0),
+    boolean = AUX0_BTVAL(0, 1),
+    //boolvec = AUX0_BTVAL(1, 1),
+    c8 = DEFAULT_BTVAL(0, 0, 0),
+    ui8 = DEFAULT_BTVAL(0, 1, 0),
+    i8 = DEFAULT_BTVAL(0, 2, 0),
+    ui16 = DEFAULT_BTVAL(0, 1, 1),
+    i16 = DEFAULT_BTVAL(0, 2, 1),
+    ui32 = DEFAULT_BTVAL(0, 1, 2),
+    i32 = DEFAULT_BTVAL(0, 2, 2),
+    ui64 = DEFAULT_BTVAL(0, 1, 3),
+    i64 = DEFAULT_BTVAL(0, 2, 3),
+    flt16 = DEFAULT_BTVAL(0, 3, 1),
+    flt32 = DEFAULT_BTVAL(0, 3, 2),
+    flt64 = DEFAULT_BTVAL(0, 3, 3),
     
-    bigint = DEFAULT_BTVAL(1, 6, 2),
-    object = DEFAULT_BTVAL(0, 7, 3),
-    //objvec = DEFAULT_BTVAL(1, 7, 3),
+    bigint = AUX0_BTVAL(1, 2),
+    object = DEFAULT_BTVAL(0, 4, 3),
+    //objvec = DEFAULT_BTVAL(1, 4, 3),
     
-    string = DEFAULT_BTVAL(1, 2, 0),
-    //string16 = DEFAULT_BTVAL(1, 2, 1),
-    //string32 = DEFAULT_BTVAL(1, 2, 2),
+    string = DEFAULT_BTVAL(1, 0, 0),
+    //string16 = DEFAULT_BTVAL(1, 0, 1),
+    //string32 = DEFAULT_BTVAL(1, 0, 2),
     
-    tuple = AUX0_BTVAL(1, 0),
-    function = AUX0_BTVAL(1, 2),
-    error = AUX0_BTVAL(1, 3)
+    tuple = AUX0_BTVAL(1, 3),
+    function = AUX0_BTVAL(1, 4),
+    error = AUX0_BTVAL(1, 5)
 };
 
 /*
@@ -475,9 +475,8 @@ inline blob_result bigint_blob_result(ArgT && arg)
     using namespace sonia;
     integer ival{ std::forward<ArgT>(arg) };
     using limb_type = remove_cvref_t<decltype(*ival.data())>;
-    static_assert(sizeof(limb_type) == sizeof(uint32_t));
     blob_result result = make_blob_result(blob_type::bigint, ival.data(), static_cast<uint32_t>(ival.data_size() * sizeof(limb_type)));
-    result.reserved = ival < 0 ? 1 : 0;
+    result.reserved = ival.raw().backend().isneg() ? 1 : 0;
     blob_result_allocate(&result);
     return result;
 }
@@ -700,6 +699,8 @@ inline std::ostream& print_type(std::ostream& os, blob_result const& b)
         return os << "nil";
     } else if (b.type == blob_type::string) {
         return os << "string";
+    } else if (b.type == blob_type::bigint) {
+        return os << "bigint";
     } else if (b.type == blob_type::error) {
         return os << "error";
     }
@@ -912,7 +913,6 @@ struct from_blob<sonia::integer>
             }
         } else if (val.type == blob_type::bigint) {
             using limb_type = remove_cvref_t<decltype(*ival.data())>;
-            static_assert(sizeof(limb_type) == sizeof(uint32_t));
             size_t sz = array_size_of<limb_type>(val);
             ival.raw().backend().resize(sz, sz);
             

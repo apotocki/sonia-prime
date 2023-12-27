@@ -346,6 +346,7 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
     }
 }
 
+/*
 int variant_fancy_string(lua_State* L)
 {
     blob_result br = nil_blob_result();
@@ -415,7 +416,7 @@ int variant_fancy_string(lua_State* L)
     lua_pushlstring(L, result.c_str(), result.size());
     return 1;
 }
-
+*/
 // blobs in sp are supposed already pinned
 template <typename T>
 blob_result to_blob_array(blob_type elemtype, span<const blob_result> sp)
@@ -496,16 +497,16 @@ blob_result to_blob(lua_State* L, int index)
                     vtype = vals.back().type;
                     is_basic_integral_v = is_basic_integral(vtype);
                     if (is_basic_integral_v) {
-                        has_negative_v = (vtype != blob_type::ui64) && as<int64_t>(vals.back()) < 0;
-                        has_i64unlimit_value_v = (vtype == blob_type::ui64) && as<uint64_t>(vals.back()) > (uint64_t)(std::numeric_limits<int64_t>::max)();
+                        has_negative_v = vtype != blob_type::ui64 && as<int64_t>(vals.back()) < 0;
+                        has_i64unlimit_value_v = vtype == blob_type::ui64 && as<uint64_t>(vals.back()) > (uint64_t)(std::numeric_limits<int64_t>::max)();
                     }
                 } else if (no_unique_v || vtype != vals.back().type) {
                     no_unique_v = true;
                     vtype = vals.back().type;
                     is_basic_integral_v = is_basic_integral_v && is_basic_integral(vtype);
                     if (is_basic_integral_v) {
-                        has_negative_v = has_negative_v || (vtype != blob_type::ui64) && as<int64_t>(vals.back()) < 0;
-                        has_i64unlimit_value_v = has_i64unlimit_value_v || (vtype == blob_type::ui64) && as<uint64_t>(vals.back()) > (uint64_t)(std::numeric_limits<int64_t>::max)();
+                        has_negative_v = has_negative_v || (vtype != blob_type::ui64 && as<int64_t>(vals.back()) < 0);
+                        has_i64unlimit_value_v = has_i64unlimit_value_v || (vtype == blob_type::ui64 && as<uint64_t>(vals.back()) > (uint64_t)(std::numeric_limits<int64_t>::max)());
                     }
                 }
             }
@@ -634,7 +635,7 @@ int variant_encode(lua_State* L)
 
 const struct luaL_Reg variantlib[] = {
     //{"f64", variant_parse_float},
-    {"to_fancy_string", variant_fancy_string},
+    //{"to_fancy_string", variant_fancy_string},
     {"encode", variant_encode},
     {NULL, NULL}
 };
@@ -650,7 +651,7 @@ const struct luaL_Reg variantlib_m[] = {
 
 const struct luaL_Reg variantlib_f[] = {
     {"type", variant_type},
-    {"to_fancy_string", variant_fancy_string},
+    //{"to_fancy_string", variant_fancy_string},
     {"decode", variant_decode},
     {NULL, NULL}
 };

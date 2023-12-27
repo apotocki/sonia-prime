@@ -67,15 +67,15 @@ void mp_enc_dec_test()
     limbs_encode_decode_test<uint32_t>(10, 1024);
     limbs_encode_decode_test<uint64_t>(10, 1024);
     //*/
-    for (int base = 3; base < 63; ++base) {
+    int dcount = 256;
+    for (int base = 2; base < 63; ++base) {
         std::cout << "Base: " << base << "\n";
-        limbs_encode_decode_test<uint64_t>(base, 1024);
-        limbs_encode_decode_test<uint32_t>(base, 1024);
-        limbs_encode_decode_test<uint16_t>(base, 1024);
-        limbs_encode_decode_test<uint8_t>(base, 1024);
+        limbs_encode_decode_test<uint64_t>(base, dcount);
+        limbs_encode_decode_test<uint32_t>(base, dcount);
+        limbs_encode_decode_test<uint16_t>(base, dcount);
+        limbs_encode_decode_test<uint8_t>(base, dcount);
     }
     //limbs_encode_decode_test<uint64_t>(10, 1024);
-    //limbs_encode_test(3, 1024);
 }
 
 void mp_ct_test()
@@ -160,7 +160,8 @@ void mp_ct_test()
     static_assert(ct::front<r9_t> == 0);
 
     {
-        using r0_t = decltype(W<-1, -2, -3, -4, -5, -6>);
+        constexpr auto max64 = 0xffffFFFFffffFFFFULL;
+        using r0_t = decltype(W<max64, max64-1, max64-2, max64-3, max64-4, max64-5>);
         static_assert(ct::back<ct::slice_limbs<r0_t, 1>> == -1);
         static_assert(ct::back<ct::slice_limbs<r0_t, 2>> == -2);
         static_assert(ct::back<ct::slice_limbs<r0_t, 3>> == -3);

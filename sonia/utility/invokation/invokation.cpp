@@ -88,9 +88,12 @@ void blob_result_allocate(blob_result * b)
     if (b->need_unpin == 0 && !b->inplace_size && !!b->bp.size) {
         void const* ptr = b->bp.data;
         uint32_t sz = b->bp.size;
-        if (sz <= 14) {
-            if (ptr) std::memcpy(b->ui8array, ptr, sz);
+        static_assert(sizeof(b->ui8array) == 14);
+        if (sz <= sizeof(b->ui8array)) {
             b->inplace_size = static_cast<uint8_t>(sz);
+            if (ptr) {
+                std::memcpy(b->ui8array, ptr, sz);
+            }
         } else {
             sonia::shared_ptr<uint8_t> data(new uint8_t[sz], [](uint8_t* p) { delete[] p; });
             if (b->bp.data) {

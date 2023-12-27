@@ -101,8 +101,8 @@ template <typename T>
 struct caster : static_visitor<T>
 {
     caster() = default;
-    template <typename T>
-    T operator()(T const& val) const { return (T)val; }
+    template <typename VT>
+    T operator()(VT const& val) const { return (T)val; }
 };
 
 template <uint64_t TicksPerSecV, int64_t EpochTo2000secondsV = 946684800LL>

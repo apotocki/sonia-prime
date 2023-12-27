@@ -69,8 +69,11 @@ int bigint_create(lua_State* L)
             char const* strval = lua_tolstring(L, 1, &sz);
             integer_type ival(string_view{ strval, sz });
             return push_bigint(L, ival);
+        } else if (lua_isnil(L, 1)) {
+            lua_pushnil(L);
+            return 1;
         }
-        return luaL_argerror(L, 1, "invalid argument");
+        return luaL_error(L, "bigint.create: invalid argument, type: %d", lua_type(L, 1));
     } catch (std::exception const& e) {
         return luaL_argerror(L, 1, e.what());
     }
@@ -98,10 +101,18 @@ int bigint_tostring(lua_State* L)
 
 int bigint_fancy_string(lua_State* L)
 {
-    bigint_header* bh = luaL_test_bigint_lib(L, 1);
-    luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
     integer_type ival;
-    restore_bigint(bh, ival);
+
+    if (bigint_header* bh = luaL_test_bigint_lib(L, 1); bh) {
+        restore_bigint(bh, ival);
+    } else if (lua_isinteger(L, 1)) {
+        ival = lua_tointeger(L, 1);
+    } else if (lua_isnil(L, 1)) {
+        lua_pushnil(L);
+        return 1;
+    } else {
+        return luaL_error(L, "bigint.to_fancy_string: invalid argument, type: %d; `bigint' or integer expected", lua_type(L, 1));
+    }
 
     lua_Integer radix = 10;
     lua_Integer groupSz = 0;
@@ -121,11 +132,11 @@ int bigint_fancy_string(lua_State* L)
 
     // formatting
     std::ostringstream ss, tempss;
+    if (ival < 0) {
+        ss << '-';
+        ival.backend().negate();
+    }
     if (radix == 16) {
-        if (ival < 0) {
-            ss << '-';
-            ival.backend().negate();
-        }
         ss << "0x"sv;
         tempss << std::hex << std::uppercase << ival;
     } else {
@@ -328,6 +339,7 @@ int bigint_shr(lua_State* L)
 
 const struct luaL_Reg bigintlib[] = {
     {"create", bigint_create},
+    {"to_fancy_string", bigint_fancy_string},
     {NULL, NULL}
 };
 

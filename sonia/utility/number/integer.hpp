@@ -58,7 +58,7 @@ public:
     }
 
     friend inline bool operator==(const integer&, const integer&) = default;
-    friend inline auto operator<=>(const integer&, const integer&) = default;
+    //friend inline auto operator<=>(const integer&, const integer&) = default;
 
     template <typename T>
     friend inline bool operator==(const integer& lhs, const T& rhs)

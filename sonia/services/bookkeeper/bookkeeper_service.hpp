@@ -10,7 +10,6 @@
 #endif
 
 #include <boost/unordered_map.hpp>
-#include <boost/serialization/boost_unordered_map.hpp>
 
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/concurrency/rw_fiber_mutex.hpp"

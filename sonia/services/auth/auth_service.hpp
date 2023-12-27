@@ -5,7 +5,6 @@
 #pragma once
 
 #include <boost/unordered_set.hpp>
-#include <boost/serialization/boost_unordered_set.hpp>
 
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/concurrency/rw_fiber_mutex.hpp"

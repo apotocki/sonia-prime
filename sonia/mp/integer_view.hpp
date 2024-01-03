@@ -33,10 +33,12 @@ std::tuple<size_t, int> to_limbs(T value, std::span<LimbT, N> sp)
 
     sp.front() = static_cast<LimbT>(absval);
     size_t cnt = 1;
-    absval >>= sizeof(LimbT) * CHAR_BIT;
-    for (; !!absval && cnt < limbs_cnt; ++cnt) {
-        sp[cnt] = static_cast<LimbT>(absval);
+    if constexpr (limbs_cnt > 1) {
         absval >>= sizeof(LimbT) * CHAR_BIT;
+        for (; !!absval && cnt < limbs_cnt; ++cnt) {
+            sp[cnt] = static_cast<LimbT>(absval);
+            absval >>= sizeof(LimbT) * CHAR_BIT;
+        }
     }
     return { cnt, sign };
 }

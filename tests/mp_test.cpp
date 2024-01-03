@@ -9,7 +9,7 @@
 #include "applied/sonia_test.hpp"
 
 #include "sonia/utility/scope_exit.hpp"
-#include "sonia/mp/integer.hpp"
+#include "sonia/mp/integer_view.hpp"
 #include "sonia/mp/limbs_from_string.hpp"
 
 template <typename LimbT>
@@ -136,7 +136,7 @@ void mp_ct_test()
     static_assert(ct::cmp<ct::limbs<uint64_t, 1, 0, 1>, ct::limbs<uint64_t, 1>> == 1);
     static_assert(ct::cmp<ct::limbs<uint64_t, 1, 0, 1>, ct::limbs<uint64_t, 2, 0, 1>> == -1);
 
-    using r6_t = decltype(100_W ^ 12_W); // = 54210 * 2 ^ 64 + 2003764205206896640 = 1000000000000000000000000
+    using r6_t = decltype(upow(100_W, 12_W)); // = 54210 * 2 ^ 64 + 2003764205206896640 = 1000000000000000000000000
     static_assert(ct::size<r6_t> == 2);
     static_assert(ct::back<r6_t> == 54210);
     static_assert(ct::front<r6_t> == 2003764205206896640UL);

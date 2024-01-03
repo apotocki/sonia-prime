@@ -10,6 +10,8 @@
 #include <string_view>
 #include <tuple>
 #include <memory>
+#include <cctype>
+#include <cmath>
 
 #include "limb_arithmetic.hpp"
 
@@ -48,9 +50,15 @@ inline const unsigned char default_alphabet_big_map[] =
 
 namespace sonia::mp {
 
+//template <std::integral LimbT, std::integral T, typename AllocatorT>
+//requires(std::is_unsigned_v<LimbT>)
+//std::tuple<LimbT*, size_t, size_t, int> to_limbs(T value, AllocatorT&& alloc)
+//{
+//    throw std::runtime_error("to_limbs from integer is not implemented"); //&
+//}
 
-template <std::integral LimbT, typename AllocatorT>
-requires(std::is_unsigned_v<LimbT> && std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
+template <std::unsigned_integral LimbT, typename AllocatorT>
+requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
 std::tuple<LimbT*, size_t, size_t, int> to_limbs(std::string_view str, unsigned int base, AllocatorT && alloc, std::span<const unsigned char> alphabet_map = {})
 {
     using namespace sonia::arithmetic;

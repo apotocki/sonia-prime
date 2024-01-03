@@ -610,7 +610,7 @@ inline constexpr auto operator/ (limbs<T, largs...> const&, limbs<T, rargs...> c
 }
 
 template <std::integral T, T... largs, T rarg>
-inline constexpr auto operator^ (limbs<T, largs...> const&, limbs<T, rarg> const&)
+inline constexpr auto upow(limbs<T, largs...> const&, limbs<T, rarg> const&)
 {
     using result_type = pow<limbs<T, largs...>, rarg>;
     return result_type{};

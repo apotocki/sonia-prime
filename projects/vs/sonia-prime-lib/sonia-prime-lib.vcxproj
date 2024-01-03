@@ -313,6 +313,11 @@
     <ClInclude Include="..\..\..\sonia\mpl\unpack_args.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\vector.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\zip_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\arithmetic.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\ct.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\integer_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\limbs_from_string.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\limb_arithmetic.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\application.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\headers.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\http.hpp" />

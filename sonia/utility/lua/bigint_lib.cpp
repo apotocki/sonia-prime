@@ -17,9 +17,11 @@ extern "C" {
 #define BIGINT_METATABLE_NAME "sonia.bigint"
 #define BIGINT_LIB_NAME "bigint"
 
+#include <boost/multiprecision/cpp_int.hpp>
+
 namespace sonia::lua {
 
-using limb_type = boost::multiprecision::limb_type;
+using integer_type = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>;
 
 bigint_header* luaL_check_bigint_lib(lua_State* L, int index)
 {
@@ -43,14 +45,14 @@ int bigint_index(lua_State* L)
     return 1;
 }
 
-int push_bigint(lua_State* L, integer_type const& value)
+int push_bigint(lua_State* L, mp::basic_integer_view<const limb_type> value)
 {
-    size_t sz = value.backend().size();
-    size_t datasz = sz * sizeof(limb_type);
+    auto limbs = (span<const limb_type>)value;
+    size_t datasz = limbs.size() * sizeof(limb_type);
     bigint_header* br = (bigint_header*)lua_newuserdata(L, sizeof(bigint_header) + datasz);
-    br->size = sz;
-    br->sign = value.backend().sign() ? 1 : 0;
-    memcpy(br + 1, value.backend().limbs(), datasz);
+    br->size = limbs.size();
+    br->sign = value.sign() > 0 ? 0 : 1;
+    memcpy(br + 1, limbs.data(), datasz);
 
     luaL_getmetatable(L, BIGINT_METATABLE_NAME);
     lua_setmetatable(L, -2);
@@ -58,62 +60,110 @@ int push_bigint(lua_State* L, integer_type const& value)
     return 1;
 }
 
+//bigint_header* push_bigint(lua_State* L, size_t limb_count)
+//{
+//    size_t datasz = limb_count * sizeof(limb_type);
+//    bigint_header* br = (bigint_header*)lua_newuserdata(L, sizeof(bigint_header) + datasz);
+//    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+//    lua_setmetatable(L, -2);
+//}
+
+template <std::integral LimbT>
+struct lua_limbs_allocator
+{
+    lua_State* L_;
+    //bigint_header* br;
+
+    using value_type = LimbT;
+
+    explicit lua_limbs_allocator(lua_State* L) : L_{L} {} //, br{nullptr} {}
+
+    value_type* allocate(size_t cnt)
+    {
+        size_t datasz = cnt * sizeof(limb_type);
+        bigint_header* br = (bigint_header*)lua_newuserdata(L_, sizeof(bigint_header) + datasz);
+        return reinterpret_cast<value_type*>(br + 1);
+    }
+
+    void deallocate(value_type*, size_t) { /* do nothing, lua will take care */ }
+};
+
+int push_bigint(lua_State* L, uint64_t value)
+{
+    limb_type buf[sizeof(uint64_t) / sizeof(limb_type)];
+    auto [sz, sign] = mp::to_limbs<limb_type>(value, std::span{buf});
+    return push_bigint(L, mp::basic_integer_view{ std::span{buf, sz}, sign });
+}
+
+//int push_bigint(lua_State* L, lua_Integer value)
+//{
+//    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+//    auto [limbs, sz, allsz, sign] = mp::to_limbs<limb_type>(value, limbs_allocator);
+//    limbs_allocator.br->sign = sign;
+//    limbs_allocator.br->size = sz;
+//
+//    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+//    lua_setmetatable(L, -2);
+//    return 1;
+//}
+
 int bigint_create(lua_State* L)
 {
     try {
+        lua_limbs_allocator<limb_type> limbs_allocator{ L };
         if (lua_isinteger(L, 1)) {
-            integer_type ival = lua_tointeger(L, 1);
-            return push_bigint(L, ival);
+            lua_Integer value = lua_tointeger(L, 1);
+            limb_type buf[sizeof(uint64_t) / sizeof(limb_type)];
+            auto [sz, sign] = mp::to_limbs<limb_type>(value, std::span{ buf });
+            return push_bigint(L, mp::basic_integer_view{ std::span{buf, sz}, sign });
         } else if (lua_isstring(L, 1)) {
-            size_t sz;
-            char const* strval = lua_tolstring(L, 1, &sz);
-            integer_type ival(string_view{ strval, sz });
-            return push_bigint(L, ival);
+            size_t strsz;
+            char const* strval = lua_tolstring(L, 1, &strsz);
+            auto [limbs, sz, allocsz, sign] = mp::to_limbs<limb_type>(string_view{ strval, strsz }, 0, limbs_allocator);
+            bigint_header* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+            bh->sign = sign > 0 ? 0 : 1;
+            bh->size = sz;
+            luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+            lua_setmetatable(L, -2);
+            return 1;
         } else if (lua_isnil(L, 1)) {
             lua_pushnil(L);
             return 1;
+        } else {
+            return luaL_error(L, "bigint.create: invalid argument, type: %d", lua_type(L, 1));
         }
-        return luaL_error(L, "bigint.create: invalid argument, type: %d", lua_type(L, 1));
     } catch (std::exception const& e) {
         return luaL_argerror(L, 1, e.what());
     }
 }
 
-void restore_bigint(bigint_header* bh, integer_type & ival)
+mp::basic_integer_view<limb_type> restore_bigint(bigint_header * bh)
 {
-    ival.backend().resize(bh->size, bh->size);
-    memcpy(ival.backend().limbs(), bh + 1, bh->size * sizeof(limb_type));
-    if (bh->sign != ival.backend().sign()) ival.backend().negate();
+    return mp::basic_integer_view<limb_type>{ std::span{ reinterpret_cast<limb_type*>(bh + 1), bh->size }, bh->sign ? -1: 1 };
+    //ival.backend().resize(bh->size, bh->size);
+    //memcpy(ival.backend().limbs(), bh + 1, bh->size * sizeof(limb_type));
+    //if (bh->sign != ival.backend().sign()) ival.backend().negate();
 }
 
 int bigint_tostring(lua_State* L)
 {
     bigint_header* bh = luaL_test_bigint_lib(L, 1);
     luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
-    integer_type ival;
-    restore_bigint(bh, ival);
+    auto ival = restore_bigint(bh);
     
-    std::ostringstream s;
-    s << ival;
-    lua_pushfstring(L, s.str().c_str());
+    std::vector<char> s;
+    if (ival.sign() < 0) s.push_back('-');
+    bool reversed;
+    mp::to_string_converter((std::span<const limb_type>)ival, std::back_inserter(s), reversed);
+    if (reversed) {
+        std::reverse(s.begin() + (ival.sign() < 0), s.end());
+    }
+    lua_pushlstring(L, s.data(), s.size());
     return 1;
 }
 
 int bigint_fancy_string(lua_State* L)
 {
-    integer_type ival;
-
-    if (bigint_header* bh = luaL_test_bigint_lib(L, 1); bh) {
-        restore_bigint(bh, ival);
-    } else if (lua_isinteger(L, 1)) {
-        ival = lua_tointeger(L, 1);
-    } else if (lua_isnil(L, 1)) {
-        lua_pushnil(L);
-        return 1;
-    } else {
-        return luaL_error(L, "bigint.to_fancy_string: invalid argument, type: %d; `bigint' or integer expected", lua_type(L, 1));
-    }
-
     lua_Integer radix = 10;
     lua_Integer groupSz = 0;
     string_view delim = " "sv;
@@ -130,20 +180,39 @@ int bigint_fancy_string(lua_State* L)
         }
     }
 
-    // formatting
-    std::ostringstream ss, tempss;
-    if (ival < 0) {
-        ss << '-';
-        ival.backend().negate();
-    }
-    if (radix == 16) {
-        ss << "0x"sv;
-        tempss << std::hex << std::uppercase << ival;
+    std::ostringstream ss;
+    std::string val;
+    
+
+    if (bigint_header* bh = luaL_test_bigint_lib(L, 1); bh) {
+        auto ival = restore_bigint(bh);
+        if (ival.sign() < 0) ss << '-';
+        if (radix == 16) {
+            ss << "0x"sv;
+        }
+        bool reversed;
+        mp::to_string_converter((std::span<const limb_type>)ival, std::back_inserter(val), reversed, (int)radix, sonia::mp::detail::default_alphabet_big);
+        if (reversed) {
+            std::reverse(val.begin(), val.end());
+        }
+    } else if (lua_isinteger(L, 1)) {
+        lua_Integer ival = lua_tointeger(L, 1);
+        if (ival < 0) ss << '-';
+        std::ostringstream tempss;
+        if (radix == 16) {
+            ss << "0x"sv;
+            tempss << std::hex;
+        }
+        tempss << std::uppercase << ival;
+        val = tempss.str();
+    } else if (lua_isnil(L, 1)) {
+        lua_pushnil(L);
+        return 1;
     } else {
-        tempss << ival;
+        return luaL_error(L, "bigint.to_fancy_string: invalid argument, type: %d; `bigint' or integer expected", lua_type(L, 1));
     }
 
-    std::string val = tempss.str();
+    // formatting
     if (!groupSz) {
         ss << val;
     } else {
@@ -155,38 +224,40 @@ int bigint_fancy_string(lua_State* L)
         }
     }
 
-    lua_pushfstring(L, ss.str().c_str());
+    val = ss.str();
+    lua_pushlstring(L, val.data(), val.size());
     return 1;
 }
 
 int bigint_to_integer(lua_State* L)
 {
-    integer_type val;
     bigint_header* bh = luaL_test_bigint_lib(L, 1);
     luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
-    restore_bigint(bh, val);
+    auto val = restore_bigint(bh);
     luaL_argcheck(L, val >= (std::numeric_limits<lua_Integer>::min)() &&
         val <= (std::numeric_limits<lua_Integer>::max)(), 1, "out of bounds");
     lua_pushinteger(L, (lua_Integer)val);
     return 1;
 }
 
-void bigint_binary_operator(lua_State* L, integer_type & l_val, integer_type& r_val)
+void bigint_binary_operator(lua_State* L, mp::basic_integer_view<limb_type>& l_val, mp::basic_integer_view<limb_type>& r_val)
 {
     bigint_header* blh = luaL_test_bigint_lib(L, 1);
     if (blh) { 
-        restore_bigint(blh, l_val);
+        l_val = restore_bigint(blh);
     } else if (lua_isinteger(L, 1)) {
-        l_val = lua_tointeger(L, 1);
+        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 1), l_val.limbs());
+        l_val = mp::basic_integer_view<limb_type>{ l_val.limbs().subspan(0, sz), sign };
     } else {
         luaL_argerror(L, 1, "`bigint' or integer expected");
     }
 
     bigint_header* brh = luaL_test_bigint_lib(L, 2);
     if (brh) {
-        restore_bigint(brh, r_val);
+        r_val = restore_bigint(brh);
     } else if (lua_isinteger(L, 2)) {
-        r_val = lua_tointeger(L, 2);
+        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 2), r_val.limbs());
+        r_val = mp::basic_integer_view<limb_type>{ r_val.limbs().subspan(0, sz), sign };
     } else {
         luaL_argerror(L, 2, "`bigint' or integer expected");
     }
@@ -194,16 +265,19 @@ void bigint_binary_operator(lua_State* L, integer_type & l_val, integer_type& r_
 
 int bigint_unary_minus(lua_State* L)
 {
-    integer_type val;
     bigint_header* bh = luaL_test_bigint_lib(L, 1);
     luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
-    restore_bigint(bh, val);
+    auto val = restore_bigint(bh);
     return push_bigint(L, -val);
 }
 
 int bigint_equal(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+    
     bigint_binary_operator(L, l_val, r_val);
 
     lua_pushboolean(L, l_val == r_val);
@@ -213,7 +287,11 @@ int bigint_equal(lua_State* L)
 
 int bigint_lt(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
     lua_pushboolean(L, l_val < r_val);
@@ -223,7 +301,11 @@ int bigint_lt(lua_State* L)
 
 int bigint_le(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
     lua_pushboolean(L, l_val <= r_val);
@@ -233,108 +315,254 @@ int bigint_le(lua_State* L)
 
 int bigint_add(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
-    return push_bigint(L, l_val + r_val);
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::add(l_val, r_val, limbs_allocator);
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 int bigint_sub(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
-    return push_bigint(L, l_val - r_val);
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::sub(l_val, r_val, limbs_allocator);
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 int bigint_mul(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
-    return push_bigint(L, l_val * r_val);
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::mul(l_val, r_val, limbs_allocator);
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 int bigint_div(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
-    return push_bigint(L, l_val / r_val);
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::div(l_val, r_val, limbs_allocator);
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 int bigint_mod(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
-    return push_bigint(L, l_val % r_val);
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::mod(l_val, r_val, limbs_allocator);
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1 ;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 int bigint_pow(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
     luaL_argcheck(L, r_val >= (std::numeric_limits<unsigned int>::min)() &&
         r_val <= (std::numeric_limits<unsigned int>::max)(), 2, "out of bounds");
 
-    return push_bigint(L, pow(l_val, (unsigned int)r_val));
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::pow(l_val, (unsigned int)r_val, limbs_allocator);
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 int bigint_band(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
-    return push_bigint(L, l_val & r_val);
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::binand(l_val, r_val, limbs_allocator);
+    if (!limbs) {
+        return push_bigint(L, 0);
+    }
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 int bigint_bor(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
-    return push_bigint(L, l_val | r_val);
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::binor(l_val, r_val, limbs_allocator);
+    if (!limbs) {
+        return push_bigint(L, 0);
+    }
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 int bigint_bxor(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
-    return push_bigint(L, l_val ^ r_val);
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::binxor(l_val, r_val, limbs_allocator);
+    if (!limbs) {
+        return push_bigint(L, 0);
+    }
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 int bigint_unary_not(lua_State* L)
 {
-    integer_type val;
-    bigint_header* bh = luaL_test_bigint_lib(L, 1);
-    luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
-    restore_bigint(bh, val);
-    return push_bigint(L, ~val);
+    bigint_header* bharg = luaL_test_bigint_lib(L, 1);
+    luaL_argcheck(L, !!bharg, 1, "`bigint' is expected");
+    auto val = restore_bigint(bharg);
+
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::binnot(val, limbs_allocator);
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 int bigint_shl(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
     luaL_argcheck(L, r_val >= (std::numeric_limits<unsigned int>::min)() &&
         r_val <= (std::numeric_limits<unsigned int>::max)(), 2, "out of bounds");
 
-    return push_bigint(L, l_val << (unsigned int)r_val);
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::shift_left(l_val, (unsigned int)r_val, limbs_allocator);
+    if (!limbs) {
+        return push_bigint(L, 0);
+    }
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 int bigint_shr(lua_State* L)
 {
-    integer_type l_val, r_val;
+    limb_type llimbs[limbs_per_lua_integer];
+    limb_type rlimbs[limbs_per_lua_integer];
+    mp::basic_integer_view<limb_type> l_val{ llimbs };
+    mp::basic_integer_view<limb_type> r_val{ rlimbs };
+
     bigint_binary_operator(L, l_val, r_val);
 
-    luaL_argcheck(L, r_val >= (std::numeric_limits<unsigned int>::min)() &&
+    luaL_argcheck(L, r_val >= 0 &&
         r_val <= (std::numeric_limits<unsigned int>::max)(), 2, "out of bounds");
 
-    return push_bigint(L, l_val >> (unsigned int)r_val);
+    unsigned int shift = r_val <= (std::numeric_limits<unsigned int>::max)() ?
+        (unsigned int)r_val : (std::numeric_limits<unsigned int>::max)();
+    
+    lua_limbs_allocator<limb_type> limbs_allocator{ L };
+    auto [limbs, sz, rsz, sign] = mp::shift_right(l_val, shift, limbs_allocator);
+    if (!limbs) {
+        return push_bigint(L, 0);
+    }
+    auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
+    bh->size = sz;
+    bh->sign = sign < 0 ? 1 : 0;
+    luaL_getmetatable(L, BIGINT_METATABLE_NAME);
+    lua_setmetatable(L, -2);
+    return 1;
 }
 
 const struct luaL_Reg bigintlib[] = {

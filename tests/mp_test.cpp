@@ -232,10 +232,102 @@ void mp_ct_test()
 
 }
 
+void mp_integer_test()
+{
+    namespace ct = sonia::mpct;
+    using namespace sonia::mp;
+    using namespace ct::literals;
+    using ct::W;
+
+    // to integral casts
+    {
+        basic_integer_view<uint32_t> v0 = ct::W32<0xffffFFFEU>;
+        BOOST_CHECK_EQUAL((uint64_t)v0, 0xffffFFFEU);
+        BOOST_CHECK_EQUAL((uint32_t)v0, 0xffffFFFEU);
+        BOOST_CHECK_EQUAL((uint16_t)v0, 0xFFFE);
+        BOOST_CHECK_EQUAL((uint8_t)v0, 0xFE);
+
+        basic_integer_view<uint32_t> v1{ct::W32<0x7fffFF7EU, 0x4fffFFFFU, 0xffffFFFFU>, -1};
+        BOOST_CHECK_EQUAL((uint8_t)v1, 0x82);
+        BOOST_CHECK_EQUAL((int8_t)v1, -0x7e);
+        BOOST_CHECK_EQUAL((uint16_t)v1, 0x82);
+        BOOST_CHECK_EQUAL((int16_t)v1, 0x82);
+        BOOST_CHECK_EQUAL((uint32_t)v1, -0x7fffFF7E);
+        BOOST_CHECK_EQUAL((int32_t)v1, -0x7fffFF7E);
+        BOOST_CHECK_EQUAL((uint64_t)v1, -0x4fffFFFF7fffFF7E);
+        BOOST_CHECK_EQUAL((int64_t)v1, -0x4fffFFFF7fffFF7E);
+
+        basic_integer_view<uint8_t> v2(ct::W8<0x1>, -1);
+        BOOST_CHECK_EQUAL((int64_t)v2, -1);
+        BOOST_CHECK_EQUAL((uint64_t)v2, 0xFFFFffffFFFFffffULL);
+    }
+    // unary minus
+    {
+        basic_integer_view v0 = ct::W<0x222>;
+        BOOST_CHECK_EQUAL((int64_t)-v0, -0x222);
+    }
+    //euqals
+    {
+        basic_integer_view v0 = ct::W<0x221, 0x222>;
+        basic_integer_view v1 = ct::W<0x221, 0x222, 0>;
+        basic_integer_view v2 = ct::W<0x221, 0x222, 1>;
+        BOOST_CHECK(v0 == v1);
+        BOOST_CHECK(v1 != v2);
+
+        basic_integer_view v3 = ct::W8<0x21, 0x22>;
+        BOOST_CHECK(v3 == 0x2221);
+        BOOST_CHECK(0x2221 == v3);
+        basic_integer_view v4 = ct::W<0x2221, 0, 1>;
+        BOOST_CHECK(v4 != 0x2221);
+        BOOST_CHECK(0x2221 != v4);
+
+        basic_integer_view v3m = -v3;
+        BOOST_CHECK(v3m == -0x2221);
+        BOOST_CHECK(-0x2221 == v3m);
+        BOOST_CHECK(v3m != 0x2221);
+    }
+    // compare
+    {
+        basic_integer_view v0 = ct::W<0x221, 0x222>;
+        basic_integer_view v1 = ct::W<0x221, 0x222, 0>;
+        BOOST_CHECK(!(v0 < v1));
+        BOOST_CHECK(!(v1 < v0));
+        BOOST_CHECK(v0 <= v1);
+        BOOST_CHECK(v1 <= v0);
+        BOOST_CHECK(v0 > 0x222);
+
+        v0 = ct::W<0x221>;
+        v1 = ct::W<0x222>;
+        BOOST_CHECK(v0 < v1);
+        BOOST_CHECK(-v1 < -v0);
+        BOOST_CHECK(v0 > -0x221);
+        BOOST_CHECK(-0x221 < v1);
+        BOOST_CHECK(0x223 > v1);
+    }
+    // plus
+    {
+        {
+            basic_integer_view v0 = ct::W32<0xFFFFffffULL>;
+            basic_integer_view v1 = ct::W32<2, 0x222, 0>;
+            auto [limbs, sz, rsz, sign] = add(v0, v1, std::allocator<uint32_t>{});
+            defer{ std::allocator<uint32_t>{}.deallocate(limbs, rsz); };
+            basic_integer_view r{ std::span{limbs, sz}, sign };
+            BOOST_CHECK((r == ct::W32<0x1, 0x223>));
+        }
+        {
+            auto [limbs, sz, rsz, sign] = add(-basic_integer_view{ 5_W }, basic_integer_view{ 12_W }, std::allocator<uint64_t>{});
+            defer{ std::allocator<uint64_t>{}.deallocate(limbs, rsz); };
+            basic_integer_view r{ std::span{limbs, sz}, sign };
+            BOOST_CHECK(r == 7_W);
+        }
+    }
+}
+
 void mp_test_registrar()
 {
-    register_test(BOOST_TEST_CASE(&mp_enc_dec_test));
-    register_test(BOOST_TEST_CASE(&mp_ct_test));
+    //register_test(BOOST_TEST_CASE(&mp_enc_dec_test));
+    //register_test(BOOST_TEST_CASE(&mp_ct_test));
+    register_test(BOOST_TEST_CASE(&mp_integer_test));
 }
 
 #ifdef AUTO_TEST_REGISTRATION

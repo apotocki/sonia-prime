@@ -135,12 +135,15 @@ void push_from_blob(lua_State* L, blob_result const& b)
     case blob_type::i64:
         lua_pushinteger(L, as<lua_Integer>(b)); break;
     case blob_type::ui64:
-        if (uint64_t val = as<uint64_t>(b); val <= (uint64_t)(std::numeric_limits<int64_t>::max)()) {
-            lua_pushinteger(L, (lua_Integer)val);
-        } else {
-            push_bigint(L, integer_type{ val });
+        {
+            uint64_t val = as<uint64_t>(b);
+            if (val <= (uint64_t)(std::numeric_limits<int64_t>::max)()) {
+                lua_pushinteger(L, (lua_Integer)val);
+            } else {
+                push_bigint(L, val);
+            }
+            break;
         }
-        break;
     case blob_type::c8:
         lua_pushlstring(L, (const char*)b.bp.data, 1); break;
     case blob_type::flt16:
@@ -155,7 +158,7 @@ void push_from_blob(lua_State* L, blob_result const& b)
     case blob_type::string:
         lua_pushlstring(L, data_of<char>(b), array_size_of<char>(b)); break;
     case blob_type::bigint:
-        push_bigint(L, as<integer>(b).raw()); break;
+        push_bigint(L, as<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>(b)); break;
     case blob_type::error:
         throw exception(std::string(data_of<char>(b), array_size_of<char>(b)));
     default:
@@ -188,7 +191,7 @@ int variant_index(lua_State* L)
     blob_type_selector(*br, [L, c_index = index - 1](auto ident, blob_result b) {
         using type = typename decltype(ident)::type;
         if constexpr (std::is_void_v<type>) { lua_pushnil(L); return; }
-        else if constexpr (std::is_same_v<type, sonia::integer>) { lua_pushnil(L); return; }
+        else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invokation_bigint_limb_type>>) { lua_pushnil(L); return; }
         else {
             using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
 
@@ -291,7 +294,7 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
         blob_type_selector(b, [&os, &printer](auto ident, blob_result b) {
             using type = typename decltype(ident)::type;
             if constexpr (std::is_void_v<type>) { os << "unknown"; }
-            else if constexpr (std::is_same_v<type, sonia::integer>) { os << "bigint"; }
+            else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invokation_bigint_limb_type>>) { os << "bigint"; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);
@@ -334,7 +337,7 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
     case blob_type::string:
         return printer(os, b.type, sonia::string_view{ data_of<char>(b), array_size_of<char>(b) });
     case blob_type::bigint:
-        return printer(os, b.type, as<integer>(b));
+        return printer(os, b.type, as<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>(b));
     case blob_type::function:
         return os << "function";
     case blob_type::object:

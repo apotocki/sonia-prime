@@ -110,11 +110,17 @@ struct iso_datetime_printer : static_visitor<std::string>
 {
     iso_datetime_printer() = default;
 
-    template <typename T>
-    std::string operator()(T const& val) const
+    template <std::integral T>
+    std::string operator()(T val) const
     {
         using tag_t = basic_datetime_tag<T, TicksPerSecV, EpochTo2000secondsV>;
         return this->operator()(typename tag_t::datetime_type{ val });
+    }
+
+    template <typename LT>
+    std::string operator()(mp::basic_integer_view<LT> const& val) const
+    {
+        return this->operator()((int64_t)val);
     }
 
     template <typename T>
@@ -130,11 +136,17 @@ struct iso_date_printer : static_visitor<std::string>
 {
     iso_date_printer() = default;
 
-    template <typename T>
-    std::string operator()(T const& val) const
+    template <std::integral T>
+    std::string operator()(T val) const
     {
         using tag_t = basic_datetime_tag<T, TicksPerSecV, EpochTo2000secondsV>;
         return this->operator()(typename tag_t::datetime_type{ val });
+    }
+
+    template <typename LT>
+    std::string operator()(mp::basic_integer_view<LT> const& val) const
+    {
+        return this->operator()((int64_t)val);
     }
 
     template <typename T>
@@ -152,11 +164,17 @@ struct iso_time_printer : static_visitor<std::string>
 {
     iso_time_printer() = default;
 
-    template <typename T>
+    template <std::integral T>
     std::string operator()(T const& val) const
     {
         using tag_t = basic_datetime_tag<T, TicksPerSecV, EpochTo2000secondsV>;
         return this->operator()(typename tag_t::datetime_type{ val });
+    }
+
+    template <typename LT>
+    std::string operator()(mp::basic_integer_view<LT> const& val) const
+    {
+        return this->operator()((int64_t)val);
     }
 
     template <typename T>
@@ -179,13 +197,11 @@ int sonialib_iso_datetime_string(lua_State* L)
     string_view dttype{ cstrval, strsz };
     std::string result;
 
-    variant<lua_Integer, integer_type> arg;
+    variant<lua_Integer, mp::basic_integer_view<const invokation_bigint_limb_type>> arg;
     if (lua_isinteger(L, 1)) {
         arg = luaL_checkinteger(L, 1);
     } else if (bigint_header* pbh = luaL_test_bigint_lib(L, 1); pbh) {
-        integer_type ival;
-        restore_bigint(pbh, ival);
-        arg = std::move(ival);
+        arg = restore_bigint(pbh);
     } else {
         return luaL_argerror(L, 1, "integer or `bigint' expected");
     }
@@ -196,13 +212,13 @@ int sonialib_iso_datetime_string(lua_State* L)
     } else if (dttype == "unix"sv) { // seconds since 1970-01-01T00:00:00Z
         result = apply_visitor(printer<1>{}, arg);
     } else if (dttype == "dosdate"sv) { // seconds since 1970-01-01T00:00:00Z
-        integer_type ival = apply_visitor(caster<integer_type>{}, arg);
+        auto ival = apply_visitor(caster<lua_Integer>{}, arg);
         unsigned int day = (unsigned int)(ival & 31);
         unsigned int month = (unsigned int)((ival >> 5) & 15);
         int64_t year = (int64_t)(1980 + (ival >> 9));
         result = printer<1>{}(basic_datetime_tag<uint64_t, 1>::construct(year, month, day));
     } else if (dttype == "dostime"sv) { // seconds since 1970-01-01T00:00:00Z
-        integer_type ival = apply_visitor(caster<integer_type>{}, arg);
+        auto ival = apply_visitor(caster<lua_Integer>{}, arg);
         luaL_argcheck(L, ival >= 0 && ival < 65536, 1, "wrong value");
         unsigned int seconds = (unsigned int)((ival & 31) * 2);
         unsigned int minutes = (unsigned int)((ival >> 5) & 63);

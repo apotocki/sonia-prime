@@ -226,6 +226,9 @@
     <Filter Include="sonia.utility\datetime">
       <UniqueIdentifier>{1147346e-ff5e-4916-96c9-865e3ab3a5ee}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.mp">
+      <UniqueIdentifier>{9a882ece-22fe-43b1-b246-4d5cc1471e93}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -1928,6 +1931,21 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\lua\sonia_lib.hpp">
       <Filter>sonia.utility\lua</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\arithmetic.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\ct.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\integer_view.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\limb_arithmetic.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\limbs_from_string.hpp">
+      <Filter>sonia.mp</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -78,8 +78,7 @@ inline static const unsigned char clz_tab[129] =
     9
 };
 
-template <std::integral T, unsigned int bits = sizeof(T) * CHAR_BIT>
-requires(std::is_unsigned_v<T>)
+template <std::unsigned_integral T, unsigned int bits = sizeof(T) * CHAR_BIT>
 inline constexpr unsigned int consteval_count_leading_zeros(T x)
 {
     if constexpr (bits == 1) {
@@ -94,15 +93,13 @@ inline constexpr unsigned int consteval_count_leading_zeros(T x)
     }
 }
 
-template <std::integral T, unsigned int bits = sizeof(T)* CHAR_BIT>
-requires(std::is_unsigned_v<T>)
+template <std::unsigned_integral T, unsigned int bits = sizeof(T)* CHAR_BIT>
 inline constexpr unsigned int consteval_log2(T x)
 {
     return bits - consteval_count_leading_zeros<T, bits>(x) - 1;
 }
 
-template <std::integral T>
-requires(std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 inline constexpr unsigned int generic_count_leading_zeros(T x)
 {
     T shift;
@@ -120,8 +117,7 @@ inline constexpr unsigned int generic_count_leading_zeros(T x)
     return (unsigned int)(sizeof(T) * CHAR_BIT + 1 - shift - clz_tab[x >> shift]);
 }
 
-template <std::integral T>
-requires(std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 inline constexpr unsigned int count_leading_zeros(T x)
 {
 #ifdef _MSC_VER
@@ -153,15 +149,13 @@ inline constexpr T ipow(T base, size_t exp)
     }
 }
 
-template <std::integral T>
-requires (std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 inline constexpr int ucmp1(T a, T b)
 {
     return a < b ? -1 : (a > b ? 1 : 0);
 };
 
-template <std::integral T>
-requires (std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 inline constexpr std::pair<T, T> uadd1(T a, T b)
 {
     T nextc = 0;
@@ -170,8 +164,7 @@ inline constexpr std::pair<T, T> uadd1(T a, T b)
     return { nextc, r };
 };
 
-template <std::integral T>
-requires (std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 inline constexpr std::pair<T, T> uadd1c(T a, T b, T c)
 {
     T nextc = 0;
@@ -182,16 +175,14 @@ inline constexpr std::pair<T, T> uadd1c(T a, T b, T c)
     return { nextc, r };
 };
 
-template <std::integral T>
-requires (std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 inline constexpr std::pair<T, T> usub1(T a, T b)
 {
     T nextc = a < b;
     return { nextc, a - b };
 };
 
-template <std::integral T>
-requires (std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 inline constexpr std::pair<T, T> usub1c(T a, T b, T c)
 {
     T nextc = a < b;
@@ -200,8 +191,7 @@ inline constexpr std::pair<T, T> usub1c(T a, T b, T c)
     return { nextc, r - c };
 };
 
-template <std::integral T>
-requires(std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 inline void add2(T & sh, T & sl, T ah, T al, T bh, T bl)
 {
     if constexpr (sizeof(T) >= sizeof(unsigned long long int)) {
@@ -216,8 +206,7 @@ inline void add2(T & sh, T & sl, T ah, T al, T bh, T bl)
     }
 }
 
-template <std::integral T>
-requires(std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 inline constexpr auto umul1(T u, T v) -> std::pair<T, T>
 {
     if constexpr (sizeof(T) >= sizeof(unsigned long long int)) {
@@ -257,8 +246,7 @@ inline constexpr auto umul1(T u, T v) -> std::pair<T, T>
 //  IEEE Transactions on Computers, 11 June 2010.
 //  https://gmplib.org/~tege/division-paper.pdf
 
-template <std::integral T>
-requires(std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 void udiv2by1(T& q, T& r, T u1, T u0, T d, T v)
 {
     assert(d >= (((T)1) << (sizeof(T) * CHAR_BIT - 1)));
@@ -275,8 +263,7 @@ void udiv2by1(T& q, T& r, T u1, T u0, T d, T v)
     }
 }
 
-template <std::integral T>
-requires(std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 inline constexpr auto udiv1(T u, T d)->std::pair<T, T>
 {
 #if 1
@@ -287,8 +274,7 @@ inline constexpr auto udiv1(T u, T d)->std::pair<T, T>
 #endif
 }
 
-template <std::integral T>
-requires(std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 constexpr auto udiv2by1norm(T u1, T u0, T d) -> std::pair<T, T>
 {
     assert(u1 < d);
@@ -332,8 +318,7 @@ constexpr auto udiv2by1norm(T u1, T u0, T d) -> std::pair<T, T>
     }
 }
 
-template <std::integral T>
-requires(std::is_unsigned_v<T>)
+template <std::unsigned_integral T>
 constexpr auto udiv2by1(T u1, T u0, T d) -> std::pair<T, T>
 {
     assert(u1 < d); // => d != 0

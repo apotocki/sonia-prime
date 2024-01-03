@@ -11,7 +11,7 @@ extern "C" {
 
 }
 
-#include <boost/multiprecision/cpp_int.hpp>
+#include "sonia/mp/integer_view.hpp"
 
 namespace sonia::lua {
 
@@ -20,15 +20,18 @@ int luaopen_bigintlib(lua_State*);
 struct bigint_header
 {
     uint64_t size : 63;
-    uint64_t sign : 1;
+    uint64_t sign : 1; // 0 - positive, 1 - negative
 };
 
 bigint_header* luaL_check_bigint_lib(lua_State*, int index);
 bigint_header* luaL_test_bigint_lib(lua_State*, int index);
 
-using integer_type = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>;
+using limb_type = uint64_t;
+constexpr size_t limbs_per_lua_integer = sizeof(lua_Integer) / sizeof(limb_type);
+//using integer_type = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>;
 
-int push_bigint(lua_State*, integer_type const& value);
-void restore_bigint(bigint_header* bh, integer_type& ival);
+int push_bigint(lua_State*, uint64_t value);
+int push_bigint(lua_State*, mp::basic_integer_view<const limb_type> value);
+mp::basic_integer_view<limb_type> restore_bigint(bigint_header * bh);
 
 }

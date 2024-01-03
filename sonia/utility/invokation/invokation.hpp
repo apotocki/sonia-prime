@@ -15,7 +15,7 @@
 #include "sonia/utility/variadic.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/utility/number/float16.hpp"
-#include "sonia/utility/number/integer.hpp"
+#include "sonia/mp/integer_view.hpp"
 #include "sonia/prime_config.hpp"
 
 namespace sonia::invokation { class invokable; }
@@ -146,6 +146,8 @@ SONIA_PRIME_API void blob_result_pin(blob_result *);
 SONIA_PRIME_API void blob_result_unpin(blob_result *);
 
 }
+
+using invokation_bigint_limb_type = uint64_t;
 
 inline blob_type arrayify(blob_type l) noexcept
 {
@@ -469,15 +471,23 @@ inline blob_result error_blob_result(ArgT && arg)
     return string_blob_result(std::forward<ArgT>(arg), blob_type::error);
 }
 
-template <typename ArgT>
-inline blob_result bigint_blob_result(ArgT && arg)
+struct invokation_blob_allocator
+{
+
+};
+
+//template <typename ArgT>
+//inline blob_result bigint_blob_result(ArgT && arg)
+template <typename LimbT>
+requires(std::is_same_v<std::remove_cv_t<LimbT>, invokation_bigint_limb_type>)
+inline blob_result bigint_blob_result(sonia::mp::basic_integer_view<LimbT> bival)
 {
     using namespace sonia;
-    integer ival{ std::forward<ArgT>(arg) };
-    using limb_type = remove_cvref_t<decltype(*ival.data())>;
-    blob_result result = make_blob_result(blob_type::bigint, ival.data(), static_cast<uint32_t>(ival.data_size() * sizeof(limb_type)));
-    result.reserved = ival.raw().backend().isneg() ? 1 : 0;
-    blob_result_allocate(&result);
+    // mp::basic_integer_view<invokation_bigint_limb_type>
+    //auto [limbs, sz, asz, sign] = mp::to_limbs<invokation_bigint_limb_type>(arg, invokation_blob_allocator{});
+    auto sp = (std::span<const invokation_bigint_limb_type>)bival;
+    blob_result result = make_blob_result(blob_type::bigint, sp.data(), static_cast<uint32_t>(sp.size() * sizeof(invokation_bigint_limb_type)));
+    result.reserved = bival.sign() < 0 ? 1 : 0;
     return result;
 }
 
@@ -563,7 +573,7 @@ inline blob_result particular_blob_result(ArgT && value)
     else if constexpr (std::is_same_v<T, uint64_t> || (std::is_integral_v<T> && !std::is_signed_v<T> && sizeof(T) == 8)) return ui64_blob_result(value);
     else if constexpr (std::is_same_v<T, int64_t> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == 8)) return i64_blob_result(value);
     else if constexpr (std::is_same_v<T, sonia::float16>) return f16_blob_result(value);
-    else if constexpr (std::is_same_v<T, sonia::integer>) return bigint_blob_result(value);
+    else if constexpr (sonia::is_template_instance_v<sonia::mp::basic_integer_view, T>) return bigint_blob_result(value);
     else if constexpr (std::is_same_v<T, float_t>) return f32_blob_result(value);
     else if constexpr (std::is_same_v<T, double_t>) return f64_blob_result(value);
     else if constexpr (sonia::is_string_v<T>) return string_blob_result(std::forward<ArgT>(value));
@@ -584,7 +594,7 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
     case blob_type::tuple:
         return ftor(sonia::identity<blob_result>(), b);
     case blob_type::bigint:
-        return ftor(sonia::identity<sonia::integer>(), b);
+        return ftor(sonia::identity<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>(), b);
     case blob_type::string:
     case blob_type::error:
         return ftor(sonia::identity<char>(), b);
@@ -638,7 +648,7 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
         blob_type_selector(b, [&os](auto ident, blob_result b) {
             using type = typename decltype(ident)::type;
             if constexpr (std::is_void_v<type>) { os << "unknown"; }
-            else if constexpr (std::is_same_v<type, sonia::integer>) { os << "bigint"; }
+            else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invokation_bigint_limb_type>>) { os << "bigint"; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);
@@ -899,11 +909,12 @@ struct from_blob<std::span<T>>
 };
 
 template <>
-struct from_blob<sonia::integer>
+struct from_blob<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>
 {
-    sonia::integer operator()(blob_result const& val) const
+    sonia::mp::basic_integer_view<const invokation_bigint_limb_type> operator()(blob_result const& val) const
     {
         using namespace sonia;
+        /*
         integer ival;
         if (is_basic_integral(val.type)) {
             if (val.type == blob_type::ui64) {
@@ -911,19 +922,24 @@ struct from_blob<sonia::integer>
             } else {
                 ival = from_blob<int64_t>{}(val);
             }
-        } else if (val.type == blob_type::bigint) {
-            using limb_type = remove_cvref_t<decltype(*ival.data())>;
-            size_t sz = array_size_of<limb_type>(val);
+        } else 
+        */
+        if (val.type == blob_type::bigint) {
+            //sonia::mp::basic_integer_view<invokation_bigint_limb_type>
+
+            size_t sz = array_size_of<invokation_bigint_limb_type>(val);
+            return sonia::mp::basic_integer_view<const invokation_bigint_limb_type>{std::span{ data_of<const invokation_bigint_limb_type>(val), sz }, val.reserved ? -1 : 1 };
+            /*
             ival.raw().backend().resize(sz, sz);
             
             std::memcpy(ival.data(), data_of<const limb_type>(val), sz * sizeof(limb_type));
             if (val.reserved) {
                 ival.raw().backend().negate();
             }
+            */
         } else {
             THROW_INTERNAL_ERROR("can't convert blob %1% to integer"_fmt % val);
         }
-        return ival;
     }
 };
 

@@ -127,7 +127,7 @@ ui_attribute_resolver::ui_attribute_resolver()
     setup_set<std::string>("component-adjuster"sv, {"left"sv, "top"sv, "right"sv, "bottom"sv});
 
     setup_set<std::string>("storage"sv, {"value"sv});
-    setup_fset("storage"sv, { "on-change"sv, "on-update"sv });
+    setup_fset("storage"sv, { "on-change"sv, "on-reset"sv });
     /*
     const char* booleanSet[] = { "is-on" };
         for (const char* attrname : booleanSet) { set<bool>(attrname); }

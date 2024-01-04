@@ -53,6 +53,10 @@ class basic_integer_view
     {}
 
 public:
+    basic_integer_view() noexcept
+        : limbs_{nullptr}, size_{0}
+    {}
+
     explicit basic_integer_view(std::span<LimbT> limbs, int sign = 1) noexcept
         : limbs_{ limbs.data() }, size_ { static_cast<intptr_t>(limbs.size()) }
     {

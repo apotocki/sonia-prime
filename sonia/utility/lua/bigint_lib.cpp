@@ -182,34 +182,30 @@ int bigint_fancy_string(lua_State* L)
 
     std::ostringstream ss;
     std::string val;
-    
 
-    if (bigint_header* bh = luaL_test_bigint_lib(L, 1); bh) {
-        auto ival = restore_bigint(bh);
-        if (ival.sign() < 0) ss << '-';
-        if (radix == 16) {
-            ss << "0x"sv;
-        }
-        bool reversed;
-        mp::to_string_converter((std::span<const limb_type>)ival, std::back_inserter(val), reversed, (int)radix, sonia::mp::detail::default_alphabet_big);
-        if (reversed) {
-            std::reverse(val.begin(), val.end());
-        }
-    } else if (lua_isinteger(L, 1)) {
-        lua_Integer ival = lua_tointeger(L, 1);
-        if (ival < 0) ss << '-';
-        std::ostringstream tempss;
-        if (radix == 16) {
-            ss << "0x"sv;
-            tempss << std::hex;
-        }
-        tempss << std::uppercase << ival;
-        val = tempss.str();
+    limb_type buf[sizeof(lua_Integer) / sizeof(limb_type)];
+    mp::basic_integer_view<limb_type> ival;
+
+    if (lua_isinteger(L, 1)) {
+        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 1), std::span{ buf });
+        ival = mp::basic_integer_view<limb_type>{std::span{ buf, sz }, sign};
+    } else if (bigint_header* bh = luaL_test_bigint_lib(L, 1); bh) {
+        ival = restore_bigint(bh);
     } else if (lua_isnil(L, 1)) {
         lua_pushnil(L);
         return 1;
     } else {
         return luaL_error(L, "bigint.to_fancy_string: invalid argument, type: %d; `bigint' or integer expected", lua_type(L, 1));
+    }
+
+    if (ival.sign() < 0) ss << '-';
+    if (radix == 16) {
+        ss << "0x"sv;
+    }
+    bool reversed;
+    mp::to_string_converter((std::span<const limb_type>)ival, std::back_inserter(val), reversed, (int)radix, sonia::mp::detail::default_alphabet_big);
+    if (reversed) {
+        std::reverse(val.begin(), val.end());
     }
 
     // formatting

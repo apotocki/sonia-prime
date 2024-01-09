@@ -11,8 +11,6 @@
 
 #include <sstream>
 
-#include <boost/multiprecision/cpp_int.hpp>
-
 #include "bigint_lib.hpp"
 
 extern "C" {
@@ -119,6 +117,40 @@ int push_variant(lua_State* L, blob_result const& value)
     return 1;
 }
 
+
+
+int variant_f16(lua_State* L)
+{
+    if (lua_isstring(L, 1)) {
+        size_t strsz;
+        char const *strval = lua_tolstring(L, 1, &strsz);
+        while (strsz && std::isspace(strval[strsz - 1])) --strsz;
+        lua_Integer radix = 10;
+        int argcount = lua_gettop(L);
+        if (argcount > 1) {
+            radix = luaL_checkinteger(L, 2);
+        }
+        // to do: implement parse with arbitrary base
+        char * pend;
+        double dval = strtod (strval, &pend);
+        if (pend != strval + strsz) {
+            return luaL_error(L, "float parse error");
+        }
+        return push_variant(L, f16_blob_result(sonia::float16{(float)dval}));
+    } else if (lua_isinteger(L, 1)) {
+        lua_Integer ival = lua_tointeger(L, 1);
+        return push_variant(L, f16_blob_result(sonia::float16{(float)ival}));
+    } else if (lua_isnumber(L, 1)) {
+        lua_Number fval = lua_tonumber(L, 1);
+        return push_variant(L, f16_blob_result(sonia::float16{(float)fval}));
+    } else if (lua_isnil(L, 1)) {
+        lua_pushnil(L);
+        return 1;
+    } else {
+        return luaL_error(L, "variant.f16: invalid argument, type: %d; number or string expected", lua_type(L, 1));
+    }
+}
+
 void push_from_blob(lua_State* L, blob_result const& b)
 {
     switch (b.type) {
@@ -168,6 +200,15 @@ void push_from_blob(lua_State* L, blob_result const& b)
             lua_pushnil(L);
         }
     }
+}
+
+int variant_decay(lua_State* L)
+{
+    blob_result* br = luaL_test_variant_lib(L, 1);
+    luaL_argcheck(L, !!br, 1, "`variant' expected");
+
+    push_from_blob(L, *br);
+    return 1;
 }
 
 int variant_index(lua_State* L)
@@ -271,20 +312,6 @@ int variant_type(lua_State* L)
     lua_pushfstring(L, "%s", result.c_str());
     return 1;
 }
-
-//int variant_parse_float(lua_State* L)
-//{
-//    size_t sz;
-//    const char * cstrval = luaL_checklstring(L, 1, &sz);
-//    while (sz && std::isspace(cstrval[sz - 1])) --sz;
-//    char * pend;
-//    double dval = strtod (cstrval, &pend);
-//    if (pend != cstrval + sz) {
-//        return luaL_error(L, "float parse error");
-//    }
-//    lua_pushnumber(L, dval);
-//    return 1;
-//}
 
 template <typename PrinterT>
 std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const& printer)
@@ -546,10 +573,9 @@ blob_result to_blob(lua_State* L, int index)
                 blob_result_pin(br);
                 return *br;
             } else if (bigint_header * bh = luaL_test_bigint_lib(L, index); bh) {
-                using limb_type = boost::multiprecision::limb_type;
-                blob_result result = make_blob_result(blob_type::bigint, bh + 1, static_cast<uint32_t>(bh->size * sizeof(limb_type)));
+                blob_result result = make_blob_result(blob_type::bigint, bh + 1, static_cast<uint32_t>(bh->size * sizeof(limbs_per_lua_integer)));
                 result.reserved = static_cast<uint8_t>(bh->sign);
-                blob_result_allocate(&result);
+                //blob_result_allocate(&result);
                 return result;
             }
             GLOBAL_LOG_WARN() << "to_blob from userdata, unknown userdata";
@@ -594,13 +620,15 @@ int variant_decode(lua_State* L)
         return luaL_error(L, e.what());
     }
 
-    push_from_blob(L, res);
-    return 1;
+    //push_from_blob(L, res);
+    //return 1;
+    return push_variant(L, res);
 }
 
 int variant_encode(lua_State* L)
 {
-    blob_result input;
+    blob_result input = to_blob(L, 1);
+    /*
     if (lua_isinteger(L, 1)) {
         input = i64_blob_result(lua_tointeger(L, 1));
     } else {
@@ -608,6 +636,7 @@ int variant_encode(lua_State* L)
         luaL_argcheck(L, !!br, 1, "`variant' or integer expected");
         input = *br;
     }
+    */
 
     size_t typestrsz;
     const char* typestr = luaL_checklstring(L, 2, &typestrsz);
@@ -637,8 +666,8 @@ int variant_encode(lua_State* L)
 }
 
 const struct luaL_Reg variantlib[] = {
-    //{"f64", variant_parse_float},
     //{"to_fancy_string", variant_fancy_string},
+    {"f16", variant_f16},
     {"encode", variant_encode},
     {NULL, NULL}
 };
@@ -655,6 +684,8 @@ const struct luaL_Reg variantlib_m[] = {
 const struct luaL_Reg variantlib_f[] = {
     {"type", variant_type},
     //{"to_fancy_string", variant_fancy_string},
+    {"decay", variant_decay},
+    {"encode", variant_encode},
     {"decode", variant_decode},
     {NULL, NULL}
 };

@@ -280,11 +280,7 @@ inline bool blob_result_equal(sonia::identity<T>, blob_result const& lhs, blob_r
     return false;
 }
 
-template <std::integral T>
-inline bool blob_result_equal(sonia::identity<T>, blob_result const& lhs, blob_result const& rhs)
-{
-    return as<T>(lhs) == as<T>(rhs);
-}
+
 
 #include "sonia/type_traits.hpp"
 #include "sonia/string.hpp"
@@ -814,6 +810,15 @@ struct from_blob<blob_result>
     blob_result operator()(blob_result val) const { return val; }
 };
 
+template <>
+struct from_blob<sonia::float16>
+{
+    sonia::float16 operator()(blob_result val) const
+    {
+        return val.bp.f16value;
+    }
+};
+
 template <typename T>
 requires (std::is_integral_v<T> || std::is_floating_point_v<T>)
 struct from_blob<T>
@@ -1088,6 +1093,17 @@ std::tuple<Ts...> from_blobs(std::span<const blob_result> vals)
     return from_blobs<Ts...>(std::make_index_sequence<sizeof ...(Ts)>{}, vals);
 }
 
+template <std::integral T>
+inline bool blob_result_equal(sonia::identity<T>, blob_result const& lhs, blob_result const& rhs)
+{
+    return as<T>(lhs) == as<T>(rhs);
+}
+
+inline bool blob_result_equal(sonia::identity<sonia::float16>, blob_result const& lhs, blob_result const& rhs)
+{
+    return as<sonia::float16>(lhs) == as<sonia::float16>(rhs);
+}
+
 inline bool operator== (blob_result const& lhs, blob_result const& rhs)
 {
     return blob_type_selector(lhs, [&rhs](auto id, blob_result const& lhs) { return blob_result_equal(id, lhs, rhs); });
@@ -1167,7 +1183,7 @@ public:
             BOOST_ASSERT(sz <= inplace_size);
             inplace_size = (uint8_t)sz;
         } else {
-            BOOST_ASSERT(bp.size <= inplace_size);
+            BOOST_ASSERT(sz <= bp.size);
             bp.size = (uint32_t)sz;
         }
     }

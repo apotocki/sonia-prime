@@ -236,7 +236,22 @@ int sonialib_iso_datetime_string(lua_State* L)
     return 1;
 }
 
+int sonia_parse_float(lua_State* L)
+{
+    size_t sz;
+    const char * cstrval = luaL_checklstring(L, 1, &sz);
+    while (sz && std::isspace(cstrval[sz - 1])) --sz;
+    char * pend;
+    double dval = strtod (cstrval, &pend);
+    if (pend != cstrval + sz) {
+        return luaL_error(L, "float parse error");
+    }
+    lua_pushnumber(L, dval);
+    return 1;
+}
+
 const struct luaL_Reg sonialib[] = {
+    {"f64", sonia_parse_float},
     {"ui8array", variant_array<uint8_t>},
     {"i8array", variant_array<int8_t>},
     {"iso_datetime", sonialib_iso_datetime},

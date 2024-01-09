@@ -187,8 +187,10 @@ int bigint_fancy_string(lua_State* L)
     mp::basic_integer_view<limb_type> ival;
 
     if (lua_isinteger(L, 1)) {
-        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 1), std::span{ buf });
-        ival = mp::basic_integer_view<limb_type>{std::span{ buf, sz }, sign};
+        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 1), std::span{buf});
+        ival = mp::basic_integer_view<limb_type>{std::span{buf, sz}, sign};
+    } else if (lua_isnumber(L, 1)) {
+        return luaL_error(L, "bigint.to_fancy_string: not implemented for numbers, type: %d;", lua_type(L, 1));
     } else if (bigint_header* bh = luaL_test_bigint_lib(L, 1); bh) {
         ival = restore_bigint(bh);
     } else if (lua_isnil(L, 1)) {

@@ -18,7 +18,27 @@
 #include "sonia/mp/integer_view.hpp"
 #include "sonia/prime_config.hpp"
 
-namespace sonia::invokation { class invokable; }
+namespace sonia::invokation {
+
+class object
+{
+public:
+    virtual ~object() = default;
+};
+
+template <typename T>
+class wrapper_object : public object
+{
+public:
+    T value;
+
+    template <typename ... ArgsT>
+    explicit wrapper_object(ArgsT&& ... args)
+        : value { std::forward<ArgsT>(args) ... }
+    {}
+};
+
+}
 
 extern "C" {
 
@@ -28,7 +48,7 @@ extern "C" {
 
 //common:
 // X XX XXXXX
-//    |-------- plane: default =0, aux0 =1(0x20)
+//    |-------- plane: default =1(0x20), aux0 =0 (0)
 // |----------- is array
 // 
 // default plane:
@@ -46,8 +66,8 @@ extern "C" {
 
 
 
-#define DEFAULT_BTVAL(isarr, type, sze) isarr * 0x80 + type * 0x4 + sze
-#define AUX0_BTVAL(isarr, type) 0x20 + isarr * 0x80 + type
+#define DEFAULT_BTVAL(isarr, type, sze) 0x20 + isarr * 0x80 + type * 0x4 + sze
+#define AUX0_BTVAL(isarr, type) isarr * 0x80 + type
 
 enum class blob_type : uint8_t {
     nil = AUX0_BTVAL(0, 0),
@@ -67,7 +87,7 @@ enum class blob_type : uint8_t {
     flt64 = DEFAULT_BTVAL(0, 3, 3),
     
     bigint = AUX0_BTVAL(1, 2),
-    object = DEFAULT_BTVAL(0, 4, 3),
+    object = DEFAULT_BTVAL(1, 4, 0),
     //objvec = DEFAULT_BTVAL(1, 4, 3),
     
     string = DEFAULT_BTVAL(1, 0, 0),
@@ -83,7 +103,6 @@ enum class blob_type : uint8_t {
 struct blob_result {
     union {
         void const* data;
-        sonia::invokation::invokable* object;
         uint64_t ui64value;
         int64_t i64value;
         sonia::float16 f16value;
@@ -112,7 +131,6 @@ struct alignas(8) blob_result
         struct {
             union {
                 void const* data;
-                sonia::invokation::invokable* object;
                 uint64_t ui64value;
                 int64_t i64value;
                 sonia::float16 f16value;
@@ -141,7 +159,7 @@ static_assert(sizeof(blob_result) == 16);
 
 typedef void(*on_invoke_cv_result_setter)(void*, blob_result*, uint32_t); // cookie, results, result count
 
-SONIA_PRIME_API void blob_result_allocate(blob_result *);
+SONIA_PRIME_API void blob_result_allocate(blob_result *, bool no_inplace = false);
 SONIA_PRIME_API void blob_result_pin(blob_result *);
 SONIA_PRIME_API void blob_result_unpin(blob_result *);
 
@@ -334,11 +352,26 @@ inline blob_result function_blob_result(std::string_view value)
     return result;
 }
 
-inline blob_result object_blob_result(sonia::invokation::invokable* value)
+template <std::derived_from<sonia::invokation::object> ObjectT, typename ... ArgsT>
+inline blob_result object_blob_result(ArgsT&& ... args)
 {
-    blob_result result = make_blob_result(blob_type::object);
-    result.bp.object = value;
+    blob_result result = make_blob_result(blob_type::object, nullptr, sizeof(ObjectT));
+    blob_result_allocate(&result, true);
+    ObjectT* place = mutable_data_of<ObjectT>(result);
+    try {
+        new (place) ObjectT(std::forward<ArgsT>(args)...);
+    } catch (...) {
+        result.type = blob_type::string;
+        blob_result_unpin(&result);
+        throw;
+    }
     return result;
+}
+
+template <typename T>
+inline blob_result object_blob_result(sonia::shared_ptr<T> object)
+{
+    return object_blob_result<sonia::invokation::wrapper_object<sonia::shared_ptr<T>>>(std::move(object));
 }
 
 inline blob_result bool_blob_result(bool value)
@@ -776,14 +809,14 @@ struct from_blob<sonia::optional<T>>
     }
 };
 
-template <std::derived_from<sonia::invokation::invokable> T>
+template <std::derived_from<sonia::invokation::object> T>
 struct from_blob<T>
 {
-    T& operator()(blob_result val) const
+    T& operator()(blob_result const& val) const
     {
         using namespace sonia;
         if (val.type == blob_type::object) {
-            if (T* result = dynamic_cast<T*>(val.bp.object); result) {
+            if (T* result = dynamic_cast<T*>(mutable_data_of<sonia::invokation::object>(val)); result) {
                 return *result;
             }
         }
@@ -1065,8 +1098,6 @@ inline auto as(blob_result const& val) -> decltype(from_blob<T>{}(std::declval<b
 {
     return from_blob<T>{}(val);
 }
-
-
 
 template <typename T>
 T from_blob_at(size_t index, std::span<const blob_result> vals)

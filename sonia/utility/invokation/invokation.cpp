@@ -6,7 +6,7 @@
 #include "invokation.hpp"
 #include "sonia/singleton.hpp"
 #include "sonia/shared_ptr.hpp"
-#include "sonia/variant.hpp"
+//#include "sonia/variant.hpp"
 #include "sonia/concurrency.hpp"
 #include "sonia/logger/logger.hpp"
 #include <boost/unordered_map.hpp>
@@ -15,14 +15,15 @@ namespace sonia::invokation {
 
 class blob_manager : public singleton
 {
-    using blob_storage = variant<shared_ptr<uint8_t>, shared_ptr<sonia::invokation::invokable>>;
-
+    using blob_storage = shared_ptr<uint8_t>;// , shared_ptr<sonia::invokation::invokable >> ;
+    /*
     struct address_retriever_visitor : static_visitor<const void*>
     {
         address_retriever_visitor() = default;
         template <typename T>
         inline const void* operator()(T const& obj) const noexcept { return obj.get(); }
     };
+    */
 
 public:
     ~blob_manager()
@@ -34,7 +35,8 @@ public:
 
     void pin(blob_storage pval)
     {
-        const void* ptr = apply_visitor(address_retriever_visitor{}, pval);
+        //const void* ptr = apply_visitor(address_retriever_visitor{}, pval);
+        const void* ptr = pval.get();
         lock_guard guard(blobs_mtx_);
         auto it = blobs_.find(ptr);
         if (it != blobs_.end()) {
@@ -83,13 +85,13 @@ private:
 }
 
 // allocates only top level array!!!
-void blob_result_allocate(blob_result * b)
+void blob_result_allocate(blob_result * b, bool no_inplace)
 {
     if (b->need_unpin == 0 && !b->inplace_size && !!b->bp.size) {
         void const* ptr = b->bp.data;
         uint32_t sz = b->bp.size;
         static_assert(sizeof(b->ui8array) == 14);
-        if (sz <= sizeof(b->ui8array)) {
+        if (!no_inplace && sz <= sizeof(b->ui8array)) {
             b->inplace_size = static_cast<uint8_t>(sz);
             if (ptr) {
                 std::memcpy(b->ui8array, ptr, sz);
@@ -125,9 +127,15 @@ void blob_result_unpin(blob_result * b)
     if (b->need_unpin) {
         auto optst = sonia::as_singleton<sonia::invokation::blob_manager>()->releaseref(b);
         b->need_unpin = 0;
-        if (optst && b->type == blob_type::tuple) {
-            blob_result* pblob = mutable_data_of<blob_result>(*b), * epblob = pblob + array_size_of<blob_result>(*b);
-            for (; pblob != epblob; blob_result_unpin(pblob++));
+        if (optst) {
+            if (b->type == blob_type::object) {
+                reinterpret_cast<sonia::invokation::object*>((*optst).get())->~object();
+            } else if (b->type == blob_type::tuple) {
+                blob_result* pblob = mutable_data_of<blob_result>(*b), * epblob = pblob + array_size_of<blob_result>(*b);
+                for (; pblob != epblob; blob_result_unpin(pblob++));
+            }
         }
+    } else if (b->type == blob_type::object) {
+        mutable_data_of<sonia::invokation::object>(*b)->~object();
     }
 }

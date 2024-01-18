@@ -4,6 +4,7 @@
 
 #include "sonia/config.hpp"
 #include "bunch_builder.hpp"
+#include "sonia/utility/scope_exit.hpp"
 
 namespace sonia::xmlbuilder {
 
@@ -52,15 +53,20 @@ void bunch_builder::set_property(string_view id, string_view propname, blob_resu
     if (value.type == blob_type::string) {
         string_view vstr = as<string_view>(value);
         std::vector<blob_result> objects;
+        SCOPE_EXIT([&objects] {
+            for (auto & obj : objects) { blob_result_unpin(&obj); }
+        });
         while (!vstr.empty()) {
             if (vstr.size() < 2 || vstr.front() != '$' || vstr[1] == '$') {
+                for (auto& obj : objects) { blob_result_unpin(&obj); }
                 objects.clear();
                 break;
             }
             size_t pos = vstr.find(',');
             if (pos == vstr.npos) pos = vstr.size();
             string_view eid = vstr.substr(1, pos - 1);
-            objects.push_back(object_blob_result(get_element_by(eid).get()));
+            objects.push_back(object_blob_result(get_element_by(eid)));
+            //objects.push_back(object_blob_result<invokation::wrapper_object<shared_ptr<invokation::invokable>>>(get_element_by(eid)));
             vstr = vstr.substr(pos);
             if (!vstr.empty()) vstr = vstr.substr(1); // skip comma
         }
@@ -83,7 +89,7 @@ void bunch_builder::set_property_functional(string_view id, string_view propname
 
 void bunch_builder::append(string_view parentid, string_view childid)
 {
-    do_append(*get_element_by(parentid), *get_element_by(childid));
+    do_append(*get_element_by(parentid), get_element_by(childid));
     //if (view_ptr pview = dynamic_pointer_cast<view>(it->second), cview = dynamic_pointer_cast<view>(it2->second); cview && pview) {
     //    pview->add_subview(cview);
     //}
@@ -91,9 +97,10 @@ void bunch_builder::append(string_view parentid, string_view childid)
     //pview->add_subview(cview);
 }
 
-void bunch_builder::do_append(invokation::invokable& parent, invokation::invokable& child)
+void bunch_builder::do_append(invokation::invokable& parent, shared_ptr<invokation::invokable> child)
 {
-    parent.invoke("append", {object_blob_result(&child)});
+    smart_blob sb = object_blob_result(std::move(child));
+    parent.invoke("append", { sb.get() });
 }
 
 void bunch_builder::append_to_document(string_view childid)

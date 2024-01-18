@@ -1947,6 +1947,9 @@
     <ClInclude Include="..\..\..\sonia\mp\limbs_from_string.hpp">
       <Filter>sonia.mp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invokation\functor_object.hpp">
+      <Filter>sonia.utility\invokation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

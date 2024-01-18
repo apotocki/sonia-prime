@@ -40,7 +40,7 @@ public:
 protected:
     virtual void do_set_text(invokation::invokable&, string_view text);
     virtual void do_set_property_functional(invokation::invokable&, string_view propname, string_view code, func_type) = 0;
-    virtual void do_append(invokation::invokable& parent, invokation::invokable& child);
+    virtual void do_append(invokation::invokable& parent, shared_ptr<invokation::invokable> child);
 
     virtual shared_ptr<invokation::invokable> root_element() = 0;
 

@@ -78,6 +78,24 @@ inline static const unsigned char clz_tab[129] =
     9
 };
 
+template <std::unsigned_integral T>
+inline constexpr unsigned int generic_count_leading_zeros(T x)
+{
+    T shift;
+									
+    if constexpr(sizeof(T) * CHAR_BIT == 32) {
+        shift = x < ((T)1 << 16)
+	        ? (x < ((T)1 << 8) ? 1 : 9) : (x < ((T)1 << 24) ? 17
+	        : 25);
+    } else {
+	    for (shift = sizeof(T) * CHAR_BIT - 8; shift > 0; shift -= 8)
+	        if (((x >> shift) & 0xff) != 0)
+	            break;
+	        ++shift;
+    }
+    return (unsigned int)(sizeof(T) * CHAR_BIT + 1 - shift - clz_tab[x >> shift]);
+}
+
 template <std::unsigned_integral T, unsigned int bits = sizeof(T) * CHAR_BIT>
 inline constexpr unsigned int consteval_count_leading_zeros(T x)
 {
@@ -100,39 +118,25 @@ inline constexpr unsigned int consteval_log2(T x)
 }
 
 template <std::unsigned_integral T>
-inline constexpr unsigned int generic_count_leading_zeros(T x)
-{
-    T shift;
-									
-    if constexpr(sizeof(T) * CHAR_BIT == 32) {
-        shift = x < ((T)1 << 16)
-	        ? (x < ((T)1 << 8) ? 1 : 9) : (x < ((T)1 << 24) ? 17
-	        : 25);
-    } else {
-	    for (shift = sizeof(T) * CHAR_BIT - 8; shift > 0; shift -= 8)
-	        if (((x >> shift) & 0xff) != 0)
-	            break;
-	        ++shift;
-    }
-    return (unsigned int)(sizeof(T) * CHAR_BIT + 1 - shift - clz_tab[x >> shift]);
-}
-
-template <std::unsigned_integral T>
 inline constexpr unsigned int count_leading_zeros(T x)
 {
-#ifdef _MSC_VER
-    if constexpr (sizeof(T) == 2) {
-        return __lzcnt16(x);
-    } else if constexpr (sizeof(T) == 4) {
-        return __lzcnt(x);
-    } else if (sizeof(T) == 8) {
-        return (unsigned int)__lzcnt64(x);
+    if (std::is_constant_evaluated()) {
+        return consteval_count_leading_zeros(x);
     } else {
-        return generic_count_leading_zeros(x);
-    }
+#ifdef _MSC_VER
+        if constexpr (sizeof(T) == 2) {
+            return __lzcnt16(x);
+        } else if constexpr (sizeof(T) == 4) {
+            return __lzcnt(x);
+        } else if (sizeof(T) == 8) {
+            return (unsigned int)__lzcnt64(x);
+        } else {
+            return generic_count_leading_zeros(x);
+        }
 #else
-    return generic_count_leading_zeros(x);
+        return generic_count_leading_zeros(x);
 #endif
+    }
 }
 
 template <typename T>

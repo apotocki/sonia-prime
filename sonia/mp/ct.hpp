@@ -501,7 +501,7 @@ struct div1_method<limbs<T, args...>, V>
 {
     using left_t = limbs<T, args...>;
     // normalization
-    static constexpr int shift = arithmetic::consteval_count_leading_zeros(V);
+    static constexpr int shift = arithmetic::count_leading_zeros(V);
     using norm_left_t = typename std::conditional_t<!shift, left_t, shift_left_method<left_t, shift>>::type;
 
     using unshifted_type = typename detail::div1_appender<std::pair<limbs<T>, std::integral_constant<T, 0>>, norm_left_t, (V << shift)>::type;

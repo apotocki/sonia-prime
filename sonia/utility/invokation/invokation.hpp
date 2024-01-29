@@ -989,7 +989,7 @@ struct from_blob<T>
     T operator()(blob_result const& val) const
     {
         using namespace sonia;
-        if (val.type == blob_type::string) {
+        if (contains_string(val)) {
             char_t const* begin_ptr = val.inplace_size ? reinterpret_cast<char_t const*>(val.ui8array) : reinterpret_cast<char_t const*>(val.bp.data);
             size_t sz = val.inplace_size ? (size_t)val.inplace_size : (size_t)val.bp.size;
             return T{ begin_ptr, sz };
@@ -1151,8 +1151,8 @@ class smart_blob : blob_result
 {
 public:
     smart_blob() : blob_result{ nil_blob_result() } {}
-    smart_blob(blob_result && b) : blob_result{ b }
-    {}
+    smart_blob(blob_result const& b) : blob_result{ b } { blob_result_pin(this); }
+    smart_blob(blob_result && b) : blob_result{ b } {}
 
     smart_blob(smart_blob const& rhs)
         : blob_result { rhs }

@@ -8,7 +8,7 @@
 
 namespace sonia::xmlbuilder {
 
-std::tuple<blob_result, std::string, func_type> attr_parser::parse(string_view val) const
+std::tuple<blob_result, func_type> attr_parser::parse(string_view val) const
 {
     if (val.starts_with("{") && val.ends_with("}")) {
         string_view code = val.substr(1, val.size() - 2);
@@ -17,27 +17,27 @@ std::tuple<blob_result, std::string, func_type> attr_parser::parse(string_view v
             code = code.substr(1, code.size() - 2);
             ft = func_type::no_return;
         }
-        return { nil_blob_result(), std::string{code}, ft };
+        return { string_blob_result(code, blob_type::function), ft };
     }
-    return { nil_blob_result(), {}, func_type::unspecified };
+    return { nil_blob_result(), func_type::unspecified };
 }
 
-std::tuple<blob_result, std::string, func_type> functional_attr_parser::parse(string_view value) const
+std::tuple<blob_result, func_type> functional_attr_parser::parse(string_view value) const
 {
-    if (auto r = attr_parser::parse(value); !std::get<1>(r).empty()) {
-        return { nil_blob_result(), std::get<1>(r), std::get<2>(r) | func_type::is_functor };
+    if (auto r = attr_parser::parse(value); std::get<0>(r).type == blob_type::function) {
+        return { std::get<0>(r), std::get<1>(r) | func_type::is_functor };
     }
-    return { nil_blob_result(), std::string{value}, func_type::no_return | func_type::is_functor };
+    return { string_blob_result(value, blob_type::function), func_type::no_return | func_type::is_functor };
     //throw exception("can't parse attribute value '%1%' as a function body"_fmt % value);
 }
 
-std::tuple<blob_result, std::string, func_type> particular_attr_parser<bool>::parse(string_view value) const
+std::tuple<blob_result, func_type> particular_attr_parser<bool>::parse(string_view value) const
 {
-    if (auto r = attr_parser::parse(value); !std::get<1>(r).empty()) {
+    if (auto r = attr_parser::parse(value); std::get<0>(r).type == blob_type::function) {
         return r;
     }
-    if (value == "true" || value == "1") return { bool_blob_result(true), {}, func_type::unspecified };
-    if (value == "false" || value == "0") return { bool_blob_result(false), {}, func_type::unspecified };
+    if (value == "true" || value == "1") return { bool_blob_result(true), func_type::unspecified };
+    if (value == "false" || value == "0") return { bool_blob_result(false), func_type::unspecified };
     throw exception("can't parse attribute value '%1%' as bool"_fmt % value);
 }
 

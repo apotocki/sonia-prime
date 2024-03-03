@@ -20,8 +20,9 @@ public:
     small_string id;
     small_string name;
     std::string text;
-    std::vector<std::pair<small_string, smart_blob>> attrs;
-    std::vector<std::tuple<small_string, small_string, func_type>> functionals; // name, code, functor_type (if code is defined)
+    std::string ns;
+    std::vector<std::pair<small_string, small_string>> attrs;
+    std::vector<std::tuple<small_string, std::string>> prefixes; // [prefix, namespace]
 };
 
 class attribute_resolver
@@ -29,7 +30,7 @@ class attribute_resolver
 public:
     virtual ~attribute_resolver() = default;
 
-    virtual std::tuple<blob_result, std::string, func_type> operator()(string_view element, string_view attr_name, string_view attr_value) = 0;
+    virtual std::tuple<blob_result, func_type> operator()(string_view element, string_view attr_name, string_view attr_value) const = 0;
 };
 
 class external_builder
@@ -50,7 +51,9 @@ public:
     virtual void append(string_view parentid, string_view childid) = 0;
     virtual void append_to_document(string_view childid) {}
 
-    virtual std::string generate_id() const;
+    virtual attribute_resolver const& ar() const = 0;
+
+    std::string generate_id() const;
     void append_element(span<element> parents, element &) override;
     void close_element(span<element> parents, element &) override;
 
@@ -59,6 +62,6 @@ protected:
 };
 
 
-void parse(string_view code, external_builder & eb, attribute_resolver& ar);
+void parse(string_view code, external_builder & eb);
 
 }

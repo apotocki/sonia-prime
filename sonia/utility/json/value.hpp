@@ -18,11 +18,13 @@
 
 #define SONIA_JSON_VALUE_SZ 8 // at least pointer size for 64bit platforms
 
-namespace sonia {
+namespace sonia::json_detail {
 
-namespace json_detail {
-    using holder_t = optimized_holder<SONIA_JSON_VALUE_SZ, 3, uint32_t>;
+using holder_t = optimized_holder<SONIA_JSON_VALUE_SZ, 3, uint32_t>;
+
 }
+
+namespace sonia {
 
 enum class json_value_type
 {

@@ -22,35 +22,35 @@ class attr_parser
 public:
     virtual ~attr_parser() = default;
 
-    // {explicit value, funcname, no_return} if null or empty => not takes place
-    virtual std::tuple<blob_result, std::string, func_type> parse(string_view val) const;
+    // {value, no_return} if null or empty => not takes place
+    virtual std::tuple<blob_result, func_type> parse(string_view val) const;
 };
 
 class functional_attr_parser : public attr_parser
 {
 public:
-    std::tuple<blob_result, std::string, func_type> parse(string_view value) const override;
+    std::tuple<blob_result, func_type> parse(string_view value) const override;
 };
 
 template <typename T>
 class particular_attr_parser : public attr_parser
 {
 public:
-    std::tuple<blob_result, std::string, func_type> parse(string_view value) const override;
+    std::tuple<blob_result, func_type> parse(string_view value) const override;
 };
 
 template <>
 class particular_attr_parser<bool> : public attr_parser
 {
 public:
-    std::tuple<blob_result, std::string, func_type> parse(string_view value) const override;
+    std::tuple<blob_result, func_type> parse(string_view value) const override;
 };
 
 template <typename T>
 class particular_attr_parser<optional<T>> : public attr_parser
 {
 public:
-    std::tuple<blob_result, std::string, func_type> parse(string_view value) const override;
+    std::tuple<blob_result, func_type> parse(string_view value) const override;
 };
 
 template <typename T, size_t SzV>
@@ -60,7 +60,7 @@ class particular_attr_parser<std::array<T, SzV>> : public attr_parser
     using intermediate_element_t = std::conditional_t<is_simple_v, T, blob_result>;
 
 public:
-    std::tuple<blob_result, std::string, func_type> parse(string_view value) const override;
+    std::tuple<blob_result, func_type> parse(string_view value) const override;
 };
 
 template <typename T>
@@ -70,7 +70,7 @@ class particular_attr_parser<std::vector<T>> : public attr_parser
     using intermediate_element_t = std::conditional_t<is_simple_v, T, blob_result>;
 
 public:
-    std::tuple<blob_result, std::string, func_type> parse(string_view value) const override;
+    std::tuple<blob_result, func_type> parse(string_view value) const override;
 };
 
 template <typename ... Ts>
@@ -95,7 +95,7 @@ class particular_attr_parser<std::tuple<Ts ...>> : public attr_parser
     }
 
 public:
-    std::tuple<blob_result, std::string, func_type> parse(string_view value) const override;
+    std::tuple<blob_result, func_type> parse(string_view value) const override;
 };
 
 using automatic_attr_parser_t = automatic_polymorphic<attr_parser, sizeof(void*)>;

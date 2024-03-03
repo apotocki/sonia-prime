@@ -10,9 +10,11 @@
 namespace sonia {
 
 using boost::variant;
+using boost::recursive_variant_;
 using boost::static_visitor;
 using boost::apply_visitor;
 using boost::get;
+using boost::make_recursive_variant;
 
 }
 

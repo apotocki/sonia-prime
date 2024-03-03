@@ -62,29 +62,20 @@ class optimized_wrapper : public optimized_base<RefCountT>
 public:
     template <typename ArgT>
     explicit optimized_wrapper(ArgT && arg)
-        : val_(std::forward<ArgT>(arg))
+        : value{std::forward<ArgT>(arg)}
     {}
 
-    WrappedT const& get() const { return val_; }
-
-    template <typename T>
-    void set(T && arg)
-    {
-        val_ = std::forward<T>(arg);
-    }
-
+    WrappedT value;
+    
     void dispose() noexcept override
     {
         delete this;
     }
 
-    optimized_base<RefCountT> * clone() const override
+    [[nodiscard]] optimized_base<RefCountT> * clone() const override
     {
-        return new optimized_wrapper(*this);
+        return new optimized_wrapper(value);
     }
-
-private:
-    WrappedT val_;
 };
 
 template <size_t HolderBytesV, size_t ServiceCookieBitsV>

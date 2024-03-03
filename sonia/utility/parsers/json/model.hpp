@@ -82,7 +82,7 @@ public:
     {
         tempstr_.clear();
         std::copy(b, e, std::back_inserter(tempstr_));
-        stack_.push_back(json_value(decimal::parse(string_view(&tempstr_.front(), tempstr_.size()))));
+        stack_.push_back(json_value(decimal::parse(string_view(tempstr_.data(), tempstr_.size()))));
     }
 
     template <typename IteratorT>
@@ -92,7 +92,7 @@ public:
         tempstr_.clear();
         normilize_json_string(b, e, std::back_inserter(tempstr_));
         tempstr_.pop_back();
-        stack_.push_back(json_value(string_view(tempstr_.empty() ? nullptr : &tempstr_[0], tempstr_.size())));
+        stack_.push_back(json_value(string_view(tempstr_.data(), tempstr_.size())));
     }
 
     bool has_state() const { return !state_stack_.empty(); }
@@ -127,7 +127,7 @@ public:
     {
         json_value res = std::move(stack_.back());
         stack_.pop_back();
-        return std::move(res);
+        return res;
     }
 
 private:

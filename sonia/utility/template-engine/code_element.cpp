@@ -9,8 +9,8 @@ namespace sonia::templates {
 
 void code_element::do_registration(registrar_type& mr)
 {
-    register_property<&code_element::code>("$");
-    register_property<&code_element::input>("input");
+    mr.register_property<&code_element::code>("$");
+    mr.register_property<&code_element::input>("input");
 }
 
 }

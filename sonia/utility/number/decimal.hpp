@@ -4,14 +4,13 @@
 
 #pragma once
 
-#include <boost/multiprecision/cpp_int.hpp>
-
 #include "basic_decimal.hpp"
+#include "sonia/mp/basic_integer.hpp"
 
 namespace sonia {
 
 using decimal = basic_decimal<
-    boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>,
+    mp::basic_integer<uint64_t, 1>,
     int32_t
 >;
 

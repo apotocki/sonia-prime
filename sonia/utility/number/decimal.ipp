@@ -29,7 +29,7 @@ void decimal_normilize(SignificandT & v, ExponentT & e)
         if (v) {
             for (;;) {
                 if (0 != v % 10) break;
-                v /= 10;
+                v = v / 10;
                 ++e;
             }
         }
@@ -41,11 +41,12 @@ void decimal_normilize(SignificandT & v, ExponentT & e)
 }
 
 template <typename SignificandT, typename ExponentT>
-void decimal_parse(string_view str, SignificandT & v, ExponentT & e)
+std::pair<SignificandT, ExponentT> decimal_parse(string_view str)
 {
     // to do: parser INF, -INF, NAN
-    SignificandT value = 0;
-    ExponentT exp = 0;
+    std::pair<SignificandT, ExponentT> result{ 0, 0 };
+    SignificandT & value = result.first;
+    ExponentT & exp = result.second;
     while (!str.empty())
     {
         bool has_minus = false;
@@ -102,9 +103,7 @@ void decimal_parse(string_view str, SignificandT & v, ExponentT & e)
         if (has_minus) {
             value = -value;
         }
-        v = value;
-        e = exp;
-        return;
+        return result;
     }
 
     throw exception("wrong decimal string: '%1%'"_fmt % str);
@@ -156,11 +155,28 @@ std::string decimal_scientific_string(SignificandT const& v, ExponentT const& e)
 }
 
 template <typename LSignificandT, typename LExponentT, typename RSignificandT, typename RExponentT>
+std::strong_ordering decimal_compare_three_way(LSignificandT const& lv, LExponentT const& le, RSignificandT const& rv, RExponentT const& re)
+{
+    if ((lv < 0 && rv >= 0) || (lv == 0 && rv > 0)) return std::strong_ordering::less;
+    if ((rv < 0 && lv >= 0) || (rv == 0 && lv > 0)) return std::strong_ordering::greater;
+    if (lv == rv && le == re) return std::strong_ordering::equal;
+    if (le == re) {
+        return lv <=> rv;
+    } else if (le < re) {
+        return lv <=> (rv * pow(RSignificandT(10), re - le));
+    } else {
+        return (lv * pow(LSignificandT(10), le - re)) <=> rv;
+    }
+}
+
+template <typename LSignificandT, typename LExponentT, typename RSignificandT, typename RExponentT>
 bool decimal_less(LSignificandT const& lv, LExponentT const& le, RSignificandT const& rv, RExponentT const& re)
 {
     if ((lv < 0 && rv >= 0) || (lv == 0 && rv > 0)) return true;
     if (rv <= 0 && lv >= 0) return false;
-    if (le <= re) {
+    if (le == re) {
+        return lv < rv;
+    } else if (le < re) {
         return lv < rv * pow(RSignificandT(10), re - le);
     } else {
         return lv * pow(LSignificandT(10), le - re) < rv;
@@ -171,12 +187,14 @@ template <typename LSignificandT, typename LExponentT, typename RSignificandT, t
 bool decimal_equal(LSignificandT const& lv, LExponentT const& le, RSignificandT const& rv, RExponentT const& re)
 {
     if (le == (std::numeric_limits<LExponentT>::max)() || re == (std::numeric_limits<RExponentT>::max)()) return false;
-    if ((lv < 0 && rv >= 0) || (lv == 0 && rv != 0) || (lv > 0 && rv <= 0)) return false;
-    if (lv == 0) return true;
-    if (le <= re) {
-        return lv == rv * pow(RSignificandT(10), re - le);
+    if ((lv < 0 && rv >= 0) || (lv > 0 && rv <= 0)) return false;
+    if (!lv) return !rv;
+    if (le == re) {
+        return lv == rv;
+    } else if (le < re) {
+        return lv == rv * pow(RSignificandT{10}, re - le);
     } else {
-        return lv * pow(LSignificandT(10), le - re) == rv;
+        return lv * pow(LSignificandT{10}, le - re) == rv;
     }
 }
 

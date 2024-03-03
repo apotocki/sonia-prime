@@ -7,11 +7,19 @@
 #include <boost/unordered_map.hpp>
 
 #include "xmlbuilder.hpp"
+#include "advxmlbuilder.hpp"
 #include "sonia/utility/invokation/invokable.hpp"
+
+//#define USE_BASIC_BUILDER
 
 namespace sonia::xmlbuilder {
 
-class bunch_builder : public basic_external_builder
+class bunch_builder 
+#ifdef USE_BASIC_BUILDER
+    : public basic_external_builder
+#else
+    : public advanced_external_builder
+#endif
 {
 public:
     class factory
@@ -32,10 +40,13 @@ public:
     void set_property(string_view id, string_view propname, blob_result const& value) override;
     void set_property_functional(string_view id, string_view propname, string_view code, func_type) override;
     void append(string_view parentid, string_view childid) override;
-    void append_to_document(string_view childid) override;
 
     shared_ptr<invokation::invokable> get_element_by(string_view id);
     shared_ptr<invokation::invokable> try_get_element_by(string_view id) noexcept;
+
+#ifdef USE_BASIC_BUILDER
+    attribute_resolver const& ar() const override final { return factory_.get_attribute_resolver(); };
+#endif
 
 protected:
     virtual void do_set_text(invokation::invokable&, string_view text);

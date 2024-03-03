@@ -9,6 +9,7 @@
 #include <boost/function_types/result_type.hpp>
 
 #include "sonia/concurrency.hpp"
+#include "sonia/singleton.hpp"
 #include "sonia/services/on_close.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
 #include "sonia/utility/functional/hash/pair.hpp"
@@ -27,25 +28,31 @@ public:
     virtual ~invokable() = default;
 
     virtual bool has_method(string_view methodname) const;
-    virtual smart_blob invoke(string_view methodname, span<const blob_result> args);
-    smart_blob invoke(string_view name, std::initializer_list<const blob_result> args)
-    {
-        return invoke(name, span{args});
-    }
     virtual bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result);
-    bool try_invoke(string_view methodname, span<const blob_result> args);
-
-    // properties routine
-    virtual smart_blob get_property(string_view propname) const;
-    virtual void set_property(string_view propname, blob_result const& val);
-    virtual void on_property_change(string_view) {}
-
     virtual bool try_get_property(string_view propname, smart_blob& result) const;
     virtual bool try_set_property(string_view propname, blob_result const& val);
 
-    void set_property(string_view propname, blob_result&& val);
+    virtual void on_property_change(string_view) {}
 
     virtual shared_ptr<invokable> self_as_invokable_shared() { return {}; }
+
+    // method routine
+    inline bool try_invoke(string_view methodname, span<const blob_result> args)
+    {
+        smart_blob result;
+        return try_invoke(methodname, args, result);
+    }
+
+    smart_blob invoke(string_view methodname, span<const blob_result> args);
+    inline smart_blob invoke(string_view name, std::initializer_list<const blob_result> args)
+    {
+        return invoke(name, span{args});
+    }
+        
+    // properties routine
+    smart_blob get_property(string_view propname) const;
+    void set_property(string_view propname, blob_result const& val);
+    void set_property(string_view propname, blob_result&& val);
 };
 
 struct method : multimethod
@@ -185,14 +192,76 @@ struct field_fn_property_writer : field_fn_property_base<FieldV>, fn_property_wr
 template <typename DerivedT, typename InheritedT = void>
 class registrar
 {
-    static std::once_flag registration_flag_;
+    //static std::once_flag registration_flag_;
+
+    struct impl : singleton
+    {
+        impl()
+        {
+            DerivedT::do_registration(*this);
+            if constexpr (!is_void_v<InheritedT>) {
+                inherit(typeid(InheritedT));
+            }
+        }
+
+        template <auto FuncV>
+        void register_method(string_view name)
+        {
+            sonia::services::register_multimethod(concrete_method<FuncV>(), { typeid(DerivedT), name });
+        }
+
+        template <typename GetterT>
+        void register_readonly_property(string_view name, GetterT&& g)
+        {
+            sonia::services::register_multimethod(concrete_fn_property_reader<DerivedT, remove_cvref_t<GetterT>>(std::forward<GetterT>(g)), { typeid(DerivedT), typeid(fn_property_reader), name });
+        }
+
+        template <typename SetterT>
+        void register_writeonly_property(string_view name, SetterT&& g)
+        {
+            sonia::services::register_multimethod(concrete_fn_property_writer<DerivedT, remove_cvref_t<SetterT>>(std::forward<SetterT>(g)), { typeid(DerivedT), typeid(fn_property_writer), name });
+        }
+
+        template <typename GetterT, typename SetterT>
+        void register_property(string_view name, GetterT&& g, SetterT&& s)
+        {
+            register_readonly_property(name, std::forward<GetterT>(g));
+            register_writeonly_property(name, std::forward<SetterT>(s));
+        }
+
+        template <auto FieldV>
+        void register_readonly_property(string_view name)
+        {
+            sonia::services::register_multimethod(field_fn_property_reader<FieldV>(), { typeid(DerivedT), typeid(fn_property_reader), name });
+        }
+
+        template <auto FieldV>
+        void register_writeonly_property(string_view name)
+        {
+            sonia::services::register_multimethod(field_fn_property_writer<FieldV>(), { typeid(DerivedT), typeid(fn_property_writer), name });
+        }
+
+        template <auto FieldV>
+        void register_property(string_view name)
+        {
+            register_readonly_property<FieldV>(name);
+            register_writeonly_property<FieldV>(name);
+        }
+
+        void inherit(std::type_index from)
+        {
+            sonia::services::copy_multimethods({ from }, { typeid(DerivedT) });
+        }
+    };
 
 protected:
-    using registrar_type = registrar;
+    using registrar_type = impl;
 
 public:
     registrar()
     {
+        as_singleton<impl>();
+        /*
         std::call_once(registration_flag_, [this] {
             services::on_close([] {
                 new(&registration_flag_) std::once_flag{};
@@ -202,60 +271,11 @@ public:
                 inherit(typeid(InheritedT));
             }
         });
-    }
-
-    template <auto FuncV>
-    void register_method(string_view name)
-    {
-        sonia::services::register_multimethod(concrete_method<FuncV>(), { typeid(DerivedT), name });
-    }
-
-    template <typename GetterT>
-    void register_readonly_property(string_view name, GetterT && g)
-    {
-        sonia::services::register_multimethod(concrete_fn_property_reader<DerivedT, remove_cvref_t<GetterT>>(std::forward<GetterT>(g)), { typeid(DerivedT), typeid(fn_property_reader), name });
-    }
-
-    template <typename SetterT>
-    void register_writeonly_property(string_view name, SetterT&& g)
-    {
-        sonia::services::register_multimethod(concrete_fn_property_writer<DerivedT, remove_cvref_t<SetterT>>(std::forward<SetterT>(g)), { typeid(DerivedT), typeid(fn_property_writer), name });
-    }
-
-    template <typename GetterT, typename SetterT>
-    void register_property(string_view name, GetterT && g, SetterT && s)
-    {
-        register_readonly_property(name, std::forward<GetterT>(g));
-        register_writeonly_property(name, std::forward<SetterT>(s));
-    }
-
-    template <auto FieldV>
-    void register_readonly_property(string_view name)
-    {
-        sonia::services::register_multimethod(field_fn_property_reader<FieldV>(), { typeid(DerivedT), typeid(fn_property_reader), name });
-    }
-
-    template <auto FieldV>
-    void register_writeonly_property(string_view name)
-    {
-        sonia::services::register_multimethod(field_fn_property_writer<FieldV>(), { typeid(DerivedT), typeid(fn_property_writer), name });
-    }
-
-    template <auto FieldV>
-    void register_property(string_view name)
-    {
-        register_readonly_property<FieldV>(name);
-        register_writeonly_property<FieldV>(name);
-    }
-
-protected:
-    void inherit(std::type_index from)
-    {
-        sonia::services::copy_multimethods({ from }, { typeid(DerivedT) });
+        */
     }
 };
 
-template <typename DerivedT, typename InheritedT>
-std::once_flag registrar<DerivedT, InheritedT>::registration_flag_{};
+//template <typename DerivedT, typename InheritedT>
+//std::once_flag registrar<DerivedT, InheritedT>::registration_flag_{};
 
 }

@@ -204,8 +204,6 @@ std::basic_string<CharT, TraitsT> to_string(basic_cstring_view<CharT, TraitsT> s
 
 namespace sonia {
 
-
-
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 using std::basic_string_view;
@@ -230,6 +228,9 @@ public:
     using const_reference = CharT const&;
     using size_type = size_t;
 
+    using iterator = pointer;
+    using const_iterator = pointer;
+
     basic_small_string() = default;
 
     basic_small_string(string_view sv)
@@ -239,7 +240,7 @@ public:
     template <size_t N>
     basic_small_string(const CharT(&arr)[N]) : array_{arr, N} {}
 
-    basic_small_string(const CharT* str, size_t size) : array_{ string_view{str, size} } {}
+    basic_small_string(const CharT* str, size_t size) : array_{ basic_string_view{str, size} } {}
 
     basic_small_string(basic_small_string const&) = default;
     basic_small_string(basic_small_string &&) = default;
@@ -310,6 +311,7 @@ inline span<const CharT> to_span(basic_small_string<CharT, SzV, TraitsT> const& 
 
 using small_string = basic_small_string<char>;
 using small_wstring = basic_small_string<wchar_t>;
+using small_u32string = basic_small_string<char32_t>;
 
 template <typename CharT, class AllocatorT>
 std::basic_string_view<CharT> to_string_view(std::vector<CharT, AllocatorT> const& v)
@@ -517,6 +519,12 @@ template <class CharT, class TraitsT>
 size_t hash_value(basic_cstring_view<CharT, TraitsT> csv)
 {
     return hash<span<const CharT>>()(csv);
+}
+
+template <typename CharT, size_t SzV, typename TraitsT>
+size_t hash_value(basic_small_string<CharT, SzV, TraitsT> ssv)
+{
+    return hash<span<const CharT>>()(ssv);
 }
 
 template <size_t BuffSzV, class CharT, class TraitsT, typename FtorT>

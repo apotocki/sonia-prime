@@ -323,11 +323,33 @@ void mp_integer_test()
     }
 }
 
+#include "sonia/mp/basic_integer.hpp"
+
+void mp_integer_test2()
+{
+    using int_t = sonia::mp::basic_integer<uint64_t, 1>;
+    int_t val0{16};
+    val0 = val0 * 16 + 1;
+    BOOST_CHECK_EQUAL(257, (int)val0);
+    int_t val1{ 32 };
+    val0.swap(val1);
+    BOOST_CHECK_EQUAL(257, (int)val1);
+    BOOST_CHECK_EQUAL(32, (int)val0);
+    val0 = val1 * val1 * val1 * val1 * val1 * val1 * val1 * val1;
+    val1 = 257;
+    val1 = pow(val1, 8);
+    BOOST_CHECK_EQUAL(val1, val0);
+
+    val1 = pow(val1, 0);
+    BOOST_CHECK_EQUAL((int)val1, 1);
+}
+
 void mp_test_registrar()
 {
     //register_test(BOOST_TEST_CASE(&mp_enc_dec_test));
-    //register_test(BOOST_TEST_CASE(&mp_ct_test));
+    register_test(BOOST_TEST_CASE(&mp_ct_test));
     register_test(BOOST_TEST_CASE(&mp_integer_test));
+    register_test(BOOST_TEST_CASE(&mp_integer_test2));
 }
 
 #ifdef AUTO_TEST_REGISTRATION

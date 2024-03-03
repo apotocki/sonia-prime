@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_OPTIMIZED_DECIMAL_HPP
-#define SONIA_UTILITY_OPTIMIZED_DECIMAL_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include "sonia/utility/number/decimal.hpp"
 #include "holder.hpp"
@@ -59,7 +54,7 @@ struct optimized_decimal_impl
     static T get(HolderT const* self)
     {
         if (self->is_ptr()) {
-            return (T)ptr(self)->get();
+            return (T)ptr(self)->value;
         } else {
             uint_t rval = self->get_uint();
             basic_decimal<int_t, int_t> d(
@@ -73,7 +68,7 @@ struct optimized_decimal_impl
     static decimal get(HolderT const* self)
     {
         if (self->is_ptr()) {
-            return ptr(self)->get();
+            return ptr(self)->value;
         } else {
             uint_t rval = self->get_uint();
             return decimal(
@@ -86,13 +81,13 @@ struct optimized_decimal_impl
     static void set(HolderT * self, decimal val)
     {
         if (self->is_ptr()) {
-            ptr(self)->set(std::move(val));
+            ptr(self)->value = std::move(val);
         } else {
             if (val.raw_value() >= (int_t)mnts_min && val.raw_value() <= (int_t)mnts_max &&
                 val.raw_exp() >= exp_min && val.raw_exp() <= exp_max)
             {
                 self->set_uint(
-                    signed_to_unsigned(val.raw_value(), mnts_sign_mask) |
+                    signed_to_unsigned((int_t)val.raw_value(), mnts_sign_mask) |
                     (signed_to_unsigned(val.raw_exp(), exp_sign_mask) << mnts_bits)
                 );
             } else {
@@ -114,5 +109,3 @@ private:
 };
 
 }
-
-#endif // SONIA_UTILITY_OPTIMIZED_DECIMAL_HPP

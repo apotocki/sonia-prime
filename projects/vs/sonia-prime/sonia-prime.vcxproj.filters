@@ -23,10 +23,10 @@
       <Filter>sonia.services\scheduler</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\net_service.cpp">
-      <Filter>sonia.services\net</Filter>
+      <Filter>sonia\net</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\basic_connector.cpp">
-      <Filter>sonia.services\net</Filter>
+      <Filter>sonia\net</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\io_service.cpp">
       <Filter>sonia.services\io</Filter>
@@ -38,16 +38,16 @@
       <Filter>sonia.services\scheduler</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\net_service_builder.cpp">
-      <Filter>sonia.services\net</Filter>
+      <Filter>sonia\net</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp">
       <Filter>sonia.services</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\echo\echo_connector_builder.cpp">
-      <Filter>sonia.services\net\echo</Filter>
+      <Filter>sonia\net\echo</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\echo\echo_connector.cpp">
-      <Filter>sonia.services\net\echo</Filter>
+      <Filter>sonia\net\echo</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\transceiver\transceiver_builder.cpp">
       <Filter>sonia.services\transceiver</Filter>
@@ -62,22 +62,22 @@
       <Filter>sonia.services\io</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\http\http_connector.cpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\http\http_connector_builder.cpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\http\http_default_application_builder.cpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\http\http_default_application.cpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\http\http_static_application.cpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\http\http_static_application_builder.cpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\registry\registry_service.cpp">
       <Filter>sonia.services\registry</Filter>
@@ -92,10 +92,10 @@
       <Filter>sonia.services\bookkeeper</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\http\http_digest_authentication_application.cpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_builder.cpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\auth\auth_service.cpp">
       <Filter>sonia.services\auth</Filter>
@@ -130,20 +130,11 @@
     <Filter Include="sonia">
       <UniqueIdentifier>{676c1e0b-bea2-4ced-96d2-fc66a4a71255}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.services\net">
-      <UniqueIdentifier>{f3ae0c95-625f-45a4-b815-929407c52b9a}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.services\io">
       <UniqueIdentifier>{226e04cf-ee30-4a3b-addc-4d6198950edb}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.services\net\echo">
-      <UniqueIdentifier>{4b38a90a-a7fe-448b-800d-996ce8f57401}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.services\transceiver">
       <UniqueIdentifier>{0616f2c9-3460-4e59-824a-df4346a66923}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.services\net\http">
-      <UniqueIdentifier>{a82c12bf-9c1d-4d99-a116-8215bf6c8dff}</UniqueIdentifier>
     </Filter>
     <Filter Include="sonia.services\registry">
       <UniqueIdentifier>{835b5fdf-684f-4ffe-9747-8067e7f629e9}</UniqueIdentifier>
@@ -162,6 +153,15 @@
     </Filter>
     <Filter Include="sonia.services\tenger">
       <UniqueIdentifier>{8eb15461-de06-40b4-9256-b06104b93097}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia\net">
+      <UniqueIdentifier>{f3ae0c95-625f-45a4-b815-929407c52b9a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia\net\echo">
+      <UniqueIdentifier>{4b38a90a-a7fe-448b-800d-996ce8f57401}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia\net\http">
+      <UniqueIdentifier>{a82c12bf-9c1d-4d99-a116-8215bf6c8dff}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -199,13 +199,13 @@
       <Filter>sonia.services</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\net_service.hpp">
-      <Filter>sonia.services\net</Filter>
+      <Filter>sonia\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\connector.hpp">
-      <Filter>sonia.services\net</Filter>
+      <Filter>sonia\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\basic_connector.hpp">
-      <Filter>sonia.services\net</Filter>
+      <Filter>sonia\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\io\io_service.hpp">
       <Filter>sonia.services\io</Filter>
@@ -223,22 +223,22 @@
       <Filter>sonia.services\scheduler</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\net_service_configuration.hpp">
-      <Filter>sonia.services\net</Filter>
+      <Filter>sonia\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\net_service_builder.hpp">
-      <Filter>sonia.services\net</Filter>
+      <Filter>sonia\net</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\local_service_registry.hpp">
       <Filter>sonia.services</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\echo\echo_connector_configuration.hpp">
-      <Filter>sonia.services\net\echo</Filter>
+      <Filter>sonia\net\echo</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\echo\echo_connector_builder.hpp">
-      <Filter>sonia.services\net\echo</Filter>
+      <Filter>sonia\net\echo</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\echo\echo_connector.hpp">
-      <Filter>sonia.services\net\echo</Filter>
+      <Filter>sonia\net\echo</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\transceiver\transceiver_builder.hpp">
       <Filter>sonia.services\transceiver</Filter>
@@ -259,31 +259,31 @@
       <Filter>sonia.services\io</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_connector.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_connector_builder.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_connector_configuration.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_configuration.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application_builder.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_default_application.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application_builder.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_static_application_configuration.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\timer.hpp">
       <Filter>sonia.services</Filter>
@@ -313,13 +313,13 @@
       <Filter>sonia.services\bookkeeper</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_configuration.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_digest_authentication_application_builder.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\auth\authentication.hpp">
       <Filter>sonia.services\auth</Filter>
@@ -334,7 +334,7 @@
       <Filter>sonia.services\auth</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\net\http\http_route.hpp">
-      <Filter>sonia.services\net\http</Filter>
+      <Filter>sonia\net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\diagnostic.hpp">
       <Filter>sonia.services</Filter>

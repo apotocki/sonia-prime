@@ -284,12 +284,6 @@ inline bool blob_result_equal(sonia::identity<double_t>, blob_result const& lhs,
     return rhs.type == blob_type::flt64 && lhs.f64value == rhs.f64value;
 }
 
-inline bool blob_result_equal(sonia::identity<sonia::string_view>, blob_result const& lhs, blob_result const& rhs)
-{
-    if (rhs.type != blob_type::blob || rhs.size != lhs.size) return false;
-    if (lhs.data == rhs.data) return true;
-    return std::memcmp(lhs.data, rhs.data, rhs.size) == 0;
-}
 */
 
 template <typename T>
@@ -500,11 +494,6 @@ inline blob_result error_blob_result(ArgT && arg)
     return string_blob_result(std::forward<ArgT>(arg), blob_type::error);
 }
 
-struct invokation_blob_allocator
-{
-
-};
-
 //template <typename ArgT>
 //inline blob_result bigint_blob_result(ArgT && arg)
 template <typename LimbT>
@@ -626,7 +615,7 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
         return ftor(sonia::identity<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>(), b);
     case blob_type::string:
     case blob_type::error:
-        return ftor(sonia::identity<char>(), b);
+        return ftor(sonia::identity<std::string_view>(), b);
         default:
             break;
     }
@@ -1130,6 +1119,23 @@ inline bool blob_result_equal(sonia::identity<T>, blob_result const& lhs, blob_r
     return as<T>(lhs) == as<T>(rhs);
 }
 
+inline bool blob_result_equal(sonia::identity<sonia::string_view>, blob_result const& lhs, blob_result const& rhs)
+{
+    if (rhs.type != rhs.type) return false;
+    size_t sz = array_size_of<char>(rhs);
+    if (array_size_of<char>(lhs) != sz) return false;
+    auto * ldata = data_of<char>(lhs);
+    auto * rdata = data_of<char>(rhs);
+    if (ldata == rdata) return true;
+    return std::memcmp(ldata, rdata, sz) == 0;
+}
+
+template <std::floating_point T>
+inline bool blob_result_equal(sonia::identity<T>, blob_result const& lhs, blob_result const& rhs)
+{
+    return as<T>(lhs) == as<T>(rhs);
+}
+
 inline bool blob_result_equal(sonia::identity<sonia::float16>, blob_result const& lhs, blob_result const& rhs)
 {
     return as<sonia::float16>(lhs) == as<sonia::float16>(rhs);
@@ -1143,6 +1149,26 @@ inline bool operator== (blob_result const& lhs, blob_result const& rhs)
 inline bool operator!= (blob_result const& lhs, blob_result const& rhs)
 {
     return !(lhs == rhs);
+}
+
+template <typename T>
+inline size_t blob_result_hash(sonia::identity<T>, blob_result const& v) { return 0; }
+
+template <>
+inline size_t blob_result_hash(sonia::identity<sonia::string_view>, blob_result const& v)
+{
+    return sonia::hash<sonia::string_view>{}(as<sonia::string_view>(v));
+}
+
+template <std::integral T>
+inline size_t blob_result_hash(sonia::identity<T>, blob_result const& v)
+{
+    return sonia::hash<T>{}(as<T>(v));
+}
+
+inline size_t hash_value(blob_result const& v)
+{
+    return blob_type_selector(v, [](auto id, blob_result const& v) { return blob_result_hash(id, v); });
 }
 
 namespace sonia {
@@ -1190,6 +1216,21 @@ public:
         blob_result_unpin(this);
     }
 
+    friend bool operator ==(smart_blob const& lhs, smart_blob const& rhs)
+    {
+        return *lhs == *rhs;
+    }
+
+    friend bool operator ==(smart_blob const& lhs, blob_result const& rhs)
+    {
+        return *lhs == rhs;
+    }
+
+    friend bool operator ==(blob_result const& lhs, smart_blob const& rhs)
+    {
+        return lhs == *rhs;
+    }
+
     blob_result const& operator*() const { return *this; }
     blob_result const& get() const { return *this; }
     blob_result * operator->() { return this; }
@@ -1235,5 +1276,10 @@ public:
         return tmp;
     }
 };
+
+inline size_t hash_value(smart_blob const& v)
+{
+    return hash_value(*v);
+}
 
 }

@@ -9,7 +9,6 @@
 #include "sonia/variant.hpp"
 #include "sonia/type_traits.hpp"
 #include "sonia/filesystem.hpp"
-#include "sonia/utility/number/decimal.hpp"
 
 #include "ast.hpp"
 

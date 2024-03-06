@@ -61,7 +61,7 @@ class unit
     eregistry_t eregistry_;
 
     // semantic
-    std::vector<shared_ptr<local_variable_entity>> variables_;
+    
     //std::vector<shared_ptr<function_t>> functions_;
     //shared_ptr<function_t> main_function_;
     std::vector<semantic_expression_type> root_expressions_;
@@ -84,18 +84,6 @@ public:
     void append_path(fs::path p)
     {
         additional_paths_.emplace_back(std::move(p));
-    }
-
-    local_variable_entity const& get_variable(size_t index) const
-    {
-        return *variables_[index];
-    }
-
-    local_variable_entity const& new_variable(shared_ptr<local_variable_entity> ve)
-    {
-        ve->set_index(variables_.size());
-        variables_.emplace_back(std::move(ve));
-        return *variables_.back();
     }
 
     std::vector<char> get_file_content(fs::path const& rpath, fs::path const* context = nullptr)
@@ -133,8 +121,10 @@ public:
     std::string print(qname_view q) const
     {
         std::ostringstream ss;
-        for (identifier id : q) {
-            ss << "::"sv;
+        for (identifier const& id : q) {
+            if (&q.front() != &id || q.is_absolute()) {
+                ss << "::"sv;
+            }
             if (auto const* pstr = slregistry_.resolve(id); pstr) {
                 ss << *pstr;
             } else {
@@ -154,13 +144,33 @@ public:
 
     small_u32string as_u32string(identifier const& id) const
     {
+        namespace cvt = boost::conversion;
         if (auto const* pstr = slregistry_.resolve(id); pstr) {
-            namespace cvt = boost::conversion;
             boost::container::small_vector<char32_t, 32> result;
             (cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << *pstr).flush();
             return small_u32string{ result.data(), result.size() };
         }
         throw exception("identifier '%1%' has no string representation"_fmt % id.value);
+    }
+
+    small_u32string as_u32string(qname_view name) const
+    {
+        namespace cvt = boost::conversion;
+        boost::container::small_vector<char32_t, 32> result;
+        for (identifier const& id : name) {
+            if (&name.front() != &id || name.is_absolute()) {
+                result.push_back(':');
+                result.push_back(':');
+            }
+            if (auto const* pstr = slregistry_.resolve(id); pstr) {
+                (cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << *pstr).flush();
+            } else {
+                throw exception("identifier '%1%' has no string representation"_fmt % id.value);
+                //result.push_back('$');
+                //(cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << boost::lexical_cast<std::string>(id.value)).flush();
+            }
+        }
+        return small_u32string{ result.data(), result.size() };
     }
 
 protected:

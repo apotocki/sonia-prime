@@ -108,9 +108,9 @@ void declaration_visitor::operator()(let_statement_decl const& ld) const
 {
     expression_visitor evis{ ctx, ctx.expressions, nullptr };
     auto etype = apply_visitor(evis, ld.expression);
-    auto idx = ctx.new_variable(ld.name, etype, true);
+    variable_entity const& ve = ctx.new_variable(ld.name, etype, true);
 
-    ctx.expressions.emplace_back(semantic::push_variable{ &idx });
+    ctx.expressions.emplace_back(semantic::set_variable{ &ve });
 }
 
 void declaration_visitor::check_name(qname const& name) const

@@ -108,11 +108,12 @@ bool type_entity::find(compiler_context& ctx,
                 argname.location.resource % argname.location.line % argname.location.column %
                 ctx.u().print(argname.id) % ctx.u().print(name()));
         }
-        result.emplace_back(semantic::push_value{ ctx.u().as_u32string(argname.id) });
         expression_visitor evis{ ctx, result, &it->second };
         apply_visitor(evis, std::get<1>(narg));
+        result.emplace_back(semantic::push_value{ ctx.u().as_u32string(argname.id) });
     }
     result.emplace_back(semantic::push_value{ decimal{ named_args.size() } });
+    result.emplace_back(semantic::push_value{ ctx.u().as_u32string(name()) });
     result.emplace_back(semantic::invoke_function{ this, 2 * ((uint32_t)named_args.size()) + 1 });
     rtype = beng_object_t{ this->name() };
     return true;

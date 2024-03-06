@@ -34,6 +34,9 @@ public:
     }
 
     basic_decimal(basic_decimal const&) = default;
+    basic_decimal(basic_decimal &&) = default;
+    basic_decimal& operator=(basic_decimal const&) = default;
+    basic_decimal& operator=(basic_decimal&&) = default;
 
     template <typename SomeSignificandT, typename SomeExponentT>
     basic_decimal & operator= (basic_decimal<SomeSignificandT, SomeExponentT> const& rhs)

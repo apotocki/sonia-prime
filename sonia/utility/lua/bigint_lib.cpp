@@ -5,6 +5,8 @@
 #include "sonia/config.hpp"
 #include "bigint_lib.hpp"
 
+#include <sstream>
+
 #include "sonia/string.hpp"
 
 extern "C" {
@@ -17,11 +19,7 @@ extern "C" {
 #define BIGINT_METATABLE_NAME "sonia.bigint"
 #define BIGINT_LIB_NAME "bigint"
 
-#include <boost/multiprecision/cpp_int.hpp>
-
 namespace sonia::lua {
-
-using integer_type = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>;
 
 bigint_header* luaL_check_bigint_lib(lua_State* L, int index)
 {

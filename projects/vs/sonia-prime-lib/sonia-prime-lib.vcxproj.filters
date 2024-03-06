@@ -363,9 +363,6 @@
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp">
       <Filter>sonia.utility\json</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\number\integer.hpp">
-      <Filter>sonia.utility\number</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\comparison_operators.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
@@ -375,20 +372,11 @@
     <ClInclude Include="..\..\..\sonia\utility\optimized\integer.hpp">
       <Filter>sonia.utility\optimized</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\number\decimal.hpp">
-      <Filter>sonia.utility\number</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\number\decimal.ipp">
-      <Filter>sonia.utility\number</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\iterators\hash_combine_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\optimized\decimal.hpp">
       <Filter>sonia.utility\optimized</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\number\basic_decimal.hpp">
-      <Filter>sonia.utility\number</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\buffer.hpp">
       <Filter>sonia.utility</Filter>
@@ -2055,6 +2043,15 @@
     <ClInclude Include="..\..\..\sonia\mp\basic_integer.hpp">
       <Filter>sonia.mp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\basic_decimal.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\decimal.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\decimal.ipp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2086,9 +2083,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\json\json_value.cpp">
       <Filter>sonia.utility\json</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\number\number_integer.cpp">
-      <Filter>sonia.utility\number</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp">
       <Filter>sonia.utility</Filter>

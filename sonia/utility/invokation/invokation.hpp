@@ -656,7 +656,8 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
     return ftor(sonia::identity<void>(), b);
 }
 
-inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
+template <typename Elem, typename Traits>
+inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& os, blob_result const& b)
 {
     if (b.type == blob_type::nil) {
         return os << "nil";
@@ -1116,7 +1117,9 @@ std::tuple<Ts...> from_blobs(std::span<const blob_result> vals)
 template <std::integral T>
 inline bool blob_result_equal(sonia::identity<T>, blob_result const& lhs, blob_result const& rhs)
 {
-    return as<T>(lhs) == as<T>(rhs);
+    if (is_basic_integral(rhs.type)) return as<T>(lhs) == as<T>(rhs);
+    // to do: bigint, decimal, float?
+    return false;
 }
 
 inline bool blob_result_equal(sonia::identity<sonia::string_view>, blob_result const& lhs, blob_result const& rhs)
@@ -1280,6 +1283,12 @@ public:
 inline size_t hash_value(smart_blob const& v)
 {
     return hash_value(*v);
+}
+
+template <typename Elem, typename Traits>
+inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& os, smart_blob const& b)
+{
+    return os << *b;
 }
 
 }

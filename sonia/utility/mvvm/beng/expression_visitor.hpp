@@ -57,7 +57,10 @@ expression_visitor::result_type expression_visitor::operator()(small_u32string c
 expression_visitor::result_type expression_visitor::operator()(qname const& e) const
 {
     // to do: look for variable first
-    shared_ptr<entity> expr = ctx.resolve_entity(e);
+    if (variable_entity const* plv = ctx.resolve_variable(e); plv) {
+        result.emplace_back(semantic::push_variable{ plv });
+        return plv->type();
+    }
     THROW_NOT_IMPLEMENTED_ERROR();
 }
 
@@ -71,7 +74,7 @@ expression_visitor::result_type expression_visitor::operator()(binary_expression
         if (!optvar) {
             throw exception("variable '%1%' is not defined"_fmt % ctx.u().print(*varnm));
         }
-        result.emplace_back(semantic::pop_variable{ optvar });
+        result.emplace_back(semantic::set_variable{ optvar });
         return std::move(rtype);
     }
     THROW_NOT_IMPLEMENTED_ERROR();

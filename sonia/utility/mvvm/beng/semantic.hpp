@@ -6,7 +6,6 @@
 #include <vector>
 #include "sonia/variant.hpp"
 #include "sonia/string.hpp"
-#include "sonia/utility/number/decimal.hpp"
 
 #include "beng.hpp"
 
@@ -19,7 +18,7 @@ namespace semantic {
 
 struct push_variable { variable_entity const* entity; };
 struct push_value { value_t value; };
-struct pop_variable { variable_entity const* entity; };
+struct set_variable { variable_entity const* entity; };
 
 struct invoke_function
 {
@@ -38,8 +37,9 @@ struct conditional
 
 // make_recursive_variant<
 using semantic_expression_type = make_recursive_variant<
+    empty_t, // no op
     semantic::push_variable, semantic::push_value,
-    semantic::pop_variable, semantic::invoke_function,
+    semantic::set_variable, semantic::invoke_function,
     std::vector<recursive_variant_>,
     semantic::conditional<recursive_variant_>
 >::type;

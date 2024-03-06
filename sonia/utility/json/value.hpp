@@ -14,7 +14,7 @@
 #include "sonia/type_traits.hpp"
 
 #include "sonia/utility/optimized/holder.hpp"
-#include "sonia/utility/number/decimal.hpp"
+#include "sonia/mp/decimal.hpp"
 
 #define SONIA_JSON_VALUE_SZ 8 // at least pointer size for 64bit platforms
 

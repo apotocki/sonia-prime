@@ -11,7 +11,7 @@
 #include "sonia/utility/lang/entity.hpp"
 
 #include "sonia/variant.hpp"
-#include "sonia/utility/number/decimal.hpp"
+#include "sonia/mp/decimal.hpp"
 
 namespace sonia::lang::beng {
 

@@ -25,6 +25,11 @@ public:
 
     explicit vm_compiler_push_value_visitor(vm::builder_virtual_stack_machine& bvm) : bvm_{ bvm } {}
 
+    inline size_t operator()(null_t const&) const
+    {
+        return bvm_.push_on_stack(smart_blob{});
+    }
+
     size_t operator()(small_u32string const& sval) const
     {
         namespace cvt = boost::conversion;
@@ -40,10 +45,12 @@ public:
     {
         if (dval.raw_exp() >= 0) { // is integral
             if (dval >= (std::numeric_limits<int64_t>::min)() && dval <= (std::numeric_limits<int64_t>::max)()) {
-            
+                return bvm_.push_on_stack(smart_blob{ i64_blob_result((int64_t)dval) });
+            } else if (dval >= 0 && dval <= (std::numeric_limits<uint64_t>::max)()) {
+                return bvm_.push_on_stack(smart_blob{ ui64_blob_result((uint64_t)dval) });
             }
         }
-        THROW_NOT_IMPLEMENTED_ERROR();
+        return bvm_.push_on_stack(smart_blob{ f64_blob_result((double_t)dval) });
     }
 
     template <typename T>
@@ -80,22 +87,38 @@ public:
 
     void operator()(lang::beng::semantic::invoke_function const& invf) const
     {
+        if (lang::beng::type_entity const* pte = dynamic_cast<lang::beng::type_entity const*>(invf.entity); pte) {
+            bvm_.append_object_constructor();
+            return;
+        }
         THROW_NOT_IMPLEMENTED_ERROR();
     }
 
-    void operator()(lang::beng::semantic::pop_variable const& pv) const
+    void operator()(lang::beng::semantic::set_variable const& pv) const
     {
         if (auto const* lve = dynamic_cast<lang::beng::local_variable_entity const*>(pv.entity); lve) {
-            THROW_NOT_IMPLEMENTED_ERROR();
-        } else {
+            bvm_.append_fset(lve->index());
+        } else { // extrenal variable case
             string_view varname = unit_.as_string(pv.entity->name().back());
-            // todo: global on stack literal registry to reuse
             smart_blob strbr{ string_blob_result(varname) };
             strbr.allocate();
-            bvm_.push_on_stack(std::move(strbr));
+            size_t stack_pos = bvm_.push_on_stack(std::move(strbr));
+            bvm_.append_push(stack_pos);
             bvm_.append_extern_assign();
         }
     }
+
+    void operator()(lang::beng::semantic::push_variable const& pv) const
+    {
+        if (auto const* lve = dynamic_cast<lang::beng::local_variable_entity const*>(pv.entity); lve) {
+            bvm_.append_fpush(lve->index());
+            return;
+        }
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+
+    inline void operator()(empty_t const&) const
+    { /* noop, do nothing */}
 
     template <typename T>
     void operator()(T const& e) const
@@ -143,6 +166,7 @@ void builder_view_model::compile(lang::beng::parser_context const& pctx)
     for (auto const& d : ds) {
         apply_visitor(dvis, d);
     }
+    ctx.finish_frame();
     // expression tree to vm script
     vm_compiler_visitor vmcvis{ unit(), bvm_ };
 

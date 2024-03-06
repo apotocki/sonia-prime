@@ -130,7 +130,7 @@ bool operator==(json_object const& lhs, json_object const& rhs)
     using object_t = optimized_object_impl<holder_t>;
     auto litems = object_t::get(&lhs);
     auto ritems = object_t::get(&rhs);
-    return sonia::range_equal()(litems, ritems);
+    return sonia::range_equal{}(litems.data(), data_end(litems), ritems.data(), data_end(ritems));
 }
 
 bool operator<(json_object const& lhs, json_object const& rhs)
@@ -138,7 +138,7 @@ bool operator<(json_object const& lhs, json_object const& rhs)
     using object_t = optimized_object_impl<holder_t>;
     auto litems = object_t::get(&lhs);
     auto ritems = object_t::get(&rhs);
-    return sonia::range_less()(litems, ritems);
+    return sonia::range_less{}(litems.data(), data_end(litems), ritems.data(), data_end(ritems));
 }
 
 bool json_value::get_bool() const

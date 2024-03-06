@@ -107,7 +107,7 @@ UEASC				    [\x80-\xff]|{U2}{U}|{U3}{U}{U}|{U4}{U}{U}{U}
 ASCALPHA				[a-zA-Z]
 ASCALPHANUM				[a-zA-Z0-9]
 DIGIT					[0-9]
-IDENTIFIER				[a-zA-Z_]+[a-zA-Z_1-9]*
+IDENTIFIER				[a-zA-Z_]+[a-zA-Z_0-9]*
 
 INTEGER                 [0-9]+
 EXPONENT                [eE][+-]?[0-9]+

@@ -29,7 +29,7 @@ public:
     void build(fs::path const&);
     void build(string_view code);
 
-    virtual void create(string_view type, string_view id) = 0;
+    //virtual void create(string_view type, string_view id) = 0;
     //virtual void set_property(string_view id, string_view propname, blob_result const& value) = 0;
 
     lang::beng::unit& unit() { return unit_; };

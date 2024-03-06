@@ -37,16 +37,16 @@ public:
         , is_const_ { is_const }
     {}
 
-    inline uint32_t index() const noexcept { return index_; }
+    inline intptr_t index() const noexcept { return index_; }
 
-    void set_index(size_t idx)
+    void set_index(intptr_t idx)
     {
-        index_ = static_cast<uint32_t>(idx);
+        index_ = static_cast<int32_t>(idx);
     }
    
 private:
-    uint32_t index_ : 31;
-    uint32_t is_const_ : 1;
+    int32_t index_ : 31;
+    int32_t is_const_ : 1;
 };
 
 }

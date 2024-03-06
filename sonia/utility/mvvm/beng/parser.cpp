@@ -6,7 +6,7 @@
 #include "sonia/config.hpp"
 #include "parser.hpp"
 
-#include "sonia/utility/number/decimal.ipp"
+#include "sonia/mp/decimal.ipp"
 #include "sonia/utility/parsers/utility.hpp"
 #include "sonia/utility/scope_exit.hpp"
 

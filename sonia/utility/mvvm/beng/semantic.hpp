@@ -12,7 +12,7 @@
 namespace sonia::lang::beng {
 
 class variable_entity;
-class procedure_entity;
+class functional_entity;
 
 namespace semantic {
 
@@ -22,7 +22,7 @@ struct set_variable { variable_entity const* entity; };
 
 struct invoke_function
 {
-    procedure_entity const* entity;
+    qname entity;
     uint32_t paramcount;
 };
 

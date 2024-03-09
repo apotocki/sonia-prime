@@ -3,8 +3,8 @@ Terminals unused in grammar
     COMMENT_BEGIN
     COMMENT_END
     OPERATOR_TERM
+    "`_`"
     "`->*`"
-    "`->`"
     "`~>`"
     "`.*`"
     "`++`"
@@ -41,7 +41,6 @@ Terminals unused in grammar
     "`$`"
     "`?`"
     "`#`"
-    FN
     NEW
     FOR
     VOID_
@@ -71,70 +70,98 @@ Grammar
 
     4 opt-decl: "`;`"
     5         | EXTERN VAR identifier "`:`" type-expr "`;`"
-    6         | enum-decl
-    7         | type-decl
-    8         | LET identifier ASSIGN expression "`;`"
-    9         | compound-expression "`;`"
+    6         | EXTERN FN qname "`(`" parameter-list-opt "`)`" "`;`"
+    7         | EXTERN FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`;`"
+    8         | enum-decl
+    9         | type-decl
+   10         | fn-decl
+   11         | LET identifier ASSIGN expression "`;`"
+   12         | compound-expression "`;`"
 
-   10 identifier: IDENTIFIER
+   13 infunction_declaration_any: %empty
+   14                           | infunction_declaration_any opt-infunction-decl
 
-   11 qname: DBLCOLON identifier
-   12      | identifier
-   13      | qname DBLCOLON identifier
+   15 opt-infunction-decl: "`;`"
+   16                    | LET identifier ASSIGN expression "`;`"
+   17                    | compound-expression "`;`"
 
-   14 enum-decl: ENUM qname "`{`" case-list-opt "`}`"
+   18 identifier: IDENTIFIER
 
-   15 case-list-opt: %empty
-   16              | case-list
+   19 qname: DBLCOLON identifier
+   20      | identifier
+   21      | qname DBLCOLON identifier
 
-   17 case-list: case-decl
-   18          | case-list "," case-decl
+   22 fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`{`" infunction_declaration_any "`}`"
+   23        | FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`{`" infunction_declaration_any "`}`"
 
-   19 case-decl: identifier
+   24 enum-decl: ENUM qname "`{`" case-list-opt "`}`"
 
-   20 type-decl: TYPE qname type-extension-any "`{`" parameter-list-opt "`}`"
+   25 case-list-opt: %empty
+   26              | case-list
 
-   21 type-extension-any: %empty
-   22                   | EXTENDS type-extension-list
+   27 case-list: case-decl
+   28          | case-list "," case-decl
 
-   23 type-extension-list: qname
-   24                    | type-extension-list "," qname
+   29 case-decl: identifier
 
-   25 parameter-list-opt: %empty
-   26                   | parameter-list
+   30 type-decl: TYPE qname type-extension-any "`{`" parameter-list-opt "`}`"
 
-   27 parameter-list: parameter-decl
-   28               | parameter-list "," parameter-decl
+   31 type-extension-any: %empty
+   32                   | EXTENDS type-extension-list
 
-   29 parameter-decl: identifier "`:`" type-expr
-   30               | "`_`" "`:`" type-expr
+   33 type-extension-list: qname
+   34                    | type-extension-list "," qname
 
-   31 type-expr: BOOL
-   32          | INT
-   33          | FLOAT
-   34          | qname
-   35          | type-expr "`[`" INTEGER "`]`"
-   36          | type-expr "`||`" type-expr
+   35 parameter-list-opt: %empty
+   36                   | parameter-list
 
-   37 compound-expression: qname "`(`" opt-named-expr-list-any "`)`"
-   38                    | expression ASSIGN expression
+   37 parameter-list: parameter-decl
+   38               | parameter-list "," parameter-decl
 
-   39 expression: INTEGER
-   40           | DECIMAL
-   41           | STRING
-   42           | "`.`" identifier
-   43           | qname
-   44           | "`(`" expression "`)`"
-   45           | compound-expression
+   39 parameter-decl: identifier "`:`" type-expr
+   40               | identifier "`:`" type-expr ASSIGN expression
+   41               | type-expr
+   42               | type-expr ASSIGN expression
 
-   46 opt-named-expr-list-any: %empty
-   47                        | opt-named-expr-list
+   43 type-expr: BOOL
+   44          | INT
+   45          | FLOAT
+   46          | STRING_WORD
+   47          | qname
+   48          | "`[`" type-expr "`]`"
+   49          | "`(`" opt-type-list "`)`"
+   50          | type-expr "`[`" INTEGER "`]`"
+   51          | type-expr "`||`" type-expr
+   52          | type-expr "`->`" type-expr
 
-   48 opt-named-expr-list: opt-named-expr
-   49                    | opt-named-expr-list "," opt-named-expr
+   53 opt-type-list: %empty
+   54              | type-expr
+   55              | opt-type-list "," type-expr
 
-   50 opt-named-expr: identifier "`:`" expression
-   51               | expression
+   56 compound-expression: qname "`(`" opt-named-expr-list-any "`)`"
+   57                    | expression ASSIGN expression
+
+   58 expression: INTEGER
+   59           | DECIMAL
+   60           | STRING
+   61           | "`.`" identifier
+   62           | qname
+   63           | "`(`" expression "`)`"
+   64           | "`[`" expression-list-any "`]`"
+   65           | compound-expression
+
+   66 expression-list-any: %empty
+   67                    | expression
+   68                    | expression-list-any "," expression
+
+   69 opt-named-expr-list-any: %empty
+   70                        | opt-named-expr-list
+
+   71 opt-named-expr-list: opt-named-expr
+   72                    | opt-named-expr-list "," opt-named-expr
+
+   73 opt-named-expr: identifier "`:`" expression
+   74               | expression
 
 
 Terminals, with rules where they appear
@@ -143,14 +170,14 @@ Terminals, with rules where they appear
     error (256)
     COMMENT_BEGIN (258)
     COMMENT_END (259)
-    STRING <sonia::string_view> (260) 41
-    IDENTIFIER <sonia::lang::beng::annotated_string_view> (261) 10
-    DECIMAL <sonia::decimal> (262) 40
-    INTEGER <int> (263) 35 39
+    STRING <sonia::string_view> (260) 60
+    IDENTIFIER <sonia::lang::beng::annotated_string_view> (261) 18
+    DECIMAL <sonia::decimal> (262) 59
+    INTEGER <int> (263) 50 58
     OPERATOR_TERM <sonia::string_view> (264)
-    "`_`" (265) 30
+    "`_`" (265)
     "`->*`" (266)
-    "`->`" (267)
+    "`->`" (267) 7 23 52
     "`~>`" (268)
     "`.*`" (269)
     "`++`" (270)
@@ -162,7 +189,7 @@ Terminals, with rules where they appear
     "`==`" (276)
     "`!=`" (277)
     "`&&`" (278)
-    "`||`" (279) 36
+    "`||`" (279) 51
     "`+=`" (280)
     "`-=`" (281)
     "`*=`" (282)
@@ -173,17 +200,17 @@ Terminals, with rules where they appear
     "`&=`" (287)
     "`|=`" (288)
     "`^=`" (289)
-    "`:`" (290) 5 29 30 50
-    "`(`" (291) 37 44
-    "`)`" (292) 37 44
-    "`{`" (293) 14 20
-    "`}`" (294) 14 20
-    "`[`" (295) 35
-    "`]`" (296) 35
+    "`:`" (290) 5 39 40 73
+    "`(`" (291) 6 7 22 23 49 56 63
+    "`)`" (292) 6 7 22 23 49 56 63
+    "`{`" (293) 22 23 24 30
+    "`}`" (294) 22 23 24 30
+    "`[`" (295) 48 50 64
+    "`]`" (296) 48 50 64
     "`<`" (297)
     "`>`" (298)
-    "`;`" (299) 4 5 8 9
-    "`.`" (300) 42
+    "`;`" (299) 4 5 6 7 11 12 15 16 17
+    "`.`" (300) 61
     "`+`" (301)
     "`-`" (302)
     "`*`" (303)
@@ -194,107 +221,123 @@ Terminals, with rules where they appear
     "`!`" (308)
     "`~`" (309)
     "`^`" (310)
-    "," (311) 18 24 28 49
+    "," (311) 28 34 38 55 68 72
     "`$`" (312)
     "`?`" (313)
     "`#`" (314)
-    LET (315) 8
+    LET (315) 11 16
     VAR (316) 5
-    FN (317)
-    NEW (318)
-    FOR (319)
-    VOID_ (320)
-    AUTO (321)
-    CONST_ (322)
-    USING (323)
-    THROW (324)
-    DELETE_ (325)
-    SIZEOF (326)
-    RETURN (327)
-    EXTERN (328) 5
-    PRIVATE (329)
-    TEMPLATE (330)
-    NAMESPACE (331)
-    LOWEST (332)
-    ASSIGN (333) 8 38
-    "`=`" (334)
-    DBLCOLON (335) 11 13
-    "`::`" (336)
-    ENUM (337) 14
-    TYPE (338) 20
-    EXTENDS (339) 22
-    BOOL (340) 31
-    INT (341) 32
-    FLOAT (342) 33
+    NEW (317)
+    FOR (318)
+    VOID_ (319)
+    AUTO (320)
+    CONST_ (321)
+    USING (322)
+    THROW (323)
+    DELETE_ (324)
+    SIZEOF (325)
+    RETURN (326)
+    EXTERN (327) 5 6 7
+    PRIVATE (328)
+    TEMPLATE (329)
+    NAMESPACE (330)
+    LOWEST (331)
+    ASSIGN (332) 11 16 40 42 57
+    "`=`" (333)
+    DBLCOLON (334) 19 21
+    "`::`" (335)
+    FN (336) 6 7 22 23
+    ENUM (337) 24
+    TYPE (338) 30
+    EXTENDS (339) 32
+    BOOL (340) 43
+    INT (341) 44
+    FLOAT (342) 45
+    STRING_WORD (343) 46
 
 
 Nonterminals, with rules where they appear
 
-    $accept (88)
+    $accept (89)
         on left: 0
-    begin (89)
+    begin (90)
         on left: 1
         on right: 0
-    declaration_any <std::vector<declaration_t>> (90)
+    declaration_any <std::vector<declaration_t>> (91)
         on left: 2 3
         on right: 1 3
-    opt-decl <declaration_t> (91)
-        on left: 4 5 6 7 8 9
+    opt-decl <declaration_t> (92)
+        on left: 4 5 6 7 8 9 10 11 12
         on right: 3
-    identifier <sonia::lang::beng::annotated_identifier> (92)
-        on left: 10
-        on right: 5 8 11 12 13 19 29 42 50
-    qname <sonia::lang::beng::qname> (93)
-        on left: 11 12 13
-        on right: 13 14 20 23 24 34 37 43
-    enum-decl <declaration_t> (94)
-        on left: 14
-        on right: 6
-    case-list-opt <std::vector<sonia::lang::identifier>> (95)
-        on left: 15 16
+    infunction_declaration_any <std::vector<infunction_declaration_t>> (93)
+        on left: 13 14
+        on right: 14 22 23
+    opt-infunction-decl <infunction_declaration_t> (94)
+        on left: 15 16 17
         on right: 14
-    case-list <std::vector<sonia::lang::identifier>> (96)
-        on left: 17 18
-        on right: 16 18
-    case-decl <sonia::lang::identifier> (97)
-        on left: 19
-        on right: 17 18
-    type-decl <declaration_t> (98)
-        on left: 20
-        on right: 7
-    type-extension-any <extension_list_t> (99)
-        on left: 21 22
-        on right: 20
-    type-extension-list <extension_list_t> (100)
-        on left: 23 24
-        on right: 22 24
-    parameter-list-opt <parameter_list_t> (101)
+    identifier <sonia::lang::beng::annotated_identifier> (95)
+        on left: 18
+        on right: 5 11 16 19 20 21 29 39 40 61 73
+    qname <sonia::lang::beng::qname> (96)
+        on left: 19 20 21
+        on right: 6 7 21 22 23 24 30 33 34 47 56 62
+    fn-decl <fn_decl_t> (97)
+        on left: 22 23
+        on right: 10
+    enum-decl <enum_decl> (98)
+        on left: 24
+        on right: 8
+    case-list-opt <std::vector<sonia::lang::identifier>> (99)
         on left: 25 26
-        on right: 20
-    parameter-list <parameter_list_t> (102)
+        on right: 24
+    case-list <std::vector<sonia::lang::identifier>> (100)
         on left: 27 28
         on right: 26 28
-    parameter-decl <parameter_t> (103)
-        on left: 29 30
+    case-decl <sonia::lang::identifier> (101)
+        on left: 29
         on right: 27 28
-    type-expr <beng_generic_type> (104)
-        on left: 31 32 33 34 35 36
-        on right: 5 29 30 35 36
-    compound-expression <expression_t> (105)
+    type-decl <type_decl> (102)
+        on left: 30
+        on right: 9
+    type-extension-any <extension_list_t> (103)
+        on left: 31 32
+        on right: 30
+    type-extension-list <extension_list_t> (104)
+        on left: 33 34
+        on right: 32 34
+    parameter-list-opt <parameter_list_t> (105)
+        on left: 35 36
+        on right: 6 7 22 23 30
+    parameter-list <parameter_list_t> (106)
         on left: 37 38
-        on right: 9 45
-    expression <expression_t> (106)
-        on left: 39 40 41 42 43 44 45
-        on right: 8 38 44 50 51
-    opt-named-expr-list-any <named_expression_term_list_t> (107)
-        on left: 46 47
-        on right: 37
-    opt-named-expr-list <named_expression_term_list_t> (108)
-        on left: 48 49
-        on right: 47 49
-    opt-named-expr <named_expression_term_t> (109)
-        on left: 50 51
-        on right: 48 49
+        on right: 36 38
+    parameter-decl <parameter_t> (107)
+        on left: 39 40 41 42
+        on right: 37 38
+    type-expr <beng_generic_type> (108)
+        on left: 43 44 45 46 47 48 49 50 51 52
+        on right: 5 7 23 39 40 41 42 48 50 51 52 54 55
+    opt-type-list <beng_tuple_t> (109)
+        on left: 53 54 55
+        on right: 49 55
+    compound-expression <expression_t> (110)
+        on left: 56 57
+        on right: 12 17 65
+    expression <expression_t> (111)
+        on left: 58 59 60 61 62 63 64 65
+        on right: 11 16 40 42 57 63 67 68 73 74
+    expression-list-any <expression_list_t> (112)
+        on left: 66 67 68
+        on right: 64 68
+    opt-named-expr-list-any <named_expression_term_list_t> (113)
+        on left: 69 70
+        on right: 56
+    opt-named-expr-list <named_expression_term_list_t> (114)
+        on left: 71 72
+        on right: 70 72
+    opt-named-expr <named_expression_term_t> (115)
+        on left: 73 74
+        on right: 71 72
 
 
 State 0
@@ -325,21 +368,24 @@ State 2
     DECIMAL        shift, and go to state 7
     INTEGER        shift, and go to state 8
     "`(`"          shift, and go to state 9
-    "`;`"          shift, and go to state 10
-    "`.`"          shift, and go to state 11
-    LET            shift, and go to state 12
-    EXTERN         shift, and go to state 13
-    DBLCOLON       shift, and go to state 14
-    ENUM           shift, and go to state 15
-    TYPE           shift, and go to state 16
+    "`[`"          shift, and go to state 10
+    "`;`"          shift, and go to state 11
+    "`.`"          shift, and go to state 12
+    LET            shift, and go to state 13
+    EXTERN         shift, and go to state 14
+    DBLCOLON       shift, and go to state 15
+    FN             shift, and go to state 16
+    ENUM           shift, and go to state 17
+    TYPE           shift, and go to state 18
 
-    opt-decl             go to state 17
-    identifier           go to state 18
-    qname                go to state 19
-    enum-decl            go to state 20
-    type-decl            go to state 21
-    compound-expression  go to state 22
-    expression           go to state 23
+    opt-decl             go to state 19
+    identifier           go to state 20
+    qname                go to state 21
+    fn-decl              go to state 22
+    enum-decl            go to state 23
+    type-decl            go to state 24
+    compound-expression  go to state 25
+    expression           go to state 26
 
 
 State 3
@@ -358,264 +404,267 @@ State 4
 
 State 5
 
-   41 expression: STRING .
+   60 expression: STRING .
 
-    $default  reduce using rule 41 (expression)
+    $default  reduce using rule 60 (expression)
 
 
 State 6
 
-   10 identifier: IDENTIFIER .
+   18 identifier: IDENTIFIER .
 
-    $default  reduce using rule 10 (identifier)
+    $default  reduce using rule 18 (identifier)
 
 
 State 7
 
-   40 expression: DECIMAL .
+   59 expression: DECIMAL .
 
-    $default  reduce using rule 40 (expression)
+    $default  reduce using rule 59 (expression)
 
 
 State 8
 
-   39 expression: INTEGER .
+   58 expression: INTEGER .
 
-    $default  reduce using rule 39 (expression)
+    $default  reduce using rule 58 (expression)
 
 
 State 9
 
-   44 expression: "`(`" . expression "`)`"
+   63 expression: "`(`" . expression "`)`"
 
     STRING      shift, and go to state 5
     IDENTIFIER  shift, and go to state 6
     DECIMAL     shift, and go to state 7
     INTEGER     shift, and go to state 8
     "`(`"       shift, and go to state 9
-    "`.`"       shift, and go to state 11
-    DBLCOLON    shift, and go to state 14
+    "`[`"       shift, and go to state 10
+    "`.`"       shift, and go to state 12
+    DBLCOLON    shift, and go to state 15
 
-    identifier           go to state 18
-    qname                go to state 19
-    compound-expression  go to state 24
-    expression           go to state 25
+    identifier           go to state 20
+    qname                go to state 21
+    compound-expression  go to state 27
+    expression           go to state 28
 
 
 State 10
+
+   64 expression: "`[`" . expression-list-any "`]`"
+
+    STRING      shift, and go to state 5
+    IDENTIFIER  shift, and go to state 6
+    DECIMAL     shift, and go to state 7
+    INTEGER     shift, and go to state 8
+    "`(`"       shift, and go to state 9
+    "`[`"       shift, and go to state 10
+    "`.`"       shift, and go to state 12
+    DBLCOLON    shift, and go to state 15
+
+    $default  reduce using rule 66 (expression-list-any)
+
+    identifier           go to state 20
+    qname                go to state 21
+    compound-expression  go to state 27
+    expression           go to state 29
+    expression-list-any  go to state 30
+
+
+State 11
 
     4 opt-decl: "`;`" .
 
     $default  reduce using rule 4 (opt-decl)
 
 
-State 11
-
-   42 expression: "`.`" . identifier
-
-    IDENTIFIER  shift, and go to state 6
-
-    identifier  go to state 26
-
-
 State 12
 
-    8 opt-decl: LET . identifier ASSIGN expression "`;`"
+   61 expression: "`.`" . identifier
 
     IDENTIFIER  shift, and go to state 6
 
-    identifier  go to state 27
+    identifier  go to state 31
 
 
 State 13
 
-    5 opt-decl: EXTERN . VAR identifier "`:`" type-expr "`;`"
+   11 opt-decl: LET . identifier ASSIGN expression "`;`"
 
-    VAR  shift, and go to state 28
+    IDENTIFIER  shift, and go to state 6
+
+    identifier  go to state 32
 
 
 State 14
 
-   11 qname: DBLCOLON . identifier
+    5 opt-decl: EXTERN . VAR identifier "`:`" type-expr "`;`"
+    6         | EXTERN . FN qname "`(`" parameter-list-opt "`)`" "`;`"
+    7         | EXTERN . FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`;`"
 
-    IDENTIFIER  shift, and go to state 6
-
-    identifier  go to state 29
+    VAR  shift, and go to state 33
+    FN   shift, and go to state 34
 
 
 State 15
 
-   14 enum-decl: ENUM . qname "`{`" case-list-opt "`}`"
+   19 qname: DBLCOLON . identifier
 
     IDENTIFIER  shift, and go to state 6
-    DBLCOLON    shift, and go to state 14
 
-    identifier  go to state 18
-    qname       go to state 30
+    identifier  go to state 35
 
 
 State 16
 
-   20 type-decl: TYPE . qname type-extension-any "`{`" parameter-list-opt "`}`"
+   22 fn-decl: FN . qname "`(`" parameter-list-opt "`)`" "`{`" infunction_declaration_any "`}`"
+   23        | FN . qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`{`" infunction_declaration_any "`}`"
 
     IDENTIFIER  shift, and go to state 6
-    DBLCOLON    shift, and go to state 14
+    DBLCOLON    shift, and go to state 15
 
-    identifier  go to state 18
-    qname       go to state 31
+    identifier  go to state 20
+    qname       go to state 36
 
 
 State 17
+
+   24 enum-decl: ENUM . qname "`{`" case-list-opt "`}`"
+
+    IDENTIFIER  shift, and go to state 6
+    DBLCOLON    shift, and go to state 15
+
+    identifier  go to state 20
+    qname       go to state 37
+
+
+State 18
+
+   30 type-decl: TYPE . qname type-extension-any "`{`" parameter-list-opt "`}`"
+
+    IDENTIFIER  shift, and go to state 6
+    DBLCOLON    shift, and go to state 15
+
+    identifier  go to state 20
+    qname       go to state 38
+
+
+State 19
 
     3 declaration_any: declaration_any opt-decl .
 
     $default  reduce using rule 3 (declaration_any)
 
 
-State 18
-
-   12 qname: identifier .
-
-    $default  reduce using rule 12 (qname)
-
-
-State 19
-
-   13 qname: qname . DBLCOLON identifier
-   37 compound-expression: qname . "`(`" opt-named-expr-list-any "`)`"
-   43 expression: qname .
-
-    "`(`"     shift, and go to state 32
-    DBLCOLON  shift, and go to state 33
-
-    $default  reduce using rule 43 (expression)
-
-
 State 20
 
-    6 opt-decl: enum-decl .
+   20 qname: identifier .
 
-    $default  reduce using rule 6 (opt-decl)
+    $default  reduce using rule 20 (qname)
 
 
 State 21
 
-    7 opt-decl: type-decl .
+   21 qname: qname . DBLCOLON identifier
+   56 compound-expression: qname . "`(`" opt-named-expr-list-any "`)`"
+   62 expression: qname .
 
-    $default  reduce using rule 7 (opt-decl)
+    "`(`"     shift, and go to state 39
+    DBLCOLON  shift, and go to state 40
+
+    $default  reduce using rule 62 (expression)
 
 
 State 22
 
-    9 opt-decl: compound-expression . "`;`"
-   45 expression: compound-expression .
+   10 opt-decl: fn-decl .
 
-    "`;`"  shift, and go to state 34
-
-    $default  reduce using rule 45 (expression)
+    $default  reduce using rule 10 (opt-decl)
 
 
 State 23
 
-   38 compound-expression: expression . ASSIGN expression
+    8 opt-decl: enum-decl .
 
-    ASSIGN  shift, and go to state 35
+    $default  reduce using rule 8 (opt-decl)
 
 
 State 24
 
-   45 expression: compound-expression .
+    9 opt-decl: type-decl .
 
-    $default  reduce using rule 45 (expression)
+    $default  reduce using rule 9 (opt-decl)
 
 
 State 25
 
-   38 compound-expression: expression . ASSIGN expression
-   44 expression: "`(`" expression . "`)`"
+   12 opt-decl: compound-expression . "`;`"
+   65 expression: compound-expression .
 
-    "`)`"   shift, and go to state 36
-    ASSIGN  shift, and go to state 35
+    "`;`"  shift, and go to state 41
+
+    $default  reduce using rule 65 (expression)
 
 
 State 26
 
-   42 expression: "`.`" identifier .
+   57 compound-expression: expression . ASSIGN expression
 
-    $default  reduce using rule 42 (expression)
+    ASSIGN  shift, and go to state 42
 
 
 State 27
 
-    8 opt-decl: LET identifier . ASSIGN expression "`;`"
+   65 expression: compound-expression .
 
-    ASSIGN  shift, and go to state 37
+    $default  reduce using rule 65 (expression)
 
 
 State 28
 
-    5 opt-decl: EXTERN VAR . identifier "`:`" type-expr "`;`"
+   57 compound-expression: expression . ASSIGN expression
+   63 expression: "`(`" expression . "`)`"
 
-    IDENTIFIER  shift, and go to state 6
-
-    identifier  go to state 38
+    "`)`"   shift, and go to state 43
+    ASSIGN  shift, and go to state 42
 
 
 State 29
 
-   11 qname: DBLCOLON identifier .
+   57 compound-expression: expression . ASSIGN expression
+   67 expression-list-any: expression .
 
-    $default  reduce using rule 11 (qname)
+    ASSIGN  shift, and go to state 42
+
+    $default  reduce using rule 67 (expression-list-any)
 
 
 State 30
 
-   13 qname: qname . DBLCOLON identifier
-   14 enum-decl: ENUM qname . "`{`" case-list-opt "`}`"
+   64 expression: "`[`" expression-list-any . "`]`"
+   68 expression-list-any: expression-list-any . "," expression
 
-    "`{`"     shift, and go to state 39
-    DBLCOLON  shift, and go to state 33
+    "`]`"  shift, and go to state 44
+    ","    shift, and go to state 45
 
 
 State 31
 
-   13 qname: qname . DBLCOLON identifier
-   20 type-decl: TYPE qname . type-extension-any "`{`" parameter-list-opt "`}`"
+   61 expression: "`.`" identifier .
 
-    DBLCOLON  shift, and go to state 33
-    EXTENDS   shift, and go to state 40
-
-    $default  reduce using rule 21 (type-extension-any)
-
-    type-extension-any  go to state 41
+    $default  reduce using rule 61 (expression)
 
 
 State 32
 
-   37 compound-expression: qname "`(`" . opt-named-expr-list-any "`)`"
+   11 opt-decl: LET identifier . ASSIGN expression "`;`"
 
-    STRING      shift, and go to state 5
-    IDENTIFIER  shift, and go to state 6
-    DECIMAL     shift, and go to state 7
-    INTEGER     shift, and go to state 8
-    "`(`"       shift, and go to state 9
-    "`.`"       shift, and go to state 11
-    DBLCOLON    shift, and go to state 14
-
-    $default  reduce using rule 46 (opt-named-expr-list-any)
-
-    identifier               go to state 42
-    qname                    go to state 19
-    compound-expression      go to state 24
-    expression               go to state 43
-    opt-named-expr-list-any  go to state 44
-    opt-named-expr-list      go to state 45
-    opt-named-expr           go to state 46
+    ASSIGN  shift, and go to state 46
 
 
 State 33
 
-   13 qname: qname DBLCOLON . identifier
+    5 opt-decl: EXTERN VAR . identifier "`:`" type-expr "`;`"
 
     IDENTIFIER  shift, and go to state 6
 
@@ -624,566 +673,1254 @@ State 33
 
 State 34
 
-    9 opt-decl: compound-expression "`;`" .
+    6 opt-decl: EXTERN FN . qname "`(`" parameter-list-opt "`)`" "`;`"
+    7         | EXTERN FN . qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`;`"
 
-    $default  reduce using rule 9 (opt-decl)
+    IDENTIFIER  shift, and go to state 6
+    DBLCOLON    shift, and go to state 15
+
+    identifier  go to state 20
+    qname       go to state 48
 
 
 State 35
 
-   38 compound-expression: expression ASSIGN . expression
+   19 qname: DBLCOLON identifier .
 
-    STRING      shift, and go to state 5
-    IDENTIFIER  shift, and go to state 6
-    DECIMAL     shift, and go to state 7
-    INTEGER     shift, and go to state 8
-    "`(`"       shift, and go to state 9
-    "`.`"       shift, and go to state 11
-    DBLCOLON    shift, and go to state 14
-
-    identifier           go to state 18
-    qname                go to state 19
-    compound-expression  go to state 24
-    expression           go to state 48
+    $default  reduce using rule 19 (qname)
 
 
 State 36
 
-   44 expression: "`(`" expression "`)`" .
+   21 qname: qname . DBLCOLON identifier
+   22 fn-decl: FN qname . "`(`" parameter-list-opt "`)`" "`{`" infunction_declaration_any "`}`"
+   23        | FN qname . "`(`" parameter-list-opt "`)`" "`->`" type-expr "`{`" infunction_declaration_any "`}`"
 
-    $default  reduce using rule 44 (expression)
+    "`(`"     shift, and go to state 49
+    DBLCOLON  shift, and go to state 40
 
 
 State 37
 
-    8 opt-decl: LET identifier ASSIGN . expression "`;`"
+   21 qname: qname . DBLCOLON identifier
+   24 enum-decl: ENUM qname . "`{`" case-list-opt "`}`"
 
-    STRING      shift, and go to state 5
-    IDENTIFIER  shift, and go to state 6
-    DECIMAL     shift, and go to state 7
-    INTEGER     shift, and go to state 8
-    "`(`"       shift, and go to state 9
-    "`.`"       shift, and go to state 11
-    DBLCOLON    shift, and go to state 14
-
-    identifier           go to state 18
-    qname                go to state 19
-    compound-expression  go to state 24
-    expression           go to state 49
+    "`{`"     shift, and go to state 50
+    DBLCOLON  shift, and go to state 40
 
 
 State 38
 
-    5 opt-decl: EXTERN VAR identifier . "`:`" type-expr "`;`"
+   21 qname: qname . DBLCOLON identifier
+   30 type-decl: TYPE qname . type-extension-any "`{`" parameter-list-opt "`}`"
 
-    "`:`"  shift, and go to state 50
+    DBLCOLON  shift, and go to state 40
+    EXTENDS   shift, and go to state 51
+
+    $default  reduce using rule 31 (type-extension-any)
+
+    type-extension-any  go to state 52
 
 
 State 39
 
-   14 enum-decl: ENUM qname "`{`" . case-list-opt "`}`"
+   56 compound-expression: qname "`(`" . opt-named-expr-list-any "`)`"
 
+    STRING      shift, and go to state 5
     IDENTIFIER  shift, and go to state 6
+    DECIMAL     shift, and go to state 7
+    INTEGER     shift, and go to state 8
+    "`(`"       shift, and go to state 9
+    "`[`"       shift, and go to state 10
+    "`.`"       shift, and go to state 12
+    DBLCOLON    shift, and go to state 15
 
-    $default  reduce using rule 15 (case-list-opt)
+    $default  reduce using rule 69 (opt-named-expr-list-any)
 
-    identifier     go to state 51
-    case-list-opt  go to state 52
-    case-list      go to state 53
-    case-decl      go to state 54
+    identifier               go to state 53
+    qname                    go to state 21
+    compound-expression      go to state 27
+    expression               go to state 54
+    opt-named-expr-list-any  go to state 55
+    opt-named-expr-list      go to state 56
+    opt-named-expr           go to state 57
 
 
 State 40
 
-   22 type-extension-any: EXTENDS . type-extension-list
+   21 qname: qname DBLCOLON . identifier
 
     IDENTIFIER  shift, and go to state 6
-    DBLCOLON    shift, and go to state 14
 
-    identifier           go to state 18
-    qname                go to state 55
-    type-extension-list  go to state 56
+    identifier  go to state 58
 
 
 State 41
 
-   20 type-decl: TYPE qname type-extension-any . "`{`" parameter-list-opt "`}`"
+   12 opt-decl: compound-expression "`;`" .
 
-    "`{`"  shift, and go to state 57
+    $default  reduce using rule 12 (opt-decl)
 
 
 State 42
 
-   12 qname: identifier .
-   50 opt-named-expr: identifier . "`:`" expression
+   57 compound-expression: expression ASSIGN . expression
 
-    "`:`"  shift, and go to state 58
+    STRING      shift, and go to state 5
+    IDENTIFIER  shift, and go to state 6
+    DECIMAL     shift, and go to state 7
+    INTEGER     shift, and go to state 8
+    "`(`"       shift, and go to state 9
+    "`[`"       shift, and go to state 10
+    "`.`"       shift, and go to state 12
+    DBLCOLON    shift, and go to state 15
 
-    $default  reduce using rule 12 (qname)
+    identifier           go to state 20
+    qname                go to state 21
+    compound-expression  go to state 27
+    expression           go to state 59
 
 
 State 43
 
-   38 compound-expression: expression . ASSIGN expression
-   51 opt-named-expr: expression .
+   63 expression: "`(`" expression "`)`" .
 
-    ASSIGN  shift, and go to state 35
-
-    $default  reduce using rule 51 (opt-named-expr)
+    $default  reduce using rule 63 (expression)
 
 
 State 44
 
-   37 compound-expression: qname "`(`" opt-named-expr-list-any . "`)`"
+   64 expression: "`[`" expression-list-any "`]`" .
 
-    "`)`"  shift, and go to state 59
+    $default  reduce using rule 64 (expression)
 
 
 State 45
 
-   47 opt-named-expr-list-any: opt-named-expr-list .
-   49 opt-named-expr-list: opt-named-expr-list . "," opt-named-expr
+   68 expression-list-any: expression-list-any "," . expression
 
-    ","  shift, and go to state 60
+    STRING      shift, and go to state 5
+    IDENTIFIER  shift, and go to state 6
+    DECIMAL     shift, and go to state 7
+    INTEGER     shift, and go to state 8
+    "`(`"       shift, and go to state 9
+    "`[`"       shift, and go to state 10
+    "`.`"       shift, and go to state 12
+    DBLCOLON    shift, and go to state 15
 
-    $default  reduce using rule 47 (opt-named-expr-list-any)
+    identifier           go to state 20
+    qname                go to state 21
+    compound-expression  go to state 27
+    expression           go to state 60
 
 
 State 46
 
-   48 opt-named-expr-list: opt-named-expr .
+   11 opt-decl: LET identifier ASSIGN . expression "`;`"
 
-    $default  reduce using rule 48 (opt-named-expr-list)
+    STRING      shift, and go to state 5
+    IDENTIFIER  shift, and go to state 6
+    DECIMAL     shift, and go to state 7
+    INTEGER     shift, and go to state 8
+    "`(`"       shift, and go to state 9
+    "`[`"       shift, and go to state 10
+    "`.`"       shift, and go to state 12
+    DBLCOLON    shift, and go to state 15
+
+    identifier           go to state 20
+    qname                go to state 21
+    compound-expression  go to state 27
+    expression           go to state 61
 
 
 State 47
 
-   13 qname: qname DBLCOLON identifier .
+    5 opt-decl: EXTERN VAR identifier . "`:`" type-expr "`;`"
 
-    $default  reduce using rule 13 (qname)
+    "`:`"  shift, and go to state 62
 
 
 State 48
 
-   38 compound-expression: expression . ASSIGN expression
-   38                    | expression ASSIGN expression .
+    6 opt-decl: EXTERN FN qname . "`(`" parameter-list-opt "`)`" "`;`"
+    7         | EXTERN FN qname . "`(`" parameter-list-opt "`)`" "`->`" type-expr "`;`"
+   21 qname: qname . DBLCOLON identifier
 
-    ASSIGN  shift, and go to state 35
-
-    $default  reduce using rule 38 (compound-expression)
+    "`(`"     shift, and go to state 63
+    DBLCOLON  shift, and go to state 40
 
 
 State 49
 
-    8 opt-decl: LET identifier ASSIGN expression . "`;`"
-   38 compound-expression: expression . ASSIGN expression
+   22 fn-decl: FN qname "`(`" . parameter-list-opt "`)`" "`{`" infunction_declaration_any "`}`"
+   23        | FN qname "`(`" . parameter-list-opt "`)`" "`->`" type-expr "`{`" infunction_declaration_any "`}`"
 
-    "`;`"   shift, and go to state 61
-    ASSIGN  shift, and go to state 35
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    $default  reduce using rule 35 (parameter-list-opt)
+
+    identifier          go to state 70
+    qname               go to state 71
+    parameter-list-opt  go to state 72
+    parameter-list      go to state 73
+    parameter-decl      go to state 74
+    type-expr           go to state 75
 
 
 State 50
 
-    5 opt-decl: EXTERN VAR identifier "`:`" . type-expr "`;`"
+   24 enum-decl: ENUM qname "`{`" . case-list-opt "`}`"
 
     IDENTIFIER  shift, and go to state 6
-    DBLCOLON    shift, and go to state 14
-    BOOL        shift, and go to state 62
-    INT         shift, and go to state 63
-    FLOAT       shift, and go to state 64
 
-    identifier  go to state 18
-    qname       go to state 65
-    type-expr   go to state 66
+    $default  reduce using rule 25 (case-list-opt)
+
+    identifier     go to state 76
+    case-list-opt  go to state 77
+    case-list      go to state 78
+    case-decl      go to state 79
 
 
 State 51
 
-   19 case-decl: identifier .
+   32 type-extension-any: EXTENDS . type-extension-list
 
-    $default  reduce using rule 19 (case-decl)
+    IDENTIFIER  shift, and go to state 6
+    DBLCOLON    shift, and go to state 15
+
+    identifier           go to state 20
+    qname                go to state 80
+    type-extension-list  go to state 81
 
 
 State 52
 
-   14 enum-decl: ENUM qname "`{`" case-list-opt . "`}`"
+   30 type-decl: TYPE qname type-extension-any . "`{`" parameter-list-opt "`}`"
 
-    "`}`"  shift, and go to state 67
+    "`{`"  shift, and go to state 82
 
 
 State 53
 
-   16 case-list-opt: case-list .
-   18 case-list: case-list . "," case-decl
+   20 qname: identifier .
+   73 opt-named-expr: identifier . "`:`" expression
 
-    ","  shift, and go to state 68
+    "`:`"  shift, and go to state 83
 
-    $default  reduce using rule 16 (case-list-opt)
+    $default  reduce using rule 20 (qname)
 
 
 State 54
 
-   17 case-list: case-decl .
+   57 compound-expression: expression . ASSIGN expression
+   74 opt-named-expr: expression .
 
-    $default  reduce using rule 17 (case-list)
+    ASSIGN  shift, and go to state 42
+
+    $default  reduce using rule 74 (opt-named-expr)
 
 
 State 55
 
-   13 qname: qname . DBLCOLON identifier
-   23 type-extension-list: qname .
+   56 compound-expression: qname "`(`" opt-named-expr-list-any . "`)`"
 
-    DBLCOLON  shift, and go to state 33
-
-    $default  reduce using rule 23 (type-extension-list)
+    "`)`"  shift, and go to state 84
 
 
 State 56
 
-   22 type-extension-any: EXTENDS type-extension-list .
-   24 type-extension-list: type-extension-list . "," qname
+   70 opt-named-expr-list-any: opt-named-expr-list .
+   72 opt-named-expr-list: opt-named-expr-list . "," opt-named-expr
 
-    ","  shift, and go to state 69
+    ","  shift, and go to state 85
 
-    $default  reduce using rule 22 (type-extension-any)
+    $default  reduce using rule 70 (opt-named-expr-list-any)
 
 
 State 57
 
-   20 type-decl: TYPE qname type-extension-any "`{`" . parameter-list-opt "`}`"
+   71 opt-named-expr-list: opt-named-expr .
 
-    IDENTIFIER  shift, and go to state 6
-    "`_`"       shift, and go to state 70
-
-    $default  reduce using rule 25 (parameter-list-opt)
-
-    identifier          go to state 71
-    parameter-list-opt  go to state 72
-    parameter-list      go to state 73
-    parameter-decl      go to state 74
+    $default  reduce using rule 71 (opt-named-expr-list)
 
 
 State 58
 
-   50 opt-named-expr: identifier "`:`" . expression
+   21 qname: qname DBLCOLON identifier .
 
-    STRING      shift, and go to state 5
-    IDENTIFIER  shift, and go to state 6
-    DECIMAL     shift, and go to state 7
-    INTEGER     shift, and go to state 8
-    "`(`"       shift, and go to state 9
-    "`.`"       shift, and go to state 11
-    DBLCOLON    shift, and go to state 14
-
-    identifier           go to state 18
-    qname                go to state 19
-    compound-expression  go to state 24
-    expression           go to state 75
+    $default  reduce using rule 21 (qname)
 
 
 State 59
 
-   37 compound-expression: qname "`(`" opt-named-expr-list-any "`)`" .
+   57 compound-expression: expression . ASSIGN expression
+   57                    | expression ASSIGN expression .
 
-    $default  reduce using rule 37 (compound-expression)
+    ASSIGN  shift, and go to state 42
+
+    $default  reduce using rule 57 (compound-expression)
 
 
 State 60
 
-   49 opt-named-expr-list: opt-named-expr-list "," . opt-named-expr
+   57 compound-expression: expression . ASSIGN expression
+   68 expression-list-any: expression-list-any "," expression .
+
+    ASSIGN  shift, and go to state 42
+
+    $default  reduce using rule 68 (expression-list-any)
+
+
+State 61
+
+   11 opt-decl: LET identifier ASSIGN expression . "`;`"
+   57 compound-expression: expression . ASSIGN expression
+
+    "`;`"   shift, and go to state 86
+    ASSIGN  shift, and go to state 42
+
+
+State 62
+
+    5 opt-decl: EXTERN VAR identifier "`:`" . type-expr "`;`"
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    identifier  go to state 20
+    qname       go to state 71
+    type-expr   go to state 87
+
+
+State 63
+
+    6 opt-decl: EXTERN FN qname "`(`" . parameter-list-opt "`)`" "`;`"
+    7         | EXTERN FN qname "`(`" . parameter-list-opt "`)`" "`->`" type-expr "`;`"
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    $default  reduce using rule 35 (parameter-list-opt)
+
+    identifier          go to state 70
+    qname               go to state 71
+    parameter-list-opt  go to state 88
+    parameter-list      go to state 73
+    parameter-decl      go to state 74
+    type-expr           go to state 75
+
+
+State 64
+
+   49 type-expr: "`(`" . opt-type-list "`)`"
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    $default  reduce using rule 53 (opt-type-list)
+
+    identifier     go to state 20
+    qname          go to state 71
+    type-expr      go to state 89
+    opt-type-list  go to state 90
+
+
+State 65
+
+   48 type-expr: "`[`" . type-expr "`]`"
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    identifier  go to state 20
+    qname       go to state 71
+    type-expr   go to state 91
+
+
+State 66
+
+   43 type-expr: BOOL .
+
+    $default  reduce using rule 43 (type-expr)
+
+
+State 67
+
+   44 type-expr: INT .
+
+    $default  reduce using rule 44 (type-expr)
+
+
+State 68
+
+   45 type-expr: FLOAT .
+
+    $default  reduce using rule 45 (type-expr)
+
+
+State 69
+
+   46 type-expr: STRING_WORD .
+
+    $default  reduce using rule 46 (type-expr)
+
+
+State 70
+
+   20 qname: identifier .
+   39 parameter-decl: identifier . "`:`" type-expr
+   40               | identifier . "`:`" type-expr ASSIGN expression
+
+    "`:`"  shift, and go to state 92
+
+    $default  reduce using rule 20 (qname)
+
+
+State 71
+
+   21 qname: qname . DBLCOLON identifier
+   47 type-expr: qname .
+
+    DBLCOLON  shift, and go to state 40
+
+    $default  reduce using rule 47 (type-expr)
+
+
+State 72
+
+   22 fn-decl: FN qname "`(`" parameter-list-opt . "`)`" "`{`" infunction_declaration_any "`}`"
+   23        | FN qname "`(`" parameter-list-opt . "`)`" "`->`" type-expr "`{`" infunction_declaration_any "`}`"
+
+    "`)`"  shift, and go to state 93
+
+
+State 73
+
+   36 parameter-list-opt: parameter-list .
+   38 parameter-list: parameter-list . "," parameter-decl
+
+    ","  shift, and go to state 94
+
+    $default  reduce using rule 36 (parameter-list-opt)
+
+
+State 74
+
+   37 parameter-list: parameter-decl .
+
+    $default  reduce using rule 37 (parameter-list)
+
+
+State 75
+
+   41 parameter-decl: type-expr .
+   42               | type-expr . ASSIGN expression
+   50 type-expr: type-expr . "`[`" INTEGER "`]`"
+   51          | type-expr . "`||`" type-expr
+   52          | type-expr . "`->`" type-expr
+
+    "`->`"  shift, and go to state 95
+    "`||`"  shift, and go to state 96
+    "`[`"   shift, and go to state 97
+    ASSIGN  shift, and go to state 98
+
+    $default  reduce using rule 41 (parameter-decl)
+
+
+State 76
+
+   29 case-decl: identifier .
+
+    $default  reduce using rule 29 (case-decl)
+
+
+State 77
+
+   24 enum-decl: ENUM qname "`{`" case-list-opt . "`}`"
+
+    "`}`"  shift, and go to state 99
+
+
+State 78
+
+   26 case-list-opt: case-list .
+   28 case-list: case-list . "," case-decl
+
+    ","  shift, and go to state 100
+
+    $default  reduce using rule 26 (case-list-opt)
+
+
+State 79
+
+   27 case-list: case-decl .
+
+    $default  reduce using rule 27 (case-list)
+
+
+State 80
+
+   21 qname: qname . DBLCOLON identifier
+   33 type-extension-list: qname .
+
+    DBLCOLON  shift, and go to state 40
+
+    $default  reduce using rule 33 (type-extension-list)
+
+
+State 81
+
+   32 type-extension-any: EXTENDS type-extension-list .
+   34 type-extension-list: type-extension-list . "," qname
+
+    ","  shift, and go to state 101
+
+    $default  reduce using rule 32 (type-extension-any)
+
+
+State 82
+
+   30 type-decl: TYPE qname type-extension-any "`{`" . parameter-list-opt "`}`"
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    $default  reduce using rule 35 (parameter-list-opt)
+
+    identifier          go to state 70
+    qname               go to state 71
+    parameter-list-opt  go to state 102
+    parameter-list      go to state 73
+    parameter-decl      go to state 74
+    type-expr           go to state 75
+
+
+State 83
+
+   73 opt-named-expr: identifier "`:`" . expression
 
     STRING      shift, and go to state 5
     IDENTIFIER  shift, and go to state 6
     DECIMAL     shift, and go to state 7
     INTEGER     shift, and go to state 8
     "`(`"       shift, and go to state 9
-    "`.`"       shift, and go to state 11
-    DBLCOLON    shift, and go to state 14
+    "`[`"       shift, and go to state 10
+    "`.`"       shift, and go to state 12
+    DBLCOLON    shift, and go to state 15
 
-    identifier           go to state 42
-    qname                go to state 19
-    compound-expression  go to state 24
-    expression           go to state 43
-    opt-named-expr       go to state 76
-
-
-State 61
-
-    8 opt-decl: LET identifier ASSIGN expression "`;`" .
-
-    $default  reduce using rule 8 (opt-decl)
+    identifier           go to state 20
+    qname                go to state 21
+    compound-expression  go to state 27
+    expression           go to state 103
 
 
-State 62
+State 84
 
-   31 type-expr: BOOL .
+   56 compound-expression: qname "`(`" opt-named-expr-list-any "`)`" .
 
-    $default  reduce using rule 31 (type-expr)
-
-
-State 63
-
-   32 type-expr: INT .
-
-    $default  reduce using rule 32 (type-expr)
+    $default  reduce using rule 56 (compound-expression)
 
 
-State 64
+State 85
 
-   33 type-expr: FLOAT .
+   72 opt-named-expr-list: opt-named-expr-list "," . opt-named-expr
 
-    $default  reduce using rule 33 (type-expr)
+    STRING      shift, and go to state 5
+    IDENTIFIER  shift, and go to state 6
+    DECIMAL     shift, and go to state 7
+    INTEGER     shift, and go to state 8
+    "`(`"       shift, and go to state 9
+    "`[`"       shift, and go to state 10
+    "`.`"       shift, and go to state 12
+    DBLCOLON    shift, and go to state 15
+
+    identifier           go to state 53
+    qname                go to state 21
+    compound-expression  go to state 27
+    expression           go to state 54
+    opt-named-expr       go to state 104
 
 
-State 65
+State 86
 
-   13 qname: qname . DBLCOLON identifier
-   34 type-expr: qname .
+   11 opt-decl: LET identifier ASSIGN expression "`;`" .
 
-    DBLCOLON  shift, and go to state 33
-
-    $default  reduce using rule 34 (type-expr)
+    $default  reduce using rule 11 (opt-decl)
 
 
-State 66
+State 87
 
     5 opt-decl: EXTERN VAR identifier "`:`" type-expr . "`;`"
-   35 type-expr: type-expr . "`[`" INTEGER "`]`"
-   36          | type-expr . "`||`" type-expr
+   50 type-expr: type-expr . "`[`" INTEGER "`]`"
+   51          | type-expr . "`||`" type-expr
+   52          | type-expr . "`->`" type-expr
 
-    "`||`"  shift, and go to state 77
-    "`[`"   shift, and go to state 78
-    "`;`"   shift, and go to state 79
-
-
-State 67
-
-   14 enum-decl: ENUM qname "`{`" case-list-opt "`}`" .
-
-    $default  reduce using rule 14 (enum-decl)
+    "`->`"  shift, and go to state 95
+    "`||`"  shift, and go to state 96
+    "`[`"   shift, and go to state 97
+    "`;`"   shift, and go to state 105
 
 
-State 68
+State 88
 
-   18 case-list: case-list "," . case-decl
+    6 opt-decl: EXTERN FN qname "`(`" parameter-list-opt . "`)`" "`;`"
+    7         | EXTERN FN qname "`(`" parameter-list-opt . "`)`" "`->`" type-expr "`;`"
+
+    "`)`"  shift, and go to state 106
+
+
+State 89
+
+   50 type-expr: type-expr . "`[`" INTEGER "`]`"
+   51          | type-expr . "`||`" type-expr
+   52          | type-expr . "`->`" type-expr
+   54 opt-type-list: type-expr .
+
+    "`->`"  shift, and go to state 95
+    "`||`"  shift, and go to state 96
+    "`[`"   shift, and go to state 97
+
+    $default  reduce using rule 54 (opt-type-list)
+
+
+State 90
+
+   49 type-expr: "`(`" opt-type-list . "`)`"
+   55 opt-type-list: opt-type-list . "," type-expr
+
+    "`)`"  shift, and go to state 107
+    ","    shift, and go to state 108
+
+
+State 91
+
+   48 type-expr: "`[`" type-expr . "`]`"
+   50          | type-expr . "`[`" INTEGER "`]`"
+   51          | type-expr . "`||`" type-expr
+   52          | type-expr . "`->`" type-expr
+
+    "`->`"  shift, and go to state 95
+    "`||`"  shift, and go to state 96
+    "`[`"   shift, and go to state 97
+    "`]`"   shift, and go to state 109
+
+
+State 92
+
+   39 parameter-decl: identifier "`:`" . type-expr
+   40               | identifier "`:`" . type-expr ASSIGN expression
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    identifier  go to state 20
+    qname       go to state 71
+    type-expr   go to state 110
+
+
+State 93
+
+   22 fn-decl: FN qname "`(`" parameter-list-opt "`)`" . "`{`" infunction_declaration_any "`}`"
+   23        | FN qname "`(`" parameter-list-opt "`)`" . "`->`" type-expr "`{`" infunction_declaration_any "`}`"
+
+    "`->`"  shift, and go to state 111
+    "`{`"   shift, and go to state 112
+
+
+State 94
+
+   38 parameter-list: parameter-list "," . parameter-decl
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    identifier      go to state 70
+    qname           go to state 71
+    parameter-decl  go to state 113
+    type-expr       go to state 75
+
+
+State 95
+
+   52 type-expr: type-expr "`->`" . type-expr
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    identifier  go to state 20
+    qname       go to state 71
+    type-expr   go to state 114
+
+
+State 96
+
+   51 type-expr: type-expr "`||`" . type-expr
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    identifier  go to state 20
+    qname       go to state 71
+    type-expr   go to state 115
+
+
+State 97
+
+   50 type-expr: type-expr "`[`" . INTEGER "`]`"
+
+    INTEGER  shift, and go to state 116
+
+
+State 98
+
+   42 parameter-decl: type-expr ASSIGN . expression
+
+    STRING      shift, and go to state 5
+    IDENTIFIER  shift, and go to state 6
+    DECIMAL     shift, and go to state 7
+    INTEGER     shift, and go to state 8
+    "`(`"       shift, and go to state 9
+    "`[`"       shift, and go to state 10
+    "`.`"       shift, and go to state 12
+    DBLCOLON    shift, and go to state 15
+
+    identifier           go to state 20
+    qname                go to state 21
+    compound-expression  go to state 27
+    expression           go to state 117
+
+
+State 99
+
+   24 enum-decl: ENUM qname "`{`" case-list-opt "`}`" .
+
+    $default  reduce using rule 24 (enum-decl)
+
+
+State 100
+
+   28 case-list: case-list "," . case-decl
 
     IDENTIFIER  shift, and go to state 6
 
-    identifier  go to state 51
-    case-decl   go to state 80
+    identifier  go to state 76
+    case-decl   go to state 118
 
 
-State 69
+State 101
 
-   24 type-extension-list: type-extension-list "," . qname
-
-    IDENTIFIER  shift, and go to state 6
-    DBLCOLON    shift, and go to state 14
-
-    identifier  go to state 18
-    qname       go to state 81
-
-
-State 70
-
-   30 parameter-decl: "`_`" . "`:`" type-expr
-
-    "`:`"  shift, and go to state 82
-
-
-State 71
-
-   29 parameter-decl: identifier . "`:`" type-expr
-
-    "`:`"  shift, and go to state 83
-
-
-State 72
-
-   20 type-decl: TYPE qname type-extension-any "`{`" parameter-list-opt . "`}`"
-
-    "`}`"  shift, and go to state 84
-
-
-State 73
-
-   26 parameter-list-opt: parameter-list .
-   28 parameter-list: parameter-list . "," parameter-decl
-
-    ","  shift, and go to state 85
-
-    $default  reduce using rule 26 (parameter-list-opt)
-
-
-State 74
-
-   27 parameter-list: parameter-decl .
-
-    $default  reduce using rule 27 (parameter-list)
-
-
-State 75
-
-   38 compound-expression: expression . ASSIGN expression
-   50 opt-named-expr: identifier "`:`" expression .
-
-    ASSIGN  shift, and go to state 35
-
-    $default  reduce using rule 50 (opt-named-expr)
-
-
-State 76
-
-   49 opt-named-expr-list: opt-named-expr-list "," opt-named-expr .
-
-    $default  reduce using rule 49 (opt-named-expr-list)
-
-
-State 77
-
-   36 type-expr: type-expr "`||`" . type-expr
+   34 type-extension-list: type-extension-list "," . qname
 
     IDENTIFIER  shift, and go to state 6
-    DBLCOLON    shift, and go to state 14
-    BOOL        shift, and go to state 62
-    INT         shift, and go to state 63
-    FLOAT       shift, and go to state 64
+    DBLCOLON    shift, and go to state 15
 
-    identifier  go to state 18
-    qname       go to state 65
-    type-expr   go to state 86
+    identifier  go to state 20
+    qname       go to state 119
 
 
-State 78
+State 102
 
-   35 type-expr: type-expr "`[`" . INTEGER "`]`"
+   30 type-decl: TYPE qname type-extension-any "`{`" parameter-list-opt . "`}`"
 
-    INTEGER  shift, and go to state 87
+    "`}`"  shift, and go to state 120
 
 
-State 79
+State 103
+
+   57 compound-expression: expression . ASSIGN expression
+   73 opt-named-expr: identifier "`:`" expression .
+
+    ASSIGN  shift, and go to state 42
+
+    $default  reduce using rule 73 (opt-named-expr)
+
+
+State 104
+
+   72 opt-named-expr-list: opt-named-expr-list "," opt-named-expr .
+
+    $default  reduce using rule 72 (opt-named-expr-list)
+
+
+State 105
 
     5 opt-decl: EXTERN VAR identifier "`:`" type-expr "`;`" .
 
     $default  reduce using rule 5 (opt-decl)
 
 
-State 80
+State 106
 
-   18 case-list: case-list "," case-decl .
+    6 opt-decl: EXTERN FN qname "`(`" parameter-list-opt "`)`" . "`;`"
+    7         | EXTERN FN qname "`(`" parameter-list-opt "`)`" . "`->`" type-expr "`;`"
 
-    $default  reduce using rule 18 (case-list)
-
-
-State 81
-
-   13 qname: qname . DBLCOLON identifier
-   24 type-extension-list: type-extension-list "," qname .
-
-    DBLCOLON  shift, and go to state 33
-
-    $default  reduce using rule 24 (type-extension-list)
+    "`->`"  shift, and go to state 121
+    "`;`"   shift, and go to state 122
 
 
-State 82
+State 107
 
-   30 parameter-decl: "`_`" "`:`" . type-expr
+   49 type-expr: "`(`" opt-type-list "`)`" .
+
+    $default  reduce using rule 49 (type-expr)
+
+
+State 108
+
+   55 opt-type-list: opt-type-list "," . type-expr
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    identifier  go to state 20
+    qname       go to state 71
+    type-expr   go to state 123
+
+
+State 109
+
+   48 type-expr: "`[`" type-expr "`]`" .
+
+    $default  reduce using rule 48 (type-expr)
+
+
+State 110
+
+   39 parameter-decl: identifier "`:`" type-expr .
+   40               | identifier "`:`" type-expr . ASSIGN expression
+   50 type-expr: type-expr . "`[`" INTEGER "`]`"
+   51          | type-expr . "`||`" type-expr
+   52          | type-expr . "`->`" type-expr
+
+    "`->`"  shift, and go to state 95
+    "`||`"  shift, and go to state 96
+    "`[`"   shift, and go to state 97
+    ASSIGN  shift, and go to state 124
+
+    $default  reduce using rule 39 (parameter-decl)
+
+
+State 111
+
+   23 fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`->`" . type-expr "`{`" infunction_declaration_any "`}`"
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    identifier  go to state 20
+    qname       go to state 71
+    type-expr   go to state 125
+
+
+State 112
+
+   22 fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`{`" . infunction_declaration_any "`}`"
+
+    $default  reduce using rule 13 (infunction_declaration_any)
+
+    infunction_declaration_any  go to state 126
+
+
+State 113
+
+   38 parameter-list: parameter-list "," parameter-decl .
+
+    $default  reduce using rule 38 (parameter-list)
+
+
+State 114
+
+   50 type-expr: type-expr . "`[`" INTEGER "`]`"
+   51          | type-expr . "`||`" type-expr
+   52          | type-expr . "`->`" type-expr
+   52          | type-expr "`->`" type-expr .
+
+    $default  reduce using rule 52 (type-expr)
+
+
+State 115
+
+   50 type-expr: type-expr . "`[`" INTEGER "`]`"
+   51          | type-expr . "`||`" type-expr
+   51          | type-expr "`||`" type-expr .
+   52          | type-expr . "`->`" type-expr
+
+    "`->`"  shift, and go to state 95
+    "`[`"   shift, and go to state 97
+
+    $default  reduce using rule 51 (type-expr)
+
+
+State 116
+
+   50 type-expr: type-expr "`[`" INTEGER . "`]`"
+
+    "`]`"  shift, and go to state 127
+
+
+State 117
+
+   42 parameter-decl: type-expr ASSIGN expression .
+   57 compound-expression: expression . ASSIGN expression
+
+    ASSIGN  shift, and go to state 42
+
+    $default  reduce using rule 42 (parameter-decl)
+
+
+State 118
+
+   28 case-list: case-list "," case-decl .
+
+    $default  reduce using rule 28 (case-list)
+
+
+State 119
+
+   21 qname: qname . DBLCOLON identifier
+   34 type-extension-list: type-extension-list "," qname .
+
+    DBLCOLON  shift, and go to state 40
+
+    $default  reduce using rule 34 (type-extension-list)
+
+
+State 120
+
+   30 type-decl: TYPE qname type-extension-any "`{`" parameter-list-opt "`}`" .
+
+    $default  reduce using rule 30 (type-decl)
+
+
+State 121
+
+    7 opt-decl: EXTERN FN qname "`(`" parameter-list-opt "`)`" "`->`" . type-expr "`;`"
+
+    IDENTIFIER   shift, and go to state 6
+    "`(`"        shift, and go to state 64
+    "`[`"        shift, and go to state 65
+    DBLCOLON     shift, and go to state 15
+    BOOL         shift, and go to state 66
+    INT          shift, and go to state 67
+    FLOAT        shift, and go to state 68
+    STRING_WORD  shift, and go to state 69
+
+    identifier  go to state 20
+    qname       go to state 71
+    type-expr   go to state 128
+
+
+State 122
+
+    6 opt-decl: EXTERN FN qname "`(`" parameter-list-opt "`)`" "`;`" .
+
+    $default  reduce using rule 6 (opt-decl)
+
+
+State 123
+
+   50 type-expr: type-expr . "`[`" INTEGER "`]`"
+   51          | type-expr . "`||`" type-expr
+   52          | type-expr . "`->`" type-expr
+   55 opt-type-list: opt-type-list "," type-expr .
+
+    "`->`"  shift, and go to state 95
+    "`||`"  shift, and go to state 96
+    "`[`"   shift, and go to state 97
+
+    $default  reduce using rule 55 (opt-type-list)
+
+
+State 124
+
+   40 parameter-decl: identifier "`:`" type-expr ASSIGN . expression
+
+    STRING      shift, and go to state 5
+    IDENTIFIER  shift, and go to state 6
+    DECIMAL     shift, and go to state 7
+    INTEGER     shift, and go to state 8
+    "`(`"       shift, and go to state 9
+    "`[`"       shift, and go to state 10
+    "`.`"       shift, and go to state 12
+    DBLCOLON    shift, and go to state 15
+
+    identifier           go to state 20
+    qname                go to state 21
+    compound-expression  go to state 27
+    expression           go to state 129
+
+
+State 125
+
+   23 fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr . "`{`" infunction_declaration_any "`}`"
+   50 type-expr: type-expr . "`[`" INTEGER "`]`"
+   51          | type-expr . "`||`" type-expr
+   52          | type-expr . "`->`" type-expr
+
+    "`->`"  shift, and go to state 95
+    "`||`"  shift, and go to state 96
+    "`{`"   shift, and go to state 130
+    "`[`"   shift, and go to state 97
+
+
+State 126
+
+   14 infunction_declaration_any: infunction_declaration_any . opt-infunction-decl
+   22 fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`{`" infunction_declaration_any . "`}`"
+
+    STRING      shift, and go to state 5
+    IDENTIFIER  shift, and go to state 6
+    DECIMAL     shift, and go to state 7
+    INTEGER     shift, and go to state 8
+    "`(`"       shift, and go to state 9
+    "`}`"       shift, and go to state 131
+    "`[`"       shift, and go to state 10
+    "`;`"       shift, and go to state 132
+    "`.`"       shift, and go to state 12
+    LET         shift, and go to state 133
+    DBLCOLON    shift, and go to state 15
+
+    opt-infunction-decl  go to state 134
+    identifier           go to state 20
+    qname                go to state 21
+    compound-expression  go to state 135
+    expression           go to state 26
+
+
+State 127
+
+   50 type-expr: type-expr "`[`" INTEGER "`]`" .
+
+    $default  reduce using rule 50 (type-expr)
+
+
+State 128
+
+    7 opt-decl: EXTERN FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr . "`;`"
+   50 type-expr: type-expr . "`[`" INTEGER "`]`"
+   51          | type-expr . "`||`" type-expr
+   52          | type-expr . "`->`" type-expr
+
+    "`->`"  shift, and go to state 95
+    "`||`"  shift, and go to state 96
+    "`[`"   shift, and go to state 97
+    "`;`"   shift, and go to state 136
+
+
+State 129
+
+   40 parameter-decl: identifier "`:`" type-expr ASSIGN expression .
+   57 compound-expression: expression . ASSIGN expression
+
+    ASSIGN  shift, and go to state 42
+
+    $default  reduce using rule 40 (parameter-decl)
+
+
+State 130
+
+   23 fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`{`" . infunction_declaration_any "`}`"
+
+    $default  reduce using rule 13 (infunction_declaration_any)
+
+    infunction_declaration_any  go to state 137
+
+
+State 131
+
+   22 fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`{`" infunction_declaration_any "`}`" .
+
+    $default  reduce using rule 22 (fn-decl)
+
+
+State 132
+
+   15 opt-infunction-decl: "`;`" .
+
+    $default  reduce using rule 15 (opt-infunction-decl)
+
+
+State 133
+
+   16 opt-infunction-decl: LET . identifier ASSIGN expression "`;`"
 
     IDENTIFIER  shift, and go to state 6
-    DBLCOLON    shift, and go to state 14
-    BOOL        shift, and go to state 62
-    INT         shift, and go to state 63
-    FLOAT       shift, and go to state 64
 
-    identifier  go to state 18
-    qname       go to state 65
-    type-expr   go to state 88
+    identifier  go to state 138
 
 
-State 83
+State 134
 
-   29 parameter-decl: identifier "`:`" . type-expr
+   14 infunction_declaration_any: infunction_declaration_any opt-infunction-decl .
 
+    $default  reduce using rule 14 (infunction_declaration_any)
+
+
+State 135
+
+   17 opt-infunction-decl: compound-expression . "`;`"
+   65 expression: compound-expression .
+
+    "`;`"  shift, and go to state 139
+
+    $default  reduce using rule 65 (expression)
+
+
+State 136
+
+    7 opt-decl: EXTERN FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`;`" .
+
+    $default  reduce using rule 7 (opt-decl)
+
+
+State 137
+
+   14 infunction_declaration_any: infunction_declaration_any . opt-infunction-decl
+   23 fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`{`" infunction_declaration_any . "`}`"
+
+    STRING      shift, and go to state 5
     IDENTIFIER  shift, and go to state 6
-    DBLCOLON    shift, and go to state 14
-    BOOL        shift, and go to state 62
-    INT         shift, and go to state 63
-    FLOAT       shift, and go to state 64
+    DECIMAL     shift, and go to state 7
+    INTEGER     shift, and go to state 8
+    "`(`"       shift, and go to state 9
+    "`}`"       shift, and go to state 140
+    "`[`"       shift, and go to state 10
+    "`;`"       shift, and go to state 132
+    "`.`"       shift, and go to state 12
+    LET         shift, and go to state 133
+    DBLCOLON    shift, and go to state 15
 
-    identifier  go to state 18
-    qname       go to state 65
-    type-expr   go to state 89
+    opt-infunction-decl  go to state 134
+    identifier           go to state 20
+    qname                go to state 21
+    compound-expression  go to state 135
+    expression           go to state 26
 
 
-State 84
+State 138
 
-   20 type-decl: TYPE qname type-extension-any "`{`" parameter-list-opt "`}`" .
+   16 opt-infunction-decl: LET identifier . ASSIGN expression "`;`"
 
-    $default  reduce using rule 20 (type-decl)
+    ASSIGN  shift, and go to state 141
 
 
-State 85
+State 139
 
-   28 parameter-list: parameter-list "," . parameter-decl
+   17 opt-infunction-decl: compound-expression "`;`" .
 
+    $default  reduce using rule 17 (opt-infunction-decl)
+
+
+State 140
+
+   23 fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`{`" infunction_declaration_any "`}`" .
+
+    $default  reduce using rule 23 (fn-decl)
+
+
+State 141
+
+   16 opt-infunction-decl: LET identifier ASSIGN . expression "`;`"
+
+    STRING      shift, and go to state 5
     IDENTIFIER  shift, and go to state 6
-    "`_`"       shift, and go to state 70
+    DECIMAL     shift, and go to state 7
+    INTEGER     shift, and go to state 8
+    "`(`"       shift, and go to state 9
+    "`[`"       shift, and go to state 10
+    "`.`"       shift, and go to state 12
+    DBLCOLON    shift, and go to state 15
 
-    identifier      go to state 71
-    parameter-decl  go to state 90
-
-
-State 86
-
-   35 type-expr: type-expr . "`[`" INTEGER "`]`"
-   36          | type-expr . "`||`" type-expr
-   36          | type-expr "`||`" type-expr .
-
-    "`[`"  shift, and go to state 78
-
-    $default  reduce using rule 36 (type-expr)
+    identifier           go to state 20
+    qname                go to state 21
+    compound-expression  go to state 27
+    expression           go to state 142
 
 
-State 87
+State 142
 
-   35 type-expr: type-expr "`[`" INTEGER . "`]`"
+   16 opt-infunction-decl: LET identifier ASSIGN expression . "`;`"
+   57 compound-expression: expression . ASSIGN expression
 
-    "`]`"  shift, and go to state 91
-
-
-State 88
-
-   30 parameter-decl: "`_`" "`:`" type-expr .
-   35 type-expr: type-expr . "`[`" INTEGER "`]`"
-   36          | type-expr . "`||`" type-expr
-
-    "`||`"  shift, and go to state 77
-    "`[`"   shift, and go to state 78
-
-    $default  reduce using rule 30 (parameter-decl)
+    "`;`"   shift, and go to state 143
+    ASSIGN  shift, and go to state 42
 
 
-State 89
+State 143
 
-   29 parameter-decl: identifier "`:`" type-expr .
-   35 type-expr: type-expr . "`[`" INTEGER "`]`"
-   36          | type-expr . "`||`" type-expr
+   16 opt-infunction-decl: LET identifier ASSIGN expression "`;`" .
 
-    "`||`"  shift, and go to state 77
-    "`[`"   shift, and go to state 78
-
-    $default  reduce using rule 29 (parameter-decl)
-
-
-State 90
-
-   28 parameter-list: parameter-list "," parameter-decl .
-
-    $default  reduce using rule 28 (parameter-list)
-
-
-State 91
-
-   35 type-expr: type-expr "`[`" INTEGER "`]`" .
-
-    $default  reduce using rule 35 (type-expr)
+    $default  reduce using rule 16 (opt-infunction-decl)

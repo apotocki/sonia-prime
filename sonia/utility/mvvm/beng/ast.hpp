@@ -68,14 +68,20 @@ template <typename ExprT>
 using named_expression_term_list = std::vector<named_expression_term<ExprT>>;
 
 template <typename ExprT>
-struct procedure
+struct expression_vector
+{
+    boost::container::small_vector<ExprT, 4> elements;
+};
+
+template <typename ExprT>
+struct function_call
 {
     //ExprT subject;
     qname name;
     boost::container::small_vector<ExprT, 4> positioned_args;
     boost::container::small_vector<std::tuple<annotated_identifier, ExprT>, 8> named_args;
 
-    procedure(qname n, named_expression_term_list<ExprT> args)
+    function_call(qname n, named_expression_term_list<ExprT> args)
         : name{std::move(n)}
     {
         for (auto & narg : args) {
@@ -100,15 +106,17 @@ struct case_expression
 using expression_t = make_recursive_variant<
     qname, case_expression, decimal, small_u32string, 
     assign_expression<>,
-    procedure<recursive_variant_>
-    //,
-    //procedure /*, ctprocedure*/
+    expression_vector<recursive_variant_>,
+    function_call<recursive_variant_>
+    //, ctprocedure
 >::type;
 
+using expression_list_t = boost::container::small_vector<expression_t, 4>;
 using named_expression_term_t = named_expression_term<expression_t>;
 using named_expression_term_list_t = named_expression_term_list<expression_t>;
 using assign_expression_t = assign_expression<expression_t>;
-using procedure_t = procedure<expression_t>;
+using function_call_t = function_call<expression_t>;
+using expression_vector_t = expression_vector<expression_t>;
 template <operator_type Op> using binary_expression_t = binary_expression<Op, expression_t>;
 
 /*
@@ -250,10 +258,25 @@ struct parameter_t
 {
     identifier name;
     beng_generic_type type;
+    optional<expression_t> default_value;
 };
 
 using parameter_list_t = std::vector<parameter_t>;
 using extension_list_t = std::vector<qname>;
+
+// for extern functions
+struct fn_pure_decl
+{
+    qname name;
+    parameter_list_t parameters;
+    beng_generic_type result;
+};
+
+template <typename DeclT>
+struct fn_decl : fn_pure_decl
+{
+    std::vector<DeclT> body;
+};
 
 struct enum_decl
 {
@@ -286,8 +309,18 @@ struct exten_var
     beng_generic_type type;
 };
 
-using declaration_t = variant<empty_t, exten_var, type_decl, enum_decl, let_statement_decl, expression_decl>; // , function_decl, extern_function_decl > ;
+using infunction_declaration_t = make_recursive_variant<
+    empty_t, let_statement_decl, expression_decl
+>::type;
 
+using declaration_t = make_recursive_variant<
+    empty_t, exten_var, type_decl, enum_decl, let_statement_decl, expression_decl,
+    fn_pure_decl, fn_decl<infunction_declaration_t>
+>::type;
+
+
+
+using fn_decl_t = fn_decl<infunction_declaration_t>;
 /*
 struct declaration
 {

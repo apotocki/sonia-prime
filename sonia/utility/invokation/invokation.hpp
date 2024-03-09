@@ -94,6 +94,7 @@ enum class blob_type : uint8_t {
     //string16 = DEFAULT_BTVAL(1, 0, 1),
     //string32 = DEFAULT_BTVAL(1, 0, 2),
     
+    blob = AUX0_BTVAL(0, 3),
     tuple = AUX0_BTVAL(1, 3),
     function = AUX0_BTVAL(1, 4),
     error = AUX0_BTVAL(1, 5)
@@ -188,6 +189,26 @@ inline bool is_basic_integral(blob_type val) noexcept
     case blob_type::ui32:
     case blob_type::i64:
     case blob_type::ui64:
+        return true;
+    default:
+        return false;
+    }
+}
+
+inline bool is_numeric(blob_type val) noexcept
+{
+    switch (val) {
+    case blob_type::i8:
+    case blob_type::ui8:
+    case blob_type::i16:
+    case blob_type::ui16:
+    case blob_type::i32:
+    case blob_type::ui32:
+    case blob_type::i64:
+    case blob_type::ui64:
+    case blob_type::flt16:
+    case blob_type::flt32:
+    case blob_type::flt64:
         return true;
     default:
         return false;
@@ -304,7 +325,7 @@ inline consteval blob_type blob_type_for()
     if constexpr (std::is_same_v<bool, type>) {
         return blob_type::boolean;
     } else if constexpr (std::is_same_v<blob_result, type>) {
-        return blob_type::tuple;
+        return blob_type::blob;
     } else if constexpr (std::is_integral_v<type>) {
         constexpr bool signed_v = std::is_signed_v<type>;
         if constexpr (sizeof(T) * CHAR_BIT <= 8 && signed_v) return blob_type::i8;
@@ -659,14 +680,18 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
 template <typename Elem, typename Traits>
 inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& os, blob_result const& b)
 {
+    using namespace std::string_view_literals;
+
     if (b.type == blob_type::nil) {
-        return os << "nil";
+        return os << "nil"sv;
+    } else if (b.type == blob_type::object) {
+        return os << "object"sv;
     }
     if (is_array(b) && !contains_string(b)) {
         os << "[";
         blob_type_selector(b, [&os](auto ident, blob_result b) {
             using type = typename decltype(ident)::type;
-            if constexpr (std::is_void_v<type>) { os << "unknown"; }
+            if constexpr (std::is_void_v<type>) { os << "unknown"sv; }
             else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invokation_bigint_limb_type>>) { os << "bigint"; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
@@ -682,58 +707,61 @@ inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Tra
     switch (b.type)
     {
     case blob_type::nil:
-        return os << "nil";
+        return os << "nil"sv;
     case blob_type::boolean:
-        return os << (b.bp.i8value ? "true" : "false");
+        return os << (b.bp.i8value ? "true"sv : "false"sv);
     case blob_type::c8:
         return os << '\'' << (char)b.bp.i8value<< '\'';
     case blob_type::i8:
-        return os << (int)b.bp.i8value << ":i8";
+        return os << (int)b.bp.i8value << ":i8"sv;
     case blob_type::ui8:
-        return os << (int)b.bp.ui8value << ":ui8";
+        return os << (int)b.bp.ui8value << ":ui8"sv;
     case blob_type::i16:
-        return os << (int)b.bp.i16value << ":i16";
+        return os << (int)b.bp.i16value << ":i16"sv;
     case blob_type::ui16:
-        return os << (int)b.bp.ui16value << ":ui16";
+        return os << (int)b.bp.ui16value << ":ui16"sv;
     case blob_type::i32:
-        return os << b.bp.i32value << ":i32";
+        return os << b.bp.i32value << ":i32"sv;
     case blob_type::ui32:
-        return os << b.bp.ui32value << ":ui32";
+        return os << b.bp.ui32value << ":ui32"sv;
     case blob_type::i64:
-        return os << b.bp.i64value << ":i64";
+        return os << b.bp.i64value << ":i64"sv;
     case blob_type::ui64:
-        return os << b.bp.ui64value << ":ui64";
+        return os << b.bp.ui64value << ":ui64"sv;
     case blob_type::flt16:
-        return os << b.bp.f16value << ":f16";
+        return os << b.bp.f16value << ":f16"sv;
     case blob_type::flt32:
-        return os << b.bp.f32value << ":f32";
+        return os << b.bp.f32value << ":f32"sv;
     case blob_type::flt64:
-        return os << b.bp.f64value << ":f64";
+        return os << b.bp.f64value << ":f64"sv;
     case blob_type::string:
         return os << '"' << sonia::string_view{data_of<char>(b), array_size_of<char>(b)} << '"';
     case blob_type::function:
-        return os << "function";
+        return os << "function"sv;
     case blob_type::object:
-        return os << "object";
+        return os << "object"sv;
     case blob_type::error:
-        return os << "error: " << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
+        return os << "error: "sv << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
     default:
-        return os << "unknown";
+        return os << "unknown"sv;
     }
 }
 
-inline std::ostream& print_type(std::ostream& os, blob_result const& b)
+template <typename Elem, typename Traits>
+inline std::basic_ostream<Elem, Traits>& print_type(std::basic_ostream<Elem, Traits>& os, blob_result const& b)
 {
+    using namespace std::string_view_literals;
     if (b.type == blob_type::nil) {
-        return os << "nil";
+        return os << "nil"sv;
     } else if (b.type == blob_type::string) {
-        return os << "string";
+        return os << "string"sv;
     } else if (b.type == blob_type::bigint) {
-        return os << "bigint";
+        return os << "bigint"sv;
     } else if (b.type == blob_type::error) {
-        return os << "error";
+        return os << "error"sv;
+    } else if (b.type == blob_type::object) {
+        return os << "object"sv;
     }
-
     if (is_array(b)) {
         os << "[";
     }
@@ -741,38 +769,38 @@ inline std::ostream& print_type(std::ostream& os, blob_result const& b)
     switch (decayed_type)
     {
     case blob_type::boolean:
-        os << "bool"; break;
+        os << "bool"sv; break;
     case blob_type::i8:
-        os << "i8"; break;
+        os << "i8"sv; break;
     case blob_type::ui8:
-        os << "ui8"; break;
+        os << "ui8"sv; break;
     case blob_type::i16:
-        os << "i16"; break;
+        os << "i16"sv; break;
     case blob_type::ui16:
-        os << "ui16"; break;
+        os << "ui16"sv; break;
     case blob_type::i32:
-        os << "i32"; break;
+        os << "i32"sv; break;
     case blob_type::ui32:
-        os << "ui32"; break;
+        os << "ui32"sv; break;
     case blob_type::i64:
-        os << "i64"; break;
+        os << "i64"sv; break;
     case blob_type::ui64:
-        os << "ui64"; break;
+        os << "ui64"sv; break;
     case blob_type::flt16:
-        os << "f16"; break;
+        os << "f16"sv; break;
     case blob_type::flt32:
-        os << "f32"; break;
+        os << "f32"sv; break;
     case blob_type::flt64:
-        os << "f64"; break;
+        os << "f64"sv; break;
     case blob_type::function:
-        os << "function"; break;
+        os << "function"sv; break;
     case blob_type::object:
-        os << "object"; break;
+        os << "object"sv; break;
     default:
-        os << "unknown";
+        os << "unknown"sv;
     }
     if (is_array(b)) {
-        os << "]";
+        os << ']';
     }
     return os;
 }

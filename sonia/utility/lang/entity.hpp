@@ -21,7 +21,7 @@ public:
 
     qname_view<IdentifierT> name() const { return name_; }
 
-private:
+protected:
     qname_type name_;
 };
 

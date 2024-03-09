@@ -87,11 +87,25 @@ public:
 
     void operator()(lang::beng::semantic::invoke_function const& invf) const
     {
-        if (lang::beng::type_entity const* pte = dynamic_cast<lang::beng::type_entity const*>(invf.entity); pte) {
-            bvm_.append_object_constructor();
-            return;
+        if (invf.entity == unit_.arrayify_entity_name()) {
+            bvm_.append_arrayify();
+        } else if (invf.entity == unit_.print_string_name()) {
+            bvm_.append_print_string();
+        } else if (auto eptr = unit_.eregistry().find(invf.entity); eptr) {
+            if (auto pte = dynamic_pointer_cast<lang::beng::type_entity>(eptr); pte) {
+                bvm_.append_object_constructor();
+            } else if (auto fe = dynamic_pointer_cast<lang::beng::function_entity>(eptr); fe) {
+                // do inline call
+                for (auto const& e : fe->body) {
+                    apply_visitor(*this, e);
+                }
+                //THROW_NOT_IMPLEMENTED_ERROR("unimplemented function call name: '%1%'"_fmt % unit_.print(invf.entity));
+            } else {
+                THROW_NOT_IMPLEMENTED_ERROR("unknown entity found, unresolved function call name: '%1%'"_fmt % unit_.print(invf.entity));
+            }
+        } else {
+            throw exception("unresolved name: '%1%'"_fmt % unit_.print(invf.entity));
         }
-        THROW_NOT_IMPLEMENTED_ERROR();
     }
 
     void operator()(lang::beng::semantic::set_variable const& pv) const

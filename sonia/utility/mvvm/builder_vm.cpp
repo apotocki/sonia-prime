@@ -6,6 +6,7 @@
 #include "builder_vm.hpp"
 #include <sstream>
 #include <boost/container/small_vector.hpp>
+#include "sonia/utility/scope_exit.hpp"
 
 namespace sonia::vm {
 
@@ -75,10 +76,35 @@ void builder_context::construct_object()
     return stack_push(smart_blob{ object_blob_result(obj) });
 }
 
+void builder_context::arrayify()
+{
+    uint32_t argcount = stack_back().as<uint32_t>();
+    boost::container::small_vector<blob_result, 4> elements;
+    EXCEPTIONAL_SCOPE_EXIT([&elements]() {
+        for (auto& e : elements) blob_result_unpin(&e);
+    });
+    for (uint32_t i = argcount; i > 0; --i) {
+        elements.emplace_back(*stack_back(i));
+        blob_result_pin(&elements.back());
+    }
+    smart_blob r{ array_blob_result(span{elements.data(), elements.size()}) };
+    r.allocate();
+    stack_pop(argcount + 1);
+    return stack_push(std::move(r));
+}
+
+void builder_context::print_string()
+{
+    string_view str = stack_back().as<string_view>();
+    GLOBAL_LOG_INFO() << str;
+}
+
 builder_virtual_stack_machine::builder_virtual_stack_machine()
 {
     do_vm_assign_variable_id_ = push_external_fn([](builder_context & ctx) { ctx.assign_variable(); });
     do_vm_object_constructor_id_ = push_external_fn([](builder_context& ctx) { ctx.construct_object(); });
+    do_vm_arrayify_id_ = push_external_fn([](builder_context& ctx) { ctx.arrayify(); });
+    do_vm_print_string_id_ = push_external_fn([](builder_context& ctx) { ctx.print_string(); });
 }
 
 void builder_virtual_stack_machine::append_extern_assign()
@@ -89,6 +115,16 @@ void builder_virtual_stack_machine::append_extern_assign()
 void builder_virtual_stack_machine::append_object_constructor()
 {
     append_ecall(do_vm_object_constructor_id_);
+}
+
+void builder_virtual_stack_machine::append_arrayify()
+{
+    append_ecall(do_vm_arrayify_id_);
+}
+
+void builder_virtual_stack_machine::append_print_string()
+{
+    append_ecall(do_vm_print_string_id_);
 }
 
 size_t builder_virtual_stack_machine::push_on_stack(var_t value)

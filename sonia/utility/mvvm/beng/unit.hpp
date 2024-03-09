@@ -24,6 +24,8 @@
 #include "semantic.hpp"
 #include "variable_entity.hpp"
 
+//#include "functional_entity.hpp"
+
 namespace sonia::lang::beng {
 
 /*
@@ -66,11 +68,34 @@ class unit
     //shared_ptr<function_t> main_function_;
     std::vector<semantic_expression_type> root_expressions_;
 
+    shared_ptr<entity> arrayify_entity_;
+    shared_ptr<entity> print_entity_;
+
+    qname arrayify_entity_name_;
+    qname print_string_name_;
+
 public:
     unit()
         : slregistry_{ identifier_builder_ }
         , piregistry_{ identifier_builder_ }
-    {}
+    {
+        // install builtin entities
+        arrayify_entity_name_ = qname{ new_identifier() };
+        //arrayify_entity_ = make_shared<entity>(qname{ new_identifier() });
+        //eregistry_.insert(arrayify_entity_);
+
+
+        // print (string)
+        qname print_qn{ slregistry_.resolve("print"sv) };
+        qname print_args{ slregistry_.resolve("string"sv) };
+        identifier particularprintid = piregistry_.resolve(span{ &print_args, 1 });
+        print_string_name_ = print_qn + particularprintid;
+
+        //print_entity_ = make_shared<entity>(qname{ slregistry_.resolve("print"sv) });
+        //eregistry_.insert(print_entity_);
+    }
+
+    identifier new_identifier() { return identifier_builder_(); }
 
     slregistry_t& slregistry() { return slregistry_; }
     piregistry_t& piregistry() { return piregistry_; }
@@ -81,6 +106,11 @@ public:
     //    functions_.emplace_back(std::move(f));
     //}
 
+    ////////////////////// builtins
+    qname const& arrayify_entity_name() const { return arrayify_entity_name_; }
+    qname const& print_string_name() const { return print_string_name_; }
+
+    ///
     void append_path(fs::path p)
     {
         additional_paths_.emplace_back(std::move(p));
@@ -118,6 +148,11 @@ public:
         return ss.str();
     }
 
+    std::string print(qname const& q) const
+    {
+        return print((qname_view)q);
+    }
+
     std::string print(qname_view q) const
     {
         std::ostringstream ss;
@@ -127,10 +162,72 @@ public:
             }
             if (auto const* pstr = slregistry_.resolve(id); pstr) {
                 ss << *pstr;
+            } else if (auto sp = piregistry_.resolve(id); !sp.empty()) {
+                ss << '<';
+                for (auto const& qn : sp) {
+                    if (&qn != &sp.front()) ss << ',';
+                    ss << print(qn);
+                }
+                ss << '>';
             } else {
                 ss << "$"sv << id.value;
             }
         }
+        return ss.str();
+    }
+
+    struct type_printer_visitor : static_visitor<void>
+    {
+        unit const& u_;
+        std::ostringstream & ss;
+        explicit type_printer_visitor(unit const& u, std::ostringstream& s) : u_{u}, ss{s} {}
+
+        inline void operator()(beng_bool_t) const { ss << "bool"; }
+        inline void operator()(beng_int_t) const { ss << "int"; }
+        inline void operator()(beng_float_t) const { ss << "float"; }
+        inline void operator()(beng_decimal_t) const { ss << "decimal"; }
+        inline void operator()(beng_string_t) const { ss << "string"; }
+        inline void operator()(beng_object_t const& obj) const { ss << '^' << u_.print(obj.name()); }
+        inline void operator()(beng_fn_t const& fn) const
+        {
+            apply_visitor(*this, fn.arg);
+            ss << "->";
+            apply_visitor(*this, fn.result);
+        }
+        inline void operator()(beng_vector_t const& v) const
+        {
+            ss << '[';
+            apply_visitor(*this, v.type);
+            ss << ']';
+        }
+        inline void operator()(beng_array_t const& arr) const
+        {
+            apply_visitor(*this, arr.type);
+            ss << '[' << arr.size << ']';
+        }
+        inline void operator()(beng_tuple_t const& tpl) const
+        {
+            ss << '(';
+            for (auto const& f : tpl.fields) {
+                if (&f != &tpl.fields.front()) ss << ',';
+                apply_visitor(*this, f);
+            }
+            ss << ')';
+        }
+        inline void operator()(beng_union_t const& tpl) const
+        {
+            for (auto const& f : tpl.members) {
+                if (&f != &tpl.members.front()) ss << "||";
+                apply_visitor(*this, f);
+            }
+        }
+    };
+
+    std::string print(beng_generic_type const& tp) const
+    {
+        std::ostringstream ss;
+        type_printer_visitor vis{ *this, ss };
+        apply_visitor(vis, tp);
         return ss.str();
     }
 
@@ -171,6 +268,85 @@ public:
             }
         }
         return small_u32string{ result.data(), result.size() };
+    }
+
+    struct type_mangler_visitor : static_visitor<qname>
+    {
+        unit & u_;
+        explicit type_mangler_visitor(unit & u) : u_{ u } {}
+
+        inline result_type operator()(beng_bool_t) const { return qname{ u_.slregistry().resolve("bool"sv) }; }
+        inline result_type operator()(beng_int_t) const { return qname{ u_.slregistry().resolve("int"sv)}; }
+        inline result_type operator()(beng_float_t) const { return qname{ u_.slregistry().resolve("float"sv) }; }
+        inline result_type operator()(beng_decimal_t) const { return qname{ u_.slregistry().resolve("decimal"sv) }; }
+        inline result_type operator()(beng_string_t) const { return qname{ u_.slregistry().resolve("string"sv) }; }
+        inline result_type operator()(beng_object_t const& obj) const { return qname{ obj.name(), true }; }
+
+        inline result_type operator()(beng_fn_t const& fn) const
+        {
+            THROW_NOT_IMPLEMENTED_ERROR();
+            /*
+            apply_visitor(*this, fn.arg);
+            ss << "->";
+            apply_visitor(*this, fn.result);
+            */
+        }
+        inline result_type operator()(beng_vector_t const& v) const
+        {
+            THROW_NOT_IMPLEMENTED_ERROR();
+            /*
+            ss << '[';
+            apply_visitor(*this, v.type);
+            ss << ']';
+            */
+        }
+        inline result_type operator()(beng_array_t const& arr) const
+        {
+            THROW_NOT_IMPLEMENTED_ERROR();
+            /*
+            apply_visitor(*this, arr.type);
+            ss << '[' << arr.size << ']';
+            */
+        }
+        inline result_type operator()(beng_tuple_t const& tpl) const
+        {
+            THROW_NOT_IMPLEMENTED_ERROR();
+            /*
+            ss << '(';
+            for (auto const& f : tpl.fields) {
+                if (&f != &tpl.fields.front()) ss << ',';
+                apply_visitor(*this, f);
+            }
+            ss << ')';
+            */
+        }
+        inline result_type operator()(beng_union_t const& tpl) const
+        {
+            THROW_NOT_IMPLEMENTED_ERROR();
+            /*
+            for (auto const& f : tpl.members) {
+                if (&f != &tpl.members.front()) ss << "||";
+                apply_visitor(*this, f);
+            }
+            */
+        }
+    };
+
+    void build_name(qname_view base, function_signature& sig)
+    {
+        type_mangler_visitor vis{ *this };
+
+        std::vector<qname> ps;
+
+        for (beng_generic_type const& postp: sig.position_parameters) {
+            ps.emplace_back(apply_visitor(vis, postp));
+        }
+        for (auto const& [id, tp] : sig.named_parameters) {
+            ps.emplace_back(qname{ id });
+            ps.emplace_back(apply_visitor(vis, tp));
+        }
+        identifier id = piregistry_.resolve(ps);
+        sig.mangled_name = base.empty() ? qname{ id } : (base + id);
     }
 
 protected:

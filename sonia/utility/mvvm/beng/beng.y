@@ -114,7 +114,6 @@ void beng_lang::parser::error(const location_type& loc, const std::string& msg)
 %token VAR
 
 
-%token FN
 %token NEW
 %token FOR
 %token VOID_
@@ -176,7 +175,7 @@ void beng_lang::parser::error(const location_type& loc, const std::string& msg)
 //%right PREFIXDBLPLUS PREFIXDBLMINUS PREFIXPLUS PREFIXMINUS EXCLPT TILDA CAST DEREF ADDRESS SIZEOF
 
 // 2 priority
-//%left DBLPLUS DBLMINUS OPEN_PARENTHESIS CLOSE_PARENTHESIS OPEN_SQUARE_BRACKET CLOSE_SQUARE_BRACKET POINT ARROW
+//%left DBLPLUS DBLMINUS OPEN_PARENTHESIS CLOSE_PARENTHESIS OPEN_SQUARE_BRACKET CLOSE_SQUARE_BRACKET POINT
 
 // 1 priority
 //%left IDENTIFIER
@@ -191,28 +190,36 @@ void beng_lang::parser::error(const location_type& loc, const std::string& msg)
 %left LOGIC_OR
 
 // 2 priority
-%left OPEN_PARENTHESIS CLOSE_PARENTHESIS OPEN_SQUARE_BRACKET CLOSE_SQUARE_BRACKET
+%left OPEN_PARENTHESIS CLOSE_PARENTHESIS OPEN_SQUARE_BRACKET CLOSE_SQUARE_BRACKET ARROW
 
 //%token DBLCOLON             "`::`"
 %left DBLCOLON             "`::`"
 
 %type <std::vector<declaration_t>> declaration_any
-%type <declaration_t> opt-decl  /* type_declaration */
+%type <declaration_t> opt-decl
+
+%type <std::vector<infunction_declaration_t>> infunction_declaration_any
+%type <infunction_declaration_t> opt-infunction-decl
 
 // QNAME
 %type <sonia::lang::beng::qname> qname
 %type <sonia::lang::beng::annotated_identifier> identifier
 
+
+// FUNCTIONS
+%token FN
+%type <fn_decl_t> fn-decl
+
 // ENUMERATIONS
 %token ENUM
-%type <declaration_t> enum-decl
+%type <enum_decl> enum-decl
 %type <std::vector<sonia::lang::identifier>> case-list-opt case-list
 %type <sonia::lang::identifier> case-decl
 
 // TYPES
 %token TYPE
 %token EXTENDS
-%type <declaration_t> type-decl
+%type <type_decl> type-decl
 %type <extension_list_t> type-extension-any type-extension-list
 %type <parameter_list_t> parameter-list-opt parameter-list
 %type <parameter_t> parameter-decl
@@ -221,7 +228,9 @@ void beng_lang::parser::error(const location_type& loc, const std::string& msg)
 %token BOOL
 %token INT
 %token FLOAT
+%token STRING_WORD
 %type<beng_generic_type> type-expr
+%type<beng_tuple_t> opt-type-list
 
 // STATEMENTS
 //%type <declaration_t> 
@@ -230,7 +239,7 @@ void beng_lang::parser::error(const location_type& loc, const std::string& msg)
 %type <expression_t> expression compound-expression
 %type <named_expression_term_list_t> opt-named-expr-list-any opt-named-expr-list
 %type <named_expression_term_t> opt-named-expr
-
+%type <expression_list_t> expression-list-any
 
 //%type <statement_list_t> statement-list-any statement-list
 //%type <statement_t> base-statement statement
@@ -289,10 +298,16 @@ opt-decl:
         { $$ = empty_t{}; }
     | EXTERN VAR identifier COLON type-expr END_STATEMENT
         { $$ = exten_var{ std::move($3.id), std::move($5) }; }
+    | EXTERN FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS END_STATEMENT
+        { $3.set_absolute(); $$ = fn_pure_decl{ std::move($3), std::move($5), beng_tuple_t{} }; }
+    | EXTERN FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS ARROW type-expr END_STATEMENT
+        { $3.set_absolute(); $$ = fn_pure_decl{ std::move($3), std::move($5), std::move($8) }; }
     | enum-decl
-        { $$ = $1; }
+        { $$ = std::move($1); }
     | type-decl
-        { $$ = $1; }
+        { $$ = std::move($1); }
+    | fn-decl
+        { $$ = std::move($1); }
     | LET identifier /* optional type here*/ ASSIGN expression END_STATEMENT
         { $$ = let_statement_decl{ std::move($2.id), std::move($4) }; }
     | compound-expression END_STATEMENT
@@ -308,6 +323,25 @@ opt-decl:
 */
 	;
  
+infunction_declaration_any:
+      %empty
+        { $$ = {}; }
+	| infunction_declaration_any opt-infunction-decl
+        {
+	        $$ = std::move($1);
+            if ($2.which()) $$.emplace_back(std::move($2));
+        }
+    ;
+
+opt-infunction-decl:
+      END_STATEMENT
+        { $$ = empty_t{}; }
+    | LET identifier /* optional type here*/ ASSIGN expression END_STATEMENT
+        { $$ = let_statement_decl{ std::move($2.id), std::move($4) }; }
+    | compound-expression END_STATEMENT
+        { $$ = expression_decl{ std::move($1) }; }
+    ;
+
 identifier:
     IDENTIFIER
       { $$ = ctx.make_identifier($1); }
@@ -326,6 +360,17 @@ qname:
         { $$ = std::move($1); $$.append(std::move($3.id)); }
     ;
 
+///////////////////////////////////////////////// FUNCTIONS
+fn-decl:
+        FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+            {
+                $$ = fn_decl{ctx.ns() + std::move($2), std::move($4), beng_tuple_t{}, std::move($7)};
+            }
+    |   FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS ARROW type-expr OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+            {
+                $$ = fn_decl{ctx.ns() + std::move($2), std::move($4), std::move($7), std::move($9)};
+            }
+    ;
 ///////////////////////////////////////////////// ENUMERATIONS
 enum-decl:
     ENUM qname OPEN_BRACE case-list-opt CLOSE_BRACE
@@ -375,24 +420,28 @@ type-extension-list:
     ;
 
 parameter-list-opt:
-    %empty { $$ = {}; }
-    |
-    parameter-list
+       %empty { $$ = {}; }
+    |  parameter-list
     ;
 
 parameter-list:
-    parameter-decl
+      parameter-decl
         { $$ = parameter_list_t{std::move($1)}; }
-    |
-    parameter-list COMMA parameter-decl
+    | parameter-list COMMA parameter-decl
         { $$ = std::move($1); $$.emplace_back(std::move($3)); }
     ;
 
 parameter-decl:
-    identifier COLON type-expr
+      identifier COLON type-expr
         { $$ = parameter_t{ std::move($1.id), std::move($3) }; }
-    | UNDERSCORE COLON type-expr
-        { $$ = parameter_t{ sonia::lang::identifier{}, std::move($3) }; }
+    | identifier COLON type-expr ASSIGN expression
+        { $$ = parameter_t{ std::move($1.id), std::move($3), std::move($5) }; }
+    | type-expr
+        { $$ = parameter_t{ sonia::lang::identifier{}, std::move($1) }; }
+    | type-expr ASSIGN expression
+        { $$ = parameter_t{ sonia::lang::identifier{}, std::move($1), std::move($3) }; }
+    //| UNDERSCORE COLON type-expr
+    //    { $$ = parameter_t{ sonia::lang::identifier{}, std::move($3) }; }
     ;
 
 
@@ -401,28 +450,41 @@ type-expr:
       BOOL { $$ = beng_bool_t{}; }
     | INT { $$ = beng_int_t{}; }
     | FLOAT { $$ = beng_float_t{}; }
+    | STRING_WORD { $$ = beng_string_t{}; }
     | qname { $$ = beng_object_t{std::move($1)}; }
+    | OPEN_SQUARE_BRACKET type-expr CLOSE_SQUARE_BRACKET
+        { $$ = beng_vector_t{std::move($2)}; }
+    | OPEN_PARENTHESIS opt-type-list CLOSE_PARENTHESIS
+        { $$ = std::move($2); }
     | type-expr OPEN_SQUARE_BRACKET INTEGER CLOSE_SQUARE_BRACKET
-        {
-            $$ = beng_array_t{std::move($1), (size_t)std::move($3)};
-        }
+        { $$ = beng_array_t{std::move($1), (size_t)std::move($3)}; }
     | type-expr LOGIC_OR type-expr
         {
-            beng_union_t<beng_generic_type> uni{};
+            beng_union_t uni{};
             uni.members.emplace_back(std::move($1));
             uni.members.emplace_back(std::move($3));
             $$ = std::move(uni);
         }
+    | type-expr ARROW type-expr
+        { $$ = beng_fn_t{std::move($1), std::move($3)}; }
     ;
 
+opt-type-list:
+    %empty
+        { $$ = beng_tuple_t{}; }
+    | type-expr
+        { $$ = beng_tuple_t{}; $$.fields.emplace_back(std::move($1)); }
+    | opt-type-list COMMA type-expr
+        { $$ = std::move($1); $$.fields.emplace_back(std::move($3)); }
+    ;
 
 
 /////////////////////////// EXPRESSIONS
 compound-expression:
     //expression OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
-    //    { $$ = expression_t { procedure_t{ std::move($1), std::move($3) } }; }
+    //    { $$ = expression_t { function_call_t{ std::move($1), std::move($3) } }; }
     qname OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
-        { $$ = expression_t { procedure_t{ std::move($1), std::move($3) } }; }
+        { $$ = expression_t { function_call_t{ std::move($1), std::move($3) } }; }
     | expression ASSIGN expression
         { $$ = assign_expression_t{ std::move($1), std::move($3) }; }
     ;
@@ -440,6 +502,8 @@ expression:
         { $$ = expression_t { std::move($1) }; }
     | OPEN_PARENTHESIS expression CLOSE_PARENTHESIS
         { $$ = expression_t { std::move($2) }; }
+    | OPEN_SQUARE_BRACKET expression-list-any CLOSE_SQUARE_BRACKET
+        { $$ = expression_vector_t{ {std::move($2)} }; }
     | compound-expression
         { $$ = std::move($1); }
     /*
@@ -447,6 +511,15 @@ expression:
         { $$ = expression_t { ctprocedure{ std::move($1), std::move($3) } }; }
     
     */
+    ;
+
+expression-list-any:
+    %empty
+        { $$ = expression_list_t{}; }
+    | expression
+        { $$ = expression_list_t{ std::move($1) }; }
+    | expression-list-any COMMA expression
+        { $$ = std::move($1); $$.emplace_back(std::move($3)); }
     ;
 
 opt-named-expr-list-any:

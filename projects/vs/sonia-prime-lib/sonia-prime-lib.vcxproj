@@ -500,7 +500,7 @@
     <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\expression_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\location.hh" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\parser.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\procedure_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\functional_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\semantic.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\type_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\unit.hpp" />

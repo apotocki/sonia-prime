@@ -2025,7 +2025,7 @@
     <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\compiler.hpp">
       <Filter>sonia.utility\mvvm\beng</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\procedure_entity.hpp">
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\functional_entity.hpp">
       <Filter>sonia.utility\mvvm\beng\entities</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\semantic.hpp">

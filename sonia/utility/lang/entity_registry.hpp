@@ -62,6 +62,7 @@ shared_ptr<EntityT> entity_registry<EntityT, MutexT>::find(qname_view_t name) no
 template <typename EntityT, typename MutexT>
 void entity_registry<EntityT, MutexT>::insert(shared_ptr<EntityT> e)
 {
+    assert(e->name().is_absolute());
     lock_guard guard(set_mtx_);
     auto it = set_.find(e->name());
     if (it == set_.end()) {

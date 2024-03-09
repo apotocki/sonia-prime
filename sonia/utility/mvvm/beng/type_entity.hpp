@@ -9,7 +9,7 @@
 
 #include "sonia/shared_ptr.hpp"
 
-#include "procedure_entity.hpp"
+#include "functional_entity.hpp"
 #include "semantic.hpp"
 
 #include <ranges>
@@ -17,10 +17,10 @@
 //#include "sonia/utility/functional/hash/span.hpp"
 namespace sonia::lang::beng {
 
-class type_entity : public procedure_entity
+class type_entity : public functional_entity
 {
 public:
-    explicit type_entity(qname_type name) : procedure_entity{ std::move(name) } {}
+    explicit type_entity(qname_type name) : functional_entity{ std::move(name) } {}
 
     bool find(compiler_context&,
         span<const expression_t> positioned_args,
@@ -97,24 +97,24 @@ bool type_entity::find(compiler_context& ctx,
     size_t initial_result_sz = result.size();
     EXCEPTIONAL_SCOPE_EXIT([&result, initial_result_sz]() { result.resize(initial_result_sz); });
 
-    procedure_signature const& sig = signatures.back();
+    function_signature const& sig = signatures.back();
     size_t posargpos = 0;
 
     for (auto const& narg : named_args) {
         auto const& argname = std::get<0>(narg);
-        auto it = std::ranges::lower_bound(sig.named_arguments, argname.id, [](auto const& l, auto const& r) { return l < r; }, [](auto const& v) { return v.first; });
-        if (it == sig.named_arguments.end() || it->first != argname.id) {
+        auto it = std::ranges::lower_bound(sig.named_parameters, argname.id, [](auto const& l, auto const& r) { return l < r; }, [](auto const& v) { return std::get<0>(v); });
+        if (it == sig.named_parameters.end() || std::get<0>(*it) != argname.id) {
             throw exception("%1%(%2%,%3%): parameter `%4%` of `%5%` is not found"_fmt %
                 argname.location.resource % argname.location.line % argname.location.column %
                 ctx.u().print(argname.id) % ctx.u().print(name()));
         }
-        expression_visitor evis{ ctx, result, &it->second };
+        expression_visitor evis{ ctx, result, &std::get<1>(*it) };
         apply_visitor(evis, std::get<1>(narg));
         result.emplace_back(semantic::push_value{ ctx.u().as_u32string(argname.id) });
     }
     result.emplace_back(semantic::push_value{ decimal{ named_args.size() } });
     result.emplace_back(semantic::push_value{ ctx.u().as_u32string(name()) });
-    result.emplace_back(semantic::invoke_function{ this, 2 * ((uint32_t)named_args.size()) + 1 });
+    result.emplace_back(semantic::invoke_function{ name_, 2 * ((uint32_t)named_args.size()) + 1 });
     rtype = beng_object_t{ this->name() };
     return true;
 

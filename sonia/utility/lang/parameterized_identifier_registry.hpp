@@ -28,22 +28,23 @@ class parameterized_identifier_registry
 
     struct item
     {
-        IdentifierT master_id;
+        //IdentifierT master_id;
         IdentifierT id; // parameterized id
         parameter_vec_t parameters;
         span<const qname_t> pspan() const { return parameters; }
     };
 
-    using composite_hasher_t = boost::multi_index::composite_key_hash<hasher, hasher>;
-    using composite_equal_to_t = boost::multi_index::composite_key_equal_to<std::equal_to<>, range_equal>;
+    //using composite_hasher_t = boost::multi_index::composite_key_hash<hasher, hasher>;
+    //using composite_equal_to_t = boost::multi_index::composite_key_equal_to<std::equal_to<>, range_equal>;
 
+    /*
     using set_t = boost::multi_index::multi_index_container<
         item,
         boost::multi_index::indexed_by<
             boost::multi_index::hashed_unique<
                 boost::multi_index::composite_key<
                     item,
-                    boost::multi_index::member<item, IdentifierT, &item::id>,
+                    //boost::multi_index::member<item, IdentifierT, &item::id>,
                     boost::multi_index::member<item, const parameter_vec_t, &item::parameters>
                     //boost::multi_index::const_mem_fun<item, span<const qname_t>, &item::pspan>
                 >,
@@ -51,15 +52,30 @@ class parameterized_identifier_registry
                 composite_equal_to_t
             >,
             boost::multi_index::hashed_unique<
-                boost::multi_index::member<item, IdentifierT, &item::master_id>
+                boost::multi_index::member<item, IdentifierT, &item::id>
+            >
+        >
+    >;
+    */
+
+    using set_t = boost::multi_index::multi_index_container<
+        item,
+        boost::multi_index::indexed_by<
+            boost::multi_index::hashed_unique<
+                boost::multi_index::member<item, const parameter_vec_t, &item::parameters>,
+                hasher
+            >,
+            boost::multi_index::hashed_unique<
+                boost::multi_index::member<item, IdentifierT, &item::id>
             >
         >
     >;
 
 public:
     explicit parameterized_identifier_registry(identifier_builder<IdentifierT>& ib) : ib_{ ib } {}
-    IdentifierT resolve(IdentifierT id, span<qname_t> params);
-    optional<std::tuple<IdentifierT, span<const qname_t>>> resolve(IdentifierT masterid) const noexcept;
+    IdentifierT resolve(/*IdentifierT id,*/ span<qname_t> params);
+    //optional<std::tuple<IdentifierT, span<const qname_t>>> resolve(IdentifierT masterid) const noexcept;
+    span<const qname_t> resolve(IdentifierT masterid) const noexcept;
 
 private:
     identifier_builder<IdentifierT>& ib_;
@@ -69,28 +85,30 @@ private:
 };
 
 template <typename IdentifierT,typename MutexT>
-IdentifierT parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT id, span<qname_t> params)
+IdentifierT parameterized_identifier_registry<IdentifierT, MutexT>::resolve(/*IdentifierT id,*/ span<qname_t> params)
 {
     lock_guard guard(set_mtx_);
-    auto it = set_.find(std::tuple{ id, params }, composite_hasher_t{}, composite_equal_to_t{});
+    auto it = set_.find(params, hasher{}, range_equal{});
+    //auto it = set_.find(std::tuple{ id, params }, composite_hasher_t{}, composite_equal_to_t{});
     if (it == set_.end()) {
-        auto mid = ib_();
-        set_.insert(it, item{ mid, id, parameter_vec_t{params.begin(), params.end()} });
-        return mid;
+        auto id = ib_();
+        set_.insert(it, item{ id, parameter_vec_t{params.begin(), params.end()} });
+        return id;
     }
-    return it->master_id;
+    return it->id;
 }
 
 template <typename IdentifierT, typename MutexT>
-optional<std::tuple<IdentifierT, span<const qname<IdentifierT>>>> parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT masterid) const noexcept
+//optional<std::tuple<IdentifierT, span<const qname<IdentifierT>>>> parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT masterid) const noexcept
+span<const qname<IdentifierT>> parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT id) const noexcept
 {
     auto const& slice = set_.get<1>();
     lock_guard guard(set_mtx_);
-    auto it = slice.find(masterid);
+    auto it = slice.find(id);
     if (it == slice.end()) {
-        return nullopt;
+        return {};
     }
-    return std::tuple(it->id, span{it->parameters});
+    return span{it->parameters};
 }
 
 #if  0 

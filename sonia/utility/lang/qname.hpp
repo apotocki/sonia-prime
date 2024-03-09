@@ -37,7 +37,7 @@ public:
     }
 
     qname(span<const IdentifierT> ids, bool is_absolute)
-        : parts_{ ids.begin(), ids.end }
+        : parts_{ ids.begin(), ids.end() }
         , absolute_{ is_absolute }
     {}
 
@@ -122,6 +122,10 @@ public:
         : base_t{ qn.parts() }
         , absolute_{ qn.is_absolute() }
     {}
+    //qname_view(IdentifierT const& id)
+    //    : base_t{ &id, 1 }
+    //    , absolute_{ true }
+    //{}
 
     qname_view(qname_view const&) = default;
     qname_view& operator=(qname_view const&) = default;
@@ -147,6 +151,14 @@ private:
 };
 
 template <typename IdentifierT>
+inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, IdentifierT leaf)
+{
+    qname<IdentifierT> result{ base };
+    result.append(leaf);
+    return std::move(result);
+}
+
+template <typename IdentifierT>
 inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, qname_view<IdentifierT> leaf)
 {
     if (leaf.is_absolute()) {
@@ -155,6 +167,18 @@ inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, qname_view<
     qname<IdentifierT> result{ base };
     result.append(leaf);
     return std::move(result);
+}
+
+template <typename IdentifierT>
+inline qname<IdentifierT> operator+ (qname_view<IdentifierT> const& base, IdentifierT leaf)
+{
+    return qname{ base, base.is_absolute() } + leaf;
+}
+
+template <typename IdentifierT>
+inline qname<IdentifierT> operator+ (qname_view<IdentifierT> const& base, qname_view<IdentifierT> leaf)
+{
+    return qname{ base, base.is_absolute() } + leaf;
 }
 
 }

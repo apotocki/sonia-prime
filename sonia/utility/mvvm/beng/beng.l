@@ -124,6 +124,7 @@ EXTERN                  "extern"
 BOOL					"bool"
 INT						"int"
 FLOAT					"float"
+STRING_WORD				"string"
 
 END_STATEMENT			";"
 COMMA					","
@@ -139,6 +140,7 @@ POINT                   "."
 UNDERSCORE              "_"
 DBLCOLON                "::"
 LOGIC_OR                "||"
+ARROW					"->"
 
 /*
 NEW						"new"
@@ -165,7 +167,7 @@ NAMESPACE               "namespace"
 ARROWAST                "->*"
 LSHIFTSSIGN             "<<="
 RSHIFTSSIGN             ">>="
-ARROW					"->"
+
 FARROW					"~>"
 PTAST                   ".*"
 
@@ -256,6 +258,7 @@ HASHTAG					"#"
 	{BOOL} { return (beng_lang::parser::token::BOOL); }
 	{INT} { return (beng_lang::parser::token::INT); }
 	{FLOAT} { return (beng_lang::parser::token::FLOAT); }
+	{STRING_WORD} { return (beng_lang::parser::token::STRING_WORD); }
 
 	{OPEN_BRACE}			{ return (beng_lang::parser::token::OPEN_BRACE); }
 	{CLOSE_BRACE}			{ return (beng_lang::parser::token::CLOSE_BRACE); }
@@ -271,6 +274,7 @@ HASHTAG					"#"
 	{UNDERSCORE}			{ return (beng_lang::parser::token::UNDERSCORE); }
 	{DBLCOLON}              { return (beng_lang::parser::token::DBLCOLON); }
 	{LOGIC_OR}              { return (beng_lang::parser::token::LOGIC_OR); }
+	{ARROW}                 { return (beng_lang::parser::token::ARROW); }
 
 	{IDENTIFIER} {
 		variant_emplace(annotated_string_view{text_view, location});
@@ -305,7 +309,7 @@ HASHTAG					"#"
 		return (beng_lang::parser::token::OPERATOR_TERM);
 	}
 
-	{ARROW}                 { return (beng_lang::parser::token::ARROW); }
+	
 	
     
 	
@@ -345,15 +349,15 @@ DECIMAL_LITERAL			{DECIMAL}"_"
 	return (beng_lang::parser::token::DECIMAL);
 }
 
-    {DECIMAL} {
-        variant_emplace(yylval, string_view{yytext, (size_t) yyleng});
-		return (beng_lang::parser::token::DECIMAL);
-    }
+{DECIMAL} {
+    variant_emplace(yylval, string_view{yytext, (size_t) yyleng});
+	return (beng_lang::parser::token::DECIMAL);
+}
 
-	{DECIMAL_LITERAL} {
-		variant_emplace(yylval, string_view{yytext, (size_t) yyleng - 1});
-		return (beng_lang::parser::token::DECIMAL_LITERAL);
-	}
+{DECIMAL_LITERAL} {
+	variant_emplace(yylval, string_view{yytext, (size_t) yyleng - 1});
+	return (beng_lang::parser::token::DECIMAL_LITERAL);
+}
 
 <NUMERIC>{
 	{UNDERSCORE} { return (beng_lang::parser::token::UNDERSCORE); }

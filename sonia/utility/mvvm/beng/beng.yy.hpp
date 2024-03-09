@@ -724,7 +724,7 @@ extern int yylex \
 #undef yyTABLES_NAME
 #endif
 
-#line 329 "beng.l"
+#line 333 "beng.l"
 
 
 #line 730 "beng.yy.hpp"

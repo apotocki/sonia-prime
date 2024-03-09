@@ -22,6 +22,8 @@ public:
 
     void assign_variable();
     void construct_object();
+    void arrayify();
+    void print_string();
 
     static small_string camel2kebab(string_view cc);
 
@@ -68,6 +70,8 @@ public:
     size_t push_on_stack(var_t value);
     void append_extern_assign();
     void append_object_constructor();
+    void append_arrayify();
+    void append_print_string();
 
 private:
     void do_vm_assign_variable();
@@ -76,6 +80,8 @@ private:
 
     size_t do_vm_assign_variable_id_;
     size_t do_vm_object_constructor_id_;
+    size_t do_vm_arrayify_id_;
+    size_t do_vm_print_string_id_;
 };
 
 }

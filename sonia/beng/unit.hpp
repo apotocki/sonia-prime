@@ -18,11 +18,11 @@
 #include "boost/conversion/unicode/utf.hpp"
 #include "boost/conversion/push_iterator.hpp"
 
-#include "beng.hpp"
+#include "ast/terms.hpp"
 
 //#include "ast.hpp"
 #include "semantic.hpp"
-#include "variable_entity.hpp"
+#include "entities/variable_entity.hpp"
 
 //#include "functional_entity.hpp"
 
@@ -176,6 +176,7 @@ public:
         return ss.str();
     }
 
+    template <typename FamilyT>
     struct type_printer_visitor : static_visitor<void>
     {
         unit const& u_;
@@ -187,25 +188,26 @@ public:
         inline void operator()(beng_float_t) const { ss << "float"; }
         inline void operator()(beng_decimal_t) const { ss << "decimal"; }
         inline void operator()(beng_string_t) const { ss << "string"; }
+        inline void operator()(beng_preliminary_object_t const& obj) const { ss << '^' << u_.print(obj.name()); }
         inline void operator()(beng_object_t const& obj) const { ss << '^' << u_.print(obj.name()); }
-        inline void operator()(beng_fn_t const& fn) const
+        inline void operator()(beng_fn<FamilyT> const& fn) const
         {
             apply_visitor(*this, fn.arg);
             ss << "->";
             apply_visitor(*this, fn.result);
         }
-        inline void operator()(beng_vector_t const& v) const
+        inline void operator()(beng_vector<FamilyT> const& v) const
         {
             ss << '[';
             apply_visitor(*this, v.type);
             ss << ']';
         }
-        inline void operator()(beng_array_t const& arr) const
+        inline void operator()(beng_array<FamilyT> const& arr) const
         {
             apply_visitor(*this, arr.type);
             ss << '[' << arr.size << ']';
         }
-        inline void operator()(beng_tuple_t const& tpl) const
+        inline void operator()(beng_tuple<FamilyT> const& tpl) const
         {
             ss << '(';
             for (auto const& f : tpl.fields) {
@@ -214,7 +216,7 @@ public:
             }
             ss << ')';
         }
-        inline void operator()(beng_union_t const& tpl) const
+        inline void operator()(beng_union<FamilyT> const& tpl) const
         {
             for (auto const& f : tpl.members) {
                 if (&f != &tpl.members.front()) ss << "||";
@@ -223,10 +225,18 @@ public:
         }
     };
 
-    std::string print(beng_generic_type const& tp) const
+    std::string print(beng_preliminary_type const& tp) const
     {
         std::ostringstream ss;
-        type_printer_visitor vis{ *this, ss };
+        type_printer_visitor<beng_preliminary_type> vis{ *this, ss };
+        apply_visitor(vis, tp);
+        return ss.str();
+    }
+
+    std::string print(beng_type const& tp) const
+    {
+        std::ostringstream ss;
+        type_printer_visitor<beng_type> vis{ *this, ss };
         apply_visitor(vis, tp);
         return ss.str();
     }
@@ -280,6 +290,7 @@ public:
         inline result_type operator()(beng_float_t) const { return qname{ u_.slregistry().resolve("float"sv) }; }
         inline result_type operator()(beng_decimal_t) const { return qname{ u_.slregistry().resolve("decimal"sv) }; }
         inline result_type operator()(beng_string_t) const { return qname{ u_.slregistry().resolve("string"sv) }; }
+        
         inline result_type operator()(beng_object_t const& obj) const { return qname{ obj.name(), true }; }
 
         inline result_type operator()(beng_fn_t const& fn) const
@@ -338,11 +349,11 @@ public:
 
         std::vector<qname> ps;
 
-        for (beng_generic_type const& postp: sig.position_parameters) {
+        for (beng_type const& postp: sig.position_parameters) {
             ps.emplace_back(apply_visitor(vis, postp));
         }
-        for (auto const& [id, tp] : sig.named_parameters) {
-            ps.emplace_back(qname{ id });
+        for (auto const& [aname, tp] : sig.named_parameters) {
+            ps.emplace_back(qname{ aname.id });
             ps.emplace_back(apply_visitor(vis, tp));
         }
         identifier id = piregistry_.resolve(ps);

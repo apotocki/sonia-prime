@@ -34,9 +34,9 @@ shared_ptr<invokation::invokable> bunch_builder_view_model::try_get_element_by(s
     return it->second;
 }
 
-void bunch_builder_view_model::set_property(string_view id, string_view propname, blob_result const& value)
+void bunch_builder_view_model::set_property(string_view propname, blob_result const& value)
 {
-    get_element_by(id)->set_property(propname, value);
+    root_element()->set_property(propname, value);
 }
 
 }

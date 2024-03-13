@@ -7,7 +7,7 @@
 #include "sonia/variant.hpp"
 #include "sonia/string.hpp"
 
-#include "beng.hpp"
+#include "ast/terms.hpp"
 
 namespace sonia::lang::beng {
 
@@ -19,6 +19,7 @@ namespace semantic {
 struct push_variable { variable_entity const* entity; };
 struct push_value { value_t value; };
 struct set_variable { variable_entity const* entity; };
+struct return_statement {};
 
 struct invoke_function
 {
@@ -39,12 +40,12 @@ struct conditional
 using semantic_expression_type = make_recursive_variant<
     empty_t, // no op
     semantic::push_variable, semantic::push_value,
-    semantic::set_variable, semantic::invoke_function,
+    semantic::set_variable, semantic::invoke_function, semantic::return_statement,
     std::vector<recursive_variant_>,
     semantic::conditional<recursive_variant_>
 >::type;
 
-using semantic_expression_pair = std::pair<semantic_expression_type, beng_generic_type>;
+using semantic_expression_pair = std::pair<semantic_expression_type, beng_type>;
 
 class function_scope_type
 {

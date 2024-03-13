@@ -18,21 +18,21 @@ namespace sonia::lang::beng {
 class variable_entity : public entity
 {
 public:
-    explicit variable_entity(qname_type name, beng_generic_type t)
+    explicit variable_entity(qname_type name, beng_type t)
         : entity{ std::move(name) }
         , type_{ std::move(t) }
     {}
 
-    inline beng_generic_type const& type() const noexcept { return type_; }
+    inline beng_type const& type() const noexcept { return type_; }
 
 private:
-    beng_generic_type type_;
+    beng_type type_;
 };
 
 class local_variable_entity : public variable_entity
 {
 public:
-    explicit local_variable_entity(qname_type name, beng_generic_type t, bool is_const)
+    explicit local_variable_entity(qname_type name, beng_type t, bool is_const)
         : variable_entity{ std::move(name), std::move(t) }
         , is_const_ { is_const }
     {}

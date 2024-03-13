@@ -16,7 +16,7 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/variant.hpp"
 
-#include "beng.hpp"
+#include "ast/terms.hpp"
 
 namespace sonia::lang::beng {
 
@@ -104,7 +104,7 @@ struct case_expression
 };
 
 using expression_t = make_recursive_variant<
-    qname, case_expression, decimal, small_u32string, 
+    annotated_qname, case_expression, decimal, small_u32string,
     assign_expression<>,
     expression_vector<recursive_variant_>,
     function_call<recursive_variant_>
@@ -256,8 +256,8 @@ struct extern_function_decl
 
 struct parameter_t
 {
-    identifier name;
-    beng_generic_type type;
+    optional<annotated_identifier> name;
+    beng_preliminary_type type;
     optional<expression_t> default_value;
 };
 
@@ -269,7 +269,7 @@ struct fn_pure_decl
 {
     qname name;
     parameter_list_t parameters;
-    beng_generic_type result;
+    optional<beng_preliminary_type> result;
 };
 
 template <typename DeclT>
@@ -280,16 +280,22 @@ struct fn_decl : fn_pure_decl
 
 struct enum_decl
 {
-    qname name;
+    annotated_qname aname;
     std::vector<identifier> cases;
+
+    qname const& name() const { return aname.name; }
+    lex::resource_location const& location() const { return aname.location; }
 };
 
 // e.g: type View(disabled: bool, enabled: bool, hidden:bool, empty: bool, backgroundColor: Color);
 struct type_decl
 {
-    qname name;
+    annotated_qname aname;
     extension_list_t bases;
     parameter_list_t parameters;
+
+    qname const& name() const { return aname.name; }
+    lex::resource_location const& location() const { return aname.location; }
 };
 
 struct let_statement_decl
@@ -303,14 +309,19 @@ struct expression_decl
     expression_t expression;
 };
 
+struct return_decl
+{
+    expression_t expression;
+};
+
 struct exten_var
 {
     identifier name;
-    beng_generic_type type;
+    beng_preliminary_type type;
 };
 
 using infunction_declaration_t = make_recursive_variant<
-    empty_t, let_statement_decl, expression_decl
+    empty_t, let_statement_decl, expression_decl, return_decl
 >::type;
 
 using declaration_t = make_recursive_variant<

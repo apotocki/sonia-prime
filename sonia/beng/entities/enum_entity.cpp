@@ -3,8 +3,15 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "ast.hpp"
+
+#include "enum_entity.hpp"
 
 namespace sonia::lang::beng {
+
+enum_entity::enum_case const* enum_entity::find(identifier id)
+{
+    auto it = std::ranges::lower_bound(cases, id, {}, [](auto const& e) { return e.name; });
+    return it == cases.end() ? nullptr : &*it;
+}
 
 }

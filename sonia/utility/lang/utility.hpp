@@ -6,6 +6,9 @@
 
 #include "sonia/cstdint.hpp"
 #include "sonia/span.hpp"
+#include "sonia/string.hpp"
+#include "sonia/exceptions.hpp"
+
 #include <boost/container/small_vector.hpp>
 
 namespace sonia::lang {

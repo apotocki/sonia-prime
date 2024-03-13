@@ -5,9 +5,10 @@
 #pragma once
 #include <boost/unordered_map.hpp>
 
-#include "unit.hpp"
 #include "sonia/exceptions.hpp"
-#include "semantic.hpp"
+
+#include "../unit.hpp"
+#include "../semantic.hpp"
 
 namespace sonia::lang::beng {
 
@@ -54,6 +55,14 @@ public:
 
     unit& u() const { return unit_; }
 
+    inline void throw_identifier_redefinition(entity const& e, qname_view qn, lex::resource_location const& loc) const
+    {
+        throw exception("%1%(%2%,%3%): `%4%`: identifier redefinition, see declaration at %5%(%6%,%7%)"_fmt %
+            loc.resource % loc.line % loc.column %
+            u().print(qn) %
+            e.location().resource % e.location().line % e.location().column);
+    }
+
     // to do: resolving depends on qname
     shared_ptr<entity> resolve_entity(qname_view name) const
     {
@@ -82,6 +91,16 @@ public:
 
     //semantic_expression_type build_expression(beng_generic_type const& result_type, expression_t const& e);
 
+    std::pair<local_variable_entity&, size_t> new_local_variable(identifier name, beng_type t)
+    {
+        qname var_qname = ns + name;
+        auto ve = sonia::make_shared<local_variable_entity>(std::move(var_qname), std::move(t), true);
+        unit_.eregistry().insert(ve);
+        variables_.emplace_back(std::move(ve));
+        return { *variables_.back(), variables_.size() - 1 };
+    }
+
+    /*
     variable_entity const& new_variable(identifier name, beng_generic_type t, bool is_const)
     {
         qname var_qname = ns + name;
@@ -91,6 +110,7 @@ public:
         variables_.emplace_back(std::move(ve));
         return *variables_.back();
     }
+    */
 
     void finish_frame()
     {
@@ -126,6 +146,7 @@ public:
 
     qname ns;
     std::vector<semantic_expression_type> expressions;
+    optional<beng_type> result;
 
 private:
     unit& unit_;

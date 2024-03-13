@@ -120,11 +120,13 @@ ENUM					"enum"
 TYPE					"type"
 EXTENDS					"extends"
 EXTERN                  "extern"
+RETURN                  "return"
 
 BOOL					"bool"
 INT						"int"
 FLOAT					"float"
 STRING_WORD				"string"
+DECIMAL_WORD			"decimal"
 
 END_STATEMENT			";"
 COMMA					","
@@ -152,7 +154,7 @@ USING                   "using"
 THROW                   "throw"
 DELETE_                 "delete"
 SIZEOF                  "sizeof"
-RETURN                  "return"
+
 
 PRIVATE                 "private"
 TEMPLATE                "template"
@@ -254,11 +256,13 @@ HASHTAG					"#"
 	{TYPE} { return (beng_lang::parser::token::TYPE); }
 	{EXTENDS} { return (beng_lang::parser::token::EXTENDS); }
 	{EXTERN} { return (beng_lang::parser::token::EXTERN); }
+	{RETURN} { return (beng_lang::parser::token::RETURN); }
 
 	{BOOL} { return (beng_lang::parser::token::BOOL); }
 	{INT} { return (beng_lang::parser::token::INT); }
 	{FLOAT} { return (beng_lang::parser::token::FLOAT); }
 	{STRING_WORD} { return (beng_lang::parser::token::STRING_WORD); }
+	{DECIMAL_WORD} { return (beng_lang::parser::token::DECIMAL_WORD); }
 
 	{OPEN_BRACE}			{ return (beng_lang::parser::token::OPEN_BRACE); }
 	{CLOSE_BRACE}			{ return (beng_lang::parser::token::CLOSE_BRACE); }
@@ -296,7 +300,7 @@ HASHTAG					"#"
 	{DELETE_} { return (beng_lang::parser::token::DELETE_); }
 	{USING} { return (beng_lang::parser::token::USING); }
 	{SIZEOF} { return (beng_lang::parser::token::SIZEOF); }
-    {RETURN} { return (beng_lang::parser::token::RETURN); }
+    
 	
 	{PRIVATE} { return (beng_lang::parser::token::PRIVATE); }
 	{TEMPLATE} { return (beng_lang::parser::token::TEMPLATE); }

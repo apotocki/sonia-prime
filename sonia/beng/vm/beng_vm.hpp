@@ -8,17 +8,24 @@
 #include "sonia/utility/invokation/invokable.hpp"
 #include "sonia/utility/lang/vm.hpp"
 #include <boost/unordered_map.hpp>
+#include "../extern.hpp"
 
-namespace sonia::vm {
+namespace sonia::beng::vm {
 
-class builder_context
+class context
 {
 public:
     using variable_type = smart_blob;
     constexpr static size_t command_max_size = sizeof(void*);
     bool is_zero(variable_type const& v) const noexcept { return v.is_nil(); }
+    size_t to_address(variable_type const& v) const { return v.as<size_t>(); }
 
-    using vm_t = virtual_stack_machine<builder_context>;
+    using vm_t = sonia::vm::virtual_stack_machine<context>;
+
+    explicit context(vm_t& vm, external_environment* penv = nullptr) : vm_{vm}, penv_{penv} {}
+    
+    context(context const&) = delete;
+    context& operator=(context const&) = delete;
 
     void assign_variable();
     void construct_object();
@@ -29,43 +36,42 @@ public:
 
     variable_type const& stack_back(size_t i = 0)
     {
-        vm_t& v = vm();
-        size_t ssz = v.stack().size();
+        size_t ssz = vm_.stack().size();
         if (ssz <= i) [[unlikely]] {
             THROW_INTERNAL_ERROR("wrong stack index");
         }
-        return v.stack()[ssz - 1 - i];
+        return vm_.stack()[ssz - 1 - i];
     }
 
     void stack_pop(size_t n = 1)
     {
-        vm_t& v = vm();
-        size_t ssz = v.stack().size();
-        v.stack().resize(ssz - n);
+        size_t ssz = vm_.stack().size();
+        vm_.stack().resize(ssz - n);
     }
 
     void stack_push(smart_blob b)
     {
-        vm_t& v = vm();
-        v.stack().emplace_back(std::move(b));
+        vm_.stack().emplace_back(std::move(b));
     }
 
-    virtual vm_t& vm() = 0;
-    virtual shared_ptr<invokation::invokable> create(string_view type, string_view id) = 0;
-    virtual void set_property(string_view id, string_view propname, blob_result const& value) = 0;
+    //virtual vm_t& vm() = 0;
+    //virtual shared_ptr<invokation::invokable> create(string_view type, string_view id) = 0;
+    //virtual void set_property(string_view id, string_view propname, blob_result const& value) = 0;
 
-    std::string generate_object_id() const;
+    small_string generate_object_id() const;
 
 private:
-    mutable int id_counter_{ 0 };
+    mutable size_t id_counter_{ 0 };
+    vm_t& vm_;
+    external_environment* penv_;
 };
 
-class builder_virtual_stack_machine : public virtual_stack_machine<builder_context>
+class virtual_stack_machine : public sonia::vm::virtual_stack_machine<context>
 {
-    using base_t = virtual_stack_machine<builder_context>;
+    using base_t = sonia::vm::virtual_stack_machine<context>;
 
 public:
-    builder_virtual_stack_machine();
+    virtual_stack_machine();
 
     size_t push_on_stack(var_t value);
     void append_extern_assign();

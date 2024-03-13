@@ -382,11 +382,11 @@ namespace beng_lang {
     /// An auxiliary type to compute the largest semantic type.
     union union_type
     {
-      // type-expr
-      char dummy1[sizeof (beng_generic_type)];
-
       // opt-type-list
-      char dummy2[sizeof (beng_tuple_t)];
+      char dummy1[sizeof (beng_preliminary_tuple_t)];
+
+      // type-expr
+      char dummy2[sizeof (beng_preliminary_type)];
 
       // opt-decl
       char dummy3[sizeof (declaration_t)];
@@ -434,11 +434,11 @@ namespace beng_lang {
       // identifier
       char dummy16[sizeof (sonia::lang::beng::annotated_identifier)];
 
-      // IDENTIFIER
-      char dummy17[sizeof (sonia::lang::beng::annotated_string_view)];
-
       // qname
-      char dummy18[sizeof (sonia::lang::beng::qname)];
+      char dummy17[sizeof (sonia::lang::beng::annotated_qname)];
+
+      // IDENTIFIER
+      char dummy18[sizeof (sonia::lang::beng::annotated_string_view)];
 
       // case-decl
       char dummy19[sizeof (sonia::lang::identifier)];
@@ -591,7 +591,8 @@ namespace beng_lang {
     BOOL = 340,                    // BOOL
     INT = 341,                     // INT
     FLOAT = 342,                   // FLOAT
-    STRING_WORD = 343              // STRING_WORD
+    STRING_WORD = 343,             // STRING_WORD
+    DECIMAL_WORD = 344             // DECIMAL_WORD
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -608,7 +609,7 @@ namespace beng_lang {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 89, ///< Number of tokens.
+        YYNTOKENS = 90, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -699,33 +700,34 @@ namespace beng_lang {
         S_INT = 86,                              // INT
         S_FLOAT = 87,                            // FLOAT
         S_STRING_WORD = 88,                      // STRING_WORD
-        S_YYACCEPT = 89,                         // $accept
-        S_begin = 90,                            // begin
-        S_declaration_any = 91,                  // declaration_any
-        S_92_opt_decl = 92,                      // opt-decl
-        S_infunction_declaration_any = 93,       // infunction_declaration_any
-        S_94_opt_infunction_decl = 94,           // opt-infunction-decl
-        S_identifier = 95,                       // identifier
-        S_qname = 96,                            // qname
-        S_97_fn_decl = 97,                       // fn-decl
-        S_98_enum_decl = 98,                     // enum-decl
-        S_99_case_list_opt = 99,                 // case-list-opt
-        S_100_case_list = 100,                   // case-list
-        S_101_case_decl = 101,                   // case-decl
-        S_102_type_decl = 102,                   // type-decl
-        S_103_type_extension_any = 103,          // type-extension-any
-        S_104_type_extension_list = 104,         // type-extension-list
-        S_105_parameter_list_opt = 105,          // parameter-list-opt
-        S_106_parameter_list = 106,              // parameter-list
-        S_107_parameter_decl = 107,              // parameter-decl
-        S_108_type_expr = 108,                   // type-expr
-        S_109_opt_type_list = 109,               // opt-type-list
-        S_110_compound_expression = 110,         // compound-expression
-        S_expression = 111,                      // expression
-        S_112_expression_list_any = 112,         // expression-list-any
-        S_113_opt_named_expr_list_any = 113,     // opt-named-expr-list-any
-        S_114_opt_named_expr_list = 114,         // opt-named-expr-list
-        S_115_opt_named_expr = 115               // opt-named-expr
+        S_DECIMAL_WORD = 89,                     // DECIMAL_WORD
+        S_YYACCEPT = 90,                         // $accept
+        S_begin = 91,                            // begin
+        S_declaration_any = 92,                  // declaration_any
+        S_93_opt_decl = 93,                      // opt-decl
+        S_infunction_declaration_any = 94,       // infunction_declaration_any
+        S_95_opt_infunction_decl = 95,           // opt-infunction-decl
+        S_identifier = 96,                       // identifier
+        S_qname = 97,                            // qname
+        S_98_fn_decl = 98,                       // fn-decl
+        S_99_enum_decl = 99,                     // enum-decl
+        S_100_case_list_opt = 100,               // case-list-opt
+        S_101_case_list = 101,                   // case-list
+        S_102_case_decl = 102,                   // case-decl
+        S_103_type_decl = 103,                   // type-decl
+        S_104_type_extension_any = 104,          // type-extension-any
+        S_105_type_extension_list = 105,         // type-extension-list
+        S_106_parameter_list_opt = 106,          // parameter-list-opt
+        S_107_parameter_list = 107,              // parameter-list
+        S_108_parameter_decl = 108,              // parameter-decl
+        S_109_type_expr = 109,                   // type-expr
+        S_110_opt_type_list = 110,               // opt-type-list
+        S_111_compound_expression = 111,         // compound-expression
+        S_expression = 112,                      // expression
+        S_113_expression_list_any = 113,         // expression-list-any
+        S_114_opt_named_expr_list_any = 114,     // opt-named-expr-list-any
+        S_115_opt_named_expr_list = 115,         // opt-named-expr-list
+        S_116_opt_named_expr = 116               // opt-named-expr
       };
     };
 
@@ -762,41 +764,41 @@ namespace beng_lang {
       {
         switch (this->kind ())
     {
-      case symbol_kind::S_108_type_expr: // type-expr
-        value.move< beng_generic_type > (std::move (that.value));
+      case symbol_kind::S_110_opt_type_list: // opt-type-list
+        value.move< beng_preliminary_tuple_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_109_opt_type_list: // opt-type-list
-        value.move< beng_tuple_t > (std::move (that.value));
+      case symbol_kind::S_109_type_expr: // type-expr
+        value.move< beng_preliminary_type > (std::move (that.value));
         break;
 
-      case symbol_kind::S_92_opt_decl: // opt-decl
+      case symbol_kind::S_93_opt_decl: // opt-decl
         value.move< declaration_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_98_enum_decl: // enum-decl
+      case symbol_kind::S_99_enum_decl: // enum-decl
         value.move< enum_decl > (std::move (that.value));
         break;
 
-      case symbol_kind::S_112_expression_list_any: // expression-list-any
+      case symbol_kind::S_113_expression_list_any: // expression-list-any
         value.move< expression_list_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_110_compound_expression: // compound-expression
+      case symbol_kind::S_111_compound_expression: // compound-expression
       case symbol_kind::S_expression: // expression
         value.move< expression_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_103_type_extension_any: // type-extension-any
-      case symbol_kind::S_104_type_extension_list: // type-extension-list
+      case symbol_kind::S_104_type_extension_any: // type-extension-any
+      case symbol_kind::S_105_type_extension_list: // type-extension-list
         value.move< extension_list_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_97_fn_decl: // fn-decl
+      case symbol_kind::S_98_fn_decl: // fn-decl
         value.move< fn_decl_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_94_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_95_opt_infunction_decl: // opt-infunction-decl
         value.move< infunction_declaration_t > (std::move (that.value));
         break;
 
@@ -804,21 +806,21 @@ namespace beng_lang {
         value.move< int > (std::move (that.value));
         break;
 
-      case symbol_kind::S_113_opt_named_expr_list_any: // opt-named-expr-list-any
-      case symbol_kind::S_114_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_114_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_115_opt_named_expr_list: // opt-named-expr-list
         value.move< named_expression_term_list_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_115_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_116_opt_named_expr: // opt-named-expr
         value.move< named_expression_term_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_105_parameter_list_opt: // parameter-list-opt
-      case symbol_kind::S_106_parameter_list: // parameter-list
+      case symbol_kind::S_106_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_107_parameter_list: // parameter-list
         value.move< parameter_list_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_107_parameter_decl: // parameter-decl
+      case symbol_kind::S_108_parameter_decl: // parameter-decl
         value.move< parameter_t > (std::move (that.value));
         break;
 
@@ -830,15 +832,15 @@ namespace beng_lang {
         value.move< sonia::lang::beng::annotated_identifier > (std::move (that.value));
         break;
 
+      case symbol_kind::S_qname: // qname
+        value.move< sonia::lang::beng::annotated_qname > (std::move (that.value));
+        break;
+
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
         value.move< sonia::lang::beng::annotated_string_view > (std::move (that.value));
         break;
 
-      case symbol_kind::S_qname: // qname
-        value.move< sonia::lang::beng::qname > (std::move (that.value));
-        break;
-
-      case symbol_kind::S_101_case_decl: // case-decl
+      case symbol_kind::S_102_case_decl: // case-decl
         value.move< sonia::lang::identifier > (std::move (that.value));
         break;
 
@@ -855,12 +857,12 @@ namespace beng_lang {
         value.move< std::vector<infunction_declaration_t> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_99_case_list_opt: // case-list-opt
-      case symbol_kind::S_100_case_list: // case-list
+      case symbol_kind::S_100_case_list_opt: // case-list-opt
+      case symbol_kind::S_101_case_list: // case-list
         value.move< std::vector<sonia::lang::identifier> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_102_type_decl: // type-decl
+      case symbol_kind::S_103_type_decl: // type-decl
         value.move< type_decl > (std::move (that.value));
         break;
 
@@ -888,13 +890,13 @@ namespace beng_lang {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, beng_generic_type&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, beng_preliminary_tuple_t&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const beng_generic_type& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const beng_preliminary_tuple_t& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -902,13 +904,13 @@ namespace beng_lang {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, beng_tuple_t&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, beng_preliminary_type&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const beng_tuple_t& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const beng_preliminary_type& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -1112,13 +1114,13 @@ namespace beng_lang {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, sonia::lang::beng::annotated_string_view&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, sonia::lang::beng::annotated_qname&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const sonia::lang::beng::annotated_string_view& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const sonia::lang::beng::annotated_qname& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -1126,13 +1128,13 @@ namespace beng_lang {
 #endif
 
 #if 201103L <= YY_CPLUSPLUS
-      basic_symbol (typename Base::kind_type t, sonia::lang::beng::qname&& v, location_type&& l)
+      basic_symbol (typename Base::kind_type t, sonia::lang::beng::annotated_string_view&& v, location_type&& l)
         : Base (t)
         , value (std::move (v))
         , location (std::move (l))
       {}
 #else
-      basic_symbol (typename Base::kind_type t, const sonia::lang::beng::qname& v, const location_type& l)
+      basic_symbol (typename Base::kind_type t, const sonia::lang::beng::annotated_string_view& v, const location_type& l)
         : Base (t)
         , value (v)
         , location (l)
@@ -1241,183 +1243,183 @@ namespace beng_lang {
         switch (yykind)
         {
       case symbol_kind::S_STRING: // STRING
-#line 264 "beng.y"
+#line 265 "beng.y"
                     { }
-#line 1247 "beng.tab.hpp"
+#line 1249 "beng.tab.hpp"
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-#line 264 "beng.y"
+#line 265 "beng.y"
                     { }
-#line 1253 "beng.tab.hpp"
+#line 1255 "beng.tab.hpp"
         break;
 
       case symbol_kind::S_DECIMAL: // DECIMAL
-#line 264 "beng.y"
+#line 265 "beng.y"
                     { }
-#line 1259 "beng.tab.hpp"
+#line 1261 "beng.tab.hpp"
         break;
 
       case symbol_kind::S_INTEGER: // INTEGER
-#line 264 "beng.y"
+#line 265 "beng.y"
                     { }
-#line 1265 "beng.tab.hpp"
+#line 1267 "beng.tab.hpp"
         break;
 
       case symbol_kind::S_OPERATOR_TERM: // OPERATOR_TERM
-#line 264 "beng.y"
+#line 265 "beng.y"
                     { }
-#line 1271 "beng.tab.hpp"
+#line 1273 "beng.tab.hpp"
         break;
 
       case symbol_kind::S_declaration_any: // declaration_any
-#line 264 "beng.y"
+#line 265 "beng.y"
                     { }
-#line 1277 "beng.tab.hpp"
+#line 1279 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_92_opt_decl: // opt-decl
-#line 264 "beng.y"
+      case symbol_kind::S_93_opt_decl: // opt-decl
+#line 265 "beng.y"
                     { }
-#line 1283 "beng.tab.hpp"
+#line 1285 "beng.tab.hpp"
         break;
 
       case symbol_kind::S_infunction_declaration_any: // infunction_declaration_any
-#line 264 "beng.y"
+#line 265 "beng.y"
                     { }
-#line 1289 "beng.tab.hpp"
+#line 1291 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_94_opt_infunction_decl: // opt-infunction-decl
-#line 264 "beng.y"
+      case symbol_kind::S_95_opt_infunction_decl: // opt-infunction-decl
+#line 265 "beng.y"
                     { }
-#line 1295 "beng.tab.hpp"
+#line 1297 "beng.tab.hpp"
         break;
 
       case symbol_kind::S_identifier: // identifier
-#line 264 "beng.y"
+#line 265 "beng.y"
                     { }
-#line 1301 "beng.tab.hpp"
+#line 1303 "beng.tab.hpp"
         break;
 
       case symbol_kind::S_qname: // qname
-#line 264 "beng.y"
+#line 265 "beng.y"
                     { }
-#line 1307 "beng.tab.hpp"
+#line 1309 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_97_fn_decl: // fn-decl
-#line 264 "beng.y"
+      case symbol_kind::S_98_fn_decl: // fn-decl
+#line 265 "beng.y"
                     { }
-#line 1313 "beng.tab.hpp"
+#line 1315 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_98_enum_decl: // enum-decl
-#line 264 "beng.y"
+      case symbol_kind::S_99_enum_decl: // enum-decl
+#line 265 "beng.y"
                     { }
-#line 1319 "beng.tab.hpp"
+#line 1321 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_99_case_list_opt: // case-list-opt
-#line 264 "beng.y"
+      case symbol_kind::S_100_case_list_opt: // case-list-opt
+#line 265 "beng.y"
                     { }
-#line 1325 "beng.tab.hpp"
+#line 1327 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_100_case_list: // case-list
-#line 264 "beng.y"
+      case symbol_kind::S_101_case_list: // case-list
+#line 265 "beng.y"
                     { }
-#line 1331 "beng.tab.hpp"
+#line 1333 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_101_case_decl: // case-decl
-#line 264 "beng.y"
+      case symbol_kind::S_102_case_decl: // case-decl
+#line 265 "beng.y"
                     { }
-#line 1337 "beng.tab.hpp"
+#line 1339 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_102_type_decl: // type-decl
-#line 264 "beng.y"
+      case symbol_kind::S_103_type_decl: // type-decl
+#line 265 "beng.y"
                     { }
-#line 1343 "beng.tab.hpp"
+#line 1345 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_103_type_extension_any: // type-extension-any
-#line 264 "beng.y"
+      case symbol_kind::S_104_type_extension_any: // type-extension-any
+#line 265 "beng.y"
                     { }
-#line 1349 "beng.tab.hpp"
+#line 1351 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_104_type_extension_list: // type-extension-list
-#line 264 "beng.y"
+      case symbol_kind::S_105_type_extension_list: // type-extension-list
+#line 265 "beng.y"
                     { }
-#line 1355 "beng.tab.hpp"
+#line 1357 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_105_parameter_list_opt: // parameter-list-opt
-#line 264 "beng.y"
+      case symbol_kind::S_106_parameter_list_opt: // parameter-list-opt
+#line 265 "beng.y"
                     { }
-#line 1361 "beng.tab.hpp"
+#line 1363 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_106_parameter_list: // parameter-list
-#line 264 "beng.y"
+      case symbol_kind::S_107_parameter_list: // parameter-list
+#line 265 "beng.y"
                     { }
-#line 1367 "beng.tab.hpp"
+#line 1369 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_107_parameter_decl: // parameter-decl
-#line 264 "beng.y"
+      case symbol_kind::S_108_parameter_decl: // parameter-decl
+#line 265 "beng.y"
                     { }
-#line 1373 "beng.tab.hpp"
+#line 1375 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_108_type_expr: // type-expr
-#line 264 "beng.y"
+      case symbol_kind::S_109_type_expr: // type-expr
+#line 265 "beng.y"
                     { }
-#line 1379 "beng.tab.hpp"
+#line 1381 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_109_opt_type_list: // opt-type-list
-#line 264 "beng.y"
+      case symbol_kind::S_110_opt_type_list: // opt-type-list
+#line 265 "beng.y"
                     { }
-#line 1385 "beng.tab.hpp"
+#line 1387 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_110_compound_expression: // compound-expression
-#line 264 "beng.y"
+      case symbol_kind::S_111_compound_expression: // compound-expression
+#line 265 "beng.y"
                     { }
-#line 1391 "beng.tab.hpp"
+#line 1393 "beng.tab.hpp"
         break;
 
       case symbol_kind::S_expression: // expression
-#line 264 "beng.y"
+#line 265 "beng.y"
                     { }
-#line 1397 "beng.tab.hpp"
+#line 1399 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_112_expression_list_any: // expression-list-any
-#line 264 "beng.y"
+      case symbol_kind::S_113_expression_list_any: // expression-list-any
+#line 265 "beng.y"
                     { }
-#line 1403 "beng.tab.hpp"
+#line 1405 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_113_opt_named_expr_list_any: // opt-named-expr-list-any
-#line 264 "beng.y"
+      case symbol_kind::S_114_opt_named_expr_list_any: // opt-named-expr-list-any
+#line 265 "beng.y"
                     { }
-#line 1409 "beng.tab.hpp"
+#line 1411 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_114_opt_named_expr_list: // opt-named-expr-list
-#line 264 "beng.y"
+      case symbol_kind::S_115_opt_named_expr_list: // opt-named-expr-list
+#line 265 "beng.y"
                     { }
-#line 1415 "beng.tab.hpp"
+#line 1417 "beng.tab.hpp"
         break;
 
-      case symbol_kind::S_115_opt_named_expr: // opt-named-expr
-#line 264 "beng.y"
+      case symbol_kind::S_116_opt_named_expr: // opt-named-expr
+#line 265 "beng.y"
                     { }
-#line 1421 "beng.tab.hpp"
+#line 1423 "beng.tab.hpp"
         break;
 
        default:
@@ -1427,41 +1429,41 @@ namespace beng_lang {
         // Value type destructor.
 switch (yykind)
     {
-      case symbol_kind::S_108_type_expr: // type-expr
-        value.template destroy< beng_generic_type > ();
+      case symbol_kind::S_110_opt_type_list: // opt-type-list
+        value.template destroy< beng_preliminary_tuple_t > ();
         break;
 
-      case symbol_kind::S_109_opt_type_list: // opt-type-list
-        value.template destroy< beng_tuple_t > ();
+      case symbol_kind::S_109_type_expr: // type-expr
+        value.template destroy< beng_preliminary_type > ();
         break;
 
-      case symbol_kind::S_92_opt_decl: // opt-decl
+      case symbol_kind::S_93_opt_decl: // opt-decl
         value.template destroy< declaration_t > ();
         break;
 
-      case symbol_kind::S_98_enum_decl: // enum-decl
+      case symbol_kind::S_99_enum_decl: // enum-decl
         value.template destroy< enum_decl > ();
         break;
 
-      case symbol_kind::S_112_expression_list_any: // expression-list-any
+      case symbol_kind::S_113_expression_list_any: // expression-list-any
         value.template destroy< expression_list_t > ();
         break;
 
-      case symbol_kind::S_110_compound_expression: // compound-expression
+      case symbol_kind::S_111_compound_expression: // compound-expression
       case symbol_kind::S_expression: // expression
         value.template destroy< expression_t > ();
         break;
 
-      case symbol_kind::S_103_type_extension_any: // type-extension-any
-      case symbol_kind::S_104_type_extension_list: // type-extension-list
+      case symbol_kind::S_104_type_extension_any: // type-extension-any
+      case symbol_kind::S_105_type_extension_list: // type-extension-list
         value.template destroy< extension_list_t > ();
         break;
 
-      case symbol_kind::S_97_fn_decl: // fn-decl
+      case symbol_kind::S_98_fn_decl: // fn-decl
         value.template destroy< fn_decl_t > ();
         break;
 
-      case symbol_kind::S_94_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_95_opt_infunction_decl: // opt-infunction-decl
         value.template destroy< infunction_declaration_t > ();
         break;
 
@@ -1469,21 +1471,21 @@ switch (yykind)
         value.template destroy< int > ();
         break;
 
-      case symbol_kind::S_113_opt_named_expr_list_any: // opt-named-expr-list-any
-      case symbol_kind::S_114_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_114_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_115_opt_named_expr_list: // opt-named-expr-list
         value.template destroy< named_expression_term_list_t > ();
         break;
 
-      case symbol_kind::S_115_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_116_opt_named_expr: // opt-named-expr
         value.template destroy< named_expression_term_t > ();
         break;
 
-      case symbol_kind::S_105_parameter_list_opt: // parameter-list-opt
-      case symbol_kind::S_106_parameter_list: // parameter-list
+      case symbol_kind::S_106_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_107_parameter_list: // parameter-list
         value.template destroy< parameter_list_t > ();
         break;
 
-      case symbol_kind::S_107_parameter_decl: // parameter-decl
+      case symbol_kind::S_108_parameter_decl: // parameter-decl
         value.template destroy< parameter_t > ();
         break;
 
@@ -1495,15 +1497,15 @@ switch (yykind)
         value.template destroy< sonia::lang::beng::annotated_identifier > ();
         break;
 
+      case symbol_kind::S_qname: // qname
+        value.template destroy< sonia::lang::beng::annotated_qname > ();
+        break;
+
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
         value.template destroy< sonia::lang::beng::annotated_string_view > ();
         break;
 
-      case symbol_kind::S_qname: // qname
-        value.template destroy< sonia::lang::beng::qname > ();
-        break;
-
-      case symbol_kind::S_101_case_decl: // case-decl
+      case symbol_kind::S_102_case_decl: // case-decl
         value.template destroy< sonia::lang::identifier > ();
         break;
 
@@ -1520,12 +1522,12 @@ switch (yykind)
         value.template destroy< std::vector<infunction_declaration_t> > ();
         break;
 
-      case symbol_kind::S_99_case_list_opt: // case-list-opt
-      case symbol_kind::S_100_case_list: // case-list
+      case symbol_kind::S_100_case_list_opt: // case-list-opt
+      case symbol_kind::S_101_case_list: // case-list
         value.template destroy< std::vector<sonia::lang::identifier> > ();
         break;
 
-      case symbol_kind::S_102_type_decl: // type-decl
+      case symbol_kind::S_103_type_decl: // type-decl
         value.template destroy< type_decl > ();
         break;
 
@@ -3010,6 +3012,21 @@ switch (yykind)
         return symbol_type (token::STRING_WORD, l);
       }
 #endif
+#if 201103L <= YY_CPLUSPLUS
+      static
+      symbol_type
+      make_DECIMAL_WORD (location_type l)
+      {
+        return symbol_type (token::DECIMAL_WORD, std::move (l));
+      }
+#else
+      static
+      symbol_type
+      make_DECIMAL_WORD (const location_type& l)
+      {
+        return symbol_type (token::DECIMAL_WORD, l);
+      }
+#endif
 
 
     class context
@@ -3088,7 +3105,7 @@ switch (yykind)
     static const signed char yydefact_[];
 
     // YYPGOTO[NTERM-NUM].
-    static const signed char yypgoto_[];
+    static const short yypgoto_[];
 
     // YYDEFGOTO[NTERM-NUM].
     static const unsigned char yydefgoto_[];
@@ -3340,7 +3357,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 207,     ///< Last index in yytable_.
+      yylast_ = 253,     ///< Last index in yytable_.
       yynnts_ = 27,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
@@ -3354,7 +3371,7 @@ switch (yykind)
 
 
 } // beng_lang
-#line 3358 "beng.tab.hpp"
+#line 3375 "beng.tab.hpp"
 
 
 

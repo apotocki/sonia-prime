@@ -229,6 +229,31 @@
     <ClInclude Include="..\..\..\agnostic\utility\uninitialized.hpp" />
     <ClInclude Include="..\..\..\agnostic\utility\static_log2.hpp" />
     <ClInclude Include="..\..\..\sonia\array_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\ast.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\ast\compiler_context.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\ast\declaration_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\ast\expression_decimal_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\ast\expression_type_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\ast\expression_vector_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\ast\expression_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\ast\forward_declaration_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\ast\terms.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\ast\preliminary_type_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\beng.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\beng.tab.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\beng.yy.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\entities\enum_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\entities\functional_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\entities\type_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\entities\variable_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\extern.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\location.hh" />
+    <ClInclude Include="..\..\..\sonia\beng\parser.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\semantic.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\unit.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\vm\beng_vm.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\vm\compiler_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\vm\push_value_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\build_config.hpp" />
     <ClInclude Include="..\..\..\sonia\concurrency.hpp" />
     <ClInclude Include="..\..\..\sonia\cstdint.hpp" />
@@ -415,6 +440,7 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\less\variant.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\variant_compare_three_way.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\hazardous.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\command.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\comparison_operators.hpp" />
@@ -491,22 +517,7 @@
     <ClInclude Include="..\..\..\sonia\utility\marshaling\string.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\marshaling\stub_parameter.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\multimethod.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\beng.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\beng.tab.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\ast.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\compiler.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\declaration_visitor.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\enum_entity.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\expression_visitor.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\location.hh" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\parser.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\functional_entity.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\semantic.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\type_entity.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\unit.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\beng\variable_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\builder_view_model.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\mvvm\builder_vm.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\bunch_builder_view_model.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\lua_view_model.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\view_model.hpp" />
@@ -623,6 +634,19 @@
     <ClInclude Include="..\..\..\sonia\variant.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\sonia\beng\ast\ast.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\ast\declaration_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\ast\expression_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\ast\forward_declaration_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\beng.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\beng.tab.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\beng.yy.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\beng_unit.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\entities\enum_entity.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\entities\functional_entity.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\entities\type_entity.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\parser.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\vm\beng_vm.cpp" />
     <ClCompile Include="..\..\..\sonia\fibers\algo\algorithm.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -840,13 +864,7 @@
     <ClCompile Include="..\..\..\sonia\utility\lua\lua.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\lua\sonia_lib.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\lua\variant_lib.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\mvvm\beng\beng.tab.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\mvvm\beng\beng.yy.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\mvvm\beng\ast.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\mvvm\beng\beng_unit.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\mvvm\beng\parser.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\mvvm\builder_view_model.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\mvvm\builder_vm.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\mvvm\bunch_builder_view_model.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\mvvm\lua_view_model.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\mvvm\view_model.cpp" />
@@ -888,9 +906,10 @@
     <Natvis Include="..\sonia.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\sonia\utility\mvvm\beng\beng.l" />
-    <None Include="..\..\..\sonia\utility\mvvm\beng\beng.y" />
-    <None Include="..\..\..\sonia\utility\mvvm\beng\generate_parser.cmd" />
+    <None Include="..\..\..\sonia\beng\beng.l" />
+    <None Include="..\..\..\sonia\beng\beng.output" />
+    <None Include="..\..\..\sonia\beng\beng.y" />
+    <None Include="..\..\..\sonia\beng\generate_parser.cmd" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

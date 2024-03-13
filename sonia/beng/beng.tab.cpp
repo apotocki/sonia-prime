@@ -194,41 +194,41 @@ namespace beng_lang {
   {
     switch (this->kind ())
     {
-      case symbol_kind::S_108_type_expr: // type-expr
-        value.copy< beng_generic_type > (YY_MOVE (that.value));
+      case symbol_kind::S_110_opt_type_list: // opt-type-list
+        value.copy< beng_preliminary_tuple_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_109_opt_type_list: // opt-type-list
-        value.copy< beng_tuple_t > (YY_MOVE (that.value));
+      case symbol_kind::S_109_type_expr: // type-expr
+        value.copy< beng_preliminary_type > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_92_opt_decl: // opt-decl
+      case symbol_kind::S_93_opt_decl: // opt-decl
         value.copy< declaration_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_98_enum_decl: // enum-decl
+      case symbol_kind::S_99_enum_decl: // enum-decl
         value.copy< enum_decl > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_112_expression_list_any: // expression-list-any
+      case symbol_kind::S_113_expression_list_any: // expression-list-any
         value.copy< expression_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_110_compound_expression: // compound-expression
+      case symbol_kind::S_111_compound_expression: // compound-expression
       case symbol_kind::S_expression: // expression
         value.copy< expression_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_103_type_extension_any: // type-extension-any
-      case symbol_kind::S_104_type_extension_list: // type-extension-list
+      case symbol_kind::S_104_type_extension_any: // type-extension-any
+      case symbol_kind::S_105_type_extension_list: // type-extension-list
         value.copy< extension_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_97_fn_decl: // fn-decl
+      case symbol_kind::S_98_fn_decl: // fn-decl
         value.copy< fn_decl_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_94_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_95_opt_infunction_decl: // opt-infunction-decl
         value.copy< infunction_declaration_t > (YY_MOVE (that.value));
         break;
 
@@ -236,21 +236,21 @@ namespace beng_lang {
         value.copy< int > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_113_opt_named_expr_list_any: // opt-named-expr-list-any
-      case symbol_kind::S_114_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_114_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_115_opt_named_expr_list: // opt-named-expr-list
         value.copy< named_expression_term_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_115_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_116_opt_named_expr: // opt-named-expr
         value.copy< named_expression_term_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_105_parameter_list_opt: // parameter-list-opt
-      case symbol_kind::S_106_parameter_list: // parameter-list
+      case symbol_kind::S_106_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_107_parameter_list: // parameter-list
         value.copy< parameter_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_107_parameter_decl: // parameter-decl
+      case symbol_kind::S_108_parameter_decl: // parameter-decl
         value.copy< parameter_t > (YY_MOVE (that.value));
         break;
 
@@ -262,15 +262,15 @@ namespace beng_lang {
         value.copy< sonia::lang::beng::annotated_identifier > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_qname: // qname
+        value.copy< sonia::lang::beng::annotated_qname > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
         value.copy< sonia::lang::beng::annotated_string_view > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_qname: // qname
-        value.copy< sonia::lang::beng::qname > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_101_case_decl: // case-decl
+      case symbol_kind::S_102_case_decl: // case-decl
         value.copy< sonia::lang::identifier > (YY_MOVE (that.value));
         break;
 
@@ -287,12 +287,12 @@ namespace beng_lang {
         value.copy< std::vector<infunction_declaration_t> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_99_case_list_opt: // case-list-opt
-      case symbol_kind::S_100_case_list: // case-list
+      case symbol_kind::S_100_case_list_opt: // case-list-opt
+      case symbol_kind::S_101_case_list: // case-list
         value.copy< std::vector<sonia::lang::identifier> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_102_type_decl: // type-decl
+      case symbol_kind::S_103_type_decl: // type-decl
         value.copy< type_decl > (YY_MOVE (that.value));
         break;
 
@@ -327,41 +327,41 @@ namespace beng_lang {
     super_type::move (s);
     switch (this->kind ())
     {
-      case symbol_kind::S_108_type_expr: // type-expr
-        value.move< beng_generic_type > (YY_MOVE (s.value));
+      case symbol_kind::S_110_opt_type_list: // opt-type-list
+        value.move< beng_preliminary_tuple_t > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_109_opt_type_list: // opt-type-list
-        value.move< beng_tuple_t > (YY_MOVE (s.value));
+      case symbol_kind::S_109_type_expr: // type-expr
+        value.move< beng_preliminary_type > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_92_opt_decl: // opt-decl
+      case symbol_kind::S_93_opt_decl: // opt-decl
         value.move< declaration_t > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_98_enum_decl: // enum-decl
+      case symbol_kind::S_99_enum_decl: // enum-decl
         value.move< enum_decl > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_112_expression_list_any: // expression-list-any
+      case symbol_kind::S_113_expression_list_any: // expression-list-any
         value.move< expression_list_t > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_110_compound_expression: // compound-expression
+      case symbol_kind::S_111_compound_expression: // compound-expression
       case symbol_kind::S_expression: // expression
         value.move< expression_t > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_103_type_extension_any: // type-extension-any
-      case symbol_kind::S_104_type_extension_list: // type-extension-list
+      case symbol_kind::S_104_type_extension_any: // type-extension-any
+      case symbol_kind::S_105_type_extension_list: // type-extension-list
         value.move< extension_list_t > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_97_fn_decl: // fn-decl
+      case symbol_kind::S_98_fn_decl: // fn-decl
         value.move< fn_decl_t > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_94_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_95_opt_infunction_decl: // opt-infunction-decl
         value.move< infunction_declaration_t > (YY_MOVE (s.value));
         break;
 
@@ -369,21 +369,21 @@ namespace beng_lang {
         value.move< int > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_113_opt_named_expr_list_any: // opt-named-expr-list-any
-      case symbol_kind::S_114_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_114_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_115_opt_named_expr_list: // opt-named-expr-list
         value.move< named_expression_term_list_t > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_115_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_116_opt_named_expr: // opt-named-expr
         value.move< named_expression_term_t > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_105_parameter_list_opt: // parameter-list-opt
-      case symbol_kind::S_106_parameter_list: // parameter-list
+      case symbol_kind::S_106_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_107_parameter_list: // parameter-list
         value.move< parameter_list_t > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_107_parameter_decl: // parameter-decl
+      case symbol_kind::S_108_parameter_decl: // parameter-decl
         value.move< parameter_t > (YY_MOVE (s.value));
         break;
 
@@ -395,15 +395,15 @@ namespace beng_lang {
         value.move< sonia::lang::beng::annotated_identifier > (YY_MOVE (s.value));
         break;
 
+      case symbol_kind::S_qname: // qname
+        value.move< sonia::lang::beng::annotated_qname > (YY_MOVE (s.value));
+        break;
+
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
         value.move< sonia::lang::beng::annotated_string_view > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_qname: // qname
-        value.move< sonia::lang::beng::qname > (YY_MOVE (s.value));
-        break;
-
-      case symbol_kind::S_101_case_decl: // case-decl
+      case symbol_kind::S_102_case_decl: // case-decl
         value.move< sonia::lang::identifier > (YY_MOVE (s.value));
         break;
 
@@ -420,12 +420,12 @@ namespace beng_lang {
         value.move< std::vector<infunction_declaration_t> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_99_case_list_opt: // case-list-opt
-      case symbol_kind::S_100_case_list: // case-list
+      case symbol_kind::S_100_case_list_opt: // case-list-opt
+      case symbol_kind::S_101_case_list: // case-list
         value.move< std::vector<sonia::lang::identifier> > (YY_MOVE (s.value));
         break;
 
-      case symbol_kind::S_102_type_decl: // type-decl
+      case symbol_kind::S_103_type_decl: // type-decl
         value.move< type_decl > (YY_MOVE (s.value));
         break;
 
@@ -530,41 +530,41 @@ namespace beng_lang {
   {
     switch (that.kind ())
     {
-      case symbol_kind::S_108_type_expr: // type-expr
-        value.YY_MOVE_OR_COPY< beng_generic_type > (YY_MOVE (that.value));
+      case symbol_kind::S_110_opt_type_list: // opt-type-list
+        value.YY_MOVE_OR_COPY< beng_preliminary_tuple_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_109_opt_type_list: // opt-type-list
-        value.YY_MOVE_OR_COPY< beng_tuple_t > (YY_MOVE (that.value));
+      case symbol_kind::S_109_type_expr: // type-expr
+        value.YY_MOVE_OR_COPY< beng_preliminary_type > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_92_opt_decl: // opt-decl
+      case symbol_kind::S_93_opt_decl: // opt-decl
         value.YY_MOVE_OR_COPY< declaration_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_98_enum_decl: // enum-decl
+      case symbol_kind::S_99_enum_decl: // enum-decl
         value.YY_MOVE_OR_COPY< enum_decl > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_112_expression_list_any: // expression-list-any
+      case symbol_kind::S_113_expression_list_any: // expression-list-any
         value.YY_MOVE_OR_COPY< expression_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_110_compound_expression: // compound-expression
+      case symbol_kind::S_111_compound_expression: // compound-expression
       case symbol_kind::S_expression: // expression
         value.YY_MOVE_OR_COPY< expression_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_103_type_extension_any: // type-extension-any
-      case symbol_kind::S_104_type_extension_list: // type-extension-list
+      case symbol_kind::S_104_type_extension_any: // type-extension-any
+      case symbol_kind::S_105_type_extension_list: // type-extension-list
         value.YY_MOVE_OR_COPY< extension_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_97_fn_decl: // fn-decl
+      case symbol_kind::S_98_fn_decl: // fn-decl
         value.YY_MOVE_OR_COPY< fn_decl_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_94_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_95_opt_infunction_decl: // opt-infunction-decl
         value.YY_MOVE_OR_COPY< infunction_declaration_t > (YY_MOVE (that.value));
         break;
 
@@ -572,21 +572,21 @@ namespace beng_lang {
         value.YY_MOVE_OR_COPY< int > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_113_opt_named_expr_list_any: // opt-named-expr-list-any
-      case symbol_kind::S_114_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_114_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_115_opt_named_expr_list: // opt-named-expr-list
         value.YY_MOVE_OR_COPY< named_expression_term_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_115_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_116_opt_named_expr: // opt-named-expr
         value.YY_MOVE_OR_COPY< named_expression_term_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_105_parameter_list_opt: // parameter-list-opt
-      case symbol_kind::S_106_parameter_list: // parameter-list
+      case symbol_kind::S_106_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_107_parameter_list: // parameter-list
         value.YY_MOVE_OR_COPY< parameter_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_107_parameter_decl: // parameter-decl
+      case symbol_kind::S_108_parameter_decl: // parameter-decl
         value.YY_MOVE_OR_COPY< parameter_t > (YY_MOVE (that.value));
         break;
 
@@ -598,15 +598,15 @@ namespace beng_lang {
         value.YY_MOVE_OR_COPY< sonia::lang::beng::annotated_identifier > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_qname: // qname
+        value.YY_MOVE_OR_COPY< sonia::lang::beng::annotated_qname > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
         value.YY_MOVE_OR_COPY< sonia::lang::beng::annotated_string_view > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_qname: // qname
-        value.YY_MOVE_OR_COPY< sonia::lang::beng::qname > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_101_case_decl: // case-decl
+      case symbol_kind::S_102_case_decl: // case-decl
         value.YY_MOVE_OR_COPY< sonia::lang::identifier > (YY_MOVE (that.value));
         break;
 
@@ -623,12 +623,12 @@ namespace beng_lang {
         value.YY_MOVE_OR_COPY< std::vector<infunction_declaration_t> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_99_case_list_opt: // case-list-opt
-      case symbol_kind::S_100_case_list: // case-list
+      case symbol_kind::S_100_case_list_opt: // case-list-opt
+      case symbol_kind::S_101_case_list: // case-list
         value.YY_MOVE_OR_COPY< std::vector<sonia::lang::identifier> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_102_type_decl: // type-decl
+      case symbol_kind::S_103_type_decl: // type-decl
         value.YY_MOVE_OR_COPY< type_decl > (YY_MOVE (that.value));
         break;
 
@@ -647,41 +647,41 @@ namespace beng_lang {
   {
     switch (that.kind ())
     {
-      case symbol_kind::S_108_type_expr: // type-expr
-        value.move< beng_generic_type > (YY_MOVE (that.value));
+      case symbol_kind::S_110_opt_type_list: // opt-type-list
+        value.move< beng_preliminary_tuple_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_109_opt_type_list: // opt-type-list
-        value.move< beng_tuple_t > (YY_MOVE (that.value));
+      case symbol_kind::S_109_type_expr: // type-expr
+        value.move< beng_preliminary_type > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_92_opt_decl: // opt-decl
+      case symbol_kind::S_93_opt_decl: // opt-decl
         value.move< declaration_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_98_enum_decl: // enum-decl
+      case symbol_kind::S_99_enum_decl: // enum-decl
         value.move< enum_decl > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_112_expression_list_any: // expression-list-any
+      case symbol_kind::S_113_expression_list_any: // expression-list-any
         value.move< expression_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_110_compound_expression: // compound-expression
+      case symbol_kind::S_111_compound_expression: // compound-expression
       case symbol_kind::S_expression: // expression
         value.move< expression_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_103_type_extension_any: // type-extension-any
-      case symbol_kind::S_104_type_extension_list: // type-extension-list
+      case symbol_kind::S_104_type_extension_any: // type-extension-any
+      case symbol_kind::S_105_type_extension_list: // type-extension-list
         value.move< extension_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_97_fn_decl: // fn-decl
+      case symbol_kind::S_98_fn_decl: // fn-decl
         value.move< fn_decl_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_94_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_95_opt_infunction_decl: // opt-infunction-decl
         value.move< infunction_declaration_t > (YY_MOVE (that.value));
         break;
 
@@ -689,21 +689,21 @@ namespace beng_lang {
         value.move< int > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_113_opt_named_expr_list_any: // opt-named-expr-list-any
-      case symbol_kind::S_114_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_114_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_115_opt_named_expr_list: // opt-named-expr-list
         value.move< named_expression_term_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_115_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_116_opt_named_expr: // opt-named-expr
         value.move< named_expression_term_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_105_parameter_list_opt: // parameter-list-opt
-      case symbol_kind::S_106_parameter_list: // parameter-list
+      case symbol_kind::S_106_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_107_parameter_list: // parameter-list
         value.move< parameter_list_t > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_107_parameter_decl: // parameter-decl
+      case symbol_kind::S_108_parameter_decl: // parameter-decl
         value.move< parameter_t > (YY_MOVE (that.value));
         break;
 
@@ -715,15 +715,15 @@ namespace beng_lang {
         value.move< sonia::lang::beng::annotated_identifier > (YY_MOVE (that.value));
         break;
 
+      case symbol_kind::S_qname: // qname
+        value.move< sonia::lang::beng::annotated_qname > (YY_MOVE (that.value));
+        break;
+
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
         value.move< sonia::lang::beng::annotated_string_view > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_qname: // qname
-        value.move< sonia::lang::beng::qname > (YY_MOVE (that.value));
-        break;
-
-      case symbol_kind::S_101_case_decl: // case-decl
+      case symbol_kind::S_102_case_decl: // case-decl
         value.move< sonia::lang::identifier > (YY_MOVE (that.value));
         break;
 
@@ -740,12 +740,12 @@ namespace beng_lang {
         value.move< std::vector<infunction_declaration_t> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_99_case_list_opt: // case-list-opt
-      case symbol_kind::S_100_case_list: // case-list
+      case symbol_kind::S_100_case_list_opt: // case-list-opt
+      case symbol_kind::S_101_case_list: // case-list
         value.move< std::vector<sonia::lang::identifier> > (YY_MOVE (that.value));
         break;
 
-      case symbol_kind::S_102_type_decl: // type-decl
+      case symbol_kind::S_103_type_decl: // type-decl
         value.move< type_decl > (YY_MOVE (that.value));
         break;
 
@@ -764,41 +764,41 @@ namespace beng_lang {
     state = that.state;
     switch (that.kind ())
     {
-      case symbol_kind::S_108_type_expr: // type-expr
-        value.copy< beng_generic_type > (that.value);
+      case symbol_kind::S_110_opt_type_list: // opt-type-list
+        value.copy< beng_preliminary_tuple_t > (that.value);
         break;
 
-      case symbol_kind::S_109_opt_type_list: // opt-type-list
-        value.copy< beng_tuple_t > (that.value);
+      case symbol_kind::S_109_type_expr: // type-expr
+        value.copy< beng_preliminary_type > (that.value);
         break;
 
-      case symbol_kind::S_92_opt_decl: // opt-decl
+      case symbol_kind::S_93_opt_decl: // opt-decl
         value.copy< declaration_t > (that.value);
         break;
 
-      case symbol_kind::S_98_enum_decl: // enum-decl
+      case symbol_kind::S_99_enum_decl: // enum-decl
         value.copy< enum_decl > (that.value);
         break;
 
-      case symbol_kind::S_112_expression_list_any: // expression-list-any
+      case symbol_kind::S_113_expression_list_any: // expression-list-any
         value.copy< expression_list_t > (that.value);
         break;
 
-      case symbol_kind::S_110_compound_expression: // compound-expression
+      case symbol_kind::S_111_compound_expression: // compound-expression
       case symbol_kind::S_expression: // expression
         value.copy< expression_t > (that.value);
         break;
 
-      case symbol_kind::S_103_type_extension_any: // type-extension-any
-      case symbol_kind::S_104_type_extension_list: // type-extension-list
+      case symbol_kind::S_104_type_extension_any: // type-extension-any
+      case symbol_kind::S_105_type_extension_list: // type-extension-list
         value.copy< extension_list_t > (that.value);
         break;
 
-      case symbol_kind::S_97_fn_decl: // fn-decl
+      case symbol_kind::S_98_fn_decl: // fn-decl
         value.copy< fn_decl_t > (that.value);
         break;
 
-      case symbol_kind::S_94_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_95_opt_infunction_decl: // opt-infunction-decl
         value.copy< infunction_declaration_t > (that.value);
         break;
 
@@ -806,21 +806,21 @@ namespace beng_lang {
         value.copy< int > (that.value);
         break;
 
-      case symbol_kind::S_113_opt_named_expr_list_any: // opt-named-expr-list-any
-      case symbol_kind::S_114_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_114_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_115_opt_named_expr_list: // opt-named-expr-list
         value.copy< named_expression_term_list_t > (that.value);
         break;
 
-      case symbol_kind::S_115_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_116_opt_named_expr: // opt-named-expr
         value.copy< named_expression_term_t > (that.value);
         break;
 
-      case symbol_kind::S_105_parameter_list_opt: // parameter-list-opt
-      case symbol_kind::S_106_parameter_list: // parameter-list
+      case symbol_kind::S_106_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_107_parameter_list: // parameter-list
         value.copy< parameter_list_t > (that.value);
         break;
 
-      case symbol_kind::S_107_parameter_decl: // parameter-decl
+      case symbol_kind::S_108_parameter_decl: // parameter-decl
         value.copy< parameter_t > (that.value);
         break;
 
@@ -832,15 +832,15 @@ namespace beng_lang {
         value.copy< sonia::lang::beng::annotated_identifier > (that.value);
         break;
 
+      case symbol_kind::S_qname: // qname
+        value.copy< sonia::lang::beng::annotated_qname > (that.value);
+        break;
+
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
         value.copy< sonia::lang::beng::annotated_string_view > (that.value);
         break;
 
-      case symbol_kind::S_qname: // qname
-        value.copy< sonia::lang::beng::qname > (that.value);
-        break;
-
-      case symbol_kind::S_101_case_decl: // case-decl
+      case symbol_kind::S_102_case_decl: // case-decl
         value.copy< sonia::lang::identifier > (that.value);
         break;
 
@@ -857,12 +857,12 @@ namespace beng_lang {
         value.copy< std::vector<infunction_declaration_t> > (that.value);
         break;
 
-      case symbol_kind::S_99_case_list_opt: // case-list-opt
-      case symbol_kind::S_100_case_list: // case-list
+      case symbol_kind::S_100_case_list_opt: // case-list-opt
+      case symbol_kind::S_101_case_list: // case-list
         value.copy< std::vector<sonia::lang::identifier> > (that.value);
         break;
 
-      case symbol_kind::S_102_type_decl: // type-decl
+      case symbol_kind::S_103_type_decl: // type-decl
         value.copy< type_decl > (that.value);
         break;
 
@@ -880,41 +880,41 @@ namespace beng_lang {
     state = that.state;
     switch (that.kind ())
     {
-      case symbol_kind::S_108_type_expr: // type-expr
-        value.move< beng_generic_type > (that.value);
+      case symbol_kind::S_110_opt_type_list: // opt-type-list
+        value.move< beng_preliminary_tuple_t > (that.value);
         break;
 
-      case symbol_kind::S_109_opt_type_list: // opt-type-list
-        value.move< beng_tuple_t > (that.value);
+      case symbol_kind::S_109_type_expr: // type-expr
+        value.move< beng_preliminary_type > (that.value);
         break;
 
-      case symbol_kind::S_92_opt_decl: // opt-decl
+      case symbol_kind::S_93_opt_decl: // opt-decl
         value.move< declaration_t > (that.value);
         break;
 
-      case symbol_kind::S_98_enum_decl: // enum-decl
+      case symbol_kind::S_99_enum_decl: // enum-decl
         value.move< enum_decl > (that.value);
         break;
 
-      case symbol_kind::S_112_expression_list_any: // expression-list-any
+      case symbol_kind::S_113_expression_list_any: // expression-list-any
         value.move< expression_list_t > (that.value);
         break;
 
-      case symbol_kind::S_110_compound_expression: // compound-expression
+      case symbol_kind::S_111_compound_expression: // compound-expression
       case symbol_kind::S_expression: // expression
         value.move< expression_t > (that.value);
         break;
 
-      case symbol_kind::S_103_type_extension_any: // type-extension-any
-      case symbol_kind::S_104_type_extension_list: // type-extension-list
+      case symbol_kind::S_104_type_extension_any: // type-extension-any
+      case symbol_kind::S_105_type_extension_list: // type-extension-list
         value.move< extension_list_t > (that.value);
         break;
 
-      case symbol_kind::S_97_fn_decl: // fn-decl
+      case symbol_kind::S_98_fn_decl: // fn-decl
         value.move< fn_decl_t > (that.value);
         break;
 
-      case symbol_kind::S_94_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_95_opt_infunction_decl: // opt-infunction-decl
         value.move< infunction_declaration_t > (that.value);
         break;
 
@@ -922,21 +922,21 @@ namespace beng_lang {
         value.move< int > (that.value);
         break;
 
-      case symbol_kind::S_113_opt_named_expr_list_any: // opt-named-expr-list-any
-      case symbol_kind::S_114_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_114_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_115_opt_named_expr_list: // opt-named-expr-list
         value.move< named_expression_term_list_t > (that.value);
         break;
 
-      case symbol_kind::S_115_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_116_opt_named_expr: // opt-named-expr
         value.move< named_expression_term_t > (that.value);
         break;
 
-      case symbol_kind::S_105_parameter_list_opt: // parameter-list-opt
-      case symbol_kind::S_106_parameter_list: // parameter-list
+      case symbol_kind::S_106_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_107_parameter_list: // parameter-list
         value.move< parameter_list_t > (that.value);
         break;
 
-      case symbol_kind::S_107_parameter_decl: // parameter-decl
+      case symbol_kind::S_108_parameter_decl: // parameter-decl
         value.move< parameter_t > (that.value);
         break;
 
@@ -948,15 +948,15 @@ namespace beng_lang {
         value.move< sonia::lang::beng::annotated_identifier > (that.value);
         break;
 
+      case symbol_kind::S_qname: // qname
+        value.move< sonia::lang::beng::annotated_qname > (that.value);
+        break;
+
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
         value.move< sonia::lang::beng::annotated_string_view > (that.value);
         break;
 
-      case symbol_kind::S_qname: // qname
-        value.move< sonia::lang::beng::qname > (that.value);
-        break;
-
-      case symbol_kind::S_101_case_decl: // case-decl
+      case symbol_kind::S_102_case_decl: // case-decl
         value.move< sonia::lang::identifier > (that.value);
         break;
 
@@ -973,12 +973,12 @@ namespace beng_lang {
         value.move< std::vector<infunction_declaration_t> > (that.value);
         break;
 
-      case symbol_kind::S_99_case_list_opt: // case-list-opt
-      case symbol_kind::S_100_case_list: // case-list
+      case symbol_kind::S_100_case_list_opt: // case-list-opt
+      case symbol_kind::S_101_case_list: // case-list
         value.move< std::vector<sonia::lang::identifier> > (that.value);
         break;
 
-      case symbol_kind::S_102_type_decl: // type-decl
+      case symbol_kind::S_103_type_decl: // type-decl
         value.move< type_decl > (that.value);
         break;
 
@@ -1019,181 +1019,181 @@ namespace beng_lang {
         switch (yykind)
     {
       case symbol_kind::S_STRING: // STRING
-#line 265 "beng.y"
+#line 266 "beng.y"
                  { }
 #line 1025 "beng.tab.cpp"
         break;
 
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
-#line 265 "beng.y"
+#line 266 "beng.y"
                  { }
 #line 1031 "beng.tab.cpp"
         break;
 
       case symbol_kind::S_DECIMAL: // DECIMAL
-#line 265 "beng.y"
+#line 266 "beng.y"
                  { }
 #line 1037 "beng.tab.cpp"
         break;
 
       case symbol_kind::S_INTEGER: // INTEGER
-#line 265 "beng.y"
+#line 266 "beng.y"
                  { }
 #line 1043 "beng.tab.cpp"
         break;
 
       case symbol_kind::S_OPERATOR_TERM: // OPERATOR_TERM
-#line 265 "beng.y"
+#line 266 "beng.y"
                  { }
 #line 1049 "beng.tab.cpp"
         break;
 
       case symbol_kind::S_declaration_any: // declaration_any
-#line 265 "beng.y"
+#line 266 "beng.y"
                  { }
 #line 1055 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_92_opt_decl: // opt-decl
-#line 265 "beng.y"
+      case symbol_kind::S_93_opt_decl: // opt-decl
+#line 266 "beng.y"
                  { }
 #line 1061 "beng.tab.cpp"
         break;
 
       case symbol_kind::S_infunction_declaration_any: // infunction_declaration_any
-#line 265 "beng.y"
+#line 266 "beng.y"
                  { }
 #line 1067 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_94_opt_infunction_decl: // opt-infunction-decl
-#line 265 "beng.y"
+      case symbol_kind::S_95_opt_infunction_decl: // opt-infunction-decl
+#line 266 "beng.y"
                  { }
 #line 1073 "beng.tab.cpp"
         break;
 
       case symbol_kind::S_identifier: // identifier
-#line 265 "beng.y"
+#line 266 "beng.y"
                  { }
 #line 1079 "beng.tab.cpp"
         break;
 
       case symbol_kind::S_qname: // qname
-#line 265 "beng.y"
+#line 266 "beng.y"
                  { }
 #line 1085 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_97_fn_decl: // fn-decl
-#line 265 "beng.y"
+      case symbol_kind::S_98_fn_decl: // fn-decl
+#line 266 "beng.y"
                  { }
 #line 1091 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_98_enum_decl: // enum-decl
-#line 265 "beng.y"
+      case symbol_kind::S_99_enum_decl: // enum-decl
+#line 266 "beng.y"
                  { }
 #line 1097 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_99_case_list_opt: // case-list-opt
-#line 265 "beng.y"
+      case symbol_kind::S_100_case_list_opt: // case-list-opt
+#line 266 "beng.y"
                  { }
 #line 1103 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_100_case_list: // case-list
-#line 265 "beng.y"
+      case symbol_kind::S_101_case_list: // case-list
+#line 266 "beng.y"
                  { }
 #line 1109 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_101_case_decl: // case-decl
-#line 265 "beng.y"
+      case symbol_kind::S_102_case_decl: // case-decl
+#line 266 "beng.y"
                  { }
 #line 1115 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_102_type_decl: // type-decl
-#line 265 "beng.y"
+      case symbol_kind::S_103_type_decl: // type-decl
+#line 266 "beng.y"
                  { }
 #line 1121 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_103_type_extension_any: // type-extension-any
-#line 265 "beng.y"
+      case symbol_kind::S_104_type_extension_any: // type-extension-any
+#line 266 "beng.y"
                  { }
 #line 1127 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_104_type_extension_list: // type-extension-list
-#line 265 "beng.y"
+      case symbol_kind::S_105_type_extension_list: // type-extension-list
+#line 266 "beng.y"
                  { }
 #line 1133 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_105_parameter_list_opt: // parameter-list-opt
-#line 265 "beng.y"
+      case symbol_kind::S_106_parameter_list_opt: // parameter-list-opt
+#line 266 "beng.y"
                  { }
 #line 1139 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_106_parameter_list: // parameter-list
-#line 265 "beng.y"
+      case symbol_kind::S_107_parameter_list: // parameter-list
+#line 266 "beng.y"
                  { }
 #line 1145 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_107_parameter_decl: // parameter-decl
-#line 265 "beng.y"
+      case symbol_kind::S_108_parameter_decl: // parameter-decl
+#line 266 "beng.y"
                  { }
 #line 1151 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_108_type_expr: // type-expr
-#line 265 "beng.y"
+      case symbol_kind::S_109_type_expr: // type-expr
+#line 266 "beng.y"
                  { }
 #line 1157 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_109_opt_type_list: // opt-type-list
-#line 265 "beng.y"
+      case symbol_kind::S_110_opt_type_list: // opt-type-list
+#line 266 "beng.y"
                  { }
 #line 1163 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_110_compound_expression: // compound-expression
-#line 265 "beng.y"
+      case symbol_kind::S_111_compound_expression: // compound-expression
+#line 266 "beng.y"
                  { }
 #line 1169 "beng.tab.cpp"
         break;
 
       case symbol_kind::S_expression: // expression
-#line 265 "beng.y"
+#line 266 "beng.y"
                  { }
 #line 1175 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_112_expression_list_any: // expression-list-any
-#line 265 "beng.y"
+      case symbol_kind::S_113_expression_list_any: // expression-list-any
+#line 266 "beng.y"
                  { }
 #line 1181 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_113_opt_named_expr_list_any: // opt-named-expr-list-any
-#line 265 "beng.y"
+      case symbol_kind::S_114_opt_named_expr_list_any: // opt-named-expr-list-any
+#line 266 "beng.y"
                  { }
 #line 1187 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_114_opt_named_expr_list: // opt-named-expr-list
-#line 265 "beng.y"
+      case symbol_kind::S_115_opt_named_expr_list: // opt-named-expr-list
+#line 266 "beng.y"
                  { }
 #line 1193 "beng.tab.cpp"
         break;
 
-      case symbol_kind::S_115_opt_named_expr: // opt-named-expr
-#line 265 "beng.y"
+      case symbol_kind::S_116_opt_named_expr: // opt-named-expr
+#line 266 "beng.y"
                  { }
 #line 1199 "beng.tab.cpp"
         break;
@@ -1424,41 +1424,41 @@ namespace beng_lang {
          when using variants.  */
       switch (yyr1_[yyn])
     {
-      case symbol_kind::S_108_type_expr: // type-expr
-        yylhs.value.emplace< beng_generic_type > ();
+      case symbol_kind::S_110_opt_type_list: // opt-type-list
+        yylhs.value.emplace< beng_preliminary_tuple_t > ();
         break;
 
-      case symbol_kind::S_109_opt_type_list: // opt-type-list
-        yylhs.value.emplace< beng_tuple_t > ();
+      case symbol_kind::S_109_type_expr: // type-expr
+        yylhs.value.emplace< beng_preliminary_type > ();
         break;
 
-      case symbol_kind::S_92_opt_decl: // opt-decl
+      case symbol_kind::S_93_opt_decl: // opt-decl
         yylhs.value.emplace< declaration_t > ();
         break;
 
-      case symbol_kind::S_98_enum_decl: // enum-decl
+      case symbol_kind::S_99_enum_decl: // enum-decl
         yylhs.value.emplace< enum_decl > ();
         break;
 
-      case symbol_kind::S_112_expression_list_any: // expression-list-any
+      case symbol_kind::S_113_expression_list_any: // expression-list-any
         yylhs.value.emplace< expression_list_t > ();
         break;
 
-      case symbol_kind::S_110_compound_expression: // compound-expression
+      case symbol_kind::S_111_compound_expression: // compound-expression
       case symbol_kind::S_expression: // expression
         yylhs.value.emplace< expression_t > ();
         break;
 
-      case symbol_kind::S_103_type_extension_any: // type-extension-any
-      case symbol_kind::S_104_type_extension_list: // type-extension-list
+      case symbol_kind::S_104_type_extension_any: // type-extension-any
+      case symbol_kind::S_105_type_extension_list: // type-extension-list
         yylhs.value.emplace< extension_list_t > ();
         break;
 
-      case symbol_kind::S_97_fn_decl: // fn-decl
+      case symbol_kind::S_98_fn_decl: // fn-decl
         yylhs.value.emplace< fn_decl_t > ();
         break;
 
-      case symbol_kind::S_94_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_95_opt_infunction_decl: // opt-infunction-decl
         yylhs.value.emplace< infunction_declaration_t > ();
         break;
 
@@ -1466,21 +1466,21 @@ namespace beng_lang {
         yylhs.value.emplace< int > ();
         break;
 
-      case symbol_kind::S_113_opt_named_expr_list_any: // opt-named-expr-list-any
-      case symbol_kind::S_114_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_114_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_115_opt_named_expr_list: // opt-named-expr-list
         yylhs.value.emplace< named_expression_term_list_t > ();
         break;
 
-      case symbol_kind::S_115_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_116_opt_named_expr: // opt-named-expr
         yylhs.value.emplace< named_expression_term_t > ();
         break;
 
-      case symbol_kind::S_105_parameter_list_opt: // parameter-list-opt
-      case symbol_kind::S_106_parameter_list: // parameter-list
+      case symbol_kind::S_106_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_107_parameter_list: // parameter-list
         yylhs.value.emplace< parameter_list_t > ();
         break;
 
-      case symbol_kind::S_107_parameter_decl: // parameter-decl
+      case symbol_kind::S_108_parameter_decl: // parameter-decl
         yylhs.value.emplace< parameter_t > ();
         break;
 
@@ -1492,15 +1492,15 @@ namespace beng_lang {
         yylhs.value.emplace< sonia::lang::beng::annotated_identifier > ();
         break;
 
+      case symbol_kind::S_qname: // qname
+        yylhs.value.emplace< sonia::lang::beng::annotated_qname > ();
+        break;
+
       case symbol_kind::S_IDENTIFIER: // IDENTIFIER
         yylhs.value.emplace< sonia::lang::beng::annotated_string_view > ();
         break;
 
-      case symbol_kind::S_qname: // qname
-        yylhs.value.emplace< sonia::lang::beng::qname > ();
-        break;
-
-      case symbol_kind::S_101_case_decl: // case-decl
+      case symbol_kind::S_102_case_decl: // case-decl
         yylhs.value.emplace< sonia::lang::identifier > ();
         break;
 
@@ -1517,12 +1517,12 @@ namespace beng_lang {
         yylhs.value.emplace< std::vector<infunction_declaration_t> > ();
         break;
 
-      case symbol_kind::S_99_case_list_opt: // case-list-opt
-      case symbol_kind::S_100_case_list: // case-list
+      case symbol_kind::S_100_case_list_opt: // case-list-opt
+      case symbol_kind::S_101_case_list: // case-list
         yylhs.value.emplace< std::vector<sonia::lang::identifier> > ();
         break;
 
-      case symbol_kind::S_102_type_decl: // type-decl
+      case symbol_kind::S_103_type_decl: // type-decl
         yylhs.value.emplace< type_decl > ();
         break;
 
@@ -1547,19 +1547,19 @@ namespace beng_lang {
           switch (yyn)
             {
   case 2: // begin: declaration_any "end of file"
-#line 270 "beng.y"
+#line 271 "beng.y"
                             { ctx.set_declarations(std::move(yystack_[1].value.as < std::vector<declaration_t> > ())); }
 #line 1553 "beng.tab.cpp"
     break;
 
   case 3: // declaration_any: %empty
-#line 275 "beng.y"
+#line 276 "beng.y"
         { yylhs.value.as < std::vector<declaration_t> > () = {}; }
 #line 1559 "beng.tab.cpp"
     break;
 
   case 4: // declaration_any: declaration_any opt-decl
-#line 278 "beng.y"
+#line 279 "beng.y"
         {
 	        yylhs.value.as < std::vector<declaration_t> > () = std::move(yystack_[1].value.as < std::vector<declaration_t> > ());
             if (yystack_[0].value.as < declaration_t > ().which()) yylhs.value.as < std::vector<declaration_t> > ().emplace_back(std::move(yystack_[0].value.as < declaration_t > ()));
@@ -1568,67 +1568,67 @@ namespace beng_lang {
     break;
 
   case 5: // opt-decl: "`;`"
-#line 298 "beng.y"
+#line 299 "beng.y"
         { yylhs.value.as < declaration_t > () = empty_t{}; }
 #line 1574 "beng.tab.cpp"
     break;
 
   case 6: // opt-decl: EXTERN VAR identifier "`:`" type-expr "`;`"
-#line 300 "beng.y"
-        { yylhs.value.as < declaration_t > () = exten_var{ std::move(yystack_[3].value.as < sonia::lang::beng::annotated_identifier > ().id), std::move(yystack_[1].value.as < beng_generic_type > ()) }; }
+#line 301 "beng.y"
+        { yylhs.value.as < declaration_t > () = exten_var{ std::move(yystack_[3].value.as < sonia::lang::beng::annotated_identifier > ().id), std::move(yystack_[1].value.as < beng_preliminary_type > ()) }; }
 #line 1580 "beng.tab.cpp"
     break;
 
   case 7: // opt-decl: EXTERN FN qname "`(`" parameter-list-opt "`)`" "`;`"
-#line 302 "beng.y"
-        { yystack_[4].value.as < sonia::lang::beng::qname > ().set_absolute(); yylhs.value.as < declaration_t > () = fn_pure_decl{ std::move(yystack_[4].value.as < sonia::lang::beng::qname > ()), std::move(yystack_[2].value.as < parameter_list_t > ()), beng_tuple_t{} }; }
+#line 303 "beng.y"
+        { yystack_[4].value.as < sonia::lang::beng::annotated_qname > ().name.set_absolute(); yylhs.value.as < declaration_t > () = fn_pure_decl{ std::move(yystack_[4].value.as < sonia::lang::beng::annotated_qname > ().name), std::move(yystack_[2].value.as < parameter_list_t > ()), beng_preliminary_tuple_t{} }; }
 #line 1586 "beng.tab.cpp"
     break;
 
   case 8: // opt-decl: EXTERN FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`;`"
-#line 304 "beng.y"
-        { yystack_[6].value.as < sonia::lang::beng::qname > ().set_absolute(); yylhs.value.as < declaration_t > () = fn_pure_decl{ std::move(yystack_[6].value.as < sonia::lang::beng::qname > ()), std::move(yystack_[4].value.as < parameter_list_t > ()), std::move(yystack_[1].value.as < beng_generic_type > ()) }; }
+#line 305 "beng.y"
+        { yystack_[6].value.as < sonia::lang::beng::annotated_qname > ().name.set_absolute(); yylhs.value.as < declaration_t > () = fn_pure_decl{ std::move(yystack_[6].value.as < sonia::lang::beng::annotated_qname > ().name), std::move(yystack_[4].value.as < parameter_list_t > ()), std::move(yystack_[1].value.as < beng_preliminary_type > ()) }; }
 #line 1592 "beng.tab.cpp"
     break;
 
   case 9: // opt-decl: enum-decl
-#line 306 "beng.y"
+#line 307 "beng.y"
         { yylhs.value.as < declaration_t > () = std::move(yystack_[0].value.as < enum_decl > ()); }
 #line 1598 "beng.tab.cpp"
     break;
 
   case 10: // opt-decl: type-decl
-#line 308 "beng.y"
+#line 309 "beng.y"
         { yylhs.value.as < declaration_t > () = std::move(yystack_[0].value.as < type_decl > ()); }
 #line 1604 "beng.tab.cpp"
     break;
 
   case 11: // opt-decl: fn-decl
-#line 310 "beng.y"
+#line 311 "beng.y"
         { yylhs.value.as < declaration_t > () = std::move(yystack_[0].value.as < fn_decl_t > ()); }
 #line 1610 "beng.tab.cpp"
     break;
 
   case 12: // opt-decl: LET identifier ASSIGN expression "`;`"
-#line 312 "beng.y"
+#line 313 "beng.y"
         { yylhs.value.as < declaration_t > () = let_statement_decl{ std::move(yystack_[3].value.as < sonia::lang::beng::annotated_identifier > ().id), std::move(yystack_[1].value.as < expression_t > ()) }; }
 #line 1616 "beng.tab.cpp"
     break;
 
   case 13: // opt-decl: compound-expression "`;`"
-#line 314 "beng.y"
+#line 315 "beng.y"
         { yylhs.value.as < declaration_t > () = expression_decl{ std::move(yystack_[1].value.as < expression_t > ()) }; }
 #line 1622 "beng.tab.cpp"
     break;
 
   case 14: // infunction_declaration_any: %empty
-#line 328 "beng.y"
+#line 329 "beng.y"
         { yylhs.value.as < std::vector<infunction_declaration_t> > () = {}; }
 #line 1628 "beng.tab.cpp"
     break;
 
   case 15: // infunction_declaration_any: infunction_declaration_any opt-infunction-decl
-#line 330 "beng.y"
+#line 331 "beng.y"
         {
 	        yylhs.value.as < std::vector<infunction_declaration_t> > () = std::move(yystack_[1].value.as < std::vector<infunction_declaration_t> > ());
             if (yystack_[0].value.as < infunction_declaration_t > ().which()) yylhs.value.as < std::vector<infunction_declaration_t> > ().emplace_back(std::move(yystack_[0].value.as < infunction_declaration_t > ()));
@@ -1637,383 +1637,395 @@ namespace beng_lang {
     break;
 
   case 16: // opt-infunction-decl: "`;`"
-#line 338 "beng.y"
+#line 339 "beng.y"
         { yylhs.value.as < infunction_declaration_t > () = empty_t{}; }
 #line 1643 "beng.tab.cpp"
     break;
 
   case 17: // opt-infunction-decl: LET identifier ASSIGN expression "`;`"
-#line 340 "beng.y"
+#line 341 "beng.y"
         { yylhs.value.as < infunction_declaration_t > () = let_statement_decl{ std::move(yystack_[3].value.as < sonia::lang::beng::annotated_identifier > ().id), std::move(yystack_[1].value.as < expression_t > ()) }; }
 #line 1649 "beng.tab.cpp"
     break;
 
-  case 18: // opt-infunction-decl: compound-expression "`;`"
-#line 342 "beng.y"
-        { yylhs.value.as < infunction_declaration_t > () = expression_decl{ std::move(yystack_[1].value.as < expression_t > ()) }; }
+  case 18: // opt-infunction-decl: RETURN expression "`;`"
+#line 343 "beng.y"
+        { yylhs.value.as < infunction_declaration_t > () = return_decl{ std::move(yystack_[1].value.as < expression_t > ()) }; }
 #line 1655 "beng.tab.cpp"
     break;
 
-  case 19: // identifier: IDENTIFIER
-#line 347 "beng.y"
-      { yylhs.value.as < sonia::lang::beng::annotated_identifier > () = ctx.make_identifier(yystack_[0].value.as < sonia::lang::beng::annotated_string_view > ()); }
+  case 19: // opt-infunction-decl: compound-expression "`;`"
+#line 345 "beng.y"
+        { yylhs.value.as < infunction_declaration_t > () = expression_decl{ std::move(yystack_[1].value.as < expression_t > ()) }; }
 #line 1661 "beng.tab.cpp"
     break;
 
-  case 20: // qname: DBLCOLON identifier
-#line 356 "beng.y"
-        { yylhs.value.as < sonia::lang::beng::qname > () = sonia::lang::qname(yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().id); }
+  case 20: // identifier: IDENTIFIER
+#line 350 "beng.y"
+      { yylhs.value.as < sonia::lang::beng::annotated_identifier > () = ctx.make_identifier(yystack_[0].value.as < sonia::lang::beng::annotated_string_view > ()); }
 #line 1667 "beng.tab.cpp"
     break;
 
-  case 21: // qname: identifier
-#line 358 "beng.y"
-        { yylhs.value.as < sonia::lang::beng::qname > () = sonia::lang::qname(yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().id); yylhs.value.as < sonia::lang::beng::qname > ().set_relative(); }
+  case 21: // qname: DBLCOLON identifier
+#line 359 "beng.y"
+        { yylhs.value.as < sonia::lang::beng::annotated_qname > () = annotated_qname{ qname{yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().id}, yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().location }; }
 #line 1673 "beng.tab.cpp"
     break;
 
-  case 22: // qname: qname DBLCOLON identifier
-#line 360 "beng.y"
-        { yylhs.value.as < sonia::lang::beng::qname > () = std::move(yystack_[2].value.as < sonia::lang::beng::qname > ()); yylhs.value.as < sonia::lang::beng::qname > ().append(std::move(yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().id)); }
+  case 22: // qname: identifier
+#line 361 "beng.y"
+        { yylhs.value.as < sonia::lang::beng::annotated_qname > () = annotated_qname{ qname{yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().id}, yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().location }; yylhs.value.as < sonia::lang::beng::annotated_qname > ().name.set_relative(); }
 #line 1679 "beng.tab.cpp"
     break;
 
-  case 23: // fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`{`" infunction_declaration_any "`}`"
-#line 366 "beng.y"
-            {
-                yylhs.value.as < fn_decl_t > () = fn_decl{ctx.ns() + std::move(yystack_[6].value.as < sonia::lang::beng::qname > ()), std::move(yystack_[4].value.as < parameter_list_t > ()), beng_tuple_t{}, std::move(yystack_[1].value.as < std::vector<infunction_declaration_t> > ())};
-            }
-#line 1687 "beng.tab.cpp"
+  case 23: // qname: qname DBLCOLON identifier
+#line 363 "beng.y"
+        { yylhs.value.as < sonia::lang::beng::annotated_qname > () = std::move(yystack_[2].value.as < sonia::lang::beng::annotated_qname > ()); yylhs.value.as < sonia::lang::beng::annotated_qname > ().name.append(std::move(yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().id)); }
+#line 1685 "beng.tab.cpp"
     break;
 
-  case 24: // fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`{`" infunction_declaration_any "`}`"
-#line 370 "beng.y"
+  case 24: // fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`{`" infunction_declaration_any "`}`"
+#line 369 "beng.y"
             {
-                yylhs.value.as < fn_decl_t > () = fn_decl{ctx.ns() + std::move(yystack_[8].value.as < sonia::lang::beng::qname > ()), std::move(yystack_[6].value.as < parameter_list_t > ()), std::move(yystack_[3].value.as < beng_generic_type > ()), std::move(yystack_[1].value.as < std::vector<infunction_declaration_t> > ())};
+                yylhs.value.as < fn_decl_t > () = fn_decl{ctx.ns() + std::move(yystack_[6].value.as < sonia::lang::beng::annotated_qname > ().name), std::move(yystack_[4].value.as < parameter_list_t > ()), nullopt, std::move(yystack_[1].value.as < std::vector<infunction_declaration_t> > ())};
             }
-#line 1695 "beng.tab.cpp"
+#line 1693 "beng.tab.cpp"
     break;
 
-  case 25: // enum-decl: ENUM qname "`{`" case-list-opt "`}`"
-#line 377 "beng.y"
+  case 25: // fn-decl: FN qname "`(`" parameter-list-opt "`)`" "`->`" type-expr "`{`" infunction_declaration_any "`}`"
+#line 373 "beng.y"
+            {
+                yylhs.value.as < fn_decl_t > () = fn_decl{ctx.ns() + std::move(yystack_[8].value.as < sonia::lang::beng::annotated_qname > ().name), std::move(yystack_[6].value.as < parameter_list_t > ()), std::move(yystack_[3].value.as < beng_preliminary_type > ()), std::move(yystack_[1].value.as < std::vector<infunction_declaration_t> > ())};
+            }
+#line 1701 "beng.tab.cpp"
+    break;
+
+  case 26: // enum-decl: ENUM qname "`{`" case-list-opt "`}`"
+#line 380 "beng.y"
     {
-        yylhs.value.as < enum_decl > () = enum_decl{ctx.ns() + std::move(yystack_[3].value.as < sonia::lang::beng::qname > ()), std::move(yystack_[1].value.as < std::vector<sonia::lang::identifier> > ())};
+        yylhs.value.as < enum_decl > () = enum_decl{annotated_qname{ctx.ns() + std::move(yystack_[3].value.as < sonia::lang::beng::annotated_qname > ().name), yystack_[3].value.as < sonia::lang::beng::annotated_qname > ().location}, std::move(yystack_[1].value.as < std::vector<sonia::lang::identifier> > ())};
     }
-#line 1703 "beng.tab.cpp"
-    break;
-
-  case 26: // case-list-opt: %empty
-#line 383 "beng.y"
-           { yylhs.value.as < std::vector<sonia::lang::identifier> > () = {}; }
 #line 1709 "beng.tab.cpp"
     break;
 
-  case 27: // case-list-opt: case-list
-#line 385 "beng.y"
-    { yylhs.value.as < std::vector<sonia::lang::identifier> > () = yystack_[0].value.as < std::vector<sonia::lang::identifier> > (); }
+  case 27: // case-list-opt: %empty
+#line 386 "beng.y"
+           { yylhs.value.as < std::vector<sonia::lang::identifier> > () = {}; }
 #line 1715 "beng.tab.cpp"
     break;
 
-  case 28: // case-list: case-decl
-#line 390 "beng.y"
-        { yylhs.value.as < std::vector<sonia::lang::identifier> > () = std::vector<sonia::lang::identifier>{std::move(yystack_[0].value.as < sonia::lang::identifier > ())}; }
+  case 28: // case-list-opt: case-list
+#line 388 "beng.y"
+    { yylhs.value.as < std::vector<sonia::lang::identifier> > () = yystack_[0].value.as < std::vector<sonia::lang::identifier> > (); }
 #line 1721 "beng.tab.cpp"
     break;
 
-  case 29: // case-list: case-list "," case-decl
+  case 29: // case-list: case-decl
 #line 393 "beng.y"
-        { yylhs.value.as < std::vector<sonia::lang::identifier> > () = std::move(yystack_[2].value.as < std::vector<sonia::lang::identifier> > ()); yylhs.value.as < std::vector<sonia::lang::identifier> > ().emplace_back(std::move(yystack_[0].value.as < sonia::lang::identifier > ())); }
+        { yylhs.value.as < std::vector<sonia::lang::identifier> > () = std::vector<sonia::lang::identifier>{std::move(yystack_[0].value.as < sonia::lang::identifier > ())}; }
 #line 1727 "beng.tab.cpp"
     break;
 
-  case 30: // case-decl: identifier
-#line 398 "beng.y"
-        { yylhs.value.as < sonia::lang::identifier > () = yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().id; }
+  case 30: // case-list: case-list "," case-decl
+#line 396 "beng.y"
+        { yylhs.value.as < std::vector<sonia::lang::identifier> > () = std::move(yystack_[2].value.as < std::vector<sonia::lang::identifier> > ()); yylhs.value.as < std::vector<sonia::lang::identifier> > ().emplace_back(std::move(yystack_[0].value.as < sonia::lang::identifier > ())); }
 #line 1733 "beng.tab.cpp"
     break;
 
-  case 31: // type-decl: TYPE qname type-extension-any "`{`" parameter-list-opt "`}`"
-#line 403 "beng.y"
-    {
-        yylhs.value.as < type_decl > () = type_decl{ctx.ns() + std::move(yystack_[4].value.as < sonia::lang::beng::qname > ()), std::move(yystack_[3].value.as < extension_list_t > ()), std::move(yystack_[1].value.as < parameter_list_t > ())};
-    }
-#line 1741 "beng.tab.cpp"
+  case 31: // case-decl: identifier
+#line 401 "beng.y"
+        { yylhs.value.as < sonia::lang::identifier > () = yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().id; }
+#line 1739 "beng.tab.cpp"
     break;
 
-  case 32: // type-extension-any: %empty
-#line 409 "beng.y"
-           { yylhs.value.as < extension_list_t > () = {}; }
+  case 32: // type-decl: TYPE qname type-extension-any "`{`" parameter-list-opt "`}`"
+#line 406 "beng.y"
+    {
+        yylhs.value.as < type_decl > () = type_decl{annotated_qname{ctx.ns() + std::move(yystack_[4].value.as < sonia::lang::beng::annotated_qname > ().name), yystack_[4].value.as < sonia::lang::beng::annotated_qname > ().location}, std::move(yystack_[3].value.as < extension_list_t > ()), std::move(yystack_[1].value.as < parameter_list_t > ())};
+    }
 #line 1747 "beng.tab.cpp"
     break;
 
-  case 33: // type-extension-any: EXTENDS type-extension-list
-#line 411 "beng.y"
-                                { yylhs.value.as < extension_list_t > () = std::move(yystack_[0].value.as < extension_list_t > ()); }
+  case 33: // type-extension-any: %empty
+#line 412 "beng.y"
+           { yylhs.value.as < extension_list_t > () = {}; }
 #line 1753 "beng.tab.cpp"
     break;
 
-  case 34: // type-extension-list: qname
-#line 416 "beng.y"
-        { yylhs.value.as < extension_list_t > () = extension_list_t{std::move(yystack_[0].value.as < sonia::lang::beng::qname > ())}; }
+  case 34: // type-extension-any: EXTENDS type-extension-list
+#line 414 "beng.y"
+                                { yylhs.value.as < extension_list_t > () = std::move(yystack_[0].value.as < extension_list_t > ()); }
 #line 1759 "beng.tab.cpp"
     break;
 
-  case 35: // type-extension-list: type-extension-list "," qname
+  case 35: // type-extension-list: qname
 #line 419 "beng.y"
-        { yylhs.value.as < extension_list_t > () = std::move(yystack_[2].value.as < extension_list_t > ()); yylhs.value.as < extension_list_t > ().emplace_back(std::move(yystack_[0].value.as < sonia::lang::beng::qname > ())); }
+        { yylhs.value.as < extension_list_t > () = extension_list_t{std::move(yystack_[0].value.as < sonia::lang::beng::annotated_qname > ().name)}; }
 #line 1765 "beng.tab.cpp"
     break;
 
-  case 36: // parameter-list-opt: %empty
-#line 423 "beng.y"
-              { yylhs.value.as < parameter_list_t > () = {}; }
+  case 36: // type-extension-list: type-extension-list "," qname
+#line 422 "beng.y"
+        { yylhs.value.as < extension_list_t > () = std::move(yystack_[2].value.as < extension_list_t > ()); yylhs.value.as < extension_list_t > ().emplace_back(std::move(yystack_[0].value.as < sonia::lang::beng::annotated_qname > ().name)); }
 #line 1771 "beng.tab.cpp"
     break;
 
-  case 37: // parameter-list-opt: parameter-list
-#line 424 "beng.y"
-       { yylhs.value.as < parameter_list_t > () = yystack_[0].value.as < parameter_list_t > (); }
+  case 37: // parameter-list-opt: %empty
+#line 426 "beng.y"
+              { yylhs.value.as < parameter_list_t > () = {}; }
 #line 1777 "beng.tab.cpp"
     break;
 
-  case 38: // parameter-list: parameter-decl
-#line 429 "beng.y"
-        { yylhs.value.as < parameter_list_t > () = parameter_list_t{std::move(yystack_[0].value.as < parameter_t > ())}; }
+  case 38: // parameter-list-opt: parameter-list
+#line 427 "beng.y"
+       { yylhs.value.as < parameter_list_t > () = yystack_[0].value.as < parameter_list_t > (); }
 #line 1783 "beng.tab.cpp"
     break;
 
-  case 39: // parameter-list: parameter-list "," parameter-decl
-#line 431 "beng.y"
-        { yylhs.value.as < parameter_list_t > () = std::move(yystack_[2].value.as < parameter_list_t > ()); yylhs.value.as < parameter_list_t > ().emplace_back(std::move(yystack_[0].value.as < parameter_t > ())); }
+  case 39: // parameter-list: parameter-decl
+#line 432 "beng.y"
+        { yylhs.value.as < parameter_list_t > () = parameter_list_t{std::move(yystack_[0].value.as < parameter_t > ())}; }
 #line 1789 "beng.tab.cpp"
     break;
 
-  case 40: // parameter-decl: identifier "`:`" type-expr
-#line 436 "beng.y"
-        { yylhs.value.as < parameter_t > () = parameter_t{ std::move(yystack_[2].value.as < sonia::lang::beng::annotated_identifier > ().id), std::move(yystack_[0].value.as < beng_generic_type > ()) }; }
+  case 40: // parameter-list: parameter-list "," parameter-decl
+#line 434 "beng.y"
+        { yylhs.value.as < parameter_list_t > () = std::move(yystack_[2].value.as < parameter_list_t > ()); yylhs.value.as < parameter_list_t > ().emplace_back(std::move(yystack_[0].value.as < parameter_t > ())); }
 #line 1795 "beng.tab.cpp"
     break;
 
-  case 41: // parameter-decl: identifier "`:`" type-expr ASSIGN expression
-#line 438 "beng.y"
-        { yylhs.value.as < parameter_t > () = parameter_t{ std::move(yystack_[4].value.as < sonia::lang::beng::annotated_identifier > ().id), std::move(yystack_[2].value.as < beng_generic_type > ()), std::move(yystack_[0].value.as < expression_t > ()) }; }
+  case 41: // parameter-decl: identifier "`:`" type-expr
+#line 439 "beng.y"
+        { yylhs.value.as < parameter_t > () = parameter_t{ std::move(yystack_[2].value.as < sonia::lang::beng::annotated_identifier > ()), std::move(yystack_[0].value.as < beng_preliminary_type > ()) }; }
 #line 1801 "beng.tab.cpp"
     break;
 
-  case 42: // parameter-decl: type-expr
-#line 440 "beng.y"
-        { yylhs.value.as < parameter_t > () = parameter_t{ sonia::lang::identifier{}, std::move(yystack_[0].value.as < beng_generic_type > ()) }; }
+  case 42: // parameter-decl: identifier "`:`" type-expr ASSIGN expression
+#line 441 "beng.y"
+        { yylhs.value.as < parameter_t > () = parameter_t{ std::move(yystack_[4].value.as < sonia::lang::beng::annotated_identifier > ()), std::move(yystack_[2].value.as < beng_preliminary_type > ()), std::move(yystack_[0].value.as < expression_t > ()) }; }
 #line 1807 "beng.tab.cpp"
     break;
 
-  case 43: // parameter-decl: type-expr ASSIGN expression
-#line 442 "beng.y"
-        { yylhs.value.as < parameter_t > () = parameter_t{ sonia::lang::identifier{}, std::move(yystack_[2].value.as < beng_generic_type > ()), std::move(yystack_[0].value.as < expression_t > ()) }; }
+  case 43: // parameter-decl: type-expr
+#line 443 "beng.y"
+        { yylhs.value.as < parameter_t > () = parameter_t{ nullopt, std::move(yystack_[0].value.as < beng_preliminary_type > ()) }; }
 #line 1813 "beng.tab.cpp"
     break;
 
-  case 44: // type-expr: BOOL
-#line 450 "beng.y"
-           { yylhs.value.as < beng_generic_type > () = beng_bool_t{}; }
+  case 44: // parameter-decl: type-expr ASSIGN expression
+#line 445 "beng.y"
+        { yylhs.value.as < parameter_t > () = parameter_t{ nullopt, std::move(yystack_[2].value.as < beng_preliminary_type > ()), std::move(yystack_[0].value.as < expression_t > ()) }; }
 #line 1819 "beng.tab.cpp"
     break;
 
-  case 45: // type-expr: INT
-#line 451 "beng.y"
-          { yylhs.value.as < beng_generic_type > () = beng_int_t{}; }
+  case 45: // type-expr: BOOL
+#line 453 "beng.y"
+           { yylhs.value.as < beng_preliminary_type > () = beng_bool_t{}; }
 #line 1825 "beng.tab.cpp"
     break;
 
-  case 46: // type-expr: FLOAT
-#line 452 "beng.y"
-            { yylhs.value.as < beng_generic_type > () = beng_float_t{}; }
+  case 46: // type-expr: INT
+#line 454 "beng.y"
+          { yylhs.value.as < beng_preliminary_type > () = beng_int_t{}; }
 #line 1831 "beng.tab.cpp"
     break;
 
-  case 47: // type-expr: STRING_WORD
-#line 453 "beng.y"
-                  { yylhs.value.as < beng_generic_type > () = beng_string_t{}; }
+  case 47: // type-expr: FLOAT
+#line 455 "beng.y"
+            { yylhs.value.as < beng_preliminary_type > () = beng_float_t{}; }
 #line 1837 "beng.tab.cpp"
     break;
 
-  case 48: // type-expr: qname
-#line 454 "beng.y"
-            { yylhs.value.as < beng_generic_type > () = beng_object_t{std::move(yystack_[0].value.as < sonia::lang::beng::qname > ())}; }
+  case 48: // type-expr: STRING_WORD
+#line 456 "beng.y"
+                  { yylhs.value.as < beng_preliminary_type > () = beng_string_t{}; }
 #line 1843 "beng.tab.cpp"
     break;
 
-  case 49: // type-expr: "`[`" type-expr "`]`"
-#line 456 "beng.y"
-        { yylhs.value.as < beng_generic_type > () = beng_vector_t{std::move(yystack_[1].value.as < beng_generic_type > ())}; }
+  case 49: // type-expr: DECIMAL_WORD
+#line 457 "beng.y"
+                   { yylhs.value.as < beng_preliminary_type > () = beng_decimal_t{}; }
 #line 1849 "beng.tab.cpp"
     break;
 
-  case 50: // type-expr: "`(`" opt-type-list "`)`"
+  case 50: // type-expr: qname
 #line 458 "beng.y"
-        { yylhs.value.as < beng_generic_type > () = std::move(yystack_[1].value.as < beng_tuple_t > ()); }
+            { yylhs.value.as < beng_preliminary_type > () = beng_preliminary_object_t{ std::move(yystack_[0].value.as < sonia::lang::beng::annotated_qname > ()) }; }
 #line 1855 "beng.tab.cpp"
     break;
 
-  case 51: // type-expr: type-expr "`[`" INTEGER "`]`"
+  case 51: // type-expr: "`[`" type-expr "`]`"
 #line 460 "beng.y"
-        { yylhs.value.as < beng_generic_type > () = beng_array_t{std::move(yystack_[3].value.as < beng_generic_type > ()), (size_t)std::move(yystack_[1].value.as < int > ())}; }
+        { yylhs.value.as < beng_preliminary_type > () = beng_preliminary_vector_t{std::move(yystack_[1].value.as < beng_preliminary_type > ())}; }
 #line 1861 "beng.tab.cpp"
     break;
 
-  case 52: // type-expr: type-expr "`||`" type-expr
+  case 52: // type-expr: "`(`" opt-type-list "`)`"
 #line 462 "beng.y"
+        { yylhs.value.as < beng_preliminary_type > () = std::move(yystack_[1].value.as < beng_preliminary_tuple_t > ()); }
+#line 1867 "beng.tab.cpp"
+    break;
+
+  case 53: // type-expr: type-expr "`[`" INTEGER "`]`"
+#line 464 "beng.y"
+        { yylhs.value.as < beng_preliminary_type > () = beng_preliminary_array_t{std::move(yystack_[3].value.as < beng_preliminary_type > ()), (size_t)std::move(yystack_[1].value.as < int > ())}; }
+#line 1873 "beng.tab.cpp"
+    break;
+
+  case 54: // type-expr: type-expr "`||`" type-expr
+#line 466 "beng.y"
         {
-            beng_union_t uni{};
-            uni.members.emplace_back(std::move(yystack_[2].value.as < beng_generic_type > ()));
-            uni.members.emplace_back(std::move(yystack_[0].value.as < beng_generic_type > ()));
-            yylhs.value.as < beng_generic_type > () = std::move(uni);
+            beng_preliminary_union_t uni{};
+            uni.members.emplace_back(std::move(yystack_[2].value.as < beng_preliminary_type > ()));
+            uni.members.emplace_back(std::move(yystack_[0].value.as < beng_preliminary_type > ()));
+            yylhs.value.as < beng_preliminary_type > () = std::move(uni);
         }
-#line 1872 "beng.tab.cpp"
-    break;
-
-  case 53: // type-expr: type-expr "`->`" type-expr
-#line 469 "beng.y"
-        { yylhs.value.as < beng_generic_type > () = beng_fn_t{std::move(yystack_[2].value.as < beng_generic_type > ()), std::move(yystack_[0].value.as < beng_generic_type > ())}; }
-#line 1878 "beng.tab.cpp"
-    break;
-
-  case 54: // opt-type-list: %empty
-#line 474 "beng.y"
-        { yylhs.value.as < beng_tuple_t > () = beng_tuple_t{}; }
 #line 1884 "beng.tab.cpp"
     break;
 
-  case 55: // opt-type-list: type-expr
-#line 476 "beng.y"
-        { yylhs.value.as < beng_tuple_t > () = beng_tuple_t{}; yylhs.value.as < beng_tuple_t > ().fields.emplace_back(std::move(yystack_[0].value.as < beng_generic_type > ())); }
+  case 55: // type-expr: type-expr "`->`" type-expr
+#line 473 "beng.y"
+        { yylhs.value.as < beng_preliminary_type > () = beng_preliminary_fn_t{std::move(yystack_[2].value.as < beng_preliminary_type > ()), std::move(yystack_[0].value.as < beng_preliminary_type > ())}; }
 #line 1890 "beng.tab.cpp"
     break;
 
-  case 56: // opt-type-list: opt-type-list "," type-expr
+  case 56: // opt-type-list: %empty
 #line 478 "beng.y"
-        { yylhs.value.as < beng_tuple_t > () = std::move(yystack_[2].value.as < beng_tuple_t > ()); yylhs.value.as < beng_tuple_t > ().fields.emplace_back(std::move(yystack_[0].value.as < beng_generic_type > ())); }
+        { yylhs.value.as < beng_preliminary_tuple_t > () = beng_preliminary_tuple_t{}; }
 #line 1896 "beng.tab.cpp"
     break;
 
-  case 57: // compound-expression: qname "`(`" opt-named-expr-list-any "`)`"
-#line 487 "beng.y"
-        { yylhs.value.as < expression_t > () = expression_t { function_call_t{ std::move(yystack_[3].value.as < sonia::lang::beng::qname > ()), std::move(yystack_[1].value.as < named_expression_term_list_t > ()) } }; }
+  case 57: // opt-type-list: type-expr
+#line 480 "beng.y"
+        { yylhs.value.as < beng_preliminary_tuple_t > () = beng_preliminary_tuple_t{}; yylhs.value.as < beng_preliminary_tuple_t > ().fields.emplace_back(std::move(yystack_[0].value.as < beng_preliminary_type > ())); }
 #line 1902 "beng.tab.cpp"
     break;
 
-  case 58: // compound-expression: expression ASSIGN expression
-#line 489 "beng.y"
-        { yylhs.value.as < expression_t > () = assign_expression_t{ std::move(yystack_[2].value.as < expression_t > ()), std::move(yystack_[0].value.as < expression_t > ()) }; }
+  case 58: // opt-type-list: opt-type-list "," type-expr
+#line 482 "beng.y"
+        { yylhs.value.as < beng_preliminary_tuple_t > () = std::move(yystack_[2].value.as < beng_preliminary_tuple_t > ()); yylhs.value.as < beng_preliminary_tuple_t > ().fields.emplace_back(std::move(yystack_[0].value.as < beng_preliminary_type > ())); }
 #line 1908 "beng.tab.cpp"
     break;
 
-  case 59: // expression: INTEGER
-#line 494 "beng.y"
-        { yylhs.value.as < expression_t > () = expression_t { decimal(yystack_[0].value.as < int > ()) }; }
+  case 59: // compound-expression: qname "`(`" opt-named-expr-list-any "`)`"
+#line 491 "beng.y"
+        { yylhs.value.as < expression_t > () = expression_t { function_call_t{ std::move(yystack_[3].value.as < sonia::lang::beng::annotated_qname > ().name), std::move(yystack_[1].value.as < named_expression_term_list_t > ()) } }; }
 #line 1914 "beng.tab.cpp"
     break;
 
-  case 60: // expression: DECIMAL
-#line 496 "beng.y"
-        { yylhs.value.as < expression_t > () = expression_t { std::move(yystack_[0].value.as < sonia::decimal > ()) }; }
+  case 60: // compound-expression: expression ASSIGN expression
+#line 493 "beng.y"
+        { yylhs.value.as < expression_t > () = assign_expression_t{ std::move(yystack_[2].value.as < expression_t > ()), std::move(yystack_[0].value.as < expression_t > ()) }; }
 #line 1920 "beng.tab.cpp"
     break;
 
-  case 61: // expression: STRING
+  case 61: // expression: INTEGER
 #line 498 "beng.y"
-        { yylhs.value.as < expression_t > () = expression_t { ctx.make_string(yystack_[0].value.as < sonia::string_view > ()) }; }
+        { yylhs.value.as < expression_t > () = expression_t { decimal(yystack_[0].value.as < int > ()) }; }
 #line 1926 "beng.tab.cpp"
     break;
 
-  case 62: // expression: "`.`" identifier
+  case 62: // expression: DECIMAL
 #line 500 "beng.y"
-        { yylhs.value.as < expression_t > () = expression_t { case_expression { std::move(yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().id) } }; }
+        { yylhs.value.as < expression_t > () = expression_t { std::move(yystack_[0].value.as < sonia::decimal > ()) }; }
 #line 1932 "beng.tab.cpp"
     break;
 
-  case 63: // expression: qname
+  case 63: // expression: STRING
 #line 502 "beng.y"
-        { yylhs.value.as < expression_t > () = expression_t { std::move(yystack_[0].value.as < sonia::lang::beng::qname > ()) }; }
+        { yylhs.value.as < expression_t > () = expression_t { ctx.make_string(yystack_[0].value.as < sonia::string_view > ()) }; }
 #line 1938 "beng.tab.cpp"
     break;
 
-  case 64: // expression: "`(`" expression "`)`"
+  case 64: // expression: "`.`" identifier
 #line 504 "beng.y"
-        { yylhs.value.as < expression_t > () = expression_t { std::move(yystack_[1].value.as < expression_t > ()) }; }
+        { yylhs.value.as < expression_t > () = expression_t { case_expression { std::move(yystack_[0].value.as < sonia::lang::beng::annotated_identifier > ().id) } }; }
 #line 1944 "beng.tab.cpp"
     break;
 
-  case 65: // expression: "`[`" expression-list-any "`]`"
+  case 65: // expression: qname
 #line 506 "beng.y"
-        { yylhs.value.as < expression_t > () = expression_vector_t{ {std::move(yystack_[1].value.as < expression_list_t > ())} }; }
+        { yylhs.value.as < expression_t > () = expression_t { std::move(yystack_[0].value.as < sonia::lang::beng::annotated_qname > ()) }; }
 #line 1950 "beng.tab.cpp"
     break;
 
-  case 66: // expression: compound-expression
+  case 66: // expression: "`(`" expression "`)`"
 #line 508 "beng.y"
-        { yylhs.value.as < expression_t > () = std::move(yystack_[0].value.as < expression_t > ()); }
+        { yylhs.value.as < expression_t > () = expression_t { std::move(yystack_[1].value.as < expression_t > ()) }; }
 #line 1956 "beng.tab.cpp"
     break;
 
-  case 67: // expression-list-any: %empty
-#line 518 "beng.y"
-        { yylhs.value.as < expression_list_t > () = expression_list_t{}; }
+  case 67: // expression: "`[`" expression-list-any "`]`"
+#line 510 "beng.y"
+        { yylhs.value.as < expression_t > () = expression_vector_t{ {std::move(yystack_[1].value.as < expression_list_t > ())} }; }
 #line 1962 "beng.tab.cpp"
     break;
 
-  case 68: // expression-list-any: expression
-#line 520 "beng.y"
-        { yylhs.value.as < expression_list_t > () = expression_list_t{ std::move(yystack_[0].value.as < expression_t > ()) }; }
+  case 68: // expression: compound-expression
+#line 512 "beng.y"
+        { yylhs.value.as < expression_t > () = std::move(yystack_[0].value.as < expression_t > ()); }
 #line 1968 "beng.tab.cpp"
     break;
 
-  case 69: // expression-list-any: expression-list-any "," expression
+  case 69: // expression-list-any: %empty
 #line 522 "beng.y"
-        { yylhs.value.as < expression_list_t > () = std::move(yystack_[2].value.as < expression_list_t > ()); yylhs.value.as < expression_list_t > ().emplace_back(std::move(yystack_[0].value.as < expression_t > ())); }
+        { yylhs.value.as < expression_list_t > () = expression_list_t{}; }
 #line 1974 "beng.tab.cpp"
     break;
 
-  case 70: // opt-named-expr-list-any: %empty
-#line 527 "beng.y"
-        { yylhs.value.as < named_expression_term_list_t > () = named_expression_term_list_t{}; }
+  case 70: // expression-list-any: expression
+#line 524 "beng.y"
+        { yylhs.value.as < expression_list_t > () = expression_list_t{ std::move(yystack_[0].value.as < expression_t > ()) }; }
 #line 1980 "beng.tab.cpp"
     break;
 
-  case 71: // opt-named-expr-list-any: opt-named-expr-list
-#line 528 "beng.y"
-      { yylhs.value.as < named_expression_term_list_t > () = yystack_[0].value.as < named_expression_term_list_t > (); }
+  case 71: // expression-list-any: expression-list-any "," expression
+#line 526 "beng.y"
+        { yylhs.value.as < expression_list_t > () = std::move(yystack_[2].value.as < expression_list_t > ()); yylhs.value.as < expression_list_t > ().emplace_back(std::move(yystack_[0].value.as < expression_t > ())); }
 #line 1986 "beng.tab.cpp"
     break;
 
-  case 72: // opt-named-expr-list: opt-named-expr
-#line 533 "beng.y"
-        { yylhs.value.as < named_expression_term_list_t > () = named_expression_term_list_t{std::move(yystack_[0].value.as < named_expression_term_t > ())}; }
+  case 72: // opt-named-expr-list-any: %empty
+#line 531 "beng.y"
+        { yylhs.value.as < named_expression_term_list_t > () = named_expression_term_list_t{}; }
 #line 1992 "beng.tab.cpp"
     break;
 
-  case 73: // opt-named-expr-list: opt-named-expr-list "," opt-named-expr
-#line 535 "beng.y"
+  case 73: // opt-named-expr-list-any: opt-named-expr-list
+#line 532 "beng.y"
+      { yylhs.value.as < named_expression_term_list_t > () = yystack_[0].value.as < named_expression_term_list_t > (); }
+#line 1998 "beng.tab.cpp"
+    break;
+
+  case 74: // opt-named-expr-list: opt-named-expr
+#line 537 "beng.y"
+        { yylhs.value.as < named_expression_term_list_t > () = named_expression_term_list_t{std::move(yystack_[0].value.as < named_expression_term_t > ())}; }
+#line 2004 "beng.tab.cpp"
+    break;
+
+  case 75: // opt-named-expr-list: opt-named-expr-list "," opt-named-expr
+#line 539 "beng.y"
         {
             yylhs.value.as < named_expression_term_list_t > () = std::move(yystack_[2].value.as < named_expression_term_list_t > ());
             yylhs.value.as < named_expression_term_list_t > ().push_back(std::move(yystack_[0].value.as < named_expression_term_t > ()));
 		}
-#line 2001 "beng.tab.cpp"
-    break;
-
-  case 74: // opt-named-expr: identifier "`:`" expression
-#line 543 "beng.y"
-        { yylhs.value.as < named_expression_term_t > () = std::tuple{std::move(yystack_[2].value.as < sonia::lang::beng::annotated_identifier > ()), std::move(yystack_[0].value.as < expression_t > ())}; }
-#line 2007 "beng.tab.cpp"
-    break;
-
-  case 75: // opt-named-expr: expression
-#line 545 "beng.y"
-        { yylhs.value.as < named_expression_term_t > () = std::move(yystack_[0].value.as < expression_t > ()); }
 #line 2013 "beng.tab.cpp"
     break;
 
+  case 76: // opt-named-expr: identifier "`:`" expression
+#line 547 "beng.y"
+        { yylhs.value.as < named_expression_term_t > () = std::tuple{std::move(yystack_[2].value.as < sonia::lang::beng::annotated_identifier > ()), std::move(yystack_[0].value.as < expression_t > ())}; }
+#line 2019 "beng.tab.cpp"
+    break;
 
-#line 2017 "beng.tab.cpp"
+  case 77: // opt-named-expr: expression
+#line 549 "beng.y"
+        { yylhs.value.as < named_expression_term_t > () = std::move(yystack_[0].value.as < expression_t > ()); }
+#line 2025 "beng.tab.cpp"
+    break;
+
+
+#line 2029 "beng.tab.cpp"
 
             default:
               break;
@@ -2365,162 +2377,172 @@ namespace beng_lang {
   }
 
 
-  const signed char parser::yypact_ninf_ = -53;
+  const signed char parser::yypact_ninf_ = -51;
 
   const signed char parser::yytable_ninf_ = -1;
 
   const short
   parser::yypact_[] =
   {
-     -53,    22,    19,   -53,   -53,   -53,   -53,   -53,   -53,     5,
-       5,   -53,    17,    17,   -52,    17,    -3,    -3,    -3,   -53,
-     -53,   -28,   -53,   -53,   -53,   -14,   -21,   -53,   -33,   -21,
-      48,   -53,    -9,    17,    -3,   -53,   -22,   -18,   -12,     5,
-      17,   -53,     5,   -53,   -53,     5,     5,    57,    -1,    33,
-      17,    -3,    49,    70,   -21,    73,    61,   -53,   -53,   -21,
-     -21,   -37,    33,    33,    33,    33,   -53,   -53,   -53,   -53,
-      87,    68,   112,    82,   -53,    -7,   -53,   114,    98,   -53,
-      68,   102,    33,     5,   -53,     5,   -53,   131,   127,    59,
-      25,   145,    33,    -6,    33,    33,    33,   152,     5,   -53,
-      17,    -3,   134,   -21,   -53,   -53,    16,   -53,    33,   -53,
-      34,    33,   -53,   -53,   -53,    74,   125,   -21,   -53,    68,
-     -53,    33,   -53,    59,     5,   153,   101,   -53,   132,   -21,
-     -53,   -53,   -53,    17,   -53,   126,   -53,   123,    97,   -53,
-     -53,     5,   -23,   -53
+     -51,     6,   105,   -51,   -51,   -51,   -51,   -51,   -51,   149,
+     149,   -51,    10,    10,    13,    10,     1,     1,     1,   -51,
+     -51,   -33,   -51,   -51,   -51,   -26,   -50,   -51,   -20,   -50,
+     -11,   -51,   -49,    10,     1,   -51,   -32,   -28,   -17,   149,
+      10,   -51,   149,   -51,   -51,   149,   149,    -6,   -31,    82,
+      10,     1,    21,    31,   -50,    38,    12,   -51,   -51,   -50,
+     -50,   -25,    82,    82,    82,    82,   -51,   -51,   -51,   -51,
+     -51,    47,     5,    55,    37,   -51,    -4,   -51,    57,    42,
+     -51,     5,    50,    82,   149,   -51,   149,   -51,    20,    70,
+      75,    84,   102,    82,    -3,    82,    82,    82,   100,   149,
+     -51,    10,     1,    85,   -50,   -51,   -51,    -1,   -51,    82,
+     -51,     2,    82,   -51,   -51,   -51,    49,    87,   -50,   -51,
+       5,   -51,    82,   -51,    75,   149,   108,   167,   -51,    41,
+     -50,   -51,   -51,   -51,    10,   149,   -51,    79,   -51,   174,
+      53,   -23,   -51,   -51,   149,   -51,   -22,   -51
   };
 
   const signed char
   parser::yydefact_[] =
   {
-       3,     0,     0,     1,     2,    61,    19,    60,    59,     0,
-      67,     5,     0,     0,     0,     0,     0,     0,     0,     4,
-      21,    63,    11,     9,    10,    66,     0,    66,     0,    68,
-       0,    62,     0,     0,     0,    20,     0,     0,    32,    70,
-       0,    13,     0,    64,    65,     0,     0,     0,     0,    36,
-      26,     0,     0,    21,    75,     0,    71,    72,    22,    58,
-      69,     0,     0,    36,    54,     0,    44,    45,    46,    47,
-      21,    48,     0,    37,    38,    42,    30,     0,    27,    28,
-      34,    33,    36,     0,    57,     0,    12,     0,     0,    55,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    25,
-       0,     0,     0,    74,    73,     6,     0,    50,     0,    49,
-      40,     0,    14,    39,    53,    52,     0,    43,    29,    35,
-      31,     0,     7,    56,     0,     0,     0,    51,     0,    41,
-      14,    23,    16,     0,    15,    66,     8,     0,     0,    18,
-      24,     0,     0,    17
+       3,     0,     0,     1,     2,    63,    20,    62,    61,     0,
+      69,     5,     0,     0,     0,     0,     0,     0,     0,     4,
+      22,    65,    11,     9,    10,    68,     0,    68,     0,    70,
+       0,    64,     0,     0,     0,    21,     0,     0,    33,    72,
+       0,    13,     0,    66,    67,     0,     0,     0,     0,    37,
+      27,     0,     0,    22,    77,     0,    73,    74,    23,    60,
+      71,     0,     0,    37,    56,     0,    45,    46,    47,    48,
+      49,    22,    50,     0,    38,    39,    43,    31,     0,    28,
+      29,    35,    34,    37,     0,    59,     0,    12,     0,     0,
+      57,     0,     0,     0,     0,     0,     0,     0,     0,     0,
+      26,     0,     0,     0,    76,    75,     6,     0,    52,     0,
+      51,    41,     0,    14,    40,    55,    54,     0,    44,    30,
+      36,    32,     0,     7,    58,     0,     0,     0,    53,     0,
+      42,    14,    24,    16,     0,     0,    15,    68,     8,     0,
+       0,     0,    19,    25,     0,    18,     0,    17
   };
 
-  const signed char
+  const short
   parser::yypgoto_[] =
   {
-     -53,   -53,   -53,   -53,    54,   -53,     3,    31,   -53,   -53,
-     -53,   -53,    79,   -53,   -53,   -53,    52,   -53,    93,    86,
-     -53,    -2,    -8,   -53,   -53,   -53,   103
+     -51,   -51,   -51,   -51,     4,   -51,     0,     7,   -51,   -51,
+     -51,   -51,    30,   -51,   -51,   -51,    14,   -51,    43,   128,
+     -51,    -2,    -8,   -51,   -51,   -51,    58
   };
 
   const unsigned char
   parser::yydefgoto_[] =
   {
-       0,     1,     2,    19,   126,   134,    20,    21,    22,    23,
-      77,    78,    79,    24,    52,    81,    72,    73,    74,    75,
-      90,    27,    26,    30,    55,    56,    57
+       0,     1,     2,    19,   127,   136,    20,    21,    22,    23,
+      78,    79,    80,    24,    52,    82,    73,    74,    75,    76,
+      91,    27,    26,    30,    55,    56,    57
   };
 
   const unsigned char
   parser::yytable_[] =
   {
-      25,    28,    29,     6,    43,    95,   111,    86,    39,    33,
-       5,     6,     7,     8,    49,    31,    32,    96,    35,     4,
-      50,   143,     3,     6,     5,     6,     7,     8,   121,    34,
-      41,    54,   112,    97,    59,    63,    47,    60,    61,     6,
-      42,     9,    53,    58,    42,    10,    95,    36,    37,    38,
-      12,    40,    70,    76,    42,     9,    42,    40,    96,    10,
-     122,    40,   107,    11,    12,    48,    70,    40,    46,    64,
-      98,    95,    51,    65,    97,   103,    15,    54,    40,    13,
-      71,   108,    80,    96,    15,    70,    95,    82,    53,    44,
-     117,    14,    62,    71,    71,    71,    71,    70,    15,    97,
-      16,    17,    18,    76,    45,    83,     5,     6,     7,     8,
-      84,   124,    15,    71,    97,    88,   129,    85,    66,    67,
-      68,    69,    92,    71,   135,    71,    71,    71,     5,     6,
-       7,     8,   119,   142,   102,   135,   138,     9,    94,    71,
-     131,    10,    71,    95,    95,   132,    12,    40,    87,    93,
-      89,    91,    71,    99,   100,    96,    96,    95,   101,     9,
-     116,   133,   140,    10,   106,    95,   127,   132,    12,    96,
-     139,    97,    97,   120,   141,   105,   136,    96,   110,   118,
-      15,   114,   115,   133,   137,    97,   109,   113,   104,     0,
-       0,   130,     0,    97,   123,     0,     0,   125,     0,     0,
-       0,     0,    15,     0,     0,     0,     0,   128
+      25,    28,    29,    39,    49,    63,     3,     6,    96,   112,
+      50,   122,    31,    32,    96,    35,     6,    43,    41,    87,
+      97,   145,   147,    36,    37,    38,    97,    42,    46,    62,
+      44,    54,    96,    47,    59,   113,    98,    60,    61,    53,
+      58,    48,    98,   123,    97,    45,    40,    40,    40,    71,
+      77,    40,    42,    96,    42,    42,    72,    42,    81,    83,
+      98,    96,    40,    71,   106,    97,    84,    51,    86,    72,
+      72,    72,    72,    99,    33,    85,   104,    89,    54,   125,
+      15,    98,    93,    71,    40,   138,    53,    96,     6,    98,
+      72,   118,    94,    95,    34,    71,   100,   103,   101,    97,
+      72,    77,    72,    72,    72,     4,   102,   107,   117,   120,
+       5,     6,     7,     8,    96,    98,    72,   130,    64,    72,
+      96,   108,    65,   142,   121,   137,    97,   141,   128,    72,
+     144,   119,    97,     0,   140,   139,   146,   137,   114,     0,
+     109,     9,    98,   110,   105,    10,   131,     0,    98,    11,
+      12,     0,     0,     0,     5,     6,     7,     8,     0,     0,
+       0,    15,     0,     0,     0,    13,     0,    66,    67,    68,
+      69,    70,     5,     6,     7,     8,     0,    14,     0,     5,
+       6,     7,     8,     0,    15,     9,    16,    17,    18,    10,
+      88,     0,    90,    92,    12,     0,     0,     0,     0,     0,
+       0,     0,     0,     9,     0,     0,   132,    10,     0,     0,
+       9,   133,    12,   143,    10,     0,     0,     0,   133,    12,
+       0,   111,     0,     0,   115,   116,     0,   134,    15,     0,
+       0,     0,     0,     0,   134,     0,     0,   124,   135,     0,
+     126,     0,     0,     0,     0,   135,    15,     0,     0,     0,
+     129,     0,     0,    15
   };
 
   const short
   parser::yycheck_[] =
   {
-       2,     9,    10,     6,    37,    12,    12,    44,    36,    61,
-       5,     6,     7,     8,    36,    12,    13,    24,    15,     0,
-      38,    44,     0,     6,     5,     6,     7,     8,    12,    81,
-      44,    39,    38,    40,    42,    36,    33,    45,    46,     6,
-      77,    36,    39,    40,    77,    40,    12,    16,    17,    18,
-      45,    79,    49,    50,    77,    36,    77,    79,    24,    40,
-      44,    79,    37,    44,    45,    34,    63,    79,    77,    36,
-      77,    12,    84,    40,    40,    83,    79,    85,    79,    60,
-      49,    56,    51,    24,    79,    82,    12,    38,    85,    41,
-      98,    72,    35,    62,    63,    64,    65,    94,    79,    40,
-      81,    82,    83,   100,    56,    35,     5,     6,     7,     8,
-      37,    77,    79,    82,    40,    63,   124,    56,    85,    86,
-      87,    88,    35,    92,   126,    94,    95,    96,     5,     6,
-       7,     8,   101,   141,    82,   137,   133,    36,    56,   108,
-      39,    40,   111,    12,    12,    44,    45,    79,    62,    37,
-      64,    65,   121,    39,    56,    24,    24,    12,    56,    36,
-       8,    60,    39,    40,    37,    12,    41,    44,    45,    24,
-      44,    40,    40,    39,    77,    44,    44,    24,    92,   100,
-      79,    95,    96,    60,   130,    40,    41,    94,    85,    -1,
-      -1,    38,    -1,    40,   108,    -1,    -1,   111,    -1,    -1,
-      -1,    -1,    79,    -1,    -1,    -1,    -1,   121
+       2,     9,    10,    36,    36,    36,     0,     6,    12,    12,
+      38,    12,    12,    13,    12,    15,     6,    37,    44,    44,
+      24,    44,    44,    16,    17,    18,    24,    77,    77,    35,
+      41,    39,    12,    33,    42,    38,    40,    45,    46,    39,
+      40,    34,    40,    44,    24,    56,    79,    79,    79,    49,
+      50,    79,    77,    12,    77,    77,    49,    77,    51,    38,
+      40,    12,    79,    63,    44,    24,    35,    84,    56,    62,
+      63,    64,    65,    77,    61,    37,    84,    63,    86,    77,
+      79,    40,    35,    83,    79,    44,    86,    12,     6,    40,
+      83,    99,    37,    56,    81,    95,    39,    83,    56,    24,
+      93,   101,    95,    96,    97,     0,    56,    37,     8,   102,
+       5,     6,     7,     8,    12,    40,   109,   125,    36,   112,
+      12,    37,    40,    44,    39,   127,    24,   135,    41,   122,
+      77,   101,    24,    -1,   134,   131,   144,   139,    95,    -1,
+      56,    36,    40,    41,    86,    40,    38,    -1,    40,    44,
+      45,    -1,    -1,    -1,     5,     6,     7,     8,    -1,    -1,
+      -1,    79,    -1,    -1,    -1,    60,    -1,    85,    86,    87,
+      88,    89,     5,     6,     7,     8,    -1,    72,    -1,     5,
+       6,     7,     8,    -1,    79,    36,    81,    82,    83,    40,
+      62,    -1,    64,    65,    45,    -1,    -1,    -1,    -1,    -1,
+      -1,    -1,    -1,    36,    -1,    -1,    39,    40,    -1,    -1,
+      36,    44,    45,    39,    40,    -1,    -1,    -1,    44,    45,
+      -1,    93,    -1,    -1,    96,    97,    -1,    60,    79,    -1,
+      -1,    -1,    -1,    -1,    60,    -1,    -1,   109,    71,    -1,
+     112,    -1,    -1,    -1,    -1,    71,    79,    -1,    -1,    -1,
+     122,    -1,    -1,    79
   };
 
   const signed char
   parser::yystos_[] =
   {
-       0,    90,    91,     0,     0,     5,     6,     7,     8,    36,
-      40,    44,    45,    60,    72,    79,    81,    82,    83,    92,
-      95,    96,    97,    98,   102,   110,   111,   110,   111,   111,
-     112,    95,    95,    61,    81,    95,    96,    96,    96,    36,
-      79,    44,    77,    37,    41,    56,    77,    95,    96,    36,
-      38,    84,   103,    95,   111,   113,   114,   115,    95,   111,
-     111,   111,    35,    36,    36,    40,    85,    86,    87,    88,
-      95,    96,   105,   106,   107,   108,    95,    99,   100,   101,
-      96,   104,    38,    35,    37,    56,    44,   108,   105,   108,
-     109,   108,    35,    37,    56,    12,    24,    40,    77,    39,
-      56,    56,   105,   111,   115,    44,    37,    37,    56,    41,
-     108,    12,    38,   107,   108,   108,     8,   111,   101,    96,
-      39,    12,    44,   108,    77,   108,    93,    41,   108,   111,
-      38,    39,    44,    60,    94,   110,    44,    93,    95,    44,
-      39,    77,   111,    44
+       0,    91,    92,     0,     0,     5,     6,     7,     8,    36,
+      40,    44,    45,    60,    72,    79,    81,    82,    83,    93,
+      96,    97,    98,    99,   103,   111,   112,   111,   112,   112,
+     113,    96,    96,    61,    81,    96,    97,    97,    97,    36,
+      79,    44,    77,    37,    41,    56,    77,    96,    97,    36,
+      38,    84,   104,    96,   112,   114,   115,   116,    96,   112,
+     112,   112,    35,    36,    36,    40,    85,    86,    87,    88,
+      89,    96,    97,   106,   107,   108,   109,    96,   100,   101,
+     102,    97,   105,    38,    35,    37,    56,    44,   109,   106,
+     109,   110,   109,    35,    37,    56,    12,    24,    40,    77,
+      39,    56,    56,   106,   112,   116,    44,    37,    37,    56,
+      41,   109,    12,    38,   108,   109,   109,     8,   112,   102,
+      97,    39,    12,    44,   109,    77,   109,    94,    41,   109,
+     112,    38,    39,    44,    60,    71,    95,   111,    44,    94,
+      96,   112,    44,    39,    77,    44,   112,    44
   };
 
   const signed char
   parser::yyr1_[] =
   {
-       0,    89,    90,    91,    91,    92,    92,    92,    92,    92,
-      92,    92,    92,    92,    93,    93,    94,    94,    94,    95,
-      96,    96,    96,    97,    97,    98,    99,    99,   100,   100,
-     101,   102,   103,   103,   104,   104,   105,   105,   106,   106,
-     107,   107,   107,   107,   108,   108,   108,   108,   108,   108,
-     108,   108,   108,   108,   109,   109,   109,   110,   110,   111,
-     111,   111,   111,   111,   111,   111,   111,   112,   112,   112,
-     113,   113,   114,   114,   115,   115
+       0,    90,    91,    92,    92,    93,    93,    93,    93,    93,
+      93,    93,    93,    93,    94,    94,    95,    95,    95,    95,
+      96,    97,    97,    97,    98,    98,    99,   100,   100,   101,
+     101,   102,   103,   104,   104,   105,   105,   106,   106,   107,
+     107,   108,   108,   108,   108,   109,   109,   109,   109,   109,
+     109,   109,   109,   109,   109,   109,   110,   110,   110,   111,
+     111,   112,   112,   112,   112,   112,   112,   112,   112,   113,
+     113,   113,   114,   114,   115,   115,   116,   116
   };
 
   const signed char
   parser::yyr2_[] =
   {
        0,     2,     2,     0,     2,     1,     6,     7,     9,     1,
-       1,     1,     5,     2,     0,     2,     1,     5,     2,     1,
-       2,     1,     3,     8,    10,     5,     0,     1,     1,     3,
-       1,     6,     0,     2,     1,     3,     0,     1,     1,     3,
-       3,     5,     1,     3,     1,     1,     1,     1,     1,     3,
-       3,     4,     3,     3,     0,     1,     3,     4,     3,     1,
-       1,     1,     2,     1,     3,     3,     1,     0,     1,     3,
-       0,     1,     1,     3,     3,     1
+       1,     1,     5,     2,     0,     2,     1,     5,     3,     2,
+       1,     2,     1,     3,     8,    10,     5,     0,     1,     1,
+       3,     1,     6,     0,     2,     1,     3,     0,     1,     1,
+       3,     3,     5,     1,     3,     1,     1,     1,     1,     1,
+       1,     3,     3,     4,     3,     3,     0,     1,     3,     4,
+       3,     1,     1,     1,     2,     1,     3,     3,     1,     0,
+       1,     3,     0,     1,     1,     3,     3,     1
   };
 
 
@@ -2544,14 +2566,15 @@ namespace beng_lang {
   "VOID_", "AUTO", "CONST_", "USING", "THROW", "DELETE_", "SIZEOF",
   "RETURN", "EXTERN", "PRIVATE", "TEMPLATE", "NAMESPACE", "LOWEST",
   "ASSIGN", "\"`=`\"", "DBLCOLON", "\"`::`\"", "FN", "ENUM", "TYPE",
-  "EXTENDS", "BOOL", "INT", "FLOAT", "STRING_WORD", "$accept", "begin",
-  "declaration_any", "opt-decl", "infunction_declaration_any",
-  "opt-infunction-decl", "identifier", "qname", "fn-decl", "enum-decl",
-  "case-list-opt", "case-list", "case-decl", "type-decl",
-  "type-extension-any", "type-extension-list", "parameter-list-opt",
-  "parameter-list", "parameter-decl", "type-expr", "opt-type-list",
-  "compound-expression", "expression", "expression-list-any",
-  "opt-named-expr-list-any", "opt-named-expr-list", "opt-named-expr", YY_NULLPTR
+  "EXTENDS", "BOOL", "INT", "FLOAT", "STRING_WORD", "DECIMAL_WORD",
+  "$accept", "begin", "declaration_any", "opt-decl",
+  "infunction_declaration_any", "opt-infunction-decl", "identifier",
+  "qname", "fn-decl", "enum-decl", "case-list-opt", "case-list",
+  "case-decl", "type-decl", "type-extension-any", "type-extension-list",
+  "parameter-list-opt", "parameter-list", "parameter-decl", "type-expr",
+  "opt-type-list", "compound-expression", "expression",
+  "expression-list-any", "opt-named-expr-list-any", "opt-named-expr-list",
+  "opt-named-expr", YY_NULLPTR
   };
 #endif
 
@@ -2560,14 +2583,14 @@ namespace beng_lang {
   const short
   parser::yyrline_[] =
   {
-       0,   270,   270,   274,   277,   297,   299,   301,   303,   305,
-     307,   309,   311,   313,   327,   329,   337,   339,   341,   346,
-     355,   357,   359,   365,   369,   376,   383,   385,   389,   392,
-     397,   402,   409,   411,   415,   418,   423,   424,   428,   430,
-     435,   437,   439,   441,   450,   451,   452,   453,   454,   455,
-     457,   459,   461,   468,   473,   475,   477,   486,   488,   493,
-     495,   497,   499,   501,   503,   505,   507,   517,   519,   521,
-     526,   528,   532,   534,   542,   544
+       0,   271,   271,   275,   278,   298,   300,   302,   304,   306,
+     308,   310,   312,   314,   328,   330,   338,   340,   342,   344,
+     349,   358,   360,   362,   368,   372,   379,   386,   388,   392,
+     395,   400,   405,   412,   414,   418,   421,   426,   427,   431,
+     433,   438,   440,   442,   444,   453,   454,   455,   456,   457,
+     458,   459,   461,   463,   465,   472,   477,   479,   481,   490,
+     492,   497,   499,   501,   503,   505,   507,   509,   511,   521,
+     523,   525,   530,   532,   536,   538,   546,   548
   };
 
   void
@@ -2640,10 +2663,10 @@ namespace beng_lang {
       55,    56,    57,    58,    59,    60,    61,    62,    63,    64,
       65,    66,    67,    68,    69,    70,    71,    72,    73,    74,
       75,    76,    77,    78,    79,    80,    81,    82,    83,    84,
-      85,    86,    87,    88
+      85,    86,    87,    88,    89
     };
     // Last valid token kind.
-    const int code_max = 343;
+    const int code_max = 344;
 
     if (t <= 0)
       return symbol_kind::S_YYEOF;
@@ -2654,7 +2677,7 @@ namespace beng_lang {
   }
 
 } // beng_lang
-#line 2658 "beng.tab.cpp"
+#line 2681 "beng.tab.cpp"
 
-#line 913 "beng.y"
+#line 876 "beng.y"
 

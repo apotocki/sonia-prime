@@ -8,50 +8,17 @@
 #include "sonia/function.hpp"
 
 #include <iostream>
-//#include <boost/function_types/function_type.hpp>
-//#include <boost/function_types/parameter_types.hpp>
-//#include <boost/function_types/result_type.hpp>
-
-//#include "sonia/utility/automatic_polymorphic.hpp"
 
 namespace sonia::vm {
 
 /*
-template <typename ContextT, auto FuncV> struct machine_fd;
-
-// , typename ... ArgsT
-template <typename ContextT, typename RT>
-struct machine_fd<ContextT, RT(ContextT::*)()>
+class context
 {
-
-};
-*/
-//
-//template <auto FuncV>
-//struct machine_fd
-//{
-//    using sig_t = decltype(FuncV);
-//    using f_type = typename boost::function_types::function_type<sig_t>::type;
-//    using result_type = typename boost::function_types::result_type<f_type>::type;
-//};
-
-/*
-template <typename ContextT>
-class command : public polymorphic_clonable, public polymorphic_movable
-{
-    using var_t = typename ContextT::variable_type;
-public:
-    // returns new stack size
-    virtual size_t operator()(ContextT&, span<var_t> stack) const = 0;
-};
-*/
-
-/*
-class context {
 public:
     using variable_type = unspecified
     constexpr size_t command_max_size = unspecified;
     bool is_zero(variable_type const&) const; // for conditional jumps
+    size_t to_address(variable_type const&) const; // for parametrized calls
 }
 */
 
@@ -63,7 +30,6 @@ class virtual_stack_machine
 {
 public:
     using var_t = typename ContextT::variable_type;
-    //using cmd_t = automatic_polymorphic<command<ContextT>, ContextT::command_max_size>;
 
     using stack_type = std::vector<var_t>;
     using stack_frames_type = std::vector<uint32_t>;
@@ -82,7 +48,8 @@ public:
         set1 = 36, set2 = 37, set3 = 38, set4 = 39, // set INDEX:uint related to the current frame pointer
         fset1 = 40, fset2 = 41, fset3 = 42, fset4 = 43, // set INDEX:uint
         ecall1 = 44, ecall2 = 45, ecall3 = 46, ecall4 = 47,
-        pushfp, popfp, truncatefp
+        truncatefp1 = 48, truncatefp2 = 49, truncatefp3 = 50, truncatefp4 = 51,
+        pushfp, popfp, truncatefp, callp
     };
 
 private:
@@ -256,7 +223,22 @@ public:
 
     void append_fpush(intptr_t fpos)
     {
-        append_generic_int(op::push1, fpos);
+        append_generic_int(op::fpush1, fpos);
+    }
+
+    void append_pushfp()
+    {
+        code_.push_back(static_cast<uint8_t>(op::pushfp));
+    }
+
+    void append_popfp()
+    {
+        code_.push_back(static_cast<uint8_t>(op::popfp));
+    }
+
+    void append_truncatefp(intptr_t offset)
+    {
+        append_generic_int(op::truncatefp1, offset);
     }
 
     void append_pop(size_t num)
@@ -276,6 +258,11 @@ public:
     void append_fset(intptr_t fpos)
     {
         append_generic_int(op::fset1, fpos);
+    }
+
+    void appned_callp()
+    {
+        code_.push_back(static_cast<uint8_t>(op::callp));
     }
 
     size_t push_on_stack(var_t value)
@@ -301,7 +288,7 @@ public:
     }
 
     void run(ContextT& ctx, size_t address);
-    void run2(ContextT& ctx, size_t address);
+    //void run2(ContextT& ctx, size_t address);
 
     template <typename FunctorT>
     void traverse(ContextT& ctx, size_t address, FunctorT const& ftor);
@@ -610,10 +597,28 @@ struct printer
         generic_print(address, "popfp"sv) << "\n";
     }
 
-    inline void operator()(identity_type<op::truncatefp>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, stack_type& s) const
+    inline void operator()(identity_type<op::truncatefp1>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, stack_type& s, int32_t offs) const
     {
-        generic_print(address, "truncatefp"sv) << "\n";
-    } 
+        generic_print(address, "truncatefp1"sv) << " " << std::dec << offs << "\n";
+    }
+    inline void operator()(identity_type<op::truncatefp2>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, stack_type& s, int32_t offs) const
+    {
+        generic_print(address, "truncatefp2"sv) << " " << std::dec << offs << "\n";
+    }
+    inline void operator()(identity_type<op::truncatefp3>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, stack_type& s, int32_t offs) const
+    {
+        generic_print(address, "truncatefp3"sv) << " " << std::dec << offs << "\n";
+    }
+    inline void operator()(identity_type<op::truncatefp4>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, stack_type& s, int32_t offs) const
+    {
+        generic_print(address, "truncatefp4"sv) << " " << std::dec << offs << "\n";
+    }
+
+    inline size_t operator()(identity_type<op::callp>, ContextT& ctx, size_t address, stack_type& s, call_stack_type& cs) const
+    {
+        generic_print(address, "callp"sv) << " " << std::hex << "0x" << ctx.to_address(s.back()) << "\n";
+        return address + 1;
+    }
 };
 
 template <typename ContextT>
@@ -767,7 +772,36 @@ struct runner
 
     inline void operator()(identity_type<op::pushfp>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, uint32_t ssz) const { sf.emplace_back(ssz); }
     inline void operator()(identity_type<op::popfp>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf) const { if (!sf.empty()) sf.pop_back(); }
-    inline void operator()(identity_type<op::truncatefp>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, stack_type& s) const { s.resize(sf.empty() ? 0 : sf.back());  }
+    
+    inline void truncatefp(ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, stack_type& s, int32_t offs) const
+    {
+        int32_t threshold = static_cast<int32_t>(sf.back()) + offs;
+        if (threshold < 0) throw internal_error("wrong truncation argument: %1%"_fmt % threshold);
+        s.resize(threshold);
+    }
+    inline void operator()(identity_type<op::truncatefp1>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, stack_type& s, int32_t offs) const
+    {
+        return truncatefp(ctx, address, sf, s, offs);
+    }
+    inline void operator()(identity_type<op::truncatefp2>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, stack_type& s, int32_t offs) const
+    {
+        return truncatefp(ctx, address, sf, s, offs);
+    }
+    inline void operator()(identity_type<op::truncatefp3>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, stack_type& s, int32_t offs) const
+    {
+        return truncatefp(ctx, address, sf, s, offs);
+    }
+    inline void operator()(identity_type<op::truncatefp4>, ContextT& ctx, size_t address, typename vm_t::stack_frames_type& sf, stack_type& s, int32_t offs) const
+    {
+        return truncatefp(ctx, address, sf, s, offs);
+    }
+
+    inline size_t operator()(identity_type<op::callp>, ContextT& ctx, size_t address, stack_type& s, call_stack_type& cs) const {
+        cs.push_back(static_cast<uint32_t>(address + 1));
+        size_t call_address = ctx.to_address(s.back());
+        s.pop_back();
+        return call_address;
+    }
 };
 
 template <typename FirstRunnerT, typename SecondRunnerT>
@@ -965,6 +999,23 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
             address += 5;
             continue;
 
+        case op::truncatefp1:
+            ftor(identity<op::truncatefp1>, ctx, address, stack_frames_, stack_, calc_int<1>(address));
+            address += 2;
+            continue;
+        case op::truncatefp2:
+            ftor(identity<op::truncatefp2>, ctx, address, stack_frames_, stack_, calc_int<2>(address));
+            address += 3;
+            continue;
+        case op::truncatefp3:
+            ftor(identity<op::truncatefp2>, ctx, address, stack_frames_, stack_, calc_int<3>(address));
+            address += 4;
+            continue;
+        case op::truncatefp4:
+            ftor(identity<op::truncatefp2>, ctx, address, stack_frames_, stack_, calc_int<4>(address));
+            address += 5;
+            continue;
+
         case op::pushfp:
             ftor(identity<op::pushfp>, ctx, address, stack_frames_, static_cast<uint32_t>(stack_.size()));
             ++address;
@@ -972,9 +1023,11 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
         case op::popfp:
             ftor(identity<op::popfp>, ctx, address, stack_frames_);
             ++address;
-        case op::truncatefp:
-            ftor(identity<op::truncatefp>, ctx, address, stack_frames_, stack_);
-            ++address;
+            continue;
+
+        
+        case op::callp:
+            address = ftor(identity<op::callp>, ctx, address, stack_, call_stack_);
             continue;
         default:
             THROW_INTERNAL_ERROR();
@@ -991,6 +1044,7 @@ void virtual_stack_machine<ContextT>::run(ContextT& ctx, size_t address)
     traverse(ctx, address, rn);
 }
 
+/*
 template <typename ContextT>
 void virtual_stack_machine<ContextT>::run2(ContextT& ctx, size_t address)
 {
@@ -1175,5 +1229,6 @@ void virtual_stack_machine<ContextT>::run2(ContextT& ctx, size_t address)
         }
     }
 }
+*/
 
 }

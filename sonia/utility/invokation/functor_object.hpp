@@ -22,10 +22,10 @@ public:
 class invokable_functor_object : public functor_object
 {
     shared_ptr<invokable> invokable_;
-    std::string name_;
+    small_string name_;
 
 public:
-    invokable_functor_object(shared_ptr<invokable> inv, std::string name)
+    invokable_functor_object(shared_ptr<invokable> inv, small_string name)
         : invokable_{ std::move(inv) }
         , name_ { std::move(name) }
     {}
@@ -39,10 +39,10 @@ public:
 class weak_invokable_functor_object : public functor_object
 {
     weak_ptr<invokable> invokable_;
-    std::string name_;
+    small_string name_;
 
 public:
-    weak_invokable_functor_object(shared_ptr<invokable> inv, std::string name)
+    weak_invokable_functor_object(shared_ptr<invokable> inv, small_string name)
         : invokable_{ std::move(inv) }
         , name_{ std::move(name) }
     {}

@@ -28,6 +28,15 @@ public:
     void insert(shared_ptr<EntityT>);
     //StringT const* resolve(IdentifierT) const noexcept;
 
+    template <typename FtorT>
+    void traverse(FtorT const& ftor)
+    {
+        lock_guard guard(set_mtx_);
+        for (auto & e : set_) {
+            if (!ftor(e.name(), *e.value)) break;
+        }
+    }
+
 private:
     struct entity_wrapper
     {
@@ -51,6 +60,7 @@ private:
 template <typename EntityT,typename MutexT>
 shared_ptr<EntityT> entity_registry<EntityT, MutexT>::find(qname_view_t name) noexcept
 {
+    assert(name.is_absolute());
     lock_guard guard(set_mtx_);
     auto it = set_.find(name);
     if (it == set_.end()) {
@@ -69,7 +79,7 @@ void entity_registry<EntityT, MutexT>::insert(shared_ptr<EntityT> e)
         set_.insert(it, entity_wrapper{ std::move(e) });
         return;
     }
-    throw exception("an entitity with the same name already exists");
+    THROW_INTERNAL_ERROR("an entity with the same name already exists");
 }
 
 /*

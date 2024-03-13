@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "beng.hpp"
+#include "sonia/beng/ast/terms.hpp"
 
 namespace sonia::lang::beng {
 
@@ -27,14 +27,3 @@ public:
 };
 
 }
-
-namespace sonia::lang::beng {
-
-enum_entity::enum_case const* enum_entity::find(identifier id)
-{
-    auto it = std::ranges::lower_bound(cases, id, {}, [](auto const& e) { return e.name; });
-    return it == cases.end() ? nullptr : &*it;
-}
-
-}
-

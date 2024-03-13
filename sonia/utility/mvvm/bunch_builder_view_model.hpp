@@ -13,6 +13,7 @@ namespace sonia {
 
 class bunch_builder_view_model 
     : public builder_view_model
+    , public beng::external_environment
 {
 public:
     class factory
@@ -25,7 +26,7 @@ public:
     explicit bunch_builder_view_model(factory& f) : factory_{ f } {}
 
     shared_ptr<invokation::invokable> create(string_view type, string_view id) override;
-    void set_property(string_view id, string_view propname, blob_result const& value) override;
+    void set_property(string_view propname, blob_result const& value) override;
     
     virtual shared_ptr<invokation::invokable> root_element() const = 0;
 

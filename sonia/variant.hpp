@@ -5,6 +5,8 @@
 #pragma once
 
 #include <boost/variant.hpp>
+#include <boost/variant/multivisitors.hpp>
+
 #include "sonia/utility/functional/equal.hpp"
 
 namespace sonia {

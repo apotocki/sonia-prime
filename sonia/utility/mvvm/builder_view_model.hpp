@@ -8,10 +8,7 @@
 #include "sonia/utility/invokation/invokation.hpp"
 #include "sonia/utility/mvvm/lua_view_model.hpp"
 
-#include "beng/unit.hpp"
-#include "sonia/utility/lang/vm.hpp"
-
-#include "builder_vm.hpp"
+#include "sonia/beng/beng.hpp"
 
 namespace sonia {
  
@@ -19,25 +16,12 @@ namespace lang::beng { class parser_context; }
 
 class builder_view_model 
     : public lua_view_model
-    , vm::builder_context
+    , public sonia::beng::language
 {
     using base_t = lua_view_model;
 
 public:
     using lua_view_model::lua_view_model;
-
-    void build(fs::path const&);
-    void build(string_view code);
-
-    lang::beng::unit& unit() { return unit_; };
-    vm::builder_virtual_stack_machine& vm() override { return bvm_; }
-
-protected:
-    void compile(lang::beng::parser_context const& ctx);
-
-private:
-    lang::beng::unit unit_;
-    vm::builder_virtual_stack_machine bvm_;
 };
 
 }

@@ -5,197 +5,140 @@
 #include "sonia/config.hpp"
 #include "declaration_visitor.hpp"
 
-#include "compiler_context.hpp"
+#include "fn_compiler_context.hpp"
 #include "expression_visitor.hpp"
 #include "preliminary_type_visitor.hpp"
 
 #include "../entities/enum_entity.hpp"
 #include "../entities/type_entity.hpp"
+#include "../entities/functional_entity.hpp"
 
 namespace sonia::lang::beng {
 
-void declaration_visitor::operator()(exten_var const& td) const
+void declaration_visitor::operator()(exten_var & td) const
 {
     preliminary_type_visitor tqvis{ ctx };
     beng_type vartype = apply_visitor(tqvis, td.type);
-    auto ve = sonia::make_shared<variable_entity>(qname{td.name}, std::move(vartype));
+    auto ve = sonia::make_shared<variable_entity>(qname{td.name}, std::move(vartype), variable_entity::kind::EXTERN);
     ctx.u().eregistry().insert(ve);
 }
 
-void declaration_visitor::operator()(expression_decl const& ed) const
+void declaration_visitor::operator()(expression_decl & ed) const
 {
     expression_visitor evis{ ctx, ctx.expressions, nullptr };
     apply_visitor(evis, ed.expression);
 }
 
-void declaration_visitor::operator()(type_decl const& td) const
+function_signature& declaration_visitor::append_fnsig(fn_pure_decl & fd) const
 {
-    auto e = dynamic_pointer_cast<type_entity>(ctx.u().eregistry().find(td.name()));
-    assert(e);
-
-    e->signatures.emplace_back();
-    auto& sig = e->signatures.back();
-
-    preliminary_type_visitor tqvis{ ctx };
-    sig.result_type = beng_object_t{ e.get() };
-
-    for (auto const& parampair : td.parameters) {
-        beng_type paramtype = apply_visitor(tqvis, parampair.type);
-        if (!parampair.name) {
-            sig.position_parameters.emplace_back(paramtype);
-        } else {
-            sig.named_parameters.emplace_back(parampair.name->id, paramtype);
-        }
+    qname fn_qname = ctx.ns() + fd.name();
+    if (!fn_qname.has_prefix(ctx.ns())) {
+        throw exception("%1%(%2%,%3%): %4% : not a nested scope identifier"_fmt %
+            fd.location().resource % fd.location().line % fd.location().column %
+            ctx.u().print(fd.name())
+        );
     }
 
-    // to do: merge types for the same named arguments
-    for (qname const& base : td.bases) {
-        //tqvis
-        shared_ptr<entity> e = ctx.resolve_entity(base);
-        if (!e) [[unlikely]] {
-            throw exception("unresolved base type '%1%' for the type '%2%'"_fmt % ctx.u().print(base) % ctx.u().print(td.name()));
-        }
-        shared_ptr<functional_entity> type_ent = dynamic_pointer_cast<type_entity>(e);
-        if (!type_ent) [[unlikely]] {
-            throw exception("the base '%1%' of a type '%2%' is not a type"_fmt % ctx.u().print(base) % ctx.u().print(td.name()));
-        }
-
-        BOOST_ASSERT(1 == type_ent->signatures.size());
-        auto const& basesig = type_ent->signatures.back();
-        sig.position_parameters.insert(sig.position_parameters.end(), basesig.position_parameters.begin(), basesig.position_parameters.end());
-        sig.named_parameters.insert(sig.named_parameters.end(), basesig.named_parameters.begin(), basesig.named_parameters.end());
-    }
-    // stable to preserve duplicated parameters order if exist
-    std::stable_sort(sig.named_parameters.begin(), sig.named_parameters.end(), [](auto const& l, auto const& r) {
-        return std::get<0>(l).id < std::get<0>(r).id;
-    });
-    // report duplicates?
-    auto it = std::unique(sig.named_parameters.begin(), sig.named_parameters.end(), [](auto const& l, auto const& r) {
-        return std::get<0>(l).id == std::get<0>(r).id;
-    });
-    sig.named_parameters.erase(it, sig.named_parameters.end());
-}
-
-void declaration_visitor::operator()(enum_decl const& ed) const
-{
-    auto pe = dynamic_pointer_cast<enum_entity>(ctx.u().eregistry().find(ed.name()));
-    assert(pe);
-    for (auto const& c : ed.cases) {
-        pe->cases.emplace_back(c, ctx.u().as_u32string(c));
-    }
-    std::ranges::sort(pe->cases);
-}
-
-function_signature& declaration_visitor::append_fnsig(fn_pure_decl const& fd) const
-{
-    auto e = ctx.u().eregistry().find(fd.name);
+    shared_ptr<functional_entity> pe;
+    auto e = ctx.u().eregistry().find(fn_qname);
     if (!e) {
-        e = make_shared<functional_entity>(fd.name);
-        ctx.u().eregistry().insert(e);
+        pe = make_shared<functional_entity>(fn_qname);
+        ctx.u().eregistry().insert(pe);
+    } else if (pe = dynamic_pointer_cast<functional_entity>(e); !pe) {
+        ctx.throw_identifier_redefinition(*e, fd.name(), fd.location());
     }
-    shared_ptr<functional_entity> pe = dynamic_pointer_cast<functional_entity>(e);
-    if (!pe) {
-        throw exception("an entitity with the same name '%1%' is already defined"_fmt % ctx.u().print(fd.name));
-    }
-    preliminary_type_visitor tqvis{ ctx };
-
+    
     function_signature sig;
-    for (auto const& parampair : fd.parameters) {
-        beng_type paramtype = apply_visitor(tqvis, parampair.type);
-        if (!parampair.name) {
-            sig.position_parameters.emplace_back(paramtype);
-        } else {
-            sig.named_parameters.emplace_back(parampair.name->id, paramtype);
-        }
-    }
-
-    // stable to preserve duplicated parameters order if exist
-    std::stable_sort(sig.named_parameters.begin(), sig.named_parameters.end(), [](auto const& l, auto const& r) {
-        return std::get<0>(l).id < std::get<0>(r).id;
-    });
-    // report duplicates?
-    auto it = std::unique(sig.named_parameters.begin(), sig.named_parameters.end(), [](auto const& l, auto const& r) {
-        return std::get<0>(l).id == std::get<0>(r).id;
-    });
-    sig.named_parameters.erase(it, sig.named_parameters.end());
+    sig.setup(ctx, fd.parameters);
+    sig.normilize(ctx);
+    sig.build_mangled_id(ctx.u());
     return pe->put_signature(std::move(sig));
 }
 
-void declaration_visitor::operator()(fn_pure_decl const& fd) const
+void declaration_visitor::operator()(fn_pure_decl & fd) const
 {
     function_signature& sig = append_fnsig(fd);
     if (fd.result) {
         preliminary_type_visitor tqvis{ ctx };
-        sig.result_type = apply_visitor(tqvis, *fd.result);
+        sig.fn_type.result = apply_visitor(tqvis, *fd.result);
     } else { // if result type isn't defined => void
-        sig.result_type = beng_tuple_t{};
+        sig.fn_type.result = beng_tuple_t{};
     }
-    ctx.u().build_name(fd.name, sig);
 }
 
-void declaration_visitor::operator()(fn_decl_t const& fnd) const
+void declaration_visitor::operator()(fn_decl_t & fnd) const
 {
     function_signature & sig = append_fnsig(fnd);
-    ctx.u().build_name(fnd.name, sig);
 
-    compiler_context fnctx{ ctx.u() };
+    fn_compiler_context fnctx{ ctx, fnd.name() + sig.mangled_id };
     if (fnd.result) {
         preliminary_type_visitor tqvis{ ctx };
         fnctx.result = apply_visitor(tqvis, *fnd.result);
     } // if result type isn't defined => void or defined by body expressions
         
     // setup parameters
+    boost::container::small_vector<variable_entity*, 16> params;
     size_t paramnum = 0;
-    size_t paramcount = sig.parameters_count();
-    for (auto const& type : sig.position_parameters) {
-        using buff_t = boost::container::small_vector<char, 16>;
-        buff_t tailored_param_name = {'$'};
-        bool reversed;
-        mp::to_string_converter(std::span{ &paramnum, 1 }, std::back_inserter(tailored_param_name), reversed);
-        if (reversed) std::reverse(tailored_param_name.begin() + 1, tailored_param_name.end());
-        identifier argid = ctx.u().slregistry().resolve(string_view{ tailored_param_name.data(), tailored_param_name.size() });
-        auto&& [ve, index] = ctx.new_local_variable(argid, type);
-        ve.set_index(static_cast<intptr_t>(paramnum) - paramcount);
+    for (auto const& type : sig.position_parameters()) {
+        variable_entity& ve = fnctx.new_position_parameter(paramnum, type);
+        params.emplace_back(&ve);
         ++paramnum;
     }
-    for (auto const&[aname, type] : sig.named_parameters) {
-        auto&& [ve, index] = ctx.new_local_variable(aname.id, type);
-        ve.set_index(static_cast<intptr_t>(paramnum) - paramcount);
-        ++paramnum;
+    for (auto const&[aname, type] : sig.named_parameters()) {
+        variable_entity& ve = fnctx.new_variable(aname.id, type, variable_entity::kind::LOCAL);
+        params.emplace_back(&ve);
     }
 
     declaration_visitor dvis{ fnctx };
-    for (infunction_declaration_t const& d : fnd.body) {
+    for (infunction_declaration_t & d : fnd.body) {
         apply_visitor(dvis, d);
     }
+    // here all captured variables (if exist) are allocated
     fnctx.finish_frame();
-    auto fnent = make_shared<function_entity>(sig.mangled_name, sig);
-    fnent->set_void(fnd.result  == beng_preliminary_type{ beng_preliminary_tuple_t{} });
+
+    // assign indexes to parameters & captured variables
+    paramnum = 0;
+    size_t paramcount = params.size() + fnctx.captured_variables.size();
+    for (variable_entity * var : params) {
+        var->set_index(static_cast<intptr_t>(paramnum) - paramcount);
+        ++paramnum;
+    }
+    for (auto [from, tovar] : fnctx.captured_variables) {
+        tovar->set_index(static_cast<intptr_t>(paramnum) - paramcount);
+        ++paramnum;
+    }
+    if (!fnctx.result || *fnctx.result == beng_type{ beng_tuple_t{} }) { // void result
+        sig.fn_type.result = beng_tuple_t{};
+    }
+
+    auto fnent = sonia::make_shared<function_entity>(qname{fnctx.ns(), true}, sig);
+    
     fnent->body = std::move(fnctx.expressions);
+    fnent->captured_variables = std::move(fnctx.captured_variables);
     ctx.u().eregistry().insert(fnent);
+
+    fnent->set_index(ctx.allocate_local_variable_index());
+
+    // initialize variable
+    auto fn = fnent->name();
+    ctx.expressions.emplace_back(semantic::push_value { function_value{ qname{ fnent->name(), true } } });
+    ctx.expressions.emplace_back(semantic::set_variable{ fnent.get() });
 }
 
-void declaration_visitor::operator()(let_statement_decl const& ld) const
+void declaration_visitor::operator()(let_statement_decl & ld) const
 {
     expression_visitor evis{ ctx, ctx.expressions, nullptr };
     auto etype = apply_visitor(evis, ld.expression);
-    auto && [ve, index] = ctx.new_local_variable(ld.name, *etype);
-    ve.set_index(index);
+    variable_entity& ve = ctx.new_variable(ld.name, *etype, variable_entity::kind::LOCAL);
+    ve.set_index(ctx.allocate_local_variable_index());
     ctx.expressions.emplace_back(semantic::set_variable{ &ve });
 }
 
-void declaration_visitor::operator()(return_decl const& rd) const
+void declaration_visitor::operator()(return_decl & rd) const
 {
     expression_visitor evis{ ctx, ctx.expressions, ctx.result ? &*ctx.result : nullptr };
     apply_visitor(evis, rd.expression);
     ctx.expressions.emplace_back(semantic::return_statement{});
-}
-
-void declaration_visitor::check_name(qname const& name) const
-{
-    if (auto pe = ctx.u().eregistry().find(name); pe) [[unlikely]] {
-        throw exception("an entitity with the same name '%1%' is already defined"_fmt % ctx.u().print(name));
-    }
 }
 
 }

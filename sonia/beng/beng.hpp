@@ -6,9 +6,10 @@
 
 #include "sonia/filesystem.hpp"
 #include "sonia/shared_ptr.hpp"
+#include "sonia/span.hpp"
 #include "extern.hpp"
 
-namespace sonia::beng {
+namespace sonia::lang::beng {
 
 namespace detail { class beng_impl; }
 
@@ -21,7 +22,7 @@ public:
     void build(fs::path const&);
     void build(string_view code);
 
-    void run(external_environment*);
+    void run(external_environment*, span<string_view> args = {});
 
 private:
     shared_ptr<detail::beng_impl> impl_;

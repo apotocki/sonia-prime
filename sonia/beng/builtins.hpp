@@ -10,15 +10,14 @@
 
 namespace sonia::lang::beng {
 
-class external_environment
+/*
+enum class builtin_type
 {
-public:
-    virtual ~external_environment() = default;
-
-    virtual shared_ptr<invokation::invokable> create(string_view type, string_view id) = 0;
-    virtual void set_property(string_view propname, blob_result const& value) = 0;
-
-    //virtual shared_ptr<external_environment> make_shared_environment() = 0;
+    arrayify = 0, tostring, print_string, assign_variable,
+    object_constructor, function_constructor,
+    call_function_object,
+    eof_builtin_type
 };
+*/
 
 }

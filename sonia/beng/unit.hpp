@@ -18,11 +18,13 @@
 #include "boost/conversion/unicode/utf.hpp"
 #include "boost/conversion/push_iterator.hpp"
 
-#include "ast/terms.hpp"
-
-//#include "ast.hpp"
 #include "semantic.hpp"
 #include "entities/variable_entity.hpp"
+#include "entities/functional_entity.hpp"
+
+#include "builtins.hpp"
+
+#include "vm/beng_vm.hpp"
 
 //#include "functional_entity.hpp"
 
@@ -53,6 +55,7 @@ struct variable_equal_to
 class unit
 {
     using identifier_builder_t = identifier_builder<identifier>;
+
     using slregistry_t = string_literal_registry<identifier, small_string>;
     using piregistry_t = parameterized_identifier_registry<identifier>;
     using eregistry_t = entity_registry<entity>;
@@ -68,31 +71,39 @@ class unit
     //shared_ptr<function_t> main_function_;
     std::vector<semantic_expression_type> root_expressions_;
 
-    shared_ptr<entity> arrayify_entity_;
-    shared_ptr<entity> print_entity_;
+    //shared_ptr<entity> arrayify_entity_;
+    //shared_ptr<entity> print_entity_;
 
-    qname arrayify_entity_name_;
-    qname print_string_name_;
+    std::vector<qname_view> builtins_;
+    //qname arrayify_entity_name_;
+    //qname print_string_name_;
+
+    virtual_stack_machine bvm_;
+
+    size_t fn_identifier_counter_;
+
+    std::vector<small_string> strings_;
 
 public:
-    unit()
-        : slregistry_{ identifier_builder_ }
-        , piregistry_{ identifier_builder_ }
+    enum class builtin_fn
     {
-        // install builtin entities
-        arrayify_entity_name_ = qname{ new_identifier() };
-        //arrayify_entity_ = make_shared<entity>(qname{ new_identifier() });
-        //eregistry_.insert(arrayify_entity_);
+        arrayify = 0,
+        tostring,
+        eof_builtin_type
+    };
 
+    unit();
 
-        // print (string)
-        qname print_qn{ slregistry_.resolve("print"sv) };
-        qname print_args{ slregistry_.resolve("string"sv) };
-        identifier particularprintid = piregistry_.resolve(span{ &print_args, 1 });
-        print_string_name_ = print_qn + particularprintid;
+    void set_efn(size_t idx, qname_view fnq);
 
-        //print_entity_ = make_shared<entity>(qname{ slregistry_.resolve("print"sv) });
-        //eregistry_.insert(print_entity_);
+    inline void set_efn(builtin_fn bi, qname_view fnq)
+    {
+        set_efn((size_t)bi, std::move(fnq));
+    }
+
+    semantic::invoke_function get_builtin_function(builtin_fn bi) const
+    {
+        return semantic::invoke_function(builtins_.at((size_t)bi));
     }
 
     identifier new_identifier() { return identifier_builder_(); }
@@ -101,14 +112,21 @@ public:
     piregistry_t& piregistry() { return piregistry_; }
     eregistry_t& eregistry() { return eregistry_; }
 
+    virtual_stack_machine& bvm() { return bvm_; }
+
+    void set_extern(string_view sign, void(*pfn)(vm::context&));
+
     //void put_function(shared_ptr<function_t> f)
     //{
     //    functions_.emplace_back(std::move(f));
     //}
 
     ////////////////////// builtins
-    qname const& arrayify_entity_name() const { return arrayify_entity_name_; }
-    qname const& print_string_name() const { return print_string_name_; }
+    //qname const& builtin(builtin_type bit) const
+    //{
+    //    return builtins_[(int)bit];
+    //}
+
 
     ///
     void append_path(fs::path p)
@@ -116,259 +134,29 @@ public:
         additional_paths_.emplace_back(std::move(p));
     }
 
-    std::vector<char> get_file_content(fs::path const& rpath, fs::path const* context = nullptr)
-    {
-        if (rpath.is_absolute()) {
-            if (!fs::exists(rpath) || fs::is_directory(rpath)) {
-                throw exception("can't resolve path: '%1%'"_fmt % rpath);
-            }
-            return read_file(rpath);
-        }
-            
-        auto tested_path = context ? *context / rpath : rpath;
-        for (auto it = additional_paths_.begin();;) {
-            if (fs::exists(tested_path) && fs::is_regular_file(tested_path)) {
-                return read_file(tested_path);
-            }
-            if (it == additional_paths_.end()) {
-                throw exception("can't resolve path: '%1%'"_fmt % rpath);
-            }
-            tested_path = (*it++) / rpath;
-        }
-    }
+    std::vector<char> get_file_content(fs::path const& rpath, fs::path const* context = nullptr);
     
-    std::string print(identifier const& id) const
-    {
-        std::ostringstream ss;
-        if (auto const* pstr = slregistry_.resolve(id); pstr) {
-            ss << *pstr;
-        } else {
-            ss << "$"sv << id.value;
-        }
-        return ss.str();
-    }
-
+    std::string print(identifier const& id) const;
+    
     std::string print(qname const& q) const
     {
         return print((qname_view)q);
     }
 
-    std::string print(qname_view q) const
-    {
-        std::ostringstream ss;
-        for (identifier const& id : q) {
-            if (&q.front() != &id || q.is_absolute()) {
-                ss << "::"sv;
-            }
-            if (auto const* pstr = slregistry_.resolve(id); pstr) {
-                ss << *pstr;
-            } else if (auto sp = piregistry_.resolve(id); !sp.empty()) {
-                ss << '<';
-                for (auto const& qn : sp) {
-                    if (&qn != &sp.front()) ss << ',';
-                    ss << print(qn);
-                }
-                ss << '>';
-            } else {
-                ss << "$"sv << id.value;
-            }
-        }
-        return ss.str();
-    }
+    std::string print(qname_view q) const;
+    
+    std::string print(beng_preliminary_type const& tp) const;
+    
+    std::string print(beng_type const& tp) const;
+    
+    string_view as_string(identifier const& id) const;
+    
+    small_u32string as_u32string(identifier const& id) const;
 
-    template <typename FamilyT>
-    struct type_printer_visitor : static_visitor<void>
-    {
-        unit const& u_;
-        std::ostringstream & ss;
-        explicit type_printer_visitor(unit const& u, std::ostringstream& s) : u_{u}, ss{s} {}
-
-        inline void operator()(beng_bool_t) const { ss << "bool"; }
-        inline void operator()(beng_int_t) const { ss << "int"; }
-        inline void operator()(beng_float_t) const { ss << "float"; }
-        inline void operator()(beng_decimal_t) const { ss << "decimal"; }
-        inline void operator()(beng_string_t) const { ss << "string"; }
-        inline void operator()(beng_preliminary_object_t const& obj) const { ss << '^' << u_.print(obj.name()); }
-        inline void operator()(beng_object_t const& obj) const { ss << '^' << u_.print(obj.name()); }
-        inline void operator()(beng_fn<FamilyT> const& fn) const
-        {
-            apply_visitor(*this, fn.arg);
-            ss << "->";
-            apply_visitor(*this, fn.result);
-        }
-        inline void operator()(beng_vector<FamilyT> const& v) const
-        {
-            ss << '[';
-            apply_visitor(*this, v.type);
-            ss << ']';
-        }
-        inline void operator()(beng_array<FamilyT> const& arr) const
-        {
-            apply_visitor(*this, arr.type);
-            ss << '[' << arr.size << ']';
-        }
-        inline void operator()(beng_tuple<FamilyT> const& tpl) const
-        {
-            ss << '(';
-            for (auto const& f : tpl.fields) {
-                if (&f != &tpl.fields.front()) ss << ',';
-                apply_visitor(*this, f);
-            }
-            ss << ')';
-        }
-        inline void operator()(beng_union<FamilyT> const& tpl) const
-        {
-            for (auto const& f : tpl.members) {
-                if (&f != &tpl.members.front()) ss << "||";
-                apply_visitor(*this, f);
-            }
-        }
-    };
-
-    std::string print(beng_preliminary_type const& tp) const
-    {
-        std::ostringstream ss;
-        type_printer_visitor<beng_preliminary_type> vis{ *this, ss };
-        apply_visitor(vis, tp);
-        return ss.str();
-    }
-
-    std::string print(beng_type const& tp) const
-    {
-        std::ostringstream ss;
-        type_printer_visitor<beng_type> vis{ *this, ss };
-        apply_visitor(vis, tp);
-        return ss.str();
-    }
-
-    string_view as_string(identifier const& id) const
-    {
-        if (auto const* pstr = slregistry_.resolve(id); pstr) {
-            return *pstr;
-        }
-        throw exception("identifier '%1%' has no string representation"_fmt % id.value);
-    }
-
-    small_u32string as_u32string(identifier const& id) const
-    {
-        namespace cvt = boost::conversion;
-        if (auto const* pstr = slregistry_.resolve(id); pstr) {
-            boost::container::small_vector<char32_t, 32> result;
-            (cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << *pstr).flush();
-            return small_u32string{ result.data(), result.size() };
-        }
-        throw exception("identifier '%1%' has no string representation"_fmt % id.value);
-    }
-
-    small_u32string as_u32string(qname_view name) const
-    {
-        namespace cvt = boost::conversion;
-        boost::container::small_vector<char32_t, 32> result;
-        for (identifier const& id : name) {
-            if (&name.front() != &id || name.is_absolute()) {
-                result.push_back(':');
-                result.push_back(':');
-            }
-            if (auto const* pstr = slregistry_.resolve(id); pstr) {
-                (cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << *pstr).flush();
-            } else {
-                throw exception("identifier '%1%' has no string representation"_fmt % id.value);
-                //result.push_back('$');
-                //(cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << boost::lexical_cast<std::string>(id.value)).flush();
-            }
-        }
-        return small_u32string{ result.data(), result.size() };
-    }
-
-    struct type_mangler_visitor : static_visitor<qname>
-    {
-        unit & u_;
-        explicit type_mangler_visitor(unit & u) : u_{ u } {}
-
-        inline result_type operator()(beng_bool_t) const { return qname{ u_.slregistry().resolve("bool"sv) }; }
-        inline result_type operator()(beng_int_t) const { return qname{ u_.slregistry().resolve("int"sv)}; }
-        inline result_type operator()(beng_float_t) const { return qname{ u_.slregistry().resolve("float"sv) }; }
-        inline result_type operator()(beng_decimal_t) const { return qname{ u_.slregistry().resolve("decimal"sv) }; }
-        inline result_type operator()(beng_string_t) const { return qname{ u_.slregistry().resolve("string"sv) }; }
-        
-        inline result_type operator()(beng_object_t const& obj) const { return qname{ obj.name(), true }; }
-
-        inline result_type operator()(beng_fn_t const& fn) const
-        {
-            THROW_NOT_IMPLEMENTED_ERROR();
-            /*
-            apply_visitor(*this, fn.arg);
-            ss << "->";
-            apply_visitor(*this, fn.result);
-            */
-        }
-        inline result_type operator()(beng_vector_t const& v) const
-        {
-            THROW_NOT_IMPLEMENTED_ERROR();
-            /*
-            ss << '[';
-            apply_visitor(*this, v.type);
-            ss << ']';
-            */
-        }
-        inline result_type operator()(beng_array_t const& arr) const
-        {
-            THROW_NOT_IMPLEMENTED_ERROR();
-            /*
-            apply_visitor(*this, arr.type);
-            ss << '[' << arr.size << ']';
-            */
-        }
-        inline result_type operator()(beng_tuple_t const& tpl) const
-        {
-            THROW_NOT_IMPLEMENTED_ERROR();
-            /*
-            ss << '(';
-            for (auto const& f : tpl.fields) {
-                if (&f != &tpl.fields.front()) ss << ',';
-                apply_visitor(*this, f);
-            }
-            ss << ')';
-            */
-        }
-        inline result_type operator()(beng_union_t const& tpl) const
-        {
-            THROW_NOT_IMPLEMENTED_ERROR();
-            /*
-            for (auto const& f : tpl.members) {
-                if (&f != &tpl.members.front()) ss << "||";
-                apply_visitor(*this, f);
-            }
-            */
-        }
-    };
-
-    void build_name(qname_view base, function_signature& sig)
-    {
-        type_mangler_visitor vis{ *this };
-
-        std::vector<qname> ps;
-
-        for (beng_type const& postp: sig.position_parameters) {
-            ps.emplace_back(apply_visitor(vis, postp));
-        }
-        for (auto const& [aname, tp] : sig.named_parameters) {
-            ps.emplace_back(qname{ aname.id });
-            ps.emplace_back(apply_visitor(vis, tp));
-        }
-        identifier id = piregistry_.resolve(ps);
-        sig.mangled_name = base.empty() ? qname{ id } : (base + id);
-    }
-
+    small_u32string as_u32string(qname_view name) const;
+    
 protected:
-    std::vector<char> read_file(fs::path const& rpath)
-    {
-        std::vector<char> result;
-        result.reserve(fs::file_size(rpath));
-        std::ifstream file{ rpath.string().c_str(), std::ios::binary };
-        std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>{}, std::back_inserter(result));
-        return result;
-    }
+    std::vector<char> read_file(fs::path const& rpath);
 
 private:
     // entities registry:

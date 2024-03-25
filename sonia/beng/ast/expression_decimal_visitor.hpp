@@ -6,19 +6,18 @@
 
 #include "sonia/variant.hpp"
 #include "sonia/optional.hpp"
-#include "terms.hpp"
 #include "../semantic.hpp"
-#include "compiler_context.hpp"
+#include "fn_compiler_context.hpp"
 
 namespace sonia::lang::beng {
 
 struct expression_decimal_visitor : static_visitor<optional<beng_type>>
 {
-    compiler_context& ctx;
+    fn_compiler_context& ctx;
     decimal const& dec;
     std::vector<semantic_expression_type>& result;
 
-    expression_decimal_visitor(compiler_context& c, decimal const& d, std::vector<semantic_expression_type>& r)
+    expression_decimal_visitor(fn_compiler_context& c, decimal const& d, std::vector<semantic_expression_type>& r)
         : ctx{ c }
         , dec{ d }
         , result{ r }
@@ -42,17 +41,14 @@ struct expression_decimal_visitor : static_visitor<optional<beng_type>>
         return beng_float_t{};
     }
 
-    result_type operator()(beng_preliminary_union_t const& v) const
+    result_type operator()(beng_union_t const& v) const
     {
-        THROW_NOT_IMPLEMENTED_ERROR();
-        /*
         for (beng_type const& ut : v.members) {
             if (auto optrest = apply_visitor(*this, ut); optrest) {
                 return *optrest;
             }
         }
         return nullopt;
-        */
     }
 
     inline result_type operator()(beng_bool_t const& v) const { return nullopt; }

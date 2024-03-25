@@ -5,13 +5,14 @@
 #include "sonia/config.hpp"
 #include "forward_declaration_visitor.hpp"
 
-#include "compiler_context.hpp"
+#include "fn_compiler_context.hpp"
 
 #include "../entities/enum_entity.hpp"
 #include "../entities/type_entity.hpp"
 
 namespace sonia::lang::beng {
 
+    /*
 void forward_declaration_visitor::operator()(exten_var const&) const
 {
     // skip
@@ -42,24 +43,33 @@ void forward_declaration_visitor::operator()(let_statement_decl const& ld) const
 {
     // skip
 }
+*/
 
 void forward_declaration_visitor::operator()(enum_decl const& ed) const
 {
     if (auto pe = ctx.u().eregistry().find(ed.name()); pe) [[unlikely]] {
         ctx.throw_identifier_redefinition(*pe, ed.name(), ed.location());
     }
-    auto e = make_shared<enum_entity>(ed.name());
+    auto e = make_shared<enum_entity>(qname{ed.name(), true});
     e->set_location(ed.location());
+    for (auto const& c : ed.cases) {
+        e->cases.emplace_back(c, ctx.u().as_u32string(c));
+    }
+    std::ranges::sort(e->cases);
     ctx.u().eregistry().insert(std::move(e));
 }
 
-void forward_declaration_visitor::operator()(type_decl const& td) const
+void forward_declaration_visitor::operator()(type_decl & td)
 {
     if (auto pe = ctx.u().eregistry().find(td.name()); pe) [[unlikely]] {
         ctx.throw_identifier_redefinition(*pe, td.name(), td.location());
     }
     auto e = make_shared<type_entity>(td.name());
     e->set_location(td.location());
+    e->direct_bases = std::move(td.bases);
+    e->direct_parameters = std::move(td.parameters);
+
+    types.emplace_back(e.get());
     ctx.u().eregistry().insert(std::move(e));
 }
 

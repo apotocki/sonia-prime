@@ -15,10 +15,10 @@ function_signature& functional_entity::put_signature(function_signature&& one_mo
 {
     // to do: check for duplicated signature
     for (auto const& sig : signatures) {
-        if (one_more_sig.position_parameters.size() != sig.position_parameters.size() ||
-            one_more_sig.named_parameters.size() != sig.named_parameters.size()) continue;
-        if (!sonia::range_equal{}(one_more_sig.position_parameters, sig.position_parameters)) continue;
-        if (!std::ranges::equal(one_more_sig.named_parameters, sig.named_parameters, {},
+        if (one_more_sig.position_parameters().size() != sig.position_parameters().size() ||
+            one_more_sig.named_parameters().size() != sig.named_parameters().size()) continue;
+        if (!sonia::range_equal{}(one_more_sig.position_parameters(), sig.position_parameters())) continue;
+        if (!std::ranges::equal(one_more_sig.named_parameters(), sig.named_parameters(), {},
             [](auto const& tpl) { return std::tuple{ std::get<0>(tpl).id, std::get<1>(tpl) }; },
             [](auto const& tpl) { return std::tuple{ std::get<0>(tpl).id, std::get<1>(tpl) }; }
         )) continue;
@@ -29,18 +29,37 @@ function_signature& functional_entity::put_signature(function_signature&& one_mo
     return signatures.back();
 }
 
-bool functional_entity::is_matched(compiler_context& ctx, function_signature const& sig,
+bool functional_entity::is_matched(fn_compiler_context& ctx,
+    function_signature const& sig,
+    span<const beng_type> positioned_params,
+    span<const std::tuple<annotated_identifier, beng_type>> named_params) const
+{
+    if (positioned_params.size() != sig.position_parameters().size() || named_params.size() != sig.named_parameters().size()) return false;
+    for (beng_type const& param : sig.position_parameters()) {
+        if (param != positioned_params.front()) return false;
+        positioned_params = positioned_params.subspan(1);
+    }
+    for (auto const& [aname, tp] : sig.named_parameters()) {
+        if (std::get<0>(named_params.front()).id != aname.id) return false;
+
+        if (std::get<1>(named_params.front()) != tp) return false;
+        named_params = named_params.subspan(1);
+    }
+    return true;
+}
+
+bool functional_entity::is_matched(fn_compiler_context& ctx, function_signature const& sig,
     span<const expression_t> positioned_args,
     span<const std::tuple<annotated_identifier, expression_t>> named_args,
     std::vector<semantic_expression_type>& result) const
 {
-    if (positioned_args.size() != sig.position_parameters.size() || named_args.size() != sig.named_parameters.size()) return false;
-    for (beng_type const& argt : sig.position_parameters) {
+    if (positioned_args.size() != sig.position_parameters().size() || named_args.size() != sig.named_parameters().size()) return false;
+    for (beng_type const& argt : sig.position_parameters()) {
         expression_visitor evis{ ctx, result, &argt };
         if (!apply_visitor(evis, positioned_args.front())) return false;
         positioned_args = positioned_args.subspan(1);
     }
-    for (auto const& [aname, tp] : sig.named_parameters) {
+    for (auto const& [aname, tp] : sig.named_parameters()) {
         if (std::get<0>(named_args.front()).id != aname.id) return false;
         expression_visitor evis{ ctx, result, &tp };
         if (!apply_visitor(evis, std::get<1>(named_args.front()))) return false;
@@ -49,7 +68,7 @@ bool functional_entity::is_matched(compiler_context& ctx, function_signature con
     return true;
 }
 
-bool functional_entity::find(compiler_context& ctx,
+bool functional_entity::find(fn_compiler_context& ctx,
     span<const expression_t> positioned_args,
     span<const std::tuple<annotated_identifier, expression_t>> named_args,
     std::vector<semantic_expression_type>& result, beng_type& rtype) const
@@ -61,12 +80,23 @@ bool functional_entity::find(compiler_context& ctx,
             result.resize(initial_result_sz);
             continue;
         }
-        size_t argcount = positioned_args.size() + named_args.size();
-        result.emplace_back(semantic::invoke_function{ sig.mangled_name, (uint32_t)argcount });
-        rtype = sig.result_type;
+        result.emplace_back(semantic::invoke_function{ name() + sig.mangled_id });
+        rtype = sig.fn_type.result;
         return true;
     }
     return false;
+}
+
+function_signature const* functional_entity::find(fn_compiler_context& ctx,
+    span<const beng_type> position_params,
+    span<const std::tuple<annotated_identifier, beng_type>> named_params) const
+{
+    for (auto const& sig : signatures) {
+        if (is_matched(ctx, sig, position_params, named_params)) {
+            return &sig;
+        }
+    }
+    return nullptr;
 }
 
 }

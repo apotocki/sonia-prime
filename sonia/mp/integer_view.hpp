@@ -731,7 +731,7 @@ OutputIteratorT to_string_converter(std::span<LimbT> limbs, OutputIteratorT out,
     if (base < 2 || base > (alphabet.empty() ? 62 : alphabet.size())) {
         throw std::invalid_argument("wrong base");
     }
-    if (limbs.empty()) {
+    if (limbs.empty() || (limbs.size() == 1 && !limbs.front())) {
         reversed = false;
         *out = alphabet.empty() ? '0' : alphabet[0];
         ++out;

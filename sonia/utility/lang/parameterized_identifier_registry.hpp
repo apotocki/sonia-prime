@@ -66,7 +66,8 @@ class parameterized_identifier_registry
                 hasher
             >,
             boost::multi_index::hashed_unique<
-                boost::multi_index::member<item, IdentifierT, &item::id>
+                boost::multi_index::member<item, IdentifierT, &item::id>,
+                hasher
             >
         >
     >;
@@ -75,7 +76,7 @@ public:
     explicit parameterized_identifier_registry(identifier_builder<IdentifierT>& ib) : ib_{ ib } {}
     IdentifierT resolve(/*IdentifierT id,*/ span<qname_t> params);
     //optional<std::tuple<IdentifierT, span<const qname_t>>> resolve(IdentifierT masterid) const noexcept;
-    span<const qname_t> resolve(IdentifierT masterid) const noexcept;
+    optional<span<const qname_t>> resolve(IdentifierT masterid) const noexcept;
 
 private:
     identifier_builder<IdentifierT>& ib_;
@@ -100,13 +101,13 @@ IdentifierT parameterized_identifier_registry<IdentifierT, MutexT>::resolve(/*Id
 
 template <typename IdentifierT, typename MutexT>
 //optional<std::tuple<IdentifierT, span<const qname<IdentifierT>>>> parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT masterid) const noexcept
-span<const qname<IdentifierT>> parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT id) const noexcept
+optional<span<const qname<IdentifierT>>> parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT id) const noexcept
 {
     auto const& slice = set_.get<1>();
     lock_guard guard(set_mtx_);
     auto it = slice.find(id);
     if (it == slice.end()) {
-        return {};
+        return nullopt;
     }
     return span{it->parameters};
 }

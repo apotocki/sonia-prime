@@ -4,13 +4,15 @@
 
 #include "sonia/config.hpp"
 #include "expression_visitor.hpp"
+#include "expression_cast_visitor.hpp"
 #include "expression_decimal_visitor.hpp"
 #include "expression_vector_visitor.hpp"
+#include "expression_fn_visitor.hpp"
 #include "expression_type_visitor.hpp"
 
 #include "sonia/utility/scope_exit.hpp"
 
-#include "compiler_context.hpp"
+#include "fn_compiler_context.hpp"
 #include "../entities/enum_entity.hpp"
 #include "../entities/functional_entity.hpp"
 
@@ -43,22 +45,54 @@ expression_visitor::result_type expression_visitor::operator()(small_u32string c
     throw exception("string '%1%' is not an expected type %2%"_fmt % string_view{ result.data(), result.size() } % ctx.u().print(*expected_result));
 }
 
-expression_visitor::result_type expression_visitor::operator()(annotated_qname const& aqnm) const
+expression_visitor::result_type expression_visitor::operator()(variable_identifier const& var) const
 {
-    shared_ptr<entity> e = ctx.resolve_entity(aqnm.name);
-    if (auto varptr = dynamic_pointer_cast<variable_entity>(e); varptr) {
+    shared_ptr<entity> e = ctx.resolve_entity(var.name);
+    if (auto varptr = dynamic_cast<variable_entity*>(e.get()); varptr) {
+        variable_entity::kind k = varptr->varkind();
+        if (k == variable_entity::kind::EXTERN || k == variable_entity::kind::STATIC) {
+            THROW_NOT_IMPLEMENTED_ERROR();
+        }
+        if (k == variable_entity::kind::SCOPE_LOCAL || k == variable_entity::kind::LOCAL) {
+            if (!varptr->name().parent().has_prefix(ctx.base_ns())) {
+                if (k == variable_entity::kind::SCOPE_LOCAL || var.scope_local) {
+                    throw exception("%1%(%2%,%3%): `%4%`: variable is not defined in the scope"_fmt %
+                        var.location.resource % var.location.line % var.location.column %
+                        ctx.u().print(var.name));
+                }
+                varptr = &ctx.create_captured_variable_chain(*varptr);
+            }
+        } else {
+            THROW_INTERNAL_ERROR("unknown variable kind");
+        }
+
+        result.emplace_back(semantic::push_variable{ varptr });
         if (!expected_result || *expected_result == varptr->type()) {
-            result.emplace_back(semantic::push_variable{ varptr.get() });
             return varptr->type();
         }
-        expression_type_visitor etvis{ ctx, varptr->type(), result };
+        expression_cast_visitor etvis{ ctx, varptr->type(), result };
         if (auto optrest = apply_visitor(etvis, *expected_result); optrest) {
             return *optrest;
         }
+        /*
+        expression_type_visitor etvis{ ctx, *expected_result, result };
+        if (auto optrest = apply_visitor(etvis, varptr->type()); optrest) {
+            return *optrest;
+        }
+        */
         throw exception("%1%(%2%,%3%): `%4%`: cannot convert from `%5%` to `%6%`"_fmt %
-            aqnm.location.resource % aqnm.location.line % aqnm.location.column %
-            ctx.u().print(aqnm.name) % ctx.u().print(varptr->type()) % ctx.u().print(*expected_result));
+            var.location.resource % var.location.line % var.location.column %
+            ctx.u().print(var.name) % ctx.u().print(varptr->type()) % ctx.u().print(*expected_result));
         // type to type converter
+    } else if (auto fnptr = dynamic_pointer_cast<functional_entity>(e); fnptr) {
+        if (!expected_result) {
+            THROW_NOT_IMPLEMENTED_ERROR("forward functional template");
+        }
+        expression_fn_visitor dvis{ ctx, *fnptr, result };
+        if (auto optrest = apply_visitor(dvis, *expected_result); optrest) {
+            return *optrest;
+        }
+        return nullopt;
     }
     /*
     // to do: look for variable first
@@ -67,9 +101,7 @@ expression_visitor::result_type expression_visitor::operator()(annotated_qname c
         return pv->type();
     }
     */
-    throw exception("%1%(%2%,%3%): `%4%`: undeclared identifier"_fmt %
-        aqnm.location.resource % aqnm.location.line % aqnm.location.column %
-        ctx.u().print(aqnm.name));
+    ctx.throw_undeclared_identifier(var.name, var.location);
 }
 
 expression_visitor::result_type expression_visitor::operator()(binary_expression_t<operator_type::ASSIGN> const& op) const
@@ -77,12 +109,10 @@ expression_visitor::result_type expression_visitor::operator()(binary_expression
     expression_visitor evis{ ctx, result, nullptr };
     auto rtype = apply_visitor(evis, op.right);
 
-    if (annotated_qname const* varnm = get<annotated_qname>(&op.left); varnm) {
+    if (variable_identifier const* varnm = get<variable_identifier>(&op.left); varnm) {
         auto optvar = ctx.resolve_variable(varnm->name);
         if (!optvar) {
-            throw exception("%1%(%2%,%3%): `%4%`: undeclared identifier"_fmt %
-                varnm->location.resource % varnm->location.line % varnm->location.column %
-                ctx.u().print(varnm->name));
+            ctx.throw_undeclared_identifier(varnm->name, varnm->location);
         }
         result.emplace_back(semantic::set_variable{ optvar });
         return std::move(rtype);
@@ -173,17 +203,22 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t c
         throw exception("%1%(%2%,%3%): duplicate argument `%4%`"_fmt % aid.location.resource % aid.location.line % aid.location.column % ctx.u().print(aid.id));
     }
 
-    shared_ptr<entity> e = ctx.resolve_entity(proc.name);
+    variable_identifier const* fnvar = get<variable_identifier>(&proc.fn_object);
+    if (!fnvar) {
+        THROW_NOT_IMPLEMENTED_ERROR("fn object expressions is not implemented yet");
+    }
+    shared_ptr<entity> e = ctx.resolve_entity(fnvar->name);
     if (!e) [[unlikely]] {
-        throw exception("unresolved function name '%1%'"_fmt % ctx.u().print(proc.name));
+        ctx.throw_undeclared_identifier(fnvar->name, fnvar->location);
     }
     shared_ptr<functional_entity> func_ent = dynamic_pointer_cast<functional_entity>(e);
     if (!func_ent) [[unlikely]] {
-        throw exception("name '%1%' is not callable"_fmt % ctx.u().print(proc.name));
+        // to do: can be variable
+        throw exception("name '%1%' is not callable"_fmt % ctx.u().print(fnvar->name));
     }
     beng_type rtype;
     if (!func_ent->find(ctx, proc.positioned_args, proc.named_args, result, rtype)) {
-        throw exception("can't match a function call '%1%'"_fmt % ctx.u().print(proc.name));
+        throw exception("can't match a function call '%1%'"_fmt % ctx.u().print(fnvar->name));
     }
 
     return rtype;

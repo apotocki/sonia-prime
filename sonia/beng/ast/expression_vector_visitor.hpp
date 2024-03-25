@@ -8,20 +8,19 @@
 #include "sonia/optional.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
-#include "../ast.hpp"
 #include "../semantic.hpp"
 #include "expression_visitor.hpp"
-#include "compiler_context.hpp"
+#include "fn_compiler_context.hpp"
 
 namespace sonia::lang::beng {
 
 struct expression_vector_visitor : static_visitor<optional<beng_type>>
 {
-    compiler_context& ctx;
+    fn_compiler_context& ctx;
     expression_vector_t const& vec;
     std::vector<semantic_expression_type>& result;
 
-    expression_vector_visitor(compiler_context& c, expression_vector_t const& v, std::vector<semantic_expression_type>& r)
+    expression_vector_visitor(fn_compiler_context& c, expression_vector_t const& v, std::vector<semantic_expression_type>& r)
         : ctx{ c }
         , vec { v }
         , result{ r }
@@ -39,7 +38,7 @@ struct expression_vector_visitor : static_visitor<optional<beng_type>>
             }
         }
         result.emplace_back(semantic::push_value{ decimal{ vec.elements.size() } });
-        result.emplace_back(semantic::invoke_function{ ctx.u().arrayify_entity_name(), (uint32_t)vec.elements.size() + 1 });
+        result.emplace_back(ctx.u().get_builtin_function(unit::builtin_fn::arrayify));
         return v;
     }
 

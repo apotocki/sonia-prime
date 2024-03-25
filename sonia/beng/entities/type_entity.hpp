@@ -22,11 +22,23 @@ class type_entity : public functional_entity
 public:
     explicit type_entity(qname_type name) : functional_entity{ std::move(name) } {}
 
-    bool find(compiler_context&,
+    bool find(fn_compiler_context&,
         span<const expression_t> positioned_args,
         span<const std::tuple<annotated_identifier, expression_t>> named_args,
         std::vector<semantic_expression_type>& result, beng_type & rtype) const override;
 
+    bool try_cast(fn_compiler_context& ctx,
+        std::vector<semantic_expression_type>& result,
+        beng_type const& rtype) const;
+
+    // ast
+    extension_list_t direct_bases;
+    parameter_woa_list_t direct_parameters;
+    
+    //semantic
+    std::vector<entity const*> bases;
+
+    void treat(fn_compiler_context&);
     /*
     struct function_descriptor
     {
@@ -55,6 +67,8 @@ public:
     };
     */
 private:
+    bool handling_ = false;
+    bool handled_ = false;
     /*
     struct f_hasher
     {

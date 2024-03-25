@@ -12,11 +12,9 @@
 
 namespace sonia {
  
-namespace lang::beng { class parser_context; }
-
 class builder_view_model 
     : public lua_view_model
-    , public sonia::beng::language
+    , public sonia::lang::beng::language
 {
     using base_t = lua_view_model;
 

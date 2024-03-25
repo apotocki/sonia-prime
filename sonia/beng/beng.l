@@ -108,6 +108,7 @@ ASCALPHA				[a-zA-Z]
 ASCALPHANUM				[a-zA-Z0-9]
 DIGIT					[0-9]
 IDENTIFIER				[a-zA-Z_]+[a-zA-Z_0-9]*
+ARGIDENTIFIER			$[a-zA-Z_0-9]+
 
 INTEGER                 [0-9]+
 EXPONENT                [eE][+-]?[0-9]+
@@ -140,6 +141,7 @@ CLOSE_SQUARE_BRACKET    "]"
 ASSIGN                  "="
 POINT                   "."
 UNDERSCORE              "_"
+BITOR                   "|"
 DBLCOLON                "::"
 LOGIC_OR                "||"
 ARROW					"->"
@@ -201,7 +203,7 @@ ASTERISK                "*"
 SLASH                   "/"
 PERCENT                 "%"
 AMPERSAND               "&"
-BITOR                   "|"
+
 EXCLPT                  "!"
 TILDA                   "~"
 EXCL                    "^"
@@ -276,6 +278,7 @@ HASHTAG					"#"
 	{ASSIGN}                { return (beng_lang::parser::token::ASSIGN); }
 	{POINT}					{ return (beng_lang::parser::token::POINT);	}
 	{UNDERSCORE}			{ return (beng_lang::parser::token::UNDERSCORE); }
+	{BITOR}				    { return (beng_lang::parser::token::BITOR);	}
 	{DBLCOLON}              { return (beng_lang::parser::token::DBLCOLON); }
 	{LOGIC_OR}              { return (beng_lang::parser::token::LOGIC_OR); }
 	{ARROW}                 { return (beng_lang::parser::token::ARROW); }
@@ -283,6 +286,10 @@ HASHTAG					"#"
 	{IDENTIFIER} {
 		variant_emplace(annotated_string_view{text_view, location});
 		return (beng_lang::parser::token::IDENTIFIER);
+	}
+	{ARGIDENTIFIER} {
+		variant_emplace(annotated_string_view{text_view, location});
+		return (beng_lang::parser::token::ARGIDENTIFIER);
 	}
 	{INTEGER} {
 		variant_emplace(ctx.make_int(text_view));

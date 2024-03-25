@@ -10,28 +10,11 @@
 #include "sonia/type_traits.hpp"
 #include "sonia/filesystem.hpp"
 
-#include "ast.hpp"
+#include "ast_terms.hpp"
 
 namespace sonia::lang::beng {
 
-
 class unit;
-//struct function_t;
-
-/*
-struct function_sig
-{
-    qname name;
-    named_type_expression_list_t args;
-    type_expression_t result;
-};
-
-struct function_decl
-{
-    function_sig sig;
-    statement_list_t body;
-};
-*/
 
 class parser_context
 {
@@ -58,7 +41,7 @@ public:
     
     //small_u32string make_string(string_view);
 
-    void set_declarations(std::vector<declaration_t>);
+    void set_declarations(declaration_set_t);
 
     void append_error(std::string errmsg);
 
@@ -72,20 +55,18 @@ public:
     void parse(fs::path const& f);
     void parse(string_view code);
 
-    span<const declaration_t> declarations() const { return declarations_; }
+    span<declaration_t> generic_declarations() { return declarations_.generic; }
+    span<type_declaration_t> type_declarations() { return declarations_.types; }
 
 private:
     unit& unit_;
 
     boost::container::small_vector<fs::path, 8> resource_stack_;
-    //environment& env_;
-
+    
     boost::container::small_vector<qname, 8> ns_stack_;
 
     std::vector<std::string> error_messages_;
-    std::vector<declaration_t> declarations_;
+    declaration_set_t declarations_;
 };
-
-//expression_list handle_call_op(expression_list& x, expression_list& y, operator_type op);
 
 }

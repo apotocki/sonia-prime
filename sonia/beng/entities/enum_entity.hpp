@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "sonia/beng/ast/terms.hpp"
+#include "sonia/beng/semantic.hpp"
 
 namespace sonia::lang::beng {
 

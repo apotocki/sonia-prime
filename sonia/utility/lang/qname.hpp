@@ -30,8 +30,8 @@ public:
 
     qname() : absolute_{ true } {}
 
-    explicit qname(IdentifierT pid)
-        : absolute_{ true }
+    explicit qname(IdentifierT pid, bool is_abs = true)
+        : absolute_{ is_abs }
     {
         parts_.emplace_back(pid);
     }
@@ -73,20 +73,6 @@ public:
         return *this;
     }
 
-    qname operator+ (qname const& r) const
-    {
-        qname tmp = *this;
-        tmp += r;
-        return tmp;
-    }
-
-    qname operator+ (IdentifierT r) const
-    {
-        qname tmp = *this;
-        tmp += r;
-        return tmp;
-    }
-
     span<const IdentifierT> parts() const
     {
         return span<const IdentifierT>{parts_.data(), parts_.size()};
@@ -97,6 +83,12 @@ public:
     void truncate(size_t sz)
     {
         parts_.resize(sz);
+    }
+
+    bool has_prefix(span<const IdentifierT> sp) const
+    {
+        if (parts_.size() < sp.size()) return false;
+        return std::ranges::equal(parts().subspan(0, sp.size()), sp);
     }
 
 private:
@@ -122,13 +114,18 @@ public:
         : base_t{ qn.parts() }
         , absolute_{ qn.is_absolute() }
     {}
-    //qname_view(IdentifierT const& id)
-    //    : base_t{ &id, 1 }
-    //    , absolute_{ true }
-    //{}
-
+    qname_view(span<const IdentifierT> sp, bool isabs = true)
+        : base_t{ sp }
+        , absolute_{ isabs }
+    {}
     qname_view(qname_view const&) = default;
     qname_view& operator=(qname_view const&) = default;
+
+    qname_view parent() const
+    {
+        assert(base_t::size());
+        return qname_view{span{base_t::data(), base_t::size() - 1}, absolute_ };
+    }
 
     inline bool is_relative() const noexcept { return !absolute_; }
     inline bool is_absolute() const noexcept { return absolute_; }
@@ -144,6 +141,12 @@ public:
         return std::lexicographical_compare_three_way(
             l.begin(), l.end(),
             r.begin(), r.end());
+    }
+
+    bool has_prefix(span<const IdentifierT> sp) const
+    {
+        if (base_t::size() < sp.size()) return false;
+        return std::ranges::equal(base_t::subspan(0, sp.size()), sp);
     }
 
 private:
@@ -170,15 +173,21 @@ inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, qname_view<
 }
 
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname_view<IdentifierT> const& base, IdentifierT leaf)
+inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, qname<IdentifierT> const& leaf)
 {
-    return qname{ base, base.is_absolute() } + leaf;
+    return base + (qname_view<IdentifierT>)leaf;
 }
 
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname_view<IdentifierT> const& base, qname_view<IdentifierT> leaf)
+inline qname<IdentifierT> operator+ (qname_view<IdentifierT> base, IdentifierT leaf)
 {
-    return qname{ base, base.is_absolute() } + leaf;
+    return qname<IdentifierT>{ base, base.is_absolute() } + leaf;
+}
+
+template <typename IdentifierT>
+inline qname<IdentifierT> operator+ (qname_view<IdentifierT> base, qname_view<IdentifierT> leaf)
+{
+    return qname<IdentifierT>{ base, base.is_absolute() } + leaf;
 }
 
 }

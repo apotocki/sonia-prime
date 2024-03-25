@@ -112,7 +112,7 @@ decimal parser_context::make_numeric(string_view str)
 //    return utf8_to_utf32(str);
 //}
 
-void parser_context::set_declarations(std::vector<declaration_t> ds)
+void parser_context::set_declarations(declaration_set_t ds)
 {
     declarations_ = std::move(ds);
 }

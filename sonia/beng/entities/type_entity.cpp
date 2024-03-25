@@ -5,13 +5,70 @@
 #include "sonia/config.hpp"
 #include "type_entity.hpp"
 
-#include "../ast/compiler_context.hpp"
+#include "../ast/fn_compiler_context.hpp"
 #include "../ast/expression_visitor.hpp"
+#include "../ast/preliminary_type_visitor.hpp"
+
 #include "sonia/utility/scope_exit.hpp"
 
 namespace sonia::lang::beng {
 
-bool type_entity::find(compiler_context& ctx,
+void type_entity::treat(fn_compiler_context& ctx)
+{
+    if (handled_) return;
+    if (handling_) {
+        throw exception("%1%(%2%,%3%): `%4%`: recursive dependency"_fmt %
+            location().resource % location().line % location().column %
+            ctx.u().print(name()));
+    }
+    handling_ = true;
+    signatures.emplace_back();
+    auto& sig = signatures.back();
+
+    sig.fn_type.result = beng_object_t{ this };
+    sig.setup(ctx, direct_parameters);
+    
+    // to do: merge types for the same named arguments
+    for (auto const& base : direct_bases) {
+        shared_ptr<entity> e = ctx.resolve_entity(base.name);
+        if (!e) [[unlikely]] {
+            ctx.throw_undeclared_identifier(base.name, base.location);
+        }
+        shared_ptr<type_entity> type_ent = dynamic_pointer_cast<type_entity>(e);
+        if (!type_ent) [[unlikely]] {
+            throw exception("%1%(%2%,%3%): `%4%`: not a type identifier"_fmt %
+                base.location.resource % base.location.line % base.location.column %
+                ctx.u().print(base.name));
+        }
+        type_ent->treat(ctx);
+        BOOST_ASSERT(1 == type_ent->signatures.size());
+        auto const& basesig = type_ent->signatures.back();
+        sig.position_parameters().insert(sig.position_parameters().end(), basesig.position_parameters().begin(), basesig.position_parameters().end());
+        sig.named_parameters().insert(sig.named_parameters().end(), basesig.named_parameters().begin(), basesig.named_parameters().end());
+        
+        bases.emplace_back(type_ent.get());
+        bases.insert(bases.end(), type_ent->bases.begin(), type_ent->bases.end());
+    }
+
+    sig.normilize(ctx);
+
+    // to do: handle duplicated bases
+
+    handling_ = false;
+    handled_ = true;
+}
+
+bool type_entity::try_cast(fn_compiler_context& ctx,
+    std::vector<semantic_expression_type>& result,
+    beng_type const& rtype) const
+{
+    beng_object_t const* pot = get<beng_object_t>(&rtype);
+    if (!pot) return false;
+    if (pot->value == this) return true;
+    return bases.end() != std::find(bases.begin(), bases.end(), pot->value);
+}
+
+bool type_entity::find(fn_compiler_context& ctx,
     span<const expression_t> positioned_args,
     span<const std::tuple<annotated_identifier, expression_t>> named_args,
     std::vector<semantic_expression_type>& result,
@@ -29,8 +86,8 @@ bool type_entity::find(compiler_context& ctx,
 
     for (auto const& narg : named_args) {
         auto const& argname = std::get<0>(narg);
-        auto it = std::ranges::lower_bound(sig.named_parameters, argname.id, [](auto const& l, auto const& r) { return l < r; }, [](auto const& v) { return std::get<0>(v).id; });
-        if (it == sig.named_parameters.end() || std::get<0>(*it).id != argname.id) {
+        auto it = std::ranges::lower_bound(sig.named_parameters(), argname.id, [](auto const& l, auto const& r) { return l < r; }, [](auto const& v) { return std::get<0>(v).id; });
+        if (it == sig.named_parameters().end() || std::get<0>(*it).id != argname.id) {
             throw exception("%1%(%2%,%3%): parameter `%4%` of `%5%` is not found"_fmt %
                 argname.location.resource % argname.location.line % argname.location.column %
                 ctx.u().print(argname.id) % ctx.u().print(name()));
@@ -41,7 +98,7 @@ bool type_entity::find(compiler_context& ctx,
     }
     result.emplace_back(semantic::push_value{ decimal{ named_args.size() } });
     result.emplace_back(semantic::push_value{ ctx.u().as_u32string(name()) });
-    result.emplace_back(semantic::invoke_function{ name_, 2 * ((uint32_t)named_args.size()) + 1 });
+    result.emplace_back(semantic::invoke_function{ name_ /*, 2 * ((uint32_t)named_args.size()) + 1*/ });
     rtype = beng_object_t{ this };
     return true;
 

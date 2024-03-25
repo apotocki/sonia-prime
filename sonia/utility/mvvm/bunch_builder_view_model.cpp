@@ -22,7 +22,8 @@ shared_ptr<invokation::invokable> bunch_builder_view_model::get_element_by(strin
 {
     if (id.empty()) return root_element();
     auto it = elements_.find(id, hasher{}, string_equal_to{});
-    if (it == elements_.end()) throw exception("An element with identifier '%1%' was not found."_fmt % id);
+    if (it == elements_.end())
+        throw exception("An element with identifier '%1%' was not found."_fmt % id);
     return it->second;
 }
 

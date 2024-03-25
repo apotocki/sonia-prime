@@ -19,6 +19,21 @@ public:
     }
 };
 
+class blob_functor_object : public functor_object
+{
+    smart_blob blob_;
+
+public:
+    explicit blob_functor_object(blob_result const& br)
+        : blob_{ br }
+    {}
+
+    smart_blob operator()(std::span<const blob_result> args) override
+    {
+        return blob_.as<functor_object>()(args);
+    }
+};
+
 class invokable_functor_object : public functor_object
 {
     shared_ptr<invokable> invokable_;

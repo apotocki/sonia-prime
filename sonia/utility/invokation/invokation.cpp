@@ -87,32 +87,43 @@ private:
 // allocates only top level array!!!
 void blob_result_allocate(blob_result * b, bool no_inplace)
 {
-    if (b->need_unpin == 0 && !b->inplace_size && !!b->bp.size) {
-        void const* ptr = b->bp.data;
-        uint32_t sz = b->bp.size;
-        static_assert(sizeof(b->ui8array) == 14);
-        if (!no_inplace && sz <= sizeof(b->ui8array)) {
-            b->inplace_size = static_cast<uint8_t>(sz);
-            if (ptr) {
-                std::memcpy(b->ui8array, ptr, sz);
-            }
-        } else {
-            sonia::shared_ptr<uint8_t> data(new uint8_t[sz], [](uint8_t* p) { delete[] p; });
-            if (b->bp.data) {
-                std::memcpy(data.get(), ptr, sz);
-            }
-            b->bp.data = data.get();
-            b->need_unpin = 1;
-            sonia::as_singleton<sonia::invokation::blob_manager>()->pin(std::move(data));
-        }
-        // elements should be pinned by callee
-        /*
-        if (b->type == blob_type::tuple) {
-            blob_result* pblob = mutable_data_of<blob_result>(*b), *epblob = pblob + array_size_of<blob_result>(*b);
-            for (; pblob != epblob; blob_result_pin(pblob++));
-        }
-        */
+    if (b->need_unpin) return; // already allocated
+    blob_result inplace_buffer;
+    void const* ptr;
+    uint32_t sz;
+    if (b->inplace_size) {
+        if (!no_inplace) return; // already inplace
+        inplace_buffer = *b;
+        ptr = inplace_buffer.ui8array;
+        sz = b->inplace_size;
+    } else {
+        ptr = b->bp.data;
+        sz = b->bp.size;
+        if (!sz) return; // nothing to allocate
     }
+    
+    static_assert(sizeof(b->ui8array) == 14);
+    if (!no_inplace && sz <= sizeof(b->ui8array)) {
+        b->inplace_size = static_cast<uint8_t>(sz);
+        if (ptr) {
+            std::memcpy(b->ui8array, ptr, sz);
+        }
+    } else {
+        sonia::shared_ptr<uint8_t> data(new uint8_t[sz], [](uint8_t* p) { delete[] p; });
+        if (b->bp.data) {
+            std::memcpy(data.get(), ptr, sz);
+        }
+        b->bp.data = data.get();
+        b->need_unpin = 1;
+        sonia::as_singleton<sonia::invokation::blob_manager>()->pin(std::move(data));
+    }
+    // elements should be pinned by callee
+    /*
+    if (b->type == blob_type::tuple) {
+        blob_result* pblob = mutable_data_of<blob_result>(*b), *epblob = pblob + array_size_of<blob_result>(*b);
+        for (; pblob != epblob; blob_result_pin(pblob++));
+    }
+    */
 }
 
 void blob_result_pin(blob_result * b)
@@ -130,7 +141,7 @@ void blob_result_unpin(blob_result * b)
         if (optst) {
             if (b->type == blob_type::object) {
                 reinterpret_cast<sonia::invokation::object*>((*optst).get())->~object();
-            } else if (b->type == blob_type::tuple) {
+            } else if (b->type == blob_type::tuple || b->type == blob_type::reference) {
                 blob_result* pblob = mutable_data_of<blob_result>(*b), * epblob = pblob + array_size_of<blob_result>(*b);
                 for (; pblob != epblob; blob_result_unpin(pblob++));
             }

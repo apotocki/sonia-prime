@@ -4,39 +4,31 @@
 
 #pragma once
 
-#include "terms.hpp"
-#include "../ast.hpp"
+#include "../semantic.hpp"
 
 namespace sonia::lang::beng {
 
 struct declaration_visitor : static_visitor<void>
 {
-    compiler_context& ctx;
+    fn_compiler_context& ctx;
 
-    explicit declaration_visitor(compiler_context& c) : ctx{ c } {}
+    explicit declaration_visitor(fn_compiler_context& c) : ctx{ c } {}
 
-    void operator()(empty_t const&) const {}
+    //void operator()(empty_t const&) const {}
 
-    void operator()(exten_var const& td) const;
+    void operator()(exten_var & td) const;
 
-    void operator()(type_decl const& td) const;
+    void operator()(fn_pure_decl & ed) const;
+
+    void operator()(fn_decl_t & ed) const;
+
+    void operator()(let_statement_decl & ld) const;
     
-    void operator()(enum_decl const& ed) const;
-    
-    void operator()(fn_pure_decl const& ed) const;
+    void operator()(expression_decl & ed) const;
 
-    void operator()(fn_decl_t const& ed) const;
+    void operator()(return_decl & rd) const;
 
-    void operator()(let_statement_decl const& ld) const;
-    
-    void operator()(expression_decl const& ed) const;
-
-    void operator()(return_decl const& rd) const;
-
-    void check_name(qname const& name) const;
-
-private:
-    function_signature& append_fnsig(fn_pure_decl const& fd) const;
+    function_signature& append_fnsig(fn_pure_decl & fd) const;
 };
 
 }

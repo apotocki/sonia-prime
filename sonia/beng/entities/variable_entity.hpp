@@ -9,7 +9,7 @@
 
 #include "sonia/shared_ptr.hpp"
 
-#include "semantic.hpp"
+#include "../semantic.hpp"
 
 #include <ranges>
 
@@ -18,17 +18,30 @@ namespace sonia::lang::beng {
 class variable_entity : public entity
 {
 public:
-    explicit variable_entity(qname_type name, beng_type t)
+    enum class kind
+    {
+        EXTERN, STATIC, LOCAL, SCOPE_LOCAL
+    };
+
+    explicit variable_entity(qname_type name, beng_type t, kind k)
         : entity{ std::move(name) }
         , type_{ std::move(t) }
+        , kind_{ k }
     {}
 
     inline beng_type const& type() const noexcept { return type_; }
+    inline kind const& varkind() const noexcept { return kind_; }
+
+    inline intptr_t index() const noexcept { return index_; }
+    void set_index(intptr_t val) { index_ = val; }
 
 private:
     beng_type type_;
+    kind kind_;
+    intptr_t index_;
 };
 
+/*
 class local_variable_entity : public variable_entity
 {
 public:
@@ -48,5 +61,6 @@ private:
     int32_t index_ : 31;
     int32_t is_const_ : 1;
 };
+*/
 
 }

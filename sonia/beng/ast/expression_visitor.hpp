@@ -6,7 +6,6 @@
 
 #include "../unit.hpp"
 
-#include "sonia/beng/ast.hpp"
 #include "sonia/beng/semantic.hpp"
 #include "sonia/optional.hpp"
 
@@ -14,17 +13,17 @@ namespace sonia::lang::beng {
 
 struct expression_visitor : static_visitor<optional<beng_type>>
 {
-    compiler_context& ctx;
+    fn_compiler_context& ctx;
     beng_type const* expected_result;
     std::vector<semantic_expression_type>& result;
 
-    explicit expression_visitor(compiler_context& c, std::vector<semantic_expression_type>& r, beng_type const* er)
+    explicit expression_visitor(fn_compiler_context& c, std::vector<semantic_expression_type>& r, beng_type const* er)
         : ctx{ c }
         , result { r }
         , expected_result{ er }
     {}
 
-    result_type operator()(annotated_qname const&) const;
+    result_type operator()(variable_identifier const&) const;
 
     result_type operator()(case_expression const&) const;
 

@@ -1,0 +1,49 @@
+//  Sonia.one framework (c) by Alexander A Pototskiy
+//  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
+//  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
+
+#pragma once
+#include <expected>
+
+#include "sonia/optional.hpp"
+
+#include "sonia/beng/semantic.hpp"
+#include "sonia/beng/errors.hpp"
+#include "sonia/beng/unit.hpp"
+
+namespace sonia::lang::beng {
+
+class variable_entity;
+
+struct lvalue_expression_visitor : static_visitor<std::expected<entity const*, error_storage>>
+{
+    fn_compiler_context& ctx;
+
+    explicit lvalue_expression_visitor(fn_compiler_context& c)
+        : ctx{ c }
+    {}
+
+    result_type operator()(variable_identifier const&) const;
+
+    result_type operator()(case_expression const&) const;
+    result_type operator()(member_expression_t &) const;
+
+    result_type operator()(annotated_bool const&) const;
+    result_type operator()(annotated_decimal const&) const;
+    result_type operator()(annotated_u32string const&) const;
+    
+    result_type operator()(expression_vector_t const&) const;
+    result_type operator()(chained_expression_t&) const;
+
+    result_type operator()(lambda_t const&) const;
+    result_type operator()(function_call_t const&) const;
+
+    result_type operator()(unary_expression_t<unary_operator_type::NEGATE> const&) const;
+
+    result_type operator()(binary_expression_t<binary_operator_type::ASSIGN> const&) const;
+    result_type operator()(binary_expression_t<binary_operator_type::LOGIC_AND> const&) const;
+    result_type operator()(binary_expression_t<binary_operator_type::LOGIC_OR> const&) const;
+    result_type operator()(binary_expression_t<binary_operator_type::CONCAT>&) const;
+};
+
+}

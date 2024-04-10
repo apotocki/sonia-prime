@@ -61,9 +61,15 @@ public:
             } else if (auto pte = dynamic_pointer_cast<type_entity>(eptr); pte) {
                 bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_object_constructor);
             } else if (auto fe = dynamic_pointer_cast<function_entity>(eptr); fe) {
-                bvm().push_on_stack_and_push(i64_blob_result((fe->signature().parameters_count() + 1) * (fe->is_void() ? -1 : 1)));
-                bvm().append_fpush(fe->index());
-                bvm().append_callp();
+                if (fe->is_inline()) {
+                    for (auto const& e : fe->body) {
+                        apply_visitor(*this, e);
+                    }
+                } else {
+                    bvm().push_on_stack_and_push(i64_blob_result((fe->signature().parameters_count() + 1) * (fe->is_void() ? -1 : 1)));
+                    bvm().append_fpush(fe->index());
+                    bvm().append_callp();
+                }
                 //bvm_.append_builtin(sonia::lang::beng::builtin_type::call_function_object);
                 /*
                 // assigned captured variables (if exist)
@@ -135,6 +141,51 @@ public:
             throw internal_error("return code is not defined");
         }
         unit_.bvm().append_jmp(*local_return_address);
+    }
+
+    inline void operator()(semantic::conditional<semantic_expression_type> const& c) const
+    {
+        size_t branch_pt = unit_.bvm().get_ip();
+        if (c.false_branch.empty() && c.true_branch.empty()) return;
+        if (c.false_branch.empty()) {
+            for (auto const& e : c.true_branch) {
+                apply_visitor(*this, e);
+            }
+            size_t branch_end_pt = unit_.bvm().get_ip();
+            unit_.bvm().append_jfx(branch_end_pt - branch_pt);
+            unit_.bvm().swap_code_blocks(branch_pt, branch_end_pt);
+        } else if (c.true_branch.empty()) {
+            for (auto const& e : c.false_branch) {
+                apply_visitor(*this, e);
+            }
+            size_t branch_end_pt = unit_.bvm().get_ip();
+            unit_.bvm().append_jtx(branch_end_pt - branch_pt);
+            unit_.bvm().swap_code_blocks(branch_pt, branch_end_pt);
+        } else {
+            for (auto const& e : c.true_branch) {
+                apply_visitor(*this, e);
+            }
+            size_t true_branch_end_pt = unit_.bvm().get_ip();
+            for (auto const& e : c.false_branch) {
+                apply_visitor(*this, e);
+            }
+            size_t false_branch_end_pt = unit_.bvm().get_ip();
+            unit_.bvm().append_jmpx(false_branch_end_pt - true_branch_end_pt);
+            size_t jmpxsz = unit_.bvm().get_ip() - false_branch_end_pt;
+            unit_.bvm().swap_code_blocks(true_branch_end_pt, false_branch_end_pt);
+
+            unit_.bvm().append_jfx(true_branch_end_pt + jmpxsz - branch_pt);
+            unit_.bvm().swap_code_blocks(branch_pt, true_branch_end_pt + jmpxsz);
+        }
+    }
+
+    inline void operator()(semantic::truncate_values const& c) const
+    {
+        if (c.keep_back) {
+            unit_.bvm().append_collapse(c.count);
+        } else {
+            unit_.bvm().append_pop(c.count);
+        }
     }
 
     template <typename T>

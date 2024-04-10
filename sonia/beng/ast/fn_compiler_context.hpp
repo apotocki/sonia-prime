@@ -51,7 +51,10 @@ class fn_compiler_context
     size_t base_ns_size_;
     size_t local_variable_count_ = 0;
     
+    using expr_vec_t = std::vector<semantic_expression_type>;
+
 public:
+
     explicit fn_compiler_context(unit& u, qname ns)
         : unit_{ u }
         , parent_ { nullptr }
@@ -87,22 +90,73 @@ public:
 
     unit& u() const { return unit_; }
 
-    [[noreturn]]
-    inline void throw_identifier_redefinition(entity const& e, qname_view qn, lex::resource_location const& loc) const
-    {
-        throw exception("%1%(%2%,%3%): `%4%`: identifier redefinition, see declaration at %5%(%6%,%7%)"_fmt %
-            loc.resource % loc.line % loc.column %
-            u().print(qn) %
-            e.location().resource % e.location().line % e.location().column);
-    }
 
-    [[noreturn]]
-    inline void throw_undeclared_identifier(qname_view qn, lex::resource_location const& loc) const
-    {
-        throw exception("%1%(%2%,%3%): `%4%`: undeclared identifier"_fmt %
-            loc.resource % loc.line % loc.column %
-            u().print(qn));
-    }
+    //inline std::string error_undeclared_identifier(lex::resource_location const& loc, qname_view qn) const
+    //{
+    //    return ("%1%(%2%,%3%): `%4%`: undeclared identifier"_fmt %
+    //        loc.resource % loc.line % loc.column %
+    //        u().print(qn)).str();
+    //}
+
+    //inline std::string error_cannot_convert(lex::resource_location const& loc, string_view subject, beng_type const& from, beng_type const& to)
+    //{
+    //    if (!subject.empty()) {
+    //        return ("%1%(%2%,%3%): `%4%`: cannot convert from `%5%` to `%6%`"_fmt %
+    //            loc.resource % loc.line % loc.column %
+    //            subject % u().print(from) % u().print(to)).str();
+    //    } else {
+    //        return ("%1%(%2%,%3%): cannot convert from `%4%` to `%5%`"_fmt %
+    //            loc.resource % loc.line % loc.column %
+    //            u().print(from) % u().print(to)).str();
+    //    }
+    //}
+
+    //inline std::string error_cannot_convert(lex::resource_location const& loc, string_view subject, beng_type const& to)
+    //{
+    //    if (!subject.empty()) {
+    //        return ("%1%(%2%,%3%): `%4%`: cannot convert to `%5%`"_fmt %
+    //            loc.resource % loc.line % loc.column %
+    //            subject %  u().print(to)).str();
+    //    } else {
+    //        return ("%1%(%2%,%3%): cannot convert to `%4%`"_fmt %
+    //            loc.resource % loc.line % loc.column %
+    //            u().print(to)).str();
+    //    }
+    //}
+
+    //inline std::string error_cannot_convert(lex::resource_location const& loc, expression_t const* psubject, beng_type const& from, beng_type const& to)
+    //{
+    //    if (psubject) {
+    //        return error_cannot_convert(loc, u().print(*psubject), from, to);
+    //    }
+    //    return error_cannot_convert(loc, {}, from, to);
+    //}
+
+    //inline std::string error_cannot_convert(expression_locator_t const& el, beng_type const& from, beng_type const& to)
+    //{
+    //    auto tpl = el();
+    //    auto [loc, optexpr] = el();
+    //    if (optexpr) {
+    //        return error_cannot_convert(loc, u().print(*optexpr), from, to);
+    //    }
+    //    return error_cannot_convert(loc, {}, from, to);
+    //}
+
+    //inline std::string error_cannot_convert(expression_locator_t const& el, beng_type const& to)
+    //{
+    //    auto [loc, optexpr] = el();
+    //    if (optexpr) {
+    //        return error_cannot_convert(loc, u().print(*optexpr), to);
+    //    }
+    //    return error_cannot_convert(loc, {}, to);
+    //}
+
+    //inline std::string error_wrong_lvalue(lex::resource_location const& loc, string_view subject)
+    //{
+    //    return ("%1%(%2%,%3%): `%4%`: is not rvalue"_fmt %
+    //        loc.resource % loc.line % loc.column % subject).str();
+    //}
+    // 
     // to do: resolving depends on qname
     shared_ptr<entity> resolve_entity(qname_view name) const
     {
@@ -200,11 +254,11 @@ public:
     void finish_frame()
     {
         if (local_variable_count_ == 1) {
-            expressions.front() = semantic::push_value{ null_t{} };
+            expressions_.front() = semantic::push_value{ null_t{} };
         } else if (local_variable_count_) {
             std::vector<semantic_expression_type> prolog;
             prolog.resize(local_variable_count_, semantic::push_value{ null_t{} });
-            expressions.front() = std::move(prolog);
+            expressions_.front() = std::move(prolog);
         }
     }
 
@@ -227,20 +281,53 @@ public:
 
     //inline span<const semantic_expression_type> expressions() const noexcept { return expressions_; }
 
+    expr_vec_t& expressions() { return *expr_stack_.back(); }
+    void append_expression(semantic_expression_type && e)
+    {
+        expressions().emplace_back(std::move(e));
+    }
+
+    void push_chain(expr_vec_t& chain_vec)
+    {
+        expr_stack_.emplace_back(&chain_vec);
+    }
+
     
-    std::vector<semantic_expression_type> expressions;
     optional<beng_type> result;
+    optional<beng_type> accum_result;
+
+    void accumulate_result_type(beng_type && t)
+    {
+        if (!accum_result) {
+            accum_result.emplace(std::move(t));
+        } else {
+            accum_result = make_union_type(*accum_result, &t);
+        }
+    }
+
+    beng_type const& compute_result_type()
+    {
+        if (result) { return *result; }
+        else if (!accum_result) {
+            accum_result = beng_tuple_t{};
+        }
+        return *accum_result;
+    }
 
 private:
     void init()
     {
         assert(ns_.is_absolute());
         base_ns_size_ = ns_.parts().size();
-        expressions.emplace_back(empty_t{}); // reserve for frame initilalization expressions
+        expressions_.emplace_back(empty_t{}); // reserve for frame initilalization expressions
+        expr_stack_.emplace_back(&expressions_);
     }
 
 private:
     
+    expr_vec_t expressions_;
+    std::vector<expr_vec_t*> expr_stack_;
+
     //boost::container::small_vector<qname, 8> ns_stack_;
     //std::vector<shared_ptr<variable_entity>> variables_;
     //boost::container::small_vector<expression_scope, 8> scope_stack_;

@@ -6,9 +6,11 @@
 
 #include <vector>
 #include <list>
+#include <expected>
 
-#include "sonia/beng/semantic.hpp"
 #include "variable_entity.hpp"
+
+#include "sonia/beng/errors.hpp"
 
 namespace sonia::lang::beng {
 
@@ -26,15 +28,15 @@ public:
 class function_entity : public variable_entity
 {
 public:
-    function_entity(qname name, function_signature const& sig)
+    function_entity(qname name, function_signature && sig)
         : variable_entity{ std::move(name), beng_type{sig.fn_type}, kind::LOCAL }
-        , signature_ { sig }
         , is_defined_{0}, is_inline_{0}
     {
-        
+        signature_ = std::move(sig);
     }
 
     function_signature const& signature() const { return signature_; }
+    beng_type const& result_type() const { return signature().fn_type.result; }
 
     boost::container::small_vector<std::pair<variable_entity*, variable_entity*>, 16> captured_variables; // [(from, to)]
     std::vector<semantic_expression_type> body;
@@ -48,10 +50,11 @@ public:
     void set_variable_index(size_t index) { address_ = static_cast<uint64_t>(index); is_variable_index_ = 1; is_defined_ = 1; }
     void set_address(size_t address) { address_ = static_cast<uint64_t>(address); is_variable_index_ = 0; is_defined_ = 1; }
 
-private:
-    function_signature const& signature_;
-    
+    void materialize_call(fn_compiler_context&, pure_call_t & call) const;
 
+private:
+    function_signature signature_;
+    
     uint64_t address_ : 60;
     uint64_t is_defined_ : 1;
     uint64_t is_variable_index_ : 1;
@@ -74,21 +77,16 @@ public:
         span<const std::tuple<annotated_identifier, beng_type>> named_params) const;
 
     // looking by argument expressions
-    virtual bool find(fn_compiler_context&,
-        span<const expression_t> positioned_args,
-        span<const std::tuple<annotated_identifier, expression_t>> named_args,
-        std::vector<semantic_expression_type> & result, beng_type & rtype) const;
-
-    bool is_matched(fn_compiler_context& ctx,
-        function_signature const& sig,
-        span<const expression_t> positioned_args,
-        span<const std::tuple<annotated_identifier, expression_t>> named_args,
-        std::vector<semantic_expression_type>& result) const;
-
-    bool is_matched(fn_compiler_context& ctx,
-        function_signature const& sig,
-        span<const beng_type> positioned_params,
-        span<const std::tuple<annotated_identifier, beng_type>> named_params) const;
+    virtual std::expected<beng_type, error_storage> find(fn_compiler_context&, pure_call_t& call) const;
 };
+
+bool is_matched(fn_compiler_context&,
+    function_signature const&,
+    pure_call_t& call);
+
+bool is_matched(fn_compiler_context& ctx,
+    function_signature const& sig,
+    span<const beng_type> positioned_params,
+    span<const std::tuple<annotated_identifier, beng_type>> named_params);
 
 }

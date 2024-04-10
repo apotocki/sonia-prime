@@ -10,6 +10,8 @@
 #include "../entities/enum_entity.hpp"
 #include "../entities/type_entity.hpp"
 
+#include "sonia/beng/errors.hpp"
+
 namespace sonia::lang::beng {
 
     /*
@@ -48,7 +50,7 @@ void forward_declaration_visitor::operator()(let_statement_decl const& ld) const
 void forward_declaration_visitor::operator()(enum_decl const& ed) const
 {
     if (auto pe = ctx.u().eregistry().find(ed.name()); pe) [[unlikely]] {
-        ctx.throw_identifier_redefinition(*pe, ed.name(), ed.location());
+        throw exception(ctx.u().print(identifier_redefinition_error{ ed.location(), pe->location(), ed.name() }));
     }
     auto e = make_shared<enum_entity>(qname{ed.name(), true});
     e->set_location(ed.location());
@@ -62,9 +64,9 @@ void forward_declaration_visitor::operator()(enum_decl const& ed) const
 void forward_declaration_visitor::operator()(type_decl & td)
 {
     if (auto pe = ctx.u().eregistry().find(td.name()); pe) [[unlikely]] {
-        ctx.throw_identifier_redefinition(*pe, td.name(), td.location());
+        throw exception(ctx.u().print(identifier_redefinition_error{ td.location(), pe->location(), td.name() }));
     }
-    auto e = make_shared<type_entity>(td.name());
+    auto e = make_shared<type_entity>(qname{td.name(), true});
     e->set_location(td.location());
     e->direct_bases = std::move(td.bases);
     e->direct_parameters = std::move(td.parameters);

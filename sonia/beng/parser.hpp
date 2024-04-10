@@ -11,6 +11,7 @@
 #include "sonia/filesystem.hpp"
 
 #include "ast_terms.hpp"
+#include "sonia/logger/logger.hpp"
 
 namespace sonia::lang::beng {
 
@@ -31,8 +32,9 @@ public:
     void pop_ns();
     //qname const& ns() const { return ns_stack_.back(); }
 
+    identifier new_identifier();
     annotated_identifier make_identifier(annotated_string_view);
-    small_u32string make_string(string_view);
+    annotated_u32string make_string(annotated_string_view);
     int make_int(string_view);
     decimal make_numeric(string_view);
 

@@ -7,6 +7,7 @@
 
 #include "sonia/utility/scope_exit.hpp"
 
+#include "../ast/fn_compiler_context.hpp"
 #include "../ast/expression_visitor.hpp"
 
 namespace sonia::lang::beng {
@@ -19,8 +20,8 @@ function_signature& functional_entity::put_signature(function_signature&& one_mo
             one_more_sig.named_parameters().size() != sig.named_parameters().size()) continue;
         if (!sonia::range_equal{}(one_more_sig.position_parameters(), sig.position_parameters())) continue;
         if (!std::ranges::equal(one_more_sig.named_parameters(), sig.named_parameters(), {},
-            [](auto const& tpl) { return std::tuple{ std::get<0>(tpl).id, std::get<1>(tpl) }; },
-            [](auto const& tpl) { return std::tuple{ std::get<0>(tpl).id, std::get<1>(tpl) }; }
+            [](auto const& tpl) { return std::tuple{ std::get<0>(tpl).value, std::get<1>(tpl) }; },
+            [](auto const& tpl) { return std::tuple{ std::get<0>(tpl).value, std::get<1>(tpl) }; }
         )) continue;
         throw exception("A procedure with the same signature already exists.");
     }
@@ -29,62 +30,22 @@ function_signature& functional_entity::put_signature(function_signature&& one_mo
     return signatures.back();
 }
 
-bool functional_entity::is_matched(fn_compiler_context& ctx,
-    function_signature const& sig,
-    span<const beng_type> positioned_params,
-    span<const std::tuple<annotated_identifier, beng_type>> named_params) const
+std::expected<beng_type, error_storage> functional_entity::find(fn_compiler_context& ctx, pure_call_t & call) const
 {
-    if (positioned_params.size() != sig.position_parameters().size() || named_params.size() != sig.named_parameters().size()) return false;
-    for (beng_type const& param : sig.position_parameters()) {
-        if (param != positioned_params.front()) return false;
-        positioned_params = positioned_params.subspan(1);
-    }
-    for (auto const& [aname, tp] : sig.named_parameters()) {
-        if (std::get<0>(named_params.front()).id != aname.id) return false;
-
-        if (std::get<1>(named_params.front()) != tp) return false;
-        named_params = named_params.subspan(1);
-    }
-    return true;
-}
-
-bool functional_entity::is_matched(fn_compiler_context& ctx, function_signature const& sig,
-    span<const expression_t> positioned_args,
-    span<const std::tuple<annotated_identifier, expression_t>> named_args,
-    std::vector<semantic_expression_type>& result) const
-{
-    if (positioned_args.size() != sig.position_parameters().size() || named_args.size() != sig.named_parameters().size()) return false;
-    for (beng_type const& argt : sig.position_parameters()) {
-        expression_visitor evis{ ctx, result, &argt };
-        if (!apply_visitor(evis, positioned_args.front())) return false;
-        positioned_args = positioned_args.subspan(1);
-    }
-    for (auto const& [aname, tp] : sig.named_parameters()) {
-        if (std::get<0>(named_args.front()).id != aname.id) return false;
-        expression_visitor evis{ ctx, result, &tp };
-        if (!apply_visitor(evis, std::get<1>(named_args.front()))) return false;
-        named_args = named_args.subspan(1);
-    }
-    return true;
-}
-
-bool functional_entity::find(fn_compiler_context& ctx,
-    span<const expression_t> positioned_args,
-    span<const std::tuple<annotated_identifier, expression_t>> named_args,
-    std::vector<semantic_expression_type>& result, beng_type& rtype) const
-{
-    size_t initial_result_sz = result.size();
-    EXCEPTIONAL_SCOPE_EXIT([&result, initial_result_sz]() { result.resize(initial_result_sz); });
-    for (auto const& sig: signatures) {
-        if (!is_matched(ctx, sig, positioned_args, named_args, result)) {
-            result.resize(initial_result_sz);
+    size_t initial_result_sz = ctx.expressions().size();
+    SCOPE_EXCEPTIONAL_EXIT([&ctx, initial_result_sz]() {
+        ctx.expressions().resize(initial_result_sz);
+    });
+    for (auto & sig: signatures) {
+        if (!is_matched(ctx, sig, call)) {
+            ctx.expressions().resize(initial_result_sz);
             continue;
         }
-        result.emplace_back(semantic::invoke_function{ name() + sig.mangled_id });
-        rtype = sig.fn_type.result;
-        return true;
+        ctx.append_expression(semantic::invoke_function{ name() + sig.mangled_id });
+        return sig.fn_type.result;
     }
-    return false;
+    //return std::unexpected(("can't match a function call '%1%'"_fmt % ctx.u().print(fnvar->name)).str());
+    return std::unexpected(function_call_match_error{ call.location() });
 }
 
 function_signature const* functional_entity::find(fn_compiler_context& ctx,
@@ -97,6 +58,56 @@ function_signature const* functional_entity::find(fn_compiler_context& ctx,
         }
     }
     return nullptr;
+}
+
+void function_entity::materialize_call(fn_compiler_context& ctx, pure_call_t& call) const
+{
+    SCOPE_EXCEPTIONAL_EXIT([&ctx, initial_result_sz = ctx.expressions().size()]() {
+        ctx.expressions().resize(initial_result_sz);
+    });
+    if (is_matched(ctx, signature_, call)) {
+        ctx.append_expression(semantic::invoke_function{ name() });
+        return;
+    }
+    throw exception(ctx.u().print(function_call_match_error{call.location()}));
+}
+
+bool is_matched(fn_compiler_context& ctx,
+    function_signature const& sig,
+    span<const beng_type> positioned_params,
+    span<const std::tuple<annotated_identifier, beng_type>> named_params)
+{
+    if (positioned_params.size() != sig.position_parameters().size() || named_params.size() != sig.named_parameters().size()) return false;
+    for (beng_type const& param : sig.position_parameters()) {
+        if (param != positioned_params.front()) return false;
+        positioned_params = positioned_params.subspan(1);
+    }
+    for (auto const& [aname, tp] : sig.named_parameters()) {
+        if (std::get<0>(named_params.front()) != aname) return false;
+
+        if (std::get<1>(named_params.front()) != tp) return false;
+        named_params = named_params.subspan(1);
+    }
+    return true;
+}
+
+bool is_matched(fn_compiler_context& ctx, function_signature const& sig, pure_call_t& call)
+{
+    if (call.positioned_args.size() != sig.position_parameters().size() || call.named_args.size() != sig.named_parameters().size()) return false;
+    auto positioned_args = std::span{ call.positioned_args };
+    auto named_args = std::span{ call.named_args };
+    for (beng_type const& argt : sig.position_parameters()) {
+        expression_visitor evis{ ctx, expected_result_t{ argt, std::get<1>(positioned_args.front()) } };
+        if (!apply_visitor(evis, std::get<0>(positioned_args.front()))) return false;
+        positioned_args = positioned_args.subspan(1);
+    }
+    for (auto const& [aname, tp] : sig.named_parameters()) {
+        if (std::get<0>(named_args.front()) != aname) return false;
+        expression_visitor evis{ ctx, expected_result_t{ tp, std::get<2>(named_args.front()) } };
+        if (!apply_visitor(evis, std::get<1>(named_args.front()))) return false;
+        named_args = named_args.subspan(1);
+    }
+    return true;
 }
 
 }

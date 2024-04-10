@@ -42,31 +42,28 @@ unit::unit()
     eregistry_.insert(parrayify);
     set_efn(builtin_fn::arrayify, parrayify->name());
 
+    auto peosp = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::extern_object_set_property);
+    eregistry_.insert(peosp);
+    set_efn(builtin_fn::extern_object_set_property, peosp->name());
+
+    auto peogp = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::extern_object_get_property);
+    eregistry_.insert(peogp);
+    set_efn(builtin_fn::extern_object_get_property, peogp->name());
+
     auto ptostring = make_shared<external_function_entity>(qname{ new_identifier() }, fn_identifier_counter_);
     eregistry_.insert(ptostring);
     strings_.emplace_back("tostring");
     set_efn(builtin_fn::tostring, ptostring->name());
     bvm_.set_efn(fn_identifier_counter_++, &beng_tostring, strings_.back());
 
+    auto pnegate = make_shared<external_function_entity>(qname{ new_identifier() }, fn_identifier_counter_);
+    eregistry_.insert(pnegate);
+    strings_.emplace_back("!");
+    set_efn(builtin_fn::negate, pnegate->name());
+    bvm_.set_efn(fn_identifier_counter_++, &beng_negate, strings_.back());
+
     set_extern("print(string)"sv, &beng_print_string);
-
-    /*
-    // install builtin entities
-    
-
-    //arrayify_entity_ = make_shared<entity>(qname{ new_identifier() });
-    //eregistry_.insert(arrayify_entity_);
-
-
-    // print (string)
-    qname print_qn{ slregistry_.resolve("print"sv) };
-    qname print_args{ slregistry_.resolve("string"sv) };
-    identifier particularprintid = piregistry_.resolve(span{ &print_args, 1 });
-    builtins_[(int)builtin_type::print_string] = print_qn + particularprintid;
-
-    //print_entity_ = make_shared<entity>(qname{ slregistry_.resolve("print"sv) });
-    //eregistry_.insert(print_entity_);
-    */
+    set_extern("concat(string,string)->string"sv, &beng_concat_string);
 }
 
 void unit::set_efn(size_t idx, qname_view fnq)
@@ -139,6 +136,7 @@ struct type_printer_visitor : static_visitor<void>
     explicit type_printer_visitor(unit const& u, std::ostringstream& s) : u_{u}, ss{s} {}
 
     inline void operator()(beng_bool_t) const { ss << "bool"; }
+    inline void operator()(beng_particular_bool_t const& t) const { ss << "bool("sv << std::boolalpha << t.value << ')'; }
     inline void operator()(beng_int_t) const { ss << "int"; }
     inline void operator()(beng_float_t) const { ss << "float"; }
     inline void operator()(beng_decimal_t) const { ss << "decimal"; }
@@ -175,7 +173,7 @@ struct type_printer_visitor : static_visitor<void>
         for (auto const& f : tpl.fields) {
             if (&f != &tpl.fields.front()) ss << ',';
             if (f.name) {
-                ss << u_.print(f.name->id) << ": "sv;
+                ss << u_.print(f.name->value) << ": "sv;
             }
             apply_visitor(*this, f.type);
         }
@@ -193,8 +191,16 @@ struct type_printer_visitor : static_visitor<void>
         ss << ')';
     }
 
+    inline void operator()(beng_union_t const& tpl) const
+    {
+        for (auto const& f : tpl) {
+            if (&f != &*tpl.begin()) ss << "||";
+            apply_visitor(*this, f);
+        }
+    }
+
     template <typename FamilyT>
-    inline void operator()(beng_union<FamilyT> const& tpl) const
+    inline void operator()(beng_preliminary_union<FamilyT> const& tpl) const
     {
         for (auto const& f : tpl.members) {
             if (&f != &tpl.members.front()) ss << "||";
@@ -265,6 +271,161 @@ std::vector<char> unit::read_file(fs::path const& rpath)
     std::ifstream file{ rpath.string().c_str(), std::ios::binary };
     std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>{}, std::back_inserter(result));
     return result;
+}
+
+struct expr_printer_visitor : static_visitor<void>
+{
+    unit const& u_;
+    std::ostringstream& ss;
+    explicit expr_printer_visitor(unit const& u, std::ostringstream& s) : u_{ u }, ss{ s } {}
+
+    template <typename T>
+    void operator()(annotated<T> const& ae) const
+    {
+        this->operator()(ae.value);
+    }
+
+    void operator()(identifier const& i) const
+    {
+        ss << u_.print(i);
+    }
+
+    void operator()(bool bval) const
+    {
+        ss << std::boolalpha << bval;
+    }
+
+    void operator()(small_u32string const& s) const
+    {
+        ss << '"' << u_.print(s) << '"';
+    }
+
+    void operator()(decimal const& d) const
+    {
+        ss << to_string(d);
+    }
+
+    void operator()(variable_identifier const& vi) const
+    {
+        if (vi.scope_local) {
+            ss << "LOCAL"sv;
+        }
+        ss << "VAR("sv << u_.print(vi.name) << ")"sv;
+    }
+
+    /*
+    void operator()(chained_expression_t const& c) const
+    {
+        ss << "CHAIN("sv;
+        apply_visitor(*this, c.expression);
+        ss << ": "sv;
+        for (opt_chain_link_t const& l : c.chaining) {
+            if (&l != &c.chaining.front()) {
+                ss << ", "sv;
+            }
+            apply_visitor(*this, l);
+        }
+        ss << ")"sv;
+    }
+    */
+
+    void operator()(member_expression_t const& c) const
+    {
+        ss << "MEMBER("sv;
+        if (c.is_object_optional) {
+            ss << "OPT "sv;
+        }
+        apply_visitor(*this, c.object);
+        ss << ", "sv << u_.print(c.name.value) << ")"sv;
+    }
+
+    void operator()(expression_vector_t const& ev) const
+    {
+        ss << '[';
+        bool first = true;
+        for (auto const& e : ev.elements) {
+            if (!first) ss << ", "sv;
+            else first = false;
+            apply_visitor(*this, e);
+        }
+        ss << ']';
+    }
+
+    void operator()(function_call_t const& f) const
+    {
+        ss << "CALL("sv;
+        apply_visitor(*this, f.fn_object);
+        ss << ")(args)"sv;
+    }
+
+    template <typename T>
+    requires(is_unary_expression<T>::value)
+    void operator()(T const& ue) const
+    {
+        ss << "unary("sv << (int)T::op << ", "sv;
+        apply_visitor(*this, ue.argument);
+        ss << ')';
+    }
+
+    template <typename T>
+    requires(is_binary_expression<T>::value)
+    void operator()(T const& be) const
+    {
+        ss << "binary("sv << (int)T::op << ", "sv;
+        apply_visitor(*this, be.left);
+        ss << ", "sv;
+        apply_visitor(*this, be.right);
+        ss << ')';
+    }
+
+    void operator()(case_expression const& f) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+
+    void operator()(lambda_t const& f) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+
+    /*
+    template <typename T>
+    void operator()(T const& te) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+    */
+};
+
+std::string unit::print(expression_t const& e) const
+{
+    std::ostringstream ss;
+    expr_printer_visitor vis{ *this, ss };
+    apply_visitor(vis, e);
+    return ss.str();
+}
+
+std::string unit::print(small_u32string const& str, bool in_quotes) const
+{
+    namespace cvt = boost::conversion;
+    std::string buff;
+    if (in_quotes) buff.push_back('`');
+    (cvt::cvt_push_iterator(cvt::utf32 | cvt::utf8, std::back_inserter(buff)) << str).flush();
+    if (in_quotes) buff.push_back('`');
+    return buff;
+}
+
+std::string unit::print(lex::resource_location const& loc) const
+{
+    return ("%1%(%2%,%3%)"_fmt % loc.resource % loc.line % loc.column).str();
+}
+
+std::string unit::print(error const& err)
+{
+    std::ostringstream ss;
+    error_printer_visitor vis{ *this, ss };
+    err.visit(vis);
+    return ss.str();
 }
 
 }

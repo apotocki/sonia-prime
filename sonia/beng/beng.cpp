@@ -143,7 +143,7 @@ void beng_impl::compile(lang::beng::parser_context & pctx)
     function_signature main_sig{ };
     main_sig.position_parameters().emplace_back(beng_vector_t{ beng_string_t{} });
     main_function_.emplace(qname{}, std::move(main_sig));
-    main_function_->body = std::move(ctx.expressions);
+    main_function_->body = std::move(ctx.expressions());
     do_compile(vmcvis, *main_function_);
 }
 

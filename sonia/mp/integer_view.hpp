@@ -149,6 +149,11 @@ public:
         return result;
     }
 
+    inline bool operator! () const noexcept
+    {
+        return limbs_ + std::abs(size_) == std::find_if(limbs_, limbs_ + std::abs(size_), [](auto l) { return !!l; });
+    }
+
     inline basic_integer_view operator- () const noexcept
     {
         return basic_integer_view { limbs_, -size_ };

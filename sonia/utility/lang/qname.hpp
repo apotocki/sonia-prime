@@ -5,6 +5,8 @@
 #pragma once
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
+
+#include "sonia/span.hpp"
 #include "sonia/utility/functional/range_equal.hpp"
 
 namespace sonia::lang {

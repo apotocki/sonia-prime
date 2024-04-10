@@ -3,28 +3,24 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #pragma once
+
 #include <vector>
 #include "sonia/variant.hpp"
 #include "sonia/string.hpp"
 
-#include "ast_terms.hpp"
-
-#include "sonia/utility/lang/entity.hpp"
+#include "semantic_fwd.hpp"
 
 namespace sonia::lang::beng {
-
-using entity = sonia::lang::entity<identifier, lex::resource_location>;
-
-class variable_entity;
-class functional_entity;
 
 // ======================================================================== types
 struct beng_object_t
 {
     entity const* value;
-    inline qname_view name() const { return value->name(); }
+
     inline bool operator==(beng_object_t const& rhs) const { return value == rhs.value; };
-    inline auto operator<=>(beng_object_t const& rhs) const { return value->name() <=> rhs.value->name(); };
+    auto operator<=>(beng_object_t const& rhs) const;
+
+    qname_view name() const;
 };
 
 template <typename T> struct beng_tuple
@@ -41,7 +37,7 @@ template <typename T> struct beng_tuple
         return std::lexicographical_compare_three_way(
             named_fields.begin(), named_fields.end(), r.named_fields.begin(), r.named_fields.end(),
             [](auto const& ltpl, auto const& rtpl) {
-                if (auto res = std::get<0>(ltpl).id <=> std::get<0>(rtpl).id; res != std::strong_ordering::equivalent) return res;
+                if (auto res = std::get<0>(ltpl).value <=> std::get<0>(rtpl).value; res != std::strong_ordering::equivalent) return res;
                 return variant_compare_three_way{}(std::get<1>(ltpl), std::get<1>(ltpl));
             });
     }
@@ -49,8 +45,129 @@ template <typename T> struct beng_tuple
 
 template <typename T> using beng_fn = beng_fn_base<beng_tuple<T>, T>;
 
+struct beng_particular_bool_t
+{
+    bool value;
+    inline bool operator==(beng_particular_bool_t const&) const = default;
+    inline auto operator<=>(beng_particular_bool_t const&) const = default;
+};
+
+template <typename T> struct beng_union
+{
+    boost::container::small_vector<T, 8> other_members;
+
+    enum class bool_type : uint8_t {
+        not_a_bool = 0, bool_true = 1, bool_false = 2, a_bool = 3
+    };
+    bool_type bool_member = bool_type::not_a_bool;
+    
+    struct member_iterator
+    {
+        using value_type = T;
+
+        beng_union const* un_;
+        T store_;
+        int state_;
+
+        member_iterator() : un_ {nullptr} {}
+
+        member_iterator(beng_union const& un, int state) : un_{ &un }, state_{ state }
+        {
+            init();
+        }
+
+        void init()
+        {
+            while (un_) {
+                if (state_ == (int)un_->other_members.size()) {
+                    un_ = nullptr;
+                    return;
+                } else if (state_ == -1) {
+                    switch (un_->bool_member) {
+                    case bool_type::not_a_bool:
+                        state_++;
+                        break;
+                    case bool_type::bool_true:
+                        store_ = beng_particular_bool_t{ true };
+                        return;
+                    case bool_type::bool_false:
+                        store_ = beng_particular_bool_t{ false };
+                        return;
+                    case bool_type::a_bool:
+                        store_ = beng_bool_t{ };
+                        return;
+                    }
+                } else if (state_ >= 0) {
+                    break;
+                }
+            }
+        }
+
+        T const& operator*() const
+        {
+            if (state_ < 0) {
+                return store_;
+            } else {
+                return un_->other_members[state_];
+            }
+        }
+
+        void operator++()
+        {
+            ++state_;
+            init();
+        }
+
+        inline bool operator==(member_iterator const& rhs) const { return !un_ ? !rhs.un_ : (un_ == rhs.un_ && state_ == rhs.state_); }
+    };
+
+    member_iterator begin() const { return member_iterator(*this, -1); }
+    member_iterator end() const { return member_iterator(); }
+
+    //inline auto to_tuple() const noexcept { std::tuple{ bool_member }; }
+
+    inline bool operator==(beng_union const& r) const
+    {
+        return bool_member == r.bool_member && other_members == r.other_members;
+    }
+
+    inline auto operator<=>(beng_union const& r) const
+    {
+        if (auto res = bool_member <=> r.bool_member; res != std::strong_ordering::equivalent) return res;
+        return std::lexicographical_compare_three_way(other_members.begin(), other_members.end(), r.other_members.begin(), r.other_members.end(), variant_compare_three_way{});
+    }
+
+    size_t size() const
+    {
+        return other_members.size() + (bool_member == bool_type::not_a_bool ? 0 : 1);
+    }
+
+    template <typename ArgT>
+    void append(ArgT && m)
+    {
+        if (sonia::get<beng_bool_t>(&m)) {
+            bool_member = bool_type::a_bool;
+        } else if (auto *pb = sonia::get<beng_particular_bool_t>(&m); pb) {
+            bool_member = (bool_type)(((uint8_t)bool_member) | (uint8_t)(pb->value ? bool_type::bool_true : bool_type::bool_false));
+        } else {
+            auto it = std::lower_bound(other_members.begin(), other_members.end(), m);
+            if (it != other_members.end() && *it == m) return; // already exists
+            other_members.insert(it, std::forward<ArgT>(m));
+        }
+
+        /*
+        std::sort(result.members.begin(), result.members.end(),
+        [](beng_type const& l, beng_type const& r) { return variant_compare_three_way{}(l, r) == std::strong_ordering::less; });
+
+        auto eit = std::unique(result.members.begin(), result.members.end());
+        result.members.erase(eit, result.members.end());
+        */
+    }
+};
+
 using beng_type = make_recursive_variant<
-    beng_bool_t, beng_int_t, beng_float_t, beng_decimal_t, beng_string_t, beng_object_t,
+    beng_bool_t, beng_particular_bool_t,
+    beng_int_t, beng_float_t, beng_decimal_t, beng_string_t, beng_object_t,
     beng_fn<recursive_variant_>,
     beng_vector<recursive_variant_>,
     beng_array<recursive_variant_>,
@@ -63,6 +180,8 @@ using beng_array_t = beng_array<beng_type>;
 using beng_tuple_t = beng_tuple<beng_type>;
 using beng_union_t = beng_union<beng_type>;
 using beng_fn_t = beng_fn<beng_type>;
+
+beng_type make_union_type(beng_type, beng_type const*);
 
 // ======================================================================== function
 
@@ -98,19 +217,20 @@ struct function_signature
     //}
 };
 
-// ======================================================================== values
-struct function_value { qname mangled_name; };
-using value_t = make_recursive_variant<
-    null_t, bool, decimal, small_u32string, // shared_ptr<beng_object>,
-    function_value,
-    std::vector<recursive_variant_>
->::type; // to do: tuples
+
 
 namespace semantic {
 
 struct push_variable { variable_entity const* entity; };
 struct push_value { value_t value; };
 struct set_variable { variable_entity const* entity; };
+struct truncate_values {
+    uint32_t count : 31;
+    uint32_t keep_back : 1;
+
+    truncate_values(size_t cnt, bool keepb) : count {static_cast<uint32_t>(cnt)}, keep_back{ keepb } {}
+};
+
 struct return_statement {};
 
 struct invoke_function
@@ -123,9 +243,16 @@ struct invoke_function
     }
 };
 
+enum class condition_type : uint8_t
+{
+    logic,
+    optionality
+};
+
 template <typename SemanticExpressionT>
 struct conditional
 {
+    condition_type type;
     std::vector<SemanticExpressionT> true_branch;
     std::vector<SemanticExpressionT> false_branch;
 };
@@ -135,7 +262,7 @@ struct conditional
 // make_recursive_variant<
 using semantic_expression_type = make_recursive_variant<
     empty_t, // no op
-    semantic::push_variable, semantic::push_value,
+    semantic::push_variable, semantic::push_value, semantic::truncate_values,
     semantic::set_variable, semantic::invoke_function, semantic::return_statement,
     std::vector<recursive_variant_>,
     semantic::conditional<recursive_variant_>
@@ -163,5 +290,22 @@ public:
     bool is_inline = false;
 };
 */
+
+}
+
+
+///#include "entities/type_entity.hpp"
+
+namespace sonia::lang::beng {
+
+inline qname_view beng_object_t::name() const
+{
+    return value->name();
+}
+
+inline auto beng_object_t::operator<=>(beng_object_t const& rhs) const
+{
+    return value->name() <=> rhs.value->name();
+};
 
 }

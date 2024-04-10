@@ -141,7 +141,7 @@ void blob_result_unpin(blob_result * b)
         if (optst) {
             if (b->type == blob_type::object) {
                 reinterpret_cast<sonia::invokation::object*>((*optst).get())->~object();
-            } else if (b->type == blob_type::tuple || b->type == blob_type::reference) {
+            } else if (b->type == blob_type::tuple || b->type == blob_type::blob_reference) {
                 blob_result* pblob = mutable_data_of<blob_result>(*b), * epblob = pblob + array_size_of<blob_result>(*b);
                 for (; pblob != epblob; blob_result_unpin(pblob++));
             }

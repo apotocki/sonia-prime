@@ -6,24 +6,22 @@
 
 //#include "sonia/utility/scope_exit.hpp"
 
-#include "sonia/beng/semantic.hpp"
+#include "../semantic.hpp"
 //#include "expression_visitor.hpp"
 //#include "expression_vector_visitor.hpp"
 #include "fn_compiler_context.hpp"
-
-#include "sonia/beng/entities/type_entity.hpp"
 
 #include "sonia/beng/errors.hpp"
 
 namespace sonia::lang::beng {
 
-struct expression_cast_to_object_visitor : static_visitor<std::expected<beng_type, error_storage>>
+struct expression_cast_to_array_visitor : static_visitor<std::expected<beng_type, error_storage>>
 {
     fn_compiler_context& ctx;
-    beng_object_t const& target;
+    beng_array_t const& target;
     expression_locator_t const& el_;
 
-    expression_cast_to_object_visitor(fn_compiler_context& c, beng_object_t const& t, expression_locator_t const& el)
+    expression_cast_to_array_visitor(fn_compiler_context& c, beng_array_t const& t, expression_locator_t const& el)
         : ctx{ c }
         , target{ t }
         , el_{ el }
@@ -88,22 +86,27 @@ struct expression_cast_to_object_visitor : static_visitor<std::expected<beng_typ
     }
     */
 
-    inline result_type operator()(beng_object_t const& v) const
+    inline result_type operator()(beng_array_t const& v) const
     {
-        if (v == target) return target;
-        if (auto const* pte = dynamic_cast<type_entity const*>(v.value); pte) {
-            if (pte->try_cast(ctx, target)) {
-                return target;
-            }
-        }
+        if (target.type == v.type) return target;
         auto [loc, optexpr] = el_();
         return std::unexpected(cast_error{ loc, target, v, std::move(optexpr) });
     }
 
-    inline result_type operator()(beng_bool_t const& b) const
+    inline result_type operator()(beng_tuple_t const& v) const
     {
+        if (v.named_fields.empty() && v.fields.size() == target.size) {
+            bool compatible = true;
+            for (auto t : v.fields) {
+                if (t != target.type) {
+                    compatible = false;
+                    break;
+                }
+            }
+            if (compatible) return target;
+        }
         auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, target, b, std::move(optexpr) });
+        return std::unexpected(cast_error{ loc, target, v, std::move(optexpr) });
     }
 
     template <typename T>

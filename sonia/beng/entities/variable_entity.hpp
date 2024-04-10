@@ -9,7 +9,7 @@
 
 #include "sonia/shared_ptr.hpp"
 
-#include "../semantic.hpp"
+#include "sonia/beng/semantic.hpp"
 
 #include <ranges>
 

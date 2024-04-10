@@ -25,6 +25,11 @@ public:
         bvm().push_on_stack_and_push(smart_blob{});
     }
 
+    void operator()(bool bval) const
+    {
+        bvm().push_on_stack_and_push(smart_blob{ bool_blob_result(bval) });
+    }
+
     void operator()(small_u32string const& sval) const
     {
         namespace cvt = boost::conversion;

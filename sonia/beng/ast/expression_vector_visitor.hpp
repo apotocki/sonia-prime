@@ -14,31 +14,31 @@
 
 namespace sonia::lang::beng {
 
-struct expression_vector_visitor : static_visitor<optional<beng_type>>
+struct expression_vector_visitor_obs : static_visitor<optional<beng_type>>
 {
     fn_compiler_context& ctx;
-    expression_vector_t const& vec;
-    std::vector<semantic_expression_type>& result;
+    expression_vector_t & vec;
+    lex::resource_location const& loc_;
 
-    expression_vector_visitor(fn_compiler_context& c, expression_vector_t const& v, std::vector<semantic_expression_type>& r)
+    expression_vector_visitor_obs(fn_compiler_context& c, expression_vector_t & v, lex::resource_location const& loc)
         : ctx{ c }
-        , vec { v }
-        , result{ r }
+        , vec{ v }
+        , loc_{ loc }
     {}
 
     result_type operator()(beng_vector_t const& v) const
     {
-        size_t stored_pos = result.size();
-        EXCEPTIONAL_SCOPE_EXIT([this, stored_pos](){ result.resize(stored_pos); });
-        expression_visitor elemvis{ ctx, result, &v.type };
-        for (expression_t const& e : vec.elements) {
+        size_t stored_pos = ctx.expressions().size();
+        SCOPE_EXCEPTIONAL_EXIT([this, stored_pos](){ ctx.expressions().resize(stored_pos); });
+        expression_visitor elemvis{ ctx, expected_result_t{ v.type, loc_ } };
+        for (expression_t & e : vec.elements) {
             if (!apply_visitor(elemvis, e)) {
-                result.resize(stored_pos);
+                ctx.expressions().resize(stored_pos);
                 return nullopt;
             }
         }
-        result.emplace_back(semantic::push_value{ decimal{ vec.elements.size() } });
-        result.emplace_back(ctx.u().get_builtin_function(unit::builtin_fn::arrayify));
+        ctx.append_expression(semantic::push_value{ decimal{ vec.elements.size() } });
+        ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::arrayify));
         return v;
     }
 
@@ -50,7 +50,7 @@ struct expression_vector_visitor : static_visitor<optional<beng_type>>
 
     result_type operator()(beng_union_t const& v) const
     {
-        for (beng_type const& ut : v.members) {
+        for (beng_type const& ut : v) {
             if (auto optrest = apply_visitor(*this, ut); optrest) {
                 return *optrest;
             }

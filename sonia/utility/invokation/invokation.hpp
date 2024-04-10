@@ -40,8 +40,6 @@ public:
 
 }
 
-extern "C" {
-
 // X XX XXXXX-type
 // | |- subtype
 // |- is array
@@ -97,9 +95,15 @@ enum class blob_type : uint8_t {
     blob = AUX0_BTVAL(0, 3),
     tuple = AUX0_BTVAL(1, 3),
     function = AUX0_BTVAL(1, 4),
-    reference = AUX0_BTVAL(1, 5),
+    blob_reference = AUX0_BTVAL(1, 5),
     error = AUX0_BTVAL(1, 6)
 };
+
+inline bool is_ref(blob_type val) noexcept
+{
+    return val == blob_type::blob_reference || val == blob_type::object;
+}
+
 
 /*
 struct blob_result {
@@ -161,6 +165,8 @@ static_assert(sizeof(blob_result) == 16);
 
 typedef void(*on_invoke_cv_result_setter)(void*, blob_result*, uint32_t); // cookie, results, result count
 
+extern "C" {
+
 SONIA_PRIME_API void blob_result_allocate(blob_result *, bool no_inplace = false);
 SONIA_PRIME_API void blob_result_pin(blob_result *);
 SONIA_PRIME_API void blob_result_unpin(blob_result *);
@@ -178,6 +184,7 @@ inline auto operator <=> (blob_type l, blob_type r) noexcept
 {
     return ((uint8_t)l) <=> ((uint8_t)r);
 }
+
 
 inline bool is_basic_integral(blob_type val) noexcept
 {
@@ -361,7 +368,7 @@ inline blob_result nil_blob_result()
     return make_blob_result(blob_type::nil);
 }
 
-inline blob_result function_blob_result(std::string_view value)
+inline blob_result function_blob_result(sonia::string_view value)
 {
     blob_result result = make_blob_result(blob_type::function, value.data());
     result.bp.size = static_cast<uint32_t>(value.size());
@@ -388,6 +395,12 @@ template <typename T>
 inline blob_result object_blob_result(sonia::shared_ptr<T> object)
 {
     return object_blob_result<sonia::invokation::wrapper_object<sonia::shared_ptr<T>>>(std::move(object));
+}
+
+template <typename T>
+inline blob_result object_blob_result(sonia::weak_ptr<T> object)
+{
+    return object_blob_result<sonia::invokation::wrapper_object<sonia::weak_ptr<T>>>(std::move(object));
 }
 
 inline blob_result bool_blob_result(bool value)
@@ -555,7 +568,7 @@ inline blob_result array_blob_result(T(&arr)[N])
 [[nodiscard]]
 inline blob_result reference_blob_result(blob_result const& br)
 {
-    blob_result res = make_blob_result(blob_type::reference, &br, static_cast<uint32_t>(sizeof(blob_result)));
+    blob_result res = make_blob_result(blob_type::blob_reference, &br, static_cast<uint32_t>(sizeof(blob_result)));
     blob_result_allocate(&res, true);
     return res;
 }
@@ -642,7 +655,7 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
     switch (b.type) {
     case blob_type::nil:
         return ftor(std::type_identity<std::nullptr_t>{}, b);
-    case blob_type::reference:
+    case blob_type::blob_reference:
         return ftor(std::type_identity<blob_result>{}, b);
     case blob_type::tuple:
         return ftor(std::type_identity<blob_result>{}, b);
@@ -700,7 +713,7 @@ inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Tra
         return os << "nil"sv;
     } else if (b.type == blob_type::object) {
         return os << "object"sv;
-    } else if (b.type == blob_type::reference) {
+    } else if (b.type == blob_type::blob_reference) {
         return os << '&' << *data_of<blob_result>(b);
     }
     if (is_array(b) && !contains_string(b)) {
@@ -778,7 +791,7 @@ inline std::basic_ostream<Elem, Traits>& print_type(std::basic_ostream<Elem, Tra
         return os << "error"sv;
     } else if (b.type == blob_type::object) {
         return os << "object"sv;
-    } else if (b.type == blob_type::reference) {
+    } else if (b.type == blob_type::blob_reference) {
         return print_type(os << '&', *data_of<blob_result>(b));
     }
     if (is_array(b)) {
@@ -1133,7 +1146,7 @@ private:
 template <typename T>
 inline auto as(blob_result const& val) -> decltype(from_blob<T>{}(std::declval<blob_result>()))
 {
-    if (val.type == blob_type::reference) {
+    if (val.type == blob_type::blob_reference) {
         return as<T>(*data_of<blob_result>(val));
     }
     return from_blob<T>{}(val);
@@ -1255,15 +1268,39 @@ public:
 
     smart_blob& operator= (smart_blob const& rhs)
     {
-        smart_blob tmp{ rhs };
-        swap(tmp);
+        if (is_ref(type) && this != &rhs) {
+            blob_result * actual_value = mutable_data_of<blob_result>(*this);
+            blob_result_unpin(actual_value);
+            if (is_ref(rhs->type)) {
+                *actual_value = *rhs.data_of<blob_result>();
+            } else {
+                *actual_value = *rhs;
+            }
+            blob_result_pin(actual_value);
+        } else {
+            smart_blob tmp{ rhs };
+            swap(tmp);
+        }
         return *this;
     }
 
     smart_blob& operator= (smart_blob && rhs)
     {
-        smart_blob tmp{ std::move(rhs) };
-        swap(tmp);
+        if (is_ref(type) && this != &rhs) {
+            blob_result* actual_value = mutable_data_of<blob_result>(*this);
+            blob_result_unpin(actual_value);
+            if (is_ref(rhs->type)) {
+                *actual_value = *rhs.data_of<blob_result>();
+                blob_result_pin(actual_value);
+                blob_result_unpin(&rhs.get());
+            } else {
+                *actual_value = *rhs;
+            }
+            reset(*rhs);
+        } else {
+            smart_blob tmp{ std::move(rhs) };
+            swap(tmp);
+        }
         return *this;
     }
 
@@ -1292,7 +1329,9 @@ public:
         return lhs == *rhs;
     }
 
+    blob_result & operator*() { return *this; }
     blob_result const& operator*() const { return *this; }
+    blob_result & get() { return *this; }
     blob_result const& get() const { return *this; }
     blob_result * operator->() { return this; }
     blob_result const* operator->() const { return this; }

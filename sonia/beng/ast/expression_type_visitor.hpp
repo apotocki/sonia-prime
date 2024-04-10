@@ -73,7 +73,7 @@ struct expression_type_visitor : static_visitor<optional<beng_type>>
     {
         if (beng_type{ v } == expected_tp) return expected_tp;
         if (auto const* pte = dynamic_cast<type_entity const*>(v.value); pte) {
-            if (pte->try_cast(ctx, result, expected_tp)) {
+            if (pte->try_cast(ctx, expected_tp)) {
                 return expected_tp;
             }
         }

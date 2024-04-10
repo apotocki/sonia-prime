@@ -4,28 +4,31 @@
 
 #pragma once
 
+#include <sstream>
+
+#include "sonia/optional.hpp"
 //#include "sonia/utility/scope_exit.hpp"
 
 #include "sonia/beng/semantic.hpp"
 //#include "expression_visitor.hpp"
 //#include "expression_vector_visitor.hpp"
-#include "fn_compiler_context.hpp"
+#include "sonia/beng/ast/fn_compiler_context.hpp"
 
-#include "sonia/beng/entities/type_entity.hpp"
+//#include "../entities/type_entity.hpp"
 
 #include "sonia/beng/errors.hpp"
 
 namespace sonia::lang::beng {
 
-struct expression_cast_to_object_visitor : static_visitor<std::expected<beng_type, error_storage>>
+struct expression_cast_to_enum_visitor : static_visitor<std::expected<beng_type, error_storage>>
 {
     fn_compiler_context& ctx;
-    beng_object_t const& target;
+    case_expression const& ce;
     expression_locator_t const& el_;
 
-    expression_cast_to_object_visitor(fn_compiler_context& c, beng_object_t const& t, expression_locator_t const& el)
+    expression_cast_to_enum_visitor(fn_compiler_context& c, case_expression const& e, expression_locator_t const& el)
         : ctx{ c }
-        , target{ t }
+        , ce { e }
         , el_{ el }
     {}
 
@@ -88,28 +91,57 @@ struct expression_cast_to_object_visitor : static_visitor<std::expected<beng_typ
     }
     */
 
-    inline result_type operator()(beng_object_t const& v) const
+    //inline result_type operator()(beng_particular_bool_t const&) const
+    //{
+    //    return std::unexpected(cast_error{ loc, e, beng_particular_bool_t{}, ce });
+    //}
+
+    inline result_type operator()(beng_object_t const& obj) const
     {
-        if (v == target) return target;
-        if (auto const* pte = dynamic_cast<type_entity const*>(v.value); pte) {
-            if (pte->try_cast(ctx, target)) {
-                return target;
-            }
+        shared_ptr<entity> e = ctx.resolve_entity(obj.name());
+        if (!e) [[unlikely]] {
+            return std::unexpected(basic_general_error{ce.name.location, "unresolved context object"sv, obj.name()});
         }
-        auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, target, v, std::move(optexpr) });
+        shared_ptr<enum_entity> enum_ent = dynamic_pointer_cast<enum_entity>(e);
+        if (!enum_ent) [[unlikely]] {
+            return std::unexpected(basic_general_error{ce.name.location, "is not a enumeration"sv, obj.name()});
+        }
+        auto const* enumcase = enum_ent->find(ce.name.value);
+        if (!enumcase) [[unlikely]] {
+            return std::unexpected(unknown_case_error{ce, obj.name()});
+        }
+        ctx.append_expression(semantic::push_value{ enumcase->value });
+        return obj;
     }
 
-    inline result_type operator()(beng_bool_t const& b) const
+    //inline result_type operator()(beng_vector_t const& v) const
+    //{
+    //    THROW_NOT_IMPLEMENTED_ERROR();
+    //    //if (target.type == v.type) return target;
+    //    //return nullopt;
+    //}
+
+    inline result_type operator()(beng_union_t const& v) const
     {
-        auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, target, b, std::move(optexpr) });
+        alt_error err;
+        for (beng_type const& t : v) {
+            auto opt = apply_visitor(*this, t);
+            if (opt.has_value()) { return opt; }
+            err.alternatives.emplace_back(std::move(opt.error()));
+        }
+        return std::unexpected(std::move(err));
     }
 
     template <typename T>
-    result_type operator()(T const& v) const
+    inline result_type operator()(T const&) const
     {
-        THROW_NOT_IMPLEMENTED_ERROR();
+        // THROW_NOT_IMPLEMENTED_ERROR();
+        auto [loc, e] = el_();
+        if (e) {
+            return std::unexpected(basic_general_error{ loc, "is not a enumeration"sv, *e });
+        } else {
+            return std::unexpected(basic_general_error{ loc, "is not a enumeration"sv });
+        }
     }
 };
 

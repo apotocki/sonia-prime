@@ -40,11 +40,13 @@ public:
     enum class op : uint8_t {
         noop = 0,
         jmp = 1, jt = 2, jf = 3,
-        call = 4, callp = 5,
-        ecall = 6,
+        jmpp = 4, jmpn = 5,
+        jtp = 6, jtn = 7,
+        jfp = 8, jfn = 9,
+        call = 10, callp = 11, ecall = 12,
         //ecall1 = 7, // call(fn_index), call(param index, fn_index)
         //fpecall1 = 8, fnecall1 = 9, //call(param +-offset, fn_index)
-        ret = 10,
+        ret = 13,
 
         // data move
         push = 16, // push on stack stack[uint]
@@ -53,7 +55,7 @@ public:
         set = 22, // set stack[uint] = stack_top_value
         fpset = 23, fnset = 24, // set stack[fp +- uint] = stack_top_value
         pop, popn, // pop COUNT:uint, pop0 === pop 1
-
+        collapse, // pop COUNT before the back
         // frame data pointer
         pushfp, popfp, truncatefpp, truncatefpn
     };
@@ -105,16 +107,18 @@ protected:
         return stack_.back();
     }
 
-    void append_generic_jump(op baseop, size_t address)
-    {
-        intptr_t dist = static_cast<intptr_t>(address) - static_cast<intptr_t>(code_.size());
-        append_generic_int(baseop, dist);
-    }
-
 public:
     virtual_stack_machine() = default;
 
     size_t get_ip() const { return code_.size(); }
+
+    void swap_code_blocks(size_t first_begin, size_t first_end)
+    {
+        std::vector<uint8_t> tmp;
+        tmp.insert(tmp.end(), code_.begin() + first_end, code_.end());
+        code_.resize(first_end);
+        code_.insert(code_.begin() + first_begin, tmp.begin(), tmp.end());
+    }
 
     stack_type& stack() { return stack_; }
 
@@ -147,14 +151,49 @@ public:
         append_uint(address);
     }
 
-    void append_jz(size_t address)
+    void append_jmpx(intptr_t offset)
     {
-        append_generic_jump(op::jz1, address);
+        if (offset >= 0) {
+            code_.push_back(static_cast<uint8_t>(op::jmpp));
+            append_uint(static_cast<size_t>(offset));
+        } else {
+            code_.push_back(static_cast<uint8_t>(op::jmpn));
+            append_uint(static_cast<size_t>(-offset));
+        }
     }
 
-    void append_jnz(size_t address)
+    void append_jt(size_t address)
     {
-        append_generic_jump(op::jnz1, address);
+        code_.push_back(static_cast<uint8_t>(op::jt));
+        append_uint(address);
+    }
+
+    void append_jtx(intptr_t offset)
+    {
+        if (offset >= 0) {
+            code_.push_back(static_cast<uint8_t>(op::jtp));
+            append_uint(static_cast<size_t>(offset));
+        } else {
+            code_.push_back(static_cast<uint8_t>(op::jtn));
+            append_uint(static_cast<size_t>(-offset));
+        }
+    }
+
+    void append_jf(size_t address)
+    {
+        code_.push_back(static_cast<uint8_t>(op::jf));
+        append_uint(address);
+    }
+
+    void append_jfx(intptr_t offset)
+    {
+        if (offset >= 0) {
+            code_.push_back(static_cast<uint8_t>(op::jfp));
+            append_uint(static_cast<size_t>(offset));
+        } else {
+            code_.push_back(static_cast<uint8_t>(op::jfn));
+            append_uint(static_cast<size_t>(-offset));
+        }
     }
 
     void append_call(size_t address)
@@ -259,12 +298,22 @@ public:
 
     void append_pop(size_t num)
     {
-        if (!num) {
+        if (!num) [[unlikely]] {
             code_.push_back(static_cast<uint8_t>(op::noop));
         } else if (num == 1) {
             code_.push_back(static_cast<uint8_t>(op::pop));
         } else {
             code_.push_back(static_cast<uint8_t>(op::popn));
+            append_uint(num);
+        }
+    }
+
+    void append_collapse(size_t num)
+    {
+        if (!num) [[unlikely]] {
+            code_.push_back(static_cast<uint8_t>(op::noop));
+        } else {
+            code_.push_back(static_cast<uint8_t>(op::collapse));
             append_uint(num);
         }
     }
@@ -416,15 +465,51 @@ struct printer
         return next_address;
     }
 
+    inline size_t operator()(identity_type<op::jmpp>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
+    {
+        generic_print(address, "jmpp"sv) << " 0x"sv << std::hex << (next_address + jmp_offset) << "\n";
+        return next_address;
+    }
+
+    inline size_t operator()(identity_type<op::jmpn>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
+    {
+        generic_print(address, "jmpn"sv) << " 0x"sv << std::hex << (next_address - jmp_offset) << "\n";
+        return next_address;
+    }
+
     inline size_t operator()(identity_type<op::jt>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
     {
         generic_print(address, "jt"sv) << " ("sv << std::boolalpha << ctx.is_true(ctx.stack_back()) << ") 0x"sv << std::hex << jmp_address << "\n";
         return next_address;
     }
 
+    inline size_t operator()(identity_type<op::jtp>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
+    {
+        generic_print(address, "jtp"sv) << " 0x"sv << std::hex << (next_address + jmp_offset) << "\n";
+        return next_address;
+    }
+
+    inline size_t operator()(identity_type<op::jtn>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
+    {
+        generic_print(address, "jtn"sv) << " 0x"sv << std::hex << (next_address - jmp_offset) << "\n";
+        return next_address;
+    }
+
     inline size_t operator()(identity_type<op::jf>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
     {
         generic_print(address, "jf"sv) << " ("sv << std::boolalpha << ctx.is_true(ctx.stack_back()) << ") 0x"sv << std::hex << jmp_address << "\n";
+        return next_address;
+    }
+
+    inline size_t operator()(identity_type<op::jfp>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
+    {
+        generic_print(address, "jfp"sv) << " 0x"sv << std::hex << (next_address + jmp_offset) << "\n";
+        return next_address;
+    }
+
+    inline size_t operator()(identity_type<op::jfn>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
+    {
+        generic_print(address, "jfn"sv) << " 0x"sv << std::hex << (next_address - jmp_offset) << "\n";
         return next_address;
     }
 
@@ -437,6 +522,22 @@ struct printer
     {
         generic_print(address, "popn"sv) << ' ' << n << " ("sv;
         auto sp = ctx.stack_span(0, n);
+        if (!sp.empty()) {
+            ss << sp.front();
+            sp = sp.subspan(1);
+        }
+        while (!sp.empty()) {
+            ss << ", "sv;
+            ss << sp.front();
+            sp = sp.subspan(1);
+        }
+        ss << ")\n"sv;
+    }
+
+    inline void operator()(identity_type<op::collapse>, ContextT& ctx, size_t address, size_t n) const
+    {
+        generic_print(address, "collapse"sv) << ' ' << n << " ("sv;
+        auto sp = ctx.stack_span(1, n);
         if (!sp.empty()) {
             ss << sp.front();
             sp = sp.subspan(1);
@@ -535,15 +636,37 @@ struct runner
     inline void operator()(identity_type<op::noop>, ContextT &, size_t) const {}
 
     inline size_t operator()(identity_type<op::jmp>, ContextT&, size_t address, size_t jmp_address, size_t) const { return jmp_address; }
-    
+    inline size_t operator()(identity_type<op::jmpp>, ContextT&, size_t address, size_t jmp_offset, size_t next) const { return next + jmp_offset; }
+    inline size_t operator()(identity_type<op::jmpn>, ContextT&, size_t address, size_t jmp_offset, size_t next) const { return next - jmp_offset; }
+
     inline size_t operator()(identity_type<op::jt>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
     {
         return ctx.is_true(ctx.stack_back()) ? jmp_address : next_address;
     }
 
+    inline size_t operator()(identity_type<op::jtp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
+    {
+        return ctx.is_true(ctx.stack_back()) ? (next_address + jmp_offset) : next_address;
+    }
+
+    inline size_t operator()(identity_type<op::jtn>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
+    {
+        return ctx.is_true(ctx.stack_back()) ? (next_address - jmp_offset) : next_address;
+    }
+
     inline size_t operator()(identity_type<op::jf>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
     {
         return ctx.is_true(ctx.stack_back()) ? next_address : jmp_address;
+    }
+
+    inline size_t operator()(identity_type<op::jfp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
+    {
+        return ctx.is_true(ctx.stack_back()) ? next_address : (next_address + jmp_offset);
+    }
+
+    inline size_t operator()(identity_type<op::jfn>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
+    {
+        return ctx.is_true(ctx.stack_back()) ? next_address : (next_address - jmp_offset);
     }
 
     inline optional<size_t> operator()(identity_type<op::ret>, ContextT& ctx, size_t) const
@@ -569,6 +692,8 @@ struct runner
 
     inline void operator()(identity_type<op::popn>, ContextT& ctx, size_t address, size_t n) const { ctx.stack_pop(n); }
     
+    inline void operator()(identity_type<op::collapse>, ContextT& ctx, size_t address, size_t n) const { ctx.stack_collapse(n); }
+
     inline void operator()(identity_type<op::push>, ContextT& ctx, size_t address, size_t index) const
     {
         var_t val = ctx.stack_at(index);
@@ -691,6 +816,48 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
                 address = ftor(identity<op::jf>, ctx, start_address, jump_address, address);
                 continue;
             }
+        case op::jmpp:
+            {
+                size_t start_address = address++;
+                size_t jump_offset = read_uint(address);
+                address = ftor(identity<op::jmpp>, ctx, start_address, jump_offset, address);
+                continue;
+            }
+        case op::jmpn:
+            {
+                size_t start_address = address++;
+                size_t jump_offset = read_uint(address);
+                address = ftor(identity<op::jmpn>, ctx, start_address, jump_offset, address);
+                continue;
+            }
+        case op::jtp:
+            {
+                size_t start_address = address++;
+                size_t jump_offset = read_uint(address);
+                address = ftor(identity<op::jtp>, ctx, start_address, jump_offset, address);
+                continue;
+            }
+        case op::jtn:
+            {
+                size_t start_address = address++;
+                size_t jump_offset = read_uint(address);
+                address = ftor(identity<op::jtn>, ctx, start_address, jump_offset, address);
+                continue;
+            }
+        case op::jfp:
+            {
+                size_t start_address = address++;
+                size_t jump_offset = read_uint(address);
+                address = ftor(identity<op::jfp>, ctx, start_address, jump_offset, address);
+                continue;
+            }
+        case op::jfn:
+            {
+                size_t start_address = address++;
+                size_t jump_offset = read_uint(address);
+                address = ftor(identity<op::jfn>, ctx, start_address, jump_offset, address);
+                continue;
+            }
         case op::call:
             {
                 size_t start_address = address++;
@@ -750,7 +917,13 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
                 ftor(identity<op::popn>, ctx, start_address, num);
                 continue;
             }
-        
+        case op::collapse:
+            {
+                size_t start_address = address++;
+                size_t num = read_uint(address);
+                ftor(identity<op::collapse>, ctx, start_address, num);
+                continue;
+            }
         case op::push:
             {
                 size_t start_address = address++;

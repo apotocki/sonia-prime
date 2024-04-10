@@ -18,6 +18,7 @@ struct type_mangler_visitor : static_visitor<qname>
     explicit type_mangler_visitor(unit & u) : u_{ u } {}
 
     inline result_type operator()(beng_bool_t) const { return qname{ u_.slregistry().resolve("bool"sv) }; }
+    inline result_type operator()(beng_particular_bool_t) const { THROW_INTERNAL_ERROR("particular_bool can not be a part of a mangled name"); }
     inline result_type operator()(beng_int_t) const { return qname{ u_.slregistry().resolve("int"sv)}; }
     inline result_type operator()(beng_float_t) const { return qname{ u_.slregistry().resolve("float"sv) }; }
     inline result_type operator()(beng_decimal_t) const { return qname{ u_.slregistry().resolve("decimal"sv) }; }
@@ -92,7 +93,7 @@ void function_signature::setup(fn_compiler_context& ctx, parameter_woa_list_t & 
 void function_signature::normilize(fn_compiler_context& ctx)
 {
     std::sort(named_parameters().begin(), named_parameters().end(), [](auto const& l, auto const& r) {
-        return std::get<0>(l).id < std::get<0>(r).id;
+        return std::get<0>(l) < std::get<0>(r);
     });
     //GLOBAL_LOG_INFO() << "---------->";
     //for (auto k = named_parameters.begin(); k != named_parameters.end(); ++k) {
@@ -101,30 +102,28 @@ void function_signature::normilize(fn_compiler_context& ctx)
     //GLOBAL_LOG_INFO() << "<----------";
     for (auto it = named_parameters().begin(), eit = named_parameters().end();;) {
         auto fit = std::adjacent_find(it, eit, [](auto const& l, auto const& r) {
-            return std::get<0>(l).id == std::get<0>(r).id;
+            return std::get<0>(l) == std::get<0>(r);
         });
         if (fit == eit) break;
         auto dupit = fit; ++dupit;
         if (std::get<1>(*fit) != std::get<1>(*dupit)) [[unlikely]] {
             auto const& loc = std::get<0>(*dupit).location;
             auto const& origloc = std::get<0>(*fit).location;
-            throw exception("%1%(%2%,%3%): `%4%`: parameter redefinition, see declaration at %5%(%6%,%7%)"_fmt %
-                loc.resource % loc.line % loc.column %
-                ctx.u().print(std::get<0>(*fit).id) %
-                origloc.resource % origloc.line % origloc.column);
+            // "parameter redefinition"sv
+            throw exception(ctx.u().print(identifier_redefinition_error{ loc, origloc, std::get<0>(*fit).value }));
         } // else skip identical
         it = dupit;
     }
     
     // now remove identical oarameters
     auto it = std::unique(named_parameters().begin(), named_parameters().end(), [](auto const& l, auto const& r) {
-        return std::get<0>(l).id == std::get<0>(r).id;
+        return std::get<0>(l) == std::get<0>(r);
     });
     named_parameters().erase(it, named_parameters().end());
     
     // recover sort order
     std::sort(named_parameters().begin(), named_parameters().end(), [](auto const& l, auto const& r) {
-        return std::get<0>(l).id < std::get<0>(r).id;
+        return std::get<0>(l) < std::get<0>(r);
     });
 }
 
@@ -138,10 +137,32 @@ void function_signature::build_mangled_id(unit& u)
         ps.emplace_back(apply_visitor(vis, postp));
     }
     for (auto const& [aname, tp] : named_parameters()) {
-        ps.emplace_back(qname{ aname.id });
+        ps.emplace_back(qname{ aname.value });
         ps.emplace_back(apply_visitor(vis, tp));
     }
     mangled_id = u.piregistry().resolve(ps);
+}
+
+beng_type make_union_type(beng_type arg0, beng_type const* parg1)
+{
+    if (!parg1) return arg0;
+    beng_union_t result;
+    if (beng_union_t const* pu1 = get<beng_union_t>(parg1); pu1) {
+        result = *pu1;
+    } else {
+        result.append(*parg1);
+    }
+    if (beng_union_t* pu0 = get<beng_union_t>(&arg0); pu0) {
+        for (auto const& m : *pu0) { result.append(m); }
+    } else {
+        result.append(std::move(arg0));
+    }
+
+    if (result.size() == 1) {
+        return *result.begin();
+    } else {
+        return result;
+    }
 }
 
 }

@@ -129,6 +129,9 @@ FLOAT					"float"
 STRING_WORD				"string"
 DECIMAL_WORD			"decimal"
 
+TRUE					"true"
+FALSE					"false"
+
 END_STATEMENT			";"
 COMMA					","
 OPEN_BRACE				"{"
@@ -142,9 +145,13 @@ ASSIGN                  "="
 POINT                   "."
 UNDERSCORE              "_"
 BITOR                   "|"
+EXCLPT                  "!"
+QMARK                   "?"
 DBLCOLON                "::"
 LOGIC_OR                "||"
+LOGIC_AND               "&&"
 ARROW					"->"
+CONCAT					".."
 
 /*
 NEW						"new"
@@ -184,7 +191,7 @@ GE                      ">="
 EQ                      "=="
 NE                      "!="
 
-AND                     "&&"
+
 ADDASSIGN               "+="
 SUBASSIGN               "-="
 MULASSIGN               "*="
@@ -204,7 +211,7 @@ SLASH                   "/"
 PERCENT                 "%"
 AMPERSAND               "&"
 
-EXCLPT                  "!"
+
 TILDA                   "~"
 EXCL                    "^"
 OPEN_BROKET             "<"
@@ -213,8 +220,9 @@ CLOSE_BROKET            ">"
 
 
 DOLLAR                  "$"
-QMARK                   "?"
+
 HASHTAG					"#"
+
 */
 
 %x COMMENT LINE_COMMENT STR USER_LITERAL
@@ -224,34 +232,39 @@ HASHTAG					"#"
 <INITIAL>{WS} /* ignore whitespaces */
 
 <INITIAL,COMMENT>"/*" {
+	//GLOBAL_LOG_INFO() << "COMMENT at: line: " << yylloc->begin.line << ", col: " << yylloc->begin.column;
 	yy_push_state(COMMENT, yyscanner);
 	yyextra->loc_stack.emplace_back(yylloc->begin.line, yylloc->begin.column);
 }
 <COMMENT>{
-	[^*]+|("*"[^/])|{UEASC}
+	[^*/]+|("/"[^*/])|("*"[^/])|{UEASC}
 	"*/" {
+		//GLOBAL_LOG_INFO() << "COMMENT CLOSED at: line: " << yylloc->begin.line << ", col: " << yylloc->begin.column;
 		yy_pop_state(yyscanner);
 		yyextra->loc_stack.pop_back();
 	}
 }
-
-<INITIAL>"//" { yy_push_state(LINE_COMMENT, yyscanner); }
+<INITIAL,COMMENT>"//" { yy_push_state(LINE_COMMENT, yyscanner); }
 <LINE_COMMENT>[^\xd]*\xd\xa? { yy_pop_state(yyscanner); }
 
-<INITIAL>\" { yyextra->str_buff_begin = yytext + 1; yy_push_state(STR, yyscanner); }
+<INITIAL>\" { 
+	yyextra->str_buff_begin = yytext + 1;
+	yyextra->loc_stack.emplace_back(location);
+	yy_push_state(STR, yyscanner);
+}
 <STR>{
 	(([\x20-\x7e\xa\xd]{-}[\"\\])|{UEASC})+
 	\\({DIGIT}+|[abfnrtv\\\'\"])
 	\\[xX][0-9a-fA-F]+
 	\" {
-		variant_emplace(string_view{yyextra->str_buff_begin, yytext});
+		variant_emplace(annotated_string_view{string_view{yyextra->str_buff_begin, yytext}, yyextra->loc_stack.back()});
 		yy_pop_state(yyscanner);
 		return (beng_lang::parser::token::STRING);
 	}
 }
 
 <INITIAL>{
-	{FN} { return (beng_lang::parser::token::FN); }
+	{FN} { variant_emplace(location); return (beng_lang::parser::token::FN); }
 	{LET} { return (beng_lang::parser::token::LET); }
 	{VAR} { return (beng_lang::parser::token::VAR); }
 	{ENUM} { return (beng_lang::parser::token::ENUM); }
@@ -266,22 +279,29 @@ HASHTAG					"#"
 	{STRING_WORD} { return (beng_lang::parser::token::STRING_WORD); }
 	{DECIMAL_WORD} { return (beng_lang::parser::token::DECIMAL_WORD); }
 
+	{TRUE} { variant_emplace(location); return (beng_lang::parser::token::TRUE); }
+	{FALSE} { variant_emplace(location); return (beng_lang::parser::token::FALSE); }
+
 	{OPEN_BRACE}			{ return (beng_lang::parser::token::OPEN_BRACE); }
 	{CLOSE_BRACE}			{ return (beng_lang::parser::token::CLOSE_BRACE); }
-	{OPEN_PARENTHESIS}		{ return (beng_lang::parser::token::OPEN_PARENTHESIS); }
+	{OPEN_PARENTHESIS}		{ variant_emplace(location); return (beng_lang::parser::token::OPEN_PARENTHESIS); }
 	{CLOSE_PARENTHESIS}		{ return (beng_lang::parser::token::CLOSE_PARENTHESIS);	}
 	{END_STATEMENT}			{ return (beng_lang::parser::token::END_STATEMENT); }
 	{COMMA}					{ return (beng_lang::parser::token::COMMA);	}
 	{COLON}                 { return (beng_lang::parser::token::COLON); }
-	{OPEN_SQUARE_BRACKET}	{ return (beng_lang::parser::token::OPEN_SQUARE_BRACKET); }
+	{OPEN_SQUARE_BRACKET}	{ variant_emplace(location); return (beng_lang::parser::token::OPEN_SQUARE_BRACKET); }
 	{CLOSE_SQUARE_BRACKET}	{ return (beng_lang::parser::token::CLOSE_SQUARE_BRACKET); }
-	{ASSIGN}                { return (beng_lang::parser::token::ASSIGN); }
-	{POINT}					{ return (beng_lang::parser::token::POINT);	}
+	{ASSIGN}                { variant_emplace(location); return (beng_lang::parser::token::ASSIGN); }
+	{POINT}					{ variant_emplace(location); return (beng_lang::parser::token::POINT);	}
 	{UNDERSCORE}			{ return (beng_lang::parser::token::UNDERSCORE); }
 	{BITOR}				    { return (beng_lang::parser::token::BITOR);	}
+	{EXCLPT}                { variant_emplace(location); return (beng_lang::parser::token::EXCLPT); }
+	{QMARK}                 { return (beng_lang::parser::token::QMARK); }
 	{DBLCOLON}              { return (beng_lang::parser::token::DBLCOLON); }
-	{LOGIC_OR}              { return (beng_lang::parser::token::LOGIC_OR); }
+	{LOGIC_OR}              { variant_emplace(location); return (beng_lang::parser::token::LOGIC_OR); }
+    {LOGIC_AND}             { variant_emplace(location); return (beng_lang::parser::token::LOGIC_AND); }
 	{ARROW}                 { return (beng_lang::parser::token::ARROW); }
+	{CONCAT}                { variant_emplace(location); return (beng_lang::parser::token::CONCAT); }
 
 	{IDENTIFIER} {
 		variant_emplace(annotated_string_view{text_view, location});
@@ -292,11 +312,11 @@ HASHTAG					"#"
 		return (beng_lang::parser::token::ARGIDENTIFIER);
 	}
 	{INTEGER} {
-		variant_emplace(ctx.make_int(text_view));
+		variant_emplace(annotated_decimal{decimal{ctx.make_int(text_view)}, location});
 		return (beng_lang::parser::token::INTEGER);
 	}
 	{DECIMAL} {
-		variant_emplace(ctx.make_numeric(text_view));
+		variant_emplace(annotated_decimal{ctx.make_numeric(text_view), location});
 		return (beng_lang::parser::token::DECIMAL);
 	}
 	/*
@@ -334,7 +354,7 @@ HASHTAG					"#"
 	
 	
 	
-	{QMARK}                 { return (beng_lang::parser::token::QMARK); }
+	
 	{HASHTAG}               { return (beng_lang::parser::token::HASHTAG); }
 	*/
 }
@@ -416,8 +436,7 @@ DECIMAL_LITERAL			{DECIMAL}"_"
 
 	
 
-	// &&
-    {AND}                   { return (beng_lang::parser::token::AND); }
+
 
 	// +=
 	{ADDASSIGN}             { return (beng_lang::parser::token::ADDASSIGN); }
@@ -473,8 +492,7 @@ DECIMAL_LITERAL			{DECIMAL}"_"
 	// ^
 	{EXCL}					{ return (beng_lang::parser::token::EXCL);	}
 
-	// !
-	{EXCLPT}                { return (beng_lang::parser::token::EXCLPT); }
+
 	
 	// ~
 	{TILDA}					{ return (beng_lang::parser::token::TILDA);	}

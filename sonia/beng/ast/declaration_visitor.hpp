@@ -8,6 +8,8 @@
 
 namespace sonia::lang::beng {
 
+class function_entity;
+
 struct declaration_visitor : static_visitor<void>
 {
     fn_compiler_context& ctx;
@@ -16,19 +18,20 @@ struct declaration_visitor : static_visitor<void>
 
     //void operator()(empty_t const&) const {}
 
-    void operator()(exten_var & td) const;
+    void operator()(extern_var & td) const;
 
     void operator()(fn_pure_decl & ed) const;
 
     void operator()(fn_decl_t & ed) const;
 
-    void operator()(let_statement_decl & ld) const;
+    void operator()(let_statement_decl_t & ld) const;
     
-    void operator()(expression_decl & ed) const;
+    void operator()(expression_decl_t & ed) const;
 
-    void operator()(return_decl & rd) const;
+    void operator()(return_decl_t & rd) const;
 
-    function_signature& append_fnsig(fn_pure_decl & fd) const;
+    function_signature& append_fnsig(fn_pure_decl&) const;
+    function_entity& append_fnent(fn_pure_decl&, function_signature& sig, span<infunction_declaration_t>) const;
 };
 
 }

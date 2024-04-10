@@ -120,6 +120,8 @@ public:
     void referify();
     void assign_extern_variable();
     void construct_extern_object();
+    void extern_object_set_property();
+    void extern_object_get_property();
     void construct_function();
 
     void call_function_object();
@@ -164,9 +166,28 @@ public:
         return vm_.stack()[ssz - 1 - i];
     }
 
+    variable_type & stack_back(size_t i = 0)
+    {
+        size_t ssz = stack_size();
+        if (ssz <= i) [[unlikely]] {
+            THROW_INTERNAL_ERROR("wrong stack index");
+        }
+        return vm_.stack()[ssz - 1 - i];
+    }
+
     void stack_pop(size_t n = 1)
     {
         size_t ssz = stack_size();
+        vm_.stack().resize(ssz - n);
+    }
+
+    void stack_collapse(size_t n = 1)
+    {
+        size_t ssz = stack_size();
+        if (ssz <= n) [[unlikely]] {
+            THROW_INTERNAL_ERROR("wrong collapse count");
+        }
+        vm_.stack().at(ssz - n - 1).swap(stack_back());
         vm_.stack().resize(ssz - n);
     }
 
@@ -240,6 +261,7 @@ public:
     enum class builtin_fn
     {
         arrayify = 0, referify, function_constructor, extern_object_constructor,
+        extern_object_set_property, extern_object_get_property,
         assign_extern_variable,
         eof_type
     };
@@ -249,33 +271,8 @@ public:
 
 protected:
 
-    /*
-    void append_extern_assign();
-    void append_object_constructor();
-    void append_arrayify();
-    void append_function_constructor();
-    void append_print_string();
-    */
-
-    //void append_builtin(sonia::lang::beng::builtin_type);
-
-    //optional<size_t> get_ecall(qname const& qn) const;
-
 private:
-    void do_vm_assign_variable();
-
     boost::unordered_map<blob_result, size_t> literals_;
-    
-    //std::vector<size_t> builtins_;
-
-    //boost::unordered_map<qname, >
-    /*
-    size_t do_vm_assign_variable_id_;
-    size_t do_vm_object_constructor_id_;
-    size_t do_vm_arrayify_id_;
-    size_t do_vm_function_constructor_id_;
-    size_t do_vm_print_string_id_;
-    */
 };
 
 }

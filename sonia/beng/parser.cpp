@@ -68,6 +68,11 @@ void parser_context::pop_ns()
     ns_stack_.pop_back();
 }
 
+identifier parser_context::new_identifier()
+{
+    return unit_.new_identifier();
+}
+
 annotated_identifier parser_context::make_identifier(annotated_string_view astr)
 {
     return { unit_.slregistry().resolve(astr.value), astr.location };
@@ -78,9 +83,9 @@ annotated_identifier parser_context::make_identifier(annotated_string_view astr)
 //    return identifier{ env_.iregistry().resolve(str).value, true};
 //}
 
-small_u32string parser_context::make_string(string_view str)
+annotated_u32string parser_context::make_string(annotated_string_view str)
 {
-    return utf8_to_utf32(str);
+    return {utf8_to_utf32(str.value), str.location};
 }
 
 //integer_literal parser_context::make_integer_literal(string_view str)

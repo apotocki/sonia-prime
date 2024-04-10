@@ -43,7 +43,7 @@ struct expression_decimal_visitor : static_visitor<optional<beng_type>>
 
     result_type operator()(beng_union_t const& v) const
     {
-        for (beng_type const& ut : v.members) {
+        for (beng_type const& ut : v) {
             if (auto optrest = apply_visitor(*this, ut); optrest) {
                 return *optrest;
             }

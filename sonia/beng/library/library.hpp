@@ -10,5 +10,7 @@ namespace sonia::lang::beng {
 
 void beng_tostring(vm::context&);
 void beng_print_string(vm::context&);
+void beng_negate(vm::context&);
+void beng_concat_string(vm::context&);
 
 }

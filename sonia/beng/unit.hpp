@@ -18,6 +18,7 @@
 #include "boost/conversion/unicode/utf.hpp"
 #include "boost/conversion/push_iterator.hpp"
 
+
 #include "semantic.hpp"
 #include "entities/variable_entity.hpp"
 #include "entities/functional_entity.hpp"
@@ -66,17 +67,9 @@ class unit
     eregistry_t eregistry_;
 
     // semantic
-    
-    //std::vector<shared_ptr<function_t>> functions_;
-    //shared_ptr<function_t> main_function_;
     std::vector<semantic_expression_type> root_expressions_;
 
-    //shared_ptr<entity> arrayify_entity_;
-    //shared_ptr<entity> print_entity_;
-
     std::vector<qname_view> builtins_;
-    //qname arrayify_entity_name_;
-    //qname print_string_name_;
 
     virtual_stack_machine bvm_;
 
@@ -88,7 +81,9 @@ public:
     enum class builtin_fn
     {
         arrayify = 0,
-        tostring,
+        extern_object_set_property,
+        extern_object_get_property,
+        tostring, negate,
         eof_builtin_type
     };
 
@@ -143,12 +138,20 @@ public:
         return print((qname_view)q);
     }
 
+    std::string print(small_u32string const&, bool in_quotes = false) const;
+
+    std::string print(lex::resource_location const&) const;
+
     std::string print(qname_view q) const;
     
     std::string print(beng_preliminary_type const& tp) const;
     
     std::string print(beng_type const& tp) const;
     
+    std::string print(expression_t const&) const;
+
+    std::string print(error const&);
+
     string_view as_string(identifier const& id) const;
     
     small_u32string as_u32string(identifier const& id) const;

@@ -2097,7 +2097,7 @@
     <ClInclude Include="..\..\..\sonia\beng\ast\expression_fn_visitor.hpp">
       <Filter>sonia.beng\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\expression_cast_visitor.hpp">
+    <ClInclude Include="..\..\..\sonia\beng\ast\expression_implicit_cast_visitor.hpp">
       <Filter>sonia.beng\ast\casts</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_vector_visitor.hpp">
@@ -2114,6 +2114,27 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\beng\library\library.hpp">
       <Filter>sonia.beng\library</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_bool_visitor.hpp">
+      <Filter>sonia.beng\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_enum_visitor.hpp">
+      <Filter>sonia.beng\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\beng\ast\lvalue_expression_visitor.hpp">
+      <Filter>sonia.beng\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\beng\semantic_fwd.hpp">
+      <Filter>sonia.beng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_float_visitor.hpp">
+      <Filter>sonia.beng\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_array_visitor.hpp">
+      <Filter>sonia.beng\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\beng\errors.hpp">
+      <Filter>sonia.beng</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2425,6 +2446,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\beng\library\beng_library.cpp">
       <Filter>sonia.beng\library</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\beng\ast\lvalue_expression_visitor.cpp">
+      <Filter>sonia.beng\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\beng\beng_errors.cpp">
+      <Filter>sonia.beng</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

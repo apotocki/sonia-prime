@@ -15,6 +15,7 @@
 #include "../entities/enum_entity.hpp"
 
 #include "sonia/utility/functional/variant_compare_three_way.hpp"
+#include "sonia/beng/errors.hpp"
 
 namespace sonia::lang::beng {
 
@@ -42,13 +43,12 @@ struct preliminary_type_visitor : static_visitor<beng_type>
             return beng_object_t{ pe.get() };
         }
         if (!pe) {
-            ctx.throw_undeclared_identifier(v.name(), v.location());
+            throw exception(ctx.u().print(undeclared_identifier_error(v.location(), v.name())));
         }
-        throw exception("%1%(%2%,%3%): `%4%`: identifier is not a type, see declaration at %5%(%6%,%7%)"_fmt %
-            v.location().resource % v.location().line % v.location().column %
-            ctx.u().print(v.name()) %
-            pe->location().resource % pe->location().line % pe->location().column
-        );
+        throw exception(ctx.u().print(basic_general_error{v.location(),
+            ("identifier is not a type, see declaration at %1%"_fmt % ctx.u().print(pe->location())).str(),
+            v.name()
+        }));
     }
 
     inline result_type operator()(beng_preliminary_vector_t & v) const
@@ -66,7 +66,7 @@ struct preliminary_type_visitor : static_visitor<beng_type>
         beng_tuple_t result;
 
         // preseve the order of positioned fields
-        auto toint = [](parameter<beng_preliminary_type> const& param) -> int { return param.name ? int(param.name->id.value) : -1; };
+        auto toint = [](parameter<beng_preliminary_type> const& param) -> int { return param.name ? int(param.name->value.value) : -1; };
         std::ranges::stable_sort(v.fields, {}, toint);
         auto eit = v.fields.end();
         auto it = std::lower_bound(v.fields.begin(), eit, 0, [&toint](auto const& l, auto const& r) { return toint(l) < r; });
@@ -76,10 +76,10 @@ struct preliminary_type_visitor : static_visitor<beng_type>
                 auto dupit = fit; ++dupit;
                 auto const& loc = dupit->name->location;
                 auto const& origloc = fit->name->location;
-                throw exception("%1%(%2%,%3%): `%4%`: parameter redefinition, see declaration at %5%(%6%,%7%)"_fmt %
-                    loc.resource % loc.line % loc.column %
-                    ctx.u().print(fit->name->id) %
-                    origloc.resource % origloc.line % origloc.column);
+                throw exception(ctx.u().print(basic_general_error{ loc,
+                    ("parameter redefinition, see declaration at %1%"_fmt % ctx.u().print(origloc)).str(),
+                    fit->name->value,
+                }));
             }
         }
         size_t positioned_count = size_t(it - v.fields.begin());
@@ -109,26 +109,17 @@ struct preliminary_type_visitor : static_visitor<beng_type>
     {
         beng_union_t result;
         size_t reserved_size = v.members.size();
-        result.members.reserve(reserved_size);
+        result.other_members.reserve(reserved_size);
         for (auto t : v.members) {
             auto rt = apply_visitor(*this, t);
             if (auto * put = get<beng_union_t>(&rt); put) {
-                if (!put->members.empty()) {
-                    reserved_size += result.members.size() - 1;
-                    result.members.reserve(reserved_size);
-                    std::move(put->members.begin(), put->members.end(), std::back_inserter(result.members));
+                for (auto const& m : *put) {
+                    result.append(m);
                 }
             } else {
-                result.members.emplace_back(std::move(rt));
+                result.append(std::move(rt));
             }
         }
-        
-        std::sort(result.members.begin(), result.members.end(),
-            [](beng_type const& l, beng_type const& r) { return variant_compare_three_way{}(l, r) == std::strong_ordering::less; });
-
-        auto eit = std::unique(result.members.begin(), result.members.end());
-        result.members.erase(eit, result.members.end());
-
         return result;
     }
 

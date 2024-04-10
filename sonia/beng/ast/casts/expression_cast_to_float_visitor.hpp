@@ -4,28 +4,25 @@
 
 #pragma once
 
+#include "sonia/optional.hpp"
 //#include "sonia/utility/scope_exit.hpp"
 
-#include "sonia/beng/semantic.hpp"
+#include "../semantic.hpp"
 //#include "expression_visitor.hpp"
 //#include "expression_vector_visitor.hpp"
 #include "fn_compiler_context.hpp"
-
-#include "sonia/beng/entities/type_entity.hpp"
 
 #include "sonia/beng/errors.hpp"
 
 namespace sonia::lang::beng {
 
-struct expression_cast_to_object_visitor : static_visitor<std::expected<beng_type, error_storage>>
+struct expression_cast_to_float_visitor : static_visitor<std::expected<beng_type, error_storage>>
 {
     fn_compiler_context& ctx;
-    beng_object_t const& target;
     expression_locator_t const& el_;
 
-    expression_cast_to_object_visitor(fn_compiler_context& c, beng_object_t const& t, expression_locator_t const& el)
+    expression_cast_to_float_visitor(fn_compiler_context& c, expression_locator_t const& el)
         : ctx{ c }
-        , target{ t }
         , el_{ el }
     {}
 
@@ -88,28 +85,21 @@ struct expression_cast_to_object_visitor : static_visitor<std::expected<beng_typ
     }
     */
 
-    inline result_type operator()(beng_object_t const& v) const
+    inline result_type operator()(beng_float_t const&) const
     {
-        if (v == target) return target;
-        if (auto const* pte = dynamic_cast<type_entity const*>(v.value); pte) {
-            if (pte->try_cast(ctx, target)) {
-                return target;
-            }
-        }
-        auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, target, v, std::move(optexpr) });
+        return beng_float_t{};
     }
 
-    inline result_type operator()(beng_bool_t const& b) const
+    inline result_type operator()(beng_decimal_t const&) const
     {
-        auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, target, b, std::move(optexpr) });
+        return beng_float_t{};
     }
 
     template <typename T>
     result_type operator()(T const& v) const
     {
-        THROW_NOT_IMPLEMENTED_ERROR();
+        auto [loc, optexpr] = el_();
+        return std::unexpected(cast_error{ loc, beng_float_t{}, v, std::move(optexpr) });
     }
 };
 

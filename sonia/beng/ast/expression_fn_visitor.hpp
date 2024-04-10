@@ -10,36 +10,62 @@
 
 #include "../semantic.hpp"
 #include "../entities/functional_entity.hpp"
+#include "sonia/beng/errors.hpp"
 
 namespace sonia::lang::beng {
 
-struct expression_fn_visitor : static_visitor<optional<beng_type>>
+struct expression_fn_visitor : static_visitor<std::expected<beng_type, error_storage>>
 {
     fn_compiler_context& ctx;
     functional_entity const& fn;
-    std::vector<semantic_expression_type>& result;
+    expression_locator_t const& el_;
 
-    expression_fn_visitor(fn_compiler_context& c, functional_entity const& f, std::vector<semantic_expression_type>& r)
+    expression_fn_visitor(fn_compiler_context& c, functional_entity const& f, expression_locator_t const& el)
         : ctx{ c }
         , fn{ f }
-        , result{ r }
+        , el_{ el }
     {}
 
-    inline result_type operator()(beng_bool_t const& v) const { return nullopt; }
-    inline result_type operator()(beng_string_t const& v) const { return nullopt; }
-    inline result_type operator()(beng_decimal_t const&) const { return nullopt; }
-    inline result_type operator()(beng_int_t const&) const { return nullopt; }
-    inline result_type operator()(beng_float_t const&) const { return nullopt; }
-    inline result_type operator()(beng_object_t const& v) const { return nullopt; } // to do: from_fn?
+    //inline result_type operator()(beng_bool_t const& v) const
+    //{
+    //    return std::unexpected(ctx.error_cannot_convert(el_, v));
+    //}
 
+    //inline result_type operator()(beng_string_t const& v) const
+    //{
+    //    return std::unexpected(ctx.error_cannot_convert(el_, v));
+    //}
+
+    //inline result_type operator()(beng_decimal_t const& v) const
+    //{
+    //    return std::unexpected(ctx.error_cannot_convert(el_, v));
+    //}
+
+    //inline result_type operator()(beng_int_t const& v) const
+    //{
+    //    return std::unexpected(ctx.error_cannot_convert(el_, v));
+    //}
+
+    //inline result_type operator()(beng_float_t const& v) const
+    //{
+    //    return std::unexpected(ctx.error_cannot_convert(el_, v));
+    //}
+
+    //inline result_type operator()(beng_object_t const& v) const
+    //{
+    //    // to do: from_fn?
+    //    return std::unexpected(ctx.error_cannot_convert(el_, v));
+    //}
+    
     result_type operator()(beng_union_t const& v) const
     {
-        for (beng_type const& ut : v.members) {
-            if (auto optrest = apply_visitor(*this, ut); optrest) {
-                return *optrest;
-            }
+        alt_error aerr;
+        for (beng_type const& ut : v) {
+            auto opt = apply_visitor(*this, ut);
+            if (opt.has_value()) { return opt; }
+            aerr.alternatives.emplace_back(std::move(opt.error()));
         }
-        return nullopt;
+        return std::unexpected(std::move(aerr));
     }
 
     inline result_type operator()(beng_fn_t const& v) const
@@ -49,12 +75,13 @@ struct expression_fn_visitor : static_visitor<optional<beng_type>>
         
         function_signature const* fs = fn.find(ctx, position_params, named_params);
         if (!fs || fs->fn_type.result != v.result) {
-            return nullopt;
+            auto [loc, optexpr] = el_();
+            return std::unexpected(cast_error{ loc, v, nullopt, std::move(optexpr) });
         }
         qname fnm = fn.name() + fs->mangled_id;
         variable_entity const* pv = ctx.resolve_variable(fnm);
         if (pv) {
-            result.emplace_back(semantic::push_variable{ pv });
+            ctx.append_expression(semantic::push_variable{ pv });
         } else {
             THROW_INTERNAL_ERROR("function '%1%' is not materialized"_fmt % ctx.u().print(fnm));
             //result.emplace_back(semantic::push_value{ function_value { std::move(fnm) } });
@@ -66,7 +93,8 @@ struct expression_fn_visitor : static_visitor<optional<beng_type>>
     template <typename T>
     result_type operator()(T const& v) const
     {
-        THROW_NOT_IMPLEMENTED_ERROR();
+        auto [loc, optexpr] = el_();
+        return std::unexpected(cast_error{ loc, v, nullopt, std::move(optexpr) });
     }
     //*/
 };

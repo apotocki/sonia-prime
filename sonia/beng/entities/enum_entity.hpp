@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "sonia/beng/semantic.hpp"
+#include "../semantic_fwd.hpp"
 
 namespace sonia::lang::beng {
 

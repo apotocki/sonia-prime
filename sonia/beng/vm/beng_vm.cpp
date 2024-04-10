@@ -51,11 +51,11 @@ public:
         if (!capture_.is_nil()) {
             auto cnt = capture_.size_of<blob_result>();
             if (cnt == 1) {
-                assert(capture_->type == blob_type::reference);
+                BOOST_ASSERT(is_ref(capture_->type));
                 ctx.stack_push(capture_);
             } else {
                 for (auto const& b : span{ capture_.data_of<blob_result>(), cnt }) {
-                    assert(b.type == blob_type::reference);
+                    BOOST_ASSERT(is_ref(b.type));
                     ctx.stack_push(b);
                 }
             }
@@ -85,7 +85,7 @@ public:
 bool vm::context::is_true(variable_type const& v) const noexcept
 {
     blob_result const* br = &v.get();
-    while (br->type == blob_type::reference) {
+    while (br->type == blob_type::blob_reference) {
         br = data_of<blob_result>(*br);
     }
     if (br->type == blob_type::boolean) {
@@ -149,6 +149,8 @@ std::string vm::context::ecall_describe(size_t fn_index) const
     case builtin_fn::referify: return "referify";
     case builtin_fn::function_constructor: return "function_constructor";
     case builtin_fn::extern_object_constructor: return "extern_object_constructor";
+    case builtin_fn::extern_object_set_property: return "extern_object_set_property";
+    case builtin_fn::extern_object_get_property: return "extern_object_get_property";
     case builtin_fn::assign_extern_variable: return "assign_extern_variable";
     default:
         {
@@ -219,6 +221,7 @@ void vm::context::construct_extern_object()
     shared_ptr<invokation::invokable> obj;
     // find id
     for (uint32_t i = 0; i < argcount; ++i) {
+        GLOBAL_LOG_INFO() << stack_back(2 + 2 * i).as<string_view>();
         if (stack_back(2 + 2 * i).as<string_view>() == "id"sv) {
             string_view idval = stack_back(3 + 2 * i).as<string_view>();
             if (!idval.empty()) {
@@ -239,6 +242,26 @@ void vm::context::construct_extern_object()
     stack_pop(argcount * 2 + 2);
 
     return stack_push(smart_blob{ object_blob_result(obj) });
+}
+
+// (obj, value, propName)->(obj, value)
+void vm::context::extern_object_set_property()
+{
+    using namespace sonia::invokation;
+    shared_ptr<invokable> obj = stack_back(2).as<wrapper_object<shared_ptr<invokable>>>().value;
+    string_view prop_name = stack_back().as<string_view>();
+    obj->set_property(camel2kebab(prop_name), *stack_back(1));
+    stack_pop();
+}
+// (obj, propName)->value
+void vm::context::extern_object_get_property()
+{
+    using namespace sonia::invokation;
+    shared_ptr<invokable> obj = stack_back(1).as<wrapper_object<shared_ptr<invokable>>>().value;
+    string_view prop_name = stack_back().as<string_view>();
+    auto result = obj->get_property(camel2kebab(prop_name));
+    stack_pop(2);
+    stack_push(std::move(result));
 }
 
 void vm::context::construct_function()
@@ -262,7 +285,7 @@ void vm::context::arrayify()
     size_t argcount = stack_back().as<size_t>();
     elements.reserve(argcount);
 
-    EXCEPTIONAL_SCOPE_EXIT([&elements]() {
+    SCOPE_EXCEPTIONAL_EXIT([&elements]() {
         for (auto& e : elements) blob_result_unpin(&e);
     });
 
@@ -281,8 +304,9 @@ void vm::context::arrayify()
 void vm::context::referify()
 {
     variable_type& v = stack_at(stack_back().as<size_t>());
-    if (v->type == blob_type::reference) return;
-    v.referify();
+    if (!is_ref(v->type)) {
+        v.referify();
+    }
     stack_pop();
 }
 
@@ -305,6 +329,8 @@ virtual_stack_machine::virtual_stack_machine()
     set_efn((size_t)builtin_fn::referify, [](vm::context& ctx) { ctx.referify(); });
     set_efn((size_t)builtin_fn::function_constructor, [](vm::context& ctx) { ctx.construct_function(); });
     set_efn((size_t)builtin_fn::extern_object_constructor, [](vm::context& ctx) { ctx.construct_extern_object(); });
+    set_efn((size_t)builtin_fn::extern_object_set_property, [](vm::context& ctx) { ctx.extern_object_set_property(); });
+    set_efn((size_t)builtin_fn::extern_object_get_property, [](vm::context& ctx) { ctx.extern_object_get_property(); });
     set_efn((size_t)builtin_fn::assign_extern_variable, [](vm::context& ctx) { ctx.assign_extern_variable(); });
     /*
     builtins_.resize((    set_efn((size_t)builtin_fn::referify, [](vm::context& ctx) { ctx.referify(); });

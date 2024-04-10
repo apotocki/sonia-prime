@@ -5,14 +5,14 @@
 #pragma once
 
 #include <vector>
+#include <ranges>
+#include <expected>
+
 #include <boost/unordered_set.hpp>
 
 #include "sonia/shared_ptr.hpp"
 
 #include "functional_entity.hpp"
-#include "../semantic.hpp"
-
-#include <ranges>
 
 //#include "sonia/utility/functional/hash/span.hpp"
 namespace sonia::lang::beng {
@@ -22,14 +22,12 @@ class type_entity : public functional_entity
 public:
     explicit type_entity(qname_type name) : functional_entity{ std::move(name) } {}
 
-    bool find(fn_compiler_context&,
-        span<const expression_t> positioned_args,
-        span<const std::tuple<annotated_identifier, expression_t>> named_args,
-        std::vector<semantic_expression_type>& result, beng_type & rtype) const override;
+    std::expected<function_entity const*, error_storage> find_field_getter(fn_compiler_context&, annotated_identifier const&) const;
+    std::expected<function_entity const*, error_storage> find_field_setter(fn_compiler_context&, annotated_identifier const&) const;
 
-    bool try_cast(fn_compiler_context& ctx,
-        std::vector<semantic_expression_type>& result,
-        beng_type const& rtype) const;
+    std::expected<beng_type, error_storage> find(fn_compiler_context&, pure_call_t&) const override;
+
+    bool try_cast(fn_compiler_context& ctx, beng_type const& rtype) const;
 
     // ast
     extension_list_t direct_bases;

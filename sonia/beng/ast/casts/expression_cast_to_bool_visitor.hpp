@@ -9,25 +9,21 @@
 
 #include "../semantic.hpp"
 //#include "expression_visitor.hpp"
-#include "casts/expression_cast_to_vector_visitor.hpp"
-#include "casts/expression_cast_to_object_visitor.hpp"
-#include "casts/expression_cast_to_string_visitor.hpp"
+//#include "expression_vector_visitor.hpp"
 #include "fn_compiler_context.hpp"
 
-//#include "../entities/type_entity.hpp"
+#include "sonia/beng/errors.hpp"
 
 namespace sonia::lang::beng {
 
-struct expression_cast_visitor : static_visitor<optional<beng_type>>
+struct expression_cast_to_bool_visitor : static_visitor<std::expected<beng_type, error_storage>>
 {
     fn_compiler_context& ctx;
-    beng_type const& type2cast;
-    std::vector<semantic_expression_type>& result;
+    expression_locator_t const& el_;
 
-    expression_cast_visitor(fn_compiler_context& c, beng_type const& t, std::vector<semantic_expression_type>& r)
+    expression_cast_to_bool_visitor(fn_compiler_context& c, expression_locator_t const& el)
         : ctx{ c }
-        , type2cast{ t }
-        , result{ r }
+        , el_{ el }
     {}
 
     /*
@@ -69,12 +65,17 @@ struct expression_cast_visitor : static_visitor<optional<beng_type>>
     inline result_type operator()(beng_decimal_t const& v) const { return nullopt; }
     inline result_type operator()(beng_string_t const& v) const { return nullopt; }
     inline result_type operator()(beng_object_t const& v) const { return nullopt; }
-    */
+    
 
     inline result_type operator()(beng_object_t const& v) const
     {
-        expression_cast_to_object_visitor vis{ ctx, v, result };
-        return apply_visitor(vis, type2cast);
+        if (beng_type{ v } == expected_tp) return expected_tp;
+        if (auto const* pte = dynamic_cast<type_entity const*>(v.value); pte) {
+            if (pte->try_cast(ctx, result, expected_tp)) {
+                return expected_tp;
+            }
+        }
+        return nullopt;
     }
 
     inline result_type operator()(beng_vector_t const& v) const
@@ -82,13 +83,18 @@ struct expression_cast_visitor : static_visitor<optional<beng_type>>
         expression_cast_to_vector_visitor vis{ ctx, v, result };
         return apply_visitor(vis, type2cast);
     }
+    */
 
-    inline result_type operator()(beng_string_t const& v) const
+    inline result_type operator()(beng_bool_t const&) const
     {
-        result.emplace_back(ctx.u().get_builtin_function(unit::builtin_fn::tostring));
-        return beng_string_t{};
-        //expression_cast_to_string_visitor vis{ ctx, result };
-        //return apply_visitor(vis, type2cast);
+        return beng_bool_t{};
+    }
+
+    inline result_type operator()(beng_vector_t const& v) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+        //if (target.type == v.type) return target;
+        //return nullopt;
     }
 
     template <typename T>

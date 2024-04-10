@@ -4,38 +4,68 @@
 
 #pragma once
 
+#include <expected>
 #include "../unit.hpp"
 
 #include "sonia/beng/semantic.hpp"
 #include "sonia/optional.hpp"
+#include "sonia/beng/errors.hpp"
 
 namespace sonia::lang::beng {
 
-struct expression_visitor : static_visitor<optional<beng_type>>
+struct expected_result_t
+{
+    beng_type const& type;
+    lex::resource_location const& location;
+};
+
+struct expression_visitor : static_visitor<std::expected<beng_type, error_storage>>
 {
     fn_compiler_context& ctx;
-    beng_type const* expected_result;
-    std::vector<semantic_expression_type>& result;
+    optional<expected_result_t> expected_result;
 
-    explicit expression_visitor(fn_compiler_context& c, std::vector<semantic_expression_type>& r, beng_type const* er)
+    // to do: set a flag to notice unneeded result
+    explicit expression_visitor(fn_compiler_context& c)
         : ctx{ c }
-        , result { r }
-        , expected_result{ er }
+    {}
+
+    expression_visitor(fn_compiler_context& c, expected_result_t && er)
+        : ctx{ c }
+        , expected_result{ std::move(er) }
+    {}
+
+    expression_visitor(fn_compiler_context& c, nullptr_t)
+        : ctx{ c }
     {}
 
     result_type operator()(variable_identifier const&) const;
 
     result_type operator()(case_expression const&) const;
+    result_type operator()(member_expression_t&) const;
 
-    result_type operator()(decimal const&) const;
+    result_type operator()(annotated_bool const&) const;
+    result_type operator()(annotated_decimal const&) const;
+    result_type operator()(annotated_u32string const&) const;
     
-    result_type operator()(small_u32string const&) const;
-    
-    result_type operator()(expression_vector_t const&) const;
+    result_type operator()(expression_vector_t &) const;
 
-    result_type operator()(function_call_t const&) const;
+    result_type operator()(chained_expression_t&) const;
 
-    result_type operator()(binary_expression_t<operator_type::ASSIGN> const&) const;
+    result_type operator()(lambda_t&) const;
+
+    result_type operator()(function_call_t&) const;
+
+    result_type operator()(negate_expression_t&) const;
+    result_type operator()(binary_expression_t<binary_operator_type::ASSIGN> &) const;
+    result_type operator()(binary_expression_t<binary_operator_type::LOGIC_AND> &) const;
+    result_type operator()(binary_expression_t<binary_operator_type::LOGIC_OR> &) const;
+    result_type operator()(binary_expression_t<binary_operator_type::CONCAT>&) const;
+
+    function_entity& handle_lambda(lambda_t&) const;
+
+private:
+    template <typename ExprT>
+    result_type apply_cast(beng_type const& t, ExprT const& e) const;
 };
 
 }

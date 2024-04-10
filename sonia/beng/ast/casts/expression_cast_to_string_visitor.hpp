@@ -7,22 +7,24 @@
 #include "sonia/optional.hpp"
 //#include "sonia/utility/scope_exit.hpp"
 
-#include "../semantic.hpp"
+#include "sonia/beng/semantic.hpp"
 //#include "expression_visitor.hpp"
 //#include "expression_vector_visitor.hpp"
-#include "fn_compiler_context.hpp"
+#include "sonia/beng/ast/fn_compiler_context.hpp"
 
 //#include "../entities/type_entity.hpp"
 
 namespace sonia::lang::beng {
 
-struct expression_cast_to_string_visitor : static_visitor<optional<beng_type>>
+struct expression_cast_to_string_visitor : static_visitor<std::expected<beng_type, std::string>>
 {
     fn_compiler_context& ctx;
+    lex::resource_location const& loc_;
     std::vector<semantic_expression_type>& result;
 
-    expression_cast_to_string_visitor(fn_compiler_context& c, std::vector<semantic_expression_type>& r)
+    expression_cast_to_string_visitor(fn_compiler_context& c, lex::resource_location const& loc, std::vector<semantic_expression_type>& r)
         : ctx{ c }
+        , loc_{ loc }
         , result{ r }
     {}
 

@@ -26,7 +26,7 @@ public:
         : unit_{ u }
     {}
 
-    void operator()(std::vector<semantic_expression_type> const& evec) const
+    void operator()(std::vector<semantic::expression_type> const& evec) const
     {
         for (auto const& e : evec) {
             apply_visitor(*this, e);
@@ -37,6 +37,16 @@ public:
     {
         push_value_visitor vis{ unit_ };
         apply_visitor(vis, pv.value);
+    }
+
+    void operator()(semantic::push_by_offset const& pv) const
+    {
+        bvm().append_pushr(pv.offset);
+    }
+
+    void operator()(semantic::set_by_offset const& sv) const
+    {
+        bvm().append_setr(sv.offset);
     }
 
     void operator()(semantic::invoke_function const& invf) const
@@ -143,7 +153,7 @@ public:
         unit_.bvm().append_jmp(*local_return_address);
     }
 
-    inline void operator()(semantic::conditional<semantic_expression_type> const& c) const
+    inline void operator()(semantic::conditional<semantic::expression_type> const& c) const
     {
         size_t branch_pt = unit_.bvm().get_ip();
         if (c.false_branch.empty() && c.true_branch.empty()) return;

@@ -26,7 +26,9 @@ void declaration_visitor::operator()(extern_var & td) const
 void declaration_visitor::operator()(expression_decl_t & ed) const
 {
     expression_visitor evis{ ctx };
-    apply_visitor(evis, ed.expression);
+    if (auto r = apply_visitor(evis, ed.expression); !r.has_value()) {
+        throw exception(ctx.u().print(*r.error()));
+    }
 }
 
 function_signature& declaration_visitor::append_fnsig(fn_pure_decl& fd) const
@@ -145,11 +147,14 @@ void declaration_visitor::operator()(let_statement_decl_t & ld) const
         auto evis = vartype ? expression_visitor{ ctx, expected_result_t{ *vartype, ld.location() } } : expression_visitor{ ctx };
         auto etype = apply_visitor(evis, *ld.expression);
         if (!etype.has_value()) {
+            throw exception(ctx.u().print(*etype.error()));
+            /*
             BOOST_ASSERT(vartype);
             throw exception(ctx.u().print(basic_general_error{ld.location(),
                 ("`%1%` initializing: can not convert to `%2%`\n%3%"_fmt % ctx.u().print(ld.name()) % ctx.u().print(*vartype) %
-                    ctx.u().print(etype.error())).str()
+                    ctx.u().print(*etype.error())).str()
             }));
+            */
         }
         if (!vartype) {
             vartype = etype.value();
@@ -166,7 +171,7 @@ void declaration_visitor::operator()(return_decl_t & rd) const
 {
     auto evis = ctx.result ? expression_visitor{ ctx, expected_result_t{ *ctx.result, rd.location } } : expression_visitor{ ctx };
     auto optetype = apply_visitor(evis, rd.expression);
-    if (!optetype.has_value()) { throw exception(ctx.u().print(optetype.error())); }
+    if (!optetype.has_value()) { throw exception(ctx.u().print(*optetype.error())); }
     if (!ctx.result) {
         ctx.accumulate_result_type(std::move(*optetype));
     }

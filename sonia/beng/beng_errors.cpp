@@ -35,7 +35,10 @@ struct printer_resolver_visitor : static_visitor<std::string>
     inline result_type operator()(null_t const&) const { return {}; }
 
     template <typename T>
-    inline result_type operator()(T const& val) const { return u_.print(val); }
+    inline result_type operator()(T const& val) const
+    {
+        return u_.print(val);
+    }
 };
 
 struct string_resolver_visitor : static_visitor<string_view>
@@ -48,11 +51,10 @@ struct string_resolver_visitor : static_visitor<string_view>
 
 void error_printer_visitor::operator()(general_error const& err)
 {
-    string_view sv = apply_visitor(string_resolver_visitor{}, err.object(u_));
     s_ << print_general(
         err.location(),
-        apply_visitor(string_resolver_visitor{}, err.object(u_)),
         apply_visitor(string_resolver_visitor{}, err.description(u_)),
+        apply_visitor(string_resolver_visitor{}, err.object(u_)),
         err.see_location()
     );
 }
@@ -64,7 +66,8 @@ general_error::string_t basic_general_error::object(unit const& u) const noexcep
 
 general_error::string_t cast_error::object(unit const& u) const noexcept
 {
-    return expr_ ? apply_visitor(printer_resolver_visitor{ u }, *expr_) : ""sv;
+    if (expr_) return u.print(*expr_);
+    return ""sv;
 }
 
 general_error::string_t cast_error::description(unit const& u) const noexcept

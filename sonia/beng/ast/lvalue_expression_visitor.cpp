@@ -16,7 +16,7 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(var
     if (auto optvar = ctx.resolve_variable(v.name); optvar) {
         return &*optvar;
     }
-    return std::unexpected(undeclared_identifier_error{v.location, v.name});
+    return std::unexpected(make_error<undeclared_identifier_error>(v.location, v.name));
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(member_expression_t & me) const
@@ -31,7 +31,7 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(mem
             THROW_NOT_IMPLEMENTED_ERROR();
         }
     } else {
-        return std::unexpected(left_not_an_object_error{ me.name.location, me.name.value, otype.value() });
+        return std::unexpected(make_error<left_not_an_object_error>(me.name.location, me.name.value, otype.value()));
     }
 }
 
@@ -42,22 +42,22 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(lam
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(case_expression const& ce) const
 {
-    return std::unexpected(wrong_lvalue_error{ce});
+    return std::unexpected(make_error<wrong_lvalue_error>(ce));
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_bool const& ab) const
 {
-    return std::unexpected(wrong_lvalue_error{ ab });
+    return std::unexpected(make_error<wrong_lvalue_error>(ab));
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_decimal const& ad) const
 {
-    return std::unexpected(wrong_lvalue_error{ ad });
+    return std::unexpected(make_error<wrong_lvalue_error>(ad));
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_u32string const& as) const
 {
-    return std::unexpected(wrong_lvalue_error{ as });
+    return std::unexpected(make_error<wrong_lvalue_error>(as));
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(expression_vector_t const&) const

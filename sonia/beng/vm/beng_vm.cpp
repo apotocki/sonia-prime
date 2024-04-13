@@ -146,6 +146,7 @@ std::string vm::context::ecall_describe(size_t fn_index) const
     using builtin_fn = virtual_stack_machine::builtin_fn;
     switch ((builtin_fn)fn_index) {
     case builtin_fn::arrayify: return "arrayify";
+    case builtin_fn::unpack: return "unpack";
     case builtin_fn::referify: return "referify";
     case builtin_fn::function_constructor: return "function_constructor";
     case builtin_fn::extern_object_constructor: return "extern_object_constructor";
@@ -221,7 +222,7 @@ void vm::context::construct_extern_object()
     shared_ptr<invokation::invokable> obj;
     // find id
     for (uint32_t i = 0; i < argcount; ++i) {
-        GLOBAL_LOG_INFO() << stack_back(2 + 2 * i).as<string_view>();
+        //GLOBAL_LOG_INFO() << stack_back(2 + 2 * i).as<string_view>();
         if (stack_back(2 + 2 * i).as<string_view>() == "id"sv) {
             string_view idval = stack_back(3 + 2 * i).as<string_view>();
             if (!idval.empty()) {
@@ -298,7 +299,17 @@ void vm::context::arrayify()
     //GLOBAL_LOG_INFO() << "arrayify address: " << std::hex << r->bp.data;
 
     stack_pop(argcount + 1);
-    return stack_push(std::move(r));
+    stack_push(std::move(r));
+}
+
+void vm::context::unpack()
+{
+    smart_blob arr = std::move(stack_back());
+    stack_pop();
+    span<const blob_result> elems = arr.as<span<const blob_result>>();
+    for (blob_result const& elem : elems) {
+        stack_push(smart_blob{ std::move(const_cast<blob_result&>(elem)) });
+    }
 }
 
 void vm::context::referify()
@@ -326,6 +337,7 @@ void vm::context::call_function_object()
 virtual_stack_machine::virtual_stack_machine()
 {
     set_efn((size_t)builtin_fn::arrayify, [](vm::context& ctx) { ctx.arrayify(); });
+    set_efn((size_t)builtin_fn::unpack, [](vm::context& ctx) { ctx.unpack(); });
     set_efn((size_t)builtin_fn::referify, [](vm::context& ctx) { ctx.referify(); });
     set_efn((size_t)builtin_fn::function_constructor, [](vm::context& ctx) { ctx.construct_function(); });
     set_efn((size_t)builtin_fn::extern_object_constructor, [](vm::context& ctx) { ctx.construct_extern_object(); });

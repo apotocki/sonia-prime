@@ -7,7 +7,6 @@
 #include <vector>
 
 #include "semantic.hpp"
-#include "sonia/utility/automatic_polymorphic.hpp"
 
 namespace sonia::lang::beng {
 
@@ -35,18 +34,22 @@ public:
     virtual void operator()(parameter_not_found_error const&) = 0;
 };
 
-class error : public polymorphic_movable, public polymorphic_clonable
+class error
 {
 public:
+    virtual ~error() = default;
     virtual void visit(error_visitor&) const = 0;
 };
 
-using error_storage = automatic_polymorphic<error, 8 * sizeof(void*)>;
+//using error_storage = automatic_polymorphic<error, 8 * sizeof(void*)>;
+using error_storage = shared_ptr<error>;
+
+template <std::derived_from<error> T, typename ... Args>
+error_storage make_error(Args&& ... args) { return sonia::make_shared<T>(std::forward<Args>(args) ...); }
 
 class alt_error : public error
 {
 public:
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(alt_error);
     std::vector<error_storage> alternatives;
     void visit(error_visitor& vis) const override { vis(*this); }
 };
@@ -71,18 +74,27 @@ protected:
     lex::resource_location location_;
     string_t description_;
     object_t object_;
+    optional< lex::resource_location> refloc_;
 
 public:
     basic_general_error(lex::resource_location loc, string_t descr, object_t obj = null_t{})
         : location_{std::move(loc)}, description_{descr}, object_{std::move(obj)}
     {}
 
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(basic_general_error);
+    basic_general_error(error_context const& errctx, string_t descr)
+        : location_{ errctx.location() }, description_{ descr }, refloc_{ errctx.refloc }
+    {
+        if (auto optexpr = errctx.expression(); optexpr) {
+            object_ = *optexpr;
+        }
+    }
+
     void visit(error_visitor& vis) const override { vis(*this); }
 
     lex::resource_location const& location() const noexcept override { return location_; }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override { return description_; }
+    lex::resource_location const* see_location() const noexcept override { return refloc_ ? &*refloc_ : nullptr; }
 };
 
 class undeclared_identifier_error : public general_error
@@ -95,7 +107,6 @@ public:
         : location_{ std::move(loc) }, idname_{ idname }
     {}
 
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(undeclared_identifier_error);
     void visit(error_visitor& vis) const override { vis(*this); }
 
     lex::resource_location const& location() const noexcept override { return location_; }
@@ -111,10 +122,9 @@ public:
         : basic_general_error{ std::move(loc), descr, std::move(obj) }, seelocation_{ std::move(seeloc) }
     {}
 
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(general_with_see_location_error);
     void visit(error_visitor& vis) const override { vis(*this); }
 
-    lex::resource_location const* see_location() const override { return &seelocation_; }
+    lex::resource_location const* see_location() const noexcept override { return &seelocation_; }
 };
 
 class identifier_redefinition_error : public general_error
@@ -129,7 +139,6 @@ public:
         : location_{ std::move(loc) }, seelocation_{ std::move(seeloc) }, name_{ qn }
     {}
 
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(identifier_redefinition_error);
     void visit(error_visitor& vis) const override { vis(*this); }
 
     lex::resource_location const& location() const noexcept override { return location_; }
@@ -145,17 +154,22 @@ public:
     optional<expression_t> expr_;
     optional<beng_type> from_;
     beng_type to_;
+    optional<lex::resource_location> refloc_;
 
     cast_error(lex::resource_location loc, beng_type to, optional<beng_type> from = nullopt, optional<expression_t> expr = nullopt)
         : location_{ std::move(loc) }, from_{std::move(from)}, to_{ std::move(to) }, expr_{ std::move(expr) }
     {}
 
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(cast_error);
+    cast_error(error_context const& errctx, beng_type to, optional<beng_type> from = nullopt)
+        : location_{ errctx.location() }, from_{ std::move(from) }, to_{ std::move(to) }, expr_{ errctx.expression() }, refloc_{ errctx.refloc }
+    {}
+
     void visit(error_visitor& vis) const override { vis(*this); }
 
     lex::resource_location const& location() const noexcept override { return location_; }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override;
+    lex::resource_location const* see_location() const noexcept override { return refloc_ ? &*refloc_ : nullptr; }
 };
 
 class unknown_case_error : public general_error
@@ -167,7 +181,6 @@ public:
         : ce_{ ce }, enum_name_{ enum_name }
     {}
 
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(unknown_case_error);
     void visit(error_visitor& vis) const override { vis(*this); }
 
     lex::resource_location const& location() const noexcept override { return ce_.name.location; }
@@ -186,7 +199,6 @@ public:
         : location_{ std::move(loc) }, right_{ right }, type_{ std::move(type) }
     {}
 
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(left_not_an_object_error);
     void visit(error_visitor& vis) const override { vis(*this); }
 
     lex::resource_location const& location() const noexcept override { return location_; }
@@ -203,7 +215,6 @@ public:
         : expr_{ expr }
     {}
 
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(wrong_lvalue_error);
     void visit(error_visitor& vis) const override { vis(*this); }
 
     lex::resource_location const& location() const noexcept override { return get_start_location(expr_); }
@@ -214,8 +225,6 @@ public:
 class function_call_match_error : public general_error
 {
 public:
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(function_call_match_error);
-
     lex::resource_location location_;
 
     function_call_match_error(lex::resource_location l) : location_{ l } {}
@@ -229,8 +238,6 @@ public:
 class parameter_not_found_error : public error
 {
 public:
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(parameter_not_found_error);
-
     annotated_identifier param;
     qname_view entity_name;
     parameter_not_found_error(qname_view qn, annotated_identifier p)

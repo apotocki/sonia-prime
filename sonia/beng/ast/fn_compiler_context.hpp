@@ -51,7 +51,7 @@ class fn_compiler_context
     size_t base_ns_size_;
     size_t local_variable_count_ = 0;
     
-    using expr_vec_t = std::vector<semantic_expression_type>;
+    using expr_vec_t = std::vector<semantic::expression_type>;
 
 public:
 
@@ -90,73 +90,6 @@ public:
 
     unit& u() const { return unit_; }
 
-
-    //inline std::string error_undeclared_identifier(lex::resource_location const& loc, qname_view qn) const
-    //{
-    //    return ("%1%(%2%,%3%): `%4%`: undeclared identifier"_fmt %
-    //        loc.resource % loc.line % loc.column %
-    //        u().print(qn)).str();
-    //}
-
-    //inline std::string error_cannot_convert(lex::resource_location const& loc, string_view subject, beng_type const& from, beng_type const& to)
-    //{
-    //    if (!subject.empty()) {
-    //        return ("%1%(%2%,%3%): `%4%`: cannot convert from `%5%` to `%6%`"_fmt %
-    //            loc.resource % loc.line % loc.column %
-    //            subject % u().print(from) % u().print(to)).str();
-    //    } else {
-    //        return ("%1%(%2%,%3%): cannot convert from `%4%` to `%5%`"_fmt %
-    //            loc.resource % loc.line % loc.column %
-    //            u().print(from) % u().print(to)).str();
-    //    }
-    //}
-
-    //inline std::string error_cannot_convert(lex::resource_location const& loc, string_view subject, beng_type const& to)
-    //{
-    //    if (!subject.empty()) {
-    //        return ("%1%(%2%,%3%): `%4%`: cannot convert to `%5%`"_fmt %
-    //            loc.resource % loc.line % loc.column %
-    //            subject %  u().print(to)).str();
-    //    } else {
-    //        return ("%1%(%2%,%3%): cannot convert to `%4%`"_fmt %
-    //            loc.resource % loc.line % loc.column %
-    //            u().print(to)).str();
-    //    }
-    //}
-
-    //inline std::string error_cannot_convert(lex::resource_location const& loc, expression_t const* psubject, beng_type const& from, beng_type const& to)
-    //{
-    //    if (psubject) {
-    //        return error_cannot_convert(loc, u().print(*psubject), from, to);
-    //    }
-    //    return error_cannot_convert(loc, {}, from, to);
-    //}
-
-    //inline std::string error_cannot_convert(expression_locator_t const& el, beng_type const& from, beng_type const& to)
-    //{
-    //    auto tpl = el();
-    //    auto [loc, optexpr] = el();
-    //    if (optexpr) {
-    //        return error_cannot_convert(loc, u().print(*optexpr), from, to);
-    //    }
-    //    return error_cannot_convert(loc, {}, from, to);
-    //}
-
-    //inline std::string error_cannot_convert(expression_locator_t const& el, beng_type const& to)
-    //{
-    //    auto [loc, optexpr] = el();
-    //    if (optexpr) {
-    //        return error_cannot_convert(loc, u().print(*optexpr), to);
-    //    }
-    //    return error_cannot_convert(loc, {}, to);
-    //}
-
-    //inline std::string error_wrong_lvalue(lex::resource_location const& loc, string_view subject)
-    //{
-    //    return ("%1%(%2%,%3%): `%4%`: is not rvalue"_fmt %
-    //        loc.resource % loc.line % loc.column % subject).str();
-    //}
-    // 
     // to do: resolving depends on qname
     shared_ptr<entity> resolve_entity(qname_view name) const
     {
@@ -186,7 +119,7 @@ public:
         return nullptr;
     }
 
-    //semantic_expression_type build_expression(beng_generic_type const& result_type, expression_t const& e);
+    //semantic::expression_type build_expression(beng_generic_type const& result_type, expression_t const& e);
 
     size_t local_variable_count() const { return local_variable_count_; }
     //span<std::pair<variable_entity*, variable_entity*>> captured_variables() { return captured_variables_; }
@@ -256,7 +189,7 @@ public:
         if (local_variable_count_ == 1) {
             expressions_.front() = semantic::push_value{ null_t{} };
         } else if (local_variable_count_) {
-            std::vector<semantic_expression_type> prolog;
+            std::vector<semantic::expression_type> prolog;
             prolog.resize(local_variable_count_, semantic::push_value{ null_t{} });
             expressions_.front() = std::move(prolog);
         }
@@ -274,15 +207,17 @@ public:
     //    return *variables_.back();
     //}
 
-    //void push_expression(semantic_expression_type e)
+    //void push_expression(semantic::expression_type e)
     //{
     //    expressions_.emplace_back(std::move(e));
     //}
 
-    //inline span<const semantic_expression_type> expressions() const noexcept { return expressions_; }
+    //inline span<const semantic::expression_type> expressions() const noexcept { return expressions_; }
 
     expr_vec_t& expressions() { return *expr_stack_.back(); }
-    void append_expression(semantic_expression_type && e)
+    expr_vec_t& expressions(size_t branch_offset) { return *expr_stack_[expr_stack_.size() - branch_offset - 1]; }
+    size_t expressions_branch() const { return expr_stack_.size(); }
+    void append_expression(semantic::expression_type && e)
     {
         expressions().emplace_back(std::move(e));
     }
@@ -292,7 +227,57 @@ public:
         expr_stack_.emplace_back(&chain_vec);
     }
 
-    
+    void pop_chain()
+    {
+        expr_stack_.pop_back();
+    }
+
+    //semantic::conditional<semantic::expression_type> * current_chain()
+    //{
+    //    if (expr_stack_.size() <= 1) return nullptr;
+    //    auto& maybecond = expressions(1).back();
+    //    return get<semantic::conditional<semantic::expression_type>>(&maybecond);
+    //}
+
+    friend class expressions_stack_state;
+
+    class expressions_state_type
+    {
+        fn_compiler_context * pctx_;
+        size_t cursize_;
+        size_t stack_size_;
+
+    public:
+        expressions_state_type(fn_compiler_context& ctx)
+            : pctx_{&ctx}, cursize_{ ctx.expressions().size() }, stack_size_{ ctx.expr_stack_.size() }
+        {}
+        expressions_state_type(expressions_state_type const&) = delete;
+        expressions_state_type(expressions_state_type && rhs)
+            : pctx_{ rhs.pctx_ }, cursize_{ rhs.cursize_ }, stack_size_{ rhs.stack_size_ }
+        {
+            rhs.pctx_ = nullptr;
+        }
+        expressions_state_type& operator=(expressions_state_type const&) = delete;
+        expressions_state_type& operator=(expressions_state_type &&) = delete;
+        ~expressions_state_type()
+        {
+            if (pctx_) {
+                restore();
+            }
+        }
+
+        void restore() {
+            pctx_->expr_stack_.resize(stack_size_);
+            pctx_->expressions().resize(cursize_);
+        }
+
+        void detach() {
+            pctx_ = nullptr;
+        }
+    };
+
+    expressions_state_type expressions_state() { return expressions_state_type{*this}; }
+
     optional<beng_type> result;
     optional<beng_type> accum_result;
 
@@ -324,7 +309,6 @@ private:
     }
 
 private:
-    
     expr_vec_t expressions_;
     std::vector<expr_vec_t*> expr_stack_;
 
@@ -340,7 +324,7 @@ private:
 
 namespace sonia::lang::beng {
 
-//semantic_expression_type fn_compiler_context::build_expression(beng_generic_type const& result_type, expression_t const& e)
+//semantic::expression_type fn_compiler_context::build_expression(beng_generic_type const& result_type, expression_t const& e)
 //{
 //    expression_visitor evis{ *this, &result_type };
 //    semantic_expression_pair pair = apply_visitor(evis, e);

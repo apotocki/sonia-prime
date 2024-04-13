@@ -17,8 +17,8 @@ struct type_mangler_visitor : static_visitor<qname>
     unit & u_;
     explicit type_mangler_visitor(unit & u) : u_{ u } {}
 
+    inline result_type operator()(beng_any_t) const { return qname{ u_.slregistry().resolve("any"sv) }; }
     inline result_type operator()(beng_bool_t) const { return qname{ u_.slregistry().resolve("bool"sv) }; }
-    inline result_type operator()(beng_particular_bool_t) const { THROW_INTERNAL_ERROR("particular_bool can not be a part of a mangled name"); }
     inline result_type operator()(beng_int_t) const { return qname{ u_.slregistry().resolve("int"sv)}; }
     inline result_type operator()(beng_float_t) const { return qname{ u_.slregistry().resolve("float"sv) }; }
     inline result_type operator()(beng_decimal_t) const { return qname{ u_.slregistry().resolve("decimal"sv) }; }
@@ -152,12 +152,7 @@ beng_type make_union_type(beng_type arg0, beng_type const* parg1)
     } else {
         result.append(*parg1);
     }
-    if (beng_union_t* pu0 = get<beng_union_t>(&arg0); pu0) {
-        for (auto const& m : *pu0) { result.append(m); }
-    } else {
-        result.append(std::move(arg0));
-    }
-
+    result.append(std::move(arg0));
     if (result.size() == 1) {
         return *result.begin();
     } else {

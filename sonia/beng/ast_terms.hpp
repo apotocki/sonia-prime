@@ -62,11 +62,13 @@ using annotated_u32string = annotated<small_u32string>;
 inline bool operator==(name const&) const { return true; } \
 inline auto operator<=>(name const&) const { return std::strong_ordering::equivalent; }
 
+struct beng_any_t { BENG_TRIVIAL_CMP(beng_any_t) };
 struct beng_bool_t { BENG_TRIVIAL_CMP(beng_bool_t) };
 struct beng_int_t { BENG_TRIVIAL_CMP(beng_int_t) };
 struct beng_float_t { BENG_TRIVIAL_CMP(beng_float_t) };
 struct beng_decimal_t { BENG_TRIVIAL_CMP(beng_decimal_t) };
 struct beng_string_t { BENG_TRIVIAL_CMP(beng_string_t) };
+
 struct beng_preliminary_object_t
 {
     annotated_qname name_;
@@ -463,7 +465,31 @@ inline lex::resource_location const& get_start_location(expression_t const& e)
     return apply_visitor(expression_location_visitor{}, e);
 }
 
-using expression_locator_t = function<std::tuple<lex::resource_location, optional<expression_t>>()>;
+// {particular location or expression, optional reference location}
+struct error_context
+{
+    variant<lex::resource_location, expression_t> loc_or_expr;
+    optional<lex::resource_location> refloc;
+
+    lex::resource_location const& location() const
+    {
+        if (lex::resource_location const* ploc = get<lex::resource_location>(&loc_or_expr); ploc) {
+            return *ploc;
+        } else {
+            return get_start_location(get<expression_t>(loc_or_expr));
+        }
+    }
+
+    optional<expression_t> expression() const
+    {
+        if (expression_t const* pe = get<expression_t>(&loc_or_expr); pe) {
+            return *pe;
+        }
+        return nullopt;
+    }
+};
+
+using context_locator_t = function<error_context()>;
 /*
 enum class call_type
 {

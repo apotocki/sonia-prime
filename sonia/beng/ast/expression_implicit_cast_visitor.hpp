@@ -29,12 +29,12 @@ struct expression_implicit_cast_visitor : static_visitor<std::expected<beng_type
 {
     fn_compiler_context& ctx;
     beng_type const& type2cast;
-    expression_locator_t const& el_;
+    context_locator_t cl_;
     
-    expression_implicit_cast_visitor(fn_compiler_context& c, beng_type const& t, expression_locator_t const& el)
+    expression_implicit_cast_visitor(fn_compiler_context& c, beng_type const& t, context_locator_t const& cl)
         : ctx{ c }
         , type2cast{ t }
-        , el_{ el }
+        , cl_{ cl }
     {}
 
     // return std::unexpected(ctx.error_cannot_convert(var.location, ctx.u().print(var.name), varptr->type(), *expected_result));
@@ -76,22 +76,22 @@ struct expression_implicit_cast_visitor : static_visitor<std::expected<beng_type
 
     inline result_type operator()(beng_float_t const&) const
     {
-        return apply_visitor(expression_cast_to_float_visitor{ ctx, el_ }, type2cast);
+        return apply_visitor(expression_cast_to_float_visitor{ ctx, cl_ }, type2cast);
     }
 
     inline result_type operator()(beng_object_t const& v) const
     {
-        return apply_visitor(expression_cast_to_object_visitor{ ctx, v, el_ }, type2cast);
+        return apply_visitor(expression_cast_to_object_visitor{ ctx, v, cl_ }, type2cast);
     }
 
     inline result_type operator()(beng_vector_t const& v) const
     {
-        return apply_visitor(expression_cast_to_vector_visitor{ ctx, v, el_ }, type2cast);
+        return apply_visitor(expression_cast_to_vector_visitor{ ctx, v, cl_ }, type2cast);
     }
 
     inline result_type operator()(beng_array_t const& ar) const
     {
-        return apply_visitor(expression_cast_to_array_visitor{ ctx, ar, el_ }, type2cast);
+        return apply_visitor(expression_cast_to_array_visitor{ ctx, ar, cl_ }, type2cast);
     }
 
     inline result_type operator()(beng_string_t const& v) const
@@ -110,24 +110,17 @@ struct expression_implicit_cast_visitor : static_visitor<std::expected<beng_type
             if (opt.has_value()) { return opt; }
             aerr.alternatives.emplace_back(std::move(opt.error()));
         }
-        return std::unexpected(std::move(aerr));
+        return std::unexpected(make_error<alt_error>(std::move(aerr)));
     }
 
     inline result_type operator()(beng_bool_t const&) const
     {
-        return apply_visitor(expression_cast_to_bool_visitor{ ctx, el_ }, type2cast);
+        return apply_visitor(expression_cast_to_bool_visitor{ ctx, cl_ }, type2cast);
     }
 
-    inline result_type operator()(beng_particular_bool_t const& v) const
+    inline result_type operator()(beng_any_t const&) const
     {
-        if (auto* pb = get<beng_particular_bool_t>(&type2cast); pb) {
-            if (v.value == pb->value) {
-                return result_type{ v };
-            }
-        }
-        //if (get<beng_bool_t>(&type2cast)) return nullopt; // arbitrary bool can not be cast to a particular bool
-        auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, v, type2cast, std::move(optexpr) });
+        return type2cast;
     }
 
     template <typename T>

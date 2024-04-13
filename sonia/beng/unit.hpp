@@ -23,8 +23,6 @@
 #include "entities/variable_entity.hpp"
 #include "entities/functional_entity.hpp"
 
-#include "builtins.hpp"
-
 #include "vm/beng_vm.hpp"
 
 //#include "functional_entity.hpp"
@@ -67,7 +65,7 @@ class unit
     eregistry_t eregistry_;
 
     // semantic
-    std::vector<semantic_expression_type> root_expressions_;
+    std::vector<semantic::expression_type> root_expressions_;
 
     std::vector<qname_view> builtins_;
 
@@ -80,7 +78,7 @@ class unit
 public:
     enum class builtin_fn
     {
-        arrayify = 0,
+        arrayify = 0, unpack,
         extern_object_set_property,
         extern_object_get_property,
         tostring, negate,

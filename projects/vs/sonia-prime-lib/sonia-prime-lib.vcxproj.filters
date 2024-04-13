@@ -2109,9 +2109,6 @@
     <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_string_visitor.hpp">
       <Filter>sonia.beng\ast\casts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\builtins.hpp">
-      <Filter>sonia.beng</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\beng\library\library.hpp">
       <Filter>sonia.beng\library</Filter>
     </ClInclude>
@@ -2135,6 +2132,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\beng\errors.hpp">
       <Filter>sonia.beng</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\beng\ast\casts\utility.hpp">
+      <Filter>sonia.beng\ast\casts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2452,6 +2452,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\beng\beng_errors.cpp">
       <Filter>sonia.beng</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_array_visitor.cpp">
+      <Filter>sonia.beng\ast\casts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_vector_visitor.cpp">
+      <Filter>sonia.beng\ast\casts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\beng\ast\casts\expression_cast_utility.cpp">
+      <Filter>sonia.beng\ast\casts</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -5,8 +5,6 @@
 #include "sonia/config.hpp"
 #include "functional_entity.hpp"
 
-#include "sonia/utility/scope_exit.hpp"
-
 #include "../ast/fn_compiler_context.hpp"
 #include "../ast/expression_visitor.hpp"
 
@@ -32,20 +30,18 @@ function_signature& functional_entity::put_signature(function_signature&& one_mo
 
 std::expected<beng_type, error_storage> functional_entity::find(fn_compiler_context& ctx, pure_call_t & call) const
 {
-    size_t initial_result_sz = ctx.expressions().size();
-    SCOPE_EXCEPTIONAL_EXIT([&ctx, initial_result_sz]() {
-        ctx.expressions().resize(initial_result_sz);
-    });
+    auto estate = ctx.expressions_state();
     for (auto & sig: signatures) {
         if (!is_matched(ctx, sig, call)) {
-            ctx.expressions().resize(initial_result_sz);
+            estate.restore();
             continue;
         }
         ctx.append_expression(semantic::invoke_function{ name() + sig.mangled_id });
+        estate.detach();
         return sig.fn_type.result;
     }
     //return std::unexpected(("can't match a function call '%1%'"_fmt % ctx.u().print(fnvar->name)).str());
-    return std::unexpected(function_call_match_error{ call.location() });
+    return std::unexpected(make_error<function_call_match_error>(call.location()));
 }
 
 function_signature const* functional_entity::find(fn_compiler_context& ctx,
@@ -62,11 +58,10 @@ function_signature const* functional_entity::find(fn_compiler_context& ctx,
 
 void function_entity::materialize_call(fn_compiler_context& ctx, pure_call_t& call) const
 {
-    SCOPE_EXCEPTIONAL_EXIT([&ctx, initial_result_sz = ctx.expressions().size()]() {
-        ctx.expressions().resize(initial_result_sz);
-    });
+    auto estate = ctx.expressions_state();
     if (is_matched(ctx, signature_, call)) {
         ctx.append_expression(semantic::invoke_function{ name() });
+        estate.detach();
         return;
     }
     throw exception(ctx.u().print(function_call_match_error{call.location()}));

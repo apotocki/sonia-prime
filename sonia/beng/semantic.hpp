@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <bit>
 #include <vector>
 #include "sonia/variant.hpp"
 #include "sonia/string.hpp"
@@ -27,6 +28,7 @@ template <typename T> struct beng_tuple
 {
     std::vector<T> fields;
     std::vector<std::tuple<annotated_identifier, T>> named_fields;
+    bool unpacked = false;
 
     inline bool operator==(beng_tuple const&) const = default;
     inline auto operator<=>(beng_tuple const& r) const
@@ -41,25 +43,29 @@ template <typename T> struct beng_tuple
                 return variant_compare_three_way{}(std::get<1>(ltpl), std::get<1>(ltpl));
             });
     }
+
+    inline bool empty() const noexcept { return fields.empty() && named_fields.empty(); }
 };
 
 template <typename T> using beng_fn = beng_fn_base<beng_tuple<T>, T>;
 
-struct beng_particular_bool_t
-{
-    bool value;
-    inline bool operator==(beng_particular_bool_t const&) const = default;
-    inline auto operator<=>(beng_particular_bool_t const&) const = default;
-};
+//struct beng_particular_bool_t
+//{
+//    bool value;
+//    inline bool operator==(beng_particular_bool_t const&) const = default;
+//    inline auto operator<=>(beng_particular_bool_t const&) const = default;
+//};
 
 template <typename T> struct beng_union
 {
     boost::container::small_vector<T, 8> other_members;
-
-    enum class bool_type : uint8_t {
-        not_a_bool = 0, bool_true = 1, bool_false = 2, a_bool = 3
+    // 1 reserved for initial state value -1
+    enum class basic_type : uint16_t {
+        nothing_e = 0, nil_e = 2, bool_e = 4, int_e = 8, float_e = 16, decimal_e = 32, string_e = 64,
+        any_e = 128,
+        max_type_e = 128
     };
-    bool_type bool_member = bool_type::not_a_bool;
+    uint16_t basic_members = 0;
     
     struct member_iterator
     {
@@ -73,32 +79,53 @@ template <typename T> struct beng_union
 
         member_iterator(beng_union const& un, int state) : un_{ &un }, state_{ state }
         {
-            init();
+            next();
         }
-
-        void init()
+        //  (int)basic_type::max_type_e
+        void next()
         {
             while (un_) {
-                if (state_ == (int)un_->other_members.size()) {
-                    un_ = nullptr;
-                    return;
-                } else if (state_ == -1) {
-                    switch (un_->bool_member) {
-                    case bool_type::not_a_bool:
-                        state_++;
-                        break;
-                    case bool_type::bool_true:
-                        store_ = beng_particular_bool_t{ true };
-                        return;
-                    case bool_type::bool_false:
-                        store_ = beng_particular_bool_t{ false };
-                        return;
-                    case bool_type::a_bool:
-                        store_ = beng_bool_t{ };
-                        return;
+                if (state_ >= 0) {
+                    if (++state_ >= un_->other_members.size()) {
+                        un_ = nullptr;
                     }
-                } else if (state_ >= 0) {
-                    break;
+                    return;
+                } else {
+                    state_ *= 2;
+                }
+                if (-state_ > (int)basic_type::max_type_e) {
+                    state_ = 0;
+                    if (un_->other_members.empty()) {
+                        un_ = nullptr;
+                    }
+                    return;
+                }
+                if (un_->basic_members & (-state_)) {
+                    switch((basic_type)(-state_)) {
+                    case basic_type::nil_e:
+                        store_ = beng_tuple<T>{};
+                        return;
+                    case basic_type::bool_e:
+                        store_ = beng_bool_t{};
+                        return;
+                    case basic_type::int_e:
+                        store_ = beng_int_t{};
+                        return;
+                    case basic_type::float_e:
+                        store_ = beng_float_t{};
+                        return;
+                    case basic_type::decimal_e:
+                        store_ = beng_decimal_t{};
+                        return;
+                    case basic_type::string_e:
+                        store_ = beng_string_t{};
+                        return;
+                    case basic_type::any_e:
+                        store_ = beng_any_t{};
+                        return;
+                    default:
+                        THROW_INTERNAL_ERROR("unknown union member type");
+                    }
                 }
             }
         }
@@ -114,8 +141,7 @@ template <typename T> struct beng_union
 
         void operator++()
         {
-            ++state_;
-            init();
+            next();
         }
 
         inline bool operator==(member_iterator const& rhs) const { return !un_ ? !rhs.un_ : (un_ == rhs.un_ && state_ == rhs.state_); }
@@ -128,46 +154,74 @@ template <typename T> struct beng_union
 
     inline bool operator==(beng_union const& r) const
     {
-        return bool_member == r.bool_member && other_members == r.other_members;
+        return basic_members == r.basic_members && other_members == r.other_members;
     }
 
     inline auto operator<=>(beng_union const& r) const
     {
-        if (auto res = bool_member <=> r.bool_member; res != std::strong_ordering::equivalent) return res;
+        if (auto res = basic_members <=> r.basic_members; res != std::strong_ordering::equivalent) return res;
         return std::lexicographical_compare_three_way(other_members.begin(), other_members.end(), r.other_members.begin(), r.other_members.end(), variant_compare_three_way{});
     }
 
     size_t size() const
     {
-        return other_members.size() + (bool_member == bool_type::not_a_bool ? 0 : 1);
+        return other_members.size() + std::popcount(basic_members);
     }
 
-    template <typename ArgT>
-    void append(ArgT && m)
+    struct appender_visitor : static_visitor<void>
     {
-        if (sonia::get<beng_bool_t>(&m)) {
-            bool_member = bool_type::a_bool;
-        } else if (auto *pb = sonia::get<beng_particular_bool_t>(&m); pb) {
-            bool_member = (bool_type)(((uint8_t)bool_member) | (uint8_t)(pb->value ? bool_type::bool_true : bool_type::bool_false));
-        } else {
-            auto it = std::lower_bound(other_members.begin(), other_members.end(), m);
-            if (it != other_members.end() && *it == m) return; // already exists
-            other_members.insert(it, std::forward<ArgT>(m));
+        beng_union & un_;
+        explicit appender_visitor(beng_union & u) : un_{u} {}
+
+        inline void operator()(beng_bool_t) const { un_.basic_members |= (uint8_t)basic_type::bool_e; }
+        inline void operator()(beng_int_t) const { un_.basic_members |= (uint8_t)basic_type::int_e; }
+        inline void operator()(beng_float_t) const { un_.basic_members |= (uint8_t)basic_type::float_e; }
+        inline void operator()(beng_decimal_t) const { un_.basic_members |= (uint8_t)basic_type::decimal_e; }
+        inline void operator()(beng_string_t) const { un_.basic_members |= (uint8_t)basic_type::string_e; }
+        inline void operator()(beng_any_t) const { un_.basic_members |= (uint8_t)basic_type::any_e; }
+
+        inline void operator()(beng_union u) const
+        {
+            for (auto const& m : u) { this->operator()(m); }
         }
 
-        /*
-        std::sort(result.members.begin(), result.members.end(),
-        [](beng_type const& l, beng_type const& r) { return variant_compare_three_way{}(l, r) == std::strong_ordering::less; });
+        inline void operator()(beng_tuple<T> t) const
+        {
+            if (t.empty()) {
+                un_.basic_members |= (uint8_t)basic_type::nil_e;
+            } else {
+                append(std::move(t));
+            }
+        }
 
-        auto eit = std::unique(result.members.begin(), result.members.end());
-        result.members.erase(eit, result.members.end());
-        */
+        inline void operator()(T arg) const
+        {
+            apply_visitor(*this, std::move(arg));
+        }
+
+        template <typename TypeT>
+        inline void operator()(TypeT arg) const
+        {
+            append(std::move(arg));
+        }
+
+        void append(T arg) const
+        {
+            auto it = std::lower_bound(un_.other_members.begin(), un_.other_members.end(), arg);
+            if (it != un_.other_members.end() && *it == arg) return; // already exists
+            un_.other_members.insert(it, std::move(arg));
+        }
+    };
+
+    template <typename ArgT>
+    inline void append(ArgT && m)
+    {
+        appender_visitor{ *this }(std::forward<ArgT>(m));
     }
 };
 
 using beng_type = make_recursive_variant<
-    beng_bool_t, beng_particular_bool_t,
-    beng_int_t, beng_float_t, beng_decimal_t, beng_string_t, beng_object_t,
+    beng_any_t, beng_bool_t, beng_int_t, beng_float_t, beng_decimal_t, beng_string_t, beng_object_t,
     beng_fn<recursive_variant_>,
     beng_vector<recursive_variant_>,
     beng_array<recursive_variant_>,
@@ -220,10 +274,11 @@ struct function_signature
 
 
 namespace semantic {
-
+struct push_by_offset { size_t offset; }; // offset from the stack top
 struct push_variable { variable_entity const* entity; };
 struct push_value { value_t value; };
 struct set_variable { variable_entity const* entity; };
+struct set_by_offset { size_t offset; }; // offset from the stack top
 struct truncate_values {
     uint32_t count : 31;
     uint32_t keep_back : 1;
@@ -257,18 +312,32 @@ struct conditional
     std::vector<SemanticExpressionT> false_branch;
 };
 
-}
+template <typename SemanticExpressionT>
+struct logic_tree_node
+{
+    std::vector<SemanticExpressionT> condition_expression;
+    beng_type expression_type = beng_tuple_t{};
+    shared_ptr<logic_tree_node> true_branch;
+    shared_ptr<logic_tree_node> false_branch;
+};
 
 // make_recursive_variant<
-using semantic_expression_type = make_recursive_variant<
+using expression_type = make_recursive_variant<
     empty_t, // no op
-    semantic::push_variable, semantic::push_value, semantic::truncate_values,
-    semantic::set_variable, semantic::invoke_function, semantic::return_statement,
+    push_variable, push_value, push_by_offset, truncate_values,
+    set_variable, set_by_offset, invoke_function, return_statement,
     std::vector<recursive_variant_>,
-    semantic::conditional<recursive_variant_>
+    conditional<recursive_variant_>,
+    logic_tree_node<recursive_variant_>
 >::type;
 
-using semantic_expression_pair = std::pair<semantic_expression_type, beng_type>;
+using logic_tree_node_t = logic_tree_node<expression_type>;
+
+}
+
+using semantic_expression_pair = std::pair<semantic::expression_type, beng_type>;
+
+
 
 class function_scope_type
 {
@@ -286,7 +355,7 @@ class implemented_function : public function_t
 {
 public:
     qname name;
-    std::vector<semantic_expression_type> body;
+    std::vector<semantic::expression_type> body;
     bool is_inline = false;
 };
 */

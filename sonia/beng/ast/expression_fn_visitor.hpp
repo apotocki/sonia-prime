@@ -18,12 +18,12 @@ struct expression_fn_visitor : static_visitor<std::expected<beng_type, error_sto
 {
     fn_compiler_context& ctx;
     functional_entity const& fn;
-    expression_locator_t const& el_;
+    context_locator_t const& cl_;
 
-    expression_fn_visitor(fn_compiler_context& c, functional_entity const& f, expression_locator_t const& el)
+    expression_fn_visitor(fn_compiler_context& c, functional_entity const& f, context_locator_t const& cl)
         : ctx{ c }
         , fn{ f }
-        , el_{ el }
+        , cl_{ cl }
     {}
 
     //inline result_type operator()(beng_bool_t const& v) const
@@ -65,7 +65,7 @@ struct expression_fn_visitor : static_visitor<std::expected<beng_type, error_sto
             if (opt.has_value()) { return opt; }
             aerr.alternatives.emplace_back(std::move(opt.error()));
         }
-        return std::unexpected(std::move(aerr));
+        return std::unexpected(make_error<alt_error>(std::move(aerr)));
     }
 
     inline result_type operator()(beng_fn_t const& v) const
@@ -75,8 +75,7 @@ struct expression_fn_visitor : static_visitor<std::expected<beng_type, error_sto
         
         function_signature const* fs = fn.find(ctx, position_params, named_params);
         if (!fs || fs->fn_type.result != v.result) {
-            auto [loc, optexpr] = el_();
-            return std::unexpected(cast_error{ loc, v, nullopt, std::move(optexpr) });
+            return std::unexpected(make_error<cast_error>(cl_(), v, nullopt));
         }
         qname fnm = fn.name() + fs->mangled_id;
         variable_entity const* pv = ctx.resolve_variable(fnm);
@@ -93,11 +92,9 @@ struct expression_fn_visitor : static_visitor<std::expected<beng_type, error_sto
     template <typename T>
     result_type operator()(T const& v) const
     {
-        auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, v, nullopt, std::move(optexpr) });
+        return std::unexpected(make_error<cast_error>(cl_(), v, nullopt));
     }
     //*/
 };
 
 }
-

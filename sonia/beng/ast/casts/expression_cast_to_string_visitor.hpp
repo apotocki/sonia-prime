@@ -20,12 +20,12 @@ struct expression_cast_to_string_visitor : static_visitor<std::expected<beng_typ
 {
     fn_compiler_context& ctx;
     lex::resource_location const& loc_;
-    std::vector<semantic_expression_type>& result;
+    context_locator_t cl_;
 
-    expression_cast_to_string_visitor(fn_compiler_context& c, lex::resource_location const& loc, std::vector<semantic_expression_type>& r)
+    expression_cast_to_string_visitor(fn_compiler_context& c, lex::resource_location const& loc, context_locator_t const& cl)
         : ctx{ c }
         , loc_{ loc }
-        , result{ r }
+        , cl_{ cl }
     {}
 
     /*

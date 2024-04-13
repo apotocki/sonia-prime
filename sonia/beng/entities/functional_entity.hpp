@@ -39,7 +39,7 @@ public:
     beng_type const& result_type() const { return signature().fn_type.result; }
 
     boost::container::small_vector<std::pair<variable_entity*, variable_entity*>, 16> captured_variables; // [(from, to)]
-    std::vector<semantic_expression_type> body;
+    std::vector<semantic::expression_type> body;
 
     bool is_defined() const { return !!is_defined_; }
     bool is_variable_index() const { return !!is_variable_index_; }

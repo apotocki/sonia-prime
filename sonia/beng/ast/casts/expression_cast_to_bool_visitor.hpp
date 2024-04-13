@@ -19,11 +19,11 @@ namespace sonia::lang::beng {
 struct expression_cast_to_bool_visitor : static_visitor<std::expected<beng_type, error_storage>>
 {
     fn_compiler_context& ctx;
-    expression_locator_t const& el_;
+    context_locator_t const& cl_;
 
-    expression_cast_to_bool_visitor(fn_compiler_context& c, expression_locator_t const& el)
+    expression_cast_to_bool_visitor(fn_compiler_context& c, context_locator_t const& cl)
         : ctx{ c }
-        , el_{ el }
+        , cl_{ cl }
     {}
 
     /*

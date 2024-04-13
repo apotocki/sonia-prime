@@ -11,7 +11,6 @@
 #include "sonia/utility/lang/vm.hpp"
 #include <boost/unordered_map.hpp>
 #include "../extern.hpp"
-#include "../builtins.hpp"
 #include "../terms.hpp"
 
 namespace sonia::lang::beng::vm {
@@ -117,6 +116,7 @@ public:
 
     // builtins
     void arrayify();
+    void unpack();
     void referify();
     void assign_extern_variable();
     void construct_extern_object();
@@ -260,7 +260,7 @@ public:
 
     enum class builtin_fn
     {
-        arrayify = 0, referify, function_constructor, extern_object_constructor,
+        arrayify = 0, unpack, referify, function_constructor, extern_object_constructor,
         extern_object_set_property, extern_object_get_property,
         assign_extern_variable,
         eof_type

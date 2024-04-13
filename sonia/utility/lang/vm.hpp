@@ -50,10 +50,12 @@ public:
 
         // data move
         push = 16, // push on stack stack[uint]
-        fppush = 17, fnpush = 18, // push on stack stack[fp +- uint]
-        pushi = 19, fppushi = 20, fnpushi = 21, // push index on stack
-        set = 22, // set stack[uint] = stack_top_value
-        fpset = 23, fnset = 24, // set stack[fp +- uint] = stack_top_value
+        pushr = 17, // push on stack stack[stack_back_pos() - uint]
+        fppush = 18, fnpush = 19, // push on stack stack[fp +- uint]
+        pushi = 20, fppushi = 21, fnpushi = 22, // push index on stack
+        set = 23, // set stack[uint] = stack_top_value
+        setr = 24, // set stack[stack_back_pos() - uint] = stack_top_value
+        fpset = 25, fnset = 26, // set stack[fp +- uint] = stack_top_value
         pop, popn, // pop COUNT:uint, pop0 === pop 1
         collapse, // pop COUNT before the back
         // frame data pointer
@@ -247,6 +249,12 @@ public:
         append_uint(num);
     }
 
+    void append_pushr(size_t offset)
+    {
+        code_.push_back(static_cast<uint8_t>(op::pushr));
+        append_uint(offset);
+    }
+
     void append_fpush(intptr_t fpos)
     {
         if (fpos >= 0) {
@@ -322,6 +330,12 @@ public:
     {
         code_.push_back(static_cast<uint8_t>(op::set));
         append_uint(num);
+    }
+
+    void append_setr(size_t offset)
+    {
+        code_.push_back(static_cast<uint8_t>(op::setr));
+        append_uint(offset);
     }
 
     void append_fset(intptr_t fpos)
@@ -515,12 +529,12 @@ struct printer
 
     inline void operator()(identity_type<op::pop>, ContextT& ctx, size_t address) const
     {
-        generic_print(address, "pop"sv) << " ("sv << ctx.stack_back() << ")\n"sv;
+        generic_print(address, "pop"sv) << ' ' << std::dec << (ctx.stack_size() - 1) << " ("sv << ctx.stack_back() << ")\n"sv;
     }
 
     inline void operator()(identity_type<op::popn>, ContextT& ctx, size_t address, size_t n) const
     {
-        generic_print(address, "popn"sv) << ' ' << n << " ("sv;
+        generic_print(address, "popn"sv) << ' ' << std::dec  << (ctx.stack_size() - n - 1) << " - "sv << (ctx.stack_size() - 1) << " ("sv;
         auto sp = ctx.stack_span(0, n);
         if (!sp.empty()) {
             ss << sp.front();
@@ -553,6 +567,11 @@ struct printer
     inline void operator()(identity_type<op::push>, ContextT& ctx, size_t address, size_t index) const
     {
         generic_print(address, "push"sv) << " ["sv << std::dec << index << "]->["sv << ctx.stack_size() << "] ("sv << ctx.stack_at(index) << ")\n"sv;
+    }
+
+    inline void operator()(identity_type<op::pushr>, ContextT& ctx, size_t address, size_t offset) const
+    {
+        generic_print(address, "pushr"sv) << " ["sv << std::dec << (ctx.stack_size() - offset - 1) << "]->["sv << ctx.stack_size() << "] ("sv << ctx.stack_back(offset) << ")\n"sv;
     }
 
     inline void operator()(identity_type<op::fppush>, ContextT& ctx, size_t address, size_t offset) const
@@ -589,6 +608,11 @@ struct printer
     inline void operator()(identity_type<op::set>, ContextT& ctx, size_t address, size_t index) const
     {
         generic_print(address, "set"sv) << " [" << std::dec << (ctx.stack_size() - 1) << "]->[" << index << "] (" << ctx.stack_back() << ")" << "\n";
+    }
+
+    inline void operator()(identity_type<op::setr>, ContextT& ctx, size_t address, size_t offset) const
+    {
+        generic_print(address, "setr"sv) << " [" << std::dec << (ctx.stack_size() - 1) << "]->[" << (ctx.stack_size() - offset - 1) << "] (" << ctx.stack_back() << ")" << "\n";
     }
 
     inline void operator()(identity_type<op::fpset>, ContextT& ctx, size_t address, size_t offset) const
@@ -700,6 +724,12 @@ struct runner
         ctx.stack_push(std::move(val));
     }
 
+    inline void operator()(identity_type<op::pushr>, ContextT& ctx, size_t address, size_t offset) const
+    {
+        var_t val = ctx.stack_back(offset);
+        ctx.stack_push(std::move(val));
+    }
+
     inline void operator()(identity_type<op::fppush>, ContextT& ctx, size_t address, size_t offset) const
     {
         var_t val = ctx.stack_at(ctx.frame_stack_back() + offset);
@@ -730,6 +760,11 @@ struct runner
     inline void operator()(identity_type<op::set>, ContextT& ctx, size_t address, size_t index) const
     {
         ctx.stack_at(index) = ctx.stack_back();
+    }
+
+    inline void operator()(identity_type<op::setr>, ContextT& ctx, size_t address, size_t offset) const
+    {
+        ctx.stack_back(offset) = ctx.stack_back();
     }
 
     inline void operator()(identity_type<op::fpset>, ContextT& ctx, size_t address, size_t offset) const
@@ -931,6 +966,13 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
                 ftor(identity<op::push>, ctx, start_address, index);
                 continue;
             }
+        case op::pushr:
+            {
+                size_t start_address = address++;
+                size_t offset = read_uint(address);
+                ftor(identity<op::pushr>, ctx, start_address, offset);
+                continue;
+            }
         case op::fppush:
             {
                 size_t start_address = address++;
@@ -972,6 +1014,13 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
                 size_t start_address = address++;
                 size_t index = read_uint(address);
                 ftor(identity<op::set>, ctx, start_address, index);
+                continue;
+            }
+        case op::setr:
+            {
+                size_t start_address = address++;
+                size_t offset = read_uint(address);
+                ftor(identity<op::setr>, ctx, start_address, offset);
                 continue;
             }
         case op::fpset:

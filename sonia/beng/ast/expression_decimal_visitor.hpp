@@ -15,9 +15,9 @@ struct expression_decimal_visitor : static_visitor<optional<beng_type>>
 {
     fn_compiler_context& ctx;
     decimal const& dec;
-    std::vector<semantic_expression_type>& result;
+    std::vector<semantic::expression_type>& result;
 
-    expression_decimal_visitor(fn_compiler_context& c, decimal const& d, std::vector<semantic_expression_type>& r)
+    expression_decimal_visitor(fn_compiler_context& c, decimal const& d, std::vector<semantic::expression_type>& r)
         : ctx{ c }
         , dec{ d }
         , result{ r }

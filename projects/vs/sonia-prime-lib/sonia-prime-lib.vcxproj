@@ -236,6 +236,7 @@
     <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_object_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_string_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_vector_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\beng\ast\casts\utility.hpp" />
     <ClInclude Include="..\..\..\sonia\beng\ast\expression_implicit_cast_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\beng\ast\expression_fn_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\beng\ast\lvalue_expression_visitor.hpp" />
@@ -251,7 +252,6 @@
     <ClInclude Include="..\..\..\sonia\beng\beng.hpp" />
     <ClInclude Include="..\..\..\sonia\beng\beng.tab.hpp" />
     <ClInclude Include="..\..\..\sonia\beng\beng.yy.hpp" />
-    <ClInclude Include="..\..\..\sonia\beng\builtins.hpp" />
     <ClInclude Include="..\..\..\sonia\beng\entities\enum_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\beng\entities\functional_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\beng\entities\type_entity.hpp" />
@@ -648,6 +648,9 @@
     <ClInclude Include="..\..\..\sonia\variant.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_array_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_vector_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\beng\ast\casts\expression_cast_utility.cpp" />
     <ClCompile Include="..\..\..\sonia\beng\ast\declaration_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\beng\ast\expression_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\beng\ast\forward_declaration_visitor.cpp" />

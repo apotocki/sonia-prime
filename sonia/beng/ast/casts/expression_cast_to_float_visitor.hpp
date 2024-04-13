@@ -19,11 +19,11 @@ namespace sonia::lang::beng {
 struct expression_cast_to_float_visitor : static_visitor<std::expected<beng_type, error_storage>>
 {
     fn_compiler_context& ctx;
-    expression_locator_t const& el_;
+    context_locator_t cl_;
 
-    expression_cast_to_float_visitor(fn_compiler_context& c, expression_locator_t const& el)
+    expression_cast_to_float_visitor(fn_compiler_context& c, context_locator_t const& cl)
         : ctx{ c }
-        , el_{ el }
+        , cl_{ cl }
     {}
 
     /*
@@ -98,8 +98,7 @@ struct expression_cast_to_float_visitor : static_visitor<std::expected<beng_type
     template <typename T>
     result_type operator()(T const& v) const
     {
-        auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, beng_float_t{}, v, std::move(optexpr) });
+        return std::unexpected(make_error<cast_error>(cl_(), beng_float_t{}, v));
     }
 };
 

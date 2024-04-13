@@ -23,9 +23,9 @@ struct preliminary_type_visitor : static_visitor<beng_type>
 {
     fn_compiler_context& ctx;
     //beng_generic_type const& tp;
-    //std::vector<semantic_expression_type>& result;
+    //std::vector<semantic::expression_type>& result;
 
-    preliminary_type_visitor(fn_compiler_context& c /*, beng_generic_type const& t, std::vector<semantic_expression_type>& r*/)
+    preliminary_type_visitor(fn_compiler_context& c /*, beng_generic_type const& t, std::vector<semantic::expression_type>& r*/)
         : ctx{ c }
         //, tp{ t }
         //, result{ r }
@@ -108,17 +108,9 @@ struct preliminary_type_visitor : static_visitor<beng_type>
     inline beng_union_t operator()(beng_preliminary_union_t & v) const
     {
         beng_union_t result;
-        size_t reserved_size = v.members.size();
-        result.other_members.reserve(reserved_size);
         for (auto t : v.members) {
-            auto rt = apply_visitor(*this, t);
-            if (auto * put = get<beng_union_t>(&rt); put) {
-                for (auto const& m : *put) {
-                    result.append(m);
-                }
-            } else {
-                result.append(std::move(rt));
-            }
+            beng_type r = apply_visitor(*this, t);
+            result.append(std::move(r));
         }
         return result;
     }

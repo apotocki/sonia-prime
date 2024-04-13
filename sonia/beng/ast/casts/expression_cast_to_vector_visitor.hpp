@@ -4,12 +4,8 @@
 
 #pragma once
 
-//#include "sonia/utility/scope_exit.hpp"
-
 #include "sonia/beng/semantic.hpp"
-//#include "expression_visitor.hpp"
-//#include "expression_vector_visitor.hpp"
-#include "fn_compiler_context.hpp"
+#include "sonia/beng/ast/fn_compiler_context.hpp"
 
 #include "sonia/beng/errors.hpp"
 
@@ -19,12 +15,12 @@ struct expression_cast_to_vector_visitor : static_visitor<std::expected<beng_typ
 {
     fn_compiler_context& ctx;
     beng_vector_t const& target;
-    expression_locator_t const& el_;
+    context_locator_t cl_;
 
-    expression_cast_to_vector_visitor(fn_compiler_context& c, beng_vector_t const& t, expression_locator_t const& el)
+    expression_cast_to_vector_visitor(fn_compiler_context& c, beng_vector_t const& t, context_locator_t const& cl)
         : ctx{ c }
         , target{ t }
-        , el_{ el }
+        , cl_{ cl }
     {}
 
     /*
@@ -89,25 +85,10 @@ struct expression_cast_to_vector_visitor : static_visitor<std::expected<beng_typ
     inline result_type operator()(beng_vector_t const& v) const
     {
         if (target.type == v.type) return target;
-        auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, target, v, std::move(optexpr) });
+        return std::unexpected(make_error<cast_error>(cl_(), target, v));
     }
 
-    inline result_type operator()(beng_tuple_t const& v) const
-    {
-        if (v.named_fields.empty()) {
-            bool compatible = true;
-            for (auto t : v.fields) {
-                if (t != target.type) {
-                    compatible = false;
-                    break;
-                }
-            }
-            if (compatible) return target;
-        }
-        auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, target, v, std::move(optexpr) });
-    }
+    result_type operator()(beng_tuple_t const& v) const;
 
     template <typename T>
     result_type operator()(T const& v) const

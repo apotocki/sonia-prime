@@ -34,6 +34,11 @@ struct expression_visitor : static_visitor<std::expected<beng_type, error_storag
         , expected_result{ std::move(er) }
     {}
 
+    expression_visitor(fn_compiler_context& c, optional<expected_result_t> opter)
+        : ctx{ c }
+        , expected_result{ std::move(opter) }
+    {}
+
     expression_visitor(fn_compiler_context& c, nullptr_t)
         : ctx{ c }
     {}
@@ -57,8 +62,8 @@ struct expression_visitor : static_visitor<std::expected<beng_type, error_storag
 
     result_type operator()(negate_expression_t&) const;
     result_type operator()(binary_expression_t<binary_operator_type::ASSIGN> &) const;
-    result_type operator()(binary_expression_t<binary_operator_type::LOGIC_AND> &) const;
-    result_type operator()(binary_expression_t<binary_operator_type::LOGIC_OR> &) const;
+    result_type operator()(logic_and_expression_t &) const;
+    result_type operator()(logic_or_expression_t &) const;
     result_type operator()(binary_expression_t<binary_operator_type::CONCAT>&) const;
 
     function_entity& handle_lambda(lambda_t&) const;

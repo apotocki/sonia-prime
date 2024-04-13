@@ -28,17 +28,16 @@ struct expression_vector_visitor_obs : static_visitor<optional<beng_type>>
 
     result_type operator()(beng_vector_t const& v) const
     {
-        size_t stored_pos = ctx.expressions().size();
-        SCOPE_EXCEPTIONAL_EXIT([this, stored_pos](){ ctx.expressions().resize(stored_pos); });
+        auto estate = ctx.expressions_state();
         expression_visitor elemvis{ ctx, expected_result_t{ v.type, loc_ } };
         for (expression_t & e : vec.elements) {
             if (!apply_visitor(elemvis, e)) {
-                ctx.expressions().resize(stored_pos);
                 return nullopt;
             }
         }
         ctx.append_expression(semantic::push_value{ decimal{ vec.elements.size() } });
         ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::arrayify));
+        estate.detach();
         return v;
     }
 

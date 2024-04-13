@@ -9,8 +9,6 @@
 #include "../ast/expression_visitor.hpp"
 #include "../ast/preliminary_type_visitor.hpp"
 
-#include "sonia/utility/scope_exit.hpp"
-
 namespace sonia::lang::beng {
 
 void type_entity::treat(fn_compiler_context& ctx)
@@ -68,9 +66,7 @@ std::expected<beng_type, error_storage> type_entity::find(fn_compiler_context& c
         THROW_NOT_IMPLEMENTED_ERROR();
     }
     
-    SCOPE_EXCEPTIONAL_EXIT([&ctx, initial_result_sz = ctx.expressions().size()]() {
-        ctx.expressions().resize(initial_result_sz);
-    });
+    auto estate = ctx.expressions_state();
 
     function_signature const& sig = signatures.back();
     size_t posargpos = 0;
@@ -79,7 +75,7 @@ std::expected<beng_type, error_storage> type_entity::find(fn_compiler_context& c
         auto const& argname = std::get<0>(narg);
         auto it = std::ranges::lower_bound(sig.named_parameters(), argname.value, {} /*[](auto const& l, auto const& r) { return l < r; }*/, [](auto const& v) { return std::get<0>(v).value; });
         if (it == sig.named_parameters().end() || std::get<0>(*it) != argname) {
-            return std::unexpected(parameter_not_found_error{ name(), argname });
+            return std::unexpected(make_error<parameter_not_found_error>(name(), argname));
         }
         expression_visitor evis{ ctx, expected_result_t{ std::get<1>(*it), std::get<0>(*it).location } };
         if (auto rtype = apply_visitor(evis, std::get<1>(narg)); !rtype.has_value()) return rtype;
@@ -88,6 +84,7 @@ std::expected<beng_type, error_storage> type_entity::find(fn_compiler_context& c
     ctx.append_expression(semantic::push_value{ decimal{ call.named_args.size() } });
     ctx.append_expression(semantic::push_value{ ctx.u().as_u32string(name()) });
     ctx.append_expression(semantic::invoke_function{ name_ });
+    estate.detach();
     return beng_object_t{ this };
 
     // ids: check uniqueness?
@@ -128,7 +125,7 @@ std::expected<function_entity const*, error_storage> type_entity::find_field_get
         [](auto const& l, auto const& r) { return l < r; },
         [](auto const& v) { return std::get<0>(v).value; });
     if (it == sig.named_parameters().end() || std::get<0>(*it) != f) {
-        return std::unexpected(parameter_not_found_error(name(), f));
+        return std::unexpected(make_error<parameter_not_found_error>(name(), f));
     }
 
     function_signature fn_getter_sig;
@@ -155,7 +152,7 @@ std::expected<function_entity const*, error_storage> type_entity::find_field_set
         [](auto const& l, auto const& r) { return l < r; },
         [](auto const& v) { return std::get<0>(v).value; });
     if (it == sig.named_parameters().end() || std::get<0>(*it) != f) {
-        return std::unexpected(parameter_not_found_error(name(), f));
+        return std::unexpected(make_error<parameter_not_found_error>(name(), f));
     }
 
     function_signature fn_setter_sig;

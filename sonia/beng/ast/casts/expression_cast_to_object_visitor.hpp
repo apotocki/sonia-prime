@@ -21,12 +21,12 @@ struct expression_cast_to_object_visitor : static_visitor<std::expected<beng_typ
 {
     fn_compiler_context& ctx;
     beng_object_t const& target;
-    expression_locator_t const& el_;
+    context_locator_t cl_;
 
-    expression_cast_to_object_visitor(fn_compiler_context& c, beng_object_t const& t, expression_locator_t const& el)
+    expression_cast_to_object_visitor(fn_compiler_context& c, beng_object_t const& t, context_locator_t const& cl)
         : ctx{ c }
         , target{ t }
-        , el_{ el }
+        , cl_{ cl }
     {}
 
     /*
@@ -96,14 +96,12 @@ struct expression_cast_to_object_visitor : static_visitor<std::expected<beng_typ
                 return target;
             }
         }
-        auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, target, v, std::move(optexpr) });
+        return std::unexpected(make_error<cast_error>(cl_(), target, v));
     }
 
     inline result_type operator()(beng_bool_t const& b) const
     {
-        auto [loc, optexpr] = el_();
-        return std::unexpected(cast_error{ loc, target, b, std::move(optexpr) });
+        return std::unexpected(make_error<cast_error>(cl_(), target, b));
     }
 
     template <typename T>

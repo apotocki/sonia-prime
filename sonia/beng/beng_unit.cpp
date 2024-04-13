@@ -42,6 +42,10 @@ unit::unit()
     eregistry_.insert(parrayify);
     set_efn(builtin_fn::arrayify, parrayify->name());
 
+    auto punpack = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::unpack);
+    eregistry_.insert(punpack);
+    set_efn(builtin_fn::unpack, punpack->name());
+
     auto peosp = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::extern_object_set_property);
     eregistry_.insert(peosp);
     set_efn(builtin_fn::extern_object_set_property, peosp->name());
@@ -135,12 +139,12 @@ struct type_printer_visitor : static_visitor<void>
     std::ostringstream & ss;
     explicit type_printer_visitor(unit const& u, std::ostringstream& s) : u_{u}, ss{s} {}
 
-    inline void operator()(beng_bool_t) const { ss << "bool"; }
-    inline void operator()(beng_particular_bool_t const& t) const { ss << "bool("sv << std::boolalpha << t.value << ')'; }
-    inline void operator()(beng_int_t) const { ss << "int"; }
-    inline void operator()(beng_float_t) const { ss << "float"; }
-    inline void operator()(beng_decimal_t) const { ss << "decimal"; }
-    inline void operator()(beng_string_t) const { ss << "string"; }
+    inline void operator()(beng_any_t) const { ss << "any"sv; }
+    inline void operator()(beng_bool_t) const { ss << "bool"sv; }
+    inline void operator()(beng_int_t) const { ss << "int"sv; }
+    inline void operator()(beng_float_t) const { ss << "float"sv; }
+    inline void operator()(beng_decimal_t) const { ss << "decimal"sv; }
+    inline void operator()(beng_string_t) const { ss << "string"sv; }
     inline void operator()(beng_preliminary_object_t const& obj) const { ss << '^' << u_.print(obj.name()); }
     inline void operator()(beng_object_t const& obj) const { ss << '^' << u_.print(obj.name()); }
         
@@ -148,7 +152,7 @@ struct type_printer_visitor : static_visitor<void>
     inline void operator()(beng_fn_base<TupleT, FamilyT> const& fn) const
     {
         (*this)(fn.arg);
-        ss << "->";
+        ss << "->"sv;
         apply_visitor(*this, fn.result);
     }
 

@@ -24,12 +24,12 @@ struct expression_cast_to_enum_visitor : static_visitor<std::expected<beng_type,
 {
     fn_compiler_context& ctx;
     case_expression const& ce;
-    expression_locator_t const& el_;
+    context_locator_t cl_;
 
-    expression_cast_to_enum_visitor(fn_compiler_context& c, case_expression const& e, expression_locator_t const& el)
+    expression_cast_to_enum_visitor(fn_compiler_context& c, case_expression const& e, context_locator_t const& cl)
         : ctx{ c }
         , ce { e }
-        , el_{ el }
+        , cl_{ cl }
     {}
 
     /*
@@ -100,15 +100,15 @@ struct expression_cast_to_enum_visitor : static_visitor<std::expected<beng_type,
     {
         shared_ptr<entity> e = ctx.resolve_entity(obj.name());
         if (!e) [[unlikely]] {
-            return std::unexpected(basic_general_error{ce.name.location, "unresolved context object"sv, obj.name()});
+            return std::unexpected(make_error<basic_general_error>(ce.name.location, "unresolved context object"sv, obj.name()));
         }
         shared_ptr<enum_entity> enum_ent = dynamic_pointer_cast<enum_entity>(e);
         if (!enum_ent) [[unlikely]] {
-            return std::unexpected(basic_general_error{ce.name.location, "is not a enumeration"sv, obj.name()});
+            return std::unexpected(make_error<basic_general_error>(ce.name.location, "is not a enumeration"sv, obj.name()));
         }
         auto const* enumcase = enum_ent->find(ce.name.value);
         if (!enumcase) [[unlikely]] {
-            return std::unexpected(unknown_case_error{ce, obj.name()});
+            return std::unexpected(make_error<unknown_case_error>(ce, obj.name()));
         }
         ctx.append_expression(semantic::push_value{ enumcase->value });
         return obj;
@@ -129,19 +129,14 @@ struct expression_cast_to_enum_visitor : static_visitor<std::expected<beng_type,
             if (opt.has_value()) { return opt; }
             err.alternatives.emplace_back(std::move(opt.error()));
         }
-        return std::unexpected(std::move(err));
+        return std::unexpected(make_error<alt_error>(std::move(err)));
     }
 
     template <typename T>
     inline result_type operator()(T const&) const
     {
         // THROW_NOT_IMPLEMENTED_ERROR();
-        auto [loc, e] = el_();
-        if (e) {
-            return std::unexpected(basic_general_error{ loc, "is not a enumeration"sv, *e });
-        } else {
-            return std::unexpected(basic_general_error{ loc, "is not a enumeration"sv });
-        }
+        return std::unexpected(make_error<basic_general_error>(cl_(), "is not a enumeration"sv));
     }
 };
 

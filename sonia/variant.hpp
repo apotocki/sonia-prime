@@ -17,6 +17,7 @@ using boost::static_visitor;
 using boost::apply_visitor;
 using boost::get;
 using boost::make_recursive_variant;
+using boost::recursive_wrapper;
 
 }
 

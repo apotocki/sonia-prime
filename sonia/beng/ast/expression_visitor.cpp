@@ -140,7 +140,7 @@ expression_visitor::result_type expression_visitor::operator()(binary_expression
     THROW_NOT_IMPLEMENTED_ERROR();
     */
 }
-
+/*
 void attach_not_true_node(semantic::logic_tree_node_t & parent, shared_ptr<semantic::logic_tree_node_t> child)
 {
     if (parent.true_branch) {
@@ -214,19 +214,15 @@ expression_visitor::result_type expression_visitor::operator()(logic_and_express
     // is prev a logical branch?
     //auto *prevcond = get<semantic::logic_tree_node_t>(&ctx.expressions().back());
     //THROW_NOT_IMPLEMENTED_ERROR();
-    /*
 
-    cond.true_branch.emplace_back(semantic::truncate_values{ 1, false }); // remove true valued first argument
-    ctx.append_expression(std::move(cond));
-    ctx.push_chain(get<semantic::conditional<semantic::expression_type>>(ctx.expressions().back()).true_branch);
-    
-    ctx.pop_chain();
-    return rtype;
-    //return make_union_type(beng_particular_bool_t{ false }, &*rtype); // false || rtype
-    */
+    //cond.true_branch.emplace_back(semantic::truncate_values{ 1, false }); // remove true valued first argument
+    //ctx.append_expression(std::move(cond));
+    //ctx.push_chain(get<semantic::conditional<semantic::expression_type>>(ctx.expressions().back()).true_branch);
+    //
+    //ctx.pop_chain();
+    //return rtype;
+    ////return make_union_type(beng_particular_bool_t{ false }, &*rtype); // false || rtype
 }
-
-
 
 expression_visitor::result_type expression_visitor::operator()(logic_or_expression_t& op) const
 {
@@ -263,15 +259,81 @@ expression_visitor::result_type expression_visitor::operator()(logic_or_expressi
     }
     return apply_cast(restype, op);
     
-    /*
-    semantic::conditional<semantic::expression_type> cond { semantic::condition_type::logic };
-    cond.false_branch.emplace_back(semantic::truncate_values{ 1, false }); // remove false valued first argument
-    ctx.append_expression(std::move(cond));
-    ctx.push_chain(get<semantic::conditional<semantic::expression_type>>(ctx.expressions().back()).false_branch);
-    auto rargvis = exprt ? expression_visitor{ ctx, expected_result_t{ *exprt, op.location } } : expression_visitor{ ctx };
-    return apply_visitor(rargvis, op.right);
-    //return make_union_type(std::move(*ltype), &*rtype);  // true || rtype
-    */
+    //semantic::conditional<semantic::expression_type> cond { semantic::condition_type::logic };
+    //cond.false_branch.emplace_back(semantic::truncate_values{ 1, false }); // remove false valued first argument
+    //ctx.append_expression(std::move(cond));
+    //ctx.push_chain(get<semantic::conditional<semantic::expression_type>>(ctx.expressions().back()).false_branch);
+    //auto rargvis = exprt ? expression_visitor{ ctx, expected_result_t{ *exprt, op.location } } : expression_visitor{ ctx };
+    //return apply_visitor(rargvis, op.right);
+    ////return make_union_type(std::move(*ltype), &*rtype);  // true || rtype
+}
+*/
+
+expression_visitor::result_type expression_visitor::operator()(logic_and_expression_t& op) const
+{
+    auto largvis = expected_result
+        ? expression_visitor{ ctx, expected_result_t{ beng_type{beng_any_t{}} || expected_result->type, expected_result->location }}
+        : expression_visitor{ ctx, nullptr };
+
+    auto ltype = apply_visitor(largvis, op.left);
+    if (!ltype.has_value()) return ltype;
+
+    ctx.append_expression(semantic::conditional_t{});
+    semantic::conditional_t & cond = get<semantic::conditional_t>(ctx.expressions().back());
+    auto st = ctx.expressions_state(); // pin state
+
+    ctx.push_chain(cond.true_branch);
+    ctx.append_expression(semantic::truncate_values(1, false)); // remove result of left expression
+    expression_visitor rargvis{ ctx, expected_result };
+    auto rtype = apply_visitor(rargvis, op.right);
+    if (!rtype.has_value()) return rtype;
+    st.restore_and_detach();
+    
+    beng_bunion_t const* pbur = get<beng_bunion_t>(&rtype.value());
+    beng_bunion_t const* pbul = get<beng_bunion_t>(&ltype.value());
+
+    beng_bunion_t res_type{
+        /*true_type*/  pbur ? pbur->true_type : rtype.value(),
+        /*false_type*/ (pbul ? pbul->false_type : ltype.value()) || (pbur ? pbur->false_type : rtype.value())
+    };
+    if (res_type.true_type == res_type.false_type) {
+        return apply_cast(res_type.true_type, op);
+    }
+    return apply_cast(res_type, op);
+}
+
+expression_visitor::result_type expression_visitor::operator()(logic_or_expression_t& op) const
+{
+    auto largvis = expected_result
+        ? expression_visitor{ ctx, expected_result_t{ beng_type{beng_any_t{}} || expected_result->type, expected_result->location }}
+        : expression_visitor{ ctx, nullptr };
+    
+    auto ltype = apply_visitor(largvis, op.left);
+    if (!ltype.has_value()) return ltype;
+
+    ctx.append_expression(semantic::conditional_t{});
+    semantic::conditional_t& cond = get<semantic::conditional_t>(ctx.expressions().back());
+    auto st = ctx.expressions_state(); // pin state
+
+    ctx.push_chain(cond.false_branch);
+    ctx.append_expression(semantic::truncate_values(1, false)); // remove result of left expression
+    expression_visitor rargvis{ ctx, expected_result };
+    auto rtype = apply_visitor(rargvis, op.right);
+    if (!rtype.has_value()) return rtype;
+    st.restore_and_detach();
+
+    beng_bunion_t const* pbur = get<beng_bunion_t>(&rtype.value());
+    beng_bunion_t const* pbul = get<beng_bunion_t>(&ltype.value());
+
+    beng_bunion_t res_type{
+        /*true_type*/  (pbul ? pbul->true_type : ltype.value()) || (pbur ? pbur->true_type : rtype.value()),
+        /*false_type*/ pbur ? pbur->false_type : rtype.value()
+    };
+
+    if (res_type.true_type == res_type.false_type) {
+        return apply_cast(res_type.true_type, op);
+    }
+    return apply_cast(res_type, op);
 }
 
 expression_visitor::result_type expression_visitor::operator()(binary_expression_t<binary_operator_type::CONCAT>& op) const
@@ -319,9 +381,9 @@ expression_visitor::result_type expression_visitor::operator()(member_expression
     }
 
     if (me.is_object_optional) {
-        semantic::conditional<semantic::expression_type> cond{ semantic::condition_type::optionality };
+        semantic::not_empty_condition_t cond{ };
         ctx.append_expression(std::move(cond));
-        ctx.push_chain(get<semantic::conditional<semantic::expression_type>>(ctx.expressions().back()).true_branch);
+        ctx.push_chain(get<semantic::not_empty_condition_t>(ctx.expressions().back()).branch);
     }
 
     ctx.append_expression(semantic::invoke_function{ getter->name() });

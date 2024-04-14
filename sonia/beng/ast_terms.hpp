@@ -54,8 +54,6 @@ using annotated_u32string = annotated<small_u32string>;
 //};
 
 
-
-
 // ======================================================================== preliminary types
 
 #define BENG_TRIVIAL_CMP(name) \

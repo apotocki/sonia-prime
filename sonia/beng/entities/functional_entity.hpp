@@ -44,7 +44,7 @@ public:
     bool is_defined() const { return !!is_defined_; }
     bool is_variable_index() const { return !!is_variable_index_; }
     bool is_inline() const { return !!is_inline_; }
-    bool is_void() const { return signature_.fn_type.result == beng_type{ beng_tuple_t{} }; }
+    bool is_void() const { return signature_.fn_type.result == beng_tuple_t{}; }
     size_t get_address() const { return address_; }
     void set_inline(bool val = true) { is_inline_ = val ? 1 : 0; is_defined_ = 1; }
     void set_variable_index(size_t index) { address_ = static_cast<uint64_t>(index); is_variable_index_ = 1; is_defined_ = 1; }

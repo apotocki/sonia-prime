@@ -64,6 +64,10 @@ struct type_mangler_visitor : static_visitor<qname>
         ss << ')';
         */
     }
+    inline result_type operator()(beng_bunion_t const& tpl) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
     inline result_type operator()(beng_union_t const& tpl) const
     {
         THROW_NOT_IMPLEMENTED_ERROR();
@@ -153,6 +157,30 @@ beng_type make_union_type(beng_type arg0, beng_type const* parg1)
         result.append(*parg1);
     }
     result.append(std::move(arg0));
+    if (result.size() == 1) {
+        return *result.begin();
+    } else {
+        return result;
+    }
+}
+
+beng_type operator|| (beng_type const& l, beng_type const& r)
+{
+    beng_union_t result;
+    if (beng_union_t const* pu1 = get<beng_union_t>(&l); pu1) {
+        result = *pu1;
+    } else if (beng_bunion_t const* pbu1 = get<beng_bunion_t>(&l); pbu1) {
+        result.append(pbu1->true_type);
+        result.append(pbu1->false_type);
+    } else {
+        result.append(l);
+    }
+    if (beng_bunion_t const* pbu2 = get<beng_bunion_t>(&l); pbu2) {
+        result.append(pbu2->true_type);
+        result.append(pbu2->false_type);
+    } else {
+        result.append(r);
+    }
     if (result.size() == 1) {
         return *result.begin();
     } else {

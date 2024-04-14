@@ -266,13 +266,21 @@ public:
             }
         }
 
-        void restore() {
+        void restore()
+        {
             pctx_->expr_stack_.resize(stack_size_);
             pctx_->expressions().resize(cursize_);
         }
 
-        void detach() {
+        void detach()
+        {
             pctx_ = nullptr;
+        }
+
+        void restore_and_detach()
+        {
+            restore();
+            detach();
         }
     };
 

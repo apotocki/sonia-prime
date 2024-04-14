@@ -101,7 +101,7 @@ enum class blob_type : uint8_t {
 
 inline bool is_ref(blob_type val) noexcept
 {
-    return val == blob_type::blob_reference || val == blob_type::object;
+    return val == blob_type::blob_reference; // || val == blob_type::object;
 }
 
 

@@ -195,6 +195,15 @@ struct type_printer_visitor : static_visitor<void>
         ss << ')';
     }
 
+    inline void operator()(beng_bunion_t const& bu) const
+    {
+        ss << "{true: "sv;
+        apply_visitor(*this, bu.true_type);
+        ss << ", false: "sv;
+        apply_visitor(*this, bu.true_type);
+        ss << '}';
+    }
+
     inline void operator()(beng_union_t const& tpl) const
     {
         for (auto const& f : tpl) {

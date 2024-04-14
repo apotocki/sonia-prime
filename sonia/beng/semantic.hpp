@@ -56,6 +56,21 @@ template <typename T> using beng_fn = beng_fn_base<beng_tuple<T>, T>;
 //    inline auto operator<=>(beng_particular_bool_t const&) const = default;
 //};
 
+template <typename T> struct beng_bunion
+{
+    T true_type;
+    T false_type;
+
+    inline bool operator==(beng_bunion const& rhs) const = default; // { return true_type == rhs.true_type && false_type == rhs.false_type; };
+    inline auto operator<=>(beng_bunion const& rhs) const = default;
+    /*
+    {
+        if (auto res = true_type <=> rhs.true_type; res != std::strong_ordering::equivalent) return res;
+        return false_type <=> rhs.false_type;
+    }
+    */
+};
+
 template <typename T> struct beng_union
 {
     boost::container::small_vector<T, 8> other_members;
@@ -72,7 +87,7 @@ template <typename T> struct beng_union
         using value_type = T;
 
         beng_union const* un_;
-        T store_;
+        T store_ = beng_any_t{};
         int state_;
 
         member_iterator() : un_ {nullptr} {}
@@ -220,19 +235,55 @@ template <typename T> struct beng_union
     }
 };
 
-using beng_type = make_recursive_variant<
+//using beng_type_variant = make_recursive_variant<
+//    beng_any_t, beng_bool_t, beng_int_t, beng_float_t, beng_decimal_t, beng_string_t, beng_object_t,
+//    beng_fn<recursive_variant_>,
+//    beng_vector<recursive_variant_>,
+//    beng_array<recursive_variant_>,
+//    beng_tuple<recursive_variant_>,
+//    beng_union<recursive_variant_>,
+//    beng_bunion<recursive_variant_>
+//>::type;
+
+struct beng_type;
+using beng_type_variant = variant<
     beng_any_t, beng_bool_t, beng_int_t, beng_float_t, beng_decimal_t, beng_string_t, beng_object_t,
-    beng_fn<recursive_variant_>,
-    beng_vector<recursive_variant_>,
-    beng_array<recursive_variant_>,
-    beng_tuple<recursive_variant_>,
-    beng_union<recursive_variant_>
->::type;
+    recursive_wrapper<beng_fn<beng_type>>,
+    recursive_wrapper<beng_vector<beng_type>>,
+    recursive_wrapper<beng_array<beng_type>>,
+    recursive_wrapper<beng_tuple<beng_type>>,
+    recursive_wrapper<beng_union<beng_type>>,
+    recursive_wrapper<beng_bunion<beng_type>>
+>;
+
+struct beng_type : beng_type_variant
+{
+    template <typename T>
+    requires(!std::is_same_v<beng_type, std::remove_cvref_t<T>>)
+    beng_type(T && val) : beng_type_variant(std::forward<T>(val)) {}
+
+    beng_type(beng_type const&) = default;
+    beng_type(beng_type &&) = default;
+    beng_type& operator=(beng_type const&) = default;
+    beng_type& operator=(beng_type&&) = default;
+
+    template <typename T>
+    beng_type& operator=(T&& val) { beng_type_variant::operator= (std::forward<T>(val)); return *this; }
+
+    template <typename T>
+    inline bool operator==(T const& rhs) const { return beng_type_variant::operator==(beng_type_variant{rhs}); }
+    inline bool operator==(beng_type const& rhs) const { return beng_type_variant::operator==(static_cast<beng_type_variant const&>(rhs)); }
+
+    inline auto operator<=>(beng_type const& rhs) const { return variant_compare_three_way{}(*this, rhs); }
+};
+
+beng_type operator|| (beng_type const& l, beng_type const& r);
 
 using beng_vector_t = beng_vector<beng_type>;
 using beng_array_t = beng_array<beng_type>;
 using beng_tuple_t = beng_tuple<beng_type>;
 using beng_union_t = beng_union<beng_type>;
+using beng_bunion_t = beng_bunion<beng_type>;
 using beng_fn_t = beng_fn<beng_type>;
 
 beng_type make_union_type(beng_type, beng_type const*);
@@ -298,28 +349,34 @@ struct invoke_function
     }
 };
 
-enum class condition_type : uint8_t
-{
-    logic,
-    optionality
-};
+//enum class condition_type : uint8_t
+//{
+//    logic,
+//    optionality
+//};
 
 template <typename SemanticExpressionT>
 struct conditional
 {
-    condition_type type;
+    //condition_type type;
     std::vector<SemanticExpressionT> true_branch;
     std::vector<SemanticExpressionT> false_branch;
 };
 
 template <typename SemanticExpressionT>
-struct logic_tree_node
+struct not_empty_condition
 {
-    std::vector<SemanticExpressionT> condition_expression;
-    beng_type expression_type = beng_tuple_t{};
-    shared_ptr<logic_tree_node> true_branch;
-    shared_ptr<logic_tree_node> false_branch;
+    std::vector<SemanticExpressionT> branch;
 };
+
+//template <typename SemanticExpressionT>
+//struct logic_tree_node
+//{
+//    std::vector<SemanticExpressionT> condition_expression;
+//    beng_type expression_type = beng_tuple_t{};
+//    shared_ptr<logic_tree_node> true_branch;
+//    shared_ptr<logic_tree_node> false_branch;
+//};
 
 // make_recursive_variant<
 using expression_type = make_recursive_variant<
@@ -328,10 +385,13 @@ using expression_type = make_recursive_variant<
     set_variable, set_by_offset, invoke_function, return_statement,
     std::vector<recursive_variant_>,
     conditional<recursive_variant_>,
-    logic_tree_node<recursive_variant_>
+    not_empty_condition<recursive_variant_>
+    //logic_tree_node<recursive_variant_>
 >::type;
 
-using logic_tree_node_t = logic_tree_node<expression_type>;
+using conditional_t = conditional<expression_type>;
+using not_empty_condition_t = not_empty_condition<expression_type>;
+//using logic_tree_node_t = logic_tree_node<expression_type>;
 
 }
 

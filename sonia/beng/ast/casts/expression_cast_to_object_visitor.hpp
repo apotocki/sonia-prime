@@ -99,15 +99,15 @@ struct expression_cast_to_object_visitor : static_visitor<std::expected<beng_typ
         return std::unexpected(make_error<cast_error>(cl_(), target, v));
     }
 
-    inline result_type operator()(beng_bool_t const& b) const
-    {
-        return std::unexpected(make_error<cast_error>(cl_(), target, b));
-    }
+    //inline result_type operator()(beng_bool_t const& b) const
+    //{
+    //    return std::unexpected(make_error<cast_error>(cl_(), target, b));
+    //}
 
     template <typename T>
     result_type operator()(T const& v) const
     {
-        THROW_NOT_IMPLEMENTED_ERROR();
+        return std::unexpected(make_error<cast_error>(cl_(), target, v));
     }
 };
 

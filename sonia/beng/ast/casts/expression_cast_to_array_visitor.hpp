@@ -66,7 +66,7 @@ struct expression_cast_to_array_visitor : static_visitor<std::expected<beng_type
 
     inline result_type operator()(beng_object_t const& v) const
     {
-        if (beng_type{ v } == expected_tp) return expected_tp;
+        if (expected_tp == v) return expected_tp;
         if (auto const* pte = dynamic_cast<type_entity const*>(v.value); pte) {
             if (pte->try_cast(ctx, result, expected_tp)) {
                 return expected_tp;

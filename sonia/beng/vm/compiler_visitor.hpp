@@ -153,7 +153,7 @@ public:
         unit_.bvm().append_jmp(*local_return_address);
     }
 
-    inline void operator()(semantic::conditional<semantic::expression_type> const& c) const
+    inline void operator()(semantic::conditional_t const& c) const
     {
         size_t branch_pt = unit_.bvm().get_ip();
         if (c.false_branch.empty() && c.true_branch.empty()) return;
@@ -196,6 +196,11 @@ public:
         } else {
             unit_.bvm().append_pop(c.count);
         }
+    }
+
+    inline void operator()(semantic::not_empty_condition_t const& n) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
     }
 
     template <typename T>

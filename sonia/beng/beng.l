@@ -132,6 +132,8 @@ DECIMAL_WORD			"decimal"
 TRUE					"true"
 FALSE					"false"
 
+WEAK					"weak"
+
 END_STATEMENT			";"
 COMMA					","
 OPEN_BRACE				"{"
@@ -279,9 +281,11 @@ HASHTAG					"#"
 	{STRING_WORD} { return (beng_lang::parser::token::STRING_WORD); }
 	{DECIMAL_WORD} { return (beng_lang::parser::token::DECIMAL_WORD); }
 
+	{WEAK} { return (beng_lang::parser::token::WEAK); }
+
 	{TRUE} { variant_emplace(location); return (beng_lang::parser::token::TRUE); }
 	{FALSE} { variant_emplace(location); return (beng_lang::parser::token::FALSE); }
-
+	
 	{OPEN_BRACE}			{ return (beng_lang::parser::token::OPEN_BRACE); }
 	{CLOSE_BRACE}			{ return (beng_lang::parser::token::CLOSE_BRACE); }
 	{OPEN_PARENTHESIS}		{ variant_emplace(location); return (beng_lang::parser::token::OPEN_PARENTHESIS); }

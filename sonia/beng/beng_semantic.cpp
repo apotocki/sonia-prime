@@ -188,4 +188,42 @@ beng_type operator|| (beng_type const& l, beng_type const& r)
     }
 }
 
+struct union_type_remove_visitor : static_visitor<bool>
+{
+    beng_union_t& res;
+    explicit union_type_remove_visitor(beng_union_t& r) : res{ r } {}
+    using basic_type = beng_union_t::basic_type;
+
+    bool operator()(beng_bool_t const&) const { res.basic_members &= ~(uint16_t)basic_type::bool_e; return true; }
+    bool operator()(beng_int_t const&) const { res.basic_members &= ~(uint16_t)basic_type::int_e; return true; }
+    bool operator()(beng_float_t const&) const { res.basic_members &= ~(uint16_t)basic_type::float_e; return true; }
+    bool operator()(beng_decimal_t const&) const { res.basic_members &= ~(uint16_t)basic_type::decimal_e; return true; }
+    bool operator()(beng_string_t const&) const { res.basic_members &= ~(uint16_t)basic_type::string_e; return true; }
+    bool operator()(beng_tuple_t const& t) const
+    {
+        if (!t.empty()) return false;
+        res.basic_members &= ~(uint16_t)basic_type::nil_e;
+        return true;
+    }
+
+    template <typename T>
+    bool operator()(T const& t) const { return false; }
+};
+
+beng_type operator- (beng_union_t const& l, beng_type const& r)
+{
+    beng_union_t result = l;
+    if (!apply_visitor(union_type_remove_visitor{ result }, r)) {
+        auto it = std::lower_bound(result.other_members.begin(), result.other_members.end(), beng_type{ r });
+        if (it != result.other_members.end() && *it == r) {
+            result.other_members.erase(it);
+        }
+    }
+    if (result.size() == 1) {
+        return *result.begin();
+    } else {
+        return result;
+    }
+}
+
 }

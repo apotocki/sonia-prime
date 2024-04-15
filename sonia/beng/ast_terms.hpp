@@ -339,6 +339,7 @@ struct let_statement_decl
     annotated_identifier aname;
     optional<ExprT> expression;
     optional<beng_preliminary_type> type;
+    bool weakness;
 
     identifier const& name() const { return aname.value; }
     lex::resource_location const& location() const { return aname.location; }

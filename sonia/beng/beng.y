@@ -185,7 +185,6 @@ void beng_lang::parser::error(const location_type& loc, const std::string& msg)
 
 // 15 priority
 %right ASSIGN
-%right QMARK
 
 // 14 priority
 %left LOGIC_OR
@@ -204,6 +203,7 @@ void beng_lang::parser::error(const location_type& loc, const std::string& msg)
 
 // 2 priority
 %left OPEN_PARENTHESIS CLOSE_PARENTHESIS OPEN_SQUARE_BRACKET CLOSE_SQUARE_BRACKET ARROW POINT
+%right QMARK
 
 //%token DBLCOLON             "`::`"
 %left DBLCOLON             "`::`"
@@ -211,7 +211,7 @@ void beng_lang::parser::error(const location_type& loc, const std::string& msg)
 // DECLARATIONS
 %type <declaration_set_t> declaration_any
 %type <declaration_t> generic-decl
-%type <let_statement_decl_t> let-decl
+%type <let_statement_decl_t> let-decl-start let-decl-start-with-opt-type let-decl
 
 %type <std::vector<infunction_declaration_t>> infunction_declaration_any
 %type <infunction_declaration_t> opt-infunction-decl
@@ -247,6 +247,7 @@ void beng_lang::parser::error(const location_type& loc, const std::string& msg)
 %token FLOAT
 %token STRING_WORD
 %token DECIMAL_WORD
+%token WEAK "weak modifier"
 %type<beng_preliminary_type> type-expr
 //%type<beng_preliminary_tuple_t> opt-type-list
 
@@ -254,8 +255,9 @@ void beng_lang::parser::error(const location_type& loc, const std::string& msg)
 //%type <declaration_t> 
 
 // EXPRESSIONS
-%token <sonia::lang::lex::resource_location> TRUE
-%token <sonia::lang::lex::resource_location> FALSE
+%token <sonia::lang::lex::resource_location> TRUE "true"
+%token <sonia::lang::lex::resource_location> FALSE "false"
+
 %type <expression_t> expression compound-expression
 %type <named_expression_term_list_t> opt-named-expr-list-any opt-named-expr-list
 %type <named_expression_term_t> opt-named-expr
@@ -344,12 +346,23 @@ generic-decl:
 	;
  
 let-decl :
-      LET identifier COLON type-expr END_STATEMENT
-        { $$ = let_statement_decl_t{ std::move($2), nullopt, std::move($4)}; }
-    | LET identifier COLON type-expr ASSIGN expression END_STATEMENT
-        { $$ = let_statement_decl_t{ std::move($2), std::move($6), std::move($4)}; IGNORE($5); }
-    | LET identifier ASSIGN expression END_STATEMENT
-        { $$ = let_statement_decl_t{ std::move($2), std::move($4) }; IGNORE($3); }
+      let-decl-start-with-opt-type END_STATEMENT
+        { $$ = std::move($1); }
+    | let-decl-start-with-opt-type ASSIGN expression END_STATEMENT
+        { $$ = std::move($1); $$.expression = std::move($3); IGNORE($2); }
+    ;
+
+let-decl-start :
+      LET identifier
+        { $$ = let_statement_decl_t{ std::move($2), {}, {}, false }; }
+    | LET WEAK identifier
+        { $$ = let_statement_decl_t{ std::move($3), {}, {}, true }; }
+    ;
+
+let-decl-start-with-opt-type :
+      let-decl-start
+    | let-decl-start COLON type-expr
+        { $$ = std::move($1); $$.type = std::move($3); }
     ;
 
 infunction_declaration_any:

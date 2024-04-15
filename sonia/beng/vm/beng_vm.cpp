@@ -48,14 +48,15 @@ public:
 
     size_t call(vm::context & ctx)
     {
+        // capture: nil OR array of refs OR ref
         if (!capture_.is_nil()) {
             auto cnt = capture_.size_of<blob_result>();
             if (cnt == 1) {
-                BOOST_ASSERT(is_ref(capture_->type));
+                BOOST_ASSERT(is_ref(capture_->type) || capture_->type == blob_type::object);
                 ctx.stack_push(capture_);
             } else {
                 for (auto const& b : span{ capture_.data_of<blob_result>(), cnt }) {
-                    BOOST_ASSERT(is_ref(b.type));
+                    BOOST_ASSERT(is_ref(b.type) || b.type == blob_type::object);
                     ctx.stack_push(b);
                 }
             }
@@ -145,9 +146,12 @@ std::string vm::context::ecall_describe(size_t fn_index) const
 {
     using builtin_fn = virtual_stack_machine::builtin_fn;
     switch ((builtin_fn)fn_index) {
+    case builtin_fn::is_nil: return "is_nil";
     case builtin_fn::arrayify: return "arrayify";
     case builtin_fn::unpack: return "unpack";
     case builtin_fn::referify: return "referify";
+    case builtin_fn::weak_create: return "weak_create";
+    case builtin_fn::weak_lock: return "weak_lock";
     case builtin_fn::function_constructor: return "function_constructor";
     case builtin_fn::extern_object_constructor: return "extern_object_constructor";
     case builtin_fn::extern_object_set_property: return "extern_object_set_property";
@@ -279,6 +283,12 @@ void vm::context::construct_function()
     stack_push(std::move(res));
 }
 
+void vm::context::is_nil()
+{
+    auto const& val = stack_back();
+    stack_push(bool_blob_result(val.is_nil() || ::is_nil(unref(*val))));
+}
+
 void vm::context::arrayify()
 {
     boost::container::small_vector<blob_result, 4> elements;
@@ -315,10 +325,52 @@ void vm::context::unpack()
 void vm::context::referify()
 {
     variable_type& v = stack_at(stack_back().as<size_t>());
-    if (!is_ref(v->type)) {
+    if (!is_ref(v->type) && v->type != blob_type::object) { // objects are already reference types
         v.referify();
     }
-    stack_pop();
+    stack_pop(); // removing var index from stack
+}
+
+void vm::context::weak_create()
+{
+    using namespace sonia::invokation;
+    using wrapper_object_t = wrapper_object<shared_ptr<invokable>>;
+    using weak_wrapper_object_t = wrapper_object<weak_ptr<invokable>>;
+    smart_blob& val = stack_back();
+    if (val->type == blob_type::object) {
+        object& obj = val.as<object>();
+        if (auto* psobj = dynamic_cast<wrapper_object_t*>(&obj); psobj) {
+            stack_push(smart_blob{object_blob_result<weak_wrapper_object_t>(psobj->value)});
+        } else if (auto* pwobj = dynamic_cast<weak_wrapper_object_t*>(&obj); pwobj) { // already weak
+            stack_push(val);
+        } else { // weak for non-object values
+            THROW_NOT_IMPLEMENTED_ERROR();
+        }
+        return;
+    }
+    THROW_NOT_IMPLEMENTED_ERROR();
+}
+
+void vm::context::weak_lock()
+{
+    using namespace sonia::invokation;
+    using wrapper_object_t = wrapper_object<shared_ptr<invokable>>;
+    using weak_wrapper_object_t = wrapper_object<weak_ptr<invokable>>;
+    smart_blob& val = stack_back();
+    blob_result const& urval = unref(*val);
+    if (urval.type == blob_type::object) {
+        object& obj = as<object>(urval);
+        if (auto* pwobj = dynamic_cast<weak_wrapper_object_t*>(&obj); pwobj) { // already weak
+            smart_blob strong{ object_blob_result<wrapper_object_t>(pwobj->value) };
+            val.swap(strong);
+        } else if (auto* psobj = dynamic_cast<wrapper_object_t*>(&obj); psobj) { // already not weak
+            // do nothing
+        } else {
+            THROW_NOT_IMPLEMENTED_ERROR();
+        }
+        return;
+    }
+    THROW_NOT_IMPLEMENTED_ERROR();
 }
 
 void vm::context::call_function_object()
@@ -336,9 +388,12 @@ void vm::context::call_function_object()
 
 virtual_stack_machine::virtual_stack_machine()
 {
+    set_efn((size_t)builtin_fn::is_nil, [](vm::context& ctx) { ctx.is_nil(); });
     set_efn((size_t)builtin_fn::arrayify, [](vm::context& ctx) { ctx.arrayify(); });
     set_efn((size_t)builtin_fn::unpack, [](vm::context& ctx) { ctx.unpack(); });
     set_efn((size_t)builtin_fn::referify, [](vm::context& ctx) { ctx.referify(); });
+    set_efn((size_t)builtin_fn::weak_create, [](vm::context& ctx) { ctx.weak_create(); });
+    set_efn((size_t)builtin_fn::weak_lock, [](vm::context& ctx) { ctx.weak_lock(); });
     set_efn((size_t)builtin_fn::function_constructor, [](vm::context& ctx) { ctx.construct_function(); });
     set_efn((size_t)builtin_fn::extern_object_constructor, [](vm::context& ctx) { ctx.construct_extern_object(); });
     set_efn((size_t)builtin_fn::extern_object_set_property, [](vm::context& ctx) { ctx.extern_object_set_property(); });

@@ -200,7 +200,15 @@ public:
 
     inline void operator()(semantic::not_empty_condition_t const& n) const
     {
-        THROW_NOT_IMPLEMENTED_ERROR();
+        size_t branch_pt = unit_.bvm().get_ip();
+        unit_.bvm().append_pop(1); // remove boolean value false = is_nil
+        for (auto const& e : n.branch) {
+            apply_visitor(*this, e);
+        }
+        size_t branch_end_pt = unit_.bvm().get_ip();
+        bvm().append_ecall(virtual_stack_machine::builtin_fn::is_nil);
+        unit_.bvm().append_jtx(branch_end_pt - branch_pt);
+        unit_.bvm().swap_code_blocks(branch_pt, branch_end_pt);
     }
 
     template <typename T>

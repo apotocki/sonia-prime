@@ -78,7 +78,7 @@ class unit
 public:
     enum class builtin_fn
     {
-        arrayify = 0, unpack,
+        arrayify = 0, unpack, weak_create, weak_lock,
         extern_object_set_property,
         extern_object_get_property,
         tostring, negate,

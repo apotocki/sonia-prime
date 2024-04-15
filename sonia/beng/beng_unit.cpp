@@ -46,6 +46,14 @@ unit::unit()
     eregistry_.insert(punpack);
     set_efn(builtin_fn::unpack, punpack->name());
 
+    auto pweak_create = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::weak_create);
+    eregistry_.insert(pweak_create);
+    set_efn(builtin_fn::weak_create, pweak_create->name());
+
+    auto pweak_lock = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::weak_lock);
+    eregistry_.insert(pweak_lock);
+    set_efn(builtin_fn::weak_lock, pweak_lock->name());
+
     auto peosp = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::extern_object_set_property);
     eregistry_.insert(peosp);
     set_efn(builtin_fn::extern_object_set_property, peosp->name());
@@ -206,8 +214,9 @@ struct type_printer_visitor : static_visitor<void>
 
     inline void operator()(beng_union_t const& tpl) const
     {
+        bool first = true;
         for (auto const& f : tpl) {
-            if (&f != &*tpl.begin()) ss << "||";
+            if (!first) ss << "|"sv; else first = false;
             apply_visitor(*this, f);
         }
     }

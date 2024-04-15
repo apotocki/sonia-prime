@@ -225,14 +225,6 @@ inline bool is_numeric(blob_type val) noexcept
 
 inline void reset(blob_result& br) { br.type = blob_type::nil; br.need_unpin = 0; }
 
-inline bool is_nil(blob_result const& val) noexcept { return val.type == blob_type::nil; }
-
-inline bool is_array(blob_result const& val) noexcept { return (((uint8_t)val.type) & 0x80) != 0; }
-inline bool contains_string(blob_result const& val) noexcept
-{
-    return val.type == blob_type::string || val.type == blob_type::error || val.type == blob_type::function;
-}
-
 template <typename T>
 inline const T* data_of(blob_result const& val) noexcept
 {
@@ -243,6 +235,31 @@ template <typename T>
 inline T* mutable_data_of(blob_result const& val) noexcept
 {
     return const_cast<T*>(data_of<T>(val));
+}
+
+inline blob_result const& unref(blob_result const& val)
+{
+    blob_result const* pval = &val;
+    while (is_ref(pval->type)) {
+        pval = data_of<blob_result>(*pval);
+    }
+    return *pval;
+}
+
+inline bool is_nil(blob_result const& val) noexcept
+{
+    return val.type == blob_type::nil;
+}
+
+inline bool is_array(blob_result const& val) noexcept
+{
+    return (((uint8_t)val.type) & 0x80) != 0;
+}
+
+inline bool contains_string(blob_result const& val) noexcept
+{
+    blob_type vtype = val.type;
+    return vtype == blob_type::string || vtype == blob_type::error || vtype == blob_type::function;
 }
 
 template <typename T>
@@ -712,7 +729,7 @@ inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Tra
     if (b.type == blob_type::nil) {
         return os << "nil"sv;
     } else if (b.type == blob_type::object) {
-        return os << "object"sv;
+        return os << "object : "sv << typeid(*data_of<sonia::invokation::object>(b)).name();
     } else if (b.type == blob_type::blob_reference) {
         return os << '&' << *data_of<blob_result>(b);
     }
@@ -769,7 +786,7 @@ inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Tra
     case blob_type::function:
         return os << "function"sv;
     case blob_type::object:
-        return os << "object"sv;
+        return os << "object : "sv << typeid(*data_of<sonia::invokation::object>(b)).name();
     case blob_type::error:
         return os << "error: "sv << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
     default:
@@ -1146,10 +1163,7 @@ private:
 template <typename T>
 inline auto as(blob_result const& val) -> decltype(from_blob<T>{}(std::declval<blob_result>()))
 {
-    if (val.type == blob_type::blob_reference) {
-        return as<T>(*data_of<blob_result>(val));
-    }
-    return from_blob<T>{}(val);
+    return from_blob<T>{}(unref(val));
 }
 
 template <typename T>
@@ -1336,8 +1350,8 @@ public:
     blob_result * operator->() { return this; }
     blob_result const* operator->() const { return this; }
 
-    inline bool is_nil() const noexcept { return type == blob_type::nil; }
-    inline bool is_array() const noexcept { return (((uint8_t)type) & 0x80) != 0; }
+    inline bool is_nil() const noexcept { return ::is_nil(**this); }
+    inline bool is_array() const noexcept { return ::is_array(**this); }
     inline bool is_inplace() const noexcept { return !!inplace_size; }
 
     inline const void* data() const noexcept

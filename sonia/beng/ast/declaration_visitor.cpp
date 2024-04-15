@@ -26,9 +26,14 @@ void declaration_visitor::operator()(extern_var & td) const
 void declaration_visitor::operator()(expression_decl_t & ed) const
 {
     expression_visitor evis{ ctx };
-    if (auto r = apply_visitor(evis, ed.expression); !r.has_value()) {
+    auto r = apply_visitor(evis, ed.expression);
+    if (!r.has_value()) {
         throw exception(ctx.u().print(*r.error()));
     }
+    if (r.value() != beng_tuple_t{}) {
+        ctx.append_expression(semantic::truncate_values(1, false));
+    }
+    ctx.collapse_chains();
 }
 
 function_signature& declaration_visitor::append_fnsig(fn_pure_decl& fd) const
@@ -162,6 +167,7 @@ void declaration_visitor::operator()(let_statement_decl_t & ld) const
     }
     variable_entity& ve = ctx.new_variable(ld.name(), *vartype, variable_entity::kind::LOCAL);
     ve.set_index(ctx.allocate_local_variable_index());
+    ve.set_weak(ld.weakness);
     if (ld.expression) {
         ctx.append_expression(semantic::set_variable{ &ve });
     }

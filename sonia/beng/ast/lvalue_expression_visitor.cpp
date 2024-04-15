@@ -21,9 +21,13 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(var
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(member_expression_t & me) const
 {
-    expression_visitor rvis{ ctx, nullptr };
-    auto otype = apply_visitor(rvis, me.object);
+    auto otype = apply_visitor(expression_visitor{ ctx, nullptr }, me.object);
     if (!otype.has_value()) return std::unexpected(std::move(otype.error()));
+    if (auto* uotype = otype.value().as<beng_union_t>(); me.is_object_optional && uotype && uotype->has(beng_tuple_t{})) {
+        ctx.append_expression(std::move(semantic::not_empty_condition_t{}));
+        ctx.push_chain(get<semantic::not_empty_condition_t>(ctx.expressions().back()).branch);
+        otype = *uotype - beng_tuple_t{};
+    }
     if (auto const* po = sonia::get<beng_object_t>(&*otype); po) {
         if (auto const& pte = dynamic_cast<type_entity const*>(po->value); pte) {
             return pte->find_field_setter(ctx, me.name);

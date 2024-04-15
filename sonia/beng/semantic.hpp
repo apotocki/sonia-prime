@@ -233,6 +233,24 @@ template <typename T> struct beng_union
     {
         appender_visitor{ *this }(std::forward<ArgT>(m));
     }
+
+    inline bool has(beng_bool_t const&) const { return !!(basic_members & (uint16_t)basic_type::bool_e); }
+    inline bool has(beng_int_t const&) const { return !!(basic_members & (uint16_t)basic_type::int_e); }
+    inline bool has(beng_float_t const&) const { return !!(basic_members & (uint16_t)basic_type::float_e); }
+    inline bool has(beng_decimal_t const&) const { return !!(basic_members & (uint16_t)basic_type::decimal_e); }
+    inline bool has(beng_string_t const&) const { return !!(basic_members & (uint16_t)basic_type::string_e); }
+    inline bool has(beng_tuple<T> const& t) const
+    {
+        if (t.empty()) return !!(basic_members & (uint16_t)basic_type::nil_e);
+        auto it = std::lower_bound(other_members.begin(), other_members.end(), T{t});
+        return it != other_members.end() && *it == t;
+    }
+    template <typename ArgT>
+    bool has(T const& t)
+    {
+        auto it = std::lower_bound(other_members.begin(), other_members.end(), T{t});
+        return it != other_members.end() && *it == t;
+    }
 };
 
 //using beng_type_variant = make_recursive_variant<
@@ -275,9 +293,10 @@ struct beng_type : beng_type_variant
     inline bool operator==(beng_type const& rhs) const { return beng_type_variant::operator==(static_cast<beng_type_variant const&>(rhs)); }
 
     inline auto operator<=>(beng_type const& rhs) const { return variant_compare_three_way{}(*this, rhs); }
-};
 
-beng_type operator|| (beng_type const& l, beng_type const& r);
+    template <typename T>
+    T const* as() const { return get<T>(static_cast<beng_type_variant const*>(this)); }
+};
 
 using beng_vector_t = beng_vector<beng_type>;
 using beng_array_t = beng_array<beng_type>;
@@ -287,7 +306,8 @@ using beng_bunion_t = beng_bunion<beng_type>;
 using beng_fn_t = beng_fn<beng_type>;
 
 beng_type make_union_type(beng_type, beng_type const*);
-
+beng_type operator|| (beng_type const& l, beng_type const& r);
+beng_type operator- (beng_union_t const& l, beng_type const& r);
 // ======================================================================== function
 
 struct function_signature

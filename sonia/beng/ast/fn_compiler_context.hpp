@@ -151,6 +151,7 @@ public:
     {
         qname var_qname = base_ns() + name;
         auto ve = sonia::make_shared<variable_entity>(std::move(var_qname), std::move(t), variable_entity::kind::LOCAL);
+        ve->set_weak(caption.is_weak());
         unit_.eregistry().insert(ve);
         captured_variables.emplace_back(&caption, ve.get());
         return *ve;
@@ -232,6 +233,10 @@ public:
         expr_stack_.pop_back();
     }
 
+    void collapse_chains()
+    {
+        expr_stack_.resize(1);
+    }
     //semantic::conditional<semantic::expression_type> * current_chain()
     //{
     //    if (expr_stack_.size() <= 1) return nullptr;

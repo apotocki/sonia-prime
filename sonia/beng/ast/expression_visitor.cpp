@@ -71,6 +71,9 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
         }
 
         ctx.append_expression(semantic::push_variable{ varptr });
+        if (varptr->is_weak()) {
+            ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_lock) });
+        }
         return apply_cast(varptr->type(), var);
     } else if (auto fnptr = dynamic_pointer_cast<functional_entity>(e); fnptr) {
         if (!expected_result) {
@@ -121,7 +124,13 @@ expression_visitor::result_type expression_visitor::operator()(binary_expression
     } else if (variable_entity const* ve = dynamic_cast<variable_entity const*>(e.value()); ve) {
         expression_visitor rvis{ ctx, expected_result_t{ ve->type(), op.location }};
         auto rtype = apply_visitor(rvis, op.right);
+        if (ve->is_weak()) {
+            ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });
+        }
         ctx.append_expression(semantic::set_variable{ ve });
+        if (ve->is_weak()) {
+            ctx.append_expression(semantic::truncate_values(1, false));
+        }
         return std::move(rtype);
     } else {
         // to do: functional entity assignment
@@ -366,7 +375,11 @@ expression_visitor::result_type expression_visitor::operator()(member_expression
 {
     auto otype = apply_visitor(expression_visitor{ ctx, nullptr }, me.object);
     if (!otype.has_value()) return std::move(otype);
-
+    if (auto* uotype = otype.value().as<beng_union_t>(); me.is_object_optional && uotype && uotype->has(beng_tuple_t{})) {
+        ctx.append_expression(std::move(semantic::not_empty_condition_t{}));
+        ctx.push_chain(get<semantic::not_empty_condition_t>(ctx.expressions().back()).branch);
+        otype = *uotype - beng_tuple_t{};
+    }
     function_entity const* getter;
     if (auto const* po = sonia::get<beng_object_t>(&*otype); po) {
         if (auto const& pte = dynamic_cast<type_entity const*>(po->value); pte) {
@@ -378,12 +391,6 @@ expression_visitor::result_type expression_visitor::operator()(member_expression
         }
     } else {
         return std::unexpected(make_error<left_not_an_object_error>(me.name.location, me.name.value, *otype));
-    }
-
-    if (me.is_object_optional) {
-        semantic::not_empty_condition_t cond{ };
-        ctx.append_expression(std::move(cond));
-        ctx.push_chain(get<semantic::not_empty_condition_t>(ctx.expressions().back()).branch);
     }
 
     ctx.append_expression(semantic::invoke_function{ getter->name() });

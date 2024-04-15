@@ -31,14 +31,18 @@ public:
 
     inline beng_type const& type() const noexcept { return type_; }
     inline kind const& varkind() const noexcept { return kind_; }
+    inline bool is_weak() const { return is_weak_; }
 
     inline intptr_t index() const noexcept { return index_; }
     void set_index(intptr_t val) { index_ = val; }
+
+    inline void set_weak(bool val = true) { is_weak_ = val; }
 
 private:
     beng_type type_;
     kind kind_;
     intptr_t index_;
+    bool is_weak_ = false;
 };
 
 /*

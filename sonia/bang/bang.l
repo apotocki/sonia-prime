@@ -172,8 +172,6 @@ TEMPLATE                "template"
 NAMESPACE               "namespace"
 */
 
-/* exclude '->', '=', '<', '//', '/*'  */
-
 /*
 
 

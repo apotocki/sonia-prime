@@ -4347,7 +4347,6 @@ PRIVATE                 "private"
 TEMPLATE                "template"
 NAMESPACE               "namespace"
 */
-
 /*
 
 ARROWAST                "->*"
@@ -4393,7 +4392,7 @@ HASHTAG					"#"
 
 */
 
-#line 4396 "bang.yy.cpp"
+#line 4395 "bang.yy.cpp"
 
 #define INITIAL 0
 #define COMMENT 1
@@ -4661,10 +4660,10 @@ YY_DECL
 		}
 
 	{
-#line 232 "bang.l"
+#line 230 "bang.l"
 
 
-#line 4667 "bang.yy.cpp"
+#line 4666 "bang.yy.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -4731,28 +4730,28 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 234 "bang.l"
+#line 232 "bang.l"
 /* ignore whitespaces */
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 236 "bang.l"
+#line 234 "bang.l"
 {
 	//GLOBAL_LOG_INFO() << "COMMENT at: line: " << yylloc->begin.line << ", col: " << yylloc->begin.column;
 	yy_push_state(COMMENT, yyscanner);
-	yyextra->loc_stack.emplace_back(yylloc->begin.line, yylloc->begin.column);
+	yyextra->loc_stack.emplace_back(location);
 }
 	YY_BREAK
 
 case 3:
 /* rule 3 can match eol */
 YY_RULE_SETUP
-#line 242 "bang.l"
+#line 240 "bang.l"
 
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 243 "bang.l"
+#line 241 "bang.l"
 {
 		//GLOBAL_LOG_INFO() << "COMMENT CLOSED at: line: " << yylloc->begin.line << ", col: " << yylloc->begin.column;
 		yy_pop_state(yyscanner);
@@ -4762,18 +4761,18 @@ YY_RULE_SETUP
 
 case 5:
 YY_RULE_SETUP
-#line 249 "bang.l"
+#line 247 "bang.l"
 { yy_push_state(LINE_COMMENT, yyscanner); }
 	YY_BREAK
 case 6:
 /* rule 6 can match eol */
 YY_RULE_SETUP
-#line 250 "bang.l"
+#line 248 "bang.l"
 { yy_pop_state(yyscanner); }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 252 "bang.l"
+#line 250 "bang.l"
 { 
 	yyextra->str_buff_begin = yytext + 1;
 	yyextra->loc_stack.emplace_back(location);
@@ -4784,22 +4783,22 @@ YY_RULE_SETUP
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-#line 258 "bang.l"
+#line 256 "bang.l"
 
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 259 "bang.l"
+#line 257 "bang.l"
 
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 260 "bang.l"
+#line 258 "bang.l"
 
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 261 "bang.l"
+#line 259 "bang.l"
 {
 		variant_emplace(annotated_string_view{string_view{yyextra->str_buff_begin, yytext}, yyextra->loc_stack.back()});
 		yy_pop_state(yyscanner);
@@ -4810,187 +4809,187 @@ YY_RULE_SETUP
 
 case 12:
 YY_RULE_SETUP
-#line 269 "bang.l"
+#line 267 "bang.l"
 { variant_emplace(location); return (bang_lang::parser::token::FN); }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 270 "bang.l"
+#line 268 "bang.l"
 { return (bang_lang::parser::token::LET); }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 271 "bang.l"
+#line 269 "bang.l"
 { return (bang_lang::parser::token::VAR); }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 272 "bang.l"
+#line 270 "bang.l"
 { return (bang_lang::parser::token::ENUM); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 273 "bang.l"
+#line 271 "bang.l"
 { return (bang_lang::parser::token::TYPE); }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 274 "bang.l"
+#line 272 "bang.l"
 { return (bang_lang::parser::token::EXTENDS); }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 275 "bang.l"
+#line 273 "bang.l"
 { return (bang_lang::parser::token::EXTERN); }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 276 "bang.l"
+#line 274 "bang.l"
 { return (bang_lang::parser::token::RETURN); }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 278 "bang.l"
+#line 276 "bang.l"
 { return (bang_lang::parser::token::BOOL); }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 279 "bang.l"
+#line 277 "bang.l"
 { return (bang_lang::parser::token::INT); }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 280 "bang.l"
+#line 278 "bang.l"
 { return (bang_lang::parser::token::FLOAT); }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 281 "bang.l"
+#line 279 "bang.l"
 { return (bang_lang::parser::token::STRING_WORD); }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 282 "bang.l"
+#line 280 "bang.l"
 { return (bang_lang::parser::token::DECIMAL_WORD); }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 284 "bang.l"
+#line 282 "bang.l"
 { return (bang_lang::parser::token::WEAK); }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 286 "bang.l"
+#line 284 "bang.l"
 { variant_emplace(location); return (bang_lang::parser::token::TRUE); }
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 287 "bang.l"
+#line 285 "bang.l"
 { variant_emplace(location); return (bang_lang::parser::token::FALSE); }
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 289 "bang.l"
+#line 287 "bang.l"
 { return (bang_lang::parser::token::OPEN_BRACE); }
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 290 "bang.l"
+#line 288 "bang.l"
 { return (bang_lang::parser::token::CLOSE_BRACE); }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 291 "bang.l"
+#line 289 "bang.l"
 { variant_emplace(location); return (bang_lang::parser::token::OPEN_PARENTHESIS); }
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 292 "bang.l"
+#line 290 "bang.l"
 { return (bang_lang::parser::token::CLOSE_PARENTHESIS);	}
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 293 "bang.l"
+#line 291 "bang.l"
 { return (bang_lang::parser::token::END_STATEMENT); }
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 294 "bang.l"
+#line 292 "bang.l"
 { return (bang_lang::parser::token::COMMA);	}
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 295 "bang.l"
+#line 293 "bang.l"
 { return (bang_lang::parser::token::COLON); }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 296 "bang.l"
+#line 294 "bang.l"
 { variant_emplace(location); return (bang_lang::parser::token::OPEN_SQUARE_BRACKET); }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 297 "bang.l"
+#line 295 "bang.l"
 { return (bang_lang::parser::token::CLOSE_SQUARE_BRACKET); }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 298 "bang.l"
+#line 296 "bang.l"
 { variant_emplace(location); return (bang_lang::parser::token::ASSIGN); }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 299 "bang.l"
+#line 297 "bang.l"
 { variant_emplace(location); return (bang_lang::parser::token::POINT);	}
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 300 "bang.l"
+#line 298 "bang.l"
 { return (bang_lang::parser::token::UNDERSCORE); }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 301 "bang.l"
+#line 299 "bang.l"
 { return (bang_lang::parser::token::BITOR);	}
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 302 "bang.l"
+#line 300 "bang.l"
 { variant_emplace(location); return (bang_lang::parser::token::EXCLPT); }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 303 "bang.l"
+#line 301 "bang.l"
 { return (bang_lang::parser::token::QMARK); }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 304 "bang.l"
+#line 302 "bang.l"
 { return (bang_lang::parser::token::DBLCOLON); }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 305 "bang.l"
+#line 303 "bang.l"
 { variant_emplace(location); return (bang_lang::parser::token::LOGIC_OR); }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 306 "bang.l"
+#line 304 "bang.l"
 { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 307 "bang.l"
+#line 305 "bang.l"
 { return (bang_lang::parser::token::ARROW); }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 308 "bang.l"
+#line 306 "bang.l"
 { variant_emplace(location); return (bang_lang::parser::token::CONCAT); }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 310 "bang.l"
+#line 308 "bang.l"
 {
 		variant_emplace(annotated_string_view{text_view, location});
 		return (bang_lang::parser::token::IDENTIFIER);
@@ -4998,7 +4997,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 314 "bang.l"
+#line 312 "bang.l"
 {
 		variant_emplace(annotated_string_view{text_view, location});
 		return (bang_lang::parser::token::ARGIDENTIFIER);
@@ -5006,7 +5005,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 318 "bang.l"
+#line 316 "bang.l"
 {
 		variant_emplace(annotated_decimal{decimal{ctx.make_int(text_view)}, location});
 		return (bang_lang::parser::token::INTEGER);
@@ -5014,7 +5013,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 322 "bang.l"
+#line 320 "bang.l"
 {
 		variant_emplace(annotated_decimal{ctx.make_numeric(text_view), location});
 		return (bang_lang::parser::token::DECIMAL);
@@ -5064,15 +5063,15 @@ case YY_STATE_EOF(COMMENT):
 case YY_STATE_EOF(LINE_COMMENT):
 case YY_STATE_EOF(STR):
 case YY_STATE_EOF(USER_LITERAL):
-#line 366 "bang.l"
+#line 364 "bang.l"
 return (bang_lang::parser::token::END);
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 368 "bang.l"
+#line 366 "bang.l"
 ECHO;
 	YY_BREAK
-#line 5075 "bang.yy.cpp"
+#line 5074 "bang.yy.cpp"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -6309,7 +6308,7 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-#line 368 "bang.l"
+#line 366 "bang.l"
 
 
 /*

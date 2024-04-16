@@ -8,13 +8,13 @@
 #include "sonia/utility/invokation/invokation.hpp"
 #include "sonia/utility/mvvm/lua_view_model.hpp"
 
-#include "sonia/beng/beng.hpp"
+#include "sonia/bang/bang.hpp"
 
 namespace sonia {
  
 class builder_view_model 
     : public lua_view_model
-    , public sonia::lang::beng::language
+    , public sonia::lang::bang::language
 {
     using base_t = lua_view_model;
 

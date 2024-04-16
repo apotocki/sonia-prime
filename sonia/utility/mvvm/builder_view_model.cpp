@@ -5,15 +5,15 @@
 #include "sonia/config.hpp"
 #include "builder_view_model.hpp"
 
-#include "sonia/beng/parser.hpp"
+#include "sonia/bang/parser.hpp"
 
-#include "sonia/beng/ast/declaration_visitor.hpp"
+#include "sonia/bang/ast/declaration_visitor.hpp"
 
 #include <boost/container/small_vector.hpp>
 #include "boost/conversion/unicode/utf.hpp"
 #include "boost/conversion/push_iterator.hpp"
 
-//#include "sonia/beng/entities/variable_entity.hpp"
+//#include "sonia/bang/entities/variable_entity.hpp"
 
 namespace sonia {
 

@@ -6,7 +6,6 @@
 #include "invokation.hpp"
 #include "sonia/singleton.hpp"
 #include "sonia/shared_ptr.hpp"
-//#include "sonia/variant.hpp"
 #include "sonia/concurrency.hpp"
 #include "sonia/logger/logger.hpp"
 #include <boost/unordered_map.hpp>

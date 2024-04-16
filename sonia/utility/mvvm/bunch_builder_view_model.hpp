@@ -13,7 +13,7 @@ namespace sonia {
 
 class bunch_builder_view_model 
     : public builder_view_model
-    , public lang::beng::external_environment
+    , public lang::bang::external_environment
 {
 public:
     class factory

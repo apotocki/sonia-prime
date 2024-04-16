@@ -26,4 +26,4 @@ using boost::recursive_wrapper;
 #include "sonia/utility/functional/equal/variant.hpp"
 #include "sonia/utility/functional/less/variant.hpp"
 #include "sonia/utility/functional/hash/variant.hpp"
-#include "sonia/utility/streaming/variant.hpp"
+//#include "sonia/utility/streaming/variant.hpp"

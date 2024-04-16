@@ -235,22 +235,22 @@
     <Filter Include="sonia.utility\lang">
       <UniqueIdentifier>{5483fc27-65d4-4e1a-8738-6d33d9552787}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.beng">
+    <Filter Include="sonia.bang">
       <UniqueIdentifier>{40dbd966-8d59-4ea0-b359-68f8f3c7dcb5}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.beng\ast">
+    <Filter Include="sonia.bang\ast">
       <UniqueIdentifier>{cea45eaf-2bd2-491e-92d5-526e9aecd0e6}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.beng\entities">
-      <UniqueIdentifier>{dca3170a-23f0-4bfc-92ec-a063bec93e0c}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.beng\vm">
-      <UniqueIdentifier>{f853d513-1b44-4100-8273-b2817d9e4d46}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="sonia.beng\ast\casts">
+    <Filter Include="sonia.bang\ast\casts">
       <UniqueIdentifier>{b7c8d321-4a32-4f74-aecc-7dfbac0872ea}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.beng\library">
+    <Filter Include="sonia.bang\entities">
+      <UniqueIdentifier>{dca3170a-23f0-4bfc-92ec-a063bec93e0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\vm">
+      <UniqueIdentifier>{f853d513-1b44-4100-8273-b2817d9e4d46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\library">
       <UniqueIdentifier>{e3a3907b-c56b-4441-a4a3-10575b6ea719}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
@@ -2016,125 +2016,128 @@
     <ClInclude Include="..\..\..\sonia\mp\decimal.ipp">
       <Filter>sonia.mp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\declaration_visitor.hpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\declaration_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\expression_visitor.hpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\entities\enum_entity.hpp">
-      <Filter>sonia.beng\entities</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\entities\enum_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\entities\functional_entity.hpp">
-      <Filter>sonia.beng\entities</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functional_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\entities\type_entity.hpp">
-      <Filter>sonia.beng\entities</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\entities\type_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\entities\variable_entity.hpp">
-      <Filter>sonia.beng\entities</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\entities\variable_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast_terms.hpp">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast_terms.hpp">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\beng.tab.hpp">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\bang.tab.hpp">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\beng.yy.hpp">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\bang.yy.hpp">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\location.hh">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\location.hh">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\parser.hpp">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\parser.hpp">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\semantic.hpp">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\semantic.hpp">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\unit.hpp">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\unit.hpp">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\fn_compiler_context.hpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\fn_compiler_context.hpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\beng.hpp">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\bang.hpp">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\vm\beng_vm.hpp">
-      <Filter>sonia.beng\vm</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\vm\bang_vm.hpp">
+      <Filter>sonia.bang\vm</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\vm\push_value_visitor.hpp">
-      <Filter>sonia.beng\vm</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\vm\push_value_visitor.hpp">
+      <Filter>sonia.bang\vm</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\vm\compiler_visitor.hpp">
-      <Filter>sonia.beng\vm</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\vm\compiler_visitor.hpp">
+      <Filter>sonia.bang\vm</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\expression_decimal_visitor.hpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_decimal_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\expression_vector_visitor.hpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_vector_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\extern.hpp">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\extern.hpp">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\expression_type_visitor.hpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_type_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\preliminary_type_visitor.hpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\forward_declaration_visitor.hpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\functional\variant_compare_three_way.hpp">
       <Filter>sonia.utility\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\terms.hpp">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\terms.hpp">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\expression_fn_visitor.hpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_fn_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\expression_implicit_cast_visitor.hpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_implicit_cast_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_vector_visitor.hpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_object_visitor.hpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_object_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_string_visitor.hpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_string_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\library\library.hpp">
-      <Filter>sonia.beng\library</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\library\library.hpp">
+      <Filter>sonia.bang\library</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_bool_visitor.hpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_bool_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_enum_visitor.hpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_enum_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\lvalue_expression_visitor.hpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\semantic_fwd.hpp">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\semantic_fwd.hpp">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_float_visitor.hpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_float_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_array_visitor.hpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\errors.hpp">
-      <Filter>sonia.beng</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\errors.hpp">
+      <Filter>sonia.bang</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\beng\ast\casts\utility.hpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\utility.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\bang_view_model.hpp">
+      <Filter>sonia.utility\mvvm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2405,79 +2408,82 @@
     <ClCompile Include="..\..\..\sonia\utility\mvvm\bunch_builder_view_model.cpp">
       <Filter>sonia.utility\mvvm</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\beng.tab.cpp">
-      <Filter>sonia.beng</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\bang.tab.cpp">
+      <Filter>sonia.bang</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\beng.yy.cpp">
-      <Filter>sonia.beng</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\bang.yy.cpp">
+      <Filter>sonia.bang</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\beng_unit.cpp">
-      <Filter>sonia.beng</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\bang_unit.cpp">
+      <Filter>sonia.bang</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\parser.cpp">
-      <Filter>sonia.beng</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\parser.cpp">
+      <Filter>sonia.bang</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\beng.cpp">
-      <Filter>sonia.beng</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\bang.cpp">
+      <Filter>sonia.bang</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\vm\beng_vm.cpp">
-      <Filter>sonia.beng\vm</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\vm\bang_vm.cpp">
+      <Filter>sonia.bang\vm</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\ast\declaration_visitor.cpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\ast\declaration_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\entities\functional_entity.cpp">
-      <Filter>sonia.beng\entities</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\entities\functional_entity.cpp">
+      <Filter>sonia.bang\entities</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\ast\expression_visitor.cpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\ast\expression_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\entities\type_entity.cpp">
-      <Filter>sonia.beng\entities</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\entities\type_entity.cpp">
+      <Filter>sonia.bang\entities</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\entities\enum_entity.cpp">
-      <Filter>sonia.beng\entities</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\entities\enum_entity.cpp">
+      <Filter>sonia.bang\entities</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\ast\forward_declaration_visitor.cpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\beng_semantic.cpp">
-      <Filter>sonia.beng</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp">
+      <Filter>sonia.bang</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\library\beng_library.cpp">
-      <Filter>sonia.beng\library</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\library\bang_library.cpp">
+      <Filter>sonia.bang\library</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\ast\lvalue_expression_visitor.cpp">
-      <Filter>sonia.beng\ast</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\beng_errors.cpp">
-      <Filter>sonia.beng</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\bang_errors.cpp">
+      <Filter>sonia.bang</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_array_visitor.cpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.cpp">
+      <Filter>sonia.bang\ast\casts</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\ast\casts\expression_cast_to_vector_visitor.cpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.cpp">
+      <Filter>sonia.bang\ast\casts</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\beng\ast\casts\expression_cast_utility.cpp">
-      <Filter>sonia.beng\ast\casts</Filter>
+    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_utility.cpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\mvvm\bang_view_model.cpp">
+      <Filter>sonia.utility\mvvm</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\sonia.natvis" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\sonia\beng\beng.l">
-      <Filter>sonia.beng</Filter>
+    <None Include="..\..\..\sonia\bang\bang.l">
+      <Filter>sonia.bang</Filter>
     </None>
-    <None Include="..\..\..\sonia\beng\beng.output">
-      <Filter>sonia.beng</Filter>
+    <None Include="..\..\..\sonia\bang\bang.output">
+      <Filter>sonia.bang</Filter>
     </None>
-    <None Include="..\..\..\sonia\beng\beng.y">
-      <Filter>sonia.beng</Filter>
+    <None Include="..\..\..\sonia\bang\bang.y">
+      <Filter>sonia.bang</Filter>
     </None>
-    <None Include="..\..\..\sonia\beng\generate_parser.cmd">
-      <Filter>sonia.beng</Filter>
+    <None Include="..\..\..\sonia\bang\generate_parser.cmd">
+      <Filter>sonia.bang</Filter>
     </None>
   </ItemGroup>
 </Project>

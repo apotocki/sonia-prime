@@ -828,10 +828,10 @@ std::basic_ostream<Elem, Traits>& operator <<(std::basic_ostream<Elem, Traits>& 
     std::vector<Elem> result;
     bool reversed;
     to_string_converter(iv.limbs(), std::back_inserter(result), reversed);
+    if (iv.sign() < 0) os << '-';
     if (reversed) {
         std::copy(result.rbegin(), result.rend(), std::ostreambuf_iterator(os));
-    }
-    else {
+    } else {
         std::copy(result.begin(), result.end(), std::ostreambuf_iterator(os));
     }
     return os;

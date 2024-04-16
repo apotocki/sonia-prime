@@ -10,7 +10,7 @@ namespace sonia::xmlbuilder {
 
 void bunch_builder::build(string_view xml)
 {
-    parse(xml, *this, factory_.get_attribute_resolver());
+    parse(xml, *this);
 }
 
 shared_ptr<invokation::invokable> bunch_builder::get_element_by(string_view id)
@@ -32,7 +32,8 @@ shared_ptr<invokation::invokable> bunch_builder::try_get_element_by(string_view 
 void bunch_builder::create(string_view type, string_view id)
 {
     auto it = elements_.find(id, hasher{}, string_equal_to{});
-    if (it != elements_.end()) throw exception("A duplicate element identifier '%1%' was found."_fmt % id);
+    if (it != elements_.end())
+        throw exception("A duplicate element identifier '%1%' was found."_fmt % id);
     auto v = factory_.create(type, id);
 
     elements_.insert(it, { std::string{id}, std::move(v) });
@@ -101,11 +102,6 @@ void bunch_builder::do_append(invokation::invokable& parent, shared_ptr<invokati
 {
     smart_blob sb = object_blob_result(std::move(child));
     parent.invoke("append", { sb.get() });
-}
-
-void bunch_builder::append_to_document(string_view childid)
-{
-
 }
 
 }

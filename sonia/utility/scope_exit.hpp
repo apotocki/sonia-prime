@@ -15,7 +15,12 @@
 
 namespace sonia {
 
-template<typename T>
+enum class scope_exit_type
+{
+    always_e, exceptional_e, noexceptional_e
+};
+
+template <typename T, scope_exit_type SV = scope_exit_type::always_e>
 class scope_exit
 {
 public:
@@ -24,7 +29,17 @@ public:
     ~scope_exit() noexcept
     {
         try {
-            exitScope_(); 
+            if constexpr (SV == scope_exit_type::always_e) {
+                exitScope_(); 
+            } else if constexpr (SV == scope_exit_type::exceptional_e) {
+                if (std::uncaught_exceptions()) {
+                    exitScope_();
+                }
+            } else if constexpr (SV == scope_exit_type::noexceptional_e) {
+                if (!std::uncaught_exceptions()) {
+                    exitScope_();
+                }
+            }
         } catch (internal_error const& e) {
             GLOBAL_LOG_ERROR() << "error during the scope exit: " << e.what();
         } catch (...) {
@@ -42,9 +57,23 @@ scope_exit<T> scope_exit_create(T&& exitScope)
     return scope_exit<T>(std::forward<T>(exitScope));
 }
 
+template <typename T>
+scope_exit<T, scope_exit_type::exceptional_e> scope_exception_exit_create(T&& exitScope)
+{
+    return scope_exit<T, scope_exit_type::exceptional_e>(std::forward<T>(exitScope));
+}
+
+template <typename T>
+scope_exit<T, scope_exit_type::noexceptional_e> scope_noexcept_exit_create(T&& exitScope)
+{
+    return scope_exit<T, scope_exit_type::noexceptional_e>(std::forward<T>(exitScope));
+}
+
 }
 
 #define SONIA_UTILITY_EXIT_SCOPE_LINENAME_CAT(name, line) name##line
 #define SONIA_UTILITY_EXIT_SCOPE_LINENAME(name, line) SONIA_UTILITY_EXIT_SCOPE_LINENAME_CAT(name, line)
 #define SCOPE_EXIT(...) const auto& SONIA_UTILITY_EXIT_SCOPE_LINENAME(EXIT, __LINE__) = ::sonia::scope_exit_create(__VA_ARGS__)
+#define SCOPE_EXCEPTIONAL_EXIT(...) const auto& SONIA_UTILITY_EXIT_SCOPE_LINENAME(EXIT, __LINE__) = ::sonia::scope_exception_exit_create(__VA_ARGS__)
+#define NOEXCEPT_EXIT(...) const auto& SONIA_UTILITY_EXIT_SCOPE_LINENAME(EXIT, __LINE__) = ::sonia::scope_noexcept_exit_create(__VA_ARGS__)
 #define defer const ::sonia::scope_exit SONIA_UTILITY_EXIT_SCOPE_LINENAME(EXIT, __LINE__) = [&]

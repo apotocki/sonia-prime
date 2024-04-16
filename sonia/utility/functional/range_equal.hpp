@@ -4,11 +4,9 @@
 
 #pragma once
 
+#include <utility>
 #include <cstring>
 #include <algorithm>
-
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
 
 #include "sonia/type_traits.hpp"
 #include "sonia/iterator_traits.hpp"
@@ -21,11 +19,13 @@ struct range_equal
     template <typename LR, typename RR>
     constexpr bool operator()(LR && l, RR && r) const
     {
+        using std::begin;
+        using std::end;
         if constexpr (is_same_v<LR, RR>) {
             return std::addressof(l) == std::addressof(r) ||
-                this->operator()(std::begin(l), std::end(l), std::begin(r), std::end(r));
+                this->operator()(begin(l), end(l), begin(r), end(r));
         } else {
-            return this->operator()(std::begin(l), std::end(l), std::begin(r), std::end(r));
+            return this->operator()(begin(l), end(l), begin(r), end(r));
         }
     }
 

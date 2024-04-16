@@ -40,28 +40,26 @@ public:
 
 }
 
-extern "C" {
-
 // X XX XXXXX-type
 // | |- subtype
 // |- is array
 
 //common:
 // X XX XXXXX
-//    |-------- plane: default =1(0x20), aux0 =0 (0)
+//    |-------- plane: default =1(0x20), aux0 =0(0)
 // |----------- is array
 // 
 // default plane:
 // X XX XXX XX
 //        |  |- size exp: size = 2 ^ xx: 1, 2, 4, 8 bytes
 //        |---- type: character=0, unsigned integral=1, signed integral =2, floating point=3, object=4
-//   |--------- plane: default=0
+//   |--------- plane: default =1(0x20)
 // |----------- is array
 
 // aux plane:
 // X XX XXXXX
 //          |-- type: nil=0, bool=1, bigint=2, tuple =3, function=4, error=5
-//    |-------- plane: aux0 =1(0x20)
+//    |-------- plane: aux0 =0(0x0)
 // |----------- is array
 
 
@@ -94,10 +92,18 @@ enum class blob_type : uint8_t {
     //string16 = DEFAULT_BTVAL(1, 0, 1),
     //string32 = DEFAULT_BTVAL(1, 0, 2),
     
+    blob = AUX0_BTVAL(0, 3),
     tuple = AUX0_BTVAL(1, 3),
     function = AUX0_BTVAL(1, 4),
-    error = AUX0_BTVAL(1, 5)
+    blob_reference = AUX0_BTVAL(1, 5),
+    error = AUX0_BTVAL(1, 6)
 };
+
+inline bool is_ref(blob_type val) noexcept
+{
+    return val == blob_type::blob_reference; // || val == blob_type::object;
+}
+
 
 /*
 struct blob_result {
@@ -159,6 +165,8 @@ static_assert(sizeof(blob_result) == 16);
 
 typedef void(*on_invoke_cv_result_setter)(void*, blob_result*, uint32_t); // cookie, results, result count
 
+extern "C" {
+
 SONIA_PRIME_API void blob_result_allocate(blob_result *, bool no_inplace = false);
 SONIA_PRIME_API void blob_result_pin(blob_result *);
 SONIA_PRIME_API void blob_result_unpin(blob_result *);
@@ -177,6 +185,7 @@ inline auto operator <=> (blob_type l, blob_type r) noexcept
     return ((uint8_t)l) <=> ((uint8_t)r);
 }
 
+
 inline bool is_basic_integral(blob_type val) noexcept
 {
     switch(val) {
@@ -194,13 +203,27 @@ inline bool is_basic_integral(blob_type val) noexcept
     }
 }
 
-inline bool is_nil(blob_result const& val) noexcept { return val.type == blob_type::nil; }
-
-inline bool is_array(blob_result const& val) noexcept { return (((uint8_t)val.type) & 0x80) != 0; }
-inline bool contains_string(blob_result const& val) noexcept
+inline bool is_numeric(blob_type val) noexcept
 {
-    return val.type == blob_type::string || val.type == blob_type::error || val.type == blob_type::function;
+    switch (val) {
+    case blob_type::i8:
+    case blob_type::ui8:
+    case blob_type::i16:
+    case blob_type::ui16:
+    case blob_type::i32:
+    case blob_type::ui32:
+    case blob_type::i64:
+    case blob_type::ui64:
+    case blob_type::flt16:
+    case blob_type::flt32:
+    case blob_type::flt64:
+        return true;
+    default:
+        return false;
+    }
 }
+
+inline void reset(blob_result& br) { br.type = blob_type::nil; br.need_unpin = 0; }
 
 template <typename T>
 inline const T* data_of(blob_result const& val) noexcept
@@ -214,6 +237,31 @@ inline T* mutable_data_of(blob_result const& val) noexcept
     return const_cast<T*>(data_of<T>(val));
 }
 
+inline blob_result const& unref(blob_result const& val)
+{
+    blob_result const* pval = &val;
+    while (is_ref(pval->type)) {
+        pval = data_of<blob_result>(*pval);
+    }
+    return *pval;
+}
+
+inline bool is_nil(blob_result const& val) noexcept
+{
+    return val.type == blob_type::nil;
+}
+
+inline bool is_array(blob_result const& val) noexcept
+{
+    return (((uint8_t)val.type) & 0x80) != 0;
+}
+
+inline bool contains_string(blob_result const& val) noexcept
+{
+    blob_type vtype = val.type;
+    return vtype == blob_type::string || vtype == blob_type::error || vtype == blob_type::function;
+}
+
 template <typename T>
 inline size_t array_size_of(blob_result const& val) noexcept
 {
@@ -223,80 +271,70 @@ inline size_t array_size_of(blob_result const& val) noexcept
 }
 
 /*
-inline bool blob_result_equal(sonia::identity<bool>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<bool>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::boolean && lhs.bp.i8value == rhs.bp.i8value;
 }
 
-inline bool blob_result_equal(sonia::identity<int8_t>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<int8_t>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::i8 && lhs.bp.i8value == rhs.bp.i8value;
 }
 
-inline bool blob_result_equal(sonia::identity<uint8_t>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<uint8_t>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::ui8 && lhs.bp.ui8value == rhs.bp.ui8value;
 }
 
-inline bool blob_result_equal(sonia::identity<int16_t>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<int16_t>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::i16 && lhs.bp.i16value == rhs.bp.i16value;
 }
 
-inline bool blob_result_equal(sonia::identity<uint16_t>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<uint16_t>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::ui16 && lhs.bp.ui16value == rhs.bp.ui16value;
 }
 
-inline bool blob_result_equal(sonia::identity<int32_t>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<int32_t>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::i32 && lhs.bp.i32value == rhs.bp.i32value;
 }
 
-inline bool blob_result_equal(sonia::identity<uint32_t>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<uint32_t>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::ui32 && lhs.bp.ui32value == rhs.bp.ui32value;
 }
 
-inline bool blob_result_equal(sonia::identity<int64_t>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<int64_t>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::i64 && lhs.bp.i64value == rhs.bp.i64value;
 }
 
-inline bool blob_result_equal(sonia::identity<uint64_t>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<uint64_t>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::ui64 && lhs.ui64value == rhs.ui64value;
 }
 
-inline bool blob_result_equal(sonia::identity<sonia::float16>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<sonia::float16>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::flt16 && lhs.f16value == rhs.f16value;
 }
 
 
-inline bool blob_result_equal(sonia::identity<float_t>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<float_t>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::flt32 && lhs.f32value == rhs.f32value;
 }
 
-inline bool blob_result_equal(sonia::identity<double_t>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<double_t>, blob_result const& lhs, blob_result const& rhs)
 {
     return rhs.type == blob_type::flt64 && lhs.f64value == rhs.f64value;
 }
 
-inline bool blob_result_equal(sonia::identity<sonia::string_view>, blob_result const& lhs, blob_result const& rhs)
-{
-    if (rhs.type != blob_type::blob || rhs.size != lhs.size) return false;
-    if (lhs.data == rhs.data) return true;
-    return std::memcmp(lhs.data, rhs.data, rhs.size) == 0;
-}
 */
 
-template <typename T>
-inline bool blob_result_equal(sonia::identity<T>, blob_result const& lhs, blob_result const& rhs)
-{
-    return false;
-}
+
 
 
 
@@ -307,10 +345,12 @@ template <typename T>
 inline consteval blob_type blob_type_for()
 {
     using type = std::remove_cv_t<T>;
-    if constexpr (std::is_same_v<bool, type>) {
+    if constexpr (std::is_same_v<std::nullptr_t, type>) {
+        return blob_type::nil;
+    } else if constexpr (std::is_same_v<bool, type>) {
         return blob_type::boolean;
     } else if constexpr (std::is_same_v<blob_result, type>) {
-        return blob_type::tuple;
+        return blob_type::blob;
     } else if constexpr (std::is_integral_v<type>) {
         constexpr bool signed_v = std::is_signed_v<type>;
         if constexpr (sizeof(T) * CHAR_BIT <= 8 && signed_v) return blob_type::i8;
@@ -345,7 +385,7 @@ inline blob_result nil_blob_result()
     return make_blob_result(blob_type::nil);
 }
 
-inline blob_result function_blob_result(std::string_view value)
+inline blob_result function_blob_result(sonia::string_view value)
 {
     blob_result result = make_blob_result(blob_type::function, value.data());
     result.bp.size = static_cast<uint32_t>(value.size());
@@ -372,6 +412,12 @@ template <typename T>
 inline blob_result object_blob_result(sonia::shared_ptr<T> object)
 {
     return object_blob_result<sonia::invokation::wrapper_object<sonia::shared_ptr<T>>>(std::move(object));
+}
+
+template <typename T>
+inline blob_result object_blob_result(sonia::weak_ptr<T> object)
+{
+    return object_blob_result<sonia::invokation::wrapper_object<sonia::weak_ptr<T>>>(std::move(object));
 }
 
 inline blob_result bool_blob_result(bool value)
@@ -500,11 +546,6 @@ inline blob_result error_blob_result(ArgT && arg)
     return string_blob_result(std::forward<ArgT>(arg), blob_type::error);
 }
 
-struct invokation_blob_allocator
-{
-
-};
-
 //template <typename ArgT>
 //inline blob_result bigint_blob_result(ArgT && arg)
 template <typename LimbT>
@@ -539,6 +580,14 @@ requires(std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_same_v<
 inline blob_result array_blob_result(T(&arr)[N])
 {
     return make_blob_result(arrayify(blob_type_for<T>()), arr, static_cast<uint32_t>(N * sizeof(T)));
+}
+
+[[nodiscard]]
+inline blob_result reference_blob_result(blob_result const& br)
+{
+    blob_result res = make_blob_result(blob_type::blob_reference, &br, static_cast<uint32_t>(sizeof(blob_result)));
+    blob_result_allocate(&res, true);
+    return res;
 }
 
 template <typename FirstT, typename SecondT>
@@ -591,7 +640,8 @@ template <typename ArgT>
 inline blob_result particular_blob_result(ArgT && value)
 {
     using T = sonia::remove_cvref_t<ArgT>;
-    if constexpr (std::is_same_v<T, bool>) return bool_blob_result(value);
+    if constexpr (std::is_same_v<T, std::nullptr_t>) return nil_blob_result();
+    else if constexpr (std::is_same_v<T, bool>) return bool_blob_result(value);
     else if constexpr (std::is_same_v<T, uint8_t>) return ui8_blob_result(value);
     else if constexpr (std::is_same_v<T, int8_t>) return i8_blob_result(value);
     else if constexpr (std::is_same_v<T, char>) return char_blob_result(value);
@@ -620,13 +670,17 @@ template <typename FT>
 auto blob_type_selector(blob_result const& b, FT&& ftor)
 {
     switch (b.type) {
+    case blob_type::nil:
+        return ftor(std::type_identity<std::nullptr_t>{}, b);
+    case blob_type::blob_reference:
+        return ftor(std::type_identity<blob_result>{}, b);
     case blob_type::tuple:
-        return ftor(sonia::identity<blob_result>(), b);
+        return ftor(std::type_identity<blob_result>{}, b);
     case blob_type::bigint:
-        return ftor(sonia::identity<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>(), b);
+        return ftor(std::type_identity<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>{}, b);
     case blob_type::string:
     case blob_type::error:
-        return ftor(sonia::identity<char>(), b);
+        return ftor(std::type_identity<std::string_view>{}, b);
         default:
             break;
     }
@@ -634,49 +688,57 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
     switch (decayed_type)
     {
     case blob_type::boolean:
-        return ftor(sonia::identity<bool>(), b);
+        return ftor(std::type_identity<bool>{}, b);
     case blob_type::i8:
-        return ftor(sonia::identity<int8_t>(), b);
+        return ftor(std::type_identity<int8_t>{}, b);
     case blob_type::ui8:
-        return ftor(sonia::identity<uint8_t>(), b);
+        return ftor(std::type_identity<uint8_t>{}, b);
     case blob_type::c8:
-        return ftor(sonia::identity<char>(), b);
+        return ftor(std::type_identity<char>{}, b);
     case blob_type::i16:
-        return ftor(sonia::identity<int16_t>(), b);
+        return ftor(std::type_identity<int16_t>{}, b);
     case blob_type::ui16:
-        return ftor(sonia::identity<uint16_t>(), b);
+        return ftor(std::type_identity<uint16_t>{}, b);
     case blob_type::i32:
-        return ftor(sonia::identity<int32_t>(), b);
+        return ftor(std::type_identity<int32_t>{}, b);
     case blob_type::ui32:
-        return ftor(sonia::identity<uint32_t>(), b);
+        return ftor(std::type_identity<uint32_t>{}, b);
     case blob_type::i64:
-        return ftor(sonia::identity<int64_t>(), b);
+        return ftor(std::type_identity<int64_t>{}, b);
     case blob_type::ui64:
-        return ftor(sonia::identity<uint64_t>(), b);
+        return ftor(std::type_identity<uint64_t>{}, b);
     case blob_type::flt16:
-        return ftor(sonia::identity<sonia::float16>(), b);
+        return ftor(std::type_identity<sonia::float16>{}, b);
     case blob_type::flt32:
-        return ftor(sonia::identity<float_t>(), b);
+        return ftor(std::type_identity<float_t>{}, b);
     case blob_type::flt64:
-        return ftor(sonia::identity<double_t>(), b);
+        return ftor(std::type_identity<double_t>{}, b);
     case blob_type::tuple:
-        return ftor(sonia::identity<blob_result>(), b);
+        return ftor(std::type_identity<blob_result>{}, b);
     default:
         break;
     }
-    return ftor(sonia::identity<void>(), b);
+    return ftor(std::type_identity<void>{}, b);
 }
 
-inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
+template <typename Elem, typename Traits>
+inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& os, blob_result const& b)
 {
+    using namespace std::string_view_literals;
+
     if (b.type == blob_type::nil) {
-        return os << "nil";
+        return os << "nil"sv;
+    } else if (b.type == blob_type::object) {
+        return os << "object : "sv << typeid(*data_of<sonia::invokation::object>(b)).name();
+    } else if (b.type == blob_type::blob_reference) {
+        return os << '&' << *data_of<blob_result>(b);
     }
     if (is_array(b) && !contains_string(b)) {
-        os << "[";
+        os << '[';
         blob_type_selector(b, [&os](auto ident, blob_result b) {
             using type = typename decltype(ident)::type;
-            if constexpr (std::is_void_v<type>) { os << "unknown"; }
+            if constexpr (std::is_same_v<type, std::nullptr_t>) { os << "nil"sv; }
+            else if constexpr (std::is_void_v<type>) { os << "unknown"sv; }
             else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invokation_bigint_limb_type>>) { os << "bigint"; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
@@ -687,63 +749,68 @@ inline std::ostream& operator<<(std::ostream& os, blob_result const& b)
                 }
             }
         });
-        return os << "]";
+        return os << ']';
     }
     switch (b.type)
     {
     case blob_type::nil:
-        return os << "nil";
+        return os << "nil"sv;
     case blob_type::boolean:
-        return os << (b.bp.i8value ? "true" : "false");
+        return os << (b.bp.i8value ? "true"sv : "false"sv);
     case blob_type::c8:
         return os << '\'' << (char)b.bp.i8value<< '\'';
     case blob_type::i8:
-        return os << (int)b.bp.i8value << ":i8";
+        return os << (int)b.bp.i8value << ":i8"sv;
     case blob_type::ui8:
-        return os << (int)b.bp.ui8value << ":ui8";
+        return os << (int)b.bp.ui8value << ":ui8"sv;
     case blob_type::i16:
-        return os << (int)b.bp.i16value << ":i16";
+        return os << (int)b.bp.i16value << ":i16"sv;
     case blob_type::ui16:
-        return os << (int)b.bp.ui16value << ":ui16";
+        return os << (int)b.bp.ui16value << ":ui16"sv;
     case blob_type::i32:
-        return os << b.bp.i32value << ":i32";
+        return os << b.bp.i32value << ":i32"sv;
     case blob_type::ui32:
-        return os << b.bp.ui32value << ":ui32";
+        return os << b.bp.ui32value << ":ui32"sv;
     case blob_type::i64:
-        return os << b.bp.i64value << ":i64";
+        return os << b.bp.i64value << ":i64"sv;
     case blob_type::ui64:
-        return os << b.bp.ui64value << ":ui64";
+        return os << b.bp.ui64value << ":ui64"sv;
     case blob_type::flt16:
-        return os << b.bp.f16value << ":f16";
+        return os << b.bp.f16value << ":f16"sv;
     case blob_type::flt32:
-        return os << b.bp.f32value << ":f32";
+        return os << b.bp.f32value << ":f32"sv;
     case blob_type::flt64:
-        return os << b.bp.f64value << ":f64";
+        return os << b.bp.f64value << ":f64"sv;
     case blob_type::string:
         return os << '"' << sonia::string_view{data_of<char>(b), array_size_of<char>(b)} << '"';
     case blob_type::function:
-        return os << "function";
+        return os << "function"sv;
     case blob_type::object:
-        return os << "object";
+        return os << "object : "sv << typeid(*data_of<sonia::invokation::object>(b)).name();
     case blob_type::error:
-        return os << "error: " << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
+        return os << "error: "sv << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
     default:
-        return os << "unknown";
+        return os << "unknown"sv;
     }
 }
 
-inline std::ostream& print_type(std::ostream& os, blob_result const& b)
+template <typename Elem, typename Traits>
+inline std::basic_ostream<Elem, Traits>& print_type(std::basic_ostream<Elem, Traits>& os, blob_result const& b)
 {
+    using namespace std::string_view_literals;
     if (b.type == blob_type::nil) {
-        return os << "nil";
+        return os << "nil"sv;
     } else if (b.type == blob_type::string) {
-        return os << "string";
+        return os << "string"sv;
     } else if (b.type == blob_type::bigint) {
-        return os << "bigint";
+        return os << "bigint"sv;
     } else if (b.type == blob_type::error) {
-        return os << "error";
+        return os << "error"sv;
+    } else if (b.type == blob_type::object) {
+        return os << "object"sv;
+    } else if (b.type == blob_type::blob_reference) {
+        return print_type(os << '&', *data_of<blob_result>(b));
     }
-
     if (is_array(b)) {
         os << "[";
     }
@@ -751,38 +818,38 @@ inline std::ostream& print_type(std::ostream& os, blob_result const& b)
     switch (decayed_type)
     {
     case blob_type::boolean:
-        os << "bool"; break;
+        os << "bool"sv; break;
     case blob_type::i8:
-        os << "i8"; break;
+        os << "i8"sv; break;
     case blob_type::ui8:
-        os << "ui8"; break;
+        os << "ui8"sv; break;
     case blob_type::i16:
-        os << "i16"; break;
+        os << "i16"sv; break;
     case blob_type::ui16:
-        os << "ui16"; break;
+        os << "ui16"sv; break;
     case blob_type::i32:
-        os << "i32"; break;
+        os << "i32"sv; break;
     case blob_type::ui32:
-        os << "ui32"; break;
+        os << "ui32"sv; break;
     case blob_type::i64:
-        os << "i64"; break;
+        os << "i64"sv; break;
     case blob_type::ui64:
-        os << "ui64"; break;
+        os << "ui64"sv; break;
     case blob_type::flt16:
-        os << "f16"; break;
+        os << "f16"sv; break;
     case blob_type::flt32:
-        os << "f32"; break;
+        os << "f32"sv; break;
     case blob_type::flt64:
-        os << "f64"; break;
+        os << "f64"sv; break;
     case blob_type::function:
-        os << "function"; break;
+        os << "function"sv; break;
     case blob_type::object:
-        os << "object"; break;
+        os << "object"sv; break;
     default:
-        os << "unknown";
+        os << "unknown"sv;
     }
     if (is_array(b)) {
-        os << "]";
+        os << ']';
     }
     return os;
 }
@@ -1064,7 +1131,7 @@ struct from_blob<std::array<T, SzV>>
 
 private:
     template <typename BT>
-    inline std::array<T, SzV> selector(sonia::identity<BT>, blob_result const& val) const
+    inline std::array<T, SzV> selector(std::type_identity<BT>, blob_result const& val) const
     {
         using namespace sonia;
         T const* begin_ptr = val.inplace_size ? reinterpret_cast<T const*>(val.ui8array) : reinterpret_cast<T const*>(val.bp.data);
@@ -1096,7 +1163,7 @@ private:
 template <typename T>
 inline auto as(blob_result const& val) -> decltype(from_blob<T>{}(std::declval<blob_result>()))
 {
-    return from_blob<T>{}(val);
+    return from_blob<T>{}(unref(val));
 }
 
 template <typename T>
@@ -1125,14 +1192,46 @@ std::tuple<Ts...> from_blobs(std::span<const blob_result> vals)
 }
 
 template <std::integral T>
-inline bool blob_result_equal(sonia::identity<T>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<T>, blob_result const& lhs, blob_result const& rhs)
 {
-    return as<T>(lhs) == as<T>(rhs);
+    if (is_basic_integral(rhs.type)) return as<T>(lhs) == as<T>(rhs);
+    // to do: bigint, decimal, float?
+    return false;
 }
 
-inline bool blob_result_equal(sonia::identity<sonia::float16>, blob_result const& lhs, blob_result const& rhs)
+inline bool blob_result_equal(std::type_identity<sonia::string_view>, blob_result const& lhs, blob_result const& rhs)
 {
-    return as<sonia::float16>(lhs) == as<sonia::float16>(rhs);
+    if (rhs.type != rhs.type) return false;
+    size_t sz = array_size_of<char>(rhs);
+    if (array_size_of<char>(lhs) != sz) return false;
+    auto * ldata = data_of<char>(lhs);
+    auto * rdata = data_of<char>(rhs);
+    if (ldata == rdata) return true;
+    return std::memcmp(ldata, rdata, sz) == 0;
+}
+
+template <std::floating_point T>
+inline bool blob_result_equal(std::type_identity<T>, blob_result const& lhs, blob_result const& rhs)
+{
+    if (is_numeric(rhs.type)) return as<T>(lhs) == as<T>(rhs);
+    return false;
+}
+
+inline bool blob_result_equal(std::type_identity<sonia::float16>, blob_result const& lhs, blob_result const& rhs)
+{
+    if (is_numeric(rhs.type)) as<sonia::float16>(lhs) == as<sonia::float16>(rhs);
+    return false;
+}
+
+inline bool blob_result_equal(std::type_identity<std::nullptr_t>, blob_result const& lhs, blob_result const& rhs)
+{
+    return is_nil(rhs);
+}
+
+template <typename T>
+inline bool blob_result_equal(std::type_identity<T>, blob_result const& lhs, blob_result const& rhs)
+{
+    return false;
 }
 
 inline bool operator== (blob_result const& lhs, blob_result const& rhs)
@@ -1140,9 +1239,24 @@ inline bool operator== (blob_result const& lhs, blob_result const& rhs)
     return blob_type_selector(lhs, [&rhs](auto id, blob_result const& lhs) { return blob_result_equal(id, lhs, rhs); });
 }
 
-inline bool operator!= (blob_result const& lhs, blob_result const& rhs)
+template <typename T>
+inline size_t blob_result_hash(std::type_identity<T>, blob_result const& v) { return 0; }
+
+template <>
+inline size_t blob_result_hash(std::type_identity<sonia::string_view>, blob_result const& v)
 {
-    return !(lhs == rhs);
+    return sonia::hash<sonia::string_view>{}(as<sonia::string_view>(v));
+}
+
+template <std::integral T>
+inline size_t blob_result_hash(std::type_identity<T>, blob_result const& v)
+{
+    return sonia::hash<T>{}(as<T>(v));
+}
+
+inline size_t hash_value(blob_result const& v)
+{
+    return blob_type_selector(v, [](auto id, blob_result const& v) { return blob_result_hash(id, v); });
 }
 
 namespace sonia {
@@ -1152,7 +1266,7 @@ class smart_blob : blob_result
 public:
     smart_blob() : blob_result{ nil_blob_result() } {}
     smart_blob(blob_result const& b) : blob_result{ b } { blob_result_pin(this); }
-    smart_blob(blob_result && b) : blob_result{ b } {}
+    smart_blob(blob_result&& b) : blob_result{ b } { reset(b); }
 
     smart_blob(smart_blob const& rhs)
         : blob_result { rhs }
@@ -1163,20 +1277,44 @@ public:
     smart_blob(smart_blob && rhs) noexcept
         : blob_result{ rhs }
     {
-        static_cast<blob_result&>(rhs) = nil_blob_result();
+        reset(rhs);
     }
 
     smart_blob& operator= (smart_blob const& rhs)
     {
-        smart_blob tmp{ rhs };
-        swap(tmp);
+        if (is_ref(type) && this != &rhs) {
+            blob_result * actual_value = mutable_data_of<blob_result>(*this);
+            blob_result_unpin(actual_value);
+            if (is_ref(rhs->type)) {
+                *actual_value = *rhs.data_of<blob_result>();
+            } else {
+                *actual_value = *rhs;
+            }
+            blob_result_pin(actual_value);
+        } else {
+            smart_blob tmp{ rhs };
+            swap(tmp);
+        }
         return *this;
     }
 
     smart_blob& operator= (smart_blob && rhs)
     {
-        smart_blob tmp{ std::move(rhs) };
-        swap(tmp);
+        if (is_ref(type) && this != &rhs) {
+            blob_result* actual_value = mutable_data_of<blob_result>(*this);
+            blob_result_unpin(actual_value);
+            if (is_ref(rhs->type)) {
+                *actual_value = *rhs.data_of<blob_result>();
+                blob_result_pin(actual_value);
+                blob_result_unpin(&rhs.get());
+            } else {
+                *actual_value = *rhs;
+            }
+            reset(*rhs);
+        } else {
+            smart_blob tmp{ std::move(rhs) };
+            swap(tmp);
+        }
         return *this;
     }
 
@@ -1190,13 +1328,31 @@ public:
         blob_result_unpin(this);
     }
 
+    friend bool operator ==(smart_blob const& lhs, smart_blob const& rhs)
+    {
+        return *lhs == *rhs;
+    }
+
+    friend bool operator ==(smart_blob const& lhs, blob_result const& rhs)
+    {
+        return *lhs == rhs;
+    }
+
+    friend bool operator ==(blob_result const& lhs, smart_blob const& rhs)
+    {
+        return lhs == *rhs;
+    }
+
+    blob_result & operator*() { return *this; }
     blob_result const& operator*() const { return *this; }
+    blob_result & get() { return *this; }
     blob_result const& get() const { return *this; }
     blob_result * operator->() { return this; }
     blob_result const* operator->() const { return this; }
 
-    inline bool is_nil() const noexcept { return type == blob_type::nil; }
-    inline bool is_array() const noexcept { return (((uint8_t)type) & 0x80) != 0; }
+    inline bool is_nil() const noexcept { return ::is_nil(**this); }
+    inline bool is_array() const noexcept { return ::is_array(**this); }
+    inline bool is_inplace() const noexcept { return !!inplace_size; }
 
     inline const void* data() const noexcept
     {
@@ -1206,6 +1362,24 @@ public:
     inline size_t size() const noexcept
     {
         return inplace_size ? (size_t)inplace_size : (size_t)bp.size;
+    }
+
+    template <typename T>
+    inline const T* data_of() const noexcept
+    {
+        return ::data_of<T>(*this);
+    }
+
+    template <typename T>
+    inline T* data_of() noexcept
+    {
+        return ::mutable_data_of<T>(*this);
+    }
+
+    template <typename T>
+    inline size_t size_of() const noexcept
+    {
+        return array_size_of<T>(*this);
     }
 
     inline void set_size(size_t sz)
@@ -1220,20 +1394,37 @@ public:
     }
 
     template <typename T>
-    auto as() const { return ::as<T>(get()); }
+    inline decltype(auto) as() const { return ::as<T>(get()); }
 
-    smart_blob& allocate()
+    smart_blob& allocate(bool no_inplace = false)
     {
-        blob_result_allocate(this);
+        blob_result_allocate(this, no_inplace);
         return *this;
     }
 
+    [[nodiscard]]
     blob_result detach()
     {
         blob_result tmp = nil_blob_result();
         std::swap(static_cast<blob_result&>(*this), tmp);
         return tmp;
     }
+
+    void referify()
+    {
+        static_cast<blob_result&>(*this) = reference_blob_result(*this);
+    };
 };
+
+inline size_t hash_value(smart_blob const& v)
+{
+    return hash_value(*v);
+}
+
+template <typename Elem, typename Traits>
+inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& os, smart_blob const& b)
+{
+    return os << *b;
+}
 
 }

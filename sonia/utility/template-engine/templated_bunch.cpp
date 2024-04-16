@@ -76,7 +76,7 @@ templated_bunch::templated_bunch()
 
 void templated_bunch::build(string_view xml)
 {
-    parse(xml, *this, as_singleton<templated_item_factory>()->get_attribute_resolver());
+    parse(xml, *this);
 }
 
 shared_ptr<templates::compound> templated_bunch::get_element_by(string_view id) const
@@ -146,16 +146,34 @@ void templated_bunch::close_element(span<xmlbuilder::element> parents, xmlbuilde
     if (!e.text.empty()) {
         set_text(*child, e.text);
     }
+    
+    std::vector<std::pair<std::string, std::string>> placeholders;
+    auto const& ar = as_singleton<templated_item_factory>()->get_attribute_resolver();
+
+    for (auto const& attr_pair : e.attrs) {
+        auto const& attrname = attr_pair.first;
+        auto const& attrvalue = attr_pair.second;
+        auto tpl = ar(e.name, attrname, attrvalue);
+        if (std::get<0>(tpl).type == blob_type::function) {
+            placeholders.emplace_back(attrname, as<string_view>(std::get<0>(tpl)));
+            //e.functionals.emplace_back(std::string{ attrname }, std::move(std::get<1>(tpl)), std::get<2>(tpl));
+        } else {
+            child->set_property(attrname, std::get<0>(tpl));
+            //e.attrs.emplace_back(attrname, std::move(std::get<0>(tpl)));
+        }
+    }
+    /*
     for (auto const& attr : e.attrs) {
         child->set_property(attr.first, *attr.second);
     }
-    std::vector<std::pair<std::string, std::string>> placeholders;
+
     for (auto const& func : e.functionals) {
         string_view propname = std::get<0>(func);
         string_view code = std::get<1>(func);
         xmlbuilder::func_type no_return = std::get<2>(func);
         placeholders.emplace_back(propname, code);
     }
+    */
     if (parents.empty()) return;
     auto parent = get_element_by(parents.back().id);
     parent->append(std::move(child), std::move(placeholders));

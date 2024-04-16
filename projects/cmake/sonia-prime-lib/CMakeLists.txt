@@ -21,6 +21,25 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/fibers/barrier.cpp
     ${BUNDLE_HOME}/sonia/fibers/algo/algorithm.cpp
     ${BUNDLE_HOME}/sonia/fibers/algo/round_robin.cpp
+    ${BUNDLE_HOME}/sonia/bang/bang.cpp
+    ${BUNDLE_HOME}/sonia/bang/bang.tab.cpp
+    ${BUNDLE_HOME}/sonia/bang/bang.yy.cpp
+    ${BUNDLE_HOME}/sonia/bang/bang_errors.cpp
+    ${BUNDLE_HOME}/sonia/bang/bang_semantic.cpp
+    ${BUNDLE_HOME}/sonia/bang/bang_unit.cpp
+    ${BUNDLE_HOME}/sonia/bang/parser.cpp
+    ${BUNDLE_HOME}/sonia/bang/ast/declaration_visitor.cpp
+    ${BUNDLE_HOME}/sonia/bang/ast/expression_visitor.cpp
+    ${BUNDLE_HOME}/sonia/bang/ast/forward_declaration_visitor.cpp
+    ${BUNDLE_HOME}/sonia/bang/ast/lvalue_expression_visitor.cpp
+    ${BUNDLE_HOME}/sonia/bang/ast/casts/expression_cast_to_array_visitor.cpp
+    ${BUNDLE_HOME}/sonia/bang/ast/casts/expression_cast_to_vector_visitor.cpp
+    ${BUNDLE_HOME}/sonia/bang/ast/casts/expression_cast_utility.cpp
+    ${BUNDLE_HOME}/sonia/bang/entities/enum_entity.cpp
+    ${BUNDLE_HOME}/sonia/bang/entities/functional_entity.cpp
+    ${BUNDLE_HOME}/sonia/bang/entities/type_entity.cpp
+    ${BUNDLE_HOME}/sonia/bang/library/bang_library.cpp
+    ${BUNDLE_HOME}/sonia/bang/vm/bang_vm.cpp
     ${BUNDLE_HOME}/sonia/sal/sal.cpp
     ${BUNDLE_HOME}/sonia/net/uri.cpp
     ${BUNDLE_HOME}/sonia/utility/assert_handler.cpp
@@ -41,6 +60,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/invokation/value_decoder.cpp
     ${BUNDLE_HOME}/sonia/utility/mvvm/view_model.cpp
     ${BUNDLE_HOME}/sonia/utility/mvvm/lua_view_model.cpp
+    ${BUNDLE_HOME}/sonia/utility/mvvm/bang_view_model.cpp
     ${BUNDLE_HOME}/sonia/utility/xmlbuilder/xmlbuilder.cpp
     ${BUNDLE_HOME}/sonia/utility/xmlbuilder/bunch_builder.cpp
     ${BUNDLE_HOME}/sonia/utility/xmlbuilder/attr_parser.cpp

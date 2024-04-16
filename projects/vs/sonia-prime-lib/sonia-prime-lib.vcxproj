@@ -229,6 +229,45 @@
     <ClInclude Include="..\..\..\agnostic\utility\uninitialized.hpp" />
     <ClInclude Include="..\..\..\agnostic\utility\static_log2.hpp" />
     <ClInclude Include="..\..\..\sonia\array_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_bool_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_enum_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_float_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_object_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_string_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\utility.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_implicit_cast_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_fn_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast_terms.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\fn_compiler_context.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\declaration_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_decimal_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_type_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_vector_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\bang.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\bang.tab.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\bang.yy.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\enum_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\functional_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\type_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\variable_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\errors.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\extern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\library\library.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\location.hh" />
+    <ClInclude Include="..\..\..\sonia\bang\parser.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\semantic.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\semantic_fwd.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\terms.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\unit.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\vm\bang_vm.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\vm\compiler_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\vm\push_value_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\build_config.hpp" />
     <ClInclude Include="..\..\..\sonia\concurrency.hpp" />
     <ClInclude Include="..\..\..\sonia\cstdint.hpp" />
@@ -314,7 +353,11 @@
     <ClInclude Include="..\..\..\sonia\mpl\vector.hpp" />
     <ClInclude Include="..\..\..\sonia\mpl\zip_view.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\arithmetic.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\basic_decimal.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\basic_integer.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\ct.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\decimal.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\decimal.ipp" />
     <ClInclude Include="..\..\..\sonia\mp\integer_view.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\limbs_from_string.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\limb_arithmetic.hpp" />
@@ -411,6 +454,7 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\tuple.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\variant.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\less\variant.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\functional\variant_compare_three_way.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\hazardous.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\command.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\comparison_operators.hpp" />
@@ -468,6 +512,14 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\value_as_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lang\entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lang\entity_registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lang\identifier_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lang\parameterized_identifier_registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lang\qname.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lang\string_literal_registry.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lang\utility.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lang\vm.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\linked_buffers.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lua\bigint_lib.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lua\lua.hpp" />
@@ -479,15 +531,14 @@
     <ClInclude Include="..\..\..\sonia\utility\marshaling\string.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\marshaling\stub_parameter.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\multimethod.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\bang_view_model.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\builder_view_model.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\bunch_builder_view_model.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\lua_view_model.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\view_model.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\mvvm\view_model.ipp" />
-    <ClInclude Include="..\..\..\sonia\utility\number\basic_decimal.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\number\decimal.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\number\decimal.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\number\fixed_uint.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\float16.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\number\integer.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\math.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\meta\for_each_wi.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\meta\uint.hpp" />
@@ -582,11 +633,15 @@
     <ClInclude Include="..\..\..\sonia\utility\type_durable_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\type_id.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\variadic.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\advxmlbuilder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\attr_parser.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\attr_parser.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\basic_attribute_resolver.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\basic_attribute_resolver.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\bunch_builder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\detail\types.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\detail\type_parser.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\detail\xmlbuilder_model.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\ui_attribute_resolver.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\xmlbuilder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\zip.hpp" />
@@ -594,6 +649,25 @@
     <ClInclude Include="..\..\..\sonia\variant.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_utility.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\ast\declaration_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\ast\expression_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\bang.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\bang.tab.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\bang.yy.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\bang_errors.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\bang_unit.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\enum_entity.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\functional_entity.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\type_entity.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\library\bang_library.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\parser.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\vm\bang_vm.cpp" />
     <ClCompile Include="..\..\..\sonia\fibers\algo\algorithm.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -811,9 +885,11 @@
     <ClCompile Include="..\..\..\sonia\utility\lua\lua.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\lua\sonia_lib.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\lua\variant_lib.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\mvvm\bang_view_model.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\mvvm\builder_view_model.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\mvvm\bunch_builder_view_model.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\mvvm\lua_view_model.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\mvvm\view_model.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\number\number_integer.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\number\number_math.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\parameters\parameters.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -839,14 +915,23 @@
     <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_bunch.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_unit.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\template-engine\compound.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\advxmlbuilder.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\attr_parser.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\basic_attribute_resolver.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\bunch_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\detail\xmlbuilder_model.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\detail\xmlbuilder_types.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\ui_attribute_resolver.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\xmlbuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\sonia.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\sonia\bang\bang.l" />
+    <None Include="..\..\..\sonia\bang\bang.output" />
+    <None Include="..\..\..\sonia\bang\bang.y" />
+    <None Include="..\..\..\sonia\bang\generate_parser.cmd" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

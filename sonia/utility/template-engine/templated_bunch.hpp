@@ -24,7 +24,7 @@ public:
     // external_builder api
     void append_element(span<xmlbuilder::element> parents, xmlbuilder::element&) override;
     void close_element(span<xmlbuilder::element> parents, xmlbuilder::element&) override;
-
+    
     templates::compound& root() { return *root_; }
 
 protected:

@@ -10,8 +10,8 @@ namespace sonia::templates {
 
 void foreach_element::do_registration(registrar_type& mr)
 {
-    register_property<&foreach_element::select>("select");
-    register_property<&foreach_element::var>("var");
+    mr.register_property<&foreach_element::select>("select");
+    mr.register_property<&foreach_element::var>("var");
 
     //mr.register_method<&foreach_element::append>("append");
 }

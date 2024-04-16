@@ -28,7 +28,7 @@ public:
 
 protected:
     // invokation routine
-    void do_registration(registrar_type&);
+    static void do_registration(registrar_type&);
 };
 
 }

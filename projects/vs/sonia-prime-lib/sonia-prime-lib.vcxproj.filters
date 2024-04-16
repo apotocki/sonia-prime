@@ -229,6 +229,30 @@
     <Filter Include="sonia.mp">
       <UniqueIdentifier>{9a882ece-22fe-43b1-b246-4d5cc1471e93}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.utility\xmlbuilder\detail">
+      <UniqueIdentifier>{6c47da02-fe62-47bd-9850-73d09408f48c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility\lang">
+      <UniqueIdentifier>{5483fc27-65d4-4e1a-8738-6d33d9552787}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang">
+      <UniqueIdentifier>{40dbd966-8d59-4ea0-b359-68f8f3c7dcb5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\ast">
+      <UniqueIdentifier>{cea45eaf-2bd2-491e-92d5-526e9aecd0e6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\ast\casts">
+      <UniqueIdentifier>{b7c8d321-4a32-4f74-aecc-7dfbac0872ea}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities">
+      <UniqueIdentifier>{dca3170a-23f0-4bfc-92ec-a063bec93e0c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\vm">
+      <UniqueIdentifier>{f853d513-1b44-4100-8273-b2817d9e4d46}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\library">
+      <UniqueIdentifier>{e3a3907b-c56b-4441-a4a3-10575b6ea719}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -348,9 +372,6 @@
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp">
       <Filter>sonia.utility\json</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\number\integer.hpp">
-      <Filter>sonia.utility\number</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\comparison_operators.hpp">
       <Filter>sonia.utility</Filter>
     </ClInclude>
@@ -360,20 +381,11 @@
     <ClInclude Include="..\..\..\sonia\utility\optimized\integer.hpp">
       <Filter>sonia.utility\optimized</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\number\decimal.hpp">
-      <Filter>sonia.utility\number</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\number\decimal.ipp">
-      <Filter>sonia.utility\number</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\iterators\hash_combine_iterator.hpp">
       <Filter>sonia.utility\iterators</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\optimized\decimal.hpp">
       <Filter>sonia.utility\optimized</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\number\basic_decimal.hpp">
-      <Filter>sonia.utility\number</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\buffer.hpp">
       <Filter>sonia.utility</Filter>
@@ -1950,6 +1962,183 @@
     <ClInclude Include="..\..\..\sonia\utility\invokation\functor_object.hpp">
       <Filter>sonia.utility\invokation</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\advxmlbuilder.hpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\detail\xmlbuilder_model.hpp">
+      <Filter>sonia.utility\xmlbuilder\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\detail\type_parser.hpp">
+      <Filter>sonia.utility\xmlbuilder\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\detail\types.hpp">
+      <Filter>sonia.utility\xmlbuilder\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\builder_view_model.hpp">
+      <Filter>sonia.utility\mvvm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\bunch_builder_view_model.hpp">
+      <Filter>sonia.utility\mvvm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lang\utility.hpp">
+      <Filter>sonia.utility\lang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lang\string_literal_registry.hpp">
+      <Filter>sonia.utility\lang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lang\parameterized_identifier_registry.hpp">
+      <Filter>sonia.utility\lang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lang\qname.hpp">
+      <Filter>sonia.utility\lang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lang\identifier_builder.hpp">
+      <Filter>sonia.utility\lang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lang\entity_registry.hpp">
+      <Filter>sonia.utility\lang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lang\entity.hpp">
+      <Filter>sonia.utility\lang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lang\vm.hpp">
+      <Filter>sonia.utility\lang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\basic_integer.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\basic_decimal.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\decimal.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\decimal.ipp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\declaration_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\enum_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functional_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\type_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\variable_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast_terms.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\bang.tab.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\bang.yy.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\location.hh">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\parser.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\semantic.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\unit.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\fn_compiler_context.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\bang.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\vm\bang_vm.hpp">
+      <Filter>sonia.bang\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\vm\push_value_visitor.hpp">
+      <Filter>sonia.bang\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\vm\compiler_visitor.hpp">
+      <Filter>sonia.bang\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_decimal_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_vector_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\extern.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_type_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\functional\variant_compare_three_way.hpp">
+      <Filter>sonia.utility\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\terms.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_fn_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\expression_implicit_cast_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_object_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_string_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\library\library.hpp">
+      <Filter>sonia.bang\library</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_bool_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_enum_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\semantic_fwd.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_float_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\utility.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\mvvm\bang_view_model.hpp">
+      <Filter>sonia.utility\mvvm</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -1981,9 +2170,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\json\json_value.cpp">
       <Filter>sonia.utility\json</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\number\number_integer.cpp">
-      <Filter>sonia.utility\number</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp">
       <Filter>sonia.utility</Filter>
@@ -2207,8 +2393,97 @@
     <ClCompile Include="..\..\..\sonia\utility\lua\sonia_lib.cpp">
       <Filter>sonia.utility\lua</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\advxmlbuilder.cpp">
+      <Filter>sonia.utility\xmlbuilder</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\detail\xmlbuilder_model.cpp">
+      <Filter>sonia.utility\xmlbuilder\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\detail\xmlbuilder_types.cpp">
+      <Filter>sonia.utility\xmlbuilder\detail</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\mvvm\builder_view_model.cpp">
+      <Filter>sonia.utility\mvvm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\mvvm\bunch_builder_view_model.cpp">
+      <Filter>sonia.utility\mvvm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\bang.tab.cpp">
+      <Filter>sonia.bang</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\bang.yy.cpp">
+      <Filter>sonia.bang</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\bang_unit.cpp">
+      <Filter>sonia.bang</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\parser.cpp">
+      <Filter>sonia.bang</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\bang.cpp">
+      <Filter>sonia.bang</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\vm\bang_vm.cpp">
+      <Filter>sonia.bang\vm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\declaration_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\functional_entity.cpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\expression_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\type_entity.cpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\enum_entity.cpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp">
+      <Filter>sonia.bang</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\library\bang_library.cpp">
+      <Filter>sonia.bang\library</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\bang_errors.cpp">
+      <Filter>sonia.bang</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.cpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.cpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_utility.cpp">
+      <Filter>sonia.bang\ast\casts</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\mvvm\bang_view_model.cpp">
+      <Filter>sonia.utility\mvvm</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\sonia.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\..\sonia\bang\bang.l">
+      <Filter>sonia.bang</Filter>
+    </None>
+    <None Include="..\..\..\sonia\bang\bang.output">
+      <Filter>sonia.bang</Filter>
+    </None>
+    <None Include="..\..\..\sonia\bang\bang.y">
+      <Filter>sonia.bang</Filter>
+    </None>
+    <None Include="..\..\..\sonia\bang\generate_parser.cmd">
+      <Filter>sonia.bang</Filter>
+    </None>
   </ItemGroup>
 </Project>

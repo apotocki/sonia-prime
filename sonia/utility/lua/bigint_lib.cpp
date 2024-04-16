@@ -5,6 +5,8 @@
 #include "sonia/config.hpp"
 #include "bigint_lib.hpp"
 
+#include <sstream>
+
 #include "sonia/string.hpp"
 
 extern "C" {
@@ -17,11 +19,7 @@ extern "C" {
 #define BIGINT_METATABLE_NAME "sonia.bigint"
 #define BIGINT_LIB_NAME "bigint"
 
-#include <boost/multiprecision/cpp_int.hpp>
-
 namespace sonia::lua {
-
-using integer_type = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>;
 
 bigint_header* luaL_check_bigint_lib(lua_State* L, int index)
 {
@@ -238,14 +236,17 @@ int bigint_to_integer(lua_State* L)
     return 1;
 }
 
-void bigint_binary_operator(lua_State* L, mp::basic_integer_view<limb_type>& l_val, mp::basic_integer_view<limb_type>& r_val)
+std::pair<mp::basic_integer_view<limb_type>, mp::basic_integer_view<limb_type>> bigint_binary_operator(lua_State* L, span<limb_type> lsp, span<limb_type> rsp)
 {
+    mp::basic_integer_view<limb_type> l_val;
+    mp::basic_integer_view<limb_type> r_val;
+
     bigint_header* blh = luaL_test_bigint_lib(L, 1);
-    if (blh) { 
+    if (blh) {
         l_val = restore_bigint(blh);
     } else if (lua_isinteger(L, 1)) {
-        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 1), l_val.limbs());
-        l_val = mp::basic_integer_view<limb_type>{ l_val.limbs().subspan(0, sz), sign };
+        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 1), lsp);
+        l_val = mp::basic_integer_view<limb_type>{ lsp.subspan(0, sz), sign };
     } else {
         luaL_argerror(L, 1, "`bigint' or integer expected");
     }
@@ -254,11 +255,12 @@ void bigint_binary_operator(lua_State* L, mp::basic_integer_view<limb_type>& l_v
     if (brh) {
         r_val = restore_bigint(brh);
     } else if (lua_isinteger(L, 2)) {
-        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 2), r_val.limbs());
-        r_val = mp::basic_integer_view<limb_type>{ r_val.limbs().subspan(0, sz), sign };
+        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 2), rsp);
+        r_val = mp::basic_integer_view<limb_type>{ rsp.subspan(0, sz), sign };
     } else {
         luaL_argerror(L, 2, "`bigint' or integer expected");
     }
+    return { l_val, r_val };
 }
 
 int bigint_unary_minus(lua_State* L)
@@ -273,10 +275,8 @@ int bigint_equal(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
     
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_pushboolean(L, l_val == r_val);
 
@@ -287,10 +287,8 @@ int bigint_lt(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_pushboolean(L, l_val < r_val);
 
@@ -301,10 +299,8 @@ int bigint_le(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_pushboolean(L, l_val <= r_val);
 
@@ -315,10 +311,8 @@ int bigint_add(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
     auto [limbs, sz, rsz, sign] = mp::add(l_val, r_val, limbs_allocator);
@@ -334,10 +328,8 @@ int bigint_sub(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
     auto [limbs, sz, rsz, sign] = mp::sub(l_val, r_val, limbs_allocator);
@@ -353,10 +345,8 @@ int bigint_mul(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
     auto [limbs, sz, rsz, sign] = mp::mul(l_val, r_val, limbs_allocator);
@@ -372,10 +362,8 @@ int bigint_div(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
     auto [limbs, sz, rsz, sign] = mp::div(l_val, r_val, limbs_allocator);
@@ -391,10 +379,8 @@ int bigint_mod(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
     auto [limbs, sz, rsz, sign] = mp::mod(l_val, r_val, limbs_allocator);
@@ -410,10 +396,8 @@ int bigint_pow(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     luaL_argcheck(L, r_val >= (std::numeric_limits<unsigned int>::min)() &&
         r_val <= (std::numeric_limits<unsigned int>::max)(), 2, "out of bounds");
@@ -432,10 +416,8 @@ int bigint_band(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
     auto [limbs, sz, rsz, sign] = mp::binand(l_val, r_val, limbs_allocator);
@@ -454,10 +436,8 @@ int bigint_bor(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
     auto [limbs, sz, rsz, sign] = mp::binor(l_val, r_val, limbs_allocator);
@@ -476,10 +456,8 @@ int bigint_bxor(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
     auto [limbs, sz, rsz, sign] = mp::binxor(l_val, r_val, limbs_allocator);
@@ -514,10 +492,8 @@ int bigint_shl(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     luaL_argcheck(L, r_val >= (std::numeric_limits<unsigned int>::min)() &&
         r_val <= (std::numeric_limits<unsigned int>::max)(), 2, "out of bounds");
@@ -539,10 +515,8 @@ int bigint_shr(lua_State* L)
 {
     limb_type llimbs[limbs_per_lua_integer];
     limb_type rlimbs[limbs_per_lua_integer];
-    mp::basic_integer_view<limb_type> l_val{ llimbs };
-    mp::basic_integer_view<limb_type> r_val{ rlimbs };
 
-    bigint_binary_operator(L, l_val, r_val);
+    auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     luaL_argcheck(L, r_val >= 0 &&
         r_val <= (std::numeric_limits<unsigned int>::max)(), 2, "out of bounds");

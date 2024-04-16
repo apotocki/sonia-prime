@@ -36,7 +36,7 @@ protected:
     //void selector(sonia::identity<BT>, sonia::lua::language& lang, blob_result const& val);
 
     // invokation routine
-    void do_registration(registrar_type&);
+    static void do_registration(registrar_type&);
 };
 
 }

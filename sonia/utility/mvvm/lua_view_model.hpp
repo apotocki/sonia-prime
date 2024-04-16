@@ -16,7 +16,7 @@ class lua_view_model
     , private sonia::lua::language
     , public invokation::registrar<lua_view_model, view_model>
 {
-    using registrar_type = invokation::registrar<lua_view_model, view_model>;
+    using registrar_type = invokation::registrar<lua_view_model, view_model>::registrar_type;
     friend class invokation::registrar<lua_view_model, view_model>;
 
 public:
@@ -38,7 +38,7 @@ public:
 
 protected:
     // methods routine
-    void do_registration(registrar_type& mr);
+    static void do_registration(registrar_type& mr);
 };
 
 }

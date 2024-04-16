@@ -4,11 +4,8 @@
 
 #pragma once
 
-#include <vector>
 #include <atomic>
 #include <set>
-#include <boost/unordered_map.hpp>
-#include <boost/variant.hpp>
 
 #include "sonia/cstdint.hpp"
 #include "sonia/string.hpp"
@@ -50,7 +47,7 @@ enum class status_type : int16_t {
 using cancel_flag_type = std::atomic<int>;
 
 class view_model 
-    : public invokation::invokable
+    : public virtual invokation::invokable
     , public invokation::registrar<view_model>
 {
     friend class invokation::registrar<view_model>;
@@ -143,7 +140,7 @@ public:
 
 protected:
     // invokation routine
-    void do_registration(registrar_type &);
+    static void do_registration(registrar_type &);
 
 protected:
     fibers::mutex ev_mtx_;

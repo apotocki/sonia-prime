@@ -12,12 +12,15 @@
 #include "limbs_from_string.hpp"
 #include "ct.hpp"
 #include <vector>
+#include <iterator>
+
+// to do: look at https://github.com/google/double-conversion
 
 namespace sonia::mp {
 
 template <std::unsigned_integral LimbT, std::integral T, size_t N>
 requires(N >= (sizeof(T) + sizeof(LimbT) - 1) / sizeof(LimbT))
-std::tuple<size_t, int> to_limbs(T value, std::span<LimbT, N> sp)
+std::tuple<size_t, int> to_limbs(T value, std::span<LimbT, N> sp) noexcept
 {
     T absval;
     int sign;
@@ -43,12 +46,24 @@ std::tuple<size_t, int> to_limbs(T value, std::span<LimbT, N> sp)
     return { cnt, sign };
 }
 
+template <std::unsigned_integral LimbT, std::integral T, typename AllocatorT>
+requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
+std::tuple<LimbT*, size_t, size_t, int> to_limbs(T value, AllocatorT&& alloc)
+{
+    using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
+    constexpr size_t limbs_cnt = (sizeof(T) + sizeof(LimbT) - 1) / sizeof(LimbT);
+
+    LimbT* buf = alloc_traits_t::allocate(alloc, limbs_cnt);
+    auto [sz, sign] = to_limbs(value, std::span{ buf, limbs_cnt });
+    return { buf, sz, limbs_cnt, sign };
+}
+
 template <std::unsigned_integral LimbT>
 class basic_integer_view
 {
     template <std::unsigned_integral> friend class basic_integer_view;
 
-    inline basic_integer_view(LimbT * limbs, intptr_t size) noexcept
+    inline basic_integer_view(LimbT const * limbs, intptr_t size) noexcept
         : limbs_{ limbs }, size_{ size }
     {}
 
@@ -57,7 +72,7 @@ public:
         : limbs_{nullptr}, size_{0}
     {}
 
-    explicit basic_integer_view(std::span<LimbT> limbs, int sign = 1) noexcept
+    explicit basic_integer_view(std::span<const LimbT> limbs, int sign = 1) noexcept
         : limbs_{ limbs.data() }, size_ { static_cast<intptr_t>(limbs.size()) }
     {
         if (sign < 0) size_ = -size_;
@@ -71,13 +86,13 @@ public:
     }
 
     template <typename LT>
-    requires(std::is_const_v<LimbT> && std::is_same_v<std::remove_cv_t<LimbT>, LT>)
+    requires(std::is_same_v<std::remove_cv_t<LimbT>, LT>)
     basic_integer_view(basic_integer_view<LT> rhs) noexcept
         : limbs_{ rhs.limbs_ }, size_{ rhs.size_ }
     {}
 
     inline int sign() const noexcept { return size_ < 0 ? -1 : 1; }
-    inline operator std::span<LimbT>() noexcept { return { limbs_, static_cast<size_t>(size_ < 0 ? -size_ : size_) }; }
+    //inline operator std::span<const LimbT>() noexcept { return { limbs_, static_cast<size_t>(size_ < 0 ? -size_ : size_) }; }
     inline operator std::span<std::add_const_t<LimbT>>() const noexcept { return { limbs_, static_cast<size_t>(size_ < 0 ? -size_ : size_) }; }
     
     inline std::span<std::add_const_t<LimbT>> limbs() const noexcept
@@ -85,10 +100,10 @@ public:
         return { limbs_, static_cast<size_t>(size_ < 0 ? -size_ : size_) };
     }
 
-    inline std::span<LimbT> limbs() noexcept
-    {
-        return { limbs_, static_cast<size_t>(size_ < 0 ? -size_ : size_) };
-    }
+    //inline std::span<LimbT> limbs() noexcept
+    //{
+    //    return { limbs_, static_cast<size_t>(size_ < 0 ? -size_ : size_) };
+    //}
 
     inline LimbT at(size_t index) const noexcept
     {
@@ -115,6 +130,30 @@ public:
         return static_cast<T>(result);
     }
 
+    template <std::floating_point T>
+    explicit operator T() const
+    {
+        if (!size_) [[unlikely]] return 0;
+        using r_t = std::remove_cv_t<T>;
+        r_t result = static_cast<r_t>(*limbs_);
+        r_t mval = 1;
+        intptr_t limbs_to_process = std::abs(size_);
+        for (intptr_t i = 1; i < limbs_to_process; ++i) {
+            mval *= r_t(LimbT(1) << (std::numeric_limits<LimbT>::digits - 1)) * 2;
+            result += static_cast<r_t>(limbs_[i]) * mval;
+        }
+        
+        if (sign() < 0) {
+            result = -result;
+        }
+        return result;
+    }
+
+    inline bool operator! () const noexcept
+    {
+        return limbs_ + std::abs(size_) == std::find_if(limbs_, limbs_ + std::abs(size_), [](auto l) { return !!l; });
+    }
+
     inline basic_integer_view operator- () const noexcept
     {
         return basic_integer_view { limbs_, -size_ };
@@ -123,8 +162,8 @@ public:
     friend bool operator ==(basic_integer_view lhs, basic_integer_view rhs)
     {
         if ((lhs.size_ < 0 && rhs.size_ > 0) || (lhs.size_ > 0 && rhs.size_ < 0)) return false;
-        LimbT* lb = lhs.limbs_, * le = lb + std::abs(lhs.size_);
-        LimbT* rb = rhs.limbs_, * re = rb + std::abs(rhs.size_);
+        LimbT const* lb = lhs.limbs_, * le = lb + std::abs(lhs.size_);
+        LimbT const* rb = rhs.limbs_, * re = rb + std::abs(rhs.size_);
         for (;; ++rb, ++lb) {
             if (lb != le) {
                 if (rb != re) {
@@ -183,8 +222,8 @@ public:
         intptr_t lsz = std::abs(lhs.size_);
         intptr_t rsz = std::abs(rhs.size_);
         
-        LimbT* re = rhs.limbs_ + rsz;
-        LimbT* le = lhs.limbs_ + lsz;
+        LimbT const* re = rhs.limbs_ + rsz;
+        LimbT const* le = lhs.limbs_ + lsz;
         if (lsz < rsz) {
             do {
                 --re;
@@ -225,9 +264,12 @@ public:
     }
 
 private:
-    LimbT* limbs_;
+    LimbT const* limbs_;
     intptr_t size_;
 };
+
+template <std::unsigned_integral LimbT>
+basic_integer_view(std::span<LimbT>, int sign) -> basic_integer_view<LimbT>;
 
 template <std::unsigned_integral LimbT, typename AllocatorT>
 requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
@@ -359,7 +401,8 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     std::tuple<limb_t*, size_t, size_t, int> result;
 
     if (!n) [[unlikely]] {
-        std::get<0>(result) = nullptr;
+        result = { alloc_traits_t::allocate(alloc, 1), 1, 1, 1 };
+        *std::get<0>(result) = 1;
         return result;
     }
 
@@ -375,16 +418,16 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     for (;;) {
         if (n & 1) {
             result = mul(base, rview, alloc);
-            if (ralloc) { alloc_traits_t::deallocate(alloc, rview.limbs().data(), ralloc); }
+            if (ralloc) { alloc_traits_t::deallocate(alloc, const_cast<LimbT*>(rview.limbs().data()), ralloc); }
             rview = basic_integer_view<LimbT>{ std::span{std::get<0>(result), std::get<1>(result)}, std::get<3>(result) }; ralloc = std::get<2>(result);
         }
         n >>= 1;
         if (!n) break;
         auto [limbs, sz, rsz, sign] = mul(base, base, alloc);
-        if (balloc) { alloc_traits_t::deallocate(alloc, base.limbs().data(), balloc); }
+        if (balloc) { alloc_traits_t::deallocate(alloc, const_cast<LimbT*>(base.limbs().data()), balloc); }
         base = basic_integer_view<LimbT>{ std::span{limbs, sz}, sign }; balloc = rsz;
     }
-    if (balloc) { alloc_traits_t::deallocate(alloc, base.limbs().data(), balloc); }
+    if (balloc) { alloc_traits_t::deallocate(alloc, const_cast<LimbT*>(base.limbs().data()), balloc); }
     while (std::get<1>(result) && !*(std::get<0>(result) + std::get<1>(result) - 1)) {
         --std::get<1>(result);
     }
@@ -549,39 +592,6 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     return result;
 }
 
-template <std::unsigned_integral LimbT, typename AllocatorT>
-class basic_integer : private std::allocator_traits<AllocatorT>::template rebind_alloc<LimbT>
-{
-    using allocator_type = std::allocator_traits<AllocatorT>::template rebind_alloc<LimbT>;
-
-public:
-    basic_integer() : size_{0}, reserved_size_{0} {}
-        
-    basic_integer(AllocatorT const& alloc) : allocator_type{ alloc }, size_{ 0 }, reserved_size_{ 0 } {}
-
-    basic_integer(AllocatorT const& alloc, std::span<LimbT> limbs, int32_t sgnsz)
-        : allocator_type{alloc}
-        , limbs_{ limbs.data() }
-        , reserved_size_{ static_cast<uint32_t>(limbs.size()) }
-        , size_ { sgnsz }
-    {}
-
-    ~basic_integer()
-    {
-        if (reserved_size_) {
-            std::allocator_traits<allocator_type>::deallocate(*this, limbs_, (size_t)reserved_size_);
-            //this->deallocate(limbs_);
-        }
-    }
-
-    inline int32_t sign() const noexcept { return size_ < 0 ? -1 : 1; }
-    //inline intptr_t limbs_size() const noexcept { return size_; };
-private:
-    LimbT* limbs_;
-    int32_t size_;
-    uint32_t reserved_size_;
-};
-
 #if 0
 template <std::integral LimbT>
 requires(std::is_unsigned_v<LimbT>)
@@ -726,7 +736,7 @@ OutputIteratorT to_string_converter(std::span<LimbT> limbs, OutputIteratorT out,
     if (base < 2 || base > (alphabet.empty() ? 62 : alphabet.size())) {
         throw std::invalid_argument("wrong base");
     }
-    if (limbs.empty()) {
+    if (limbs.empty() || (limbs.size() == 1 && !limbs.front())) {
         reversed = false;
         *out = alphabet.empty() ? '0' : alphabet[0];
         ++out;
@@ -812,6 +822,20 @@ OutputIteratorT to_string_converter(std::span<LimbT> limbs, OutputIteratorT out,
     */
 }
 
+template <typename Elem, typename Traits, std::unsigned_integral LimbT>
+std::basic_ostream<Elem, Traits>& operator <<(std::basic_ostream<Elem, Traits>& os, basic_integer_view<LimbT> iv)
+{
+    std::vector<Elem> result;
+    bool reversed;
+    to_string_converter(iv.limbs(), std::back_inserter(result), reversed);
+    if (reversed) {
+        std::copy(result.rbegin(), result.rend(), std::ostreambuf_iterator(os));
+    }
+    else {
+        std::copy(result.begin(), result.end(), std::ostreambuf_iterator(os));
+    }
+    return os;
+}
 
 /*
 template <typename LimbT, typename AllocatorT>

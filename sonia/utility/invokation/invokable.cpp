@@ -30,12 +30,6 @@ bool invokable::try_invoke(string_view methodname, span<const blob_result> args,
     return true;
 }
 
-bool invokable::try_invoke(string_view methodname, span<const blob_result> args)
-{
-    smart_blob result;
-    return try_invoke(methodname, args, result);
-}
-
 smart_blob invokable::get_property(string_view propname) const
 {
     smart_blob result;

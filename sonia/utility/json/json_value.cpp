@@ -79,7 +79,7 @@ struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
     using optimized_collection_base_t = typename base_t::optimized_collection_base_t;
     using optimized_collection_t = typename base_t::optimized_collection_t;
 
-    static void init(HolderT * self, array_view<const std::string> keys, array_view<const json_value> vals)
+    static void init(HolderT * self, span<const std::string> keys, span<const json_value> vals)
     {
         BOOST_ASSERT(keys.size() == vals.size());
         if (!keys.empty()) {
@@ -130,7 +130,7 @@ bool operator==(json_object const& lhs, json_object const& rhs)
     using object_t = optimized_object_impl<holder_t>;
     auto litems = object_t::get(&lhs);
     auto ritems = object_t::get(&rhs);
-    return sonia::range_equal()(litems, ritems);
+    return sonia::range_equal{}(litems.data(), data_end(litems), ritems.data(), data_end(ritems));
 }
 
 bool operator<(json_object const& lhs, json_object const& rhs)
@@ -138,7 +138,7 @@ bool operator<(json_object const& lhs, json_object const& rhs)
     using object_t = optimized_object_impl<holder_t>;
     auto litems = object_t::get(&lhs);
     auto ritems = object_t::get(&rhs);
-    return sonia::range_less()(litems, ritems);
+    return sonia::range_less{}(litems.data(), data_end(litems), ritems.data(), data_end(ritems));
 }
 
 bool json_value::get_bool() const
@@ -225,7 +225,7 @@ json_object json_value::get_object() const
 json_object::json_object()
 {
     using object_t = optimized_object_impl<holder_t>;
-    object_t::init(this, array_view<std::string>(), array_view<json_value>());
+    object_t::init(this, span<std::string>(), span<json_value>());
     set_service_cookie((size_t)json_value_type::object);
 }
 
@@ -307,7 +307,7 @@ json_value::json_value(int val)
 json_value::json_value(decimal val)
 {
     using number_t = optimized_decimal_impl<holder_t>;
-    number_t::set(this, val);
+    number_t::set(this, std::move(val));
     set_service_cookie((size_t)json_value_type::number);
 }
 
@@ -416,7 +416,7 @@ json_value::~json_value()
                             json_value_collect(jv, accum);
                         }
                     } else if (jv.type() == json_value_type::object) {
-                        for (auto const & item : jv.get_object().items()) {
+                        for (auto item : jv.get_object().items()) {
                             json_value_collect(item.second, accum);
                         }
                     }

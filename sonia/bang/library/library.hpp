@@ -4,15 +4,13 @@
 
 #pragma once
 
-#include <boost/multiprecision/cpp_int.hpp>
+#include "../vm/bang_vm.hpp"
 
-#include "basic_decimal.hpp"
+namespace sonia::lang::bang {
 
-namespace sonia {
-
-using decimal = basic_decimal<
-    boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>,
-    int32_t
->;
+void bang_tostring(vm::context&);
+void bang_print_string(vm::context&);
+void bang_negate(vm::context&);
+void bang_concat_string(vm::context&);
 
 }

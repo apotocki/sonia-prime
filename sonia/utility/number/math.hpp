@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "decimal.hpp"
+#include "sonia/mp/decimal.hpp"
 
 namespace sonia {
 

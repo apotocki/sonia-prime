@@ -9,10 +9,10 @@ namespace sonia::templates {
 
 void file_template_element::do_registration(registrar_type& mr)
 {
-    register_property<&file_template_element::src>("src");
-    register_property<&file_template_element::input>("input");
-    register_property<&file_template_element::result>("result");
-    register_property<&file_template_element::code>("$");
+    mr.register_property<&file_template_element::src>("src");
+    mr.register_property<&file_template_element::input>("input");
+    mr.register_property<&file_template_element::result>("result");
+    mr.register_property<&file_template_element::code>("$");
 }
 
 }

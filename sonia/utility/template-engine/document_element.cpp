@@ -9,7 +9,7 @@ namespace sonia::templates {
 
 void document_element::do_registration(registrar_type& mr)
 {
-    register_property<&document_element::code>("code");
+    mr.register_property<&document_element::code>("code");
 
     //mr.register_method<&foreach_element::append>("append");
 }

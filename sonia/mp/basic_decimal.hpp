@@ -3,9 +3,9 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 #pragma once
 
+#include <boost/lexical_cast.hpp>
 #include "sonia/string.hpp"
 #include "sonia/utility/functional/hash.hpp"
-#include "sonia/utility/comparison_operators.hpp"
 
 namespace sonia {
 
@@ -34,6 +34,9 @@ public:
     }
 
     basic_decimal(basic_decimal const&) = default;
+    basic_decimal(basic_decimal &&) = default;
+    basic_decimal& operator=(basic_decimal const&) = default;
+    basic_decimal& operator=(basic_decimal&&) = default;
 
     template <typename SomeSignificandT, typename SomeExponentT>
     basic_decimal & operator= (basic_decimal<SomeSignificandT, SomeExponentT> const& rhs)
@@ -61,7 +64,8 @@ public:
     template <typename T>
     T get() const;
 
-    template <typename T, typename = enable_if_t<!is_same_v<T, basic_decimal>>>
+    template <typename T>
+    requires(!is_same_v<T, basic_decimal>)
     explicit operator T() const { return get<T>(); }
 
     static basic_decimal parse(string_view);
@@ -87,12 +91,10 @@ template <class T> constexpr bool is_decimal_v = is_decimal<T>::value;
 namespace sonia {
 
 template <typename SignificandT, typename ExponentT>
-basic_decimal<SignificandT, ExponentT> basic_decimal<SignificandT, ExponentT>::parse(string_view sval)
+inline basic_decimal<SignificandT, ExponentT> basic_decimal<SignificandT, ExponentT>::parse(string_view sval)
 {
-    SignificandT s;
-    ExponentT e;
-    decimal_parse(sval, s, e);
-    return basic_decimal(s, e);
+    auto [s, e] = decimal_parse<SignificandT, ExponentT>(sval);
+    return basic_decimal(std::move(s), std::move(e));
 }
 
 template <typename SignificandT, typename ExponentT>
@@ -141,24 +143,22 @@ bool operator== (T const& lhs, basic_decimal<LSignificandT, LExponentT> const& r
 
 
 template <typename LSignificandT, typename LExponentT, typename RSignificandT, typename RExponentT>
-bool operator< (basic_decimal<LSignificandT, LExponentT> const& lhs, basic_decimal<RSignificandT, RExponentT> const& rhs) noexcept
+auto operator<=> (basic_decimal<LSignificandT, LExponentT> const& lhs, basic_decimal<RSignificandT, RExponentT> const& rhs) noexcept
 {
-    return decimal_less(lhs.raw_value(), lhs.raw_exp(), rhs.raw_value(), rhs.raw_exp());
+    return decimal_compare_three_way(lhs.raw_value(), lhs.raw_exp(), rhs.raw_value(), rhs.raw_exp());
 }
 
 template <typename LSignificandT, typename LExponentT, typename T>
-bool operator< (basic_decimal<LSignificandT, LExponentT> const& lhs, T const& rhs)
+auto operator<=> (basic_decimal<LSignificandT, LExponentT> const& lhs, T const& rhs)
 {
-    return lhs < basic_decimal<LSignificandT, LExponentT>(rhs);
+    return lhs <=> basic_decimal<LSignificandT, LExponentT>(rhs);
 }
 
 template <typename LSignificandT, typename LExponentT, typename T>
-bool operator< (T const& lhs, basic_decimal<LSignificandT, LExponentT> const& rhs)
+auto operator<=> (T const& lhs, basic_decimal<LSignificandT, LExponentT> const& rhs)
 {
-    return basic_decimal<LSignificandT, LExponentT>(lhs) < rhs;
+    return basic_decimal<LSignificandT, LExponentT>(lhs) <=> rhs;
 }
-
-MAKE_FREE_COMPARISON_OPERATORS(is_decimal_v)
 
 template <class OStreamT, typename SignificandT, typename ExponentT>
 auto & operator<< (OStreamT & os, basic_decimal<SignificandT, ExponentT> const& val)

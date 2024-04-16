@@ -236,7 +236,7 @@ HASHTAG					"#"
 <INITIAL,COMMENT>"/*" {
 	//GLOBAL_LOG_INFO() << "COMMENT at: line: " << yylloc->begin.line << ", col: " << yylloc->begin.column;
 	yy_push_state(COMMENT, yyscanner);
-	yyextra->loc_stack.emplace_back(yylloc->begin.line, yylloc->begin.column);
+	yyextra->loc_stack.emplace_back(location);
 }
 <COMMENT>{
 	[^*/]+|("/"[^*/])|("*"[^/])|{UEASC}

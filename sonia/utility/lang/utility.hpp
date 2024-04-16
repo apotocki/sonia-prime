@@ -19,18 +19,15 @@ namespace sonia::lang {
 struct identifier
 {
     using value_type = uint32_t;
-    union {
-        value_type raw_value;
-        struct {
-            value_type value : 31;
-            value_type is_required : 1;
-        };
-    };
+    value_type value;
+    //value_type value : 31;
+    //value_type is_required : 1;
+
     inline bool empty() const noexcept { return !value; }
     inline explicit operator bool() const noexcept { return !!empty(); }
 
-    identifier() : value{ 0 }, is_required{ 0 } {}
-    explicit identifier(value_type val, bool is_required_val = false) : value{ val }, is_required{ value_type(is_required_val ? 1 : 0) } {}
+    identifier() : value{ 0 } /*, is_required{ 0 }*/ {}
+    explicit identifier(value_type val/*, bool is_required_val = false*/) : value{ val }/*, is_required{ value_type(is_required_val ? 1 : 0) }*/ {}
 
     friend inline bool operator== (identifier const& l, identifier const& r)
     {

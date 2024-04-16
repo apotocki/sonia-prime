@@ -10,6 +10,7 @@ namespace sonia {
 
 struct variant_compare_three_way_visitor : static_visitor<std::strong_ordering>
 {
+    variant_compare_three_way_visitor() = default;
     template <typename L, typename R>
     result_type operator()(L const& l, R const& r) const { std::terminate(); }
 
@@ -23,8 +24,7 @@ struct variant_compare_three_way
     auto operator()(VariantT const& l, VariantT const& r)
     {
         if (l.which() != r.which()) return l.which() <=> r.which();
-        variant_compare_three_way_visitor v{};
-        return apply_visitor(v, l, r);
+        return apply_visitor(variant_compare_three_way_visitor{}, l, r);
     }
 };
 

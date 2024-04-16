@@ -4347,7 +4347,7 @@ PRIVATE                 "private"
 TEMPLATE                "template"
 NAMESPACE               "namespace"
 */
-/* exclude '->', '=', '<', '//', '/*'  */
+
 /*
 
 ARROWAST                "->*"

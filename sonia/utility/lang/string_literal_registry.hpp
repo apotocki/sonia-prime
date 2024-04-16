@@ -65,7 +65,7 @@ IdentifierT string_literal_registry<IdentifierT, StringT, MutexT>::resolve(strin
 template <typename IdentifierT, typename StringT, typename MutexT>
 StringT const* string_literal_registry<IdentifierT, StringT, MutexT>::resolve(IdentifierT id) const noexcept
 {
-    auto const& slice = set_.get<1>();
+    auto const& slice = set_.template get<1>();
     lock_guard guard(set_mtx_);
     auto it = slice.find(id);
     if (it == slice.end()) {

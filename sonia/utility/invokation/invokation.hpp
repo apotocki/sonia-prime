@@ -729,7 +729,8 @@ inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Tra
     if (b.type == blob_type::nil) {
         return os << "nil"sv;
     } else if (b.type == blob_type::object) {
-        return os << "object : "sv << typeid(*data_of<sonia::invokation::object>(b)).name();
+        auto &obj = *data_of<sonia::invokation::object>(b);
+        return os << "object : "sv << typeid(obj).name();
     } else if (b.type == blob_type::blob_reference) {
         return os << '&' << *data_of<blob_result>(b);
     }
@@ -785,8 +786,10 @@ inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Tra
         return os << '"' << sonia::string_view{data_of<char>(b), array_size_of<char>(b)} << '"';
     case blob_type::function:
         return os << "function"sv;
-    case blob_type::object:
-        return os << "object : "sv << typeid(*data_of<sonia::invokation::object>(b)).name();
+    case blob_type::object: {
+        auto &obj = *data_of<sonia::invokation::object>(b);
+        return os << "object : "sv << typeid(obj).name();
+    }
     case blob_type::error:
         return os << "error: "sv << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
     default:
@@ -1201,7 +1204,7 @@ inline bool blob_result_equal(std::type_identity<T>, blob_result const& lhs, blo
 
 inline bool blob_result_equal(std::type_identity<sonia::string_view>, blob_result const& lhs, blob_result const& rhs)
 {
-    if (rhs.type != rhs.type) return false;
+    if (lhs.type != rhs.type) return false;
     size_t sz = array_size_of<char>(rhs);
     if (array_size_of<char>(lhs) != sz) return false;
     auto * ldata = data_of<char>(lhs);
@@ -1219,7 +1222,7 @@ inline bool blob_result_equal(std::type_identity<T>, blob_result const& lhs, blo
 
 inline bool blob_result_equal(std::type_identity<sonia::float16>, blob_result const& lhs, blob_result const& rhs)
 {
-    if (is_numeric(rhs.type)) as<sonia::float16>(lhs) == as<sonia::float16>(rhs);
+    if (is_numeric(rhs.type)) return as<sonia::float16>(lhs) == as<sonia::float16>(rhs);
     return false;
 }
 

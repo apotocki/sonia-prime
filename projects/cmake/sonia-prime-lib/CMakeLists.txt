@@ -66,6 +66,8 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/xmlbuilder/attr_parser.cpp
     ${BUNDLE_HOME}/sonia/utility/xmlbuilder/basic_attribute_resolver.cpp
     ${BUNDLE_HOME}/sonia/utility/xmlbuilder/ui_attribute_resolver.cpp
+    ${BUNDLE_HOME}/sonia/utility/xmlbuilder/detail/xmlbuilder_types.cpp
+    ${BUNDLE_HOME}/sonia/utility/xmlbuilder/detail/xmlbuilder_model.cpp
     ${BUNDLE_HOME}/sonia/utility/template-engine/compound.cpp
     ${BUNDLE_HOME}/sonia/utility/template-engine/code_element.cpp
     ${BUNDLE_HOME}/sonia/utility/template-engine/document_element.cpp

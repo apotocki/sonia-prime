@@ -17,6 +17,10 @@ public:
     {
         identifier name;
         value_t value;
+
+        template <typename VArgT>
+        enum_case(identifier n, VArgT && v) : name{ std::move(n) }, value{ std::forward<VArgT>(v) } {}
+
         friend inline bool operator==(enum_case const& l, enum_case const& r) { return l.name == r.name; }
         friend inline auto operator<=>(enum_case const& l, enum_case const& r) { return l.name <=> r.name; }
     };

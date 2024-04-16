@@ -67,7 +67,7 @@ public:
     smart_blob operator()(std::span<const blob_result> args) override
     {
         if (args.size() != param_cnt_) {
-            throw exception("fn invokation error: wrong number of arguments: %1%, expected: %2%"_fmt % args.size() % param_cnt_);
+            throw exception("fn invocation error: wrong number of arguments: %1%, expected: %2%"_fmt % args.size() % (uint64_t)param_cnt_);
         }
         vm::context ctx(vm_, penv_);
         for (blob_result const& arg: args) {

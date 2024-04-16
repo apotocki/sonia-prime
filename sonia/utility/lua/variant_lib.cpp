@@ -10,6 +10,7 @@
 #include "sonia/utility/scope_exit.hpp"
 
 #include <sstream>
+#include <bit>
 
 #include "bigint_lib.hpp"
 

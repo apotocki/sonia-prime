@@ -9,6 +9,7 @@
 #include <boost/algorithm/string/trim_all.hpp>
 
 #if __APPLE__ || __ANDROID__
+#include <boost/algorithm/string/split.hpp>
 namespace std::views {
 
 template <typename RangeT>

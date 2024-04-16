@@ -96,7 +96,7 @@ public:
 
     semantic::invoke_function get_builtin_function(builtin_fn bi) const
     {
-        return semantic::invoke_function(builtins_.at((size_t)bi));
+        return semantic::invoke_function{ builtins_.at((size_t)bi) };
     }
 
     identifier new_identifier() { return identifier_builder_(); }

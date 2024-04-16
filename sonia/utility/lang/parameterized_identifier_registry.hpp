@@ -103,7 +103,7 @@ template <typename IdentifierT, typename MutexT>
 //optional<std::tuple<IdentifierT, span<const qname<IdentifierT>>>> parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT masterid) const noexcept
 optional<span<const qname<IdentifierT>>> parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT id) const noexcept
 {
-    auto const& slice = set_.get<1>();
+    auto const& slice = set_.template get<1>();
     lock_guard guard(set_mtx_);
     auto it = slice.find(id);
     if (it == slice.end()) {

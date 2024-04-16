@@ -4,13 +4,8 @@
 
 #pragma once
 
-#include "sonia/optional.hpp"
-//#include "sonia/utility/scope_exit.hpp"
-
-#include "../semantic.hpp"
-//#include "expression_visitor.hpp"
-//#include "expression_vector_visitor.hpp"
-#include "fn_compiler_context.hpp"
+#include "sonia/bang/semantic.hpp"
+#include "sonia/bang/ast/fn_compiler_context.hpp"
 
 #include "sonia/bang/errors.hpp"
 

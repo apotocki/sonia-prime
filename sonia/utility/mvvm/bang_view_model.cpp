@@ -11,8 +11,8 @@ namespace sonia {
 void bang_view_model::do_registration(registrar_type& mr)
 {
     using load_bang_t = void(bang_view_model::*)(string_view);
-    mr.register_method<(load_bang_t)&bang_view_model::build>("load_bang"sv);
-    mr.register_method<(load_bang_t)&bang_view_model::build>("load_code"sv);
+    //mr.register_method<(load_bang_t)&bang_view_model::build>("load_bang"sv);
+    //mr.register_method<(load_bang_t)&bang_view_model::build>("load_code"sv);
     mr.register_method<&bang_view_model::load_file>("load_file"sv);
     using load_bang_t = void(bang_view_model::*)(string_view);
     //using eval_bang_t = smart_blob(bang_view_model::*)(string_view);

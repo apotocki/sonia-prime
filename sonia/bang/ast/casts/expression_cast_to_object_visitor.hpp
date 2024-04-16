@@ -4,15 +4,9 @@
 
 #pragma once
 
-//#include "sonia/utility/scope_exit.hpp"
-
 #include "sonia/bang/semantic.hpp"
-//#include "expression_visitor.hpp"
-//#include "expression_vector_visitor.hpp"
-#include "fn_compiler_context.hpp"
-
+#include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/entities/type_entity.hpp"
-
 #include "sonia/bang/errors.hpp"
 
 namespace sonia::lang::bang {

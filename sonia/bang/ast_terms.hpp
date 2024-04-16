@@ -80,6 +80,12 @@ struct parameter
 {
     optional<annotated_identifier> name;
     T type;
+
+    parameter() = default;
+
+    template <typename NameArgT, typename TArgT>
+    inline parameter(NameArgT && n, TArgT && t) : name{ std::forward<NameArgT>(n) }, type{ std::forward<TArgT>(t) } {}
+
     inline bool operator==(parameter const&) const = default;
 };
 

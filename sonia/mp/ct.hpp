@@ -8,6 +8,7 @@
 #pragma once
 
 #include <concepts>
+#include <algorithm>
 
 #include "arithmetic.hpp"
 

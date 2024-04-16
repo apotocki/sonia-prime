@@ -11,7 +11,7 @@
 
 #include <boost/algorithm/string.hpp>
 
-#if __APPLE__ || __ANDROID__
+#if __ANDROID__
 namespace std::views {
 
 template <typename RangeT>

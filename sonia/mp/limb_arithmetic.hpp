@@ -8,6 +8,7 @@
 #pragma once
 
 #include <span>
+#include <tuple>
 
 #include "arithmetic.hpp"
 #include "ct.hpp"
@@ -81,7 +82,7 @@ inline LimbT uadd(std::span<const LimbT> u, std::span<const LimbT> v, std::span<
     for (;; ++ub, ++vb, ++rb) {
         if (ub != ue) {
             if (vb != ve) {
-                std::tie(c , *rb) = sonia::arithmetic::uadd1c(*ub, *vb, c);
+                std::tie(c, *rb) = sonia::arithmetic::uadd1c(*ub, *vb, c);
                 continue;
             } else {
                 do {

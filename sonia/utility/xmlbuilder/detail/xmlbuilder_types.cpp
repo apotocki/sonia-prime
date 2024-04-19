@@ -94,7 +94,7 @@ type_value_parser_visitor::result_type type_value_parser_visitor::operator()(x_b
     };
     if (checker("true"sv)) return { bool_blob_result(true), tvalue.substr(4) };
     if (checker("false"sv)) return { bool_blob_result(false), tvalue.substr(5) };
-    if (!tvalue.empty() && tvalue.front() == '0' || tvalue.front() == '1') {
+    if (!tvalue.empty() && (tvalue.front() == '0' || tvalue.front() == '1')) {
         boost::container::small_vector<char, 16> buff{ tvalue.begin(), tvalue.end() };
         buff.push_back(0);
         char* estring;

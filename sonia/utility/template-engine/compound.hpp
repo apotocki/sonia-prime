@@ -5,7 +5,7 @@
 #pragma once
 
 #include <vector>
-#include "sonia/utility/invokation/invokable.hpp"
+#include "sonia/utility/invocation/invocable.hpp"
 
 namespace sonia::templates {
 
@@ -25,7 +25,7 @@ public:
     virtual void operator()(code_element&) = 0;
 };
 
-class compound : public invokation::invokable
+class compound : public invocation::invocable
 {
     friend class build_visitor;
 

@@ -16,16 +16,18 @@
 
 #include "sonia/utility/multimethod.hpp"
 
-#include "invokation.hpp"
+#include "invocation.hpp"
 
 #include "sonia/logger/logger.hpp"
 
-namespace sonia::invokation {
+namespace sonia::invocation {
 
-class invokable
+class invocable
 {
 public:
-    virtual ~invokable() = default;
+    virtual ~invocable() = default;
+
+    virtual std::type_index get_type_index() const { return typeid(*this); }
 
     virtual bool has_method(string_view methodname) const;
     virtual bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result);
@@ -34,7 +36,7 @@ public:
 
     virtual void on_property_change(string_view) {}
 
-    virtual shared_ptr<invokable> self_as_invokable_shared() { return {}; }
+    virtual shared_ptr<invocable> self_as_invocable_shared() { return {}; }
 
     // method routine
     inline bool try_invoke(string_view methodname, span<const blob_result> args)
@@ -57,18 +59,18 @@ public:
 
 struct method : multimethod
 {
-    virtual smart_blob operator()(invokable &, span<const blob_result> args) const = 0;
-    virtual smart_blob operator()(invokable const&, span<const blob_result> args) const = 0;
+    virtual smart_blob operator()(invocable &, span<const blob_result> args) const = 0;
+    virtual smart_blob operator()(invocable const&, span<const blob_result> args) const = 0;
 };
 
 struct fn_property_reader : multimethod
 {
-    virtual smart_blob get(invokable const&) const = 0;
+    virtual smart_blob get(invocable const&) const = 0;
 };
 
 struct fn_property_writer : multimethod
 {
-    virtual void set(invokable& object, string_view propname, blob_result const& value) const = 0;
+    virtual void set(invocable& object, string_view propname, blob_result const& value) const = 0;
 };
 
 template <auto FuncV>
@@ -79,16 +81,16 @@ struct concrete_method : method
     using result_type = typename boost::function_types::result_type<f_type>::type;
     using args_type = typename boost::function_types::parameter_types<f_type>::type;
     using pure_args_type = typename boost::mpl::pop_front<args_type>::type;
-    using invokable_t = remove_reference_t<typename boost::mpl::at_c<args_type, 0>::type>;
+    using invocable_t = remove_reference_t<typename boost::mpl::at_c<args_type, 0>::type>;
 
     template <typename InvokableT, size_t ... Is>
     smart_blob do_job(std::index_sequence<Is...>, InvokableT& self, span<const blob_result> args) const
     {
-        invokable_t* pinv = dynamic_cast<invokable_t*>(std::addressof(self));
+        invocable_t* pinv = dynamic_cast<invocable_t*>(std::addressof(self));
         if (!pinv) {
-            THROW_INTERNAL_ERROR("while method invoking can not cast from %1% to %2%"_fmt % typeid(self).name() % typeid(invokable_t).name());
+            THROW_INTERNAL_ERROR("while method invoking can not cast from %1% to %2%"_fmt % typeid(self).name() % typeid(invocable_t).name());
         }
-        std::tuple<invokable_t&, typename boost::mpl::at_c<pure_args_type, Is>::type ...> argstpl{
+        std::tuple<invocable_t&, typename boost::mpl::at_c<pure_args_type, Is>::type ...> argstpl{
             *pinv, from_blob_at<typename boost::mpl::at_c<pure_args_type, Is>::type>(Is, args) ...};
         if constexpr (is_void_v<result_type>) {
             std::apply(FuncV, std::move(argstpl));
@@ -103,14 +105,14 @@ struct concrete_method : method
         }
     }
 
-    smart_blob operator()(invokable & self, span<const blob_result> args) const override
+    smart_blob operator()(invocable & self, span<const blob_result> args) const override
     {
         return do_job(std::make_index_sequence<boost::mpl::size<pure_args_type>::type::value>{}, self, args);
     }
 
-    smart_blob operator()(invokable const& self, span<const blob_result> args) const override
+    smart_blob operator()(invocable const& self, span<const blob_result> args) const override
     {
-        if constexpr (std::is_const_v<invokable_t>) {
+        if constexpr (std::is_const_v<invocable_t>) {
             return do_job(std::make_index_sequence<boost::mpl::size<pure_args_type>::type::value>{}, self, args);
         } else {
             THROW_INTERNAL_ERROR("a mutable object is expected");
@@ -129,7 +131,7 @@ struct concrete_fn_property_reader : fn_property_reader
         : getter_{ std::move(g) }
     {}
 
-    smart_blob get(invokable const& obj) const override { return getter_(dynamic_cast<InvokableT const&>(obj)); }
+    smart_blob get(invocable const& obj) const override { return getter_(dynamic_cast<InvokableT const&>(obj)); }
 
     SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(concrete_fn_property_reader);
 };
@@ -143,7 +145,7 @@ struct concrete_fn_property_writer : fn_property_writer
         : setter_{ std::move(s) }
     {}
 
-    void set(invokable& obj, string_view propname, blob_result const& val) const override { setter_(dynamic_cast<InvokableT &>(obj), val); }
+    void set(invocable& obj, string_view propname, blob_result const& val) const override { setter_(dynamic_cast<InvokableT &>(obj), val); }
 
     SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(concrete_fn_property_writer);
 };
@@ -155,15 +157,15 @@ struct field_fn_property_base
     using f_type = typename boost::function_types::function_type<sig_t>::type;
     using property_type = remove_reference_t<typename boost::function_types::result_type<f_type>::type>;
     using args_type = typename boost::function_types::parameter_types<f_type>::type;
-    using invokable_t = remove_reference_t<typename boost::mpl::at_c<args_type, 0>::type>;
+    using invocable_t = remove_reference_t<typename boost::mpl::at_c<args_type, 0>::type>;
 };
 
 template <auto FieldV>
 struct field_fn_property_reader : field_fn_property_base<FieldV>, fn_property_reader
 {
-    smart_blob get(invokable const& obj) const override
+    smart_blob get(invocable const& obj) const override
     {
-        return smart_blob{ particular_blob_result(dynamic_cast<typename field_fn_property_reader::invokable_t const&>(obj).*FieldV) };
+        return smart_blob{ particular_blob_result(dynamic_cast<typename field_fn_property_reader::invocable_t const&>(obj).*FieldV) };
     }
 
     SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(field_fn_property_reader);
@@ -174,11 +176,11 @@ struct field_fn_property_writer : field_fn_property_base<FieldV>, fn_property_wr
 {
     using base_t = field_fn_property_base<FieldV>;
     using property_type = typename base_t::property_type;
-    using invokable_t = typename base_t::invokable_t;
+    using invocable_t = typename base_t::invocable_t;
 
-    void set(invokable& obj, string_view propname, blob_result const& val) const override
+    void set(invocable& obj, string_view propname, blob_result const& val) const override
     {
-        property_type& stored_val = dynamic_cast<invokable_t&>(obj).*FieldV;
+        property_type& stored_val = dynamic_cast<invocable_t&>(obj).*FieldV;
         auto newval = from_blob<property_type>{}(val);
         if (stored_val != newval) {
             stored_val = newval;

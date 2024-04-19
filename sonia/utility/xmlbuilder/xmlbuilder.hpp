@@ -8,7 +8,7 @@
 
 #include "sonia/string.hpp"
 
-#include "sonia/utility/invokation/invokation.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 
 #include "functor_type.hpp"
 

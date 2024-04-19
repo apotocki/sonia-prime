@@ -13,7 +13,7 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/function.hpp"
 
-#include "sonia/utility/invokation/invokation.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 
 namespace sonia::lua {
 

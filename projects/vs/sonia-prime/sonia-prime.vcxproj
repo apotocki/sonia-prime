@@ -63,7 +63,7 @@
     <ClCompile Include="..\..\..\sonia\services\tenger\tenger_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\transceiver\transceiver_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\transceiver\transceiver_service.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\invokation\invokation.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\invocation\invocation.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\sonia-prime-lib\sonia-prime-lib.vcxproj">
@@ -136,7 +136,7 @@
     <ClInclude Include="..\..\..\sonia\services\transceiver\transceiver_configuration.hpp" />
     <ClInclude Include="..\..\..\sonia\services\transceiver\transceiver_service.hpp" />
     <ClInclude Include="..\..\..\sonia\services\type_registry.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\invokation\invokation.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invocation\invocation.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

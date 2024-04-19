@@ -6,8 +6,8 @@
 
 #include "sonia/variant.hpp"
 #include "sonia/shared_ptr.hpp"
-#include "sonia/utility/invokation/invokation.hpp"
-#include "sonia/utility/invokation/invokable.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
+#include "sonia/utility/invocation/invocable.hpp"
 #include "sonia/utility/lang/vm.hpp"
 #include <boost/unordered_map.hpp>
 #include "../extern.hpp"

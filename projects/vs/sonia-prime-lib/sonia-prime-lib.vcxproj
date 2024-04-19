@@ -476,12 +476,12 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\range_equal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\range_less.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\reference_wrapper.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\invokation\functor_object.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\invokation\invokation.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\invokation\invokable.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\invokation\serialization.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\invokation\value_decoder.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\invokation\value_encoder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invocation\functor_object.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invocation\invocable.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invocation\invocation.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invocation\serialization.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invocation\value_decoder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invocation\value_encoder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\buffering_mediator_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\iterators\buffering_write_input_iterator.hpp" />
@@ -858,15 +858,15 @@
     <ClCompile Include="..\..\..\sonia\sys\windows\windows.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\assert_handler.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\file_persister.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\invokation\invokable.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\invokation\invokation.cpp">
+    <ClCompile Include="..\..\..\sonia\utility\invocation\invocable.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\invocation\invocation.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\invokation\value_decoder.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\invokation\value_encoder.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\invocation\value_decoder.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\invocation\value_encoder.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>

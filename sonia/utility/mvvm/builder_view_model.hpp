@@ -5,7 +5,7 @@
 #pragma once
 
 #include "sonia/string.hpp"
-#include "sonia/utility/invokation/invokation.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 #include "sonia/utility/mvvm/lua_view_model.hpp"
 
 #include "sonia/bang/bang.hpp"

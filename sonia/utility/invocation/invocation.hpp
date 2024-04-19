@@ -18,7 +18,7 @@
 #include "sonia/mp/integer_view.hpp"
 #include "sonia/prime_config.hpp"
 
-namespace sonia::invokation {
+namespace sonia::invocation {
 
 class object
 {
@@ -173,7 +173,7 @@ SONIA_PRIME_API void blob_result_unpin(blob_result *);
 
 }
 
-using invokation_bigint_limb_type = uint64_t;
+using invocation_bigint_limb_type = uint64_t;
 
 inline blob_type arrayify(blob_type l) noexcept
 {
@@ -392,7 +392,7 @@ inline blob_result function_blob_result(sonia::string_view value)
     return result;
 }
 
-template <std::derived_from<sonia::invokation::object> ObjectT, typename ... ArgsT>
+template <std::derived_from<sonia::invocation::object> ObjectT, typename ... ArgsT>
 inline blob_result object_blob_result(ArgsT&& ... args)
 {
     blob_result result = make_blob_result(blob_type::object, nullptr, sizeof(ObjectT));
@@ -411,13 +411,13 @@ inline blob_result object_blob_result(ArgsT&& ... args)
 template <typename T>
 inline blob_result object_blob_result(sonia::shared_ptr<T> object)
 {
-    return object_blob_result<sonia::invokation::wrapper_object<sonia::shared_ptr<T>>>(std::move(object));
+    return object_blob_result<sonia::invocation::wrapper_object<sonia::shared_ptr<T>>>(std::move(object));
 }
 
 template <typename T>
 inline blob_result object_blob_result(sonia::weak_ptr<T> object)
 {
-    return object_blob_result<sonia::invokation::wrapper_object<sonia::weak_ptr<T>>>(std::move(object));
+    return object_blob_result<sonia::invocation::wrapper_object<sonia::weak_ptr<T>>>(std::move(object));
 }
 
 inline blob_result bool_blob_result(bool value)
@@ -549,14 +549,14 @@ inline blob_result error_blob_result(ArgT && arg)
 //template <typename ArgT>
 //inline blob_result bigint_blob_result(ArgT && arg)
 template <typename LimbT>
-requires(std::is_same_v<std::remove_cv_t<LimbT>, invokation_bigint_limb_type>)
+requires(std::is_same_v<std::remove_cv_t<LimbT>, invocation_bigint_limb_type>)
 inline blob_result bigint_blob_result(sonia::mp::basic_integer_view<LimbT> bival)
 {
     using namespace sonia;
-    // mp::basic_integer_view<invokation_bigint_limb_type>
-    //auto [limbs, sz, asz, sign] = mp::to_limbs<invokation_bigint_limb_type>(arg, invokation_blob_allocator{});
-    auto sp = (std::span<const invokation_bigint_limb_type>)bival;
-    blob_result result = make_blob_result(blob_type::bigint, sp.data(), static_cast<uint32_t>(sp.size() * sizeof(invokation_bigint_limb_type)));
+    // mp::basic_integer_view<invocation_bigint_limb_type>
+    //auto [limbs, sz, asz, sign] = mp::to_limbs<invocation_bigint_limb_type>(arg, invocation_blob_allocator{});
+    auto sp = (std::span<const invocation_bigint_limb_type>)bival;
+    blob_result result = make_blob_result(blob_type::bigint, sp.data(), static_cast<uint32_t>(sp.size() * sizeof(invocation_bigint_limb_type)));
     result.reserved = bival.sign() < 0 ? 1 : 0;
     return result;
 }
@@ -677,7 +677,7 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
     case blob_type::tuple:
         return ftor(std::type_identity<blob_result>{}, b);
     case blob_type::bigint:
-        return ftor(std::type_identity<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>{}, b);
+        return ftor(std::type_identity<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>{}, b);
     case blob_type::string:
     case blob_type::error:
         return ftor(std::type_identity<std::string_view>{}, b);
@@ -729,7 +729,7 @@ inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Tra
     if (b.type == blob_type::nil) {
         return os << "nil"sv;
     } else if (b.type == blob_type::object) {
-        auto &obj = *data_of<sonia::invokation::object>(b);
+        auto &obj = *data_of<sonia::invocation::object>(b);
         return os << "object : "sv << typeid(obj).name();
     } else if (b.type == blob_type::blob_reference) {
         return os << '&' << *data_of<blob_result>(b);
@@ -740,7 +740,7 @@ inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Tra
             using type = typename decltype(ident)::type;
             if constexpr (std::is_same_v<type, std::nullptr_t>) { os << "nil"sv; }
             else if constexpr (std::is_void_v<type>) { os << "unknown"sv; }
-            else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invokation_bigint_limb_type>>) { os << "bigint"; }
+            else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);
@@ -787,7 +787,7 @@ inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Tra
     case blob_type::function:
         return os << "function"sv;
     case blob_type::object: {
-        auto &obj = *data_of<sonia::invokation::object>(b);
+        auto &obj = *data_of<sonia::invocation::object>(b);
         return os << "object : "sv << typeid(obj).name();
     }
     case blob_type::error:
@@ -879,14 +879,14 @@ struct from_blob<sonia::optional<T>>
     }
 };
 
-template <std::derived_from<sonia::invokation::object> T>
+template <std::derived_from<sonia::invocation::object> T>
 struct from_blob<T>
 {
     T& operator()(blob_result const& val) const
     {
         using namespace sonia;
         if (val.type == blob_type::object) {
-            if (T* result = dynamic_cast<T*>(mutable_data_of<sonia::invokation::object>(val)); result) {
+            if (T* result = dynamic_cast<T*>(mutable_data_of<sonia::invocation::object>(val)); result) {
                 return *result;
             }
         }
@@ -1017,9 +1017,9 @@ struct from_blob<std::span<T>>
 };
 
 template <>
-struct from_blob<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>
+struct from_blob<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>
 {
-    sonia::mp::basic_integer_view<const invokation_bigint_limb_type> operator()(blob_result const& val) const
+    sonia::mp::basic_integer_view<const invocation_bigint_limb_type> operator()(blob_result const& val) const
     {
         using namespace sonia;
         /*
@@ -1033,10 +1033,10 @@ struct from_blob<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>
         } else 
         */
         if (val.type == blob_type::bigint) {
-            //sonia::mp::basic_integer_view<invokation_bigint_limb_type>
+            //sonia::mp::basic_integer_view<invocation_bigint_limb_type>
 
-            size_t sz = array_size_of<invokation_bigint_limb_type>(val);
-            return sonia::mp::basic_integer_view<const invokation_bigint_limb_type>{std::span{ data_of<const invokation_bigint_limb_type>(val), sz }, val.reserved ? -1 : 1 };
+            size_t sz = array_size_of<invocation_bigint_limb_type>(val);
+            return sonia::mp::basic_integer_view<const invocation_bigint_limb_type>{std::span{ data_of<const invocation_bigint_limb_type>(val), sz }, val.reserved ? -1 : 1 };
             /*
             ival.raw().backend().resize(sz, sz);
             

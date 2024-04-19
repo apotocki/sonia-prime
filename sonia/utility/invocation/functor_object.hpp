@@ -4,10 +4,10 @@
 
 #pragma once
 
-#include "invokation.hpp"
-#include "invokable.hpp"
+#include "invocation.hpp"
+#include "invocable.hpp"
 
-namespace sonia::invokation {
+namespace sonia::invocation {
 
 class functor_object : public object
 {
@@ -34,37 +34,37 @@ public:
     }
 };
 
-class invokable_functor_object : public functor_object
+class invocable_functor_object : public functor_object
 {
-    shared_ptr<invokable> invokable_;
+    shared_ptr<invocable> invocable_;
     small_string name_;
 
 public:
-    invokable_functor_object(shared_ptr<invokable> inv, small_string name)
-        : invokable_{ std::move(inv) }
+    invocable_functor_object(shared_ptr<invocable> inv, small_string name)
+        : invocable_{ std::move(inv) }
         , name_ { std::move(name) }
     {}
 
     smart_blob operator()(std::span<const blob_result> args) override
     {
-        return invokable_->invoke(name_, args);
+        return invocable_->invoke(name_, args);
     }
 };
 
-class weak_invokable_functor_object : public functor_object
+class weak_invocable_functor_object : public functor_object
 {
-    weak_ptr<invokable> invokable_;
+    weak_ptr<invocable> invocable_;
     small_string name_;
 
 public:
-    weak_invokable_functor_object(shared_ptr<invokable> inv, small_string name)
-        : invokable_{ std::move(inv) }
+    weak_invocable_functor_object(shared_ptr<invocable> inv, small_string name)
+        : invocable_{ std::move(inv) }
         , name_{ std::move(name) }
     {}
 
     smart_blob operator()(std::span<const blob_result> args) override
     {
-        if (auto obj = invokable_.lock(); obj) {
+        if (auto obj = invocable_.lock(); obj) {
             return obj->invoke(name_, args);
         }
         return {};

@@ -6,7 +6,7 @@
 
 #include "sonia/shared_ptr.hpp"
 #include "sonia/string.hpp"
-#include "sonia/utility/invokation/invokable.hpp"
+#include "sonia/utility/invocation/invocable.hpp"
 
 namespace sonia::lang::bang {
 
@@ -15,7 +15,7 @@ class external_environment
 public:
     virtual ~external_environment() = default;
 
-    virtual shared_ptr<invokation::invokable> create(string_view type, string_view id) = 0;
+    virtual shared_ptr<invocation::invocable> create(string_view type, string_view id) = 0;
     virtual void set_property(string_view propname, blob_result const& value) = 0;
 
     //virtual shared_ptr<external_environment> make_shared_environment() = 0;

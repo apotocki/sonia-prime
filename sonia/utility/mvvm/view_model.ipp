@@ -11,7 +11,7 @@
 #include <boost/function_types/result_type.hpp>
 
 #include "sonia/utility/scope_exit.hpp"
-#include "sonia/utility/invokation/serialization.hpp"
+#include "sonia/utility/invocation/serialization.hpp"
 
 namespace sonia {
 

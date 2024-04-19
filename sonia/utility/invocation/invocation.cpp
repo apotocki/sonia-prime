@@ -3,18 +3,18 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "invokation.hpp"
+#include "invocation.hpp"
 #include "sonia/singleton.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/concurrency.hpp"
 #include "sonia/logger/logger.hpp"
 #include <boost/unordered_map.hpp>
 
-namespace sonia::invokation {
+namespace sonia::invocation {
 
 class blob_manager : public singleton
 {
-    using blob_storage = shared_ptr<uint8_t>;// , shared_ptr<sonia::invokation::invokable >> ;
+    using blob_storage = shared_ptr<uint8_t>;// , shared_ptr<sonia::invocation::invocable >> ;
     /*
     struct address_retriever_visitor : static_visitor<const void*>
     {
@@ -114,7 +114,7 @@ void blob_result_allocate(blob_result * b, bool no_inplace)
         }
         b->bp.data = data.get();
         b->need_unpin = 1;
-        sonia::as_singleton<sonia::invokation::blob_manager>()->pin(std::move(data));
+        sonia::as_singleton<sonia::invocation::blob_manager>()->pin(std::move(data));
     }
     // elements should be pinned by callee
     /*
@@ -128,24 +128,24 @@ void blob_result_allocate(blob_result * b, bool no_inplace)
 void blob_result_pin(blob_result * b)
 {
     if (b->need_unpin) {
-        sonia::as_singleton<sonia::invokation::blob_manager>()->addref(b);
+        sonia::as_singleton<sonia::invocation::blob_manager>()->addref(b);
     }
 }
 
 void blob_result_unpin(blob_result * b)
 {
     if (b->need_unpin) {
-        auto optst = sonia::as_singleton<sonia::invokation::blob_manager>()->releaseref(b);
+        auto optst = sonia::as_singleton<sonia::invocation::blob_manager>()->releaseref(b);
         b->need_unpin = 0;
         if (optst) {
             if (b->type == blob_type::object) {
-                reinterpret_cast<sonia::invokation::object*>((*optst).get())->~object();
+                reinterpret_cast<sonia::invocation::object*>((*optst).get())->~object();
             } else if (b->type == blob_type::tuple || b->type == blob_type::blob_reference) {
                 blob_result* pblob = mutable_data_of<blob_result>(*b), * epblob = pblob + array_size_of<blob_result>(*b);
                 for (; pblob != epblob; blob_result_unpin(pblob++));
             }
         }
     } else if (b->type == blob_type::object) {
-        mutable_data_of<sonia::invokation::object>(*b)->~object();
+        mutable_data_of<sonia::invocation::object>(*b)->~object();
     }
 }

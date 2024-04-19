@@ -6,7 +6,7 @@
 #include "value_encoder.hpp"
 #include "boost/conversion/detail/utility/data_ops.hpp"
 
-namespace sonia::invokation {
+namespace sonia::invocation {
 
 namespace cvt = boost::conversion;
 

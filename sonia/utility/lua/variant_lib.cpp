@@ -4,9 +4,9 @@
 
 #include "sonia/config.hpp"
 #include "variant_lib.hpp"
-#include "sonia/utility/invokation/invokation.hpp"
-#include "sonia/utility/invokation/value_encoder.hpp"
-#include "sonia/utility/invokation/value_decoder.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
+#include "sonia/utility/invocation/value_encoder.hpp"
+#include "sonia/utility/invocation/value_decoder.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
 #include <sstream>
@@ -191,7 +191,7 @@ void push_from_blob(lua_State* L, blob_result const& b)
     case blob_type::string:
         lua_pushlstring(L, data_of<char>(b), array_size_of<char>(b)); break;
     case blob_type::bigint:
-        push_bigint(L, as<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>(b)); break;
+        push_bigint(L, as<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>(b)); break;
     case blob_type::error:
         throw exception(std::string(data_of<char>(b), array_size_of<char>(b)));
     default:
@@ -233,7 +233,7 @@ int variant_index(lua_State* L)
     blob_type_selector(*br, [L, c_index = index - 1](auto ident, blob_result b) {
         using type = typename decltype(ident)::type;
         if constexpr (std::is_void_v<type>) { lua_pushnil(L); return; }
-        else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invokation_bigint_limb_type>>) { lua_pushnil(L); return; }
+        else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { lua_pushnil(L); return; }
         else {
             using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
 
@@ -322,7 +322,7 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
         blob_type_selector(b, [&os, &printer](auto ident, blob_result b) {
             using type = typename decltype(ident)::type;
             if constexpr (std::is_void_v<type>) { os << "unknown"; }
-            else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invokation_bigint_limb_type>>) { os << "bigint"; }
+            else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);
@@ -365,7 +365,7 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
     case blob_type::string:
         return printer(os, b.type, sonia::string_view{ data_of<char>(b), array_size_of<char>(b) });
     case blob_type::bigint:
-        return printer(os, b.type, as<sonia::mp::basic_integer_view<invokation_bigint_limb_type>>(b));
+        return printer(os, b.type, as<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>(b));
     case blob_type::function:
         return os << "function";
     case blob_type::object:
@@ -616,7 +616,7 @@ int variant_decode(lua_State* L)
 
     blob_result res;
     try {
-        res = as_singleton<invokation::value_decoder>()->decode(sp, { typestr, typestrsz }, endianness);
+        res = as_singleton<invocation::value_decoder>()->decode(sp, { typestr, typestrsz }, endianness);
     } catch (std::exception const& e) {
         return luaL_error(L, e.what());
     }
@@ -653,7 +653,7 @@ int variant_encode(lua_State* L)
     }
 
     try {
-        as_singleton<invokation::value_encoder>()->encode(input, { typestr, typestrsz }, endianness, [L](span<const uint8_t> sp) {
+        as_singleton<invocation::value_encoder>()->encode(input, { typestr, typestrsz }, endianness, [L](span<const uint8_t> sp) {
             blob_result br = make_blob_result(arrayify(blob_type::ui8), sp.data(), static_cast<uint32_t>(sp.size()));
             blob_result_allocate(&br);
             defer{ blob_result_unpin(&br); };

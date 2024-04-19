@@ -5,16 +5,16 @@
 #pragma once
 
 #include <vector>
-#include "sonia/utility/invokation/invokable.hpp"
+#include "sonia/utility/invocation/invocable.hpp"
 #include "compound.hpp"
 
 namespace sonia::templates {
 
 class foreach_element 
     : public compound
-    , public invokation::registrar<foreach_element>
+    , public invocation::registrar<foreach_element>
 {
-    friend class invokation::registrar<foreach_element>;
+    friend class invocation::registrar<foreach_element>;
 
     friend class foreach_element_lua_resolver;
 
@@ -35,7 +35,7 @@ protected:
     //template <typename BT>
     //void selector(sonia::identity<BT>, sonia::lua::language& lang, blob_result const& val);
 
-    // invokation routine
+    // invocation routine
     static void do_registration(registrar_type&);
 };
 

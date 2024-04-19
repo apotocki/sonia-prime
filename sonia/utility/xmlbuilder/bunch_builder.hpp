@@ -8,7 +8,7 @@
 
 #include "xmlbuilder.hpp"
 #include "advxmlbuilder.hpp"
-#include "sonia/utility/invokation/invokable.hpp"
+#include "sonia/utility/invocation/invocable.hpp"
 
 //#define USE_BASIC_BUILDER
 
@@ -26,7 +26,7 @@ public:
     {
     public:
         virtual ~factory() = default;
-        virtual shared_ptr<invokation::invokable> create(string_view type, string_view id) = 0;
+        virtual shared_ptr<invocation::invocable> create(string_view type, string_view id) = 0;
         virtual attribute_resolver& get_attribute_resolver() = 0;
     };
 
@@ -41,22 +41,22 @@ public:
     void set_property_functional(string_view id, string_view propname, string_view code, func_type) override;
     void append(string_view parentid, string_view childid) override;
 
-    shared_ptr<invokation::invokable> get_element_by(string_view id);
-    shared_ptr<invokation::invokable> try_get_element_by(string_view id) noexcept;
+    shared_ptr<invocation::invocable> get_element_by(string_view id);
+    shared_ptr<invocation::invocable> try_get_element_by(string_view id) noexcept;
 
 #ifdef USE_BASIC_BUILDER
     attribute_resolver const& ar() const override final { return factory_.get_attribute_resolver(); };
 #endif
 
 protected:
-    virtual void do_set_text(invokation::invokable&, string_view text);
-    virtual void do_set_property_functional(invokation::invokable&, string_view propname, string_view code, func_type) = 0;
-    virtual void do_append(invokation::invokable& parent, shared_ptr<invokation::invokable> child);
+    virtual void do_set_text(invocation::invocable&, string_view text);
+    virtual void do_set_property_functional(invocation::invocable&, string_view propname, string_view code, func_type) = 0;
+    virtual void do_append(invocation::invocable& parent, shared_ptr<invocation::invocable> child);
 
-    virtual shared_ptr<invokation::invokable> root_element() = 0;
+    virtual shared_ptr<invocation::invocable> root_element() = 0;
 
 protected:
-    boost::unordered_map<std::string, shared_ptr<invokation::invokable>, hasher> elements_;
+    boost::unordered_map<std::string, shared_ptr<invocation::invocable>, hasher> elements_;
     factory & factory_;
 };
 

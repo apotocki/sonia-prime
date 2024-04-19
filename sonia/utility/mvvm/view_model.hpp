@@ -13,7 +13,7 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
-#include "sonia/utility/invokation/invokable.hpp"
+#include "sonia/utility/invocation/invocable.hpp"
 #include "sonia/services/scheduler/scheduler.hpp"
 
 namespace sonia {
@@ -47,10 +47,10 @@ enum class status_type : int16_t {
 using cancel_flag_type = std::atomic<int>;
 
 class view_model 
-    : public virtual invokation::invokable
-    , public invokation::registrar<view_model>
+    : public virtual invocation::invocable
+    , public invocation::registrar<view_model>
 {
-    friend class invokation::registrar<view_model>;
+    friend class invocation::registrar<view_model>;
 
 public:
     class manager
@@ -83,7 +83,7 @@ public:
     int32_t id() const { return id_; }
     void inherit(int32_t baseid);
 
-    // invokable
+    // invocable
     bool has_method(string_view methodname) const override;
     bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) override;
     bool try_get_property(string_view propname, smart_blob& result) const override;
@@ -139,7 +139,7 @@ public:
     string_view echo_method(string_view arg) const;
 
 protected:
-    // invokation routine
+    // invocation routine
     static void do_registration(registrar_type &);
 
 protected:
@@ -148,7 +148,7 @@ protected:
     //boost::unordered_map<uint32_t, response_item> ev_resps_;
 
     //mutable fibers::mutex props_mtx_;
-    //using fn_property_holder = automatic_polymorphic<invokation::fn_property, 4 * sizeof(void*)>;
+    //using fn_property_holder = automatic_polymorphic<invocation::fn_property, 4 * sizeof(void*)>;
     //boost::unordered_map<std::string, boost::variant<blob_result, fn_property_holder>, hasher> properties_;
 
     //  + sizeof(function<void()>)
@@ -172,7 +172,7 @@ template <std::derived_from<view_model> BaseT>
 class final_view_model 
     : public BaseT
     , public enable_shared_from_this<final_view_model<BaseT>>
-    //, public invokation::registrar<bang_canvas_view_model, bang_view_model>
+    //, public invocation::registrar<bang_canvas_view_model, bang_view_model>
 {
 public:
     explicit final_view_model(int32_t idval, shared_ptr<view_model::manager> mng = {})
@@ -189,6 +189,9 @@ public:
     //{
     //    mr.inherit(typeid(bang_view_model));
     //}
+
+    // invocable
+    std::type_index get_type_index() const override { return typeid(BaseT); }
 
 private:
     weak_ptr<view_model::manager> mng_;

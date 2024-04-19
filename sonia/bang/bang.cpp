@@ -19,7 +19,7 @@ namespace sonia::lang::bang::detail {
 using sonia::lang::bang::vm::compiler_visitor;
 
 class bang_impl 
-    : public invokation::invokable
+    : public invocation::invocable
 {
 public:
     void build(fs::path const&);
@@ -32,7 +32,7 @@ public:
 
 private:
     /*
-    shared_ptr<invokation::invokable> create(string_view type, string_view id) override
+    shared_ptr<invocation::invocable> create(string_view type, string_view id) override
     {
         THROW_NOT_IMPLEMENTED_ERROR();
     }

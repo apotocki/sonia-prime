@@ -8,7 +8,7 @@
 #include "sonia/variant.hpp"
 #include "sonia/optional.hpp"
 #include "sonia/string.hpp"
-#include "sonia/utility/invokation/invokation.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 
 namespace sonia::xmlbuilder::detail {
 

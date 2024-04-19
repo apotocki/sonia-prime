@@ -30,7 +30,7 @@ public:
 protected:
     std::string generate_id() const;
     shared_ptr<templates::compound> get_element_by(string_view id) const;
-    void set_text(invokation::invokable&, string_view text);
+    void set_text(invocation::invocable&, string_view text);
 
     boost::unordered_map<std::string, shared_ptr<templates::compound>, hasher> elements_;
     shared_ptr<templates::compound> root_;

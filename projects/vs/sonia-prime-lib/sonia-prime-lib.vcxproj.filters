@@ -187,9 +187,6 @@
     <Filter Include="sonia.utility\number\meta">
       <UniqueIdentifier>{02cdfbbc-e293-4d92-809b-66054f319fa7}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.utility\invokation">
-      <UniqueIdentifier>{72f48ccc-1d69-422c-8d6d-06a96e8caf2e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.utility\lua">
       <UniqueIdentifier>{f29f4a0d-85b7-462c-92ff-18f406c767fc}</UniqueIdentifier>
     </Filter>
@@ -252,6 +249,9 @@
     </Filter>
     <Filter Include="sonia.bang\library">
       <UniqueIdentifier>{e3a3907b-c56b-4441-a4a3-10575b6ea719}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility\invocation">
+      <UniqueIdentifier>{72f48ccc-1d69-422c-8d6d-06a96e8caf2e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -1701,15 +1701,6 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\floating_point.hpp">
       <Filter>sonia.utility\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invokation\invokation.hpp">
-      <Filter>sonia.utility\invokation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invokation\invokable.hpp">
-      <Filter>sonia.utility\invokation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invokation\serialization.hpp">
-      <Filter>sonia.utility\invokation</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\lua\lua.hpp">
       <Filter>sonia.utility\lua</Filter>
     </ClInclude>
@@ -1932,12 +1923,6 @@
     <ClInclude Include="..\..\..\sonia\utility\datetime\iso_parser.hpp">
       <Filter>sonia.utility\datetime</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invokation\value_decoder.hpp">
-      <Filter>sonia.utility\invokation</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invokation\value_encoder.hpp">
-      <Filter>sonia.utility\invokation</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\lua\bigint_lib.hpp">
       <Filter>sonia.utility\lua</Filter>
     </ClInclude>
@@ -1958,9 +1943,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\mp\limbs_from_string.hpp">
       <Filter>sonia.mp</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invokation\functor_object.hpp">
-      <Filter>sonia.utility\invokation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\xmlbuilder\advxmlbuilder.hpp">
       <Filter>sonia.utility\xmlbuilder</Filter>
@@ -2139,6 +2121,24 @@
     <ClInclude Include="..\..\..\sonia\utility\mvvm\bang_view_model.hpp">
       <Filter>sonia.utility\mvvm</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\value_encoder.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\value_decoder.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\serialization.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\invocation.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\invocable.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\functor_object.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2294,14 +2294,8 @@
     <ClCompile Include="..\..\..\sonia\services\net\http\mime_mapping.cpp">
       <Filter>sonia.net\http</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\invokation\invokable.cpp">
-      <Filter>sonia.utility\invokation</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\lua\lua.cpp">
       <Filter>sonia.utility\lua</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\invokation\invokation.cpp">
-      <Filter>sonia.utility\invokation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\mvvm\view_model.cpp">
       <Filter>sonia.utility\mvvm</Filter>
@@ -2380,12 +2374,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\fibers\scheduler.cpp">
       <Filter>sonia.fibers</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\invokation\value_decoder.cpp">
-      <Filter>sonia.utility\invokation</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\invokation\value_encoder.cpp">
-      <Filter>sonia.utility\invokation</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\lua\bigint_lib.cpp">
       <Filter>sonia.utility\lua</Filter>
@@ -2467,6 +2455,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\mvvm\bang_view_model.cpp">
       <Filter>sonia.utility\mvvm</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\value_encoder.cpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\value_decoder.cpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\invocation.cpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\invocable.cpp">
+      <Filter>sonia.utility\invocation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

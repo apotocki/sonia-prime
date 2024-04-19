@@ -197,7 +197,7 @@ int sonialib_iso_datetime_string(lua_State* L)
     string_view dttype{ cstrval, strsz };
     std::string result;
 
-    variant<lua_Integer, mp::basic_integer_view<const invokation_bigint_limb_type>> arg;
+    variant<lua_Integer, mp::basic_integer_view<const invocation_bigint_limb_type>> arg;
     if (lua_isinteger(L, 1)) {
         arg = luaL_checkinteger(L, 1);
     } else if (bigint_header* pbh = luaL_test_bigint_lib(L, 1); pbh) {

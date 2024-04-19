@@ -7,7 +7,7 @@
 #include <boost/unordered_map.hpp>
 
 #include "builder_view_model.hpp"
-#include "sonia/utility/invokation/invokable.hpp"
+#include "sonia/utility/invocation/invocable.hpp"
 
 namespace sonia {
 
@@ -20,21 +20,21 @@ public:
     {
     public:
         virtual ~factory() = default;
-        virtual shared_ptr<invokation::invokable> create(string_view type, string_view id) = 0;
+        virtual shared_ptr<invocation::invocable> create(string_view type, string_view id) = 0;
     };
 
     explicit bunch_builder_view_model(factory& f) : factory_{ f } {}
 
-    shared_ptr<invokation::invokable> create(string_view type, string_view id) override;
+    shared_ptr<invocation::invocable> create(string_view type, string_view id) override;
     void set_property(string_view propname, blob_result const& value) override;
     
-    virtual shared_ptr<invokation::invokable> root_element() const = 0;
+    virtual shared_ptr<invocation::invocable> root_element() const = 0;
 
-    shared_ptr<invokation::invokable> get_element_by(string_view id) const;
-    shared_ptr<invokation::invokable> try_get_element_by(string_view id) const noexcept;
+    shared_ptr<invocation::invocable> get_element_by(string_view id) const;
+    shared_ptr<invocation::invocable> try_get_element_by(string_view id) const noexcept;
 
 protected:
-    boost::unordered_map<std::string, shared_ptr<invokation::invokable>, hasher> elements_;
+    boost::unordered_map<std::string, shared_ptr<invocation::invocable>, hasher> elements_;
     factory& factory_;
 };
 

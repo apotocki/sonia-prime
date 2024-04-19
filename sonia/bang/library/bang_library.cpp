@@ -37,7 +37,7 @@ void bang_negate(vm::context& ctx)
         using type = typename decltype(ident)::type;
         if (!is_array(b)) {
             if constexpr (std::is_same_v<type, bool>) { return bool_blob_result(!b.bp.i8value); }
-            else if constexpr (std::is_integral_v<type> || std::is_same_v<type, sonia::mp::basic_integer_view<invokation_bigint_limb_type>>) { return bool_blob_result(!as<type>(b)); }
+            else if constexpr (std::is_integral_v<type> || std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { return bool_blob_result(!as<type>(b)); }
             else {
                 throw exception("cna't negate value: %1%"_fmt % b);
             }

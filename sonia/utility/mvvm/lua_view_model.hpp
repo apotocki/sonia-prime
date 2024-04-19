@@ -14,10 +14,10 @@ namespace sonia {
 class lua_view_model
     : public virtual view_model
     , private sonia::lua::language
-    , public invokation::registrar<lua_view_model, view_model>
+    , public invocation::registrar<lua_view_model, view_model>
 {
-    using registrar_type = invokation::registrar<lua_view_model, view_model>::registrar_type;
-    friend class invokation::registrar<lua_view_model, view_model>;
+    using registrar_type = invocation::registrar<lua_view_model, view_model>::registrar_type;
+    friend class invocation::registrar<lua_view_model, view_model>;
 
 public:
     using view_model::view_model;

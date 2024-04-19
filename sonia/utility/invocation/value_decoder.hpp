@@ -10,9 +10,9 @@
 #include "sonia/string.hpp"
 #include "sonia/singleton.hpp"
 #include "sonia/exceptions.hpp"
-#include "sonia/utility/invokation/invokation.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 
-namespace sonia::invokation {
+namespace sonia::invocation {
 
 class value_decoder : public singleton
 {

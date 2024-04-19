@@ -51,7 +51,7 @@ public:
 void foreach_element::run_elements(sonia::lua::language& lang)
 {
     for (auto& elem : elements_) {
-        shared_ptr<invokation::invokable> child = std::get<0>(elem);
+        shared_ptr<invocation::invocable> child = std::get<0>(elem);
         placaholders_t const& ps = std::get<1>(elem);
         for (auto const& pair : ps) {
             smart_blob actualvalue = lang.eval_inplace(pair.second, {});

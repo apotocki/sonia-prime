@@ -7,7 +7,7 @@
 
 namespace sonia {
 
-shared_ptr<invokation::invokable> bunch_builder_view_model::create(string_view type, string_view id)
+shared_ptr<invocation::invocable> bunch_builder_view_model::create(string_view type, string_view id)
 {
     auto it = elements_.find(id, hasher{}, string_equal_to{});
     if (it != elements_.end())
@@ -18,7 +18,7 @@ shared_ptr<invokation::invokable> bunch_builder_view_model::create(string_view t
     return v;
 }
 
-shared_ptr<invokation::invokable> bunch_builder_view_model::get_element_by(string_view id) const
+shared_ptr<invocation::invocable> bunch_builder_view_model::get_element_by(string_view id) const
 {
     if (id.empty()) return root_element();
     auto it = elements_.find(id, hasher{}, string_equal_to{});
@@ -27,7 +27,7 @@ shared_ptr<invokation::invokable> bunch_builder_view_model::get_element_by(strin
     return it->second;
 }
 
-shared_ptr<invokation::invokable> bunch_builder_view_model::try_get_element_by(string_view id) const noexcept
+shared_ptr<invocation::invocable> bunch_builder_view_model::try_get_element_by(string_view id) const noexcept
 {
     if (id.empty()) return root_element();
     auto it = elements_.find(id, hasher{}, string_equal_to{});

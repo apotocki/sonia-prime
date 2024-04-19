@@ -13,7 +13,7 @@ void bunch_builder::build(string_view xml)
     parse(xml, *this);
 }
 
-shared_ptr<invokation::invokable> bunch_builder::get_element_by(string_view id)
+shared_ptr<invocation::invocable> bunch_builder::get_element_by(string_view id)
 {
     if (id.empty()) return root_element();
     auto it = elements_.find(id, hasher{}, string_equal_to{});
@@ -21,7 +21,7 @@ shared_ptr<invokation::invokable> bunch_builder::get_element_by(string_view id)
     return it->second;
 }
 
-shared_ptr<invokation::invokable> bunch_builder::try_get_element_by(string_view id) noexcept
+shared_ptr<invocation::invocable> bunch_builder::try_get_element_by(string_view id) noexcept
 {
     if (id.empty()) return root_element();
     auto it = elements_.find(id, hasher{}, string_equal_to{});
@@ -44,7 +44,7 @@ void bunch_builder::set_text(string_view id, string_view text)
     do_set_text(*get_element_by(id), text);
 }
 
-void bunch_builder::do_set_text(invokation::invokable& obj, string_view text)
+void bunch_builder::do_set_text(invocation::invocable& obj, string_view text)
 {
     obj.set_property("$", string_blob_result(text));
 }
@@ -67,7 +67,7 @@ void bunch_builder::set_property(string_view id, string_view propname, blob_resu
             if (pos == vstr.npos) pos = vstr.size();
             string_view eid = vstr.substr(1, pos - 1);
             objects.push_back(object_blob_result(get_element_by(eid)));
-            //objects.push_back(object_blob_result<invokation::wrapper_object<shared_ptr<invokation::invokable>>>(get_element_by(eid)));
+            //objects.push_back(object_blob_result<invocation::wrapper_object<shared_ptr<invocation::invocable>>>(get_element_by(eid)));
             vstr = vstr.substr(pos);
             if (!vstr.empty()) vstr = vstr.substr(1); // skip comma
         }
@@ -98,7 +98,7 @@ void bunch_builder::append(string_view parentid, string_view childid)
     //pview->add_subview(cview);
 }
 
-void bunch_builder::do_append(invokation::invokable& parent, shared_ptr<invokation::invokable> child)
+void bunch_builder::do_append(invocation::invocable& parent, shared_ptr<invocation::invocable> child)
 {
     smart_blob sb = object_blob_result(std::move(child));
     parent.invoke("append", { sb.get() });

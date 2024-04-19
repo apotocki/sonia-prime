@@ -110,14 +110,14 @@
     <ClCompile Include="..\..\..\sonia\services\io\io_ssl_service_builder.cpp">
       <Filter>sonia.services\io</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\invokation\invokation.cpp">
-      <Filter>sonia.utility.invokation</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\tenger\tenger_service_builder.cpp">
       <Filter>sonia.services\tenger</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\tenger\tenger_service.cpp">
       <Filter>sonia.services\tenger</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\invocation.cpp">
+      <Filter>sonia.utility.invocation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -148,9 +148,6 @@
     <Filter Include="sonia.applied">
       <UniqueIdentifier>{1d697cd3-38d9-4f82-83ac-f7a985212f56}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.utility.invokation">
-      <UniqueIdentifier>{65222d1f-e832-4541-bd15-d57c45118524}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.services\tenger">
       <UniqueIdentifier>{8eb15461-de06-40b4-9256-b06104b93097}</UniqueIdentifier>
     </Filter>
@@ -162,6 +159,9 @@
     </Filter>
     <Filter Include="sonia\net\http">
       <UniqueIdentifier>{a82c12bf-9c1d-4d99-a116-8215bf6c8dff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.utility.invocation">
+      <UniqueIdentifier>{65222d1f-e832-4541-bd15-d57c45118524}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -351,9 +351,6 @@
     <ClInclude Include="..\..\..\sonia\services\io\io_ssl_service_builder.hpp">
       <Filter>sonia.services\io</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invokation\invokation.hpp">
-      <Filter>sonia.utility.invokation</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\tenger\tenger_service_configuration.hpp">
       <Filter>sonia.services\tenger</Filter>
     </ClInclude>
@@ -362,6 +359,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\tenger\tenger_service.hpp">
       <Filter>sonia.services\tenger</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\invocation.hpp">
+      <Filter>sonia.utility.invocation</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

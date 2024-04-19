@@ -30,7 +30,7 @@ public:
     }
 };
 
-//class code_element : public invokation::invokable {};
+//class code_element : public invocation::invocable {};
 
 class templated_item_factory
     : public xmlbuilder::bunch_builder::factory
@@ -54,7 +54,7 @@ public:
         factories["code"] = [](string_view id) { return make_shared<templates::code_element>(id); };
     }
 
-    shared_ptr<invokation::invokable> create(string_view type, string_view id) override
+    shared_ptr<invocation::invocable> create(string_view type, string_view id) override
     {
         auto it = factories.find(type, hasher{}, string_equal_to{});
         if (it == factories.end())
@@ -68,7 +68,7 @@ public:
     }
 
 private:
-    boost::unordered_map<std::string, function<shared_ptr<invokation::invokable>(string_view)>, hasher> factories;
+    boost::unordered_map<std::string, function<shared_ptr<invocation::invocable>(string_view)>, hasher> factories;
 };
 
 templated_bunch::templated_bunch()
@@ -93,7 +93,7 @@ std::string templated_bunch::generate_id() const
     return namess.str();
 }
 
-void templated_bunch::set_text(invokation::invokable& obj, string_view text)
+void templated_bunch::set_text(invocation::invocable& obj, string_view text)
 {
     if (!obj.try_set_property("$"sv, string_blob_result(text))) {
         /*

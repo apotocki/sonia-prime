@@ -40,7 +40,7 @@ void view_model::inherit(int32_t baseid)
 
 bool view_model::has_method(string_view methodname) const
 {
-    if (invokable::has_method(methodname)) return true;
+    if (invocable::has_method(methodname)) return true;
     shared_ptr<manager> mng = get_manager();
     if (!mng) return false;
     for (int32_t baseid : bases_) {
@@ -51,7 +51,7 @@ bool view_model::has_method(string_view methodname) const
 
 bool view_model::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result)
 {
-    if (invokable::try_invoke(methodname, args, result)) return true;
+    if (invocable::try_invoke(methodname, args, result)) return true;
     shared_ptr<manager> mng = get_manager();
     if (!mng) return false;
     for (int32_t baseid : bases_) {
@@ -62,7 +62,7 @@ bool view_model::try_invoke(string_view methodname, span<const blob_result> args
 
 bool view_model::try_get_property(string_view propname, smart_blob& result) const
 {
-    if (invokable::try_get_property(propname, result)) return true;
+    if (invocable::try_get_property(propname, result)) return true;
     shared_ptr<manager> mng = get_manager();
     if (!mng) return false;
     for (int32_t baseid : bases_) {
@@ -74,7 +74,7 @@ bool view_model::try_get_property(string_view propname, smart_blob& result) cons
 bool view_model::try_set_property(string_view propname, blob_result const& val)
 {
     //GLOBAL_LOG_INFO() << "view_model::try_set_property: " << propname;
-    if (invokable::try_set_property(propname, val)) return true;
+    if (invocable::try_set_property(propname, val)) return true;
     shared_ptr<manager> mng = get_manager();
     if (!mng) return false;
     for (int32_t baseid : bases_) {
@@ -234,7 +234,7 @@ blob_result view_model::call_method(std::string_view name, blob_result args) con
         boost::container::small_vector<blob_result, 16> bargs;
         blob_type_selector(args, [&bargs](auto ident, blob_result const& b) {
             using type = typename decltype(ident)::type;
-            if constexpr (std::is_void_v<type> || std::is_same_v<mp::basic_integer_view<invokation_bigint_limb_type>, type>) { bargs.push_back(nil_blob_result()); }
+            if constexpr (std::is_void_v<type> || std::is_same_v<mp::basic_integer_view<invocation_bigint_limb_type>, type>) { bargs.push_back(nil_blob_result()); }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);

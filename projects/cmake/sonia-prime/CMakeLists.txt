@@ -23,7 +23,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/auth/auth_service_builder.cpp
     ${BUNDLE_HOME}/sonia/services/auth/auth_service.cpp
     ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
-    ${BUNDLE_HOME}/sonia/utility/invokation/invokation.cpp
+    ${BUNDLE_HOME}/sonia/utility/invocation/invocation.cpp
 )
 
 if (NOT DEFINED NO_NET)

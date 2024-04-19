@@ -10,11 +10,11 @@
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/mp/integer_view.hpp" 
 
-#include "sonia/utility/invokation/functor_object.hpp"
+#include "sonia/utility/invocation/functor_object.hpp"
 
 namespace sonia::lang::bang {
 
-class function_invoker : public invokation::functor_object
+class function_invoker : public invocation::functor_object
 {
     uint64_t address_ : 30;
     uint64_t param_cnt_ : 16;
@@ -104,7 +104,7 @@ size_t vm::context::callp(size_t ret_address)
         stack_pop();
         return address;
     }
-    decltype(auto) ftor = p.as<invokation::functor_object>();
+    decltype(auto) ftor = p.as<invocation::functor_object>();
     int64_t sigdescr = stack_back(1).as<int64_t>(); // (the number of args + 1) [ * (-1) if no result ]
     stack_pop(2);
     if (auto* pfinv = dynamic_cast<function_invoker*>(&ftor); pfinv) {
@@ -129,7 +129,7 @@ std::string vm::context::callp_describe() const
         size_t address = p.as<size_t>();
         return ("0x%1$x"_fmt % address).str();
     }
-    decltype(auto) ftor = p.as<invokation::functor_object>();
+    decltype(auto) ftor = p.as<invocation::functor_object>();
     int64_t sigdescr = stack_back(1).as<int64_t>();
     if (auto* pfinv = dynamic_cast<function_invoker*>(&ftor); pfinv) {
         return ("`%1%` at 0x%2$x"_fmt % pfinv->name() % pfinv->address(*this)).str();
@@ -223,7 +223,7 @@ void vm::context::construct_extern_object()
         throw exception("can't construct the object '%1%', no external environment was provided"_fmt % name);
     }
 
-    shared_ptr<invokation::invokable> obj;
+    shared_ptr<invocation::invocable> obj;
     // find id
     for (uint32_t i = 0; i < argcount; ++i) {
         //GLOBAL_LOG_INFO() << stack_back(2 + 2 * i).as<string_view>();
@@ -252,8 +252,8 @@ void vm::context::construct_extern_object()
 // (obj, value, propName)->(obj, value)
 void vm::context::extern_object_set_property()
 {
-    using namespace sonia::invokation;
-    shared_ptr<invokable> obj = stack_back(2).as<wrapper_object<shared_ptr<invokable>>>().value;
+    using namespace sonia::invocation;
+    shared_ptr<invocable> obj = stack_back(2).as<wrapper_object<shared_ptr<invocable>>>().value;
     string_view prop_name = stack_back().as<string_view>();
     obj->set_property(camel2kebab(prop_name), *stack_back(1));
     stack_pop();
@@ -261,8 +261,8 @@ void vm::context::extern_object_set_property()
 // (obj, propName)->value
 void vm::context::extern_object_get_property()
 {
-    using namespace sonia::invokation;
-    shared_ptr<invokable> obj = stack_back(1).as<wrapper_object<shared_ptr<invokable>>>().value;
+    using namespace sonia::invocation;
+    shared_ptr<invocable> obj = stack_back(1).as<wrapper_object<shared_ptr<invocable>>>().value;
     string_view prop_name = stack_back().as<string_view>();
     auto result = obj->get_property(camel2kebab(prop_name));
     stack_pop(2);
@@ -333,9 +333,9 @@ void vm::context::referify()
 
 void vm::context::weak_create()
 {
-    using namespace sonia::invokation;
-    using wrapper_object_t = wrapper_object<shared_ptr<invokable>>;
-    using weak_wrapper_object_t = wrapper_object<weak_ptr<invokable>>;
+    using namespace sonia::invocation;
+    using wrapper_object_t = wrapper_object<shared_ptr<invocable>>;
+    using weak_wrapper_object_t = wrapper_object<weak_ptr<invocable>>;
     smart_blob& val = stack_back();
     if (val->type == blob_type::object) {
         object& obj = val.as<object>();
@@ -353,9 +353,9 @@ void vm::context::weak_create()
 
 void vm::context::weak_lock()
 {
-    using namespace sonia::invokation;
-    using wrapper_object_t = wrapper_object<shared_ptr<invokable>>;
-    using weak_wrapper_object_t = wrapper_object<weak_ptr<invokable>>;
+    using namespace sonia::invocation;
+    using wrapper_object_t = wrapper_object<shared_ptr<invocable>>;
+    using weak_wrapper_object_t = wrapper_object<weak_ptr<invocable>>;
     smart_blob& val = stack_back();
     blob_result const& urval = unref(*val);
     if (urval.type == blob_type::object) {
@@ -376,7 +376,7 @@ void vm::context::weak_lock()
 void vm::context::call_function_object()
 {
     int64_t sigdescr = stack_back().as<int64_t>(); // (the number of args + 1) [ * (-1) if no result ]
-    decltype(auto) ftor = stack_back(1).as<invokation::functor_object>();
+    decltype(auto) ftor = stack_back(1).as<invocation::functor_object>();
     auto sp = stack_span(2, std::abs(sigdescr) - 1);
     static_assert(sizeof(variable_type) == sizeof(blob_result));
     auto result = ftor(span{(blob_result const*)sp.data(), sp.size()});

@@ -4,16 +4,16 @@
 
 #pragma once
 
-#include "sonia/utility/invokation/invokable.hpp"
+#include "sonia/utility/invocation/invocable.hpp"
 #include "compound.hpp"
 
 namespace sonia::templates {
 
 class file_template_element 
     : public compound
-    , public invokation::registrar<file_template_element>
+    , public invocation::registrar<file_template_element>
 {
-    friend class invokation::registrar<file_template_element>;
+    friend class invocation::registrar<file_template_element>;
 
 public:
     using compound::compound;
@@ -29,7 +29,7 @@ public:
     }
 
 protected:
-    // invokation routine
+    // invocation routine
     static void do_registration(registrar_type&);
 };
 

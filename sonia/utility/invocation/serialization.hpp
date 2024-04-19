@@ -6,7 +6,7 @@
 
 #include <sstream>
 
-#include "sonia/utility/invokation/invokation.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 
 namespace boost::serialization {
 

@@ -4,7 +4,7 @@
 
 #pragma once
 #include "sonia/utility/mvvm/view_model.hpp"
-#include "sonia/utility/invokation/invokation.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 #include "sonia/bang/bang.hpp"
 
 namespace sonia {
@@ -13,10 +13,10 @@ namespace sonia {
 class bang_view_model
     : public virtual view_model
     , public sonia::lang::bang::language
-    , public invokation::registrar<bang_view_model, view_model>
+    , public invocation::registrar<bang_view_model, view_model>
 {
-    using registrar_type = invokation::registrar<bang_view_model, view_model>::registrar_type;
-    friend class invokation::registrar<bang_view_model, view_model>;
+    using registrar_type = invocation::registrar<bang_view_model, view_model>::registrar_type;
+    friend class invocation::registrar<bang_view_model, view_model>;
 
 public:
     using view_model::view_model;
@@ -32,7 +32,7 @@ protected:
 //class bang_canvas_view_model
 //    : public bang_view_model
 //    , public enable_shared_from_this<bang_canvas_view_model>
-//    , public invokation::registrar<bang_canvas_view_model, bang_view_model>
+//    , public invocation::registrar<bang_canvas_view_model, bang_view_model>
 //{
 //public:
 //    explicit bang_canvas_view_model(int32_t idval, shared_ptr<manager> mng = {})

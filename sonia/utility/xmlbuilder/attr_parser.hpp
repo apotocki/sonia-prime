@@ -9,7 +9,7 @@
 #include "sonia/string.hpp"
 #include "sonia/optional.hpp"
 
-#include "sonia/utility/invokation/invokation.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 
 #include "sonia/utility/automatic_polymorphic.hpp"
 

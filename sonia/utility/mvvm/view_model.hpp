@@ -168,4 +168,30 @@ protected:
     int32_t id_;
 };
 
+template <std::derived_from<view_model> BaseT>
+class final_view_model 
+    : public BaseT
+    , public enable_shared_from_this<final_view_model<BaseT>>
+    //, public invokation::registrar<bang_canvas_view_model, bang_view_model>
+{
+public:
+    explicit final_view_model(int32_t idval, shared_ptr<view_model::manager> mng = {})
+        : BaseT{ idval }, mng_{ std::move(mng) }
+    {}
+
+    shared_ptr<view_model::manager> get_manager() const override final { return mng_.lock(); }
+    void set(shared_ptr<view_model::manager> mng) override final { mng_ = mng; }
+
+    shared_ptr<view_model> self_as_content_view_shared() override final { return this->shared_from_this(); }
+
+    //template <typename RT>
+    //static void do_registration(RT& mr)
+    //{
+    //    mr.inherit(typeid(bang_view_model));
+    //}
+
+private:
+    weak_ptr<view_model::manager> mng_;
+};
+
 }

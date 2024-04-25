@@ -122,6 +122,7 @@ TYPE					"type"
 EXTENDS					"extends"
 EXTERN                  "extern"
 RETURN                  "return"
+INCLUDE					"include"
 
 BOOL					"bool"
 INT						"int"
@@ -245,7 +246,7 @@ HASHTAG					"#"
 	}
 }
 <INITIAL,COMMENT>"//" { yy_push_state(LINE_COMMENT, yyscanner); }
-<LINE_COMMENT>[^\xd]*\xd\xa? { yy_pop_state(yyscanner); }
+<LINE_COMMENT>[^\xd\xa]*[\xd\xa]* { yy_pop_state(yyscanner); }
 
 <INITIAL>\" { 
 	yyextra->str_buff_begin = yytext + 1;
@@ -258,6 +259,7 @@ HASHTAG					"#"
 	\\[xX][0-9a-fA-F]+
 	\" {
 		variant_emplace(annotated_string_view{string_view{yyextra->str_buff_begin, yytext}, yyextra->loc_stack.back()});
+		yyextra->loc_stack.pop_back();
 		yy_pop_state(yyscanner);
 		return (bang_lang::parser::token::STRING);
 	}
@@ -272,6 +274,7 @@ HASHTAG					"#"
 	{EXTENDS} { return (bang_lang::parser::token::EXTENDS); }
 	{EXTERN} { return (bang_lang::parser::token::EXTERN); }
 	{RETURN} { return (bang_lang::parser::token::RETURN); }
+	{INCLUDE} { return (bang_lang::parser::token::INCLUDE); }
 
 	{BOOL} { return (bang_lang::parser::token::BOOL); }
 	{INT} { return (bang_lang::parser::token::INT); }

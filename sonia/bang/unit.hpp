@@ -81,6 +81,7 @@ public:
         arrayify = 0, unpack, weak_create, weak_lock,
         extern_object_set_property,
         extern_object_get_property,
+        extern_function_call,
         tostring, negate,
         eof_builtin_type
     };
@@ -99,7 +100,7 @@ public:
         return semantic::invoke_function{ builtins_.at((size_t)bi) };
     }
 
-    identifier new_identifier() { return identifier_builder_(); }
+    identifier new_identifier();
 
     slregistry_t& slregistry() { return slregistry_; }
     piregistry_t& piregistry() { return piregistry_; }
@@ -150,14 +151,19 @@ public:
 
     std::string print(error const&);
 
-    string_view as_string(identifier const& id) const;
-    
-    small_u32string as_u32string(identifier const& id) const;
+    small_string as_string(identifier const& id) const;
+    small_string as_string(qname_view name) const;
 
-    small_u32string as_u32string(qname_view name) const;
+    //small_u32string as_u32string(identifier const& id) const;
     
 protected:
     std::vector<char> read_file(fs::path const& rpath);
+
+    template <typename OutputIteratorT, typename UndefinedFT>
+    OutputIteratorT identifier_printer(identifier const&, string_view prefix, OutputIteratorT, UndefinedFT const&) const;
+
+    template <typename OutputIteratorT, typename UndefinedFT>
+    OutputIteratorT name_printer(qname_view const&, OutputIteratorT, UndefinedFT const&) const;
 
 private:
     // entities registry:

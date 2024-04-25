@@ -30,7 +30,7 @@ struct lvalue_expression_visitor : static_visitor<std::expected<entity const*, e
 
     result_type operator()(annotated_bool const&) const;
     result_type operator()(annotated_decimal const&) const;
-    result_type operator()(annotated_u32string const&) const;
+    result_type operator()(annotated_string const&) const;
     
     result_type operator()(expression_vector_t const&) const;
     result_type operator()(chained_expression_t&) const;

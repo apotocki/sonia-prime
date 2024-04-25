@@ -29,7 +29,7 @@ public:
     smart_blob eval_lua(string_view code);
     smart_blob eval_lua(string_view code, resolver* r = nullptr);
 
-    bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) override;
+    bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept override;
     bool try_get_property(string_view propname, smart_blob& result) const override;
     bool try_set_property(string_view propname, blob_result const& val) override;
     //smart_blob invoke(string_view methodname, span<const blob_result> args) override;

@@ -5,40 +5,16 @@
 #include "sonia/config.hpp"
 #include "builder_view_model.hpp"
 
-#include "sonia/bang/parser.hpp"
-
-#include "sonia/bang/ast/declaration_visitor.hpp"
-
-#include <boost/container/small_vector.hpp>
-#include "boost/conversion/unicode/utf.hpp"
-#include "boost/conversion/push_iterator.hpp"
-
-//#include "sonia/bang/entities/variable_entity.hpp"
-
 namespace sonia {
 
+void builder_view_model::do_registration(registrar_type& mr)
+{
+    mr.register_method<&builder_view_model::create>("create"sv);
+}
 
-
-
-
-
-/*
-class model_builder_context : public vm::builder_context {
-    using base_t = vm::builder_context;
-    builder_view_model & b_;
-
-public:
-    explicit model_builder_context(builder_view_model & b)
-        : base_t{ b.vm() }, b_{b}
-    {}
-
-    void set_property(string_view id, string_view propname, blob_result const& value) override
-    {
-        b_.set_property(id, propname, value)
-    }
-};
-*/
-
-
+shared_ptr<invocation::invocable> builder_view_model::create(string_view type)
+{
+    return factory_.create(type);
+}
 
 }

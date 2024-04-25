@@ -18,7 +18,7 @@ struct expression_fn_visitor : static_visitor<std::expected<bang_type, error_sto
 {
     fn_compiler_context& ctx;
     functional_entity const& fn;
-    context_locator_t const& cl_;
+    context_locator_t cl_;
 
     expression_fn_visitor(fn_compiler_context& c, functional_entity const& f, context_locator_t const& cl)
         : ctx{ c }
@@ -82,6 +82,10 @@ struct expression_fn_visitor : static_visitor<std::expected<bang_type, error_sto
         if (pv) {
             ctx.append_expression(semantic::push_variable{ pv });
         } else {
+            // delayed binding
+            //small_string fnmangled = ctx.u().as_string(fnm);
+            //ctx.append_expression(semantic::push_value{ fnmangled });
+            //ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::extern_function_call));
             THROW_INTERNAL_ERROR("function '%1%' is not materialized"_fmt % ctx.u().print(fnm));
             //result.emplace_back(semantic::push_value{ function_value { std::move(fnm) } });
         }

@@ -14,42 +14,29 @@
 
 #include "vm/compiler_visitor.hpp"
 
+#include "sonia/utility/scope_exit.hpp"
+
 namespace sonia::lang::bang::detail {
 
 using sonia::lang::bang::vm::compiler_visitor;
 
 class bang_impl 
-    : public invocation::invocable
 {
 public:
     void build(fs::path const&);
     void build(string_view code);
-    void run(external_environment* penv, span<string_view> args);
+    void run(invocation::invocable* penv, span<string_view> args);
 
     bang_impl() = default;
     bang_impl(bang_impl const&) = delete;
     bang_impl& operator=(bang_impl const&) = delete;
 
-private:
-    /*
-    shared_ptr<invocation::invocable> create(string_view type, string_view id) override
-    {
-        THROW_NOT_IMPLEMENTED_ERROR();
-    }
-
-    void set_property(string_view id, string_view propname, blob_result const& value) override
-    {
-        THROW_NOT_IMPLEMENTED_ERROR();
-    }
-    */
-
 protected:
-    void compile(lang::bang::parser_context&);
+    void compile(lang::bang::parser_context&, declaration_set_t);
     void do_compile(vm::compiler_visitor&, function_entity&);
 
 private:
     lang::bang::unit unit_;
-    
     optional<function_entity> main_function_;
 };
 
@@ -68,7 +55,7 @@ language::~language()
 
 }
 
-void language::run(external_environment* penv, span<string_view> args)
+void language::run(invocation::invocable* penv, span<string_view> args)
 {
     impl_->run(penv, args);
 }
@@ -92,18 +79,20 @@ using namespace sonia::lang::bang;
 void bang_impl::build(fs::path const& f)
 {
     parser_context parser{ unit_ };
-    parser.parse(f);
-    compile(parser);
+    auto exp_decls = parser.parse(f);
+    if (!exp_decls.has_value()) throw exception(exp_decls.error());
+    compile(parser, std::move(*exp_decls));
 }
 
 void bang_impl::build(string_view code)
 {
     lang::bang::parser_context parser{ unit_ };
-    parser.parse(code);
-    compile(parser);
+    auto exp_decls = parser.parse(code);
+    if (!exp_decls.has_value()) throw exception(exp_decls.error());
+    compile(parser, std::move(*exp_decls));
 }
 
-void bang_impl::compile(lang::bang::parser_context & pctx)
+void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t decls)
 {
     // main context
     fn_compiler_context ctx{ unit_, qname{} };
@@ -111,9 +100,10 @@ void bang_impl::compile(lang::bang::parser_context & pctx)
     auto&& ve = ctx.new_position_parameter(0, bang_vector_t{ bang_string_t{} });
     ve.set_index(-1); // first parameter
 
+    // separate declarations
     // retrieve forward declarations
-    forward_declaration_visitor fdvis{ ctx };
-    for (auto & d : pctx.type_declarations()) {
+    forward_declaration_visitor fdvis{ ctx, pctx };
+    for (auto & d : decls) {
         apply_visitor(fdvis, d);
     }
     
@@ -123,7 +113,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx)
     }
 
     declaration_visitor dvis{ ctx };
-    for (auto & d : pctx.generic_declarations()) {
+    for (auto & d : fdvis.decls) {
         apply_visitor(dvis, d);
     }
     ctx.finish_frame();
@@ -133,7 +123,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx)
 
     // at first compile all functions
     unit_.eregistry().traverse([this, &vmcvis](qname_view name, entity& e) {
-        if (auto fe = dynamic_cast<function_entity*>(&e); fe && !fe->is_inline()) {
+        if (auto fe = dynamic_cast<function_entity*>(&e); fe) {
             do_compile(vmcvis, *fe);
         }
         return true;
@@ -168,10 +158,10 @@ void bang_impl::do_compile(vm::compiler_visitor & vmcvis, function_entity & fe)
     size_t address = bvm.get_ip();
     if (!fe.is_defined()) {
         fe.set_address(address);
-    } else if (fe.is_variable_index()) {
+    } else if (fe.is_static_variable_index()) {
         size_t varaddress = fe.get_address();
-        bvm.set_at_stack(varaddress, smart_blob{ui64_blob_result(address)});
-        fe.set_address(address); // update for fututre direct calls
+        bvm.statics().at(varaddress).replace(smart_blob{ui64_blob_result(address)});
+        fe.set_address(address); // update for future direct calls
     }
 
     //if (param_count) {
@@ -184,7 +174,7 @@ void bang_impl::do_compile(vm::compiler_visitor & vmcvis, function_entity & fe)
     bvm.append_jmp(return_address);
 }
 
-void bang_impl::run(external_environment* penv, span<string_view> args)
+void bang_impl::run(invocation::invocable* penv, span<string_view> args)
 {
     vm::context ctx{ unit_.bvm(), penv };
     for (string_view arg : args) {

@@ -10,7 +10,7 @@
 #include "sonia/utility/invocation/invocable.hpp"
 #include "sonia/utility/lang/vm.hpp"
 #include <boost/unordered_map.hpp>
-#include "../extern.hpp"
+//#include "../extern.hpp"
 #include "../terms.hpp"
 
 namespace sonia::lang::bang::vm {
@@ -109,7 +109,7 @@ public:
 
     using vm_t = sonia::vm::virtual_stack_machine<context>;
 
-    explicit context(vm_t& vm, external_environment* penv = nullptr) : vm_{vm}, penv_{penv} {}
+    explicit context(vm_t& vm, invocation::invocable* penv = nullptr) : vm_{vm}, penv_{penv} {}
     
     context(context const&) = delete;
     context& operator=(context const&) = delete;
@@ -125,13 +125,24 @@ public:
     void construct_extern_object();
     void extern_object_set_property();
     void extern_object_get_property();
+    void extern_function_call();
     void construct_function();
 
     void call_function_object();
 
     static small_string camel2kebab(string_view cc);
 
+    inline size_t statics_size() const noexcept { return vm_.statics().size(); }
     inline size_t stack_size() const noexcept { return vm_.stack().size(); }
+
+    variable_type const& static_at(size_t i) const
+    {
+        size_t ssz = statics_size();
+        if (ssz <= i) [[unlikely]] {
+            THROW_INTERNAL_ERROR("wrong static var index");
+        }
+        return vm_.statics()[i];
+    }
 
     variable_type const& stack_at(size_t i) const
     {
@@ -244,7 +255,7 @@ public:
 private:
     mutable size_t id_counter_{ 0 };
     vm_t& vm_;
-    external_environment* penv_;
+    invocation::invocable* penv_;
 };
 
 }
@@ -258,8 +269,8 @@ class virtual_stack_machine : public sonia::vm::virtual_stack_machine<vm::contex
 public:
     virtual_stack_machine();
 
-    size_t push_on_stack(smart_blob&& value);
-    void push_on_stack_and_push(smart_blob&& value);
+    size_t append_static_const(smart_blob&& value);
+    void append_push_static_const(smart_blob&& value);
 
     enum class builtin_fn
     {
@@ -268,7 +279,7 @@ public:
         referify, weak_create, weak_lock,
         function_constructor, extern_object_constructor,
         extern_object_set_property, extern_object_get_property,
-        assign_extern_variable,
+        assign_extern_variable, extern_function_call,
         eof_type
     };
 

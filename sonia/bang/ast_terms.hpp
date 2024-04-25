@@ -42,7 +42,7 @@ using annotated_identifier = annotated<identifier>;
 using annotated_qname = annotated<qname>;
 using annotated_bool = annotated<bool>;
 using annotated_decimal = annotated<decimal>;
-using annotated_u32string = annotated<small_u32string>;
+using annotated_string = annotated<small_string>;
 
 //using elementary_expression = variant<
 //    null_t, bool, decimal, small_u32string, 
@@ -399,7 +399,7 @@ struct lambda : fn_pure<ExprT>
 };
 
 using expression_t = make_recursive_variant<
-    annotated_bool, annotated_decimal, annotated_u32string,
+    annotated_bool, annotated_decimal, annotated_string,
     variable_identifier, case_expression, member_expression<recursive_variant_>, 
     lambda<recursive_variant_>,
     negate_expression<>,
@@ -673,34 +673,29 @@ struct extern_var
     bang_preliminary_type type;
 };
 
+struct include_decl
+{
+    annotated_string path;
+};
+
 using infunction_declaration_t = typename infunction_declaration<expression_t>::type;
 using return_decl_t = return_decl<expression_t>;
 using let_statement_decl_t = let_statement_decl<expression_t>;
 using expression_decl_t = expression_decl<expression_t>;
 
-using declaration_t = make_recursive_variant<
+using declaration_t = variant<
     extern_var, let_statement_decl_t, expression_decl_t,
     fn_pure_decl, fn_decl<infunction_declaration_t>
->::type;
+>;
 
-using type_declaration_t = variant<type_decl, enum_decl>;
+using generic_declaration_t = variant<
+    extern_var, let_statement_decl_t, expression_decl_t,
+    fn_pure_decl, fn_decl<infunction_declaration_t>, include_decl, type_decl, enum_decl
+>;
+
+using declaration_set_t = std::vector<generic_declaration_t>;
 
 using fn_decl_t = fn_decl<infunction_declaration_t>;
-
-struct declaration_set_t
-{
-    std::vector<declaration_t> generic;
-    std::vector<type_declaration_t> types;
-};
-
-
-/*
-struct declaration
-{
-    boost::variant<function_decl> value;
-};
-*/
-
 
 
 template <typename LocationT>

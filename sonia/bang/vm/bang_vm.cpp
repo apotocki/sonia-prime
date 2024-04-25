@@ -19,18 +19,18 @@ class function_invoker : public invocation::functor_object
     uint64_t address_ : 30;
     uint64_t param_cnt_ : 16;
     uint64_t is_void_ : 1;
-    uint64_t is_variable_index_ : 1;
+    uint64_t is_static_variable_index_ : 1;
     vm::context::vm_t & vm_;
-    external_environment * penv_;
+    invocation::invocable* penv_;
     smart_blob capture_;
-    small_string name_;
+    small_string name_; // for describing purposes only, it's @XXX for lambdas
 
 public:
     explicit function_invoker(size_t address, bool is_vidx, size_t paramcnt, bool is_void, smart_blob capture,
-        vm::context::vm_t& v, external_environment * pev, small_string name)
+        vm::context::vm_t& v, invocation::invocable* pev, small_string name)
             : address_{ address }
             , param_cnt_{ paramcnt }, is_void_ { is_void }
-            , is_variable_index_{ is_vidx ? 1u : 0 }
+            , is_static_variable_index_{ is_vidx ? 1u : 0 }
             , capture_{ std::move(capture) }
             , vm_(v), penv_{ pev }, name_ { std::move(name) }
     {}
@@ -39,8 +39,8 @@ public:
 
     size_t address(vm::context const& ctx) const
     {
-        if (is_variable_index_) {
-            return ctx.stack_at(address_).as<size_t>();
+        if (is_static_variable_index_) {
+            return ctx.static_at(address_).as<size_t>();
         } else {
             return address_;
         }
@@ -112,7 +112,7 @@ size_t vm::context::callp(size_t ret_address)
         return pfinv->call(*this);
     }
     // external functor
-    auto sp = stack_span(2, std::abs(sigdescr) - 1);
+    auto sp = stack_span(0 /*2*/, std::abs(sigdescr) - 1);
     static_assert(sizeof(variable_type) == sizeof(blob_result));
     auto result = ftor(span{ (blob_result const*)sp.data(), sp.size() });
     stack_pop(std::abs(sigdescr) - 1);
@@ -157,6 +157,7 @@ std::string vm::context::ecall_describe(size_t fn_index) const
     case builtin_fn::extern_object_set_property: return "extern_object_set_property";
     case builtin_fn::extern_object_get_property: return "extern_object_get_property";
     case builtin_fn::assign_extern_variable: return "assign_extern_variable";
+    case builtin_fn::extern_function_call: return "extern_function_call";
     default:
         {
             auto pair = vm_.efns().at(fn_index);
@@ -210,6 +211,26 @@ void vm::context::assign_extern_variable()
     }
 }
 
+void vm::context::extern_function_call()
+{
+    string_view funcname = stack_back().as<string_view>();
+    int64_t sigdescr = stack_back(1).as<int64_t>(); // (the number of args + 1) [ * (-1) if no result ]
+    size_t argscnt = std::abs(sigdescr) - 1;
+    auto sp = stack_span(2, argscnt);
+    if (penv_) {
+        auto result = penv_->invoke(funcname, span{ (blob_result const*)sp.data(), sp.size() });
+        if (result.is_error()) {
+            throw exception(result.as<string_view>());
+        }
+        if (sigdescr > 0) {
+            stack_back(2 + argscnt).replace(std::move(result));
+        }
+        stack_pop(argscnt + (sigdescr > 0 ? 1 : 2));
+    } else {
+        throw exception("can't call extern function '%1%', no external environment was provided"_fmt % funcname);
+    }
+}
+
 void vm::context::construct_extern_object()
 {
     string_view name = stack_back().as<string_view>();
@@ -223,20 +244,26 @@ void vm::context::construct_extern_object()
         throw exception("can't construct the object '%1%', no external environment was provided"_fmt % name);
     }
 
-    shared_ptr<invocation::invocable> obj;
+    smart_blob resobj;
     // find id
     for (uint32_t i = 0; i < argcount; ++i) {
         //GLOBAL_LOG_INFO() << stack_back(2 + 2 * i).as<string_view>();
         if (stack_back(2 + 2 * i).as<string_view>() == "id"sv) {
             string_view idval = stack_back(3 + 2 * i).as<string_view>();
             if (!idval.empty()) {
-                obj = penv_->create(camel2kebab(name), idval);
+                resobj = penv_->invoke("create"sv, { string_blob_result(camel2kebab(name)), string_blob_result(idval) });
             }
         }
     }
-    if (!obj) {
-        obj = penv_->create(camel2kebab(name), generate_object_id());
+    if (resobj.is_nil()) {
+        resobj = penv_->invoke("create"sv, { string_blob_result(camel2kebab(name)), string_blob_result(generate_object_id()) });
     }
+
+    if (resobj->type == blob_type::error) {
+        throw exception(resobj.as<std::string>());
+    }
+    using namespace sonia::invocation;
+    shared_ptr<invocable> obj = resobj.as<wrapper_object<shared_ptr<invocable>>>().value;
 
     for (uint32_t i = 0; i < argcount; ++i) {
         string_view arg_name = stack_back(2 + 2 * i).as<string_view>();
@@ -361,8 +388,7 @@ void vm::context::weak_lock()
     if (urval.type == blob_type::object) {
         object& obj = as<object>(urval);
         if (auto* pwobj = dynamic_cast<weak_wrapper_object_t*>(&obj); pwobj) { // already weak
-            smart_blob strong{ object_blob_result<wrapper_object_t>(pwobj->value) };
-            val.swap(strong);
+            val.replace(smart_blob{ object_blob_result<wrapper_object_t>(pwobj->value) });
         } else if (auto* psobj = dynamic_cast<wrapper_object_t*>(&obj); psobj) { // already not weak
             // do nothing
         } else {
@@ -398,6 +424,7 @@ virtual_stack_machine::virtual_stack_machine()
     set_efn((size_t)builtin_fn::extern_object_constructor, [](vm::context& ctx) { ctx.construct_extern_object(); });
     set_efn((size_t)builtin_fn::extern_object_set_property, [](vm::context& ctx) { ctx.extern_object_set_property(); });
     set_efn((size_t)builtin_fn::extern_object_get_property, [](vm::context& ctx) { ctx.extern_object_get_property(); });
+    set_efn((size_t)builtin_fn::extern_function_call, [](vm::context& ctx) { ctx.extern_function_call(); });
     set_efn((size_t)builtin_fn::assign_extern_variable, [](vm::context& ctx) { ctx.assign_extern_variable(); });
     /*
     builtins_.resize((    set_efn((size_t)builtin_fn::referify, [](vm::context& ctx) { ctx.referify(); });
@@ -410,23 +437,23 @@ void virtual_stack_machine::append_ecall(builtin_fn fn)
     base_t::append_ecall((size_t)fn);
 }
 
-size_t virtual_stack_machine::push_on_stack(smart_blob&& value)
+size_t virtual_stack_machine::append_static_const(smart_blob&& value)
 {
     auto it = literals_.find(*value);
     if (it == literals_.end()) {
-        size_t index = base_t::push_on_stack(std::move(value));
-        it = literals_.insert(it, std::pair{ *base_t::stack()[index], index });
-        GLOBAL_LOG_INFO() << "pushing new value: " << base_t::stack()[index] << ", index: " << index;
+        size_t index = base_t::append_static(std::move(value));
+        it = literals_.insert(it, std::pair{ *base_t::statics()[index], index });
+        GLOBAL_LOG_DEBUG() << "placing new const value: " << base_t::statics()[index] << ", at index: " << index;
     } else {
-        GLOBAL_LOG_INFO() << "pushing existed value: " << value << ", index: " << it->second;
+        GLOBAL_LOG_DEBUG() << "found existing value: " << value << ", at index: " << it->second;
     }
     return it->second;
 }
 
-void virtual_stack_machine::push_on_stack_and_push(smart_blob&& value)
+void virtual_stack_machine::append_push_static_const(smart_blob&& value)
 {
-    size_t pos = push_on_stack(std::move(value));
-    append_push(pos);
+    size_t pos = append_static_const(std::move(value));
+    append_pushs(pos);
 }
 
 }

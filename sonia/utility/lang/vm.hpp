@@ -19,6 +19,7 @@ public:
     bool is_true(variable_type const&) const; // for conditional jumps
     variable_type value_of(size_t val) const; // for pushi
     
+    variable_type const& static_at(size_t index) const;
 
 }
 */
@@ -53,9 +54,10 @@ public:
         pushr = 17, // push on stack stack[stack_back_pos() - uint]
         fppush = 18, fnpush = 19, // push on stack stack[fp +- uint]
         pushi = 20, fppushi = 21, fnpushi = 22, // push index on stack
-        set = 23, // set stack[uint] = stack_top_value
-        setr = 24, // set stack[stack_back_pos() - uint] = stack_top_value
-        fpset = 25, fnset = 26, // set stack[fp +- uint] = stack_top_value
+        pushs = 23, // push static on stack: statics_[uint] -> on stack
+        set = 24, // set stack[uint] = stack_top_value
+        setr = 25, // set stack[stack_back_pos() - uint] = stack_top_value
+        fpset = 26, fnset = 27, // set stack[fp +- uint] = stack_top_value
         pop, popn, // pop COUNT:uint, pop0 === pop 1
         collapse, // pop COUNT before the back
         // frame data pointer
@@ -63,6 +65,7 @@ public:
     };
 
 protected:
+    std::vector<var_t> statics_;
     stack_type stack_;
     
     std::vector<uint8_t> code_;
@@ -122,8 +125,8 @@ public:
         code_.insert(code_.begin() + first_begin, tmp.begin(), tmp.end());
     }
 
-    stack_type& stack() { return stack_; }
-
+    auto& statics() { return statics_; }
+    auto& stack() { return stack_; }
     auto& efns() const { return efns_; }
 
     void set_efn(size_t idx, ext_function_t pfn, small_string descr = {})
@@ -249,6 +252,12 @@ public:
         append_uint(num);
     }
 
+    void append_pushs(size_t num)
+    {
+        code_.push_back(static_cast<uint8_t>(op::pushs));
+        append_uint(num);
+    }
+
     void append_pushr(size_t offset)
     {
         code_.push_back(static_cast<uint8_t>(op::pushr));
@@ -347,6 +356,15 @@ public:
             code_.push_back(static_cast<uint8_t>(op::fnset));
             append_uint(static_cast<size_t>(-fpos));
         }
+    }
+
+    template <typename T>
+    requires (std::is_convertible_v<std::remove_cvref_t<T>, var_t>)
+    size_t append_static(T&& value)
+    {
+        size_t pos = statics_.size();
+        statics_.emplace_back(std::forward<T>(value));
+        return pos;
     }
 
     template <typename T>
@@ -604,6 +622,10 @@ struct printer
         generic_print(address, "fnpushi"sv) << ' ' << std::dec << index << "->[" << ctx.stack_size() << "] \n"sv;
     }
 
+    inline void operator()(identity_type<op::pushs>, ContextT& ctx, size_t address, size_t index) const
+    {
+        generic_print(address, "pushs"sv) << " S["sv << std::dec << index << "]->["sv << ctx.stack_size() << "] ("sv << ctx.static_at(index) << ")\n"sv;
+    }
 
     inline void operator()(identity_type<op::set>, ContextT& ctx, size_t address, size_t index) const
     {
@@ -721,6 +743,12 @@ struct runner
     inline void operator()(identity_type<op::push>, ContextT& ctx, size_t address, size_t index) const
     {
         var_t val = ctx.stack_at(index);
+        ctx.stack_push(std::move(val));
+    }
+
+    inline void operator()(identity_type<op::pushs>, ContextT& ctx, size_t address, size_t index) const
+    {
+        var_t val = ctx.static_at(index);
         ctx.stack_push(std::move(val));
     }
 
@@ -1007,6 +1035,13 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
                 size_t start_address = address++;
                 size_t offset = read_uint(address);
                 ftor(identity<op::fnpushi>, ctx, start_address, offset);
+                continue;
+            }
+        case op::pushs:
+            {
+                size_t start_address = address++;
+                size_t index = read_uint(address);
+                ftor(identity<op::pushs>, ctx, start_address, index);
                 continue;
             }
         case op::set:

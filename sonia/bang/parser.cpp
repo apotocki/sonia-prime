@@ -83,9 +83,10 @@ annotated_identifier parser_context::make_identifier(annotated_string_view astr)
 //    return identifier{ env_.iregistry().resolve(str).value, true};
 //}
 
-annotated_u32string parser_context::make_string(annotated_string_view str)
+annotated_string parser_context::make_string(annotated_string_view str)
 {
-    return {utf8_to_utf32(str.value), str.location};
+    //return {utf8_to_utf32(str.value), str.location};
+    return { small_string{str.value.data(), str.value.size()}, str.location };
 }
 
 //integer_literal parser_context::make_integer_literal(string_view str)
@@ -127,15 +128,20 @@ void parser_context::append_error(std::string errmsg)
     error_messages_.push_back(std::move(errmsg));
 }
 
-void parser_context::parse(fs::path const& f)
+std::expected<declaration_set_t, std::string> parser_context::parse(fs::path const& f)
 {
-    auto code = unit_.get_file_content(f, resource_stack_.empty() ? nullptr : &resource_stack_.back());
+    std::vector<char> code;
+    try {
+        code = unit_.get_file_content(f, resource_stack_.empty() ? nullptr : &resource_stack_.back());
+    } catch (std::exception const& e) {
+        return std::unexpected(e.what());
+    }
     resource_stack_.emplace_back(f);
-    SCOPE_EXIT([this]{ resource_stack_.pop_back(); });
-    parse(string_view { code.data(), code.size() });
+    SCOPE_EXCEPTIONAL_EXIT([this]{ resource_stack_.pop_back(); }); // just in case
+    return parse(string_view { code.data(), code.size() });
 }
 
-void parser_context::parse(string_view code)
+std::expected<declaration_set_t, std::string> parser_context::parse(string_view code)
 {
     auto sc_data = std::make_unique<lex::scanner_data>();
 
@@ -177,8 +183,9 @@ void parser_context::parse(string_view code)
             if (&err != &error_messages_.front()) ss << "\n";
             ss << err;
         }
-        throw exception(ss.str());
+        return std::unexpected(ss.str());
     }
+    return std::move(declarations_);
 }
 
 }

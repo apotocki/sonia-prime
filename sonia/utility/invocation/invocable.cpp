@@ -13,20 +13,22 @@ bool invocable::has_method(string_view methodname) const
     return !!sonia::services::get_multimethod({ get_type_index(), methodname });
 }
 
-smart_blob invocable::invoke(string_view methodname, span<const blob_result> args)
+smart_blob invocable::invoke(string_view methodname, span<const blob_result> args) noexcept
 {
     smart_blob result;
     if (!try_invoke(methodname, args, result)) {
-        throw exception("method %1% of %2% is not registered"_fmt % methodname % get_type_index().name());
+        auto errstr = ("invocable error: method '%1%' of %2% is not registered"_fmt % methodname % get_type_index().name()).str();
+        result = error_blob_result(errstr);
+        result.allocate();
     }
     return result;
 }
 
-bool invocable::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result)
+bool invocable::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept
 {
     method const* pm = static_cast<method const*>(sonia::services::get_multimethod({ get_type_index(), methodname }));
     if (!pm) return false;
-    result = (*pm)(*this, args);
+    result = (*pm)(*this, args); // noexcept
     return true;
 }
 
@@ -34,7 +36,7 @@ smart_blob invocable::get_property(string_view propname) const
 {
     smart_blob result;
     if (!try_get_property(propname, result)) {
-        throw exception("property %1% of %2% is not registered"_fmt % propname % get_type_index().name());
+        throw exception("property '%1%' of %2% is not registered"_fmt % propname % get_type_index().name());
     }
     return result;
 }
@@ -50,7 +52,7 @@ bool invocable::try_get_property(string_view propname, smart_blob & result) cons
 void invocable::set_property(string_view propname, blob_result const& val)
 {
     if (!try_set_property(propname, val)) {
-        throw exception("property %1% of %2% is not registered"_fmt % propname % get_type_index().name());
+        throw exception("property '%1%' of %2% is not registered"_fmt % propname % get_type_index().name());
     }
 }
 

@@ -22,35 +22,35 @@ public:
 
     inline void operator()(null_t const&) const
     {
-        bvm().push_on_stack_and_push(smart_blob{});
+        bvm().append_push_static_const(smart_blob{});
     }
 
     void operator()(bool bval) const
     {
-        bvm().push_on_stack_and_push(smart_blob{ bool_blob_result(bval) });
+        bvm().append_push_static_const(smart_blob{ bool_blob_result(bval) });
     }
 
-    void operator()(small_u32string const& sval) const
+    void operator()(small_string const& sval) const
     {
-        namespace cvt = boost::conversion;
-        boost::container::small_vector<char, 32> result;
-        result.reserve(sval.size());
-        (cvt::cvt_push_iterator(cvt::utf32 | cvt::utf8, std::back_inserter(result)) << sval).flush();
-        smart_blob strbr{ string_blob_result(span{result}) };
+        //namespace cvt = boost::conversion;
+        //boost::container::small_vector<char, 32> result;
+        //result.reserve(sval.size());
+        //(cvt::cvt_push_iterator(cvt::utf32 | cvt::utf8, std::back_inserter(result)) << sval).flush();
+        smart_blob strbr{ string_blob_result(sval) };
         strbr.allocate();
-        bvm().push_on_stack_and_push(std::move(strbr));
+        bvm().append_push_static_const(std::move(strbr));
     }
 
     void operator()(decimal const& dval) const
     {
         if (dval.raw_exp() >= 0) { // is integral
             if (dval >= (std::numeric_limits<int64_t>::min)() && dval <= (std::numeric_limits<int64_t>::max)()) {
-                bvm().push_on_stack_and_push(smart_blob{ i64_blob_result((int64_t)dval) });
+                bvm().append_push_static_const(smart_blob{ i64_blob_result((int64_t)dval) });
             } else if (dval >= 0 && dval <= (std::numeric_limits<uint64_t>::max)()) {
-                bvm().push_on_stack_and_push(smart_blob{ ui64_blob_result((uint64_t)dval) });
+                bvm().append_push_static_const(smart_blob{ ui64_blob_result((uint64_t)dval) });
             }
         } else {
-            bvm().push_on_stack_and_push(smart_blob{ f64_blob_result((double_t)dval) });
+            bvm().append_push_static_const(smart_blob{ f64_blob_result((double_t)dval) });
         }
     }
 
@@ -59,15 +59,15 @@ public:
         if (auto eptr = unit_.eregistry().find(dval.mangled_name); eptr) {
             if (auto fe = dynamic_pointer_cast<lang::bang::function_entity>(eptr); fe) {
                 if (!fe->is_defined()) {
-                    size_t pos = bvm().push_on_stack(smart_blob{}); // just reserve
-                    fe->set_variable_index(pos);
+                    size_t pos = bvm().append_static(smart_blob{}); // just reserve
+                    fe->set_static_variable_index(pos);
                 }
-                if (fe->is_variable_index()) {
-                    bvm().append_push(fe->get_address());
-                    bvm().push_on_stack_and_push(bool_blob_result(true));
+                if (fe->is_static_variable_index()) {
+                    bvm().append_pushs(fe->get_address());
+                    bvm().append_push_static_const(bool_blob_result(true));
                 } else {
-                    bvm().push_on_stack_and_push(ui64_blob_result(fe->get_address()));
-                    bvm().push_on_stack_and_push(bool_blob_result(false));
+                    bvm().append_push_static_const(ui64_blob_result(fe->get_address()));
+                    bvm().append_push_static_const(bool_blob_result(false));
                 }
                 
                 if (!fe->captured_variables.empty()) {
@@ -78,21 +78,21 @@ public:
                     }
                     if (fe->captured_variables.size() > 1) {
                         //size_t idx = bvm().push_on_stack(ui64_blob_result(fe->captured_variables.size()));
-                        bvm().push_on_stack_and_push(ui64_blob_result(fe->captured_variables.size()));
+                        bvm().append_push_static_const(ui64_blob_result(fe->captured_variables.size()));
                         bvm().append_ecall(virtual_stack_machine::builtin_fn::arrayify);
 
                         //bvm().push_on_stack_and_push(ui64_blob_result(fe->captured_variables.size()));
                         //bvm().append_builtin(sonia::lang::bang::builtin_type::arrayify);
                     }
                 } else {
-                    bvm().push_on_stack_and_push(nil_blob_result());
+                    bvm().append_push_static_const(nil_blob_result());
                 }
                 
                 auto nmstr = unit_.print(dval.mangled_name);
                 smart_blob strbr{ string_blob_result(nmstr) };
                 strbr.allocate();
-                bvm().push_on_stack_and_push(std::move(strbr));
-                bvm().push_on_stack_and_push(i64_blob_result((fe->signature().parameters_count() + 1) * (fe->is_void() ? -1 : 1)));
+                bvm().append_push_static_const(std::move(strbr));
+                bvm().append_push_static_const(i64_blob_result((fe->signature().parameters_count() + 1) * (fe->is_void() ? -1 : 1)));
                 bvm().append_ecall(virtual_stack_machine::builtin_fn::function_constructor);
                 
                 //return bvm_.push_on_stack(smart_blob{ object_blob_result<function_invoker>(fe.get()) });

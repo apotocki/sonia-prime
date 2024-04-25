@@ -85,7 +85,7 @@ public:
 
     // invocable
     bool has_method(string_view methodname) const override;
-    bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) override;
+    bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept override;
     bool try_get_property(string_view propname, smart_blob& result) const override;
     bool try_set_property(string_view propname, blob_result const& val) override;
     // properties

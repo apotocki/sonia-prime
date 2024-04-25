@@ -45,7 +45,7 @@ expression_visitor::result_type expression_visitor::operator()(annotated_decimal
     return apply_cast(bang_decimal_t{}, d);
 }
 
-expression_visitor::result_type expression_visitor::operator()(annotated_u32string const& s) const
+expression_visitor::result_type expression_visitor::operator()(annotated_string const& s) const
 {
     ctx.append_expression(semantic::push_value{ s.value });
     return apply_cast(bang_string_t{}, s);

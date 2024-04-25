@@ -30,7 +30,7 @@ public:
     virtual std::type_index get_type_index() const { return typeid(*this); }
 
     virtual bool has_method(string_view methodname) const;
-    virtual bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result);
+    virtual bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept;
     virtual bool try_get_property(string_view propname, smart_blob& result) const;
     virtual bool try_set_property(string_view propname, blob_result const& val);
 
@@ -39,14 +39,14 @@ public:
     virtual shared_ptr<invocable> self_as_invocable_shared() { return {}; }
 
     // method routine
-    inline bool try_invoke(string_view methodname, span<const blob_result> args)
+    inline bool try_invoke(string_view methodname, span<const blob_result> args) noexcept
     {
         smart_blob result;
         return try_invoke(methodname, args, result);
     }
 
-    smart_blob invoke(string_view methodname, span<const blob_result> args);
-    inline smart_blob invoke(string_view name, std::initializer_list<const blob_result> args)
+    smart_blob invoke(string_view methodname, span<const blob_result> args) noexcept;
+    inline smart_blob invoke(string_view name, std::initializer_list<const blob_result> args) noexcept
     {
         return invoke(name, span{args});
     }
@@ -59,8 +59,8 @@ public:
 
 struct method : multimethod
 {
-    virtual smart_blob operator()(invocable &, span<const blob_result> args) const = 0;
-    virtual smart_blob operator()(invocable const&, span<const blob_result> args) const = 0;
+    virtual smart_blob operator()(invocable &, span<const blob_result> args) const noexcept = 0;
+    virtual smart_blob operator()(invocable const&, span<const blob_result> args) const noexcept = 0;
 };
 
 struct fn_property_reader : multimethod
@@ -84,38 +84,42 @@ struct concrete_method : method
     using invocable_t = remove_reference_t<typename boost::mpl::at_c<args_type, 0>::type>;
 
     template <typename InvokableT, size_t ... Is>
-    smart_blob do_job(std::index_sequence<Is...>, InvokableT& self, span<const blob_result> args) const
+    smart_blob do_job(std::index_sequence<Is...>, InvokableT& self, span<const blob_result> args) const noexcept
     {
+        smart_blob result;
         invocable_t* pinv = dynamic_cast<invocable_t*>(std::addressof(self));
         if (!pinv) {
-            THROW_INTERNAL_ERROR("while method invoking can not cast from %1% to %2%"_fmt % typeid(self).name() % typeid(invocable_t).name());
+            auto errstr = ("invocable method error: can not cast from %1% to %2%"_fmt % typeid(self).name() % typeid(invocable_t).name()).str();
+            result = error_blob_result(errstr);
+            result.allocate();
+        } else try {
+            std::tuple<invocable_t&, typename boost::mpl::at_c<pure_args_type, Is>::type ...> argstpl{
+                *pinv, from_blob_at<typename boost::mpl::at_c<pure_args_type, Is>::type>(Is, args) ...};
+            if constexpr (is_void_v<result_type>) {
+                std::apply(FuncV, std::move(argstpl));
+            } else if constexpr (is_same_v<result_type, smart_blob>) {
+                result = std::apply(FuncV, std::move(argstpl));
+            } else {
+                result = particular_blob_result(std::apply(FuncV, std::move(argstpl)));
+            }
+        } catch (std::exception const& e) {
+            result = error_blob_result(string_view{e.what()});
+            result.allocate();
         }
-        std::tuple<invocable_t&, typename boost::mpl::at_c<pure_args_type, Is>::type ...> argstpl{
-            *pinv, from_blob_at<typename boost::mpl::at_c<pure_args_type, Is>::type>(Is, args) ...};
-        if constexpr (is_void_v<result_type>) {
-            std::apply(FuncV, std::move(argstpl));
-            return smart_blob{};
-        } else if constexpr (is_same_v<result_type, smart_blob>) {
-            return std::apply(FuncV, std::move(argstpl));
-        } else {
-            //blob_result br = particular_blob_result(std::apply(FuncV, std::move(argstpl)), self.get_blob_manager());
-            //GLOBAL_LOG_INFO() << "do_job returns: " << br;
-            //return br;
-            return smart_blob { particular_blob_result(std::apply(FuncV, std::move(argstpl))) };
-        }
+        return result;
     }
 
-    smart_blob operator()(invocable & self, span<const blob_result> args) const override
+    smart_blob operator()(invocable & self, span<const blob_result> args) const noexcept override
     {
         return do_job(std::make_index_sequence<boost::mpl::size<pure_args_type>::type::value>{}, self, args);
     }
 
-    smart_blob operator()(invocable const& self, span<const blob_result> args) const override
+    smart_blob operator()(invocable const& self, span<const blob_result> args) const noexcept override
     {
         if constexpr (std::is_const_v<invocable_t>) {
             return do_job(std::make_index_sequence<boost::mpl::size<pure_args_type>::type::value>{}, self, args);
         } else {
-            THROW_INTERNAL_ERROR("a mutable object is expected");
+            return error_blob_result("invocable method internal error: a mutable object is expected");
         }
     }
 

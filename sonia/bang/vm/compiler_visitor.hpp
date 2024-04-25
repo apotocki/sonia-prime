@@ -76,7 +76,7 @@ public:
                         apply_visitor(*this, e);
                     }
                 } else {
-                    bvm().push_on_stack_and_push(i64_blob_result((fe->signature().parameters_count() + 1) * (fe->is_void() ? -1 : 1)));
+                    bvm().append_push_static_const(i64_blob_result((fe->signature().parameters_count() + 1) * (fe->is_void() ? -1 : 1)));
                     bvm().append_fpush(fe->index());
                     bvm().append_callp();
                 }

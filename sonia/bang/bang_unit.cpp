@@ -15,13 +15,15 @@ namespace sonia::lang::bang {
 void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
 {
     parser_context parser{ *this };
-    parser.parse((string_view)("extern fn ::%1%;"_fmt % signature).str());
+    auto decls = parser.parse((string_view)("extern fn ::%1%;"_fmt % signature).str());
     
     fn_compiler_context ctx{ *this, qname{} };
-    auto & fndecl = get<fn_pure_decl>(parser.generic_declarations().front());
+    auto & fndecl = get<fn_pure_decl>(decls->front());
 
     declaration_visitor dvis{ ctx };
-    auto & fsig = dvis.append_fnsig(fndecl);
+
+    shared_ptr<functional_entity> fe;
+    auto & fsig = dvis.append_fnsig(fndecl, fe);
 
     qname fnm = fndecl.name() + fsig.mangled_id;
     auto pefe = make_shared<external_function_entity>(fnm, fn_identifier_counter_);
@@ -62,6 +64,10 @@ unit::unit()
     eregistry_.insert(peogp);
     set_efn(builtin_fn::extern_object_get_property, peogp->name());
 
+    auto pefc = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::extern_function_call);
+    eregistry_.insert(pefc);
+    set_efn(builtin_fn::extern_function_call, pefc->name());
+
     auto ptostring = make_shared<external_function_entity>(qname{ new_identifier() }, fn_identifier_counter_);
     eregistry_.insert(ptostring);
     strings_.emplace_back("tostring");
@@ -78,6 +84,14 @@ unit::unit()
     set_extern("concat(string,string)->string"sv, &bang_concat_string);
 }
 
+identifier unit::new_identifier()
+{
+    return identifier_builder_();
+    //auto r = identifier_builder_();
+    //auto rv = r.value;
+    //return r;
+}
+
 void unit::set_efn(size_t idx, qname_view fnq)
 {
     if (builtins_.size() <= idx) {
@@ -90,55 +104,75 @@ std::vector<char> unit::get_file_content(fs::path const& rpath, fs::path const* 
 {
     if (rpath.is_absolute()) {
         if (!fs::exists(rpath) || fs::is_directory(rpath)) {
-            throw exception("can't resolve path: '%1%'"_fmt % rpath);
+            throw exception("can't resolve path: %1%"_fmt % rpath);
         }
         return read_file(rpath);
     }
             
-    auto tested_path = context ? *context / rpath : rpath;
+    auto tested_path = context ? context->parent_path() / rpath : rpath;
     for (auto it = additional_paths_.begin();;) {
         if (fs::exists(tested_path) && fs::is_regular_file(tested_path)) {
             return read_file(tested_path);
         }
         if (it == additional_paths_.end()) {
-            throw exception("can't resolve path: '%1%'"_fmt % rpath);
+            throw exception("can't resolve path: %1%"_fmt % rpath);
         }
         tested_path = (*it++) / rpath;
     }
 }
 
-std::string unit::print(identifier const& id) const
+template <typename OutputIteratorT, typename UndefinedFT>
+OutputIteratorT unit::identifier_printer(identifier const& id, string_view prefix, OutputIteratorT oi, UndefinedFT const& uf) const
 {
-    std::ostringstream ss;
     if (auto const* pstr = slregistry_.resolve(id); pstr) {
-        ss << *pstr;
+        oi = std::copy(pstr->begin(), pstr->end(), std::copy(prefix.begin(), prefix.end(), std::move(oi)));
+    } else if (auto sp = piregistry_.resolve(id); sp) {
+        if (!sp->empty()) {
+            //oi = std::copy(prefix.begin(), prefix.end(), std::move(oi));
+            *oi++ = '<';
+            for (auto const& qn : *sp) {
+                if (&qn != &sp->front()) *oi++ = ',';
+                oi = name_printer(qn, std::move(oi), uf);
+            }
+            *oi++ = '>';
+        }
     } else {
-        ss << "$"sv << id.value;
+        uf(id, prefix, oi);
     }
-    return ss.str();
+    return std::move(oi);
 }
 
-std::string unit::print(qname_view q) const
+template <typename OutputIteratorT, typename UndefinedFT>
+OutputIteratorT unit::name_printer(qname_view const& qn, OutputIteratorT oi, UndefinedFT const& uf) const
 {
-    std::ostringstream ss;
-    for (identifier const& id : q) {
-        if (&q.front() != &id || q.is_absolute()) {
-            ss << "::"sv;
-        }
-        if (auto const* pstr = slregistry_.resolve(id); pstr) {
-            ss << *pstr;
-        } else if (auto sp = piregistry_.resolve(id); sp) {
-            ss << '<';
-            for (auto const& qn : *sp) {
-                if (&qn != &sp->front()) ss << ',';
-                ss << print(qn);
-            }
-            ss << '>';
-        } else {
-            ss << "@"sv << id.value;
-        }
+    for (identifier const& id : qn) {
+        oi = identifier_printer(id, &qn.front() == &id /* && !qn.is_absolute()*/ ? ""sv : "::"sv, std::move(oi), uf);
     }
-    return ss.str();
+    return std::move(oi);
+}
+
+std::string unit::print(identifier const& id) const
+{
+    boost::container::small_vector<char, 32> result;
+    identifier_printer(id, ""sv, std::back_inserter(result), [](identifier const& id, string_view prefix, auto & oi) {
+        std::ostringstream ss;
+        ss << prefix << "@"sv << id.value;
+        auto str = ss.str();
+        oi = std::copy(str.begin(), str.end(), std::move(oi));
+    });
+    return { result.data(), result.data() + result.size() };
+}
+
+std::string unit::print(qname_view qn) const
+{
+    boost::container::small_vector<char, 32> result;
+    name_printer(qn, std::back_inserter(result), [](identifier const& id, string_view prefix, auto & oi) {
+        std::ostringstream ss;
+        ss << prefix << "@"sv << id.value;
+        auto str = ss.str();
+        oi = std::copy(str.begin(), str.end(), std::move(oi));
+    });
+    return { result.data(), result.data() + result.size() };
 }
 
 struct type_printer_visitor : static_visitor<void>
@@ -247,44 +281,60 @@ std::string unit::print(bang_type const& tp) const
     return ss.str();
 }
 
-string_view unit::as_string(identifier const& id) const
+small_string unit::as_string(identifier const& id) const
 {
-    if (auto const* pstr = slregistry_.resolve(id); pstr) {
-        return *pstr;
-    }
-    throw exception("identifier '%1%' has no string representation"_fmt % id.value);
+    boost::container::small_vector<char, 32> result;
+    identifier_printer(id, ""sv, std::back_inserter(result), [](identifier const& id, string_view, auto &) {
+        throw exception("identifier '%1%' has no string representation"_fmt % id.value);
+    });
+    return { result.data(), result.size() };
 }
 
-small_u32string unit::as_u32string(identifier const& id) const
+small_string unit::as_string(qname_view qn) const
 {
-    namespace cvt = boost::conversion;
-    if (auto const* pstr = slregistry_.resolve(id); pstr) {
-        boost::container::small_vector<char32_t, 32> result;
-        (cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << *pstr).flush();
-        return small_u32string{ result.data(), result.size() };
-    }
-    throw exception("identifier '%1%' has no string representation"_fmt % id.value);
+    boost::container::small_vector<char, 32> result;
+    name_printer(qn, std::back_inserter(result), [](identifier const& id, string_view, auto &) {
+        throw exception("identifier '%1%' has no string representation"_fmt % id.value);
+    });
+    return { result.data(), result.size() };
 }
 
-small_u32string unit::as_u32string(qname_view name) const
-{
-    namespace cvt = boost::conversion;
-    boost::container::small_vector<char32_t, 32> result;
-    for (identifier const& id : name) {
-        if (&name.front() != &id || name.is_absolute()) {
-            result.push_back(':');
-            result.push_back(':');
-        }
-        if (auto const* pstr = slregistry_.resolve(id); pstr) {
-            (cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << *pstr).flush();
-        } else {
-            throw exception("identifier '%1%' has no string representation"_fmt % id.value);
-            //result.push_back('$');
-            //(cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << boost::lexical_cast<std::string>(id.value)).flush();
-        }
-    }
-    return small_u32string{ result.data(), result.size() };
-}
+//small_u32string unit::as_u32string(identifier const& id) const
+//{
+//    namespace cvt = boost::conversion;
+//    if (auto const* pstr = slregistry_.resolve(id); pstr) {
+//        boost::container::small_vector<char32_t, 32> result;
+//        (cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << *pstr).flush();
+//        return small_u32string{ result.data(), result.size() };
+//    }
+//    throw exception("identifier '%1%' has no string representation"_fmt % id.value);
+//}
+
+
+
+//small_u32string unit::as_u32string(qname_view name) const
+//{
+//    namespace cvt = boost::conversion;
+//    boost::container::small_vector<char32_t, 32> result;
+//    for (identifier const& id : name) {
+//        if (&name.front() != &id || name.is_absolute()) {
+//            result.push_back(':');
+//            result.push_back(':');
+//        }
+//        if (auto const* pstr = slregistry_.resolve(id); pstr) {
+//            (cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << *pstr).flush();
+//        } else if (auto sp = piregistry_.resolve(id); sp) {
+//
+//
+//        } else {
+//            throw exception("identifier '%1%' has no string representation"_fmt % id.value);
+//            //result.push_back('$');
+//            //(cvt::cvt_push_iterator(cvt::utf8 | cvt::utf32, std::back_inserter(result)) << boost::lexical_cast<std::string>(id.value)).flush();
+//        }
+//    }
+//    return small_u32string{ result.data(), result.size() };
+//}
+
 
 std::vector<char> unit::read_file(fs::path const& rpath)
 {
@@ -317,9 +367,9 @@ struct expr_printer_visitor : static_visitor<void>
         ss << std::boolalpha << bval;
     }
 
-    void operator()(small_u32string const& s) const
+    void operator()(small_string const& s) const
     {
-        ss << '"' << u_.print(s) << '"';
+        ss << '"' << s << '"';
     }
 
     void operator()(decimal const& d) const

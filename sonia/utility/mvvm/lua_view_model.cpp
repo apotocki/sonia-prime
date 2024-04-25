@@ -79,7 +79,7 @@ public:
     }
 };
 
-bool lua_view_model::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result)
+bool lua_view_model::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept
 {
     if (view_model::try_invoke(methodname, args, result)) return true;
     //GLOBAL_LOG_INFO() << "invoking lua: " << methodname;

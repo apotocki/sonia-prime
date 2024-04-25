@@ -7,6 +7,11 @@
 
 namespace sonia {
 
+void bunch_builder_view_model::do_registration(registrar_type& mr)
+{
+    mr.register_method<&bunch_builder_view_model::create>("create"sv);
+}
+
 shared_ptr<invocation::invocable> bunch_builder_view_model::create(string_view type, string_view id)
 {
     auto it = elements_.find(id, hasher{}, string_equal_to{});
@@ -35,9 +40,9 @@ shared_ptr<invocation::invocable> bunch_builder_view_model::try_get_element_by(s
     return it->second;
 }
 
-void bunch_builder_view_model::set_property(string_view propname, blob_result const& value)
-{
-    root_element()->set_property(propname, value);
-}
+//void bunch_builder_view_model::set_property(string_view propname, blob_result const& value)
+//{
+//    root_element()->set_property(propname, value);
+//}
 
 }

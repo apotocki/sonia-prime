@@ -233,6 +233,7 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_bool_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_enum_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_float_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_int_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_object_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_string_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.hpp" />
@@ -257,7 +258,6 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\type_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\variable_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\extern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\library\library.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\location.hh" />
     <ClInclude Include="..\..\..\sonia\bang\parser.hpp" />

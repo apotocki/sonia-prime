@@ -49,7 +49,7 @@ bool view_model::has_method(string_view methodname) const
     return false;
 }
 
-bool view_model::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result)
+bool view_model::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept
 {
     if (invocable::try_invoke(methodname, args, result)) return true;
     shared_ptr<manager> mng = get_manager();

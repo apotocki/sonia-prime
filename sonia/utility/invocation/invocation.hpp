@@ -660,6 +660,7 @@ inline blob_result particular_blob_result(ArgT && value)
     else if constexpr (sonia::is_template_instance_v<sonia::optional, T>) return optional_blob_result(std::forward<ArgT>(value));
     else if constexpr (sonia::is_template_instance_v<std::pair, T>) return pair_blob_result(std::forward<ArgT>(value));
     else if constexpr (sonia::is_template_instance_v<std::tuple, T>) return tuple_blob_result(std::forward<ArgT>(value));
+    else if constexpr (sonia::is_template_instance_v<sonia::shared_ptr, T>) return object_blob_result(std::forward<ArgT>(value));
     else {
         static_assert(sonia::dependent_false<T>);
         return nil_blob_result();
@@ -1194,6 +1195,11 @@ std::tuple<Ts...> from_blobs(std::span<const blob_result> vals)
     return from_blobs<Ts...>(std::make_index_sequence<sizeof ...(Ts)>{}, vals);
 }
 
+inline bool blob_result_equal(std::type_identity<bool>, blob_result const& lhs, blob_result const& rhs)
+{
+    return rhs.type == blob_type::boolean && as<bool>(lhs) == as<bool>(rhs);
+}
+
 template <std::integral T>
 inline bool blob_result_equal(std::type_identity<T>, blob_result const& lhs, blob_result const& rhs)
 {
@@ -1321,6 +1327,13 @@ public:
         return *this;
     }
 
+    void replace(smart_blob&& with) noexcept
+    {
+        blob_result_unpin(this);
+        static_cast<blob_result&>(*this) = static_cast<blob_result&>(with);
+        reset(with);
+    }
+
     inline void swap(smart_blob & rhs) noexcept
     {
         std::swap(static_cast<blob_result&>(*this), static_cast<blob_result&>(rhs));
@@ -1356,6 +1369,7 @@ public:
     inline bool is_nil() const noexcept { return ::is_nil(**this); }
     inline bool is_array() const noexcept { return ::is_array(**this); }
     inline bool is_inplace() const noexcept { return !!inplace_size; }
+    inline bool is_error() const noexcept { return type == blob_type::error; }
 
     inline const void* data() const noexcept
     {

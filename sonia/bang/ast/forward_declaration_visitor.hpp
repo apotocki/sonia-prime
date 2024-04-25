@@ -9,38 +9,27 @@
 namespace sonia::lang::bang {
 
 class type_entity;
+class parser_context;
 
 struct forward_declaration_visitor : static_visitor<void>
 {
     fn_compiler_context& ctx;
+    parser_context& pctx;
+    std::vector<declaration_t> decls;
     std::vector<type_entity*> types;
 
-    explicit forward_declaration_visitor(fn_compiler_context& c) : ctx{ c } {}
+    explicit forward_declaration_visitor(fn_compiler_context& c, lang::bang::parser_context& p) : ctx{ c }, pctx{ p } {}
 
-    /*
-    void operator()(empty_t const&) const {}
+    void operator()(include_decl&);
 
-    void operator()(exten_var const& td) const;
+    void operator()(enum_decl&);
 
-    void operator()(expression_decl const& ed) const;
-
-    void operator()(return_decl const& rd) const;
-
-    void operator()(fn_pure_decl const& ed) const;
-
-    void operator()(fn_decl_t const& ed) const;
-
-    void operator()(let_statement_decl const& ld) const;
-    */
-
-    void operator()(enum_decl const& ed) const;
-
-    void operator()(type_decl & td);
+    void operator()(type_decl&);
 
     template <typename T>
-    void operator()(T const& d) const
+    void operator()(T & d)
     {
-        THROW_NOT_IMPLEMENTED_ERROR();
+        decls.emplace_back(std::move(d));
     }
 };
 

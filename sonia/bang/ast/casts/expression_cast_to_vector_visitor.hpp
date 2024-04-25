@@ -93,7 +93,8 @@ struct expression_cast_to_vector_visitor : static_visitor<std::expected<bang_typ
     template <typename T>
     result_type operator()(T const& v) const
     {
-        THROW_NOT_IMPLEMENTED_ERROR();
+        return std::unexpected(make_error<cast_error>(cl_(), target, v));
+        //THROW_NOT_IMPLEMENTED_ERROR();
     }
 };
 

@@ -11,6 +11,8 @@
 #include "../entities/type_entity.hpp"
 
 #include "sonia/bang/errors.hpp"
+#include "sonia/bang/parser.hpp"
+#include "sonia/utility/scope_exit.hpp"
 
 namespace sonia::lang::bang {
 
@@ -47,7 +49,23 @@ void forward_declaration_visitor::operator()(let_statement_decl const& ld) const
 }
 */
 
-void forward_declaration_visitor::operator()(enum_decl const& ed) const
+void forward_declaration_visitor::operator()(include_decl& d)
+{
+    fs::path fpath{ u8string_view{reinterpret_cast<char8_t const*>(d.path.value.data()), d.path.value.size() } };
+
+    auto exp_decls = pctx.parse(fpath);
+    if (!exp_decls.has_value()) {
+        throw exception{ ctx.u().print(basic_general_error{ d.path.location, exp_decls.error() }) };
+    }
+
+    SCOPE_EXIT([this] { pctx.pop_resource(); });
+
+    for (auto& d : *exp_decls) {
+        apply_visitor(*this, d);
+    }
+}
+
+void forward_declaration_visitor::operator()(enum_decl & ed)
 {
     if (auto pe = ctx.u().eregistry().find(ed.name()); pe) [[unlikely]] {
         throw exception(ctx.u().print(identifier_redefinition_error{ ed.location(), pe->location(), ed.name() }));
@@ -55,7 +73,7 @@ void forward_declaration_visitor::operator()(enum_decl const& ed) const
     auto e = make_shared<enum_entity>(qname{ed.name(), true});
     e->set_location(ed.location());
     for (auto const& c : ed.cases) {
-        e->cases.emplace_back(c, ctx.u().as_u32string(c));
+        e->cases.emplace_back(c, ctx.u().as_string(c));
     }
     std::ranges::sort(e->cases);
     ctx.u().eregistry().insert(std::move(e));

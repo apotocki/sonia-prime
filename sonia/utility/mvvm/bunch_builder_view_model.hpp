@@ -6,15 +6,20 @@
 
 #include <boost/unordered_map.hpp>
 
-#include "builder_view_model.hpp"
+#include "bang_view_model.hpp"
+//#include "builder_view_model.hpp"
 #include "sonia/utility/invocation/invocable.hpp"
 
 namespace sonia {
 
 class bunch_builder_view_model 
-    : public builder_view_model
-    , public lang::bang::external_environment
+    : public bang_view_model
+    , public invocation::registrar<bunch_builder_view_model, bang_view_model>
 {
+    using base_t = invocation::registrar<bunch_builder_view_model, bang_view_model>;
+    using registrar_type = base_t::registrar_type;
+    friend class base_t;
+
 public:
     class factory
     {
@@ -25,8 +30,8 @@ public:
 
     explicit bunch_builder_view_model(factory& f) : factory_{ f } {}
 
-    shared_ptr<invocation::invocable> create(string_view type, string_view id) override;
-    void set_property(string_view propname, blob_result const& value) override;
+    shared_ptr<invocation::invocable> create(string_view type, string_view id);
+    //void set_property(string_view propname, blob_result const& value) override;
     
     virtual shared_ptr<invocation::invocable> root_element() const = 0;
 
@@ -34,6 +39,9 @@ public:
     shared_ptr<invocation::invocable> try_get_element_by(string_view id) const noexcept;
 
 protected:
+    // methods routine
+    static void do_registration(registrar_type& mr);
+
     boost::unordered_map<std::string, shared_ptr<invocation::invocable>, hasher> elements_;
     factory& factory_;
 };

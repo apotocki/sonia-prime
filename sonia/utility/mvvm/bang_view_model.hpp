@@ -29,29 +29,4 @@ protected:
     static void do_registration(registrar_type& mr);
 };
 
-//class bang_canvas_view_model
-//    : public bang_view_model
-//    , public enable_shared_from_this<bang_canvas_view_model>
-//    , public invocation::registrar<bang_canvas_view_model, bang_view_model>
-//{
-//public:
-//    explicit bang_canvas_view_model(int32_t idval, shared_ptr<manager> mng = {})
-//        : bang_view_model{ idval }, mng_{ std::move(mng) }
-//    {}
-//
-//    shared_ptr<manager> get_manager() const override final { return mng_.lock(); }
-//    void set(shared_ptr<manager> mng) override final { mng_ = mng; }
-//
-//    shared_ptr<view_model> self_as_content_view_shared() override final { return shared_from_this(); }
-//
-//    template <typename RT>
-//    static void do_registration(RT& mr)
-//    {
-//        mr.inherit(typeid(bang_view_model));
-//    }
-//
-//private:
-//    weak_ptr<manager> mng_;
-//};
-
 }

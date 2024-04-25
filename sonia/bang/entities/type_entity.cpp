@@ -79,10 +79,10 @@ std::expected<bang_type, error_storage> type_entity::find(fn_compiler_context& c
         }
         expression_visitor evis{ ctx, expected_result_t{ std::get<1>(*it), std::get<0>(*it).location } };
         if (auto rtype = apply_visitor(evis, std::get<1>(narg)); !rtype.has_value()) return rtype;
-        ctx.append_expression(semantic::push_value{ ctx.u().as_u32string(argname.value) });
+        ctx.append_expression(semantic::push_value{ ctx.u().as_string(argname.value) });
     }
     ctx.append_expression(semantic::push_value{ decimal{ call.named_args.size() } });
-    ctx.append_expression(semantic::push_value{ ctx.u().as_u32string(name()) });
+    ctx.append_expression(semantic::push_value{ ctx.u().as_string(name()) });
     ctx.append_expression(semantic::invoke_function{ name_ });
     estate.detach();
     return bang_object_t{ this };
@@ -98,7 +98,7 @@ std::expected<bang_type, error_storage> type_entity::find(fn_compiler_context& c
             
         }
         for (identifier argid : ids) {
-            fn->body.emplace_back(semantic::push_value{ ctx.u().as_u32string() });
+            fn->body.emplace_back(semantic::push_value{ ctx.u().as_string() });
         }
 
         ctx.u().put_function(fn);
@@ -135,7 +135,7 @@ std::expected<function_entity const*, error_storage> type_entity::find_field_get
     fn_getter_sig.build_mangled_id(ctx.u());
     auto fnent = sonia::make_shared<function_entity>(fnname, std::move(fn_getter_sig));
     fnent->set_inline();
-    fnent->body.emplace_back(semantic::push_value{ ctx.u().as_u32string(f.value) });
+    fnent->body.emplace_back(semantic::push_value{ ctx.u().as_string(f.value) });
     fnent->body.emplace_back(ctx.u().get_builtin_function(unit::builtin_fn::extern_object_get_property));
     ctx.u().eregistry().insert(fnent);
     return fnent.get();
@@ -163,7 +163,7 @@ std::expected<function_entity const*, error_storage> type_entity::find_field_set
     fn_setter_sig.build_mangled_id(ctx.u());
     auto fnent = sonia::make_shared<function_entity>(fnname, std::move(fn_setter_sig));
     fnent->set_inline();
-    fnent->body.emplace_back(semantic::push_value{ ctx.u().as_u32string(f.value) });
+    fnent->body.emplace_back(semantic::push_value{ ctx.u().as_string(f.value) });
     fnent->body.emplace_back(ctx.u().get_builtin_function(unit::builtin_fn::extern_object_set_property));
     fnent->body.emplace_back(semantic::truncate_values(1, true)); // remove object reference, preserve value
     ctx.u().eregistry().insert(fnent);

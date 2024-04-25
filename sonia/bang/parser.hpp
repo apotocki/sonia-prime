@@ -5,6 +5,7 @@
 #pragma once
 
 #include <vector>
+#include <expected>
 
 #include "sonia/variant.hpp"
 #include "sonia/type_traits.hpp"
@@ -34,13 +35,11 @@ public:
 
     identifier new_identifier();
     annotated_identifier make_identifier(annotated_string_view);
-    annotated_u32string make_string(annotated_string_view);
+    annotated_string make_string(annotated_string_view);
     int make_int(string_view);
     decimal make_numeric(string_view);
 
     //identifier make_required_identifier(string_view);
-
-    
     //small_u32string make_string(string_view);
 
     void set_declarations(declaration_set_t);
@@ -54,11 +53,10 @@ public:
         return small_string{ reinterpret_cast<char const*>(u8str.data()), u8str.size() };
     }
 
-    void parse(fs::path const& f);
-    void parse(string_view code);
+    void pop_resource() { resource_stack_.pop_back(); }
 
-    span<declaration_t> generic_declarations() { return declarations_.generic; }
-    span<type_declaration_t> type_declarations() { return declarations_.types; }
+    std::expected<declaration_set_t, std::string> parse(fs::path const& f);
+    std::expected<declaration_set_t, std::string> parse(string_view code);
 
 private:
     unit& unit_;
@@ -68,6 +66,7 @@ private:
     boost::container::small_vector<qname, 8> ns_stack_;
 
     std::vector<std::string> error_messages_;
+    
     declaration_set_t declarations_;
 };
 

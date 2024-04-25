@@ -7,7 +7,9 @@
 #include "sonia/filesystem.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/span.hpp"
-#include "extern.hpp"
+#include "sonia/utility/invocation/invocable.hpp"
+
+//#include "extern.hpp"
 
 namespace sonia::lang::bang {
 
@@ -22,7 +24,7 @@ public:
     void build(fs::path const&);
     void build(string_view code);
 
-    void run(external_environment*, span<string_view> args = {});
+    void run(invocation::invocable*, span<string_view> args = {});
 
 private:
     shared_ptr<detail::bang_impl> impl_;

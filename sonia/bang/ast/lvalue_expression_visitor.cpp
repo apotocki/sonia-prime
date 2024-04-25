@@ -59,7 +59,7 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(ann
     return std::unexpected(make_error<wrong_lvalue_error>(ad));
 }
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_u32string const& as) const
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_string const& as) const
 {
     return std::unexpected(make_error<wrong_lvalue_error>(as));
 }

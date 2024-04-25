@@ -12,6 +12,7 @@
 #include "../semantic.hpp"
 //#include "expression_visitor.hpp"
 #include "casts/expression_cast_to_bool_visitor.hpp"
+#include "casts/expression_cast_to_int_visitor.hpp"
 #include "casts/expression_cast_to_float_visitor.hpp"
 
 #include "casts/expression_cast_to_array_visitor.hpp"
@@ -73,6 +74,11 @@ struct expression_implicit_cast_visitor : static_visitor<std::expected<bang_type
     inline result_type operator()(bang_string_t const& v) const { return nullopt; }
     inline result_type operator()(bang_object_t const& v) const { return nullopt; }
     */
+
+    inline result_type operator()(bang_int_t const&) const
+    {
+        return apply_visitor(expression_cast_to_int_visitor{ ctx, cl_ }, type2cast);
+    }
 
     inline result_type operator()(bang_float_t const&) const
     {

@@ -2058,9 +2058,6 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_vector_visitor.hpp">
       <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\extern.hpp">
-      <Filter>sonia.bang</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_type_visitor.hpp">
       <Filter>sonia.bang\ast</Filter>
     </ClInclude>
@@ -2138,6 +2135,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\invocation\functor_object.hpp">
       <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_int_visitor.hpp">
+      <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

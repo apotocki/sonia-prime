@@ -42,13 +42,13 @@ public:
     std::vector<semantic::expression_type> body;
 
     bool is_defined() const { return !!is_defined_; }
-    bool is_variable_index() const { return !!is_variable_index_; }
+    bool is_static_variable_index() const { return !!is_static_variable_index_; }
     bool is_inline() const { return !!is_inline_; }
     bool is_void() const { return signature_.fn_type.result == bang_tuple_t{}; }
     size_t get_address() const { return address_; }
-    void set_inline(bool val = true) { is_inline_ = val ? 1 : 0; is_defined_ = 1; }
-    void set_variable_index(size_t index) { address_ = static_cast<uint64_t>(index); is_variable_index_ = 1; is_defined_ = 1; }
-    void set_address(size_t address) { address_ = static_cast<uint64_t>(address); is_variable_index_ = 0; is_defined_ = 1; }
+    void set_inline(bool val = true) { is_inline_ = val ? 1 : 0; }
+    void set_static_variable_index(size_t index) { address_ = static_cast<uint64_t>(index); is_static_variable_index_ = 1; is_defined_ = 1; }
+    void set_address(size_t address) { address_ = static_cast<uint64_t>(address); is_static_variable_index_ = 0; is_defined_ = 1; }
 
     void materialize_call(fn_compiler_context&, pure_call_t & call) const;
 
@@ -57,7 +57,7 @@ private:
     
     uint64_t address_ : 60;
     uint64_t is_defined_ : 1;
-    uint64_t is_variable_index_ : 1;
+    uint64_t is_static_variable_index_ : 1;
     uint64_t is_inline_ : 1;
 };
 

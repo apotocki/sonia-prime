@@ -24,6 +24,7 @@ void bang_view_model::load_file(string_view pathstr)
 {
     fs::path path{ u8string_view{reinterpret_cast<char8_t const*>(pathstr.data()), pathstr.size()} };
     build(path);
+    run(this, {});
 }
 
 }

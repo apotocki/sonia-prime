@@ -115,9 +115,9 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 %token LET
 %token VAR
+%token RETURN
+%token EXTERN
 
-
-%token NEW
 %token FOR
 %token VOID_
 %token AUTO
@@ -126,11 +126,6 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token THROW
 %token DELETE_
 %token SIZEOF
-%token RETURN
-%token EXTERN
-%token PRIVATE
-%token TEMPLATE
-%token NAMESPACE
 
 
 // 16 priority
@@ -209,8 +204,9 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %left DBLCOLON             "`::`"
 
 // DECLARATIONS
+%token INCLUDE
 %type <declaration_set_t> declaration_any
-%type <declaration_t> generic-decl
+%type <generic_declaration_t> generic-decl
 %type <let_statement_decl_t> let-decl-start let-decl-start-with-opt-type let-decl
 
 %type <std::vector<infunction_declaration_t>> infunction_declaration_any
@@ -252,7 +248,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 //%type<bang_preliminary_tuple_t> opt-type-list
 
 // STATEMENTS
-//%type <declaration_t> 
+
 
 // EXPRESSIONS
 %token <sonia::lang::lex::resource_location> TRUE "true"
@@ -272,8 +268,6 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 //%type <function_def> function-def
 
 
-
-//%type <declaration_t> function-decl using-decl
 
 ////%type <type_expression_t> type-expr 
 ////%type <type_expression_list_t> opt-type-expr-list type-expr-list-not-empty
@@ -298,14 +292,10 @@ declaration_any:
         { $$ = {}; }
     | declaration_any END_STATEMENT
         { $$ = std::move($1); }
-    | declaration_any enum-decl
-        { $$ = std::move($1); $$.types.emplace_back(std::move($2)); }
-    | declaration_any type-decl
-        { $$ = std::move($1); $$.types.emplace_back(std::move($2)); }
 	| declaration_any generic-decl
         {
 	        $$ = std::move($1);
-            $$.generic.emplace_back(std::move($2));
+            $$.emplace_back(std::move($2));
         }
 /*
     |
@@ -328,6 +318,12 @@ generic-decl:
         { $$ = fn_pure_decl{ std::move($3), std::move($5), bang_preliminary_tuple_t{} }; IGNORE($2, $4); }
     | EXTERN FN qname OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS ARROW type-expr END_STATEMENT
         { $$ = fn_pure_decl{ std::move($3), std::move($5), std::move($8) }; IGNORE($2, $4); }
+    | INCLUDE STRING
+        { $$ = include_decl{ctx.make_string(std::move($2)) }; }
+    | enum-decl
+        { $$ = std::move($1); }
+    | type-decl
+        { $$ = std::move($1); }
     | fn-decl
         { $$ = std::move($1); }
     | let-decl

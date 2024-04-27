@@ -19,12 +19,12 @@ namespace sonia::lang {
 template <typename EntityT, typename MutexT = dummy_mutex_t>
 class entity_registry
 {
-    using identifier_type = typename EntityT::identifier_type;
-    using qname_t = qname<identifier_type>;
-    using qname_view_t = qname_view<identifier_type>;
+    using qname_identifier_type = typename EntityT::identifier_type;
+    //using qname_t = qname<identifier_type>;
+    //using qname_view_t = qname_view<identifier_type>;
 
 public:
-    shared_ptr<EntityT> find(qname_view_t) noexcept;
+    shared_ptr<EntityT> find(qname_identifier_type) noexcept;
     void insert(shared_ptr<EntityT>);
     //StringT const* resolve(IdentifierT) const noexcept;
 
@@ -41,14 +41,14 @@ private:
     struct entity_wrapper
     {
         shared_ptr<EntityT> value;
-        qname_view_t name() const { return value->name(); }
+        qname_identifier_type name() const { return value->name(); }
     };
 
     using set_t = boost::multi_index::multi_index_container<
         entity_wrapper,
         boost::multi_index::indexed_by<
             boost::multi_index::ordered_unique<
-                boost::multi_index::const_mem_fun<entity_wrapper, qname_view_t, &entity_wrapper::name>
+                boost::multi_index::const_mem_fun<entity_wrapper, qname_identifier_type, &entity_wrapper::name>
             >
         >
     >;
@@ -58,7 +58,7 @@ private:
 };
 
 template <typename EntityT,typename MutexT>
-shared_ptr<EntityT> entity_registry<EntityT, MutexT>::find(qname_view_t name) noexcept
+shared_ptr<EntityT> entity_registry<EntityT, MutexT>::find(qname_identifier_type name) noexcept
 {
     assert(name.is_absolute());
     lock_guard guard(set_mtx_);

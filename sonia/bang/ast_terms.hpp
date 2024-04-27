@@ -40,6 +40,7 @@ struct annotated
 using annotated_string_view = annotated<string_view>;
 using annotated_identifier = annotated<identifier>;
 using annotated_qname = annotated<qname>;
+using annotated_qname_identifier = annotated<qname_identifier>;
 using annotated_bool = annotated<bool>;
 using annotated_decimal = annotated<decimal>;
 using annotated_string = annotated<small_string>;
@@ -250,7 +251,7 @@ struct concat_expression : binary_expression<binary_operator_type::CONCAT, ExprT
 template <typename ExprT>
 struct named_expression_term
 {
-    variant<std::tuple<annotated_identifier, ExprT>, ExprT> term;
+    variant<std::tuple<annotated_qname, ExprT>, ExprT> term;
     lex::resource_location eloc; // start of expression
 };
 
@@ -268,7 +269,7 @@ template <typename ExprT>
 struct pure_call
 {
     boost::container::small_vector<std::tuple<ExprT, lex::resource_location>, 4> positioned_args;
-    boost::container::small_vector<std::tuple<annotated_identifier, ExprT, lex::resource_location>, 8> named_args;
+    boost::container::small_vector<std::tuple<annotated_qname, ExprT, lex::resource_location>, 8> named_args;
     lex::resource_location location_;
 
     pure_call(lex::resource_location && loc, named_expression_term_list<ExprT> && args)
@@ -277,7 +278,7 @@ struct pure_call
         for (named_expression_term<ExprT> & narg : args) {
             if (auto const* pure_expr = get<ExprT>(&narg.term); pure_expr) {
                 positioned_args.emplace_back(std::move(*pure_expr), std::move(narg.eloc));
-            } else if (auto const* named_expr = get<std::tuple<annotated_identifier, ExprT>>(&narg.term); named_expr) {
+            } else if (auto const* named_expr = get<std::tuple<annotated_qname, ExprT>>(&narg.term); named_expr) {
                 named_args.emplace_back(std::move(std::get<0>(*named_expr)), std::move(std::get<1>(*named_expr)), std::move(narg.eloc));
             } else {
                 THROW_INTERNAL_ERROR();
@@ -334,8 +335,7 @@ struct member_expression
 
 struct variable_identifier
 {
-    qname name;
-    lex::resource_location location;
+    annotated_qname_identifier name;
     bool scope_local; // true e.g. for $0, $$
 };
 
@@ -444,7 +444,7 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     template <typename T>
     inline result_type operator()(annotated<T> const& ae) const noexcept { return ae.location; }
 
-    inline result_type operator()(variable_identifier const& v) const noexcept { return v.location; }
+    inline result_type operator()(variable_identifier const& v) const noexcept { return v.name.location; }
     inline result_type operator()(case_expression const& ce) const noexcept { return ce.start; }
     inline result_type operator()(member_expression_t const& me) const noexcept { return me.start(); }
     inline result_type operator()(lambda_t const& le) const noexcept { return le.start; }
@@ -635,7 +635,7 @@ struct extern_function_decl
 using parameter_woa_t = parameter_woa<expression_t>;
 using parameter_woa_list_t = parameter_woa_list<expression_t>;
 
-using extension_list_t = std::vector<annotated_qname>;
+using extension_list_t = std::vector<annotated_qname_identifier>;
 
 using fn_pure_decl = fn_pure<expression_t>;
 
@@ -647,21 +647,21 @@ struct fn_decl : fn_pure_decl
 
 struct enum_decl
 {
-    annotated_qname aname;
+    annotated_qname_identifier aname;
     std::vector<identifier> cases;
 
-    qname_view name() const { return aname.value; }
+    qname_identifier name() const { return aname.value; }
     lex::resource_location const& location() const { return aname.location; }
 };
 
 // e.g: type View(disabled: bool, enabled: bool, hidden:bool, empty: bool, backgroundColor: Color);
 struct type_decl
 {
-    annotated_qname aname;
+    annotated_qname_identifier aname;
     extension_list_t bases;
     parameter_woa_list_t parameters;
 
-    qname_view name() const { return aname.value; }
+    qname_identifier name() const { return aname.value; }
     lex::resource_location const& location() const { return aname.location; }
 };
 

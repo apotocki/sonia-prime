@@ -8,24 +8,23 @@
 
 namespace sonia::lang {
 
-template <typename IdentifierT, typename LocationT>
+template <typename QnameIdentifierT, typename LocationT>
 class entity
 {
 public:
-    using identifier_type = IdentifierT;
-    using qname_type = qname<IdentifierT>;
+    using identifier_type = QnameIdentifierT;
 
-    explicit entity(qname_type name) : name_{ std::move(name) } {}
+    explicit entity(QnameIdentifierT name) : name_{ std::move(name) } {}
 
     virtual ~entity() = default;
 
     inline void set_location(LocationT l) { location_ = std::move(l); }
 
-    qname_view<IdentifierT> name() const { return name_; }
+    QnameIdentifierT name() const { return name_; }
     LocationT const& location() const { return location_; }
 
 protected:
-    qname_type name_;
+    QnameIdentifierT name_;
     LocationT location_;
 };
 

@@ -90,7 +90,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token COLON                "`:`"
 %token <sonia::lang::lex::resource_location> OPEN_PARENTHESIS     "`(`"
 %token CLOSE_PARENTHESIS    "`)`"
-%token OPEN_BRACE           "`{`"
+%token <sonia::lang::lex::resource_location> OPEN_BRACE           "`{`"
 %token CLOSE_BRACE			"`}`"
 %token <sonia::lang::lex::resource_location> OPEN_SQUARE_BRACKET  "`[`"
 %token CLOSE_SQUARE_BRACKET "`]`"
@@ -197,8 +197,9 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %right EXCLPT
 
 // 2 priority
-%left OPEN_PARENTHESIS CLOSE_PARENTHESIS OPEN_SQUARE_BRACKET CLOSE_SQUARE_BRACKET ARROW POINT
+%left OPEN_BRACE OPEN_PARENTHESIS OPEN_SQUARE_BRACKET ARROW POINT
 %right QMARK
+%left COLON
 
 //%token DBLCOLON             "`::`"
 %left DBLCOLON             "`::`"
@@ -211,6 +212,8 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 %type <std::vector<infunction_declaration_t>> infunction_declaration_any
 %type <infunction_declaration_t> opt-infunction-decl
+
+//%type <identifier_chain_t> identifier-chain
 
 // QNAME
 %type <sonia::lang::bang::annotated_identifier> identifier
@@ -232,7 +235,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token EXTENDS
 %type <type_decl> type-decl
 %type <extension_list_t> type-extension-any type-extension-list
-%type <parameter_list_t> parameter-list-opt parameter-list
+%type <parameter_list_t> parameter-list parameter-list-opt
 %type <parameter_t> parameter-decl
 %type <parameter_woa_list_t> parameter-woa-list-opt parameter-woa-list
 %type <parameter_woa_t> parameter-woa-decl // with optional assignement
@@ -404,18 +407,18 @@ qname:
 fn-decl:
         FN qname OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction_declaration_any CLOSE_BRACE
             {
-                $$ = fn_decl_t{std::move($2), std::move($4), nullopt, std::move($7)}; IGNORE($1, $3);
+                $$ = fn_decl_t{std::move($2), std::move($4), nullopt, std::move($7)}; IGNORE($1, $3, $6);
             }
     |   FN qname OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS ARROW type-expr OPEN_BRACE infunction_declaration_any CLOSE_BRACE
             {
-                $$ = fn_decl_t{std::move($2), std::move($4), std::move($7), std::move($9)}; IGNORE($1, $3);
+                $$ = fn_decl_t{std::move($2), std::move($4), std::move($7), std::move($9)}; IGNORE($1, $3, $8);
             }
     ;
 ///////////////////////////////////////////////// ENUMERATIONS
 enum-decl:
     ENUM qname OPEN_BRACE case-list-opt CLOSE_BRACE
     {
-        $$ = enum_decl{annotated_qname{ctx.ns() + std::move($2.value), $2.location}, std::move($4)};
+        $$ = enum_decl{ctx.make_qname_identifier(annotated_qname{ctx.ns() + std::move($2.value), $2.location}), std::move($4)}; IGNORE($3);
     }
     ;
 
@@ -441,7 +444,7 @@ case-decl:
 type-decl:
     TYPE qname type-extension-any OPEN_BRACE parameter-woa-list-opt CLOSE_BRACE
     {
-        $$ = type_decl{annotated_qname{ctx.ns() + std::move($2.value), $2.location}, std::move($3), std::move($5)};
+        $$ = type_decl{ctx.make_qname_identifier(annotated_qname{ctx.ns() + std::move($2.value), $2.location}), std::move($3), std::move($5)}; IGNORE($4);
     }
     ;
 
@@ -453,16 +456,17 @@ type-extension-any:
 
 type-extension-list:
     qname
-        { $$ = extension_list_t{std::move($1)}; }
+        { $$ = extension_list_t{ctx.make_qname_identifier(std::move($1))}; }
     |
     type-extension-list COMMA qname
-        { $$ = std::move($1); $$.emplace_back(std::move($3)); }
+        { $$ = std::move($1); $$.emplace_back(ctx.make_qname_identifier(std::move($3))); }
     ;
 
 parameter-list-opt:
        %empty { $$ = {}; }
     | parameter-list
     ;
+
 parameter-list:
       parameter-decl
         { $$ = parameter_list_t{std::move($1)}; }
@@ -535,6 +539,11 @@ opt-type-list:
 compound-expression:
       expression OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($2), std::move($1), std::move($3) }; }
+    | expression OPEN_BRACE opt-named-expr-list-any CLOSE_BRACE
+        { 
+           $$ = function_call_t{ std::move($2), std::move($1), std::move($3) };
+            //$$ = function_call_t{}; IGNORE($1, $2, $3);
+        }
     | expression ASSIGN expression
         { $$ = assign_expression_t{ std::move($1), std::move($3), std::move($2) }; }
     ;
@@ -553,15 +562,17 @@ expression:
     | POINT identifier
         { $$ = case_expression { std::move($2), std::move($1) }; }
     | qname
-        { $$ = variable_identifier{std::move($1.value), std::move($1.location), false}; }
+        { $$ = variable_identifier{ ctx.make_qname_identifier(std::move($1)), false}; }
     | ARGIDENTIFIER
-        { auto tmp = ctx.make_identifier($1); $$ = variable_identifier{ qname{tmp.value, false}, std::move(tmp.location), true }; }
+        { $$ = variable_identifier{ ctx.make_qname_identifier($1, false), true }; }
     | OPEN_PARENTHESIS expression CLOSE_PARENTHESIS
         { $$ = std::move($2); IGNORE($1); }
     | FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction_declaration_any CLOSE_BRACE
-        { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), nullopt, std::move($6), std::move($1)}; }
+        { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), nullopt, std::move($6), std::move($1)}; IGNORE($5); }
+    //| OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+    //    { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, $1}, std::move($2), nullopt, std::move($5), $1}; IGNORE($4); }
     | FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS ARROW type-expr OPEN_BRACE infunction_declaration_any CLOSE_BRACE
-        { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), std::move($6), std::move($8), std::move($1)}; }
+        { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), std::move($6), std::move($8), std::move($1)}; IGNORE($7); }
     | OPEN_SQUARE_BRACKET expression-list-any CLOSE_SQUARE_BRACKET
         { $$ = expression_vector_t{ {std::move($2)}, std::move($1) }; }
     | EXCLPT expression
@@ -604,7 +615,7 @@ opt-named-expr-list-any:
     ;
 
 opt-named-expr-list:
-    opt-named-expr
+      opt-named-expr
         { $$ = named_expression_term_list_t{std::move($1)}; }
     | opt-named-expr-list COMMA opt-named-expr
         {
@@ -614,11 +625,19 @@ opt-named-expr-list:
 	;
 
 opt-named-expr:
-    identifier COLON expression
-        { auto loc = get_start_location($3); $$ = named_expression_term_t{std::tuple{std::move($1), std::move($3)}, std::move(loc)}; }
+      qname COLON expression
+        { auto loc = get_start_location($3); $1.value.set_absolute(); $$ = named_expression_term_t{std::tuple{std::move($1), std::move($3)}, std::move(loc)}; }
     | expression
         { auto loc = get_start_location($1); $$ = named_expression_term_t{std::move($1), std::move(loc)}; }
     ;
+
+//identifier-chain:
+//      identifier
+//        { $$ = identifier_chain_t{ std::move($1) }; }
+//    | identifier-chain POINT identifier
+//        { $$ = std::move($1); $1.emplace_back(std::move($3)); }
+//    ;
+
 /*
 optional-chain-link:
       POINT identifier

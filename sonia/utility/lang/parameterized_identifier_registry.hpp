@@ -22,8 +22,8 @@ namespace sonia::lang {
 template <typename IdentifierT, typename MutexT = dummy_mutex_t>
 class parameterized_identifier_registry
 {
-    using qname_t = qname<IdentifierT>;
-    using parameter_vec_t = boost::container::small_vector<qname_t, 2>;
+    //using qname_t = qname<IdentifierT>;
+    using parameter_vec_t = boost::container::small_vector<qname_identifier, 2>;
     //using element_t = std::tuple<IdentifierT, boost::container::small_vector<qname_t, 2>>;
 
     struct item
@@ -31,7 +31,7 @@ class parameterized_identifier_registry
         //IdentifierT master_id;
         IdentifierT id; // parameterized id
         parameter_vec_t parameters;
-        span<const qname_t> pspan() const { return parameters; }
+        span<const qname_identifier> pspan() const { return parameters; }
     };
 
     //using composite_hasher_t = boost::multi_index::composite_key_hash<hasher, hasher>;
@@ -74,9 +74,9 @@ class parameterized_identifier_registry
 
 public:
     explicit parameterized_identifier_registry(identifier_builder<IdentifierT>& ib) : ib_{ ib } {}
-    IdentifierT resolve(/*IdentifierT id,*/ span<qname_t> params);
+    IdentifierT resolve(/*IdentifierT id,*/ span<const qname_identifier> params);
     //optional<std::tuple<IdentifierT, span<const qname_t>>> resolve(IdentifierT masterid) const noexcept;
-    optional<span<const qname_t>> resolve(IdentifierT masterid) const noexcept;
+    optional<span<const qname_identifier>> resolve(IdentifierT masterid) const noexcept;
 
 private:
     identifier_builder<IdentifierT>& ib_;
@@ -86,7 +86,7 @@ private:
 };
 
 template <typename IdentifierT,typename MutexT>
-IdentifierT parameterized_identifier_registry<IdentifierT, MutexT>::resolve(/*IdentifierT id,*/ span<qname_t> params)
+IdentifierT parameterized_identifier_registry<IdentifierT, MutexT>::resolve(/*IdentifierT id,*/ span<const qname_identifier> params)
 {
     lock_guard guard(set_mtx_);
     auto it = set_.find(params, hasher{}, range_equal{});
@@ -101,7 +101,7 @@ IdentifierT parameterized_identifier_registry<IdentifierT, MutexT>::resolve(/*Id
 
 template <typename IdentifierT, typename MutexT>
 //optional<std::tuple<IdentifierT, span<const qname<IdentifierT>>>> parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT masterid) const noexcept
-optional<span<const qname<IdentifierT>>> parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT id) const noexcept
+optional<span<const qname_identifier>> parameterized_identifier_registry<IdentifierT, MutexT>::resolve(IdentifierT id) const noexcept
 {
     auto const& slice = set_.template get<1>();
     lock_guard guard(set_mtx_);

@@ -13,6 +13,7 @@
 #include "sonia/utility/lang/identifier_builder.hpp"
 #include "sonia/utility/lang/string_literal_registry.hpp"
 #include "sonia/utility/lang/parameterized_identifier_registry.hpp"
+#include "sonia/utility/lang/qname_registry.hpp"
 #include "sonia/utility/lang/entity_registry.hpp"
 
 #include "boost/conversion/unicode/utf.hpp"
@@ -58,16 +59,18 @@ class unit
     using slregistry_t = string_literal_registry<identifier, small_string>;
     using piregistry_t = parameterized_identifier_registry<identifier>;
     using eregistry_t = entity_registry<entity>;
+    using qname_registry_t = qname_registry<identifier>;
 
     identifier_builder_t identifier_builder_;
     slregistry_t slregistry_;
     piregistry_t piregistry_;
+    qname_registry_t qname_registry_;
     eregistry_t eregistry_;
 
     // semantic
     std::vector<semantic::expression_type> root_expressions_;
 
-    std::vector<qname_view> builtins_;
+    std::vector<qname_identifier> builtins_;
 
     virtual_stack_machine bvm_;
 
@@ -88,9 +91,9 @@ public:
 
     unit();
 
-    void set_efn(size_t idx, qname_view fnq);
+    void set_efn(size_t idx, qname_identifier);
 
-    inline void set_efn(builtin_fn bi, qname_view fnq)
+    inline void set_efn(builtin_fn bi, qname_identifier fnq)
     {
         set_efn((size_t)bi, std::move(fnq));
     }
@@ -101,10 +104,13 @@ public:
     }
 
     identifier new_identifier();
+    qname_identifier new_qname_identifier();
+    qname_identifier make_qname_identifier(string_view);
 
     slregistry_t& slregistry() { return slregistry_; }
     piregistry_t& piregistry() { return piregistry_; }
     eregistry_t& eregistry() { return eregistry_; }
+    qname_registry_t& qnregistry() { return qname_registry_; }
 
     virtual_stack_machine& bvm() { return bvm_; }
 
@@ -131,17 +137,18 @@ public:
     std::vector<char> get_file_content(fs::path const& rpath, fs::path const* context = nullptr);
     
     std::string print(identifier const& id) const;
-    
+    std::string print(qname_view q) const;
     std::string print(qname const& q) const
     {
         return print((qname_view)q);
     }
+    std::string print(qname_identifier) const;
 
     std::string print(small_u32string const&, bool in_quotes = false) const;
 
     std::string print(lex::resource_location const&) const;
 
-    std::string print(qname_view q) const;
+   
     
     std::string print(bang_preliminary_type const& tp) const;
     
@@ -153,6 +160,7 @@ public:
 
     small_string as_string(identifier const& id) const;
     small_string as_string(qname_view name) const;
+    small_string as_string(qname_identifier name) const;
 
     //small_u32string as_u32string(identifier const& id) const;
     

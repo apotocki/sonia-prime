@@ -77,7 +77,7 @@ struct expression_fn_visitor : static_visitor<std::expected<bang_type, error_sto
         if (!fs || fs->fn_type.result != v.result) {
             return std::unexpected(make_error<cast_error>(cl_(), v, nullopt));
         }
-        qname fnm = fn.name() + fs->mangled_id;
+        qname_identifier fnm = ctx.u().qnregistry().concat(fn.name(), fs->mangled_id);
         variable_entity const* pv = ctx.resolve_variable(fnm);
         if (pv) {
             ctx.append_expression(semantic::push_variable{ pv });

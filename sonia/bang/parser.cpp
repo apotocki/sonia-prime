@@ -78,6 +78,16 @@ annotated_identifier parser_context::make_identifier(annotated_string_view astr)
     return { unit_.slregistry().resolve(astr.value), astr.location };
 }
 
+annotated_qname_identifier parser_context::make_qname_identifier(annotated_qname aqn)
+{
+    return annotated_qname_identifier{ unit_.qnregistry().resolve(aqn.value), aqn.location };
+}
+
+annotated_qname_identifier parser_context::make_qname_identifier(annotated_string_view asv, bool is_abs)
+{
+    return annotated_qname_identifier{ unit_.qnregistry().resolve(qname{unit_.slregistry().resolve(asv.value), is_abs}), asv.location };
+}
+
 //identifier parser_context::make_required_identifier(string_view str)
 //{
 //    return identifier{ env_.iregistry().resolve(str).value, true};

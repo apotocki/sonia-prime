@@ -2139,6 +2139,9 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_int_visitor.hpp">
       <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lang\qname_registry.hpp">
+      <Filter>sonia.utility\lang</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

@@ -23,7 +23,7 @@ public:
         EXTERN, STATIC, LOCAL, SCOPE_LOCAL
     };
 
-    explicit variable_entity(qname_type name, bang_type t, kind k)
+    explicit variable_entity(qname_identifier name, bang_type t, kind k)
         : entity{ std::move(name) }
         , type_{ std::move(t) }
         , kind_{ k }

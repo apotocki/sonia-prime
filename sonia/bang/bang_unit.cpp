@@ -26,11 +26,16 @@ void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
     auto & fsig = dvis.append_fnsig(fndecl, fe);
 
     qname fnm = fndecl.name() + fsig.mangled_id;
-    auto pefe = make_shared<external_function_entity>(fnm, fn_identifier_counter_);
+    auto pefe = make_shared<external_function_entity>(qnregistry().resolve(fnm), fn_identifier_counter_);
     eregistry_.insert(pefe);
 
     strings_.emplace_back(print(fnm));
     bvm_.set_efn(fn_identifier_counter_++, pfn, strings_.back());
+}
+
+qname_identifier unit::new_qname_identifier()
+{
+    return qnregistry().resolve(qname{ new_identifier() });
 }
 
 unit::unit()
@@ -40,41 +45,41 @@ unit::unit()
 {
     builtins_.resize((size_t)builtin_fn::eof_builtin_type);
 
-    auto parrayify = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::arrayify);
+    auto parrayify = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::arrayify);
     eregistry_.insert(parrayify);
     set_efn(builtin_fn::arrayify, parrayify->name());
 
-    auto punpack = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::unpack);
+    auto punpack = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::unpack);
     eregistry_.insert(punpack);
     set_efn(builtin_fn::unpack, punpack->name());
 
-    auto pweak_create = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::weak_create);
+    auto pweak_create = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::weak_create);
     eregistry_.insert(pweak_create);
     set_efn(builtin_fn::weak_create, pweak_create->name());
 
-    auto pweak_lock = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::weak_lock);
+    auto pweak_lock = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::weak_lock);
     eregistry_.insert(pweak_lock);
     set_efn(builtin_fn::weak_lock, pweak_lock->name());
 
-    auto peosp = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::extern_object_set_property);
+    auto peosp = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::extern_object_set_property);
     eregistry_.insert(peosp);
     set_efn(builtin_fn::extern_object_set_property, peosp->name());
 
-    auto peogp = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::extern_object_get_property);
+    auto peogp = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::extern_object_get_property);
     eregistry_.insert(peogp);
     set_efn(builtin_fn::extern_object_get_property, peogp->name());
 
-    auto pefc = make_shared<external_function_entity>(qname{ new_identifier() }, (size_t)virtual_stack_machine::builtin_fn::extern_function_call);
+    auto pefc = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::extern_function_call);
     eregistry_.insert(pefc);
     set_efn(builtin_fn::extern_function_call, pefc->name());
 
-    auto ptostring = make_shared<external_function_entity>(qname{ new_identifier() }, fn_identifier_counter_);
+    auto ptostring = make_shared<external_function_entity>(new_qname_identifier(), fn_identifier_counter_);
     eregistry_.insert(ptostring);
     strings_.emplace_back("tostring");
     set_efn(builtin_fn::tostring, ptostring->name());
     bvm_.set_efn(fn_identifier_counter_++, &bang_tostring, strings_.back());
 
-    auto pnegate = make_shared<external_function_entity>(qname{ new_identifier() }, fn_identifier_counter_);
+    auto pnegate = make_shared<external_function_entity>(new_qname_identifier(), fn_identifier_counter_);
     eregistry_.insert(pnegate);
     strings_.emplace_back("!");
     set_efn(builtin_fn::negate, pnegate->name());
@@ -92,7 +97,13 @@ identifier unit::new_identifier()
     //return r;
 }
 
-void unit::set_efn(size_t idx, qname_view fnq)
+qname_identifier unit::make_qname_identifier(string_view sv)
+{
+    qname qn{ slregistry().resolve(sv) };
+    return qnregistry().resolve(qn);
+}
+
+void unit::set_efn(size_t idx, qname_identifier fnq)
 {
     if (builtins_.size() <= idx) {
         builtins_.resize(idx + 1);
@@ -132,7 +143,7 @@ OutputIteratorT unit::identifier_printer(identifier const& id, string_view prefi
             *oi++ = '<';
             for (auto const& qn : *sp) {
                 if (&qn != &sp->front()) *oi++ = ',';
-                oi = name_printer(qn, std::move(oi), uf);
+                oi = name_printer(qname_registry_.resolve(qn), std::move(oi), uf);
             }
             *oi++ = '>';
         }
@@ -173,6 +184,11 @@ std::string unit::print(qname_view qn) const
         oi = std::copy(str.begin(), str.end(), std::move(oi));
     });
     return { result.data(), result.data() + result.size() };
+}
+
+std::string unit::print(qname_identifier qid) const
+{
+    return print(qname_registry_.resolve(qid));
 }
 
 struct type_printer_visitor : static_visitor<void>
@@ -299,6 +315,11 @@ small_string unit::as_string(qname_view qn) const
     return { result.data(), result.size() };
 }
 
+small_string unit::as_string(qname_identifier name) const
+{
+    return as_string(qname_registry_.resolve(name));
+}
+
 //small_u32string unit::as_u32string(identifier const& id) const
 //{
 //    namespace cvt = boost::conversion;
@@ -382,7 +403,7 @@ struct expr_printer_visitor : static_visitor<void>
         if (vi.scope_local) {
             ss << "LOCAL"sv;
         }
-        ss << "VAR("sv << u_.print(vi.name) << ")"sv;
+        ss << "VAR("sv << u_.print(vi.name.value) << ")"sv;
     }
 
     /*

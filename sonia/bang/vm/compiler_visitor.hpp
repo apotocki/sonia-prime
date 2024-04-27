@@ -64,7 +64,7 @@ public:
         }
         else 
         */
-        if (auto eptr = unit_.eregistry().find(invf.function_entity_name()); eptr) {
+        if (auto eptr = unit_.eregistry().find(invf.varname); eptr) {
             // to do: visitor
             if (auto pefe = dynamic_pointer_cast<external_function_entity>(eptr); pefe) {
                 bvm().append_ecall(pefe->fn_index);
@@ -106,10 +106,10 @@ public:
                 */
                 //THROW_NOT_IMPLEMENTED_ERROR("unimplemented function call name: '%1%'"_fmt % unit_.print(invf.entity));
             } else {
-                THROW_NOT_IMPLEMENTED_ERROR("unknown entity found, unresolved function call name: '%1%'"_fmt % unit_.print(invf.function_entity_name()));
+                THROW_NOT_IMPLEMENTED_ERROR("unknown entity found, unresolved function call name: '%1%'"_fmt % unit_.print(invf.varname));
             }
         } else {
-            throw exception("unresolved name: '%1%'"_fmt % unit_.print(invf.function_entity_name()));
+            throw exception("unresolved name: '%1%'"_fmt % unit_.print(invf.varname));
         }
     }
 
@@ -121,7 +121,7 @@ public:
         if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
             bvm().append_fset(pv.entity->index());
         } else if (varkind == variable_entity::kind::EXTERN) {
-            string_view varname = unit_.as_string(pv.entity->name().back());
+            string_view varname = unit_.as_string(unit_.qnregistry().resolve(pv.entity->name()).back());
             smart_blob strbr{ string_blob_result(varname) };
             strbr.allocate();
             size_t stack_pos = bvm().push_on_stack(std::move(strbr));

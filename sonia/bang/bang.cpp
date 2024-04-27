@@ -122,7 +122,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
     vm::compiler_visitor vmcvis{ unit_ };
 
     // at first compile all functions
-    unit_.eregistry().traverse([this, &vmcvis](qname_view name, entity& e) {
+    unit_.eregistry().traverse([this, &vmcvis](auto name, entity& e) {
         if (auto fe = dynamic_cast<function_entity*>(&e); fe) {
             do_compile(vmcvis, *fe);
         }
@@ -132,7 +132,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
     // main
     function_signature main_sig{ };
     main_sig.position_parameters().emplace_back(bang_vector_t{ bang_string_t{} });
-    main_function_.emplace(qname{}, std::move(main_sig));
+    main_function_.emplace(unit_.make_qname_identifier("main"sv), std::move(main_sig));
     main_function_->body = std::move(ctx.expressions());
     do_compile(vmcvis, *main_function_);
 }

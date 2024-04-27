@@ -4997,7 +4997,7 @@ YY_RULE_SETUP
 case 29:
 YY_RULE_SETUP
 #line 290 "bang.l"
-{ return (bang_lang::parser::token::OPEN_BRACE); }
+{ variant_emplace(location); return (bang_lang::parser::token::OPEN_BRACE); }
 	YY_BREAK
 case 30:
 YY_RULE_SETUP

@@ -36,7 +36,7 @@ std::expected<bang_type, error_storage> functional_entity::find(fn_compiler_cont
             estate.restore();
             continue;
         }
-        ctx.append_expression(semantic::invoke_function{ name() + sig.mangled_id });
+        ctx.append_expression(semantic::invoke_function{ ctx.u().qnregistry().concat(name(), sig.mangled_id) });
         estate.detach();
         return sig.fn_type.result;
     }
@@ -97,7 +97,7 @@ bool is_matched(fn_compiler_context& ctx, function_signature const& sig, pure_ca
         positioned_args = positioned_args.subspan(1);
     }
     for (auto const& [aname, tp] : sig.named_parameters()) {
-        if (std::get<0>(named_args.front()) != aname) return false;
+        if (std::get<0>(named_args.front()).value != qname{aname.value}) return false;
         expression_visitor evis{ ctx, expected_result_t{ tp, std::get<2>(named_args.front()) } };
         if (!apply_visitor(evis, std::get<1>(named_args.front()))) return false;
         named_args = named_args.subspan(1);

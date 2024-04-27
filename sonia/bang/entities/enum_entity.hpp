@@ -11,7 +11,7 @@ namespace sonia::lang::bang {
 class enum_entity : public entity
 {
 public:
-    explicit enum_entity(qname_type name) : entity { std::move(name) } {}
+    explicit enum_entity(qname_identifier name) : entity { std::move(name) } {}
 
     struct enum_case
     {

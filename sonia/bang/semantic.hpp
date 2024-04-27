@@ -21,7 +21,7 @@ struct bang_object_t
     inline bool operator==(bang_object_t const& rhs) const { return value == rhs.value; };
     auto operator<=>(bang_object_t const& rhs) const;
 
-    qname_view name() const;
+    qname_identifier name() const;
 };
 
 template <typename T> struct bang_tuple
@@ -361,12 +361,7 @@ struct return_statement {};
 
 struct invoke_function
 {
-    variant<qname, qname_view> varname;
-    qname_view function_entity_name() const
-    {
-        if (qname_view const* qv = get<qname_view>(&varname); qv) return *qv;
-        return get<qname>(varname);
-    }
+    qname_identifier varname;
 };
 
 //enum class condition_type : uint8_t
@@ -447,7 +442,7 @@ public:
 
 namespace sonia::lang::bang {
 
-inline qname_view bang_object_t::name() const
+inline qname_identifier bang_object_t::name() const
 {
     return value->name();
 }

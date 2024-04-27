@@ -13,10 +13,10 @@ namespace sonia::lang::bang {
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(variable_identifier const& v) const
 {
-    if (auto optvar = ctx.resolve_variable(v.name); optvar) {
+    if (auto optvar = ctx.resolve_variable(v.name.value); optvar) {
         return &*optvar;
     }
-    return std::unexpected(make_error<undeclared_identifier_error>(v.location, v.name));
+    return std::unexpected(make_error<undeclared_identifier_error>(v.name));
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(member_expression_t & me) const

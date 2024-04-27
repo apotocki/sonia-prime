@@ -96,7 +96,7 @@ general_error::string_t unknown_case_error::description(unit const& u) const noe
 
 general_error::string_t undeclared_identifier_error::object(unit const& u) const noexcept
 {
-    return u.print(idname_);
+    return u.print(idname_.value);
 }
 
 general_error::string_t identifier_redefinition_error::object(unit const& u) const noexcept

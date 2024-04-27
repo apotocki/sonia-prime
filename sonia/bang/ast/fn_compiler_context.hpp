@@ -91,23 +91,23 @@ public:
     unit& u() const { return unit_; }
 
     // to do: resolving depends on qname
-    shared_ptr<entity> resolve_entity(qname_view name) const
+    shared_ptr<entity> resolve_entity(qname_identifier name) const
     {
         if (name.is_absolute()) {
             return unit_.eregistry().find(name);
         }
         qname checkns = ns_;
-        
+        qname_view name_qn = unit_.qnregistry().resolve(name);
         for (size_t sz = checkns.parts().size();;) {
-            checkns.append(name);
-            shared_ptr<entity> e = unit_.eregistry().find(checkns);
+            checkns.append(name_qn);
+            shared_ptr<entity> e = unit_.eregistry().find(unit_.qnregistry().resolve(checkns));
             if (e || !sz) return e;
             --sz;
             checkns.truncate(sz);
         }
     }
 
-    variable_entity const* resolve_variable(qname_view name) const
+    variable_entity const* resolve_variable(qname_identifier name) const
     {
         if (name.is_absolute()) {
             shared_ptr<entity> e = unit_.eregistry().find(name);
@@ -140,7 +140,7 @@ public:
     variable_entity& new_variable(identifier name, bang_type t, variable_entity::kind k)
     {
         qname var_qname = ns() + name;
-        auto ve = sonia::make_shared<variable_entity>(std::move(var_qname), std::move(t), k);
+        auto ve = sonia::make_shared<variable_entity>(u().qnregistry().resolve(var_qname), std::move(t), k);
         unit_.eregistry().insert(ve);
         return *ve;
     }
@@ -150,7 +150,7 @@ public:
     variable_entity& new_captured_variable(identifier name, bang_type t, variable_entity& caption)
     {
         qname var_qname = base_ns() + name;
-        auto ve = sonia::make_shared<variable_entity>(std::move(var_qname), std::move(t), variable_entity::kind::LOCAL);
+        auto ve = sonia::make_shared<variable_entity>(u().qnregistry().resolve(var_qname), std::move(t), variable_entity::kind::LOCAL);
         ve->set_weak(caption.is_weak());
         unit_.eregistry().insert(ve);
         captured_variables.emplace_back(&caption, ve.get());
@@ -164,12 +164,13 @@ public:
                 u().print(v.name()) % u().print(ns())
             );
         }
-        qname_view vardefscope = v.name().parent();
+        qname_view name_qv = u().qnregistry().resolve(v.name());
+        qname_view vardefscope = name_qv.parent();
         if (vardefscope.has_prefix(parent_->base_ns())) {
-            return new_captured_variable(v.name().back(), v.type(), v);
+            return new_captured_variable(name_qv.back(), v.type(), v);
         } else {
             variable_entity& parentvar = parent_->create_captured_variable_chain(v);
-            return new_captured_variable(v.name().back(), v.type(), parentvar);
+            return new_captured_variable(name_qv.back(), v.type(), parentvar);
         }
     }
 

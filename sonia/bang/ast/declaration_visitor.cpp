@@ -19,8 +19,17 @@ void declaration_visitor::operator()(extern_var & d) const
 {
     preliminary_type_visitor tqvis{ ctx };
     bang_type vartype = apply_visitor(tqvis, d.type);
-    auto ve = sonia::make_shared<variable_entity>(qname{d.name.value}, std::move(vartype), variable_entity::kind::EXTERN);
-    ctx.u().eregistry().insert(ve);
+    
+    qname var_qname = ctx.ns() + d.name.value;
+    qname_identifier var_qnameid = ctx.u().qnregistry().resolve(var_qname);
+    auto e = ctx.u().eregistry().find(var_qnameid);
+    if (!e) {
+        auto ve = sonia::make_shared<variable_entity>(var_qnameid, std::move(vartype), variable_entity::kind::EXTERN);
+        ve->set_location(d.name.location);
+        ctx.u().eregistry().insert(ve);
+    } else {
+        throw exception(ctx.u().print(identifier_redefinition_error{ annotated_qname_identifier(var_qnameid, d.name.location), e->location() }));
+    }
 }
 
 void declaration_visitor::operator()(expression_decl_t & ed) const
@@ -45,13 +54,14 @@ function_signature& declaration_visitor::append_fnsig(fn_pure_decl& fd, shared_p
             ctx.u().print(fd.name())
         );
     }
-
-    auto e = ctx.u().eregistry().find(fn_qname);
+    qname_identifier fn_qnameid = ctx.u().qnregistry().resolve(fn_qname);
+    auto e = ctx.u().eregistry().find(fn_qnameid);
     if (!e) {
-        fe = make_shared<functional_entity>(fn_qname);
+        fe = make_shared<functional_entity>(fn_qnameid);
+        fe->set_location(fd.location());
         ctx.u().eregistry().insert(fe);
     } else if (fe = dynamic_pointer_cast<functional_entity>(e); !fe) {
-        throw exception(ctx.u().print(identifier_redefinition_error{fd.location(), e->location(), fd.name()}));
+        throw exception(ctx.u().print(identifier_redefinition_error{annotated_qname_identifier(fn_qnameid, fd.location()), e->location()}));
     }
     
     function_signature sig;
@@ -69,7 +79,7 @@ void declaration_visitor::operator()(fn_pure_decl & fd) const
 {
     shared_ptr<functional_entity> fe;
     function_signature& sig = append_fnsig(fd, fe);
-    auto fnm = fe->name() + sig.mangled_id;
+    auto fnm = ctx.u().qnregistry().concat(fe->name(), sig.mangled_id);
     if (!ctx.u().eregistry().find(fnm)) { // external is not registered, will be trying to bind in runtime
         // create the description for late binding
         auto fnent = sonia::make_shared<function_entity>(fnm, function_signature{ sig });
@@ -142,7 +152,8 @@ function_entity & declaration_visitor::append_fnent(fn_pure_decl& fnd, function_
     }
     sig.fn_type.result = fnctx.compute_result_type();
 
-    auto fnent = sonia::make_shared<function_entity>(qname{fnctx.ns(), true}, function_signature{sig});
+    qname_identifier fnqnid = ctx.u().qnregistry().resolve(fnctx.ns());
+    auto fnent = sonia::make_shared<function_entity>(fnqnid, function_signature{sig});
     
     fnent->body = std::move(fnctx.expressions());
     fnent->captured_variables = std::move(fnctx.captured_variables);
@@ -151,7 +162,7 @@ function_entity & declaration_visitor::append_fnent(fn_pure_decl& fnd, function_
     fnent->set_index(ctx.allocate_local_variable_index());
 
     // initialize variable
-    ctx.append_expression(semantic::push_value { function_value{ qname{ fnent->name(), true } } });
+    ctx.append_expression(semantic::push_value { function_value{ fnent->name() } });
     ctx.append_expression(semantic::set_variable{ fnent.get() });
     return *fnent;
 }

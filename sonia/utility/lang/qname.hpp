@@ -104,6 +104,36 @@ inline size_t hash_value(qname<IdentifierT> const& v)
     return hasher{}(v.parts(), v.is_absolute());
 }
 
+class qname_identifier
+{
+    uint32_t value_ : 31;
+    uint32_t absolute_ : 1;
+
+public:
+    qname_identifier() : value_{0x7fffffffu}, absolute_{1u} {}
+
+    qname_identifier(size_t idvalue, bool is_absolute) : value_{ static_cast<uint32_t>(idvalue) }, absolute_{ is_absolute ? 1u : 0 } {}
+
+    friend inline bool operator== (qname_identifier const& l, qname_identifier const& r)
+    {
+        return l.value_ == r.value_;
+    }
+
+    friend inline auto operator<=>(qname_identifier const& l, qname_identifier const& r)
+    {
+        return uint32_t(l.value_) <=> uint32_t(r.value_);
+    }
+
+    inline bool is_relative() const noexcept { return !absolute_; }
+    inline bool is_absolute() const noexcept { return !!absolute_; }
+    uint32_t raw() const { return value_; }
+};
+
+inline size_t hash_value(qname_identifier const& v)
+{
+    return hasher{}(v.raw());
+}
+
 template <typename IdentifierT>
 class qname_view : public span<const IdentifierT>
 {

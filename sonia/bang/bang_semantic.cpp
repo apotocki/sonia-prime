@@ -12,19 +12,24 @@
 
 namespace sonia::lang::bang {
 
-struct type_mangler_visitor : static_visitor<qname>
+class type_mangler_visitor : static_visitor<qname_identifier>
 {
     unit & u_;
-    explicit type_mangler_visitor(unit & u) : u_{ u } {}
 
-    inline result_type operator()(bang_any_t) const { return qname{ u_.slregistry().resolve("any"sv) }; }
-    inline result_type operator()(bang_bool_t) const { return qname{ u_.slregistry().resolve("bool"sv) }; }
-    inline result_type operator()(bang_int_t) const { return qname{ u_.slregistry().resolve("int"sv)}; }
-    inline result_type operator()(bang_float_t) const { return qname{ u_.slregistry().resolve("float"sv) }; }
-    inline result_type operator()(bang_decimal_t) const { return qname{ u_.slregistry().resolve("decimal"sv) }; }
-    inline result_type operator()(bang_string_t) const { return qname{ u_.slregistry().resolve("string"sv) }; }
+    inline qname_identifier qnid(identifier id) const { return u_.qnregistry().resolve(qname{ id }); }
+    inline qname_identifier qnid(string_view sv) const { return qnid(u_.slregistry().resolve(sv)); }
+
+public:
+    explicit type_mangler_visitor(unit& u) : u_{ u } {}
+
+    inline result_type operator()(bang_any_t) const { return qnid("any"sv); }
+    inline result_type operator()(bang_bool_t) const { return qnid("bool"sv); }
+    inline result_type operator()(bang_int_t) const { return qnid("int"sv); }
+    inline result_type operator()(bang_float_t) const { return qnid("float"sv); }
+    inline result_type operator()(bang_decimal_t) const { return qnid("decimal"sv); }
+    inline result_type operator()(bang_string_t) const { return qnid("string"sv); }
         
-    inline result_type operator()(bang_object_t const& obj) const { return qname{ obj.name(), true }; }
+    inline result_type operator()(bang_object_t const& obj) const { return obj.name(); }
 
     inline result_type operator()(bang_fn_t const& fn) const
     {
@@ -114,7 +119,7 @@ void function_signature::normilize(fn_compiler_context& ctx)
             auto const& loc = std::get<0>(*dupit).location;
             auto const& origloc = std::get<0>(*fit).location;
             // "parameter redefinition"sv
-            throw exception(ctx.u().print(identifier_redefinition_error{ loc, origloc, std::get<0>(*fit).value }));
+            throw exception(ctx.u().print(identifier_redefinition_error{ std::get<0>(*fit), origloc }));
         } // else skip identical
         it = dupit;
     }
@@ -135,13 +140,13 @@ void function_signature::build_mangled_id(unit& u)
 {
     type_mangler_visitor vis{ u };
 
-    std::vector<qname> ps;
+    std::vector<qname_identifier> ps;
 
     for (bang_type const& postp : position_parameters()) {
         ps.emplace_back(apply_visitor(vis, postp));
     }
     for (auto const& [aname, tp] : named_parameters()) {
-        ps.emplace_back(qname{ aname.value });
+        ps.emplace_back(u.qnregistry().resolve(qname{ aname.value }));
         ps.emplace_back(apply_visitor(vis, tp));
     }
     mangled_id = u.piregistry().resolve(ps);

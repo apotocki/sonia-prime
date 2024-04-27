@@ -68,9 +68,9 @@ void forward_declaration_visitor::operator()(include_decl& d)
 void forward_declaration_visitor::operator()(enum_decl & ed)
 {
     if (auto pe = ctx.u().eregistry().find(ed.name()); pe) [[unlikely]] {
-        throw exception(ctx.u().print(identifier_redefinition_error{ ed.location(), pe->location(), ed.name() }));
+        throw exception(ctx.u().print(identifier_redefinition_error{ ed.aname, pe->location() }));
     }
-    auto e = make_shared<enum_entity>(qname{ed.name(), true});
+    auto e = make_shared<enum_entity>(ed.name());
     e->set_location(ed.location());
     for (auto const& c : ed.cases) {
         e->cases.emplace_back(c, ctx.u().as_string(c));
@@ -82,9 +82,9 @@ void forward_declaration_visitor::operator()(enum_decl & ed)
 void forward_declaration_visitor::operator()(type_decl & td)
 {
     if (auto pe = ctx.u().eregistry().find(td.name()); pe) [[unlikely]] {
-        throw exception(ctx.u().print(identifier_redefinition_error{ td.location(), pe->location(), td.name() }));
+        throw exception(ctx.u().print(identifier_redefinition_error{ td.aname, pe->location() }));
     }
-    auto e = make_shared<type_entity>(qname{td.name(), true});
+    auto e = make_shared<type_entity>(td.name());
     e->set_location(td.location());
     e->direct_bases = std::move(td.bases);
     e->direct_parameters = std::move(td.parameters);

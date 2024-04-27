@@ -38,6 +38,8 @@ public:
     annotated_string make_string(annotated_string_view);
     int make_int(string_view);
     decimal make_numeric(string_view);
+    annotated_qname_identifier make_qname_identifier(annotated_qname);
+    annotated_qname_identifier make_qname_identifier(annotated_string_view, bool is_abs);
 
     //identifier make_required_identifier(string_view);
     //small_u32string make_string(string_view);

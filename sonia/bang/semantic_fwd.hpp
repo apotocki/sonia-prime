@@ -9,14 +9,14 @@
 
 namespace sonia::lang::bang {
 
-using entity = sonia::lang::entity<identifier, lex::resource_location>;
+using entity = sonia::lang::entity<qname_identifier, lex::resource_location>;
 class enum_entity;
 class variable_entity;
 class functional_entity;
 class type_entity;
 
 // ======================================================================== values
-struct function_value { qname mangled_name; };
+struct function_value { qname_identifier mangled_name; };
 using value_t = make_recursive_variant<
     null_t, bool, decimal, small_string, // shared_ptr<beng_object>,
     function_value,

@@ -20,7 +20,7 @@ namespace sonia::lang::bang {
 class type_entity : public functional_entity
 {
 public:
-    explicit type_entity(qname_type name) : functional_entity{ std::move(name) } {}
+    explicit type_entity(qname_identifier name) : functional_entity{ std::move(name) } {}
 
     std::expected<function_entity const*, error_storage> find_field_getter(fn_compiler_context&, annotated_identifier const&) const;
     std::expected<function_entity const*, error_storage> find_field_setter(fn_compiler_context&, annotated_identifier const&) const;

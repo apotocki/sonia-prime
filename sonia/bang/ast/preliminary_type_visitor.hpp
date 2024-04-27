@@ -38,16 +38,17 @@ struct preliminary_type_visitor : static_visitor<bang_type>
     inline result_type operator()(bang_string_t const& v) const { return v; }
     inline result_type operator()(bang_preliminary_object_t & v) const
     {
-        auto pe = ctx.resolve_entity(v.name());
+        qname_identifier nid = ctx.u().qnregistry().resolve(v.name());
+        auto pe = ctx.resolve_entity(nid);
         if (dynamic_cast<type_entity const*>(pe.get()) || dynamic_cast<enum_entity const*>(pe.get())) {
             return bang_object_t{ pe.get() };
         }
         if (!pe) {
-            throw exception(ctx.u().print(undeclared_identifier_error(v.location(), v.name())));
+            throw exception(ctx.u().print(undeclared_identifier_error(v.location(), nid)));
         }
         throw exception(ctx.u().print(basic_general_error{v.location(),
             ("identifier is not a type, see declaration at %1%"_fmt % ctx.u().print(pe->location())).str(),
-            v.name()
+            nid
         }));
     }
 

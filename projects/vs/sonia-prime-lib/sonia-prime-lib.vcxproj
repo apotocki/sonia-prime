@@ -517,6 +517,7 @@
     <ClInclude Include="..\..\..\sonia\utility\lang\identifier_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lang\parameterized_identifier_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lang\qname.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lang\qname_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lang\string_literal_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lang\utility.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lang\vm.hpp" />

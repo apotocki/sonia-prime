@@ -53,16 +53,16 @@ expression_visitor::result_type expression_visitor::operator()(annotated_string 
 
 expression_visitor::result_type expression_visitor::operator()(variable_identifier const& var) const
 {
-    shared_ptr<entity> e = ctx.resolve_entity(var.name);
+    shared_ptr<entity> e = ctx.resolve_entity(var.name.value);
     if (auto varptr = dynamic_cast<variable_entity*>(e.get()); varptr) {
         variable_entity::kind k = varptr->varkind();
         if (k == variable_entity::kind::EXTERN || k == variable_entity::kind::STATIC) {
             THROW_NOT_IMPLEMENTED_ERROR();
         }
         if (k == variable_entity::kind::SCOPE_LOCAL || k == variable_entity::kind::LOCAL) {
-            if (!varptr->name().parent().has_prefix(ctx.base_ns())) {
+            if (!ctx.u().qnregistry().resolve(varptr->name()).parent().has_prefix(ctx.base_ns())) {
                 if (k == variable_entity::kind::SCOPE_LOCAL || var.scope_local) {
-                    return std::unexpected(make_error<basic_general_error>(var.location, "variable is not defined in the scope"sv, qname_view{var.name}));
+                    return std::unexpected(make_error<basic_general_error>(var.name.location, "variable is not defined in the scope"sv, var.name.value));
                 }
                 varptr = &ctx.create_captured_variable_chain(*varptr);
             }
@@ -89,7 +89,7 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
         return pv->type();
     }
     */
-    return std::unexpected(make_error<undeclared_identifier_error>(var.location, var.name));
+    return std::unexpected(make_error<undeclared_identifier_error>(var.name));
 }
 
 expression_visitor::result_type expression_visitor::operator()(negate_expression_t & op) const
@@ -348,7 +348,7 @@ expression_visitor::result_type expression_visitor::operator()(logic_or_expressi
 expression_visitor::result_type expression_visitor::operator()(binary_expression_t<binary_operator_type::CONCAT>& op) const
 {
     // find a function
-    auto func_ent = dynamic_pointer_cast<functional_entity>(ctx.u().eregistry().find(qname{ ctx.u().slregistry().resolve("concat"sv) }));
+    auto func_ent = dynamic_pointer_cast<functional_entity>(ctx.u().eregistry().find(ctx.u().make_qname_identifier("concat"sv)));
     BOOST_ASSERT(func_ent);
 
     pure_call_t proc(std::move(op.location), {});
@@ -478,7 +478,7 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t &
     if (auto it = std::ranges::adjacent_find(proc.named_args, {}, [](auto const& pair) { return std::get<0>(pair).value; }); it != proc.named_args.end()) {
         ++it; // get second
         auto const& aid = std::get<0>(*it);
-        return std::unexpected(make_error<basic_general_error>(aid.location, "repeated argument"sv, aid.value));
+        return std::unexpected(make_error<basic_general_error>(aid.location, "repeated argument"sv, ctx.u().qnregistry().resolve(aid.value)));
     }
 
     if (auto *pl = get<lambda_t>(&proc.fn_object); pl) {
@@ -494,14 +494,14 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t &
         THROW_NOT_IMPLEMENTED_ERROR("fn object expression is not implemented yet");
     }
     //GLOBAL_LOG_INFO() << ctx.u().print(fnvar->name);
-    shared_ptr<entity> e = ctx.resolve_entity(fnvar->name);
+    shared_ptr<entity> e = ctx.resolve_entity(fnvar->name.value);
     if (!e) [[unlikely]] {
-        return std::unexpected(make_error<undeclared_identifier_error>(fnvar->location, fnvar->name));
+        return std::unexpected(make_error<undeclared_identifier_error>(fnvar->name));
     }
     shared_ptr<functional_entity> func_ent = dynamic_pointer_cast<functional_entity>(e);
     if (!func_ent) [[unlikely]] {
         // to do: can be variable
-        return std::unexpected(make_error<basic_general_error>(fnvar->location, "is not callable"sv, qname_view{fnvar->name}));
+        return std::unexpected(make_error<basic_general_error>(fnvar->name.location, "is not callable"sv, fnvar->name.value));
     }
     
     return func_ent->find(ctx, proc);

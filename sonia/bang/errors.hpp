@@ -69,7 +69,7 @@ public:
 class basic_general_error : public general_error
 {
 protected:
-    using object_t = variant<null_t, expression_t, qname_view, identifier>;
+    using object_t = variant<null_t, expression_t, qname_identifier, identifier>;
 
     lex::resource_location location_;
     string_t description_;
@@ -99,17 +99,20 @@ public:
 
 class undeclared_identifier_error : public general_error
 {
-    lex::resource_location location_;
-    qname_view idname_;
+    annotated_qname_identifier idname_;
 
 public:
-    undeclared_identifier_error(lex::resource_location loc, qname_view idname)
-        : location_{ std::move(loc) }, idname_{ idname }
+    undeclared_identifier_error(annotated_qname_identifier idname)
+        : idname_{ idname }
+    {}
+
+    undeclared_identifier_error(lex::resource_location loc, qname_identifier idname)
+        : idname_{ std::move(idname), std::move(loc) }
     {}
 
     void visit(error_visitor& vis) const override { vis(*this); }
 
-    lex::resource_location const& location() const noexcept override { return location_; }
+    lex::resource_location const& location() const noexcept override { return idname_.location; }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override { return "undeclared identifier"sv; }
 };
@@ -129,14 +132,14 @@ public:
 
 class identifier_redefinition_error : public general_error
 {
+    variant<qname_identifier, identifier> name_;
     lex::resource_location location_;
     lex::resource_location seelocation_;
-    using object_t = variant<qname_view, identifier>;
-    object_t name_;
 
 public:
-    identifier_redefinition_error(lex::resource_location loc, lex::resource_location seeloc, object_t qn)
-        : location_{ std::move(loc) }, seelocation_{ std::move(seeloc) }, name_{ qn }
+    template <typename SomethingT>
+    identifier_redefinition_error(annotated<SomethingT> n, lex::resource_location seeloc)
+        : name_{ std::move(n.value) }, location_{ std::move(n.location) }, seelocation_{ std::move(seeloc) }
     {}
 
     void visit(error_visitor& vis) const override { vis(*this); }
@@ -176,8 +179,8 @@ class unknown_case_error : public general_error
 {
 public:
     case_expression ce_;
-    qname_view enum_name_;
-    unknown_case_error(case_expression const& ce, qname_view enum_name)
+    qname_identifier enum_name_;
+    unknown_case_error(case_expression const& ce, qname_identifier enum_name)
         : ce_{ ce }, enum_name_{ enum_name }
     {}
 
@@ -238,11 +241,14 @@ public:
 class parameter_not_found_error : public error
 {
 public:
-    annotated_identifier param;
-    qname_view entity_name;
-    parameter_not_found_error(qname_view qn, annotated_identifier p)
+    annotated_qname_identifier param;
+    qname_identifier entity_name;
+    parameter_not_found_error(qname_identifier qn, annotated_qname_identifier p)
         : param{ std::move(p) }, entity_name{ qn }
     {}
+    //parameter_not_found_error(qname_view qn, annotated_identifier p)
+    //    : param{ qname{std::move(p.value)}, std::move(p.location) }, entity_name{ qn }
+    //{}
     void visit(error_visitor& vis) const override { vis(*this); }
 };
 

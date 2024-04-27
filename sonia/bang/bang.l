@@ -287,7 +287,7 @@ HASHTAG					"#"
 	{TRUE} { variant_emplace(location); return (bang_lang::parser::token::TRUE); }
 	{FALSE} { variant_emplace(location); return (bang_lang::parser::token::FALSE); }
 	
-	{OPEN_BRACE}			{ return (bang_lang::parser::token::OPEN_BRACE); }
+	{OPEN_BRACE}			{ variant_emplace(location); return (bang_lang::parser::token::OPEN_BRACE); }
 	{CLOSE_BRACE}			{ return (bang_lang::parser::token::CLOSE_BRACE); }
 	{OPEN_PARENTHESIS}		{ variant_emplace(location); return (bang_lang::parser::token::OPEN_PARENTHESIS); }
 	{CLOSE_PARENTHESIS}		{ return (bang_lang::parser::token::CLOSE_PARENTHESIS);	}

@@ -17,7 +17,7 @@ namespace sonia::lang::bang {
 class external_function_entity : public entity
 {
 public:
-    explicit external_function_entity(qname_type name, size_t fni = -1)
+    explicit external_function_entity(qname_identifier name, size_t fni = -1)
         : entity{ std::move(name) }
         , fn_index{ fni }
     {}
@@ -28,7 +28,7 @@ public:
 class function_entity : public variable_entity
 {
 public:
-    function_entity(qname name, function_signature && sig)
+    function_entity(qname_identifier name, function_signature && sig)
         : variable_entity{ std::move(name), bang_type{sig.fn_type}, kind::LOCAL }
         , is_defined_{0}, is_inline_{0}
     {
@@ -64,7 +64,7 @@ private:
 class functional_entity : public entity
 {
 public:
-    explicit functional_entity(qname name) : entity { std::move(name) } {}
+    explicit functional_entity(qname_identifier name) : entity { std::move(name) } {}
 
     // used list to store just the reference in function_entity
     std::list<function_signature> signatures;

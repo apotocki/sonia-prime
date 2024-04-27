@@ -28,7 +28,7 @@ void declaration_visitor::operator()(extern_var & d) const
         ve->set_location(d.name.location);
         ctx.u().eregistry().insert(ve);
     } else {
-        throw exception(ctx.u().print(identifier_redefinition_error{ annotated_qname_identifier(var_qnameid, d.name.location), e->location() }));
+        throw exception(ctx.u().print(identifier_redefinition_error{ annotated_qname_identifier{var_qnameid, d.name.location}, e->location() }));
     }
 }
 
@@ -61,7 +61,7 @@ function_signature& declaration_visitor::append_fnsig(fn_pure_decl& fd, shared_p
         fe->set_location(fd.location());
         ctx.u().eregistry().insert(fe);
     } else if (fe = dynamic_pointer_cast<functional_entity>(e); !fe) {
-        throw exception(ctx.u().print(identifier_redefinition_error{annotated_qname_identifier(fn_qnameid, fd.location()), e->location()}));
+        throw exception(ctx.u().print(identifier_redefinition_error{annotated_qname_identifier{fn_qnameid, fd.location()}, e->location()}));
     }
     
     function_signature sig;

@@ -252,14 +252,15 @@ public:
         fn_compiler_context * pctx_;
         size_t cursize_;
         size_t stack_size_;
+        bang_type cur_type_;
 
     public:
         expressions_state_type(fn_compiler_context& ctx)
-            : pctx_{&ctx}, cursize_{ ctx.expressions().size() }, stack_size_{ ctx.expr_stack_.size() }
+            : pctx_{&ctx}, cursize_{ ctx.expressions().size() }, stack_size_{ ctx.expr_stack_.size() }, cur_type_{ ctx.context_type }
         {}
         expressions_state_type(expressions_state_type const&) = delete;
         expressions_state_type(expressions_state_type && rhs)
-            : pctx_{ rhs.pctx_ }, cursize_{ rhs.cursize_ }, stack_size_{ rhs.stack_size_ }
+            : pctx_{ rhs.pctx_ }, cursize_{ rhs.cursize_ }, stack_size_{ rhs.stack_size_ }, cur_type_{ rhs.cur_type_ }
         {
             rhs.pctx_ = nullptr;
         }
@@ -276,6 +277,7 @@ public:
         {
             pctx_->expr_stack_.resize(stack_size_);
             pctx_->expressions().resize(cursize_);
+            pctx_->context_type = cur_type_;
         }
 
         void detach()
@@ -294,6 +296,7 @@ public:
 
     optional<bang_type> result;
     optional<bang_type> accum_result;
+    bang_type context_type = bang_tuple_t{};
 
     void accumulate_result_type(bang_type && t)
     {

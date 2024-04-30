@@ -241,6 +241,7 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_implicit_cast_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_fn_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\vector_expression_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast_terms.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\fn_compiler_context.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\declaration_visitor.hpp" />
@@ -654,7 +655,10 @@
     <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_utility.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\declaration_visitor.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\ast\expression_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\ast\expression_visitor.cpp">
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/bigobj %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang.cpp" />

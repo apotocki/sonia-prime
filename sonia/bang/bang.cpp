@@ -139,6 +139,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
 
 void bang_impl::do_compile(vm::compiler_visitor & vmcvis, function_entity & fe)
 {
+    GLOBAL_LOG_INFO() << unit_.print(fe.name());
     size_t param_count = fe.signature().parameters_count() + fe.captured_variables.size();
 
     auto& bvm = unit_.bvm();

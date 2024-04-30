@@ -91,18 +91,18 @@ protected:
     {
         uint8_t b = static_cast<uint8_t>(uval & 0x7f);
         bool has_more = !!(uval - b);
-        code_.push_back(b + (has_more ? 0x80 : 0));
+        code_.push_back(b);
         if (!has_more) return;
         size_t pos = code_.size() - 1;
         for (;;) {
+            uval >>= 7;
             uint8_t b = static_cast<uint8_t>(uval & 0x7f);
             bool has_more = !!(uval - b);
-            code_.push_back(b + (has_more ? 0x80 : 0));
+            code_.push_back(b + 0x80);
             if (!has_more) {
                 std::reverse(code_.begin() + pos, code_.end());
                 return;
             }
-            uval >>= 7;
         }
     }
 
@@ -315,6 +315,9 @@ public:
 
     void append_pop(size_t num)
     {
+        if (code_.size() == 0x101) {
+            int i = 0;
+        }
         if (!num) [[unlikely]] {
             code_.push_back(static_cast<uint8_t>(op::noop));
         } else if (num == 1) {

@@ -31,7 +31,6 @@ public:
     virtual ~error_visitor() = default;
     virtual void operator()(general_error const&) = 0;
     virtual void operator()(alt_error const&) = 0;
-    virtual void operator()(parameter_not_found_error const&) = 0;
 };
 
 class error
@@ -41,7 +40,6 @@ public:
     virtual void visit(error_visitor&) const = 0;
 };
 
-//using error_storage = automatic_polymorphic<error, 8 * sizeof(void*)>;
 using error_storage = shared_ptr<error>;
 
 template <std::derived_from<error> T, typename ... Args>
@@ -150,6 +148,23 @@ public:
     lex::resource_location const* see_location() const override { return &seelocation_; }
 };
 
+class parameter_not_found_error : public general_error
+{
+public:
+    annotated_qname_identifier param;
+    qname_identifier entity_name;
+    parameter_not_found_error(qname_identifier qn, annotated_qname_identifier p)
+        : param{ std::move(p) }, entity_name{ qn }
+    {}
+    //parameter_not_found_error(qname_view qn, annotated_identifier p)
+    //    : param{ qname{std::move(p.value)}, std::move(p.location) }, entity_name{ qn }
+    //{}
+    void visit(error_visitor& vis) const override { vis(*this); }
+    lex::resource_location const& location() const noexcept override { return param.location; }
+    string_t object(unit const&) const noexcept override { return ""sv; }
+    string_t description(unit const&) const noexcept override;
+};
+
 class cast_error : public general_error
 {
 public:
@@ -238,19 +253,7 @@ public:
     string_t description(unit const&) const noexcept override { return "can't match the function call"sv; }
 };
 
-class parameter_not_found_error : public error
-{
-public:
-    annotated_qname_identifier param;
-    qname_identifier entity_name;
-    parameter_not_found_error(qname_identifier qn, annotated_qname_identifier p)
-        : param{ std::move(p) }, entity_name{ qn }
-    {}
-    //parameter_not_found_error(qname_view qn, annotated_identifier p)
-    //    : param{ qname{std::move(p.value)}, std::move(p.location) }, entity_name{ qn }
-    //{}
-    void visit(error_visitor& vis) const override { vis(*this); }
-};
+
 
 class error_printer_visitor : public error_visitor
 {
@@ -261,7 +264,7 @@ public:
     error_printer_visitor(unit& u, std::ostream& s) : u_{u}, s_{s} {}
 
     void operator()(alt_error const&) override;
-    void operator()(parameter_not_found_error const&) override;
+    //void operator()(parameter_not_found_error const&) override;
     void operator()(general_error const&) override;
 
 private:

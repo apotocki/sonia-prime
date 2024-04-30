@@ -27,6 +27,7 @@ struct lvalue_expression_visitor : static_visitor<std::expected<entity const*, e
 
     result_type operator()(case_expression const&) const;
     result_type operator()(member_expression_t &) const;
+    result_type operator()(property_expression&) const;
 
     result_type operator()(annotated_bool const&) const;
     result_type operator()(annotated_decimal const&) const;
@@ -44,6 +45,8 @@ struct lvalue_expression_visitor : static_visitor<std::expected<entity const*, e
     result_type operator()(binary_expression_t<binary_operator_type::LOGIC_AND> const&) const;
     result_type operator()(binary_expression_t<binary_operator_type::LOGIC_OR> const&) const;
     result_type operator()(binary_expression_t<binary_operator_type::CONCAT>&) const;
+
+    std::expected<entity const*, error_storage> handle_property_set(annotated_identifier id) const;
 };
 
 }

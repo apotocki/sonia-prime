@@ -21,7 +21,8 @@ expression_cast_to_array_visitor::result_type expression_cast_to_array_visitor::
         }
         if (compatible) {
             // to do: compatible tuple to array cast
-            return target;
+            ctx.context_type = target;
+            return {};
         }
         // try to cast
         if (!v.unpacked) {
@@ -37,7 +38,10 @@ expression_cast_to_array_visitor::result_type expression_cast_to_array_visitor::
         });
         ctx.append_expression(semantic::push_value{ decimal{ target.size } });
         ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::arrayify));
-        if (!opterror) return target;
+        if (!opterror) {
+            ctx.context_type = target;
+            return {};
+        }
         /*
         size_t offset = v.fields.size() - 1;
         for (auto t : v.fields) {
@@ -59,7 +63,7 @@ expression_cast_to_array_visitor::result_type expression_cast_to_array_visitor::
         }
         */
     }
-    return std::unexpected(make_error<cast_error>(cl_(), target, v));
+    return make_error<cast_error>(cl_(), target, v);
 }
 
 }

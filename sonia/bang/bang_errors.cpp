@@ -126,9 +126,15 @@ void error_printer_visitor::operator()(alt_error const& err)
     }
 }
 
-void error_printer_visitor::operator()(parameter_not_found_error const& err)
+general_error::string_t parameter_not_found_error::description(unit const& u) const noexcept
 {
-    s_ << ("parameter `%1%` of `%2%` is not found"_fmt % u_.print(err.param.value) % u_.print(err.entity_name)).str();
+    return ("parameter `%1%` of `%2%` is not found"_fmt %
+        u.print(param.value) % u.print(entity_name)).str();
 }
+
+//void error_printer_visitor::operator()(parameter_not_found_error const& err)
+//{
+//    s_ << ("parameter `%1%` of `%2%` is not found"_fmt % u_.print(err.param.value) % u_.print(err.entity_name)).str();
+//}
 
 }

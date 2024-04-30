@@ -10,6 +10,8 @@
 #include "ast/fn_compiler_context.hpp"
 #include "ast/declaration_visitor.hpp"
 
+#include "vm/bang_vm.hpp"
+
 namespace sonia::lang::bang {
 
 void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
@@ -30,7 +32,7 @@ void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
     eregistry_.insert(pefe);
 
     strings_.emplace_back(print(fnm));
-    bvm_.set_efn(fn_identifier_counter_++, pfn, strings_.back());
+    bvm_->set_efn(fn_identifier_counter_++, pfn, strings_.back());
 }
 
 qname_identifier unit::new_qname_identifier()
@@ -42,6 +44,7 @@ unit::unit()
     : slregistry_{ identifier_builder_ }
     , piregistry_{ identifier_builder_ }
     , fn_identifier_counter_ { (size_t)virtual_stack_machine::builtin_fn::eof_type }
+    , bvm_{ std::make_unique<virtual_stack_machine>() }
 {
     builtins_.resize((size_t)builtin_fn::eof_builtin_type);
 
@@ -61,6 +64,10 @@ unit::unit()
     eregistry_.insert(pweak_lock);
     set_efn(builtin_fn::weak_lock, pweak_lock->name());
 
+    auto pce = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::extern_object_create);
+    eregistry_.insert(pce);
+    set_efn(builtin_fn::extern_object_create, pce->name());
+
     auto peosp = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::extern_object_set_property);
     eregistry_.insert(peosp);
     set_efn(builtin_fn::extern_object_set_property, peosp->name());
@@ -77,13 +84,13 @@ unit::unit()
     eregistry_.insert(ptostring);
     strings_.emplace_back("tostring");
     set_efn(builtin_fn::tostring, ptostring->name());
-    bvm_.set_efn(fn_identifier_counter_++, &bang_tostring, strings_.back());
+    bvm_->set_efn(fn_identifier_counter_++, &bang_tostring, strings_.back());
 
     auto pnegate = make_shared<external_function_entity>(new_qname_identifier(), fn_identifier_counter_);
     eregistry_.insert(pnegate);
     strings_.emplace_back("!");
     set_efn(builtin_fn::negate, pnegate->name());
-    bvm_.set_efn(fn_identifier_counter_++, &bang_negate, strings_.back());
+    bvm_->set_efn(fn_identifier_counter_++, &bang_negate, strings_.back());
 
     set_extern("print(string)"sv, &bang_print_string);
     set_extern("concat(string,string)->string"sv, &bang_concat_string);
@@ -430,6 +437,11 @@ struct expr_printer_visitor : static_visitor<void>
         }
         apply_visitor(*this, c.object);
         ss << ", "sv << u_.print(c.name.value) << ")"sv;
+    }
+
+    void operator()(property_expression const& c) const
+    {
+        ss << "PROPERTY("sv << u_.print(c.name.value) << ")"sv;
     }
 
     void operator()(expression_vector_t const& ev) const

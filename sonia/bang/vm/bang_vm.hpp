@@ -122,7 +122,8 @@ public:
     void weak_create();
     void weak_lock();
     void assign_extern_variable();
-    void construct_extern_object();
+    //void construct_extern_object();
+    void extern_object_create();
     void extern_object_set_property();
     void extern_object_get_property();
     void extern_function_call();
@@ -277,8 +278,8 @@ public:
         is_nil = 0,
         arrayify, unpack,
         referify, weak_create, weak_lock,
-        function_constructor, extern_object_constructor,
-        extern_object_set_property, extern_object_get_property,
+        function_constructor,
+        extern_object_create, extern_object_set_property, extern_object_get_property,
         assign_extern_variable, extern_function_call,
         eof_type
     };

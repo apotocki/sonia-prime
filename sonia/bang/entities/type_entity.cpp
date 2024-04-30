@@ -55,12 +55,14 @@ void type_entity::treat(fn_compiler_context& ctx)
 bool type_entity::try_cast(fn_compiler_context& ctx, bang_type const& rtype) const
 {
     bang_object_t const* pot = get<bang_object_t>(&rtype);
-    if (!pot) return false;
-    if (pot->value == this) return true;
-    return bases.end() != std::find(bases.begin(), bases.end(), pot->value);
+    if (pot && (pot->value == this || bases.end() != std::find(bases.begin(), bases.end(), pot->value))) {
+        ctx.context_type = rtype;
+        return true;
+    }
+    return false;
 }
 
-std::expected<bang_type, error_storage> type_entity::find(fn_compiler_context& ctx, pure_call_t& call) const
+error_storage type_entity::find(fn_compiler_context& ctx, pure_call_t& call) const
 {
     if (!call.positioned_args.empty()) {
         THROW_NOT_IMPLEMENTED_ERROR();
@@ -68,11 +70,48 @@ std::expected<bang_type, error_storage> type_entity::find(fn_compiler_context& c
     
     auto estate = ctx.expressions_state();
 
+    ctx.append_expression(semantic::push_value{ ctx.u().as_string(name()) }); // type
+    ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::extern_object_create));
+
     function_signature const& sig = signatures.back();
     size_t posargpos = 0;
 
     for (auto & narg : call.named_args) {
+        ctx.append_expression(semantic::push_by_offset{ 0 }); // duplicate object on stack (because 'set property' absorbs object )
         auto const& argname = std::get<0>(narg);
+        auto argparts = argname.value.parts();
+        // build property assignment
+        ctx.context_type = bang_object_t{ this };
+        expression_t left_expr = property_expression{ annotated_identifier{ argparts[0], argname.location } };
+        for (size_t partidx = 1; partidx < argparts.size(); ++partidx) {
+            left_expr = member_expression_t{ std::move(left_expr), annotated_identifier{ argparts[partidx], argname.location } };
+        }
+        assign_expression_t aex{ std::move(left_expr), std::get<1>(narg), std::get<2>(narg) };
+        expression_visitor evis{ ctx, nullptr };
+        if (auto opterr = evis(aex); opterr) return std::move(opterr);
+        
+        ctx.append_expression(semantic::truncate_values(1, false)); // remove property value from stack
+#if 0
+        if (argparts.size() > 1) {
+            assign_expression_t aex{left, std::get<1>(narg) }
+            identifier id = argparts[0];
+            auto expgetter = find_field_getter(ctx, annotated_identifier{ id, argname.location });
+            if (!expgetter.has_value()) return std::unexpected(std::move(expgetter.error()));
+            function_entity const* getter = expgetter.value();
+            ctx.append_expression(semantic::invoke_function{ getter->name() });
+            bang_type proptype = getter->result_type();
+
+            for (size_t partidx = 1; partidx < argparts.size() - 1; ++partidx) {
+                identifier id = argparts[partidx];
+                expression_visitor evis{ ctx, nullptr };
+                expgetter = evis.handle_property_get(proptype, annotated_identifier{ id, argname.location });
+                if (!expgetter.has_value()) return std::unexpected(std::move(expgetter.error()));
+                function_entity const* getter = expgetter.value();
+                proptype = getter->result_type();
+            }
+            
+        }
+
         auto it = std::ranges::lower_bound(sig.named_parameters(), argname.value, {} /*[](auto const& l, auto const& r) { return l < r; }*/, [](auto const& v) { return qname{std::get<0>(v).value}; });
         if (it == sig.named_parameters().end() || qname{std::get<0>(*it).value} != argname.value) {
             annotated_qname_identifier aqnid{ ctx.u().qnregistry().resolve(argname.value), argname.location };
@@ -81,12 +120,14 @@ std::expected<bang_type, error_storage> type_entity::find(fn_compiler_context& c
         expression_visitor evis{ ctx, expected_result_t{ std::get<1>(*it), std::get<0>(*it).location } };
         if (auto rtype = apply_visitor(evis, std::get<1>(narg)); !rtype.has_value()) return rtype;
         ctx.append_expression(semantic::push_value{ ctx.u().as_string(argname.value) });
+#endif
     }
-    ctx.append_expression(semantic::push_value{ decimal{ call.named_args.size() } });
-    ctx.append_expression(semantic::push_value{ ctx.u().as_string(name()) });
-    ctx.append_expression(semantic::invoke_function{ name_ });
+    //ctx.append_expression(semantic::push_value{ decimal{ call.named_args.size() } });
+    //ctx.append_expression(semantic::push_value{ ctx.u().as_string(name()) });
+    //ctx.append_expression(semantic::invoke_function{ name_ });
     estate.detach();
-    return bang_object_t{ this };
+    ctx.context_type = bang_object_t{ this };
+    return {};
 
     // ids: check uniqueness?
     //std::ranges::sort(std::views::zip(ids, args_exprs), {}, [](auto const& pair) { return std::get<0>(pair); });
@@ -165,7 +206,7 @@ std::expected<function_entity const*, error_storage> type_entity::find_field_set
     fn_setter_sig.position_parameters().emplace_back(std::get<1>(*it));
     fn_setter_sig.fn_type.result = std::get<1>(*it);
     fn_setter_sig.normilize(ctx);
-    fn_setter_sig.build_mangled_id(ctx.u());
+    //fn_setter_sig.build_mangled_id(ctx.u());
     auto fnent = sonia::make_shared<function_entity>(fnnameid, std::move(fn_setter_sig));
     fnent->set_inline();
     fnent->body.emplace_back(semantic::push_value{ ctx.u().as_string(f.value) });

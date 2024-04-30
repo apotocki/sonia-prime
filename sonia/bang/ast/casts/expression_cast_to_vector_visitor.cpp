@@ -20,7 +20,10 @@ expression_cast_to_vector_visitor::result_type expression_cast_to_vector_visitor
             }
         }
         // to do: compatible tuple to vector cast
-        if (compatible) return target;
+        if (compatible) {
+            ctx.context_type = target;
+            return {};
+        }
         // try to cast
         if (!v.unpacked) {
             ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::unpack));
@@ -35,9 +38,12 @@ expression_cast_to_vector_visitor::result_type expression_cast_to_vector_visitor
         });
         ctx.append_expression(semantic::push_value{ decimal{ v.fields.size() } });
         ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::arrayify));
-        if (!opterror) return target;
+        if (!opterror) {
+            ctx.context_type = target;
+            return {};
+        }
     }
-    return std::unexpected(make_error<cast_error>(cl_(), target, v));
+    return make_error<cast_error>(cl_(), target, v);
 }
 
 }

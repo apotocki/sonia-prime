@@ -253,6 +253,9 @@
     <Filter Include="sonia.utility\invocation">
       <UniqueIdentifier>{72f48ccc-1d69-422c-8d6d-06a96e8caf2e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.bang\ast\type_visitors">
+      <UniqueIdentifier>{22978f14-bf65-4551-adeb-cb54c7f4415f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -2141,6 +2144,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\lang\qname_registry.hpp">
       <Filter>sonia.utility\lang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\vector_expression_visitor.hpp">
+      <Filter>sonia.bang\ast\type_visitors</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

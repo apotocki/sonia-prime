@@ -5,7 +5,6 @@
 #pragma once
 
 #include "sonia/variant.hpp"
-#include "sonia/optional.hpp"
 #include "fn_compiler_context.hpp"
 
 #include "../semantic.hpp"
@@ -14,7 +13,7 @@
 
 namespace sonia::lang::bang {
 
-struct expression_fn_visitor : static_visitor<std::expected<bang_type, error_storage>>
+struct expression_fn_visitor : static_visitor<error_storage>
 {
     fn_compiler_context& ctx;
     functional_entity const& fn;
@@ -61,11 +60,13 @@ struct expression_fn_visitor : static_visitor<std::expected<bang_type, error_sto
     {
         alt_error aerr;
         for (bang_type const& ut : v) {
-            auto opt = apply_visitor(*this, ut);
-            if (opt.has_value()) { return opt; }
-            aerr.alternatives.emplace_back(std::move(opt.error()));
+            if (auto opterr = apply_visitor(*this, ut); opterr) {
+                aerr.alternatives.emplace_back(std::move(opterr));
+            } else {
+                return {};
+            }
         }
-        return std::unexpected(make_error<alt_error>(std::move(aerr)));
+        return make_error<alt_error>(std::move(aerr));
     }
 
     inline result_type operator()(bang_fn_t const& v) const
@@ -75,7 +76,7 @@ struct expression_fn_visitor : static_visitor<std::expected<bang_type, error_sto
         
         function_signature const* fs = fn.find(ctx, position_params, named_params);
         if (!fs || fs->fn_type.result != v.result) {
-            return std::unexpected(make_error<cast_error>(cl_(), v, nullopt));
+            return make_error<cast_error>(cl_(), v, nullopt);
         }
         qname_identifier fnm = ctx.u().qnregistry().concat(fn.name(), fs->mangled_id);
         variable_entity const* pv = ctx.resolve_variable(fnm);
@@ -89,14 +90,15 @@ struct expression_fn_visitor : static_visitor<std::expected<bang_type, error_sto
             THROW_INTERNAL_ERROR("function '%1%' is not materialized"_fmt % ctx.u().print(fnm));
             //result.emplace_back(semantic::push_value{ function_value { std::move(fnm) } });
         }
-        return v;
+        ctx.context_type = v;
+        return {};
     }
 
     ///*
     template <typename T>
     result_type operator()(T const& v) const
     {
-        return std::unexpected(make_error<cast_error>(cl_(), v, nullopt));
+        return make_error<cast_error>(cl_(), v, nullopt);
     }
     //*/
 };

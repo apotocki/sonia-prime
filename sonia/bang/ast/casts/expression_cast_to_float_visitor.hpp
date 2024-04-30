@@ -10,7 +10,7 @@
 
 namespace sonia::lang::bang {
 
-struct expression_cast_to_float_visitor : static_visitor<std::expected<bang_type, error_storage>>
+struct expression_cast_to_float_visitor : static_visitor<error_storage>
 {
     fn_compiler_context& ctx;
     context_locator_t cl_;
@@ -81,18 +81,20 @@ struct expression_cast_to_float_visitor : static_visitor<std::expected<bang_type
 
     inline result_type operator()(bang_float_t const&) const
     {
-        return bang_float_t{};
+        ctx.context_type = bang_float_t{};
+        return {};
     }
 
     inline result_type operator()(bang_decimal_t const&) const
     {
-        return bang_float_t{};
+        ctx.context_type = bang_float_t{};
+        return {};
     }
 
     template <typename T>
     result_type operator()(T const& v) const
     {
-        return std::unexpected(make_error<cast_error>(cl_(), bang_float_t{}, v));
+        return make_error<cast_error>(cl_(), bang_float_t{}, v);
     }
 };
 

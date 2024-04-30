@@ -11,7 +11,7 @@
 
 namespace sonia::lang::bang {
 
-struct expression_cast_to_array_visitor : static_visitor<std::expected<bang_type, error_storage>>
+struct expression_cast_to_array_visitor : static_visitor<error_storage>
 {
     fn_compiler_context& ctx;
     bang_array_t const& target;
@@ -84,8 +84,11 @@ struct expression_cast_to_array_visitor : static_visitor<std::expected<bang_type
 
     inline result_type operator()(bang_array_t const& v) const
     {
-        if (target.type == v.type) return target;
-        return std::unexpected(make_error<cast_error>(cl_(), target, v));
+        if (target.type == v.type) {
+            ctx.context_type = target;
+            return {};
+        }
+        return make_error<cast_error>(cl_(), target, v);
     }
 
     result_type operator()(bang_tuple_t const& v) const;

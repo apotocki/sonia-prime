@@ -6,7 +6,6 @@
 
 #include <sstream>
 
-#include "sonia/optional.hpp"
 //#include "sonia/utility/scope_exit.hpp"
 
 #include "sonia/bang/semantic.hpp"
@@ -20,7 +19,7 @@
 
 namespace sonia::lang::bang {
 
-struct expression_cast_to_enum_visitor : static_visitor<std::expected<bang_type, error_storage>>
+struct expression_cast_to_enum_visitor : static_visitor<error_storage>
 {
     fn_compiler_context& ctx;
     case_expression const& ce;
@@ -100,43 +99,46 @@ struct expression_cast_to_enum_visitor : static_visitor<std::expected<bang_type,
     {
         shared_ptr<entity> e = ctx.resolve_entity(obj.name());
         if (!e) [[unlikely]] {
-            return std::unexpected(make_error<basic_general_error>(ce.name.location, "unresolved context object"sv, obj.name()));
+            return make_error<basic_general_error>(ce.name.location, "unresolved context object"sv, obj.name());
         }
         shared_ptr<enum_entity> enum_ent = dynamic_pointer_cast<enum_entity>(e);
         if (!enum_ent) [[unlikely]] {
-            return std::unexpected(make_error<basic_general_error>(ce.name.location, "is not a enumeration"sv, obj.name()));
+            return make_error<basic_general_error>(ce.name.location, "is not a enumeration"sv, obj.name());
         }
         auto const* enumcase = enum_ent->find(ce.name.value);
         if (!enumcase) [[unlikely]] {
-            return std::unexpected(make_error<unknown_case_error>(ce, obj.name()));
+            return make_error<unknown_case_error>(ce, obj.name());
         }
         ctx.append_expression(semantic::push_value{ enumcase->value });
-        return obj;
+        ctx.context_type = obj;
+        return {};
     }
 
     //inline result_type operator()(bang_vector_t const& v) const
     //{
     //    THROW_NOT_IMPLEMENTED_ERROR();
     //    //if (target.type == v.type) return target;
-    //    //return nullopt;
+    //    //return {};
     //}
 
     inline result_type operator()(bang_union_t const& v) const
     {
         alt_error err;
         for (bang_type const& t : v) {
-            auto opt = apply_visitor(*this, t);
-            if (opt.has_value()) { return opt; }
-            err.alternatives.emplace_back(std::move(opt.error()));
+            if (auto opterr = apply_visitor(*this, t); opterr) {
+                err.alternatives.emplace_back(std::move(opterr));
+            } else {
+                return {};
+            }
         }
-        return std::unexpected(make_error<alt_error>(std::move(err)));
+        return make_error<alt_error>(std::move(err));
     }
 
     template <typename T>
     inline result_type operator()(T const&) const
     {
         // THROW_NOT_IMPLEMENTED_ERROR();
-        return std::unexpected(make_error<basic_general_error>(cl_(), "is not a enumeration"sv));
+        return make_error<basic_general_error>(cl_(), "is not a enumeration"sv);
     }
 };
 

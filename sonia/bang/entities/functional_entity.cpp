@@ -28,7 +28,7 @@ function_signature& functional_entity::put_signature(function_signature&& one_mo
     return signatures.back();
 }
 
-std::expected<bang_type, error_storage> functional_entity::find(fn_compiler_context& ctx, pure_call_t & call) const
+error_storage functional_entity::find(fn_compiler_context& ctx, pure_call_t & call) const
 {
     auto estate = ctx.expressions_state();
     for (auto & sig: signatures) {
@@ -38,10 +38,11 @@ std::expected<bang_type, error_storage> functional_entity::find(fn_compiler_cont
         }
         ctx.append_expression(semantic::invoke_function{ ctx.u().qnregistry().concat(name(), sig.mangled_id) });
         estate.detach();
-        return sig.fn_type.result;
+        ctx.context_type = sig.fn_type.result;
+        return {};
     }
     //return std::unexpected(("can't match a function call '%1%'"_fmt % ctx.u().print(fnvar->name)).str());
-    return std::unexpected(make_error<function_call_match_error>(call.location()));
+    return make_error<function_call_match_error>(call.location());
 }
 
 function_signature const* functional_entity::find(fn_compiler_context& ctx,
@@ -93,13 +94,13 @@ bool is_matched(fn_compiler_context& ctx, function_signature const& sig, pure_ca
     auto named_args = std::span{ call.named_args };
     for (bang_type const& argt : sig.position_parameters()) {
         expression_visitor evis{ ctx, expected_result_t{ argt, std::get<1>(positioned_args.front()) } };
-        if (!apply_visitor(evis, std::get<0>(positioned_args.front()))) return false;
+        if (apply_visitor(evis, std::get<0>(positioned_args.front()))) return false;
         positioned_args = positioned_args.subspan(1);
     }
     for (auto const& [aname, tp] : sig.named_parameters()) {
         if (std::get<0>(named_args.front()).value != qname{aname.value}) return false;
         expression_visitor evis{ ctx, expected_result_t{ tp, std::get<2>(named_args.front()) } };
-        if (!apply_visitor(evis, std::get<1>(named_args.front()))) return false;
+        if (apply_visitor(evis, std::get<1>(named_args.front()))) return false;
         named_args = named_args.subspan(1);
     }
     return true;

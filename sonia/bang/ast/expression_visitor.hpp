@@ -3,12 +3,8 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #pragma once
-
-#include <expected>
-#include "../unit.hpp"
-
+#include "sonia/bang/unit.hpp"
 #include "sonia/bang/semantic.hpp"
-#include "sonia/optional.hpp"
 #include "sonia/bang/errors.hpp"
 
 namespace sonia::lang::bang {
@@ -19,7 +15,7 @@ struct expected_result_t
     lex::resource_location const& location;
 };
 
-struct expression_visitor : static_visitor<std::expected<bang_type, error_storage>>
+struct expression_visitor : static_visitor<error_storage>
 {
     fn_compiler_context& ctx;
     optional<expected_result_t> expected_result;
@@ -47,6 +43,7 @@ struct expression_visitor : static_visitor<std::expected<bang_type, error_storag
 
     result_type operator()(case_expression const&) const;
     result_type operator()(member_expression_t&) const;
+    result_type operator()(property_expression&) const;
 
     result_type operator()(annotated_bool const&) const;
     result_type operator()(annotated_decimal const&) const;
@@ -61,12 +58,13 @@ struct expression_visitor : static_visitor<std::expected<bang_type, error_storag
     result_type operator()(function_call_t&) const;
 
     result_type operator()(negate_expression_t&) const;
-    result_type operator()(binary_expression_t<binary_operator_type::ASSIGN> &) const;
+    result_type operator()(assign_expression_t&) const;
     result_type operator()(logic_and_expression_t &) const;
     result_type operator()(logic_or_expression_t &) const;
     result_type operator()(binary_expression_t<binary_operator_type::CONCAT>&) const;
 
     function_entity& handle_lambda(lambda_t&) const;
+    std::expected<function_entity const*, error_storage> handle_property_get(annotated_identifier id) const;
 
 private:
     template <typename ExprT>

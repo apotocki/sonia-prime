@@ -11,7 +11,7 @@
 
 namespace sonia::lang::bang {
 
-struct expression_cast_to_bool_visitor : static_visitor<std::expected<bang_type, error_storage>>
+struct expression_cast_to_bool_visitor : static_visitor<error_storage>
 {
     fn_compiler_context& ctx;
     context_locator_t cl_;
@@ -82,7 +82,8 @@ struct expression_cast_to_bool_visitor : static_visitor<std::expected<bang_type,
 
     inline result_type operator()(bang_bool_t const&) const
     {
-        return bang_bool_t{};
+        ctx.context_type = bang_bool_t{};
+        return {};
     }
 
     inline result_type operator()(bang_vector_t const& v) const

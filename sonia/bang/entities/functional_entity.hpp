@@ -77,7 +77,7 @@ public:
         span<const std::tuple<annotated_identifier, bang_type>> named_params) const;
 
     // looking by argument expressions
-    virtual std::expected<bang_type, error_storage> find(fn_compiler_context&, pure_call_t& call) const;
+    virtual error_storage find(fn_compiler_context&, pure_call_t& call) const;
 };
 
 bool is_matched(fn_compiler_context&,

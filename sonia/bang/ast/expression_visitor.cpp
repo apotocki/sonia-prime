@@ -20,6 +20,8 @@
 #include "casts/expression_cast_to_enum_visitor.hpp"
 #include "sonia/bang/errors.hpp"
 
+#include "vector_expression_visitor.hpp"
+
 #include <expected>
 
 namespace sonia::lang::bang {
@@ -27,7 +29,10 @@ namespace sonia::lang::bang {
 template <typename ExprT>
 inline expression_visitor::result_type expression_visitor::apply_cast(bang_type const& t, ExprT const& e) const
 {
-    if (!expected_result || (t.which() == expected_result->type.which() && expected_result->type == t)) return t;
+    if (!expected_result || (t.which() == expected_result->type.which() && expected_result->type == t)) {
+        ctx.context_type = t;
+        return {};
+    }
     return apply_visitor(
           expression_implicit_cast_visitor{ ctx, t, [this, &e] { return error_context{e, expected_result->location}; } }
         , expected_result->type);
@@ -62,7 +67,7 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
         if (k == variable_entity::kind::SCOPE_LOCAL || k == variable_entity::kind::LOCAL) {
             if (!ctx.u().qnregistry().resolve(varptr->name()).parent().has_prefix(ctx.base_ns())) {
                 if (k == variable_entity::kind::SCOPE_LOCAL || var.scope_local) {
-                    return std::unexpected(make_error<basic_general_error>(var.name.location, "variable is not defined in the scope"sv, var.name.value));
+                    return make_error<basic_general_error>(var.name.location, "variable is not defined in the scope"sv, var.name.value);
                 }
                 varptr = &ctx.create_captured_variable_chain(*varptr);
             }
@@ -89,41 +94,40 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
         return pv->type();
     }
     */
-    return std::unexpected(make_error<undeclared_identifier_error>(var.name));
+    return make_error<undeclared_identifier_error>(var.name);
 }
 
 expression_visitor::result_type expression_visitor::operator()(negate_expression_t & op) const
 {
     expression_visitor rvis{ ctx, nullptr };
-    auto rtype = apply_visitor(rvis, op.argument);
-    if (!rtype.has_value()) return rtype;
+    if (auto opterr = apply_visitor(rvis, op.argument); opterr) return std::move(opterr);
+    
     ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::negate) });
     
     // "result of negated expression"
     return apply_cast(bang_bool_t{}, op);
 }
 
-expression_visitor::result_type expression_visitor::operator()(binary_expression_t<binary_operator_type::ASSIGN> & op) const
+expression_visitor::result_type expression_visitor::operator()(assign_expression_t& op) const
 {
     //GLOBAL_LOG_INFO() << "left expression: " << ctx.u().print(op.left);
 
     //size_t start_result_pos = result.size();
     lvalue_expression_visitor lvis{ ctx };
     auto e = apply_visitor(lvis, op.left);
-    if (!e.has_value()) return std::unexpected(e.error());
+    if (!e.has_value()) return e.error();
 
     // variable_entity
     if (function_entity const* fe = dynamic_cast<function_entity const*>(e.value()); fe) {
         // fe: (object, property value)->
         bang_type const& t = fe->signature().position_parameters().back();
         expression_visitor rvis{ ctx, expected_result_t{ t, op.location }};
-        auto rtype = apply_visitor(rvis, op.right);
-        if (!rtype.has_value()) return rtype;
+        auto opterr = apply_visitor(rvis, op.right);
         ctx.append_expression(semantic::invoke_function{ fe->name() });
-        return std::move(rtype);
+        return std::move(opterr);
     } else if (variable_entity const* ve = dynamic_cast<variable_entity const*>(e.value()); ve) {
         expression_visitor rvis{ ctx, expected_result_t{ ve->type(), op.location }};
-        auto rtype = apply_visitor(rvis, op.right);
+        auto opterr = apply_visitor(rvis, op.right);
         if (ve->is_weak()) {
             ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });
         }
@@ -131,7 +135,7 @@ expression_visitor::result_type expression_visitor::operator()(binary_expression
         if (ve->is_weak()) {
             ctx.append_expression(semantic::truncate_values(1, false));
         }
-        return std::move(rtype);
+        return std::move(opterr);
     } else {
         // to do: functional entity assignment
         THROW_NOT_IMPLEMENTED_ERROR();
@@ -284,9 +288,9 @@ expression_visitor::result_type expression_visitor::operator()(logic_and_express
         ? expression_visitor{ ctx, expected_result_t{ bang_type{bang_any_t{}} || expected_result->type, expected_result->location }}
         : expression_visitor{ ctx, nullptr };
 
-    auto ltype = apply_visitor(largvis, op.left);
-    if (!ltype.has_value()) return ltype;
-
+    if (auto opterr = apply_visitor(largvis, op.left); opterr) return opterr;
+    auto ltype = ctx.context_type;
+    
     ctx.append_expression(semantic::conditional_t{});
     semantic::conditional_t & cond = get<semantic::conditional_t>(ctx.expressions().back());
     auto st = ctx.expressions_state(); // pin state
@@ -294,16 +298,16 @@ expression_visitor::result_type expression_visitor::operator()(logic_and_express
     ctx.push_chain(cond.true_branch);
     ctx.append_expression(semantic::truncate_values(1, false)); // remove result of left expression
     expression_visitor rargvis{ ctx, expected_result };
-    auto rtype = apply_visitor(rargvis, op.right);
-    if (!rtype.has_value()) return rtype;
+    if (auto opterr = apply_visitor(rargvis, op.right); opterr) return opterr;
+    auto rtype = ctx.context_type;
     st.restore_and_detach();
     
-    bang_bunion_t const* pbur = get<bang_bunion_t>(&rtype.value());
-    bang_bunion_t const* pbul = get<bang_bunion_t>(&ltype.value());
+    bang_bunion_t const* pbur = rtype.as<bang_bunion_t>();
+    bang_bunion_t const* pbul = ltype.as<bang_bunion_t>();
 
     bang_bunion_t res_type{
-        /*true_type*/  pbur ? pbur->true_type : rtype.value(),
-        /*false_type*/ (pbul ? pbul->false_type : ltype.value()) || (pbur ? pbur->false_type : rtype.value())
+        /*true_type*/  pbur ? pbur->true_type : rtype,
+        /*false_type*/ (pbul ? pbul->false_type : ltype) || (pbur ? pbur->false_type : rtype)
     };
     if (res_type.true_type == res_type.false_type) {
         return apply_cast(res_type.true_type, op);
@@ -317,9 +321,9 @@ expression_visitor::result_type expression_visitor::operator()(logic_or_expressi
         ? expression_visitor{ ctx, expected_result_t{ bang_type{bang_any_t{}} || expected_result->type, expected_result->location }}
         : expression_visitor{ ctx, nullptr };
     
-    auto ltype = apply_visitor(largvis, op.left);
-    if (!ltype.has_value()) return ltype;
-
+    if (auto opterr = apply_visitor(largvis, op.left); opterr) return opterr;
+    auto ltype = ctx.context_type;
+    
     ctx.append_expression(semantic::conditional_t{});
     semantic::conditional_t& cond = get<semantic::conditional_t>(ctx.expressions().back());
     auto st = ctx.expressions_state(); // pin state
@@ -327,16 +331,16 @@ expression_visitor::result_type expression_visitor::operator()(logic_or_expressi
     ctx.push_chain(cond.false_branch);
     ctx.append_expression(semantic::truncate_values(1, false)); // remove result of left expression
     expression_visitor rargvis{ ctx, expected_result };
-    auto rtype = apply_visitor(rargvis, op.right);
-    if (!rtype.has_value()) return rtype;
+    if (auto opterr = apply_visitor(rargvis, op.right); opterr) return opterr;
+    auto rtype = ctx.context_type;
     st.restore_and_detach();
 
-    bang_bunion_t const* pbur = get<bang_bunion_t>(&rtype.value());
-    bang_bunion_t const* pbul = get<bang_bunion_t>(&ltype.value());
+    bang_bunion_t const* pbur = rtype.as<bang_bunion_t>();
+    bang_bunion_t const* pbul = ltype.as<bang_bunion_t>();
 
     bang_bunion_t res_type{
-        /*true_type*/  (pbul ? pbul->true_type : ltype.value()) || (pbur ? pbur->true_type : rtype.value()),
-        /*false_type*/ pbur ? pbur->false_type : rtype.value()
+        /*true_type*/  (pbul ? pbul->true_type : ltype) || (pbur ? pbur->true_type : rtype),
+        /*false_type*/ pbur ? pbur->false_type : rtype
     };
 
     if (res_type.true_type == res_type.false_type) {
@@ -354,104 +358,81 @@ expression_visitor::result_type expression_visitor::operator()(binary_expression
     pure_call_t proc(std::move(op.location), {});
     proc.positioned_args.emplace_back(std::move(op.left), op.start());
     proc.positioned_args.emplace_back(std::move(op.right), op.location); // ~
-    auto et = func_ent->find(ctx, proc);
-    if (!et.has_value()) return et;
+    return func_ent->find(ctx, proc);
     // to do: type matching. or should the find method take into account result type?
-    return et;
 }
 
 expression_visitor::result_type expression_visitor::operator()(case_expression const& ce) const
 {
     if (!expected_result) {
-        return std::unexpected(make_error<basic_general_error>(ce.name.location, "no context type to resolve the case expression"sv, ce.name.value));
+        return make_error<basic_general_error>(ce.name.location, "no context type to resolve the case expression"sv, ce.name.value);
     }
 
-    expression_cast_to_enum_visitor vis{ ctx, ce,  [this, &ce] { return error_context{ce, expected_result->location}; } };
+    return apply_visitor(
+        expression_cast_to_enum_visitor{ ctx, ce,  [this, &ce] { return error_context{ce, expected_result->location}; } },
+        expected_result->type
+    );
+}
 
-    return apply_visitor(vis, expected_result->type);
+std::expected<function_entity const*, error_storage> expression_visitor::handle_property_get(annotated_identifier id) const
+{
+    if (auto const* po = sonia::get<bang_object_t>(&ctx.context_type); po) {
+        if (auto const& pte = dynamic_cast<type_entity const*>(po->value); pte) {
+            auto rg = pte->find_field_getter(ctx, id);
+            if (!rg.has_value()) return std::unexpected(std::move(rg.error()));
+            function_entity const* getter = rg.value();
+            ctx.append_expression(semantic::invoke_function{ getter->name() });
+            return getter;
+        } else { // could be enum
+            THROW_NOT_IMPLEMENTED_ERROR();
+        }
+    }
+    return std::unexpected(make_error<left_not_an_object_error>(id.location, id.value, ctx.context_type));
 }
 
 expression_visitor::result_type expression_visitor::operator()(member_expression_t & me) const
 {
-    auto otype = apply_visitor(expression_visitor{ ctx, nullptr }, me.object);
-    if (!otype.has_value()) return std::move(otype);
-    if (auto* uotype = otype.value().as<bang_union_t>(); me.is_object_optional && uotype && uotype->has(bang_tuple_t{})) {
+    if (auto opterr = apply_visitor(expression_visitor{ ctx, nullptr }, me.object); opterr) return opterr;
+    if (auto* uotype = ctx.context_type.as<bang_union_t>(); me.is_object_optional && uotype && uotype->has(bang_tuple_t{})) {
         ctx.append_expression(std::move(semantic::not_empty_condition_t{}));
         ctx.push_chain(get<semantic::not_empty_condition_t>(ctx.expressions().back()).branch);
-        otype = *uotype - bang_tuple_t{};
+        ctx.context_type = *uotype - bang_tuple_t{};
     }
-    function_entity const* getter;
-    if (auto const* po = sonia::get<bang_object_t>(&*otype); po) {
-        if (auto const& pte = dynamic_cast<type_entity const*>(po->value); pte) {
-             auto rg = pte->find_field_getter(ctx, me.name);
-             if (!rg.has_value()) return std::unexpected(std::move(rg.error()));
-             getter = rg.value();
-        } else { // could be enum
-            THROW_NOT_IMPLEMENTED_ERROR();
-        }
-    } else {
-        return std::unexpected(make_error<left_not_an_object_error>(me.name.location, me.name.value, *otype));
-    }
+    auto expgetter = handle_property_get(me.name);
+    if (!expgetter.has_value()) return std::move(expgetter.error());
 
-    ctx.append_expression(semantic::invoke_function{ getter->name() });
+    function_entity const* getter = expgetter.value();
     return apply_cast(getter->result_type(), me);
+}
+
+expression_visitor::result_type expression_visitor::operator()(property_expression& pe)  const
+{
+    //if (ctx.context_type == bang_tuple_t{}) {
+    //    return std::unexpected(make_error<left_not_an_object_error>(pe.name.location, pe.name.value, bang_tuple_t{}));
+    //}
+    auto expgetter = handle_property_get(pe.name);
+    if (!expgetter.has_value()) return std::move(expgetter.error());
+
+    function_entity const* getter = expgetter.value();
+    return apply_cast(getter->result_type(), pe);
 }
 
 expression_visitor::result_type expression_visitor::operator()(expression_vector_t & vec) const
 {
+    if (expected_result) {
+        return apply_visitor(vector_expression_visitor{ ctx, vec, expected_result->location }, expected_result->type);
+    }
+
+    // no expected_result case
     bang_tuple_t rtype;
     rtype.fields.reserve(vec.elements.size());
     expression_visitor elemvis{ ctx, nullptr };
     for (expression_t& e : vec.elements) {
-        auto et = apply_visitor(elemvis, e);
-        if (!et.has_value()) return et;
-        rtype.fields.emplace_back(*et);
+        if (auto opterr = apply_visitor(elemvis, e); opterr) return opterr;
+        rtype.fields.emplace_back(ctx.context_type);
     }
     rtype.unpacked = true;
     return apply_cast(rtype, vec);
-
-    /*
-    if (!expected_result) { // is real case?
-        rtype.fields.reserve(vec.elements.size());
-        expression_visitor elemvis{ ctx, nullptr };
-        for (expression_t & e : vec.elements) {
-            rtype.fields.emplace_back(*apply_visitor(elemvis, e));
-        }
-        return std::move(rtype);
-    }
-
-    expression_vector_visitor evv{ ctx, vec, *expected_result_loc_ };
-    if (auto optrest = apply_visitor(evv, *expected_result); optrest) {
-        return *optrest;
-    }
-    
-    rtype.fields.reserve(vec.elements.size());
-    expression_visitor elemvis{ ctx, nullptr };
-    for (expression_t & e : vec.elements) {
-        rtype.fields.emplace_back(*apply_visitor(elemvis, e));
-    }
-    throw exception("can't convert the %1% to %2%"_fmt % ctx.u().print(bang_type{rtype}) % ctx.u().print(*expected_result));
-    */
-    /*
-    bang_generic_type const* expected_elem_type = nullptr;
-    if (expected_result) {
-        if (bang_vector_t const* parr = get<bang_vector_t>(expected_result); parr) {
-            expected_elem_type = &parr->type;
-
-            expression_visitor elemvis{ ctx, result, expected_elem_type };
-            for (expression_t const& e : vec.elements) {
-                apply_visitor(elemvis, e);
-            }
-            result.emplace_back(semantic::push_value{ decimal{ vec.elements.size() } });
-            result.emplace_back(semantic::invoke_function{ &ctx.u().arrayify_entity(), (uint32_t)vec.elements.size() + 1 });
-            return *expected_result;
-        }
-        THROW_NOT_IMPLEMENTED_ERROR("expected type: %1%"_fmt % ctx.u().print(*expected_result));
-    }
-
-    
-    return std::move(rtype);
-    */
 }
 
 function_entity& expression_visitor::handle_lambda(lambda_t& l) const
@@ -466,7 +447,9 @@ function_entity& expression_visitor::handle_lambda(lambda_t& l) const
 
 expression_visitor::result_type expression_visitor::operator()(lambda_t & l) const
 {
-    return handle_lambda(l).type();
+    function_entity& fe = handle_lambda(l);
+    ctx.context_type = fe.type();
+    return {};
 }
 
 expression_visitor::result_type expression_visitor::operator()(function_call_t & proc) const
@@ -478,7 +461,7 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t &
     if (auto it = std::ranges::adjacent_find(proc.named_args, {}, [](auto const& pair) { return std::get<0>(pair).value; }); it != proc.named_args.end()) {
         ++it; // get second
         auto const& aid = std::get<0>(*it);
-        return std::unexpected(make_error<basic_general_error>(aid.location, "repeated argument"sv, ctx.u().qnregistry().resolve(aid.value)));
+        return make_error<basic_general_error>(aid.location, "repeated argument"sv, ctx.u().qnregistry().resolve(aid.value));
     }
 
     if (auto *pl = get<lambda_t>(&proc.fn_object); pl) {
@@ -486,7 +469,8 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t &
         //ctx.expressions.emplace_back(semantic::set_variable{ &fnent });
         fnent.materialize_call(ctx, proc);
         ctx.append_expression(semantic::truncate_values{ 1, !fnent.is_void() }); // remove fnobject
-        return fnent.signature().fn_type.result;
+        ctx.context_type = fnent.signature().fn_type.result;
+        return {};
     }
 
     variable_identifier const* fnvar = get<variable_identifier>(&proc.fn_object);
@@ -496,17 +480,15 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t &
     //GLOBAL_LOG_INFO() << ctx.u().print(fnvar->name);
     shared_ptr<entity> e = ctx.resolve_entity(fnvar->name.value);
     if (!e) [[unlikely]] {
-        return std::unexpected(make_error<undeclared_identifier_error>(fnvar->name));
+        return make_error<undeclared_identifier_error>(fnvar->name);
     }
     shared_ptr<functional_entity> func_ent = dynamic_pointer_cast<functional_entity>(e);
     if (!func_ent) [[unlikely]] {
         // to do: can be variable
-        return std::unexpected(make_error<basic_general_error>(fnvar->name.location, "is not callable"sv, fnvar->name.value));
+        return make_error<basic_general_error>(fnvar->name.location, "is not callable"sv, fnvar->name.value);
     }
     
     return func_ent->find(ctx, proc);
-    //if (!rtype.has_value()) return rtype;
-    //return rtype;
 }
 
 expression_visitor::result_type expression_visitor::operator()(chained_expression_t&) const

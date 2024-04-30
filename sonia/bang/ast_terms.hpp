@@ -333,6 +333,11 @@ struct member_expression
     lex::resource_location const& start() const { return get_start_location(object); }
 };
 
+struct property_expression
+{
+    annotated_identifier name;
+};
+
 struct variable_identifier
 {
     annotated_qname_identifier name;
@@ -400,7 +405,7 @@ struct lambda : fn_pure<ExprT>
 
 using expression_t = make_recursive_variant<
     annotated_bool, annotated_decimal, annotated_string,
-    variable_identifier, case_expression, member_expression<recursive_variant_>, 
+    variable_identifier, case_expression, property_expression, member_expression<recursive_variant_>,
     lambda<recursive_variant_>,
     negate_expression<>,
     assign_expression<>, logic_and_expression<>, logic_or_expression<>, concat_expression<>,
@@ -447,6 +452,7 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     inline result_type operator()(variable_identifier const& v) const noexcept { return v.name.location; }
     inline result_type operator()(case_expression const& ce) const noexcept { return ce.start; }
     inline result_type operator()(member_expression_t const& me) const noexcept { return me.start(); }
+    inline result_type operator()(property_expression const& me) const noexcept { return me.name.location; }
     inline result_type operator()(lambda_t const& le) const noexcept { return le.start; }
 
     template <unary_operator_type Op>

@@ -24,8 +24,6 @@
 #include "entities/variable_entity.hpp"
 #include "entities/functional_entity.hpp"
 
-#include "vm/bang_vm.hpp"
-
 //#include "functional_entity.hpp"
 
 namespace sonia::lang::bang {
@@ -52,6 +50,9 @@ struct variable_equal_to
 };
 */
 
+class virtual_stack_machine;
+namespace vm { class context; }
+
 class unit
 {
     using identifier_builder_t = identifier_builder<identifier>;
@@ -72,8 +73,6 @@ class unit
 
     std::vector<qname_identifier> builtins_;
 
-    virtual_stack_machine bvm_;
-
     size_t fn_identifier_counter_;
 
     std::vector<small_string> strings_;
@@ -82,6 +81,7 @@ public:
     enum class builtin_fn
     {
         arrayify = 0, unpack, weak_create, weak_lock,
+        extern_object_create,
         extern_object_set_property,
         extern_object_get_property,
         extern_function_call,
@@ -112,7 +112,7 @@ public:
     eregistry_t& eregistry() { return eregistry_; }
     qname_registry_t& qnregistry() { return qname_registry_; }
 
-    virtual_stack_machine& bvm() { return bvm_; }
+    virtual_stack_machine& bvm() { return *bvm_; }
 
     void set_extern(string_view sign, void(*pfn)(vm::context&));
 
@@ -177,6 +177,7 @@ private:
     // entities registry:
     //qname -> entity
 
+    std::unique_ptr<virtual_stack_machine> bvm_;
     std::vector<fs::path> additional_paths_;
 };
 

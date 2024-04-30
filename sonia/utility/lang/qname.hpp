@@ -93,6 +93,9 @@ public:
         return std::ranges::equal(parts().subspan(0, sp.size()), sp);
     }
 
+    auto begin() const { return parts_.begin(); }
+    auto end() const { return parts_.end(); }
+
 private:
     boost::container::small_vector<IdentifierT, 4> parts_;
     bool absolute_;

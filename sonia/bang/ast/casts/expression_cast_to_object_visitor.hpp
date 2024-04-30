@@ -11,7 +11,7 @@
 
 namespace sonia::lang::bang {
 
-struct expression_cast_to_object_visitor : static_visitor<std::expected<bang_type, error_storage>>
+struct expression_cast_to_object_visitor : static_visitor<error_storage>
 {
     fn_compiler_context& ctx;
     bang_object_t const& target;
@@ -84,13 +84,14 @@ struct expression_cast_to_object_visitor : static_visitor<std::expected<bang_typ
 
     inline result_type operator()(bang_object_t const& v) const
     {
-        if (v == target) return target;
-        if (auto const* pte = dynamic_cast<type_entity const*>(v.value); pte) {
-            if (pte->try_cast(ctx, target)) {
-                return target;
-            }
+        if (v == target) {
+            ctx.context_type = target;
+            return {};
         }
-        return std::unexpected(make_error<cast_error>(cl_(), target, v));
+        if (auto const* pte = dynamic_cast<type_entity const*>(v.value); pte) {
+            if (pte->try_cast(ctx, target)) return {};
+        }
+        return make_error<cast_error>(cl_(), target, v);
     }
 
     //inline result_type operator()(bang_bool_t const& b) const
@@ -101,7 +102,7 @@ struct expression_cast_to_object_visitor : static_visitor<std::expected<bang_typ
     template <typename T>
     result_type operator()(T const& v) const
     {
-        return std::unexpected(make_error<cast_error>(cl_(), target, v));
+        return make_error<cast_error>(cl_(), target, v);
     }
 };
 

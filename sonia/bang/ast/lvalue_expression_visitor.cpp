@@ -19,24 +19,35 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(var
     return std::unexpected(make_error<undeclared_identifier_error>(v.name));
 }
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(member_expression_t & me) const
+std::expected<entity const*, error_storage> lvalue_expression_visitor::handle_property_set(annotated_identifier id) const
 {
-    auto otype = apply_visitor(expression_visitor{ ctx, nullptr }, me.object);
-    if (!otype.has_value()) return std::unexpected(std::move(otype.error()));
-    if (auto* uotype = otype.value().as<bang_union_t>(); me.is_object_optional && uotype && uotype->has(bang_tuple_t{})) {
-        ctx.append_expression(std::move(semantic::not_empty_condition_t{}));
-        ctx.push_chain(get<semantic::not_empty_condition_t>(ctx.expressions().back()).branch);
-        otype = *uotype - bang_tuple_t{};
-    }
-    if (auto const* po = sonia::get<bang_object_t>(&*otype); po) {
+    if (auto const* po = sonia::get<bang_object_t>(&ctx.context_type); po) {
         if (auto const& pte = dynamic_cast<type_entity const*>(po->value); pte) {
-            return pte->find_field_setter(ctx, me.name);
+            return pte->find_field_setter(ctx, id);
         } else {
             THROW_NOT_IMPLEMENTED_ERROR();
         }
-    } else {
-        return std::unexpected(make_error<left_not_an_object_error>(me.name.location, me.name.value, otype.value()));
     }
+    
+    return std::unexpected(make_error<left_not_an_object_error>(id.location, id.value, ctx.context_type));
+}
+
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(member_expression_t & me) const
+{
+    if (auto opterr = apply_visitor(expression_visitor{ ctx, nullptr }, me.object); opterr) {
+        return std::unexpected(std::move(opterr));
+    }
+    if (auto* uotype = ctx.context_type.as<bang_union_t>(); me.is_object_optional && uotype && uotype->has(bang_tuple_t{})) {
+        ctx.append_expression(std::move(semantic::not_empty_condition_t{}));
+        ctx.push_chain(get<semantic::not_empty_condition_t>(ctx.expressions().back()).branch);
+        ctx.context_type = *uotype - bang_tuple_t{};
+    }
+    return handle_property_set(me.name);
+}
+
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(property_expression& pe) const
+{
+    return handle_property_set(pe.name);
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(lambda_t const&) const

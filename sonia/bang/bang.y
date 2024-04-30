@@ -180,6 +180,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 // 15 priority
 %right ASSIGN
+%left COLON
 
 // 14 priority
 %left LOGIC_OR
@@ -199,7 +200,6 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 // 2 priority
 %left OPEN_BRACE OPEN_PARENTHESIS OPEN_SQUARE_BRACKET ARROW POINT
 %right QMARK
-%left COLON
 
 //%token DBLCOLON             "`::`"
 %left DBLCOLON             "`::`"

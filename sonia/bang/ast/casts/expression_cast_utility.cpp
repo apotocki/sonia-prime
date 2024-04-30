@@ -16,9 +16,8 @@ optional<error_storage> cast_elements(fn_compiler_context& ctx, span<const bang_
         if (t != to) {
             if (offset) ctx.append_expression(semantic::push_by_offset{ offset });
             expression_implicit_cast_visitor vis{ ctx, t, [index = from.size() - offset - 1, &cl] { return cl(index); } };
-            auto r = apply_visitor(vis, to);
-            if (!r.has_value()) {
-                return r.error();
+            if (auto opterr = apply_visitor(vis, to); opterr) {
+                return std::move(opterr);
             }
             if (offset) {
                 ctx.append_expression(semantic::set_by_offset{ offset + 1 });

@@ -68,9 +68,11 @@ public:
             // to do: visitor
             if (auto pefe = dynamic_pointer_cast<external_function_entity>(eptr); pefe) {
                 bvm().append_ecall(pefe->fn_index);
-            } else if (auto pte = dynamic_pointer_cast<type_entity>(eptr); pte) {
-                bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_object_constructor);
-            } else if (auto fe = dynamic_pointer_cast<function_entity>(eptr); fe) {
+            }
+            //else if (auto pte = dynamic_pointer_cast<type_entity>(eptr); pte) {
+            //    bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_object_constructor);
+            //}
+            else if (auto fe = dynamic_pointer_cast<function_entity>(eptr); fe) {
                 if (fe->is_inline()) {
                     for (auto const& e : fe->body) {
                         apply_visitor(*this, e);

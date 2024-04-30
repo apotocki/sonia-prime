@@ -25,7 +25,7 @@ public:
     std::expected<function_entity const*, error_storage> find_field_getter(fn_compiler_context&, annotated_identifier const&) const;
     std::expected<function_entity const*, error_storage> find_field_setter(fn_compiler_context&, annotated_identifier const&) const;
 
-    std::expected<bang_type, error_storage> find(fn_compiler_context&, pure_call_t&) const override;
+    error_storage find(fn_compiler_context&, pure_call_t&) const override;
 
     bool try_cast(fn_compiler_context& ctx, bang_type const& rtype) const;
 

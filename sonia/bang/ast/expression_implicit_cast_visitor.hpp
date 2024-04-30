@@ -5,7 +5,6 @@
 #pragma once
 
 #include <sstream>
-#include <expected>
 
 //#include "sonia/utility/scope_exit.hpp"
 
@@ -26,7 +25,7 @@
 
 namespace sonia::lang::bang {
 
-struct expression_implicit_cast_visitor : static_visitor<std::expected<bang_type, error_storage>>
+struct expression_implicit_cast_visitor : static_visitor<error_storage>
 {
     fn_compiler_context& ctx;
     bang_type const& type2cast;
@@ -103,7 +102,8 @@ struct expression_implicit_cast_visitor : static_visitor<std::expected<bang_type
     inline result_type operator()(bang_string_t const& v) const
     {
         ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::tostring));
-        return bang_string_t{};
+        ctx.context_type = bang_string_t{};
+        return {};
         //expression_cast_to_string_visitor vis{ ctx, result };
         //return apply_visitor(vis, type2cast);
     }
@@ -112,11 +112,13 @@ struct expression_implicit_cast_visitor : static_visitor<std::expected<bang_type
     {
         alt_error aerr;
         for (bang_type const& t : v) {
-            auto opt = apply_visitor(*this, t);
-            if (opt.has_value()) { return opt; }
-            aerr.alternatives.emplace_back(std::move(opt.error()));
+            if (auto opterr = apply_visitor(*this, t); opterr) {
+                aerr.alternatives.emplace_back(std::move(opterr));
+            } else {
+                return {};
+            }
         }
-        return std::unexpected(make_error<alt_error>(std::move(aerr)));
+        return make_error<alt_error>(std::move(aerr));
     }
 
     inline result_type operator()(bang_bool_t const&) const
@@ -126,7 +128,8 @@ struct expression_implicit_cast_visitor : static_visitor<std::expected<bang_type
 
     inline result_type operator()(bang_any_t const&) const
     {
-        return type2cast;
+        ctx.context_type = type2cast;
+        return {};
     }
 
     template <typename T>

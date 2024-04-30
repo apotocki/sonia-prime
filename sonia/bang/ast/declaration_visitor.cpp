@@ -34,12 +34,11 @@ void declaration_visitor::operator()(extern_var & d) const
 
 void declaration_visitor::operator()(expression_decl_t & ed) const
 {
-    expression_visitor evis{ ctx };
-    auto r = apply_visitor(evis, ed.expression);
-    if (!r.has_value()) {
-        throw exception(ctx.u().print(*r.error()));
+    ctx.context_type = bang_tuple_t{};
+    if (auto opterr = apply_visitor(expression_visitor{ ctx }, ed.expression); opterr) {
+        throw exception(ctx.u().print(*opterr));
     }
-    if (r.value() != bang_tuple_t{}) {
+    if (ctx.context_type != bang_tuple_t{}) {
         ctx.append_expression(semantic::truncate_values(1, false));
     }
     ctx.collapse_chains();
@@ -182,11 +181,10 @@ void declaration_visitor::operator()(let_statement_decl_t & ld) const
         preliminary_type_visitor tvis{ ctx };
         vartype = apply_visitor(tvis, *ld.type);
     }
+    ctx.context_type = bang_tuple_t{};
     if (ld.expression) {
         auto evis = vartype ? expression_visitor{ ctx, expected_result_t{ *vartype, ld.location() } } : expression_visitor{ ctx };
-        auto etype = apply_visitor(evis, *ld.expression);
-        if (!etype.has_value()) {
-            throw exception(ctx.u().print(*etype.error()));
+        if (auto opterr = apply_visitor(evis, *ld.expression); opterr) {
             /*
             BOOST_ASSERT(vartype);
             throw exception(ctx.u().print(basic_general_error{ld.location(),
@@ -194,12 +192,10 @@ void declaration_visitor::operator()(let_statement_decl_t & ld) const
                     ctx.u().print(*etype.error())).str()
             }));
             */
-        }
-        if (!vartype) {
-            vartype = etype.value();
+            throw exception(ctx.u().print(*opterr));
         }
     }
-    variable_entity& ve = ctx.new_variable(ld.name(), *vartype, variable_entity::kind::LOCAL);
+    variable_entity& ve = ctx.new_variable(ld.name(), vartype.value_or(ctx.context_type), variable_entity::kind::LOCAL);
     ve.set_index(ctx.allocate_local_variable_index());
     ve.set_weak(ld.weakness);
     if (ld.expression) {
@@ -210,10 +206,11 @@ void declaration_visitor::operator()(let_statement_decl_t & ld) const
 void declaration_visitor::operator()(return_decl_t & rd) const
 {
     auto evis = ctx.result ? expression_visitor{ ctx, expected_result_t{ *ctx.result, rd.location } } : expression_visitor{ ctx };
-    auto optetype = apply_visitor(evis, rd.expression);
-    if (!optetype.has_value()) { throw exception(ctx.u().print(*optetype.error())); }
+    if (auto opterr = apply_visitor(evis, rd.expression); opterr) {
+        throw exception(ctx.u().print(*opterr));
+    }
     if (!ctx.result) {
-        ctx.accumulate_result_type(std::move(*optetype));
+        ctx.accumulate_result_type(std::move(ctx.context_type));
     }
     ctx.append_expression(semantic::return_statement{});
 }

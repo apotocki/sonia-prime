@@ -153,7 +153,7 @@ std::string vm::context::ecall_describe(size_t fn_index) const
     case builtin_fn::weak_create: return "weak_create";
     case builtin_fn::weak_lock: return "weak_lock";
     case builtin_fn::function_constructor: return "function_constructor";
-    case builtin_fn::extern_object_constructor: return "extern_object_constructor";
+    case builtin_fn::extern_object_create: return "extern_object_create";
     case builtin_fn::extern_object_set_property: return "extern_object_set_property";
     case builtin_fn::extern_object_get_property: return "extern_object_get_property";
     case builtin_fn::assign_extern_variable: return "assign_extern_variable";
@@ -231,6 +231,7 @@ void vm::context::extern_function_call()
     }
 }
 
+#if 0
 void vm::context::construct_extern_object()
 {
     string_view name = stack_back().as<string_view>();
@@ -275,16 +276,23 @@ void vm::context::construct_extern_object()
 
     return stack_push(smart_blob{ object_blob_result(obj) });
 }
+#endif
 
-// (obj, value, propName)->(obj, value)
-void vm::context::extern_object_set_property()
+// type -> obj
+void vm::context::extern_object_create()
 {
-    using namespace sonia::invocation;
-    shared_ptr<invocable> obj = stack_back(2).as<wrapper_object<shared_ptr<invocable>>>().value;
-    string_view prop_name = stack_back().as<string_view>();
-    obj->set_property(camel2kebab(prop_name), *stack_back(1));
-    stack_pop();
+    string_view name = stack_back().as<string_view>();
+    if (name.starts_with("::"sv)) {
+        name = name.substr(2);
+        name = name.substr(2);
+    }
+    smart_blob resobj = penv_->invoke("create"sv, { string_blob_result(camel2kebab(name)) });
+    if (resobj->type == blob_type::error) {
+        throw exception(resobj.as<std::string>());
+    }
+    stack_back().replace(std::move(resobj));
 }
+
 // (obj, propName)->value
 void vm::context::extern_object_get_property()
 {
@@ -294,6 +302,16 @@ void vm::context::extern_object_get_property()
     auto result = obj->get_property(camel2kebab(prop_name));
     stack_pop(2);
     stack_push(std::move(result));
+}
+
+// (obj, value, propName)->(obj, value)
+void vm::context::extern_object_set_property()
+{
+    using namespace sonia::invocation;
+    shared_ptr<invocable> obj = stack_back(2).as<wrapper_object<shared_ptr<invocable>>>().value;
+    string_view prop_name = stack_back().as<string_view>();
+    obj->set_property(camel2kebab(prop_name), *stack_back(1));
+    stack_pop();
 }
 
 void vm::context::construct_function()
@@ -421,7 +439,7 @@ virtual_stack_machine::virtual_stack_machine()
     set_efn((size_t)builtin_fn::weak_create, [](vm::context& ctx) { ctx.weak_create(); });
     set_efn((size_t)builtin_fn::weak_lock, [](vm::context& ctx) { ctx.weak_lock(); });
     set_efn((size_t)builtin_fn::function_constructor, [](vm::context& ctx) { ctx.construct_function(); });
-    set_efn((size_t)builtin_fn::extern_object_constructor, [](vm::context& ctx) { ctx.construct_extern_object(); });
+    set_efn((size_t)builtin_fn::extern_object_create, [](vm::context& ctx) { ctx.extern_object_create(); });
     set_efn((size_t)builtin_fn::extern_object_set_property, [](vm::context& ctx) { ctx.extern_object_set_property(); });
     set_efn((size_t)builtin_fn::extern_object_get_property, [](vm::context& ctx) { ctx.extern_object_get_property(); });
     set_efn((size_t)builtin_fn::extern_function_call, [](vm::context& ctx) { ctx.extern_function_call(); });

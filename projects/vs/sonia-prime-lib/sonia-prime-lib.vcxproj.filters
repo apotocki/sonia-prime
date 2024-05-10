@@ -2148,6 +2148,18 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\vector_expression_visitor.hpp">
       <Filter>sonia.bang\ast\type_visitors</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\internal_type_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\limbs_from_integral.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\integer_view_arithmetic.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\limbs_to_string.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

@@ -126,9 +126,8 @@ public:
             string_view varname = unit_.as_string(unit_.qnregistry().resolve(pv.entity->name()).back());
             smart_blob strbr{ string_blob_result(varname) };
             strbr.allocate();
-            size_t stack_pos = bvm().push_on_stack(std::move(strbr));
-            bvm().append_push(stack_pos);
-            bvm().append_ecall(virtual_stack_machine::builtin_fn::assign_extern_variable);
+            bvm().append_push_static_const(std::move(strbr));
+            bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_variable_set);
         } else {
             THROW_NOT_IMPLEMENTED_ERROR();
         }
@@ -140,8 +139,15 @@ public:
         if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
             unit_.bvm().append_fpush(pv.entity->index());
             return;
+        } else if (varkind == variable_entity::kind::EXTERN) {
+            string_view varname = unit_.as_string(unit_.qnregistry().resolve(pv.entity->name()).back());
+            smart_blob strbr{ string_blob_result(varname) };
+            strbr.allocate();
+            bvm().append_push_static_const(std::move(strbr));
+            bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_variable_get);
+        } else {
+            THROW_NOT_IMPLEMENTED_ERROR();
         }
-        THROW_NOT_IMPLEMENTED_ERROR();
     }
 
     inline void operator()(empty_t const&) const
@@ -207,10 +213,20 @@ public:
         for (auto const& e : n.branch) {
             apply_visitor(*this, e);
         }
-        size_t branch_end_pt = unit_.bvm().get_ip();
+        size_t not_nil_branch_end_pt = unit_.bvm().get_ip();
+
+        unit_.bvm().append_pop(1); // remove boolean value true = is_nil
+        unit_.bvm().append_jmpx(not_nil_branch_end_pt - branch_pt);
+        size_t nil_branch_end_pt = unit_.bvm().get_ip();
+        unit_.bvm().swap_code_blocks(branch_pt, not_nil_branch_end_pt);
+        
         bvm().append_ecall(virtual_stack_machine::builtin_fn::is_nil);
-        unit_.bvm().append_jtx(branch_end_pt - branch_pt);
-        unit_.bvm().swap_code_blocks(branch_pt, branch_end_pt);
+        unit_.bvm().append_jfx(nil_branch_end_pt - not_nil_branch_end_pt);
+        unit_.bvm().swap_code_blocks(branch_pt, nil_branch_end_pt);
+
+        //bvm().append_ecall(virtual_stack_machine::builtin_fn::is_nil);
+        //unit_.bvm().append_jtx(branch_end_pt - branch_pt);
+        //unit_.bvm().swap_code_blocks(branch_pt, branch_end_pt);
     }
 
     template <typename T>

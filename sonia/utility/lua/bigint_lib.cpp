@@ -4,6 +4,7 @@
 
 #include "sonia/config.hpp"
 #include "bigint_lib.hpp"
+#include "sonia/mp/integer_view_arithmetic.hpp"
 
 #include <sstream>
 
@@ -152,7 +153,7 @@ int bigint_tostring(lua_State* L)
     std::vector<char> s;
     if (ival.sign() < 0) s.push_back('-');
     bool reversed;
-    mp::to_string_converter((std::span<const limb_type>)ival, std::back_inserter(s), reversed);
+    mp::to_string((std::span<const limb_type>)ival, std::back_inserter(s), reversed);
     if (reversed) {
         std::reverse(s.begin() + (ival.sign() < 0), s.end());
     }
@@ -203,7 +204,7 @@ int bigint_fancy_string(lua_State* L)
         ss << "0x"sv;
     }
     bool reversed;
-    mp::to_string_converter((std::span<const limb_type>)ival, std::back_inserter(val), reversed, (int)radix, sonia::mp::detail::default_alphabet_big);
+    mp::to_string((std::span<const limb_type>)ival, std::back_inserter(val), reversed, (int)radix, sonia::mp::detail::default_alphabet_big);
     if (reversed) {
         std::reverse(val.begin(), val.end());
     }

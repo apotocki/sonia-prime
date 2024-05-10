@@ -463,8 +463,9 @@ namespace bang_lang {
       // "`{`"
       // "`[`"
       // "`.`"
+      // "`+`"
       // "`!`"
-      // FN
+      // "reserved word `fn`"
       // "true"
       // "false"
       char dummy22[sizeof (sonia::lang::lex::resource_location)];
@@ -605,7 +606,7 @@ namespace bang_lang {
     LOWEST = 330,                  // LOWEST
     DBLCOLON = 331,                // DBLCOLON
     INCLUDE = 333,                 // INCLUDE
-    FN = 334,                      // FN
+    FN = 334,                      // "reserved word `fn`"
     ENUM = 335,                    // ENUM
     TYPE = 336,                    // TYPE
     EXTENDS = 337,                 // EXTENDS
@@ -613,10 +614,9 @@ namespace bang_lang {
     INT = 339,                     // INT
     FLOAT = 340,                   // FLOAT
     STRING_WORD = 341,             // STRING_WORD
-    DECIMAL_WORD = 342,            // DECIMAL_WORD
-    WEAK = 343,                    // "weak modifier"
-    TRUE = 344,                    // "true"
-    FALSE = 345                    // "false"
+    WEAK = 342,                    // "weak modifier"
+    TRUE = 343,                    // "true"
+    FALSE = 344                    // "false"
       };
       /// Backward compatibility alias (Bison 3.6).
       typedef token_kind_type yytokentype;
@@ -633,7 +633,7 @@ namespace bang_lang {
     {
       enum symbol_kind_type
       {
-        YYNTOKENS = 91, ///< Number of tokens.
+        YYNTOKENS = 90, ///< Number of tokens.
         S_YYEMPTY = -2,
         S_YYEOF = 0,                             // "end of file"
         S_YYerror = 1,                           // error
@@ -714,7 +714,7 @@ namespace bang_lang {
         S_DBLCOLON = 76,                         // DBLCOLON
         S_77_ = 77,                              // "`::`"
         S_INCLUDE = 78,                          // INCLUDE
-        S_FN = 79,                               // FN
+        S_FN = 79,                               // "reserved word `fn`"
         S_ENUM = 80,                             // ENUM
         S_TYPE = 81,                             // TYPE
         S_EXTENDS = 82,                          // EXTENDS
@@ -722,42 +722,41 @@ namespace bang_lang {
         S_INT = 84,                              // INT
         S_FLOAT = 85,                            // FLOAT
         S_STRING_WORD = 86,                      // STRING_WORD
-        S_DECIMAL_WORD = 87,                     // DECIMAL_WORD
-        S_WEAK = 88,                             // "weak modifier"
-        S_TRUE = 89,                             // "true"
-        S_FALSE = 90,                            // "false"
-        S_YYACCEPT = 91,                         // $accept
-        S_begin = 92,                            // begin
-        S_declaration_any = 93,                  // declaration_any
-        S_94_generic_decl = 94,                  // generic-decl
-        S_95_let_decl = 95,                      // let-decl
-        S_96_let_decl_start = 96,                // let-decl-start
-        S_97_let_decl_start_with_opt_type = 97,  // let-decl-start-with-opt-type
-        S_infunction_declaration_any = 98,       // infunction_declaration_any
-        S_99_opt_infunction_decl = 99,           // opt-infunction-decl
-        S_identifier = 100,                      // identifier
-        S_qname = 101,                           // qname
-        S_102_fn_decl = 102,                     // fn-decl
-        S_103_enum_decl = 103,                   // enum-decl
-        S_104_case_list_opt = 104,               // case-list-opt
-        S_105_case_list = 105,                   // case-list
-        S_106_case_decl = 106,                   // case-decl
-        S_107_type_decl = 107,                   // type-decl
-        S_108_type_extension_any = 108,          // type-extension-any
-        S_109_type_extension_list = 109,         // type-extension-list
-        S_110_parameter_list_opt = 110,          // parameter-list-opt
-        S_111_parameter_list = 111,              // parameter-list
-        S_112_parameter_decl = 112,              // parameter-decl
-        S_113_parameter_woa_list_opt = 113,      // parameter-woa-list-opt
-        S_114_parameter_woa_list = 114,          // parameter-woa-list
-        S_115_parameter_woa_decl = 115,          // parameter-woa-decl
-        S_116_type_expr = 116,                   // type-expr
-        S_117_compound_expression = 117,         // compound-expression
-        S_expression = 118,                      // expression
-        S_119_expression_list_any = 119,         // expression-list-any
-        S_120_opt_named_expr_list_any = 120,     // opt-named-expr-list-any
-        S_121_opt_named_expr_list = 121,         // opt-named-expr-list
-        S_122_opt_named_expr = 122               // opt-named-expr
+        S_WEAK = 87,                             // "weak modifier"
+        S_TRUE = 88,                             // "true"
+        S_FALSE = 89,                            // "false"
+        S_YYACCEPT = 90,                         // $accept
+        S_begin = 91,                            // begin
+        S_declaration_any = 92,                  // declaration_any
+        S_93_generic_decl = 93,                  // generic-decl
+        S_94_let_decl = 94,                      // let-decl
+        S_95_let_decl_start = 95,                // let-decl-start
+        S_96_let_decl_start_with_opt_type = 96,  // let-decl-start-with-opt-type
+        S_infunction_declaration_any = 97,       // infunction_declaration_any
+        S_98_opt_infunction_decl = 98,           // opt-infunction-decl
+        S_identifier = 99,                       // identifier
+        S_qname = 100,                           // qname
+        S_101_fn_decl = 101,                     // fn-decl
+        S_102_enum_decl = 102,                   // enum-decl
+        S_103_case_list_opt = 103,               // case-list-opt
+        S_104_case_list = 104,                   // case-list
+        S_105_case_decl = 105,                   // case-decl
+        S_106_type_decl = 106,                   // type-decl
+        S_107_type_extension_any = 107,          // type-extension-any
+        S_108_type_extension_list = 108,         // type-extension-list
+        S_109_parameter_list_opt = 109,          // parameter-list-opt
+        S_110_parameter_list = 110,              // parameter-list
+        S_111_parameter_decl = 111,              // parameter-decl
+        S_112_parameter_woa_list_opt = 112,      // parameter-woa-list-opt
+        S_113_parameter_woa_list = 113,          // parameter-woa-list
+        S_114_parameter_woa_decl = 114,          // parameter-woa-decl
+        S_115_type_expr = 115,                   // type-expr
+        S_116_compound_expression = 116,         // compound-expression
+        S_expression = 117,                      // expression
+        S_118_expression_list_any = 118,         // expression-list-any
+        S_119_opt_named_expr_list_any = 119,     // opt-named-expr-list-any
+        S_120_opt_named_expr_list = 120,         // opt-named-expr-list
+        S_121_opt_named_expr = 121               // opt-named-expr
       };
     };
 
@@ -794,7 +793,7 @@ namespace bang_lang {
       {
         switch (this->kind ())
     {
-      case symbol_kind::S_116_type_expr: // type-expr
+      case symbol_kind::S_115_type_expr: // type-expr
         value.move< bang_preliminary_type > (std::move (that.value));
         break;
 
@@ -802,66 +801,66 @@ namespace bang_lang {
         value.move< declaration_set_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_103_enum_decl: // enum-decl
+      case symbol_kind::S_102_enum_decl: // enum-decl
         value.move< enum_decl > (std::move (that.value));
         break;
 
-      case symbol_kind::S_119_expression_list_any: // expression-list-any
+      case symbol_kind::S_118_expression_list_any: // expression-list-any
         value.move< expression_list_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_117_compound_expression: // compound-expression
+      case symbol_kind::S_116_compound_expression: // compound-expression
       case symbol_kind::S_expression: // expression
         value.move< expression_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_108_type_extension_any: // type-extension-any
-      case symbol_kind::S_109_type_extension_list: // type-extension-list
+      case symbol_kind::S_107_type_extension_any: // type-extension-any
+      case symbol_kind::S_108_type_extension_list: // type-extension-list
         value.move< extension_list_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_102_fn_decl: // fn-decl
+      case symbol_kind::S_101_fn_decl: // fn-decl
         value.move< fn_decl_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_94_generic_decl: // generic-decl
+      case symbol_kind::S_93_generic_decl: // generic-decl
         value.move< generic_declaration_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_99_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_98_opt_infunction_decl: // opt-infunction-decl
         value.move< infunction_declaration_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_95_let_decl: // let-decl
-      case symbol_kind::S_96_let_decl_start: // let-decl-start
-      case symbol_kind::S_97_let_decl_start_with_opt_type: // let-decl-start-with-opt-type
+      case symbol_kind::S_94_let_decl: // let-decl
+      case symbol_kind::S_95_let_decl_start: // let-decl-start
+      case symbol_kind::S_96_let_decl_start_with_opt_type: // let-decl-start-with-opt-type
         value.move< let_statement_decl_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_120_opt_named_expr_list_any: // opt-named-expr-list-any
-      case symbol_kind::S_121_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_119_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_120_opt_named_expr_list: // opt-named-expr-list
         value.move< named_expression_term_list_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_122_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_121_opt_named_expr: // opt-named-expr
         value.move< named_expression_term_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_110_parameter_list_opt: // parameter-list-opt
-      case symbol_kind::S_111_parameter_list: // parameter-list
+      case symbol_kind::S_109_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_110_parameter_list: // parameter-list
         value.move< parameter_list_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_112_parameter_decl: // parameter-decl
+      case symbol_kind::S_111_parameter_decl: // parameter-decl
         value.move< parameter_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_113_parameter_woa_list_opt: // parameter-woa-list-opt
-      case symbol_kind::S_114_parameter_woa_list: // parameter-woa-list
+      case symbol_kind::S_112_parameter_woa_list_opt: // parameter-woa-list-opt
+      case symbol_kind::S_113_parameter_woa_list: // parameter-woa-list
         value.move< parameter_woa_list_t > (std::move (that.value));
         break;
 
-      case symbol_kind::S_115_parameter_woa_decl: // parameter-woa-decl
+      case symbol_kind::S_114_parameter_woa_decl: // parameter-woa-decl
         value.move< parameter_woa_t > (std::move (that.value));
         break;
 
@@ -884,7 +883,7 @@ namespace bang_lang {
         value.move< sonia::lang::bang::annotated_string_view > (std::move (that.value));
         break;
 
-      case symbol_kind::S_106_case_decl: // case-decl
+      case symbol_kind::S_105_case_decl: // case-decl
         value.move< sonia::lang::identifier > (std::move (that.value));
         break;
 
@@ -896,8 +895,9 @@ namespace bang_lang {
       case symbol_kind::S_OPEN_BRACE: // "`{`"
       case symbol_kind::S_OPEN_SQUARE_BRACKET: // "`[`"
       case symbol_kind::S_POINT: // "`.`"
+      case symbol_kind::S_PLUS: // "`+`"
       case symbol_kind::S_EXCLPT: // "`!`"
-      case symbol_kind::S_FN: // FN
+      case symbol_kind::S_FN: // "reserved word `fn`"
       case symbol_kind::S_TRUE: // "true"
       case symbol_kind::S_FALSE: // "false"
         value.move< sonia::lang::lex::resource_location > (std::move (that.value));
@@ -911,12 +911,12 @@ namespace bang_lang {
         value.move< std::vector<infunction_declaration_t> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_104_case_list_opt: // case-list-opt
-      case symbol_kind::S_105_case_list: // case-list
+      case symbol_kind::S_103_case_list_opt: // case-list-opt
+      case symbol_kind::S_104_case_list: // case-list
         value.move< std::vector<sonia::lang::identifier> > (std::move (that.value));
         break;
 
-      case symbol_kind::S_107_type_decl: // type-decl
+      case symbol_kind::S_106_type_decl: // type-decl
         value.move< type_decl > (std::move (that.value));
         break;
 
@@ -1408,208 +1408,214 @@ namespace bang_lang {
 #line 1409 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_EXCLPT: // "`!`"
+      case symbol_kind::S_PLUS: // "`+`"
 #line 284 "bang.y"
                     { }
 #line 1415 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_FN: // FN
+      case symbol_kind::S_EXCLPT: // "`!`"
 #line 284 "bang.y"
                     { }
 #line 1421 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_TRUE: // "true"
+      case symbol_kind::S_FN: // "reserved word `fn`"
 #line 284 "bang.y"
                     { }
 #line 1427 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_FALSE: // "false"
+      case symbol_kind::S_TRUE: // "true"
 #line 284 "bang.y"
                     { }
 #line 1433 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_declaration_any: // declaration_any
+      case symbol_kind::S_FALSE: // "false"
 #line 284 "bang.y"
                     { }
 #line 1439 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_94_generic_decl: // generic-decl
+      case symbol_kind::S_declaration_any: // declaration_any
 #line 284 "bang.y"
                     { }
 #line 1445 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_95_let_decl: // let-decl
+      case symbol_kind::S_93_generic_decl: // generic-decl
 #line 284 "bang.y"
                     { }
 #line 1451 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_96_let_decl_start: // let-decl-start
+      case symbol_kind::S_94_let_decl: // let-decl
 #line 284 "bang.y"
                     { }
 #line 1457 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_97_let_decl_start_with_opt_type: // let-decl-start-with-opt-type
+      case symbol_kind::S_95_let_decl_start: // let-decl-start
 #line 284 "bang.y"
                     { }
 #line 1463 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_infunction_declaration_any: // infunction_declaration_any
+      case symbol_kind::S_96_let_decl_start_with_opt_type: // let-decl-start-with-opt-type
 #line 284 "bang.y"
                     { }
 #line 1469 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_99_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_infunction_declaration_any: // infunction_declaration_any
 #line 284 "bang.y"
                     { }
 #line 1475 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_identifier: // identifier
+      case symbol_kind::S_98_opt_infunction_decl: // opt-infunction-decl
 #line 284 "bang.y"
                     { }
 #line 1481 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_qname: // qname
+      case symbol_kind::S_identifier: // identifier
 #line 284 "bang.y"
                     { }
 #line 1487 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_102_fn_decl: // fn-decl
+      case symbol_kind::S_qname: // qname
 #line 284 "bang.y"
                     { }
 #line 1493 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_103_enum_decl: // enum-decl
+      case symbol_kind::S_101_fn_decl: // fn-decl
 #line 284 "bang.y"
                     { }
 #line 1499 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_104_case_list_opt: // case-list-opt
+      case symbol_kind::S_102_enum_decl: // enum-decl
 #line 284 "bang.y"
                     { }
 #line 1505 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_105_case_list: // case-list
+      case symbol_kind::S_103_case_list_opt: // case-list-opt
 #line 284 "bang.y"
                     { }
 #line 1511 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_106_case_decl: // case-decl
+      case symbol_kind::S_104_case_list: // case-list
 #line 284 "bang.y"
                     { }
 #line 1517 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_107_type_decl: // type-decl
+      case symbol_kind::S_105_case_decl: // case-decl
 #line 284 "bang.y"
                     { }
 #line 1523 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_108_type_extension_any: // type-extension-any
+      case symbol_kind::S_106_type_decl: // type-decl
 #line 284 "bang.y"
                     { }
 #line 1529 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_109_type_extension_list: // type-extension-list
+      case symbol_kind::S_107_type_extension_any: // type-extension-any
 #line 284 "bang.y"
                     { }
 #line 1535 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_110_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_108_type_extension_list: // type-extension-list
 #line 284 "bang.y"
                     { }
 #line 1541 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_111_parameter_list: // parameter-list
+      case symbol_kind::S_109_parameter_list_opt: // parameter-list-opt
 #line 284 "bang.y"
                     { }
 #line 1547 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_112_parameter_decl: // parameter-decl
+      case symbol_kind::S_110_parameter_list: // parameter-list
 #line 284 "bang.y"
                     { }
 #line 1553 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_113_parameter_woa_list_opt: // parameter-woa-list-opt
+      case symbol_kind::S_111_parameter_decl: // parameter-decl
 #line 284 "bang.y"
                     { }
 #line 1559 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_114_parameter_woa_list: // parameter-woa-list
+      case symbol_kind::S_112_parameter_woa_list_opt: // parameter-woa-list-opt
 #line 284 "bang.y"
                     { }
 #line 1565 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_115_parameter_woa_decl: // parameter-woa-decl
+      case symbol_kind::S_113_parameter_woa_list: // parameter-woa-list
 #line 284 "bang.y"
                     { }
 #line 1571 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_116_type_expr: // type-expr
+      case symbol_kind::S_114_parameter_woa_decl: // parameter-woa-decl
 #line 284 "bang.y"
                     { }
 #line 1577 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_117_compound_expression: // compound-expression
+      case symbol_kind::S_115_type_expr: // type-expr
 #line 284 "bang.y"
                     { }
 #line 1583 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_expression: // expression
+      case symbol_kind::S_116_compound_expression: // compound-expression
 #line 284 "bang.y"
                     { }
 #line 1589 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_119_expression_list_any: // expression-list-any
+      case symbol_kind::S_expression: // expression
 #line 284 "bang.y"
                     { }
 #line 1595 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_120_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_118_expression_list_any: // expression-list-any
 #line 284 "bang.y"
                     { }
 #line 1601 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_121_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_119_opt_named_expr_list_any: // opt-named-expr-list-any
 #line 284 "bang.y"
                     { }
 #line 1607 "bang.tab.hpp"
         break;
 
-      case symbol_kind::S_122_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_120_opt_named_expr_list: // opt-named-expr-list
 #line 284 "bang.y"
                     { }
 #line 1613 "bang.tab.hpp"
+        break;
+
+      case symbol_kind::S_121_opt_named_expr: // opt-named-expr
+#line 284 "bang.y"
+                    { }
+#line 1619 "bang.tab.hpp"
         break;
 
        default:
@@ -1619,7 +1625,7 @@ namespace bang_lang {
         // Value type destructor.
 switch (yykind)
     {
-      case symbol_kind::S_116_type_expr: // type-expr
+      case symbol_kind::S_115_type_expr: // type-expr
         value.template destroy< bang_preliminary_type > ();
         break;
 
@@ -1627,66 +1633,66 @@ switch (yykind)
         value.template destroy< declaration_set_t > ();
         break;
 
-      case symbol_kind::S_103_enum_decl: // enum-decl
+      case symbol_kind::S_102_enum_decl: // enum-decl
         value.template destroy< enum_decl > ();
         break;
 
-      case symbol_kind::S_119_expression_list_any: // expression-list-any
+      case symbol_kind::S_118_expression_list_any: // expression-list-any
         value.template destroy< expression_list_t > ();
         break;
 
-      case symbol_kind::S_117_compound_expression: // compound-expression
+      case symbol_kind::S_116_compound_expression: // compound-expression
       case symbol_kind::S_expression: // expression
         value.template destroy< expression_t > ();
         break;
 
-      case symbol_kind::S_108_type_extension_any: // type-extension-any
-      case symbol_kind::S_109_type_extension_list: // type-extension-list
+      case symbol_kind::S_107_type_extension_any: // type-extension-any
+      case symbol_kind::S_108_type_extension_list: // type-extension-list
         value.template destroy< extension_list_t > ();
         break;
 
-      case symbol_kind::S_102_fn_decl: // fn-decl
+      case symbol_kind::S_101_fn_decl: // fn-decl
         value.template destroy< fn_decl_t > ();
         break;
 
-      case symbol_kind::S_94_generic_decl: // generic-decl
+      case symbol_kind::S_93_generic_decl: // generic-decl
         value.template destroy< generic_declaration_t > ();
         break;
 
-      case symbol_kind::S_99_opt_infunction_decl: // opt-infunction-decl
+      case symbol_kind::S_98_opt_infunction_decl: // opt-infunction-decl
         value.template destroy< infunction_declaration_t > ();
         break;
 
-      case symbol_kind::S_95_let_decl: // let-decl
-      case symbol_kind::S_96_let_decl_start: // let-decl-start
-      case symbol_kind::S_97_let_decl_start_with_opt_type: // let-decl-start-with-opt-type
+      case symbol_kind::S_94_let_decl: // let-decl
+      case symbol_kind::S_95_let_decl_start: // let-decl-start
+      case symbol_kind::S_96_let_decl_start_with_opt_type: // let-decl-start-with-opt-type
         value.template destroy< let_statement_decl_t > ();
         break;
 
-      case symbol_kind::S_120_opt_named_expr_list_any: // opt-named-expr-list-any
-      case symbol_kind::S_121_opt_named_expr_list: // opt-named-expr-list
+      case symbol_kind::S_119_opt_named_expr_list_any: // opt-named-expr-list-any
+      case symbol_kind::S_120_opt_named_expr_list: // opt-named-expr-list
         value.template destroy< named_expression_term_list_t > ();
         break;
 
-      case symbol_kind::S_122_opt_named_expr: // opt-named-expr
+      case symbol_kind::S_121_opt_named_expr: // opt-named-expr
         value.template destroy< named_expression_term_t > ();
         break;
 
-      case symbol_kind::S_110_parameter_list_opt: // parameter-list-opt
-      case symbol_kind::S_111_parameter_list: // parameter-list
+      case symbol_kind::S_109_parameter_list_opt: // parameter-list-opt
+      case symbol_kind::S_110_parameter_list: // parameter-list
         value.template destroy< parameter_list_t > ();
         break;
 
-      case symbol_kind::S_112_parameter_decl: // parameter-decl
+      case symbol_kind::S_111_parameter_decl: // parameter-decl
         value.template destroy< parameter_t > ();
         break;
 
-      case symbol_kind::S_113_parameter_woa_list_opt: // parameter-woa-list-opt
-      case symbol_kind::S_114_parameter_woa_list: // parameter-woa-list
+      case symbol_kind::S_112_parameter_woa_list_opt: // parameter-woa-list-opt
+      case symbol_kind::S_113_parameter_woa_list: // parameter-woa-list
         value.template destroy< parameter_woa_list_t > ();
         break;
 
-      case symbol_kind::S_115_parameter_woa_decl: // parameter-woa-decl
+      case symbol_kind::S_114_parameter_woa_decl: // parameter-woa-decl
         value.template destroy< parameter_woa_t > ();
         break;
 
@@ -1709,7 +1715,7 @@ switch (yykind)
         value.template destroy< sonia::lang::bang::annotated_string_view > ();
         break;
 
-      case symbol_kind::S_106_case_decl: // case-decl
+      case symbol_kind::S_105_case_decl: // case-decl
         value.template destroy< sonia::lang::identifier > ();
         break;
 
@@ -1721,8 +1727,9 @@ switch (yykind)
       case symbol_kind::S_OPEN_BRACE: // "`{`"
       case symbol_kind::S_OPEN_SQUARE_BRACKET: // "`[`"
       case symbol_kind::S_POINT: // "`.`"
+      case symbol_kind::S_PLUS: // "`+`"
       case symbol_kind::S_EXCLPT: // "`!`"
-      case symbol_kind::S_FN: // FN
+      case symbol_kind::S_FN: // "reserved word `fn`"
       case symbol_kind::S_TRUE: // "true"
       case symbol_kind::S_FALSE: // "false"
         value.template destroy< sonia::lang::lex::resource_location > ();
@@ -1736,12 +1743,12 @@ switch (yykind)
         value.template destroy< std::vector<infunction_declaration_t> > ();
         break;
 
-      case symbol_kind::S_104_case_list_opt: // case-list-opt
-      case symbol_kind::S_105_case_list: // case-list
+      case symbol_kind::S_103_case_list_opt: // case-list-opt
+      case symbol_kind::S_104_case_list: // case-list
         value.template destroy< std::vector<sonia::lang::identifier> > ();
         break;
 
-      case symbol_kind::S_107_type_decl: // type-decl
+      case symbol_kind::S_106_type_decl: // type-decl
         value.template destroy< type_decl > ();
         break;
 
@@ -2659,16 +2666,16 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_PLUS (location_type l)
+      make_PLUS (sonia::lang::lex::resource_location v, location_type l)
       {
-        return symbol_type (token::PLUS, std::move (l));
+        return symbol_type (token::PLUS, std::move (v), std::move (l));
       }
 #else
       static
       symbol_type
-      make_PLUS (const location_type& l)
+      make_PLUS (const sonia::lang::lex::resource_location& v, const location_type& l)
       {
-        return symbol_type (token::PLUS, l);
+        return symbol_type (token::PLUS, v, l);
       }
 #endif
 #if 201103L <= YY_CPLUSPLUS
@@ -3214,21 +3221,6 @@ switch (yykind)
 #if 201103L <= YY_CPLUSPLUS
       static
       symbol_type
-      make_DECIMAL_WORD (location_type l)
-      {
-        return symbol_type (token::DECIMAL_WORD, std::move (l));
-      }
-#else
-      static
-      symbol_type
-      make_DECIMAL_WORD (const location_type& l)
-      {
-        return symbol_type (token::DECIMAL_WORD, l);
-      }
-#endif
-#if 201103L <= YY_CPLUSPLUS
-      static
-      symbol_type
       make_WEAK (location_type l)
       {
         return symbol_type (token::WEAK, std::move (l));
@@ -3601,7 +3593,7 @@ switch (yykind)
     /// Constants.
     enum
     {
-      yylast_ = 426,     ///< Last index in yytable_.
+      yylast_ = 434,     ///< Last index in yytable_.
       yynnts_ = 32,  ///< Number of nonterminal symbols.
       yyfinal_ = 3 ///< Termination state number.
     };
@@ -3615,7 +3607,7 @@ switch (yykind)
 
 
 } // bang_lang
-#line 3619 "bang.tab.hpp"
+#line 3611 "bang.tab.hpp"
 
 
 

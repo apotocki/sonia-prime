@@ -128,7 +128,7 @@ BOOL					"bool"
 INT						"int"
 FLOAT					"float"
 STRING_WORD				"string"
-DECIMAL_WORD			"decimal"
+/* DECIMAL_WORD			"decimal" */
 
 TRUE					"true"
 FALSE					"false"
@@ -150,6 +150,7 @@ UNDERSCORE              "_"
 BITOR                   "|"
 EXCLPT                  "!"
 QMARK                   "?"
+PLUS                    "+"
 DBLCOLON                "::"
 LOGIC_OR                "||"
 LOGIC_AND               "&&"
@@ -205,7 +206,7 @@ BITXORASSIGN            "^="
 
 
 
-PLUS                    "+"
+
 MINUS                   "-"
 ASTERISK                "*"
 SLASH                   "/"
@@ -226,7 +227,7 @@ HASHTAG					"#"
 
 */
 
-%x COMMENT LINE_COMMENT STR USER_LITERAL
+%x COMMENT LINE_COMMENT STR STR2 USER_LITERAL
 
 %%
 
@@ -248,16 +249,35 @@ HASHTAG					"#"
 <INITIAL,COMMENT>"//" { yy_push_state(LINE_COMMENT, yyscanner); }
 <LINE_COMMENT>[^\xd\xa]*[\xd\xa]* { yy_pop_state(yyscanner); }
 
-<INITIAL>\" { 
-	yyextra->str_buff_begin = yytext + 1;
-	yyextra->loc_stack.emplace_back(location);
-	yy_push_state(STR, yyscanner);
-}
+<INITIAL>
+	\" { 
+		yyextra->str_buff_begin = yytext + 1;
+		yyextra->loc_stack.emplace_back(location);
+		yy_push_state(STR, yyscanner);
+	}
+	\' { 
+		yyextra->str_buff_begin = yytext + 1;
+		yyextra->loc_stack.emplace_back(location);
+		yy_push_state(STR2, yyscanner);
+	}
+
 <STR>{
 	(([\x20-\x7e\xa\xd]{-}[\"\\])|{UEASC})+
 	\\({DIGIT}+|[abfnrtv\\\'\"])
 	\\[xX][0-9a-fA-F]+
 	\" {
+		variant_emplace(annotated_string_view{string_view{yyextra->str_buff_begin, yytext}, yyextra->loc_stack.back()});
+		yyextra->loc_stack.pop_back();
+		yy_pop_state(yyscanner);
+		return (bang_lang::parser::token::STRING);
+	}
+}
+
+<STR2>{
+	(([\x20-\x7e\xa\xd]{-}[\'\\])|{UEASC})+
+	\\({DIGIT}+|[abfnrtv\\\'\"])
+	\\[xX][0-9a-fA-F]+
+	\' {
 		variant_emplace(annotated_string_view{string_view{yyextra->str_buff_begin, yytext}, yyextra->loc_stack.back()});
 		yyextra->loc_stack.pop_back();
 		yy_pop_state(yyscanner);
@@ -280,7 +300,7 @@ HASHTAG					"#"
 	{INT} { return (bang_lang::parser::token::INT); }
 	{FLOAT} { return (bang_lang::parser::token::FLOAT); }
 	{STRING_WORD} { return (bang_lang::parser::token::STRING_WORD); }
-	{DECIMAL_WORD} { return (bang_lang::parser::token::DECIMAL_WORD); }
+	/* {DECIMAL_WORD} { return (bang_lang::parser::token::DECIMAL_WORD); } */
 
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
 
@@ -303,6 +323,7 @@ HASHTAG					"#"
 	{EXCLPT}                { variant_emplace(location); return (bang_lang::parser::token::EXCLPT); }
 	{QMARK}                 { return (bang_lang::parser::token::QMARK); }
 	{DBLCOLON}              { return (bang_lang::parser::token::DBLCOLON); }
+	{PLUS}					{ variant_emplace(location); return (bang_lang::parser::token::PLUS); }
 	{LOGIC_OR}              { variant_emplace(location); return (bang_lang::parser::token::LOGIC_OR); }
     {LOGIC_AND}             { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
 	{ARROW}                 { return (bang_lang::parser::token::ARROW); }

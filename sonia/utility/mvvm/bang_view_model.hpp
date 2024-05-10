@@ -3,6 +3,9 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #pragma once
+
+#include <boost/unordered_map.hpp>
+
 #include "sonia/utility/mvvm/view_model.hpp"
 #include "sonia/utility/invocation/invocation.hpp"
 #include "sonia/bang/bang.hpp"
@@ -23,10 +26,14 @@ public:
 
     // scripting
     void load_file(string_view path);
+    smart_blob eval(string_view code, bool no_return);
 
 protected:
     // methods routine
     static void do_registration(registrar_type& mr);
+
+private:
+    boost::unordered_map<std::string, std::string, hasher, string_equal_to> inplace_fns_;
 };
 
 }

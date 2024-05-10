@@ -41,7 +41,7 @@ void decimal_normilize(SignificandT & v, ExponentT & e)
 }
 
 template <typename SignificandT, typename ExponentT>
-std::pair<SignificandT, ExponentT> decimal_parse(string_view str)
+optional<std::pair<SignificandT, ExponentT>> decimal_parse(string_view str)
 {
     // to do: parser INF, -INF, NAN
     std::pair<SignificandT, ExponentT> result{ 0, 0 };
@@ -105,8 +105,7 @@ std::pair<SignificandT, ExponentT> decimal_parse(string_view str)
         }
         return result;
     }
-
-    throw exception("wrong decimal string: '%1%'"_fmt % str);
+    return nullopt;
 }
 
 template <typename SignificandT, typename ExponentT>

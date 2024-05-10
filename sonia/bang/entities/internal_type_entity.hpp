@@ -17,26 +17,26 @@
 //#include "sonia/utility/functional/hash/span.hpp"
 namespace sonia::lang::bang {
 
-class type_entity : public functional_entity
+class internal_type_entity : public functional_entity
 {
 public:
-    explicit type_entity(qname_identifier name) : functional_entity{ std::move(name) } {}
+    explicit internal_type_entity(qname_identifier name) : functional_entity{ std::move(name) } {}
 
-    std::expected<function_entity const*, error_storage> find_field_getter(fn_compiler_context&, annotated_identifier const&) const;
-    std::expected<function_entity const*, error_storage> find_field_setter(fn_compiler_context&, annotated_identifier const&) const;
+    //std::expected<function_entity const*, error_storage> find_field_getter(fn_compiler_context&, annotated_identifier const&) const;
+    //std::expected<function_entity const*, error_storage> find_field_setter(fn_compiler_context&, annotated_identifier const&) const;
 
-    std::expected<function_signature const*, error_storage> find(fn_compiler_context&, pure_call_t&) const override;
+    //error_storage find(fn_compiler_context&, pure_call_t&) const override;
 
-    bool try_cast(fn_compiler_context& ctx, bang_type const& rtype) const;
+    //bool try_cast(fn_compiler_context& ctx, bang_type const& rtype) const;
 
     // ast
-    extension_list_t direct_bases;
-    parameter_woa_list_t direct_parameters;
+    //extension_list_t direct_bases;
+    //parameter_woa_list_t direct_parameters;
     
     //semantic
-    std::vector<entity const*> bases;
+    //std::vector<entity const*> bases;
 
-    void treat(fn_compiler_context&);
+    //void treat(fn_compiler_context&);
     /*
     struct function_descriptor
     {

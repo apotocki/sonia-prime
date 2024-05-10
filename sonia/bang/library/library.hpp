@@ -13,4 +13,7 @@ void bang_print_string(vm::context&);
 void bang_negate(vm::context&);
 void bang_concat_string(vm::context&);
 
+void bang_operator_plus_decimal(vm::context&);
+void bang_to_decimal(vm::context&);
+
 }

@@ -156,7 +156,8 @@ std::string vm::context::ecall_describe(size_t fn_index) const
     case builtin_fn::extern_object_create: return "extern_object_create";
     case builtin_fn::extern_object_set_property: return "extern_object_set_property";
     case builtin_fn::extern_object_get_property: return "extern_object_get_property";
-    case builtin_fn::assign_extern_variable: return "assign_extern_variable";
+    case builtin_fn::extern_variable_get: return "extern_variable_get";
+    case builtin_fn::extern_variable_set: return "extern_variable_set";
     case builtin_fn::extern_function_call: return "extern_function_call";
     default:
         {
@@ -175,7 +176,7 @@ small_string vm::context::generate_object_id() const
     using buff_t = boost::container::small_vector<char, 16>;
     buff_t tailored_name = { '_', 'i', 'd' };
     bool reversed;
-    mp::to_string_converter(std::span{ &id_counter_, 1 }, std::back_inserter(tailored_name), reversed);
+    mp::to_string(std::span{ &id_counter_, 1 }, std::back_inserter(tailored_name), reversed);
     if (reversed) std::reverse(tailored_name.begin() + 3, tailored_name.end());
     ++id_counter_;
     return small_string{ tailored_name.data(), tailored_name.size() };
@@ -199,7 +200,17 @@ small_string vm::context::camel2kebab(string_view cc)
     return small_string{ buff.data(), buff.size() };
 }
 
-void vm::context::assign_extern_variable()
+void vm::context::extern_variable_get()
+{
+    string_view propname = stack_back().as<string_view>();
+    if (penv_) {
+        stack_back().replace(penv_->get_property(propname));
+    } else {
+        throw exception("can't get property '%1%', no external environment was provided"_fmt % propname);
+    }
+}
+
+void vm::context::extern_variable_set()
 {
     SCOPE_EXIT([this] { stack_pop(); }); // assign value on stack after that
     string_view propname = stack_back().as<string_view>();
@@ -443,7 +454,8 @@ virtual_stack_machine::virtual_stack_machine()
     set_efn((size_t)builtin_fn::extern_object_set_property, [](vm::context& ctx) { ctx.extern_object_set_property(); });
     set_efn((size_t)builtin_fn::extern_object_get_property, [](vm::context& ctx) { ctx.extern_object_get_property(); });
     set_efn((size_t)builtin_fn::extern_function_call, [](vm::context& ctx) { ctx.extern_function_call(); });
-    set_efn((size_t)builtin_fn::assign_extern_variable, [](vm::context& ctx) { ctx.assign_extern_variable(); });
+    set_efn((size_t)builtin_fn::extern_variable_get, [](vm::context& ctx) { ctx.extern_variable_get(); });
+    set_efn((size_t)builtin_fn::extern_variable_set, [](vm::context& ctx) { ctx.extern_variable_set(); });
     /*
     builtins_.resize((    set_efn((size_t)builtin_fn::referify, [](vm::context& ctx) { ctx.referify(); });
 )builtin_fn::eof_builtin_type);

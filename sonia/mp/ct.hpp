@@ -9,7 +9,7 @@
 
 #include <concepts>
 #include <algorithm>
-
+#include <array>
 #include "arithmetic.hpp"
 
 namespace sonia::mpct

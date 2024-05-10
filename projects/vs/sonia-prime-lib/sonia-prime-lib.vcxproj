@@ -256,6 +256,7 @@
     <ClInclude Include="..\..\..\sonia\bang\bang.yy.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\enum_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functional_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\internal_type_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\type_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\variable_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors.hpp" />
@@ -360,7 +361,10 @@
     <ClInclude Include="..\..\..\sonia\mp\decimal.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\decimal.ipp" />
     <ClInclude Include="..\..\..\sonia\mp\integer_view.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\integer_view_arithmetic.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\limbs_from_integral.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\limbs_from_string.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\limbs_to_string.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\limb_arithmetic.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\application.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\headers.hpp" />

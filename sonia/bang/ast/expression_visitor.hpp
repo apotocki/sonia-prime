@@ -42,6 +42,7 @@ struct expression_visitor : static_visitor<error_storage>
     result_type operator()(variable_identifier const&) const;
 
     result_type operator()(case_expression const&) const;
+    result_type operator()(not_empty_expression_t&) const;
     result_type operator()(member_expression_t&) const;
     result_type operator()(property_expression&) const;
 
@@ -58,10 +59,20 @@ struct expression_visitor : static_visitor<error_storage>
     result_type operator()(function_call_t&) const;
 
     result_type operator()(negate_expression_t&) const;
-    result_type operator()(assign_expression_t&) const;
-    result_type operator()(logic_and_expression_t &) const;
-    result_type operator()(logic_or_expression_t &) const;
-    result_type operator()(binary_expression_t<binary_operator_type::CONCAT>&) const;
+
+    inline result_type operator()(binary_expression_t & be) const
+    {
+        return bang_binary_switcher(be, *this);
+    }
+
+    result_type operator()(binary_operator_t<binary_operator_type::ASSIGN>, binary_expression_t &) const;
+    result_type operator()(binary_operator_t<binary_operator_type::LOGIC_AND>, binary_expression_t &) const;
+    result_type operator()(binary_operator_t<binary_operator_type::LOGIC_OR>, binary_expression_t &) const;
+
+    template <binary_operator_type BOpV>
+    result_type operator()(binary_operator_t<BOpV>, binary_expression_t&) const;
+    //result_type operator()(binary_operator_t<binary_operator_type::PLUS>, binary_expression_t&) const;
+    //result_type operator()(binary_operator_t<binary_operator_type::CONCAT>, binary_expression_t &) const;
 
     function_entity& handle_lambda(lambda_t&) const;
     std::expected<function_entity const*, error_storage> handle_property_get(annotated_identifier id) const;

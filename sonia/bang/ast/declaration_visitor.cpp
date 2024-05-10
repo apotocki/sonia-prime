@@ -205,10 +205,13 @@ void declaration_visitor::operator()(let_statement_decl_t & ld) const
 
 void declaration_visitor::operator()(return_decl_t & rd) const
 {
+    ctx.context_type = bang_tuple_t{};
+    size_t initial_branch = ctx.expressions_branch();
     auto evis = ctx.result ? expression_visitor{ ctx, expected_result_t{ *ctx.result, rd.location } } : expression_visitor{ ctx };
     if (auto opterr = apply_visitor(evis, rd.expression); opterr) {
         throw exception(ctx.u().print(*opterr));
     }
+    ctx.collapse_chains(initial_branch);
     if (!ctx.result) {
         ctx.accumulate_result_type(std::move(ctx.context_type));
     }

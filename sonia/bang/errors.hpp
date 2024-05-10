@@ -243,25 +243,29 @@ public:
 class function_call_match_error : public general_error
 {
 public:
-    lex::resource_location location_;
+    annotated_qname_identifier functional_;
+    function_signature const& signature_;
+    error_storage reason_;
 
-    function_call_match_error(lex::resource_location l) : location_{ l } {}
+    function_call_match_error(annotated_qname_identifier f, function_signature const& signature, error_storage reason)
+        : functional_{ f }, signature_{ signature }, reason_{ reason } {}
+
     void visit(error_visitor& vis) const override { vis(*this); }
 
-    lex::resource_location const& location() const noexcept override { return location_; }
-    string_t object(unit const&) const noexcept override { return ""sv; }
-    string_t description(unit const&) const noexcept override { return "can't match the function call"sv; }
+    lex::resource_location const& location() const noexcept override { return functional_.location; }
+    string_t object(unit const&) const noexcept override;
+    string_t description(unit const&) const noexcept override;
 };
 
 
 
 class error_printer_visitor : public error_visitor
 {
-    unit& u_;
+    unit const& u_;
     std::ostream & s_;
 
 public:
-    error_printer_visitor(unit& u, std::ostream& s) : u_{u}, s_{s} {}
+    error_printer_visitor(unit const& u, std::ostream& s) : u_{u}, s_{s} {}
 
     void operator()(alt_error const&) override;
     //void operator()(parameter_not_found_error const&) override;

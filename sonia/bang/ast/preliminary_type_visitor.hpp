@@ -11,6 +11,7 @@
 #include "../semantic.hpp"
 #include "expression_visitor.hpp"
 #include "fn_compiler_context.hpp"
+#include "../entities/internal_type_entity.hpp"
 #include "../entities/type_entity.hpp"
 #include "../entities/enum_entity.hpp"
 
@@ -40,7 +41,7 @@ struct preliminary_type_visitor : static_visitor<bang_type>
     {
         qname_identifier nid = ctx.u().qnregistry().resolve(v.name());
         auto pe = ctx.resolve_entity(nid);
-        if (dynamic_cast<type_entity const*>(pe.get()) || dynamic_cast<enum_entity const*>(pe.get())) {
+        if (dynamic_cast<internal_type_entity const*>(pe.get()) || dynamic_cast<type_entity const*>(pe.get()) || dynamic_cast<enum_entity const*>(pe.get())) {
             return bang_object_t{ pe.get() };
         }
         if (!pe) {

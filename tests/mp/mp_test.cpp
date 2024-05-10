@@ -328,6 +328,7 @@ void mp_integer_test()
 void mp_integer_test2()
 {
     using int_t = sonia::mp::basic_integer<uint64_t, 1>;
+    size_t isz = sizeof(int_t);
     int_t val0{16};
     val0 = val0 * 16 + 1;
     BOOST_CHECK_EQUAL(257, (int)val0);

@@ -25,6 +25,7 @@ public:
     void build(string_view code);
 
     void run(invocation::invocable*, span<string_view> args = {});
+    smart_blob call(string_view name, invocation::invocable*, span<const blob_result> args = {});
 
 private:
     shared_ptr<detail::bang_impl> impl_;

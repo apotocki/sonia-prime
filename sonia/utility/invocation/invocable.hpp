@@ -195,68 +195,70 @@ struct field_fn_property_writer : field_fn_property_base<FieldV>, fn_property_wr
     SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(field_fn_property_writer);
 };
 
+template <typename TargetT>
+struct basic_registrar
+{
+    template <auto FuncV>
+    static void register_method(string_view name)
+    {
+        sonia::services::register_multimethod(concrete_method<FuncV>(), { typeid(TargetT), name });
+    }
+
+    template <typename GetterT>
+    static void register_readonly_property(string_view name, GetterT&& g)
+    {
+        sonia::services::register_multimethod(concrete_fn_property_reader<TargetT, remove_cvref_t<GetterT>>(std::forward<GetterT>(g)), { typeid(TargetT), typeid(fn_property_reader), name });
+    }
+
+    template <typename SetterT>
+    static void register_writeonly_property(string_view name, SetterT&& g)
+    {
+        sonia::services::register_multimethod(concrete_fn_property_writer<TargetT, remove_cvref_t<SetterT>>(std::forward<SetterT>(g)), { typeid(TargetT), typeid(fn_property_writer), name });
+    }
+
+    template <typename GetterT, typename SetterT>
+    static void register_property(string_view name, GetterT&& g, SetterT&& s)
+    {
+        register_readonly_property(name, std::forward<GetterT>(g));
+        register_writeonly_property(name, std::forward<SetterT>(s));
+    }
+
+    template <auto FieldV>
+    static void register_readonly_property(string_view name)
+    {
+        sonia::services::register_multimethod(field_fn_property_reader<FieldV>(), { typeid(TargetT), typeid(fn_property_reader), name });
+    }
+
+    template <auto FieldV>
+    static void register_writeonly_property(string_view name)
+    {
+        sonia::services::register_multimethod(field_fn_property_writer<FieldV>(), { typeid(TargetT), typeid(fn_property_writer), name });
+    }
+
+    template <auto FieldV>
+    static void register_property(string_view name)
+    {
+        register_readonly_property<FieldV>(name);
+        register_writeonly_property<FieldV>(name);
+    }
+
+    static void inherit(std::type_index from)
+    {
+        sonia::services::copy_multimethods({ from }, { typeid(TargetT) });
+    }
+};
+
 template <typename DerivedT, typename InheritedT = void>
 class registrar
 {
-    //static std::once_flag registration_flag_;
-
-    struct impl : singleton
+    struct impl : basic_registrar<DerivedT>, singleton
     {
         impl()
         {
             DerivedT::do_registration(*this);
             if constexpr (!is_void_v<InheritedT>) {
-                inherit(typeid(InheritedT));
+                basic_registrar<DerivedT>::inherit(typeid(InheritedT));
             }
-        }
-
-        template <auto FuncV>
-        void register_method(string_view name)
-        {
-            sonia::services::register_multimethod(concrete_method<FuncV>(), { typeid(DerivedT), name });
-        }
-
-        template <typename GetterT>
-        void register_readonly_property(string_view name, GetterT&& g)
-        {
-            sonia::services::register_multimethod(concrete_fn_property_reader<DerivedT, remove_cvref_t<GetterT>>(std::forward<GetterT>(g)), { typeid(DerivedT), typeid(fn_property_reader), name });
-        }
-
-        template <typename SetterT>
-        void register_writeonly_property(string_view name, SetterT&& g)
-        {
-            sonia::services::register_multimethod(concrete_fn_property_writer<DerivedT, remove_cvref_t<SetterT>>(std::forward<SetterT>(g)), { typeid(DerivedT), typeid(fn_property_writer), name });
-        }
-
-        template <typename GetterT, typename SetterT>
-        void register_property(string_view name, GetterT&& g, SetterT&& s)
-        {
-            register_readonly_property(name, std::forward<GetterT>(g));
-            register_writeonly_property(name, std::forward<SetterT>(s));
-        }
-
-        template <auto FieldV>
-        void register_readonly_property(string_view name)
-        {
-            sonia::services::register_multimethod(field_fn_property_reader<FieldV>(), { typeid(DerivedT), typeid(fn_property_reader), name });
-        }
-
-        template <auto FieldV>
-        void register_writeonly_property(string_view name)
-        {
-            sonia::services::register_multimethod(field_fn_property_writer<FieldV>(), { typeid(DerivedT), typeid(fn_property_writer), name });
-        }
-
-        template <auto FieldV>
-        void register_property(string_view name)
-        {
-            register_readonly_property<FieldV>(name);
-            register_writeonly_property<FieldV>(name);
-        }
-
-        void inherit(std::type_index from)
-        {
-            sonia::services::copy_multimethods({ from }, { typeid(DerivedT) });
         }
     };
 
@@ -267,21 +269,7 @@ public:
     registrar()
     {
         as_singleton<impl>();
-        /*
-        std::call_once(registration_flag_, [this] {
-            services::on_close([] {
-                new(&registration_flag_) std::once_flag{};
-            });
-            static_cast<DerivedT*>(this)->do_registration(*this); 
-            if constexpr (!is_void_v<InheritedT>) {
-                inherit(typeid(InheritedT));
-            }
-        });
-        */
     }
 };
-
-//template <typename DerivedT, typename InheritedT>
-//std::once_flag registrar<DerivedT, InheritedT>::registration_flag_{};
 
 }

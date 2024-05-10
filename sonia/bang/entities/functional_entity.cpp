@@ -28,21 +28,27 @@ function_signature& functional_entity::put_signature(function_signature&& one_mo
     return signatures.back();
 }
 
-error_storage functional_entity::find(fn_compiler_context& ctx, pure_call_t & call) const
+std::expected<function_signature const*, error_storage> functional_entity::find(fn_compiler_context& ctx, pure_call_t & call) const
 {
+    alt_error aerr;
     auto estate = ctx.expressions_state();
     for (auto & sig: signatures) {
-        if (!is_matched(ctx, sig, call)) {
+        if (auto optres = is_matched(ctx, sig, call); optres) {
+            aerr.alternatives.emplace_back(
+                make_error<function_call_match_error>(annotated_qname_identifier{ name(), call.location() }, sig, std::move(optres))
+            );
             estate.restore();
             continue;
         }
         ctx.append_expression(semantic::invoke_function{ ctx.u().qnregistry().concat(name(), sig.mangled_id) });
         estate.detach();
         ctx.context_type = sig.fn_type.result;
-        return {};
+        return &sig;
     }
-    //return std::unexpected(("can't match a function call '%1%'"_fmt % ctx.u().print(fnvar->name)).str());
-    return make_error<function_call_match_error>(call.location());
+    if (aerr.alternatives.size() == 1) {
+        return std::unexpected(std::move(aerr.alternatives.front()));
+    }
+    return std::unexpected(make_error<alt_error>(std::move(aerr)));
 }
 
 function_signature const* functional_entity::find(fn_compiler_context& ctx,
@@ -60,12 +66,11 @@ function_signature const* functional_entity::find(fn_compiler_context& ctx,
 void function_entity::materialize_call(fn_compiler_context& ctx, pure_call_t& call) const
 {
     auto estate = ctx.expressions_state();
-    if (is_matched(ctx, signature_, call)) {
-        ctx.append_expression(semantic::invoke_function{ name() });
-        estate.detach();
-        return;
+    if (auto opterr = is_matched(ctx, signature_, call); opterr) {
+        throw exception(ctx.u().print(function_call_match_error{ annotated_qname_identifier{ name(), call.location() }, signature_, opterr }));
     }
-    throw exception(ctx.u().print(function_call_match_error{call.location()}));
+    ctx.append_expression(semantic::invoke_function{ name() });
+    estate.detach();
 }
 
 bool is_matched(fn_compiler_context& ctx,
@@ -87,23 +92,27 @@ bool is_matched(fn_compiler_context& ctx,
     return true;
 }
 
-bool is_matched(fn_compiler_context& ctx, function_signature const& sig, pure_call_t& call)
+error_storage is_matched(fn_compiler_context& ctx, function_signature const& sig, pure_call_t& call)
 {
-    if (call.positioned_args.size() != sig.position_parameters().size() || call.named_args.size() != sig.named_parameters().size()) return false;
+    if (call.positioned_args.size() != sig.position_parameters().size() || call.named_args.size() != sig.named_parameters().size())
+        return make_error<basic_general_error>(call.location(), "argument count mismatch"sv);
     auto positioned_args = std::span{ call.positioned_args };
     auto named_args = std::span{ call.named_args };
     for (bang_type const& argt : sig.position_parameters()) {
         expression_visitor evis{ ctx, expected_result_t{ argt, std::get<1>(positioned_args.front()) } };
-        if (apply_visitor(evis, std::get<0>(positioned_args.front()))) return false;
+        if (auto opterr = apply_visitor(evis, std::get<0>(positioned_args.front())); opterr) return std::move(opterr);
         positioned_args = positioned_args.subspan(1);
     }
     for (auto const& [aname, tp] : sig.named_parameters()) {
-        if (std::get<0>(named_args.front()).value != qname{aname.value}) return false;
+        if (std::get<0>(named_args.front()).value != qname{aname.value}) {
+            // name mismatch
+            return make_error<basic_general_error>(std::get<0>(named_args.front()).location, "argument name mismatch"sv);
+        }
         expression_visitor evis{ ctx, expected_result_t{ tp, std::get<2>(named_args.front()) } };
-        if (apply_visitor(evis, std::get<1>(named_args.front()))) return false;
+        if (auto opterr = apply_visitor(evis, std::get<1>(named_args.front())); opterr) return std::move(opterr);
         named_args = named_args.subspan(1);
     }
-    return true;
+    return {}; // matched
 }
 
 }

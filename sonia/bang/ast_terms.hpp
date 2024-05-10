@@ -7,8 +7,11 @@
 #include <vector>
 #include <cstdlib>
 
-#include <boost/preprocessor/seq/for_each_i.hpp>
+#include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
+#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/cat.hpp>
+
 #include <boost/container/small_vector.hpp>
 
 #include "sonia/string.hpp"
@@ -181,7 +184,7 @@ using parameter_list_t = parameter_list<bang_preliminary_type>;
 
 // ========================================================================
 
-#define BANG_PRINT_SIMPLE_ENUM(r, data, i, elem) elem,
+#define BANG_PRINT_SIMPLE_ENUM(r, data, elem) elem,
 
 /*
 #define OPERATOR_ENUM (POSTFIX_INCREMENT)(POSTFIX_DECREMENT)(PERIOD)(ARROW)(DBLCOLON)(POSTFIX_CLOSE_BROKET)(POSTFIX_RIGHTSHIFT) \
@@ -198,20 +201,42 @@ using parameter_list_t = parameter_list<bang_preliminary_type>;
     (COMMA)
 */
 
-#define UNARY_OPERATOR_ENUM (NEGATE)
-#define BINARY_OPERATOR_ENUM (ASSIGN)(LOGIC_AND)(LOGIC_OR)(CONCAT)
+#define BANG_UNARY_OPERATOR_ENUM (NEGATE)
+#define BANG_BINARY_OPERATOR_ENUM (ASSIGN)(LOGIC_AND)(LOGIC_OR)(CONCAT)(PLUS)
 enum class unary_operator_type
 {
-    BOOST_PP_SEQ_FOR_EACH_I(BANG_PRINT_SIMPLE_ENUM, _, UNARY_OPERATOR_ENUM)
+    BOOST_PP_SEQ_FOR_EACH(BANG_PRINT_SIMPLE_ENUM, _, BANG_UNARY_OPERATOR_ENUM)
 };
 
 enum class binary_operator_type
 {
-    BOOST_PP_SEQ_FOR_EACH_I(BANG_PRINT_SIMPLE_ENUM, _, BINARY_OPERATOR_ENUM)
+    BOOST_PP_SEQ_FOR_EACH(BANG_PRINT_SIMPLE_ENUM, _, BANG_BINARY_OPERATOR_ENUM)
 };
 
-#undef UNARY_OPERATOR_ENUM
-#undef BINARY_OPERATOR_ENUM
+template <binary_operator_type Op>
+using binary_operator_t = std::integral_constant<binary_operator_type, Op>;
+
+#define BANG_PRINT_BOP_CASE(r, data, elem) case binary_operator_type::elem: return BOOST_PP_CAT(BOOST_PP_STRINGIZE(elem), sv);
+inline string_view to_string(binary_operator_type op) {
+    switch (op) {
+    BOOST_PP_SEQ_FOR_EACH(BANG_PRINT_BOP_CASE, _, BANG_BINARY_OPERATOR_ENUM)
+    default: return "unknown"sv;
+    }
+}
+
+#define BANG_PRINT_BOP_CASE_VISIT(r, data, elem) case binary_operator_type::elem: return std::forward<VisitorT>(vis)(binary_operator_t<binary_operator_type::elem>{}, std::forward<BinaryExprT>(exp));
+template <typename BinaryExprT, typename VisitorT>
+inline auto bang_binary_switcher(BinaryExprT && exp, VisitorT && vis) {
+    switch (exp.op) {
+    BOOST_PP_SEQ_FOR_EACH(BANG_PRINT_BOP_CASE_VISIT, _, BANG_BINARY_OPERATOR_ENUM)
+    }
+    THROW_INTERNAL_ERROR("unknown binary operator '%1%'"_fmt % to_string(exp.op));
+}
+
+#undef BANG_PRINT_BOP_CASE_VISIT
+#undef BANG_PRINT_BOP_CASE
+#undef BANG_UNARY_OPERATOR_ENUM
+#undef BANG_BINARY_OPERATOR_ENUM
 #undef BANG_PRINT_SIMPLE_ENUM
 
 template <unary_operator_type Op, typename ExprT>
@@ -222,31 +247,36 @@ struct unary_expression
     lex::resource_location location;
 };
 
-template <binary_operator_type Op, typename ExprT>
+template <typename ExprT>
 struct binary_expression
 {
-    static constexpr binary_operator_type op = Op;
     ExprT left;
     ExprT right;
     lex::resource_location location;
+    binary_operator_type op;
     lex::resource_location const& start() const { return get_start_location(left); }
+
+    template <typename LET, typename RET>
+    binary_expression(binary_operator_type opval, LET && let, RET && ret, lex::resource_location loc)
+        : left{std::forward<LET>(let)}, right{ std::forward<RET>(ret) }, location{std::move(loc)}, op{ opval }
+    {}
 };
 
 template <typename ExprT = recursive_variant_>
 struct negate_expression : unary_expression<unary_operator_type::NEGATE, ExprT> {};
 
 //'coz recursive variant problem when template has not type parameters
-template <typename ExprT = recursive_variant_>
-struct assign_expression : binary_expression<binary_operator_type::ASSIGN, ExprT> {};
+//template <typename ExprT = recursive_variant_>
+//struct assign_expression : binary_expression<binary_operator_type::ASSIGN, ExprT> {};
 
-template <typename ExprT = recursive_variant_>
-struct logic_and_expression : binary_expression<binary_operator_type::LOGIC_AND, ExprT> {};
+//template <typename ExprT = recursive_variant_>
+//struct logic_and_expression : binary_expression<binary_operator_type::LOGIC_AND, ExprT> {};
+//
+//template <typename ExprT = recursive_variant_>
+//struct logic_or_expression : binary_expression<binary_operator_type::LOGIC_OR, ExprT> {};
 
-template <typename ExprT = recursive_variant_>
-struct logic_or_expression : binary_expression<binary_operator_type::LOGIC_OR, ExprT> {};
-
-template <typename ExprT = recursive_variant_>
-struct concat_expression : binary_expression<binary_operator_type::CONCAT, ExprT> {};
+//template <typename ExprT = recursive_variant_>
+//struct concat_expression : binary_expression<binary_operator_type::CONCAT, ExprT> {};
 
 template <typename ExprT>
 struct named_expression_term
@@ -328,7 +358,7 @@ struct member_expression
 {
     ExprT object;
     annotated_identifier name;
-    bool is_object_optional = false;
+    //bool is_object_optional = false;
 
     lex::resource_location const& start() const { return get_start_location(object); }
 };
@@ -403,12 +433,19 @@ struct lambda : fn_pure<ExprT>
     lex::resource_location start;
 };
 
+template <typename ExprT>
+struct not_empty_expression
+{
+    ExprT value;
+};
+
 using expression_t = make_recursive_variant<
     annotated_bool, annotated_decimal, annotated_string,
-    variable_identifier, case_expression, property_expression, member_expression<recursive_variant_>,
+    variable_identifier, case_expression, property_expression, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
     lambda<recursive_variant_>,
     negate_expression<>,
-    assign_expression<>, logic_and_expression<>, logic_or_expression<>, concat_expression<>,
+    binary_expression<recursive_variant_>,
+    //assign_expression<>, logic_and_expression<>, logic_or_expression<>, concat_expression<>,
     expression_vector<recursive_variant_>,
     function_call<recursive_variant_>
     //, chained_expression<recursive_variant_>
@@ -424,23 +461,17 @@ using opt_chain_link_t = opt_chain_link<expression_t>;
 using chained_expression_t = chained_expression<expression_t>;
 using named_expression_term_t = named_expression_term<expression_t>;
 using named_expression_term_list_t = named_expression_term_list<expression_t>;
-using assign_expression_t = assign_expression<expression_t>;
+using not_empty_expression_t = not_empty_expression<expression_t>;
 using member_expression_t = member_expression<expression_t>;
 using negate_expression_t = negate_expression<expression_t>;
-using logic_and_expression_t = logic_and_expression<expression_t>;
-using logic_or_expression_t = logic_or_expression<expression_t>;
-using concat_expression_t = concat_expression<expression_t>;
+using binary_expression_t = binary_expression<expression_t>;
 using pure_call_t = pure_call<expression_t>;
 using function_call_t = function_call<expression_t>;
 using expression_vector_t = expression_vector<expression_t>;
 template <unary_operator_type Op> using unary_expression_t = unary_expression<Op, expression_t>;
-template <binary_operator_type Op> using binary_expression_t = binary_expression<Op, expression_t>;
 
 template <typename T> struct is_unary_expression : false_type {};
 template <typename T> requires(std::is_same_v<decltype(T::op), const unary_operator_type>) struct is_unary_expression<T> : true_type {};
-
-template <typename T> struct is_binary_expression : false_type {};
-template <typename T> requires(std::is_same_v<decltype(T::op), const binary_operator_type>) struct is_binary_expression<T> : true_type {};
 
 struct expression_location_visitor : static_visitor<lex::resource_location const&>
 {
@@ -451,6 +482,7 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
 
     inline result_type operator()(variable_identifier const& v) const noexcept { return v.name.location; }
     inline result_type operator()(case_expression const& ce) const noexcept { return ce.start; }
+    inline result_type operator()(not_empty_expression_t const& me) const noexcept { return apply_visitor(*this, me.value); }
     inline result_type operator()(member_expression_t const& me) const noexcept { return me.start(); }
     inline result_type operator()(property_expression const& me) const noexcept { return me.name.location; }
     inline result_type operator()(lambda_t const& le) const noexcept { return le.start; }
@@ -458,8 +490,7 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     template <unary_operator_type Op>
     inline result_type operator()(unary_expression_t<Op> const& ue) const noexcept { return ue.location; }
     
-    template <binary_operator_type Op>
-    inline result_type operator()(binary_expression_t<Op> const& be) const noexcept { return be.start(); }
+    inline result_type operator()(binary_expression_t const& be) const noexcept { return be.start(); }
 
     inline result_type operator()(expression_vector_t const& v) const noexcept { return v.start; }
     inline result_type operator()(function_call_t const& f) const noexcept { return f.start(); }

@@ -462,7 +462,8 @@ void yyfree ( void * , yyscan_t yyscanner );
 #define COMMENT 1
 #define LINE_COMMENT 2
 #define STR 3
-#define USER_LITERAL 4
+#define STR2 4
+#define USER_LITERAL 5
 
 #endif
 
@@ -724,9 +725,9 @@ extern int yylex \
 #undef yyTABLES_NAME
 #endif
 
-#line 369 "bang.l"
+#line 390 "bang.l"
 
 
-#line 730 "bang.yy.hpp"
+#line 731 "bang.yy.hpp"
 #undef bang_langIN_HEADER
 #endif /* bang_langHEADER_H */

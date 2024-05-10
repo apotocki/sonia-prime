@@ -5,6 +5,8 @@
 
 #include <boost/lexical_cast.hpp>
 #include "sonia/string.hpp"
+#include "sonia/optional.hpp"
+#include "sonia/exceptions.hpp"
 #include "sonia/utility/functional/hash.hpp"
 
 namespace sonia {
@@ -69,6 +71,7 @@ public:
     explicit operator T() const { return get<T>(); }
 
     static basic_decimal parse(string_view);
+    static optional<basic_decimal> parse_no_throw(string_view);
 
     void operator += (basic_decimal const& rhs);
     void operator -= (basic_decimal const& rhs);
@@ -91,10 +94,19 @@ template <class T> constexpr bool is_decimal_v = is_decimal<T>::value;
 namespace sonia {
 
 template <typename SignificandT, typename ExponentT>
+inline optional<basic_decimal<SignificandT, ExponentT>> basic_decimal<SignificandT, ExponentT>::parse_no_throw(string_view sval)
+{
+    if (auto optpair = decimal_parse<SignificandT, ExponentT>(sval); optpair) {
+        return basic_decimal(std::move(optpair->first), std::move(optpair->second));
+    }
+    return nullopt;
+}
+
+template <typename SignificandT, typename ExponentT>
 inline basic_decimal<SignificandT, ExponentT> basic_decimal<SignificandT, ExponentT>::parse(string_view sval)
 {
-    auto [s, e] = decimal_parse<SignificandT, ExponentT>(sval);
-    return basic_decimal(std::move(s), std::move(e));
+    if (auto optres = parse_no_throw(sval); optres) return *optres;
+    throw exception("can't convert to decimal: '%1%'"_fmt % sval);
 }
 
 template <typename SignificandT, typename ExponentT>

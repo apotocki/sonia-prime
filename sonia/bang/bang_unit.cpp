@@ -11,8 +11,33 @@
 #include "ast/declaration_visitor.hpp"
 
 #include "vm/bang_vm.hpp"
+#include "entities/internal_type_entity.hpp"
 
 namespace sonia::lang::bang {
+
+qname_identifier unit::get_function_entity_identifier(string_view signature)
+{
+    parser_context parser{ *this };
+    auto decls = parser.parse((string_view)("extern fn %1%;"_fmt % signature).str());
+
+    fn_compiler_context ctx{ *this, qname{} };
+    auto& fndecl = get<fn_pure_decl>(decls->front());
+    fndecl.aname.value.set_absolute();
+
+    function_signature sig;
+    sig.setup(ctx, fndecl.parameters);
+    sig.normilize(ctx);
+    sig.build_mangled_id(*this);
+
+    qname fnm = fndecl.name() + sig.mangled_id;
+    return qnregistry().resolve(fnm);
+}
+
+qname_identifier unit::make_qname_identifier(string_view sv)
+{
+    qname qn{ slregistry_.resolve(sv) };
+    return qname_registry_.resolve(qn);
+}
 
 void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
 {
@@ -46,6 +71,12 @@ unit::unit()
     , fn_identifier_counter_ { (size_t)virtual_stack_machine::builtin_fn::eof_type }
     , bvm_{ std::make_unique<virtual_stack_machine>() }
 {
+    // internal types
+    auto e = make_shared<internal_type_entity>(make_qname_identifier("decimal"));
+    decimal_entity_ = e.get();
+    eregistry().insert(std::move(e));
+
+    // internal functions
     builtins_.resize((size_t)builtin_fn::eof_builtin_type);
 
     auto parrayify = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::arrayify);
@@ -92,8 +123,13 @@ unit::unit()
     set_efn(builtin_fn::negate, pnegate->name());
     bvm_->set_efn(fn_identifier_counter_++, &bang_negate, strings_.back());
 
+
+
     set_extern("print(string)"sv, &bang_print_string);
     set_extern("concat(string,string)->string"sv, &bang_concat_string);
+    set_extern("operator_plus(decimal,decimal)->decimal"sv, &bang_operator_plus_decimal);
+    set_extern("decimal(text: string)->decimal|()"sv, &bang_to_decimal);
+    
 }
 
 identifier unit::new_identifier()
@@ -104,11 +140,7 @@ identifier unit::new_identifier()
     //return r;
 }
 
-qname_identifier unit::make_qname_identifier(string_view sv)
-{
-    qname qn{ slregistry().resolve(sv) };
-    return qnregistry().resolve(qn);
-}
+
 
 void unit::set_efn(size_t idx, qname_identifier fnq)
 {
@@ -210,8 +242,8 @@ struct type_printer_visitor : static_visitor<void>
     inline void operator()(bang_float_t) const { ss << "float"sv; }
     inline void operator()(bang_decimal_t) const { ss << "decimal"sv; }
     inline void operator()(bang_string_t) const { ss << "string"sv; }
-    inline void operator()(bang_preliminary_object_t const& obj) const { ss << '^' << u_.print(obj.name()); }
-    inline void operator()(bang_object_t const& obj) const { ss << '^' << u_.print(obj.name()); }
+    inline void operator()(bang_preliminary_object_t const& obj) const { ss << u_.print(obj.name()); }
+    inline void operator()(bang_object_t const& obj) const { ss << u_.print(obj.name()); }
         
     template <typename TupleT, typename FamilyT>
     inline void operator()(bang_fn_base<TupleT, FamilyT> const& fn) const
@@ -429,12 +461,19 @@ struct expr_printer_visitor : static_visitor<void>
     }
     */
 
+    void operator()(not_empty_expression_t const& c) const
+    {
+        ss << "NOTEMPTY("sv;
+        apply_visitor(*this, c.value);
+        ss << ")"sv;
+    }
+
     void operator()(member_expression_t const& c) const
     {
         ss << "MEMBER("sv;
-        if (c.is_object_optional) {
-            ss << "OPT "sv;
-        }
+        //if (c.is_object_optional) {
+        //    ss << "OPT "sv;
+        //}
         apply_visitor(*this, c.object);
         ss << ", "sv << u_.print(c.name.value) << ")"sv;
     }
@@ -472,11 +511,9 @@ struct expr_printer_visitor : static_visitor<void>
         ss << ')';
     }
 
-    template <typename T>
-    requires(is_binary_expression<T>::value)
-    void operator()(T const& be) const
+    void operator()(binary_expression_t const& be) const
     {
-        ss << "binary("sv << (int)T::op << ", "sv;
+        ss << "binary("sv << (int)be.op << ", "sv;
         apply_visitor(*this, be.left);
         ss << ", "sv;
         apply_visitor(*this, be.right);
@@ -525,12 +562,40 @@ std::string unit::print(lex::resource_location const& loc) const
     return ("%1%(%2%,%3%)"_fmt % loc.resource % loc.line % loc.column).str();
 }
 
-std::string unit::print(error const& err)
+std::string unit::print(error const& err) const
 {
     std::ostringstream ss;
     error_printer_visitor vis{ *this, ss };
     err.visit(vis);
     return ss.str();
+}
+
+functional_entity& unit::get_functional_entity(binary_operator_type bop)
+{
+    qname_identifier op_qi;
+    switch (bop) {
+    case binary_operator_type::CONCAT:
+        op_qi = make_qname_identifier("concat"sv); break;
+    case binary_operator_type::PLUS:
+        op_qi = make_qname_identifier("operator_plus"sv); break;
+    default:
+        THROW_INTERNAL_ERROR("unit::get_functional_entity error: unknown operator '%1%'"_fmt % to_string(bop));
+    }
+    auto func_ent = dynamic_pointer_cast<functional_entity>(eregistry().find(op_qi));
+    if (!func_ent) {
+        THROW_INTERNAL_ERROR("unit::get_functional_entity error: operator '%1%' is not defined"_fmt % to_string(bop));
+    }
+    return *func_ent;
+}
+
+functional_entity& unit::get_functional_entity(builtin_type bt) const
+{
+    switch (bt) {
+    case builtin_type::decimal:
+        return *decimal_entity_;
+    default:
+        THROW_INTERNAL_ERROR("unit::get_functional_entity error: unknown builtin_type '%1%'"_fmt % int(bt));
+    }
 }
 
 }

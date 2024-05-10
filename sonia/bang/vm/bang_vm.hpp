@@ -121,7 +121,8 @@ public:
     void referify();
     void weak_create();
     void weak_lock();
-    void assign_extern_variable();
+    void extern_variable_get();
+    void extern_variable_set();
     //void construct_extern_object();
     void extern_object_create();
     void extern_object_set_property();
@@ -280,7 +281,8 @@ public:
         referify, weak_create, weak_lock,
         function_constructor,
         extern_object_create, extern_object_set_property, extern_object_get_property,
-        assign_extern_variable, extern_function_call,
+        extern_variable_get, extern_variable_set,
+        extern_function_call,
         eof_type
     };
 

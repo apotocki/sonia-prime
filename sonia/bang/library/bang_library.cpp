@@ -5,6 +5,7 @@
 #include "sonia/config.hpp"
 #include "library.hpp"
 #include "sonia/logger/logger.hpp"
+#include "sonia/mp/decimal.hpp"
 
 #include <sstream>
 
@@ -62,7 +63,31 @@ void bang_concat_string(vm::context& ctx)
     std::memcpy(buff, l.data(), l.size());
     std::memcpy(buff + l.size(), r.data(), r.size());
     ctx.stack_pop();
-    ctx.stack_back() = smart_blob{ std::move(res) };
+    ctx.stack_back().replace( smart_blob{ std::move(res) } );
+}
+
+void bang_operator_plus_decimal(vm::context& ctx)
+{
+    auto l = ctx.stack_back(1).as<decimal>();
+    auto r = ctx.stack_back().as<decimal>();
+    decimal sum = l + r;
+    smart_blob res{ decimal_blob_result(sum) };
+    res.allocate();
+    
+    ctx.stack_pop();
+    ctx.stack_back().replace(std::move(res));
+}
+
+void bang_to_decimal(vm::context& ctx)
+{
+    auto str = ctx.stack_back().as<string_view>();
+    if (optional<decimal> d = sonia::decimal::parse_no_throw(str); d) {
+        smart_blob res{ decimal_blob_result(*d) };
+        res.allocate();
+        ctx.stack_back().replace(std::move(res));
+    } else {
+        ctx.stack_back().replace(nil_blob_result());
+    }
 }
 
 }

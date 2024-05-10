@@ -62,7 +62,7 @@ bool type_entity::try_cast(fn_compiler_context& ctx, bang_type const& rtype) con
     return false;
 }
 
-error_storage type_entity::find(fn_compiler_context& ctx, pure_call_t& call) const
+std::expected<function_signature const*, error_storage> type_entity::find(fn_compiler_context& ctx, pure_call_t& call) const
 {
     if (!call.positioned_args.empty()) {
         THROW_NOT_IMPLEMENTED_ERROR();
@@ -86,9 +86,9 @@ error_storage type_entity::find(fn_compiler_context& ctx, pure_call_t& call) con
         for (size_t partidx = 1; partidx < argparts.size(); ++partidx) {
             left_expr = member_expression_t{ std::move(left_expr), annotated_identifier{ argparts[partidx], argname.location } };
         }
-        assign_expression_t aex{ std::move(left_expr), std::get<1>(narg), std::get<2>(narg) };
+        binary_expression_t aex{ binary_operator_type::ASSIGN, std::move(left_expr), std::get<1>(narg), std::get<2>(narg) };
         expression_visitor evis{ ctx, nullptr };
-        if (auto opterr = evis(aex); opterr) return std::move(opterr);
+        if (auto opterr = evis(aex); opterr) return std::unexpected(std::move(opterr));
         
         ctx.append_expression(semantic::truncate_values(1, false)); // remove property value from stack
 #if 0
@@ -127,7 +127,7 @@ error_storage type_entity::find(fn_compiler_context& ctx, pure_call_t& call) con
     //ctx.append_expression(semantic::invoke_function{ name_ });
     estate.detach();
     ctx.context_type = bang_object_t{ this };
-    return {};
+    return &sig;
 
     // ids: check uniqueness?
     //std::ranges::sort(std::views::zip(ids, args_exprs), {}, [](auto const& pair) { return std::get<0>(pair); });

@@ -26,6 +26,7 @@ public:
     void build(fs::path const&);
     void build(string_view code);
     void run(invocation::invocable* penv, span<string_view> args);
+    smart_blob call(string_view name, invocation::invocable* penv, span<const blob_result> args);
 
     bang_impl() = default;
     bang_impl(bang_impl const&) = delete;
@@ -37,6 +38,7 @@ protected:
 
 private:
     lang::bang::unit unit_;
+    optional<fn_compiler_context> main_ctx_;
     optional<function_entity> main_function_;
 };
 
@@ -58,6 +60,11 @@ language::~language()
 void language::run(invocation::invocable* penv, span<string_view> args)
 {
     impl_->run(penv, args);
+}
+
+smart_blob language::call(string_view name, invocation::invocable* penv, span<const blob_result> args)
+{
+    return impl_->call(name, penv, args);
 }
 
 void language::build(fs::path const& f)
@@ -94,11 +101,17 @@ void bang_impl::build(string_view code)
 
 void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t decls)
 {
-    // main context
-    fn_compiler_context ctx{ unit_, qname{} };
-    // main argument: [string]
-    auto&& ve = ctx.new_position_parameter(0, bang_vector_t{ bang_string_t{} });
-    ve.set_index(-1); // first parameter
+    if (!main_ctx_) {
+        main_ctx_.emplace(unit_, qname{});
+
+        // main argument: [string]
+        auto&& ve = main_ctx_->new_position_parameter(0, bang_vector_t{ bang_string_t{} });
+        ve.set_index(-1); // first parameter
+    } else if (main_function_) {
+        main_ctx_->expressions() = std::move(main_function_->body);
+    }
+    
+    fn_compiler_context & ctx = *main_ctx_;
 
     // separate declarations
     // retrieve forward declarations
@@ -123,7 +136,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
 
     // at first compile all functions
     unit_.eregistry().traverse([this, &vmcvis](auto name, entity& e) {
-        if (auto fe = dynamic_cast<function_entity*>(&e); fe) {
+        if (auto fe = dynamic_cast<function_entity*>(&e); fe && !fe->is_defined()) {
             do_compile(vmcvis, *fe);
         }
         return true;
@@ -139,7 +152,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
 
 void bang_impl::do_compile(vm::compiler_visitor & vmcvis, function_entity & fe)
 {
-    GLOBAL_LOG_INFO() << unit_.print(fe.name());
+    GLOBAL_LOG_INFO() << "compiling function: " << unit_.print(fe.name());
     size_t param_count = fe.signature().parameters_count() + fe.captured_variables.size();
 
     auto& bvm = unit_.bvm();
@@ -188,6 +201,35 @@ void bang_impl::run(invocation::invocable* penv, span<string_view> args)
         ctx.arrayify();
     }
     unit_.bvm().run(ctx, main_function_->get_address());
+}
+
+smart_blob bang_impl::call(string_view fnsig, invocation::invocable* penv, span<const blob_result> args = {})
+{
+    smart_blob result;
+    vm::context ctx{ unit_.bvm(), penv };
+    for (blob_result const& arg : args) {
+        ctx.stack_push(smart_blob(arg));
+    }
+    qname_identifier qid = unit_.get_function_entity_identifier(fnsig);
+    //span<qname_identifier> fnsig{};
+    //identifier mandled_sig_id = unit_.piregistry().resolve(fnsig);
+    //qname fnqn = qname{unit_.slregistry().resolve(name)} + mandled_sig_id;
+    //qname_identifier qid = unit_.qnregistry().resolve(fnqn);
+    auto ent = unit_.eregistry().find(qid);
+    auto fnent = dynamic_pointer_cast<function_entity>(ent);
+    if (!fnent) {
+        throw exception("function '%1%' is not found"_fmt % fnsig);
+    }
+    if (fnent->signature().parameters_count() != args.size()) {
+        throw exception("function '%1%' error: wrong number of arguments, expected: %2%, provided: %3%"_fmt % fnsig %
+            fnent->signature().parameters_count() % args.size());
+    }
+    unit_.bvm().run(ctx, fnent->get_address());
+    if (fnent->signature().fn_type.result != bang_tuple_t()) {
+        result.replace(std::move(ctx.stack_back()));
+        ctx.stack_pop();
+    }
+    return result;
 }
 
 }

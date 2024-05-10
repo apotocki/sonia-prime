@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_AUTOMATIC_HPP
-#define SONIA_AUTOMATIC_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <utility>
 #include <iosfwd>
@@ -27,12 +22,12 @@ public:
     // potentially dangerous
     automatic(null_t) {}
 
-    automatic() { new (get_pointer()) T; }
+    automatic() { new (buffer_) T; }
 
     template <typename ... ArgsT>
     explicit automatic(in_place_t, ArgsT && ... args)
     {
-        new (get_pointer()) T(std::forward<ArgsT>(args) ...);
+        new (buffer_) T(std::forward<ArgsT>(args) ...);
     }
 
     template <typename ArgT>
@@ -40,24 +35,24 @@ public:
     {
         using pure_arg_t = remove_cvref_t<ArgT>;
         if constexpr (is_same_v<automatic, pure_arg_t>) {
-            new (get_pointer()) T(*std::forward<ArgT>(arg));
+            new (buffer_) T(*std::forward<ArgT>(arg));
         } else if constexpr (is_in_place_factory_v<pure_arg_t>) {
-            arg.template apply<T>(get_pointer());
+            arg.template apply<T>(buffer_);
         } else if constexpr (is_typed_in_place_factory_v<pure_arg_t>) {
-            arg.apply(get_pointer());
+            arg.apply(buffer_);
         } else {
-            new (get_pointer()) T(std::forward<ArgT>(arg));
+            new (buffer_) T(std::forward<ArgT>(arg));
         }
     }
 
     automatic(automatic const& rhs)
     {
-        new (get_pointer()) T(*rhs);
+        new (buffer_) T(*rhs);
     }
 
     automatic(automatic && rhs)
     {
-        new (get_pointer()) T(std::move(*rhs));
+        new (buffer_) T(std::move(*rhs));
     }
 
     automatic & operator= (automatic const& rhs)
@@ -99,7 +94,7 @@ public:
     T * operator->() { return get_pointer(); }
 
 private:
-    alignas(T) char buffer_[sizeof(T)];
+    alignas(T) std::byte buffer_[sizeof(T)];
 };
 
 template <typename CharT, class TraitsT, typename T>
@@ -112,5 +107,3 @@ template <typename T> T * get_pointer(automatic<T> & p) { return p.get_pointer()
 template <typename T> T const* get_pointer(automatic<T> const& p) { return p.get_pointer(); }
 
 }
-
-#endif // SONIA_AUTOMATIC_HPP

@@ -78,6 +78,11 @@ class unit
     std::vector<small_string> strings_;
 
 public:
+    enum class builtin_type
+    {
+        decimal
+    };
+
     enum class builtin_fn
     {
         arrayify = 0, unpack, weak_create, weak_lock,
@@ -106,6 +111,7 @@ public:
     identifier new_identifier();
     qname_identifier new_qname_identifier();
     qname_identifier make_qname_identifier(string_view);
+    qname_identifier get_function_entity_identifier(string_view signature);
 
     slregistry_t& slregistry() { return slregistry_; }
     piregistry_t& piregistry() { return piregistry_; }
@@ -148,15 +154,13 @@ public:
 
     std::string print(lex::resource_location const&) const;
 
-   
-    
     std::string print(bang_preliminary_type const& tp) const;
     
     std::string print(bang_type const& tp) const;
     
     std::string print(expression_t const&) const;
 
-    std::string print(error const&);
+    std::string print(error const&) const;
 
     small_string as_string(identifier const& id) const;
     small_string as_string(qname_view name) const;
@@ -164,6 +168,9 @@ public:
 
     //small_u32string as_u32string(identifier const& id) const;
     
+    functional_entity& get_functional_entity(builtin_type) const;
+    functional_entity& get_functional_entity(binary_operator_type);
+
 protected:
     std::vector<char> read_file(fs::path const& rpath);
 
@@ -179,6 +186,8 @@ private:
 
     std::unique_ptr<virtual_stack_machine> bvm_;
     std::vector<fs::path> additional_paths_;
+
+    functional_entity* decimal_entity_;
 };
 
 }

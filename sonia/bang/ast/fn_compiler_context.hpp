@@ -131,7 +131,7 @@ public:
         using buff_t = boost::container::small_vector<char, 16>;
         buff_t tailored_param_name = { '$' };
         bool reversed;
-        mp::to_string_converter(std::span{ &paramnum, 1 }, std::back_inserter(tailored_param_name), reversed);
+        mp::to_string(std::span{ &paramnum, 1 }, std::back_inserter(tailored_param_name), reversed);
         if (reversed) std::reverse(tailored_param_name.begin() + 1, tailored_param_name.end());
         identifier argid = unit_.slregistry().resolve(string_view{ tailored_param_name.data(), tailored_param_name.size() });
         return new_variable(argid, std::move(t), variable_entity::kind::SCOPE_LOCAL);
@@ -234,9 +234,9 @@ public:
         expr_stack_.pop_back();
     }
 
-    void collapse_chains()
+    void collapse_chains(size_t branch = 1)
     {
-        expr_stack_.resize(1);
+        expr_stack_.resize(branch);
     }
     //semantic::conditional<semantic::expression_type> * current_chain()
     //{

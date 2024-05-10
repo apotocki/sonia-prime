@@ -47,7 +47,8 @@ expression_visitor::result_type expression_visitor::operator()(annotated_bool co
 expression_visitor::result_type expression_visitor::operator()(annotated_decimal const& d) const
 {
     ctx.append_expression(semantic::push_value{ d.value });
-    return apply_cast(bang_decimal_t{}, d);
+    return apply_cast(bang_object_t{&ctx.u().get_functional_entity(unit::builtin_type::decimal)}, d);
+    //return apply_cast(bang_decimal_t{}, d);
 }
 
 expression_visitor::result_type expression_visitor::operator()(annotated_string const& s) const
@@ -61,10 +62,11 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
     shared_ptr<entity> e = ctx.resolve_entity(var.name.value);
     if (auto varptr = dynamic_cast<variable_entity*>(e.get()); varptr) {
         variable_entity::kind k = varptr->varkind();
-        if (k == variable_entity::kind::EXTERN || k == variable_entity::kind::STATIC) {
+        if (k == variable_entity::kind::EXTERN) {
+            // do nothing
+        } else if (k == variable_entity::kind::STATIC) {
             THROW_NOT_IMPLEMENTED_ERROR();
-        }
-        if (k == variable_entity::kind::SCOPE_LOCAL || k == variable_entity::kind::LOCAL) {
+        } else if (k == variable_entity::kind::SCOPE_LOCAL || k == variable_entity::kind::LOCAL) {
             if (!ctx.u().qnregistry().resolve(varptr->name()).parent().has_prefix(ctx.base_ns())) {
                 if (k == variable_entity::kind::SCOPE_LOCAL || var.scope_local) {
                     return make_error<basic_general_error>(var.name.location, "variable is not defined in the scope"sv, var.name.value);
@@ -108,7 +110,7 @@ expression_visitor::result_type expression_visitor::operator()(negate_expression
     return apply_cast(bang_bool_t{}, op);
 }
 
-expression_visitor::result_type expression_visitor::operator()(assign_expression_t& op) const
+expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::ASSIGN>, binary_expression_t& op) const
 {
     //GLOBAL_LOG_INFO() << "left expression: " << ctx.u().print(op.left);
 
@@ -282,7 +284,7 @@ expression_visitor::result_type expression_visitor::operator()(logic_or_expressi
 }
 */
 
-expression_visitor::result_type expression_visitor::operator()(logic_and_expression_t& op) const
+expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::LOGIC_AND>, binary_expression_t& op) const
 {
     auto largvis = expected_result
         ? expression_visitor{ ctx, expected_result_t{ bang_type{bang_any_t{}} || expected_result->type, expected_result->location }}
@@ -315,10 +317,10 @@ expression_visitor::result_type expression_visitor::operator()(logic_and_express
     return apply_cast(res_type, op);
 }
 
-expression_visitor::result_type expression_visitor::operator()(logic_or_expression_t& op) const
+expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::LOGIC_OR>, binary_expression_t & op) const
 {
     auto largvis = expected_result
-        ? expression_visitor{ ctx, expected_result_t{ bang_type{bang_any_t{}} || expected_result->type, expected_result->location }}
+        ? expression_visitor{ ctx, expected_result_t{ expected_result->type || bang_any_t{}, expected_result->location }}
         : expression_visitor{ ctx, nullptr };
     
     if (auto opterr = apply_visitor(largvis, op.left); opterr) return opterr;
@@ -349,18 +351,43 @@ expression_visitor::result_type expression_visitor::operator()(logic_or_expressi
     return apply_cast(res_type, op);
 }
 
-expression_visitor::result_type expression_visitor::operator()(binary_expression_t<binary_operator_type::CONCAT>& op) const
+template <binary_operator_type BOpV>
+expression_visitor::result_type expression_visitor::operator()(binary_operator_t<BOpV>, binary_expression_t& op) const
 {
-    // find a function
-    auto func_ent = dynamic_pointer_cast<functional_entity>(ctx.u().eregistry().find(ctx.u().make_qname_identifier("concat"sv)));
-    BOOST_ASSERT(func_ent);
-
+    // find a functional
+    auto & func_ent = ctx.u().get_functional_entity(BOpV);
+    
     pure_call_t proc(std::move(op.location), {});
     proc.positioned_args.emplace_back(std::move(op.left), op.start());
-    proc.positioned_args.emplace_back(std::move(op.right), op.location); // ~
-    return func_ent->find(ctx, proc);
-    // to do: type matching. or should the find method take into account result type?
+    proc.positioned_args.emplace_back(std::move(op.right), op.location);
+    auto optres = func_ent.find(ctx, proc);
+    if (!optres.has_value()) return std::move(optres.error());
+    return apply_cast(optres.value()->fn_type.result, op);
 }
+
+template expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::CONCAT>, binary_expression_t&) const;
+template expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::PLUS>, binary_expression_t&) const;
+
+//expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::CONCAT>, binary_expression_t& op) const
+//{
+//    // find a function
+//    auto func_ent = dynamic_pointer_cast<functional_entity>(ctx.u().eregistry().find(ctx.u().make_qname_identifier("concat"sv)));
+//    BOOST_ASSERT(func_ent);
+//
+//    pure_call_t proc(std::move(op.location), {});
+//    proc.positioned_args.emplace_back(std::move(op.left), op.start());
+//    proc.positioned_args.emplace_back(std::move(op.right), op.location); // ~
+//    return func_ent->find(ctx, proc);
+//    // to do: type matching. or should the find method take into account result type?
+//}
+//
+//expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::PLUS>, binary_expression_t& op) const
+//{
+//    auto func_ent = dynamic_pointer_cast<functional_entity>(ctx.u().eregistry().find(ctx.u().make_qname_identifier("'+"sv)));
+//    BOOST_ASSERT(func_ent);
+//
+//    THROW_NOT_IMPLEMENTED_ERROR();
+//}
 
 expression_visitor::result_type expression_visitor::operator()(case_expression const& ce) const
 {
@@ -390,14 +417,32 @@ std::expected<function_entity const*, error_storage> expression_visitor::handle_
     return std::unexpected(make_error<left_not_an_object_error>(id.location, id.value, ctx.context_type));
 }
 
+expression_visitor::result_type expression_visitor::operator()(not_empty_expression_t& me) const
+{
+    auto subvis = expected_result
+        ? expression_visitor{ ctx, expected_result_t{ expected_result->type || bang_tuple_t{}, expected_result->location } }
+        : expression_visitor{ ctx, nullptr };
+
+    if (auto opterr = apply_visitor(subvis, me.value); opterr) return opterr;
+    if (auto* uotype = ctx.context_type.as<bang_union_t>(); uotype && uotype->has(bang_tuple_t{})) {
+        ctx.append_expression(std::move(semantic::not_empty_condition_t{}));
+        ctx.push_chain(get<semantic::not_empty_condition_t>(ctx.expressions().back()).branch);
+        ctx.context_type = *uotype - bang_tuple_t{};
+        return {};
+    }
+    return make_error<basic_general_error>(get_start_location(me), "the expression type is not optional"sv, me);
+}
+
 expression_visitor::result_type expression_visitor::operator()(member_expression_t & me) const
 {
     if (auto opterr = apply_visitor(expression_visitor{ ctx, nullptr }, me.object); opterr) return opterr;
+    /*
     if (auto* uotype = ctx.context_type.as<bang_union_t>(); me.is_object_optional && uotype && uotype->has(bang_tuple_t{})) {
         ctx.append_expression(std::move(semantic::not_empty_condition_t{}));
         ctx.push_chain(get<semantic::not_empty_condition_t>(ctx.expressions().back()).branch);
         ctx.context_type = *uotype - bang_tuple_t{};
     }
+    */
     auto expgetter = handle_property_get(me.name);
     if (!expgetter.has_value()) return std::move(expgetter.error());
 
@@ -488,7 +533,9 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t &
         return make_error<basic_general_error>(fnvar->name.location, "is not callable"sv, fnvar->name.value);
     }
     
-    return func_ent->find(ctx, proc);
+    auto optres = func_ent->find(ctx, proc);
+    if (!optres.has_value()) return std::move(optres.error());
+    return apply_cast(optres.value()->fn_type.result, proc);
 }
 
 expression_visitor::result_type expression_visitor::operator()(chained_expression_t&) const

@@ -132,6 +132,22 @@ general_error::string_t parameter_not_found_error::description(unit const& u) co
         u.print(param.value) % u.print(entity_name)).str();
 }
 
+general_error::string_t function_call_match_error::object(unit const& u) const noexcept
+{
+    return u.print(functional_.value);
+}
+
+general_error::string_t function_call_match_error::description(unit const& u) const noexcept
+{
+    std::ostringstream ss;
+    ss << "can't match the function signature: "sv;
+    ss << u.print(signature_.fn_type);
+    if (reason_) {
+        ss << ", caused by: \n" << u.print(*reason_);
+    }
+    return ss.str();
+}
+
 //void error_printer_visitor::operator()(parameter_not_found_error const& err)
 //{
 //    s_ << ("parameter `%1%` of `%2%` is not found"_fmt % u_.print(err.param.value) % u_.print(err.entity_name)).str();

@@ -32,14 +32,14 @@ public:
 protected:
     OffsetT get_offset() const { return offset_; }
 
-    void set_offset(int offset)
+    inline void set_offset(int offset)
     {
-        BOOST_ASSERT (offset <= (std::numeric_limits<OffsetT>().max)());
-        BOOST_ASSERT (offset >= (std::numeric_limits<OffsetT>().min)());
+        BOOST_ASSERT (offset <= (std::numeric_limits<OffsetT>::max)());
+        BOOST_ASSERT (offset >= (std::numeric_limits<OffsetT>::min)());
         offset_ = static_cast<OffsetT>(offset);
     }
 
-    alignas(AlignmentV) char buffer_[SizeV];
+    alignas(AlignmentV) std::byte buffer_[SizeV];
     OffsetT offset_;
 };
 
@@ -54,12 +54,12 @@ public:
 protected:
     constexpr int get_offset() const noexcept { return 0; }
 
-    void set_offset(int offset)
+    inline void set_offset(int offset)
     {
-        BOOST_ASSERT (0 == offset);
+        BOOST_ASSERT (!offset);
     }
 
-    alignas(AlignmentV) char buffer_[SizeV];
+    alignas(AlignmentV) std::byte buffer_[SizeV];
 };
 
 template <class PolymorphicT, size_t SizeV, size_t AlignmentV = std::alignment_of_v<PolymorphicT>, typename OffsetT = void>
@@ -250,7 +250,7 @@ private:
     {
         BOOST_MPL_ASSERT_RELATION( sizeof(T), <=, SizeV );
         new (this->buffer_) T(std::forward<ArgsT>(args) ...);
-        T * place = std::launder(reinterpret_cast<T*>(this->buffer_));
+        T * place = reinterpret_cast<T*>(this->buffer_);
         int offset = static_cast<int>(reinterpret_cast<char*>(static_cast<PolymorphicT*>(place)) - reinterpret_cast<char*>(place));
         this->set_offset(offset);
     }
@@ -289,7 +289,7 @@ private:
     void do_clone(PolymorphicClonableT const& sample)
     {
         PolymorphicT * p = static_cast<PolymorphicT*>(sample.clone(this->buffer_, SizeV));
-        int offset = static_cast<int>(reinterpret_cast<char*>(p) - std::launder(reinterpret_cast<char*>(this->buffer_)));
+        int offset = static_cast<int>(reinterpret_cast<char*>(p) - reinterpret_cast<char*>(this->buffer_));
         this->set_offset(offset);
     }
 
@@ -297,7 +297,7 @@ private:
     void do_move(PolymorphicMovableT & sample)
     {
         PolymorphicT * p = static_cast<PolymorphicT*>(sample.move(this->buffer_, SizeV));
-        int offset = static_cast<int>(reinterpret_cast<char*>(p) - std::launder(reinterpret_cast<char*>(this->buffer_)));
+        int offset = static_cast<int>(reinterpret_cast<char*>(p) - reinterpret_cast<char*>(this->buffer_));
         this->set_offset(offset);
     }
 };

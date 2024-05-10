@@ -77,14 +77,15 @@ public:
         span<const std::tuple<annotated_identifier, bang_type>> named_params) const;
 
     // looking by argument expressions
-    virtual error_storage find(fn_compiler_context&, pure_call_t& call) const;
+    virtual std::expected<function_signature const*, error_storage> find(fn_compiler_context&, pure_call_t& call) const;
 };
 
-bool is_matched(fn_compiler_context&,
+// returns no error if matched
+error_storage is_matched(fn_compiler_context&,
     function_signature const&,
     pure_call_t& call);
 
-bool is_matched(fn_compiler_context& ctx,
+ bool is_matched(fn_compiler_context& ctx,
     function_signature const& sig,
     span<const bang_type> positioned_params,
     span<const std::tuple<annotated_identifier, bang_type>> named_params);

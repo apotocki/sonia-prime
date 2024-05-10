@@ -160,12 +160,13 @@ inline void umul(std::span<const LimbT> u, std::span<const LimbT> v, std::span<L
     } while (ub != ue);
     if (cl) { *rb++ = cl; }
     while (rb != re) { *rb++ = 0; }
+    rb = r.data() + u.size();
 
     // next lines
     for (++vb; vb != ve; ++vb) {
         cl = 0;
         ub = u.data();
-        rb -= u.size();
+        rb -= u.size() - 1;
         do {
             auto [h, l] = sonia::arithmetic::umul1(*ub, *vb);
             auto [h1, l1] = sonia::arithmetic::uadd1c(l, *rb, cl);
@@ -174,7 +175,7 @@ inline void umul(std::span<const LimbT> u, std::span<const LimbT> v, std::span<L
             ++ub; ++rb;
         } while (ub != ue);
         if (cl) {
-            *rb++ = sonia::arithmetic::uadd1(*rb, cl).second;
+            *rb = sonia::arithmetic::uadd1(*rb, cl).second;
         }
     }
 }

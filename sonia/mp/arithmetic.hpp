@@ -83,20 +83,20 @@ inline constexpr unsigned int generic_count_leading_zeros(T x)
 {
     T shift;
 									
-    if constexpr(sizeof(T) * CHAR_BIT == 32) {
+    if constexpr(std::numeric_limits<T>::digits == 32) {
         shift = x < ((T)1 << 16)
 	        ? (x < ((T)1 << 8) ? 1 : 9) : (x < ((T)1 << 24) ? 17
 	        : 25);
     } else {
-	    for (shift = sizeof(T) * CHAR_BIT - 8; shift > 0; shift -= 8)
+	    for (shift = std::numeric_limits<T>::digits - 8; shift > 0; shift -= 8)
 	        if (((x >> shift) & 0xff) != 0)
 	            break;
 	        ++shift;
     }
-    return (unsigned int)(sizeof(T) * CHAR_BIT + 1 - shift - clz_tab[x >> shift]);
+    return (unsigned int)(std::numeric_limits<T>::digits + 1 - shift - clz_tab[x >> shift]);
 }
 
-template <std::unsigned_integral T, unsigned int bits = sizeof(T) * CHAR_BIT>
+template <std::unsigned_integral T, unsigned int bits = std::numeric_limits<T>::digits>
 inline constexpr unsigned int consteval_count_leading_zeros(T x)
 {
     if constexpr (bits == 1) {
@@ -111,7 +111,7 @@ inline constexpr unsigned int consteval_count_leading_zeros(T x)
     }
 }
 
-template <std::unsigned_integral T, unsigned int bits = sizeof(T)* CHAR_BIT>
+template <std::unsigned_integral T, unsigned int bits = std::numeric_limits<T>::digits>
 inline constexpr unsigned int consteval_log2(T x)
 {
     return bits - consteval_count_leading_zeros<T, bits>(x) - 1;
@@ -202,7 +202,7 @@ inline void add2(T & sh, T & sl, T ah, T al, T bh, T bl)
         sl = al + bl;
         sh = ah + bh + (sl < al);
     } else {
-        constexpr int bsz = sizeof(T) * CHAR_BIT;
+        constexpr int bsz = std::numeric_limits<T>::digits;
         using h_t = typename uint_t<bsz * 2>::least;
         h_t result = ((((h_t)ah) << bsz) | al) + ((((h_t)bh) << bsz) | bl);
         sl = (T)(result & (std::numeric_limits<T>::max)());
@@ -214,7 +214,7 @@ template <std::unsigned_integral T>
 inline constexpr auto umul1(T u, T v) -> std::pair<T, T>
 {
     if constexpr (sizeof(T) >= sizeof(unsigned long long int)) {
-        constexpr int hbsz = sizeof(T) * CHAR_BIT / 2;
+        constexpr int hbsz = std::numeric_limits<T>::digits / 2;
         constexpr T lmask = ((T)1 << hbsz) - 1;
 
         using h_t = typename uint_t<hbsz>::least;
@@ -236,7 +236,7 @@ inline constexpr auto umul1(T u, T v) -> std::pair<T, T>
         }
         return { x3 + ((T)x1 >> hbsz), (x1 << hbsz) + ((T)x0 & lmask) };
     } else {
-        constexpr int bsz = sizeof(T) * CHAR_BIT;
+        constexpr int bsz = std::numeric_limits<T>::digits;
         using h_t = typename uint_t<bsz * 2>::least;
         constexpr h_t lmask = ((h_t)1 << bsz) - 1;
 
@@ -253,7 +253,7 @@ inline constexpr auto umul1(T u, T v) -> std::pair<T, T>
 template <std::unsigned_integral T>
 void udiv2by1(T& q, T& r, T u1, T u0, T d, T v)
 {
-    assert(d >= (((T)1) << (sizeof(T) * CHAR_BIT - 1)));
+    assert(d >= (((T)1) << (std::numeric_limits<T>::digits - 1)));
     auto [q1, q0] = umul1(u1, v);
     add2<T>(q, q0, q1, q0, u1 + 1, u0);
     r = u0 - q * d;
@@ -267,8 +267,8 @@ void udiv2by1(T& q, T& r, T u1, T u0, T d, T v)
     }
 }
 
-template <std::unsigned_integral T>
-inline constexpr auto udiv1(T u, T d)->std::pair<T, T>
+template <std::integral T>
+inline constexpr auto div1(T u, T d)->std::pair<T, T>
 {
 #if 1
     return { u / d, u % d };
@@ -282,7 +282,7 @@ template <std::unsigned_integral T>
 constexpr auto udiv2by1norm(T u1, T u0, T d) -> std::pair<T, T>
 {
     assert(u1 < d);
-    constexpr int bsz = sizeof(T) * CHAR_BIT;
+    constexpr int bsz = std::numeric_limits<T>::digits;
 
     if constexpr (sizeof(T) >= sizeof(unsigned long long int)) {
         assert(d & (T(1) << (bsz - 1)));
@@ -290,7 +290,7 @@ constexpr auto udiv2by1norm(T u1, T u0, T d) -> std::pair<T, T>
         T d1 = d >> (bsz / 2);
         T d0 = d & lmask;
             
-        auto [q1, r1] = udiv1(u1, d1);
+        auto [q1, r1] = div1(u1, d1);
         T m = q1 * d0;
         r1 = (r1 << (bsz / 2)) | (u0 >> (bsz / 2));
 
@@ -303,7 +303,7 @@ constexpr auto udiv2by1norm(T u1, T u0, T d) -> std::pair<T, T>
             }
         }
         r1 -= m;
-        auto [q0, r0] = udiv1(r1, d1);
+        auto [q0, r0] = div1(r1, d1);
         m = q0 * d0;
         r0 = (r0 << (bsz / 2)) | (u0 & lmask);
         if (r0 < m) {
@@ -326,14 +326,14 @@ template <std::unsigned_integral T>
 constexpr auto udiv2by1(T u1, T u0, T d) -> std::pair<T, T>
 {
     assert(u1 < d); // => d != 0
-    constexpr int bsz = sizeof(T) * CHAR_BIT;
+    constexpr int bsz = std::numeric_limits<T>::digits;
 
     if constexpr (sizeof(T) >= sizeof(unsigned long long int)) {
         constexpr T highbit = T(1) << (bsz - 1);
         if (!(d & highbit)) {
             int shift = count_leading_zeros(d);
             d <<= shift;
-            u1 = (u1 << shift) | u0 >> (sizeof(T) * CHAR_BIT - shift);
+            u1 = (u1 << shift) | u0 >> (bsz - shift);
             u0 <<= shift;
             auto [q, r] = udiv2by1norm(u1, u0, d);
             return { q, r >> shift };

@@ -84,7 +84,6 @@ void delete_file(cstring_view path)
 
 void get_disk_info(u8string_view path, disk_info& di)
 {
-    using namespace boost::conversion;
     std::wstring wfname = winapi::utf8_to_utf16(std::string_view{(const char*)path.data(), path.size()});
 
     ULARGE_INTEGER ulFreeSpace;

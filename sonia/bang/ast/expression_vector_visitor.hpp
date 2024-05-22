@@ -35,7 +35,7 @@ struct expression_vector_visitor_obs : static_visitor<optional<bang_type>>
                 return nullopt;
             }
         }
-        ctx.append_expression(semantic::push_value{ decimal{ vec.elements.size() } });
+        ctx.append_expression(semantic::push_value{ mp::integer{ vec.elements.size() } });
         ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::arrayify));
         estate.detach();
         return v;

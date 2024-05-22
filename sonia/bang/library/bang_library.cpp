@@ -5,7 +5,7 @@
 #include "sonia/config.hpp"
 #include "library.hpp"
 #include "sonia/logger/logger.hpp"
-#include "sonia/mp/decimal.hpp"
+#include "sonia/mp/basic_decimal.hpp"
 
 #include <sstream>
 
@@ -68,9 +68,9 @@ void bang_concat_string(vm::context& ctx)
 
 void bang_operator_plus_decimal(vm::context& ctx)
 {
-    auto l = ctx.stack_back(1).as<decimal>();
-    auto r = ctx.stack_back().as<decimal>();
-    decimal sum = l + r;
+    auto l = ctx.stack_back(1).as<mp::decimal>();
+    auto r = ctx.stack_back().as<mp::decimal_view>();
+    auto sum = l + r;
     smart_blob res{ decimal_blob_result(sum) };
     res.allocate();
     
@@ -81,12 +81,14 @@ void bang_operator_plus_decimal(vm::context& ctx)
 void bang_to_decimal(vm::context& ctx)
 {
     auto str = ctx.stack_back().as<string_view>();
-    if (optional<decimal> d = sonia::decimal::parse_no_throw(str); d) {
-        smart_blob res{ decimal_blob_result(*d) };
+    try {
+        mp::decimal d(str);
+        smart_blob res{ decimal_blob_result(d) };
         res.allocate();
         ctx.stack_back().replace(std::move(res));
-    } else {
-        ctx.stack_back().replace(nil_blob_result());
+    } catch (std::exception const& e) {
+        ctx.stack_back().replace(error_blob_result(e.what())); // nil_blob_result()
+        ctx.stack_back().allocate();
     }
 }
 

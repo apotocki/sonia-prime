@@ -83,6 +83,11 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(ann
     return std::unexpected(make_error<wrong_lvalue_error>(ab));
 }
 
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_integer const& ai) const
+{
+    return std::unexpected(make_error<wrong_lvalue_error>(ai));
+}
+
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_decimal const& ad) const
 {
     return std::unexpected(make_error<wrong_lvalue_error>(ad));

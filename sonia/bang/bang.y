@@ -54,7 +54,8 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token COMMENT_END
 
 %token <sonia::lang::bang::annotated_string_view> STRING IDENTIFIER ARGIDENTIFIER
-%token <sonia::lang::bang::annotated_decimal> INTEGER DECIMAL
+%token <sonia::lang::bang::annotated_integer> INTEGER
+%token <sonia::lang::bang::annotated_decimal> DECIMAL
 %token <sonia::string_view> OPERATOR_TERM
 
 %token <sonia::lang::lex::resource_location> ASSIGN               "`=`"

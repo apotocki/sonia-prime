@@ -189,7 +189,7 @@ Terminals, with rules where they appear
     STRING <sonia::lang::bang::annotated_string_view> (260) 8 72
     IDENTIFIER <sonia::lang::bang::annotated_string_view> (261) 26
     ARGIDENTIFIER <sonia::lang::bang::annotated_string_view> (262) 75
-    INTEGER <sonia::lang::bang::annotated_decimal> (263) 62 70
+    INTEGER <sonia::lang::bang::annotated_integer> (263) 62 70
     DECIMAL <sonia::lang::bang::annotated_decimal> (264) 71
     OPERATOR_TERM <sonia::string_view> (265)
     "`=`" <sonia::lang::lex::resource_location> (266) 15 54 67

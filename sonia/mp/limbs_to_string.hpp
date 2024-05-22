@@ -118,7 +118,7 @@ OutputIteratorT bc_get_str(std::span<LimbT> limbs, int base, std::string_view al
 
     for (LimbT ul = limbs.front(); ul; ++oi)
     {
-        auto [q, r] = udiv1<LimbT>(ul, base);
+        auto [q, r] = div1<LimbT>(ul, base);
         ul = q;
         *oi = alphabet[static_cast<uint8_t>(r)];
     }

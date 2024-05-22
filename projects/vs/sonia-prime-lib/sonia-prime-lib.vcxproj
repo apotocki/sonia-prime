@@ -356,12 +356,15 @@
     <ClInclude Include="..\..\..\sonia\mpl\zip_view.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\arithmetic.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\basic_decimal.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\basic_decimal_old.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\basic_integer.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\ct.hpp" />
-    <ClInclude Include="..\..\..\sonia\mp\decimal.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\decimal.ipp" />
+    <ClInclude Include="..\..\..\sonia\mp\decimal_arithmetic.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\decimal_view.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\integer_view.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\integer_view_arithmetic.hpp" />
+    <ClInclude Include="..\..\..\sonia\mp\limbs_from_decimal_string.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\limbs_from_integral.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\limbs_from_string.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\limbs_to_string.hpp" />
@@ -545,7 +548,6 @@
     <ClInclude Include="..\..\..\sonia\utility\mvvm\view_model.ipp" />
     <ClInclude Include="..\..\..\sonia\utility\number\fixed_uint.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\float16.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\number\math.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\meta\for_each_wi.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\number\meta\uint.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\optimized\decimal.hpp" />
@@ -899,7 +901,6 @@
     <ClCompile Include="..\..\..\sonia\utility\mvvm\bunch_builder_view_model.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\mvvm\lua_view_model.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\mvvm\view_model.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\number\number_math.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\parameters\parameters.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>

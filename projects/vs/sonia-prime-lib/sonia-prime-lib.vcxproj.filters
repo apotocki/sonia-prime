@@ -999,9 +999,6 @@
     <ClInclude Include="..\..\..\sonia\utility\parsers\xml\parser.hpp">
       <Filter>sonia.utility\parsers\xml</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\number\math.hpp">
-      <Filter>sonia.utility\number</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\functional\hash\tuple.hpp">
       <Filter>sonia.utility\functional\hash</Filter>
     </ClInclude>
@@ -1995,9 +1992,6 @@
     <ClInclude Include="..\..\..\sonia\mp\basic_decimal.hpp">
       <Filter>sonia.mp</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\mp\decimal.hpp">
-      <Filter>sonia.mp</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\mp\decimal.ipp">
       <Filter>sonia.mp</Filter>
     </ClInclude>
@@ -2160,6 +2154,18 @@
     <ClInclude Include="..\..\..\sonia\mp\limbs_to_string.hpp">
       <Filter>sonia.mp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\basic_decimal_old.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\limbs_from_decimal_string.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\decimal_view.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\mp\decimal_arithmetic.hpp">
+      <Filter>sonia.mp</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2281,9 +2287,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\parsers\xml\xml_model.cpp">
       <Filter>sonia.utility\parsers\xml</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\number\number_math.cpp">
-      <Filter>sonia.utility\number</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\sys\linux\linux.cpp">
       <Filter>sonia.sys\linux</Filter>

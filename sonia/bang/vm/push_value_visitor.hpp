@@ -41,9 +41,22 @@ public:
         bvm().append_push_static_const(std::move(strbr));
     }
 
-    void operator()(decimal const& dval) const
+    void operator()(mp::integer const& ival) const
     {
-        if (dval.raw_exp() >= 0) { // is integral
+        if (ival.is_fit<int64_t>()) {
+            bvm().append_push_static_const(smart_blob{ i64_blob_result((int64_t)ival) });
+        } else if (ival.is_fit<uint64_t>()) {
+            bvm().append_push_static_const(smart_blob{ ui64_blob_result((uint64_t)ival) });
+        } else {
+            bvm().append_push_static_const(smart_blob{ bigint_blob_result(ival) });
+        }
+    }
+
+    void operator()(mp::decimal const& dval) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+        /*
+        if (dval.exponent().sgn() >= 0) { // is integral
             if (dval >= (std::numeric_limits<int64_t>::min)() && dval <= (std::numeric_limits<int64_t>::max)()) {
                 bvm().append_push_static_const(smart_blob{ i64_blob_result((int64_t)dval) });
             } else if (dval >= 0 && dval <= (std::numeric_limits<uint64_t>::max)()) {
@@ -52,6 +65,7 @@ public:
         } else {
             bvm().append_push_static_const(smart_blob{ f64_blob_result((double_t)dval) });
         }
+        */
     }
 
     void operator()(lang::bang::function_value const& dval) const

@@ -5860,7 +5860,7 @@ case 56:
 YY_RULE_SETUP
 #line 340 "bang.l"
 {
-		variant_emplace(annotated_decimal{decimal{ctx.make_int(text_view)}, location});
+		variant_emplace(annotated_integer{ctx.make_integer(text_view), location});
 		return (bang_lang::parser::token::INTEGER);
 	}
 	YY_BREAK
@@ -5868,7 +5868,7 @@ case 57:
 YY_RULE_SETUP
 #line 344 "bang.l"
 {
-		variant_emplace(annotated_decimal{ctx.make_numeric(text_view), location});
+		variant_emplace(annotated_decimal{ctx.make_decimal(text_view), location});
 		return (bang_lang::parser::token::DECIMAL);
 	}
 	YY_BREAK

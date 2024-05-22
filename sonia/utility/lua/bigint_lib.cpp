@@ -50,7 +50,7 @@ int push_bigint(lua_State* L, mp::basic_integer_view<const limb_type> value)
     size_t datasz = limbs.size() * sizeof(limb_type);
     bigint_header* br = (bigint_header*)lua_newuserdata(L, sizeof(bigint_header) + datasz);
     br->size = limbs.size();
-    br->sign = value.sign() > 0 ? 0 : 1;
+    br->sign = value.is_negative() ? 1 : 0;
     memcpy(br + 1, limbs.data(), datasz);
 
     luaL_getmetatable(L, BIGINT_METATABLE_NAME);
@@ -118,7 +118,14 @@ int bigint_create(lua_State* L)
         } else if (lua_isstring(L, 1)) {
             size_t strsz;
             char const* strval = lua_tolstring(L, 1, &strsz);
-            auto [limbs, sz, allocsz, sign] = mp::to_limbs<limb_type>(string_view{ strval, strsz }, 0, limbs_allocator);
+            string_view str{ strval, strsz };
+            auto opt_limbs = mp::to_limbs<limb_type>(str, 0, limbs_allocator);
+            if (!opt_limbs.has_value()) {
+                std::rethrow_exception(opt_limbs.error());
+            } else if (!str.empty()) {
+                throw exception("can't parse '%1%' as an integer, stopped at: '%2%'"_fmt % string_view{ strval, strsz } % str);
+            }
+            auto [limbs, sz, allocsz, sign] = *opt_limbs;
             bigint_header* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
             bh->sign = sign > 0 ? 0 : 1;
             bh->size = sz;
@@ -151,11 +158,11 @@ int bigint_tostring(lua_State* L)
     auto ival = restore_bigint(bh);
     
     std::vector<char> s;
-    if (ival.sign() < 0) s.push_back('-');
+    if (ival.is_negative()) s.push_back('-');
     bool reversed;
     mp::to_string((std::span<const limb_type>)ival, std::back_inserter(s), reversed);
     if (reversed) {
-        std::reverse(s.begin() + (ival.sign() < 0), s.end());
+        std::reverse(s.begin() + ival.is_negative(), s.end());
     }
     lua_pushlstring(L, s.data(), s.size());
     return 1;
@@ -199,7 +206,7 @@ int bigint_fancy_string(lua_State* L)
         return luaL_error(L, "bigint.to_fancy_string: invalid argument, type: %d; `bigint' or integer expected", lua_type(L, 1));
     }
 
-    if (ival.sign() < 0) ss << '-';
+    if (ival.is_negative()) ss << '-';
     if (radix == 16) {
         ss << "0x"sv;
     }

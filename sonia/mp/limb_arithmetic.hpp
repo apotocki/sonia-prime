@@ -71,32 +71,86 @@ inline void uxor(std::span<const LimbT> u, std::span<const LimbT> v, std::span<L
     }
 }
 
+// u size must be >= v size
+template <std::unsigned_integral LimbT>
+inline LimbT uadd_partial_unchecked(LimbT const*& ub, LimbT const* vb, LimbT const* ve, LimbT *& rb)
+{
+    LimbT c = 0;
+    for (; vb != ve; ++ub, ++vb, ++rb) {
+        std::tie(c, *rb) = sonia::arithmetic::uadd1c(*ub, *vb, c);
+    }
+    return c;
+}
+
+// u size must be >= v size
+template <std::unsigned_integral LimbT>
+inline LimbT uadd_unchecked(LimbT const* ub, LimbT const* ue, LimbT const* vb, LimbT const* ve, LimbT* rb)
+{
+    LimbT c = uadd_partial_unchecked(ub, vb, ve, rb);
+    for (; ub != ue; ++ub, ++rb) {
+        std::tie(c, *rb) = sonia::arithmetic::uadd1(*ub, c);
+    }
+    return c;
+}
+
+// u size must be >= v size
+template <std::unsigned_integral LimbT>
+inline LimbT uadd_unchecked(LimbT const* ub, LimbT const* ue, LimbT last_u, LimbT const* vb, LimbT const* ve, LimbT last_v, LimbT*& rb)
+{
+    LimbT c = uadd_partial_unchecked(ub, vb, ve, rb);
+    if (ub != ue) {
+        std::tie(c, *rb++) = sonia::arithmetic::uadd1c(*ub++, last_v, c);
+        for (; ub != ue; ++ub, ++rb) {
+            std::tie(c, *rb) = sonia::arithmetic::uadd1(*ub, c);
+        }
+        std::tie(c, *rb++) = sonia::arithmetic::uadd1(last_u, c);
+    } else {
+        std::tie(c, *rb++) = sonia::arithmetic::uadd1c(last_u, last_v, c);
+    }
+    return c;
+}
+
 template <std::unsigned_integral LimbT>
 inline LimbT uadd(std::span<const LimbT> u, std::span<const LimbT> v, std::span<LimbT> r)
 {
     assert(r.size() >= (std::max)(u.size(), v.size()));
     LimbT const* ub = u.data(), * ue = ub + u.size();
     LimbT const* vb = v.data(), * ve = vb + v.size();
-    LimbT* rb = r.data(), * re = rb + r.size();
-    LimbT c = 0;
-    for (;; ++ub, ++vb, ++rb) {
-        if (ub != ue) {
-            if (vb != ve) {
-                std::tie(c, *rb) = sonia::arithmetic::uadd1c(*ub, *vb, c);
-                continue;
-            } else {
-                do {
-                    std::tie(c, *rb) = sonia::arithmetic::uadd1(*ub, c);
-                    ++ub; ++rb;
-                } while (ub != ue);
-            }
-        } else {
-            for (; vb != ve; ++vb, ++rb) {
-                std::tie(c, *rb) = sonia::arithmetic::uadd1(*vb, c);
-            }
-        }
-        return c;
+    LimbT* rb = r.data();
+
+    if (u.size() >= v.size()) {
+        return uadd_unchecked(ub, ue, vb, ve, rb);
+    } else {
+        return uadd_unchecked(vb, ve, ub, ue, rb);
     }
+}
+
+// u size must be >= v size
+template <std::unsigned_integral LimbT>
+inline LimbT usub_partial_unchecked(LimbT const*& ub, LimbT const* vb, LimbT const* ve, LimbT*& rb)
+{
+    LimbT c = 0;
+    for (; vb != ve; ++ub, ++vb, ++rb) {
+        std::tie(c, *rb) = sonia::arithmetic::usub1c(*ub, *vb, c);
+    }
+    return c;
+}
+
+// u size must be >= v size
+template <std::unsigned_integral LimbT>
+inline LimbT usub_unchecked(LimbT const* ub, LimbT const* ue, LimbT last_u, LimbT const* vb, LimbT const* ve, LimbT last_v, LimbT*& rb)
+{
+    LimbT c = usub_partial_unchecked(ub, vb, ve, rb);
+    if (ub != ue) {
+        std::tie(c, *rb++) = sonia::arithmetic::usub1c(*ub++, last_v, c);
+        for (; ub != ue; ++ub, ++rb) {
+            std::tie(c, *rb) = sonia::arithmetic::usub1(*ub, c);
+        }
+        std::tie(c, *rb) = sonia::arithmetic::usub1(last_u, c);
+    } else {
+        std::tie(c, *rb) = sonia::arithmetic::usub1c(last_u, last_v, c);
+    }
+    return c;
 }
 
 template <std::unsigned_integral LimbT>

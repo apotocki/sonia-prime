@@ -72,9 +72,13 @@ unit::unit()
     , bvm_{ std::make_unique<virtual_stack_machine>() }
 {
     // internal types
-    auto e = make_shared<internal_type_entity>(make_qname_identifier("decimal"));
-    decimal_entity_ = e.get();
-    eregistry().insert(std::move(e));
+    auto ie = make_shared<internal_type_entity>(make_qname_identifier("integer"));
+    integer_entity_ = ie.get();
+    eregistry().insert(std::move(ie));
+
+    auto de = make_shared<internal_type_entity>(make_qname_identifier("decimal"));
+    decimal_entity_ = de.get();
+    eregistry().insert(std::move(de));
 
     // internal functions
     builtins_.resize((size_t)builtin_fn::eof_builtin_type);
@@ -432,7 +436,12 @@ struct expr_printer_visitor : static_visitor<void>
         ss << '"' << s << '"';
     }
 
-    void operator()(decimal const& d) const
+    void operator()(mp::integer const& i) const
+    {
+        ss << to_string(i);
+    }
+
+    void operator()(mp::decimal const& d) const
     {
         ss << to_string(d);
     }
@@ -591,6 +600,8 @@ functional_entity& unit::get_functional_entity(binary_operator_type bop)
 functional_entity& unit::get_functional_entity(builtin_type bt) const
 {
     switch (bt) {
+    case builtin_type::integer:
+        return *integer_entity_;
     case builtin_type::decimal:
         return *decimal_entity_;
     default:

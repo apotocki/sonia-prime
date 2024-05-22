@@ -86,7 +86,7 @@ void declaration_visitor::operator()(fn_pure_decl & fd) const
         
         // signature
         int64_t sigval = (sig.parameters_count() + 1) * (fnent->is_void() ? -1 : 1);
-        fnent->body.emplace_back(semantic::push_value{ decimal{ sigval }});
+        fnent->body.emplace_back(semantic::push_value{ mp::integer{ sigval }});
         // name
         small_string fnmangled = ctx.u().as_string(fnm);
         fnent->body.emplace_back(semantic::push_value{ fnmangled });

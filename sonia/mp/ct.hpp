@@ -19,13 +19,13 @@ namespace sonia::mpct
 // template <typename T, T... args> using limbs = std::integer_sequence<T, args...>;
 
 
-template <typename T, T... args> struct limbs
+template <std::unsigned_integral T, T... args> struct limbs
 {
     using type = limbs;
     static T data[sizeof...(args)];
 };
 
-template <typename T, T... args> T limbs<T, args...>::data[sizeof...(args)] = { args ... };
+template <std::unsigned_integral T, T... args> T limbs<T, args...>::data[sizeof...(args)] = { args ... };
 
 template <typename LimbsT> struct size_method : size_method<typename LimbsT::type> {};
 template <typename LimbsT> constexpr size_t size = size_method<LimbsT>::value;
@@ -38,20 +38,20 @@ template <typename LimbsT> constexpr auto front = front_method<LimbsT>::value;
 
 template <typename LimbsT> struct front_method<const LimbsT> : front_method<LimbsT> {};
 
-template <typename T, T h, T... args>
+template <std::unsigned_integral T, T h, T... args>
 struct front_method<limbs<T, h, args...>> : std::integral_constant<T, h> { };
 
-template <typename T> struct front_method<limbs<T>> : std::integral_constant<T, T{}> {};
+template <std::unsigned_integral T> struct front_method<limbs<T>> : std::integral_constant<T, T{}> {};
 
 // ////////////////////////////////// pop_front
 template <typename LimbsT> struct pop_front_method : pop_front_method<typename LimbsT::type> {};
 
 template <typename LimbsT> using pop_front = typename pop_front_method<LimbsT>::type;
 
-template <typename T, T h, T... args>
+template <std::unsigned_integral T, T h, T... args>
 struct pop_front_method<limbs<T, h, args...>> { using type = limbs<T, args...>; };
 
-template <typename T>
+template <std::unsigned_integral T>
 struct pop_front_method<limbs<T>> { using type = limbs<T>; };
 
 // ////////////////////////////////// back
@@ -59,7 +59,7 @@ template <typename LimbsT> struct back_method : back_method<typename LimbsT::typ
 
 template <typename LimbsT> constexpr auto back = back_method<LimbsT>::value;
 
-template <typename T, T... args>
+template <std::unsigned_integral T, T... args>
 struct back_method<limbs<T, args...>>
 {
     static constexpr T value = (T{ args }, ...);
@@ -81,7 +81,7 @@ namespace detail {
     }
 }
 
-template <typename T, T ... args, size_t LimbCount> struct slice_limbs_method<limbs<T, args...>, LimbCount>
+template <std::unsigned_integral T, T ... args, size_t LimbCount> struct slice_limbs_method<limbs<T, args...>, LimbCount>
 {
     using type = decltype(detail::slice_limbs_impl<T, args...>(std::make_index_sequence<LimbCount>()));
 };
@@ -91,14 +91,14 @@ template <typename LimbsT> struct pop_back_method : pop_back_method<typename Lim
 
 template <typename LimbsT> using pop_back = typename pop_back_method<LimbsT>::type;
 
-template <typename T, T ... args> struct pop_back_method<limbs<T, args...>>
+template <std::unsigned_integral T, T ... args> struct pop_back_method<limbs<T, args...>>
 {
     using type = decltype(detail::slice_limbs_impl<T, args...>(std::make_index_sequence<sizeof ...(args) - 1>()));
 };
 
 // ////////////////////////////////// at
 template <typename LimbsT, size_t I> struct at_method : at_method<typename LimbsT::type, I> {};
-template <typename T, T ... args, size_t I>
+template <std::unsigned_integral T, T ... args, size_t I>
 requires(sizeof...(args) > I) struct at_method<limbs<T, args...>, I>
 {
     static constexpr T value = std::array<T, sizeof ...(args)>{ args ... }[I];
@@ -117,7 +117,7 @@ struct concat_method<limbs<T, largs...>, limbs<T, rargs...>>
 
 // ////////////////////////////////// BUILD
 namespace detail {
-    template <typename T, T V, size_t ...Is> auto build_method_impl(std::index_sequence<Is...>)
+    template <std::unsigned_integral T, T V, size_t ...Is> auto build_method_impl(std::index_sequence<Is...>)
     {
         return limbs<T, (V + Is * 0)...>{};
     };
@@ -143,7 +143,7 @@ template <typename LimbsT, auto V> struct push_front_method : push_front_method<
 
 template <typename LimbsT, auto V> using push_front = typename push_front_method<LimbsT, V>::type;
 
-template <typename T, T... args, T V>
+template <std::unsigned_integral T, T... args, T V>
 struct push_front_method<limbs<T, args...>, V> { using type = limbs<T, V, args...>; };
 
 // ////////////////////////////////// fold
@@ -192,7 +192,7 @@ namespace detail {
     {
         using ls_t = limbs<T, args...>;
 
-        static constexpr auto bits = sizeof(T) * CHAR_BIT;
+        static constexpr auto bits = std::numeric_limits<T>::digits;
         static constexpr auto maskbits = BitCount % bits;
 
         static constexpr T last_limb = std::conditional_t<!maskbits, std::integral_constant<T, 0>, at_method<ls_t, BitCount / bits>>::type::value;
@@ -206,7 +206,7 @@ namespace detail {
 template <typename T, T... args, size_t BitCount>
 struct slice_method<limbs<T, args...>, BitCount>
 {
-    static constexpr auto bits = sizeof(T) * CHAR_BIT;
+    static constexpr auto bits = std::numeric_limits<T>::digits;
     using type = typename std::conditional_t<bits * sizeof...(args) <= BitCount, limbs<T, args...>, detail::slice_impl<T, BitCount, args...>>::type;
 };
 
@@ -219,7 +219,7 @@ namespace detail {
     template <size_t ShiftV, std::integral T, T... sargs, T... args>
     struct shift_left_builder<ShiftV, limbs<T, sargs...>, limbs<T, args...>>
     {
-        using type = norm<limbs<T, ((args << ShiftV) | (sargs >> (sizeof(T) * CHAR_BIT - ShiftV))) ...>>;
+        using type = norm<limbs<T, ((args << ShiftV) | (sargs >> (std::numeric_limits<T>::digits - ShiftV))) ...>>;
     };
 }
 
@@ -230,7 +230,7 @@ template <std::integral T, T... args, auto V>
 struct shift_left_method<limbs<T, args...>, V>
 {
     using limbs_t = limbs<T, args...>;
-    static constexpr auto QR = arithmetic::udiv1<T>(V, sizeof(T) * CHAR_BIT);
+    static constexpr auto QR = arithmetic::div1<T>(V, std::numeric_limits<T>::digits);
     using raw_type = typename detail::shift_left_builder<QR.second, push_front<limbs_t, T(0)>, push_back<limbs_t, T(0)>>::type;
     using type = typename std::conditional_t<!QR.first, raw_type, concat_method<build_method<T, QR.first>, raw_type>>::type;
 };
@@ -243,7 +243,7 @@ template <std::integral T, T... args, auto V>
 struct shift_right_method<limbs<T, args...>, V>
 {
     using limbs_t = limbs<T, args...>;
-    static constexpr auto QR = arithmetic::udiv1<T>(V, sizeof(T) * CHAR_BIT);
+    static constexpr auto QR = arithmetic::div1<T>(V, std::numeric_limits<T>::digits);
     using raw_type = typename std::conditional_t<!QR.first, limbs_t,
         std::conditional<(sizeof ...(args) > QR.first), slice_limbs_method<limbs_t, sizeof ...(args) - QR.first>, limbs<T, 0>>
     >::type;
@@ -251,7 +251,7 @@ struct shift_right_method<limbs<T, args...>, V>
     using type = typename std::conditional_t<
         !QR.second,
         raw_type,
-        detail::shift_left_builder<sizeof(T)* CHAR_BIT - QR.second, raw_type, push_back_method<pop_front_method<raw_type>, T(0)>>
+        detail::shift_left_builder<std::numeric_limits<T>::digits - QR.second, raw_type, push_back_method<pop_front_method<raw_type>, T(0)>>
     >::type;
 };
 
@@ -538,10 +538,24 @@ struct pow_method<limbs<T, args...>, a> : mul_method<pow<limbs<T, args...>, a / 
 
 namespace literals {
 
-inline constexpr unsigned int char_to_digit(char val)
+inline constexpr unsigned int oct_char_to_digit(char val)
+{
+    assert(val >= '0' && val <= '7');
+    return (unsigned int)val - '0';
+}
+
+inline constexpr unsigned int dec_char_to_digit(char val)
 {
     assert(val >= '0' && val <= '9');
     return (unsigned int)val - '0';
+}
+
+inline constexpr unsigned int hex_char_to_digit(char val)
+{
+    if (val >= '0' && val <= '9') return (unsigned int)val - '0';
+    if (val >= 'a' && val <= 'f') return (unsigned int)val - 'a' + 10;
+    if (val >= 'A' && val <= 'F') return (unsigned int)val - 'A' + 10;
+    assert(false);
 }
 
 template <auto Base, typename AccumT, unsigned int ... args>
@@ -557,7 +571,7 @@ struct mul_base_plus_method<Base, limbs<T, accum...>> { using type = limbs<T, ac
 
 template <char... Chars> constexpr auto operator"" _W()
 {
-    return typename mul_base_plus_method<uint64_t(10), limbs<uint64_t>, char_to_digit(Chars) ...>::type{};
+    return typename mul_base_plus_method<uint64_t(10), limbs<uint64_t>, dec_char_to_digit(Chars) ...>::type{};
 }
 
 }

@@ -5,6 +5,7 @@
 #define TEST_FOLDER "mp_test"
 
 #include "sonia/config.hpp"
+#undef BOOST_ENABLE_ASSERT_HANDLER
 
 #include "applied/sonia_test.hpp"
 
@@ -18,14 +19,16 @@ void basic_integer_test0()
 {
     static_assert(sizeof(sonia::mp::basic_integer<uint8_t, 1>) == sizeof(void*));
 
-    static_assert(sonia::mp::basic_integer<uintptr_t, 1>::alloc_holder::limb_count_bits == 0);
-    static_assert(sonia::mp::basic_integer<uintptr_t, 2>::alloc_holder::limb_count_bits == 1);
-    static_assert(sonia::mp::basic_integer<uintptr_t, 3>::alloc_holder::limb_count_bits == 2);
-    static_assert(sonia::mp::basic_integer<uintptr_t, 4>::alloc_holder::limb_count_bits == 2);
-    static_assert(sonia::mp::basic_integer<uintptr_t, 5>::alloc_holder::limb_count_bits == 3);
+    static_assert(sonia::mp::basic_integer<uintptr_t, 1>::storage_type::limb_count_bits == 0);
+    static_assert(sonia::mp::basic_integer<uintptr_t, 2>::storage_type::limb_count_bits == 1);
+    static_assert(sonia::mp::basic_integer<uintptr_t, 3>::storage_type::limb_count_bits == 2);
+    static_assert(sonia::mp::basic_integer<uintptr_t, 4>::storage_type::limb_count_bits == 2);
+    static_assert(sonia::mp::basic_integer<uintptr_t, 5>::storage_type::limb_count_bits == 3);
 
     using bint_t = sonia::mp::basic_integer<uint64_t, 1>;
     using biv_t = sonia::mp::basic_integer_view<uint64_t>;
+    
+    using namespace std::string_view_literals;
 
     BOOST_CHECK(!bint_t{});
     BOOST_CHECK(!(biv_t)bint_t{});
@@ -46,7 +49,7 @@ void basic_integer_test0()
     BOOST_CHECK_EQUAL(-bint_t{ 0x4000000000000000ll }, bint_t{ -0x4000000000000000ll });
     BOOST_CHECK_EQUAL((uint64_t)bint_t { -0x4000000000000000ll }, -0x4000000000000000ll);
 
-    using namespace std::string_view_literals;
+    
     BOOST_CHECK(*bint_t{ "0"sv }.raw_data() == (uint64_t{ 1 } << 63));
     BOOST_CHECK(*bint_t{ "1"sv }.raw_data() == (uint64_t{ 1 } << 63) + 1);
     BOOST_CHECK(*bint_t{ "-1"sv }.raw_data() == (uint64_t{ 3 } << 62) + 1);
@@ -188,6 +191,20 @@ void basic_integer_test0()
 
     using namespace sonia::mp::literals;
     {
+        {
+            bint_t b0 = 10_bi + 0x20_bi;
+            BOOST_CHECK(b0.is_inplaced());
+            BOOST_CHECK_EQUAL(b0, 42);
+        }
+        {
+            bint_t b0 = "10"_bi - "20"_bi;
+            BOOST_CHECK(b0.is_inplaced());
+            BOOST_CHECK_EQUAL(b0, -10);
+        }
+
+        BOOST_CHECK_EQUAL(0111_bi, 73);
+
+        BOOST_CHECK_EQUAL("0x3fffFFFFffffFFFF"_bi + 1, 0x4000000000000000);
         BOOST_CHECK_EQUAL("-0xffffFFFFffffFFFF"_bi + "-340282366920938463408034375210639556610"_bi, "-340282366920938463426481119284349108225"_bi);
         BOOST_CHECK_EQUAL("340282366920938463408034375210639556610"_bi + 0xffffFFFFffffFFFFll, "340282366920938463426481119284349108225"_bi);
         BOOST_CHECK_EQUAL(0xffffFFFFffffFFFFll + "340282366920938463408034375210639556610"_bi, "340282366920938463426481119284349108225"_bi);
@@ -211,6 +228,9 @@ void basic_integer_test0()
         BOOST_CHECK_EQUAL("340282366920938463408034375210639556610"_bi % "0xfffE"_bi, "210"_bi);
         BOOST_CHECK_EQUAL("340282366920938463408034375210639556610"_bi % 0xfffE, "210"_bi);
         BOOST_CHECK_EQUAL("340282366920938463408034375210639556610"_bi * "340282366920938463408034375210639556610"_bi, "115792089237316195385908374596367823274678918896366765567645960308857394692100"_bi);
+
+        BOOST_CHECK_EQUAL(340282366920938463408034375210639556610_bi * 340282366920938463408034375210639556610_bi, 115792089237316195385908374596367823274678918896366765567645960308857394692100_bi);
+
 
         auto x0 = "5"_bi;
         BOOST_CHECK_EQUAL(x0* x0, (uint64_t)25);
@@ -264,12 +284,12 @@ void basic_integer_test0()
 //    BOOST_CHECK_EQUAL(pow("340282366920938463408034375210639556610"_bi, 0xf), "94971145180789141173792039356877348546615710136820159429620005475820741373484440733711065254441078508238038934605050990664553807873876669074305644271758756235065228100642097755554173541883690838600982589611688150716320040505871847239934643409009493854662453165945031933545041297089845350845567778753783952870388913863486884966424088583811509592259257648204772815239748003247381690020399370551715721516812596449220997661037663386512666647739896418940688124424283266194059250293267995087980181863547749199304889944124217666383500994250505363539943187173672572952901000000000000000"_bi);
 //}
 
-void mp_test_registrar()
+void basic_integer_test_registrar()
 {
     //register_test(BOOST_TEST_CASE(&mp_mul_test));
     register_test(BOOST_TEST_CASE(&basic_integer_test0));
 }
 
 #ifdef AUTO_TEST_REGISTRATION
-AUTOTEST(mp_test_registrar)
+AUTOTEST(basic_integer_test_registrar)
 #endif

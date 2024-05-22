@@ -14,9 +14,9 @@
 #include "sonia/type_traits.hpp"
 
 #include "sonia/utility/optimized/holder.hpp"
-#include "sonia/mp/decimal.hpp"
+#include "sonia/mp/basic_decimal.hpp"
 
-#define SONIA_JSON_VALUE_SZ 8 // at least pointer size for 64bit platforms
+#define SONIA_JSON_VALUE_SZ sizeof(intptr_t) // at least pointer size
 
 namespace sonia::json_detail {
 
@@ -120,7 +120,7 @@ class json_value : json_detail::holder_t
 
     explicit json_value(bool);
     explicit json_value(int);
-    explicit json_value(decimal);
+    explicit json_value(mp::decimal_view);
     explicit json_value(string_view);
     explicit json_value(cstring_view);
     explicit json_value(span<json_value>);
@@ -148,7 +148,7 @@ class json_value : json_detail::holder_t
     bool get_bool() const;
     int get_int() const;
     int64_t get_int64() const;
-    decimal get_number() const;
+    mp::decimal_view get_number() const;
     std::string_view get_string() const;
     std::u8string_view get_u8string() const;
     span<const json_value> get_array() const;

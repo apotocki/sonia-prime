@@ -36,7 +36,7 @@ expression_cast_to_array_visitor::result_type expression_cast_to_array_visitor::
                 return { ctx.location() };
             }
         });
-        ctx.append_expression(semantic::push_value{ decimal{ target.size } });
+        ctx.append_expression(semantic::push_value{ mp::integer{ target.size } });
         ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::arrayify));
         if (!opterror) {
             ctx.context_type = target;

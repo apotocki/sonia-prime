@@ -27,7 +27,7 @@ struct vector_expression_visitor : static_visitor<error_storage>
         for (expression_t& e : vec.elements) {
             if (auto opterr = apply_visitor(elemvis, e); opterr) return std::move(opterr);
         }
-        ctx.append_expression(semantic::push_value{ decimal{ vec.elements.size() } });
+        ctx.append_expression(semantic::push_value{ mp::integer{ vec.elements.size() } });
         ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::arrayify));
         ctx.context_type = v;
         return {};
@@ -42,7 +42,7 @@ struct vector_expression_visitor : static_visitor<error_storage>
         for (expression_t& e : vec.elements) {
             if (auto opterr = apply_visitor(elemvis, e); opterr) return std::move(opterr);
         }
-        ctx.append_expression(semantic::push_value{ decimal{ vec.elements.size() } });
+        ctx.append_expression(semantic::push_value{ mp::integer{ vec.elements.size() } });
         ctx.append_expression(ctx.u().get_builtin_function(unit::builtin_fn::arrayify));
         ctx.context_type = v;
         return {};

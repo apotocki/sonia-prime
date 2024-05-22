@@ -19,44 +19,93 @@ namespace sonia::mp {
 
 template <std::unsigned_integral LimbT, typename AllocatorT>
 requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
+auto copy(basic_integer_view<LimbT> arg, AllocatorT&& alloc)
+{
+    std::tuple<LimbT*, size_t, size_t, int> result;
+    if (!arg.size())[[unlikely]] {
+        result = { nullptr, 0, 0, 1 };
+    } else {
+        using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
+        result = {
+            alloc_traits_t::allocate(alloc, arg.size()),
+            arg.size(),
+            arg.size(),
+            arg.sgn()
+        };
+        auto r = std::copy(arg.data(), arg.data() + arg.size(), std::get<0>(result));
+        if (arg.most_significant_skipping_bits()) {
+            *(r - 1) &= arg.last_limb_mask();
+        }
+    }
+    return result;
+}
+
+template <std::unsigned_integral LimbT, typename AllocatorT>
+requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
 [[nodiscard]] auto add(basic_integer_view<LimbT> l, basic_integer_view<LimbT> r, AllocatorT&& alloc)
 {
-    using limb_t = std::remove_cv_t<LimbT>;
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
-    std::tuple<limb_t*, size_t, size_t, int> result;
-    size_t margsz = (std::max)(l.limbs().size(), r.limbs().size());
     
-    if (!!(l.sign() + r.sign())) {
-        std::get<2>(result) = 1 + margsz;
+    std::tuple<LimbT*, size_t, size_t, int> result;
+    if (!l.size()) return copy(r, std::forward<AllocatorT>(alloc));
+    if (!r.size()) return copy(l, std::forward<AllocatorT>(alloc));
+        
+    size_t margsz = l.size();
+
+    std::get<3>(result) = l.sgn();
+
+    LimbT const* lb = l.data(), * le = l.data() + l.size() - 1;
+    LimbT const* rb = r.data(), * re = r.data() + r.size() - 1;
+    
+    LimbT last_l = l.most_significant_skipping_bits() ? *le & l.last_limb_mask() : *le;
+    LimbT last_r = r.most_significant_skipping_bits() ? *re & r.last_limb_mask() : *re;
+        
+    if (l.size() < r.size()) {
+        std::swap(lb, rb);
+        std::swap(le, re);
+        std::swap(last_l, last_r);
+        std::get<3>(result) = r.sgn();
+        margsz = r.size();
+    }
+
+    if (l.sgn() - r.sgn() == 0) { // the same signs
+        //if (lb == le) {} // one limb optimization
+        auto [ctmp, _] = sonia::arithmetic::uadd1c(last_l, last_r, LimbT{1}); // if ctmp == 0 => no need additional limb result
+        std::get<2>(result) = ctmp + margsz;
         std::get<0>(result) = alloc_traits_t::allocate(alloc, std::get<2>(result));
-        std::get<3>(result) = l.sign();
-        limb_t c = arithmetic::uadd<limb_t>(l.limbs(), r.limbs(), std::span{ std::get<0>(result), std::get<2>(result) });
+        LimbT* res = std::get<0>(result);
+        LimbT c = arithmetic::uadd_unchecked(lb, le, last_l, rb, re, last_r, res);
         if (c) {
-            *(std::get<0>(result) + std::get<2>(result) - 1) = c;
+            *res = c;
             std::get<1>(result) = margsz + 1;
         } else {
             std::get<1>(result) = margsz;
         }
     } else {
-        std::strong_ordering cmpval = basic_integer_view{ l.limbs() } <=> basic_integer_view{ r.limbs() };
-        if (cmpval == std::strong_ordering::equal) [[unlikely]] {
-            std::get<0>(result) = nullptr;
-            std::get<1>(result) = std::get<2>(result) = 0;
-            std::get<3>(result) = 0;
-        } else {
-            std::get<1>(result) = std::get<2>(result) = margsz;
-            std::get<0>(result) = alloc_traits_t::allocate(alloc, std::get<2>(result));
-            if (cmpval == std::strong_ordering::less) {
-                arithmetic::usub<limb_t>(r.limbs(), l.limbs(), std::span{ std::get<0>(result), std::get<2>(result) });
-                std::get<3>(result) = r.sign();
-            } else {
-                assert(cmpval == std::strong_ordering::greater);
-                arithmetic::usub<limb_t>(l.limbs(), r.limbs(), std::span{ std::get<0>(result), std::get<2>(result) });
-                std::get<3>(result) = l.sign();
+        if (l.size() == r.size()) {
+            while (last_l == last_r) {
+                if (lb == le) {
+                    result = { nullptr, 0, 0, 1 };
+                    return result;
+                }
+                last_l = *--lb;
+                last_r = *--rb;
             }
-            while (std::get<1>(result) && !*(std::get<0>(result) + std::get<1>(result) - 1)) {
-                --std::get<1>(result);
+            if (last_l < last_r) {
+                std::swap(lb, rb);
+                std::swap(le, re);
+                std::swap(last_l, last_r);
+                std::get<3>(result) = r.sgn();
+                margsz = r.size();
             }
+        }
+        std::get<0>(result) = alloc_traits_t::allocate(alloc, margsz);
+        std::get<1>(result) = std::get<2>(result) = margsz;
+        LimbT* res = std::get<0>(result);
+        LimbT c = arithmetic::usub_unchecked(lb, le, last_l, rb, re, last_r, res);
+        assert(!c);
+        for (; !*res; --res) { // need not to check res >= std::get<0>(result)
+            --std::get<1>(result);
         }
     }
     return result;
@@ -75,21 +124,26 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
 {
     using limb_t = std::remove_cv_t<LimbT>;
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
-    std::tuple<limb_t*, size_t, size_t, int> result;
+
+    return l.with_limbs([r, &alloc](std::span<const LimbT> llimbs, int lsign) {
+        return r.with_limbs([llimbs, lsign, &alloc](std::span<const LimbT> rlimbs, int rsign) {
+            std::tuple<limb_t*, size_t, size_t, int> result;
     
-    size_t margsz = l.limbs().size() + r.limbs().size();
-    std::get<1>(result) = std::get<2>(result) = margsz;
-    std::get<0>(result) = alloc_traits_t::allocate(alloc, std::get<2>(result));
-    std::get<3>(result) = !(l.sign() + r.sign()) ? -1 : 1;
-    if (basic_integer_view{ l.limbs() } >= basic_integer_view{ r.limbs() }) {
-        arithmetic::umul<limb_t>(l.limbs(), r.limbs(), std::span{ std::get<0>(result), std::get<2>(result) });
-    } else {
-        arithmetic::umul<limb_t>(r.limbs(), l.limbs(), std::span{ std::get<0>(result), std::get<2>(result) });
-    }
-    while (std::get<1>(result) && !*(std::get<0>(result) + std::get<1>(result) - 1)) {
-        --std::get<1>(result);
-    }
-    return result;
+            size_t margsz = llimbs.size() + rlimbs.size();
+            std::get<1>(result) = std::get<2>(result) = margsz;
+            std::get<0>(result) = alloc_traits_t::allocate(alloc, std::get<2>(result));
+            std::get<3>(result) = !(lsign + rsign) ? -1 : 1;
+            if (basic_integer_view{ llimbs } >= basic_integer_view{ rlimbs }) {
+                arithmetic::umul<limb_t>(llimbs, rlimbs, std::span{ std::get<0>(result), std::get<2>(result) });
+            } else {
+                arithmetic::umul<limb_t>(rlimbs, llimbs, std::span{ std::get<0>(result), std::get<2>(result) });
+            }
+            while (std::get<1>(result) && !*(std::get<0>(result) + std::get<1>(result) - 1)) {
+                --std::get<1>(result);
+            }
+            return result;
+        });
+    });
 }
 
 template <std::unsigned_integral LimbT, typename AllocatorT>
@@ -98,21 +152,27 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
 {
     using limb_t = std::remove_cv_t<LimbT>;
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
-    std::tuple<limb_t*, size_t, size_t, int> result;
 
-    size_t margsz = l.limbs().size() + r.limbs().size();
-    std::get<2>(result) = margsz;
-    limb_t* pls = alloc_traits_t::allocate(alloc, std::get<2>(result));
-    std::get<3>(result) = !(l.sign() + r.sign()) ? -1 : 1;
-    std::span q{ pls, l.limbs().size() };
-    std::span res{ pls + l.limbs().size(), r.limbs().size() };
-    arithmetic::udiv<limb_t>(l.limbs(), r.limbs(), q, res);
-    std::get<0>(result) = q.data();
-    std::get<1>(result) = q.size();
-    while (std::get<1>(result) && !*(std::get<0>(result) + std::get<1>(result) - 1)) {
-        --std::get<1>(result);
-    }
-    return result;
+    return l.with_limbs([r, &alloc](std::span<const LimbT> llimbs, int lsign) {
+        return r.with_limbs([llimbs, lsign, &alloc](std::span<const LimbT> rlimbs, int rsign) {
+            std::tuple<limb_t*, size_t, size_t, int> result;
+
+            size_t margsz = llimbs.size() + rlimbs.size();
+            std::get<2>(result) = margsz;
+            limb_t* pls = alloc_traits_t::allocate(alloc, std::get<2>(result));
+            std::get<3>(result) = !(lsign + rsign) ? -1 : 1;
+            std::span q{ pls, llimbs.size() };
+            std::span res{ pls + llimbs.size(), rlimbs.size() };
+            arithmetic::udiv<limb_t>(llimbs, rlimbs, q, res);
+            std::get<0>(result) = q.data();
+            std::get<1>(result) = q.size();
+            assert(q.size() <= margsz);
+            while (std::get<1>(result) && !*(std::get<0>(result) + std::get<1>(result) - 1)) {
+                --std::get<1>(result);
+            }
+            return result;
+        });
+    });
 }
 
 template <std::unsigned_integral LimbT, typename AllocatorT>
@@ -121,21 +181,25 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
 {
     using limb_t = std::remove_cv_t<LimbT>;
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
-    std::tuple<limb_t*, size_t, size_t, int> result;
+    return l.with_limbs([r, &alloc](std::span<const LimbT> llimbs, int lsign) {
+        return r.with_limbs([llimbs, lsign, &alloc](std::span<const LimbT> rlimbs, int rsign) {
+            std::tuple<limb_t*, size_t, size_t, int> result;
 
-    size_t margsz = l.limbs().size() + r.limbs().size();
-    std::get<2>(result) = margsz;
-    limb_t * pls = alloc_traits_t::allocate(alloc, std::get<2>(result));
-    std::get<3>(result) = !(l.sign() + r.sign()) ? -1 : 1;
-    std::span q{ pls + r.limbs().size(), l.limbs().size() };
-    std::span res{ pls, r.limbs().size() };
-    arithmetic::udiv<limb_t>(l.limbs(), r.limbs(), q, res);
-    std::get<0>(result) = res.data();
-    std::get<1>(result) = res.size();
-    while (std::get<1>(result) && !*(std::get<0>(result) + std::get<1>(result) - 1)) {
-        --std::get<1>(result);
-    }
-    return result;
+            size_t margsz = llimbs.size() + rlimbs.size();
+            std::get<2>(result) = margsz;
+            limb_t * pls = alloc_traits_t::allocate(alloc, std::get<2>(result));
+            std::get<3>(result) = !(lsign + rsign) ? -1 : 1;
+            std::span q{ pls + rlimbs.size(), llimbs.size() };
+            std::span res{ pls, rlimbs.size() };
+            arithmetic::udiv<limb_t>(llimbs, rlimbs, q, res);
+            std::get<0>(result) = res.data();
+            std::get<1>(result) = res.size();
+            while (std::get<1>(result) && !*(std::get<0>(result) + std::get<1>(result) - 1)) {
+                --std::get<1>(result);
+            }
+            return result;
+        });
+    });
 }
 
 template <std::unsigned_integral LimbT, typename AllocatorT>
@@ -191,7 +255,7 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
     std::tuple<limb_t*, size_t, size_t, int> result;
     size_t margsz = (std::min)(l.limbs().size(), r.limbs().size());
-    std::get<3>(result) = l.sign() * r.sign();
+    std::get<3>(result) = l.sgn() * r.sgn();
     std::get<1>(result) = std::get<2>(result) = margsz;
     if (!margsz) [[unlikely]] {
         std::get<0>(result) = nullptr;
@@ -219,7 +283,7 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
     std::tuple<limb_t*, size_t, size_t, int> result;
     size_t margsz = (std::max)(l.limbs().size(), r.limbs().size());
-    std::get<3>(result) = l.sign() * r.sign();
+    std::get<3>(result) = l.sgn() * r.sgn();
     std::get<1>(result) = std::get<2>(result) = margsz;
     if (!margsz) [[unlikely]] {
         std::get<0>(result) = nullptr;
@@ -239,7 +303,7 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
     std::tuple<limb_t*, size_t, size_t, int> result;
     size_t margsz = (std::max)(l.limbs().size(), r.limbs().size());
-    std::get<3>(result) = l.sign() * r.sign();
+    std::get<3>(result) = l.sgn() * r.sgn();
     std::get<1>(result) = std::get<2>(result) = margsz;
     if (!margsz) [[unlikely]] {
         std::get<0>(result) = nullptr;
@@ -261,7 +325,7 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
     std::tuple<limb_t*, size_t, size_t, int> result;
     size_t margsz = l.limbs().size();
-    std::get<3>(result) = -l.sign();
+    std::get<3>(result) = -l.sgn();
     std::get<1>(result) = std::get<2>(result) = margsz;
     if (!margsz) [[unlikely]] {
         std::get<0>(result) = nullptr;
@@ -288,10 +352,10 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     std::tuple<limb_t*, size_t, size_t, int> result;
 
     if (!l.limbs().size()) [[unlikely]] {
-        result = { nullptr, 0, 0, l.sign() };
+        result = { nullptr, 0, 0, l.sgn() };
         return result;
     }
-    std::get<3>(result) = l.sign();
+    std::get<3>(result) = l.sgn();
 
     size_t shift = n & (std::numeric_limits<LimbT>::digits - 1);
     size_t rsz = (n >> sonia::arithmetic::consteval_log2(size_t(std::numeric_limits<LimbT>::digits)));
@@ -320,10 +384,10 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     size_t rsz = (n >> sonia::arithmetic::consteval_log2(size_t(std::numeric_limits<LimbT>::digits)));
 
     if (rsz >= l.limbs().size()) {
-        result = { nullptr, 0, 0, l.sign() };
+        result = { nullptr, 0, 0, l.sgn() };
         return result;
     }
-    std::get<3>(result) = l.sign();
+    std::get<3>(result) = l.sgn();
     size_t shift = n & (std::numeric_limits<LimbT>::digits - 1);
     std::get<1>(result) = std::get<2>(result) = l.limbs().size() - rsz;
     limb_t* pls = std::get<0>(result) = alloc_traits_t::allocate(alloc, std::get<2>(result));
@@ -363,10 +427,6 @@ LimbT size_in_base(std::span<const LimbT> limbs, int base)
 }
 #endif
 
-
-
-
-
 /*
 template <typename LimbT, typename AllocatorT>
 basic_integer<LimbT, AllocatorT> mul(basic_integer_view<LimbT> const& u, basic_integer_view<LimbT> const& v, AllocatorT const& alloc = std::allocator<LimbT>{})
@@ -388,21 +448,6 @@ basic_integer<LimbT, AllocatorT> mul(basic_integer_view<LimbT> const& u, basic_i
     rsize -= cy_limb;
     return { alloc, std::span{rlimbs, rsize}, rsign };
 }
-*/
-
-/*
-template <size_t MinBits, size_t MaxBits, typename AllocatorT>
-class integer
-{
-    using limb_t = 
-    using type = typename std::allocator_traits<AllocatorT>::template rebind_alloc<value_type>;
-    union {
-        
-    };
-public:
-    template <std::integral T>
-    static void create(T val)
-};
 */
 
 }

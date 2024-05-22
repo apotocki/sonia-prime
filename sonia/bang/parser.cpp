@@ -109,18 +109,14 @@ annotated_string parser_context::make_string(annotated_string_view str)
 //    };
 //}
 
-int parser_context::make_int(string_view str)
+mp::integer parser_context::make_integer(string_view str)
 {
-    mp::basic_integer<uint64_t, 1> val(str);
-    if (val < (std::numeric_limits<int>::min)() || val > (std::numeric_limits<int>::max)()) {
-        throw exception("can't convert to int: '%1%'"_fmt % str);
-    }
-    return (int)val;
+    return mp::integer(str);
 }
 
-decimal parser_context::make_numeric(string_view str)
+mp::decimal parser_context::make_decimal(string_view str)
 {
-    return sonia::decimal::parse(str);
+    return mp::decimal(str);
 }
 //
 //u32string parser_context::make_string(string_view str)

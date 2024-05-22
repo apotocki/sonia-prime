@@ -36,8 +36,8 @@ public:
     identifier new_identifier();
     annotated_identifier make_identifier(annotated_string_view);
     annotated_string make_string(annotated_string_view);
-    int make_int(string_view);
-    decimal make_numeric(string_view);
+    mp::integer make_integer(string_view);
+    mp::decimal make_decimal(string_view);
     annotated_qname_identifier make_qname_identifier(annotated_qname);
     annotated_qname_identifier make_qname_identifier(annotated_string_view, bool is_abs);
 

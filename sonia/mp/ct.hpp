@@ -552,10 +552,10 @@ inline constexpr unsigned int dec_char_to_digit(char val)
 
 inline constexpr unsigned int hex_char_to_digit(char val)
 {
+    assert((val >= '0' && val <= '9') || (val >= 'a' && val <= 'f') || (val >= 'A' && val <= 'F'));
     if (val >= '0' && val <= '9') return (unsigned int)val - '0';
     if (val >= 'a' && val <= 'f') return (unsigned int)val - 'a' + 10;
-    if (val >= 'A' && val <= 'F') return (unsigned int)val - 'A' + 10;
-    assert(false);
+    return (unsigned int)val - 'A' + 10; // val >= 'A' && val <= 'F'
 }
 
 template <auto Base, typename AccumT, unsigned int ... args>

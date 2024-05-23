@@ -267,6 +267,7 @@ struct lin_impl
     // tcp socket service
     expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept override final;
     expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept override final;
+    void shutdown_handle(identity<tcp_socket_service_type>, tcp_handle_type, shutdown_opt) noexcept override final;
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
     void free_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
@@ -591,6 +592,28 @@ expected<size_t, std::exception_ptr> lin_impl::tcp_socket_write_some(tcp_handle_
     }
 }
 
+void lin_impl::shutdown_handle(identity<tcp_socket_service_type>, tcp_handle_type h, shutdown_opt opt) noexcept
+{
+    auto* sh = static_cast<lin_shared_handle*>(h);
+    if (sh && sh->handle != -1) {
+        int r = -1;
+        switch (opt) {
+        case shutdown_opt::read:
+            r = ::shutdown(sh->handle, SHUT_RD);
+            break;
+        case shutdown_opt::write:
+            r = ::shutdown(sh->handle, SHUT_WR);
+            break;
+        default:
+            r = ::shutdown(sh->handle, SHUT_RDWR);
+        }
+        if (-1 == r) {
+            int err = errno;
+            LOG_ERROR(wrapper->logger()) << ("can't shutdown handle, error: %1%"_fmt % strerror(err)).str();
+        }
+    }
+}
+
 void lin_impl::close_handle(identity<tcp_socket_service_type>, tcp_handle_type h) noexcept
 {
     auto * sh = static_cast<lin_shared_handle*>(h);
@@ -837,7 +860,7 @@ file factory::open_file(cstring_view path, file_open_mode fom, file_access_mode 
         }
     }
 
-    return file_access::open_file(shared_from_this(), h, path);
+    return file_access::open_file(shared_from_this(), h, u8string_view{ reinterpret_cast<const char8_t*>(path.data()), path.size() });
 }
 
 #ifndef __ANDROID__

@@ -350,7 +350,7 @@ struct decimal_holder : AllocatorT
                 ctl = (ctl & ~exp_bits_mask) | mask;
             } else {
                 uint32_t sz = static_cast<uint32_t>(inplaced_size(ctl));
-                uint32_t esz = static_cast<uint32_t>(exponent.is_fit<int64_t>() ? 0 : exponent.size());
+                uint32_t esz = static_cast<uint32_t>(exponent.template is_fit<int64_t>() ? 0 : exponent.size());
                 LimbT* newlimbdata = allocate(sz + esz + data_sizeof_in_limbs);
                 LimbT* lastlimb = std::copy(inplace_limbs_, inplace_limbs_ + sz, newlimbdata + data_sizeof_in_limbs);
                 if (inplaced_size(ctl) == N) *(lastlimb - 1) &= sig_limb_count_mask;
@@ -374,7 +374,7 @@ struct decimal_holder : AllocatorT
             }
         } else {
             DataT* ldata = allocated_data();
-            if (exponent.is_fit<int64_t>()) {
+            if (exponent.template is_fit<int64_t>()) {
                 ldata->exponent = (int64_t)exponent;
                 ldata->allocated_exponent = 0;
             } else if (exponent.size() + ldata->size <= ldata->allocated_size) {
@@ -400,10 +400,10 @@ struct decimal_holder : AllocatorT
     }
 
     // (limbs, size, allocated size, sign)
-    template <typename AllocatorT>
-    inline void init(std::tuple<LimbT*, size_t, size_t, int> tpl, AllocatorT & alloc, basic_integer_view<LimbT> exponent)
+    template <typename InitAllocatorT>
+    inline void init(std::tuple<LimbT*, size_t, size_t, int> tpl, InitAllocatorT& alloc, basic_integer_view<LimbT> exponent)
     {
-        using alloc_traits_t = std::allocator_traits<AllocatorT>;
+        using alloc_traits_t = std::allocator_traits<InitAllocatorT>;
 
         LimbT* limbsdata;
         size_t exp_alloc_sz;
@@ -433,7 +433,7 @@ struct decimal_holder : AllocatorT
             if (can_be_inplaced(limbs, sz, exponent)) { // sso case
                 return inplaced_set_masks(sz, sign, (int64_t)exponent);
             } else { // need allocate
-                exp_alloc_sz = exponent.is_fit<int64_t>() ? 0 : exponent.size();
+                exp_alloc_sz = exponent.template is_fit<int64_t>() ? 0 : exponent.size();
                 asz = sz + exp_alloc_sz;
                 limbsdata = allocate(asz + data_sizeof_in_limbs);
                 std::copy(limbs, limbs + sz, limbsdata + data_sizeof_in_limbs);
@@ -441,7 +441,7 @@ struct decimal_holder : AllocatorT
                     exponent.copy_to(limbsdata + data_sizeof_in_limbs + sz);
                 }
             }
-        } else if (!exponent.is_fit<int64_t>()) { // libsdata is allocated, but needs to be reallocated
+        } else if (!exponent.template is_fit<int64_t>()) { // libsdata is allocated, but needs to be reallocated
             exp_alloc_sz = exponent.size();
             size_t new_asz = sz + exp_alloc_sz;
             try {
@@ -541,7 +541,7 @@ struct decimal_holder : AllocatorT
     template <std::integral T>
     [[nodiscard]] bool is_fit_significand() const noexcept
     {
-        return significand().is_fit<T>();
+        return significand().template is_fit<T>();
     }
 
     inline void free() noexcept
@@ -554,7 +554,7 @@ struct decimal_holder : AllocatorT
     }
 };
 
-template <std::unsigned_integral LimbT, size_t N, size_t EBC, typename DataT, typename AllocatorT>
+template <std::unsigned_integral LimbT, size_t N, intptr_t EBC, typename DataT, typename AllocatorT>
 std::exception_ptr from_integer_string(decimal_holder<LimbT, N, EBC, DataT, AllocatorT>& dh, std::string_view & str, int base = 0) noexcept
 {
     using storage_type = decimal_holder<LimbT, N, EBC, DataT, AllocatorT>;
@@ -579,7 +579,7 @@ std::exception_ptr from_integer_string(decimal_holder<LimbT, N, EBC, DataT, Allo
     return nullptr;
 }
 
-template <std::unsigned_integral LimbT, size_t N, size_t EBC, typename DataT, typename AllocatorT>
+template <std::unsigned_integral LimbT, size_t N, intptr_t EBC, typename DataT, typename AllocatorT>
 std::exception_ptr from_decimal_string(decimal_holder<LimbT, N, EBC, DataT, AllocatorT>& dh, std::string_view & str) noexcept
 {
     using storage_type = decimal_holder<LimbT, N, EBC, DataT, AllocatorT>;
@@ -624,18 +624,20 @@ namespace sonia::mp {
 // ExponentBitCount includes the sign bit
 // inplaced exponent must fit in LimbT
 template <std::unsigned_integral LimbT, size_t N, size_t ExponentBitCount, typename AllocatorT = std::allocator<LimbT>>
-requires(std::numeric_limits<LimbT>::digits > ExponentBitCount)
+// requires(std::numeric_limits<LimbT2>::digits > ExponentBitCount2) // clang issue
 class basic_decimal
 {
+    static_assert(std::numeric_limits<LimbT>::digits > ExponentBitCount);
+
     static constexpr size_t expected_sizeof = (N * sizeof(LimbT) + sizeof(void*) - 1) & ~size_t(sizeof(void*) - 1); // a multiple of the pointer size
     static constexpr size_t actualN = expected_sizeof / sizeof(LimbT);
 
     using allocator_type = std::allocator_traits<AllocatorT>::template rebind_alloc<LimbT>;
     using alloc_traits_t = std::allocator_traits<allocator_type>;
 
-    template <std::unsigned_integral LimbT2, size_t N2, size_t ExponentBitCount2, typename AllocatorT2>
-    requires(std::numeric_limits<LimbT2>::digits > ExponentBitCount2)
-    friend class basic_decimal;
+    //template <std::unsigned_integral LimbT2, size_t N2, size_t ExponentBitCount2, typename AllocatorT2>
+    //requires(std::numeric_limits<LimbT2>::digits > ExponentBitCount2)
+    template <std::unsigned_integral LimbT2, size_t, size_t, typename> friend class basic_decimal;
 
     using alloc_holder = detail::decimal_holder<LimbT, actualN, ExponentBitCount, detail::decimal_data, allocator_type>;
     alloc_holder aholder_;
@@ -717,7 +719,7 @@ public:
     template <std::signed_integral T>
     inline T exponent_as() const noexcept
     {
-        return aholder_.integral_exponent<T>();
+        return aholder_.template integral_exponent<T>();
     }
 
     inline operator basic_decimal_view<LimbT>() const

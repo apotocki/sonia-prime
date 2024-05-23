@@ -10,12 +10,14 @@ namespace sonia {
 
 void bang_view_model::do_registration(registrar_type& mr)
 {
-    using load_bang_t = void(bang_view_model::*)(string_view);
-    //mr.register_method<(load_bang_t)&bang_view_model::build>("load_bang"sv);
-    mr.register_method<(load_bang_t)&bang_view_model::build>("load_code"sv);
+    using load_bang_t = void(lang::bang::language::*)(string_view);
+    ////mr.register_method<(load_bang_t)&bang_view_model::build>("load_bang"sv);
+    //mr.register_method<(load_bang_t)&bang_view_model::build>("load_code"sv);
+    mr.register_method<(load_bang_t)&lang::bang::language::build>("load_code"sv);
+    
     mr.register_method<&bang_view_model::load_file>("load_file"sv);
     mr.register_method<&bang_view_model::eval>("eval"sv);
-    using load_bang_t = void(bang_view_model::*)(string_view);
+    //using load_bang_t = void(bang_view_model::*)(string_view);
     //using eval_bang_t = smart_blob(bang_view_model::*)(string_view);
     //mr.register_method<(eval_lua_t)&bang_view_model::eval_bang>("eval_bang"sv);
     //mr.register_method<&bang_view_model::append_inplace>("append_inplace"sv);

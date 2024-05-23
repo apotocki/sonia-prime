@@ -47,7 +47,7 @@ public:
     template <size_t N, typename AllocatorT>
     explicit operator basic_integer<LimbT, N, AllocatorT>() const
     {
-        if (!exponent_.is_fit<int>()) {
+        if (!exponent_.template is_fit<int>()) {
             if (exponent_.sgn() > 0) {
                 throw std::invalid_argument("exponent is too large");
             } else {

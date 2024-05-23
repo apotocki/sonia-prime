@@ -742,7 +742,7 @@ public:
     template <std::integral T>
     bool is_fit() const noexcept
     {
-        return aholder_.significand().is_fit<T>();
+        return aholder_.significand().template is_fit<T>();
     }
 
     basic_integer operator- () const

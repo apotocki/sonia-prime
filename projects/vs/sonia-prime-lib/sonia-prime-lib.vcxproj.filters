@@ -2166,6 +2166,12 @@
     <ClInclude Include="..\..\..\sonia\mp\decimal_arithmetic.hpp">
       <Filter>sonia.mp</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\lexicographical_compare_three_way.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\three_way_comp_ref_type.hpp">
+      <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

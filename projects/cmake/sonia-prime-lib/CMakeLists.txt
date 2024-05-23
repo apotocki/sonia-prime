@@ -50,7 +50,6 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/utility/iterators/file_region_iterator.cpp
     ${BUNDLE_HOME}/sonia/utility/iterators/tar_iterator.cpp
     ${BUNDLE_HOME}/sonia/utility/iterators/archive_extract_iterator.cpp
-    ${BUNDLE_HOME}/sonia/utility/number/number_math.cpp
     ${BUNDLE_HOME}/sonia/utility/lua/lua.cpp
     ${BUNDLE_HOME}/sonia/utility/lua/variant_lib.cpp
     ${BUNDLE_HOME}/sonia/utility/lua/bigint_lib.cpp
@@ -125,7 +124,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Androi
         ${BUNDLE_HOME}/sonia/sys/linux/signals.cpp
         ${BUNDLE_HOME}/sonia/sys/linux/linux_timer.cpp
         ${BUNDLE_HOME}/sonia/sal/posix_sal.cpp
-        #${BUNDLE_HOME}/sonia/sal/linux_sal.cpp
+        ${BUNDLE_HOME}/sonia/sal/linux_sal.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_factory_linux.cpp
     )
     if (CMAKE_SYSTEM_NAME STREQUAL "Android")

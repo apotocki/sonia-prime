@@ -49,7 +49,7 @@ public:
     static optimized_decimal* create(mp::basic_decimal_view<LimbT> const& dv, AllocatorT && alloc = AllocatorT{})
     {
         uint32_t limb_sz_to_allocate = static_cast<uint32_t>(dv.significand().size());
-        bool inplace_exp = dv.exponent().is_fit<int64_t>();
+        bool inplace_exp = dv.exponent().template is_fit<int64_t>();
         if (!inplace_exp) {
             limb_sz_to_allocate += static_cast<uint32_t>(dv.exponent().size());
         }

@@ -29,3 +29,7 @@
 #ifndef DO_NOT_USE_AGNOSTIC_ALGORITHM_MAX_ELEMENT
 #   include "algorithm/max_element.hpp"
 #endif
+
+#ifndef DO_NOT_USE_AGNOSTIC_ALGORITHM_THREE_WAY_COMP_REF_TYPE
+#   include "algorithm/lexicographical_compare_three_way.hpp"
+#endif

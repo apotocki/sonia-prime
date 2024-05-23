@@ -8,6 +8,7 @@
 #include <limits>
 #include <concepts>
 #include <stdexcept>
+#include <type_traits>
 
 namespace sonia {
 
@@ -45,7 +46,7 @@ using std::int_fast64_t;
 using std::uint_fast64_t;
 
 using float_t = float;
-using double_t = long double;
+using double_t = std::conditional_t<sizeof(double) == 8, double, long double>;
 
 static_assert(sizeof(float_t) == 4);
 static_assert(sizeof(double_t) == 8);

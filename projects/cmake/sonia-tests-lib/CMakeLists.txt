@@ -17,7 +17,6 @@ set (MAIN_TESTS
     file_persister_test
     json_parser_test
     iterators_test
-    number_test
     optimized_test
     serialization_stream_test
     prime_test
@@ -30,12 +29,17 @@ set (MAIN_TESTS
     utf_test
     compound_cvt_test
     base64_test
-    mp_test
 )
 
 set (AGNOSTIC_TESTS
     vector_test
     avl_test
+)
+
+set (MP_TESTS
+    basic_integer_test
+    basic_decimal_test
+    mp_test
 )
 
 set (BUNDLE_SOURCES
@@ -57,6 +61,12 @@ foreach(ITEM ${AGNOSTIC_TESTS})
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${BUNDLES}/sonia-prime/tests/agnostic/${ITEM}.cpp)
 endforeach()
 #endif()
+
+foreach(ITEM ${MP_TESTS})
+    set (FWD_TEST_DECLS "${FWD_TEST_DECLS}void mp_${ITEM}_registrar();\n")
+    set (TEST_LIST "${TEST_LIST}  mp_${ITEM}_registrar();\n")
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${BUNDLES}/sonia-prime/tests/mp/${ITEM}.cpp)
+endforeach()
 
 configure_file (
     "${BUNDLES}/sonia-prime/tests/all_tests_registrar.cpp.in"

@@ -324,7 +324,7 @@ public:
         return sgn() < 0 ? -*this : *this;
     }
 
-    friend [[nodiscard]] bool operator ==(basic_integer_view lhs, basic_integer_view rhs) noexcept
+    [[nodiscard]] friend bool operator ==(basic_integer_view lhs, basic_integer_view rhs) noexcept
     {
         int lsgn = lhs.sgn(), rsgn = rhs.sgn();
         if (!lsgn) return !rsgn;
@@ -362,7 +362,7 @@ public:
     }
 
     template <std::integral T>
-    friend [[nodiscard]] bool operator ==(basic_integer_view lhs, T rhs)
+    [[nodiscard]] friend bool operator ==(basic_integer_view lhs, T rhs)
     {
         if constexpr (std::is_signed_v<T>) {
             int s = lhs.sgn();
@@ -397,7 +397,7 @@ public:
         return true;
     }
 
-    friend [[nodiscard]] std::strong_ordering operator <=> (basic_integer_view lhs, basic_integer_view rhs) noexcept
+    [[nodiscard]] friend std::strong_ordering operator <=> (basic_integer_view lhs, basic_integer_view rhs) noexcept
     {
         if (lhs.is_negative() && !rhs.is_negative()) return std::strong_ordering::less;
         if (!lhs.is_negative() && rhs.is_negative()) return std::strong_ordering::greater;
@@ -447,7 +447,7 @@ public:
     }
 
     template <std::integral T>
-    friend [[nodiscard]] std::strong_ordering operator <=> (basic_integer_view lhs, T rhs)
+    [[nodiscard]] friend std::strong_ordering operator <=> (basic_integer_view lhs, T rhs)
     {
         /*
         if constexpr (std::is_signed_v<T>) {

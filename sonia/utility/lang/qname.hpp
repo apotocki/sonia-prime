@@ -9,6 +9,8 @@
 #include "sonia/span.hpp"
 #include "sonia/utility/functional/range_equal.hpp"
 
+#include "agnostic/std/algorithm/lexicographical_compare_three_way.hpp"
+
 namespace sonia::lang {
 
 template <typename IdentifierT>

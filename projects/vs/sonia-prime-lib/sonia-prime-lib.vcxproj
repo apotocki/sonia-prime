@@ -55,6 +55,7 @@
     <ClInclude Include="..\..\..\agnostic\std\algorithm\copy.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm\fill_n.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm\iter_swap.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\lexicographical_compare_three_way.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm\max.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm\max_element.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm\min.hpp" />
@@ -64,6 +65,7 @@
     <ClInclude Include="..\..\..\agnostic\std\algorithm\move_backward.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm\swap.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\algorithm\swap_ranges.hpp" />
+    <ClInclude Include="..\..\..\agnostic\std\algorithm\three_way_comp_ref_type.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\array.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\atomic\memory_order.hpp" />
     <ClInclude Include="..\..\..\agnostic\std\compare\equality.hpp" />

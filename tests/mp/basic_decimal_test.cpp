@@ -13,6 +13,7 @@
 #include "sonia/mp/basic_integer.hpp"
 #include <vector>
 #include <iostream>
+#include <cfloat>
 //#include <boost/container/small_vector.hpp>
 
 void basic_decimal_test0()

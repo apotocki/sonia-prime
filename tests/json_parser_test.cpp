@@ -5,14 +5,14 @@
 
 #include <fstream>
 #include <iterator>
-#include <filesystem>
+
+#include "sonia/filesystem.hpp"
 
 #include "sonia/utility/parsers/json/lexertl_lexer.hpp"
 #include "sonia/utility/parsers/json/model.hpp"
 #include "sonia/utility/parsers/json/parser.hpp"
 
 using namespace sonia;
-namespace fs = std::filesystem;
 
 #include <boost/any.hpp>
 #include <boost/unordered_map.hpp>
@@ -36,9 +36,63 @@ void json_parse_test()
 }
 #endif
 
+//#include <fstream>
+//
+//#include "sonia/utility/iterators/file_region_iterator.hpp"
+//#include "sonia/utility/iterators/archive_extract_iterator.hpp"
+//
+//namespace {
+//
+//void restore_assets(const char* archivepath)
+//{
+//    using namespace sonia;
+//    try {
+//        fs::path filepath = archivepath;
+//        fs::path filename = filepath.filename();
+//        archive_iterator ait = make_archive_extract_iterator(filename.string().c_str(), file_region_iterator<const char>(filepath, 0, 65536));
+//        ait.impl->set_extraction_depth(2);
+//        while (ait.next()) {
+//            fs::path itempath = ait.name();
+//            std::vector<fs::path> parts;
+//            while (!itempath.empty()) {
+//                parts.emplace_back(itempath.filename());
+//                itempath = itempath.parent_path();
+//            }
+//            if (parts.empty()) continue;
+//            //parts.pop_back();
+//            while (!parts.empty()) {
+//                itempath /= parts.back();
+//                parts.pop_back();
+//            }
+//            
+//            if (auto parent = itempath.parent_path(); !parent.empty()) {
+//                fs::create_directories(parent);
+//            }
+//
+//            { std::ofstream f{ itempath.string().c_str() }; }
+//            file_region_iterator<char> fit(itempath, 0, 65536);
+//            std::cout << "restored " << itempath << "\n";
+//            size_t fsz = 0;
+//            do {
+//                span<const char> rng = *ait;
+//                fit.write(rng);
+//                ++ait;
+//            } while (!ait.empty());
+//            fit.close();
+//        }
+//    }
+//    catch (...) {
+//        std::cout << boost::current_exception_diagnostic_information();
+//    }
+//}
+//
+//}
+
 #if 1
 void json_test()
 {
+    //restore_assets("w:\\projects\\android\\TesCppApplication\\test_assets.tar.xz");
+
     char const* path = std::getenv("TESTS_HOME");
     fs::path data_path{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) };
 

@@ -49,6 +49,7 @@ public:
     virtual archive_iterator * pbase() = 0;
     virtual void * get_base() = 0;
     virtual bool is_finished() const = 0;
+    virtual void set_extraction_depth(size_t val) noexcept = 0;
     friend void intrusive_ptr_add_ref(archive_iterator_polymorphic * p)
     {
         ++p->refs;
@@ -148,20 +149,25 @@ protected:
     std::string part_name_;
     archive_type type_;
     size_t buffsz_;
+    size_t extraction_depth_;
 
 public:
-    extract_iterator_polymorpic_adapter_base(std::string full_name, std::string part_name, size_t buffsz)
+    extract_iterator_polymorpic_adapter_base(std::string full_name, std::string part_name, size_t buffsz, size_t extraction_depth)
         : full_name_(std::move(full_name))
         , part_name_(std::move(part_name))
         , type_(archive_type::UNDEFINED)
         , buffsz_(buffsz)
+        , extraction_depth_(extraction_depth)
     {}
 
-    extract_iterator_polymorpic_adapter_base(std::string name, size_t buffsz)
+    extract_iterator_polymorpic_adapter_base(std::string name, size_t buffsz, size_t extraction_depth = (std::numeric_limits<size_t>::max)())
         : full_name_(std::move(name))
         , type_(archive_type::UNDEFINED)
         , buffsz_(buffsz)
+        , extraction_depth_(extraction_depth)
     {}
+
+    inline void set_extraction_depth(size_t val) noexcept { extraction_depth_ = val; }
 
     bool do_next(archive_iterator &);
 
@@ -188,15 +194,15 @@ class extract_iterator_polymorpic_adapter
 
 public:
     template <typename ... ArgsT>
-    explicit extract_iterator_polymorpic_adapter(std::string fullname, size_t buffsz, ArgsT && ... args)
+    explicit extract_iterator_polymorpic_adapter(std::string fullname, size_t buffsz, size_t extraction_depth, ArgsT && ... args)
         : base_type{std::forward<ArgsT>(args)...}
-        , extract_iterator_polymorpic_adapter_base{std::move(fullname), buffsz}
+        , extract_iterator_polymorpic_adapter_base{std::move(fullname), buffsz, extraction_depth}
     {}
 
     template <typename ... ArgsT>
-    explicit extract_iterator_polymorpic_adapter(std::string fullname, std::string partname, size_t buffsz, ArgsT && ... args)
+    explicit extract_iterator_polymorpic_adapter(std::string fullname, std::string partname, size_t buffsz, size_t extraction_depth, ArgsT && ... args)
         : base_type{std::forward<ArgsT>(args)...}
-        , extract_iterator_polymorpic_adapter_base{std::move(fullname), std::move(partname), buffsz}
+        , extract_iterator_polymorpic_adapter_base{std::move(fullname), std::move(partname), buffsz, extraction_depth}
     {}
 
     std::span<const char> get_dereference() const override final { return *base_type::base; }
@@ -252,6 +258,11 @@ public:
     {
         return do_get_name();
     }
+
+    void set_extraction_depth(size_t val) noexcept override
+    {
+        extract_iterator_polymorpic_adapter_base::set_extraction_depth(val);
+    }
 };
 
 } // sonia::archive_detail
@@ -259,9 +270,9 @@ public:
 using archive_iterator = archive_detail::archive_iterator;
 
 template <class IteratorT>
-archive_iterator make_archive_extract_iterator(std::string name, IteratorT && it, size_t interal_buffsz = DEFAULT_ARCHIVER_INTERNAL_BUFFER_SIZE)
+archive_iterator make_archive_extract_iterator(std::string name, IteratorT && it, size_t interal_buffsz = DEFAULT_ARCHIVER_INTERNAL_BUFFER_SIZE, size_t extraction_depth = (std::numeric_limits<size_t>::max)())
 {
-    return archive_iterator(in_place_type<archive_detail::extract_iterator_polymorpic_adapter<remove_cvref_t<IteratorT>>>, std::move(name), interal_buffsz, std::forward<IteratorT>(it));
+    return archive_iterator(in_place_type<archive_detail::extract_iterator_polymorpic_adapter<remove_cvref_t<IteratorT>>>, std::move(name), interal_buffsz, extraction_depth, std::forward<IteratorT>(it));
 }
 
 }

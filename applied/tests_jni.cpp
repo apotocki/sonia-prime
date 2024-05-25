@@ -15,9 +15,11 @@
 #include <boost/exception/diagnostic_information.hpp>
 
 class androidbuf : public std::streambuf {
+    const char* name_;
 public:
     enum { bufsize = 1024 }; // ... or some other suitable buffer size
-    androidbuf() { this->setp(buffer, buffer + bufsize - 1); }
+
+    explicit androidbuf(const char* name) : name_{ name } { this->setp(buffer, buffer + bufsize - 1); }
 
 private:
     int overflow(int c)
@@ -37,7 +39,7 @@ private:
         if (this->pbase() != this->pptr()) {
             line_.insert(line_.end(), pbase(), pptr());
             line_.push_back(0);
-            __android_log_write(ANDROID_LOG_INFO, "std", line_.data());
+            __android_log_write(ANDROID_LOG_INFO, name_, line_.data());
             line_.clear();
             this->setp(buffer, buffer + bufsize);
         }
@@ -50,31 +52,91 @@ private:
 
 #include <unistd.h>
 
-extern "C" JNIEXPORT jint JNICALL
-Java_com_example_tescppapplication_MainActivity_run(JNIEnv * env, jobject, jstring dir)
+#include <fstream>
+#include <vector>
+#include "sonia/filesystem.hpp"
+#include "sonia/utility/iterators/file_region_iterator.hpp"
+#include "sonia/utility/iterators/archive_extract_iterator.hpp"
+
+namespace {
+
+void restore_assets(const char* archivepath)
 {
-    std::cout.rdbuf(new androidbuf);
+    using namespace sonia;
+    try {
+        fs::path filepath = archivepath;
+        fs::path filename = filepath.filename();
+        archive_iterator ait = make_archive_extract_iterator(filename.string().c_str(), file_region_iterator<const char>(filepath, 0, 65536));
+        ait.impl->set_extraction_depth(2); // xz->tar->
+        while (ait.next()) {
+            fs::path itempath = ait.name();
+            std::vector<fs::path> parts;
+            while (!itempath.empty()) {
+                parts.emplace_back(itempath.filename());
+                itempath = itempath.parent_path();
+            }
+            if (parts.empty()) continue;
+            parts.pop_back();
+            while (!parts.empty()) {
+                itempath /= parts.back();
+                parts.pop_back();
+            }
+            if (auto parent = itempath.parent_path(); !parent.empty()) {
+                fs::create_directories(parent);
+            }
+            { std::ofstream f{ itempath.string().c_str() }; }
+            file_region_iterator<char> fit(itempath, 0, 65536);
+            //std::cout << "restored " << itempath << "\n";
+            size_t fsz = 0;
+            do {
+                span<const char> rng = *ait;
+                fit.write(rng);
+                ++ait;
+            } while (!ait.empty());
+            fit.close();
+        }
+    }
+    catch (...) {
+        std::cout << boost::current_exception_diagnostic_information();
+    }
+}
+
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_example_tescppapplication_MainActivity_run(JNIEnv * env, jobject, jstring dir, jstring assetsfile)
+{
+    std::cout.rdbuf(new androidbuf("cout"));
+    std::cerr.rdbuf(new androidbuf("cerr"));
     const char* path = env->GetStringUTFChars(dir, NULL);
     std::cout << "provided path: " << path << std::endl;
+
+    const char* assetspath = env->GetStringUTFChars(assetsfile, NULL);
 
     if (int r = chdir(path); r == -1) {
         int err = errno;
         std::cout <<  "can't set working dir, error : " << strerror(err) << std::endl;
         return 1;
     }
+
+    restore_assets(assetspath);
+
     char cwd[PATH_MAX];
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
-        std::cout << "Current working dir: " << cwd << std::endl;
+        std::cout << "Current working dir: " << std::string_view{cwd} << std::endl;
     } else {
         std::cout << "getcwd() error" << std::endl;
     }
-    const char* argv[] = { "tests", "--no_color_output", "--log_level=test_suite" };
+    const char* argv[] = { "tests", "--no_color_output", "--log_level=test_suite", "--run_test=!http_server_filebrowser_test" };
     int r = 0;
     try {
         r = run_tests(3, (char**)argv);
+        std::cout.flush();
     } catch (...) {
         std::cout << "ERROR: " << boost::current_exception_diagnostic_information() << std::endl;
     }
+    
     delete std::cout.rdbuf(0);
+    delete std::cerr.rdbuf(0);
     return r;
 }

@@ -243,7 +243,7 @@ struct lin_impl
 
     ~lin_impl() override
     {
-        LOG_TRACE(wrapper->logger()) << "descruction of lin_impl";
+        LOG_TRACE(wrapper->logger()) << "destruction of lin_impl";
         ::close(ctl_pipe[0]);
         ::close(ctl_pipe[1]);
         ::close(efd);

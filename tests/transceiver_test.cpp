@@ -358,7 +358,8 @@ void cmd_transceiver_test()
     } catch (closed_exception const& e) {
         std::cout << e.what() << "\n";
     } catch (std::exception const& e) {
-        std::cerr << e.what() << boost::diagnostic_information(e) << "\n";
+        GLOBAL_LOG_ERROR() << boost::diagnostic_information(e);
+        std::cout << e.what() << boost::diagnostic_information(e) << "\n";
         BOOST_REQUIRE(false);
     }
 }

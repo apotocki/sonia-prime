@@ -49,6 +49,7 @@ void replace(archive_iterator & r, ArgsT&& ... args)
 bool extract_iterator_polymorpic_adapter_base::do_next(archive_iterator & ax)
 {
     if (archive_type::UNDEFINED == type_) {
+        if (!extraction_depth_) { type_ = archive_type::UNKNOWN; return !ax.empty(); }
         string_view name_wo_ext;
         std::tie(name_wo_ext, type_) = split_name(do_get_name());
         if (archive_type::UNKNOWN == type_) {
@@ -61,36 +62,36 @@ bool extract_iterator_polymorpic_adapter_base::do_next(archive_iterator & ax)
         case archive_type::GZIP:
             replace<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<inflate_iterator<archive_iterator>>>>(
                 ax,
-                std::move(name_wo_ext_str), buffsz_, in_place, buffsz_, std::move(ax), true
+                std::move(name_wo_ext_str), buffsz_, extraction_depth_ - 1, in_place, buffsz_, std::move(ax), true
             );
             return false;
         case archive_type::BZIP2:
             replace<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<bz2_decompress_iterator<archive_iterator>>>>(
                 ax,
-                std::move(name_wo_ext_str), buffsz_, in_place, buffsz_, std::move(ax)
+                std::move(name_wo_ext_str), buffsz_, extraction_depth_ - 1, in_place, buffsz_, std::move(ax)
             );
             return false;
         case archive_type::XZ:
             replace<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<lzma_decompress_iterator<archive_iterator>>>>(
                 ax,
-                std::move(name_wo_ext_str), buffsz_, in_place, buffsz_, std::move(ax)
+                std::move(name_wo_ext_str), buffsz_, extraction_depth_ - 1, in_place, buffsz_, std::move(ax)
             );
             return false;
         case archive_type::TAR:
             replace<extract_iterator_polymorpic_adapter<tar_extract_iterator<archive_iterator>>>(
                 ax,
-                std::move(name_wo_ext_str), buffsz_, std::move(ax)
+                std::move(name_wo_ext_str), buffsz_, extraction_depth_ - 1, std::move(ax)
             );
             return false;
         case archive_type::TGZ:
         {
             archive_iterator tmp(
                 in_place_type<extract_iterator_polymorpic_adapter<buffering_mediator_iterator<inflate_iterator<archive_iterator>>>>,
-                "", buffsz_, in_place, buffsz_, std::move(ax), true
+                "", buffsz_, extraction_depth_ - 1, in_place, buffsz_, std::move(ax), true
             );
             replace<extract_iterator_polymorpic_adapter<tar_extract_iterator<archive_iterator>>>(
                 ax,
-                std::move(name_wo_ext_str), buffsz_, std::move(tmp)
+                std::move(name_wo_ext_str), buffsz_, extraction_depth_ - 1, std::move(tmp)
             );
             return false;
         }

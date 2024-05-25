@@ -11,3 +11,9 @@
 namespace { struct test_class { test_class() { name(); }}; test_class test; }
 
 void register_test(boost::unit_test::test_case*);
+
+#define BOOST_TEST_CASE_WITH_FIXTURE(test_function, Fixture) \
+BOOST_TEST_CASE_NAME([tf = test_function]() { Fixture f; tf(); BOOST_CHECK(true); }, BOOST_TEST_STRINGIZE( test_function ))
+
+#define BOOST_TEST_CASE_SILENT(test_function) \
+BOOST_TEST_CASE_NAME([tf = test_function]() { tf(); BOOST_CHECK(true); }, BOOST_TEST_STRINGIZE( test_function ))

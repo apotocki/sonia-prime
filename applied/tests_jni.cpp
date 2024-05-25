@@ -55,6 +55,11 @@ private:
 #include <fstream>
 #include <vector>
 #include "sonia/filesystem.hpp"
+
+//#define DO_NOT_USE_ASSETS
+
+#ifndef DO_NOT_USE_ASSETS
+
 #include "sonia/utility/iterators/file_region_iterator.hpp"
 #include "sonia/utility/iterators/archive_extract_iterator.hpp"
 
@@ -103,15 +108,15 @@ void restore_assets(const char* archivepath)
 
 }
 
+#endif
+
 extern "C" JNIEXPORT jint JNICALL
-Java_com_example_tescppapplication_MainActivity_run(JNIEnv * env, jobject, jstring dir, jstring assetsfile)
+Java_com_example_tescppapplication_MainActivity_run(JNIEnv * env, jobject, jstring dir, jstring assetsfile, jstring option)
 {
     std::cout.rdbuf(new androidbuf("cout"));
     std::cerr.rdbuf(new androidbuf("cerr"));
     const char* path = env->GetStringUTFChars(dir, NULL);
     std::cout << "provided path: " << path << std::endl;
-
-    const char* assetspath = env->GetStringUTFChars(assetsfile, NULL);
 
     if (int r = chdir(path); r == -1) {
         int err = errno;
@@ -119,7 +124,10 @@ Java_com_example_tescppapplication_MainActivity_run(JNIEnv * env, jobject, jstri
         return 1;
     }
 
+#ifndef DO_NOT_USE_ASSETS
+    const char* assetspath = env->GetStringUTFChars(assetsfile, NULL);
     restore_assets(assetspath);
+#endif
 
     char cwd[PATH_MAX];
     if (getcwd(cwd, sizeof(cwd)) != NULL) {
@@ -127,10 +135,11 @@ Java_com_example_tescppapplication_MainActivity_run(JNIEnv * env, jobject, jstri
     } else {
         std::cout << "getcwd() error" << std::endl;
     }
-    const char* argv[] = { "tests", "--no_color_output", "--log_level=test_suite", "--run_test=!http_server_filebrowser_test" };
+    const char* optionstr = env->GetStringUTFChars(option, NULL); // e.g. "--run_test=!http_server_filebrowser_test"
+    const char* argv[] = { "tests", "--no_color_output", "--log_level=test_suite", optionstr };
     int r = 0;
     try {
-        r = run_tests(3, (char**)argv);
+        r = run_tests(sizeof(argv)/sizeof(const char*), (char**)argv);
         std::cout.flush();
     } catch (...) {
         std::cout << "ERROR: " << boost::current_exception_diagnostic_information() << std::endl;

@@ -5,7 +5,7 @@
 #define TEST_FOLDER "mp_test"
 
 #include "sonia/config.hpp"
-
+#undef BOOST_ENABLE_ASSERT_HANDLER
 #include "applied/sonia_test.hpp"
 
 #include "sonia/utility/scope_exit.hpp"
@@ -351,7 +351,7 @@ void mp_integer_test2()
 void mp_test_registrar()
 {
     //register_test(BOOST_TEST_CASE(&mp_enc_dec_test));
-    register_test(BOOST_TEST_CASE(&mp_ct_test));
+    register_test(BOOST_TEST_CASE_SILENT(&mp_ct_test));
     register_test(BOOST_TEST_CASE(&mp_integer_test));
     register_test(BOOST_TEST_CASE(&mp_integer_test2));
 }

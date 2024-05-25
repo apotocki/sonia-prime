@@ -497,7 +497,8 @@ template <typename T, T... args> struct div1_method<limbs<T, args...>, 1> { usin
 //    using type = std::pair<q, r>;
 //};
 
-template <std::integral T, T... args, T V>
+template <std::integral T, T... args, auto V>
+requires (std::is_unsigned_v<decltype(V)> && sizeof(decltype(V)) <= sizeof(T))
 struct div1_method<limbs<T, args...>, V>
 {
     using left_t = limbs<T, args...>;
@@ -505,7 +506,7 @@ struct div1_method<limbs<T, args...>, V>
     static constexpr int shift = arithmetic::count_leading_zeros(V);
     using norm_left_t = typename std::conditional_t<!shift, left_t, shift_left_method<left_t, shift>>::type;
 
-    using unshifted_type = typename detail::div1_appender<std::pair<limbs<T>, std::integral_constant<T, 0>>, norm_left_t, (V << shift)>::type;
+    using unshifted_type = typename detail::div1_appender<std::pair<limbs<T>, std::integral_constant<T, 0>>, norm_left_t, (T)(V << shift)>::type;
 
     using qtype = norm<typename unshifted_type::first_type>;
     using rtype = std::integral_constant<T, (unshifted_type::second_type::value >> shift)>;

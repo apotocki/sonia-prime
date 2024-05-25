@@ -10,6 +10,7 @@
 
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/mp/integer_view.hpp"
+#include "sonia/mp/integer_view_arithmetic.hpp"
 #include "sonia/mp/limbs_from_string.hpp"
 
 template <typename LimbT>
@@ -23,12 +24,14 @@ void limbs_encode_decode_test(int base, int digit_count)
         // generate string
         numstr.push_back(alphabet[i % base]);
         //if (i < 41) continue;
-        auto [limbs, size, allocsize, sign] = sonia::mp::to_limbs<LimbT>(numstr, base, std::allocator<LimbT>{});
+        std::string_view numstrv = numstr;
+        auto optres = sonia::mp::to_limbs<LimbT>(numstrv, base, std::allocator<LimbT>{});
+        auto [limbs, size, allocsize, sign] = *optres;
         defer{ std::allocator<LimbT>{}.deallocate(limbs, allocsize); };
         //*
         bool reversed = false;
         std::span sp0{ limbs, size };
-        sonia::mp::to_string_converter(sp0, std::back_inserter(resstr), reversed, base);
+        sonia::mp::to_string(sp0, std::back_inserter(resstr), reversed, base);
         if (reversed) {
             std::reverse(resstr.begin(), resstr.end());
         }
@@ -333,7 +336,7 @@ void mp_integer_test2()
     val0 = val0 * 16 + 1;
     BOOST_CHECK_EQUAL(257, (int)val0);
     int_t val1{ 32 };
-    val0.swap(val1);
+    swap(val0, val1);
     BOOST_CHECK_EQUAL(257, (int)val1);
     BOOST_CHECK_EQUAL(32, (int)val0);
     val0 = val1 * val1 * val1 * val1 * val1 * val1 * val1 * val1;

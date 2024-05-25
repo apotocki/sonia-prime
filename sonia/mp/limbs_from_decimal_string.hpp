@@ -35,7 +35,6 @@ std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_si
     constexpr LimbT big_base = ipow<LimbT>(10u, digits_per_limb);
 
     using result_t = std::tuple<LimbT*, size_t, size_t, int>;
-    
     result_t result{ nullptr, 0, 0, 1 };
     exponent = 0;
 
@@ -44,17 +43,9 @@ std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_si
         str = str.substr(1);
         std::get<3>(result) = -1;
     }
-
     if (str.empty()) [[unlikely]] {
         return std::unexpected(std::make_exception_ptr(std::invalid_argument("no value"s)));;
     }
-
-    SCOPE_EXCEPTIONAL_EXIT([&alloc, &result]{
-        if (auto* ptr = std::get<0>(result); ptr) {
-            alloc_traits_t::deallocate(alloc, ptr, std::get<2>(result));
-        }
-    });
-    
     const char* pc = str.data(), *pce = pc + str.size();
 
     int point_pos = -1;
@@ -62,6 +53,7 @@ std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_si
     auto get_digit = [&point_pos, &pc, pce]() -> std::pair<LimbT, size_t> {
         size_t zcnt = 0;
         for (; pc != pce; ++pc) {
+            //std::cout << "p get_digit\n" << std::flush;
             unsigned char c = *pc;
             if (c >= '1' && c <= '9') {
                 ++pc;
@@ -103,12 +95,10 @@ std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_si
         *std::get<0>(result) = 0;
         return result;
     }
-    
     size_t left_digits = pce - pc;
     size_t max_limbs_count = (left_digits + digits_per_limb) / digits_per_limb; // total digits = 1 + left_digits
     std::get<0>(result) = alloc_traits_t::allocate(alloc, max_limbs_count);
     std::get<2>(result) = max_limbs_count;
-
     *std::get<0>(result) = limb;
     std::get<1>(result) = 1;
     limb = 0;
@@ -150,7 +140,6 @@ std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_si
         dc = 0;
         limb = 0;
     }
-    
     str = { pc, pce };
     return std::move(result);
 }

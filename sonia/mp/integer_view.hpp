@@ -219,9 +219,10 @@ public:
     template <typename OutputIteratorT>
     inline OutputIteratorT copy_to(OutputIteratorT oi) noexcept
     {
-        if (ctl_.skip_bits) {
+        if (!ctl_.skip_bits) {
             return std::copy(data(), data() + size(), std::move(oi));
         } else {
+            assert(!ctl_.inplace_bit);
             const_limb_t* last_limb_ptr = limbs_ + size() - 1;
             OutputIteratorT r = std::copy(limbs_, last_limb_ptr, std::move(oi));
             *r = *last_limb_ptr & last_limb_mask();
@@ -375,11 +376,9 @@ public:
             }
         } else if (lhs.sgn() < 0) return false;
 
-        std::make_unsigned_t<T> rabsval;
+        std::make_unsigned_t<T> rabsval = rhs;
         if constexpr (std::is_signed_v<T>) {
-            rabsval = std::abs(rhs);
-        } else {
-            rabsval = rhs;
+            if (rhs < 0) rabsval = ~rabsval + 1;
         }
 
         if (lhs.at(0) != static_cast<LimbT>(rabsval)) return false;
@@ -457,9 +456,7 @@ public:
             if (lhs.sign() < 0) return std::strong_ordering::less;
         }
         */
-        std::remove_cv_t<LimbT> buf[(sizeof(T) + sizeof(LimbT) - 1) / sizeof(LimbT)];
-        auto [sz, sign] = to_limbs(rhs, std::span{buf});
-        return lhs <=> basic_integer_view{ std::span{buf, sz}, sign };
+        return lhs <=> basic_integer_view{ rhs };
     }
 };
 

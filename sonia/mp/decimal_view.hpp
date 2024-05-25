@@ -54,7 +54,6 @@ public:
                 return 0;
             }
         }
-        int eval = (int)exponent_;
         basic_integer<LimbT, N, AllocatorT> val10{ 10 };
         auto expm = pow(val10, (unsigned int)std::abs((int)exponent_));
 

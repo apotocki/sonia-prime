@@ -191,8 +191,12 @@ struct decimal_holder : AllocatorT
             if (exponent < 0) mask |= exp_sign_mask;
         }
         if constexpr (exp_value_bits) {
-            assert(std::abs(exponent) <= max_inplace_exp_value);
-            mask |= static_cast<LimbT>(std::abs(exponent)) << exp_value_bit_offset;
+            uint64_t absexp = static_cast<uint64_t>(exponent);
+            if (exponent < 0) {
+                absexp = ~absexp + 1;
+            }
+            assert(absexp <= max_inplace_exp_value);
+            mask |= static_cast<LimbT>(absexp) << exp_value_bit_offset;
         }
         LimbT& ctl = ctl_limb(inplace_limbs_);
         ctl = (ctl & last_significand_limb_mask) | mask;
@@ -286,7 +290,7 @@ struct decimal_holder : AllocatorT
                 if constexpr (ExponentBitCount >= 0) {
                     if (!ldata->allocated_exponent) {
                         if (!has_exp_sign_bit && ldata->exponent < 0) return false;
-                        if (std::abs(ldata->exponent) > (int64_t)max_inplace_exp_value) return false;
+                        if (ldata->exponent > (int64_t)max_inplace_exp_value || ldata->exponent < -(int64_t)max_inplace_exp_value) return false;
                     } else {
                         basic_integer_view<LimbT> exp {
                             std::span{ limbs + ldata->size, static_cast<size_t>(std::abs(ldata->exponent)) },
@@ -414,7 +418,6 @@ struct decimal_holder : AllocatorT
         }
 
         assert(limbs);
-
         if (std::equal_to<LimbT*>()(limbs, inplace_limbs_)) {
             auto can_be_inplaced = [](LimbT const* limbs, size_t sz, basic_integer_view<LimbT> exponent) noexcept {
                 if (sz > N) return false;
@@ -469,8 +472,8 @@ struct decimal_holder : AllocatorT
             }
         }
         set_allocated(reinterpret_cast<DataT*>(limbsdata));
-        DataT* p = allocated_data();
-        assert(p == reinterpret_cast<DataT*>(limbsdata));
+        //DataT* p = allocated_data();
+        //assert(p == reinterpret_cast<DataT*>(limbsdata));
     }
 
     bool is_zero() const noexcept
@@ -587,6 +590,7 @@ std::exception_ptr from_decimal_string(decimal_holder<LimbT, N, EBC, DataT, Allo
     int64_t exp;
     auto alloc = dh.sso_allocator();
     auto opt_sig_tpl = to_significand_limbs<LimbT>(str, alloc, exp);
+    
     if (!opt_sig_tpl.has_value()) {
         try { std::rethrow_exception(opt_sig_tpl.error()); } catch (std::exception const& e) {
             return std::make_exception_ptr(std::invalid_argument((std::ostringstream{} << "string '"sv << orig_str << "' cannot be parsed as a decimal, "sv << e.what()).str()));
@@ -596,7 +600,6 @@ std::exception_ptr from_decimal_string(decimal_holder<LimbT, N, EBC, DataT, Allo
 
     try {
         dh.init(*opt_sig_tpl, alloc, exp);
-
         if (!str.empty() && (str.front() == 'e' || str.front() == 'E')) {
             str = str.substr(1);
             auto opt_e = basic_integer<LimbT>::from_string(str, 10, dh.allocator()); // noexcept

@@ -17,30 +17,32 @@
 namespace sonia::mp {
 
 template <std::unsigned_integral LimbT, std::integral T, size_t N>
-requires(N >= (sizeof(T) + sizeof(LimbT) - 1) / sizeof(LimbT))
+requires(N == std::dynamic_extent || N >= (sizeof(T) + sizeof(LimbT) - 1) / sizeof(LimbT))
 std::tuple<size_t, int> to_limbs(T value, std::span<LimbT, N> sp) noexcept
 {
-    T absval;
-    int sign;
+    std::make_unsigned_t<T> absval = value;
+    int sign = 1;
     if constexpr (std::is_signed_v<T>) {
-        absval = std::abs(value);
-        sign = value < 0 ? -1 : 1;
-    } else {
-        absval = value;
-        sign = 1;
+        if (value < 0) {
+            absval = ~absval + 1;
+            sign = -1;
+        }
     }
 
     constexpr size_t limbs_cnt = (sizeof(T) + sizeof(LimbT) - 1) / sizeof(LimbT);
-
+    if constexpr (N == std::dynamic_extent) {
+        if (sp.empty()) return { 0, sign };
+    }
     sp.front() = static_cast<LimbT>(absval);
     size_t cnt = 1;
     if constexpr (limbs_cnt > 1) {
         absval >>= std::numeric_limits<LimbT>::digits;
-        for (; !!absval && cnt < limbs_cnt; ++cnt) {
+        for (; !!absval && cnt < (std::min)(limbs_cnt, sp.size()); ++cnt) {
             sp[cnt] = static_cast<LimbT>(absval);
             absval >>= std::numeric_limits<LimbT>::digits;
         }
     }
+    
     return { cnt, sign };
 }
 

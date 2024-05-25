@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_FUNCTIONAL_ABS_HPP
-#define SONIA_FUNCTIONAL_ABS_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <cmath>
 
@@ -16,25 +11,32 @@
 
 namespace sonia {
 
-template <typename T, typename Enable = void>
-struct abs_f {
-    bool operator()(T val) const { return std::abs(val); }
+template <typename T>
+struct abs_f
+{
+    inline T operator()(T val) const noexcept { return std::abs(val); }
 };
 
-template <typename T>
-struct abs_f<T, enable_if_t<is_integral_v<T>>> {
-    T operator()(T val) const {
-        if constexpr (is_signed_v<T>) {
-            return val < 0 ? -val : val;
-        } else {
-            return val;
+template <std::signed_integral T>
+struct abs_f<T>
+{
+    inline std::make_unsigned_t<T> operator()(T val) const noexcept
+    {
+        std::make_unsigned_t<T> result = val;
+        if (val < 0) {
+            result = ~result + 1;
         }
+        return result;
     }
 };
 
+template <std::unsigned_integral T>
+struct abs_f<T>
+{
+    inline T operator()(T val) const noexcept { return val; }
+};
+
 template <typename T>
-T abs(T val) { return abs_f<T>()(val); }
+inline auto abs(T val) noexcept { return abs_f<T>{}(val); }
 
 }
-
-#endif // SONIA_FUNCTIONAL_ABS_HPP

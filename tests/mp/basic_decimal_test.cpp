@@ -26,7 +26,6 @@ void basic_decimal_test0()
     using namespace std::string_view_literals;
     using namespace sonia::mp::literals;
 
-    BOOST_CHECK_EQUAL(to_string(dec_t{ "3.1e-5"sv }), "0.000031");
     //auto vvv = -.022e-12;
 
     BOOST_CHECK_EQUAL(dec_t{ ".022"sv }.exponent_as<int>(), -3);
@@ -51,21 +50,22 @@ void basic_decimal_test0()
     BOOST_CHECK_EQUAL(dec_t{ "00.2"sv }.significand(), 2);
     BOOST_CHECK_EQUAL(dec_t{ ".3"sv }.exponent_as<int>(), -1);
     BOOST_CHECK_EQUAL(dec_t{ ".3"sv }.significand(), 3);
-
+   
     BOOST_CHECK_EQUAL(dec_t{ "9.00000000990000000000001"sv }.significand(), 900000000990000000000001_bi);
     BOOST_CHECK_EQUAL(mdec_t{ "9.00000000990000000000001"sv }.significand(), (sonia::mp::basic_integer<uint8_t, 1>("900000000990000000000001"sv)));
-
+    
     BOOST_CHECK_EQUAL(dec_t{ "3.1e5"sv }.significand(), 31);
     BOOST_CHECK_EQUAL(dec_t{ "3.1e5"sv }.exponent_as<int>(), 4);
     BOOST_CHECK_EQUAL(to_string(dec_t{ "3.1e5"sv }), "310000");
     BOOST_CHECK_EQUAL(to_string(dec_t{ "3.1e-5"sv }), "0.000031");
+    
     BOOST_CHECK_LE(std::abs((float)dec_t{ "3.1234e-5"sv } - 0.000031234f), FLT_EPSILON);
     BOOST_CHECK_LE(std::abs((double)dec_t { "3.1e-5"sv } - 0.000031), DBL_EPSILON);
     
     BOOST_CHECK_EQUAL(dec_t{ "31e5"sv }, dec_t{ "3.1e6"sv });
     BOOST_CHECK_EQUAL(dec_t{ "-3.1e6"sv }, dec_t{ "-31e5"sv });
     BOOST_CHECK_EQUAL(dec_t{ "31e5"sv }, 3100000);
-
+    
     BOOST_CHECK_LT(dec_t{ "3.11e5"sv }, dec_t{ "3.1e6"sv });
     BOOST_CHECK_GT(dec_t{ "3.1e6"sv }, dec_t{ "3.11e5"sv });
     BOOST_CHECK_GT(dec_t{ "3110000"sv }, dec_t{ "3.1e6"sv });

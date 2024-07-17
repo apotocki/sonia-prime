@@ -5,50 +5,14 @@
 //
 #include "sonia/config.hpp"
 #include "tests_external.hpp"
-#include <jni.h>
-#include <android/log.h>
+
+#include "sonia/sys/android/streambuf.hpp"
 
 #include <iostream>
 
 #include <boost/bind/placeholders.hpp>
 #include <boost/test/included/unit_test.hpp>
 #include <boost/exception/diagnostic_information.hpp>
-
-class androidbuf : public std::streambuf {
-    const char* name_;
-public:
-    enum { bufsize = 1024 }; // ... or some other suitable buffer size
-
-    explicit androidbuf(const char* name) : name_{ name } { this->setp(buffer, buffer + bufsize - 1); }
-
-private:
-    int overflow(int c)
-    {
-        if (c == traits_type::eof()) {
-            sync();
-        } else if (epptr() == pptr()) {
-            line_.insert(line_.end(), pbase(), pptr());
-            line_.push_back(traits_type::to_char_type(c));
-            this->setp(buffer, buffer + bufsize);
-        }
-        return traits_type::not_eof(c);
-    }
-
-    int sync()
-    {
-        if (this->pbase() != this->pptr()) {
-            line_.insert(line_.end(), pbase(), pptr());
-            line_.push_back(0);
-            __android_log_write(ANDROID_LOG_INFO, name_, line_.data());
-            line_.clear();
-            this->setp(buffer, buffer + bufsize);
-        }
-        return 0;
-    }
-
-    char buffer[bufsize];
-    std::vector<char> line_;
-};
 
 #include <unistd.h>
 
@@ -113,6 +77,8 @@ void restore_assets(const char* archivepath)
 extern "C" JNIEXPORT jint JNICALL
 Java_com_example_tescppapplication_MainActivity_run(JNIEnv * env, jobject, jstring dir, jstring assetsfile, jstring option)
 {
+    using namespace sonia::android;
+
     std::cout.rdbuf(new androidbuf("cout"));
     std::cerr.rdbuf(new androidbuf("cerr"));
     const char* path = env->GetStringUTFChars(dir, NULL);

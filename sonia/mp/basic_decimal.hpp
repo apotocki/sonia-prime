@@ -80,7 +80,7 @@ struct decimal_holder : AllocatorT
     using allocator_type = AllocatorT;
     using alloc_traits_t = std::allocator_traits<allocator_type>;
 
-    alignas(decimal_data*) LimbT inplace_limbs_[N];
+    alignas(decimal_data*) alignas(LimbT) alignas(LimbT) LimbT inplace_limbs_[N];
 
     inline allocator_type& allocator() noexcept { return static_cast<allocator_type&>(*this); }
 
@@ -218,7 +218,7 @@ struct decimal_holder : AllocatorT
     inline DataT * allocated_data() const noexcept
     {
         if constexpr (!overwritten_limb_flag) {
-            return *std::launder(reinterpret_cast<DataT const**>(inplace_limbs_));
+            return *std::launder(reinterpret_cast<DataT* const*>(inplace_limbs_));
         } else {
             return reinterpret_cast<DataT*>(std::rotl(*std::launder(reinterpret_cast<uintptr_t const*>(inplace_limbs_)), 1));
         }

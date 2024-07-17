@@ -348,8 +348,21 @@ void mp_integer_test2()
     BOOST_CHECK_EQUAL((int)val1, 1);
 }
 
+std::string tohex(double a, double r, double g, double b)
+{
+    uint32_t val = ((((uint32_t)(a * 255)) * 256 + ((uint32_t)(r * 255))) * 256 + ((uint32_t)(g * 255))) * 256 + ((uint32_t)(b * 255));
+    std::ostringstream ss;
+    ss << std::hex << std::uppercase << "#" << val;
+    return ss.str();
+}
+
 void mp_test_registrar()
 {
+
+
+    std::cout << tohex(1.0, 0.957, 0.961, 0.961) << "\n";
+    //std::cout << tohex(1.0, 0.247, 0.247, 0.275) << "\n";
+
     //register_test(BOOST_TEST_CASE(&mp_enc_dec_test));
     register_test(BOOST_TEST_CASE_SILENT(&mp_ct_test));
     register_test(BOOST_TEST_CASE(&mp_integer_test));

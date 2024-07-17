@@ -111,7 +111,7 @@ class basic_integer_view
     using const_limb_t = std::add_const_t<LimbT>;
     using ctl_type = detail::integer_view_ctl<uintptr_t>; // to ensure the same size as a pointer size
 
-    static constexpr size_t inplace_max_size = sizeof(const_limb_t*) / sizeof(LimbT);
+    static constexpr size_t inplace_max_size = (std::max)(sizeof(uint64_t), sizeof(const_limb_t*)) / sizeof(LimbT);
 
     union {
         const_limb_t* limbs_;
@@ -135,7 +135,7 @@ public:
     {}
 
     template <std::integral T>
-    requires (sizeof(T) <= inplace_max_size * sizeof(const_limb_t*))
+    requires (sizeof(T) <= inplace_max_size * sizeof(LimbT))
     basic_integer_view(T value) noexcept
     {
         auto [sz, sign] = to_limbs(value, std::span<LimbT, inplace_max_size>{ inplace_value_ });

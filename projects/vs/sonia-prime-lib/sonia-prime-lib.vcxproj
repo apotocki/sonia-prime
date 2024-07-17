@@ -321,6 +321,10 @@
     <ClInclude Include="..\..\..\sonia\filesystem.hpp" />
     <ClInclude Include="..\..\..\sonia\function.hpp" />
     <ClInclude Include="..\..\..\sonia\iterator_traits.hpp" />
+    <ClInclude Include="..\..\..\sonia\java\jnifwd.hpp" />
+    <ClInclude Include="..\..\..\sonia\java\jni_env.hpp" />
+    <ClInclude Include="..\..\..\sonia\java\jni_ref.hpp" />
+    <ClInclude Include="..\..\..\sonia\java\jni_vm.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\android_sink.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\loggable.hpp" />
     <ClInclude Include="..\..\..\sonia\logger\logger.hpp" />
@@ -424,6 +428,7 @@
     <ClInclude Include="..\..\..\sonia\small_vector.hpp" />
     <ClInclude Include="..\..\..\sonia\span.hpp" />
     <ClInclude Include="..\..\..\sonia\string.hpp" />
+    <ClInclude Include="..\..\..\sonia\sys\android\streambuf.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\linux\signals.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\linux\signals_api.hpp" />
     <ClInclude Include="..\..\..\sonia\sys\linux\timer.hpp" />
@@ -489,6 +494,8 @@
     <ClInclude Include="..\..\..\sonia\utility\invocation\functor_object.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\invocable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\invocation.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invocation\jni_decoder.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invocation\jni_encoder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\serialization.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\value_decoder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\value_encoder.hpp" />
@@ -740,6 +747,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\java\jni_env.cpp" />
+    <ClCompile Include="..\..\..\sonia\java\jni_vm.cpp" />
     <ClCompile Include="..\..\..\sonia\logger\android_sink.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -878,6 +887,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_decoder.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_encoder.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\invocation\value_decoder.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\invocation\value_encoder.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.cpp">
@@ -1021,7 +1032,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include;$(ProjectDir)..\..\..\..\..\tpls\jni;$(ProjectDir)..\..\..\..\..\tpls\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -1041,7 +1052,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include;$(ProjectDir)..\..\..\..\..\tpls\jni;$(ProjectDir)..\..\..\..\..\tpls\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -1064,7 +1075,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include;$(ProjectDir)..\..\..\..\..\tpls\jni;$(ProjectDir)..\..\..\..\..\tpls\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -1088,7 +1099,7 @@
       </SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include;$(ProjectDir)..\..\..\..\..\tpls\jni;$(ProjectDir)..\..\..\..\..\tpls\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

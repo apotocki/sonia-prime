@@ -145,7 +145,7 @@ int bigint_create(lua_State* L)
 
 mp::basic_integer_view<limb_type> restore_bigint(bigint_header * bh)
 {
-    return mp::basic_integer_view<limb_type>{ std::span{ reinterpret_cast<limb_type*>(bh + 1), bh->size }, bh->sign ? -1: 1 };
+    return mp::basic_integer_view<limb_type>{ std::span{ reinterpret_cast<limb_type*>(bh + 1), static_cast<size_t>(bh->size) }, bh->sign ? -1: 1 };
     //ival.backend().resize(bh->size, bh->size);
     //memcpy(ival.backend().limbs(), bh + 1, bh->size * sizeof(limb_type));
     //if (bh->sign != ival.backend().sign()) ival.backend().negate();

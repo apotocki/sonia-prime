@@ -58,7 +58,7 @@ struct integer_holder : AllocatorT
     using allocator_type = AllocatorT;
     using alloc_traits_t = std::allocator_traits<allocator_type>;
 
-    alignas(limbs_data*) LimbT inplace_limbs_[N];
+    alignas(limbs_data*) alignas(LimbT) LimbT inplace_limbs_[N];
 
     LimbT * allocate(size_t sz)
     {

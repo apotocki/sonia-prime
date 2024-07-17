@@ -23,6 +23,8 @@ public:
     using view_model::view_model;
 
     // scripting
+
+    void load_file(string_view pathstr);
     void load_lua(std::string code);
     cstring_view append_inplace(string_view code, bool no_return);
 

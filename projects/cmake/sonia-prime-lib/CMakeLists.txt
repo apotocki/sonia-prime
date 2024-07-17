@@ -128,7 +128,12 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Androi
         ${BUNDLE_HOME}/sonia/services/io/io_factory_linux.cpp
     )
     if (CMAKE_SYSTEM_NAME STREQUAL "Android")
-        set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${BUNDLE_HOME}/sonia/logger/android_sink.cpp)
+        set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+            ${BUNDLE_HOME}/sonia/logger/android_sink.cpp
+            ${BUNDLE_HOME}/sonia/java/jni_env.cpp
+            ${BUNDLE_HOME}/sonia/utility/invocation/jni_decoder.cpp
+            ${BUNDLE_HOME}/sonia/utility/invocation/jni_encoder.cpp
+        )
     endif ()
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "iOS")
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}

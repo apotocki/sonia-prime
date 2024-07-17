@@ -59,7 +59,11 @@ public:
         virtual ~manager() = default;
         virtual scheduler& get_scheduler() const = 0;
 
-        virtual void invoke_callback(void* cookie, int32_t cvid, string_view method_name, span<const blob_result>, on_invoke_cv_result_setter setter) = 0;
+        //typedef void(*on_invoke_cv_result_setter)(void*, blob_result*, uint32_t); // cookie, results, result count
+        //virtual void invoke_callback(void* cookie, int32_t cvid, string_view method_name, span<const blob_result>, on_invoke_cv_result_setter setter) = 0;
+
+        virtual smart_blob invoke_callback(int32_t cvid, string_view method_name, span<const blob_result>) = 0;
+
         virtual int on_change_callback(int32_t cvid, status_type, std::span<const blob_result> args) = 0;
 
         virtual int32_t create_content_view(string_view) = 0;
@@ -127,12 +131,12 @@ public:
     // properties routine
     void on_property_change(string_view propname) override;
     
-    blob_result call_method(string_view name, blob_result args) const;
-    blob_result do_call_method(string_view name, span<const blob_result> args) const;
-    blob_result do_call_method(string_view name, std::initializer_list<const blob_result> args) const
+    smart_blob call_method(string_view name, blob_result args) const;
+    smart_blob do_call_method(string_view name, span<const blob_result> args) const;
+    smart_blob do_call_method(string_view name, std::initializer_list<const blob_result> args) const
     { return do_call_method(name, span{args}); }
 
-    blob_result get_method(string_view name) const;
+    smart_blob get_method(string_view name) const;
     void set_method(string_view name, string_view propname, blob_result val);
 
     // test method

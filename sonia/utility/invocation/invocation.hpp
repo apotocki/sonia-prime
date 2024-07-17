@@ -166,8 +166,6 @@ struct alignas(8) blob_result
 
 static_assert(sizeof(blob_result) == 16);
 
-typedef void(*on_invoke_cv_result_setter)(void*, blob_result*, uint32_t); // cookie, results, result count
-
 extern "C" {
 
 SONIA_PRIME_API void blob_result_allocate(blob_result *, bool no_inplace = false);

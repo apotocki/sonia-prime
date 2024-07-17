@@ -129,13 +129,13 @@ struct optimized_array_impl
     static std::span<ElementT> get(HolderT * self)
 	{
         return self->is_ptr() ? std::span<ElementT>{ptr(self)->to_span()}
-        : std::span{local_begin(self), self->get_uint() & sz_mask};
+            : std::span{local_begin(self), static_cast<size_t>(self->get_uint() & sz_mask)};
     }
 
     static std::span<const element_t> get(HolderT const * self)
     {
         return self->is_ptr() ? ptr(self)->to_span()
-            : std::span{local_begin(self), self->get_uint() & sz_mask};
+            : std::span{local_begin(self), static_cast<size_t>(self->get_uint() & sz_mask)};
     }
 
     static ElementT& front(HolderT * self)

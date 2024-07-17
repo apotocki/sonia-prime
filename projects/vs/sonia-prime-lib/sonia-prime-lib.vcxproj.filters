@@ -256,6 +256,12 @@
     <Filter Include="sonia.bang\ast\type_visitors">
       <UniqueIdentifier>{22978f14-bf65-4551-adeb-cb54c7f4415f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.sys\android">
+      <UniqueIdentifier>{cf19571f-9da9-4c17-8290-cd6ee7c4671c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.java">
+      <UniqueIdentifier>{5bcdd7a2-dae6-4cf0-9139-f3e0c2533a1c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -2172,6 +2178,27 @@
     <ClInclude Include="..\..\..\agnostic\std\algorithm\three_way_comp_ref_type.hpp">
       <Filter>agnostic\std\algorithm</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\android\streambuf.hpp">
+      <Filter>sonia.sys\android</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\java\jnifwd.hpp">
+      <Filter>sonia.java</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\java\jni_env.hpp">
+      <Filter>sonia.java</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\java\jni_ref.hpp">
+      <Filter>sonia.java</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\jni_decoder.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\jni_encoder.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\java\jni_vm.hpp">
+      <Filter>sonia.java</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2497,6 +2524,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\invocation\invocable.cpp">
       <Filter>sonia.utility\invocation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_decoder.cpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_encoder.cpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\java\jni_vm.cpp">
+      <Filter>sonia.java</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\java\jni_env.cpp">
+      <Filter>sonia.java</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

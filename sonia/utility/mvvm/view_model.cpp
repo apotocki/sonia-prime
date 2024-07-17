@@ -201,12 +201,12 @@ blob_result view_model::do_call_method(string_view name, std::initializer_list<c
 }
 */
 
-blob_result view_model::do_call_method(std::string_view name, std::span<const blob_result> args) const
+smart_blob view_model::do_call_method(std::string_view name, std::span<const blob_result> args) const
 {
-    blob_result result = nil_blob_result();
     if (auto mng = get_manager(); mng) {
         //GLOBAL_LOG_INFO() << "view_model::do_call_method " << name << ", argscount: " << args.size();
-        mng->invoke_callback(&result, id(), name, args,
+        return mng->invoke_callback(id(), name, args);
+        /*
             [](void* cookie, blob_result* r, uint32_t count) {
                 for (uint32_t i = 0; i < count; ++i) blob_result_pin(r);
                 blob_result * result = reinterpret_cast<blob_result*>(cookie);
@@ -217,12 +217,12 @@ blob_result view_model::do_call_method(std::string_view name, std::span<const bl
                     blob_result_allocate(result);
                 }
             }
-        );
+       */
     }
-    return result;
+    return {};
 }
 
-blob_result view_model::call_method(std::string_view name, blob_result args) const
+smart_blob view_model::call_method(std::string_view name, blob_result args) const
 {
     if (is_nil(args)) {
         return do_call_method(name, {});
@@ -247,13 +247,13 @@ blob_result view_model::call_method(std::string_view name, blob_result args) con
     }
 }
 
-blob_result view_model::get_method(std::string_view name) const
+smart_blob view_model::get_method(std::string_view name) const
 {
-    blob_result result = nil_blob_result();
     if (auto mng = get_manager(); mng) {
         //GLOBAL_LOG_INFO() << "view_model::do_call_method " << name << ", argscount: " << args.size();
         blob_result args[1] = { string_blob_result(name) };
-        mng->invoke_callback(&result, id(), "$"sv, args,
+        return mng->invoke_callback(id(), "$"sv, args);
+        /*
             [](void* cookie, blob_result* r, uint32_t count) {
                 blob_result * result = reinterpret_cast<blob_result*>(cookie);
                 if (count == 1) {
@@ -264,9 +264,9 @@ blob_result view_model::get_method(std::string_view name) const
                     blob_result_allocate(result);
                 }
             }
-        );
+        */
     }
-    return result;
+    return {};
 }
 
 void view_model::set_method(std::string_view name, std::string_view propname, blob_result val)
@@ -274,7 +274,7 @@ void view_model::set_method(std::string_view name, std::string_view propname, bl
     if (auto mng = get_manager(); mng) {
         //GLOBAL_LOG_INFO() << "view_model::do_call_method " << name << ", argscount: " << args.size();
         blob_result args[3] = { string_blob_result(name), string_blob_result(propname), val };
-        mng->invoke_callback(nullptr, id(), "="sv, args, nullptr);
+        mng->invoke_callback(id(), "="sv, args);
     }
 }
 

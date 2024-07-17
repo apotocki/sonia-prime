@@ -110,7 +110,7 @@ std::strong_ordering operator<=> (basic_decimal_view<LimbT> const& lhs, basic_de
 
     auto r = basic_integer<LimbT, 1>{rhs.exponent() } - lhs.exponent(); // can throw bad_alloc
     constexpr size_t big_base_digits_per_limb = std::numeric_limits<LimbT>::digits10;
-    constexpr size_t big_base = sonia::arithmetic::ipow<LimbT>(10, big_base_digits_per_limb);
+    constexpr LimbT big_base = sonia::arithmetic::ipow<LimbT>(10, big_base_digits_per_limb);
     if (!r) {
         return lhs.significand() <=> rhs.significand();
     }

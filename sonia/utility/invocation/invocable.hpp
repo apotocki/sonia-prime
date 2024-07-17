@@ -255,6 +255,7 @@ class registrar
     {
         impl()
         {
+            //GLOBAL_LOG_INFO() << "registrar: " << typeid(DerivedT).name();
             DerivedT::do_registration(*this);
             if constexpr (!is_void_v<InheritedT>) {
                 basic_registrar<DerivedT>::inherit(typeid(InheritedT));

@@ -109,10 +109,10 @@ annotated_string parser_context::make_string(annotated_string_view str)
 //    };
 //}
 
-mp::integer parser_context::make_integer(string_view str)
-{
-    return mp::integer(str);
-}
+//mp::integer parser_context::make_integer(string_view str)
+//{
+//    return mp::integer(str);
+//}
 
 mp::decimal parser_context::make_decimal(string_view str)
 {

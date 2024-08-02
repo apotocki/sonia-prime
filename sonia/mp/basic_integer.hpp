@@ -227,11 +227,11 @@ struct integer_holder : AllocatorT
     {
         LimbT* limbsdata;
         auto [limbs, sz, asz, sign] = tpl;
-        if (!sz) {
+        if (!limbs) {
             init_zero();
             return;
         }
-        assert(limbs);
+
         if (std::equal_to<LimbT*>()(limbs, inplace_limbs_)) {
             // assert (sz <= N);
             if (sz < N || !(limbs[N - 1] & ~last_limb_mask)) { // sso case

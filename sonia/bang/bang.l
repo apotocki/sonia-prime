@@ -338,7 +338,7 @@ HASHTAG					"#"
 		return (bang_lang::parser::token::ARGIDENTIFIER);
 	}
 	{INTEGER} {
-		variant_emplace(annotated_integer{ctx.make_integer(text_view), location});
+		variant_emplace(annotated_decimal{ctx.make_decimal(text_view), location});
 		return (bang_lang::parser::token::INTEGER);
 	}
 	{DECIMAL} {

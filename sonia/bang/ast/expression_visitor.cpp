@@ -44,11 +44,11 @@ expression_visitor::result_type expression_visitor::operator()(annotated_bool co
     return apply_cast(bang_bool_t{}, b);
 }
 
-expression_visitor::result_type expression_visitor:: operator()(annotated_integer const& i) const
-{
-    ctx.append_expression(semantic::push_value{ i.value });
-    return apply_cast(bang_object_t{ &ctx.u().get_functional_entity(unit::builtin_type::integer) }, i);
-}
+//expression_visitor::result_type expression_visitor:: operator()(annotated_integer const& i) const
+//{
+//    ctx.append_expression(semantic::push_value{ i.value });
+//    return apply_cast(bang_object_t{ &ctx.u().get_functional_entity(unit::builtin_type::integer) }, i);
+//}
 
 expression_visitor::result_type expression_visitor::operator()(annotated_decimal const& d) const
 {

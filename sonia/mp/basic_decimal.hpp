@@ -412,12 +412,11 @@ struct decimal_holder : AllocatorT
         LimbT* limbsdata;
         size_t exp_alloc_sz;
         auto [limbs, sz, asz, sign] = tpl;
-        if (!sz) {
+        if (!limbs) {
             init_zero();
             return;
         }
 
-        assert(limbs);
         if (std::equal_to<LimbT*>()(limbs, inplace_limbs_)) {
             auto can_be_inplaced = [](LimbT const* limbs, size_t sz, basic_integer_view<LimbT> exponent) noexcept {
                 if (sz > N) return false;
@@ -698,6 +697,51 @@ public:
     inline explicit operator T() const
     {
         return (T)((T)aholder_.significand() * std::pow(10.0, exponent_as<int64_t>()));
+    }
+
+    // returns only for not fractional values
+    template <std::integral T>
+    inline explicit operator T() const
+    {
+        int64_t eval = exponent_as<int64_t>();
+        if (eval >= 0) {
+            if (std::numeric_limits<T>::digits10 >= eval && aholder_.is_fit_significand<T>()) {
+                using UT = std::make_unsigned_t<T>;
+
+                UT value = (UT)aholder_.significand().abs();
+                UT emultiplier = sonia::arithmetic::ipow<UT>(10, eval);
+            
+                auto [h, l] = sonia::arithmetic::umul1(value, emultiplier);
+                if (!h) {
+                    if constexpr (std::is_same_v<T, UT>) {
+                        return l;
+                    } else if (!(l >> (std::numeric_limits<UT>::digits - 1))) { // check 0 for most significant bit
+                        if (aholder_.is_negative()) {
+                            l = ~l + 1;
+                        }
+                        return static_cast<T>(l);
+                    }
+                }
+            }
+        } else {
+            eval = -eval;
+            basic_integer<LimbT, actualN, AllocatorT> sig = aholder_.significand();
+            // This is a temporary solution until division with an arbitrary size divider is implemented.
+            
+            constexpr uint64_t step = std::numeric_limits<LimbT>::digits10;
+            constexpr uint64_t stepdivider = sonia::arithmetic::ipow<LimbT>(10, step);
+            
+            while (step < eval) {
+                sig /= stepdivider;
+                if (!sig) return 0;
+                eval -= step;
+            }
+            uint64_t lastdivider = sonia::arithmetic::ipow<LimbT>(10, eval);
+            sig /= lastdivider;
+            return (T)sig;
+        }
+        
+        throw std::invalid_argument((std::ostringstream() << "the destination type can't fit value: " << *this).str());
     }
 
     inline bool is_negative() const noexcept { return aholder_.is_negative(); }

@@ -47,7 +47,7 @@ struct expression_visitor : static_visitor<error_storage>
     result_type operator()(property_expression&) const;
 
     result_type operator()(annotated_bool const&) const;
-    result_type operator()(annotated_integer const&) const;
+    //result_type operator()(annotated_integer const&) const;
     result_type operator()(annotated_decimal const&) const;
     result_type operator()(annotated_string const&) const;
     

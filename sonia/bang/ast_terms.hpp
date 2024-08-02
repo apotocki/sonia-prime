@@ -45,7 +45,7 @@ using annotated_identifier = annotated<identifier>;
 using annotated_qname = annotated<qname>;
 using annotated_qname_identifier = annotated<qname_identifier>;
 using annotated_bool = annotated<bool>;
-using annotated_integer = annotated<mp::integer>;
+//using annotated_integer = annotated<mp::integer>;
 using annotated_decimal = annotated<mp::decimal>;
 using annotated_string = annotated<small_string>;
 
@@ -441,7 +441,7 @@ struct not_empty_expression
 };
 
 using expression_t = make_recursive_variant<
-    annotated_bool, annotated_integer, annotated_decimal, annotated_string,
+    annotated_bool, /* annotated_integer,*/ annotated_decimal, annotated_string,
     variable_identifier, case_expression, property_expression, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
     lambda<recursive_variant_>,
     negate_expression<>,

@@ -80,7 +80,8 @@ class unit
 public:
     enum class builtin_type
     {
-        integer, decimal
+        //integer, 
+        decimal
     };
 
     enum class builtin_fn
@@ -187,7 +188,7 @@ private:
     std::unique_ptr<virtual_stack_machine> bvm_;
     std::vector<fs::path> additional_paths_;
 
-    functional_entity* integer_entity_;
+    //functional_entity* integer_entity_;
     functional_entity* decimal_entity_;
 };
 

@@ -79,6 +79,21 @@ void basic_decimal_test0()
     BOOST_CHECK_GT(dec_t{ "-3.10999999999999999999999999999999e6"sv }, dec_t{ "-3110000"sv });
     BOOST_CHECK_GT(dec_t{ "3110000"sv }, dec_t{ "3.10999999999999999999999999999999e6"sv });
     BOOST_CHECK_LT(dec_t{ "-3110000"sv }, dec_t{ "-3.10999999999999999999999999999999e6"sv });
+
+    float val = -200;
+    uint8_t x = static_cast<uint8_t>(val);
+    BOOST_CHECK_EQUAL((size_t)dec_t{ "3e5"sv }, 300000);
+    BOOST_CHECK_EQUAL((int16_t)dec_t { "-2e2"sv }, -200);
+    BOOST_CHECK_EQUAL((int16_t)dec_t { "2.19399878273287837459238450239485023985748738458787"sv }, 2);
+
+    
+    //x0 /= 10000000000000000000ul;
+    //std::cout << x0 << "\n";
+    auto x1 = "2193998782732"_bi;
+    
+    //x0 /= 10000000000000000000ul;
+    //x0 /= 10000000000000000000ul;
+    //BOOST_CHECK_EQUAL("219399878273287837459238450239485023985748738458787"_bi / "0xffffFFFFffffFFFE"_bi, "-0xffffFFFFffffFFFF"_bi);
 }
 
 void basic_decimal_test_registrar()

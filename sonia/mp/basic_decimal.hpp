@@ -834,6 +834,12 @@ inline std::strong_ordering operator<=> (basic_decimal<LimbT, NL, ExponentBitCou
 }
 
 template <std::unsigned_integral LimbT, size_t N, size_t E, typename AllocatorT>
+inline size_t hash_value(basic_decimal<LimbT, N, E, AllocatorT> const& v)
+{
+    return hasher()(v.significand(), v.exponent());
+}
+
+template <std::unsigned_integral LimbT, size_t N, size_t E, typename AllocatorT>
 inline basic_decimal<LimbT, N, E, AllocatorT> operator+ (basic_decimal<LimbT, N, E, AllocatorT> const& l, basic_decimal_view<LimbT> rv)
 {
     THROW_NOT_IMPLEMENTED_ERROR();
@@ -844,6 +850,27 @@ template <typename Elem, typename Traits, std::unsigned_integral LimbT, size_t N
 inline std::basic_ostream<Elem, Traits>& operator <<(std::basic_ostream<Elem, Traits>& os, basic_decimal<LimbT, N, E, AllocatorT> const& dv)
 {
     return os << to_string(dv);
+}
+
+template <std::unsigned_integral LimbT, size_t N, size_t E, typename AllocatorT>
+std::string to_scientific_string(basic_decimal<LimbT, N, E, AllocatorT> const& val)
+{
+    using namespace std::string_literals;
+    if (!val) return "0.0E0"s;
+    std::string result = (std::ostringstream() << val.significand()).str();
+    basic_integer<LimbT, N, AllocatorT> sc_e = val.exponent();
+    for (; result.back() == '0'; result.pop_back(), sc_e += 1);
+
+    int pos = val.is_negative() ? 1 : 0;
+
+    sc_e += (result.size() - 1);
+    sc_e -= pos;
+
+    result.insert(result.begin() + 1 + pos, '.');
+    if (result.back() == '.') result.pop_back();
+    result.push_back('E');
+    to_vector((basic_integer_view<LimbT>)sc_e, 10, false, result);
+    return result;
 }
 
 using decimal = basic_decimal<uint64_t, 1, 8>;

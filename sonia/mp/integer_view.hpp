@@ -287,7 +287,7 @@ public:
                 result |= static_cast<u_t>(at(i)) << (i * std::numeric_limits<LimbT>::digits);
             }
         }
-        // for signed types in case of overflow the behaviour is similar to c cast's one
+        // for signed types in case of overflow the behaviour is similar to C cast's one
         if (is_negative()) {
            result = ~result + 1;
         }
@@ -463,6 +463,25 @@ public:
 template <std::unsigned_integral LimbT>
 basic_integer_view(std::span<LimbT>, int sign) -> basic_integer_view<LimbT>;
 
+template <std::unsigned_integral LimbT, typename VectorT>
+void to_vector(basic_integer_view<LimbT> const& iv, int base, bool showbase, VectorT& result)
+{
+    bool reversed;
+    if (iv.is_negative()) result.push_back('-');
+    if (showbase) {
+        switch (base) {
+            case 8: result.push_back('0'); break;
+            case 16: result.push_back('0'); result.push_back('x'); break;
+        }
+    }
+    size_t pos = result.size();
+    iv.with_limbs([&result, &reversed](std::span<const LimbT> sp, int) { to_string(sp, std::back_inserter(result), reversed); });
+    
+    if (reversed) {
+        std::reverse(result.begin() + pos, result.end());
+    }
+}
+
 template <typename Elem, typename Traits, std::unsigned_integral LimbT>
 std::basic_ostream<Elem, Traits>& operator <<(std::basic_ostream<Elem, Traits>& os, basic_integer_view<LimbT> iv)
 {
@@ -494,6 +513,36 @@ std::basic_ostream<Elem, Traits>& operator <<(std::basic_ostream<Elem, Traits>& 
         std::copy(result.begin(), result.end(), std::ostreambuf_iterator(os));
     }
     return os;
+}
+
+
+template <std::unsigned_integral LimbT>
+inline size_t hash_value(basic_integer_view<LimbT> const& v)
+{
+    size_t seed = 0;
+
+    size_t vsz = v.size();
+    if (!vsz) return seed;
+
+    LimbT const* b = v.data();
+    LimbT const* e = b + vsz - 1;
+    
+    LimbT l = *e & v.last_limb_mask();
+    if (l) [[likely]] {
+        sonia::hash_combine(seed, l);
+    } else {
+        for (;;) {
+            if (b == e) return seed; // holds 0
+            --e;
+            if (*e) { ++e; break; }
+        }
+    }
+
+    for (; b != e; ++b) {
+        sonia::hash_combine(seed, *b);
+    }
+    sonia::hash_combine(seed, v.sgn());
+    return seed;
 }
 
 }

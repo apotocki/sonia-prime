@@ -162,9 +162,9 @@ std::strong_ordering decimal_compare_three_way(LSignificandT const& lv, LExponen
     if (le == re) {
         return lv <=> rv;
     } else if (le < re) {
-        return lv <=> (rv * pow(RSignificandT(10), re - le));
+        return lv <=> (rv * pow(RSignificandT{10}, re - le));
     } else {
-        return (lv * pow(LSignificandT(10), le - re)) <=> rv;
+        return (lv * pow(LSignificandT{10}, le - re)) <=> rv;
     }
 }
 
@@ -176,9 +176,9 @@ bool decimal_less(LSignificandT const& lv, LExponentT const& le, RSignificandT c
     if (le == re) {
         return lv < rv;
     } else if (le < re) {
-        return lv < rv * pow(RSignificandT(10), re - le);
+        return lv < rv * pow(RSignificandT{10}, re - le);
     } else {
-        return lv * pow(LSignificandT(10), le - re) < rv;
+        return lv * pow(LSignificandT{10}, le - re) < rv;
     }
 }
 
@@ -202,10 +202,10 @@ void decimal_add(SignificandT & lv, ExponentT & le, SignificandT const& rv, Expo
 {
     ExponentT minexp = (std::min)(le, re);
     if (le != minexp) {
-        lv = lv * pow(SignificandT(10), le - minexp) + rv;
+        lv = lv * pow(SignificandT{10}, le - minexp) + rv;
         le = minexp;
     } else if (re != minexp) {
-        lv += rv * pow(SignificandT(10), re - minexp);
+        lv += rv * pow(SignificandT{10}, re - minexp);
     } else {
         lv += rv;
     }
@@ -217,10 +217,10 @@ void decimal_minus(SignificandT & lv, ExponentT & le, SignificandT const& rv, Ex
 {
     ExponentT minexp = (std::min)(le, re);
     if (le != minexp) {
-        lv = lv * pow(SignificandT(10), le - minexp) - rv;
+        lv = lv * pow(SignificandT{10}, le - minexp) - rv;
         le = minexp;
     } else if (re != minexp) {
-        lv -= rv * pow(SignificandT(10), re - minexp);
+        lv -= rv * pow(SignificandT{10}, re - minexp);
     } else {
         lv -= rv;
     }
@@ -244,7 +244,7 @@ void decimal_divide(SignificandT & lv, ExponentT & le, SignificandT const& rv, E
         auto val = msb(lv);
         if (val < 63) {
             int p = (int)log10(pow(2.0, 63 - val));
-            lv = lv * pow(SignificandT(10), p);
+            lv = lv * pow(SignificandT{10}, p);
             le -= p;
         }
         lv /= rv;
@@ -252,5 +252,6 @@ void decimal_divide(SignificandT & lv, ExponentT & le, SignificandT const& rv, E
     }
     decimal_normilize(lv, le);
 }
+
 
 }

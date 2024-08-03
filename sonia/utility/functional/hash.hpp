@@ -7,7 +7,6 @@
 #include <typeindex>
 #include "sonia/type_traits.hpp"
 #include "sonia/utility/variadic.hpp"
-#include "sonia/utility/functional/has.hpp"
 
 namespace sonia {
 
@@ -32,7 +31,7 @@ inline void hash_combine(std::size_t& seed, const T& v) noexcept
 
 inline constexpr size_t hash_init_value()
 {
-    if constexpr (sizeof(size_t) == 4)
+    if constexpr (sizeof(size_t) <= 4)
     {
         return 2166136261U;
     } else {
@@ -42,7 +41,7 @@ inline constexpr size_t hash_init_value()
 
 inline constexpr size_t hash_prime_value()
 {
-    if constexpr (sizeof(size_t) == 4)
+    if constexpr (sizeof(size_t) <= 4)
     {
         return 16777619U;
     } else {
@@ -53,21 +52,21 @@ inline constexpr size_t hash_prime_value()
 struct hasher
 {
     template <typename T>
-    size_t operator()(T const& arg) const
+    inline size_t operator()(T const& arg) const
     {
         return hash<T>{}(arg);
     }
 
     template <typename ... Ts>
     requires(sizeof...(Ts) > 1)
-    size_t operator()(Ts const& ... vs) const
+    inline size_t operator()(Ts const& ... vs) const
     {
-        size_t seed = hash_init_value();
+        constexpr size_t seed = hash_init_value();
         return do_work(std::make_index_sequence<sizeof ...(Ts)>(), seed, vs ...);
     }
 
     template <typename ... Ts, size_t ... Idxs>
-    size_t do_work(std::index_sequence<Idxs...>, size_t seed, Ts const& ... vs) const
+    inline size_t do_work(std::index_sequence<Idxs...>, size_t seed, Ts const& ... vs) const
     {
         (sonia::hash_combine(seed, hash<variadic::type_at_t<Idxs, Ts...>>{}(variadic::forward_at<Idxs>(vs ...))), ...);
         return seed;

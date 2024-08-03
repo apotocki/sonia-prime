@@ -23,12 +23,12 @@ shared_ptr<T> make_clone(shared_ptr<T> const& ptr)
 {
     if (!ptr) return ptr;
     size_t sz = ptr->get_sizeof();
-    char * charptr = new char[sz];
+    std::byte* ptr = new std::byte[sz];
     try {
-        ptr->clone(charptr, sz);
-        return shared_ptr<T>(std::launder(reinterpret_cast<T*>(charptr)), [](T * p) { p->~T();  delete[] reinterpret_cast<char*>(p); });
+        ptr->clone(ptr, sz);
+        return shared_ptr<T>(std::launder(reinterpret_cast<T*>(ptr)), [](T * p) { p->~T();  delete[] reinterpret_cast<std::byte*>(p); });
     } catch (...) {
-        delete[] charptr;
+        delete[] ptr;
         throw;
     }
 }
@@ -36,12 +36,12 @@ shared_ptr<T> make_clone(shared_ptr<T> const& ptr)
 template <class T, class FactoryT>
 shared_ptr<T> construct_shared(FactoryT const& f)
 {
-    char * charptr = new char[sizeof(T)];
+    std::byte* ptr = new std::byte[sizeof(T)];
     try {
-        f.template apply<T>(charptr);
-        return shared_ptr<T>(std::launder(reinterpret_cast<T*>(charptr)), [](T * p) { p->~T();  delete[] reinterpret_cast<char*>(p); });
+        f.template apply<T>(ptr);
+        return shared_ptr<T>(std::launder(reinterpret_cast<T*>(ptr)), [](T * p) { p->~T();  delete[] reinterpret_cast<std::byte*>(p); });
     } catch (...) {
-        delete[] charptr;
+        delete[] ptr;
         throw;
     }
 }

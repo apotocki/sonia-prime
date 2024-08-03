@@ -102,6 +102,7 @@ public:
     requires(is_rvalue_reference_v<T&&> && is_polymorphic_movable_v<remove_cvref_t<T>>)
     automatic_polymorphic(T&& val)
     {
+        BOOST_MPL_ASSERT_RELATION(sizeof(T), <= , SizeV);
         move(std::move(val));
     }
     
@@ -109,6 +110,7 @@ public:
     requires(is_polymorphic_clonable_v<remove_cvref_t<T>>)
     automatic_polymorphic(T const& val)
     {
+        BOOST_MPL_ASSERT_RELATION(sizeof(T), <= , SizeV);
         clone(val);
     }
     /*

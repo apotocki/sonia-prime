@@ -12,7 +12,7 @@
 
 namespace sonia::lang::bang::vm {
 
-class push_value_visitor : public static_visitor<void>
+class push_value_visitor : public static_visitor<void>, public entity_visitor
 {
 public:
     unit& unit_;
@@ -54,22 +54,24 @@ public:
 
     void operator()(mp::decimal const& dval) const
     {
-        THROW_NOT_IMPLEMENTED_ERROR();
-        /*
+        //THROW_NOT_IMPLEMENTED_ERROR("push_value_visitor decimal");
+#if 1
         if (dval.exponent().sgn() >= 0) { // is integral
-            if (dval >= (std::numeric_limits<int64_t>::min)() && dval <= (std::numeric_limits<int64_t>::max)()) {
+            if (dval >= mp::decimal{(std::numeric_limits<int64_t>::min)()} && dval <= mp::decimal{(std::numeric_limits<int64_t>::max)()}) {
                 bvm().append_push_static_const(smart_blob{ i64_blob_result((int64_t)dval) });
-            } else if (dval >= 0 && dval <= (std::numeric_limits<uint64_t>::max)()) {
+            } else if (dval >= 0 /*mp::decimal{ 0}*/ && dval <= mp::decimal{ (std::numeric_limits<uint64_t>::max)()}) {
                 bvm().append_push_static_const(smart_blob{ ui64_blob_result((uint64_t)dval) });
             }
         } else {
             bvm().append_push_static_const(smart_blob{ f64_blob_result((double_t)dval) });
         }
-        */
+#endif
     }
 
     void operator()(lang::bang::function_value const& dval) const
     {
+        THROW_NOT_IMPLEMENTED_ERROR("push_value_visitor function_value");
+#if 0
         if (auto eptr = unit_.eregistry().find(dval.mangled_name); eptr) {
             if (auto fe = dynamic_pointer_cast<lang::bang::function_entity>(eptr); fe) {
                 if (!fe->is_defined()) {
@@ -116,10 +118,51 @@ public:
         } else {
             throw exception("unresolved name: '%1%'"_fmt % unit_.print(dval.mangled_name));
         }
+#endif
+    }
+
+    void operator()(entity_identifier const& eid) const
+    {
+        entity const& e = unit_.eregistry().get(eid);
+        e.visit(*this);
+    }
+
+    void operator()(uint64_t value) const
+    {
+        bvm().append_push_static_const(smart_blob{ ui64_blob_result(value) });
     }
 
     template <typename T>
     void operator()(T const& e) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+
+
+    void operator()(string_literal_entity const& sle) const override
+    {
+        this->operator()(sle.value());
+    }
+
+    void operator()(decimal_literal_entity const& dle) const override
+    {
+        this->operator()(dle.value());
+    }
+
+    void operator()(pack_entity const&) const override
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+
+
+
+
+    void operator()(functional_entity const&) const override
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+
+    void operator()(function_entity const&) const override
     {
         THROW_NOT_IMPLEMENTED_ERROR();
     }

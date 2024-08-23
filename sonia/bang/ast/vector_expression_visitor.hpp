@@ -20,7 +20,7 @@ struct vector_expression_visitor : static_visitor<error_storage>
     vector_expression_visitor(fn_compiler_context& c, expression_vector_t& v, lex::resource_location const& loc)
         : ctx{c}, vec{v}, type_decl_location{ loc }
     {}
-
+#if 0
     result_type operator()(bang_vector_t const& v) const
     {
         expression_visitor elemvis{ ctx, expected_result_t{v.type, type_decl_location} };
@@ -65,7 +65,7 @@ struct vector_expression_visitor : static_visitor<error_storage>
     {
         return make_error<cast_error>(type_decl_location, v, nullopt, vec);
     }
-
+#endif
     template <typename T>
     result_type operator()(T const& v) const
     {

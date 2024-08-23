@@ -17,17 +17,22 @@ namespace sonia::lang::bang {
 
 class variable_entity : public entity
 {
+    qname_identifier name_;
+
 public:
     enum class kind
     {
         EXTERN, STATIC, LOCAL, SCOPE_LOCAL
     };
 
-    explicit variable_entity(qname_identifier name, bang_type t, kind k)
-        : entity{ std::move(name) }
+    explicit variable_entity(entity_identifier eid, qname_identifier name, bang_type t, kind k)
+        : entity{ std::move(eid) }
+        , name_{ std::move(name) }
         , type_{ std::move(t) }
         , kind_{ k }
     {}
+
+    qname_identifier name() const { return name_; }
 
     inline bang_type const& type() const noexcept { return type_; }
     inline kind const& varkind() const noexcept { return kind_; }

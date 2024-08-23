@@ -21,6 +21,8 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(var
 
 std::expected<entity const*, error_storage> lvalue_expression_visitor::handle_property_set(annotated_identifier id) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("lvalue_expression_visitor::handle_property_set");
+#if 0
     if (auto const* po = sonia::get<bang_object_t>(&ctx.context_type); po) {
         if (auto const& pte = dynamic_cast<type_entity const*>(po->value); pte) {
             return pte->find_field_setter(ctx, id);
@@ -30,6 +32,7 @@ std::expected<entity const*, error_storage> lvalue_expression_visitor::handle_pr
     }
     
     return std::unexpected(make_error<left_not_an_object_error>(id.location, id.value, ctx.context_type));
+#endif
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(not_empty_expression_t& me) const
@@ -139,6 +142,11 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(bin
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(chained_expression_t&) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR();
+}
+
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(entity_expression const& ee) const
 {
     THROW_NOT_IMPLEMENTED_ERROR();
 }

@@ -20,19 +20,19 @@ class function_invoker : public invocation::functor_object
     uint64_t param_cnt_ : 16;
     uint64_t is_void_ : 1;
     uint64_t is_static_variable_index_ : 1;
-    vm::context::vm_t & vm_;
+    unit & unit_;
     invocation::invocable* penv_;
     smart_blob capture_;
     small_string name_; // for describing purposes only, it's @XXX for lambdas
 
 public:
     explicit function_invoker(size_t address, bool is_vidx, size_t paramcnt, bool is_void, smart_blob capture,
-        vm::context::vm_t& v, invocation::invocable* pev, small_string name)
+        unit& u, invocation::invocable* pev, small_string name)
             : address_{ address }
             , param_cnt_{ paramcnt }, is_void_ { is_void }
             , is_static_variable_index_{ is_vidx ? 1u : 0 }
             , capture_{ std::move(capture) }
-            , vm_(v), penv_{ pev }, name_ { std::move(name) }
+            , unit_{u}, penv_{ pev }, name_ { std::move(name) }
     {}
 
     string_view name() const { return name_; }
@@ -69,12 +69,12 @@ public:
         if (args.size() != param_cnt_) {
             throw exception("fn invocation error: wrong number of arguments: %1%, expected: %2%"_fmt % args.size() % (uint64_t)param_cnt_);
         }
-        vm::context ctx(vm_, penv_);
+        vm::context ctx(unit_, penv_);
         for (blob_result const& arg: args) {
             ctx.stack_push(arg);
         }
         size_t procaddress = call(ctx);
-        vm_.run(ctx, procaddress);
+        unit_.bvm().run(ctx, procaddress);
         if (is_void_) {
             return nil_blob_result();
         } else {
@@ -82,6 +82,10 @@ public:
         }
     }
 };
+
+vm::context::context(unit& u, invocation::invocable* penv)
+    : unit_{ u }, vm_{ u.bvm() }, penv_{ penv }
+{}
 
 bool vm::context::is_true(variable_type const& v) const noexcept
 {
@@ -334,7 +338,7 @@ void vm::context::construct_function()
     size_t address = stack_back(4).as<size_t>();
     size_t paramcount = std::abs(sigdescr) - 1;
     bool is_void = sigdescr < 0;
-    smart_blob res{ object_blob_result<function_invoker>(address, is_vidx, paramcount, is_void, std::move(capture), vm_, penv_, std::move(name)) };
+    smart_blob res{ object_blob_result<function_invoker>(address, is_vidx, paramcount, is_void, std::move(capture), unit_, penv_, std::move(name)) };
     stack_pop(5);
     stack_push(std::move(res));
 }

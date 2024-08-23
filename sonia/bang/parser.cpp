@@ -59,7 +59,7 @@ void parser_context::push_ns(qname qn)
     if (qn.is_absolute()) {
         ns_stack_.push_back(std::move(qn));
     } else {
-        ns_stack_.push_back(ns_stack_.back() + qn);
+        ns_stack_.push_back(ns_stack_.back() / qn);
     }
 }
 

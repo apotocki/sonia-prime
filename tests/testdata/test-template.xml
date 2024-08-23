@@ -1,0 +1,15 @@
+<document>
+    <document.code><![CDATA[
+    descriptor = { 
+        { ["classname"] = "test_class",
+          ["members"] = {"field0", "field1"}
+        },
+        { ["classname"] = "test_class2",
+          ["members"] = {"field0", "field1", "field2", "field3"}
+        }
+    }
+    ]]></document.code>
+    <for-each select="descriptor" var="fd">
+        <file-template name="../../bundles/sonia-prime/tests/testdata/test-template.sot" input="fd" result="{fd.classname .. '.hpp'}"/>
+    </for-each>
+</document>

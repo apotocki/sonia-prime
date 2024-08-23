@@ -53,7 +53,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token COMMENT_BEGIN
 %token COMMENT_END
 
-%token <sonia::lang::bang::annotated_string_view> STRING IDENTIFIER ARGIDENTIFIER
+%token <sonia::lang::bang::annotated_string_view> STRING IDENTIFIER INTERNAL_IDENTIFIER
 %token <sonia::lang::bang::annotated_decimal> INTEGER
 %token <sonia::lang::bang::annotated_decimal> DECIMAL
 %token <sonia::string_view> OPERATOR_TERM
@@ -77,6 +77,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token <sonia::lang::lex::resource_location> LOGIC_AND            "`&&`"
 %token <sonia::lang::lex::resource_location> LOGIC_OR             "`||`"
 %token <sonia::lang::lex::resource_location> CONCAT               "`..`"
+%token <sonia::lang::lex::resource_location> ELLIPSIS "`...`"
 %token ADDASSIGN            "`+=`"
 %token SUBASSIGN            "`-=`"
 %token MULASSIGN            "`*=`"
@@ -229,27 +230,34 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 // ENUMERATIONS
 %token ENUM
 %type <enum_decl> enum-decl
-%type <std::vector<sonia::lang::identifier>> case-list-opt case-list
-%type <sonia::lang::identifier> case-decl
+%type <std::vector<sonia::lang::bang::identifier>> case-list-opt case-list
+%type <sonia::lang::bang::identifier> case-decl
 
 // TYPES
 %token TYPE
 %token EXTENDS
 %type <type_decl> type-decl
 %type <extension_list_t> type-extension-any type-extension-list
-%type <parameter_list_t> parameter-list parameter-list-opt
+%type <field_list_t> field-list field-list-opt
+%type <field_t> field-decl
 %type <parameter_t> parameter-decl
+%type <parameter_name> parameter-decl-name
+%type <parameter_type_t> parameter-decl-type
+%type <parameter_woa_list_t> parameter-list-opt parameter-list // for unification, empty assignment
 %type <parameter_woa_list_t> parameter-woa-list-opt parameter-woa-list
 %type <parameter_woa_t> parameter-woa-decl // with optional assignement
 
 // TYPE EXPRESSIONS
+%token TYPENAME
 %token BOOL
 %token INT
 %token FLOAT
-%token STRING_WORD
+//%token STRING_WORD
 //%token DECIMAL_WORD "reserved word `decimal`"
 %token WEAK "weak modifier"
-%type<bang_preliminary_type> type-expr
+%token CONST "const modifier"
+
+%type <bang_preliminary_type> type-expr
 //%type<bang_preliminary_tuple_t> opt-type-list
 
 // STATEMENTS
@@ -316,11 +324,11 @@ declaration_any:
     ;
 
 generic-decl:
-     EXTERN VAR identifier COLON type-expr END_STATEMENT
+      EXTERN VAR identifier COLON type-expr END_STATEMENT
         { $$ = extern_var{ std::move($3), std::move($5) }; }
-    | EXTERN FN qname OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS END_STATEMENT
-        { $$ = fn_pure_decl{ std::move($3), std::move($5), bang_preliminary_tuple_t{} }; IGNORE($2, $4); }
-    | EXTERN FN qname OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS ARROW type-expr END_STATEMENT
+    | EXTERN FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS END_STATEMENT
+        { $$ = fn_pure_decl{ std::move($3), std::move($5), nullopt }; IGNORE($2, $4); }
+    | EXTERN FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS ARROW type-expr END_STATEMENT
         { $$ = fn_pure_decl{ std::move($3), std::move($5), std::move($8) }; IGNORE($2, $4); }
     | INCLUDE STRING
         { $$ = include_decl{ctx.make_string(std::move($2)) }; }
@@ -419,7 +427,7 @@ fn-decl:
 enum-decl:
     ENUM qname OPEN_BRACE case-list-opt CLOSE_BRACE
     {
-        $$ = enum_decl{ctx.make_qname_identifier(annotated_qname{ctx.ns() + std::move($2.value), $2.location}), std::move($4)}; IGNORE($3);
+        $$ = enum_decl{ctx.make_qname_identifier(annotated_qname{ctx.ns() / std::move($2.value), $2.location}), std::move($4)}; IGNORE($3);
     }
     ;
 
@@ -431,7 +439,7 @@ case-list-opt:
 
 case-list:
     case-decl
-        { $$ = std::vector<sonia::lang::identifier>{std::move($1)}; }
+        { $$ = std::vector<sonia::lang::bang::identifier>{std::move($1)}; }
     |
     case-list COMMA case-decl
         { $$ = std::move($1); $$.emplace_back(std::move($3)); }
@@ -445,7 +453,7 @@ case-decl:
 type-decl:
     TYPE qname type-extension-any OPEN_BRACE parameter-woa-list-opt CLOSE_BRACE
     {
-        $$ = type_decl{ctx.make_qname_identifier(annotated_qname{ctx.ns() + std::move($2.value), $2.location}), std::move($3), std::move($5)}; IGNORE($4);
+        $$ = type_decl{ctx.make_qname_identifier(annotated_qname{ctx.ns() / std::move($2.value), $2.location}), std::move($3), std::move($5)}; IGNORE($4);
     }
     ;
 
@@ -463,36 +471,76 @@ type-extension-list:
         { $$ = std::move($1); $$.emplace_back(ctx.make_qname_identifier(std::move($3))); }
     ;
 
+field-list-opt:
+       %empty { $$ = {}; }
+    | field-list
+    ;
+
+field-list:
+      field-decl
+        { $$ = field_list_t{std::move($1)}; }
+    | field-list COMMA field-decl
+        { $$ = std::move($1); $$.emplace_back(std::move($3)); }
+    ;
+
+field-decl:
+    IDENTIFIER COLON type-expr
+        { $$ = field_t{ ctx.make_identifier($1), std::move($3) }; }
+    | type-expr
+        { $$ = field_t{ std::move($1) }; }
+    ;
+
+parameter-decl-name:
+      IDENTIFIER INTERNAL_IDENTIFIER COLON
+        { $$ = parameter_name{ctx.make_identifier($1), ctx.make_identifier($2)}; }
+    | IDENTIFIER COLON
+        { $$ = parameter_name{ctx.make_identifier($1), nullopt}; }
+    | INTERNAL_IDENTIFIER COLON
+        { $$ = parameter_name{nullopt, ctx.make_identifier($1)}; }
+    ;
+
+parameter-decl-type:
+      CONST type-expr ELLIPSIS
+        { $$ = parameter_type_t{bang_preliminary_parameter_pack_t{std::move($2)}, true}; IGNORE($3); }
+    | CONST type-expr
+        { $$ = parameter_type_t{std::move($2), true}; }
+    | type-expr ELLIPSIS
+        { $$ = parameter_type_t{bang_preliminary_parameter_pack_t{std::move($1)}, false}; IGNORE($2); }
+    | type-expr
+        { $$ = parameter_type_t{std::move($1), false}; }
+    ;
+
+parameter-decl:
+      parameter-decl-name parameter-decl-type
+        { $$ = parameter_t{ std::move($1), std::move($2) }; }
+    | parameter-decl-type
+        { $$ = parameter_t{ std::move($1) }; }
+    ;
+
 parameter-list-opt:
        %empty { $$ = {}; }
-    | parameter-list
+    |  parameter-list
     ;
 
 parameter-list:
       parameter-decl
-        { $$ = parameter_list_t{std::move($1)}; }
+        { $$ = parameter_woa_list_t{ parameter_woa_t{std::move($1)} }; }
     | parameter-list COMMA parameter-decl
         { $$ = std::move($1); $$.emplace_back(std::move($3)); }
-    ;
-parameter-decl:
-      identifier COLON type-expr
-        { $$ = parameter_t{ std::move($1), std::move($3) }; }
-    | type-expr
-        { $$ = parameter_t{ nullopt, std::move($1) }; }
-    //| UNDERSCORE COLON type-expr
-    //    { $$ = parameter_t{ nullopt, std::move($3) }; }
     ;
 
 parameter-woa-list-opt:
        %empty { $$ = {}; }
     |  parameter-woa-list
     ;
+
 parameter-woa-list:
       parameter-woa-decl
         { $$ = parameter_woa_list_t{std::move($1)}; }
     | parameter-woa-list COMMA parameter-woa-decl
         { $$ = std::move($1); $$.emplace_back(std::move($3)); }
     ;
+
 parameter-woa-decl:
       parameter-decl
         { $$ = parameter_woa_t { std::move($1) }; }
@@ -505,12 +553,12 @@ type-expr:
       BOOL { $$ = bang_bool_t{}; }
     | INT { $$ = bang_int_t{}; }
     | FLOAT { $$ = bang_float_t{}; }
-    | STRING_WORD { $$ = bang_string_t{}; }
-/*    | DECIMAL_WORD { $$ = bang_decimal_t{}; } */
+/*    | STRING_WORD { $$ = bang_string_t{}; }
+    | DECIMAL_WORD { $$ = bang_decimal_t{}; } */
     | qname { $$ = bang_preliminary_object_t{ std::move($1) }; }
     | OPEN_SQUARE_BRACKET type-expr CLOSE_SQUARE_BRACKET
         { $$ = bang_preliminary_vector_t{std::move($2)}; IGNORE($1); }
-    | OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS
+    | OPEN_PARENTHESIS field-list-opt CLOSE_PARENTHESIS
         { $$ = bang_preliminary_tuple_t { std::move($2) }; IGNORE($1); }
     | type-expr OPEN_SQUARE_BRACKET INTEGER CLOSE_SQUARE_BRACKET
         { $$ = bang_preliminary_array_t{std::move($1), (size_t)$3.value}; IGNORE($2); }
@@ -564,7 +612,7 @@ expression:
         { $$ = case_expression { std::move($2), std::move($1) }; }
     | qname
         { $$ = variable_identifier{ ctx.make_qname_identifier(std::move($1)), false}; }
-    | ARGIDENTIFIER
+    | INTERNAL_IDENTIFIER
         { $$ = variable_identifier{ ctx.make_qname_identifier($1, false), true }; }
     | OPEN_PARENTHESIS expression CLOSE_PARENTHESIS
         { $$ = std::move($2); IGNORE($1); }

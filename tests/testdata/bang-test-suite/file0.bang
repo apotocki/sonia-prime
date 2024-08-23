@@ -1,0 +1,3 @@
+//extern fn print(string); // implicit declaration
+
+print("Hello from Bang!");

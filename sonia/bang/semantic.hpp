@@ -21,7 +21,7 @@ struct bang_object_t
     inline bool operator==(bang_object_t const& rhs) const { return value == rhs.value; };
     auto operator<=>(bang_object_t const& rhs) const;
 
-    qname_identifier name() const;
+    entity_identifier id() const;
 };
 
 template <typename T> struct bang_tuple
@@ -263,6 +263,7 @@ template <typename T> struct bang_union
 //    bang_bunion<recursive_variant_>
 //>::type;
 
+
 struct bang_type;
 using bang_type_variant = variant<
     bang_any_t, bang_bool_t, bang_int_t, bang_float_t, bang_decimal_t, bang_string_t, bang_object_t,
@@ -310,6 +311,90 @@ bang_type operator|| (bang_type const& l, bang_type const& r);
 bang_type operator- (bang_union_t const& l, bang_type const& r);
 // ======================================================================== function
 
+//class symbol
+//{
+//public:
+//    explicit symbol(qname_identifier id) : id_{ id } {}
+//
+//private:
+//    qname_identifier id_;
+//    boost::container::small_vector<entity_identifier, 4> entities_;
+//    boost::container::small_vector<identifier, 4> names_;
+//
+//    // entities_.size() >= names_.size();
+//};
+
+enum class param_constraint_type : uint8_t
+{
+    type_constaint = 0,
+    value_constaint = 3,
+    const_constraint = 2
+};
+
+class function_descriptor
+{
+public:
+    // to do: optimize
+    struct named_field
+    {
+        annotated_identifier ename;
+        optional<annotated_identifier> iname;
+        entity_identifier constraint;
+        param_constraint_type constraint_type;
+    };
+
+    struct positioned_field
+    {
+        optional<annotated_identifier> iname;
+        entity_identifier constraint;
+        param_constraint_type constraint_type;
+    };
+
+private:
+    qname_identifier id_;
+    std::vector<named_field> nfields_;
+    std::vector<positioned_field> pfields_;
+    entity_identifier result_type_;
+
+public:
+    function_descriptor() = default;
+
+    explicit function_descriptor(qname_identifier idval) : id_{ idval } {}
+
+    qname_identifier id() const { return id_; }
+    entity_identifier result_type() const { return result_type_; }
+
+    template <typename ArgT>
+    void set_nfields(ArgT&& arg) { nfields_ = std::forward<ArgT>(arg); }
+
+    template <typename ArgT>
+    void set_pfields(ArgT&& arg) { pfields_ = std::forward<ArgT>(arg); }
+
+    void set_result_type(entity_identifier rt) { result_type_ = rt; }
+
+    //void push_field(annotated_identifier ext_name, annotated_identifier * int_name, entity_identifier type, bool is_const)
+    //{
+    //    using opt_name_t = optional<annotated_identifier>;
+    //    nfields_.emplace_back(
+    //        std::move(ext_name),
+    //        int_name ? opt_name_t{ std::move(*int_name) } : nullopt,
+    //        type,
+    //        is_const);
+    //}
+
+    //void push_field(annotated_identifier* int_name, entity_identifier type, bool is_const)
+    //{
+    //    using opt_name_t = optional<annotated_identifier>;
+    //    pfields_.emplace_back(
+    //        int_name ? opt_name_t{ std::move(*int_name) } : nullopt,
+    //        type,
+    //        is_const);
+    //}
+
+    span<const named_field> named_fields() const { return nfields_; }
+    span<const positioned_field> positioned_fields() const { return pfields_; }
+};
+
 struct function_signature
 {
     bang_fn_t fn_type;
@@ -328,6 +413,7 @@ struct function_signature
 
     void setup(fn_compiler_context&, parameter_woa_list_t&);
     void normilize(fn_compiler_context&);
+    //void build_symbol(unit&, symbol&);
     void build_mangled_id(unit&);
 
     //bang_type to_function_type() const { return bang_fn_t{}}
@@ -364,6 +450,11 @@ struct invoke_function
     qname_identifier varname;
 };
 
+struct invoke_external_function
+{
+    size_t fn_index;
+};
+
 //enum class condition_type : uint8_t
 //{
 //    logic,
@@ -397,7 +488,7 @@ struct not_empty_condition
 using expression_type = make_recursive_variant<
     empty_t, // no op
     push_variable, push_value, push_by_offset, truncate_values,
-    set_variable, set_by_offset, invoke_function, return_statement,
+    set_variable, set_by_offset, invoke_function, invoke_external_function, return_statement,
     std::vector<recursive_variant_>,
     conditional<recursive_variant_>,
     not_empty_condition<recursive_variant_>
@@ -442,14 +533,14 @@ public:
 
 namespace sonia::lang::bang {
 
-inline qname_identifier bang_object_t::name() const
+inline entity_identifier bang_object_t::id() const
 {
-    return value->name();
+    return value->id();
 }
 
 inline auto bang_object_t::operator<=>(bang_object_t const& rhs) const
 {
-    return value->name() <=> rhs.value->name();
+    return value->id() <=> rhs.value->id();
 };
 
 }

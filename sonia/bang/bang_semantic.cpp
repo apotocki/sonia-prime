@@ -9,8 +9,19 @@
 
 #include "ast/fn_compiler_context.hpp"
 #include "ast/preliminary_type_visitor.hpp"
+#include "sonia/bang/unit.hpp"
 
 namespace sonia::lang::bang {
+
+std::ostream& entity::print_to(std::ostream& os, unit const& u) const
+{
+    return os << "@E"sv << id().value;
+}
+
+std::ostream& type_entity::print_to(std::ostream& os, unit const& u) const
+{
+    return entity::print_to(os, u) << "("sv << u.print(signature_) << ")"sv;
+}
 
 class type_mangler_visitor : static_visitor<qname_identifier>
 {
@@ -29,7 +40,10 @@ public:
     inline result_type operator()(bang_decimal_t) const { return qnid("decimal"sv); }
     inline result_type operator()(bang_string_t) const { return qnid("string"sv); }
         
-    inline result_type operator()(bang_object_t const& obj) const { return obj.name(); }
+    inline result_type operator()(bang_object_t const& obj) const { 
+        THROW_NOT_IMPLEMENTED_ERROR("type_mangler_visitor bang_object_t");
+        //return obj.name();
+    }
 
     inline result_type operator()(bang_fn_t const& fn) const
     {
@@ -85,16 +99,18 @@ public:
     }
 };
 
+
+
 void function_signature::setup(fn_compiler_context& ctx, parameter_woa_list_t & params)
 {
     preliminary_type_visitor tqvis{ ctx };
     for (auto & parampair : params) {
-        bang_type paramtype = apply_visitor(tqvis, parampair.type);
-        if (!parampair.name) {
+        bang_type paramtype = apply_visitor(tqvis, parampair.type.value);
+        if (!parampair.name.external_name) {
             position_parameters().emplace_back(paramtype);
         } else {
             //GLOBAL_LOG_INFO() << "APPEND param: " << ctx.u().print(parampair.name->id);
-            named_parameters().emplace_back(*parampair.name, paramtype);
+            named_parameters().emplace_back(*parampair.name.external_name, paramtype);
         }
     }
 }
@@ -124,7 +140,7 @@ void function_signature::normilize(fn_compiler_context& ctx)
         it = dupit;
     }
     
-    // now remove identical oarameters
+    // now remove identical parameters
     auto it = std::unique(named_parameters().begin(), named_parameters().end(), [](auto const& l, auto const& r) {
         return std::get<0>(l) == std::get<0>(r);
     });
@@ -135,6 +151,11 @@ void function_signature::normilize(fn_compiler_context& ctx)
         return std::get<0>(l) < std::get<0>(r);
     });
 }
+
+//void function_signature::build_symbol(unit& u, symbol& s)
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("function_signature::build_symbol");
+//}
 
 void function_signature::build_mangled_id(unit& u)
 {

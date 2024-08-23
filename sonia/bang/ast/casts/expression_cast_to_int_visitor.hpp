@@ -78,7 +78,7 @@ struct expression_cast_to_int_visitor : static_visitor<error_storage>
         return apply_visitor(vis, type2cast);
     }
     */
-
+#if 0
     inline result_type operator()(bang_int_t const&) const
     {
         ctx.context_type = bang_int_t{};
@@ -96,11 +96,12 @@ struct expression_cast_to_int_visitor : static_visitor<error_storage>
         ctx.context_type = bang_int_t{};
         return {};
     }
-
+#endif
     template <typename T>
     result_type operator()(T const& v) const
     {
-        return make_error<cast_error>(cl_(), bang_int_t{}, v);
+        THROW_NOT_IMPLEMENTED_ERROR();
+        //return make_error<cast_error>(cl_(), bang_int_t{}, v);
     }
 };
 

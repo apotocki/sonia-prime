@@ -80,16 +80,43 @@ struct bang_preliminary_object_t
     inline bool operator==(bang_preliminary_object_t const& rhs) const { return name() == rhs.name(); };
 };
 
+struct parameter_name
+{
+    optional<annotated_identifier> external_name;
+    optional<annotated_identifier> internal_name;
+};
+
+template <typename T>
+struct parameter_type
+{
+    T value;
+    bool is_const = false;
+
+    parameter_type() = default;
+
+    template <typename TArgT>
+    inline explicit parameter_type(TArgT&& t, bool cval = false)
+        : value{ std::forward<TArgT>(t) }, is_const{ cval }
+    {}
+};
+
 template <typename T>
 struct parameter
 {
-    optional<annotated_identifier> name;
-    T type;
-
+    parameter_name name;
+    parameter_type<T> type;
+    
     parameter() = default;
 
-    template <typename NameArgT, typename TArgT>
-    inline parameter(NameArgT && n, TArgT && t) : name{ std::forward<NameArgT>(n) }, type{ std::forward<TArgT>(t) } {}
+    inline explicit parameter(parameter_type<T> && t)
+        : type{ std::move(t) }
+    {}
+
+    template <typename NameT, typename TypeT>
+    inline parameter(NameT&& n, TypeT&& t)
+        : name{ std::forward<NameT>(n) }
+        , type{ std::forward<TypeT>(t) }
+    {}
 
     inline bool operator==(parameter const&) const = default;
 };
@@ -97,9 +124,31 @@ struct parameter
 template <typename T>
 using parameter_list = std::vector<parameter<T>>;
 
+template <typename T>
+struct field
+{
+    optional<annotated_identifier> name;
+    T type;
+
+    field() = default;
+
+    template <typename NameT>
+    inline field(NameT && n, T && t)
+        : name{ std::forward<NameT>(n) }
+        , type{ std::move(t) }
+    {}
+
+    inline explicit field(T&& t)
+        : type{ std::move(t) }
+    {}
+};
+
+template <typename T>
+using field_list = std::vector<field<T>>;
+
 template <typename T> struct bang_preliminary_tuple
 {
-    parameter_list<T> fields;
+    field_list<T> fields;
     inline bool operator==(bang_preliminary_tuple const&) const = default;
 };
 
@@ -152,6 +201,8 @@ template <typename T> struct bang_vector
     inline auto operator<=>(bang_vector const& r) const { return variant_compare_three_way{}(type, r.type); }
 };
 
+template <typename T> struct bang_parameter_pack : bang_vector<T> {};
+
 template <typename T> struct bang_preliminary_union
 {
     boost::container::small_vector<T, 8> members;
@@ -169,6 +220,7 @@ using bang_preliminary_type = make_recursive_variant<
     bang_preliminary_fn<recursive_variant_>,
     bang_vector<recursive_variant_>,
     bang_array<recursive_variant_>,
+    bang_parameter_pack<recursive_variant_>,
     bang_preliminary_tuple<recursive_variant_>,
     bang_preliminary_union<recursive_variant_>
 >::type;
@@ -178,9 +230,12 @@ using bang_preliminary_array_t = bang_array<bang_preliminary_type>;
 using bang_preliminary_tuple_t = bang_preliminary_tuple<bang_preliminary_type>;
 using bang_preliminary_union_t = bang_preliminary_union<bang_preliminary_type>;
 using bang_preliminary_fn_t = bang_preliminary_fn<bang_preliminary_type>;
-
+using bang_preliminary_parameter_pack_t = bang_parameter_pack<bang_preliminary_type>;
 using parameter_t = parameter<bang_preliminary_type>;
+using parameter_type_t = parameter_type<bang_preliminary_type>;
 using parameter_list_t = parameter_list<bang_preliminary_type>;
+using field_t = field<bang_preliminary_type>;
+using field_list_t = field_list<bang_preliminary_type>;
 // ========================================================================
 
 // ========================================================================
@@ -303,7 +358,9 @@ struct pure_call
     boost::container::small_vector<std::tuple<annotated_qname, ExprT, lex::resource_location>, 8> named_args;
     lex::resource_location location_;
 
-    pure_call(lex::resource_location && loc, named_expression_term_list<ExprT> && args)
+    explicit pure_call(lex::resource_location loc) : location_{ std::move(loc) } {}
+
+    pure_call(lex::resource_location loc, named_expression_term_list<ExprT> && args)
         : location_{std::move(loc)}
     {
         for (named_expression_term<ExprT> & narg : args) {
@@ -375,6 +432,12 @@ struct variable_identifier
     bool scope_local; // true e.g. for $0, $$
 };
 
+struct context_value
+{
+    entity_identifier type;
+    lex::resource_location location;
+};
+
 template <typename ExprT>
 struct let_statement_decl
 {
@@ -412,6 +475,16 @@ template <typename ExprT>
 struct parameter_woa : parameter_t
 {
     optional<ExprT> value;
+
+    parameter_woa() = default;
+
+    explicit inline parameter_woa(parameter_t && p) : parameter_t{ std::move(p) } {}
+    
+    template <typename EArgT>
+    inline parameter_woa(parameter_t&& p, EArgT&& earg)
+        : parameter_t{ std::move(p) }
+        , value{ std::forward<EArgT>(earg) }
+    {}
 };
 
 template <typename ExprT> using parameter_woa_list = std::vector<parameter_woa<ExprT>>;
@@ -440,15 +513,22 @@ struct not_empty_expression
     ExprT value;
 };
 
+struct entity_expression
+{
+    entity_identifier id;
+    lex::resource_location location;
+};
+
 using expression_t = make_recursive_variant<
     annotated_bool, /* annotated_integer,*/ annotated_decimal, annotated_string,
-    variable_identifier, case_expression, property_expression, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
+    context_value, variable_identifier, case_expression, property_expression, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
     lambda<recursive_variant_>,
     negate_expression<>,
     binary_expression<recursive_variant_>,
     //assign_expression<>, logic_and_expression<>, logic_or_expression<>, concat_expression<>,
     expression_vector<recursive_variant_>,
-    function_call<recursive_variant_>
+    function_call<recursive_variant_>,
+    entity_expression
     //, chained_expression<recursive_variant_>
     //, ctprocedure
 >::type;
@@ -481,12 +561,14 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     template <typename T>
     inline result_type operator()(annotated<T> const& ae) const noexcept { return ae.location; }
 
+    inline result_type operator()(context_value const& v) const noexcept { return v.location; }
     inline result_type operator()(variable_identifier const& v) const noexcept { return v.name.location; }
     inline result_type operator()(case_expression const& ce) const noexcept { return ce.start; }
     inline result_type operator()(not_empty_expression_t const& me) const noexcept { return apply_visitor(*this, me.value); }
     inline result_type operator()(member_expression_t const& me) const noexcept { return me.start(); }
     inline result_type operator()(property_expression const& me) const noexcept { return me.name.location; }
     inline result_type operator()(lambda_t const& le) const noexcept { return le.start; }
+    inline result_type operator()(entity_expression const& ee) const noexcept { return ee.location; }
 
     template <unary_operator_type Op>
     inline result_type operator()(unary_expression_t<Op> const& ue) const noexcept { return ue.location; }

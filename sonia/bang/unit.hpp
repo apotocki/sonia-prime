@@ -23,8 +23,8 @@
 #include "semantic.hpp"
 #include "entities/variable_entity.hpp"
 #include "entities/functional_entity.hpp"
-
-//#include "functional_entity.hpp"
+#include "entities/functional.hpp"
+#include "entities/functional_registry.hpp"
 
 namespace sonia::lang::bang {
 
@@ -56,16 +56,23 @@ namespace vm { class context; }
 class unit
 {
     using identifier_builder_t = identifier_builder<identifier>;
+    //using entity_identifier_builder_t = identifier_builder<entity_identifier>;
 
     using slregistry_t = string_literal_registry<identifier, small_string>;
+    using qname_registry_t = qname_registry<identifier>;
+    using functional_registry_t = functional_registry<functional>;
+
     using piregistry_t = parameterized_identifier_registry<identifier>;
     using eregistry_t = entity_registry<entity>;
-    using qname_registry_t = qname_registry<identifier>;
+    
 
     identifier_builder_t identifier_builder_;
+    //entity_identifier_builder_t entity_identifier_builder_;
     slregistry_t slregistry_;
-    piregistry_t piregistry_;
     qname_registry_t qname_registry_;
+    functional_registry_t functional_registry_;
+
+    piregistry_t piregistry_;
     eregistry_t eregistry_;
 
     // semantic
@@ -115,11 +122,26 @@ public:
     qname_identifier get_function_entity_identifier(string_view signature);
 
     slregistry_t& slregistry() { return slregistry_; }
+    qname_registry_t& qnregistry() { return qname_registry_; }
+    functional_registry_t& fregistry() { return functional_registry_; }
+
     piregistry_t& piregistry() { return piregistry_; }
     eregistry_t& eregistry() { return eregistry_; }
-    qname_registry_t& qnregistry() { return qname_registry_; }
-
+    
     virtual_stack_machine& bvm() { return *bvm_; }
+
+    inline entity_identifier get_typename_entity_identifier() const noexcept { return typename_entity_identifier_; }
+    inline entity_identifier get_void_entity_identifier() const noexcept { return void_entity_identifier_; }
+    inline entity_identifier get_any_entity_identifier() const noexcept { return any_entity_identifier_; }
+    inline entity_identifier get_string_entity_identifier() const noexcept { return string_entity_identifier_; }
+    inline entity_identifier get_decimal_entity_identifier() const noexcept { return decimal_entity_identifier_; }
+    
+    inline qname_identifier get_ellipsis_qname_identifier() const noexcept { return ellipsis_qname_identifier_; }
+    inline qname_identifier get_string_qname_identifier() const noexcept { return string_qname_identifier_; }
+    inline qname_identifier get_decimal_qname_identifier() const noexcept { return decimal_qname_identifier_; }
+    inline qname_identifier get_any_qname_identifier() const noexcept { return any_qname_identifier_; }
+
+    //void push_entity(shared_ptr<entity>);
 
     void set_extern(string_view sign, void(*pfn)(vm::context&));
 
@@ -143,7 +165,13 @@ public:
 
     std::vector<char> get_file_content(fs::path const& rpath, fs::path const* context = nullptr);
     
+    functional& resolve_functional(qname_view);
+
     std::string print(identifier const& id) const;
+    std::string print(entity_identifier const& id) const;
+    std::string print(entity const&) const;
+    std::string print(entity_signature const&) const;
+
     std::string print(qname_view q) const;
     std::string print(qname const& q) const
     {
@@ -164,6 +192,7 @@ public:
     std::string print(error const&) const;
 
     small_string as_string(identifier const& id) const;
+    small_string as_string(entity_identifier const& id) const;
     small_string as_string(qname_view name) const;
     small_string as_string(qname_identifier name) const;
 
@@ -171,6 +200,19 @@ public:
     
     functional_entity& get_functional_entity(builtin_type) const;
     functional_entity& get_functional_entity(binary_operator_type);
+
+    void set_cout_writer(function<void(string_view)> writer)
+    {
+        cout_writer_ = std::move(writer);
+    }
+
+    void write_cout(string_view str)
+    {
+        if (cout_writer_) cout_writer_(str);
+        else {
+            GLOBAL_LOG_INFO() << str;
+        }
+    }
 
 protected:
     std::vector<char> read_file(fs::path const& rpath);
@@ -182,6 +224,16 @@ protected:
     OutputIteratorT name_printer(qname_view const&, OutputIteratorT, UndefinedFT const&) const;
 
 private:
+    qname_identifier ellipsis_qname_identifier_;
+    qname_identifier string_qname_identifier_;
+    qname_identifier decimal_qname_identifier_;
+    qname_identifier any_qname_identifier_;
+
+    entity_identifier void_entity_identifier_;
+    entity_identifier any_entity_identifier_;
+    entity_identifier typename_entity_identifier_;
+    entity_identifier string_entity_identifier_;
+    entity_identifier decimal_entity_identifier_;
     // entities registry:
     //qname -> entity
 
@@ -190,6 +242,8 @@ private:
 
     //functional_entity* integer_entity_;
     functional_entity* decimal_entity_;
+
+    function<void(string_view)> cout_writer_;
 };
 
 }

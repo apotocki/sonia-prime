@@ -1,0 +1,5 @@
+//extern fn print(... any); // implicit declaration
+//fn string(const __id) {
+//    return __stringinize(__id)
+//}
+print($0, " ", $1, " ", $2, $$);

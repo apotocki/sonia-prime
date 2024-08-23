@@ -67,6 +67,8 @@ void forward_declaration_visitor::operator()(include_decl& d)
 
 void forward_declaration_visitor::operator()(enum_decl & ed)
 {
+    THROW_NOT_IMPLEMENTED_ERROR("forward_declaration_visitor enum_decl");
+#if 0
     if (auto pe = ctx.u().eregistry().find(ed.name()); pe) [[unlikely]] {
         throw exception(ctx.u().print(identifier_redefinition_error{ ed.aname, pe->location() }));
     }
@@ -77,10 +79,13 @@ void forward_declaration_visitor::operator()(enum_decl & ed)
     }
     std::ranges::sort(e->cases);
     ctx.u().eregistry().insert(std::move(e));
+#endif
 }
 
 void forward_declaration_visitor::operator()(type_decl & td)
 {
+    THROW_NOT_IMPLEMENTED_ERROR("forward_declaration_visitor type_decl");
+#if 0
     if (auto pe = ctx.u().eregistry().find(td.name()); pe) [[unlikely]] {
         throw exception(ctx.u().print(identifier_redefinition_error{ td.aname, pe->location() }));
     }
@@ -91,6 +96,7 @@ void forward_declaration_visitor::operator()(type_decl & td)
 
     types.emplace_back(e.get());
     ctx.u().eregistry().insert(std::move(e));
+#endif
 }
 
 }

@@ -20,6 +20,30 @@
 
 namespace sonia::lang::bang {
 
+struct preliminary_type_visitor2 : static_visitor<entity_identifier>
+{
+    fn_compiler_context& ctx;
+
+    preliminary_type_visitor2(fn_compiler_context& c)
+        : ctx{ c }
+    {}
+
+    result_type operator()(bang_string_t const& v) const
+    {
+        return ctx.u().get_string_entity_identifier();
+    }
+
+    result_type operator()(bang_preliminary_parameter_pack_t const& v) const;
+
+    result_type operator()(bang_preliminary_object_t const& v) const;
+
+    template <typename T>
+    result_type operator()(T const& v) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+};
+
 struct preliminary_type_visitor : static_visitor<bang_type>
 {
     fn_compiler_context& ctx;
@@ -37,6 +61,9 @@ struct preliminary_type_visitor : static_visitor<bang_type>
     inline result_type operator()(bang_float_t const& v) const { return v; }
     inline result_type operator()(bang_decimal_t const& v) const { return v; }
     inline result_type operator()(bang_string_t const& v) const { return v; }
+
+
+#if 0
     inline result_type operator()(bang_preliminary_object_t & v) const
     {
         qname_identifier nid = ctx.u().qnregistry().resolve(v.name());
@@ -116,14 +143,14 @@ struct preliminary_type_visitor : static_visitor<bang_type>
         }
         return result;
     }
+#endif
 
-    /*
     template <typename T>
     result_type operator()(T const& v) const
     {
         THROW_NOT_IMPLEMENTED_ERROR();
     }
-    */
+
 };
 
 }

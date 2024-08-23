@@ -71,6 +71,8 @@ struct expression_fn_visitor : static_visitor<error_storage>
 
     inline result_type operator()(bang_fn_t const& v) const
     {
+        THROW_NOT_IMPLEMENTED_ERROR("expression_fn_visitor bang_fn_t");
+#if 0
         span<const bang_type> position_params = v.arg.fields;
         span<const std::tuple<annotated_identifier, bang_type>> named_params = v.arg.named_fields;
         
@@ -92,13 +94,15 @@ struct expression_fn_visitor : static_visitor<error_storage>
         }
         ctx.context_type = v;
         return {};
+#endif
     }
 
     ///*
     template <typename T>
     result_type operator()(T const& v) const
     {
-        return make_error<cast_error>(cl_(), v, nullopt);
+        THROW_NOT_IMPLEMENTED_ERROR();
+        //return make_error<cast_error>(cl_(), v);
     }
     //*/
 };

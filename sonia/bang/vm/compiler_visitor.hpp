@@ -49,8 +49,15 @@ public:
         bvm().append_setr(sv.offset);
     }
 
+    void operator()(semantic::invoke_external_function const& invf) const
+    {
+        bvm().append_ecall(invf.fn_index);
+    }
+
     void operator()(semantic::invoke_function const& invf) const
     {
+        THROW_NOT_IMPLEMENTED_ERROR("compiler_visitor invoke_function");
+#if 0
         /*
         if (auto optecall = bvm_.get_ecall(invf.function_entity_name); optecall) {
             bvm_.append_ecall(*optecall);
@@ -113,6 +120,7 @@ public:
         } else {
             throw exception("unresolved name: '%1%'"_fmt % unit_.print(invf.varname));
         }
+#endif
     }
 
     void operator()(semantic::set_variable const& pv) const

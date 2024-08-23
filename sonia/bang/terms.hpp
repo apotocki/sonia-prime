@@ -9,7 +9,12 @@
 
 namespace sonia::lang::bang {
 
+struct lex_tag;
+struct enity_tag;
+
+using identifier = sonia::lang::identifier<uint32_t, lex_tag>;
 using qname = sonia::lang::qname<identifier>;
 using qname_view = sonia::lang::qname_view<identifier>;
+using entity_identifier = sonia::lang::identifier<uint32_t, enity_tag>;
 
 }

@@ -79,7 +79,7 @@ struct expression_cast_to_bool_visitor : static_visitor<error_storage>
         return apply_visitor(vis, type2cast);
     }
     */
-
+#if 0
     inline result_type operator()(bang_bool_t const&) const
     {
         ctx.context_type = bang_bool_t{};
@@ -92,7 +92,7 @@ struct expression_cast_to_bool_visitor : static_visitor<error_storage>
         //if (target.type == v.type) return target;
         //return nullopt;
     }
-
+#endif
     template <typename T>
     result_type operator()(T const& v) const
     {

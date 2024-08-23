@@ -23,7 +23,7 @@ class wrong_lvalue_error;
 class function_call_match_error;
 class parameter_not_found_error;
 class alt_error;
-
+class ambiguity_error;
 
 class error_visitor
 {
@@ -31,6 +31,7 @@ public:
     virtual ~error_visitor() = default;
     virtual void operator()(general_error const&) = 0;
     virtual void operator()(alt_error const&) = 0;
+    virtual void operator()(ambiguity_error const&) = 0;
 };
 
 class error
@@ -46,6 +47,13 @@ template <std::derived_from<error> T, typename ... Args>
 error_storage make_error(Args&& ... args) { return sonia::make_shared<T>(std::forward<Args>(args) ...); }
 
 class alt_error : public error
+{
+public:
+    std::vector<error_storage> alternatives;
+    void visit(error_visitor& vis) const override { vis(*this); }
+};
+
+class ambiguity_error : public error
 {
 public:
     std::vector<error_storage> alternatives;
@@ -170,15 +178,15 @@ class cast_error : public general_error
 public:
     lex::resource_location location_;
     optional<expression_t> expr_;
-    optional<bang_type> from_;
-    bang_type to_;
+    entity_identifier from_;
+    entity_identifier to_;
     optional<lex::resource_location> refloc_;
 
-    cast_error(lex::resource_location loc, bang_type to, optional<bang_type> from = nullopt, optional<expression_t> expr = nullopt)
+    cast_error(lex::resource_location loc, entity_identifier to, entity_identifier from = {}, optional<expression_t> expr = nullopt)
         : location_{ std::move(loc) }, from_{std::move(from)}, to_{ std::move(to) }, expr_{ std::move(expr) }
     {}
 
-    cast_error(error_context const& errctx, bang_type to, optional<bang_type> from = nullopt)
+    cast_error(error_context const& errctx, entity_identifier to, entity_identifier from = {})
         : location_{ errctx.location() }, from_{ std::move(from) }, to_{ std::move(to) }, expr_{ errctx.expression() }, refloc_{ errctx.refloc }
     {}
 
@@ -244,10 +252,10 @@ class function_call_match_error : public general_error
 {
 public:
     annotated_qname_identifier functional_;
-    function_signature const& signature_;
+    function_signature const* signature_;
     error_storage reason_;
 
-    function_call_match_error(annotated_qname_identifier f, function_signature const& signature, error_storage reason)
+    function_call_match_error(annotated_qname_identifier f, function_signature const* signature, error_storage reason)
         : functional_{ f }, signature_{ signature }, reason_{ reason } {}
 
     void visit(error_visitor& vis) const override { vis(*this); }
@@ -270,6 +278,8 @@ public:
     void operator()(alt_error const&) override;
     //void operator()(parameter_not_found_error const&) override;
     void operator()(general_error const&) override;
+
+    void operator()(ambiguity_error const&) override;
 
 private:
     static std::string print_general(lex::resource_location const& loc, string_view err, string_view object, lex::resource_location const* optseeloc = nullptr);

@@ -262,6 +262,9 @@
     <Filter Include="sonia.java">
       <UniqueIdentifier>{5bcdd7a2-dae6-4cf0-9139-f3e0c2533a1c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.bang\entities\ellipsis">
+      <UniqueIdentifier>{c7793df5-9618-486e-8a33-49b10971c99a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -2199,6 +2202,27 @@
     <ClInclude Include="..\..\..\sonia\java\jni_vm.hpp">
       <Filter>sonia.java</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functional_registry.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functional.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\const_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp">
+      <Filter>sonia.bang\entities\ellipsis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.hpp">
+      <Filter>sonia.bang\entities\ellipsis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\entity_signature.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\external_function_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2536,6 +2560,21 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\java\jni_env.cpp">
       <Filter>sonia.java</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\functional.cpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.cpp">
+      <Filter>sonia.bang\entities\ellipsis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.cpp">
+      <Filter>sonia.bang\entities\ellipsis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\fn_compiler_context.cpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

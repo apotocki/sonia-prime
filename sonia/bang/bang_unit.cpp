@@ -12,8 +12,16 @@
 
 #include "vm/bang_vm.hpp"
 #include "entities/internal_type_entity.hpp"
+#include "entities/ellipsis/ellipsis_pattern.hpp"
 
 namespace sonia::lang::bang {
+
+functional& unit::resolve_functional(qname_view qn)
+{
+    assert(qn.is_absolute());
+    qname_identifier qname_id = qnregistry().resolve(qn);
+    return fregistry().resolve(qname_id);
+}
 
 qname_identifier unit::get_function_entity_identifier(string_view signature)
 {
@@ -29,7 +37,7 @@ qname_identifier unit::get_function_entity_identifier(string_view signature)
     sig.normilize(ctx);
     sig.build_mangled_id(*this);
 
-    qname fnm = fndecl.name() + sig.mangled_id;
+    qname fnm = fndecl.name() / sig.mangled_id;
     return qnregistry().resolve(fnm);
 }
 
@@ -39,25 +47,57 @@ qname_identifier unit::make_qname_identifier(string_view sv)
     return qname_registry_.resolve(qn);
 }
 
+//void unit::push_entity(shared_ptr<entity> e)
+//{
+//    entity_identifier eid = entity_identifier_builder_();
+//    e->set_id(eid);
+//    eregistry().insert(std::move(e));
+//}
+
 void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
 {
     parser_context parser{ *this };
     auto decls = parser.parse((string_view)("extern fn ::%1%;"_fmt % signature).str());
-    
+    if (!decls.has_value()) [[unlikely]] {
+        throw exception(decls.error());
+    }
     fn_compiler_context ctx{ *this, qname{} };
     auto & fndecl = get<fn_pure_decl>(decls->front());
 
+    auto fnres = ctx.build_function_descriptor(fndecl);
+    if (!fnres.has_value()) {
+        throw exception(ctx.u().print(*fnres.error()));
+    }
+    function_descriptor & fd = fnres.value();
+
+    functional& f = ctx.u().fregistry().resolve(fd.id());
+    f.push(make_shared<external_fn_pattern>(std::move(fd), fn_identifier_counter_));
+    
+    // to do: mangled name
+    bvm_->set_efn(fn_identifier_counter_++, pfn, small_string{print(fndecl.name())});
+
+    //function_signature sig;
+    //sig.setup(ctx, fndecl.parameters);
+    //sig.normilize(ctx);
+
+    //symbol smb{ fd.id() };
+    //sig.build_symbol(*this, smb);
+
+//    THROW_NOT_IMPLEMENTED_ERROR("unit::set_extern");
+#if 0
     declaration_visitor dvis{ ctx };
+    auto & fsig = dvis.append_fnsig(fndecl);
 
-    shared_ptr<functional_entity> fe;
-    auto & fsig = dvis.append_fnsig(fndecl, fe);
+    qname fnm = fndecl.name() / fsig.mangled_id;
 
-    qname fnm = fndecl.name() + fsig.mangled_id;
+
+
     auto pefe = make_shared<external_function_entity>(qnregistry().resolve(fnm), fn_identifier_counter_);
     eregistry_.insert(pefe);
 
     strings_.emplace_back(print(fnm));
     bvm_->set_efn(fn_identifier_counter_++, pfn, strings_.back());
+#endif
 }
 
 qname_identifier unit::new_qname_identifier()
@@ -71,17 +111,27 @@ unit::unit()
     , fn_identifier_counter_ { (size_t)virtual_stack_machine::builtin_fn::eof_type }
     , bvm_{ std::make_unique<virtual_stack_machine>() }
 {
+    //set_extern("string(const __id)"sv, &bang_print_string);
+
+    //qname_identifier string_lid = make_qname_identifier("string");
+    //functional& string_fnl = fregistry().resolve(string_lid);
+    //functional::pattern p()
+    //string_fnl.push();
+
+    //identifier id_lid = slregistry().resolve("__id");
+
     // internal types
     //auto ie = make_shared<internal_type_entity>(make_qname_identifier("integer"));
     //integer_entity_ = ie.get();
     //eregistry().insert(std::move(ie));
-
+#if 0
     auto de = make_shared<internal_type_entity>(make_qname_identifier("decimal"));
     decimal_entity_ = de.get();
     eregistry().insert(std::move(de));
 
     // internal functions
     builtins_.resize((size_t)builtin_fn::eof_builtin_type);
+
 
     auto parrayify = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::arrayify);
     eregistry_.insert(parrayify);
@@ -127,13 +177,77 @@ unit::unit()
     set_efn(builtin_fn::negate, pnegate->name());
     bvm_->set_efn(fn_identifier_counter_++, &bang_negate, strings_.back());
 
-
-
+    //string(const __identifier)
     set_extern("print(string)"sv, &bang_print_string);
     set_extern("concat(string,string)->string"sv, &bang_concat_string);
     set_extern("operator_plus(decimal,decimal)->decimal"sv, &bang_operator_plus_decimal);
     set_extern("decimal(text: string)->decimal|()"sv, &bang_to_decimal);
+#endif
+    // typename
+    auto typename_entity = make_shared<type_entity>();
+    eregistry().insert(typename_entity);
+    typename_entity_identifier_ = typename_entity->id();
+    typename_entity->set_type(typename_entity_identifier_);
+
+    // any
+    any_qname_identifier_ = make_qname_identifier("any");
     
+    auto any_entity = make_shared<type_entity>();
+    any_entity->set_type(typename_entity_identifier_);
+    any_entity->set_signature(entity_signature{ any_qname_identifier_ });
+    eregistry().insert(any_entity);
+    any_entity_identifier_ = any_entity->id();
+    functional& any_fnl = fregistry().resolve(any_qname_identifier_);
+    any_fnl.set_default_entity(any_entity->id());
+    
+    // tuple
+    qname_identifier tuple_qnid = make_qname_identifier("tuple");
+    
+
+    // void
+    auto void_entity = make_shared<type_entity>();
+    void_entity->set_type(typename_entity_identifier_);
+    void_entity->set_signature(entity_signature{ tuple_qnid }); // tuple without arguments
+    eregistry().insert(void_entity);
+
+    void_entity_identifier_ = void_entity->id();
+
+    // setup string
+    string_qname_identifier_ = make_qname_identifier("string");
+    functional& string_fnl = fregistry().resolve(string_qname_identifier_);
+    auto string_entity = make_shared<type_entity>();
+    string_entity->set_type(typename_entity_identifier_);
+    string_entity->set_signature(entity_signature{ string_qname_identifier_ });
+    eregistry().insert(string_entity);
+    string_fnl.set_default_entity(string_entity->id());
+    string_entity_identifier_ = string_entity->id();
+
+    // decimal
+    decimal_qname_identifier_ = make_qname_identifier("decimal");
+    functional& decimal_fnl = fregistry().resolve(decimal_qname_identifier_);
+    auto decimal_entity = make_shared<type_entity>();
+    decimal_entity->set_type(typename_entity_identifier_);
+    decimal_entity->set_signature(entity_signature{ decimal_qname_identifier_ });
+    eregistry().insert(decimal_entity);
+    decimal_fnl.set_default_entity(decimal_entity->id());
+    decimal_entity_identifier_ = decimal_entity->id();
+
+    // setup ellipsis
+    // operator...(type: typename)
+    ellipsis_qname_identifier_ = make_qname_identifier("...");
+    //function_descriptor fn_ellipsis{ ellipsis_qname_identifier_ };
+    //fn_ellipsis.push_field(nullptr, typename_entity->id(), true);
+
+    functional& ellipsis_fnl = fregistry().resolve(ellipsis_qname_identifier_);
+    // no default entity
+    // ellipsis_fnl.set_default_entity({});
+    ellipsis_fnl.push(make_shared<ellipsis_pattern>());
+    
+    //functional::pattern p()
+    //string_fnl.push();
+
+    set_extern("print(string...)"sv, &bang_print_string);
+    set_extern("string(any)->string"sv, &bang_tostring);
 }
 
 identifier unit::new_identifier()
@@ -217,6 +331,27 @@ std::string unit::print(identifier const& id) const
     return { result.data(), result.data() + result.size() };
 }
 
+std::string unit::print(entity_identifier const& id) const
+{
+    std::ostringstream ss;
+    eregistry_.get(id).print_to(ss, *this);
+    return ss.str();
+}
+
+std::string unit::print(entity const& e) const
+{
+    std::ostringstream ss;
+    e.print_to(ss, *this);
+    return ss.str();
+}
+
+std::string unit::print(entity_signature const& sgn) const
+{
+    std::ostringstream ss;
+    ss << print(sgn.name()) << "<>";
+    return ss.str();
+}
+
 std::string unit::print(qname_view qn) const
 {
     boost::container::small_vector<char, 32> result;
@@ -247,7 +382,9 @@ struct type_printer_visitor : static_visitor<void>
     inline void operator()(bang_decimal_t) const { ss << "decimal"sv; }
     inline void operator()(bang_string_t) const { ss << "string"sv; }
     inline void operator()(bang_preliminary_object_t const& obj) const { ss << u_.print(obj.name()); }
-    inline void operator()(bang_object_t const& obj) const { ss << u_.print(obj.name()); }
+    inline void operator()(bang_object_t const& obj) const {
+        ss << u_.print(obj.id());
+    }
         
     template <typename TupleT, typename FamilyT>
     inline void operator()(bang_fn_base<TupleT, FamilyT> const& fn) const
@@ -349,6 +486,11 @@ small_string unit::as_string(identifier const& id) const
     return { result.data(), result.size() };
 }
 
+small_string unit::as_string(entity_identifier const& id) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR("unit::as_string entity_identifier");
+}
+
 small_string unit::as_string(qname_view qn) const
 {
     boost::container::small_vector<char, 32> result;
@@ -446,6 +588,11 @@ struct expr_printer_visitor : static_visitor<void>
         ss << to_string(d);
     }
 
+    void operator()(context_value const& vi) const
+    {
+
+    }
+
     void operator()(variable_identifier const& vi) const
     {
         if (vi.scope_local) {
@@ -539,6 +686,11 @@ struct expr_printer_visitor : static_visitor<void>
         THROW_NOT_IMPLEMENTED_ERROR();
     }
 
+    void operator()(entity_expression const& f) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+
     /*
     template <typename T>
     void operator()(T const& te) const
@@ -590,11 +742,14 @@ functional_entity& unit::get_functional_entity(binary_operator_type bop)
     default:
         THROW_INTERNAL_ERROR("unit::get_functional_entity error: unknown operator '%1%'"_fmt % to_string(bop));
     }
+    THROW_NOT_IMPLEMENTED_ERROR("unit::get_functional_entity");
+#if 0
     auto func_ent = dynamic_pointer_cast<functional_entity>(eregistry().find(op_qi));
     if (!func_ent) {
         THROW_INTERNAL_ERROR("unit::get_functional_entity error: operator '%1%' is not defined"_fmt % to_string(bop));
     }
     return *func_ent;
+#endif
 }
 
 functional_entity& unit::get_functional_entity(builtin_type bt) const

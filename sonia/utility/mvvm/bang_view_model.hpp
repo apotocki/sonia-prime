@@ -22,9 +22,10 @@ class bang_view_model
     friend class invocation::registrar<bang_view_model, view_model>;
 
 public:
-    using view_model::view_model;
+    explicit bang_view_model(int32_t idval = 0);
 
     // scripting
+    void load_code(string_view code);
     void load_file(string_view path);
     smart_blob eval(string_view code, bool no_return);
 

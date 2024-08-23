@@ -23,9 +23,12 @@ void bang_tostring(vm::context & ctx)
 
 void bang_print_string(vm::context& ctx)
 {
-    string_view str = ctx.stack_back().as<string_view>();
-    GLOBAL_LOG_INFO() << str;
-    ctx.stack_pop();
+    size_t argcount = ctx.stack_back().as<size_t>();
+    unit & u = ctx.get_unit();
+    for (size_t i = argcount; i > 0; --i) {
+        u.write_cout(ctx.stack_back(i).as<string_view>());
+    }
+    ctx.stack_pop(argcount + 1);
 }
 
 void bang_negate(vm::context& ctx)

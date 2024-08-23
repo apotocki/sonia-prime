@@ -10,8 +10,12 @@ namespace sonia::lang::bang {
 
 class enum_entity : public entity
 {
+    qname_identifier name_;
+
 public:
-    explicit enum_entity(qname_identifier name) : entity { std::move(name) } {}
+    explicit enum_entity(entity_identifier eid, qname_identifier name) 
+        : entity { std::move(eid) }, name_{ name }
+    {}
 
     struct enum_case
     {

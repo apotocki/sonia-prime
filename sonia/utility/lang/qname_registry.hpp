@@ -31,6 +31,17 @@ class qname_registry
     >;
 
 public:
+    qname_identifier find(qname_view_t qnv)
+    {
+        lock_guard guard(set_mtx_);
+        auto& plane = set_.template get<1>();
+        auto it = plane.find(qnv, hasher{}, range_equal{});
+        if (it != plane.end()) {
+            return qname_identifier{ (size_t)(boost::multi_index::project<0>(set_, it) - set_.begin()), qnv.is_absolute() };
+        }
+        return {};
+    }
+
     qname_identifier resolve(qname_view_t qnv)
     {
         lock_guard guard(set_mtx_);
@@ -53,7 +64,7 @@ public:
 
     qname_identifier concat(qname_identifier qid, QnameIdentifierT part_id)
     {
-        qname rqn = resolve(qid) + part_id;
+        qname rqn = resolve(qid) / part_id;
         return resolve(rqn);
     }
 

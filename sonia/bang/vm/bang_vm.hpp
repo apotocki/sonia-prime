@@ -12,6 +12,7 @@
 #include <boost/unordered_map.hpp>
 //#include "../extern.hpp"
 #include "../terms.hpp"
+#include "sonia/bang/unit.hpp"
 
 namespace sonia::lang::bang::vm {
 
@@ -109,10 +110,12 @@ public:
 
     using vm_t = sonia::vm::virtual_stack_machine<context>;
 
-    explicit context(vm_t& vm, invocation::invocable* penv = nullptr) : vm_{vm}, penv_{penv} {}
+    explicit context(unit& u, invocation::invocable* penv = nullptr);
     
     context(context const&) = delete;
     context& operator=(context const&) = delete;
+
+    unit& get_unit() const { return unit_; }
 
     // builtins
     void is_nil();
@@ -256,6 +259,7 @@ public:
 
 private:
     mutable size_t id_counter_{ 0 };
+    unit& unit_;
     vm_t& vm_;
     invocation::invocable* penv_;
 };

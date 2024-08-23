@@ -16,33 +16,51 @@ namespace sonia::lang {
 // ========================================================================
 // a numeric identifier of a lexical identifier
 // some ranges can be reserved by lang needs
+template <std::integral ValueT, typename TagT = void>
 struct identifier
 {
-    using value_type = uint32_t;
+    using value_type = ValueT;
     value_type value;
     //value_type value : 31;
     //value_type is_required : 1;
 
     inline bool empty() const noexcept { return !value; }
-    inline explicit operator bool() const noexcept { return !!empty(); }
+    inline explicit operator bool() const noexcept { return !empty(); }
 
     identifier() : value{ 0 } /*, is_required{ 0 }*/ {}
     explicit identifier(value_type val/*, bool is_required_val = false*/) : value{ val }/*, is_required{ value_type(is_required_val ? 1 : 0) }*/ {}
 
-    friend inline bool operator== (identifier const& l, identifier const& r)
+    template <std::integral IT>
+    inline explicit identifier(IT val) : value{ static_cast<value_type>(val) }
+    {
+        // to do: bounds checking
+    }
+
+    friend inline bool operator== (identifier const& l, identifier const& r) noexcept
     {
         return l.value == r.value;
     }
 
-    friend inline auto operator<=>(identifier const& l, identifier const& r)
+    friend inline auto operator<=>(identifier const& l, identifier const& r) noexcept
     {
         return l.value <=> r.value;
     }
+
+    inline identifier self_or(identifier other) const noexcept { return value ? *this : other; }
+
+    inline value_type raw() const noexcept { return value; }
 };
 
-inline size_t hash_value(identifier const& v)
+template <std::integral ValueT, typename TagT = void>
+inline size_t hash_value(identifier<ValueT, TagT> const& v)
 {
-    return hash<identifier::value_type>()(v.value);
+    return hash<typename identifier<ValueT, TagT>::value_type>{}(v.value);
+}
+
+template <typename T, typename Traits, std::integral ValueT, typename TagT>
+std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits> & os, identifier<ValueT, TagT> idval)
+{
+    return os << idval.value;
 }
 
 namespace lex {

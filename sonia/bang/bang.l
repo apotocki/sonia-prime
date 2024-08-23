@@ -108,7 +108,7 @@ ASCALPHA				[a-zA-Z]
 ASCALPHANUM				[a-zA-Z0-9]
 DIGIT					[0-9]
 IDENTIFIER				[a-zA-Z_]+[a-zA-Z_0-9]*
-ARGIDENTIFIER			$[a-zA-Z_0-9]+
+INTERNAL_IDENTIFIER		$([$0]|([1-9][0-9]*)|{IDENTIFIER})
 
 INTEGER                 [0-9]+
 EXPONENT                [eE][+-]?[0-9]+
@@ -124,16 +124,18 @@ EXTERN                  "extern"
 RETURN                  "return"
 INCLUDE					"include"
 
+TYPENAME				"typename"
 BOOL					"bool"
 INT						"int"
 FLOAT					"float"
-STRING_WORD				"string"
+/* STRING_WORD			"string" */
 /* DECIMAL_WORD			"decimal" */
 
 TRUE					"true"
 FALSE					"false"
 
 WEAK					"weak"
+CONST					"const"
 
 END_STATEMENT			";"
 COMMA					","
@@ -156,6 +158,7 @@ LOGIC_OR                "||"
 LOGIC_AND               "&&"
 ARROW					"->"
 CONCAT					".."
+ELLIPSIS				"..."
 
 /*
 NEW						"new"
@@ -296,13 +299,15 @@ HASHTAG					"#"
 	{RETURN} { return (bang_lang::parser::token::RETURN); }
 	{INCLUDE} { return (bang_lang::parser::token::INCLUDE); }
 
+	{TYPENAME} { return (bang_lang::parser::token::TYPENAME); }
 	{BOOL} { return (bang_lang::parser::token::BOOL); }
 	{INT} { return (bang_lang::parser::token::INT); }
 	{FLOAT} { return (bang_lang::parser::token::FLOAT); }
-	{STRING_WORD} { return (bang_lang::parser::token::STRING_WORD); }
+	/* {STRING_WORD} { return (bang_lang::parser::token::STRING_WORD); } */
 	/* {DECIMAL_WORD} { return (bang_lang::parser::token::DECIMAL_WORD); } */
 
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
+	{CONST} { return (bang_lang::parser::token::CONST); }
 
 	{TRUE} { variant_emplace(location); return (bang_lang::parser::token::TRUE); }
 	{FALSE} { variant_emplace(location); return (bang_lang::parser::token::FALSE); }
@@ -328,14 +333,15 @@ HASHTAG					"#"
     {LOGIC_AND}             { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
 	{ARROW}                 { return (bang_lang::parser::token::ARROW); }
 	{CONCAT}                { variant_emplace(location); return (bang_lang::parser::token::CONCAT); }
+	{ELLIPSIS}              { variant_emplace(location); return (bang_lang::parser::token::ELLIPSIS); }
 
 	{IDENTIFIER} {
 		variant_emplace(annotated_string_view{text_view, location});
 		return (bang_lang::parser::token::IDENTIFIER);
 	}
-	{ARGIDENTIFIER} {
+	{INTERNAL_IDENTIFIER} {
 		variant_emplace(annotated_string_view{text_view, location});
-		return (bang_lang::parser::token::ARGIDENTIFIER);
+		return (bang_lang::parser::token::INTERNAL_IDENTIFIER);
 	}
 	{INTEGER} {
 		variant_emplace(annotated_decimal{ctx.make_decimal(text_view), location});

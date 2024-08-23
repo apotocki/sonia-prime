@@ -73,7 +73,7 @@ struct expression_implicit_cast_visitor : static_visitor<error_storage>
     inline result_type operator()(bang_string_t const& v) const { return nullopt; }
     inline result_type operator()(bang_object_t const& v) const { return nullopt; }
     */
-
+#if 0
     inline result_type operator()(bang_int_t const&) const
     {
         return apply_visitor(expression_cast_to_int_visitor{ ctx, cl_ }, type2cast);
@@ -131,7 +131,7 @@ struct expression_implicit_cast_visitor : static_visitor<error_storage>
         ctx.context_type = type2cast;
         return {};
     }
-
+#endif
     template <typename T>
     result_type operator()(T const& v) const
     {

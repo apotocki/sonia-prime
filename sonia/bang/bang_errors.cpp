@@ -74,7 +74,7 @@ general_error::string_t cast_error::description(unit const& u) const noexcept
 {
     if (from_) {
         return ("cannot convert from `%1%` to `%2%`"_fmt 
-            % u.print(*from_)
+            % u.print(from_)
             % u.print(to_)
         ).str();
     } else {
@@ -126,6 +126,18 @@ void error_printer_visitor::operator()(alt_error const& err)
     }
 }
 
+void error_printer_visitor::operator()(ambiguity_error const& err)
+{
+    bool first = true;
+    for (auto const& e : err.alternatives) {
+        if (!first) {
+            s_ << "\n or \n";
+        }
+        else { first = false; }
+        e->visit(*this);
+    }
+}
+
 general_error::string_t parameter_not_found_error::description(unit const& u) const noexcept
 {
     return ("parameter `%1%` of `%2%` is not found"_fmt %
@@ -140,8 +152,12 @@ general_error::string_t function_call_match_error::object(unit const& u) const n
 general_error::string_t function_call_match_error::description(unit const& u) const noexcept
 {
     std::ostringstream ss;
-    ss << "can't match the function signature: "sv;
-    ss << u.print(signature_.fn_type);
+    if (signature_) {
+        ss << "can't match the function signature: "sv;
+        ss << u.print(signature_->fn_type);
+    } else {
+        ss << "can't match the function call";
+    }
     if (reason_) {
         ss << ", caused by: \n" << u.print(*reason_);
     }

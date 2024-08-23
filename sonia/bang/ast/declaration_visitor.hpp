@@ -8,6 +8,7 @@
 
 namespace sonia::lang::bang {
 
+class functional;
 class function_entity;
 
 struct declaration_visitor : static_visitor<void>
@@ -30,7 +31,7 @@ struct declaration_visitor : static_visitor<void>
 
     void operator()(return_decl_t&) const;
 
-    function_signature& append_fnsig(fn_pure_decl& /*in*/, shared_ptr<functional_entity>& /*out*/) const;
+    function_signature& append_fnsig(fn_pure_decl& /*in*/, functional** ppf = nullptr) const;
     function_entity& append_fnent(fn_pure_decl&, function_signature& sig, span<infunction_declaration_t>) const;
 };
 

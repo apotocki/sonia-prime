@@ -10,6 +10,10 @@
 #include "../unit.hpp"
 #include "../semantic.hpp"
 
+#include "sonia/utility/invocation/invocation.hpp"
+
+#include "sonia/bang/entities/const_entity.hpp"
+
 namespace sonia::lang::bang {
 
 /*
@@ -51,13 +55,12 @@ class fn_compiler_context
     size_t base_ns_size_;
     size_t local_variable_count_ = 0;
     
+public:
     using expr_vec_t = std::vector<semantic::expression_type>;
 
-public:
-
-    explicit fn_compiler_context(unit& u, qname ns)
+    fn_compiler_context(unit& u, qname ns)
         : unit_{ u }
-        , parent_ { nullptr }
+        , parent_{ nullptr }
         , ns_{ std::move(ns) }
     {
         init();
@@ -65,8 +68,8 @@ public:
 
     fn_compiler_context(fn_compiler_context& parent, qname_view nested)
         : unit_{ parent.unit_ }
-        , ns_{ parent.ns() + nested }
-        , parent_ { nested.has_prefix(parent.ns()) ? &parent : nullptr }
+        , ns_{ parent.ns() / nested }
+        , parent_{ nested.has_prefix(parent.ns()) ? &parent : nullptr }
     {
         init();
     }
@@ -79,7 +82,7 @@ public:
 
     void pushed_unnamed_ns()
     {
-        ns_ = ns_ + unit_.new_identifier();
+        ns_ = ns_ / unit_.new_identifier();
     }
 
     void pop_ns()
@@ -90,9 +93,35 @@ public:
 
     unit& u() const { return unit_; }
 
+    std::expected<function_descriptor, error_storage> build_function_descriptor(fn_pure_decl& pure_decl);
+
+    functional* resolve_functional(qname_identifier name) const
+    {
+        if (name.is_absolute()) {
+            return unit_.fregistry().find(name);
+        }
+        qname checkns = ns_;
+        qname_view name_qn = unit_.qnregistry().resolve(name);
+        size_t sz = checkns.parts().size();
+        for (;;) {
+            checkns.append(name_qn);
+            qname_identifier qid = unit_.qnregistry().find(checkns);
+            if (qid) {
+                functional* f = unit_.fregistry().find(qid);
+                if (f || !sz) return f;
+            }
+            --sz;
+            checkns.truncate(sz);
+        }
+    }
+
+    functional const* lookup_functional(qname_identifier name) const;
+
     // to do: resolving depends on qname
     shared_ptr<entity> resolve_entity(qname_identifier name) const
     {
+        THROW_NOT_IMPLEMENTED_ERROR("resolve_entity");
+#if 0
         if (name.is_absolute()) {
             return unit_.eregistry().find(name);
         }
@@ -105,10 +134,13 @@ public:
             --sz;
             checkns.truncate(sz);
         }
+#endif
     }
 
     variable_entity const* resolve_variable(qname_identifier name) const
     {
+        THROW_NOT_IMPLEMENTED_ERROR("resolve_variable");
+#if 0
         if (name.is_absolute()) {
             shared_ptr<entity> e = unit_.eregistry().find(name);
         }
@@ -117,6 +149,7 @@ public:
             return varptr.get();
         }
         return nullptr;
+#endif
     }
 
     //semantic::expression_type build_expression(bang_generic_type const& result_type, expression_t const& e);
@@ -126,7 +159,16 @@ public:
     size_t allocate_local_variable_index() { return local_variable_count_++; }
     //size_t allocate_captured_variable_index() { return captured_variable_count_++; }
     
-    variable_entity& new_position_parameter(size_t paramnum, bang_type t)
+    //void new_const_entity(string_view name, shared_ptr<const_entity> ent)
+    //{
+    //    identifier nid = unit_.slregistry().resolve(name);
+    //    qname var_qname = ns() / nid;
+    //    qname_identifier qname_id = unit_.qnregistry().resolve(var_qname);
+    //    functional& varfn = unit_.fregistry().resolve(qname_id);
+    //    varfn.set_default_entity(ent->id());
+    //}
+
+    variable_entity& new_position_parameter(size_t paramnum, entity_identifier t)
     {
         using buff_t = boost::container::small_vector<char, 16>;
         buff_t tailored_param_name = { '$' };
@@ -137,24 +179,30 @@ public:
         return new_variable(argid, std::move(t), variable_entity::kind::SCOPE_LOCAL);
     }
 
-    variable_entity& new_variable(identifier name, bang_type t, variable_entity::kind k)
+    variable_entity& new_variable(identifier name, entity_identifier t, variable_entity::kind k)
     {
-        qname var_qname = ns() + name;
+        THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context new_variable");
+#if 0
+        qname var_qname = ns() / name;
         auto ve = sonia::make_shared<variable_entity>(u().qnregistry().resolve(var_qname), std::move(t), k);
         unit_.eregistry().insert(ve);
         return *ve;
+#endif
     }
 
     boost::container::small_vector<std::pair<variable_entity*, variable_entity*>, 16> captured_variables;
 
     variable_entity& new_captured_variable(identifier name, bang_type t, variable_entity& caption)
     {
-        qname var_qname = base_ns() + name;
+        THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context new_captured_variable");
+#if 0
+        qname var_qname = base_ns() / name;
         auto ve = sonia::make_shared<variable_entity>(u().qnregistry().resolve(var_qname), std::move(t), variable_entity::kind::LOCAL);
         ve->set_weak(caption.is_weak());
         unit_.eregistry().insert(ve);
         captured_variables.emplace_back(&caption, ve.get());
         return *ve;
+#endif
     }
 
     variable_entity& create_captured_variable_chain(variable_entity& v)
@@ -224,6 +272,16 @@ public:
         expressions().emplace_back(std::move(e));
     }
 
+    std::pair<size_t, size_t> current_expressions_pointer() const
+    {
+        return { expr_stack_.size() - 1, expr_stack_.back()->size() - 1 };
+    }
+
+    void set_expression(std::pair<size_t, size_t> ep, semantic::expression_type&& e)
+    {
+        (*expr_stack_[ep.first])[ep.second] = std::move(e);
+    }
+
     void push_chain(expr_vec_t& chain_vec)
     {
         expr_stack_.emplace_back(&chain_vec);
@@ -252,7 +310,7 @@ public:
         fn_compiler_context * pctx_;
         size_t cursize_;
         size_t stack_size_;
-        bang_type cur_type_;
+        entity_identifier cur_type_;
 
     public:
         expressions_state_type(fn_compiler_context& ctx)
@@ -294,26 +352,29 @@ public:
 
     expressions_state_type expressions_state() { return expressions_state_type{*this}; }
 
-    optional<bang_type> result;
-    optional<bang_type> accum_result;
-    bang_type context_type = bang_tuple_t{};
+    entity_identifier result;
+    entity_identifier accum_result;
+    entity_identifier context_type;
 
-    void accumulate_result_type(bang_type && t)
+    void accumulate_result_type(entity_identifier t)
     {
         if (!accum_result) {
-            accum_result.emplace(std::move(t));
+            accum_result = std::move(t);
         } else {
+            THROW_NOT_IMPLEMENTED_ERROR("compiler context: accumulate_result_type");
+#if 0
             accum_result = make_union_type(*accum_result, &t);
+#endif
         }
     }
 
-    bang_type const& compute_result_type()
+    entity_identifier compute_result_type()
     {
-        if (result) { return *result; }
+        if (result) { return result; }
         else if (!accum_result) {
-            accum_result = bang_tuple_t{};
+            accum_result = unit_.get_void_entity_identifier();
         }
-        return *accum_result;
+        return accum_result;
     }
 
 private:

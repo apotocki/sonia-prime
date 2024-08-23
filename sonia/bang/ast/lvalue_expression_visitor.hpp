@@ -40,6 +40,7 @@ struct lvalue_expression_visitor : static_visitor<std::expected<entity const*, e
 
     result_type operator()(lambda_t const&) const;
     result_type operator()(function_call_t const&) const;
+    result_type operator()(entity_expression const& ee) const;
 
     result_type operator()(unary_expression_t<unary_operator_type::NEGATE> const&) const;
 

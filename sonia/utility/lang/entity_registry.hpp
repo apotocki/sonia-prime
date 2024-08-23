@@ -6,34 +6,36 @@
 
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
 
 #include "sonia/concurrency.hpp"
 #include "sonia/shared_ptr.hpp"
-
-#include "qname.hpp"
-#include "entity.hpp"
+#include "sonia/utility/functional/hash.hpp"
 
 namespace sonia::lang {
 
 template <typename EntityT, typename MutexT = dummy_mutex_t>
 class entity_registry
 {
-    using qname_identifier_type = typename EntityT::identifier_type;
-    //using qname_t = qname<identifier_type>;
-    //using qname_view_t = qname_view<identifier_type>;
+    using entity_identifier_type = typename EntityT::identifier_type;
 
 public:
-    shared_ptr<EntityT> find(qname_identifier_type) noexcept;
+    EntityT const& get(entity_identifier_type) const;
+    
+    template <typename FactoryT>
+    EntityT const& find_or_create(EntityT const&, FactoryT const&);
+
     void insert(shared_ptr<EntityT>);
     //StringT const* resolve(IdentifierT) const noexcept;
 
     template <typename FtorT>
     void traverse(FtorT const& ftor)
     {
+        //THROW_NOT_IMPLEMENTED_ERROR("entity_registry traverse");
         lock_guard guard(set_mtx_);
         for (auto & e : set_) {
-            if (!ftor(e.name(), *e.value)) break;
+            if (!ftor(*e.value)) break;
         }
     }
 
@@ -41,14 +43,21 @@ private:
     struct entity_wrapper
     {
         shared_ptr<EntityT> value;
-        qname_identifier_type name() const { return value->name(); }
+        //qname_identifier_type name() const { return value->name(); }
+        //inline entity_identifier_type id() const noexcept { return value->id(); }
+        inline EntityT const& self() const noexcept { return *value; }
     };
 
     using set_t = boost::multi_index::multi_index_container<
         entity_wrapper,
         boost::multi_index::indexed_by<
-            boost::multi_index::ordered_unique<
-                boost::multi_index::const_mem_fun<entity_wrapper, qname_identifier_type, &entity_wrapper::name>
+            boost::multi_index::random_access<>,
+            //boost::multi_index::ordered_unique<
+            //    boost::multi_index::const_mem_fun<entity_wrapper, entity_identifier_type, &entity_wrapper::id>
+            //>,
+            boost::multi_index::hashed_unique<
+                boost::multi_index::const_mem_fun<entity_wrapper, EntityT const&, &entity_wrapper::self>,
+                hasher
             >
         >
     >;
@@ -57,43 +66,42 @@ private:
     mutable MutexT set_mtx_;
 };
 
-template <typename EntityT,typename MutexT>
-shared_ptr<EntityT> entity_registry<EntityT, MutexT>::find(qname_identifier_type name) noexcept
+template <typename EntityT, typename MutexT>
+template <typename FactoryT>
+EntityT const& entity_registry<EntityT, MutexT>::find_or_create(EntityT const& sample, FactoryT const& factory)
 {
-    assert(name.is_absolute());
     lock_guard guard(set_mtx_);
-    auto it = set_.find(name);
-    if (it == set_.end()) {
-        return {};
+    auto& index = set_.get<1>();
+    auto it = index.find(sample);
+    if (it == index.end()) {
+        it = index.insert(it, entity_wrapper{ factory() });
+        it->value->set_id(entity_identifier_type{ set_.size() });
     }
-    return it->value;
+    return *it->value;
+}
+
+template <typename EntityT,typename MutexT>
+EntityT const& entity_registry<EntityT, MutexT>::get(entity_identifier_type eid) const
+{
+    lock_guard guard(set_mtx_);
+    if (eid.raw() > set_.size()) [[unlikely]] {
+        THROW_INTERNAL_ERROR("no entity with id: %1%"_fmt % eid);
+    }
+    return *set_.template get<0>().at(eid.raw() - 1).value;
 }
 
 template <typename EntityT, typename MutexT>
 void entity_registry<EntityT, MutexT>::insert(shared_ptr<EntityT> e)
 {
-    assert(e->name().is_absolute());
     lock_guard guard(set_mtx_);
-    auto it = set_.find(e->name());
-    if (it == set_.end()) {
-        set_.insert(it, entity_wrapper{ std::move(e) });
+    auto& index = set_.get<1>();
+    auto it = index.find(*e);
+    if (it == index.end()) {
+        it = index.insert(it, entity_wrapper{ std::move(e) });
+        it->value->set_id(entity_identifier_type{ set_.size() });
         return;
     }
-    THROW_INTERNAL_ERROR("an entity with the same name already exists");
+    THROW_INTERNAL_ERROR("an equivalent entity has bean already registered");
 }
-
-/*
-template <typename IdentifierT, typename StringT, typename MutexT>
-StringT const* string_literal_registry<IdentifierT, StringT, MutexT>::resolve(IdentifierT id) const noexcept
-{
-    auto const& slice = set_.get<1>();
-    lock_guard guard(set_mtx_);
-    auto it = slice.find(id);
-    if (it == slice.end()) {
-        return nullptr;
-    }
-    return std::addressof(it->name);
-}
-*/
 
 }

@@ -256,8 +256,15 @@
     <ClInclude Include="..\..\..\sonia\bang\bang.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.tab.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.yy.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\const_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\entity_signature.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\enum_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\external_function_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\functional.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functional_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\functional_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\internal_type_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\type_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\variable_entity.hpp" />
@@ -674,15 +681,20 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/bigobj %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\fn_compiler_context.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang.tab.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang.yy.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_errors.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_unit.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\enum_entity.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\functional.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functional_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\type_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\library\bang_library.cpp" />

@@ -1,0 +1,9 @@
+<%
+classname = input.classname
+members = input.members
+%>
+class %classname% {
+<%for i,v in ipairs(members) do%>
+    int %v .. " qq"%;
+<%end%>
+};

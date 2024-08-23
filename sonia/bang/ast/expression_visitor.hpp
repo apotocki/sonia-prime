@@ -11,7 +11,7 @@ namespace sonia::lang::bang {
 
 struct expected_result_t
 {
-    bang_type const& type;
+    entity_identifier type;
     lex::resource_location const& location;
 };
 
@@ -39,6 +39,7 @@ struct expression_visitor : static_visitor<error_storage>
         : ctx{ c }
     {}
 
+    result_type operator()(context_value&) const;
     result_type operator()(variable_identifier const&) const;
 
     result_type operator()(case_expression const&) const;
@@ -59,6 +60,8 @@ struct expression_visitor : static_visitor<error_storage>
 
     result_type operator()(function_call_t&) const;
 
+    result_type operator()(entity_expression const& ee) const;
+
     result_type operator()(negate_expression_t&) const;
 
     inline result_type operator()(binary_expression_t & be) const
@@ -78,7 +81,19 @@ struct expression_visitor : static_visitor<error_storage>
     function_entity& handle_lambda(lambda_t&) const;
     std::expected<function_entity const*, error_storage> handle_property_get(annotated_identifier id) const;
 
+
+    template <typename T>
+    result_type operator()(T const&) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR("expression_visitor not implemented expression");
+    }
+
 private:
+    unit& u() const noexcept;
+
+    template <typename ExprT>
+    result_type apply_cast(entity_identifier, ExprT const& e) const;
+
     template <typename ExprT>
     result_type apply_cast(bang_type const& t, ExprT const& e) const;
 };

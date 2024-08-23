@@ -17,10 +17,12 @@ namespace sonia::lang::bang {
 
 void declaration_visitor::operator()(extern_var & d) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor extern_var");
+#if 0
     preliminary_type_visitor tqvis{ ctx };
     bang_type vartype = apply_visitor(tqvis, d.type);
     
-    qname var_qname = ctx.ns() + d.name.value;
+    qname var_qname = ctx.ns() / d.name.value;
     qname_identifier var_qnameid = ctx.u().qnregistry().resolve(var_qname);
     auto e = ctx.u().eregistry().find(var_qnameid);
     if (!e) {
@@ -30,23 +32,27 @@ void declaration_visitor::operator()(extern_var & d) const
     } else {
         throw exception(ctx.u().print(identifier_redefinition_error{ annotated_qname_identifier{var_qnameid, d.name.location}, e->location() }));
     }
+#endif
 }
 
 void declaration_visitor::operator()(expression_decl_t & ed) const
 {
-    ctx.context_type = bang_tuple_t{};
+    entity_identifier void_eid = ctx.u().get_void_entity_identifier();
+    ctx.context_type = void_eid;
     if (auto opterr = apply_visitor(expression_visitor{ ctx }, ed.expression); opterr) {
         throw exception(ctx.u().print(*opterr));
     }
-    if (ctx.context_type != bang_tuple_t{}) {
+    if (ctx.context_type != void_eid) {
         ctx.append_expression(semantic::truncate_values(1, false));
     }
     ctx.collapse_chains();
 }
 
-function_signature& declaration_visitor::append_fnsig(fn_pure_decl& fd, shared_ptr<functional_entity> & fe) const
+function_signature& declaration_visitor::append_fnsig(fn_pure_decl& fd, functional ** ppf) const
 {
-    qname fn_qname = ctx.ns() + fd.name();
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor append_fnsig");
+#if 0
+    qname fn_qname = ctx.ns() / fd.name();
     if (!fn_qname.has_prefix(ctx.ns())) {
         throw exception("%1%(%2%,%3%): %4% : not a nested scope identifier"_fmt %
             fd.location().resource % fd.location().line % fd.location().column %
@@ -54,15 +60,9 @@ function_signature& declaration_visitor::append_fnsig(fn_pure_decl& fd, shared_p
         );
     }
     qname_identifier fn_qnameid = ctx.u().qnregistry().resolve(fn_qname);
-    auto e = ctx.u().eregistry().find(fn_qnameid);
-    if (!e) {
-        fe = make_shared<functional_entity>(fn_qnameid);
-        fe->set_location(fd.location());
-        ctx.u().eregistry().insert(fe);
-    } else if (fe = dynamic_pointer_cast<functional_entity>(e); !fe) {
-        throw exception(ctx.u().print(identifier_redefinition_error{annotated_qname_identifier{fn_qnameid, fd.location()}, e->location()}));
-    }
-    
+    functional & f = ctx.u().fregistry().resolve(fn_qnameid);
+    if (ppf) *ppf = std::addressof(f);
+
     function_signature sig;
     sig.setup(ctx, fd.parameters);
     sig.normilize(ctx);
@@ -71,11 +71,26 @@ function_signature& declaration_visitor::append_fnsig(fn_pure_decl& fd, shared_p
         preliminary_type_visitor tqvis{ ctx };
         sig.fn_type.result = apply_visitor(tqvis, *fd.result);
     }
+    ;
+    f.push(std::move(make_shared<fn_signature_pattern>(std::move(sig))));
+    
+    auto e = ctx.u().eregistry().find(fn_qnameid);
+    if (!e) {
+        fe = make_shared<functional_entity>(fn_qnameid);
+        fe->set_location(fd.location());
+        ctx.u().eregistry().insert(fe);
+    } else if (fe = dynamic_pointer_cast<functional_entity>(e); !fe) {
+        throw exception(ctx.u().print(identifier_redefinition_error{annotated_qname_identifier{fn_qnameid, fd.location()}, e->location()}));
+    }
+
     return fe->put_signature(std::move(sig));
+#endif
 }
 
 void declaration_visitor::operator()(fn_pure_decl & fd) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_pure_decl");
+#if 0
     shared_ptr<functional_entity> fe;
     function_signature& sig = append_fnsig(fd, fe);
     auto fnm = ctx.u().qnregistry().concat(fe->name(), sig.mangled_id);
@@ -109,11 +124,14 @@ void declaration_visitor::operator()(fn_pure_decl & fd) const
         sig.fn_type.result = bang_tuple_t{};
     }
     */
+#endif
 }
 
 function_entity & declaration_visitor::append_fnent(fn_pure_decl& fnd, function_signature& sig, span<infunction_declaration_t> body) const
 {
-    fn_compiler_context fnctx{ ctx, fnd.name() + sig.mangled_id };
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor append_fnent");
+#if 0
+    fn_compiler_context fnctx{ ctx, fnd.name() / sig.mangled_id };
     if (fnd.result) {
         fnctx.result = sig.fn_type.result;
     } // if result type isn't defined => void or defined by body expressions
@@ -164,26 +182,27 @@ function_entity & declaration_visitor::append_fnent(fn_pure_decl& fnd, function_
     ctx.append_expression(semantic::push_value { function_value{ fnent->name() } });
     ctx.append_expression(semantic::set_variable{ fnent.get() });
     return *fnent;
+#endif
 }
 
 void declaration_visitor::operator()(fn_decl_t& fnd) const
 {
-    shared_ptr<functional_entity> fe;
-    function_signature& sig = append_fnsig(fnd, fe);
+    //shared_ptr<functional_entity> fe;
+    function_signature& sig = append_fnsig(fnd);
     function_entity & fnent = append_fnent(fnd, sig, fnd.body);
     //ctx.expressions.emplace_back(semantic::set_variable{ &fnent });
 }
 
 void declaration_visitor::operator()(let_statement_decl_t & ld) const
 {
-    optional<bang_type> vartype;
+    entity_identifier vartype;
     if (ld.type) {
-        preliminary_type_visitor tvis{ ctx };
+        preliminary_type_visitor2 tvis{ ctx };
         vartype = apply_visitor(tvis, *ld.type);
     }
-    ctx.context_type = bang_tuple_t{};
+    ctx.context_type = ctx.u().get_void_entity_identifier();
     if (ld.expression) {
-        auto evis = vartype ? expression_visitor{ ctx, expected_result_t{ *vartype, ld.location() } } : expression_visitor{ ctx };
+        auto evis = vartype ? expression_visitor{ ctx, expected_result_t{ vartype, ld.location() } } : expression_visitor{ ctx };
         if (auto opterr = apply_visitor(evis, *ld.expression); opterr) {
             /*
             BOOST_ASSERT(vartype);
@@ -195,7 +214,7 @@ void declaration_visitor::operator()(let_statement_decl_t & ld) const
             throw exception(ctx.u().print(*opterr));
         }
     }
-    variable_entity& ve = ctx.new_variable(ld.name(), vartype.value_or(ctx.context_type), variable_entity::kind::LOCAL);
+    variable_entity& ve = ctx.new_variable(ld.name(), vartype.self_or(ctx.context_type), variable_entity::kind::LOCAL);
     ve.set_index(ctx.allocate_local_variable_index());
     ve.set_weak(ld.weakness);
     if (ld.expression) {
@@ -205,9 +224,9 @@ void declaration_visitor::operator()(let_statement_decl_t & ld) const
 
 void declaration_visitor::operator()(return_decl_t & rd) const
 {
-    ctx.context_type = bang_tuple_t{};
+    ctx.context_type = ctx.u().get_void_entity_identifier();
     size_t initial_branch = ctx.expressions_branch();
-    auto evis = ctx.result ? expression_visitor{ ctx, expected_result_t{ *ctx.result, rd.location } } : expression_visitor{ ctx };
+    auto evis = ctx.result ? expression_visitor{ ctx, expected_result_t{ ctx.result, rd.location } } : expression_visitor{ ctx };
     if (auto opterr = apply_visitor(evis, rd.expression); opterr) {
         throw exception(ctx.u().print(*opterr));
     }

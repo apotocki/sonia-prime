@@ -23,23 +23,30 @@ using sonia::lang::bang::vm::compiler_visitor;
 class bang_impl 
 {
 public:
-    void build(fs::path const&);
-    void build(string_view code);
-    void run(invocation::invocable* penv, span<string_view> args);
-    smart_blob call(string_view name, invocation::invocable* penv, span<const blob_result> args);
+    //void build(fs::path const&);
+    //void build(string_view code);
+    void run(span<string_view> args);
 
     bang_impl() = default;
     bang_impl(bang_impl const&) = delete;
     bang_impl& operator=(bang_impl const&) = delete;
 
+    void set_cout_writer(function<void(string_view)> writer) { unit_.set_cout_writer(std::move(writer)); }
+    void set_environment(invocation::invocable* penv) { penv_ = penv; }
+    void load(fs::path const& srcfile, span<string_view> args = {});
+    void load(string_view code, span<string_view> args = {});
+
+    smart_blob call(string_view name, span<const std::pair<string_view, const blob_result>> namedargs, span<const blob_result> args);
+
 protected:
-    void compile(lang::bang::parser_context&, declaration_set_t);
+    void compile(lang::bang::parser_context&, declaration_set_t, span<string_view> args);
     void do_compile(vm::compiler_visitor&, function_entity&);
 
 private:
     lang::bang::unit unit_;
-    optional<fn_compiler_context> main_ctx_;
+    optional<fn_compiler_context> default_ctx_;
     optional<function_entity> main_function_;
+    invocation::invocable* penv_ = nullptr;
 };
 
 }
@@ -57,24 +64,30 @@ language::~language()
 
 }
 
-void language::run(invocation::invocable* penv, span<string_view> args)
+void language::set_cout_writer(function<void(string_view)> writer)
 {
-    impl_->run(penv, args);
+    impl_->set_cout_writer(std::move(writer));
 }
 
-smart_blob language::call(string_view name, invocation::invocable* penv, span<const blob_result> args)
+void language::set_environment(invocation::invocable* penv)
 {
-    return impl_->call(name, penv, args);
+    impl_->set_environment(penv);
 }
 
-void language::build(fs::path const& f)
+void language::load(fs::path const& srcfile, span<string_view> args)
 {
-    impl_->build(f);
+    impl_->load(srcfile, args);
 }
 
-void language::build(string_view code)
+void language::load(string_view code, span<string_view> args)
 {
-    impl_->build(code);
+    impl_->load(code, args);
+}
+
+
+smart_blob language::call(string_view name, span<const std::pair<string_view, const blob_result>> namedargs, span<const blob_result> args)
+{
+    return impl_->call(name, namedargs, args);
 }
 
 }
@@ -83,59 +96,95 @@ namespace sonia::lang::bang::detail {
 
 using namespace sonia::lang::bang;
 
-void bang_impl::build(fs::path const& f)
+void bang_impl::load(fs::path const& f, span<string_view> args)
 {
     parser_context parser{ unit_ };
     auto exp_decls = parser.parse(f);
     if (!exp_decls.has_value()) throw exception(exp_decls.error());
-    compile(parser, std::move(*exp_decls));
+    compile(parser, std::move(*exp_decls), args);
 }
 
-void bang_impl::build(string_view code)
+void bang_impl::load(string_view code, span<string_view> args)
 {
     lang::bang::parser_context parser{ unit_ };
     auto exp_decls = parser.parse(code);
     if (!exp_decls.has_value()) throw exception(exp_decls.error());
-    compile(parser, std::move(*exp_decls));
+    compile(parser, std::move(*exp_decls), args);
 }
 
-void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t decls)
+void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t decls, span<string_view> args)
 {
-    if (!main_ctx_) {
-        main_ctx_.emplace(unit_, qname{});
+    fn_compiler_context ctx{ unit_, qname{unit_.new_identifier()} };
+    size_t argindex = 0;
+    std::array<char, 16> argname = { '$' };
+    for (string_view arg : args) {
+        bool reversed = false;
+        char * epos = mp::to_string(span{ &argindex, 1 }, argname.data() + 1, reversed);
+        if (reversed) std::reverse(argname.data() + 1, epos);
 
-        // main argument: [string]
-        auto&& ve = main_ctx_->new_position_parameter(0, bang_vector_t{ bang_string_t{} });
-        ve.set_index(-1); // first parameter
-    } else if (main_function_) {
-        main_ctx_->expressions() = std::move(main_function_->body);
+        string_literal_entity smpl{arg};
+        smpl.set_type(unit_.get_string_entity_identifier());
+        entity const& argent = unit_.eregistry().find_or_create(smpl, [&smpl]() {
+            return make_shared<string_literal_entity>(std::move(smpl));
+        });
+        identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), epos });
+        functional& arg_fnl = unit_.fregistry().resolve(unit_.qnregistry().resolve(ctx.ns() / argid));
+        arg_fnl.set_default_entity(argent.id());
+        //ctx.new_const_entity(string_view{ argname.data(), epos }, std::move(ent));
+        ++argindex;
     }
+    argname[1] = '$';
+    decimal_literal_entity smpl{ argindex };
+    smpl.set_type(unit_.get_decimal_entity_identifier());
+    entity const& argent = unit_.eregistry().find_or_create(smpl, [&smpl]() {
+        return make_shared<decimal_literal_entity>(std::move(smpl));
+    });
+    identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), 2 });
+    functional& arg_fnl = unit_.fregistry().resolve(unit_.qnregistry().resolve(ctx.ns() / argid));
+    arg_fnl.set_default_entity(argent.id());
+
     
-    fn_compiler_context & ctx = *main_ctx_;
+
+    if (!default_ctx_) {
+        default_ctx_.emplace(unit_, qname{});
+    }
 
     // separate declarations
     // retrieve forward declarations
-    forward_declaration_visitor fdvis{ ctx, pctx };
-    for (auto & d : decls) {
+    forward_declaration_visitor fdvis{ *default_ctx_, pctx };
+    for (auto& d : decls) {
         apply_visitor(fdvis, d);
     }
-    
+
     // treat types
-    for (type_entity * pte : fdvis.types) {
-        pte->treat(ctx);
-    }
+    //for (type_entity* pte : fdvis.types) {
+    //    pte->treat(ctx);
+    //}
 
     declaration_visitor dvis{ ctx };
-    for (auto & d : fdvis.decls) {
+    for (auto& d : fdvis.decls) {
         apply_visitor(dvis, d);
     }
     ctx.finish_frame();
+
+
+    ////    for (string_view arg : args) {
+    ////        auto&& ve = main_ctx_->new_position_parameter(0, bang_string_t{});
+    ////    }
+    ////    // main argument: [string]
+    ////    auto&& ve = main_ctx_->new_position_parameter(0, bang_vector_t{ bang_string_t{} });
+    ////    ve.set_index(-1); // first parameter
+    ////} else if (main_function_) {
+    ////    main_ctx_->expressions() = std::move(main_function_->body);
+    ////}
+    //
+    ////fn_compiler_context & ctx = *main_ctx_;
 
     // expression tree to vm script
     vm::compiler_visitor vmcvis{ unit_ };
 
     // at first compile all functions
-    unit_.eregistry().traverse([this, &vmcvis](auto name, entity& e) {
+    unit_.eregistry().traverse([this, &vmcvis](entity& e) {
         if (auto fe = dynamic_cast<function_entity*>(&e); fe && !fe->is_defined()) {
             do_compile(vmcvis, *fe);
         }
@@ -143,17 +192,29 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
     });
 
     // main
-    function_signature main_sig{ };
-    main_sig.position_parameters().emplace_back(bang_vector_t{ bang_string_t{} });
-    main_function_.emplace(unit_.make_qname_identifier("main"sv), std::move(main_sig));
-    main_function_->body = std::move(ctx.expressions());
-    do_compile(vmcvis, *main_function_);
+    // all arguments referenced as constants => no fp prolog/epilog code
+    auto& bvm = unit_.bvm();
+    size_t main_address = bvm.get_ip();
+    for (auto const& e : ctx.expressions()) {
+        apply_visitor(vmcvis, e);
+    }
+    bvm.append_ret();
+
+    // run
+    vm::context vmctx{ unit_, penv_ };
+    unit_.bvm().run(vmctx, main_address);
+
+    //function_signature main_sig{ };
+    //main_sig.position_parameters().emplace_back(bang_vector_t{ bang_string_t{} });
+    //main_function_.emplace(entity_identifier{}, unit_.make_qname_identifier("main"sv), std::move(main_sig));
+    //main_function_->body = std::move(ctx.expressions());
+    //do_compile(vmcvis, *main_function_);
 }
 
 void bang_impl::do_compile(vm::compiler_visitor & vmcvis, function_entity & fe)
 {
     GLOBAL_LOG_INFO() << "compiling function: " << unit_.print(fe.name());
-    size_t param_count = fe.signature().parameters_count() + fe.captured_variables.size();
+    size_t param_count = fe.fsignature().parameters_count() + fe.captured_variables.size();
 
     auto& bvm = unit_.bvm();
     // at first return code
@@ -188,9 +249,9 @@ void bang_impl::do_compile(vm::compiler_visitor & vmcvis, function_entity & fe)
     bvm.append_jmp(return_address);
 }
 
-void bang_impl::run(invocation::invocable* penv, span<string_view> args)
+void bang_impl::run(span<string_view> args)
 {
-    vm::context ctx{ unit_.bvm(), penv };
+    vm::context ctx{ unit_, penv_ };
     for (string_view arg : args) {
         smart_blob argblob{ string_blob_result(arg) };
         argblob.allocate();
@@ -199,14 +260,16 @@ void bang_impl::run(invocation::invocable* penv, span<string_view> args)
     if (!args.empty()) {
         ctx.stack_push(ui64_blob_result(args.size()));
         ctx.arrayify();
+    } else {
+        ctx.stack_push(nil_blob_result());
     }
     unit_.bvm().run(ctx, main_function_->get_address());
 }
 
-smart_blob bang_impl::call(string_view fnsig, invocation::invocable* penv, span<const blob_result> args = {})
+smart_blob bang_impl::call(string_view fnsig, span<const std::pair<string_view, const blob_result>> namedargs, span<const blob_result> args)
 {
     smart_blob result;
-    vm::context ctx{ unit_.bvm(), penv };
+    vm::context ctx{ unit_, penv_ };
     for (blob_result const& arg : args) {
         ctx.stack_push(smart_blob(arg));
     }
@@ -215,14 +278,16 @@ smart_blob bang_impl::call(string_view fnsig, invocation::invocable* penv, span<
     //identifier mandled_sig_id = unit_.piregistry().resolve(fnsig);
     //qname fnqn = qname{unit_.slregistry().resolve(name)} + mandled_sig_id;
     //qname_identifier qid = unit_.qnregistry().resolve(fnqn);
+    THROW_NOT_IMPLEMENTED_ERROR("bang_impl::call");
+#if 0
     auto ent = unit_.eregistry().find(qid);
     auto fnent = dynamic_pointer_cast<function_entity>(ent);
     if (!fnent) {
         throw exception("function '%1%' is not found"_fmt % fnsig);
     }
-    if (fnent->signature().parameters_count() != args.size()) {
+    if (fnent->signature().parameters_count() != args.size() + namedargs.size()) {
         throw exception("function '%1%' error: wrong number of arguments, expected: %2%, provided: %3%"_fmt % fnsig %
-            fnent->signature().parameters_count() % args.size());
+            fnent->signature().parameters_count() % (args.size() + namedargs.size()));
     }
     unit_.bvm().run(ctx, fnent->get_address());
     if (fnent->signature().fn_type.result != bang_tuple_t()) {
@@ -230,6 +295,12 @@ smart_blob bang_impl::call(string_view fnsig, invocation::invocable* penv, span<
         ctx.stack_pop();
     }
     return result;
+#endif
 }
+
+//void bang_impl::set_cout_writer(function<void(string_view)> writer)
+//{
+//    unit_.set_cout_writer(std::move(writer));
+//}
 
 }

@@ -61,7 +61,7 @@ public:
     inline bool is_relative() const noexcept { return !absolute_; }
     inline bool is_absolute() const noexcept { return absolute_; }
 
-    qname& operator+= (qname const& r)
+    qname& operator/= (qname const& r)
     {
         if (r.is_absolute()) {
             parts_.clear();
@@ -71,7 +71,7 @@ public:
         return *this;
     }
 
-    qname& operator+= (IdentifierT r)
+    qname& operator/= (IdentifierT r)
     {
         parts_.emplace_back(r);
         return *this;
@@ -117,7 +117,12 @@ class qname_identifier
 public:
     qname_identifier() : value_{0x7fffffffu}, absolute_{1u} {}
 
-    qname_identifier(size_t idvalue, bool is_absolute) : value_{ static_cast<uint32_t>(idvalue) }, absolute_{ is_absolute ? 1u : 0 } {}
+    qname_identifier(size_t idvalue, bool is_absolute)
+        : value_{ static_cast<uint32_t>(idvalue) }
+        , absolute_{ is_absolute ? 1u : 0 }
+    {}
+
+    inline explicit operator bool() const noexcept { return value_ != 0x7fffffffu; }
 
     friend inline bool operator== (qname_identifier const& l, qname_identifier const& r)
     {
@@ -191,7 +196,7 @@ private:
 };
 
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, IdentifierT leaf)
+inline qname<IdentifierT> operator/ (qname<IdentifierT> const& base, IdentifierT leaf)
 {
     qname<IdentifierT> result{ base };
     result.append(leaf);
@@ -199,7 +204,7 @@ inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, IdentifierT
 }
 
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, qname_view<IdentifierT> leaf)
+inline qname<IdentifierT> operator/ (qname<IdentifierT> const& base, qname_view<IdentifierT> leaf)
 {
     if (leaf.is_absolute()) {
         return { leaf, true };
@@ -210,21 +215,21 @@ inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, qname_view<
 }
 
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, qname<IdentifierT> const& leaf)
+inline qname<IdentifierT> operator/ (qname<IdentifierT> const& base, qname<IdentifierT> const& leaf)
 {
-    return base + (qname_view<IdentifierT>)leaf;
+    return base / (qname_view<IdentifierT>)leaf;
 }
 
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname_view<IdentifierT> base, IdentifierT leaf)
+inline qname<IdentifierT> operator/ (qname_view<IdentifierT> base, IdentifierT leaf)
 {
-    return qname<IdentifierT>{ base, base.is_absolute() } + leaf;
+    return qname<IdentifierT>{ base, base.is_absolute() } / leaf;
 }
 
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname_view<IdentifierT> base, qname_view<IdentifierT> leaf)
+inline qname<IdentifierT> operator/ (qname_view<IdentifierT> base, qname_view<IdentifierT> leaf)
 {
-    return qname<IdentifierT>{ base, base.is_absolute() } + leaf;
+    return qname<IdentifierT>{ base, base.is_absolute() } / leaf;
 }
 
 }

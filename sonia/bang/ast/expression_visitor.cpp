@@ -26,9 +26,70 @@
 
 namespace sonia::lang::bang {
 
+inline unit& expression_visitor::u() const noexcept { return ctx.u(); }
+
+template <typename ExprT>
+inline expression_visitor::result_type expression_visitor::apply_cast(entity_identifier typeeid, ExprT const& e) const
+{
+    if (!expected_result) {
+        ctx.context_type = typeeid;
+        return {};
+    }
+
+    if (typeeid == expected_result->type) return {};
+
+    if (expected_result->type == u().get_any_entity_identifier()) {
+        ctx.context_type = expected_result->type;
+        return {};
+    }
+    entity const& ent = u().eregistry().get(expected_result->type);
+    entity_signature const* esig = ent.signature();
+    if (!esig) {
+        return make_error<basic_general_error>(expected_result->location, "type is expected"sv);
+    }
+    functional const* fn = u().fregistry().find(esig->name());
+    if (!fn) {
+        return make_error<cast_error>(expected_result->location, expected_result->type, typeeid, e);
+    }
+
+    lex::resource_location expr_loc = get_start_location(e);
+    pure_call_t cast_call{ expected_result->location };
+    cast_call.positioned_args.emplace_back(context_value{ typeeid, expr_loc }, expr_loc);
+
+    auto ptrn = fn->find(ctx, cast_call);
+    if (!ptrn.has_value()) {
+        return ptrn.error();
+        //return make_error<cast_error>(expected_result->location, expected_result->type, typeeid, e);
+    }
+    auto r = ptrn.value()->apply(ctx);
+    if (!r.has_value()) {
+        return r.error();
+    }
+    
+    return {};
+    //THROW_NOT_IMPLEMENTED_ERROR("expected type: %1%, but actual type: %2%"_fmt % u().print(expected_result->type) % u().print(typeeid));
+}
+
+expression_visitor::result_type expression_visitor::operator()(context_value& v) const
+{
+    // just verify condition
+    if (!expected_result) {
+        ctx.context_type = v.type;
+        return {};
+    }
+    if (v.type == expected_result->type) return {};
+    if (expected_result->type == u().get_any_entity_identifier()) {
+        ctx.context_type = expected_result->type;
+        return {};
+    }
+    THROW_INTERNAL_ERROR("expected type: %1%, but actual type: %2%"_fmt % u().print(expected_result->type) % u().print(v.type));
+}
+
 template <typename ExprT>
 inline expression_visitor::result_type expression_visitor::apply_cast(bang_type const& t, ExprT const& e) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::apply_cast");
+#if 0
     if (!expected_result || (t.which() == expected_result->type.which() && expected_result->type == t)) {
         ctx.context_type = t;
         return {};
@@ -36,6 +97,7 @@ inline expression_visitor::result_type expression_visitor::apply_cast(bang_type 
     return apply_visitor(
           expression_implicit_cast_visitor{ ctx, t, [this, &e] { return error_context{e, expected_result->location}; } }
         , expected_result->type);
+#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(annotated_bool const& b) const
@@ -60,49 +122,61 @@ expression_visitor::result_type expression_visitor::operator()(annotated_decimal
 expression_visitor::result_type expression_visitor::operator()(annotated_string const& s) const
 {
     ctx.append_expression(semantic::push_value{ s.value });
-    return apply_cast(bang_string_t{}, s);
+    return apply_cast(u().get_string_entity_identifier(), s);
 }
 
 expression_visitor::result_type expression_visitor::operator()(variable_identifier const& var) const
 {
-    shared_ptr<entity> e = ctx.resolve_entity(var.name.value);
-    if (auto varptr = dynamic_cast<variable_entity*>(e.get()); varptr) {
-        variable_entity::kind k = varptr->varkind();
-        if (k == variable_entity::kind::EXTERN) {
-            // do nothing
-        } else if (k == variable_entity::kind::STATIC) {
-            THROW_NOT_IMPLEMENTED_ERROR();
-        } else if (k == variable_entity::kind::SCOPE_LOCAL || k == variable_entity::kind::LOCAL) {
-            if (!ctx.u().qnregistry().resolve(varptr->name()).parent().has_prefix(ctx.base_ns())) {
-                if (k == variable_entity::kind::SCOPE_LOCAL || var.scope_local) {
-                    return make_error<basic_general_error>(var.name.location, "variable is not defined in the scope"sv, var.name.value);
+ //   THROW_NOT_IMPLEMENTED_ERROR("expression_visitor variable_identifier");
+#if 1
+    if (functional const* fl = ctx.lookup_functional(var.name.value); fl) {
+        if (entity_identifier eid = fl->default_entity(); eid) { // variable or const
+            ctx.append_expression(semantic::push_value{ eid });
+            entity const& ent = u().eregistry().get(eid);
+            return apply_cast(ent.get_type(), var);
+        }
+#if 0
+        shared_ptr<entity> e = ctx.resolve_entity(var.name.value);
+        if (auto varptr = dynamic_cast<variable_entity*>(e.get()); varptr) {
+            variable_entity::kind k = varptr->varkind();
+            if (k == variable_entity::kind::EXTERN) {
+                // do nothing
+            } else if (k == variable_entity::kind::STATIC) {
+                THROW_NOT_IMPLEMENTED_ERROR();
+            } else if (k == variable_entity::kind::SCOPE_LOCAL || k == variable_entity::kind::LOCAL) {
+                if (!ctx.u().qnregistry().resolve(varptr->name()).parent().has_prefix(ctx.base_ns())) {
+                    if (k == variable_entity::kind::SCOPE_LOCAL || var.scope_local) {
+                        return make_error<basic_general_error>(var.name.location, "variable is not defined in the scope"sv, var.name.value);
+                    }
+                    varptr = &ctx.create_captured_variable_chain(*varptr);
                 }
-                varptr = &ctx.create_captured_variable_chain(*varptr);
+            } else {
+                THROW_INTERNAL_ERROR("unknown variable kind");
             }
-        } else {
-            THROW_INTERNAL_ERROR("unknown variable kind");
-        }
 
-        ctx.append_expression(semantic::push_variable{ varptr });
-        if (varptr->is_weak()) {
-            ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_lock) });
+            ctx.append_expression(semantic::push_variable{ varptr });
+            if (varptr->is_weak()) {
+                ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_lock) });
+            }
+            return apply_cast(varptr->type(), var);
+        } else if (auto fnptr = dynamic_pointer_cast<functional_entity>(e); fnptr) {
+            if (!expected_result) {
+                THROW_NOT_IMPLEMENTED_ERROR("forward functional template");
+            }
+            expression_fn_visitor dvis{ ctx, *fnptr, [this, &var] { return error_context{var, expected_result->location}; } };
+            return apply_visitor(dvis, expected_result->type);
         }
-        return apply_cast(varptr->type(), var);
-    } else if (auto fnptr = dynamic_pointer_cast<functional_entity>(e); fnptr) {
-        if (!expected_result) {
-            THROW_NOT_IMPLEMENTED_ERROR("forward functional template");
+        /*
+        // to do: look for variable first
+        if (variable_entity const* pv = ctx.resolve_variable(aqnm.name); pv) {
+            result.emplace_back(semantic::push_variable{ pv });
+            return pv->type();
         }
-        expression_fn_visitor dvis{ ctx, *fnptr, [this, &var] { return error_context{var, expected_result->location}; } };
-        return apply_visitor(dvis, expected_result->type);
+        */
+#endif
     }
-    /*
-    // to do: look for variable first
-    if (variable_entity const* pv = ctx.resolve_variable(aqnm.name); pv) {
-        result.emplace_back(semantic::push_variable{ pv });
-        return pv->type();
-    }
-    */
     return make_error<undeclared_identifier_error>(var.name);
+#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(negate_expression_t & op) const
@@ -118,8 +192,9 @@ expression_visitor::result_type expression_visitor::operator()(negate_expression
 
 expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::ASSIGN>, binary_expression_t& op) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN");
     //GLOBAL_LOG_INFO() << "left expression: " << ctx.u().print(op.left);
-
+#if 0
     //size_t start_result_pos = result.size();
     lvalue_expression_visitor lvis{ ctx };
     auto e = apply_visitor(lvis, op.left);
@@ -160,7 +235,25 @@ expression_visitor::result_type expression_visitor::operator()(binary_operator_t
     }
     THROW_NOT_IMPLEMENTED_ERROR();
     */
+#endif
 }
+
+expression_visitor::result_type expression_visitor::operator()(entity_expression const& ee) const
+{
+    entity const& ent = ctx.u().eregistry().get(ee.id);
+    if (expected_result) {
+        if (ent.is(ctx, expected_result->type)) {
+            ctx.append_expression(semantic::push_value{ ee.id });
+            ctx.context_type = expected_result->type;
+            return {};
+        }
+        THROW_NOT_IMPLEMENTED_ERROR("expression_visitor entity_expression");
+    }
+    ctx.append_expression(semantic::push_value{ ee.id });
+    ctx.context_type = ent.get_type();
+    return {};
+}
+
 /*
 void attach_not_true_node(semantic::logic_tree_node_t & parent, shared_ptr<semantic::logic_tree_node_t> child)
 {
@@ -292,6 +385,9 @@ expression_visitor::result_type expression_visitor::operator()(logic_or_expressi
 
 expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::LOGIC_AND>, binary_expression_t& op) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::LOGIC_AND");
+    
+#if 0
     auto largvis = expected_result
         ? expression_visitor{ ctx, expected_result_t{ bang_type{bang_any_t{}} || expected_result->type, expected_result->location }}
         : expression_visitor{ ctx, nullptr };
@@ -321,10 +417,14 @@ expression_visitor::result_type expression_visitor::operator()(binary_operator_t
         return apply_cast(res_type.true_type, op);
     }
     return apply_cast(res_type, op);
+#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::LOGIC_OR>, binary_expression_t & op) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::LOGIC_OR");
+
+#if 0
     auto largvis = expected_result
         ? expression_visitor{ ctx, expected_result_t{ expected_result->type || bang_any_t{}, expected_result->location }}
         : expression_visitor{ ctx, nullptr };
@@ -355,6 +455,7 @@ expression_visitor::result_type expression_visitor::operator()(binary_operator_t
         return apply_cast(res_type.true_type, op);
     }
     return apply_cast(res_type, op);
+#endif
 }
 
 template <binary_operator_type BOpV>
@@ -397,6 +498,9 @@ template expression_visitor::result_type expression_visitor::operator()(binary_o
 
 expression_visitor::result_type expression_visitor::operator()(case_expression const& ce) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor case_expression");
+
+#if 0
     if (!expected_result) {
         return make_error<basic_general_error>(ce.name.location, "no context type to resolve the case expression"sv, ce.name.value);
     }
@@ -405,10 +509,14 @@ expression_visitor::result_type expression_visitor::operator()(case_expression c
         expression_cast_to_enum_visitor{ ctx, ce,  [this, &ce] { return error_context{ce, expected_result->location}; } },
         expected_result->type
     );
+#endif
 }
 
 std::expected<function_entity const*, error_storage> expression_visitor::handle_property_get(annotated_identifier id) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::handle_property_get");
+
+#if 0
     if (auto const* po = sonia::get<bang_object_t>(&ctx.context_type); po) {
         if (auto const& pte = dynamic_cast<type_entity const*>(po->value); pte) {
             auto rg = pte->find_field_getter(ctx, id);
@@ -421,10 +529,14 @@ std::expected<function_entity const*, error_storage> expression_visitor::handle_
         }
     }
     return std::unexpected(make_error<left_not_an_object_error>(id.location, id.value, ctx.context_type));
+#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(not_empty_expression_t& me) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::not_empty_expression_t");
+
+#if 0
     auto subvis = expected_result
         ? expression_visitor{ ctx, expected_result_t{ expected_result->type || bang_tuple_t{}, expected_result->location } }
         : expression_visitor{ ctx, nullptr };
@@ -437,6 +549,7 @@ expression_visitor::result_type expression_visitor::operator()(not_empty_express
         return {};
     }
     return make_error<basic_general_error>(get_start_location(me), "the expression type is not optional"sv, me);
+#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(member_expression_t & me) const
@@ -470,6 +583,8 @@ expression_visitor::result_type expression_visitor::operator()(property_expressi
 
 expression_visitor::result_type expression_visitor::operator()(expression_vector_t & vec) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor expression_vector_t");
+#if 0
     if (expected_result) {
         return apply_visitor(vector_expression_visitor{ ctx, vec, expected_result->location }, expected_result->type);
     }
@@ -484,6 +599,7 @@ expression_visitor::result_type expression_visitor::operator()(expression_vector
     }
     rtype.unpacked = true;
     return apply_cast(rtype, vec);
+#endif
 }
 
 function_entity& expression_visitor::handle_lambda(lambda_t& l) const
@@ -498,30 +614,39 @@ function_entity& expression_visitor::handle_lambda(lambda_t& l) const
 
 expression_visitor::result_type expression_visitor::operator()(lambda_t & l) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor lambda_t");
+
+#if 0
     function_entity& fe = handle_lambda(l);
     ctx.context_type = fe.type();
     return {};
+#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(function_call_t & proc) const
 {
+    //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor function_call_t");
+
     //expression_visitor evis{ ctx, nullptr };
     //semantic_expression_pair epair = apply_visitor(evis, proc.subject);
     
-    // check uniqueness
-    if (auto it = std::ranges::adjacent_find(proc.named_args, {}, [](auto const& pair) { return std::get<0>(pair).value; }); it != proc.named_args.end()) {
-        ++it; // get second
-        auto const& aid = std::get<0>(*it);
-        return make_error<basic_general_error>(aid.location, "repeated argument"sv, ctx.u().qnregistry().resolve(aid.value));
-    }
+    // no nee check uniqueness due to the named ellipsis support
+    //if (auto it = std::ranges::adjacent_find(proc.named_args, {}, [](auto const& pair) { return std::get<0>(pair).value; }); it != proc.named_args.end()) {
+    //    ++it; // get second
+    //    auto const& aid = std::get<0>(*it);
+    //    return make_error<basic_general_error>(aid.location, "repeated argument"sv, ctx.u().qnregistry().resolve(aid.value));
+    //}
 
     if (auto *pl = get<lambda_t>(&proc.fn_object); pl) {
+        THROW_NOT_IMPLEMENTED_ERROR("expression_visitor function_call_t lambda_t");
+#if 0
         function_entity& fnent = handle_lambda(*pl);
         //ctx.expressions.emplace_back(semantic::set_variable{ &fnent });
         fnent.materialize_call(ctx, proc);
         ctx.append_expression(semantic::truncate_values{ 1, !fnent.is_void() }); // remove fnobject
         ctx.context_type = fnent.signature().fn_type.result;
         return {};
+#endif
     }
 
     variable_identifier const* fnvar = get<variable_identifier>(&proc.fn_object);
@@ -529,19 +654,28 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t &
         THROW_NOT_IMPLEMENTED_ERROR("fn object expression is not implemented yet");
     }
     //GLOBAL_LOG_INFO() << ctx.u().print(fnvar->name);
-    shared_ptr<entity> e = ctx.resolve_entity(fnvar->name.value);
-    if (!e) [[unlikely]] {
+    functional* fnl = ctx.resolve_functional(fnvar->name.value);
+    if (!fnl) {
         return make_error<undeclared_identifier_error>(fnvar->name);
     }
-    shared_ptr<functional_entity> func_ent = dynamic_pointer_cast<functional_entity>(e);
-    if (!func_ent) [[unlikely]] {
-        // to do: can be variable
-        return make_error<basic_general_error>(fnvar->name.location, "is not callable"sv, fnvar->name.value);
-    }
     
-    auto optres = func_ent->find(ctx, proc);
+    //shared_ptr<entity> e = ctx.resolve_entity(fnvar->name.value);
+    //if (!e) [[unlikely]] {
+    //    return make_error<undeclared_identifier_error>(fnvar->name);
+    //}
+    //shared_ptr<functional_entity> fnl = dynamic_pointer_cast<functional_entity>(e);
+    //if (!fnl) [[unlikely]] {
+    //    // to do: can be variable
+    //    return make_error<basic_general_error>(fnvar->name.location, "is not callable"sv, fnvar->name.value);
+    //}
+    
+    auto ptrn = fnl->find(ctx, proc);
+    if (!ptrn.has_value()) return std::move(ptrn.error());
+    auto optres = ptrn.value()->apply(ctx);
     if (!optres.has_value()) return std::move(optres.error());
-    return apply_cast(optres.value()->fn_type.result, proc);
+    return apply_cast(optres.value(), proc);
+
+    //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::operator()(function_call_t");
 }
 
 expression_visitor::result_type expression_visitor::operator()(chained_expression_t&) const

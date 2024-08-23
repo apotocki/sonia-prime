@@ -81,7 +81,7 @@ struct expression_cast_to_array_visitor : static_visitor<error_storage>
         return apply_visitor(vis, type2cast);
     }
     */
-
+#if 0
     inline result_type operator()(bang_array_t const& v) const
     {
         if (target.type == v.type) {
@@ -92,7 +92,8 @@ struct expression_cast_to_array_visitor : static_visitor<error_storage>
     }
 
     result_type operator()(bang_tuple_t const& v) const;
-    
+#endif
+
     template <typename T>
     result_type operator()(T const& v) const
     {

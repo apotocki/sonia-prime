@@ -10,11 +10,12 @@ namespace sonia {
 
 void bang_view_model::do_registration(registrar_type& mr)
 {
-    using load_bang_t = void(lang::bang::language::*)(string_view);
+    using load_bang_t = void(lang::bang::language::*)(string_view, span<string_view>);
     ////mr.register_method<(load_bang_t)&bang_view_model::build>("load_bang"sv);
     //mr.register_method<(load_bang_t)&bang_view_model::build>("load_code"sv);
-    mr.register_method<(load_bang_t)&lang::bang::language::build>("load_code"sv);
+    //mr.register_method<(load_bang_t)&lang::bang::language::load>("load_code"sv);
     
+    mr.register_method<&bang_view_model::load_code>("load_code"sv);
     mr.register_method<&bang_view_model::load_file>("load_file"sv);
     mr.register_method<&bang_view_model::eval>("eval"sv);
     //using load_bang_t = void(bang_view_model::*)(string_view);
@@ -23,11 +24,21 @@ void bang_view_model::do_registration(registrar_type& mr)
     //mr.register_method<&bang_view_model::append_inplace>("append_inplace"sv);
 }
 
+bang_view_model::bang_view_model(int32_t idval)
+    : view_model{ idval }
+{
+    set_environment(this);
+}
+
+void bang_view_model::load_code(string_view code)
+{
+    load(code);
+}
+
 void bang_view_model::load_file(string_view pathstr)
 {
     fs::path path{ u8string_view{reinterpret_cast<char8_t const*>(pathstr.data()), pathstr.size()} };
-    build(path);
-    run(this, {});
+    load(path);
 }
 
 smart_blob bang_view_model::eval(string_view code, bool no_return)
@@ -45,13 +56,13 @@ smart_blob bang_view_model::eval(string_view code, bool no_return)
         } else {
             fncodess << code << "; }";
         }
-        build((string_view)fncodess.str());
+        load((string_view)fncodess.str());
         
         it = inplace_fns_.insert(std::pair{ std::string{code}, std::move(fnname) }).first;
     }
 
     std::string const& fnname = it->second;
-    return call(fnname, this);
+    return call(fnname);
 }
 
 }

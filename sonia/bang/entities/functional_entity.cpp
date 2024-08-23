@@ -30,17 +30,19 @@ function_signature& functional_entity::put_signature(function_signature&& one_mo
 
 std::expected<function_signature const*, error_storage> functional_entity::find(fn_compiler_context& ctx, pure_call_t & call) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("functional_entity::find");
+#if 0
     alt_error aerr;
     auto estate = ctx.expressions_state();
     for (auto & sig: signatures) {
         if (auto optres = is_matched(ctx, sig, call); optres) {
             aerr.alternatives.emplace_back(
-                make_error<function_call_match_error>(annotated_qname_identifier{ name(), call.location() }, sig, std::move(optres))
+                make_error<function_call_match_error>(annotated_qname_identifier{ name_, call.location() }, &sig, std::move(optres))
             );
             estate.restore();
             continue;
         }
-        ctx.append_expression(semantic::invoke_function{ ctx.u().qnregistry().concat(name(), sig.mangled_id) });
+        ctx.append_expression(semantic::invoke_function{ ctx.u().qnregistry().concat(name_, sig.mangled_id) });
         estate.detach();
         ctx.context_type = sig.fn_type.result;
         return &sig;
@@ -49,6 +51,7 @@ std::expected<function_signature const*, error_storage> functional_entity::find(
         return std::unexpected(std::move(aerr.alternatives.front()));
     }
     return std::unexpected(make_error<alt_error>(std::move(aerr)));
+#endif
 }
 
 function_signature const* functional_entity::find(fn_compiler_context& ctx,
@@ -67,7 +70,7 @@ void function_entity::materialize_call(fn_compiler_context& ctx, pure_call_t& ca
 {
     auto estate = ctx.expressions_state();
     if (auto opterr = is_matched(ctx, signature_, call); opterr) {
-        throw exception(ctx.u().print(function_call_match_error{ annotated_qname_identifier{ name(), call.location() }, signature_, opterr }));
+        throw exception(ctx.u().print(function_call_match_error{ annotated_qname_identifier{ name(), call.location() }, &signature_, opterr }));
     }
     ctx.append_expression(semantic::invoke_function{ name() });
     estate.detach();
@@ -94,6 +97,8 @@ bool is_matched(fn_compiler_context& ctx,
 
 error_storage is_matched(fn_compiler_context& ctx, function_signature const& sig, pure_call_t& call)
 {
+    THROW_NOT_IMPLEMENTED_ERROR("functional_entity::is_matched");
+#if 0
     if (call.positioned_args.size() != sig.position_parameters().size() || call.named_args.size() != sig.named_parameters().size())
         return make_error<basic_general_error>(call.location(), "argument count mismatch"sv);
     auto positioned_args = std::span{ call.positioned_args };
@@ -113,6 +118,7 @@ error_storage is_matched(fn_compiler_context& ctx, function_signature const& sig
         named_args = named_args.subspan(1);
     }
     return {}; // matched
+#endif
 }
 
 }

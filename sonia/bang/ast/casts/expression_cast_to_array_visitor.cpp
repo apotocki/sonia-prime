@@ -8,7 +8,7 @@
 #include "utility.hpp"
 
 namespace sonia::lang::bang {
-
+#if 0
 expression_cast_to_array_visitor::result_type expression_cast_to_array_visitor::operator()(bang_tuple_t const& v) const
 {
     if (v.named_fields.empty() && v.fields.size() == target.size) {
@@ -65,5 +65,5 @@ expression_cast_to_array_visitor::result_type expression_cast_to_array_visitor::
     }
     return make_error<cast_error>(cl_(), target, v);
 }
-
+#endif
 }

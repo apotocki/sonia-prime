@@ -11,10 +11,27 @@
 
 namespace sonia::lang::bang {
 
+void bang_assert(vm::context& ctx)
+{
+    bool r = ctx.stack_back().as<bool>();
+    ctx.stack_pop();
+    if (!r) {
+        throw exception("bang assertion error");
+    }
+}
+
+void bang_decimal_equal(vm::context& ctx)
+{
+    mp::decimal r = ctx.stack_back().as<mp::decimal>();
+    mp::decimal l = ctx.stack_back(1).as<mp::decimal>();
+    ctx.stack_pop();
+    ctx.stack_back().replace(smart_blob{ bool_blob_result(l == r) });
+}
+
 void bang_tostring(vm::context & ctx)
 {
     std::ostringstream res;
-    res << ctx.stack_back();
+    print_to_stream(res, *ctx.stack_back(), false);
     ctx.stack_pop(1);
     smart_blob r{ string_blob_result(res.str()) };
     r.allocate();

@@ -37,10 +37,10 @@ public:
 
     virtual entity_signature const* signature() const noexcept { return nullptr; }
 
-    //entity_signature signature_;
-    //inline void set_signature(entity_signature && sgn) noexcept { signature_ = std::move(sgn); }
-
-    virtual void visit(entity_visitor const&) const { THROW_NOT_IMPLEMENTED_ERROR("entity::visit"); }
+    virtual void visit(entity_visitor const&) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR("entity::visit");
+    }
 
     virtual size_t hash() const noexcept { return 0; }
     virtual bool equal(entity const&) const noexcept { return true; }
@@ -58,7 +58,15 @@ protected:
     entity_signature signature_;
 
 public:
-    using entity::entity;
+    type_entity() = default;
+
+    explicit type_entity(entity_identifier type)
+        : entity{ type }
+    {}
+
+    type_entity(entity_identifier type, entity_signature&& sgn)
+        : entity{ type }, signature_{ std::move(sgn) }
+    {}
 
     inline void set_signature(entity_signature && sgn) noexcept { signature_ = std::move(sgn); }
 
@@ -127,6 +135,7 @@ class variable_entity;
 class functional_entity;
 class function_entity;
 class type_entity;
+class variable_entity;
 
 class entity_visitor
 {
@@ -136,9 +145,10 @@ public:
     virtual void operator()(string_literal_entity const&) const = 0;
     virtual void operator()(decimal_literal_entity const&) const = 0;
     virtual void operator()(pack_entity const&) const = 0;
+    virtual void operator()(function_entity const&) const = 0;
+    virtual void operator()(variable_entity const&) const = 0;
 
     virtual void operator()(functional_entity const&) const = 0;
-    virtual void operator()(function_entity const&) const = 0;
 };
 
 // ======================================================================== values

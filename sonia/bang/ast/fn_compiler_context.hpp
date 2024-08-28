@@ -56,7 +56,7 @@ class fn_compiler_context
     size_t local_variable_count_ = 0;
     
 public:
-    using expr_vec_t = std::vector<semantic::expression_type>;
+    using expr_vec_t = std::vector<semantic::expression_t>;
 
     fn_compiler_context(unit& u, qname ns)
         : unit_{ u }
@@ -93,6 +93,7 @@ public:
 
     unit& u() const { return unit_; }
 
+    error_storage build_fieldset(fn_pure_decl const& pure_decl, fieldset& fs);
     std::expected<function_descriptor, error_storage> build_function_descriptor(fn_pure_decl& pure_decl);
 
     functional* resolve_functional(qname_identifier name) const
@@ -192,7 +193,7 @@ public:
 
     boost::container::small_vector<std::pair<variable_entity*, variable_entity*>, 16> captured_variables;
 
-    variable_entity& new_captured_variable(identifier name, bang_type t, variable_entity& caption)
+    variable_entity& new_captured_variable(identifier name, entity_identifier t, variable_entity& caption)
     {
         THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context new_captured_variable");
 #if 0
@@ -215,10 +216,10 @@ public:
         qname_view name_qv = u().qnregistry().resolve(v.name());
         qname_view vardefscope = name_qv.parent();
         if (vardefscope.has_prefix(parent_->base_ns())) {
-            return new_captured_variable(name_qv.back(), v.type(), v);
+            return new_captured_variable(name_qv.back(), v.get_type(), v);
         } else {
             variable_entity& parentvar = parent_->create_captured_variable_chain(v);
-            return new_captured_variable(name_qv.back(), v.type(), parentvar);
+            return new_captured_variable(name_qv.back(), v.get_type(), parentvar);
         }
     }
 
@@ -239,7 +240,7 @@ public:
         if (local_variable_count_ == 1) {
             expressions_.front() = semantic::push_value{ null_t{} };
         } else if (local_variable_count_) {
-            std::vector<semantic::expression_type> prolog;
+            std::vector<semantic::expression_t> prolog;
             prolog.resize(local_variable_count_, semantic::push_value{ null_t{} });
             expressions_.front() = std::move(prolog);
         }
@@ -267,7 +268,7 @@ public:
     expr_vec_t& expressions() { return *expr_stack_.back(); }
     expr_vec_t& expressions(size_t branch_offset) { return *expr_stack_[expr_stack_.size() - branch_offset - 1]; }
     size_t expressions_branch() const { return expr_stack_.size(); }
-    void append_expression(semantic::expression_type && e)
+    void append_expression(semantic::expression_t && e)
     {
         expressions().emplace_back(std::move(e));
     }
@@ -277,7 +278,7 @@ public:
         return { expr_stack_.size() - 1, expr_stack_.back()->size() - 1 };
     }
 
-    void set_expression(std::pair<size_t, size_t> ep, semantic::expression_type&& e)
+    void set_expression(std::pair<size_t, size_t> ep, semantic::expression_t&& e)
     {
         (*expr_stack_[ep.first])[ep.second] = std::move(e);
     }

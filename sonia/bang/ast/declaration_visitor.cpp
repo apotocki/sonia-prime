@@ -12,8 +12,11 @@
 #include "../entities/enum_entity.hpp"
 #include "../entities/type_entity.hpp"
 #include "../entities/functional_entity.hpp"
+#include "../entities/functions/basic_fn_pattern.hpp"
 
 namespace sonia::lang::bang {
+
+inline unit& declaration_visitor::u() const noexcept { return ctx.u(); }
 
 void declaration_visitor::operator()(extern_var & d) const
 {
@@ -37,10 +40,10 @@ void declaration_visitor::operator()(extern_var & d) const
 
 void declaration_visitor::operator()(expression_decl_t & ed) const
 {
-    entity_identifier void_eid = ctx.u().get_void_entity_identifier();
+    entity_identifier void_eid = u().get_void_entity_identifier();
     ctx.context_type = void_eid;
     if (auto opterr = apply_visitor(expression_visitor{ ctx }, ed.expression); opterr) {
-        throw exception(ctx.u().print(*opterr));
+        throw exception(u().print(*opterr));
     }
     if (ctx.context_type != void_eid) {
         ctx.append_expression(semantic::truncate_values(1, false));
@@ -48,21 +51,33 @@ void declaration_visitor::operator()(expression_decl_t & ed) const
     ctx.collapse_chains();
 }
 
-function_signature& declaration_visitor::append_fnsig(fn_pure_decl& fd, functional ** ppf) const
+void declaration_visitor::append_fnsig(fn_pure_decl& fndecl, functional ** ppf) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor append_fnsig");
 #if 0
-    qname fn_qname = ctx.ns() / fd.name();
+    qname fn_qname = ctx.ns() / fndecl.name();
     if (!fn_qname.has_prefix(ctx.ns())) {
         throw exception("%1%(%2%,%3%): %4% : not a nested scope identifier"_fmt %
-            fd.location().resource % fd.location().line % fd.location().column %
-            ctx.u().print(fd.name())
+            fndecl.location().resource % fndecl.location().line % fndecl.location().column %
+            u().print(fndecl.name())
         );
     }
-    qname_identifier fn_qnameid = ctx.u().qnregistry().resolve(fn_qname);
-    functional & f = ctx.u().fregistry().resolve(fn_qnameid);
+    
+    auto fnres = ctx.build_function_descriptor(fndecl);
+    if (!fnres.has_value()) {
+        throw exception(ctx.u().print(*fnres.error()));
+    }
+    function_descriptor& fd = fnres.value();
+
+    qname_identifier fn_qnameid = u().qnregistry().resolve(fn_qname);
+    functional& f = ctx.u().fregistry().resolve(fn_qnameid);
     if (ppf) *ppf = std::addressof(f);
 
+    f.push(make_shared<fn_pattern>(std::move(fd)));
+#endif
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor append_fnsig");
+
+#if 0
+    
     function_signature sig;
     sig.setup(ctx, fd.parameters);
     sig.normilize(ctx);
@@ -87,6 +102,7 @@ function_signature& declaration_visitor::append_fnsig(fn_pure_decl& fd, function
 #endif
 }
 
+// extern function declaration
 void declaration_visitor::operator()(fn_pure_decl & fd) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_pure_decl");
@@ -187,10 +203,67 @@ function_entity & declaration_visitor::append_fnent(fn_pure_decl& fnd, function_
 
 void declaration_visitor::operator()(fn_decl_t& fnd) const
 {
-    //shared_ptr<functional_entity> fe;
-    function_signature& sig = append_fnsig(fnd);
-    function_entity & fnent = append_fnent(fnd, sig, fnd.body);
+    auto fnptrn = make_shared<basic_fn_pattern>(ctx, fnd);
+    functional& f = u().resolve_functional(fnptrn->fn_qname_id());
+    f.push(std::move(fnptrn));
+
+#if 0
+    //---------------
+    fieldset fnfs;
+    if (auto err = ctx.build_fieldset(fnd, fnfs); err) {
+        throw exception(u().print(*err));
+    }
+
+    
+
+    
+    auto fptrn = make_shared<basic_fn_pattern>(std::move(fnfs));
+    f.push(fptrn);
+    function_descriptor& fd = fptrn->
+    function_descriptor& fd = fnres.value();
+    entity_signature fnsig{ u().get_fn_qname_identifier() };
+    
+    fn_compiler_context fnctx{ ctx, fnd.name() / u().new_identifier() };
+
+    
+
+    
+
+    shared_ptr<type_entity> fn_type_entity;
+    if (fd.result_type()) {
+        // create function type
+        fnsig.push(u().get_fn_result_identifier(), fd.result_type());
+        fn_type_entity = make_shared<type_entity>(u().get_typename_entity_identifier()); // function type is typename
+        fn_type_entity->set_signature(std::move(fnsig));
+    }
+
+
+    auto fnent = sonia::make_shared<function_entity>(fnqnid, function_signature{ sig });
+    
+
+    declaration_visitor dvis{ fnctx };
+    for (infunction_declaration_t& d : fnd.body) {
+        apply_visitor(dvis, d);
+    }
+    // here all captured variables (if exist) are allocated
+    fnctx.finish_frame();
+
+    intptr_t paramnum = 0;
+    size_t paramcount = params.size() + fnctx.captured_variables.size();
+    for (variable_entity* var : params) {
+        var->set_index(paramnum - paramcount);
+        ++paramnum;
+    }
+    for (auto [from, tovar] : fnctx.captured_variables) {
+        tovar->set_index(paramnum - paramcount);
+        ++paramnum;
+    }
+
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_decl_t");
+    //function_signature& sig = append_fnsig(fnd);
+    //function_entity & fnent = append_fnent(fnd, sig, fnd.body);
     //ctx.expressions.emplace_back(semantic::set_variable{ &fnent });
+#endif
 }
 
 void declaration_visitor::operator()(let_statement_decl_t & ld) const

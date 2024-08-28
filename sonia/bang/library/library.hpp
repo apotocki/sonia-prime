@@ -8,8 +8,11 @@
 
 namespace sonia::lang::bang {
 
+void bang_assert(vm::context&);
+void bang_decimal_equal(vm::context&);
 void bang_tostring(vm::context&);
 void bang_print_string(vm::context&);
+
 void bang_negate(vm::context&);
 void bang_concat_string(vm::context&);
 

@@ -137,16 +137,16 @@ public:
 
     static small_string camel2kebab(string_view cc);
 
-    inline size_t statics_size() const noexcept { return vm_.statics().size(); }
+    inline size_t consts_size() const noexcept { return vm_.consts().size(); }
     inline size_t stack_size() const noexcept { return vm_.stack().size(); }
 
-    variable_type const& static_at(size_t i) const
+    variable_type const& const_at(size_t i) const
     {
-        size_t ssz = statics_size();
+        size_t ssz = consts_size();
         if (ssz <= i) [[unlikely]] {
             THROW_INTERNAL_ERROR("wrong static var index");
         }
-        return vm_.statics()[i];
+        return vm_.consts()[i];
     }
 
     variable_type const& stack_at(size_t i) const
@@ -275,8 +275,9 @@ class virtual_stack_machine : public sonia::vm::virtual_stack_machine<vm::contex
 public:
     virtual_stack_machine();
 
-    size_t append_static_const(smart_blob&& value);
-    void append_push_static_const(smart_blob&& value);
+    size_t add_pooled_const(smart_blob&& value);
+    void set_const(size_t index, smart_blob&& value);
+    void append_push_pooled_const(smart_blob&& value);
 
     enum class builtin_fn
     {

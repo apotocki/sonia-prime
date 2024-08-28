@@ -111,9 +111,15 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(fun
     THROW_NOT_IMPLEMENTED_ERROR();
 }
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(unary_expression_t<unary_operator_type::NEGATE> const&) const
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(unary_expression_t const& be) const
 {
     THROW_NOT_IMPLEMENTED_ERROR();
+}
+
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(binary_expression_t const& be) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR();
+    //return bang_binary_switcher(be, *this);
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(binary_operator_t<binary_operator_type::ASSIGN>, binary_expression_t const&) const
@@ -137,6 +143,16 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(bin
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(binary_operator_t<binary_operator_type::PLUS>, binary_expression_t const&) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR();
+}
+
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(binary_operator_t<binary_operator_type::EQ>, binary_expression_t const&) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR();
+}
+
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(binary_operator_t<binary_operator_type::NE>, binary_expression_t const&) const
 {
     THROW_NOT_IMPLEMENTED_ERROR();
 }

@@ -125,11 +125,6 @@ RETURN                  "return"
 INCLUDE					"include"
 
 TYPENAME				"typename"
-BOOL					"bool"
-INT						"int"
-FLOAT					"float"
-/* STRING_WORD			"string" */
-/* DECIMAL_WORD			"decimal" */
 
 TRUE					"true"
 FALSE					"false"
@@ -158,6 +153,8 @@ LOGIC_OR                "||"
 LOGIC_AND               "&&"
 ARROW					"->"
 CONCAT					".."
+EQ                      "=="
+NE                      "!="
 ELLIPSIS				"..."
 
 /*
@@ -193,8 +190,8 @@ LEFTSHIFT               "<<"
 RIGHTSHIFT              ">>"
 LE                      "<="
 GE                      ">="
-EQ                      "=="
-NE                      "!="
+
+
 
 
 ADDASSIGN               "+="
@@ -300,12 +297,7 @@ HASHTAG					"#"
 	{INCLUDE} { return (bang_lang::parser::token::INCLUDE); }
 
 	{TYPENAME} { return (bang_lang::parser::token::TYPENAME); }
-	{BOOL} { return (bang_lang::parser::token::BOOL); }
-	{INT} { return (bang_lang::parser::token::INT); }
-	{FLOAT} { return (bang_lang::parser::token::FLOAT); }
-	/* {STRING_WORD} { return (bang_lang::parser::token::STRING_WORD); } */
-	/* {DECIMAL_WORD} { return (bang_lang::parser::token::DECIMAL_WORD); } */
-
+	
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
 	{CONST} { return (bang_lang::parser::token::CONST); }
 
@@ -333,6 +325,8 @@ HASHTAG					"#"
     {LOGIC_AND}             { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
 	{ARROW}                 { return (bang_lang::parser::token::ARROW); }
 	{CONCAT}                { variant_emplace(location); return (bang_lang::parser::token::CONCAT); }
+	{EQ}					{ variant_emplace(location); return (bang_lang::parser::token::EQ); }
+	{NE}					{ variant_emplace(location); return (bang_lang::parser::token::NE); }
 	{ELLIPSIS}              { variant_emplace(location); return (bang_lang::parser::token::ELLIPSIS); }
 
 	{IDENTIFIER} {

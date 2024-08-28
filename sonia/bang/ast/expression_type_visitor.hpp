@@ -20,9 +20,9 @@ struct expression_type_visitor : static_visitor<optional<bang_type>>
 {
     fn_compiler_context& ctx;
     bang_type const& expected_tp;
-    std::vector<semantic::expression_type>& result;
+    std::vector<semantic::expression_t>& result;
 
-    expression_type_visitor(fn_compiler_context& c, bang_type const& t, std::vector<semantic::expression_type>& r)
+    expression_type_visitor(fn_compiler_context& c, bang_type const& t, std::vector<semantic::expression_t>& r)
         : ctx{ c }
         , expected_tp{ t }
         , result{ r }

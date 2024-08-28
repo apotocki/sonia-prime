@@ -14,10 +14,8 @@ class pack_entity : public type_entity
 
 public:
     explicit pack_entity(qname_identifier eqnm, entity_identifier elem, entity_identifier type)
-        : type_entity{ type }, pack_element_type_{ elem }
-    {
-        signature_ = std::move(entity_signature{ eqnm }.push(elem));
-    }
+        : type_entity{ type, std::move(entity_signature{ eqnm }.push(elem)) }, pack_element_type_{ elem }
+    {}
 
     entity_identifier element_type() const { return pack_element_type_; }
 

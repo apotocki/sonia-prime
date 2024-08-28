@@ -12,9 +12,12 @@
 #include "ast/forward_declaration_visitor.hpp"
 #include "ast/declaration_visitor.hpp"
 
+#include "entities/functions/function_entity.hpp"
+
 #include "vm/compiler_visitor.hpp"
 
 #include "sonia/utility/scope_exit.hpp"
+
 
 namespace sonia::lang::bang::detail {
 
@@ -185,6 +188,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
 
     // at first compile all functions
     unit_.eregistry().traverse([this, &vmcvis](entity& e) {
+        //GLOBAL_LOG_INFO() << unit_.print(e);
         if (auto fe = dynamic_cast<function_entity*>(&e); fe && !fe->is_defined()) {
             do_compile(vmcvis, *fe);
         }
@@ -195,7 +199,8 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
     // all arguments referenced as constants => no fp prolog/epilog code
     auto& bvm = unit_.bvm();
     size_t main_address = bvm.get_ip();
-    for (auto const& e : ctx.expressions()) {
+    for (semantic::expression_t const& e : ctx.expressions()) {
+        //GLOBAL_LOG_INFO() << "\n"sv << unit_.print(e);
         apply_visitor(vmcvis, e);
     }
     bvm.append_ret();
@@ -213,8 +218,11 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
 
 void bang_impl::do_compile(vm::compiler_visitor & vmcvis, function_entity & fe)
 {
+    if (!fe.is_built()) {
+        fe.build(unit_);
+    }
     GLOBAL_LOG_INFO() << "compiling function: " << unit_.print(fe.name());
-    size_t param_count = fe.fsignature().parameters_count() + fe.captured_variables.size();
+    size_t param_count = fe.parameter_count(); // including captured_variables
 
     auto& bvm = unit_.bvm();
     // at first return code
@@ -231,18 +239,26 @@ void bang_impl::do_compile(vm::compiler_visitor & vmcvis, function_entity & fe)
     vmcvis.local_return_address = return_address;
 
     size_t address = bvm.get_ip();
-    if (!fe.is_defined()) {
-        fe.set_address(address);
-    } else if (fe.is_static_variable_index()) {
-        size_t varaddress = fe.get_address();
-        bvm.statics().at(varaddress).replace(smart_blob{ui64_blob_result(address)});
-        fe.set_address(address); // update for future direct calls
-    }
+
+    // replace index with real function address
+    BOOST_ASSERT(fe.is_const_index());
+    size_t fni = fe.get_index();
+    bvm.set_const(fni, smart_blob{ ui64_blob_result(address) });
+    fe.set_address(address);
+
+    //if (!fe.is_defined()) {
+    //    fe.set_address(address);
+    //} else if (fe.is_const_index()) {
+    //    size_t varaddress = fe.get_address();
+    //    bvm.consts().at(varaddress).replace(smart_blob{ui64_blob_result(address)});
+    //    fe.set_address(address); // update for future direct calls
+    //}
 
     //if (param_count) {
     bvm.append_pushfp(); // for accessing function arguments and local variables
     //}
-    for (auto const& e : fe.body) {
+    for (auto const& e : fe.body()) {
+        //GLOBAL_LOG_INFO() << "\n"sv << unit_.print(e);
         apply_visitor(vmcvis, e);
     }
     vmcvis.local_return_address = nullopt;
@@ -263,7 +279,10 @@ void bang_impl::run(span<string_view> args)
     } else {
         ctx.stack_push(nil_blob_result());
     }
+    THROW_NOT_IMPLEMENTED_ERROR("bang_impl::run");
+#if 0
     unit_.bvm().run(ctx, main_function_->get_address());
+#endif
 }
 
 smart_blob bang_impl::call(string_view fnsig, span<const std::pair<string_view, const blob_result>> namedargs, span<const blob_result> args)

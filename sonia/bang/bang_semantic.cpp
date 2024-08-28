@@ -34,7 +34,7 @@ public:
     explicit type_mangler_visitor(unit& u) : u_{ u } {}
 
     inline result_type operator()(bang_any_t) const { return qnid("any"sv); }
-    inline result_type operator()(bang_bool_t) const { return qnid("bool"sv); }
+    //inline result_type operator()(bang_bool_t) const { return qnid("bool"sv); }
     inline result_type operator()(bang_int_t) const { return qnid("int"sv); }
     inline result_type operator()(bang_float_t) const { return qnid("float"sv); }
     inline result_type operator()(bang_decimal_t) const { return qnid("decimal"sv); }
@@ -220,7 +220,7 @@ struct union_type_remove_visitor : static_visitor<bool>
     explicit union_type_remove_visitor(bang_union_t& r) : res{ r } {}
     using basic_type = bang_union_t::basic_type;
 
-    bool operator()(bang_bool_t const&) const { res.basic_members &= ~(uint16_t)basic_type::bool_e; return true; }
+    //bool operator()(bang_bool_t const&) const { res.basic_members &= ~(uint16_t)basic_type::bool_e; return true; }
     bool operator()(bang_int_t const&) const { res.basic_members &= ~(uint16_t)basic_type::int_e; return true; }
     bool operator()(bang_float_t const&) const { res.basic_members &= ~(uint16_t)basic_type::float_e; return true; }
     bool operator()(bang_decimal_t const&) const { res.basic_members &= ~(uint16_t)basic_type::decimal_e; return true; }

@@ -54,7 +54,7 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
 
     lex::resource_location expr_loc = get_start_location(e);
     pure_call_t cast_call{ expected_result->location };
-    cast_call.positioned_args.emplace_back(context_value{ typeeid, expr_loc }, expr_loc);
+    cast_call.positioned_args.emplace_back(context_value{ typeeid, expr_loc });
 
     auto ptrn = fn->find(ctx, cast_call);
     if (!ptrn.has_value()) {
@@ -85,38 +85,31 @@ expression_visitor::result_type expression_visitor::operator()(context_value& v)
     THROW_INTERNAL_ERROR("expected type: %1%, but actual type: %2%"_fmt % u().print(expected_result->type) % u().print(v.type));
 }
 
-template <typename ExprT>
-inline expression_visitor::result_type expression_visitor::apply_cast(bang_type const& t, ExprT const& e) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::apply_cast");
-#if 0
-    if (!expected_result || (t.which() == expected_result->type.which() && expected_result->type == t)) {
-        ctx.context_type = t;
-        return {};
-    }
-    return apply_visitor(
-          expression_implicit_cast_visitor{ ctx, t, [this, &e] { return error_context{e, expected_result->location}; } }
-        , expected_result->type);
-#endif
-}
+//template <typename ExprT>
+//inline expression_visitor::result_type expression_visitor::apply_cast(bang_type const& t, ExprT const& e) const
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::apply_cast");
+//#if 0
+//    if (!expected_result || (t.which() == expected_result->type.which() && expected_result->type == t)) {
+//        ctx.context_type = t;
+//        return {};
+//    }
+//    return apply_visitor(
+//          expression_implicit_cast_visitor{ ctx, t, [this, &e] { return error_context{e, expected_result->location}; } }
+//        , expected_result->type);
+//#endif
+//}
 
 expression_visitor::result_type expression_visitor::operator()(annotated_bool const& b) const
 {
     ctx.append_expression(semantic::push_value{ b.value });
-    return apply_cast(bang_bool_t{}, b);
+    return apply_cast(u().get_bool_entity_identifier(), b);
 }
-
-//expression_visitor::result_type expression_visitor:: operator()(annotated_integer const& i) const
-//{
-//    ctx.append_expression(semantic::push_value{ i.value });
-//    return apply_cast(bang_object_t{ &ctx.u().get_functional_entity(unit::builtin_type::integer) }, i);
-//}
 
 expression_visitor::result_type expression_visitor::operator()(annotated_decimal const& d) const
 {
     ctx.append_expression(semantic::push_value{ d.value });
-    return apply_cast(bang_object_t{&ctx.u().get_functional_entity(unit::builtin_type::decimal)}, d);
-    //return apply_cast(bang_decimal_t{}, d);
+    return apply_cast(u().get_decimal_entity_identifier(), d);
 }
 
 expression_visitor::result_type expression_visitor::operator()(annotated_string const& s) const
@@ -179,16 +172,19 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
 #endif
 }
 
-expression_visitor::result_type expression_visitor::operator()(negate_expression_t & op) const
-{
-    expression_visitor rvis{ ctx, nullptr };
-    if (auto opterr = apply_visitor(rvis, op.argument); opterr) return std::move(opterr);
-    
-    ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::negate) });
-    
-    // "result of negated expression"
-    return apply_cast(bang_bool_t{}, op);
-}
+//expression_visitor::result_type expression_visitor::operator()(negate_expression_t & op) const
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor negate_expression_t");
+//#if 0
+//    expression_visitor rvis{ ctx, nullptr };
+//    if (auto opterr = apply_visitor(rvis, op.argument); opterr) return std::move(opterr);
+//    
+//    ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::negate) });
+//    
+//    // "result of negated expression"
+//    return apply_cast(bang_bool_t{}, op);
+//#endif
+//}
 
 expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::ASSIGN>, binary_expression_t& op) const
 {
@@ -458,9 +454,32 @@ expression_visitor::result_type expression_visitor::operator()(binary_operator_t
 #endif
 }
 
+expression_visitor::result_type expression_visitor::operator()(unary_expression_t& be) const
+{
+    switch (be.op) {
+    case unary_operator_type::NEGATE:
+        return this->operator()(u().get_negate_qname_identifier(), be);
+    }
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor unary_expression_t");
+}
+
+expression_visitor::result_type expression_visitor::operator()(binary_expression_t& be) const
+{
+    switch (be.op) {
+    case binary_operator_type::EQ:
+        return this->operator()(u().get_eq_qname_identifier(), be);
+    case binary_operator_type::NE:
+        return this->operator()(u().get_ne_qname_identifier(), be);
+    }
+    return bang_binary_switcher(be, *this);
+}
+
+
 template <binary_operator_type BOpV>
 expression_visitor::result_type expression_visitor::operator()(binary_operator_t<BOpV>, binary_expression_t& op) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_t<BOpV>");
+#if 0
     // find a functional
     auto & func_ent = ctx.u().get_functional_entity(BOpV);
     
@@ -470,6 +489,7 @@ expression_visitor::result_type expression_visitor::operator()(binary_operator_t
     auto optres = func_ent.find(ctx, proc);
     if (!optres.has_value()) return std::move(optres.error());
     return apply_cast(optres.value()->fn_type.result, op);
+#endif
 }
 
 template expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::CONCAT>, binary_expression_t&) const;
@@ -554,6 +574,8 @@ expression_visitor::result_type expression_visitor::operator()(not_empty_express
 
 expression_visitor::result_type expression_visitor::operator()(member_expression_t & me) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor member_expression_t");
+#if 0
     if (auto opterr = apply_visitor(expression_visitor{ ctx, nullptr }, me.object); opterr) return opterr;
     /*
     if (auto* uotype = ctx.context_type.as<bang_union_t>(); me.is_object_optional && uotype && uotype->has(bang_tuple_t{})) {
@@ -567,10 +589,13 @@ expression_visitor::result_type expression_visitor::operator()(member_expression
 
     function_entity const* getter = expgetter.value();
     return apply_cast(getter->result_type(), me);
+#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(property_expression& pe)  const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor property_expression");
+#if 0
     //if (ctx.context_type == bang_tuple_t{}) {
     //    return std::unexpected(make_error<left_not_an_object_error>(pe.name.location, pe.name.value, bang_tuple_t{}));
     //}
@@ -579,6 +604,7 @@ expression_visitor::result_type expression_visitor::operator()(property_expressi
 
     function_entity const* getter = expgetter.value();
     return apply_cast(getter->result_type(), pe);
+#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(expression_vector_t & vec) const
@@ -623,6 +649,24 @@ expression_visitor::result_type expression_visitor::operator()(lambda_t & l) con
 #endif
 }
 
+template <std::derived_from<pure_call_t> CallExpressionT>
+inline expression_visitor::result_type expression_visitor::operator()(qname_identifier fnqn, CallExpressionT& call) const
+{
+    functional const* fn = u().fregistry().find(fnqn);
+    BOOST_ASSERT(fn);
+    return this->operator()(*fn, call);
+}
+
+template <std::derived_from<pure_call_t> CallExpressionT>
+expression_visitor::result_type expression_visitor::operator()(functional const& fnl, CallExpressionT& call) const
+{
+    auto ptrn = fnl.find(ctx, call);
+    if (!ptrn.has_value()) return std::move(ptrn.error());
+    auto optres = ptrn.value()->apply(ctx);
+    if (!optres.has_value()) return std::move(optres.error());
+    return apply_cast(optres.value(), call);
+}
+
 expression_visitor::result_type expression_visitor::operator()(function_call_t & proc) const
 {
     //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor function_call_t");
@@ -653,7 +697,7 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t &
     if (!fnvar) {
         THROW_NOT_IMPLEMENTED_ERROR("fn object expression is not implemented yet");
     }
-    //GLOBAL_LOG_INFO() << ctx.u().print(fnvar->name);
+    //GLOBAL_LOG_INFO() << u().print(fnvar->name.value);
     functional* fnl = ctx.resolve_functional(fnvar->name.value);
     if (!fnl) {
         return make_error<undeclared_identifier_error>(fnvar->name);
@@ -669,11 +713,7 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t &
     //    return make_error<basic_general_error>(fnvar->name.location, "is not callable"sv, fnvar->name.value);
     //}
     
-    auto ptrn = fnl->find(ctx, proc);
-    if (!ptrn.has_value()) return std::move(ptrn.error());
-    auto optres = ptrn.value()->apply(ctx);
-    if (!optres.has_value()) return std::move(optres.error());
-    return apply_cast(optres.value(), proc);
+    return this->operator()(*fnl, proc);
 
     //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::operator()(function_call_t");
 }

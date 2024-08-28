@@ -26,7 +26,7 @@ public:
         : unit_{ u }
     {}
 
-    void operator()(std::vector<semantic::expression_type> const& evec) const
+    void operator()(std::vector<semantic::expression_t> const& evec) const
     {
         for (auto const& e : evec) {
             apply_visitor(*this, e);
@@ -56,7 +56,26 @@ public:
 
     void operator()(semantic::invoke_function const& invf) const
     {
-        THROW_NOT_IMPLEMENTED_ERROR("compiler_visitor invoke_function");
+        entity const& e = unit_.eregistry().get(invf.fn);
+        if (auto fe = dynamic_cast<function_entity const*>(&e); fe) {
+            if (fe->is_inline()) {
+                for (auto const& e : fe->body()) {
+                    apply_visitor(*this, e);
+                }
+            } else {
+                //bvm().append_push_static_const(i64_blob_result((fe->parameter_count() + 1) * (fe->is_void() ? -1 : 1)));
+                if (fe->is_const_index()) {
+                    bvm().append_pushc(fe->get_index());
+                    bvm().append_callp();
+                } else if (fe->is_defined()) {
+                    bvm().append_call(fe->get_address());
+                } else {
+                    THROW_INTERNAL_ERROR("wrong function entity state");
+                }
+            }
+        } else {
+            THROW_NOT_IMPLEMENTED_ERROR("compiler_visitor invoke_function");
+        }
 #if 0
         /*
         if (auto optecall = bvm_.get_ecall(invf.function_entity_name); optecall) {
@@ -134,7 +153,7 @@ public:
             string_view varname = unit_.as_string(unit_.qnregistry().resolve(pv.entity->name()).back());
             smart_blob strbr{ string_blob_result(varname) };
             strbr.allocate();
-            bvm().append_push_static_const(std::move(strbr));
+            bvm().append_push_pooled_const(std::move(strbr));
             bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_variable_set);
         } else {
             THROW_NOT_IMPLEMENTED_ERROR();
@@ -151,7 +170,7 @@ public:
             string_view varname = unit_.as_string(unit_.qnregistry().resolve(pv.entity->name()).back());
             smart_blob strbr{ string_blob_result(varname) };
             strbr.allocate();
-            bvm().append_push_static_const(std::move(strbr));
+            bvm().append_push_pooled_const(std::move(strbr));
             bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_variable_get);
         } else {
             THROW_NOT_IMPLEMENTED_ERROR();

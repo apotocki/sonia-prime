@@ -28,10 +28,10 @@ struct preliminary_type_visitor2 : static_visitor<entity_identifier>
         : ctx{ c }
     {}
 
-    result_type operator()(bang_string_t const& v) const
-    {
-        return ctx.u().get_string_entity_identifier();
-    }
+    //result_type operator()(bang_string_t const& v) const
+    //{
+    //    return ctx.u().get_string_entity_identifier();
+    //}
 
     result_type operator()(bang_preliminary_parameter_pack_t const& v) const;
 
@@ -56,7 +56,7 @@ struct preliminary_type_visitor : static_visitor<bang_type>
         //, result{ r }
     {}
 
-    inline result_type operator()(bang_bool_t const& v) const { return v; }
+    //inline result_type operator()(bang_bool_t const& v) const { return v; }
     inline result_type operator()(bang_int_t const& v) const { return v; }
     inline result_type operator()(bang_float_t const& v) const { return v; }
     inline result_type operator()(bang_decimal_t const& v) const { return v; }

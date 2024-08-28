@@ -80,7 +80,7 @@ struct decimal_holder : AllocatorT
     using allocator_type = AllocatorT;
     using alloc_traits_t = std::allocator_traits<allocator_type>;
 
-    alignas(decimal_data*) alignas(LimbT) alignas(LimbT) LimbT inplace_limbs_[N];
+    alignas(decimal_data*) alignas(LimbT) LimbT inplace_limbs_[N];
 
     inline allocator_type& allocator() noexcept { return static_cast<allocator_type&>(*this); }
 
@@ -831,6 +831,13 @@ template <std::unsigned_integral LimbT, size_t NL, size_t NR, size_t ExponentBit
 inline std::strong_ordering operator<=> (basic_decimal<LimbT, NL, ExponentBitCountL, AllocatorTL> const& lhs, basic_decimal<LimbT, NR, ExponentBitCountR, AllocatorTR> const& rhs)
 {
     return (basic_decimal_view<LimbT>)lhs <=> (basic_decimal_view<LimbT>)rhs;
+}
+
+template <std::unsigned_integral LimbT, size_t LN, size_t ExponentBitCountL, typename AllocatorTL, std::integral RT>
+inline std::strong_ordering operator <=>(basic_decimal<LimbT, LN, ExponentBitCountL, AllocatorTL> const& lhs, RT rhs)
+{
+    // 1 + sizeof(RT) / sizeof(LimbT) ensures no dynamic allocation for RT representation in basic_decimal
+    return lhs <=> basic_decimal<LimbT, 1 + sizeof(RT) / sizeof(LimbT), ExponentBitCountL, AllocatorTL>{ rhs };
 }
 
 template <std::unsigned_integral LimbT, size_t N, size_t E, typename AllocatorT>

@@ -63,31 +63,20 @@ private:
     boost::container::small_vector<shared_ptr<pattern>, 1> patterns_;
 };
 
-class fn_pattern : public functional::pattern
+class fieldset_pattern : public functional::pattern
 {
-protected:
-    function_descriptor fn_;
-    
+   
 public:
-    fn_pattern(function_descriptor&& fn)
-        : fn_{ std::move(fn) }
-    {}
+    fieldset_pattern() = default;
+
+    virtual fieldset const& get_fieldset() const noexcept = 0;
 
     error_storage is_matched(fn_compiler_context&, pure_call_t&) const override;
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx) const override;
 };
 
-class external_fn_pattern : public fn_pattern
-{
-    size_t extfnid_;
 
-public:
-    external_fn_pattern(function_descriptor&& fn, size_t extfnid)
-        : fn_pattern{ std::move(fn) }, extfnid_{ extfnid }
-    {}
 
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx) const override;
-    std::expected<entity_identifier, error_storage> apply(fn_compiler_context& ctx) const override;
-};
+
 
 }

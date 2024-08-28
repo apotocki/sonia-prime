@@ -72,6 +72,13 @@ struct resource_location
     small_string resource;
 };
 
+struct resource_span
+{
+    int line_begin, line_end;
+    int column_being, column_end;
+    small_string resource;
+};
+
 struct scanner_data
 {
     const char* str_buff_begin;

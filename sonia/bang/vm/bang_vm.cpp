@@ -40,7 +40,7 @@ public:
     size_t address(vm::context const& ctx) const
     {
         if (is_static_variable_index_) {
-            return ctx.static_at(address_).as<size_t>();
+            return ctx.const_at(address_).as<size_t>();
         } else {
             return address_;
         }
@@ -471,23 +471,32 @@ void virtual_stack_machine::append_ecall(builtin_fn fn)
     base_t::append_ecall((size_t)fn);
 }
 
-size_t virtual_stack_machine::append_static_const(smart_blob&& value)
+size_t virtual_stack_machine::add_pooled_const(smart_blob&& value)
 {
     auto it = literals_.find(*value);
     if (it == literals_.end()) {
-        size_t index = base_t::append_static(std::move(value));
-        it = literals_.insert(it, std::pair{ *base_t::statics()[index], index });
-        GLOBAL_LOG_DEBUG() << "placing new const value: " << base_t::statics()[index] << ", at index: " << index;
+        size_t index = base_t::add_const(std::move(value));
+        it = literals_.insert(it, std::pair{ *base_t::consts()[index], index });
+        GLOBAL_LOG_DEBUG() << "placing new const value: " << base_t::consts()[index] << ", at index: " << index;
     } else {
         GLOBAL_LOG_DEBUG() << "found existing value: " << value << ", at index: " << it->second;
     }
     return it->second;
 }
 
-void virtual_stack_machine::append_push_static_const(smart_blob&& value)
+void virtual_stack_machine::set_const(size_t index, smart_blob&& value)
 {
-    size_t pos = append_static_const(std::move(value));
-    append_pushs(pos);
+    auto it = literals_.find(*value);
+    if (it == literals_.end()) {
+        literals_.insert(it, std::pair{ *value, index });
+    }
+    base_t::set_const(index, std::move(value));
+}
+
+void virtual_stack_machine::append_push_pooled_const(smart_blob&& value)
+{
+    size_t pos = add_pooled_const(std::move(value));
+    append_pushc(pos);
 }
 
 }

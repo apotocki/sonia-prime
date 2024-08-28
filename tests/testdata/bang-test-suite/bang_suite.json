@@ -5,8 +5,8 @@
     },
     {
         "src": "file1.bang",
-        "arguments": ["Hello", "from", "Bang!"],
+        "arguments": [ "Hello", "from", "Bang!" ],
         "output": "Hello from Bang!"
     }
-        /* { "src": "file1.bang" }*/
+    /* { "src": "file1.bang" }*/
 ]

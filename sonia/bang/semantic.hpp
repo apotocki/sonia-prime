@@ -120,9 +120,9 @@ template <typename T> struct bang_union
                     case basic_type::nil_e:
                         store_ = bang_tuple<T>{};
                         return;
-                    case basic_type::bool_e:
-                        store_ = bang_bool_t{};
-                        return;
+                    //case basic_type::bool_e:
+                    //    store_ = bang_bool_t{};
+                    //    return;
                     case basic_type::int_e:
                         store_ = bang_int_t{};
                         return;
@@ -188,7 +188,7 @@ template <typename T> struct bang_union
         bang_union & un_;
         explicit appender_visitor(bang_union & u) : un_{u} {}
 
-        inline void operator()(bang_bool_t) const { un_.basic_members |= (uint8_t)basic_type::bool_e; }
+        //inline void operator()(bang_bool_t) const { un_.basic_members |= (uint8_t)basic_type::bool_e; }
         inline void operator()(bang_int_t) const { un_.basic_members |= (uint8_t)basic_type::int_e; }
         inline void operator()(bang_float_t) const { un_.basic_members |= (uint8_t)basic_type::float_e; }
         inline void operator()(bang_decimal_t) const { un_.basic_members |= (uint8_t)basic_type::decimal_e; }
@@ -234,7 +234,7 @@ template <typename T> struct bang_union
         appender_visitor{ *this }(std::forward<ArgT>(m));
     }
 
-    inline bool has(bang_bool_t const&) const { return !!(basic_members & (uint16_t)basic_type::bool_e); }
+    //inline bool has(bang_bool_t const&) const { return !!(basic_members & (uint16_t)basic_type::bool_e); }
     inline bool has(bang_int_t const&) const { return !!(basic_members & (uint16_t)basic_type::int_e); }
     inline bool has(bang_float_t const&) const { return !!(basic_members & (uint16_t)basic_type::float_e); }
     inline bool has(bang_decimal_t const&) const { return !!(basic_members & (uint16_t)basic_type::decimal_e); }
@@ -266,7 +266,7 @@ template <typename T> struct bang_union
 
 struct bang_type;
 using bang_type_variant = variant<
-    bang_any_t, bang_bool_t, bang_int_t, bang_float_t, bang_decimal_t, bang_string_t, bang_object_t,
+    bang_any_t, bang_int_t, bang_float_t, bang_decimal_t, bang_string_t, bang_object_t,
     recursive_wrapper<bang_fn<bang_type>>,
     recursive_wrapper<bang_vector<bang_type>>,
     recursive_wrapper<bang_array<bang_type>>,
@@ -331,7 +331,7 @@ enum class param_constraint_type : uint8_t
     const_constraint = 2
 };
 
-class function_descriptor
+class fieldset
 {
 public:
     // to do: optimize
@@ -350,19 +350,7 @@ public:
         param_constraint_type constraint_type;
     };
 
-private:
-    qname_identifier id_;
-    std::vector<named_field> nfields_;
-    std::vector<positioned_field> pfields_;
-    entity_identifier result_type_;
-
-public:
-    function_descriptor() = default;
-
-    explicit function_descriptor(qname_identifier idval) : id_{ idval } {}
-
-    qname_identifier id() const { return id_; }
-    entity_identifier result_type() const { return result_type_; }
+    fieldset() = default;
 
     template <typename ArgT>
     void set_nfields(ArgT&& arg) { nfields_ = std::forward<ArgT>(arg); }
@@ -370,6 +358,24 @@ public:
     template <typename ArgT>
     void set_pfields(ArgT&& arg) { pfields_ = std::forward<ArgT>(arg); }
 
+    span<const named_field> named_fields() const { return nfields_; }
+    span<const positioned_field> positioned_fields() const { return pfields_; }
+
+protected:
+    std::vector<named_field> nfields_;
+    std::vector<positioned_field> pfields_;
+};
+
+class function_descriptor : public fieldset
+{
+public:
+    function_descriptor() = default;
+
+    explicit function_descriptor(qname_identifier idval) : id_{ idval } {}
+
+    qname_identifier id() const { return id_; }
+
+    entity_identifier result_type() const { return result_type_; }
     void set_result_type(entity_identifier rt) { result_type_ = rt; }
 
     //void push_field(annotated_identifier ext_name, annotated_identifier * int_name, entity_identifier type, bool is_const)
@@ -391,8 +397,12 @@ public:
     //        is_const);
     //}
 
-    span<const named_field> named_fields() const { return nfields_; }
-    span<const positioned_field> positioned_fields() const { return pfields_; }
+
+
+private:
+    qname_identifier id_;
+
+    entity_identifier result_type_;
 };
 
 struct function_signature
@@ -432,7 +442,7 @@ struct function_signature
 
 namespace semantic {
 struct push_by_offset { size_t offset; }; // offset from the stack top
-struct push_variable { variable_entity const* entity; };
+  struct push_variable { variable_entity const* entity; };
 struct push_value { value_t value; };
 struct set_variable { variable_entity const* entity; };
 struct set_by_offset { size_t offset; }; // offset from the stack top
@@ -447,7 +457,8 @@ struct return_statement {};
 
 struct invoke_function
 {
-    qname_identifier varname;
+    //qname_identifier varname;
+    entity_identifier fn;
 };
 
 struct invoke_external_function
@@ -485,7 +496,7 @@ struct not_empty_condition
 //};
 
 // make_recursive_variant<
-using expression_type = make_recursive_variant<
+using expression_t = make_recursive_variant<
     empty_t, // no op
     push_variable, push_value, push_by_offset, truncate_values,
     set_variable, set_by_offset, invoke_function, invoke_external_function, return_statement,
@@ -495,13 +506,13 @@ using expression_type = make_recursive_variant<
     //logic_tree_node<recursive_variant_>
 >::type;
 
-using conditional_t = conditional<expression_type>;
-using not_empty_condition_t = not_empty_condition<expression_type>;
-//using logic_tree_node_t = logic_tree_node<expression_type>;
+using conditional_t = conditional<expression_t>;
+using not_empty_condition_t = not_empty_condition<expression_t>;
+//using logic_tree_node_t = logic_tree_node<expression_t>;
 
 }
 
-using semantic_expression_pair = std::pair<semantic::expression_type, bang_type>;
+using semantic_expression_pair = std::pair<semantic::expression_t, bang_type>;
 
 
 
@@ -521,7 +532,7 @@ class implemented_function : public function_t
 {
 public:
     qname name;
-    std::vector<semantic::expression_type> body;
+    std::vector<semantic::expression_t> body;
     bool is_inline = false;
 };
 */

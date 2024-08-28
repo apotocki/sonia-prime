@@ -24,6 +24,7 @@ class function_call_match_error;
 class parameter_not_found_error;
 class alt_error;
 class ambiguity_error;
+class circular_dependency_error;
 
 class error_visitor
 {
@@ -32,6 +33,7 @@ public:
     virtual void operator()(general_error const&) = 0;
     virtual void operator()(alt_error const&) = 0;
     virtual void operator()(ambiguity_error const&) = 0;
+    virtual void operator()(circular_dependency_error const&) = 0;
 };
 
 class error
@@ -60,6 +62,17 @@ public:
     void visit(error_visitor& vis) const override { vis(*this); }
 };
 
+class circular_dependency_error : public error
+{
+public:
+    std::vector<error_storage> circle_items;
+    void visit(error_visitor& vis) const override { vis(*this); }
+
+    explicit circular_dependency_error(std::vector<error_storage> errs)
+        : circle_items{ std::move(errs) }
+    {}
+};
+
 class general_error : public error
 {
 protected:
@@ -75,7 +88,7 @@ public:
 class basic_general_error : public general_error
 {
 protected:
-    using object_t = variant<null_t, expression_t, qname_identifier, identifier>;
+    using object_t = variant<null_t, syntax_expression_t, qname, qname_identifier, identifier>;
 
     lex::resource_location location_;
     string_t description_;
@@ -177,12 +190,12 @@ class cast_error : public general_error
 {
 public:
     lex::resource_location location_;
-    optional<expression_t> expr_;
+    optional<syntax_expression_t> expr_;
     entity_identifier from_;
     entity_identifier to_;
     optional<lex::resource_location> refloc_;
 
-    cast_error(lex::resource_location loc, entity_identifier to, entity_identifier from = {}, optional<expression_t> expr = nullopt)
+    cast_error(lex::resource_location loc, entity_identifier to, entity_identifier from = {}, optional<syntax_expression_t> expr = nullopt)
         : location_{ std::move(loc) }, from_{std::move(from)}, to_{ std::move(to) }, expr_{ std::move(expr) }
     {}
 
@@ -234,10 +247,10 @@ public:
 
 class wrong_lvalue_error : public general_error
 {
-    expression_t expr_;
+    syntax_expression_t expr_;
 
 public:
-    explicit wrong_lvalue_error(expression_t const& expr)
+    explicit wrong_lvalue_error(syntax_expression_t const& expr)
         : expr_{ expr }
     {}
 
@@ -280,6 +293,7 @@ public:
     void operator()(general_error const&) override;
 
     void operator()(ambiguity_error const&) override;
+    void operator()(circular_dependency_error const&) override;
 
 private:
     static std::string print_general(lex::resource_location const& loc, string_view err, string_view object, lex::resource_location const* optseeloc = nullptr);

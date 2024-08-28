@@ -36,7 +36,6 @@ public:
     using stack_type = std::vector<var_t>;
     
     using ext_function_t = void(*)(ContextT&);
-    //using ext1_function_t = void(*)(ContextT&, var_t&);
 
     enum class op : uint8_t {
         noop = 0,
@@ -44,19 +43,21 @@ public:
         jmpp = 4, jmpn = 5,
         jtp = 6, jtn = 7,
         jfp = 8, jfn = 9,
-        call = 10, callp = 11, ecall = 12,
+        call = 10,  // call(address) -> call address
+        callp = 11, // call() -> call stack[stack_back_pos()]
+        ecall = 12, // ecall(index) -> call efn[index]
         //ecall1 = 7, // call(fn_index), call(param index, fn_index)
         //fpecall1 = 8, fnecall1 = 9, //call(param +-offset, fn_index)
         ret = 13,
 
         // data move
         push = 16, // push on stack stack[uint]
-        pushr = 17, // push on stack stack[stack_back_pos() - uint]
+        pushr = 17, // push on stack stack[stack_back_pos() - uint] // r aka relative
         fppush = 18, fnpush = 19, // push on stack stack[fp +- uint]
-        pushi = 20, fppushi = 21, fnpushi = 22, // push index on stack
-        pushs = 23, // push static on stack: statics_[uint] -> on stack
+        pushi = 20, fppushi = 21, fnpushi = 22, // push index on stack // positive/negative index
+        pushc = 23, // push const on stack: consts_[uint] -> on stack
         set = 24, // set stack[uint] = stack_top_value
-        setr = 25, // set stack[stack_back_pos() - uint] = stack_top_value
+        setr = 25, // set stack[stack_back_pos() - uint] = stack_top_value // r aka relative
         fpset = 26, fnset = 27, // set stack[fp +- uint] = stack_top_value
         pop, popn, // pop COUNT:uint, pop0 === pop 1
         collapse, // pop COUNT before the back
@@ -65,7 +66,7 @@ public:
     };
 
 protected:
-    std::vector<var_t> statics_;
+    std::vector<var_t> consts_;
     stack_type stack_;
     
     std::vector<uint8_t> code_;
@@ -125,7 +126,7 @@ public:
         code_.insert(code_.begin() + first_begin, tmp.begin(), tmp.end());
     }
 
-    auto& statics() { return statics_; }
+    auto& consts() { return consts_; }
     auto& stack() { return stack_; }
     auto& efns() const { return efns_; }
 
@@ -252,9 +253,9 @@ public:
         append_uint(num);
     }
 
-    void append_pushs(size_t num)
+    void append_pushc(size_t num)
     {
-        code_.push_back(static_cast<uint8_t>(op::pushs));
+        code_.push_back(static_cast<uint8_t>(op::pushc));
         append_uint(num);
     }
 
@@ -363,11 +364,18 @@ public:
 
     template <typename T>
     requires (std::is_convertible_v<std::remove_cvref_t<T>, var_t>)
-    size_t append_static(T&& value)
+    size_t add_const(T&& value)
     {
-        size_t pos = statics_.size();
-        statics_.emplace_back(std::forward<T>(value));
+        size_t pos = consts_.size();
+        consts_.emplace_back(std::forward<T>(value));
         return pos;
+    }
+
+    template <typename T>
+    requires (std::is_convertible_v<std::remove_cvref_t<T>, var_t>)
+    void set_const(size_t index, T&& value)
+    {
+        consts_[index].replace(std::move(value));
     }
 
     template <typename T>
@@ -458,10 +466,11 @@ struct printer
     inline void operator()(identity_type<op::ecall>, ContextT& ctx, size_t address, size_t fn_index) const
     {
         generic_print(address, "ecall"sv);
+        ss << " #"sv << std::dec << fn_index;
         if constexpr (requires{ ctx.ecall_describe(fn_index); }) {
             ss << ' ' << ctx.ecall_describe(fn_index) << '\n';
         } else {
-            ss << " #"sv << std::dec << fn_index << '\n';
+            ss << '\n';
         }
     }
 
@@ -625,9 +634,9 @@ struct printer
         generic_print(address, "fnpushi"sv) << ' ' << std::dec << index << "->[" << ctx.stack_size() << "] \n"sv;
     }
 
-    inline void operator()(identity_type<op::pushs>, ContextT& ctx, size_t address, size_t index) const
+    inline void operator()(identity_type<op::pushc>, ContextT& ctx, size_t address, size_t index) const
     {
-        generic_print(address, "pushs"sv) << " S["sv << std::dec << index << "]->["sv << ctx.stack_size() << "] ("sv << ctx.static_at(index) << ")\n"sv;
+        generic_print(address, "pushc"sv) << " C["sv << std::dec << index << "]->["sv << ctx.stack_size() << "] ("sv << ctx.const_at(index) << ")\n"sv;
     }
 
     inline void operator()(identity_type<op::set>, ContextT& ctx, size_t address, size_t index) const
@@ -749,9 +758,9 @@ struct runner
         ctx.stack_push(std::move(val));
     }
 
-    inline void operator()(identity_type<op::pushs>, ContextT& ctx, size_t address, size_t index) const
+    inline void operator()(identity_type<op::pushc>, ContextT& ctx, size_t address, size_t index) const
     {
-        var_t val = ctx.static_at(index);
+        var_t val = ctx.const_at(index);
         ctx.stack_push(std::move(val));
     }
 
@@ -1040,11 +1049,11 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
                 ftor(identity<op::fnpushi>, ctx, start_address, offset);
                 continue;
             }
-        case op::pushs:
+        case op::pushc:
             {
                 size_t start_address = address++;
                 size_t index = read_uint(address);
-                ftor(identity<op::pushs>, ctx, start_address, index);
+                ftor(identity<op::pushc>, ctx, start_address, index);
                 continue;
             }
         case op::set:
@@ -1107,9 +1116,9 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
 template <typename ContextT>
 void virtual_stack_machine<ContextT>::run(ContextT& ctx, size_t address)
 {
-    //sequence_runner<printer<ContextT>, runner<ContextT>> rn{ printer<ContextT>{std::cout}, {}};
+    sequence_runner<printer<ContextT>, runner<ContextT>> rn{ printer<ContextT>{std::cout}, {}};
     //printer<ContextT> rn{ std::cout };
-    runner<ContextT> rn;
+    //runner<ContextT> rn;
     traverse(ctx, address, rn);
 }
 

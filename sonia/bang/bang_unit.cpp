@@ -13,6 +13,10 @@
 #include "vm/bang_vm.hpp"
 #include "entities/internal_type_entity.hpp"
 #include "entities/ellipsis/ellipsis_pattern.hpp"
+#include "entities/functions/external_fn_pattern.hpp"
+#include "entities/compare/compare_patterns.hpp"
+
+#include "semantic/expression_printer.hpp"
 
 namespace sonia::lang::bang {
 
@@ -41,6 +45,24 @@ qname_identifier unit::get_function_entity_identifier(string_view signature)
     return qnregistry().resolve(fnm);
 }
 
+identifier unit::new_identifier()
+{
+    return identifier_builder_();
+    //auto r = identifier_builder_();
+    //auto rv = r.value;
+    //return r;
+}
+
+identifier unit::make_identifier(string_view sv)
+{
+    return slregistry_.resolve(sv);
+}
+
+qname_identifier unit::new_qname_identifier()
+{
+    return qnregistry().resolve(qname{ new_identifier() });
+}
+
 qname_identifier unit::make_qname_identifier(string_view sv)
 {
     qname qn{ slregistry_.resolve(sv) };
@@ -53,6 +75,21 @@ qname_identifier unit::make_qname_identifier(string_view sv)
 //    e->set_id(eid);
 //    eregistry().insert(std::move(e));
 //}
+
+size_t unit::allocate_constant_index()
+{
+    return bvm().add_const(smart_blob{});
+}
+
+std::string unit::describe_efn(size_t fn_index) const
+{
+    auto pair = bvm_->efns().at(fn_index);
+    if (std::get<1>(pair).empty()) {
+        return ("#%1% at 0x%2$x"_fmt % fn_index % (uintptr_t)std::get<0>(pair)).str();
+    } else {
+        return ("#%1% '%2%'"_fmt % fn_index % std::string(std::get<1>(pair))).str();
+    }
+}
 
 void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
 {
@@ -98,11 +135,6 @@ void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
     strings_.emplace_back(print(fnm));
     bvm_->set_efn(fn_identifier_counter_++, pfn, strings_.back());
 #endif
-}
-
-qname_identifier unit::new_qname_identifier()
-{
-    return qnregistry().resolve(qname{ new_identifier() });
 }
 
 unit::unit()
@@ -184,7 +216,10 @@ unit::unit()
     set_extern("decimal(text: string)->decimal|()"sv, &bang_to_decimal);
 #endif
     // typename
+    auto typename_qname_identifier = make_qname_identifier("typename");
     auto typename_entity = make_shared<type_entity>();
+    typename_entity->set_signature(entity_signature{typename_qname_identifier});
+
     eregistry().insert(typename_entity);
     typename_entity_identifier_ = typename_entity->id();
     typename_entity->set_type(typename_entity_identifier_);
@@ -200,10 +235,19 @@ unit::unit()
     functional& any_fnl = fregistry().resolve(any_qname_identifier_);
     any_fnl.set_default_entity(any_entity->id());
     
-    // tuple
-    qname_identifier tuple_qnid = make_qname_identifier("tuple");
+    // bool
+    setup_type("bool"sv, bool_qname_identifier_, bool_entity_identifier_);
     
+    // string
+    setup_type("string"sv, string_qname_identifier_, string_entity_identifier_);
 
+    // decimal
+    setup_type("decimal"sv, decimal_qname_identifier_, decimal_entity_identifier_);
+
+
+    // tuple
+    qname_identifier tuple_qnid = make_qname_identifier("tuple"sv);
+    
     // void
     auto void_entity = make_shared<type_entity>();
     void_entity->set_type(typename_entity_identifier_);
@@ -212,26 +256,18 @@ unit::unit()
 
     void_entity_identifier_ = void_entity->id();
 
-    // setup string
-    string_qname_identifier_ = make_qname_identifier("string");
-    functional& string_fnl = fregistry().resolve(string_qname_identifier_);
-    auto string_entity = make_shared<type_entity>();
-    string_entity->set_type(typename_entity_identifier_);
-    string_entity->set_signature(entity_signature{ string_qname_identifier_ });
-    eregistry().insert(string_entity);
-    string_fnl.set_default_entity(string_entity->id());
-    string_entity_identifier_ = string_entity->id();
+    //// operations
+    // eq
+    eq_qname_identifier_ = make_qname_identifier("equal"sv);
+    ne_qname_identifier_ = make_qname_identifier("not_equal"sv);
+    negate_qname_identifier_ = make_qname_identifier("negate"sv);
 
-    // decimal
-    decimal_qname_identifier_ = make_qname_identifier("decimal");
-    functional& decimal_fnl = fregistry().resolve(decimal_qname_identifier_);
-    auto decimal_entity = make_shared<type_entity>();
-    decimal_entity->set_type(typename_entity_identifier_);
-    decimal_entity->set_signature(entity_signature{ decimal_qname_identifier_ });
-    eregistry().insert(decimal_entity);
-    decimal_fnl.set_default_entity(decimal_entity->id());
-    decimal_entity_identifier_ = decimal_entity->id();
+    //eq_qname_identifier_ = make_qname_identifier("==");
+    //functional& eq_fnl = fregistry().resolve(eq_qname_identifier_);
+    //eq_fnl.push(make_shared<eq_pattern>());
 
+    fn_qname_identifier_ = make_qname_identifier("__fn"sv);
+    fn_result_identifier_ = make_identifier("->");
     // setup ellipsis
     // operator...(type: typename)
     ellipsis_qname_identifier_ = make_qname_identifier("...");
@@ -248,15 +284,25 @@ unit::unit()
 
     set_extern("print(string...)"sv, &bang_print_string);
     set_extern("string(any)->string"sv, &bang_tostring);
+    set_extern("assert(bool)"sv, &bang_assert);
+
+    // temporary
+    set_extern("equal(decimal,decimal)->bool"sv, &bang_decimal_equal);
+    set_extern("negate(any)->bool"sv, &bang_negate);
 }
 
-identifier unit::new_identifier()
+void unit::setup_type(string_view type_name, qname_identifier& qnid, entity_identifier& eid)
 {
-    return identifier_builder_();
-    //auto r = identifier_builder_();
-    //auto rv = r.value;
-    //return r;
+    qnid = make_qname_identifier(type_name);
+    functional& some_type_fnl = fregistry().resolve(qnid);
+    auto some_type_entity = make_shared<type_entity>();
+    some_type_entity->set_type(typename_entity_identifier_);
+    some_type_entity->set_signature(entity_signature{ qnid });
+    eregistry().insert(some_type_entity);
+    some_type_fnl.set_default_entity(some_type_entity->id());
+    eid = some_type_entity->id();
 }
+
 
 
 
@@ -366,7 +412,10 @@ std::string unit::print(qname_view qn) const
 
 std::string unit::print(qname_identifier qid) const
 {
-    return print(qname_registry_.resolve(qid));
+    if (qid) {
+        return print(qname_registry_.resolve(qid));
+    }
+    return "`uninitialized qname`"s;
 }
 
 struct type_printer_visitor : static_visitor<void>
@@ -376,7 +425,7 @@ struct type_printer_visitor : static_visitor<void>
     explicit type_printer_visitor(unit const& u, std::ostringstream& s) : u_{u}, ss{s} {}
 
     inline void operator()(bang_any_t) const { ss << "any"sv; }
-    inline void operator()(bang_bool_t) const { ss << "bool"sv; }
+    //inline void operator()(bang_bool_t) const { ss << "bool"sv; }
     inline void operator()(bang_int_t) const { ss << "int"sv; }
     inline void operator()(bang_float_t) const { ss << "float"sv; }
     inline void operator()(bang_decimal_t) const { ss << "decimal"sv; }
@@ -658,21 +707,28 @@ struct expr_printer_visitor : static_visitor<void>
         ss << ")(args)"sv;
     }
 
-    template <typename T>
-    requires(is_unary_expression<T>::value)
-    void operator()(T const& ue) const
+    //template <typename T>
+    //requires(is_unary_expression<T>::value)
+    //void operator()(T const& ue) const
+    //{
+    //    ss << "unary("sv << (int)T::op << ", "sv;
+    //    apply_visitor(*this, ue.argument);
+    //    ss << ')';
+    //}
+
+    void operator()(unary_expression_t const& be) const
     {
-        ss << "unary("sv << (int)T::op << ", "sv;
-        apply_visitor(*this, ue.argument);
+        ss << "unary("sv << (int)be.op << ", "sv;
+        apply_visitor(*this, be.positioned_args[0]);
         ss << ')';
     }
 
     void operator()(binary_expression_t const& be) const
     {
         ss << "binary("sv << (int)be.op << ", "sv;
-        apply_visitor(*this, be.left);
+        apply_visitor(*this, be.positioned_args[0]);
         ss << ", "sv;
-        apply_visitor(*this, be.right);
+        apply_visitor(*this, be.positioned_args[1]);
         ss << ')';
     }
 
@@ -700,10 +756,18 @@ struct expr_printer_visitor : static_visitor<void>
     */
 };
 
-std::string unit::print(expression_t const& e) const
+std::string unit::print(syntax_expression_t const& e) const
 {
     std::ostringstream ss;
     expr_printer_visitor vis{ *this, ss };
+    apply_visitor(vis, e);
+    return ss.str();
+}
+
+std::string unit::print(semantic::expression_t const& e) const
+{
+    std::ostringstream ss;
+    semantic::expression_printer_visitor vis{ *this, ss };
     apply_visitor(vis, e);
     return ss.str();
 }
@@ -731,37 +795,31 @@ std::string unit::print(error const& err) const
     return ss.str();
 }
 
-functional_entity& unit::get_functional_entity(binary_operator_type bop)
-{
-    qname_identifier op_qi;
-    switch (bop) {
-    case binary_operator_type::CONCAT:
-        op_qi = make_qname_identifier("concat"sv); break;
-    case binary_operator_type::PLUS:
-        op_qi = make_qname_identifier("operator_plus"sv); break;
-    default:
-        THROW_INTERNAL_ERROR("unit::get_functional_entity error: unknown operator '%1%'"_fmt % to_string(bop));
-    }
-    THROW_NOT_IMPLEMENTED_ERROR("unit::get_functional_entity");
-#if 0
-    auto func_ent = dynamic_pointer_cast<functional_entity>(eregistry().find(op_qi));
-    if (!func_ent) {
-        THROW_INTERNAL_ERROR("unit::get_functional_entity error: operator '%1%' is not defined"_fmt % to_string(bop));
-    }
-    return *func_ent;
-#endif
-}
+//functional_entity& unit::get_functional_entity(binary_operator_type bop)
+//{
+//    qname_identifier op_qi;
+//    switch (bop) {
+//    case binary_operator_type::CONCAT:
+//        op_qi = make_qname_identifier("concat"sv); break;
+//    case binary_operator_type::PLUS:
+//        op_qi = make_qname_identifier("operator_plus"sv); break;
+//    default:
+//        THROW_INTERNAL_ERROR("unit::get_functional_entity error: unknown operator '%1%'"_fmt % to_string(bop));
+//    }
+//    THROW_NOT_IMPLEMENTED_ERROR("unit::get_functional_entity");
+//#if 0
+//    auto func_ent = dynamic_pointer_cast<functional_entity>(eregistry().find(op_qi));
+//    if (!func_ent) {
+//        THROW_INTERNAL_ERROR("unit::get_functional_entity error: operator '%1%' is not defined"_fmt % to_string(bop));
+//    }
+//    return *func_ent;
+//#endif
+//}
 
-functional_entity& unit::get_functional_entity(builtin_type bt) const
+functional& unit::resolve_functional(qname_identifier fid)
 {
-    switch (bt) {
-    //case builtin_type::integer:
-    //    return *integer_entity_;
-    case builtin_type::decimal:
-        return *decimal_entity_;
-    default:
-        THROW_INTERNAL_ERROR("unit::get_functional_entity error: unknown builtin_type '%1%'"_fmt % int(bt));
-    }
+    return fregistry().resolve(fid);
+    //functional& f = fregistry().resolve(fid);
 }
 
 }

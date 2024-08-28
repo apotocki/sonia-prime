@@ -25,16 +25,14 @@ public:
         EXTERN, STATIC, LOCAL, SCOPE_LOCAL
     };
 
-    explicit variable_entity(entity_identifier eid, qname_identifier name, bang_type t, kind k)
-        : entity{ std::move(eid) }
+    explicit variable_entity(entity_identifier type, qname_identifier name, kind k)
+        : entity{ std::move(type) }
         , name_{ std::move(name) }
-        , type_{ std::move(t) }
         , kind_{ k }
     {}
 
     qname_identifier name() const { return name_; }
 
-    inline bang_type const& type() const noexcept { return type_; }
     inline kind const& varkind() const noexcept { return kind_; }
     inline bool is_weak() const { return is_weak_; }
 
@@ -43,8 +41,18 @@ public:
 
     inline void set_weak(bool val = true) { is_weak_ = val; }
 
+    size_t hash() const noexcept override { return hash_value(name_); }
+    bool equal(entity const& rhs) const noexcept
+    { 
+        if (variable_entity const* verhs = dynamic_cast<variable_entity const*>(&rhs); verhs) {
+            return verhs->name_ == name_;
+        }
+        return false;
+    }
+
+    void visit(entity_visitor const& v) const override { v(*this); }
+
 private:
-    bang_type type_;
     kind kind_;
     intptr_t index_;
     bool is_weak_ = false;

@@ -15,25 +15,25 @@ namespace sonia::lang::bang {
 error_storage ellipsis_pattern::is_matched(fn_compiler_context& ctx, pure_call_t& call) const
 {
     if (!call.named_args.empty()) {
-        return make_error<basic_general_error>(std::get<2>(call.named_args.front()), "unexpected named argument"sv);
+        return make_error<basic_general_error>(std::get<0>(call.named_args.front()).location, "unexpected named argument"sv);
     }
     if (call.positioned_args.empty()) {
         return make_error<basic_general_error>(call.location(), "an argument is expected"sv);
     }
     if (call.positioned_args.size() != 1) {
-        return make_error<basic_general_error>(std::get<1>(call.positioned_args[1]), "unexpected argument"sv);
+        return make_error<basic_general_error>(get_start_location(call.positioned_args[1]), "unexpected argument"sv);
     }
-    auto const& tpl = call.positioned_args.front();
+    auto const& expr = call.positioned_args.front();
 
-    expression_visitor evis{ ctx, expected_result_t{ ctx.u().get_typename_entity_identifier(), std::get<1>(tpl) } };
-    if (auto opterr = apply_visitor(evis, std::get<0>(tpl)); opterr) return std::move(opterr);
+    expression_visitor evis{ ctx, expected_result_t{ ctx.u().get_typename_entity_identifier(), get_start_location(expr) } };
+    if (auto opterr = apply_visitor(evis, expr); opterr) return std::move(opterr);
 
     return {};
 }
 
 std::expected<entity_identifier, error_storage> ellipsis_pattern::const_apply(fn_compiler_context& ctx) const
 {
-    std::span<semantic::expression_type> args = ctx.expressions();
+    std::span<semantic::expression_t> args = ctx.expressions();
     for (;;) {
         if (args.size() != 1) break;
         semantic::push_value const* pv = get<semantic::push_value>(&args.front());

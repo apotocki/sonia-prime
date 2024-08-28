@@ -58,16 +58,12 @@ struct expression_visitor : static_visitor<error_storage>
 
     result_type operator()(lambda_t&) const;
 
-    result_type operator()(function_call_t&) const;
-
     result_type operator()(entity_expression const& ee) const;
 
-    result_type operator()(negate_expression_t&) const;
-
-    inline result_type operator()(binary_expression_t & be) const
-    {
-        return bang_binary_switcher(be, *this);
-    }
+    result_type operator()(function_call_t&) const;
+    result_type operator()(unary_expression_t& be) const;
+    result_type operator()(binary_expression_t& be) const;
+        
 
     result_type operator()(binary_operator_t<binary_operator_type::ASSIGN>, binary_expression_t &) const;
     result_type operator()(binary_operator_t<binary_operator_type::LOGIC_AND>, binary_expression_t &) const;
@@ -94,8 +90,14 @@ private:
     template <typename ExprT>
     result_type apply_cast(entity_identifier, ExprT const& e) const;
 
-    template <typename ExprT>
-    result_type apply_cast(bang_type const& t, ExprT const& e) const;
+    template <std::derived_from<pure_call_t> CallExpressionT>
+    result_type operator()(qname_identifier fnqn, CallExpressionT& call) const;
+
+    template <std::derived_from<pure_call_t> CallExpressionT>
+    result_type operator()(functional const& fnl, CallExpressionT& call) const;
+
+    //template <typename ExprT>
+    //result_type apply_cast(bang_type const& t, ExprT const& e) const;
 };
 
 }

@@ -19,7 +19,6 @@
 #include "boost/conversion/unicode/utf.hpp"
 #include "boost/conversion/push_iterator.hpp"
 
-
 #include "semantic.hpp"
 #include "entities/variable_entity.hpp"
 #include "entities/functional_entity.hpp"
@@ -76,7 +75,7 @@ class unit
     eregistry_t eregistry_;
 
     // semantic
-    std::vector<semantic::expression_type> root_expressions_;
+    std::vector<semantic::expression_t> root_expressions_;
 
     std::vector<qname_identifier> builtins_;
 
@@ -111,12 +110,14 @@ public:
         set_efn((size_t)bi, std::move(fnq));
     }
 
-    semantic::invoke_function get_builtin_function(builtin_fn bi) const
-    {
-        return semantic::invoke_function{ builtins_.at((size_t)bi) };
-    }
+    //semantic::invoke_function get_builtin_function(builtin_fn bi) const
+    //{
+    //    return semantic::invoke_function{ builtins_.at((size_t)bi) };
+    //}
 
     identifier new_identifier();
+    identifier make_identifier(string_view);
+
     qname_identifier new_qname_identifier();
     qname_identifier make_qname_identifier(string_view);
     qname_identifier get_function_entity_identifier(string_view signature);
@@ -128,6 +129,9 @@ public:
     piregistry_t& piregistry() { return piregistry_; }
     eregistry_t& eregistry() { return eregistry_; }
     
+    // global constants rotine
+    size_t allocate_constant_index();
+
     virtual_stack_machine& bvm() { return *bvm_; }
 
     inline entity_identifier get_typename_entity_identifier() const noexcept { return typename_entity_identifier_; }
@@ -135,11 +139,23 @@ public:
     inline entity_identifier get_any_entity_identifier() const noexcept { return any_entity_identifier_; }
     inline entity_identifier get_string_entity_identifier() const noexcept { return string_entity_identifier_; }
     inline entity_identifier get_decimal_entity_identifier() const noexcept { return decimal_entity_identifier_; }
-    
+    inline entity_identifier get_bool_entity_identifier() const noexcept { return bool_entity_identifier_; }
+
+    inline qname_identifier get_fn_qname_identifier() const noexcept { return fn_qname_identifier_; }
     inline qname_identifier get_ellipsis_qname_identifier() const noexcept { return ellipsis_qname_identifier_; }
     inline qname_identifier get_string_qname_identifier() const noexcept { return string_qname_identifier_; }
     inline qname_identifier get_decimal_qname_identifier() const noexcept { return decimal_qname_identifier_; }
+    inline qname_identifier get_bool_qname_identifier() const noexcept { return bool_qname_identifier_; }
     inline qname_identifier get_any_qname_identifier() const noexcept { return any_qname_identifier_; }
+
+    inline qname_identifier get_eq_qname_identifier() const noexcept { return eq_qname_identifier_; }
+    inline qname_identifier get_ne_qname_identifier() const noexcept { return ne_qname_identifier_; }
+    inline qname_identifier get_negate_qname_identifier() const noexcept { return negate_qname_identifier_; }
+
+    inline identifier get_fn_result_identifier() const noexcept { return fn_result_identifier_; }
+
+
+    functional& resolve_functional(qname_identifier);
 
     //void push_entity(shared_ptr<entity>);
 
@@ -187,9 +203,12 @@ public:
     
     std::string print(bang_type const& tp) const;
     
-    std::string print(expression_t const&) const;
+    std::string print(syntax_expression_t const&) const;
+    std::string print(semantic::expression_t const&) const;
 
     std::string print(error const&) const;
+
+    std::string describe_efn(size_t index) const;
 
     small_string as_string(identifier const& id) const;
     small_string as_string(entity_identifier const& id) const;
@@ -198,8 +217,7 @@ public:
 
     //small_u32string as_u32string(identifier const& id) const;
     
-    functional_entity& get_functional_entity(builtin_type) const;
-    functional_entity& get_functional_entity(binary_operator_type);
+    //functional_entity& get_functional_entity(binary_operator_type);
 
     void set_cout_writer(function<void(string_view)> writer)
     {
@@ -215,6 +233,8 @@ public:
     }
 
 protected:
+    void setup_type(string_view type_name, qname_identifier&, entity_identifier&);
+
     std::vector<char> read_file(fs::path const& rpath);
 
     template <typename OutputIteratorT, typename UndefinedFT>
@@ -224,16 +244,25 @@ protected:
     OutputIteratorT name_printer(qname_view const&, OutputIteratorT, UndefinedFT const&) const;
 
 private:
-    qname_identifier ellipsis_qname_identifier_;
-    qname_identifier string_qname_identifier_;
-    qname_identifier decimal_qname_identifier_;
-    qname_identifier any_qname_identifier_;
+    identifier fn_result_identifier_; // ->
+
+    qname_identifier fn_qname_identifier_; // :: __fn
+    qname_identifier ellipsis_qname_identifier_; // :: ...
+    qname_identifier string_qname_identifier_; // :: string
+    qname_identifier decimal_qname_identifier_; // :: decimal
+    qname_identifier bool_qname_identifier_; // :: bool
+    qname_identifier any_qname_identifier_; // :: any
+    qname_identifier eq_qname_identifier_; // :: ==
+    qname_identifier ne_qname_identifier_; // :: !=
+    qname_identifier negate_qname_identifier_; // :: !
 
     entity_identifier void_entity_identifier_;
     entity_identifier any_entity_identifier_;
     entity_identifier typename_entity_identifier_;
     entity_identifier string_entity_identifier_;
     entity_identifier decimal_entity_identifier_;
+    entity_identifier bool_entity_identifier_;
+
     // entities registry:
     //qname -> entity
 

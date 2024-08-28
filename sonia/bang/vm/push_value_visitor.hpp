@@ -22,12 +22,12 @@ public:
 
     inline void operator()(null_t const&) const
     {
-        bvm().append_push_static_const(smart_blob{});
+        bvm().append_push_pooled_const(smart_blob{});
     }
 
     void operator()(bool bval) const
     {
-        bvm().append_push_static_const(smart_blob{ bool_blob_result(bval) });
+        bvm().append_push_pooled_const(smart_blob{ bool_blob_result(bval) });
     }
 
     void operator()(small_string const& sval) const
@@ -38,34 +38,33 @@ public:
         //(cvt::cvt_push_iterator(cvt::utf32 | cvt::utf8, std::back_inserter(result)) << sval).flush();
         smart_blob strbr{ string_blob_result(sval) };
         strbr.allocate();
-        bvm().append_push_static_const(std::move(strbr));
+        bvm().append_push_pooled_const(std::move(strbr));
     }
 
     void operator()(mp::integer const& ival) const
     {
         if (ival.is_fit<int64_t>()) {
-            bvm().append_push_static_const(smart_blob{ i64_blob_result((int64_t)ival) });
+            bvm().append_push_pooled_const(smart_blob{ i64_blob_result((int64_t)ival) });
         } else if (ival.is_fit<uint64_t>()) {
-            bvm().append_push_static_const(smart_blob{ ui64_blob_result((uint64_t)ival) });
+            bvm().append_push_pooled_const(smart_blob{ ui64_blob_result((uint64_t)ival) });
         } else {
-            bvm().append_push_static_const(smart_blob{ bigint_blob_result(ival) });
+            bvm().append_push_pooled_const(smart_blob{ bigint_blob_result(ival) });
         }
     }
 
     void operator()(mp::decimal const& dval) const
     {
         //THROW_NOT_IMPLEMENTED_ERROR("push_value_visitor decimal");
-#if 1
         if (dval.exponent().sgn() >= 0) { // is integral
-            if (dval >= mp::decimal{(std::numeric_limits<int64_t>::min)()} && dval <= mp::decimal{(std::numeric_limits<int64_t>::max)()}) {
-                bvm().append_push_static_const(smart_blob{ i64_blob_result((int64_t)dval) });
-            } else if (dval >= 0 /*mp::decimal{ 0}*/ && dval <= mp::decimal{ (std::numeric_limits<uint64_t>::max)()}) {
-                bvm().append_push_static_const(smart_blob{ ui64_blob_result((uint64_t)dval) });
+            if (dval >= (std::numeric_limits<int64_t>::min)() && dval <= (std::numeric_limits<int64_t>::max)()) {
+                bvm().append_push_pooled_const(smart_blob{ i64_blob_result((int64_t)dval) });
+            } else if (dval >= 0 && dval <= (std::numeric_limits<uint64_t>::max)()) {
+                bvm().append_push_pooled_const(smart_blob{ ui64_blob_result((uint64_t)dval) });
             }
         } else {
-            bvm().append_push_static_const(smart_blob{ f64_blob_result((double_t)dval) });
+            bvm().append_push_pooled_const(smart_blob{ decimal_blob_result(dval) });
+            //bvm().append_push_static_const(smart_blob{ f64_blob_result((double_t)dval) });
         }
-#endif
     }
 
     void operator()(lang::bang::function_value const& dval) const
@@ -129,7 +128,7 @@ public:
 
     void operator()(uint64_t value) const
     {
-        bvm().append_push_static_const(smart_blob{ ui64_blob_result(value) });
+        bvm().append_push_pooled_const(smart_blob{ ui64_blob_result(value) });
     }
 
     template <typename T>
@@ -165,6 +164,26 @@ public:
     void operator()(function_entity const&) const override
     {
         THROW_NOT_IMPLEMENTED_ERROR();
+    }
+
+    void operator()(variable_entity const& ve) const override
+    {
+        auto varkind = ve.varkind();
+        if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
+            unit_.bvm().append_fpush(ve.index());
+            return;
+        } else if (varkind == variable_entity::kind::EXTERN) {
+            THROW_NOT_IMPLEMENTED_ERROR();
+#if 0
+            string_view varname = unit_.as_string(unit_.qnregistry().resolve(pv.entity->name()).back());
+            smart_blob strbr{ string_blob_result(varname) };
+            strbr.allocate();
+            bvm().append_push_static_const(std::move(strbr));
+            bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_variable_get);
+#endif
+        } else {
+            THROW_NOT_IMPLEMENTED_ERROR();
+        }
     }
 };
 

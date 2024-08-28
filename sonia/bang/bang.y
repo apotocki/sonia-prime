@@ -72,8 +72,8 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token RIGHTSHIFT           "`>>`"
 %token LE                   "`<=`"
 %token GE                   "`>=`"
-%token EQ                   "`==`"
-%token NE                   "`!=`"
+%token <sonia::lang::lex::resource_location> EQ                   "`==`"
+%token <sonia::lang::lex::resource_location> NE                   "`!=`"
 %token <sonia::lang::lex::resource_location> LOGIC_AND            "`&&`"
 %token <sonia::lang::lex::resource_location> LOGIC_OR             "`||`"
 %token <sonia::lang::lex::resource_location> CONCAT               "`..`"
@@ -193,6 +193,9 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 // 12 priority
 %left BITOR
 
+// 9 priority
+%left EQ NE
+
 // 6 priority
 %left CONCAT
 %left PLUS MINUS
@@ -249,7 +252,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 // TYPE EXPRESSIONS
 %token TYPENAME
-%token BOOL
+//%token BOOL
 %token INT
 %token FLOAT
 //%token STRING_WORD
@@ -267,7 +270,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token <sonia::lang::lex::resource_location> TRUE "true"
 %token <sonia::lang::lex::resource_location> FALSE "false"
 
-%type <expression_t> expression compound-expression
+%type <syntax_expression_t> expression compound-expression
 %type <named_expression_term_list_t> opt-named-expr-list-any opt-named-expr-list
 %type <named_expression_term_t> opt-named-expr
 %type <expression_list_t> expression-list-any
@@ -550,12 +553,7 @@ parameter-woa-decl:
 
 // TYPE EXPRESSIONS
 type-expr:
-      BOOL { $$ = bang_bool_t{}; }
-    | INT { $$ = bang_int_t{}; }
-    | FLOAT { $$ = bang_float_t{}; }
-/*    | STRING_WORD { $$ = bang_string_t{}; }
-    | DECIMAL_WORD { $$ = bang_decimal_t{}; } */
-    | qname { $$ = bang_preliminary_object_t{ std::move($1) }; }
+      qname { $$ = bang_preliminary_object_t{ std::move($1) }; }
     | OPEN_SQUARE_BRACKET type-expr CLOSE_SQUARE_BRACKET
         { $$ = bang_preliminary_vector_t{std::move($2)}; IGNORE($1); }
     | OPEN_PARENTHESIS field-list-opt CLOSE_PARENTHESIS
@@ -593,8 +591,8 @@ compound-expression:
            $$ = function_call_t{ std::move($2), std::move($1), std::move($3) };
             //$$ = function_call_t{}; IGNORE($1, $2, $3);
         }
-    | expression ASSIGN expression
-        { $$ = binary_expression_t{ binary_operator_type::ASSIGN, std::move($1), std::move($3), std::move($2) }; }
+    //| expression ASSIGN expression
+    //    { $$ = binary_expression_t{ binary_operator_type::ASSIGN, std::move($1), std::move($3), std::move($2) }; }
     ;
 
 expression:
@@ -625,7 +623,7 @@ expression:
     | OPEN_SQUARE_BRACKET expression-list-any CLOSE_SQUARE_BRACKET
         { $$ = expression_vector_t{ {std::move($2)}, std::move($1) }; }
     | EXCLPT expression
-		{ $$ = negate_expression_t{ std::move($2), std::move($1) }; }
+		{ $$ = unary_expression_t{ unary_operator_type::NEGATE, true /* prefixed */, std::move($2), std::move($1) }; }
     | expression QMARK
         { $$ = not_empty_expression_t{ std::move($1) }; }
     | expression POINT identifier
@@ -640,12 +638,19 @@ expression:
         { $$ = binary_expression_t{ binary_operator_type::PLUS, std::move($1), std::move($3), std::move($2) }; }
     | expression CONCAT expression
         { $$ = binary_expression_t{ binary_operator_type::CONCAT, std::move($1), std::move($3), std::move($2) }; }
-    
+
+//////////////////////////// 9 priority
+    | expression EQ expression
+        { $$ = binary_expression_t{ binary_operator_type::EQ, std::move($1), std::move($3), std::move($2) }; }
+    | expression NE expression
+        { $$ = binary_expression_t{ binary_operator_type::NE, std::move($1), std::move($3), std::move($2) }; }
+
     | compound-expression
         { $$ = std::move($1); }
+
     /*
     | qname OPEN_BROKET opt-named-expr-list CLOSE_BROKET
-        { $$ = expression_t { ctprocedure{ std::move($1), std::move($3) } }; }
+        { $$ = syntax_expression_t { ctprocedure{ std::move($1), std::move($3) } }; }
     
     */
     ;
@@ -677,9 +682,9 @@ opt-named-expr-list:
 
 opt-named-expr:
       qname COLON expression
-        { auto loc = get_start_location($3); $1.value.set_absolute(); $$ = named_expression_term_t{std::tuple{std::move($1), std::move($3)}, std::move(loc)}; }
+        { $1.value.set_absolute(); $$ = named_expression_term_t{ std::tuple{std::move($1), std::move($3)} }; }
     | expression
-        { auto loc = get_start_location($1); $$ = named_expression_term_t{std::move($1), std::move(loc)}; }
+        { $$ = named_expression_term_t{ std::move($1) }; }
     ;
 
 //identifier-chain:

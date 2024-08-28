@@ -60,17 +60,17 @@ std::expected<functional::pattern const*, error_storage> functional::find(fn_com
     return &*alternatives.front().first;
 }
 
-error_storage fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t& call) const
+error_storage fieldset_pattern::is_matched(fn_compiler_context& ctx, pure_call_t& call) const
 {
     for (auto const& tpl : call.named_args) { // {argname, expr, exprloc}
         THROW_NOT_IMPLEMENTED_ERROR("fn_pattern::is_matched, named argument");
     }
-    auto psp = fn_.positioned_fields();
+    fieldset const& fs = get_fieldset();
+    auto psp = fs.positioned_fields();
     auto posarg = psp.begin();
-    for (auto tplit = call.positioned_args.begin(), tpleit = call.positioned_args.end(); tplit != tpleit;) { // {expr, exprloc}
-        //auto const& tpl = *tplit;
+    for (auto expr_it = call.positioned_args.begin(), expr_eit = call.positioned_args.end(); expr_it != expr_eit;) {
         if (posarg == psp.end()) {
-            return make_error<basic_general_error>(std::get<1>(*tplit), "positioned argument mismatch"sv);
+            return make_error<basic_general_error>(get_start_location(*expr_it), "positioned argument mismatch"sv);
         }
         entity_identifier param_type = posarg->constraint;
         entity const& param_entity = ctx.u().eregistry().get(param_type);
@@ -79,14 +79,14 @@ error_storage fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t& call
             //ctx.append_expression(semantic::push_value{ uint64_t{pack_size} });
             //auto pack_size_expr_pointer = ctx.current_expressions_pointer();
             for (;;) {
-                expression_visitor evis{ ctx, expected_result_t{ pent->element_type(), std::get<1>(*tplit) } };
-                if (auto opterr = apply_visitor(evis, std::get<0>(*tplit)); opterr) {
+                expression_visitor evis{ ctx, expected_result_t{ pent->element_type(), get_start_location(*expr_it) } };
+                if (auto opterr = apply_visitor(evis, *expr_it); opterr) {
                     ++posarg;
                     if (posarg == psp.end()) return std::move(opterr);
                     break;
                 }
                 ++pack_size;
-                if (++tplit == tpleit) {
+                if (++expr_it == expr_eit) {
                     ++posarg;
                     break;
                 }
@@ -94,9 +94,9 @@ error_storage fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t& call
             ctx.append_expression(semantic::push_value{ uint64_t{pack_size} });
             //ctx.set_expression(pack_size_expr_pointer, semantic::push_value{ uint64_t{pack_size} });
         } else {
-            expression_visitor evis{ ctx, expected_result_t{ param_type, std::get<1>(*tplit) } };
-            if (auto opterr = apply_visitor(evis, std::get<0>(*tplit)); opterr) return std::move(opterr);
-            ++tplit;
+            expression_visitor evis{ ctx, expected_result_t{ param_type, get_start_location(*expr_it) } };
+            if (auto opterr = apply_visitor(evis, *expr_it); opterr) return std::move(opterr);
+            ++expr_it;
             ++posarg;
         }
     }
@@ -123,23 +123,13 @@ std::expected<entity_identifier, error_storage> functional::pattern::apply(fn_co
     return e.get_type();
 }
 
-std::expected<entity_identifier, error_storage> fn_pattern::const_apply(fn_compiler_context& ctx) const
+std::expected<entity_identifier, error_storage> fieldset_pattern::const_apply(fn_compiler_context& ctx) const
 {
     // , std::span<semantic::expression_type> args
     THROW_NOT_IMPLEMENTED_ERROR("fn_pattern::const_apply");
 }
 
 
-std::expected<entity_identifier, error_storage> external_fn_pattern::const_apply(fn_compiler_context& ctx) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("external_fn_pattern::const_apply");
-}
 
-std::expected<entity_identifier, error_storage> external_fn_pattern::apply(fn_compiler_context& ctx) const
-{
-    ctx.append_expression(semantic::invoke_external_function{ extfnid_ });
-    ctx.pop_chain(); // function call chain
-    return fn_.result_type();
-}
 
 }

@@ -138,6 +138,18 @@ void error_printer_visitor::operator()(ambiguity_error const& err)
     }
 }
 
+void error_printer_visitor::operator()(circular_dependency_error const& err)
+{
+    bool first = true;
+    for (auto const& e : err.circle_items) {
+        if (!first) {
+            s_ << "\n -------------- \n";
+        }
+        else { first = false; }
+        e->visit(*this);
+    }
+}
+
 general_error::string_t parameter_not_found_error::description(unit const& u) const noexcept
 {
     return ("parameter `%1%` of `%2%` is not found"_fmt %

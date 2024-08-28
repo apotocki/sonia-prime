@@ -107,30 +107,6 @@ inline bool is_ref(blob_type val) noexcept
     return val == blob_type::blob_reference; // || val == blob_type::object;
 }
 
-
-/*
-struct blob_result {
-    union {
-        void const* data;
-        uint64_t ui64value;
-        int64_t i64value;
-        sonia::float16 f16value;
-        float_t f32value;
-        double_t f64value;
-        uint32_t ui32value;
-        int32_t i32value;
-        uint16_t ui16value;
-        int16_t i16value;
-        uint8_t ui8value;
-        int8_t i8value;
-    };
-    int32_t size; // always in bytes, defined only when data field is used
-    uint8_t need_unpin : 7; // defined only when data field is used
-    uint8_t is_array : 1; // defined only when data field is used
-    blob_type type;
-};
-//*/
-
 //#pragma pack(push)
 //#pragma pack(1)
 #pragma pack(push, 1)
@@ -991,21 +967,40 @@ struct from_blob<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>
 template <size_t N, size_t E, typename AllocatorT>
 struct from_blob<sonia::mp::basic_decimal<invocation_bigint_limb_type, N, E, AllocatorT>>
 {
-    sonia::mp::basic_decimal<invocation_bigint_limb_type, N, E, AllocatorT> operator()(blob_result const& val) const
+    using decimal_t = sonia::mp::basic_decimal<invocation_bigint_limb_type, N, E, AllocatorT>;
+    decimal_t operator()(blob_result const& val) const
     {
         using namespace sonia;
-        THROW_NOT_IMPLEMENTED_ERROR("basic_decimal");
-        /*
-        if (val.type == blob_type::decimal) {
-            size_t sz = array_size_of<invocation_bigint_limb_type>(val);
-            sonia::mp::basic_integer_view<invocation_bigint_limb_type> svalv{std::span{ data_of<const invocation_bigint_limb_type>(val), sz }, val.reserved ? -1 : 1 };
 
-            SignificandT sval{ svalv };
-            return sonia::basic_decimal<SignificandT, ExponentT>{ sval, static_cast<int16_t>(val.bp.reserved) };
-        } else {
-            THROW_INTERNAL_ERROR("can't convert blob %1% to decimal"_fmt % val);
+        switch (val.type) {
+        case blob_type::ui8:
+            return decimal_t{val.bp.ui8value};
+        case blob_type::i8:
+            return decimal_t{ val.bp.i8value };
+        case blob_type::ui16:
+            return decimal_t{ val.bp.ui16value };
+        case blob_type::i16:
+            return decimal_t{ val.bp.i16value };
+        case blob_type::ui32:
+            return decimal_t{ val.bp.ui32value };
+        case blob_type::i32:
+            return decimal_t{ val.bp.i32value };
+        case blob_type::ui64:
+            return decimal_t{ val.bp.ui64value };
+        case blob_type::i64:
+            return decimal_t{ val.bp.i64value };
+        case blob_type::decimal:
+            {
+                THROW_NOT_IMPLEMENTED_ERROR("basic_decimal from decimal");
+                //size_t sz = array_size_of<invocation_bigint_limb_type>(val);
+                //sonia::mp::basic_integer_view<invocation_bigint_limb_type> svalv{ std::span{ data_of<const invocation_bigint_limb_type>(val), sz }, val.reserved ? -1 : 1 };
+                //SignificandT sval{ svalv };
+                //return sonia::basic_decimal<SignificandT, ExponentT>{ sval, static_cast<int16_t>(val.bp.reserved) };
+            }
+        case blob_type::bigint:
+            THROW_NOT_IMPLEMENTED_ERROR("basic_decimal from bigint");
         }
-        */
+        THROW_INTERNAL_ERROR("can't convert blob %1% to decimal"_fmt % val);
     }
 };
 
@@ -1236,7 +1231,7 @@ inline size_t hash_value(blob_result const& v)
 }
 
 template <typename Elem, typename Traits>
-inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& os, blob_result const& b)
+inline std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem, Traits>& os, blob_result const& b, bool with_types)
 {
     using namespace std::string_view_literals;
 
@@ -1276,31 +1271,33 @@ inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Tra
     case blob_type::boolean:
         return os << (b.bp.i8value ? "true"sv : "false"sv);
     case blob_type::c8:
-        return os << '\'' << (char)b.bp.i8value<< '\'';
+        return with_types ? (os << '\'' << (char)b.bp.i8value<< '\'') : (os << (char)b.bp.i8value);
     case blob_type::i8:
-        return os << (int)b.bp.i8value << ":i8"sv;
+        return os << (int)b.bp.i8value << (with_types ? ":i8"sv : ""sv);
     case blob_type::ui8:
-        return os << (int)b.bp.ui8value << ":ui8"sv;
+        return os << (int)b.bp.ui8value << (with_types ? ":ui8"sv : ""sv);
     case blob_type::i16:
-        return os << (int)b.bp.i16value << ":i16"sv;
+        return os << (int)b.bp.i16value << (with_types ? ":i16"sv : ""sv);
     case blob_type::ui16:
-        return os << (int)b.bp.ui16value << ":ui16"sv;
+        return os << (int)b.bp.ui16value << (with_types ? ":ui16"sv : ""sv);
     case blob_type::i32:
-        return os << b.bp.i32value << ":i32"sv;
+        return os << b.bp.i32value << (with_types ? ":i32"sv : ""sv);
     case blob_type::ui32:
-        return os << b.bp.ui32value << ":ui32"sv;
+        return os << b.bp.ui32value << (with_types ? ":ui32"sv : ""sv);
     case blob_type::i64:
-        return os << b.bp.i64value << ":i64"sv;
+        return os << b.bp.i64value << (with_types ? ":i64"sv : ""sv);
     case blob_type::ui64:
-        return os << b.bp.ui64value << ":ui64"sv;
+        return os << b.bp.ui64value << (with_types ? ":ui64"sv : ""sv);
     case blob_type::flt16:
-        return os << b.bp.f16value << ":f16"sv;
+        return os << b.bp.f16value << (with_types ? ":f16"sv : ""sv);
     case blob_type::flt32:
-        return os << b.bp.f32value << ":f32"sv;
+        return os << b.bp.f32value << (with_types ? ":f32"sv : ""sv);
     case blob_type::flt64:
-        return os << b.bp.f64value << ":f64"sv;
+        return os << b.bp.f64value << (with_types ? ":f64"sv : ""sv);
     case blob_type::string:
-        return os << '"' << sonia::string_view{data_of<char>(b), array_size_of<char>(b)} << '"';
+        if (with_types)
+            return os << '"' << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) } << '"';
+        else return os << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
     case blob_type::function:
         return os << "function"sv;
     case blob_type::object: {
@@ -1312,6 +1309,12 @@ inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Tra
     default:
         return os << "unknown"sv;
     }
+}
+
+template <typename Elem, typename Traits>
+inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& os, blob_result const& b)
+{
+    return print_to_stream(os, b, true);
 }
 
 namespace sonia {

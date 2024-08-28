@@ -28,43 +28,7 @@ namespace sonia::lang::bang {
 //    size_t fn_index;
 //};
 
-class function_entity : public variable_entity
-{
-public:
-    function_entity(entity_identifier eid, qname_identifier name, function_signature && sig)
-        : variable_entity{ std::move(eid), std::move(name), bang_type{sig.fn_type}, kind::LOCAL }
-        , is_defined_{0}, is_inline_{0}
-    {
-        signature_ = std::move(sig);
-    }
 
-    function_signature const& fsignature() const { return signature_; }
-    bang_type const& result_type() const { return fsignature().fn_type.result; }
-
-    boost::container::small_vector<std::pair<variable_entity*, variable_entity*>, 16> captured_variables; // [(from, to)]
-    std::vector<semantic::expression_type> body;
-
-    bool is_defined() const { return !!is_defined_; }
-    bool is_static_variable_index() const { return !!is_static_variable_index_; }
-    bool is_inline() const { return !!is_inline_; }
-    bool is_void() const { return signature_.fn_type.result == bang_tuple_t{}; }
-    size_t get_address() const { return address_; }
-    void set_inline(bool val = true) { is_inline_ = val ? 1 : 0; }
-    void set_static_variable_index(size_t index) { address_ = static_cast<uint64_t>(index); is_static_variable_index_ = 1; is_defined_ = 1; }
-    void set_address(size_t address) { address_ = static_cast<uint64_t>(address); is_static_variable_index_ = 0; is_defined_ = 1; }
-
-    void materialize_call(fn_compiler_context&, pure_call_t & call) const;
-
-    void visit(entity_visitor const& v) const override { v(*this); }
-
-private:
-    function_signature signature_;
-    
-    uint64_t address_ : 60;
-    uint64_t is_defined_ : 1;
-    uint64_t is_static_variable_index_ : 1;
-    uint64_t is_inline_ : 1;
-};
 
 class functional_entity : public entity
 {

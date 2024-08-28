@@ -191,6 +191,8 @@ public:
         return std::ranges::equal(base_t::subspan(0, sp.size()), sp);
     }
 
+    inline explicit operator qname<IdentifierT>() const { return qname<IdentifierT>{*this, is_absolute()}; }
+
 private:
     bool absolute_;
 };

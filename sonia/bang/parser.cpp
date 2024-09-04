@@ -68,24 +68,29 @@ void parser_context::pop_ns()
     ns_stack_.pop_back();
 }
 
-identifier parser_context::new_identifier()
+identifier parser_context::new_identifier() const
 {
     return unit_.new_identifier();
 }
 
-annotated_identifier parser_context::make_identifier(annotated_string_view astr)
+annotated_identifier parser_context::make_identifier(annotated_string_view astr) const
 {
     return { unit_.slregistry().resolve(astr.value), astr.location };
 }
 
-annotated_qname_identifier parser_context::make_qname_identifier(annotated_qname aqn)
+annotated_qname parser_context::make_qname(annotated_string_view astr) const
 {
-    return annotated_qname_identifier{ unit_.qnregistry().resolve(aqn.value), aqn.location };
+    return annotated_qname{ qname{unit_.slregistry().resolve(astr.value), false}, std::move(astr.location) };
 }
 
-annotated_qname_identifier parser_context::make_qname_identifier(annotated_string_view asv, bool is_abs)
+annotated_qname_identifier parser_context::make_qname_identifier(annotated_qname aqn) const
 {
-    return annotated_qname_identifier{ unit_.qnregistry().resolve(qname{unit_.slregistry().resolve(asv.value), is_abs}), asv.location };
+    return annotated_qname_identifier{ unit_.fregistry().resolve(aqn.value).id(), aqn.location };
+}
+
+annotated_qname_identifier parser_context::make_qname_identifier(annotated_string_view asv, bool is_abs) const
+{
+    return annotated_qname_identifier{ unit_.fregistry().resolve(qname{unit_.slregistry().resolve(asv.value), is_abs}).id(), asv.location };
 }
 
 //identifier parser_context::make_required_identifier(string_view str)
@@ -93,7 +98,7 @@ annotated_qname_identifier parser_context::make_qname_identifier(annotated_strin
 //    return identifier{ env_.iregistry().resolve(str).value, true};
 //}
 
-annotated_string parser_context::make_string(annotated_string_view str)
+annotated_string parser_context::make_string(annotated_string_view str) const
 {
     //return {utf8_to_utf32(str.value), str.location};
     return { small_string{str.value.data(), str.value.size()}, str.location };
@@ -114,7 +119,7 @@ annotated_string parser_context::make_string(annotated_string_view str)
 //    return mp::integer(str);
 //}
 
-mp::decimal parser_context::make_decimal(string_view str)
+mp::decimal parser_context::make_decimal(string_view str) const
 {
     return mp::decimal(str);
 }

@@ -12,7 +12,7 @@
 namespace sonia::lang::bang {
 
 // opeator ...(typename)
-error_storage ellipsis_pattern::is_matched(fn_compiler_context& ctx, pure_call_t& call) const
+error_storage ellipsis_pattern::is_matched(fn_compiler_context& ctx, pure_call_t const& call, functional::match_descriptor& md) const
 {
     if (!call.named_args.empty()) {
         return make_error<basic_general_error>(std::get<0>(call.named_args.front()).location, "unexpected named argument"sv);
@@ -28,31 +28,27 @@ error_storage ellipsis_pattern::is_matched(fn_compiler_context& ctx, pure_call_t
     expression_visitor evis{ ctx, expected_result_t{ ctx.u().get_typename_entity_identifier(), get_start_location(expr) } };
     if (auto opterr = apply_visitor(evis, expr); opterr) return std::move(opterr);
 
+    md.signature.set_name(ctx.u().get_ellipsis_qname_identifier());
+
+    std::span<semantic::expression_t> args = ctx.expressions();
+    semantic::push_value const* pv = get<semantic::push_value>(&args.back());
+    BOOST_ASSERT(pv);
+    entity_identifier const* peid = get<entity_identifier>(&pv->value);
+    BOOST_ASSERT(peid); // must be entity_identifier
+    md.signature.push({*peid, true});
     return {};
 }
 
-std::expected<entity_identifier, error_storage> ellipsis_pattern::const_apply(fn_compiler_context& ctx) const
+std::expected<entity_identifier, error_storage> ellipsis_pattern::const_apply(fn_compiler_context& ctx, functional::match_descriptor& md) const
 {
-    std::span<semantic::expression_t> args = ctx.expressions();
-    for (;;) {
-        if (args.size() != 1) break;
-        semantic::push_value const* pv = get<semantic::push_value>(&args.front());
-        if (!pv) break;
-        entity_identifier const* eid = get<entity_identifier>(&pv->value);
-        BOOST_ASSERT(eid); // must be entity_identifier
-        
-        // signature: ellipsis_qname, string_entity_id
-        pack_entity smpl{ ctx.u().get_ellipsis_qname_identifier(), *eid, ctx.u().get_typename_entity_identifier() };
-        
-        entity const& entres = ctx.u().eregistry().find_or_create(smpl, [&ctx, eid, &smpl]() {
-            // create entity for pack
-            return make_shared<pack_entity>(std::move(smpl));
-        });
-        ctx.pop_chain();
-        return entres.id();
-    }
+    BOOST_ASSERT(md.signature.named_fields().empty());
+    BOOST_ASSERT(md.signature.positioned_fields().size() == 1);
 
-    THROW_NOT_IMPLEMENTED_ERROR("ellipsis_pattern::apply, complex argument");
+    entity const& entres = ctx.u().eregistry().find_or_create(indirect_signatured_entity{ md.signature }, [&ctx, &md]() {
+        return make_shared<pack_entity>(ctx.u().get_typename_entity_identifier(), std::move(md.signature));
+    });
+    ctx.pop_chain();
+    return entres.id();
 }
 
 }

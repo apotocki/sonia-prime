@@ -23,8 +23,7 @@ namespace sonia::lang::bang {
 functional& unit::resolve_functional(qname_view qn)
 {
     assert(qn.is_absolute());
-    qname_identifier qname_id = qnregistry().resolve(qn);
-    return fregistry().resolve(qname_id);
+    return fregistry().resolve(qn);
 }
 
 qname_identifier unit::get_function_entity_identifier(string_view signature)
@@ -33,9 +32,11 @@ qname_identifier unit::get_function_entity_identifier(string_view signature)
     auto decls = parser.parse((string_view)("extern fn %1%;"_fmt % signature).str());
 
     fn_compiler_context ctx{ *this, qname{} };
-    auto& fndecl = get<fn_pure_decl>(decls->front());
+    auto& fndecl = get<fn_pure_t>(decls->front());
     fndecl.aname.value.set_absolute();
 
+    THROW_NOT_IMPLEMENTED_ERROR("unit get_function_entity_identifier");
+#if 0
     function_signature sig;
     sig.setup(ctx, fndecl.parameters);
     sig.normilize(ctx);
@@ -43,6 +44,7 @@ qname_identifier unit::get_function_entity_identifier(string_view signature)
 
     qname fnm = fndecl.name() / sig.mangled_id;
     return qnregistry().resolve(fnm);
+#endif
 }
 
 identifier unit::new_identifier()
@@ -60,13 +62,13 @@ identifier unit::make_identifier(string_view sv)
 
 qname_identifier unit::new_qname_identifier()
 {
-    return qnregistry().resolve(qname{ new_identifier() });
+    return fregistry().resolve(qname{ new_identifier() }).id();
 }
 
 qname_identifier unit::make_qname_identifier(string_view sv)
 {
     qname qn{ slregistry_.resolve(sv) };
-    return qname_registry_.resolve(qn);
+    return functional_registry_.resolve(qn).id();
 }
 
 //void unit::push_entity(shared_ptr<entity> e)
@@ -99,17 +101,17 @@ void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
         throw exception(decls.error());
     }
     fn_compiler_context ctx{ *this, qname{} };
-    auto & fndecl = get<fn_pure_decl>(decls->front());
+    auto & fndecl = get<fn_pure_t>(decls->front());
 
-    auto fnres = ctx.build_function_descriptor(fndecl);
-    if (!fnres.has_value()) {
-        throw exception(ctx.u().print(*fnres.error()));
+    // if the result is not defined we can not resove it (e.g. from the function body) => suppose that it is void
+    if (!fndecl.result) {
+        fndecl.result = entity_expression(get_void_entity_identifier(), fndecl.location());
     }
-    function_descriptor & fd = fnres.value();
 
-    functional& f = ctx.u().fregistry().resolve(fd.id());
-    f.push(make_shared<external_fn_pattern>(std::move(fd), fn_identifier_counter_));
-    
+    auto eptrn = make_shared<external_fn_pattern>(ctx, fndecl, fn_identifier_counter_);
+    functional& f = ctx.u().fregistry().resolve(eptrn->fn_qname_id());
+    f.push(eptrn);
+
     // to do: mangled name
     bvm_->set_efn(fn_identifier_counter_++, pfn, small_string{print(fndecl.name())});
 
@@ -217,7 +219,7 @@ unit::unit()
 #endif
     // typename
     auto typename_qname_identifier = make_qname_identifier("typename");
-    auto typename_entity = make_shared<type_entity>();
+    auto typename_entity = make_shared<basic_signatured_entity>();
     typename_entity->set_signature(entity_signature{typename_qname_identifier});
 
     eregistry().insert(typename_entity);
@@ -227,9 +229,7 @@ unit::unit()
     // any
     any_qname_identifier_ = make_qname_identifier("any");
     
-    auto any_entity = make_shared<type_entity>();
-    any_entity->set_type(typename_entity_identifier_);
-    any_entity->set_signature(entity_signature{ any_qname_identifier_ });
+    auto any_entity = make_shared<basic_signatured_entity>(typename_entity_identifier_, entity_signature{ any_qname_identifier_ });
     eregistry().insert(any_entity);
     any_entity_identifier_ = any_entity->id();
     functional& any_fnl = fregistry().resolve(any_qname_identifier_);
@@ -244,14 +244,11 @@ unit::unit()
     // decimal
     setup_type("decimal"sv, decimal_qname_identifier_, decimal_entity_identifier_);
 
-
     // tuple
     qname_identifier tuple_qnid = make_qname_identifier("tuple"sv);
     
     // void
-    auto void_entity = make_shared<type_entity>();
-    void_entity->set_type(typename_entity_identifier_);
-    void_entity->set_signature(entity_signature{ tuple_qnid }); // tuple without arguments
+    auto void_entity = make_shared<basic_signatured_entity>(typename_entity_identifier_, entity_signature{ tuple_qnid });
     eregistry().insert(void_entity);
 
     void_entity_identifier_ = void_entity->id();
@@ -295,16 +292,11 @@ void unit::setup_type(string_view type_name, qname_identifier& qnid, entity_iden
 {
     qnid = make_qname_identifier(type_name);
     functional& some_type_fnl = fregistry().resolve(qnid);
-    auto some_type_entity = make_shared<type_entity>();
-    some_type_entity->set_type(typename_entity_identifier_);
-    some_type_entity->set_signature(entity_signature{ qnid });
+    auto some_type_entity = make_shared<basic_signatured_entity>(typename_entity_identifier_, entity_signature{ qnid });
     eregistry().insert(some_type_entity);
     some_type_fnl.set_default_entity(some_type_entity->id());
     eid = some_type_entity->id();
 }
-
-
-
 
 void unit::set_efn(size_t idx, qname_identifier fnq)
 {
@@ -346,7 +338,7 @@ OutputIteratorT unit::identifier_printer(identifier const& id, string_view prefi
             *oi++ = '<';
             for (auto const& qn : *sp) {
                 if (&qn != &sp->front()) *oi++ = ',';
-                oi = name_printer(qname_registry_.resolve(qn), std::move(oi), uf);
+                oi = name_printer(functional_registry_.resolve(qn).name(), std::move(oi), uf);
             }
             *oi++ = '>';
         }
@@ -413,7 +405,7 @@ std::string unit::print(qname_view qn) const
 std::string unit::print(qname_identifier qid) const
 {
     if (qid) {
-        return print(qname_registry_.resolve(qid));
+        return print(functional_registry_.resolve(qid).name());
     }
     return "`uninitialized qname`"s;
 }
@@ -426,11 +418,12 @@ struct type_printer_visitor : static_visitor<void>
 
     inline void operator()(bang_any_t) const { ss << "any"sv; }
     //inline void operator()(bang_bool_t) const { ss << "bool"sv; }
-    inline void operator()(bang_int_t) const { ss << "int"sv; }
-    inline void operator()(bang_float_t) const { ss << "float"sv; }
-    inline void operator()(bang_decimal_t) const { ss << "decimal"sv; }
-    inline void operator()(bang_string_t) const { ss << "string"sv; }
-    inline void operator()(bang_preliminary_object_t const& obj) const { ss << u_.print(obj.name()); }
+    //inline void operator()(bang_int_t) const { ss << "int"sv; }
+    //inline void operator()(bang_float_t) const { ss << "float"sv; }
+    //inline void operator()(bang_decimal_t) const { ss << "decimal"sv; }
+    //inline void operator()(bang_string_t) const { ss << "string"sv; }
+    inline void operator()(annotated_qname const& qn) const { ss << u_.print(qn.value); }
+    inline void operator()(annotated_identifier const& obj) const { ss << u_.print(obj.value); }
     inline void operator()(bang_object_t const& obj) const {
         ss << u_.print(obj.id());
     }
@@ -551,7 +544,7 @@ small_string unit::as_string(qname_view qn) const
 
 small_string unit::as_string(qname_identifier name) const
 {
-    return as_string(qname_registry_.resolve(name));
+    return as_string(functional_registry_.resolve(name).name());
 }
 
 //small_u32string unit::as_u32string(identifier const& id) const
@@ -612,6 +605,11 @@ struct expr_printer_visitor : static_visitor<void>
         this->operator()(ae.value);
     }
 
+    void operator()(qname_view qn) const
+    {
+        ss << u_.print(qn);
+    }
+
     void operator()(identifier const& i) const
     {
         ss << u_.print(i);
@@ -644,8 +642,8 @@ struct expr_printer_visitor : static_visitor<void>
 
     void operator()(variable_identifier const& vi) const
     {
-        if (vi.scope_local) {
-            ss << "LOCAL"sv;
+        if (vi.implicit) {
+            ss << "IMPLICIT"sv;
         }
         ss << "VAR("sv << u_.print(vi.name.value) << ")"sv;
     }
@@ -698,6 +696,12 @@ struct expr_printer_visitor : static_visitor<void>
             apply_visitor(*this, e);
         }
         ss << ']';
+    }
+
+    void operator()(bang_parameter_pack_t const& p) const
+    {
+        apply_visitor(*this, p.type);
+        ss << "..."sv;
     }
 
     void operator()(function_call_t const& f) const

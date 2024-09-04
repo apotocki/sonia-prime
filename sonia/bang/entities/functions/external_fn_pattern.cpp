@@ -9,16 +9,19 @@
 
 namespace sonia::lang::bang {
 
-std::expected<entity_identifier, error_storage> external_fn_pattern::const_apply(fn_compiler_context& ctx) const
+std::expected<entity_identifier, error_storage> external_fn_pattern::const_apply(fn_compiler_context& ctx, functional::match_descriptor&) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("external_fn_pattern::const_apply");
 }
 
-std::expected<entity_identifier, error_storage> external_fn_pattern::apply(fn_compiler_context& ctx) const
+std::expected<entity_identifier, error_storage> external_fn_pattern::apply(fn_compiler_context& ctx, functional::match_descriptor&) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("external_fn_pattern::apply");
+#if 0
     ctx.append_expression(semantic::invoke_external_function{ extfnid_ });
     ctx.pop_chain(); // function call chain
     return fd_.result_type();
+#endif
 }
 
 }

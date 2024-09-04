@@ -58,7 +58,7 @@ class unit
     //using entity_identifier_builder_t = identifier_builder<entity_identifier>;
 
     using slregistry_t = string_literal_registry<identifier, small_string>;
-    using qname_registry_t = qname_registry<identifier>;
+    //using qname_registry_t = qname_registry<identifier>;
     using functional_registry_t = functional_registry<functional>;
 
     using piregistry_t = parameterized_identifier_registry<identifier>;
@@ -68,7 +68,7 @@ class unit
     identifier_builder_t identifier_builder_;
     //entity_identifier_builder_t entity_identifier_builder_;
     slregistry_t slregistry_;
-    qname_registry_t qname_registry_;
+    //qname_registry_t qname_registry_;
     functional_registry_t functional_registry_;
 
     piregistry_t piregistry_;
@@ -123,7 +123,7 @@ public:
     qname_identifier get_function_entity_identifier(string_view signature);
 
     slregistry_t& slregistry() { return slregistry_; }
-    qname_registry_t& qnregistry() { return qname_registry_; }
+    //qname_registry_t& qnregistry() { return qname_registry_; }
     functional_registry_t& fregistry() { return functional_registry_; }
 
     piregistry_t& piregistry() { return piregistry_; }

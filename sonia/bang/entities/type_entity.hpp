@@ -17,6 +17,7 @@
 //#include "sonia/utility/functional/hash/span.hpp"
 namespace sonia::lang::bang {
 
+#if 0
 class type_entity2 : public functional_entity
 {
 public:
@@ -83,6 +84,7 @@ private:
     */
     //mutable boost::unordered_set<function_descriptor, hasher> funcions_;
 };
+#endif
 
 // parameters: {argname, argvalue} ... pair_count
 //class object_constructor_function : public function_t

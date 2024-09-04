@@ -93,30 +93,10 @@ public:
 
     unit& u() const { return unit_; }
 
-    error_storage build_fieldset(fn_pure_decl const& pure_decl, fieldset& fs);
-    std::expected<function_descriptor, error_storage> build_function_descriptor(fn_pure_decl& pure_decl);
+    //std::expected<int, error_storage> build_fieldset(fn_pure_t const&, patern_fieldset_t&);
+    error_storage build_function_descriptor(fn_pure_t const& pure_decl, function_descriptor& fds);
 
-    functional* resolve_functional(qname_identifier name) const
-    {
-        if (name.is_absolute()) {
-            return unit_.fregistry().find(name);
-        }
-        qname checkns = ns_;
-        qname_view name_qn = unit_.qnregistry().resolve(name);
-        size_t sz = checkns.parts().size();
-        for (;;) {
-            checkns.append(name_qn);
-            qname_identifier qid = unit_.qnregistry().find(checkns);
-            if (qid) {
-                functional* f = unit_.fregistry().find(qid);
-                if (f || !sz) return f;
-            }
-            --sz;
-            checkns.truncate(sz);
-        }
-    }
-
-    functional const* lookup_functional(qname_identifier name) const;
+    functional const* lookup_functional(qname_view name) const;
 
     // to do: resolving depends on qname
     shared_ptr<entity> resolve_entity(qname_identifier name) const
@@ -213,7 +193,7 @@ public:
                 u().print(v.name()) % u().print(ns())
             );
         }
-        qname_view name_qv = u().qnregistry().resolve(v.name());
+        qname_view name_qv = u().fregistry().resolve(v.name()).name();
         qname_view vardefscope = name_qv.parent();
         if (vardefscope.has_prefix(parent_->base_ns())) {
             return new_captured_variable(name_qv.back(), v.get_type(), v);

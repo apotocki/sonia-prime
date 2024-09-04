@@ -32,7 +32,7 @@ void forward_declaration_visitor::operator()(return_decl const&) const
     // skip
 }
 
-void forward_declaration_visitor::operator()(fn_pure_decl const&) const
+void forward_declaration_visitor::operator()(fn_pure_t const&) const
 {
     // skip
 }

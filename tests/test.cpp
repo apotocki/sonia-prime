@@ -1,4 +1,4 @@
-#include "maat/config.hpp"
+#include "sonia/config.hpp"
 #include <filesystem>
 
 #include <boost/test/unit_test.hpp>
@@ -82,8 +82,28 @@ typedef boost::mpl::my_quoteN<f10>::apply<char,short,int,long,float,char,short,i
 static_assert(std::is_same<t1, int>::value);
 static_assert(std::is_same<t5, f5<char,short,int,long,float>>::value);
 
+template <size_t N> struct get_type;
+template <> struct get_type<0> { using type = int; };
+template <> struct get_type<1> { using type = float; };
+template <size_t N> using get_type_t = typename get_type<N>::type;
+
+template <typename T, size_t N> struct xxx;
+template <size_t N> struct xxx<get_type_t<N>, N> {};
+
+//template <typename T1, size_t N1, typename T2, size_t N2> struct yyy;
+//template <size_t N> struct yyy<get_type_t<N>, N> {};
+
+template <size_t N>
+void foo(get_type_t<N> r)
+{
+
+}
+
 BOOST_AUTO_TEST_CASE(test)
 {
+    foo<1>(1.2f);
+    xxx<int, 0> x0;
+    xxx<float, 1> x1;
     std::cout << "hello\n";
     assert(!(std::is_same_v<t1, int>));
     //assert((std::is_same<t5, f5<char,short,int,long,float>>::value));

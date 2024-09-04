@@ -8,16 +8,21 @@
 
 namespace sonia::lang::bang {
 
-class pack_entity : public type_entity
+class pack_entity : public signatured_entity
 {
-    entity_identifier pack_element_type_;
+    entity_signature sig_;
 
 public:
-    explicit pack_entity(qname_identifier eqnm, entity_identifier elem, entity_identifier type)
-        : type_entity{ type, std::move(entity_signature{ eqnm }.push(elem)) }, pack_element_type_{ elem }
-    {}
+    pack_entity(entity_identifier type, entity_signature&& sig)
+        : signatured_entity{ type }, sig_{ std::move(sig) }
+    {
+        BOOST_ASSERT(sig_.named_fields().empty());
+        BOOST_ASSERT(sig_.positioned_fields().size() == 1);
+    }
 
-    entity_identifier element_type() const { return pack_element_type_; }
+    inline entity_signature const* signature() const noexcept override final { return &sig_; }
+
+    entity_identifier element_type() const { return sig_.positioned_fields().front().entity_id(); }
 
     void visit(entity_visitor const& v) const override { v(*this); }
 };

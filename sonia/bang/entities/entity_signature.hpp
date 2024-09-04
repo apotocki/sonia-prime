@@ -14,13 +14,32 @@
 
 namespace sonia::lang::bang {
 
-//entity signature:  qname, {identifier, entity_identifier}*, {entity_identifier}*
+//entity signature:  qname, {identifier, [const]entity_identifier}*, {[const]entity_identifier}*
+
+struct field_descriptor
+{
+    entity_identifier entity_id_;
+    bool is_const_;
+
+    inline entity_identifier entity_id() const noexcept { return entity_id_; }
+    inline bool is_const() const noexcept { return is_const_; }
+
+    friend inline bool operator== (field_descriptor const& l, field_descriptor const& r) noexcept
+    {
+        return l.entity_id_ == r.entity_id_ && l.is_const_ == r.is_const_;
+    }
+
+    friend inline size_t hash_value(field_descriptor const& v)
+    {
+        return hasher{}(v.entity_id_, v.is_const_);
+    }
+};
 
 class entity_signature
 {
     qname_identifier name_;
-    boost::container::small_vector<std::pair<identifier, entity_identifier>, 2> nfields_;
-    boost::container::small_vector<entity_identifier, 2> pfields_;
+    boost::container::small_vector<std::pair<identifier, field_descriptor>, 2> nfields_;
+    boost::container::small_vector<field_descriptor, 2> pfields_;
 
 public:
     entity_signature() = default;
@@ -30,23 +49,48 @@ public:
     inline qname_identifier name() const { return name_; }
     inline void set_name(qname_identifier val) { name_ = val; }
 
-    entity_signature& push(identifier p, entity_identifier e)
+    inline span<const std::pair<identifier, field_descriptor>> named_fields() const noexcept { return nfields_; }
+    inline span<const field_descriptor> positioned_fields() const noexcept { return pfields_; }
+
+    inline void reset_fields() noexcept { nfields_.clear(); pfields_.clear(); }
+    
+    entity_signature& push(identifier p, field_descriptor fd)
     {
-        nfields_.emplace_back(p, e);
+        nfields_.emplace_back(p, fd);
         return *this;
     }
 
-    entity_signature& push(entity_identifier e)
+    entity_signature& push(field_descriptor fd)
     {
-        pfields_.push_back(e);
+        pfields_.push_back(fd);
         return *this;
+    }
+
+    void set(size_t pos, identifier p, field_descriptor fd)
+    {
+        if (nfields_.size() <= pos) nfields_.resize(pos + 1);
+        nfields_[pos] = std::pair{ p, fd };
+    }
+
+    void set(size_t pos, field_descriptor fd)
+    {
+        if (pfields_.size() <= pos) pfields_.resize(pos + 1);
+        pfields_[pos] = fd;
     }
 
     void normilize()
     {
-        std::sort(nfields_.begin(), nfields_.end(), [](auto const& l, auto const& r) {
+        std::stable_sort(nfields_.begin(), nfields_.end(), [](auto const& l, auto const& r) {
             return l.first < r.first;
         });
+    }
+
+    field_descriptor const* find_field(identifier field_name) const
+    {
+        auto it = std::lower_bound(nfields_.begin(), nfields_.end(), field_name,
+            [](std::pair<identifier, field_descriptor> const& l, identifier r) { return l.first < r; });
+        if (it != nfields_.end() && it->first == field_name) return &it->second;
+        return nullptr;
     }
 
     friend inline bool operator== (entity_signature const& l, entity_signature const& r) noexcept

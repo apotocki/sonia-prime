@@ -7,12 +7,15 @@
 
 namespace sonia::lang::bang {
 
-class function_entity : public entity
+// not a type, it's an instance that has type - function type
+class function_entity : public signatured_entity
 {
-    std::vector<infunction_declaration_t> decl_body_;
+    entity_signature sig_;
+
     std::vector<semantic::expression_t> body_;
 
-    shared_ptr<fieldset> fs_;
+    using fieldset_t = fieldset<entity_identifier>;
+    shared_ptr<fieldset_t> fs_;
     qname_identifier name_;
     entity_identifier result_type_;
 
@@ -24,26 +27,33 @@ class function_entity : public entity
     uint64_t is_const_index_ : 1;
 
 public:
-    function_entity(qname_identifier name, shared_ptr<fieldset> fs, entity_identifier result_type)
-        : name_{ name }, fs_{ std::move(fs) }, result_type_ { result_type }, is_inline_{ 0 }
-        , is_built_{ 0 }, is_defined_ { 0 }, is_const_index_{ 0 }
+    function_entity(qname_identifier name, entity_signature&& sig)
+        : name_{ name }, sig_{ std::move(sig) }
+        , is_inline_{ 0 }
+        , is_built_{ 0 }, is_defined_{ 0 }, is_const_index_{ 0 }
     {}
 
-    size_t hash() const noexcept override;
-    bool equal(entity const&) const noexcept override;
+    //function_entity(qname_identifier name, shared_ptr<fieldset_t> fs, entity_identifier result_type)
+    //    : name_{ name }, fs_{ std::move(fs) }, result_type_ { result_type }, is_inline_{ 0 }
+    //    , is_built_{ 0 }, is_defined_ { 0 }, is_const_index_{ 0 }
+    //{}
+
+    inline entity_signature const* signature() const noexcept override final { return &sig_; }
+
+    //size_t hash() const noexcept override;
+    //bool equal(entity const&) const noexcept override;
     
     void visit(entity_visitor const& v) const override { v(*this); }
 
     inline qname_identifier name() const noexcept { return name_; }
     size_t parameter_count() const noexcept;
 
-    void set_body(std::vector<infunction_declaration_t> body) { decl_body_ = std::move(body); }
     std::span<const semantic::expression_t> body() const { return body_; }
 
+    void set_fn_signature(unit&, entity_signature&& fnsig);
     inline entity_identifier get_result_type() const noexcept { return result_type_; }
 
     void build(unit&);
-    void set_fn_type(unit&, entity_signature&); // result_type_ should be initialized
 
     bool is_void() const { return !!is_void_; }
 

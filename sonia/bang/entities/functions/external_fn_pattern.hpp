@@ -5,24 +5,24 @@
 #pragma once
 
 #include "sonia/shared_ptr.hpp"
-#include "sonia/bang/entities/functional.hpp"
+#include "basic_fn_pattern.hpp"
 
 namespace sonia::lang::bang {
 
-class external_fn_pattern : public fieldset_pattern
+class external_fn_pattern : public basic_fn_pattern
 {
     size_t extfnid_;
-    function_descriptor fd_;
 
 public:
-    external_fn_pattern(function_descriptor&& fn, size_t extfnid)
-        : fd_{ std::move(fn) }, extfnid_{ extfnid }
+    external_fn_pattern(fn_compiler_context& ctx, fn_pure_t& decl, size_t extfnid)
+        : basic_fn_pattern{ ctx, decl }
+        , extfnid_{ extfnid }
     {}
 
-    fieldset const& get_fieldset() const noexcept override { return fd_; }
+    //fieldset_t const& get_fieldset() const noexcept override { return fd_; }
 
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx) const override;
-    std::expected<entity_identifier, error_storage> apply(fn_compiler_context& ctx) const override;
+    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional::match_descriptor&) const override;
+    std::expected<entity_identifier, error_storage> apply(fn_compiler_context&, functional::match_descriptor&) const override;
 };
 
 }

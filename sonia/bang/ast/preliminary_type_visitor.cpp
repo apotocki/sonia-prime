@@ -7,7 +7,7 @@
 
 namespace sonia::lang::bang {
 
-preliminary_type_visitor2::result_type preliminary_type_visitor2::operator()(bang_preliminary_parameter_pack_t const& v) const
+preliminary_type_visitor::result_type preliminary_type_visitor::operator()(bang_preliminary_parameter_pack_t const& v) const
 {
     entity_identifier element_type = apply_visitor(*this, v.type);
     functional& ellipsis_fnl = ctx.u().fregistry().resolve(ctx.u().get_ellipsis_qname_identifier());
@@ -15,29 +15,38 @@ preliminary_type_visitor2::result_type preliminary_type_visitor2::operator()(ban
     named_expression_term_list_t ellipsis_args;
     ellipsis_args.emplace_back(entity_expression{ element_type, });
     pure_call_t ellipsis_call{ lex::resource_location{}, std::move(ellipsis_args) };
-    auto ptrn = ellipsis_fnl.find(ctx, ellipsis_call);
+    functional::match_descriptor md;
+    auto ptrn = ellipsis_fnl.find(ctx, ellipsis_call, md);
     if (!ptrn.has_value()) {
         throw exception(ctx.u().print(*ptrn.error()));
     }
-    auto r = ptrn.value()->const_apply(ctx);
+    auto r = ptrn.value()->const_apply(ctx, md);
     if (!r.has_value()) {
         throw exception(ctx.u().print(*r.error()));
     }
     return r.value();
 }
 
-preliminary_type_visitor2::result_type preliminary_type_visitor2::operator()(bang_preliminary_object_t const& v) const
+preliminary_type_visitor::result_type preliminary_type_visitor::operator()(annotated_qname const& v) const
 {
-    qname_identifier qnid = ctx.u().qnregistry().resolve(v.name());
+    THROW_NOT_IMPLEMENTED_ERROR("preliminary_type_visitor  annotated_qname");
+#if 0
+    qname_identifier qnid = ctx.u().qnregistry().resolve(v.value);
     functional const* fn = ctx.resolve_functional(qnid);
     if (!fn) {
-        throw exception(ctx.u().print(*make_error<undeclared_identifier_error>(v.location(), qnid)));
+        throw exception(ctx.u().print(*make_error<undeclared_identifier_error>(v.location, qnid)));
     }
     entity_identifier type_eid = fn->default_entity();
     if (!type_eid) {
-        throw exception(ctx.u().print(*make_error<basic_general_error>(v.location(), "is not a type"sv)));
+        throw exception(ctx.u().print(*make_error<basic_general_error>(v.location, "is not a type"sv)));
     }
     return type_eid;
+#endif
+}
+
+preliminary_type_visitor::result_type preliminary_type_visitor::operator()(annotated_identifier const& v) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR();
 }
 
 }

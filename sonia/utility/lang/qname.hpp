@@ -98,6 +98,8 @@ public:
     auto begin() const { return parts_.begin(); }
     auto end() const { return parts_.end(); }
 
+    inline size_t size() const noexcept { return parts_.size(); }
+
 private:
     boost::container::small_vector<IdentifierT, 4> parts_;
     bool absolute_;
@@ -111,15 +113,14 @@ inline size_t hash_value(qname<IdentifierT> const& v)
 
 class qname_identifier
 {
-    uint32_t value_ : 31;
-    uint32_t absolute_ : 1;
+    uint32_t value_;
 
 public:
-    qname_identifier() : value_{0x7fffffffu}, absolute_{1u} {}
+    qname_identifier() : value_{0xffffffffu} {}
 
-    qname_identifier(size_t idvalue, bool is_absolute)
+    template <std::unsigned_integral T>
+    explicit qname_identifier(T idvalue)
         : value_{ static_cast<uint32_t>(idvalue) }
-        , absolute_{ is_absolute ? 1u : 0 }
     {}
 
     inline explicit operator bool() const noexcept { return value_ != 0x7fffffffu; }
@@ -134,8 +135,6 @@ public:
         return uint32_t(l.value_) <=> uint32_t(r.value_);
     }
 
-    inline bool is_relative() const noexcept { return !absolute_; }
-    inline bool is_absolute() const noexcept { return !!absolute_; }
     uint32_t raw() const { return value_; }
 };
 
@@ -202,7 +201,7 @@ inline qname<IdentifierT> operator/ (qname<IdentifierT> const& base, IdentifierT
 {
     qname<IdentifierT> result{ base };
     result.append(leaf);
-    return std::move(result);
+    return result;
 }
 
 template <typename IdentifierT>
@@ -213,7 +212,7 @@ inline qname<IdentifierT> operator/ (qname<IdentifierT> const& base, qname_view<
     }
     qname<IdentifierT> result{ base };
     result.append(leaf);
-    return std::move(result);
+    return result;
 }
 
 template <typename IdentifierT>
@@ -232,6 +231,12 @@ template <typename IdentifierT>
 inline qname<IdentifierT> operator/ (qname_view<IdentifierT> base, qname_view<IdentifierT> leaf)
 {
     return qname<IdentifierT>{ base, base.is_absolute() } / leaf;
+}
+
+template <typename IdentifierT>
+inline qname<IdentifierT> operator/ (qname_view<IdentifierT> base, qname<IdentifierT> const& leaf)
+{
+    return base / (qname_view<IdentifierT>)leaf;
 }
 
 }

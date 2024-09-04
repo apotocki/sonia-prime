@@ -33,13 +33,16 @@ public:
     void pop_ns();
     //qname const& ns() const { return ns_stack_.back(); }
 
-    identifier new_identifier();
-    annotated_identifier make_identifier(annotated_string_view);
-    annotated_string make_string(annotated_string_view);
-    //mp::integer make_integer(string_view);
-    mp::decimal make_decimal(string_view);
-    annotated_qname_identifier make_qname_identifier(annotated_qname);
-    annotated_qname_identifier make_qname_identifier(annotated_string_view, bool is_abs);
+    annotated_string make_string(annotated_string_view) const;
+    mp::decimal make_decimal(string_view) const;
+
+    identifier new_identifier() const;
+    annotated_identifier make_identifier(annotated_string_view) const;
+    
+    annotated_qname make_qname(annotated_string_view) const;
+
+    annotated_qname_identifier make_qname_identifier(annotated_qname) const;
+    annotated_qname_identifier make_qname_identifier(annotated_string_view, bool is_abs) const;
 
     //identifier make_required_identifier(string_view);
     //small_u32string make_string(string_view);

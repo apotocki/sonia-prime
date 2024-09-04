@@ -13,6 +13,8 @@
 
 namespace sonia::lang::bang {
 
+class functional;
+
 // ======================================================================== types
 struct bang_object_t
 {
@@ -123,21 +125,21 @@ template <typename T> struct bang_union
                     //case basic_type::bool_e:
                     //    store_ = bang_bool_t{};
                     //    return;
-                    case basic_type::int_e:
-                        store_ = bang_int_t{};
-                        return;
-                    case basic_type::float_e:
-                        store_ = bang_float_t{};
-                        return;
-                    case basic_type::decimal_e:
-                        store_ = bang_decimal_t{};
-                        return;
-                    case basic_type::string_e:
-                        store_ = bang_string_t{};
-                        return;
-                    case basic_type::any_e:
-                        store_ = bang_any_t{};
-                        return;
+                    //case basic_type::int_e:
+                    //    store_ = bang_int_t{};
+                    //    return;
+                    //case basic_type::float_e:
+                    //    store_ = bang_float_t{};
+                    //    return;
+                    //case basic_type::decimal_e:
+                    //    store_ = bang_decimal_t{};
+                    //    return;
+                    //case basic_type::string_e:
+                    //    store_ = bang_string_t{};
+                    //    return;
+                    //case basic_type::any_e:
+                    //    store_ = bang_any_t{};
+                    //    return;
                     default:
                         THROW_INTERNAL_ERROR("unknown union member type");
                     }
@@ -189,11 +191,11 @@ template <typename T> struct bang_union
         explicit appender_visitor(bang_union & u) : un_{u} {}
 
         //inline void operator()(bang_bool_t) const { un_.basic_members |= (uint8_t)basic_type::bool_e; }
-        inline void operator()(bang_int_t) const { un_.basic_members |= (uint8_t)basic_type::int_e; }
-        inline void operator()(bang_float_t) const { un_.basic_members |= (uint8_t)basic_type::float_e; }
-        inline void operator()(bang_decimal_t) const { un_.basic_members |= (uint8_t)basic_type::decimal_e; }
-        inline void operator()(bang_string_t) const { un_.basic_members |= (uint8_t)basic_type::string_e; }
-        inline void operator()(bang_any_t) const { un_.basic_members |= (uint8_t)basic_type::any_e; }
+        //inline void operator()(bang_int_t) const { un_.basic_members |= (uint8_t)basic_type::int_e; }
+        //inline void operator()(bang_float_t) const { un_.basic_members |= (uint8_t)basic_type::float_e; }
+        //inline void operator()(bang_decimal_t) const { un_.basic_members |= (uint8_t)basic_type::decimal_e; }
+        //inline void operator()(bang_string_t) const { un_.basic_members |= (uint8_t)basic_type::string_e; }
+        //inline void operator()(bang_any_t) const { un_.basic_members |= (uint8_t)basic_type::any_e; }
 
         inline void operator()(bang_union u) const
         {
@@ -235,10 +237,10 @@ template <typename T> struct bang_union
     }
 
     //inline bool has(bang_bool_t const&) const { return !!(basic_members & (uint16_t)basic_type::bool_e); }
-    inline bool has(bang_int_t const&) const { return !!(basic_members & (uint16_t)basic_type::int_e); }
-    inline bool has(bang_float_t const&) const { return !!(basic_members & (uint16_t)basic_type::float_e); }
-    inline bool has(bang_decimal_t const&) const { return !!(basic_members & (uint16_t)basic_type::decimal_e); }
-    inline bool has(bang_string_t const&) const { return !!(basic_members & (uint16_t)basic_type::string_e); }
+    //inline bool has(bang_int_t const&) const { return !!(basic_members & (uint16_t)basic_type::int_e); }
+    //inline bool has(bang_float_t const&) const { return !!(basic_members & (uint16_t)basic_type::float_e); }
+    //inline bool has(bang_decimal_t const&) const { return !!(basic_members & (uint16_t)basic_type::decimal_e); }
+    //inline bool has(bang_string_t const&) const { return !!(basic_members & (uint16_t)basic_type::string_e); }
     inline bool has(bang_tuple<T> const& t) const
     {
         if (t.empty()) return !!(basic_members & (uint16_t)basic_type::nil_e);
@@ -266,7 +268,7 @@ template <typename T> struct bang_union
 
 struct bang_type;
 using bang_type_variant = variant<
-    bang_any_t, bang_int_t, bang_float_t, bang_decimal_t, bang_string_t, bang_object_t,
+    bang_any_t, bang_object_t,
     recursive_wrapper<bang_fn<bang_type>>,
     recursive_wrapper<bang_vector<bang_type>>,
     recursive_wrapper<bang_array<bang_type>>,
@@ -324,13 +326,7 @@ bang_type operator- (bang_union_t const& l, bang_type const& r);
 //    // entities_.size() >= names_.size();
 //};
 
-enum class param_constraint_type : uint8_t
-{
-    type_constaint = 0,
-    value_constaint = 3,
-    const_constraint = 2
-};
-
+template <typename ConstraintT>
 class fieldset
 {
 public:
@@ -339,15 +335,15 @@ public:
     {
         annotated_identifier ename;
         optional<annotated_identifier> iname;
-        entity_identifier constraint;
-        param_constraint_type constraint_type;
+        ConstraintT constraint;
+        parameter_constraint_modifier_t constraint_type;
     };
 
     struct positioned_field
     {
         optional<annotated_identifier> iname;
-        entity_identifier constraint;
-        param_constraint_type constraint_type;
+        ConstraintT constraint;
+        parameter_constraint_modifier_t constraint_type;
     };
 
     fieldset() = default;
@@ -361,50 +357,24 @@ public:
     span<const named_field> named_fields() const { return nfields_; }
     span<const positioned_field> positioned_fields() const { return pfields_; }
 
+    named_field const* find_named_field(identifier name) const
+    {
+        auto it = std::lower_bound(nfields_.begin(), nfields_.end(), name,
+            [](named_field const& l, identifier r) { return l.ename.value < r; });
+        if (it != nfields_.end() && it->ename.value == name) return &*it;
+        return nullptr;
+    }
+
 protected:
     std::vector<named_field> nfields_;
     std::vector<positioned_field> pfields_;
 };
 
-class function_descriptor : public fieldset
-{
-public:
-    function_descriptor() = default;
-
-    explicit function_descriptor(qname_identifier idval) : id_{ idval } {}
-
-    qname_identifier id() const { return id_; }
-
-    entity_identifier result_type() const { return result_type_; }
-    void set_result_type(entity_identifier rt) { result_type_ = rt; }
-
-    //void push_field(annotated_identifier ext_name, annotated_identifier * int_name, entity_identifier type, bool is_const)
-    //{
-    //    using opt_name_t = optional<annotated_identifier>;
-    //    nfields_.emplace_back(
-    //        std::move(ext_name),
-    //        int_name ? opt_name_t{ std::move(*int_name) } : nullopt,
-    //        type,
-    //        is_const);
-    //}
-
-    //void push_field(annotated_identifier* int_name, entity_identifier type, bool is_const)
-    //{
-    //    using opt_name_t = optional<annotated_identifier>;
-    //    pfields_.emplace_back(
-    //        int_name ? opt_name_t{ std::move(*int_name) } : nullopt,
-    //        type,
-    //        is_const);
-    //}
 
 
 
-private:
-    qname_identifier id_;
 
-    entity_identifier result_type_;
-};
-
+#if 0
 struct function_signature
 {
     bang_fn_t fn_type;
@@ -437,7 +407,7 @@ struct function_signature
     //        [](auto const& tpl) { return std::tuple{ std::get<0>(tpl).id, std::get<1>(tpl) }; });
     //}
 };
-
+#endif
 
 
 namespace semantic {

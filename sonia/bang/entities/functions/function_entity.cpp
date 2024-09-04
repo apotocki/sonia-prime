@@ -11,72 +11,84 @@
 
 namespace sonia::lang::bang {
 
-size_t function_entity::hash() const noexcept
-{
-    size_t hv = hash_value(name_);
-    for (fieldset::positioned_field const& f : fs_->positioned_fields()) {
-        hash_combine(hv, f.constraint);
-    }
-    for (fieldset::named_field const& f : fs_->named_fields()) {
-        hash_combine(hv, f.ename.value);
-        hash_combine(hv, f.constraint);
-    }
-    return hv;
-}
-
-bool function_entity::equal(entity const& rhs) const noexcept
-{
-    if (function_entity const* pfe = dynamic_cast<function_entity const*>(&rhs); pfe) {
-        if (pfe->name_ != name_) return false;
-        if (!std::ranges::equal(pfe->fs_->positioned_fields(), fs_->positioned_fields(),
-            [](fieldset::positioned_field const& l, fieldset::positioned_field const& r) {
-                return l.constraint == r.constraint &&
-                       l.constraint_type == r.constraint_type;
-            })) return false;
-        return std::ranges::equal(pfe->fs_->named_fields(), fs_->named_fields(),
-            [](fieldset::named_field const& l, fieldset::named_field const& r) {
-                return l.ename.value == r.ename.value &&
-                       l.constraint == r.constraint &&
-                       l.constraint_type == r.constraint_type;
-            });
-    }
-    return false;
-}
+//size_t function_entity::hash() const noexcept
+//{
+//    size_t hv = hash_value(name_);
+//    for (fieldset_t::positioned_field const& f : fs_->positioned_fields()) {
+//        hash_combine(hv, f.constraint);
+//    }
+//    for (fieldset_t::named_field const& f : fs_->named_fields()) {
+//        hash_combine(hv, f.ename.value);
+//        hash_combine(hv, f.constraint);
+//    }
+//    return hv;
+//}
+//
+//bool function_entity::equal(entity const& rhs) const noexcept
+//{
+//    if (function_entity const* pfe = dynamic_cast<function_entity const*>(&rhs); pfe) {
+//        if (pfe->name_ != name_) return false;
+//        if (!std::ranges::equal(pfe->fs_->positioned_fields(), fs_->positioned_fields(),
+//            [](fieldset_t::positioned_field const& l, fieldset_t::positioned_field const& r) {
+//                return l.constraint == r.constraint &&
+//                       l.constraint_type == r.constraint_type;
+//            })) return false;
+//        return std::ranges::equal(pfe->fs_->named_fields(), fs_->named_fields(),
+//            [](fieldset_t::named_field const& l, fieldset_t::named_field const& r) {
+//                return l.ename.value == r.ename.value &&
+//                       l.constraint == r.constraint &&
+//                       l.constraint_type == r.constraint_type;
+//            });
+//    }
+//    return false;
+//}
 
 size_t function_entity::parameter_count() const noexcept
 {
     // to do: include captured parameters
     size_t cnt = 0;
-    for (fieldset::positioned_field const& f : fs_->positioned_fields()) {
-        if (f.constraint_type == param_constraint_type::type_constaint) ++cnt;
+    for (fieldset_t::positioned_field const& f : fs_->positioned_fields()) {
+        if (f.constraint_type == parameter_constraint_modifier_t::value_type_constraint) ++cnt;
     }
-    for (fieldset::named_field const& f : fs_->named_fields()) {
-        if (f.constraint_type == param_constraint_type::type_constaint) ++cnt;
+    for (fieldset_t::named_field const& f : fs_->named_fields()) {
+        if (f.constraint_type == parameter_constraint_modifier_t::value_type_constraint) ++cnt;
     }
     return cnt;
 }
 
-void function_entity::set_fn_type(unit& u, entity_signature& fnsig)
+void function_entity::set_fn_signature(unit& u, entity_signature&& fnsig)
 {
-    fnsig.push(u.get_fn_result_identifier(), result_type_);
-    fnsig.normilize();
-
-    // resolve function type entity
-    type_entity te;
-    te.set_signature(std::move(fnsig));
-    entity const& fnte = u.eregistry().find_or_create(te, [&te, &u]() {
-        te.set_type(u.get_typename_entity_identifier());
-        return make_shared<type_entity>(std::move(te));
+    indirect_signatured_entity te{ fnsig };
+    entity const& fnte = u.eregistry().find_or_create(te, [&fnsig, &u]() {
+        return make_shared<basic_signatured_entity>(u.get_typename_entity_identifier(), std::move(fnsig));
     });
-    set_type(fnte.id());
-    is_void_ = fnte.id() == u.get_void_entity_identifier();
+    field_descriptor const* fd = fnsig.find_field(u.get_fn_result_identifier());
+    is_void_ = !fd;
+    result_type_ = is_void_ ? u.get_void_entity_identifier() : fd->entity_id();
 }
+
+//void function_entity::set_fn_type(unit& u, entity_signature& fnsig)
+//{
+//    fnsig.push(u.get_fn_result_identifier(), {result_type_, false});
+//    fnsig.normilize();
+//
+//    // resolve function type entity
+//    indirect_signatured_entity te{fnsig};
+//    entity const& fnte = u.eregistry().find_or_create(te, [&te, &u]() {
+//        te.set_type(u.get_typename_entity_identifier());
+//        return make_shared<type_entity>(std::move(te));
+//    });
+//    set_type(fnte.id());
+//    is_void_ = result_type_ == u.get_void_entity_identifier();
+//}
 
 void function_entity::build(unit& u)
 {
     BOOST_ASSERT(!is_built_);
 
-    qname_view fn_qname = u.qnregistry().resolve(name_);
+    THROW_NOT_IMPLEMENTED_ERROR("function_entity::build");
+#if 0
+    qname_view fn_qname = u.fregistry().resolve(name_).name();
     fn_compiler_context fnctx{ u, fn_qname / u.new_identifier() };
 
     // setup parameters & signature
@@ -85,13 +97,13 @@ void function_entity::build(unit& u)
     std::array<char, 16> argname = { '$' };
     size_t argindex = 0;
     for (auto const& f : fs_->positioned_fields()) {
-        if (f.constraint_type == param_constraint_type::value_constaint) {
+        if (f.constraint_type == parameter_constraint_modifier_t::value_constraint) {
             THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_decl_t with value constraints");
         }
-        else if (f.constraint_type == param_constraint_type::const_constraint) {
-            THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_decl_t with const constraints");
+        else if (f.constraint_type == parameter_constraint_modifier_t::typename_constraint) {
+            THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_decl_t with typename_constraint constraints");
         }
-        BOOST_ASSERT(f.constraint_type == param_constraint_type::type_constaint);
+        BOOST_ASSERT(f.constraint_type == parameter_constraint_modifier_t::value_type_constraint);
         fnsig.push(f.constraint);
         identifier fname;
         if (f.iname) {
@@ -102,7 +114,7 @@ void function_entity::build(unit& u)
             if (reversed) std::reverse(argname.data() + 1, epos);
             fname = u.slregistry().resolve(string_view{ argname.data(), epos });
         }
-        qname_identifier param_qname_id = u.qnregistry().resolve(fnctx.ns() / fname);
+        qname_identifier param_qname_id = u.fregistry().resolve(fnctx.ns() / fname).id();
         ++argindex;
 
         auto var_entity = make_shared<variable_entity>(f.constraint, param_qname_id, variable_entity::kind::SCOPE_LOCAL);
@@ -137,6 +149,7 @@ void function_entity::build(unit& u)
         tovar->set_index(paramnum - paramcount);
         ++paramnum;
     }
+#endif
     is_built_ = true;
 }
 

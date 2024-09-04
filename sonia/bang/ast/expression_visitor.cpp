@@ -35,7 +35,8 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
         ctx.context_type = typeeid;
         return {};
     }
-
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor apply_cast");
+#if 0
     if (typeeid == expected_result->type) return {};
 
     if (expected_result->type == u().get_any_entity_identifier()) {
@@ -68,6 +69,7 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
     
     return {};
     //THROW_NOT_IMPLEMENTED_ERROR("expected type: %1%, but actual type: %2%"_fmt % u().print(expected_result->type) % u().print(typeeid));
+#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(context_value& v) const
@@ -454,7 +456,7 @@ expression_visitor::result_type expression_visitor::operator()(binary_operator_t
 #endif
 }
 
-expression_visitor::result_type expression_visitor::operator()(unary_expression_t& be) const
+expression_visitor::result_type expression_visitor::operator()(unary_expression_t const& be) const
 {
     switch (be.op) {
     case unary_operator_type::NEGATE:
@@ -463,7 +465,7 @@ expression_visitor::result_type expression_visitor::operator()(unary_expression_
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor unary_expression_t");
 }
 
-expression_visitor::result_type expression_visitor::operator()(binary_expression_t& be) const
+expression_visitor::result_type expression_visitor::operator()(binary_expression_t const& be) const
 {
     switch (be.op) {
     case binary_operator_type::EQ:
@@ -471,7 +473,8 @@ expression_visitor::result_type expression_visitor::operator()(binary_expression
     case binary_operator_type::NE:
         return this->operator()(u().get_ne_qname_identifier(), be);
     }
-    return bang_binary_switcher(be, *this);
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_expression_t");
+    //return bang_binary_switcher(be, *this);
 }
 
 
@@ -630,12 +633,15 @@ expression_visitor::result_type expression_visitor::operator()(expression_vector
 
 function_entity& expression_visitor::handle_lambda(lambda_t& l) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor handle_lambda");
+#if 0
     function_signature sig;
     sig.setup(ctx, l.parameters);
     sig.normilize(ctx);
     sig.build_mangled_id(ctx.u());
     declaration_visitor dvis{ ctx };
     return dvis.append_fnent(l, sig, l.body);
+#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(lambda_t & l) const
@@ -650,19 +656,20 @@ expression_visitor::result_type expression_visitor::operator()(lambda_t & l) con
 }
 
 template <std::derived_from<pure_call_t> CallExpressionT>
-inline expression_visitor::result_type expression_visitor::operator()(qname_identifier fnqn, CallExpressionT& call) const
+inline expression_visitor::result_type expression_visitor::operator()(qname_identifier fnqn, CallExpressionT const& call) const
 {
-    functional const* fn = u().fregistry().find(fnqn);
-    BOOST_ASSERT(fn);
-    return this->operator()(*fn, call);
+    //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor qname_identifier CallExpressionT");
+    functional const& fn = u().fregistry().resolve(fnqn);
+    return this->operator()(fn, call);
 }
 
 template <std::derived_from<pure_call_t> CallExpressionT>
-expression_visitor::result_type expression_visitor::operator()(functional const& fnl, CallExpressionT& call) const
+expression_visitor::result_type expression_visitor::operator()(functional const& fnl, CallExpressionT const& call) const
 {
-    auto ptrn = fnl.find(ctx, call);
+    functional::match_descriptor md;
+    auto ptrn = fnl.find(ctx, call, md);
     if (!ptrn.has_value()) return std::move(ptrn.error());
-    auto optres = ptrn.value()->apply(ctx);
+    auto optres = ptrn.value()->apply(ctx, md);
     if (!optres.has_value()) return std::move(optres.error());
     return apply_cast(optres.value(), call);
 }
@@ -681,6 +688,7 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t &
     //    return make_error<basic_general_error>(aid.location, "repeated argument"sv, ctx.u().qnregistry().resolve(aid.value));
     //}
 
+#if 0
     if (auto *pl = get<lambda_t>(&proc.fn_object); pl) {
         THROW_NOT_IMPLEMENTED_ERROR("expression_visitor function_call_t lambda_t");
 #if 0
@@ -692,13 +700,14 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t &
         return {};
 #endif
     }
+#endif
 
     variable_identifier const* fnvar = get<variable_identifier>(&proc.fn_object);
     if (!fnvar) {
         THROW_NOT_IMPLEMENTED_ERROR("fn object expression is not implemented yet");
     }
-    //GLOBAL_LOG_INFO() << u().print(fnvar->name.value);
-    functional* fnl = ctx.resolve_functional(fnvar->name.value);
+    GLOBAL_LOG_INFO() << u().print(fnvar->name.value);
+    functional const* fnl = ctx.lookup_functional(fnvar->name.value);
     if (!fnl) {
         return make_error<undeclared_identifier_error>(fnvar->name);
     }

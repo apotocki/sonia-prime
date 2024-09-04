@@ -18,7 +18,7 @@ namespace sonia::lang::bang {
 
 inline unit& declaration_visitor::u() const noexcept { return ctx.u(); }
 
-void declaration_visitor::operator()(extern_var & d) const
+void declaration_visitor::operator()(extern_var const& d) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor extern_var");
 #if 0
@@ -38,7 +38,7 @@ void declaration_visitor::operator()(extern_var & d) const
 #endif
 }
 
-void declaration_visitor::operator()(expression_decl_t & ed) const
+void declaration_visitor::operator()(expression_decl_t const& ed) const
 {
     entity_identifier void_eid = u().get_void_entity_identifier();
     ctx.context_type = void_eid;
@@ -51,7 +51,7 @@ void declaration_visitor::operator()(expression_decl_t & ed) const
     ctx.collapse_chains();
 }
 
-void declaration_visitor::append_fnsig(fn_pure_decl& fndecl, functional ** ppf) const
+void declaration_visitor::append_fnsig(fn_pure_t& fndecl, functional ** ppf) const
 {
 #if 0
     qname fn_qname = ctx.ns() / fndecl.name();
@@ -103,9 +103,9 @@ void declaration_visitor::append_fnsig(fn_pure_decl& fndecl, functional ** ppf) 
 }
 
 // extern function declaration
-void declaration_visitor::operator()(fn_pure_decl & fd) const
+void declaration_visitor::operator()(fn_pure_t const& fd) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_pure_decl");
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_pure_t");
 #if 0
     shared_ptr<functional_entity> fe;
     function_signature& sig = append_fnsig(fd, fe);
@@ -143,7 +143,8 @@ void declaration_visitor::operator()(fn_pure_decl & fd) const
 #endif
 }
 
-function_entity & declaration_visitor::append_fnent(fn_pure_decl& fnd, function_signature& sig, span<infunction_declaration_t> body) const
+#if 0
+function_entity & declaration_visitor::append_fnent(fn_pure_t& fnd, function_signature& sig, span<infunction_declaration_t> body) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor append_fnent");
 #if 0
@@ -200,10 +201,11 @@ function_entity & declaration_visitor::append_fnent(fn_pure_decl& fnd, function_
     return *fnent;
 #endif
 }
+#endif
 
-void declaration_visitor::operator()(fn_decl_t& fnd) const
+void declaration_visitor::operator()(fn_decl_t const& fnd) const
 {
-    auto fnptrn = make_shared<basic_fn_pattern>(ctx, fnd);
+    auto fnptrn = make_shared<generic_fn_pattern>(ctx, fnd);
     functional& f = u().resolve_functional(fnptrn->fn_qname_id());
     f.push(std::move(fnptrn));
 
@@ -266,12 +268,11 @@ void declaration_visitor::operator()(fn_decl_t& fnd) const
 #endif
 }
 
-void declaration_visitor::operator()(let_statement_decl_t & ld) const
+void declaration_visitor::operator()(let_statement_decl_t const& ld) const
 {
     entity_identifier vartype;
     if (ld.type) {
-        preliminary_type_visitor2 tvis{ ctx };
-        vartype = apply_visitor(tvis, *ld.type);
+        vartype = apply_visitor(preliminary_type_visitor{ ctx }, *ld.type);
     }
     ctx.context_type = ctx.u().get_void_entity_identifier();
     if (ld.expression) {
@@ -295,7 +296,7 @@ void declaration_visitor::operator()(let_statement_decl_t & ld) const
     }
 }
 
-void declaration_visitor::operator()(return_decl_t & rd) const
+void declaration_visitor::operator()(return_decl_t const& rd) const
 {
     ctx.context_type = ctx.u().get_void_entity_identifier();
     size_t initial_branch = ctx.expressions_branch();

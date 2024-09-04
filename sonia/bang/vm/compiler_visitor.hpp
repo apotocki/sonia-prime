@@ -150,7 +150,7 @@ public:
         if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
             bvm().append_fset(pv.entity->index());
         } else if (varkind == variable_entity::kind::EXTERN) {
-            string_view varname = unit_.as_string(unit_.qnregistry().resolve(pv.entity->name()).back());
+            string_view varname = unit_.as_string(unit_.fregistry().resolve(pv.entity->name()).name().back());
             smart_blob strbr{ string_blob_result(varname) };
             strbr.allocate();
             bvm().append_push_pooled_const(std::move(strbr));
@@ -167,7 +167,7 @@ public:
             unit_.bvm().append_fpush(pv.entity->index());
             return;
         } else if (varkind == variable_entity::kind::EXTERN) {
-            string_view varname = unit_.as_string(unit_.qnregistry().resolve(pv.entity->name()).back());
+            string_view varname = unit_.as_string(unit_.fregistry().resolve(pv.entity->name()).name().back());
             smart_blob strbr{ string_blob_result(varname) };
             strbr.allocate();
             bvm().append_push_pooled_const(std::move(strbr));

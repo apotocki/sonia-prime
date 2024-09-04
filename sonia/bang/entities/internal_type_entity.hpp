@@ -17,6 +17,7 @@
 //#include "sonia/utility/functional/hash/span.hpp"
 namespace sonia::lang::bang {
 
+#if 0
 class internal_type_entity : public functional_entity
 {
 public:
@@ -90,5 +91,6 @@ private:
 //public:
 //
 //};
+#endif
 
 }

@@ -28,7 +28,7 @@ namespace sonia::lang::bang {
 //    size_t fn_index;
 //};
 
-
+#if 0
 
 class functional_entity : public entity
 {
@@ -65,4 +65,5 @@ error_storage is_matched(fn_compiler_context&,
     span<const bang_type> positioned_params,
     span<const std::tuple<annotated_identifier, bang_type>> named_params);
 
+#endif
 }

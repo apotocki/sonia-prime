@@ -53,13 +53,14 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token COMMENT_BEGIN
 %token COMMENT_END
 
-%token <sonia::lang::bang::annotated_string_view> STRING IDENTIFIER INTERNAL_IDENTIFIER
+%token <sonia::lang::bang::annotated_string_view> STRING IDENTIFIER INTERNAL_IDENTIFIER RESERVED_IDENTIFIER
 %token <sonia::lang::bang::annotated_decimal> INTEGER
 %token <sonia::lang::bang::annotated_decimal> DECIMAL
 %token <sonia::string_view> OPERATOR_TERM
 
 %token <sonia::lang::lex::resource_location> ASSIGN               "`=`"
 
+%token AT_SYMBOL            "`@`"
 %token UNDERSCORE           "`_`"
 %token ARROWAST             "`->*`"
 %token ARROW                "`->`"
@@ -90,6 +91,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token BITXORASSIGN         "`^=`"
 
 %token COLON                "`:`"
+%token DBLCOLON             "`::`"
 %token <sonia::lang::lex::resource_location> OPEN_PARENTHESIS     "`(`"
 %token CLOSE_PARENTHESIS    "`)`"
 %token <sonia::lang::lex::resource_location> OPEN_BRACE           "`{`"
@@ -182,7 +184,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 // 15 priority
 %right ASSIGN
-%left COLON
+//%left COLON
 
 // 14 priority
 %left LOGIC_OR
@@ -207,8 +209,15 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %left OPEN_BRACE OPEN_PARENTHESIS OPEN_SQUARE_BRACKET ARROW POINT
 %right QMARK
 
-//%token DBLCOLON             "`::`"
-%left DBLCOLON             "`::`"
+%left DBLCOLON
+
+// 1 priority
+%right IDENTIFIER INTERNAL_IDENTIFIER RESERVED_IDENTIFIER
+
+
+
+
+
 
 // DECLARATIONS
 %token INCLUDE
@@ -227,8 +236,8 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 
 // FUNCTIONS
-%token <sonia::lang::lex::resource_location> FN "reserved word `fn`"
-%type <fn_decl_t> fn-decl
+%token <sonia::lang::lex::resource_location> FN "`fn`"
+%type <fn_pure_t> fn-decl
 
 // ENUMERATIONS
 %token ENUM
@@ -244,8 +253,16 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %type <field_list_t> field-list field-list-opt
 %type <field_t> field-decl
 %type <parameter_t> parameter-decl
-%type <parameter_name> parameter-decl-name
-%type <parameter_type_t> parameter-decl-type
+%type <parameter_name> parameter-name-decl
+
+
+
+
+
+%type <parameter_constraint_modifier_t> parameter-constraint-modifier parameter-constraint-modifier-opt
+%type <parameter_constraint_set_t> parameter-constraint-set
+    %type <syntax_expression_t> syntax-expression syntax-expression-wo-ii concept-expression
+
 %type <parameter_woa_list_t> parameter-list-opt parameter-list // for unification, empty assignment
 %type <parameter_woa_list_t> parameter-woa-list-opt parameter-woa-list
 %type <parameter_woa_t> parameter-woa-decl // with optional assignement
@@ -329,18 +346,16 @@ declaration_any:
 generic-decl:
       EXTERN VAR identifier COLON type-expr END_STATEMENT
         { $$ = extern_var{ std::move($3), std::move($5) }; }
-    | EXTERN FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS END_STATEMENT
-        { $$ = fn_pure_decl{ std::move($3), std::move($5), nullopt }; IGNORE($2, $4); }
-    | EXTERN FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS ARROW type-expr END_STATEMENT
-        { $$ = fn_pure_decl{ std::move($3), std::move($5), std::move($8) }; IGNORE($2, $4); }
+    | EXTERN fn-decl END_STATEMENT
+        { $$ = std::move($2); }
     | INCLUDE STRING
         { $$ = include_decl{ctx.make_string(std::move($2)) }; }
     | enum-decl
         { $$ = std::move($1); }
-    | type-decl
-        { $$ = std::move($1); }
-    | fn-decl
-        { $$ = std::move($1); }
+    //| type-decl
+    //    { $$ = std::move($1); }
+    | fn-decl OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+        { $$ = fn_decl_t{std::move($1), std::move($3)}; IGNORE($2); }
     | let-decl
         { $$ = std::move($1); }
     | compound-expression END_STATEMENT
@@ -417,15 +432,12 @@ qname:
 
 ///////////////////////////////////////////////// FUNCTIONS
 fn-decl:
-        FN qname OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction_declaration_any CLOSE_BRACE
-            {
-                $$ = fn_decl_t{std::move($2), std::move($4), nullopt, std::move($7)}; IGNORE($1, $3, $6);
-            }
-    |   FN qname OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS ARROW type-expr OPEN_BRACE infunction_declaration_any CLOSE_BRACE
-            {
-                $$ = fn_decl_t{std::move($2), std::move($4), std::move($7), std::move($9)}; IGNORE($1, $3, $8);
-            }
+      FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS
+        { $$ = fn_pure_t{ std::move($2), std::move($4), nullopt }; IGNORE($1, $3); }
+    | FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS ARROW syntax-expression
+        { $$ = fn_pure_t{ std::move($2), std::move($4), std::move($7) }; IGNORE($1, $3); }
     ;
+
 ///////////////////////////////////////////////// ENUMERATIONS
 enum-decl:
     ENUM qname OPEN_BRACE case-list-opt CLOSE_BRACE
@@ -493,7 +505,7 @@ field-decl:
         { $$ = field_t{ std::move($1) }; }
     ;
 
-parameter-decl-name:
+parameter-name-decl:
       IDENTIFIER INTERNAL_IDENTIFIER COLON
         { $$ = parameter_name{ctx.make_identifier($1), ctx.make_identifier($2)}; }
     | IDENTIFIER COLON
@@ -502,7 +514,65 @@ parameter-decl-name:
         { $$ = parameter_name{nullopt, ctx.make_identifier($1)}; }
     ;
 
-parameter-decl-type:
+parameter-constraint-modifier:
+      TYPENAME
+        { $$ = parameter_constraint_modifier_t::typename_constraint; }
+    | CONST
+        { $$ = parameter_constraint_modifier_t::value_constraint; }
+    //| %empty
+    //    { $$ = parameter_constraint_modifier_t::value_type_constraint; }
+    ;
+
+parameter-constraint-modifier-opt:
+      parameter-constraint-modifier
+    | %empty
+        { $$ = parameter_constraint_modifier_t::value_type_constraint; }
+    ;
+
+// one optional syntax-expression, and arbitrary count of concept-expression or internal idetifiers
+parameter-constraint-set:
+      syntax-expression-wo-ii
+        { $$ = parameter_constraint_set_t{ std::move($1), {}, {} }; }
+    | INTERNAL_IDENTIFIER
+        { $$ = parameter_constraint_set_t{ nullopt, {}, { ctx.make_identifier(std::move($1)) } }; }
+    | concept-expression
+        { $$ = parameter_constraint_set_t{ nullopt, {std::move($1)}, {} }; }
+    | parameter-constraint-set INTERNAL_IDENTIFIER
+        { $$ = std::move($1); $$.bindings.emplace_back(ctx.make_identifier(std::move($2))); }
+    | parameter-constraint-set concept-expression
+        { $$ = std::move($1); $$.concepts.emplace_back(std::move($2)); }
+    ;
+
+concept-expression:
+    AT_SYMBOL qname
+        { $$ = syntax_expression_t{ std::move($2) }; }
+    ;
+
+// without internal identifiers
+syntax-expression-wo-ii:
+     RESERVED_IDENTIFIER
+        { $$ = variable_identifier{ctx.make_qname(std::move($1)), true}; }
+    | qname
+        { $$ = variable_identifier{ std::move($1) }; }
+    | syntax-expression ELLIPSIS
+        { $$ = bang_parameter_pack_t{std::move($1)}; IGNORE($2); }
+    ;
+
+syntax-expression:
+      INTERNAL_IDENTIFIER
+        { $$ = variable_identifier{ctx.make_qname(std::move($1)), true}; }
+    | syntax-expression-wo-ii
+    ;
+
+    /*
+syntax-expression-wii:
+      INTERNAL_IDENTIFIER
+        { $$ = variable_identifier{ctx.make_qname_identifier(std::move($1), false), true}; }
+    | syntax-expression
+    ;
+    */
+/*
+parameter-constraint-decl:
       CONST type-expr ELLIPSIS
         { $$ = parameter_type_t{bang_preliminary_parameter_pack_t{std::move($2)}, true}; IGNORE($3); }
     | CONST type-expr
@@ -512,12 +582,15 @@ parameter-decl-type:
     | type-expr
         { $$ = parameter_type_t{std::move($1), false}; }
     ;
+*/
 
 parameter-decl:
-      parameter-decl-name parameter-decl-type
-        { $$ = parameter_t{ std::move($1), std::move($2) }; }
-    | parameter-decl-type
-        { $$ = parameter_t{ std::move($1) }; }
+      parameter-name-decl parameter-constraint-modifier-opt parameter-constraint-set
+        { $$ = parameter_t{ std::move($1), std::move($2), std::move($3) }; }
+    | parameter-constraint-modifier parameter-constraint-set
+        { $$ = parameter_t{ {}, std::move($1), std::move($2) }; }
+    | parameter-constraint-set
+        { $$ = parameter_t{ {}, parameter_constraint_modifier_t::value_type_constraint, std::move($1) }; }
     ;
 
 parameter-list-opt:
@@ -553,7 +626,14 @@ parameter-woa-decl:
 
 // TYPE EXPRESSIONS
 type-expr:
-      qname { $$ = bang_preliminary_object_t{ std::move($1) }; }
+      qname
+        { $$ = std::move($1); }
+    | qname OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
+        { $$ = std::move($1); IGNORE($2); IGNORE($3); }
+    | INTERNAL_IDENTIFIER
+        { $$ = ctx.make_identifier(std::move($1)); }
+    | INTERNAL_IDENTIFIER OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
+        { $$ = ctx.make_identifier(std::move($1)); IGNORE($2); IGNORE($3); }
     | OPEN_SQUARE_BRACKET type-expr CLOSE_SQUARE_BRACKET
         { $$ = bang_preliminary_vector_t{std::move($2)}; IGNORE($1); }
     | OPEN_PARENTHESIS field-list-opt CLOSE_PARENTHESIS
@@ -609,17 +689,19 @@ expression:
     | POINT identifier
         { $$ = case_expression { std::move($2), std::move($1) }; }
     | qname
-        { $$ = variable_identifier{ ctx.make_qname_identifier(std::move($1)), false}; }
+        { $$ = variable_identifier{ std::move($1), false}; }
     | INTERNAL_IDENTIFIER
-        { $$ = variable_identifier{ ctx.make_qname_identifier($1, false), true }; }
+        { $$ = variable_identifier{ ctx.make_qname(std::move($1)), true }; }
+    | RESERVED_IDENTIFIER
+        { $$ = variable_identifier{ ctx.make_qname(std::move($1)), true }; }
     | OPEN_PARENTHESIS expression CLOSE_PARENTHESIS
         { $$ = std::move($2); IGNORE($1); }
-    | FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction_declaration_any CLOSE_BRACE
-        { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), nullopt, std::move($6), std::move($1)}; IGNORE($5); }
+    //| FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+    //    { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), nullopt, std::move($6), std::move($1)}; IGNORE($5); }
     //| OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction_declaration_any CLOSE_BRACE
     //    { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, $1}, std::move($2), nullopt, std::move($5), $1}; IGNORE($4); }
-    | FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS ARROW type-expr OPEN_BRACE infunction_declaration_any CLOSE_BRACE
-        { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), std::move($6), std::move($8), std::move($1)}; IGNORE($7); }
+    //| FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS ARROW type-expr OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+    //    { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), std::move($6), std::move($8), std::move($1)}; IGNORE($7); }
     | OPEN_SQUARE_BRACKET expression-list-any CLOSE_SQUARE_BRACKET
         { $$ = expression_vector_t{ {std::move($2)}, std::move($1) }; }
     | EXCLPT expression
@@ -740,10 +822,11 @@ named-arg:
 */
 /*
 type-expr:
-    qname
+      qname
         { $$ = std::move($1); }
     | qname OPEN_BROKET opt-type-expr-list CLOSE_BROKET
         { $$ = ctprocedure2{ std::move($1), std::move($3) }; }
+    
     ;
 
 

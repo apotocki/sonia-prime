@@ -108,7 +108,8 @@ ASCALPHA				[a-zA-Z]
 ASCALPHANUM				[a-zA-Z0-9]
 DIGIT					[0-9]
 IDENTIFIER				[a-zA-Z_]+[a-zA-Z_0-9]*
-INTERNAL_IDENTIFIER		$([$0]|([1-9][0-9]*)|{IDENTIFIER})
+INTERNAL_IDENTIFIER		${IDENTIFIER}
+RESERVED_IDENTIFIER		$([$0]|([1-9][0-9]*))
 
 INTEGER                 [0-9]+
 EXPONENT                [eE][+-]?[0-9]+
@@ -132,6 +133,7 @@ FALSE					"false"
 WEAK					"weak"
 CONST					"const"
 
+AT_SYMBOL				"@"
 END_STATEMENT			";"
 COMMA					","
 OPEN_BRACE				"{"
@@ -304,6 +306,7 @@ HASHTAG					"#"
 	{TRUE} { variant_emplace(location); return (bang_lang::parser::token::TRUE); }
 	{FALSE} { variant_emplace(location); return (bang_lang::parser::token::FALSE); }
 	
+	{AT_SYMBOL}				{ return (bang_lang::parser::token::AT_SYMBOL); }
 	{OPEN_BRACE}			{ variant_emplace(location); return (bang_lang::parser::token::OPEN_BRACE); }
 	{CLOSE_BRACE}			{ return (bang_lang::parser::token::CLOSE_BRACE); }
 	{OPEN_PARENTHESIS}		{ variant_emplace(location); return (bang_lang::parser::token::OPEN_PARENTHESIS); }
@@ -337,6 +340,12 @@ HASHTAG					"#"
 		variant_emplace(annotated_string_view{text_view, location});
 		return (bang_lang::parser::token::INTERNAL_IDENTIFIER);
 	}
+
+	{RESERVED_IDENTIFIER}  {
+		variant_emplace(annotated_string_view{text_view, location});
+		return (bang_lang::parser::token::RESERVED_IDENTIFIER);
+	}
+
 	{INTEGER} {
 		variant_emplace(annotated_decimal{ctx.make_decimal(text_view), location});
 		return (bang_lang::parser::token::INTEGER);

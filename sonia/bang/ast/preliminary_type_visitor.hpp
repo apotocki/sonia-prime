@@ -20,11 +20,11 @@
 
 namespace sonia::lang::bang {
 
-struct preliminary_type_visitor2 : static_visitor<entity_identifier>
+struct preliminary_type_visitor : static_visitor<entity_identifier>
 {
     fn_compiler_context& ctx;
 
-    preliminary_type_visitor2(fn_compiler_context& c)
+    preliminary_type_visitor(fn_compiler_context& c)
         : ctx{ c }
     {}
 
@@ -35,7 +35,9 @@ struct preliminary_type_visitor2 : static_visitor<entity_identifier>
 
     result_type operator()(bang_preliminary_parameter_pack_t const& v) const;
 
-    result_type operator()(bang_preliminary_object_t const& v) const;
+    result_type operator()(annotated_qname const& v) const;
+
+    result_type operator()(annotated_identifier const& v) const;
 
     template <typename T>
     result_type operator()(T const& v) const
@@ -44,6 +46,7 @@ struct preliminary_type_visitor2 : static_visitor<entity_identifier>
     }
 };
 
+#if 0
 struct preliminary_type_visitor : static_visitor<bang_type>
 {
     fn_compiler_context& ctx;
@@ -153,4 +156,5 @@ struct preliminary_type_visitor : static_visitor<bang_type>
 
 };
 
+#endif
 }

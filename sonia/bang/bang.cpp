@@ -131,7 +131,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
             return make_shared<string_literal_entity>(std::move(smpl));
         });
         identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), epos });
-        functional& arg_fnl = unit_.fregistry().resolve(unit_.qnregistry().resolve(ctx.ns() / argid));
+        functional& arg_fnl = unit_.fregistry().resolve(ctx.ns() / argid);
         arg_fnl.set_default_entity(argent.id());
         //ctx.new_const_entity(string_view{ argname.data(), epos }, std::move(ent));
         ++argindex;
@@ -143,7 +143,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
         return make_shared<decimal_literal_entity>(std::move(smpl));
     });
     identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), 2 });
-    functional& arg_fnl = unit_.fregistry().resolve(unit_.qnregistry().resolve(ctx.ns() / argid));
+    functional& arg_fnl = unit_.fregistry().resolve(ctx.ns() / argid);
     arg_fnl.set_default_entity(argent.id());
 
     

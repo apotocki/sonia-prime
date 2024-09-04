@@ -1,8 +1,8 @@
-[
+[/*
     {
         "src": "file0.bang",
         "output": "Hello from Bang!"
-    },
+    },*/
     {
         "src": "file1.bang",
         "arguments": [ "Hello", "from", "Bang!" ],

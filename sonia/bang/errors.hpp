@@ -118,15 +118,15 @@ public:
 
 class undeclared_identifier_error : public general_error
 {
-    annotated_qname_identifier idname_;
+    annotated_qname idname_;
 
 public:
-    undeclared_identifier_error(annotated_qname_identifier idname)
+    explicit undeclared_identifier_error(annotated_qname idname)
         : idname_{ idname }
     {}
 
-    undeclared_identifier_error(lex::resource_location loc, qname_identifier idname)
-        : idname_{ std::move(idname), std::move(loc) }
+    undeclared_identifier_error(lex::resource_location loc, qname_view idname)
+        : idname_{ qname{idname}, std::move(loc) }
     {}
 
     void visit(error_visitor& vis) const override { vis(*this); }
@@ -265,11 +265,13 @@ class function_call_match_error : public general_error
 {
 public:
     annotated_qname_identifier functional_;
-    function_signature const* signature_;
+    //function_signature const* signature_;
     error_storage reason_;
 
-    function_call_match_error(annotated_qname_identifier f, function_signature const* signature, error_storage reason)
-        : functional_{ f }, signature_{ signature }, reason_{ reason } {}
+    function_call_match_error(annotated_qname_identifier f, /*function_signature const* signature,*/ error_storage reason)
+        : functional_{ f }
+        //, signature_{ signature }
+        , reason_{ reason } {}
 
     void visit(error_visitor& vis) const override { vis(*this); }
 
@@ -277,7 +279,6 @@ public:
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override;
 };
-
 
 
 class error_printer_visitor : public error_visitor

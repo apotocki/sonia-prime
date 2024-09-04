@@ -7,7 +7,8 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 //#include <boost/multi_index/ordered_index.hpp>
-#include <boost/multi_index/mem_fun.hpp>
+//#include <boost/multi_index/mem_fun.hpp>
+#include <boost/multi_index/global_fun.hpp>
 
 #include "sonia/concurrency.hpp"
 
@@ -17,20 +18,29 @@ template <typename FunctionalT, typename MutexT = dummy_mutex_t>
 class functional_registry
 {
     using identifier_type = typename FunctionalT::identifier_type;
+    using qname_view_t = typename FunctionalT::qname_view_type;
 
 public:
-    FunctionalT* find(identifier_type) const noexcept;
-
-    FunctionalT& resolve(identifier_type) noexcept;
+    FunctionalT* find(qname_view_t) const noexcept;
+    FunctionalT& resolve(qname_view_t) noexcept;
+    FunctionalT& resolve(identifier_type qid) const;
 
 private:
+    static qname_view_t get_name(shared_ptr<FunctionalT> const& pf) { return pf->name(); }
+
     using set_t = boost::multi_index::multi_index_container<
-        FunctionalT,
-        boost::multi_index::indexed_by<
+        shared_ptr<FunctionalT>,
+        boost::multi_index::indexed_by <
+            boost::multi_index::random_access<>,
             boost::multi_index::hashed_unique<
-                boost::multi_index::const_mem_fun<FunctionalT, identifier_type, &FunctionalT::id>
+                boost::multi_index::global_fun<shared_ptr<FunctionalT> const&, qname_view_t, &get_name>
             >
         >
+        //boost::multi_index::indexed_by<
+        //    boost::multi_index::hashed_unique<
+        //        boost::multi_index::const_mem_fun<FunctionalT, identifier_type, &FunctionalT::id>
+        //    >
+        //>
     >;
 
     set_t set_;
@@ -38,25 +48,38 @@ private:
 };
 
 template <typename FunctionalT, typename MutexT>
-FunctionalT* functional_registry<FunctionalT, MutexT>::find(identifier_type id) const noexcept
+FunctionalT* functional_registry<FunctionalT, MutexT>::find(qname_view_t qnv) const noexcept
 {
+    BOOST_ASSERT(qnv.is_absolute());
     lock_guard guard(set_mtx_);
-    auto it = set_.find(id);
-    if (it != set_.end()) {
-        return std::addressof(const_cast<FunctionalT&>(*it));
+    auto& plane = set_.template get<1>();
+    auto it = plane.find(qnv);
+
+    if (it != plane.end()) {
+        return const_cast<FunctionalT*>(it->get());
     }
     return nullptr;
 }
 
 template <typename FunctionalT, typename MutexT>
-FunctionalT& functional_registry<FunctionalT, MutexT>::resolve(identifier_type id) noexcept
+FunctionalT& functional_registry<FunctionalT, MutexT>::resolve(qname_view_t qnv) noexcept
+{
+    BOOST_ASSERT(qnv.is_absolute());
+    lock_guard guard(set_mtx_);
+    auto& plane = set_.template get<1>();
+    auto it = plane.find(qnv);
+    if (it == plane.end()) {
+        size_t r = set_.size();
+        it = plane.insert(it, make_shared<FunctionalT>(identifier_type{r}, qnv));
+    }
+    return **it;
+}
+
+template <typename FunctionalT, typename MutexT>
+FunctionalT& functional_registry<FunctionalT, MutexT>::resolve(identifier_type qid) const
 {
     lock_guard guard(set_mtx_);
-    auto it = set_.find(id);
-    if (it == set_.end()) {
-        return const_cast<FunctionalT&>(*set_.insert(it, FunctionalT{ std::move(id) }));
-    }
-    return const_cast<FunctionalT&>(*it);
+    return *set_.template get<0>().at(qid.raw());
 }
 
 }

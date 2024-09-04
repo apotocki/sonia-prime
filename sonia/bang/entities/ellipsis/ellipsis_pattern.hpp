@@ -13,8 +13,8 @@ class ellipsis_pattern : public functional::pattern
 public:
     ellipsis_pattern() = default;
 
-    error_storage is_matched(fn_compiler_context&, pure_call_t&) const override;
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx) const override;
+    error_storage is_matched(fn_compiler_context&, pure_call_t const&, functional::match_descriptor&) const override;
+    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional::match_descriptor&) const override;
 };
 
 }

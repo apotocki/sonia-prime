@@ -18,27 +18,27 @@ std::ostream& entity::print_to(std::ostream& os, unit const& u) const
     return os << "@E"sv << id().value;
 }
 
-std::ostream& type_entity::print_to(std::ostream& os, unit const& u) const
+std::ostream& signatured_entity::print_to(std::ostream& os, unit const& u) const
 {
-    return entity::print_to(os, u) << "("sv << u.print(signature_) << ")"sv;
+    return entity::print_to(os, u) << "("sv << u.print(*signature()) << ")"sv;
 }
 
 class type_mangler_visitor : static_visitor<qname_identifier>
 {
     unit & u_;
 
-    inline qname_identifier qnid(identifier id) const { return u_.qnregistry().resolve(qname{ id }); }
+    inline qname_identifier qnid(identifier id) const { return u_.fregistry().resolve(qname{ id }).id(); }
     inline qname_identifier qnid(string_view sv) const { return qnid(u_.slregistry().resolve(sv)); }
 
 public:
     explicit type_mangler_visitor(unit& u) : u_{ u } {}
 
-    inline result_type operator()(bang_any_t) const { return qnid("any"sv); }
+    //inline result_type operator()(bang_any_t) const { return qnid("any"sv); }
     //inline result_type operator()(bang_bool_t) const { return qnid("bool"sv); }
-    inline result_type operator()(bang_int_t) const { return qnid("int"sv); }
-    inline result_type operator()(bang_float_t) const { return qnid("float"sv); }
-    inline result_type operator()(bang_decimal_t) const { return qnid("decimal"sv); }
-    inline result_type operator()(bang_string_t) const { return qnid("string"sv); }
+    //inline result_type operator()(bang_int_t) const { return qnid("int"sv); }
+    //inline result_type operator()(bang_float_t) const { return qnid("float"sv); }
+    //inline result_type operator()(bang_decimal_t) const { return qnid("decimal"sv); }
+    //inline result_type operator()(bang_string_t) const { return qnid("string"sv); }
         
     inline result_type operator()(bang_object_t const& obj) const { 
         THROW_NOT_IMPLEMENTED_ERROR("type_mangler_visitor bang_object_t");
@@ -100,7 +100,7 @@ public:
 };
 
 
-
+#if 0
 void function_signature::setup(fn_compiler_context& ctx, parameter_woa_list_t & params)
 {
     preliminary_type_visitor tqvis{ ctx };
@@ -114,6 +114,7 @@ void function_signature::setup(fn_compiler_context& ctx, parameter_woa_list_t & 
         }
     }
 }
+
 
 void function_signature::normilize(fn_compiler_context& ctx)
 {
@@ -172,6 +173,7 @@ void function_signature::build_mangled_id(unit& u)
     }
     mangled_id = u.piregistry().resolve(ps);
 }
+#endif
 
 bang_type make_union_type(bang_type arg0, bang_type const* parg1)
 {
@@ -221,10 +223,10 @@ struct union_type_remove_visitor : static_visitor<bool>
     using basic_type = bang_union_t::basic_type;
 
     //bool operator()(bang_bool_t const&) const { res.basic_members &= ~(uint16_t)basic_type::bool_e; return true; }
-    bool operator()(bang_int_t const&) const { res.basic_members &= ~(uint16_t)basic_type::int_e; return true; }
-    bool operator()(bang_float_t const&) const { res.basic_members &= ~(uint16_t)basic_type::float_e; return true; }
-    bool operator()(bang_decimal_t const&) const { res.basic_members &= ~(uint16_t)basic_type::decimal_e; return true; }
-    bool operator()(bang_string_t const&) const { res.basic_members &= ~(uint16_t)basic_type::string_e; return true; }
+    //bool operator()(bang_int_t const&) const { res.basic_members &= ~(uint16_t)basic_type::int_e; return true; }
+    //bool operator()(bang_float_t const&) const { res.basic_members &= ~(uint16_t)basic_type::float_e; return true; }
+    //bool operator()(bang_decimal_t const&) const { res.basic_members &= ~(uint16_t)basic_type::decimal_e; return true; }
+    //bool operator()(bang_string_t const&) const { res.basic_members &= ~(uint16_t)basic_type::string_e; return true; }
     bool operator()(bang_tuple_t const& t) const
     {
         if (!t.empty()) return false;

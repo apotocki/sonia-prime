@@ -61,8 +61,8 @@ struct expression_visitor : static_visitor<error_storage>
     result_type operator()(entity_expression const& ee) const;
 
     result_type operator()(function_call_t&) const;
-    result_type operator()(unary_expression_t& be) const;
-    result_type operator()(binary_expression_t& be) const;
+    result_type operator()(unary_expression_t const& be) const;
+    result_type operator()(binary_expression_t const& be) const;
         
 
     result_type operator()(binary_operator_t<binary_operator_type::ASSIGN>, binary_expression_t &) const;
@@ -70,7 +70,7 @@ struct expression_visitor : static_visitor<error_storage>
     result_type operator()(binary_operator_t<binary_operator_type::LOGIC_OR>, binary_expression_t &) const;
 
     template <binary_operator_type BOpV>
-    result_type operator()(binary_operator_t<BOpV>, binary_expression_t&) const;
+    result_type operator()(binary_operator_t<BOpV>, binary_expression_t &) const;
     //result_type operator()(binary_operator_t<binary_operator_type::PLUS>, binary_expression_t&) const;
     //result_type operator()(binary_operator_t<binary_operator_type::CONCAT>, binary_expression_t &) const;
 
@@ -79,7 +79,7 @@ struct expression_visitor : static_visitor<error_storage>
 
 
     template <typename T>
-    result_type operator()(T const&) const
+    result_type operator()(T const& v) const
     {
         THROW_NOT_IMPLEMENTED_ERROR("expression_visitor not implemented expression");
     }
@@ -91,13 +91,10 @@ private:
     result_type apply_cast(entity_identifier, ExprT const& e) const;
 
     template <std::derived_from<pure_call_t> CallExpressionT>
-    result_type operator()(qname_identifier fnqn, CallExpressionT& call) const;
+    result_type operator()(qname_identifier fnqn, CallExpressionT const& call) const;
 
     template <std::derived_from<pure_call_t> CallExpressionT>
-    result_type operator()(functional const& fnl, CallExpressionT& call) const;
-
-    //template <typename ExprT>
-    //result_type apply_cast(bang_type const& t, ExprT const& e) const;
+    result_type operator()(functional const& fnl, CallExpressionT const& call) const;
 };
 
 }

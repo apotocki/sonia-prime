@@ -52,36 +52,56 @@ public:
 
 inline size_t hash_value(entity const& e) noexcept { return e.hash(); }
 
-class type_entity : public entity
+// entities whose identities are based on their signatures
+class signatured_entity : public entity
 {
-protected:
-    entity_signature signature_;
-
 public:
-    type_entity() = default;
+    using entity::entity;
 
-    explicit type_entity(entity_identifier type)
-        : entity{ type }
-    {}
-
-    type_entity(entity_identifier type, entity_signature&& sgn)
-        : entity{ type }, signature_{ std::move(sgn) }
-    {}
-
-    inline void set_signature(entity_signature && sgn) noexcept { signature_ = std::move(sgn); }
-
-    entity_signature const* signature() const noexcept override { return &signature_; }
-
-    size_t hash() const noexcept override { return hash_value(signature_); }
-    bool equal(entity const& rhs) const noexcept override
+    size_t hash() const noexcept override final
     {
-        if (type_entity const* pr = dynamic_cast<type_entity const*>(&rhs); pr) {
-            return pr->signature_ == signature_;
+        return hash_value(*signature());
+    }
+
+    bool equal(entity const& rhs) const noexcept override final
+    {
+        if (signatured_entity const* pr = dynamic_cast<signatured_entity const*>(&rhs); pr) {
+            return *pr->signature() == *signature();
         }
         return false;
     }
 
     std::ostream& print_to(std::ostream& os, unit const& u) const override;
+};
+
+// auxiliary type for entity lookups by a signature
+struct indirect_signatured_entity : signatured_entity
+{
+    entity_signature& sig_;
+
+public:
+    explicit indirect_signatured_entity(entity_signature& s) : sig_{ s } {}
+
+    inline entity_signature const* signature() const noexcept override final { return &sig_; }
+};
+
+struct basic_signatured_entity : signatured_entity
+{
+    entity_signature sig_;
+
+    basic_signatured_entity() = default;
+
+    explicit basic_signatured_entity(entity_identifier type)
+        : signatured_entity{ type }
+    {}
+
+    basic_signatured_entity(entity_identifier type, entity_signature&& sgn)
+        : signatured_entity{ type }, sig_{ std::move(sgn) }
+    {}
+
+    inline void set_signature(entity_signature && sgn) { sig_ = std::move(sgn); }
+
+    entity_signature const* signature() const noexcept override final { return &sig_; }
 };
 
 template <typename ValueT>

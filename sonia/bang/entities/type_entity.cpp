@@ -11,6 +11,7 @@
 
 namespace sonia::lang::bang {
 
+#if 0
 void type_entity2::treat(fn_compiler_context& ctx)
 {
     THROW_NOT_IMPLEMENTED_ERROR("ype_entity::treat");
@@ -230,5 +231,5 @@ std::expected<function_entity const*, error_storage> type_entity2::find_field_se
     return fnent.get();
 #endif
 }
-
+#endif
 }

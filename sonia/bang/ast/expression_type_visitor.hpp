@@ -71,6 +71,8 @@ struct expression_type_visitor : static_visitor<optional<bang_type>>
 
     inline result_type operator()(bang_object_t const& v) const
     {
+        THROW_NOT_IMPLEMENTED_ERROR();
+#if 0
         if (bang_type{ v } == expected_tp) return expected_tp;
         if (auto const* pte = dynamic_cast<type_entity2 const*>(v.value); pte) {
             if (pte->try_cast(ctx, expected_tp)) {
@@ -78,6 +80,7 @@ struct expression_type_visitor : static_visitor<optional<bang_type>>
             }
         }
         return nullopt;
+#endif
     }
 
     inline result_type operator()(bang_vector_t const& v) const

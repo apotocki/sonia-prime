@@ -19,20 +19,21 @@ struct declaration_visitor : static_visitor<void>
 
     //void operator()(empty_t const&) const {}
 
-    void operator()(extern_var&) const;
+    void operator()(extern_var const&) const;
 
-    void operator()(fn_pure_decl&) const;
+    void operator()(fn_pure_t const&) const;
 
-    void operator()(fn_decl_t&) const;
+    void operator()(fn_decl_t const&) const;
 
-    void operator()(let_statement_decl_t&) const;
+    void operator()(let_statement_decl_t const&) const;
     
-    void operator()(expression_decl_t&) const;
+    void operator()(expression_decl_t const&) const;
 
-    void operator()(return_decl_t&) const;
+    void operator()(return_decl_t const&) const;
 
-    void append_fnsig(fn_pure_decl& /*in*/, functional** ppf = nullptr) const;
-    function_entity& append_fnent(fn_pure_decl&, function_signature& sig, span<infunction_declaration_t>) const;
+    void append_fnsig(fn_pure_t& /*in*/, functional** ppf = nullptr) const;
+    
+    //function_entity& append_fnent(fn_pure_t&, function_signature& sig, span<infunction_declaration_t>) const;
 
     unit& u() const noexcept;
 };

@@ -35,14 +35,17 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
         ctx.context_type = typeeid;
         return {};
     }
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor apply_cast");
-#if 0
+
     if (typeeid == expected_result->type) return {};
 
     if (expected_result->type == u().get_any_entity_identifier()) {
         ctx.context_type = expected_result->type;
         return {};
     }
+
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor apply_cast");
+#if 0
+    
     entity const& ent = u().eregistry().get(expected_result->type);
     entity_signature const* esig = ent.signature();
     if (!esig) {
@@ -118,6 +121,12 @@ expression_visitor::result_type expression_visitor::operator()(annotated_string 
 {
     ctx.append_expression(semantic::push_value{ s.value });
     return apply_cast(u().get_string_entity_identifier(), s);
+}
+
+expression_visitor::result_type expression_visitor::operator()(annotated_qname const& aqn) const
+{
+    GLOBAL_LOG_INFO() << ctx.u().print(aqn.value);
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor annotated_qname");
 }
 
 expression_visitor::result_type expression_visitor::operator()(variable_identifier const& var) const
@@ -674,7 +683,7 @@ expression_visitor::result_type expression_visitor::operator()(functional const&
     return apply_cast(optres.value(), call);
 }
 
-expression_visitor::result_type expression_visitor::operator()(function_call_t & proc) const
+expression_visitor::result_type expression_visitor::operator()(function_call_t const& proc) const
 {
     //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor function_call_t");
 

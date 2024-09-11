@@ -24,7 +24,7 @@ public:
     EntityT const& get(entity_identifier_type) const;
     
     template <typename FactoryT>
-    EntityT const& find_or_create(EntityT const&, FactoryT const&);
+    EntityT & find_or_create(EntityT const&, FactoryT const&);
 
     void insert(shared_ptr<EntityT>);
     //StringT const* resolve(IdentifierT) const noexcept;
@@ -68,7 +68,7 @@ private:
 
 template <typename EntityT, typename MutexT>
 template <typename FactoryT>
-EntityT const& entity_registry<EntityT, MutexT>::find_or_create(EntityT const& sample, FactoryT const& factory)
+EntityT & entity_registry<EntityT, MutexT>::find_or_create(EntityT const& sample, FactoryT const& factory)
 {
     lock_guard guard(set_mtx_);
     auto& index = set_.get<1>();

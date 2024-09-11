@@ -1,9 +1,6 @@
 // @copyright 2020 Alexander A Pototskiy
 // You can redistribute it and/or modify it under the terms of the MIT License
 
-#ifndef AGNOSTIC_INTRUSIVE_AVL_HPP
-#define AGNOSTIC_INTRUSIVE_AVL_HPP
-
 #pragma once
 
 #ifndef DO_NOT_USE_AGNOSTIC_ADDRESSOF
@@ -171,9 +168,6 @@ private:
 };
 
 } // avl_detail
-
-//typedef avl_multiset< MyClass, MemberOption>   MemberMultiset;
-
 
 template <class T, class ... OptionsT>
 class avl_tree
@@ -722,5 +716,3 @@ T* avl_tree<T, OptionsT...>::big_rotate_left(T* root, T* mright, T* bleft) noexc
 }
 
 }
-
-#endif // AGNOSTIC_INTRUSIVE_AVL_HPP

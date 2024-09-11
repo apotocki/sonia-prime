@@ -2,11 +2,12 @@
 //fn string(const __id) {
 //    return __stringinize(__id)
 //}
-//fn ::not_equal(decimal, decimal)->bool { return !($0 == $1); }
-fn ::not_equal($T0, $T1)->bool { return !($0 == $1); }
-let x = $$ != 4;
-//assert($$ != 4);
-//print($0, " ", $1, " ", $2);
+//inline fn ::not_equal(decimal, decimal)->bool { return !($0 == $1); }
+inline fn ::not_equal($T0, $T1)->bool { return !($0 == $1); }
+//let x = ($$ != 4);
+assert($$ != 4);
+//assert(3 == $$);
+print($0, " ", $1, " ", $2);
 
 
 //fn xxx(a: foo(param0: $x), const $x)

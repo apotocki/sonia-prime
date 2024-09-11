@@ -41,13 +41,7 @@ void expression_printer_visitor::operator()(push_value const& v) const
 void expression_printer_visitor::operator()(invoke_function const& f) const
 {
     do_indent();
-    ss << "invoke fn "sv << f.fn << "\n"sv;
-}
-
-void expression_printer_visitor::operator()(invoke_external_function const& ef) const
-{
-    do_indent();
-    ss << "invoke external fn "sv << u_.describe_efn(ef.fn_index) << "\n"sv;
+    ss << "invoke "sv << f.fn << "\n"sv;
 }
 
 void expression_printer_visitor::operator()(return_statement const&) const

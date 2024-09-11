@@ -14,8 +14,12 @@
 #include "../terms.hpp"
 #include "sonia/bang/unit.hpp"
 
+#include "sonia/bang/vm/vmasm_builder.hpp"
+
 namespace sonia::lang::bang::vm {
 
+static_assert(sizeof(vmasm::fn_identity<identifier>) <= 2 * sizeof(void*));
+static_assert(sizeof(vmasm::fn_identity<qname_identifier>) <= 2 * sizeof(void*));
 /*
 class variable
 {
@@ -267,6 +271,8 @@ private:
 }
 
 namespace sonia::lang::bang {
+
+using asm_builder_t = sonia::vmasm::builder<vm::context>;
 
 class virtual_stack_machine : public sonia::vm::virtual_stack_machine<vm::context>
 {

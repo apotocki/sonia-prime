@@ -78,10 +78,10 @@ qname_identifier unit::make_qname_identifier(string_view sv)
 //    eregistry().insert(std::move(e));
 //}
 
-size_t unit::allocate_constant_index()
-{
-    return bvm().add_const(smart_blob{});
-}
+//size_t unit::allocate_constant_index()
+//{
+//    return bvm().add_const(smart_blob{});
+//}
 
 std::string unit::describe_efn(size_t fn_index) const
 {
@@ -386,7 +386,25 @@ std::string unit::print(entity const& e) const
 std::string unit::print(entity_signature const& sgn) const
 {
     std::ostringstream ss;
-    ss << print(sgn.name()) << "<>";
+    ss << print(sgn.name());
+    if (!sgn.positioned_fields().empty() || !sgn.named_fields().empty()) {
+        ss << '(';
+        bool first = true;
+        for (auto const&f : sgn.positioned_fields()) {
+            if (first) first = false;
+            else ss << ", "sv;
+            if (f.is_const()) ss << "const "sv;
+            ss << print(f.entity_id());
+        }
+        for (auto const& f : sgn.named_fields()) {
+            if (first) first = false;
+            else ss << ", "sv;
+            ss << print(f.first) << ": "sv;
+            if (f.second.is_const()) ss << "const "sv;
+            ss << print(f.second.entity_id());
+        }
+        ss << ")";
+    }
     return ss.str();
 }
 

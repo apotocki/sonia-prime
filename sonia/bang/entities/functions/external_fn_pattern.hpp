@@ -22,7 +22,10 @@ public:
     //fieldset_t const& get_fieldset() const noexcept override { return fd_; }
 
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional::match_descriptor&) const override;
-    std::expected<entity_identifier, error_storage> apply(fn_compiler_context&, functional::match_descriptor&) const override;
+    //std::expected<entity_identifier, error_storage> apply(fn_compiler_context&, functional::match_descriptor&) const override;
+
+protected:
+    shared_ptr<entity> build(unit&, functional::match_descriptor&) const override;
 };
 
 }

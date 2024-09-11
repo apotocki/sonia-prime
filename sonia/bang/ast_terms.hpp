@@ -562,12 +562,19 @@ struct parameter_woa : parameter_t
 
 template <typename ExprT> using parameter_woa_list = std::vector<parameter_woa<ExprT>>;
 
+enum class fn_kind : int8_t
+{
+    DEFAULT,
+    INLINE
+};
+
 template <typename ExprT>
 struct fn_pure
 {
     annotated_qname aname;
     parameter_woa_list<ExprT> parameters;
     optional<ExprT> result;
+    fn_kind kind = fn_kind::DEFAULT;
 
     qname_view name() const { return aname.value; }
     lex::resource_location const& location() const { return aname.location; }

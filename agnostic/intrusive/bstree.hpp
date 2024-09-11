@@ -11,7 +11,7 @@ public:
     using node = NodeT;
 
     static NodeT* first(NodeT* nd) noexcept;
-    static NodeT* leftmost(NodeT* r) noexcept; // returns the lestmost node from the given root node
+    static NodeT* leftmost(NodeT* r) noexcept; // returns the leftmost node from the given root node
     static NodeT* last(NodeT* nd) noexcept;
     static NodeT* root(NodeT* nd) noexcept;
 

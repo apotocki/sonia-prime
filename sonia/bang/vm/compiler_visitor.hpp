@@ -4,142 +4,80 @@
 
 #pragma once
 
+#include <boost/container/small_vector.hpp>
+
 #include "sonia/variant.hpp"
 
 #include "bang_vm.hpp"
 #include "push_value_visitor.hpp"
 
-#include "../entities/type_entity.hpp"
-#include "../entities/functional_entity.hpp"
+#include "sonia/bang/entities/functions/function_entity.hpp"
 
 namespace sonia::lang::bang::vm {
 
-class compiler_visitor : public static_visitor<void>
+class compiler_visitor_base : public static_visitor<void>
 {
+protected:
+    unit& unit_;
+    internal_function_entity const* fn_context_;
+    mutable asm_builder_t::function_builder fnbuilder_;
+
 public:
-    unit & unit_;
-    optional<size_t> local_return_address;
-
-    auto& bvm() const { return unit_.bvm(); }
-
-    explicit compiler_visitor(unit& u) 
+    compiler_visitor_base(unit& u, asm_builder_t::function_builder b, internal_function_entity const& ife)
         : unit_{ u }
+        , fnbuilder_{ std::move(b) }
+        , fn_context_{ &ife }
     {}
 
-    void operator()(std::vector<semantic::expression_t> const& evec) const
-    {
-        for (auto const& e : evec) {
-            apply_visitor(*this, e);
-        }
-    }
+    compiler_visitor_base(unit& u, asm_builder_t::function_builder b)
+        : unit_{ u }
+        , fnbuilder_{ std::move(b) }
+        , fn_context_{ nullptr }
+    {}
+
+    inline void operator()(empty_t const&) const
+    { /* noop, do nothing */ }
 
     void operator()(semantic::push_value const& pv) const
     {
-        push_value_visitor vis{ unit_ };
+        push_value_visitor vis{ unit_, fnbuilder_ };
         apply_visitor(vis, pv.value);
     }
 
     void operator()(semantic::push_by_offset const& pv) const
     {
-        bvm().append_pushr(pv.offset);
+        fnbuilder_.append_pushr(pv.offset);
     }
 
     void operator()(semantic::set_by_offset const& sv) const
     {
-        bvm().append_setr(sv.offset);
+        fnbuilder_.append_setr(sv.offset);
     }
 
-    void operator()(semantic::invoke_external_function const& invf) const
+    void operator()(semantic::push_variable const& pv) const
     {
-        bvm().append_ecall(invf.fn_index);
+        auto varkind = pv.entity->varkind();
+        if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
+            fnbuilder_.append_fpush(pv.entity->index());
+            return;
+        } else if (varkind == variable_entity::kind::EXTERN) {
+            string_view varname = unit_.as_string(unit_.fregistry().resolve(pv.entity->name()).name().back());
+            smart_blob strbr{ string_blob_result(varname) };
+            strbr.allocate();
+            fnbuilder_.append_push_pooled_const(std::move(strbr));
+            fnbuilder_.append_ecall((size_t)virtual_stack_machine::builtin_fn::extern_variable_get);
+        } else {
+            THROW_NOT_IMPLEMENTED_ERROR();
+        }
     }
 
-    void operator()(semantic::invoke_function const& invf) const
+    inline void operator()(semantic::truncate_values const& c) const
     {
-        entity const& e = unit_.eregistry().get(invf.fn);
-        if (auto fe = dynamic_cast<function_entity const*>(&e); fe) {
-            if (fe->is_inline()) {
-                for (auto const& e : fe->body()) {
-                    apply_visitor(*this, e);
-                }
-            } else {
-                //bvm().append_push_static_const(i64_blob_result((fe->parameter_count() + 1) * (fe->is_void() ? -1 : 1)));
-                if (fe->is_const_index()) {
-                    bvm().append_pushc(fe->get_index());
-                    bvm().append_callp();
-                } else if (fe->is_defined()) {
-                    bvm().append_call(fe->get_address());
-                } else {
-                    THROW_INTERNAL_ERROR("wrong function entity state");
-                }
-            }
+        if (c.keep_back) {
+            fnbuilder_.append_collapse(c.count);
         } else {
-            THROW_NOT_IMPLEMENTED_ERROR("compiler_visitor invoke_function");
+            fnbuilder_.append_pop(c.count);
         }
-#if 0
-        /*
-        if (auto optecall = bvm_.get_ecall(invf.function_entity_name); optecall) {
-            bvm_.append_ecall(*optecall);
-        }
-        if (invf.function_entity_name == unit_.builtin(sonia::lang::bang::builtin_type::arrayify)) {
-            bvm_.append_builtin(sonia::lang::bang::builtin_type::arrayify);
-        } else if (invf.function_entity_name == unit_.builtin(sonia::lang::bang::builtin_type::print_string)) {
-            bvm_.append_builtin(sonia::lang::bang::builtin_type::print_string);
-        } else if (invf.function_entity_name == unit_.builtin(sonia::lang::bang::builtin_type::tostring)) {
-            bvm_.append_builtin(sonia::lang::bang::builtin_type::tostring);
-        }
-        else 
-        */
-        if (auto eptr = unit_.eregistry().find(invf.varname); eptr) {
-            // to do: visitor
-            if (auto pefe = dynamic_pointer_cast<external_function_entity>(eptr); pefe) {
-                bvm().append_ecall(pefe->fn_index);
-            }
-            //else if (auto pte = dynamic_pointer_cast<type_entity>(eptr); pte) {
-            //    bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_object_constructor);
-            //}
-            else if (auto fe = dynamic_pointer_cast<function_entity>(eptr); fe) {
-                if (fe->is_inline()) {
-                    for (auto const& e : fe->body) {
-                        apply_visitor(*this, e);
-                    }
-                } else {
-                    bvm().append_push_static_const(i64_blob_result((fe->signature().parameters_count() + 1) * (fe->is_void() ? -1 : 1)));
-                    bvm().append_fpush(fe->index());
-                    bvm().append_callp();
-                }
-                //bvm_.append_builtin(sonia::lang::bang::builtin_type::call_function_object);
-                /*
-                // assigned captured variables (if exist)
-                for (auto const& pair : fe->captured_variables) {
-                    // refiry
-                    bvm_.append_freferify(std::get<0>(pair)->index());
-                    bvm_.append_fpush(std::get<0>(pair)->index());
-                }
-                //
-                if (!fe->is_defined()) {
-                    size_t pos = bvm_.push_on_stack(smart_blob{}); // just reserve
-                    fe->set_variable_index(pos);
-                }
-                if (fe->is_inline()) {
-                    for (auto const& e : fe->body) {
-                        apply_visitor(*this, e);
-                    }
-                } else if (fe->is_variable_index()) {
-                    bvm_.append_push(fe->get_address());
-                    bvm_.appned_callp();
-                } else {
-                    bvm_.append_call(fe->get_address());
-                }
-                */
-                //THROW_NOT_IMPLEMENTED_ERROR("unimplemented function call name: '%1%'"_fmt % unit_.print(invf.entity));
-            } else {
-                THROW_NOT_IMPLEMENTED_ERROR("unknown entity found, unresolved function call name: '%1%'"_fmt % unit_.print(invf.varname));
-            }
-        } else {
-            throw exception("unresolved name: '%1%'"_fmt % unit_.print(invf.varname));
-        }
-#endif
     }
 
     void operator()(semantic::set_variable const& pv) const
@@ -148,48 +86,107 @@ public:
 
         auto varkind = pv.entity->varkind();
         if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
-            bvm().append_fset(pv.entity->index());
+            fnbuilder_.append_fset(pv.entity->index());
         } else if (varkind == variable_entity::kind::EXTERN) {
             string_view varname = unit_.as_string(unit_.fregistry().resolve(pv.entity->name()).name().back());
             smart_blob strbr{ string_blob_result(varname) };
             strbr.allocate();
-            bvm().append_push_pooled_const(std::move(strbr));
-            bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_variable_set);
+            fnbuilder_.append_push_pooled_const(std::move(strbr));
+            fnbuilder_.append_ecall((size_t)virtual_stack_machine::builtin_fn::extern_variable_set);
         } else {
             THROW_NOT_IMPLEMENTED_ERROR();
         }
     }
 
-    void operator()(semantic::push_variable const& pv) const
+    void operator()(semantic::invoke_function const& invf) const;
+};
+
+class inline_compiler_visitor : public compiler_visitor_base
+{
+    mutable boost::container::small_vector<asm_builder_t::instruction_entry*, 4> rpositions_;
+
+public:
+    using compiler_visitor_base::compiler_visitor_base;
+    
+    using compiler_visitor_base::operator();
+
+    void operator()(std::vector<semantic::expression_t> const& evec) const
     {
-        auto varkind = pv.entity->varkind();
-        if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
-            unit_.bvm().append_fpush(pv.entity->index());
-            return;
-        } else if (varkind == variable_entity::kind::EXTERN) {
-            string_view varname = unit_.as_string(unit_.fregistry().resolve(pv.entity->name()).name().back());
-            smart_blob strbr{ string_blob_result(varname) };
-            strbr.allocate();
-            bvm().append_push_pooled_const(std::move(strbr));
-            bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_variable_get);
-        } else {
-            THROW_NOT_IMPLEMENTED_ERROR();
+        for (auto const& e : evec) {
+            //GLOBAL_LOG_INFO() << unit_.print(e);
+            apply_visitor(*this, e);
         }
     }
-
-    inline void operator()(empty_t const&) const
-    { /* noop, do nothing */}
 
     inline void operator()(semantic::return_statement const&) const
     {
-        if (!local_return_address) [[unlikely]] {
-            throw internal_error("return code is not defined");
+        fnbuilder_.append_noop();
+        rpositions_.push_back(fnbuilder_.position());
+    }
+
+    void finalize()
+    {
+        auto fin_pos = fnbuilder_.position();
+        while (!rpositions_.empty() && rpositions_.back() == fin_pos) { // inline fn returns right at the code end
+            fnbuilder_.remove(rpositions_.back());
+            rpositions_.pop_back();
+            fin_pos = fnbuilder_.position();
         }
-        unit_.bvm().append_jmp(*local_return_address);
+        for (auto rpos : rpositions_) {
+            rpos->operation = asm_builder_t::op_t::jmp;
+            rpos->operand = fin_pos;
+        }
+    }
+
+    template <typename T>
+    void operator()(T const& e) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+};
+
+class compiler_visitor : public compiler_visitor_base
+{
+public:
+    mutable optional<asm_builder_t::instruction_entry*> local_return_position;
+
+    using compiler_visitor_base::compiler_visitor_base;
+
+    using compiler_visitor_base::operator();
+
+    void operator()(std::vector<semantic::expression_t> const& evec) const
+    {
+        for (auto const& e : evec) {
+            //GLOBAL_LOG_INFO() << unit_.print(e);
+            apply_visitor(*this, e);
+        }
+    }
+
+    inline void operator()(semantic::return_statement const&) const
+    {
+        if (local_return_position) {
+            fnbuilder_.append_jmp(*local_return_position);
+            return;
+        } else if (fn_context_) {
+            local_return_position = fnbuilder_.position();
+            size_t param_count = fn_context_->parameter_count(); // including captured_variables
+            if (!fn_context_->is_void()) {
+                fnbuilder_.append_fset(-static_cast<intptr_t>(param_count));
+                fnbuilder_.append_truncatefp(-static_cast<intptr_t>(param_count) + 1);
+            } else {
+                fnbuilder_.append_truncatefp(-static_cast<intptr_t>(param_count));
+            }
+            if (param_count) {
+                fnbuilder_.append_popfp();
+            }
+        }
+        fnbuilder_.append_ret();
     }
 
     inline void operator()(semantic::conditional_t const& c) const
     {
+        THROW_NOT_IMPLEMENTED_ERROR("compiler_visitor conditional_t");
+#if 0
         size_t branch_pt = unit_.bvm().get_ip();
         if (c.false_branch.empty() && c.true_branch.empty()) return;
         if (c.false_branch.empty()) {
@@ -222,19 +219,15 @@ public:
             unit_.bvm().append_jfx(true_branch_end_pt + jmpxsz - branch_pt);
             unit_.bvm().swap_code_blocks(branch_pt, true_branch_end_pt + jmpxsz);
         }
+#endif
     }
 
-    inline void operator()(semantic::truncate_values const& c) const
-    {
-        if (c.keep_back) {
-            unit_.bvm().append_collapse(c.count);
-        } else {
-            unit_.bvm().append_pop(c.count);
-        }
-    }
+
 
     inline void operator()(semantic::not_empty_condition_t const& n) const
     {
+        THROW_NOT_IMPLEMENTED_ERROR("compiler_visitor return_statement");
+#if 0
         size_t branch_pt = unit_.bvm().get_ip();
         unit_.bvm().append_pop(1); // remove boolean value false = is_nil
         for (auto const& e : n.branch) {
@@ -254,6 +247,7 @@ public:
         //bvm().append_ecall(virtual_stack_machine::builtin_fn::is_nil);
         //unit_.bvm().append_jtx(branch_end_pt - branch_pt);
         //unit_.bvm().swap_code_blocks(branch_pt, branch_end_pt);
+#endif
     }
 
     template <typename T>
@@ -262,5 +256,96 @@ public:
         THROW_NOT_IMPLEMENTED_ERROR();
     }
 };
+
+
+void compiler_visitor_base::operator()(semantic::invoke_function const& invf) const
+{
+    entity const& e = unit_.eregistry().get(invf.fn);
+    if (auto fe = dynamic_cast<internal_function_entity const*>(&e); fe) {
+        if (fe->is_inline()) {
+            inline_compiler_visitor ivis{ unit_, fnbuilder_, *fe };
+            fnbuilder_.append_pushfp();
+            for (auto const& e : fe->body()) {
+                //GLOBAL_LOG_INFO() << unit_.print(e);
+                apply_visitor(ivis, e);
+            }
+            ivis.finalize();
+            fnbuilder_.append_popfp();
+        } else {
+            vmasm::fn_identity<qname_identifier> fnident{ fe->name() };
+            fnbuilder_.append_call(fnident);
+
+            //bvm().append_push_static_const(i64_blob_result((fe->parameter_count() + 1) * (fe->is_void() ? -1 : 1)));
+        }
+    } else if (auto efe = dynamic_cast<external_function_entity const*>(&e); efe) {
+        fnbuilder_.append_ecall(efe->extfnid());
+    } else {
+        THROW_NOT_IMPLEMENTED_ERROR("compiler_visitor invoke_function");
+    }
+#if 0
+    /*
+    if (auto optecall = bvm_.get_ecall(invf.function_entity_name); optecall) {
+        bvm_.append_ecall(*optecall);
+    }
+    if (invf.function_entity_name == unit_.builtin(sonia::lang::bang::builtin_type::arrayify)) {
+        bvm_.append_builtin(sonia::lang::bang::builtin_type::arrayify);
+    } else if (invf.function_entity_name == unit_.builtin(sonia::lang::bang::builtin_type::print_string)) {
+        bvm_.append_builtin(sonia::lang::bang::builtin_type::print_string);
+    } else if (invf.function_entity_name == unit_.builtin(sonia::lang::bang::builtin_type::tostring)) {
+        bvm_.append_builtin(sonia::lang::bang::builtin_type::tostring);
+    }
+    else 
+    */
+    if (auto eptr = unit_.eregistry().find(invf.varname); eptr) {
+        // to do: visitor
+        if (auto pefe = dynamic_pointer_cast<external_function_entity>(eptr); pefe) {
+            bvm().append_ecall(pefe->fn_index);
+        }
+        //else if (auto pte = dynamic_pointer_cast<type_entity>(eptr); pte) {
+        //    bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_object_constructor);
+        //}
+        else if (auto fe = dynamic_pointer_cast<function_entity>(eptr); fe) {
+            if (fe->is_inline()) {
+                for (auto const& e : fe->body) {
+                    apply_visitor(*this, e);
+                }
+            } else {
+                bvm().append_push_static_const(i64_blob_result((fe->signature().parameters_count() + 1) * (fe->is_void() ? -1 : 1)));
+                bvm().append_fpush(fe->index());
+                bvm().append_callp();
+            }
+            //bvm_.append_builtin(sonia::lang::bang::builtin_type::call_function_object);
+            /*
+            // assigned captured variables (if exist)
+            for (auto const& pair : fe->captured_variables) {
+                // refiry
+                bvm_.append_freferify(std::get<0>(pair)->index());
+                bvm_.append_fpush(std::get<0>(pair)->index());
+            }
+            //
+            if (!fe->is_defined()) {
+                size_t pos = bvm_.push_on_stack(smart_blob{}); // just reserve
+                fe->set_variable_index(pos);
+            }
+            if (fe->is_inline()) {
+                for (auto const& e : fe->body) {
+                    apply_visitor(*this, e);
+                }
+            } else if (fe->is_variable_index()) {
+                bvm_.append_push(fe->get_address());
+                bvm_.appned_callp();
+            } else {
+                bvm_.append_call(fe->get_address());
+            }
+            */
+            //THROW_NOT_IMPLEMENTED_ERROR("unimplemented function call name: '%1%'"_fmt % unit_.print(invf.entity));
+        } else {
+            THROW_NOT_IMPLEMENTED_ERROR("unknown entity found, unresolved function call name: '%1%'"_fmt % unit_.print(invf.varname));
+        }
+    } else {
+        throw exception("unresolved name: '%1%'"_fmt % unit_.print(invf.varname));
+    }
+#endif
+}
 
 }

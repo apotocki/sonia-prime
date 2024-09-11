@@ -266,9 +266,13 @@ private:
         }
     }
 
-    void clone(polymorphic_clonable const& sample)
+    template <clonable CT>
+    requires(std::derived_from<CT, PolymorphicT>)
+    void clone(CT const& sample)
     {
-        do_clone(sample);
+        PolymorphicT* p = static_cast<PolymorphicT*>(sample.clone(this->buffer_, SizeV));
+        int offset = static_cast<int>(reinterpret_cast<char*>(p) - reinterpret_cast<char*>(this->buffer_));
+        this->set_offset(offset);
     }
 
 
@@ -281,24 +285,11 @@ private:
         }
     }
 
-    void move(polymorphic_movable && sample)
+    template <movable MT>
+    requires(std::derived_from<MT, PolymorphicT>)
+    void move(MT&& sample)
     {
-        do_move(sample);
-    }
-    
-
-    template <class PolymorphicClonableT>
-    void do_clone(PolymorphicClonableT const& sample)
-    {
-        PolymorphicT * p = static_cast<PolymorphicT*>(sample.clone(this->buffer_, SizeV));
-        int offset = static_cast<int>(reinterpret_cast<char*>(p) - reinterpret_cast<char*>(this->buffer_));
-        this->set_offset(offset);
-    }
-
-    template <class PolymorphicMovableT>
-    void do_move(PolymorphicMovableT & sample)
-    {
-        PolymorphicT * p = static_cast<PolymorphicT*>(sample.move(this->buffer_, SizeV));
+        PolymorphicT* p = static_cast<PolymorphicT*>(sample.move(this->buffer_, SizeV));
         int offset = static_cast<int>(reinterpret_cast<char*>(p) - reinterpret_cast<char*>(this->buffer_));
         this->set_offset(offset);
     }

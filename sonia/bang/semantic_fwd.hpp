@@ -154,6 +154,7 @@ class enum_entity;
 class variable_entity;
 class functional_entity;
 class function_entity;
+class external_function_entity;
 class type_entity;
 class variable_entity;
 
@@ -166,9 +167,11 @@ public:
     virtual void operator()(decimal_literal_entity const&) const = 0;
     virtual void operator()(pack_entity const&) const = 0;
     virtual void operator()(function_entity const&) const = 0;
+    virtual void operator()(external_function_entity const&) const = 0;
     virtual void operator()(variable_entity const&) const = 0;
 
     virtual void operator()(functional_entity const&) const = 0;
+
 };
 
 // ======================================================================== values

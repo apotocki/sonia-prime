@@ -8,6 +8,8 @@
 #include "unit.hpp"
 #include "parser.hpp"
 
+#include "vm/bang_vm.hpp"
+
 #include "ast/fn_compiler_context.hpp"
 #include "ast/forward_declaration_visitor.hpp"
 #include "ast/declaration_visitor.hpp"
@@ -17,7 +19,6 @@
 #include "vm/compiler_visitor.hpp"
 
 #include "sonia/utility/scope_exit.hpp"
-
 
 namespace sonia::lang::bang::detail {
 
@@ -30,7 +31,7 @@ public:
     //void build(string_view code);
     void run(span<string_view> args);
 
-    bang_impl() = default;
+    bang_impl();
     bang_impl(bang_impl const&) = delete;
     bang_impl& operator=(bang_impl const&) = delete;
 
@@ -43,13 +44,14 @@ public:
 
 protected:
     void compile(lang::bang::parser_context&, declaration_set_t, span<string_view> args);
-    void do_compile(vm::compiler_visitor&, function_entity&);
+    void do_compile(internal_function_entity&);
 
 private:
     lang::bang::unit unit_;
     optional<fn_compiler_context> default_ctx_;
-    optional<function_entity> main_function_;
+    optional<internal_function_entity> main_function_;
     invocation::invocable* penv_ = nullptr;
+    asm_builder_t vmasm_;
 };
 
 }
@@ -99,6 +101,10 @@ namespace sonia::lang::bang::detail {
 
 using namespace sonia::lang::bang;
 
+bang_impl::bang_impl()
+    : vmasm_{ unit_.bvm() }
+{}
+
 void bang_impl::load(fs::path const& f, span<string_view> args)
 {
     parser_context parser{ unit_ };
@@ -117,7 +123,8 @@ void bang_impl::load(string_view code, span<string_view> args)
 
 void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t decls, span<string_view> args)
 {
-    fn_compiler_context ctx{ unit_, qname{unit_.new_identifier()} };
+    identifier main_id = unit_.new_identifier();
+    fn_compiler_context ctx{ unit_, qname{ main_id } };
     size_t argindex = 0;
     std::array<char, 16> argname = { '$' };
     for (string_view arg : args) {
@@ -184,30 +191,36 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
     ////fn_compiler_context & ctx = *main_ctx_;
 
     // expression tree to vm script
-    vm::compiler_visitor vmcvis{ unit_ };
+    
 
     // at first compile all functions
-    unit_.eregistry().traverse([this, &vmcvis](entity& e) {
+    unit_.eregistry().traverse([this](entity& e) {
         //GLOBAL_LOG_INFO() << unit_.print(e);
-        if (auto fe = dynamic_cast<function_entity*>(&e); fe && !fe->is_defined()) {
-            do_compile(vmcvis, *fe);
+        if (auto fe = dynamic_cast<internal_function_entity*>(&e); fe) {
+            do_compile(*fe);
         }
         return true;
     });
 
     // main
     // all arguments referenced as constants => no fp prolog/epilog code
-    auto& bvm = unit_.bvm();
-    size_t main_address = bvm.get_ip();
+    asm_builder_t::function_descriptor& fd = vmasm_.resolve_function(vmasm::fn_identity<identifier>{ main_id });
+    asm_builder_t::function_builder fb{ vmasm_, fd }; // = vmasm_.create_function(sonia::vmasm::fn_identity<identifier>{ main_id });
+    vm::compiler_visitor vmcvis{ unit_, fb };
+    //auto& bvm = unit_.bvm();
+    //size_t main_address = bvm.get_ip();
     for (semantic::expression_t const& e : ctx.expressions()) {
         //GLOBAL_LOG_INFO() << "\n"sv << unit_.print(e);
         apply_visitor(vmcvis, e);
     }
-    bvm.append_ret();
+    if (!vmcvis.local_return_position) { // no explicit return
+        fb.append_ret();
+    }
+    fb.materialize();
 
     // run
     vm::context vmctx{ unit_, penv_ };
-    unit_.bvm().run(vmctx, main_address);
+    unit_.bvm().run(vmctx, *fd.address);
 
     //function_signature main_sig{ };
     //main_sig.position_parameters().emplace_back(bang_vector_t{ bang_string_t{} });
@@ -216,27 +229,50 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
     //do_compile(vmcvis, *main_function_);
 }
 
-void bang_impl::do_compile(vm::compiler_visitor & vmcvis, function_entity & fe)
+void bang_impl::do_compile(internal_function_entity& fe)
 {
+    GLOBAL_LOG_INFO() << "compiling function: " << unit_.print(fe.name());
+
     if (!fe.is_built()) {
         fe.build(unit_);
     }
-    GLOBAL_LOG_INFO() << "compiling function: " << unit_.print(fe.name());
-    size_t param_count = fe.parameter_count(); // including captured_variables
+    
+    if (fe.is_inline()) return;
+
+    asm_builder_t::function_descriptor & fd = vmasm_.resolve_function(vmasm::fn_identity<qname_identifier>{ fe.name() });
+    if (fd.address) return; // already compiled
+
+    size_t param_count = fe.parameter_count();
+    asm_builder_t::function_builder fb{ vmasm_, fd };// = vmasm_.create_function(vmasm::fn_identity<qname_identifier>{ fe.name() });
+    if (param_count) {
+        fb.append_pushfp(); // for accessing function arguments and local variables
+    }
+
+    vm::compiler_visitor vmcvis{ unit_, fb, fe };
+    for (auto const& e : fe.body()) {
+        //GLOBAL_LOG_INFO() << "\n"sv << unit_.print(e);
+        apply_visitor(vmcvis, e);
+    }
+    fb.materialize();
+    if (fd.index) {
+        unit_.bvm().set_const(*fd.index, smart_blob{ ui64_blob_result(*fd.address) });
+    }
+#if 0
+    //size_t param_count = fe.parameter_count(); // including captured_variables
 
     auto& bvm = unit_.bvm();
-    // at first return code
-    size_t return_address = bvm.get_ip();
-    if (!fe.is_void()) {
-        bvm.append_fset(-static_cast<intptr_t>(param_count));
-        bvm.append_truncatefp(-static_cast<intptr_t>(param_count) + 1);
-    } else {
-        bvm.append_truncatefp(-static_cast<intptr_t>(param_count));
-    }
-    //if (param_count) 
-    bvm.append_popfp();
-    bvm.append_ret();
-    vmcvis.local_return_address = return_address;
+    //// at first return code
+    //size_t return_address = bvm.get_ip();
+    //if (!fe.is_void()) {
+    //    bvm.append_fset(-static_cast<intptr_t>(param_count));
+    //    bvm.append_truncatefp(-static_cast<intptr_t>(param_count) + 1);
+    //} else {
+    //    bvm.append_truncatefp(-static_cast<intptr_t>(param_count));
+    //}
+    ////if (param_count) 
+    //bvm.append_popfp();
+    //bvm.append_ret();
+    //vmcvis.local_return_address = return_address;
 
     size_t address = bvm.get_ip();
 
@@ -257,12 +293,11 @@ void bang_impl::do_compile(vm::compiler_visitor & vmcvis, function_entity & fe)
     //if (param_count) {
     bvm.append_pushfp(); // for accessing function arguments and local variables
     //}
-    for (auto const& e : fe.body()) {
-        //GLOBAL_LOG_INFO() << "\n"sv << unit_.print(e);
-        apply_visitor(vmcvis, e);
-    }
-    vmcvis.local_return_address = nullopt;
-    bvm.append_jmp(return_address);
+
+    
+    //vmcvis.local_return_address = nullopt;
+    //bvm.append_jmp(return_address);
+#endif
 }
 
 void bang_impl::run(span<string_view> args)

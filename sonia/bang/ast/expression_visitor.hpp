@@ -52,6 +52,8 @@ struct expression_visitor : static_visitor<error_storage>
     result_type operator()(annotated_decimal const&) const;
     result_type operator()(annotated_string const&) const;
     
+    result_type operator()(annotated_qname const&) const;
+
     result_type operator()(expression_vector_t &) const;
 
     result_type operator()(chained_expression_t&) const;
@@ -60,7 +62,7 @@ struct expression_visitor : static_visitor<error_storage>
 
     result_type operator()(entity_expression const& ee) const;
 
-    result_type operator()(function_call_t&) const;
+    result_type operator()(function_call_t const&) const;
     result_type operator()(unary_expression_t const& be) const;
     result_type operator()(binary_expression_t const& be) const;
         

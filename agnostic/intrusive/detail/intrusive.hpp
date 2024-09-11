@@ -19,18 +19,18 @@ struct size_plugin
 {
 protected:
     SizeT size_;
-    void increment_size() noexcept { ++size_; }
-    void decrement_size() noexcept { --size_; }
+    inline void increment_size() noexcept { ++size_; }
+    inline void decrement_size() noexcept { --size_; }
 
 public:
-    SizeT size() const { return size_; }
+    inline SizeT size() const noexcept { return size_; }
 };
 
 template <typename SizeT>
 struct size_plugin<SizeT, false>
 {
-    void increment_size() noexcept { }
-    void decrement_size() noexcept { }
+    inline void increment_size() noexcept { }
+    inline void decrement_size() noexcept { }
 };
 
 template <class LessT>
@@ -38,10 +38,10 @@ struct basic_compare
 {
     using tag = compare_tag;
     template <typename LT, typename RT>
-    int operator()(LT const& l, RT const& r) const
+    inline int operator()(LT const& l, RT const& r) const
     {
-        if (LessT()(l, r)) return -1;
-        if (LessT()(r, l)) return 1;
+        if (LessT{}(l, r)) return -1;
+        if (LessT{}(r, l)) return 1;
         return 0;
     }
 };

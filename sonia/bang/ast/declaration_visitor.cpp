@@ -288,8 +288,7 @@ void declaration_visitor::operator()(let_statement_decl_t const& ld) const
             throw exception(ctx.u().print(*opterr));
         }
     }
-    variable_entity& ve = ctx.new_variable(ld.name(), vartype.self_or(ctx.context_type), variable_entity::kind::LOCAL);
-    ve.set_index(ctx.allocate_local_variable_index());
+    variable_entity& ve = ctx.new_variable(ld.aname, vartype.self_or(ctx.context_type), variable_entity::kind::LOCAL);
     ve.set_weak(ld.weakness);
     if (ld.expression) {
         ctx.append_expression(semantic::set_variable{ &ve });

@@ -124,7 +124,7 @@ EXTENDS					"extends"
 EXTERN                  "extern"
 RETURN                  "return"
 INCLUDE					"include"
-
+INLINE					"inline"
 TYPENAME				"typename"
 
 TRUE					"true"
@@ -297,7 +297,7 @@ HASHTAG					"#"
 	{EXTERN} { return (bang_lang::parser::token::EXTERN); }
 	{RETURN} { return (bang_lang::parser::token::RETURN); }
 	{INCLUDE} { return (bang_lang::parser::token::INCLUDE); }
-
+	{INLINE} { return (bang_lang::parser::token::INLINE); }
 	{TYPENAME} { return (bang_lang::parser::token::TYPENAME); }
 	
 	{WEAK} { return (bang_lang::parser::token::WEAK); }

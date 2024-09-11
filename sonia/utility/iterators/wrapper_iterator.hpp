@@ -287,24 +287,22 @@ public:
 
 protected:
     template <class DerivedT>
-    static polymorphic_clonable * do_clone(DerivedT const * obj, void * address, size_t sz)
+    static void * do_clone(DerivedT const * obj, void * address, size_t sz)
     {
         if constexpr (is_copy_constructible_v<IteratorT>) {
             BOOST_ASSERT(sz >= obj->get_sizeof());
-            new (address) DerivedT(*obj);
-            return reinterpret_cast<DerivedT*>(address);
+            return new (address) DerivedT(*obj);
         } else {
             THROW_NOT_SUPPORTED_ERROR("%1% can not be copied"_fmt % typeid(IteratorT).name());
         }
     }
 
     template <class DerivedT>
-    static polymorphic_movable * do_move(DerivedT * obj, void * address, size_t sz)
+    static void* do_move(DerivedT * obj, void * address, size_t sz)
     {
         if constexpr (is_move_constructible_v<IteratorT>) {
             BOOST_ASSERT(sz >= obj->get_sizeof());
-            new (address) DerivedT(std::move(*obj));
-            return reinterpret_cast<DerivedT*>(address);
+            return new (address) DerivedT(std::move(*obj));
         } else {
             THROW_NOT_SUPPORTED_ERROR("%1% can not be moved"_fmt % typeid(IteratorT).name());
         }
@@ -341,12 +339,12 @@ public:
         return sizeof(iterator_polymorpic_adapter);
     }
 
-    polymorphic_clonable * clone(void * address, size_t sz) const override final
+    void * clone(void * address, size_t sz) const override final
     {
         return adapter_base_t::do_clone(this, address, sz);
     }
 
-    polymorphic_movable * move(void * address, size_t sz) override final
+    void* move(void * address, size_t sz) override final
     {
         return adapter_base_t::do_move(this, address, sz);
     }
@@ -390,12 +388,12 @@ public:
         return sizeof(output_iterator_polymorpic_adapter);
     }
 
-    polymorphic_clonable * clone(void * address, size_t sz) const override final
+    void * clone(void * address, size_t sz) const override final
     {
         return adapter_base_t::do_clone(this, address, sz);
     }
 
-    polymorphic_movable * move(void * address, size_t sz) override final
+    void* move(void * address, size_t sz) override final
     {
         return adapter_base_t::do_move(this, address, sz);
     }

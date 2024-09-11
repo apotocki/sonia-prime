@@ -39,11 +39,10 @@ public:
 
     void destroy(uintptr_t cookie) override;
 
-    polymorphic_movable* move(void* address, size_t sz) override final
+    void* move(void* address, size_t sz) override final
     {
         BOOST_ASSERT(sz >= sizeof(basic_scheduler_task_handle_impl));
-        new (address) basic_scheduler_task_handle_impl(entry_);
-        return reinterpret_cast<basic_scheduler_task_handle_impl*>(address);
+        return new (address) basic_scheduler_task_handle_impl(entry_);
     }
 
 private:

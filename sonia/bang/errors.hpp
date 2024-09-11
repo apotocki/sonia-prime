@@ -88,7 +88,7 @@ public:
 class basic_general_error : public general_error
 {
 protected:
-    using object_t = variant<null_t, syntax_expression_t, qname, qname_identifier, identifier>;
+    using object_t = variant<null_t, syntax_expression_t, qname, qname_view, qname_identifier, identifier>;
 
     lex::resource_location location_;
     string_t description_;

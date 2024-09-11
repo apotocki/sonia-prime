@@ -14,59 +14,61 @@ namespace sonia::lang::bang::vm {
 
 class push_value_visitor : public static_visitor<void>, public entity_visitor
 {
-public:
     unit& unit_;
-    auto& bvm() const { return unit_.bvm(); }
+    asm_builder_t::function_builder& fnbuilder_;
 
-    explicit push_value_visitor(unit& u) : unit_{ u } {}
+public:
+    explicit push_value_visitor(unit& u, asm_builder_t::function_builder& b)
+        : unit_{ u }, fnbuilder_{ b }
+    {}
 
     inline void operator()(null_t const&) const
     {
-        bvm().append_push_pooled_const(smart_blob{});
+        fnbuilder_.append_push_pooled_const(smart_blob{});
     }
 
     void operator()(bool bval) const
     {
-        bvm().append_push_pooled_const(smart_blob{ bool_blob_result(bval) });
+        fnbuilder_.append_push_pooled_const(smart_blob{ bool_blob_result(bval) });
     }
 
     void operator()(small_string const& sval) const
     {
-        //namespace cvt = boost::conversion;
-        //boost::container::small_vector<char, 32> result;
-        //result.reserve(sval.size());
-        //(cvt::cvt_push_iterator(cvt::utf32 | cvt::utf8, std::back_inserter(result)) << sval).flush();
         smart_blob strbr{ string_blob_result(sval) };
         strbr.allocate();
-        bvm().append_push_pooled_const(std::move(strbr));
+        fnbuilder_.append_push_pooled_const(std::move(strbr));
+    }
+
+    void operator()(uint64_t value) const
+    {
+        fnbuilder_.append_push_pooled_const(smart_blob{ ui64_blob_result(value) });
     }
 
     void operator()(mp::integer const& ival) const
     {
         if (ival.is_fit<int64_t>()) {
-            bvm().append_push_pooled_const(smart_blob{ i64_blob_result((int64_t)ival) });
+            fnbuilder_.append_push_pooled_const(smart_blob{ i64_blob_result((int64_t)ival) });
         } else if (ival.is_fit<uint64_t>()) {
-            bvm().append_push_pooled_const(smart_blob{ ui64_blob_result((uint64_t)ival) });
+            fnbuilder_.append_push_pooled_const(smart_blob{ ui64_blob_result((uint64_t)ival) });
         } else {
-            bvm().append_push_pooled_const(smart_blob{ bigint_blob_result(ival) });
+            fnbuilder_.append_push_pooled_const(smart_blob{ bigint_blob_result(ival) });
         }
     }
 
     void operator()(mp::decimal const& dval) const
     {
-        //THROW_NOT_IMPLEMENTED_ERROR("push_value_visitor decimal");
         if (dval.exponent().sgn() >= 0) { // is integral
             if (dval >= (std::numeric_limits<int64_t>::min)() && dval <= (std::numeric_limits<int64_t>::max)()) {
-                bvm().append_push_pooled_const(smart_blob{ i64_blob_result((int64_t)dval) });
+                fnbuilder_.append_push_pooled_const(smart_blob{ i64_blob_result((int64_t)dval) });
             } else if (dval >= 0 && dval <= (std::numeric_limits<uint64_t>::max)()) {
-                bvm().append_push_pooled_const(smart_blob{ ui64_blob_result((uint64_t)dval) });
+                fnbuilder_.append_push_pooled_const(smart_blob{ ui64_blob_result((uint64_t)dval) });
             }
         } else {
-            bvm().append_push_pooled_const(smart_blob{ decimal_blob_result(dval) });
-            //bvm().append_push_static_const(smart_blob{ f64_blob_result((double_t)dval) });
+            fnbuilder_.append_push_pooled_const(smart_blob{ decimal_blob_result(dval) });
         }
     }
 
+#if 0
     void operator()(lang::bang::function_value const& dval) const
     {
         THROW_NOT_IMPLEMENTED_ERROR("push_value_visitor function_value");
@@ -119,16 +121,12 @@ public:
         }
 #endif
     }
+#endif
 
     void operator()(entity_identifier const& eid) const
     {
         entity const& e = unit_.eregistry().get(eid);
         e.visit(*this);
-    }
-
-    void operator()(uint64_t value) const
-    {
-        bvm().append_push_pooled_const(smart_blob{ ui64_blob_result(value) });
     }
 
     template <typename T>
@@ -153,10 +151,12 @@ public:
         THROW_NOT_IMPLEMENTED_ERROR();
     }
 
-
-
-
     void operator()(functional_entity const&) const override
+    {
+        THROW_NOT_IMPLEMENTED_ERROR();
+    }
+
+    void operator()(external_function_entity const&) const override
     {
         THROW_NOT_IMPLEMENTED_ERROR();
     }
@@ -170,7 +170,7 @@ public:
     {
         auto varkind = ve.varkind();
         if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
-            unit_.bvm().append_fpush(ve.index());
+            fnbuilder_.append_fpush(ve.index());
             return;
         } else if (varkind == variable_entity::kind::EXTERN) {
             THROW_NOT_IMPLEMENTED_ERROR();

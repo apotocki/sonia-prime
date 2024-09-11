@@ -63,7 +63,6 @@ public:
     void operator()(std::vector<expression_t> const&) const;
     void operator()(push_value const&) const;
     void operator()(invoke_function const&) const;
-    void operator()(invoke_external_function const&) const;
     void operator()(return_statement const&) const;
 
     template <typename T>

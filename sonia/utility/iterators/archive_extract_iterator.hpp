@@ -208,7 +208,7 @@ public:
     std::span<const char> get_dereference() const override final { return *base_type::base; }
     void set_dereference(std::span<const char> val) override final { *base_type::base = val; }
     size_t get_sizeof() const override final { return sizeof(extract_iterator_polymorpic_adapter); }
-    polymorphic_clonable * clone(void * address, size_t sz) const override final { return base_type::do_clone(this, address, sz); }
+    void* clone(void * address, size_t sz) const override final { return base_type::do_clone(this, address, sz); }
     //polymorphic_movable * move(void * address, size_t sz) override final { return base_type::do_move(this, address, sz); }
 
     bool is_finished() const override final { return this->finished; }

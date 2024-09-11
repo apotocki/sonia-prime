@@ -262,7 +262,6 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\entity_signature.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\enum_entity.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\entities\external_function_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functional.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functional_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functional_registry.hpp" />
@@ -284,6 +283,7 @@
     <ClInclude Include="..\..\..\sonia\bang\vm\bang_vm.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\vm\compiler_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\vm\push_value_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\vm\vmasm_builder.hpp" />
     <ClInclude Include="..\..\..\sonia\build_config.hpp" />
     <ClInclude Include="..\..\..\sonia\concurrency.hpp" />
     <ClInclude Include="..\..\..\sonia\cstdint.hpp" />
@@ -982,6 +982,7 @@
     <None Include="..\..\..\sonia\bang\bang.output" />
     <None Include="..\..\..\sonia\bang\bang.y" />
     <None Include="..\..\..\sonia\bang\generate_parser.cmd" />
+    <None Include="..\..\..\sonia\bang\vm\vmasm_builder.chpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

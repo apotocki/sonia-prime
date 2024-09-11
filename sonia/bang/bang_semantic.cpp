@@ -20,7 +20,7 @@ std::ostream& entity::print_to(std::ostream& os, unit const& u) const
 
 std::ostream& signatured_entity::print_to(std::ostream& os, unit const& u) const
 {
-    return entity::print_to(os, u) << "("sv << u.print(*signature()) << ")"sv;
+    return entity::print_to(os, u) << "<"sv << u.print(*signature()) << ">"sv;
 }
 
 class type_mangler_visitor : static_visitor<qname_identifier>

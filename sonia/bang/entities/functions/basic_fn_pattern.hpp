@@ -11,11 +11,11 @@ namespace sonia::lang::bang {
 
 class basic_fn_pattern : public functional::pattern
 {
+protected:
     function_descriptor fd_;
-    
-    //entity_identifier fn_entity_id_;
-    //entity_identifier result_type_;
+
     lex::resource_location declaration_location_;
+    mutable bool building_ = false;
 
 public:
     basic_fn_pattern(fn_compiler_context&, fn_pure_t const&);
@@ -24,23 +24,24 @@ public:
 
     inline qname_identifier fn_qname_id() const noexcept { return fd_.id(); }
 
-private:
-    entity_identifier build_fn_type(unit&, entity_signature&);
+    std::expected<entity_identifier, error_storage> apply(fn_compiler_context&, functional::match_descriptor&) const override;
+
+protected:
+    virtual shared_ptr<entity> build(unit&, functional::match_descriptor&) const = 0;
 };
 
 class generic_fn_pattern : public basic_fn_pattern
 {
-    std::vector<infunction_declaration_t> body_;
-    bool building_ = false;
+    shared_ptr<std::vector<infunction_declaration_t>> body_;
+    fn_kind kind_;
 
 public:
     generic_fn_pattern(fn_compiler_context&, fn_decl_t const&);
-
-    std::expected<entity_identifier, error_storage> apply(fn_compiler_context&, functional::match_descriptor&) const override;
+    
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional::match_descriptor&) const override;
 
-private:
-    shared_ptr<entity> build(unit&, functional::match_descriptor&) const;
+protected:
+    shared_ptr<entity> build(unit&, functional::match_descriptor&) const override;
 };
 
 }

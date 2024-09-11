@@ -146,6 +146,11 @@ public:
     //    e1fns_[idx] = pfn;
     //}
 
+    void append(span<uint8_t> fragment)
+    {
+        code_.insert(code_.end(), fragment.begin(), fragment.end());
+    }
+
     void append_noop()
     {
         code_.push_back(static_cast<uint8_t>(op::noop));
@@ -316,9 +321,6 @@ public:
 
     void append_pop(size_t num)
     {
-        if (code_.size() == 0x101) {
-            int i = 0;
-        }
         if (!num) [[unlikely]] {
             code_.push_back(static_cast<uint8_t>(op::noop));
         } else if (num == 1) {

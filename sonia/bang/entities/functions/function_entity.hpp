@@ -4,34 +4,24 @@
 
 #pragma once
 #include "sonia/bang/semantic.hpp"
+#include "sonia/bang/entities/functional.hpp"
 
 namespace sonia::lang::bang {
 
 // not a type, it's an instance that has type - function type
 class function_entity : public signatured_entity
 {
-    entity_signature sig_;
-
-    std::vector<semantic::expression_t> body_;
-
-    using fieldset_t = fieldset<entity_identifier>;
-    shared_ptr<fieldset_t> fs_;
+protected:
     qname_identifier name_;
+    entity_signature sig_;
     entity_identifier result_type_;
-
-    uint64_t address_ : 59;
-    uint64_t is_built_ : 1;
-    uint64_t is_inline_ : 1;
-    uint64_t is_void_ : 1;
-    uint64_t is_defined_ : 1; // key for extraction vm or execution related stuff
-    uint64_t is_const_index_ : 1;
 
 public:
     function_entity(qname_identifier name, entity_signature&& sig)
         : name_{ name }, sig_{ std::move(sig) }
-        , is_inline_{ 0 }
-        , is_built_{ 0 }, is_defined_{ 0 }, is_const_index_{ 0 }
     {}
+
+    inline qname_identifier name() const noexcept { return name_; }
 
     //function_entity(qname_identifier name, shared_ptr<fieldset_t> fs, entity_identifier result_type)
     //    : name_{ name }, fs_{ std::move(fs) }, result_type_ { result_type }, is_inline_{ 0 }
@@ -40,35 +30,25 @@ public:
 
     inline entity_signature const* signature() const noexcept override final { return &sig_; }
 
-    //size_t hash() const noexcept override;
-    //bool equal(entity const&) const noexcept override;
-    
-    void visit(entity_visitor const& v) const override { v(*this); }
-
-    inline qname_identifier name() const noexcept { return name_; }
     size_t parameter_count() const noexcept;
 
-    std::span<const semantic::expression_t> body() const { return body_; }
-
     void set_fn_signature(unit&, entity_signature&& fnsig);
+    void build_fn_signature(unit& u, entity_identifier rt);
+
     inline entity_identifier get_result_type() const noexcept { return result_type_; }
+    inline void set_result_type(entity_identifier val) noexcept { result_type_ = val; }
 
-    void build(unit&);
+    virtual bool is_void() const noexcept = 0;
 
-    bool is_void() const { return !!is_void_; }
+    virtual void build(unit&)
+    {
+        THROW_NOT_IMPLEMENTED_ERROR("function_entity::build");
+    }
 
-    bool is_inline() const { return !!is_inline_; }
-    void set_inline(bool val = true) { is_inline_ = val ? 1 : 0; }
+    
 
-    bool is_built() const { return !!is_built_; }
-
-    /// to do: extract vm or execution related stuff
-    bool is_defined() const { return !!is_defined_; }
-    size_t get_address() const { BOOST_ASSERT(is_defined_); return address_; }
-    size_t get_index() const { BOOST_ASSERT(is_const_index_); return address_; }
-    void set_address(size_t address) { address_ = static_cast<uint64_t>(address); is_const_index_ = 0; is_defined_ = 1; }
-    bool is_const_index() const { return !!is_const_index_; }
-    void set_const_index(size_t index) { address_ = static_cast<uint64_t>(index); is_const_index_ = 1; is_defined_ = 0; }
+protected:
+    virtual void set_void(bool val = true) noexcept = 0;
 
 #if 0
 public:
@@ -96,6 +76,80 @@ private:
     uint64_t is_static_variable_index_ : 1;
     uint64_t is_inline_ : 1;
 #endif
+};
+
+class internal_function_entity : public function_entity
+{
+    std::vector<semantic::expression_t> body_;
+
+    uint64_t is_built_ : 1;
+    uint64_t is_inline_ : 1;
+    uint64_t is_void_ : 1;
+
+public:
+    struct build_data
+    {
+        functional::binding_set_t bindings;
+        shared_ptr<std::vector<infunction_declaration_t>> body;
+    };
+
+    internal_function_entity(qname_identifier name, entity_signature&& sig, shared_ptr<build_data> bd)
+        : function_entity{ name, std::move(sig) }
+        , bd_{ std::move(bd) }
+        , is_inline_{ 0 }
+        , is_built_{ 0 }
+    {}
+
+    std::span<const semantic::expression_t> body() const { return body_; }
+
+    void visit(entity_visitor const& v) const override { v(*this); }
+
+    bool is_void() const noexcept override { return !!is_void_; }
+    
+    bool is_inline() const { return !!is_inline_; }
+    void set_inline(bool val = true) { is_inline_ = val ? 1 : 0; }
+
+    bool is_built() const { return !!is_built_; }
+
+    inline std::ostream& print_to(std::ostream& os, unit const& u) const override
+    {
+        os << "fn "sv;
+        return signatured_entity::print_to(os, u);
+    }
+
+    void build(unit&) override;
+
+protected:
+    void set_void(bool val) noexcept { is_void_ = val ? 1 : 0; }
+
+private:
+    shared_ptr<build_data> bd_;
+};
+
+class external_function_entity : public function_entity
+{
+    uint32_t extfnid_: 31;
+    uint32_t is_void_ : 1;
+
+public:
+    external_function_entity(qname_identifier name, entity_signature&& sig, size_t fnid)
+        : function_entity{ name, std::move(sig) }, extfnid_{ static_cast<uint32_t>(fnid) }
+    {}
+
+    inline size_t extfnid() const noexcept { return extfnid_; }
+
+    bool is_void() const noexcept override { return !!is_void_; }
+
+    void visit(entity_visitor const& v) const override { v(*this); }
+
+    inline std::ostream& print_to(std::ostream& os, unit const& u) const override
+    {
+        os << "external fn(id: "sv << extfnid_ << ")"sv;
+        return signatured_entity::print_to(os, u);
+    }
+
+protected:
+    void set_void(bool val) noexcept { is_void_ = val ? 1 : 0; }
 };
 
 }

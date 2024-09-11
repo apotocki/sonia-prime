@@ -431,11 +431,6 @@ struct invoke_function
     entity_identifier fn;
 };
 
-struct invoke_external_function
-{
-    size_t fn_index;
-};
-
 //enum class condition_type : uint8_t
 //{
 //    logic,
@@ -469,7 +464,7 @@ struct not_empty_condition
 using expression_t = make_recursive_variant<
     empty_t, // no op
     push_variable, push_value, push_by_offset, truncate_values,
-    set_variable, set_by_offset, invoke_function, invoke_external_function, return_statement,
+    set_variable, set_by_offset, invoke_function, return_statement,
     std::vector<recursive_variant_>,
     conditional<recursive_variant_>,
     not_empty_condition<recursive_variant_>

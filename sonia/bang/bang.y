@@ -236,7 +236,9 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 
 // FUNCTIONS
+%token INLINE
 %token <sonia::lang::lex::resource_location> FN "`fn`"
+%type <fn_kind> fn-start-decl
 %type <fn_pure_t> fn-decl
 
 // ENUMERATIONS
@@ -346,16 +348,16 @@ declaration_any:
 generic-decl:
       EXTERN VAR identifier COLON type-expr END_STATEMENT
         { $$ = extern_var{ std::move($3), std::move($5) }; }
-    | EXTERN fn-decl END_STATEMENT
-        { $$ = std::move($2); }
+    | EXTERN FN fn-decl END_STATEMENT
+        { $$ = std::move($3); IGNORE($2); }
     | INCLUDE STRING
         { $$ = include_decl{ctx.make_string(std::move($2)) }; }
     | enum-decl
         { $$ = std::move($1); }
     //| type-decl
     //    { $$ = std::move($1); }
-    | fn-decl OPEN_BRACE infunction_declaration_any CLOSE_BRACE
-        { $$ = fn_decl_t{std::move($1), std::move($3)}; IGNORE($2); }
+    | fn-start-decl fn-decl OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+        { $2.kind = $1; $$ = fn_decl_t{std::move($2), std::move($4)}; IGNORE($3); }
     | let-decl
         { $$ = std::move($1); }
     | compound-expression END_STATEMENT
@@ -431,11 +433,18 @@ qname:
     ;
 
 ///////////////////////////////////////////////// FUNCTIONS
+fn-start-decl:
+      FN
+        { $$ = fn_kind::DEFAULT; IGNORE($1); }
+    | INLINE FN
+        { $$ = fn_kind::INLINE; IGNORE($2); }
+    ;
+
 fn-decl:
-      FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS
-        { $$ = fn_pure_t{ std::move($2), std::move($4), nullopt }; IGNORE($1, $3); }
-    | FN qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS ARROW syntax-expression
-        { $$ = fn_pure_t{ std::move($2), std::move($4), std::move($7) }; IGNORE($1, $3); }
+      qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS
+        { $$ = fn_pure_t{ std::move($1), std::move($3), nullopt }; IGNORE($2); }
+    | qname OPEN_PARENTHESIS parameter-list-opt CLOSE_PARENTHESIS ARROW syntax-expression
+        { $$ = fn_pure_t{ std::move($1), std::move($3), std::move($6) }; IGNORE($2); }
     ;
 
 ///////////////////////////////////////////////// ENUMERATIONS

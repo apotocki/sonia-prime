@@ -14,6 +14,7 @@
 //#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
 #include "sonia/bang/entities/functional_entity.hpp"
 #include "sonia/bang/entities/functions/function_entity.hpp"
+#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
 
 namespace sonia::lang::bang {
 
@@ -21,7 +22,6 @@ basic_fn_pattern::basic_fn_pattern(fn_compiler_context& ctx, fn_pure_t const& fn
 {
     unit& u = ctx.u();
     declaration_location_ = fnd.location();
-
     //qname fn_qname = ctx.ns() / fnd.name();
     //fn_qname_id_ = u.fregistry().resolve(fn_qname).id();
     //fd_.set_id(fn_qname_id_);
@@ -70,30 +70,89 @@ basic_fn_pattern::basic_fn_pattern(fn_compiler_context& ctx, fn_pure_t const& fn
 #endif
 }
 
+template <typename ExpressionIteratorT>
 struct arg_resolving_visitor : static_visitor<std::expected<entity_identifier, error_storage>>
 {
     fn_compiler_context& ctx;
     functional::binding_set_t& binding;
-    syntax_expression_t const& expr;
-    arg_resolving_visitor(fn_compiler_context& c, functional::binding_set_t& bnd, syntax_expression_t const& e)
-        : ctx{ c }, binding{ bnd }, expr { e }
+    ExpressionIteratorT & expr_it, expr_eit;
+    arg_resolving_visitor(fn_compiler_context& c, functional::binding_set_t& bnd, ExpressionIteratorT & it, ExpressionIteratorT eit)
+        : ctx{ c }, binding{ bnd }, expr_it{ it }, expr_eit{ eit }
     {}
 
-    result_type operator()(functional const* fnl) const
+    result_type operator()(annotated_qname_identifier const& aqi) const
     {
-        entity_identifier eid = fnl->default_entity();
-        if (eid) return eid;
-        return std::unexpected(make_error<basic_general_error>(get_start_location(expr), "not a variable or constant"sv, expr));
+        functional const& fnl = ctx.u().fregistry().resolve(aqi.value);
+        entity_identifier eid = fnl.default_entity();
+        if (eid) {
+            return this->operator()(eid);
+        }
+        return std::unexpected(make_error<basic_general_error>(aqi.location, "not a variable or constant"sv, *expr_it));
+    }
+
+    result_type operator()(entity_identifier const& eid) const
+    {
+        entity const& param_entity = ctx.u().eregistry().get(eid);
+        if (pack_entity const* pent = dynamic_cast<pack_entity const*>(&param_entity); pent) {
+            uint64_t pack_size = 0;
+            for (;;) {
+                expression_visitor evis{ ctx, expected_result_t{ pent->element_type(), get_start_location(*expr_it) } };
+                if (auto opterr = apply_visitor(evis, *expr_it); opterr) break; // skip error
+                ++pack_size;
+                if (++expr_it == expr_eit) break;
+            }
+            ctx.append_expression(semantic::push_value{ uint64_t{pack_size} });
+        } else {
+            BOOST_ASSERT(eid);
+            expression_visitor evis{ ctx, expected_result_t{ eid, get_start_location(*expr_it) } };
+            if (auto err = apply_visitor(evis, *expr_it); err) {
+                return std::unexpected(std::move(err));
+            }
+            ++expr_it;
+        }
+        return eid;
+
+        //GLOBAL_LOG_INFO() << ctx.u().print(eid);
+        //GLOBAL_LOG_INFO() << ctx.u().print(expr);
+        //THROW_NOT_IMPLEMENTED_ERROR("arg_resolve_visitor(entity_identifier) not implemented expression");
     }
 
     template <typename T>
     result_type operator()(T const& v) const
     {
+        
         THROW_NOT_IMPLEMENTED_ERROR("arg_resolve_visitor not implemented expression");
     }
 };
 
+struct result_resolving_visitor : static_visitor<std::expected<entity_identifier, error_storage>>
+{
+    fn_compiler_context& ctx;
+    functional::binding_set_t& binding;
 
+    result_resolving_visitor(fn_compiler_context& c, functional::binding_set_t& bnd)
+        : ctx{ c }, binding{ bnd }
+    {}
+
+    result_type operator()(annotated_qname_identifier const& aqi) const
+    {
+        functional const& fnl = ctx.u().fregistry().resolve(aqi.value);
+        entity_identifier eid = fnl.default_entity();
+        if (eid) return eid;
+        return std::unexpected(make_error<basic_general_error>(aqi.location, "not a variable or constant"sv, fnl.name()));
+    }
+
+    result_type operator()(entity_identifier const& eid) const
+    {
+        return eid;
+    }
+
+    template <typename T>
+    result_type operator()(T const& v) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR("result_resolving_visitor not implemented expression");
+    }
+};
 
 error_storage basic_fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t const& call, functional::match_descriptor& md) const
 {
@@ -127,7 +186,7 @@ error_storage basic_fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t
 
         entity_identifier param_entity;
         if (posarg->constraint) {
-            arg_resolving_visitor arvis{ ctx, md.bindings, *expr_it };
+            arg_resolving_visitor arvis{ ctx, md.bindings, expr_it, expr_eit };
             auto res = apply_visitor(arvis, *posarg->constraint);
             if (!res.has_value()) return std::move(res.error());
             param_entity = res.value();
@@ -138,6 +197,7 @@ error_storage basic_fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t
             }
             // to do: const & typename cases
             param_entity = ctx.context_type;
+            ++expr_it;
         }
 
         if (param_entity) { // entity was resolved
@@ -154,12 +214,17 @@ error_storage basic_fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t
 
         estate.restore();
 
-        ++expr_it;
         ++posarg;
         ++argnum;
     }
 
     // to do: check all resolved
+    if (pattern_expression_t const* retexpr = fd_.result_type(); retexpr) {
+        result_resolving_visitor arvis{ ctx, md.bindings };
+        auto res = apply_visitor(arvis, *retexpr);
+        if (!res.has_value()) return std::move(res.error());
+        md.result = res.value();
+    }
 
     for (auto & branch : arg_branches) {
         std::move(branch.begin(), branch.end(), std::back_inserter(ctx.expressions()));
@@ -177,36 +242,34 @@ error_storage basic_fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t
 
     // to do: check concepts
     md.signature.normilize();
+    estate.detach();
     return {};
 }
 
-generic_fn_pattern::generic_fn_pattern(fn_compiler_context& ctx, fn_decl_t const& fnd)
-    : basic_fn_pattern{ ctx, fnd }
-    , body_ { std::move(fnd.body) }
-{
-
-}
-
-std::expected<entity_identifier, error_storage> generic_fn_pattern::const_apply(fn_compiler_context& ctx, functional::match_descriptor&) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern::const_apply");
-}
-
-
-
-std::expected<entity_identifier, error_storage> generic_fn_pattern::apply(fn_compiler_context& ctx, functional::match_descriptor& md) const
+std::expected<entity_identifier, error_storage> basic_fn_pattern::apply(fn_compiler_context& ctx, functional::match_descriptor& md) const
 {
     indirect_signatured_entity smpl{ md.signature };
 
-    entity const& e = ctx.u().eregistry().find_or_create(smpl, [this, &ctx, &md](){
+    entity & e = ctx.u().eregistry().find_or_create(smpl, [this, &ctx, &md]() {
         return build(ctx.u(), md);
     });
 
+    BOOST_ASSERT(dynamic_cast<function_entity*>(&e));
+    function_entity & fne = static_cast<function_entity&>(e);
+    entity_identifier rt = fne.get_result_type();
+    if (!rt) { // need build to resolve result type
+        if (building_) {
+            throw circular_dependency_error({ make_error<basic_general_error>(declaration_location_, "resolving function result type"sv, fd_.id()) });
+        }
+        building_ = true;
+        fne.build(ctx.u());
+        building_ = false;
+        rt = fne.get_result_type();
+    }
+
     ctx.expressions().push_back(semantic::invoke_function(e.id()));
-    
-    BOOST_ASSERT(dynamic_cast<function_entity const*>(&e));
-    function_entity const& fne = static_cast<function_entity const&>(e);
-    return fne.get_result_type();
+    ctx.pop_chain(); // pop function call chain
+    return rt;
 
     //THROW_NOT_IMPLEMENTED_ERROR("generic_fn_pattern::apply");
 #if 0
@@ -223,88 +286,38 @@ std::expected<entity_identifier, error_storage> generic_fn_pattern::apply(fn_com
 #endif
 }
 
+generic_fn_pattern::generic_fn_pattern(fn_compiler_context& ctx, fn_decl_t const& fnd)
+    : basic_fn_pattern{ ctx, fnd }
+    , body_{ make_shared<std::vector<infunction_declaration_t>>(fnd.body)}
+    , kind_{ fnd.kind }
+{
+
+}
+
+std::expected<entity_identifier, error_storage> generic_fn_pattern::const_apply(fn_compiler_context& ctx, functional::match_descriptor&) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern::const_apply");
+}
+
 shared_ptr<entity> generic_fn_pattern::build(unit& u, functional::match_descriptor& md) const
 {
-    auto pfe = make_shared<function_entity>(fn_qname_id(), std::move(md.signature));
+    auto pife = make_shared<internal_function_entity>(
+        fn_qname_id(),
+        std::move(md.signature),
+        make_shared<internal_function_entity::build_data>(std::move(md.bindings), body_));
 
-    std::array<char, 16> argname = { '$' };
-    size_t argindex = 0;
-
-    qname_view fn_qname = u.fregistry().resolve(fn_qname_id()).name();
-    fn_compiler_context fnctx{ u, fn_qname / u.new_identifier() };
-
-    entity_signature fnsig{ u.get_fn_qname_identifier() }; // function type signature
-
-    boost::container::small_vector<variable_entity*, 16> params;
-    //THROW_NOT_IMPLEMENTED_ERROR("generic_fn_pattern::build");
-
-    // setup parameters 
-    for (auto const& fd : md.signature.positioned_fields()) { //fs_->positioned_fields()) {
-        //if (f.constraint_type == param_constraint_type::value_constaint) {
-        //    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_decl_t with value constraints");
-        //}
-        //else if (f.constraint_type == param_constraint_type::const_constraint) {
-        //    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_decl_t with const constraints");
-        //}
-        BOOST_ASSERT(!fd.is_const());
-
-        identifier fname;
-        //if (f.iname) {
-        //    fname = f.iname->value;
-        //}
-        //else {
-            bool reversed = false;
-            char* epos = mp::to_string(span{ &argindex, 1 }, argname.data() + 1, reversed);
-            if (reversed) std::reverse(argname.data() + 1, epos);
-            fname = u.slregistry().resolve(string_view{ argname.data(), epos });
-        //}
-        functional & param_fnl = u.fregistry().resolve(fnctx.ns() / fname);
-        ++argindex;
-
-        auto var_entity = make_shared<variable_entity>(fd.entity_id(), param_fnl.id(), variable_entity::kind::SCOPE_LOCAL);
-        u.eregistry().insert(var_entity);
-
-        param_fnl.set_default_entity(var_entity->id());
-        params.emplace_back(var_entity.get());
+    pife->set_inline(kind_ == fn_kind::INLINE);
+    if (md.result) {
+        pife->build_fn_signature(u, md.result);
     }
+    
+    return pife;
 
-    for (auto const& fd : md.signature.named_fields()) {
-        //fnsig.push(fd.ename.value, f.constraint);
-        THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_decl_t with named fields");
-    }
-
-    declaration_visitor dvis{ fnctx };
-    for (infunction_declaration_t const& d : body_) {
-        apply_visitor(dvis, d);
-    }
-    fnctx.finish_frame();
-
-    entity_identifier result_type = fnctx.result;
-    if (result_type != u.get_void_entity_identifier()) {
-        fnsig.push(u.get_fn_result_identifier(), { result_type, false });
-        fnsig.normilize();
-    }
-    pfe->set_fn_signature(u, std::move(fnsig));
-
-    intptr_t paramnum = 0;
-    size_t paramcount = params.size() + fnctx.captured_variables.size();
-    for (variable_entity* var : params) {
-        var->set_index(paramnum - paramcount);
-        ++paramnum;
-    }
-    for (auto [from, tovar] : fnctx.captured_variables) {
-        tovar->set_index(paramnum - paramcount);
-        ++paramnum;
-    }
-   
-    return pfe;
 #if 0
-    BOOST_ASSERT(!building_);
-    building_ = true;
+
     function_entity& fe = const_cast<function_entity&>(dynamic_cast<function_entity const&>(u.eregistry().get(fn_entity_id_)));
     fe.build(u);
     result_type_ = fe.get_result_type();
-    building_ = false;
 
     qname_view fn_qname = u.qnregistry().resolve(fn_qname_id_);
     fn_compiler_context fnctx{ u, fn_qname / u.new_identifier() };

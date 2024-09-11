@@ -143,7 +143,4 @@ std::expected<entity_identifier, error_storage> fieldset_pattern::const_apply(fn
     THROW_NOT_IMPLEMENTED_ERROR("fn_pattern::const_apply");
 }
 
-
-
-
 }

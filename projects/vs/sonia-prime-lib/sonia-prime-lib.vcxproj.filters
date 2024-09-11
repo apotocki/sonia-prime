@@ -2229,9 +2229,6 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\entity_signature.hpp">
       <Filter>sonia.bang\entities</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\external_function_entity.hpp">
-      <Filter>sonia.bang\entities</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\compare\compare_patterns.hpp">
       <Filter>sonia.bang\entities\compare</Filter>
     </ClInclude>
@@ -2246,6 +2243,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\semantic\expression_printer.hpp">
       <Filter>sonia.bang\semantic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\vm\vmasm_builder.hpp">
+      <Filter>sonia.bang\vm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2631,6 +2631,9 @@
     </None>
     <None Include="..\..\..\sonia\bang\generate_parser.cmd">
       <Filter>sonia.bang</Filter>
+    </None>
+    <None Include="..\..\..\sonia\bang\vm\vmasm_builder.chpp">
+      <Filter>sonia.bang\vm</Filter>
     </None>
   </ItemGroup>
 </Project>

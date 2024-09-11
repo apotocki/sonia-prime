@@ -50,6 +50,7 @@ struct variable_equal_to
 */
 
 class virtual_stack_machine;
+
 namespace vm { class context; }
 
 class unit
@@ -130,7 +131,7 @@ public:
     eregistry_t& eregistry() { return eregistry_; }
     
     // global constants rotine
-    size_t allocate_constant_index();
+    //size_t allocate_constant_index();
 
     virtual_stack_machine& bvm() { return *bvm_; }
 

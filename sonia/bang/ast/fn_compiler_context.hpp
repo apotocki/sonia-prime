@@ -149,27 +149,18 @@ public:
     //    varfn.set_default_entity(ent->id());
     //}
 
-    variable_entity& new_position_parameter(size_t paramnum, entity_identifier t)
-    {
-        using buff_t = boost::container::small_vector<char, 16>;
-        buff_t tailored_param_name = { '$' };
-        bool reversed;
-        mp::to_string(std::span{ &paramnum, 1 }, std::back_inserter(tailored_param_name), reversed);
-        if (reversed) std::reverse(tailored_param_name.begin() + 1, tailored_param_name.end());
-        identifier argid = unit_.slregistry().resolve(string_view{ tailored_param_name.data(), tailored_param_name.size() });
-        return new_variable(argid, std::move(t), variable_entity::kind::SCOPE_LOCAL);
-    }
+    //variable_entity& new_position_parameter(size_t paramnum, entity_identifier t)
+    //{
+    //    using buff_t = boost::container::small_vector<char, 16>;
+    //    buff_t tailored_param_name = { '$' };
+    //    bool reversed;
+    //    mp::to_string(std::span{ &paramnum, 1 }, std::back_inserter(tailored_param_name), reversed);
+    //    if (reversed) std::reverse(tailored_param_name.begin() + 1, tailored_param_name.end());
+    //    identifier argid = unit_.slregistry().resolve(string_view{ tailored_param_name.data(), tailored_param_name.size() });
+    //    return new_variable(argid, std::move(t), variable_entity::kind::SCOPE_LOCAL);
+    //}
 
-    variable_entity& new_variable(identifier name, entity_identifier t, variable_entity::kind k)
-    {
-        THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context new_variable");
-#if 0
-        qname var_qname = ns() / name;
-        auto ve = sonia::make_shared<variable_entity>(u().qnregistry().resolve(var_qname), std::move(t), k);
-        unit_.eregistry().insert(ve);
-        return *ve;
-#endif
-    }
+    variable_entity& new_variable(annotated_identifier name, entity_identifier t, variable_entity::kind k);
 
     boost::container::small_vector<std::pair<variable_entity*, variable_entity*>, 16> captured_variables;
 

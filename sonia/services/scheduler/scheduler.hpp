@@ -47,18 +47,16 @@ template <typename DerivedT>
 class scheduler_task_adapter : public scheduler_task
 {
 public:
-    polymorphic_movable* move(void* address, size_t sz) override
+    void* move(void* address, size_t sz) override
     {
         BOOST_ASSERT(sz >= sizeof(DerivedT));
-        new (address) DerivedT(std::move(static_cast<DerivedT&>(*this)));
-        return reinterpret_cast<DerivedT*>(address);
+        return new (address) DerivedT(std::move(static_cast<DerivedT&>(*this)));
     }
 
-    polymorphic_clonable* clone(void* address, size_t sz) const override
+    void* clone(void* address, size_t sz) const override
     {
         BOOST_ASSERT(sz >= sizeof(DerivedT));
-        new (address) DerivedT(static_cast<DerivedT const&>(*this));
-        return reinterpret_cast<DerivedT*>(address);
+        return new (address) DerivedT(static_cast<DerivedT const&>(*this));
     }
 };
 
@@ -131,18 +129,16 @@ public:
         }
     }
 
-    polymorphic_movable* move(void* address, size_t sz) override
+    void* move(void* address, size_t sz) override
     {
         BOOST_ASSERT(sz >= sizeof(function_call_scheduler_task));
-        new (address) function_call_scheduler_task(std::move(*this));
-        return reinterpret_cast<function_call_scheduler_task*>(address);
+        return new (address) function_call_scheduler_task(std::move(*this));
     }
 
-    polymorphic_clonable* clone(void* address, size_t sz) const override
+    void* clone(void* address, size_t sz) const override
     {
         BOOST_ASSERT(sz >= sizeof(function_call_scheduler_task));
-        new (address) function_call_scheduler_task(*this);
-        return reinterpret_cast<function_call_scheduler_task*>(address);
+        return new (address) function_call_scheduler_task(*this);
     }
 
 private:

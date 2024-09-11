@@ -28,12 +28,13 @@ struct parameter_pack_element_type_visitor : static_visitor<std::expected<patter
         THROW_NOT_IMPLEMENTED_ERROR("parameter_pack_element_type_visitor not implemented expression");
     }
 
-    result_type operator()(functional const* pf)
+    result_type operator()(annotated_qname_identifier const& aqi)
     {
-        entity_identifier element_type = pf->default_entity();
+        functional const& fnl = ctx.u().fregistry().resolve(aqi.value);
+        entity_identifier element_type = fnl.default_entity();
         if (!element_type) {
             return std::unexpected(make_error<basic_general_error>(get_start_location(element_type_expression_),
-                ("identifier is not a type, see declaration at %1%"_fmt % u().print(pf->location())).str()));
+                ("identifier is not a type, see declaration at %1%"_fmt % u().print(fnl.location())).str()));
         }
         return this->operator()(element_type);
     }
@@ -92,7 +93,7 @@ struct parameter_visitor : static_visitor<std::expected<pattern_expression_t, er
         }
 
         functional const* f = ctx.lookup_functional(var.name.value);
-        if (f) return pattern_expression_t{ f };
+        if (f) return annotated_qname_identifier{ f->id(), var.name.location };
         
         if (var.name.value.is_absolute() || !var.implicit || var.name.value.size() != 1) {
             return std::unexpected(make_error<undeclared_identifier_error>(var.name));
@@ -363,6 +364,23 @@ functional const* fn_compiler_context::lookup_functional(qname_view name) const
         --sz;
         checkns.truncate(sz);
     }
+}
+
+variable_entity& fn_compiler_context::new_variable(annotated_identifier name, entity_identifier t, variable_entity::kind k)
+{
+    qname var_qname = ns() / name.value;
+    functional& fnl = unit_.fregistry().resolve(var_qname);
+    if (fnl.default_entity()) {
+        throw exception(unit_.print(identifier_redefinition_error{ annotated_qname_identifier{fnl.id(), name.location}, fnl.location() }));
+    }
+    auto ve = sonia::make_shared<variable_entity>(std::move(t), fnl.id(), k);
+    entity& ent = unit_.eregistry().find_or_create(*ve, [&ve]() { return std::move(ve); });
+    fnl.set_default_entity(ent.id());
+    fnl.set_location(name.location);
+    auto& vent = static_cast<variable_entity&>(ent);
+    vent.set_index(allocate_local_variable_index());
+    return vent;
+    //THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context new_variable");
 }
 
 }

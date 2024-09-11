@@ -28,8 +28,8 @@ public:
     {
         binding_set_t bindings;
         entity_signature signature;
-
-        inline void reset() noexcept { bindings.clear(); signature.reset_fields(); }
+        entity_identifier result;
+        inline void reset() noexcept { bindings.clear(); signature.reset_fields(); result = {}; }
     };
 
     class pattern
@@ -88,7 +88,7 @@ private:
 };
 
 struct pattern_variable { identifier id; };
-using pattern_expression_t = variant<functional const*, entity_identifier, pattern_variable>;
+using pattern_expression_t = variant<annotated_qname_identifier, entity_identifier, pattern_variable>;
 using patern_fieldset_t = fieldset<boost::container::small_vector<pattern_expression_t, 1>>;
 
 class function_descriptor

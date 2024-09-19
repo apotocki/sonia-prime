@@ -40,6 +40,37 @@ expression_list handle_call_op(expression_list& x, expression_list& y, operator_
 }
 */
 
+class file_resource : public lex::code_resource
+{
+    fs::path path_;
+
+public:
+    explicit file_resource(fs::path p) : path_{ std::move(p) } {}
+
+    small_string description() const override
+    {
+        auto u8str = path_.generic_u8string();
+        return small_string{ reinterpret_cast<char const*>(u8str.data()), u8str.size() };
+    }
+
+    inline fs::path const& path() const noexcept { return path_; }
+};
+
+class string_resource : public lex::code_resource
+{
+    std::string src_;
+
+public:
+    explicit string_resource(string_view s) : src_{ s } {}
+
+    small_string description() const override
+    {
+        std::ostringstream result;
+        result << '`' << src_ << '`';
+        return small_string{ result.str() };
+    }
+};
+
 small_u32string utf8_to_utf32(string_view sv)
 {
     boost::container::small_vector<char32_t, 64> result;
@@ -114,11 +145,11 @@ annotated_string parser_context::make_string(annotated_string_view str) const
 //    };
 //}
 
-//mp::integer parser_context::make_integer(string_view str)
-//{
-//    return mp::integer(str);
-//}
-
+mp::integer parser_context::make_integer(string_view str) const
+{
+    return mp::integer(str);
+}
+//
 mp::decimal parser_context::make_decimal(string_view str) const
 {
     return mp::decimal(str);
@@ -139,17 +170,37 @@ void parser_context::append_error(std::string errmsg)
     error_messages_.push_back(std::move(errmsg));
 }
 
+
+
+shared_ptr<lex::code_resource> parser_context::get_resource() const
+{
+    if (resource_stack_.empty()) return {};
+    return resource_stack_.back();
+}
+
 std::expected<declaration_set_t, std::string> parser_context::parse(fs::path const& f)
 {
     std::vector<char> code;
     try {
-        code = unit_.get_file_content(f, resource_stack_.empty() ? nullptr : &resource_stack_.back());
+        fs::path const* base_path = nullptr;
+        shared_ptr<lex::code_resource> cur_res = resource_stack_.empty() ? shared_ptr<lex::code_resource>{} : resource_stack_.back();
+        if (auto const* pfr = dynamic_cast<file_resource const*>(cur_res.get()); pfr) {
+            base_path = &pfr->path();
+        }
+        code = unit_.get_file_content(f, base_path);
     } catch (std::exception const& e) {
         return std::unexpected(e.what());
     }
-    resource_stack_.emplace_back(f);
-    SCOPE_EXCEPTIONAL_EXIT([this]{ resource_stack_.pop_back(); }); // just in case
+    resource_stack_.emplace_back(make_shared<file_resource>(f));
+    SCOPE_EXIT([this]{ resource_stack_.pop_back(); });
     return parse(string_view { code.data(), code.size() });
+}
+
+std::expected<declaration_set_t, std::string> parser_context::parse_string(string_view code)
+{
+    resource_stack_.emplace_back(make_shared<string_resource>(code));
+    SCOPE_EXIT([this] { resource_stack_.pop_back(); });
+    return parse(code);
 }
 
 std::expected<declaration_set_t, std::string> parser_context::parse(string_view code)

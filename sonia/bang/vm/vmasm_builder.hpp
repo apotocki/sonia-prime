@@ -140,7 +140,7 @@ public:
         inline void append_fpush(intptr_t fpos) { fpos >= 0 ? append_op(op_t::fppush, static_cast<size_t>(fpos)) : append_op(op_t::fnpush, static_cast<size_t>(-fpos)); }
         inline void append_fpushi(intptr_t fpos) { fpos >= 0 ? append_op(op_t::fppushi, static_cast<size_t>(fpos)) : append_op(op_t::fnpushi, static_cast<size_t>(-fpos)); }
         
-        inline void append_pop(size_t num) { append_op(op_t::popn, num); }
+        inline void append_pop(size_t num = 1) { append_op(op_t::popn, num); }
         inline void append_popfp() { append_op(op_t::popfp); }
         inline void append_truncatefp(intptr_t offset) { offset >= 0 ? append_op(op_t::truncatefpp, static_cast<size_t>(offset)) : append_op(op_t::truncatefpn, static_cast<size_t>(-offset)); }
 
@@ -228,9 +228,9 @@ size_t builder<ContextT>::add_pooled_const(variable_type&& value)
     if (it == literals_.end()) {
         size_t index = vm_.add_const(std::move(value));
         it = literals_.emplace_hint(it, *vm_.consts()[index], index);
-        GLOBAL_LOG_DEBUG() << "placing new const value: " << vm_.consts()[index] << ", at index: " << index;
+        GLOBAL_LOG_DEBUG() << "new const value: " << vm_.consts()[index] << " -> C["sv << index << "]"sv;
     } else {
-        GLOBAL_LOG_DEBUG() << "found existing value: " << value << ", at index: " << it->second;
+        GLOBAL_LOG_DEBUG() << "found value: " << value << " at C[" << it->second << "]"sv;
     }
     return it->second;
 }
@@ -285,6 +285,7 @@ void builder<ContextT>::function_builder::materialize()
         case op_t::noop: continue;
         case op_t::pushfp:
         case op_t::popfp:
+        case op_t::pop:
         case op_t::ret:
             blocks.back().append(e.operation);
             break;
@@ -304,6 +305,16 @@ void builder<ContextT>::function_builder::materialize()
         case op_t::truncatefpn:
             blocks.back().append(e.operation, get<size_t>(e.operand));
             break;
+        case op_t::popn:
+            {
+                size_t num = get<size_t>(e.operand);
+                if (num == 1) {
+                    blocks.back().append(op_t::pop);
+                } else if (num) {
+                    blocks.back().append(e.operation, num);
+                }
+                break;
+            }
         case op_t::ecall:
             {
                 size_t fnindex = get<size_t>(e.operand);

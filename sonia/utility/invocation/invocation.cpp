@@ -102,7 +102,7 @@ void blob_result_allocate(blob_result * b, bool no_inplace)
     }
     
     static_assert(sizeof(b->ui8array) == 14);
-    if (!no_inplace && sz <= sizeof(b->ui8array)) {
+    if (!no_inplace && sz <= sizeof(b->ui8array) - b->bp_reserved_used * 2) {
         b->inplace_size = static_cast<uint8_t>(sz);
         if (ptr) {
             std::memcpy(b->ui8array, ptr, sz);

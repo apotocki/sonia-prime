@@ -32,7 +32,7 @@ public:
 
     size_t parameter_count() const noexcept;
 
-    void set_fn_signature(unit&, entity_signature&& fnsig);
+    //void set_fn_signature(unit&, entity_signature&& fnsig);
     void build_fn_signature(unit& u, entity_identifier rt);
 
     inline entity_identifier get_result_type() const noexcept { return result_type_; }

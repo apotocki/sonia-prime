@@ -34,6 +34,7 @@ public:
     //qname const& ns() const { return ns_stack_.back(); }
 
     annotated_string make_string(annotated_string_view) const;
+    mp::integer make_integer(string_view) const;
     mp::decimal make_decimal(string_view) const;
 
     identifier new_identifier() const;
@@ -51,22 +52,19 @@ public:
 
     void append_error(std::string errmsg);
 
-    small_string get_resource() const
-    {
-        if (resource_stack_.empty()) return small_string{"<code>"sv};
-        auto u8str = resource_stack_.back().generic_u8string();
-        return small_string{ reinterpret_cast<char const*>(u8str.data()), u8str.size() };
-    }
+    shared_ptr<lex::code_resource> get_resource() const;
 
     void pop_resource() { resource_stack_.pop_back(); }
 
     std::expected<declaration_set_t, std::string> parse(fs::path const& f);
-    std::expected<declaration_set_t, std::string> parse(string_view code);
+    std::expected<declaration_set_t, std::string> parse_string(string_view);
 
 private:
+    std::expected<declaration_set_t, std::string> parse(string_view code);
+
     unit& unit_;
 
-    boost::container::small_vector<fs::path, 8> resource_stack_;
+    boost::container::small_vector<shared_ptr<lex::code_resource>, 8> resource_stack_;
     
     boost::container::small_vector<qname, 8> ns_stack_;
 

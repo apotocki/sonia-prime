@@ -14,13 +14,12 @@ class basic_fn_pattern : public functional::pattern
 protected:
     function_descriptor fd_;
 
-    lex::resource_location declaration_location_;
     mutable bool building_ = false;
 
 public:
     basic_fn_pattern(fn_compiler_context&, fn_pure_t const&);
 
-    error_storage is_matched(fn_compiler_context&, pure_call_t const&, functional::match_descriptor&) const override;
+    std::expected<int, error_storage> is_matched(fn_compiler_context&, pure_call_t const&, functional::match_descriptor&) const override;
 
     inline qname_identifier fn_qname_id() const noexcept { return fd_.id(); }
 

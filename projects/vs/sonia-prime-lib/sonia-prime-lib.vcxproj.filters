@@ -2632,7 +2632,7 @@
     <None Include="..\..\..\sonia\bang\generate_parser.cmd">
       <Filter>sonia.bang</Filter>
     </None>
-    <None Include="..\..\..\sonia\bang\vm\vmasm_builder.chpp">
+    <None Include="..\..\..\sonia\bang\vm\vmasm_builder.cpp">
       <Filter>sonia.bang\vm</Filter>
     </None>
   </ItemGroup>

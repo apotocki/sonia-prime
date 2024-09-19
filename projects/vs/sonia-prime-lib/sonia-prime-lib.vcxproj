@@ -982,7 +982,7 @@
     <None Include="..\..\..\sonia\bang\bang.output" />
     <None Include="..\..\..\sonia\bang\bang.y" />
     <None Include="..\..\..\sonia\bang\generate_parser.cmd" />
-    <None Include="..\..\..\sonia\bang\vm\vmasm_builder.chpp" />
+    <None Include="..\..\..\sonia\bang\vm\vmasm_builder.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

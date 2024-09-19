@@ -208,12 +208,22 @@ public:
 
     void finish_frame()
     {
+        /*
         if (local_variable_count_ == 1) {
             expressions_.front() = semantic::push_value{ null_t{} };
         } else if (local_variable_count_) {
             std::vector<semantic::expression_t> prolog;
             prolog.resize(local_variable_count_, semantic::push_value{ null_t{} });
             expressions_.front() = std::move(prolog);
+        }
+        */
+        if (!result) {
+            if (accum_result) {
+                result = accum_result;
+            } else { // no explicit return
+                result = u().get_void_entity_identifier();
+                expressions_.push_back(semantic::return_statement{});
+            }
         }
     }
 

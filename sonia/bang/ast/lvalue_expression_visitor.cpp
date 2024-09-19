@@ -11,15 +11,23 @@
 
 namespace sonia::lang::bang {
 
+//lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_qname const&) const
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("lvalue_expression_visitor annotated_qname");
+//}
+
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(variable_identifier const& v) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("lvalue_expression_visitor  variable_identifier");
-#if 0
-    if (auto optvar = ctx.resolve_variable(v.name.value); optvar) {
-        return &*optvar;
+    functional const* pfn = ctx.lookup_functional(v.name.value);
+    if (pfn && pfn->default_entity()) {
+        return &ctx.u().eregistry().get(pfn->default_entity());
     }
     return std::unexpected(make_error<undeclared_identifier_error>(v.name));
-#endif
+}
+
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(context_value const&) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR("lvalue_expression_visitor context_value");
 }
 
 std::expected<entity const*, error_storage> lvalue_expression_visitor::handle_property_set(annotated_identifier id) const
@@ -38,7 +46,12 @@ std::expected<entity const*, error_storage> lvalue_expression_visitor::handle_pr
 #endif
 }
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(not_empty_expression_t& me) const
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(bang_parameter_pack_t const&) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR();
+}
+
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(not_empty_expression_t const& ne) const
 {
     THROW_NOT_IMPLEMENTED_ERROR();
     /*
@@ -54,10 +67,10 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(not
     */
 }
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(member_expression_t & me) const
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(member_expression_t const& me) const
 {
-    if (auto opterr = apply_visitor(expression_visitor{ ctx, nullptr }, me.object); opterr) {
-        return std::unexpected(std::move(opterr));
+    if (auto res = apply_visitor(expression_visitor{ ctx, nullptr }, me.object); !res) {
+        return std::unexpected(std::move(res.error()));
     }
     /*
     if (auto* uotype = ctx.context_type.as<bang_union_t>(); me.is_object_optional && uotype && uotype->has(bang_tuple_t{})) {
@@ -69,7 +82,7 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(mem
     return handle_property_set(me.name);
 }
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(property_expression& pe) const
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(property_expression const& pe) const
 {
     return handle_property_set(pe.name);
 }
@@ -89,10 +102,10 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(ann
     return std::unexpected(make_error<wrong_lvalue_error>(ab));
 }
 
-//lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_integer const& ai) const
-//{
-//    return std::unexpected(make_error<wrong_lvalue_error>(ai));
-//}
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_integer const& ai) const
+{
+    return std::unexpected(make_error<wrong_lvalue_error>(ai));
+}
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_decimal const& ad) const
 {

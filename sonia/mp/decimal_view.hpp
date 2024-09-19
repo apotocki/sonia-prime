@@ -23,15 +23,27 @@ namespace sonia::mp {
 template <std::unsigned_integral LimbT>
 class basic_decimal_view
 {
-public:
-    using limb_type = LimbT;
     basic_integer_view<LimbT> significand_;
     basic_integer_view<LimbT> exponent_;
+
+public:
+    using limb_type = LimbT;
 
     template <typename ST, typename ET>
     inline basic_decimal_view(ST && s, ET && e) noexcept
         : significand_{ std::forward<ST>(s) }, exponent_{ std::forward<ET>(e) }
     {}
+
+    template <std::integral T>
+    inline basic_decimal_view(T value) noexcept
+    {
+        uint8_t e = 0;
+        while (!(value % 10)) {
+            value /= 10; ++e;
+        }
+        significand_ = value;
+        exponent_ = e;
+    }
 
     inline bool is_negative() const noexcept { return significand_.is_negative(); }
     inline int sgn() const noexcept { return significand_.sgn(); }
@@ -44,6 +56,12 @@ public:
         return (T)(basic_integer<LimbT, bisz>)*this;
     }
 
+    template <std::floating_point T>
+    inline explicit operator T() const
+    {
+        return (T)((T)significand_ * std::pow(10.0, (int64_t)exponent_));
+    }
+
     template <size_t N, typename AllocatorT>
     explicit operator basic_integer<LimbT, N, AllocatorT>() const
     {
@@ -51,7 +69,7 @@ public:
             if (exponent_.sgn() > 0) {
                 throw std::invalid_argument("exponent is too large");
             } else {
-                return 0;
+                return basic_integer<LimbT, N, AllocatorT>{0};
             }
         }
         basic_integer<LimbT, N, AllocatorT> val10{ 10 };
@@ -72,6 +90,11 @@ public:
 };
 
 using decimal_view = basic_decimal_view<uint64_t>;
+
+template <typename T> struct is_basic_decimal_view : std::false_type {};
+template <typename LimbT> struct is_basic_decimal_view<basic_decimal_view<LimbT>> : std::true_type {};
+template <typename T> constexpr bool is_basic_decimal_view_v = is_basic_decimal_view<T>::value;
+
 
 // expected normilized value
 template <std::unsigned_integral LimbT>
@@ -176,7 +199,12 @@ inline std::basic_ostream<Elem, Traits>& operator <<(std::basic_ostream<Elem, Tr
     return os << to_string(dv);
 }
 
+template <std::unsigned_integral LimbT>
+inline size_t hash_value(basic_decimal_view<LimbT> const& v) noexcept
+{
+    return hasher{}(v.significand(), v.exponent());
+}
+
 using decimal_view = basic_decimal_view<uint64_t>;
 
 }
-

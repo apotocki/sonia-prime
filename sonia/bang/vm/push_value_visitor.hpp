@@ -46,26 +46,20 @@ public:
 
     void operator()(mp::integer const& ival) const
     {
-        if (ival.is_fit<int64_t>()) {
-            fnbuilder_.append_push_pooled_const(smart_blob{ i64_blob_result((int64_t)ival) });
-        } else if (ival.is_fit<uint64_t>()) {
-            fnbuilder_.append_push_pooled_const(smart_blob{ ui64_blob_result((uint64_t)ival) });
-        } else {
-            fnbuilder_.append_push_pooled_const(smart_blob{ bigint_blob_result(ival) });
-        }
+        fnbuilder_.append_push_pooled_const(smart_blob{ bigint_blob_result(ival) });
+
+        //if (ival.is_fit<int64_t>()) {
+        //    fnbuilder_.append_push_pooled_const(smart_blob{ i64_blob_result((int64_t)ival) });
+        //} else if (ival.is_fit<uint64_t>()) {
+        //    fnbuilder_.append_push_pooled_const(smart_blob{ ui64_blob_result((uint64_t)ival) });
+        //} else {
+        //    fnbuilder_.append_push_pooled_const(smart_blob{ bigint_blob_result(ival) });
+        //}
     }
 
     void operator()(mp::decimal const& dval) const
     {
-        if (dval.exponent().sgn() >= 0) { // is integral
-            if (dval >= (std::numeric_limits<int64_t>::min)() && dval <= (std::numeric_limits<int64_t>::max)()) {
-                fnbuilder_.append_push_pooled_const(smart_blob{ i64_blob_result((int64_t)dval) });
-            } else if (dval >= 0 && dval <= (std::numeric_limits<uint64_t>::max)()) {
-                fnbuilder_.append_push_pooled_const(smart_blob{ ui64_blob_result((uint64_t)dval) });
-            }
-        } else {
-            fnbuilder_.append_push_pooled_const(smart_blob{ decimal_blob_result(dval) });
-        }
+        fnbuilder_.append_push_pooled_const(smart_blob{ decimal_blob_result(dval) });
     }
 
 #if 0
@@ -139,6 +133,11 @@ public:
     void operator()(string_literal_entity const& sle) const override
     {
         this->operator()(sle.value());
+    }
+
+    void operator()(integer_literal_entity const& ile) const override
+    {
+        this->operator()(ile.value());
     }
 
     void operator()(decimal_literal_entity const& dle) const override

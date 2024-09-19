@@ -21,31 +21,35 @@ function_descriptor::named_field const* function_descriptor::find_named_field(id
 std::expected<functional::pattern const*, error_storage> functional::find(fn_compiler_context& ctx, pure_call_t const& call, functional::match_descriptor & md) const
 {
     alt_error err;
-    mp::decimal priority = 0;
-    using alternative_t = std::pair<pattern const*, fn_compiler_context::expr_vec_t>;
+    mp::decimal major_weight = 0;
+    int minor_weight = 0;
+    using alternative_t = std::tuple<pattern const*, fn_compiler_context::expr_vec_t, match_descriptor>;
     boost::container::small_vector<alternative_t, 2> alternatives;
     auto estate = ctx.expressions_state();
     fn_compiler_context::expr_vec_t branch;
 
     for (auto const& p : patterns_) {
-        auto cmp = priority <=> p->get_weight();
+        auto cmp = major_weight <=> p->get_weight();
         if (cmp == std::strong_ordering::greater) continue;
         ctx.push_chain(branch);
         match_descriptor temp_md{ {}, entity_signature{id_} };
-        if (auto res = p->is_matched(ctx, call, temp_md); res) {
+        auto match_weight = p->is_matched(ctx, call, temp_md);
+        if (!match_weight) {
             if (alternatives.empty()) { // no need to store errors if a match exists
                 //err.alternatives.emplace_back(
                 //    make_error<function_call_match_error>(annotated_qname_identifier{ id_, call.location() }, sig, std::move(optres))
                 //);
-                err.alternatives.emplace_back(std::move(res));
+                err.alternatives.emplace_back(std::move(match_weight.error()));
             }
         } else {
-            if (cmp == std::strong_ordering::less) {
-                priority = p->get_weight();
-                md = std::move(temp_md);
+            if (cmp == std::strong_ordering::less || minor_weight < *match_weight) {
+                major_weight = p->get_weight();
+                minor_weight = *match_weight;
                 alternatives.clear();
-            }
-            alternatives.emplace_back(p.get(), std::move(branch));
+                alternatives.emplace_back(p.get(), std::move(branch), std::move(temp_md));
+            } else if (minor_weight == *match_weight) { // cmp == std::strong_ordering::equal
+                alternatives.emplace_back(p.get(), std::move(branch), std::move(temp_md));
+            } // else skip less weighted alternatives
         }
         estate.restore();
         branch.clear();
@@ -61,16 +65,21 @@ std::expected<functional::pattern const*, error_storage> functional::find(fn_com
         return std::unexpected(make_error<alt_error>(std::move(err)));
     }
     if (alternatives.size() > 1) {
-        return std::unexpected(make_error<ambiguity_error>());
+        std::vector<ambiguity_error::alternative> as;
+        for (alternative_t const& a : alternatives) {
+            as.emplace_back(get<0>(a)->location(), get<2>(a).signature);
+        }
+        return std::unexpected(make_error<ambiguity_error>(annotated_qname_identifier{ id_, call.location() }, std::move(as)));
     }
     estate.detach();
-    ctx.append_expression(std::move(alternatives.front().second));
+    ctx.append_expression(std::move(get<1>(alternatives.front())));
     fn_compiler_context::expr_vec_t& args = get<fn_compiler_context::expr_vec_t>(ctx.expressions().back());
     ctx.push_chain(args);
-    return &*alternatives.front().first;
+    md = std::move(get<2>(alternatives.front()));
+    return get<0>(alternatives.front());
 }
 
-error_storage fieldset_pattern::is_matched(fn_compiler_context& ctx, pure_call_t const& call, functional::match_descriptor&) const
+std::expected<int, error_storage> fieldset_pattern::is_matched(fn_compiler_context& ctx, pure_call_t const& call, functional::match_descriptor&) const
 {
     for (auto const& tpl : call.named_args) { // {argname, expr, exprloc}
         THROW_NOT_IMPLEMENTED_ERROR("fn_pattern::is_matched, named argument");

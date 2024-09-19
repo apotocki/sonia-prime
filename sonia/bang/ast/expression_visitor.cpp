@@ -33,17 +33,40 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
 {
     if (!expected_result) {
         ctx.context_type = typeeid;
-        return {};
+        return false;
     }
 
-    if (typeeid == expected_result->type) return {};
+    if (typeeid == expected_result->type) {
+        ctx.context_type = typeeid;
+        return false;
+    }
 
     if (expected_result->type == u().get_any_entity_identifier()) {
         ctx.context_type = expected_result->type;
-        return {};
+        return false;
     }
 
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor apply_cast");
+    functional const& fn = u().fregistry().resolve(u().get_implicit_cast_qname_identifier());
+    lex::resource_location expr_loc = get_start_location(e);
+    pure_call_t cast_call{ expected_result->location };
+    cast_call.named_args.emplace_back(u().get_to_parameter_identifier(), entity_expression{ expected_result->type, expected_result->location });
+    cast_call.positioned_args.emplace_back(context_value{ typeeid, expr_loc });
+
+    functional::match_descriptor md;
+    auto ptrn = fn.find(ctx, cast_call, md);
+    if (!ptrn.has_value()) {
+        //return std::move(ptrn.error());
+        return std::unexpected(append_cause(
+            make_error<cast_error>(expr_loc /*expected_result->location*/, expected_result->type, typeeid, e),
+            std::move(ptrn.error())
+        ));
+    }
+    auto optres = ptrn.value()->apply(ctx, md);
+    if (!optres.has_value()) return std::unexpected(std::move(optres.error()));
+
+    return true;
+
+    //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor apply_cast");
 #if 0
     
     entity const& ent = u().eregistry().get(expected_result->type);
@@ -75,7 +98,7 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
 #endif
 }
 
-expression_visitor::result_type expression_visitor::operator()(context_value& v) const
+expression_visitor::result_type expression_visitor::operator()(context_value const& v) const
 {
     // just verify condition
     if (!expected_result) {
@@ -111,6 +134,12 @@ expression_visitor::result_type expression_visitor::operator()(annotated_bool co
     return apply_cast(u().get_bool_entity_identifier(), b);
 }
 
+expression_visitor::result_type expression_visitor::operator()(annotated_integer const& d) const
+{
+    ctx.append_expression(semantic::push_value{ d.value });
+    return apply_cast(u().get_integer_entity_identifier(), d);
+}
+
 expression_visitor::result_type expression_visitor::operator()(annotated_decimal const& d) const
 {
     ctx.append_expression(semantic::push_value{ d.value });
@@ -123,11 +152,11 @@ expression_visitor::result_type expression_visitor::operator()(annotated_string 
     return apply_cast(u().get_string_entity_identifier(), s);
 }
 
-expression_visitor::result_type expression_visitor::operator()(annotated_qname const& aqn) const
-{
-    GLOBAL_LOG_INFO() << ctx.u().print(aqn.value);
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor annotated_qname");
-}
+//expression_visitor::result_type expression_visitor::operator()(annotated_qname const& aqn) const
+//{
+//    GLOBAL_LOG_INFO() << ctx.u().print(aqn.value);
+//    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor annotated_qname");
+//}
 
 expression_visitor::result_type expression_visitor::operator()(variable_identifier const& var) const
 {
@@ -179,7 +208,7 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
         */
 #endif
     }
-    return make_error<undeclared_identifier_error>(var.name);
+    return std::unexpected(make_error<undeclared_identifier_error>(var.name));
 #endif
 }
 
@@ -197,38 +226,42 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
 //#endif
 //}
 
-expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::ASSIGN>, binary_expression_t& op) const
+expression_visitor::result_type expression_visitor::do_assign(binary_expression_t const& op) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN");
+    //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN");
     //GLOBAL_LOG_INFO() << "left expression: " << ctx.u().print(op.left);
-#if 0
     //size_t start_result_pos = result.size();
     lvalue_expression_visitor lvis{ ctx };
-    auto e = apply_visitor(lvis, op.left);
-    if (!e.has_value()) return e.error();
+    auto e = apply_visitor(lvis, op.positioned_args[0]);
+    if (!e.has_value()) return std::unexpected(std::move(e.error()));
 
-    // variable_entity
-    if (function_entity const* fe = dynamic_cast<function_entity const*>(e.value()); fe) {
-        // fe: (object, property value)->
-        bang_type const& t = fe->signature().position_parameters().back();
-        expression_visitor rvis{ ctx, expected_result_t{ t, op.location }};
-        auto opterr = apply_visitor(rvis, op.right);
-        ctx.append_expression(semantic::invoke_function{ fe->name() });
-        return std::move(opterr);
-    } else if (variable_entity const* ve = dynamic_cast<variable_entity const*>(e.value()); ve) {
-        expression_visitor rvis{ ctx, expected_result_t{ ve->type(), op.location }};
-        auto opterr = apply_visitor(rvis, op.right);
+    if (variable_entity const* ve = dynamic_cast<variable_entity const*>(e.value()); ve) {
+        expression_visitor rvis{ ctx, expected_result_t{ ve->get_type(), op.location() } };
+        auto opterr = apply_visitor(rvis, op.positioned_args[1]);
+        if (opterr) return std::move(opterr);
         if (ve->is_weak()) {
-            ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });
+            THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN");
+            //ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });
         }
         ctx.append_expression(semantic::set_variable{ ve });
         if (ve->is_weak()) {
             ctx.append_expression(semantic::truncate_values(1, false));
         }
-        return std::move(opterr);
+        return apply_cast(ve->get_type(), op);
     } else {
+        THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN");
+#if 0
+        if (function_entity const* fe = dynamic_cast<function_entity const*>(e.value()); fe) {
+        // fe: (object, property value)->
+        bang_type const& t = fe->signature().position_parameters().back();
+        expression_visitor rvis{ ctx, expected_result_t{ t, op.location() }};
+        auto opterr = apply_visitor(rvis, op.positioned_args[1]);
+        ctx.append_expression(semantic::invoke_function{ fe->name() });
+        return std::move(opterr);
+    } else  else {
         // to do: functional entity assignment
         THROW_NOT_IMPLEMENTED_ERROR();
+#endif
     }
 
     /*
@@ -242,7 +275,6 @@ expression_visitor::result_type expression_visitor::operator()(binary_operator_t
     }
     THROW_NOT_IMPLEMENTED_ERROR();
     */
-#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(entity_expression const& ee) const
@@ -254,6 +286,7 @@ expression_visitor::result_type expression_visitor::operator()(entity_expression
             ctx.context_type = expected_result->type;
             return {};
         }
+        GLOBAL_LOG_INFO() << "expected: " << u().print(expected_result->type) << ", actual: " << u().print(ent.id());
         THROW_NOT_IMPLEMENTED_ERROR("expression_visitor entity_expression");
     }
     ctx.append_expression(semantic::push_value{ ee.id });
@@ -481,6 +514,10 @@ expression_visitor::result_type expression_visitor::operator()(binary_expression
         return this->operator()(u().get_eq_qname_identifier(), be);
     case binary_operator_type::NE:
         return this->operator()(u().get_ne_qname_identifier(), be);
+    case binary_operator_type::PLUS:
+        return this->operator()(u().get_plus_qname_identifier(), be);
+    case binary_operator_type::ASSIGN:
+        return do_assign(be);
     }
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_expression_t");
     //return bang_binary_switcher(be, *this);
@@ -677,9 +714,9 @@ expression_visitor::result_type expression_visitor::operator()(functional const&
 {
     functional::match_descriptor md;
     auto ptrn = fnl.find(ctx, call, md);
-    if (!ptrn.has_value()) return std::move(ptrn.error());
+    if (!ptrn.has_value()) return std::unexpected(std::move(ptrn.error()));
     auto optres = ptrn.value()->apply(ctx, md);
-    if (!optres.has_value()) return std::move(optres.error());
+    if (!optres.has_value()) return std::unexpected(std::move(optres.error()));
     return apply_cast(optres.value(), call);
 }
 
@@ -718,7 +755,7 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t c
     GLOBAL_LOG_INFO() << u().print(fnvar->name.value);
     functional const* fnl = ctx.lookup_functional(fnvar->name.value);
     if (!fnl) {
-        return make_error<undeclared_identifier_error>(fnvar->name);
+        return std::unexpected(make_error<undeclared_identifier_error>(fnvar->name));
     }
     
     //shared_ptr<entity> e = ctx.resolve_entity(fnvar->name.value);

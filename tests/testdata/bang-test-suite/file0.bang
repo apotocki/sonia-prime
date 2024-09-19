@@ -1,4 +1,2 @@
-//extern fn print(string); // implicit declaration
-
 print("Hello from Bang!");
 assert($$ == 0); // no arguments

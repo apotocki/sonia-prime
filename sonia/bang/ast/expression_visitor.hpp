@@ -15,7 +15,8 @@ struct expected_result_t
     lex::resource_location const& location;
 };
 
-struct expression_visitor : static_visitor<error_storage>
+// returns true if implicit cast was applied
+struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
 {
     fn_compiler_context& ctx;
     optional<expected_result_t> expected_result;
@@ -39,7 +40,7 @@ struct expression_visitor : static_visitor<error_storage>
         : ctx{ c }
     {}
 
-    result_type operator()(context_value&) const;
+    result_type operator()(context_value const&) const;
     result_type operator()(variable_identifier const&) const;
 
     result_type operator()(case_expression const&) const;
@@ -48,12 +49,10 @@ struct expression_visitor : static_visitor<error_storage>
     result_type operator()(property_expression&) const;
 
     result_type operator()(annotated_bool const&) const;
-    //result_type operator()(annotated_integer const&) const;
+    result_type operator()(annotated_integer const&) const;
     result_type operator()(annotated_decimal const&) const;
     result_type operator()(annotated_string const&) const;
     
-    result_type operator()(annotated_qname const&) const;
-
     result_type operator()(expression_vector_t &) const;
 
     result_type operator()(chained_expression_t&) const;
@@ -67,7 +66,7 @@ struct expression_visitor : static_visitor<error_storage>
     result_type operator()(binary_expression_t const& be) const;
         
 
-    result_type operator()(binary_operator_t<binary_operator_type::ASSIGN>, binary_expression_t &) const;
+    
     result_type operator()(binary_operator_t<binary_operator_type::LOGIC_AND>, binary_expression_t &) const;
     result_type operator()(binary_operator_t<binary_operator_type::LOGIC_OR>, binary_expression_t &) const;
 
@@ -97,6 +96,8 @@ private:
 
     template <std::derived_from<pure_call_t> CallExpressionT>
     result_type operator()(functional const& fnl, CallExpressionT const& call) const;
+
+    result_type do_assign(binary_expression_t const&) const;
 };
 
 }

@@ -34,25 +34,18 @@ public:
 
     class pattern
     {
-        mp::decimal weight_ = 1;
+    protected:
+        mp::decimal weight_{1};
+        lex::resource_location location_;
 
     public:
-        //explicit pattern(shared_ptr<entity> ent)
-        //    : entity_{ std::move(ent) }
-        //{
-        //
-        //}
-
-        virtual error_storage is_matched(fn_compiler_context& ctx, pure_call_t const& call, match_descriptor&) const = 0;
+        virtual std::expected<int, error_storage> is_matched(fn_compiler_context& ctx, pure_call_t const& call, match_descriptor&) const = 0; // returns the match weight or an error
         virtual std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx, functional::match_descriptor&) const = 0; // returns const value
         virtual std::expected<entity_identifier, error_storage> apply(fn_compiler_context& ctx, functional::match_descriptor&) const; // returns type of result
 
         inline mp::decimal const& get_weight() const noexcept { return weight_; }
-
-        
-    private:
-        //shared_ptr<entity> entity_;
-    };
+        inline lex::resource_location const& location() const noexcept { return location_; }
+     };
 
     functional(qname_identifier idval, qname_view qv)
         : id_{ idval }
@@ -63,13 +56,9 @@ public:
 
     inline qname_identifier id() const noexcept { return id_; }
     inline qname_view name() const noexcept { return qname_view{ qnameids_, true }; }
-    inline lex::resource_location const& location() const noexcept { return location_; }
 
-    inline void set_location(lex::resource_location l) { location_ = std::move(l); }
-
-    entity_identifier default_entity() const { return default_entity_; }
-
-    void set_default_entity(entity_identifier e) { default_entity_ = std::move(e); }
+    inline entity_identifier const& default_entity() const noexcept { return default_entity_; }
+    inline void set_default_entity(entity_identifier e) noexcept { default_entity_ = std::move(e); }
 
     void push(shared_ptr<pattern> p)
     {
@@ -82,7 +71,6 @@ public:
 private:
     qname_identifier id_;
     boost::container::small_vector<identifier, 4> qnameids_;
-    lex::resource_location location_;
     entity_identifier default_entity_; // corresponds to name without call
     boost::container::small_vector<shared_ptr<pattern>, 1> patterns_;
 };
@@ -110,6 +98,16 @@ public:
             : ename{ std::move(n) }
             , generic_field { std::move(f) }
         {}
+
+        friend inline bool operator==(named_field const& l, named_field const& r) noexcept
+        {
+            return l.ename.value == r.ename.value;
+        }
+
+        friend inline auto operator<=>(named_field const& l, named_field const& r) noexcept
+        {
+            return l.ename.value <=> r.ename.value;
+        }
     };
 
     struct positioned_field : generic_field
@@ -143,25 +141,6 @@ public:
 
     named_field const* find_named_field(identifier name) const;
 
-    //void push_field(annotated_identifier ext_name, annotated_identifier * int_name, entity_identifier type, bool is_const)
-    //{
-    //    using opt_name_t = optional<annotated_identifier>;
-    //    nfields_.emplace_back(
-    //        std::move(ext_name),
-    //        int_name ? opt_name_t{ std::move(*int_name) } : nullopt,
-    //        type,
-    //        is_const);
-    //}
-
-    //void push_field(annotated_identifier* int_name, entity_identifier type, bool is_const)
-    //{
-    //    using opt_name_t = optional<annotated_identifier>;
-    //    pfields_.emplace_back(
-    //        int_name ? opt_name_t{ std::move(*int_name) } : nullopt,
-    //        type,
-    //        is_const);
-    //}
-
 private:
     std::vector<named_field> nfields_;
     std::vector<positioned_field> pfields_;
@@ -183,7 +162,7 @@ public:
 
     virtual fieldset_t const& get_fieldset() const noexcept = 0;
 
-    error_storage is_matched(fn_compiler_context&, pure_call_t const&, functional::match_descriptor&) const override;
+    std::expected<int, error_storage> is_matched(fn_compiler_context&, pure_call_t const&, functional::match_descriptor&) const override;
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx, functional::match_descriptor&) const override;
 };
 

@@ -140,21 +140,25 @@ public:
     inline entity_identifier get_any_entity_identifier() const noexcept { return any_entity_identifier_; }
     inline entity_identifier get_string_entity_identifier() const noexcept { return string_entity_identifier_; }
     inline entity_identifier get_decimal_entity_identifier() const noexcept { return decimal_entity_identifier_; }
+    inline entity_identifier get_integer_entity_identifier() const noexcept { return integer_entity_identifier_; }
     inline entity_identifier get_bool_entity_identifier() const noexcept { return bool_entity_identifier_; }
 
     inline qname_identifier get_fn_qname_identifier() const noexcept { return fn_qname_identifier_; }
     inline qname_identifier get_ellipsis_qname_identifier() const noexcept { return ellipsis_qname_identifier_; }
     inline qname_identifier get_string_qname_identifier() const noexcept { return string_qname_identifier_; }
     inline qname_identifier get_decimal_qname_identifier() const noexcept { return decimal_qname_identifier_; }
+    inline qname_identifier get_integer_qname_identifier() const noexcept { return integer_qname_identifier_; }
     inline qname_identifier get_bool_qname_identifier() const noexcept { return bool_qname_identifier_; }
     inline qname_identifier get_any_qname_identifier() const noexcept { return any_qname_identifier_; }
 
     inline qname_identifier get_eq_qname_identifier() const noexcept { return eq_qname_identifier_; }
     inline qname_identifier get_ne_qname_identifier() const noexcept { return ne_qname_identifier_; }
+    inline qname_identifier get_plus_qname_identifier() const noexcept { return plus_qname_identifier_; }
     inline qname_identifier get_negate_qname_identifier() const noexcept { return negate_qname_identifier_; }
+    inline qname_identifier get_implicit_cast_qname_identifier() const noexcept { return implicit_cast_qname_identifier_; }
 
-    inline identifier get_fn_result_identifier() const noexcept { return fn_result_identifier_; }
-
+    //inline identifier get_fn_result_identifier() const noexcept { return fn_result_identifier_; }
+    inline identifier get_to_parameter_identifier() const noexcept { return to_parameter_identifier_; }
 
     functional& resolve_functional(qname_identifier);
 
@@ -245,23 +249,28 @@ protected:
     OutputIteratorT name_printer(qname_view const&, OutputIteratorT, UndefinedFT const&) const;
 
 private:
-    identifier fn_result_identifier_; // ->
+    //identifier fn_result_identifier_; // ->
+    identifier to_parameter_identifier_; // to:
 
-    qname_identifier fn_qname_identifier_; // :: __fn
+    qname_identifier fn_qname_identifier_; // :: __fn -- the marker of a function type
     qname_identifier ellipsis_qname_identifier_; // :: ...
     qname_identifier string_qname_identifier_; // :: string
     qname_identifier decimal_qname_identifier_; // :: decimal
+    qname_identifier integer_qname_identifier_; // :: integer
     qname_identifier bool_qname_identifier_; // :: bool
     qname_identifier any_qname_identifier_; // :: any
     qname_identifier eq_qname_identifier_; // :: ==
     qname_identifier ne_qname_identifier_; // :: !=
+    qname_identifier plus_qname_identifier_; // binary +
     qname_identifier negate_qname_identifier_; // :: !
+    qname_identifier implicit_cast_qname_identifier_;
 
     entity_identifier void_entity_identifier_;
     entity_identifier any_entity_identifier_;
     entity_identifier typename_entity_identifier_;
     entity_identifier string_entity_identifier_;
     entity_identifier decimal_entity_identifier_;
+    entity_identifier integer_entity_identifier_;
     entity_identifier bool_entity_identifier_;
 
     // entities registry:

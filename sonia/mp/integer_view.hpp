@@ -46,14 +46,14 @@ struct integer_view_ctl<StorageT>
         : size{ 0 }, skip_bits{ 0 }, inplace_bit{ 0 }, sign_bit{ 0 }
     {}
 
-    inline integer_view_ctl(size_t sz, int sign, size_t sb = 0)
+    inline integer_view_ctl(size_t sz, int sign, size_t sb = 0) noexcept
         : size{static_cast<StorageT>(sz)}
         , skip_bits{ static_cast<StorageT>(sb) }
         , inplace_bit{ 0 }
         , sign_bit{ sign < 0 ? 1u : 0 }
     {
         assert(!((sz >> 56) & 0xff));
-        assert(sb < 128);
+        assert(sb < 64);
     }
 
     inline int sign() const noexcept { return sign_bit ? -1 : 1; }
@@ -86,7 +86,7 @@ struct integer_view_ctl<StorageT>
         , sign_bit{ sign < 0 ? 1u : 0 }
     {
         assert(!((sz >> 24) & 0xff));
-        assert(sb < 128);
+        assert(sb < 64);
     }
 
     inline int sign() const noexcept { return sign_bit ? -1 : 1; }
@@ -110,8 +110,8 @@ class basic_integer_view
 
     using const_limb_t = std::add_const_t<LimbT>;
     using ctl_type = detail::integer_view_ctl<uintptr_t>; // to ensure the same size as a pointer size
-
-    static constexpr size_t inplace_max_size = (std::max)(sizeof(uint64_t), sizeof(const_limb_t*)) / sizeof(LimbT);
+    static_assert(sizeof(LimbT) <= 8); // because we reserve only 6 bits for 'skip_bits' in ctl_type
+    static constexpr size_t inplace_max_size = (std::max)(sizeof(LimbT), sizeof(const_limb_t*)) / sizeof(LimbT);
 
     union {
         const_limb_t* limbs_;
@@ -130,18 +130,20 @@ class basic_integer_view
     }
 
 public:
-    basic_integer_view() noexcept
+    using limb_type = LimbT;
+
+    inline basic_integer_view() noexcept
         : limbs_{nullptr}
     {}
 
     template <std::integral T>
     requires (sizeof(T) <= inplace_max_size * sizeof(LimbT))
-    basic_integer_view(T value) noexcept
+    basic_integer_view(T value, int optsignmodifier = 1) noexcept
     {
         auto [sz, sign] = to_limbs(value, std::span<LimbT, inplace_max_size>{ inplace_value_ });
         ctl_.size = sz;
         ctl_.inplace_bit = 1;
-        ctl_.sign_bit = sign < 0 ? 1 : 0;
+        ctl_.sign_bit = (sign * optsignmodifier) < 0 ? 1 : 0;
     }
 
     explicit basic_integer_view(std::span<const LimbT> limbs, int sign = 1, size_t skip_bits = 0) noexcept
@@ -463,6 +465,12 @@ public:
 template <std::unsigned_integral LimbT>
 basic_integer_view(std::span<LimbT>, int sign) -> basic_integer_view<LimbT>;
 
+using integer_view = basic_integer_view<uint64_t>;
+
+template <typename T> struct is_basic_integer_view : std::false_type {};
+template <typename LimbT> struct is_basic_integer_view<basic_integer_view<LimbT>> : std::true_type {};
+template <typename T> constexpr bool is_basic_integer_view_v = is_basic_integer_view<T>::value;
+
 template <std::unsigned_integral LimbT, typename VectorT>
 void to_vector(basic_integer_view<LimbT> const& iv, int base, bool showbase, VectorT& result)
 {
@@ -517,7 +525,7 @@ std::basic_ostream<Elem, Traits>& operator <<(std::basic_ostream<Elem, Traits>& 
 
 
 template <std::unsigned_integral LimbT>
-inline size_t hash_value(basic_integer_view<LimbT> const& v)
+inline size_t hash_value(basic_integer_view<LimbT> const& v) noexcept
 {
     size_t seed = 0;
 

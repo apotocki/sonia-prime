@@ -5,6 +5,7 @@
 #include "sonia/config.hpp"
 #include "library.hpp"
 #include "sonia/logger/logger.hpp"
+#include "sonia/mp/basic_integer.hpp"
 #include "sonia/mp/basic_decimal.hpp"
 
 #include <sstream>
@@ -18,6 +19,13 @@ void bang_assert(vm::context& ctx)
     if (!r) {
         throw exception("bang assertion error");
     }
+}
+
+void bang_any_equal(vm::context& ctx)
+{
+    bool result = ctx.stack_back() == ctx.stack_back(1);
+    ctx.stack_pop();
+    ctx.stack_back().replace(smart_blob{ bool_blob_result(result) });
 }
 
 void bang_decimal_equal(vm::context& ctx)
@@ -86,6 +94,18 @@ void bang_concat_string(vm::context& ctx)
     ctx.stack_back().replace( smart_blob{ std::move(res) } );
 }
 
+void bang_operator_plus_integer(vm::context& ctx)
+{
+    auto l = ctx.stack_back(1).as<mp::integer>();
+    auto r = ctx.stack_back().as<mp::integer_view>();
+    auto sum = l + r;
+    smart_blob res{ bigint_blob_result(sum) };
+    res.allocate();
+
+    ctx.stack_pop();
+    ctx.stack_back().replace(std::move(res));
+}
+
 void bang_operator_plus_decimal(vm::context& ctx)
 {
     auto l = ctx.stack_back(1).as<mp::decimal>();
@@ -98,11 +118,11 @@ void bang_operator_plus_decimal(vm::context& ctx)
     ctx.stack_back().replace(std::move(res));
 }
 
-void bang_to_decimal(vm::context& ctx)
+void bang_str2dec(vm::context& ctx)
 {
     auto str = ctx.stack_back().as<string_view>();
     try {
-        mp::decimal d(str);
+        mp::decimal d{ str };
         smart_blob res{ decimal_blob_result(d) };
         res.allocate();
         ctx.stack_back().replace(std::move(res));
@@ -110,6 +130,15 @@ void bang_to_decimal(vm::context& ctx)
         ctx.stack_back().replace(error_blob_result(e.what())); // nil_blob_result()
         ctx.stack_back().allocate();
     }
+}
+
+void bang_int2dec(vm::context& ctx)
+{
+    auto ival = ctx.stack_back().as<mp::integer_view>();
+    mp::decimal dval{ ival };
+    smart_blob res{ decimal_blob_result(dval) };
+    res.allocate();
+    ctx.stack_back().replace(std::move(res));
 }
 
 }

@@ -29,7 +29,7 @@ functional& unit::resolve_functional(qname_view qn)
 qname_identifier unit::get_function_entity_identifier(string_view signature)
 {
     parser_context parser{ *this };
-    auto decls = parser.parse((string_view)("extern fn %1%;"_fmt % signature).str());
+    auto decls = parser.parse_string((string_view)("extern fn %1%;"_fmt % signature).str());
 
     fn_compiler_context ctx{ *this, qname{} };
     auto& fndecl = get<fn_pure_t>(decls->front());
@@ -96,7 +96,7 @@ std::string unit::describe_efn(size_t fn_index) const
 void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
 {
     parser_context parser{ *this };
-    auto decls = parser.parse((string_view)("extern fn ::%1%;"_fmt % signature).str());
+    auto decls = parser.parse_string((string_view)("extern fn ::%1%;"_fmt % signature).str());
     if (!decls.has_value()) [[unlikely]] {
         throw exception(decls.error());
     }
@@ -238,11 +238,15 @@ unit::unit()
     // bool
     setup_type("bool"sv, bool_qname_identifier_, bool_entity_identifier_);
     
-    // string
-    setup_type("string"sv, string_qname_identifier_, string_entity_identifier_);
+    // integer
+    setup_type("integer"sv, integer_qname_identifier_, integer_entity_identifier_);
 
     // decimal
     setup_type("decimal"sv, decimal_qname_identifier_, decimal_entity_identifier_);
+
+    // string
+    setup_type("string"sv, string_qname_identifier_, string_entity_identifier_);
+        
 
     // tuple
     qname_identifier tuple_qnid = make_qname_identifier("tuple"sv);
@@ -253,10 +257,15 @@ unit::unit()
 
     void_entity_identifier_ = void_entity->id();
 
+    //// parameters
+    to_parameter_identifier_ = make_identifier("to");
+    //fn_result_identifier_ = make_identifier("->");
+
     //// operations
-    // eq
+    implicit_cast_qname_identifier_ = make_qname_identifier("implicit_cast"sv);
     eq_qname_identifier_ = make_qname_identifier("equal"sv);
     ne_qname_identifier_ = make_qname_identifier("not_equal"sv);
+    plus_qname_identifier_ = make_qname_identifier("__plus"sv);
     negate_qname_identifier_ = make_qname_identifier("negate"sv);
 
     //eq_qname_identifier_ = make_qname_identifier("==");
@@ -264,7 +273,7 @@ unit::unit()
     //eq_fnl.push(make_shared<eq_pattern>());
 
     fn_qname_identifier_ = make_qname_identifier("__fn"sv);
-    fn_result_identifier_ = make_identifier("->");
+    
     // setup ellipsis
     // operator...(type: typename)
     ellipsis_qname_identifier_ = make_qname_identifier("...");
@@ -280,12 +289,16 @@ unit::unit()
     //string_fnl.push();
 
     set_extern("print(string...)"sv, &bang_print_string);
-    set_extern("string(any)->string"sv, &bang_tostring);
+    set_extern("implicit_cast(to: typename string, _)->string"sv, &bang_tostring);
+    set_extern("implicit_cast(to: typename decimal, integer)->decimal"sv, &bang_int2dec);
+    //set_extern("string(any)->string"sv, &bang_tostring);
     set_extern("assert(bool)"sv, &bang_assert);
 
     // temporary
-    set_extern("equal(decimal,decimal)->bool"sv, &bang_decimal_equal);
+    set_extern("equal(any,any)->bool"sv, &bang_any_equal);
     set_extern("negate(any)->bool"sv, &bang_negate);
+    set_extern("__plus(integer,integer)->integer"sv, &bang_operator_plus_integer);
+    set_extern("__plus(decimal,decimal)->decimal"sv, &bang_operator_plus_decimal);
 }
 
 void unit::setup_type(string_view type_name, qname_identifier& qnid, entity_identifier& eid)
@@ -351,8 +364,9 @@ OutputIteratorT unit::identifier_printer(identifier const& id, string_view prefi
 template <typename OutputIteratorT, typename UndefinedFT>
 OutputIteratorT unit::name_printer(qname_view const& qn, OutputIteratorT oi, UndefinedFT const& uf) const
 {
-    for (identifier const& id : qn) {
-        oi = identifier_printer(id, &qn.front() == &id /* && !qn.is_absolute()*/ ? ""sv : "::"sv, std::move(oi), uf);
+    oi = identifier_printer(qn.front(), qn.is_absolute() ? "::"sv : ""sv, std::move(oi), uf);
+    for (identifier const& id : qn.subspan(1)) {
+        oi = identifier_printer(id, "::"sv, std::move(oi), uf);
     }
     return std::move(oi);
 }
@@ -372,7 +386,11 @@ std::string unit::print(identifier const& id) const
 std::string unit::print(entity_identifier const& id) const
 {
     std::ostringstream ss;
-    eregistry_.get(id).print_to(ss, *this);
+    if (id) {
+        eregistry_.get(id).print_to(ss, *this);
+    } else {
+        ss << "nil-entity"sv;
+    }
     return ss.str();
 }
 
@@ -390,19 +408,24 @@ std::string unit::print(entity_signature const& sgn) const
     if (!sgn.positioned_fields().empty() || !sgn.named_fields().empty()) {
         ss << '(';
         bool first = true;
+
+        auto name_it = sgn.names().begin();
+        for (auto const& f : sgn.named_fields()) {
+            if (first) first = false;
+            else ss << ", "sv;
+            ss << print(*name_it) << ": "sv;
+            if (f.is_const()) ss << "const "sv;
+            ss << print(f.entity_id());
+            ++name_it;
+        }
+        BOOST_ASSERT(name_it == sgn.names().end());
         for (auto const&f : sgn.positioned_fields()) {
             if (first) first = false;
             else ss << ", "sv;
             if (f.is_const()) ss << "const "sv;
             ss << print(f.entity_id());
         }
-        for (auto const& f : sgn.named_fields()) {
-            if (first) first = false;
-            else ss << ", "sv;
-            ss << print(f.first) << ": "sv;
-            if (f.second.is_const()) ss << "const "sv;
-            ss << print(f.second.entity_id());
-        }
+
         ss << ")";
     }
     return ss.str();
@@ -660,10 +683,11 @@ struct expr_printer_visitor : static_visitor<void>
 
     void operator()(variable_identifier const& vi) const
     {
-        if (vi.implicit) {
-            ss << "IMPLICIT"sv;
-        }
-        ss << "VAR("sv << u_.print(vi.name.value) << ")"sv;
+        //if (vi.implicit) {
+        //    ss << "IMPLICIT"sv;
+        //}
+        //ss << "VAR("sv << u_.print(vi.name.value) << ")"sv;
+        ss << u_.print(vi.name.value);
     }
 
     /*
@@ -813,7 +837,14 @@ std::string unit::print(error const& err) const
 {
     std::ostringstream ss;
     error_printer_visitor vis{ *this, ss };
-    err.visit(vis);
+    error const* perr = &err;
+    for (;;) {
+        perr->visit(vis);
+        auto & cause = perr->cause();
+        if (!cause) break;
+        perr = cause.get();
+        ss << "\ncaused by: "sv;
+    }
     return ss.str();
 }
 

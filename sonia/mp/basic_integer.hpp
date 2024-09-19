@@ -625,9 +625,16 @@ public:
 
     explicit basic_integer(AllocatorT const& alloc) : aholder_{ alloc } {}
 
-    basic_integer(basic_integer_view<LimbT> const& rhs, AllocatorT const& alloc = AllocatorT{})
+    explicit basic_integer(basic_integer_view<LimbT> const& rhs, AllocatorT const& alloc = AllocatorT{})
         : aholder_{ rhs, alloc }
     {}
+
+    template <std::unsigned_integral ForeignLimbT>
+    explicit basic_integer(basic_integer_view<ForeignLimbT> const& rhs, AllocatorT const& alloc = AllocatorT{})
+        : aholder_{ alloc }
+    {
+        THROW_NOT_IMPLEMENTED_ERROR("basic_integer with foreign LimbT"sv);
+    }
 
     template <std::integral T>
     basic_integer(T value, AllocatorT const& alloc = AllocatorT{})
@@ -940,6 +947,12 @@ bool operator ==(basic_integer<LimbT, LN, AllocatorLT> const& lhs, RT rhs)
 {
     // 1 + sizeof(RT) / sizeof(LimbT) ensures no dynamic allocation for RT representation in basic_integer
     return lhs == basic_integer<LimbT, 1 + sizeof(RT) / sizeof(LimbT), AllocatorLT>{ rhs };
+}
+
+template <std::unsigned_integral LimbT, size_t N, typename AllocatorT>
+inline size_t hash_value(basic_integer<LimbT, N, AllocatorT> const& v) noexcept
+{
+    return hash_value((basic_integer_view<LimbT>)v);
 }
 
 using integer = basic_integer<uint64_t, 1>;

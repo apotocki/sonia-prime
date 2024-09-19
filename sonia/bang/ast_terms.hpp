@@ -44,8 +44,9 @@ using annotated_string_view = annotated<string_view>;
 using annotated_identifier = annotated<identifier>;
 using annotated_qname = annotated<qname>;
 using annotated_qname_identifier = annotated<qname_identifier>;
+using annotated_entity_identifier = annotated<entity_identifier>;
 using annotated_bool = annotated<bool>;
-//using annotated_integer = annotated<mp::integer>;
+using annotated_integer = annotated<mp::integer>;
 using annotated_decimal = annotated<mp::decimal>;
 using annotated_string = annotated<small_string>;
 
@@ -307,7 +308,7 @@ inline auto bang_binary_switcher(BinaryExprT && exp, VisitorT && vis) {
 template <typename ExprT>
 struct named_expression_term
 {
-    variant<std::tuple<annotated_qname, ExprT>, ExprT> term;
+    variant<std::tuple<annotated_identifier, ExprT>, ExprT> term;
 };
 
 template <typename ExprT>
@@ -324,7 +325,7 @@ template <typename ExprT>
 struct pure_call
 {
     boost::container::small_vector<ExprT, 4> positioned_args;
-    boost::container::small_vector<std::tuple<annotated_qname, ExprT>, 8> named_args;
+    boost::container::small_vector<std::tuple<annotated_identifier, ExprT>, 8> named_args;
     lex::resource_location location_; // operator or OPEN_PARENTHESIS location
 
     explicit pure_call(lex::resource_location loc) : location_{ std::move(loc) } {}
@@ -335,7 +336,7 @@ struct pure_call
         for (named_expression_term<ExprT> & narg : args) {
             if (auto const* pure_expr = get<ExprT>(&narg.term); pure_expr) {
                 positioned_args.emplace_back(std::move(*pure_expr));
-            } else if (auto const* named_expr = get<std::tuple<annotated_qname, ExprT>>(&narg.term); named_expr) {
+            } else if (auto const* named_expr = get<std::tuple<annotated_identifier, ExprT>>(&narg.term); named_expr) {
                 named_args.emplace_back(std::move(std::get<0>(*named_expr)), std::move(std::get<1>(*named_expr)));
             } else {
                 THROW_INTERNAL_ERROR();
@@ -454,6 +455,14 @@ struct let_statement_decl
     lex::resource_location const& location() const { return aname.location; }
 };
 
+//template <typename ExprT>
+//struct assign_decl
+//{
+//    ExprT lvalue;
+//    ExprT rvalue;
+//    lex::resource_location location;
+//};
+
 template <typename ExprT>
 struct expression_decl
 {
@@ -488,8 +497,8 @@ struct entity_expression
 };
 
 using syntax_expression_t = make_recursive_variant<
-    annotated_qname, variable_identifier,
-    annotated_bool, annotated_decimal, annotated_string,
+    variable_identifier,
+    annotated_bool, annotated_integer, annotated_decimal, annotated_string,
     bang_parameter_pack<recursive_variant_>,
     context_value, case_expression, property_expression, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
     //lambda<recursive_variant_>,
@@ -858,6 +867,7 @@ using infunction_declaration_t = typename infunction_declaration<syntax_expressi
 using return_decl_t = return_decl<syntax_expression_t>;
 using let_statement_decl_t = let_statement_decl<syntax_expression_t>;
 using expression_decl_t = expression_decl<syntax_expression_t>;
+//using assign_decl_t = assign_decl<syntax_expression_t>;
 
 using declaration_t = variant<
     extern_var, let_statement_decl_t, expression_decl_t,

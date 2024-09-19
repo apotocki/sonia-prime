@@ -126,15 +126,24 @@ void error_printer_visitor::operator()(alt_error const& err)
     }
 }
 
+std::string ambiguity_error::object(unit const& u) const noexcept
+{
+    return u.print(functional_.value);
+}
+
+
 void error_printer_visitor::operator()(ambiguity_error const& err)
 {
+    s_ << print_general(err.location(), "ambiguity call error"sv, err.object(u_));
+    s_ << "\ncould be:\n";
     bool first = true;
-    for (auto const& e : err.alternatives) {
+    for (auto const& e : err.alternatives()) {
         if (!first) {
             s_ << "\n or \n";
         }
         else { first = false; }
-        e->visit(*this);
+        s_ << e.location.resource << '(' << e.location.line << ',' << e.location.column << "): "sv;
+        s_ << u_.print(e.sig);
     }
 }
 
@@ -176,6 +185,12 @@ general_error::string_t function_call_match_error::description(unit const& u) co
     return ss.str();
 }
 
+general_error::string_t type_mismatch_error::description(unit const& u) const noexcept
+{
+    std::ostringstream ss;
+    ss << "type mismatch error, expected: " << u.print(expected_);
+    return ss.str();
+}
 //void error_printer_visitor::operator()(parameter_not_found_error const& err)
 //{
 //    s_ << ("parameter `%1%` of `%2%` is not found"_fmt % u_.print(err.param.value) % u_.print(err.entity_name)).str();

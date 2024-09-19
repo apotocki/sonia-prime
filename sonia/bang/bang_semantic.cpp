@@ -15,12 +15,13 @@ namespace sonia::lang::bang {
 
 std::ostream& entity::print_to(std::ostream& os, unit const& u) const
 {
-    return os << "@E"sv << id().value;
+    return os; // << "@E"sv << id().value;
 }
 
 std::ostream& signatured_entity::print_to(std::ostream& os, unit const& u) const
 {
-    return entity::print_to(os, u) << "<"sv << u.print(*signature()) << ">"sv;
+    return os << u.print(*signature());
+    //return entity::print_to(os, u) << "<"sv << u.print(*signature()) << ">"sv;
 }
 
 class type_mangler_visitor : static_visitor<qname_identifier>

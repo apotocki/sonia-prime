@@ -7,6 +7,7 @@
 
 #include "fn_compiler_context.hpp"
 #include "expression_visitor.hpp"
+#include "lvalue_expression_visitor.hpp"
 #include "preliminary_type_visitor.hpp"
 
 #include "../entities/enum_entity.hpp"
@@ -42,8 +43,8 @@ void declaration_visitor::operator()(expression_decl_t const& ed) const
 {
     entity_identifier void_eid = u().get_void_entity_identifier();
     ctx.context_type = void_eid;
-    if (auto opterr = apply_visitor(expression_visitor{ ctx }, ed.expression); opterr) {
-        throw exception(u().print(*opterr));
+    if (auto res = apply_visitor(expression_visitor{ ctx }, ed.expression); !res) {
+        throw exception(u().print(*res.error()));
     }
     if (ctx.context_type != void_eid) {
         ctx.append_expression(semantic::truncate_values(1, false));
@@ -277,7 +278,7 @@ void declaration_visitor::operator()(let_statement_decl_t const& ld) const
     ctx.context_type = ctx.u().get_void_entity_identifier();
     if (ld.expression) {
         auto evis = vartype ? expression_visitor{ ctx, expected_result_t{ vartype, ld.location() } } : expression_visitor{ ctx };
-        if (auto opterr = apply_visitor(evis, *ld.expression); opterr) {
+        if (auto res = apply_visitor(evis, *ld.expression); !res) {
             /*
             BOOST_ASSERT(vartype);
             throw exception(ctx.u().print(basic_general_error{ld.location(),
@@ -285,23 +286,49 @@ void declaration_visitor::operator()(let_statement_decl_t const& ld) const
                     ctx.u().print(*etype.error())).str()
             }));
             */
-            throw exception(ctx.u().print(*opterr));
+            throw exception(ctx.u().print(*res.error()));
         }
     }
     variable_entity& ve = ctx.new_variable(ld.aname, vartype.self_or(ctx.context_type), variable_entity::kind::LOCAL);
     ve.set_weak(ld.weakness);
-    if (ld.expression) {
-        ctx.append_expression(semantic::set_variable{ &ve });
-    }
+    if (!ld.expression) {
+        ctx.append_expression(semantic::push_value{ null }); // just declaration, initializtion just declared variable
+    } 
+    // else do not set variable because we have a result of the expression on stack and consider it as a variable initialization
+    // if (ld.expression) { ctx.append_expression(semantic::set_variable{ &ve }); }
 }
+
+//void declaration_visitor::operator()(assign_decl_t const& ad) const
+//{
+//    lvalue_expression_visitor lvis{ ctx };
+//    auto e = apply_visitor(lvis, ad.lvalue);
+//    if (!e.has_value()) throw exception(ctx.u().print(*e.error()));
+//    
+//    if (variable_entity const* ve = dynamic_cast<variable_entity const*>(e.value()); ve) {
+//        expression_visitor rvis{ ctx, expected_result_t{ ve->get_type(), ad.location } };
+//        auto opterr = apply_visitor(rvis, ad.rvalue);
+//        if (ve->is_weak()) {
+//            THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor assign_decl_t");
+//            //ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });
+//        }
+//        ctx.append_expression(semantic::set_variable{ ve });
+//        if (ve->is_weak()) {
+//            ctx.append_expression(semantic::truncate_values(1, false));
+//        }
+//        return std::move(opterr);
+//    } else {
+//        const entity* pe = e.value();
+//        THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor assign_decl_t");
+//    }
+//}
 
 void declaration_visitor::operator()(return_decl_t const& rd) const
 {
     ctx.context_type = ctx.u().get_void_entity_identifier();
     size_t initial_branch = ctx.expressions_branch();
     auto evis = ctx.result ? expression_visitor{ ctx, expected_result_t{ ctx.result, rd.location } } : expression_visitor{ ctx };
-    if (auto opterr = apply_visitor(evis, rd.expression); opterr) {
-        throw exception(ctx.u().print(*opterr));
+    if (auto res = apply_visitor(evis, rd.expression); !res) {
+        throw exception(ctx.u().print(*res.error()));
     }
     ctx.collapse_chains(initial_branch);
     if (!ctx.result) {

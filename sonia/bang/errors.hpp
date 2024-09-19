@@ -38,15 +38,25 @@ public:
 
 class error
 {
+    shared_ptr<error> cause_;
+
 public:
     virtual ~error() = default;
     virtual void visit(error_visitor&) const = 0;
+
+    inline void set_cause(shared_ptr<error> cause) noexcept { cause_ = std::move(cause); }
+    inline shared_ptr<error> const& cause() const { return cause_; }
 };
 
 using error_storage = shared_ptr<error>;
 
 template <std::derived_from<error> T, typename ... Args>
-error_storage make_error(Args&& ... args) { return sonia::make_shared<T>(std::forward<Args>(args) ...); }
+inline error_storage make_error(Args&& ... args) { return sonia::make_shared<T>(std::forward<Args>(args) ...); }
+inline error_storage append_cause(error_storage err, error_storage cause)
+{
+    err->set_cause(std::move(cause));
+    return err;
+}
 
 class alt_error : public error
 {
@@ -58,8 +68,25 @@ public:
 class ambiguity_error : public error
 {
 public:
-    std::vector<error_storage> alternatives;
+    struct alternative
+    {
+        lex::resource_location location;
+        entity_signature sig;
+    };
+
+    explicit ambiguity_error(annotated_qname_identifier f, std::vector<alternative> as)
+        : functional_{ f }, alternatives_{ std::move(as) }
+    {}
+
     void visit(error_visitor& vis) const override { vis(*this); }
+
+    lex::resource_location const& location() const noexcept { return functional_.location; }
+    std::string object(unit const&) const noexcept;
+    inline span<const alternative> alternatives() const noexcept { return alternatives_; }
+
+private:
+    annotated_qname_identifier functional_;
+    std::vector<alternative> alternatives_;
 };
 
 class circular_dependency_error : public error
@@ -88,7 +115,7 @@ public:
 class basic_general_error : public general_error
 {
 protected:
-    using object_t = variant<null_t, syntax_expression_t, qname, qname_view, qname_identifier, identifier>;
+    using object_t = variant<null_t, syntax_expression_t, qname, qname_view, qname_identifier, entity_identifier, identifier>;
 
     lex::resource_location location_;
     string_t description_;
@@ -147,6 +174,18 @@ public:
     void visit(error_visitor& vis) const override { vis(*this); }
 
     lex::resource_location const* see_location() const noexcept override { return &seelocation_; }
+};
+
+class type_mismatch_error : public general_with_see_location_error
+{
+    entity_identifier expected_;
+public:
+    type_mismatch_error(lex::resource_location loc, entity_identifier actual, entity_identifier expected, lex::resource_location seeloc)
+        : general_with_see_location_error{ loc, ""sv, seeloc, actual }
+        , expected_{ expected }
+    {}
+
+    string_t description(unit const&) const noexcept override;
 };
 
 class identifier_redefinition_error : public general_error

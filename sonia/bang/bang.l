@@ -154,6 +154,7 @@ DBLCOLON                "::"
 LOGIC_OR                "||"
 LOGIC_AND               "&&"
 ARROW					"->"
+ARROWEXPR				"=>"
 CONCAT					".."
 EQ                      "=="
 NE                      "!="
@@ -303,8 +304,14 @@ HASHTAG					"#"
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
 	{CONST} { return (bang_lang::parser::token::CONST); }
 
-	{TRUE} { variant_emplace(location); return (bang_lang::parser::token::TRUE); }
-	{FALSE} { variant_emplace(location); return (bang_lang::parser::token::FALSE); }
+	{TRUE} {
+		variant_emplace(annotated_bool{true, location});
+		return (bang_lang::parser::token::TRUE);
+	}
+	{FALSE} {
+		variant_emplace(annotated_bool{false, location});
+		return (bang_lang::parser::token::FALSE);
+	}
 	
 	{AT_SYMBOL}				{ return (bang_lang::parser::token::AT_SYMBOL); }
 	{OPEN_BRACE}			{ variant_emplace(location); return (bang_lang::parser::token::OPEN_BRACE); }
@@ -327,6 +334,7 @@ HASHTAG					"#"
 	{LOGIC_OR}              { variant_emplace(location); return (bang_lang::parser::token::LOGIC_OR); }
     {LOGIC_AND}             { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
 	{ARROW}                 { return (bang_lang::parser::token::ARROW); }
+	{ARROWEXPR}				{ return (bang_lang::parser::token::ARROWEXPR); }
 	{CONCAT}                { variant_emplace(location); return (bang_lang::parser::token::CONCAT); }
 	{EQ}					{ variant_emplace(location); return (bang_lang::parser::token::EQ); }
 	{NE}					{ variant_emplace(location); return (bang_lang::parser::token::NE); }
@@ -347,7 +355,7 @@ HASHTAG					"#"
 	}
 
 	{INTEGER} {
-		variant_emplace(annotated_decimal{ctx.make_decimal(text_view), location});
+		variant_emplace(annotated_integer{ctx.make_integer(text_view), location});
 		return (bang_lang::parser::token::INTEGER);
 	}
 	{DECIMAL} {

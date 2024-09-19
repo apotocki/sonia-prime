@@ -47,25 +47,28 @@ size_t function_entity::parameter_count() const noexcept
 {
     // to do: include captured parameters
     size_t cnt = 0;
-    for (auto const& f : sig_.positioned_fields()) {
+    for (auto const& f : sig_.fields()) {
         if (!f.is_const()) ++cnt;
     }
-    for (auto const& [_, f] : sig_.named_fields()) {
-        if (!f.is_const()) ++cnt;
-    }
+    //for (auto const& f : sig_.positioned_fields()) {
+    //    if (!f.is_const()) ++cnt;
+    //}
+    //for (auto const& [_, f] : sig_.named_fields()) {
+    //    if (!f.is_const()) ++cnt;
+    //}
     return cnt;
 }
 
-void function_entity::set_fn_signature(unit& u, entity_signature&& fnsig)
-{
-    indirect_signatured_entity te{ fnsig };
-    entity const& fnte = u.eregistry().find_or_create(te, [&fnsig, &u]() {
-        return make_shared<basic_signatured_entity>(u.get_typename_entity_identifier(), std::move(fnsig));
-    });
-    field_descriptor const* fd = fnsig.find_field(u.get_fn_result_identifier());
-    set_void(!fd);
-    result_type_ = !fd ? u.get_void_entity_identifier() : fd->entity_id();
-}
+//void function_entity::set_fn_signature(unit& u, entity_signature&& fnsig)
+//{
+//    indirect_signatured_entity te{ fnsig };
+//    entity const& fnte = u.eregistry().find_or_create(te, [&fnsig, &u]() {
+//        return make_shared<basic_signatured_entity>(u.get_typename_entity_identifier(), std::move(fnsig));
+//    });
+//    field_descriptor const* fd = fnsig.find_field(u.get_fn_result_identifier());
+//    set_void(!fd);
+//    result_type_ = !fd ? u.get_void_entity_identifier() : fd->entity_id();
+//}
 
 //void function_entity::set_fn_type(unit& u, entity_signature& fnsig)
 //{
@@ -136,11 +139,13 @@ void internal_function_entity::build(unit& u)
     for (infunction_declaration_t const& d : *bd_->body) {
         apply_visitor(dvis, d);
     }
-    fnctx.finish_frame();
+    fnctx.finish_frame(); // unknown result type is resolving here
 
     if (!result_type_) {
-        THROW_NOT_IMPLEMENTED_ERROR("internal_function_entity::build resolving return type");
+        build_fn_signature(u, fnctx.result);
     }
+    //    THROW_NOT_IMPLEMENTED_ERROR("internal_function_entity::build resolving return type");
+    //}
 
     intptr_t paramnum = 0;
     size_t paramcount = params.size() + fnctx.captured_variables.size();
@@ -164,16 +169,20 @@ void function_entity::build_fn_signature(unit& u, entity_identifier rt)
     result_type_ = rt;
     set_void(result_type_ == u.get_void_entity_identifier());
 
+    auto name_it = sig_.names().begin();
+    for (auto const& f : sig_.named_fields()) {
+        if (!f.is_const()) fnsig.push(*name_it, f);
+        ++name_it;
+    }
+
     for (auto const& fd : sig_.positioned_fields()) {
         if (!fd.is_const()) fnsig.push(fd);
     }
-    for (auto const& f : sig_.named_fields()) {
-        if (!f.second.is_const()) fnsig.push(f.first, f.second);
-    }
 
     if (result_type_ != u.get_void_entity_identifier()) {
-        fnsig.push(u.get_fn_result_identifier(), { result_type_, false });
-        fnsig.normilize();
+        //fnsig.push(u.get_fn_result_identifier(), { result_type_, false });
+        fnsig.set_result({ result_type_, false });
+        //fnsig.normilize();
     }
 
     indirect_signatured_entity te{ fnsig };

@@ -12,21 +12,21 @@
 namespace sonia::lang::bang {
 
 // opeator ...(typename)
-error_storage ellipsis_pattern::is_matched(fn_compiler_context& ctx, pure_call_t const& call, functional::match_descriptor& md) const
+std::expected<int, error_storage> ellipsis_pattern::is_matched(fn_compiler_context& ctx, pure_call_t const& call, functional::match_descriptor& md) const
 {
     if (!call.named_args.empty()) {
-        return make_error<basic_general_error>(std::get<0>(call.named_args.front()).location, "unexpected named argument"sv);
+        return std::unexpected(make_error<basic_general_error>(std::get<0>(call.named_args.front()).location, "unexpected named argument"sv));
     }
     if (call.positioned_args.empty()) {
-        return make_error<basic_general_error>(call.location(), "an argument is expected"sv);
+        return std::unexpected(make_error<basic_general_error>(call.location(), "an argument is expected"sv));
     }
     if (call.positioned_args.size() != 1) {
-        return make_error<basic_general_error>(get_start_location(call.positioned_args[1]), "unexpected argument"sv);
+        return std::unexpected(make_error<basic_general_error>(get_start_location(call.positioned_args[1]), "unexpected argument"sv));
     }
     auto const& expr = call.positioned_args.front();
 
     expression_visitor evis{ ctx, expected_result_t{ ctx.u().get_typename_entity_identifier(), get_start_location(expr) } };
-    if (auto opterr = apply_visitor(evis, expr); opterr) return std::move(opterr);
+    if (auto res = apply_visitor(evis, expr); !res) return std::unexpected(std::move(res.error()));
 
     md.signature.set_name(ctx.u().get_ellipsis_qname_identifier());
 
@@ -36,7 +36,7 @@ error_storage ellipsis_pattern::is_matched(fn_compiler_context& ctx, pure_call_t
     entity_identifier const* peid = get<entity_identifier>(&pv->value);
     BOOST_ASSERT(peid); // must be entity_identifier
     md.signature.push({*peid, true});
-    return {};
+    return 0;
 }
 
 std::expected<entity_identifier, error_storage> ellipsis_pattern::const_apply(fn_compiler_context& ctx, functional::match_descriptor& md) const

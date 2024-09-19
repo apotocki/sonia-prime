@@ -21,7 +21,7 @@ namespace sonia::lang::bang {
 basic_fn_pattern::basic_fn_pattern(fn_compiler_context& ctx, fn_pure_t const& fnd)
 {
     unit& u = ctx.u();
-    declaration_location_ = fnd.location();
+    location_ = fnd.location();
     //qname fn_qname = ctx.ns() / fnd.name();
     //fn_qname_id_ = u.fregistry().resolve(fn_qname).id();
     //fd_.set_id(fn_qname_id_);
@@ -70,14 +70,37 @@ basic_fn_pattern::basic_fn_pattern(fn_compiler_context& ctx, fn_pure_t const& fn
 #endif
 }
 
+struct const_expression_visitor : static_visitor<error_storage>
+{
+    fn_compiler_context& ctx;
+    optional<expected_result_t> expected_result;
+
+    const_expression_visitor(fn_compiler_context& c, expected_result_t&& er)
+        : ctx{ c }
+        , expected_result{ std::move(er) }
+    {}
+
+    result_type operator()(entity_expression const& ee) const
+    {
+        if (!expected_result || expected_result->type == ee.id) return {};
+        return make_error<type_mismatch_error>(ee.location, ee.id, expected_result->type, expected_result->location);
+    }
+
+    template <typename T>
+    result_type operator()(T const& v) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR("const_expression_visitor not implemented expression");
+    }
+};
+
 template <typename ExpressionIteratorT>
-struct arg_resolving_visitor : static_visitor<std::expected<entity_identifier, error_storage>>
+struct arg_resolving_by_value_visitor : static_visitor<std::expected<entity_identifier, error_storage>>
 {
     fn_compiler_context& ctx;
     functional::binding_set_t& binding;
-    ExpressionIteratorT & expr_it, expr_eit;
-    arg_resolving_visitor(fn_compiler_context& c, functional::binding_set_t& bnd, ExpressionIteratorT & it, ExpressionIteratorT eit)
-        : ctx{ c }, binding{ bnd }, expr_it{ it }, expr_eit{ eit }
+    ExpressionIteratorT& expr_it;
+    arg_resolving_by_value_visitor(fn_compiler_context& c, functional::binding_set_t& bnd, ExpressionIteratorT& it)
+        : ctx{ c }, binding{ bnd }, expr_it{ it }
     {}
 
     result_type operator()(annotated_qname_identifier const& aqi) const
@@ -85,30 +108,73 @@ struct arg_resolving_visitor : static_visitor<std::expected<entity_identifier, e
         functional const& fnl = ctx.u().fregistry().resolve(aqi.value);
         entity_identifier eid = fnl.default_entity();
         if (eid) {
-            return this->operator()(eid);
+            return this->operator()(eid, aqi.location);
         }
-        return std::unexpected(make_error<basic_general_error>(aqi.location, "not a variable or constant"sv, *expr_it));
+        return std::unexpected(make_error<basic_general_error>(aqi.location, "not a variable or constant"sv, expr_it.next_expression()));
     }
 
-    result_type operator()(entity_identifier const& eid) const
+    result_type operator()(entity_identifier const& eid, lex::resource_location eidloc = {}) const
+    {
+        entity const& param_entity = ctx.u().eregistry().get(eid);
+        BOOST_ASSERT(eid);
+        const_expression_visitor evis{ ctx, expected_result_t{ eid, eidloc } };
+        if (auto err = apply_visitor(evis, expr_it.next_expression()); err) {
+            return std::unexpected(std::move(err));
+        }
+        return eid;
+    }
+
+    template <typename T>
+    result_type operator()(T const& v) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR("arg_resolving_by_value_visitor not implemented expression");
+    }
+};
+
+template <typename ExpressionIteratorT>
+struct arg_resolving_by_value_type_visitor : static_visitor<std::expected<entity_identifier, error_storage>>
+{
+    fn_compiler_context& ctx;
+    functional::binding_set_t& binding;
+    ExpressionIteratorT & expr_it;
+    mutable int weight = 0;
+    arg_resolving_by_value_type_visitor(fn_compiler_context& c, functional::binding_set_t& bnd, ExpressionIteratorT & it)
+        : ctx{ c }, binding{ bnd }, expr_it{ it }
+    {}
+
+    result_type operator()(annotated_qname_identifier const& aqi) const
+    {
+        functional const& fnl = ctx.u().fregistry().resolve(aqi.value);
+        entity_identifier eid = fnl.default_entity();
+        if (eid) {
+            return this->operator()(eid, aqi.location);
+        }
+        return std::unexpected(make_error<basic_general_error>(aqi.location, "not a variable or constant"sv, expr_it.next_expression()));
+    }
+
+    result_type operator()(entity_identifier const& eid, lex::resource_location eidloc = {}) const
     {
         entity const& param_entity = ctx.u().eregistry().get(eid);
         if (pack_entity const* pent = dynamic_cast<pack_entity const*>(&param_entity); pent) {
-            uint64_t pack_size = 0;
+            unsigned int pack_size = 0;
             for (;;) {
-                expression_visitor evis{ ctx, expected_result_t{ pent->element_type(), get_start_location(*expr_it) } };
-                if (auto opterr = apply_visitor(evis, *expr_it); opterr) break; // skip error
+                syntax_expression_t const& expr = expr_it.next_expression();
+                expression_visitor evis{ ctx, expected_result_t{ pent->element_type(), get_start_location(expr) } };
+                auto res = apply_visitor(evis, expr);
+                if (!res) break; // skip error
+                // do not condider cast's weight inpact for pack_entity cases
                 ++pack_size;
-                if (++expr_it == expr_eit) break;
+                if (!expr_it.has_next_expression()) break;
             }
+            weight -= pack_size; // put down as pack_entity
             ctx.append_expression(semantic::push_value{ uint64_t{pack_size} });
         } else {
             BOOST_ASSERT(eid);
-            expression_visitor evis{ ctx, expected_result_t{ eid, get_start_location(*expr_it) } };
-            if (auto err = apply_visitor(evis, *expr_it); err) {
-                return std::unexpected(std::move(err));
-            }
-            ++expr_it;
+            expression_visitor evis{ ctx, expected_result_t{ eid, eidloc } };
+            auto res = apply_visitor(evis, expr_it.next_expression());
+            if (!res) {
+                return std::unexpected(std::move(res.error()));
+            } else if (res.value()) { --weight; }
         }
         return eid;
 
@@ -120,8 +186,7 @@ struct arg_resolving_visitor : static_visitor<std::expected<entity_identifier, e
     template <typename T>
     result_type operator()(T const& v) const
     {
-        
-        THROW_NOT_IMPLEMENTED_ERROR("arg_resolve_visitor not implemented expression");
+        THROW_NOT_IMPLEMENTED_ERROR("arg_resolving_by_value_type_visitor not implemented expression");
     }
 };
 
@@ -154,48 +219,288 @@ struct result_resolving_visitor : static_visitor<std::expected<entity_identifier
     }
 };
 
-error_storage basic_fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t const& call, functional::match_descriptor& md) const
-{
-    auto estate = ctx.expressions_state();
 
-    boost::container::small_vector<fn_compiler_context::expr_vec_t, 8> arg_branches;
-    arg_branches.resize(call.named_args.size() + call.positioned_args.size());
-    size_t argnum = 0;
-    for (auto const& tpl : call.named_args) { // { argname, expr }
-        annotated_qname const& argname = std::get<0>(tpl);
-        if (argname.value.size() != 1) {
-            return make_error<basic_general_error>(argname.location, "positioned argument mismatch"sv, argname.value);
+class argument_matcher
+{
+    function_descriptor const& fd_;
+
+    using bound_args_set_t = boost::container::small_flat_multimap<identifier, syntax_expression_t const*, 8>;
+    bound_args_set_t named_;
+    using positioned_args_set_t = std::span<const syntax_expression_t>;
+    positioned_args_set_t positioned_;
+
+    variant<null_t, bound_args_set_t::iterator, positioned_args_set_t::iterator> arg_iterator_;
+    identifier cur_name_;
+    syntax_expression_t const* cur_expression_ = nullptr;
+
+    using named_fields_t = span<const function_descriptor::named_field>;
+    using positioned_fields_t = span<const function_descriptor::positioned_field>;
+    variant<null_t, named_fields_t::iterator, positioned_fields_t::iterator> param_iterator_;
+
+    int index_;
+
+public:
+    explicit argument_matcher(function_descriptor const& fd) : fd_{ fd } {}
+    
+    error_storage setup(pure_call_t const& call)
+    {
+        for (auto const& tpl : call.named_args) { // { argname, expr }
+            annotated_identifier const& argname = std::get<0>(tpl);
+            function_descriptor::named_field const* pnf = fd_.find_named_field(argname.value);
+            if (!pnf) {
+                return make_error<basic_general_error>(argname.location, "unmatched named argument"sv, argname.value);
+            }
+            named_.emplace(pnf->ename.value, &std::get<1>(tpl));
         }
-        function_descriptor::named_field const* pnf = fd_.find_named_field(*argname.value.begin());
-        if (!pnf) {
-            return make_error<basic_general_error>(argname.location, "positioned argument mismatch"sv, argname.value);
+
+        for (function_descriptor::named_field const& nf : fd_.named_fields()) {
+            auto it = named_.find(nf.ename.value);
+            if (it != named_.end()) continue;
+            // to do: treat default value if exists
+            return make_error<basic_general_error>(call.location(), "unmatched named parameter"sv, nf.ename.value);
         }
-        THROW_NOT_IMPLEMENTED_ERROR("fn_pattern::is_matched, named argument");
+
+        // initialize argument and parameter iterators
+        positioned_ = call.positioned_args;
+        if (named_.empty()) {
+            arg_iterator_ = positioned_.begin();
+            param_iterator_ = fd_.positioned_fields().begin();
+            BOOST_ASSERT(fd_.named_fields().empty());
+        } else {
+            arg_iterator_ = named_.begin();
+            param_iterator_ = fd_.named_fields().begin();
+        }
+        cur_name_ = {};
+        return {};
     }
+
+    bool has_next_expression() const
+    {
+        if (positioned_args_set_t::iterator const* p = get<positioned_args_set_t::iterator>(&arg_iterator_); p)
+            return *p != positioned_.end();
+        if (!cur_name_) return true;
+        bound_args_set_t::iterator const& nit = get<bound_args_set_t::iterator>(arg_iterator_);
+        if (nit == named_.end()) return false;
+        return nit->first == cur_name_;
+    }
+
+    syntax_expression_t const& next_expression()
+    {
+        if (positioned_args_set_t::iterator * p = get<positioned_args_set_t::iterator>(&arg_iterator_); p) {
+            BOOST_ASSERT(*p != positioned_.end());
+            cur_expression_ = std::addressof(*(*p)++);
+        } else {
+            bound_args_set_t::iterator& nit = get<bound_args_set_t::iterator>(arg_iterator_);
+            BOOST_ASSERT(nit != named_.end());
+            if (!cur_name_) {
+                cur_name_ = nit->first;
+            } else {
+                BOOST_ASSERT(nit->first == cur_name_);
+            }
+            cur_expression_ = std::addressof(*nit->second);
+            ++nit;
+        }
+        return *cur_expression_;
+    }
+
+    syntax_expression_t const& current_expression() const
+    {
+        BOOST_ASSERT(cur_expression_);
+        return *cur_expression_;
+    }
+
+    bool has_next_parameter() const
+    {
+        if (positioned_fields_t::iterator const* p = get<positioned_fields_t::iterator>(&param_iterator_); p)
+            return *p != fd_.positioned_fields().end();
+        
+        //named_fields_t::iterator const& nit = get<named_fields_t::iterator>(param_iterator_);
+        BOOST_ASSERT(get<named_fields_t::iterator>(param_iterator_) != fd_.named_fields().end());
+        return true;
+    }
+
+    function_descriptor::generic_field const& next_parameter()
+    {
+        if (positioned_fields_t::iterator * p = get<positioned_fields_t::iterator>(&param_iterator_); p) {
+            return *(*p)++;
+        }
+        named_fields_t::iterator& nit = get<named_fields_t::iterator>(param_iterator_);
+        function_descriptor::generic_field const& result = *nit++;
+        cur_name_ = {};
+        if (nit == fd_.named_fields().end()) {
+            param_iterator_ = fd_.positioned_fields().begin();
+        }
+        return result;
+    }
+
+    std::expected<int, error_storage> try_match(fn_compiler_context& ctx, functional::match_descriptor& md)
+    {
+        int match_weight = 0;
+        boost::container::small_vector<fn_compiler_context::expr_vec_t, 8> arg_branches;
+        size_t argnum = 0;
+
+        auto estate = ctx.expressions_state();
+
+        while (has_next_expression()) {
+            if (!has_next_parameter()) {
+                return std::unexpected(make_error<basic_general_error>(get_start_location(next_expression()), "unmatched argument"sv));
+            }
+            entity_identifier param_entity;
+            function_descriptor::generic_field const& param = next_parameter();
+            bool is_runtime_argument = false;
+            if (param.constraint) {
+                std::expected<entity_identifier, error_storage> res;
+                switch (param.constraint_type) {
+                case parameter_constraint_modifier_t::value_type_constraint:
+                {
+                    if (arg_branches.size() <= argnum) arg_branches.resize(argnum + 1);
+                    ctx.push_chain(arg_branches[argnum]);
+                    is_runtime_argument = true;
+                    
+                    arg_resolving_by_value_type_visitor arvis{ ctx, md.bindings, *this };
+                    res = apply_visitor(arvis, *param.constraint);
+                    match_weight += arvis.weight;
+                    break;
+                }
+                case parameter_constraint_modifier_t::typename_constraint:
+                case parameter_constraint_modifier_t::value_constraint:
+                {
+                    arg_resolving_by_value_visitor arvis{ ctx, md.bindings, *this };
+                    res = apply_visitor(arvis, *param.constraint);
+                    break;
+                }
+                default:
+                    THROW_INTERNAL_ERROR("unknown constraint type");
+                }
+                if (!res.has_value()) return std::unexpected(std::move(res.error()));
+                param_entity = res.value();
+            } else {
+                if (arg_branches.size() <= argnum) arg_branches.resize(argnum + 1);
+                ctx.push_chain(arg_branches[argnum]);
+                is_runtime_argument = true;
+
+                expression_visitor evis{ ctx, nullptr };
+                if (auto res = apply_visitor(evis, next_expression()); !res) {
+                    return std::unexpected(std::move(res.error()));
+                }
+                param_entity = ctx.context_type;
+            }
+
+            if (param_entity) { // entity was resolved
+                if (is_runtime_argument) { // if not const or a typename
+                    if (cur_name_) {
+                        md.signature.set(argnum, cur_name_, { param_entity, false });
+                    } else {
+                        md.signature.set(argnum, { param_entity, false });
+                    }
+                }
+                
+                for (annotated_identifier const& ai : param.bindings) {
+                    auto it = md.bindings.find(ai);
+                    if (it == md.bindings.end()) {
+                        md.bindings.insert(it, std::pair{ ai, param_entity });
+                    }
+                    else if (it->second != param_entity) {
+                        return std::unexpected(make_error<basic_general_error>(get_start_location(current_expression()), "positioned argument mismatch"sv));
+                    }
+                }
+            } // else can't resolve due to the lack of matched parameters
+
+            estate.restore();
+            if (is_runtime_argument) ++argnum;
+        }
+
+        // to do: check all resolved
+        if (pattern_expression_t const* retexpr = fd_.result_type(); retexpr) {
+            result_resolving_visitor arvis{ ctx, md.bindings };
+            auto res = apply_visitor(arvis, *retexpr);
+            if (!res.has_value()) return std::unexpected(std::move(res.error()));
+            md.result = res.value();
+        }
+
+        for (auto& branch : arg_branches) {
+            std::move(branch.begin(), branch.end(), std::back_inserter(ctx.expressions()));
+        }
+
+        md.signature.normilize(); // ?? already sorted?
+        estate.detach();
+        return match_weight;
+    }
+
+    //inline bool empty() const noexcept { return !named_ || named_->size() + positioned_.size() >= index_; }
+
+    //syntax_expression_t const& operator*() const
+    //{
+    //    if (index < named_->size()) {
+
+    //    }
+    //}
+};
+
+std::expected<int, error_storage> basic_fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t const& call, functional::match_descriptor& md) const
+{
+    argument_matcher matcher{ fd_ };
+    if (auto err = matcher.setup(call); err) return std::unexpected(std::move(err));
+
+    return matcher.try_match(ctx, md);
+    
+#if 0
+    
+    //arg_branches.resize(call.named_args.size() + call.positioned_args.size());
+    size_t argnum = 0;
+
+    size_t param_pos = 0;
+    size_t param_count = fd_.positioned_fields().size() + fd_.named_fields().size();
+
+    for (auto const& pair: bind_args) {
+        if (arg_branches.size() <= argnum) arg_branches.resize(argnum + 1);
+        ctx.push_chain(arg_branches[argnum]);
+    }
+    THROW_NOT_IMPLEMENTED_ERROR("fn_pattern::is_matched, named argument");
 
     auto psp = fd_.positioned_fields();
     auto posarg = psp.begin();
-    argnum = call.named_args.size(); // to do: change to actual (possible increased) number of names params (take into account named param packs) 
+    argnum = call.named_args.size(); // to do: change to actual (possible increased) number of named params (take into account named param packs) 
 
     for (auto expr_it = call.positioned_args.begin(), expr_eit = call.positioned_args.end(); expr_it != expr_eit;) {
         if (posarg == psp.end()) {
-            return make_error<basic_general_error>(get_start_location(*expr_it), "positioned argument mismatch"sv);
+            return std::unexpected(make_error<basic_general_error>(get_start_location(*expr_it), "positioned argument mismatch"sv));
         }
-        if (arg_branches.size() <= argnum) arg_branches.resize(argnum + 1);
-        ctx.push_chain(arg_branches[argnum]);
 
         entity_identifier param_entity;
         if (posarg->constraint) {
-            arg_resolving_visitor arvis{ ctx, md.bindings, expr_it, expr_eit };
-            auto res = apply_visitor(arvis, *posarg->constraint);
-            if (!res.has_value()) return std::move(res.error());
+            std::expected<entity_identifier, error_storage> res;
+            switch (posarg->constraint_type) {
+                case parameter_constraint_modifier_t::value_type_constraint:
+                {
+                    if (arg_branches.size() <= argnum) arg_branches.resize(argnum + 1);
+                    ctx.push_chain(arg_branches[argnum]);
+
+                    arg_resolving_by_value_type_visitor arvis{ ctx, md.bindings, expr_it, expr_eit };
+                    res = apply_visitor(arvis, *posarg->constraint);
+                    match_weight += arvis.weight;
+                    break;
+                }
+                case parameter_constraint_modifier_t::typename_constraint:
+                case parameter_constraint_modifier_t::value_constraint:
+                {
+                    arg_resolving_by_value_visitor arvis{ ctx, md.bindings, expr_it, expr_eit };
+                    res = apply_visitor(arvis, *posarg->constraint);
+                    break;
+                }
+                default:
+                    THROW_INTERNAL_ERROR("unknown constraint type");
+            }
+            if (!res.has_value()) return std::unexpected(std::move(res.error()));
             param_entity = res.value();
         } else {
+            if (arg_branches.size() <= argnum) arg_branches.resize(argnum + 1);
+            ctx.push_chain(arg_branches[argnum]);
+
             expression_visitor evis{ ctx, nullptr };
-            if (auto err = apply_visitor(evis, *expr_it); err) {
-                return std::move(err);
+            if (auto res = apply_visitor(evis, *expr_it); !res) {
+                return std::unexpected(std::move(res.error()));
             }
-            // to do: const & typename cases
             param_entity = ctx.context_type;
             ++expr_it;
         }
@@ -207,7 +512,7 @@ error_storage basic_fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t
                 if (it == md.bindings.end()) {
                     md.bindings.insert(it, std::pair{ ai, param_entity });
                 } else if (it->second != param_entity) {
-                    return make_error<basic_general_error>(get_start_location(*expr_it), "positioned argument mismatch"sv);
+                    return std::unexpected(make_error<basic_general_error>(get_start_location(*expr_it), "positioned argument mismatch"sv));
                 }
             }
         } // else can't resolve due to lack of matched parameters
@@ -222,7 +527,7 @@ error_storage basic_fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t
     if (pattern_expression_t const* retexpr = fd_.result_type(); retexpr) {
         result_resolving_visitor arvis{ ctx, md.bindings };
         auto res = apply_visitor(arvis, *retexpr);
-        if (!res.has_value()) return std::move(res.error());
+        if (!res.has_value()) return std::unexpected(std::move(res.error()));
         md.result = res.value();
     }
 
@@ -243,7 +548,8 @@ error_storage basic_fn_pattern::is_matched(fn_compiler_context& ctx, pure_call_t
     // to do: check concepts
     md.signature.normilize();
     estate.detach();
-    return {};
+    return match_weight;
+#endif
 }
 
 std::expected<entity_identifier, error_storage> basic_fn_pattern::apply(fn_compiler_context& ctx, functional::match_descriptor& md) const
@@ -259,7 +565,7 @@ std::expected<entity_identifier, error_storage> basic_fn_pattern::apply(fn_compi
     entity_identifier rt = fne.get_result_type();
     if (!rt) { // need build to resolve result type
         if (building_) {
-            throw circular_dependency_error({ make_error<basic_general_error>(declaration_location_, "resolving function result type"sv, fd_.id()) });
+            throw circular_dependency_error({ make_error<basic_general_error>(location_, "resolving function result type"sv, fd_.id()) });
         }
         building_ = true;
         fne.build(ctx.u());
@@ -275,7 +581,7 @@ std::expected<entity_identifier, error_storage> basic_fn_pattern::apply(fn_compi
 #if 0
     if (!result_type_) { // the result type should be inferred by the function content
         if (building_) {
-            throw circular_dependency_error({ make_error<basic_general_error>(declaration_location_, "resolving function result type"sv, fd_.id()) });
+            throw circular_dependency_error({ make_error<basic_general_error>(location_, "resolving function result type"sv, fd_.id()) });
         }
         const_cast<basic_fn_pattern*>(this)->build(ctx.u());
     }

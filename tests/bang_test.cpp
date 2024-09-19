@@ -54,8 +54,21 @@ namespace {
 
 using namespace sonia;
 
+//struct dec{};
+//
+//dec my_plus(dec a, dec b) { throw; }
+//
+//struct bint{};
+
 void bang_suite_test()
 {
+    //bint a, b;
+    //my_plus(a, b);
+    mp::integer i0{ 20 };
+    auto br0 = bigint_blob_result(i0);
+    auto br1 = bigint_blob_result(i0);
+    BOOST_ASSERT(br0 == br1);
+
     fs::remove_all(TEST_FOLDER);
     scoped_services ss{ "base-path=" TEST_FOLDER "/" };
     std::stringstream cfgss;

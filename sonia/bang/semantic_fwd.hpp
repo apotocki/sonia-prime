@@ -148,6 +148,7 @@ private:
 
 class pack_entity;
 using string_literal_entity = value_entity<small_string>;
+using integer_literal_entity = value_entity<mp::integer>;
 using decimal_literal_entity = value_entity<mp::decimal>;
 
 class enum_entity;
@@ -164,6 +165,7 @@ public:
     virtual ~entity_visitor() = default;
 
     virtual void operator()(string_literal_entity const&) const = 0;
+    virtual void operator()(integer_literal_entity const&) const = 0;
     virtual void operator()(decimal_literal_entity const&) const = 0;
     virtual void operator()(pack_entity const&) const = 0;
     virtual void operator()(function_entity const&) const = 0;

@@ -254,6 +254,16 @@ struct decimal_holder : AllocatorT
         return is_inplaced(ctl) ? inplaced_is_negative(ctl) : allocated_is_negative();
     }
 
+    inline void negate()
+    {
+        LimbT& ctl = ctl_limb();
+        if (is_inplaced(ctl)) {
+            ctl ^= sign_mask;
+        } else {
+            allocated_data()->sign ^= 1;
+        }
+    }
+
     explicit decimal_holder()
     {
         init_zero();
@@ -403,6 +413,58 @@ struct decimal_holder : AllocatorT
         }
     }
 
+    static bool can_be_inplaced(LimbT const* limbs, size_t sz, LimbT last_limb_mask, basic_integer_view<LimbT> exponent) noexcept
+    {
+        if (sz > N) return false;
+        if (sz == N && (limbs[N - 1] & last_limb_mask)) return false;
+        if constexpr (exp_value_bits > 0) {
+            // can fit exponent in available bits?
+            if constexpr (!has_exp_sign_bit) {
+                if (exponent.is_negative()) return false;
+            }
+            if (exponent.abs() > max_inplace_exp_value) return false;
+        } else {
+            if (exponent) return false;
+        }
+        return true;
+    };
+
+    inline void init(basic_integer_view<LimbT> s, basic_integer_view<LimbT> exponent)
+    {
+        if (!s) {
+            init_zero();
+            return;
+        }
+        LimbT const* limbs = s.data();
+        size_t sz = s.size();
+        LimbT last_limb_mask = s.last_limb_mask();
+        if (can_be_inplaced(limbs, sz, last_limb_mask & ~last_significand_limb_mask, exponent)) {
+            memcpy(inplace_limbs_, limbs, sz * sizeof(LimbT));
+            inplace_limbs_[sz - 1] &= s.last_limb_mask();
+            return inplaced_set_masks(sz, s.sgn(), (int64_t)exponent);
+        } else { // need allocate
+            size_t exp_alloc_sz = exponent.template is_fit<int64_t>() ? 0 : exponent.size();
+            size_t asz = sz + exp_alloc_sz;
+            LimbT* limbsdata = allocate(asz + data_sizeof_in_limbs);
+            std::copy(limbs, limbs + sz, limbsdata + data_sizeof_in_limbs);
+            if (exp_alloc_sz) {
+                exponent.copy_to(limbsdata + data_sizeof_in_limbs + sz);
+            }
+
+            new (limbsdata) DataT{ .allocated_size = static_cast<uint32_t>(asz), .sign = (s.sgn() < 0) ? 1u : 0, .size = static_cast<uint32_t>(sz) };
+            if constexpr (ExponentBitCount >= 0) {
+                if (exp_alloc_sz) {
+                    reinterpret_cast<DataT*>(limbsdata)->allocated_exponent = 1;
+                    reinterpret_cast<DataT*>(limbsdata)->exponent = (exponent.is_negative() ? -1 : 1) * static_cast<int64_t>(exp_alloc_sz);
+                } else {
+                    reinterpret_cast<DataT*>(limbsdata)->allocated_exponent = 0;
+                    reinterpret_cast<DataT*>(limbsdata)->exponent = (int64_t)exponent;
+                }
+            }
+            set_allocated(reinterpret_cast<DataT*>(limbsdata));
+        }
+    }
+
     // (limbs, size, allocated size, sign)
     template <typename InitAllocatorT>
     inline void init(std::tuple<LimbT*, size_t, size_t, int> tpl, InitAllocatorT& alloc, basic_integer_view<LimbT> exponent)
@@ -417,22 +479,22 @@ struct decimal_holder : AllocatorT
             return;
         }
 
-        if (std::equal_to<LimbT*>()(limbs, inplace_limbs_)) {
-            auto can_be_inplaced = [](LimbT const* limbs, size_t sz, basic_integer_view<LimbT> exponent) noexcept {
-                if (sz > N) return false;
-                if (sz == N && (limbs[N - 1] & ~last_significand_limb_mask)) return false;
-                if constexpr (exp_value_bits > 0) {
-                    // can fit exponent in available bits?
-                    if constexpr (!has_exp_sign_bit) {
-                        if (exponent.is_negative()) return false;
-                    }
-                    if (exponent.abs() > max_inplace_exp_value) return false;
-                } else {
-                    if (exponent) return false;
-                }
-                return true;
-            };
-            if (can_be_inplaced(limbs, sz, exponent)) { // sso case
+        if (std::equal_to<const LimbT*>()(limbs, inplace_limbs_)) {
+            //auto can_be_inplaced = [](LimbT const* limbs, size_t sz, basic_integer_view<LimbT> exponent) noexcept {
+            //    if (sz > N) return false;
+            //    if (sz == N && (limbs[N - 1] & ~last_significand_limb_mask)) return false;
+            //    if constexpr (exp_value_bits > 0) {
+            //        // can fit exponent in available bits?
+            //        if constexpr (!has_exp_sign_bit) {
+            //            if (exponent.is_negative()) return false;
+            //        }
+            //        if (exponent.abs() > max_inplace_exp_value) return false;
+            //    } else {
+            //        if (exponent) return false;
+            //    }
+            //    return true;
+            //};
+            if (can_be_inplaced(limbs, sz, ~last_significand_limb_mask, exponent)) { // sso case
                 return inplaced_set_masks(sz, sign, (int64_t)exponent);
             } else { // need allocate
                 exp_alloc_sz = exponent.template is_fit<int64_t>() ? 0 : exponent.size();
@@ -644,16 +706,26 @@ class basic_decimal
     using alloc_holder = detail::decimal_holder<LimbT, actualN, ExponentBitCount, detail::decimal_data, allocator_type>;
     alloc_holder aholder_;
 
+public:
     inline allocator_type& allocator() noexcept { return aholder_; }
     inline allocator_type const& allocator() const noexcept { return aholder_; }
 
-public:
     basic_decimal() = default;
     ~basic_decimal() = default;
 
     using storage_type = alloc_holder; // for debug
 
     explicit basic_decimal(AllocatorT const& alloc) noexcept : aholder_{ alloc } {}
+
+    explicit basic_decimal(basic_integer_view<LimbT> s, basic_integer_view<LimbT> exp = {}, AllocatorT const& alloc = AllocatorT{})
+        : aholder_{ [&s, &exp](storage_type& dh) { dh.init(s, exp); }, alloc }
+    {
+        // to do: normilize
+    }
+
+    explicit basic_decimal(basic_decimal_view<LimbT> dv, AllocatorT const& alloc = AllocatorT{})
+        : aholder_{ [&dv](storage_type& dh) { dh.init(dv.significand(), dv.exponent()); }, alloc }
+    {}
 
     template <std::integral T>
     basic_decimal(T value, AllocatorT const& alloc = AllocatorT{})
@@ -725,7 +797,7 @@ public:
             }
         } else {
             eval = -eval;
-            basic_integer<LimbT, actualN, AllocatorT> sig = aholder_.significand();
+            basic_integer<LimbT, actualN, AllocatorT> sig{ aholder_.significand() };
             // This is a temporary solution until division with an arbitrary size divider is implemented.
             
             constexpr uint64_t step = std::numeric_limits<LimbT>::digits10;
@@ -742,6 +814,11 @@ public:
         }
         
         throw std::invalid_argument((std::ostringstream() << "the destination type can't fit value: " << *this).str());
+    }
+
+    inline void negate() noexcept
+    {
+        aholder_.negate();
     }
 
     inline bool is_negative() const noexcept { return aholder_.is_negative(); }
@@ -804,6 +881,13 @@ public:
         }
         return result;
     }
+
+    basic_decimal operator- () const
+    {
+        basic_decimal result{ *this };
+        result.negate();
+        return result;
+    }
 };
 
 template <std::unsigned_integral LimbT, size_t NL, size_t NR, size_t ExponentBitCountL, size_t ExponentBitCountR, typename AllocatorTL, typename AllocatorTR>
@@ -841,7 +925,7 @@ inline std::strong_ordering operator <=>(basic_decimal<LimbT, LN, ExponentBitCou
 }
 
 template <std::unsigned_integral LimbT, size_t N, size_t E, typename AllocatorT>
-inline size_t hash_value(basic_decimal<LimbT, N, E, AllocatorT> const& v)
+inline size_t hash_value(basic_decimal<LimbT, N, E, AllocatorT> const& v) noexcept
 {
     return hasher()(v.significand(), v.exponent());
 }
@@ -849,8 +933,27 @@ inline size_t hash_value(basic_decimal<LimbT, N, E, AllocatorT> const& v)
 template <std::unsigned_integral LimbT, size_t N, size_t E, typename AllocatorT>
 inline basic_decimal<LimbT, N, E, AllocatorT> operator+ (basic_decimal<LimbT, N, E, AllocatorT> const& l, basic_decimal_view<LimbT> rv)
 {
-    THROW_NOT_IMPLEMENTED_ERROR();
-    //return l.build_new([lv = (basic_integer_view<LimbT>)l, rv](auto& ih) { ih.init(add(lv, rv, ih.sso_allocator())); });
+    basic_integer<LimbT, N, AllocatorT> ediff{ rv.exponent(), l.allocator() };
+    ediff -= l.exponent();
+    if (!ediff.template is_fit<int>()) throw std::overflow_error("the exponent difference is too large");
+    int ediffval = (int)ediff;
+
+    basic_integer<LimbT, N, AllocatorT> rs, re; // result significand and exponent
+    if (ediffval > 0) {
+        rs = pow(basic_integer<LimbT, N, AllocatorT>{ 10, l.allocator() }, (unsigned int)ediffval) * rv.significand() + l.significand();
+        re = l.exponent();
+    } else if (ediffval < 0) {
+        rs = pow(basic_integer<LimbT, N, AllocatorT>{ 10, l.allocator() }, (unsigned int)(-ediffval))* l.significand() + rv.significand();
+        re = rv.exponent();
+    } else {
+        rs = l.significand(); rs += rv.significand();
+        re = l.exponent();
+    }
+    while (!(rs % 10)) {
+        rs /= 10;
+        re += 1;
+    }
+    return basic_decimal<LimbT, N, E, AllocatorT>{ rs, re, l.allocator() };
 }
 
 template <typename Elem, typename Traits, std::unsigned_integral LimbT, size_t N, size_t E, typename AllocatorT>
@@ -865,7 +968,7 @@ std::string to_scientific_string(basic_decimal<LimbT, N, E, AllocatorT> const& v
     using namespace std::string_literals;
     if (!val) return "0.0E0"s;
     std::string result = (std::ostringstream() << val.significand()).str();
-    basic_integer<LimbT, N, AllocatorT> sc_e = val.exponent();
+    basic_integer<LimbT, N, AllocatorT> sc_e{ val.exponent() };
     for (; result.back() == '0'; result.pop_back(), sc_e += 1);
 
     int pos = val.is_negative() ? 1 : 0;

@@ -8,7 +8,7 @@
 #include "sonia/span.hpp"
 #include "sonia/string.hpp"
 #include "sonia/exceptions.hpp"
-
+#include "sonia/shared_ptr.hpp"
 #include <boost/container/small_vector.hpp>
 
 namespace sonia::lang {
@@ -65,11 +65,31 @@ std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits> & os, id
 
 namespace lex {
 
+class code_resource
+{
+public:
+    virtual ~code_resource() = default;
+    virtual small_string description() const = 0;
+};
+
+template <typename T, typename Traits>
+inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& os, code_resource const& res)
+{
+    return os << res.description();
+}
+
+template <typename T, typename Traits>
+inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& os, shared_ptr<code_resource> const& res)
+{
+    if (res) return os << *res;
+    return os << "<undefined resource>"sv;
+}
+
 struct resource_location
 {
     int line;
     int column;
-    small_string resource;
+    shared_ptr<code_resource> resource;
 };
 
 struct resource_span

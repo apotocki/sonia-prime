@@ -46,12 +46,15 @@ protected:
     void compile(lang::bang::parser_context&, declaration_set_t, span<string_view> args);
     void do_compile(internal_function_entity&);
 
+    void bootstrap();
+
 private:
     lang::bang::unit unit_;
     optional<fn_compiler_context> default_ctx_;
     optional<internal_function_entity> main_function_;
     invocation::invocable* penv_ = nullptr;
     asm_builder_t vmasm_;
+    bool bootstrapped_ = false;
 };
 
 }
@@ -101,12 +104,38 @@ namespace sonia::lang::bang::detail {
 
 using namespace sonia::lang::bang;
 
+const char bang_bootstrap_code[] = R"#(
+inline fn ::not_equal(_, _)->bool => !($0 == $1);
+
+)#";
+
 bang_impl::bang_impl()
     : vmasm_{ unit_.bvm() }
 {}
 
+void bang_impl::bootstrap()
+{
+    if (bootstrapped_) return;
+    parser_context parser{ unit_ };
+    auto exp_decls = parser.parse_string(string_view{bang_bootstrap_code});
+    if (!exp_decls.has_value()) throw exception(exp_decls.error());
+    declaration_set_t& decls = *exp_decls;
+    
+    fn_compiler_context ctx{ unit_, qname{} };
+
+    forward_declaration_visitor fdvis{ ctx, parser };
+    for (auto& d : decls) { apply_visitor(fdvis, d); }
+
+    declaration_visitor dvis{ ctx };
+    for (auto& d : fdvis.decls) { apply_visitor(dvis, d); }
+    ctx.finish_frame();
+
+    bootstrapped_ = true;
+}
+
 void bang_impl::load(fs::path const& f, span<string_view> args)
 {
+    bootstrap();
     parser_context parser{ unit_ };
     auto exp_decls = parser.parse(f);
     if (!exp_decls.has_value()) throw exception(exp_decls.error());
@@ -115,8 +144,9 @@ void bang_impl::load(fs::path const& f, span<string_view> args)
 
 void bang_impl::load(string_view code, span<string_view> args)
 {
-    lang::bang::parser_context parser{ unit_ };
-    auto exp_decls = parser.parse(code);
+    bootstrap();
+    parser_context parser{ unit_ };
+    auto exp_decls = parser.parse_string(code);
     if (!exp_decls.has_value()) throw exception(exp_decls.error());
     compile(parser, std::move(*exp_decls), args);
 }
@@ -144,10 +174,10 @@ void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t dec
         ++argindex;
     }
     argname[1] = '$';
-    decimal_literal_entity smpl{ argindex };
-    smpl.set_type(unit_.get_decimal_entity_identifier());
+    integer_literal_entity smpl{ argindex };
+    smpl.set_type(unit_.get_integer_entity_identifier());
     entity const& argent = unit_.eregistry().find_or_create(smpl, [&smpl]() {
-        return make_shared<decimal_literal_entity>(std::move(smpl));
+        return make_shared<integer_literal_entity>(std::move(smpl));
     });
     identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), 2 });
     functional& arg_fnl = unit_.fregistry().resolve(ctx.ns() / argid);

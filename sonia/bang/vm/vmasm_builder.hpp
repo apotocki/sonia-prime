@@ -63,7 +63,7 @@ public:
     using function_identity_store_t = automatic_polymorphic<function_identity, 2 * sizeof(void*)>;
 
     struct instruction_entry;
-    using operand_t = variant<null_t, size_t, instruction_entry*, function_identity_store_t>;
+    using operand_t = variant<null_t, size_t, instruction_entry const*, function_identity_store_t>;
     struct instruction_entry
     {
         boost::intrusive::list_member_hook<> hook;
@@ -108,23 +108,62 @@ public:
         builder& builder_;
         function_descriptor& dr_;
 
+        boost::unordered_map<instruction_entry const*, int> labels_; // ie -> blocknum, negative means undefined
+
         struct block
         {
+            op_t operation;
+            uint8_t op_supposed_size : 7;
+            uint8_t op_applied : 1;
+            instruction_entry const* operand;
+            
             boost::container::small_vector<uint8_t, 16> code;
-            operand_t operand;
-            vm_t::op operation;
+            
+            inline explicit block() noexcept
+                : operation{ op_t::noop }, op_supposed_size{ 0 }, op_applied{ 0 }, operand{ nullptr }
+            { }
 
             inline void append(op_t op) { code.push_back(static_cast<uint8_t>(op)); }
             inline void append(op_t op, size_t param) { append(op); append_uint(param); }
             void append_uint(size_t);
+
+            inline void append_relative_jump(op_t posop, int_least32_t offset)
+            {
+                if (offset > 0) {
+                    append(posop, static_cast<size_t>(offset));
+                } else {
+                    append((op_t)(((uint8_t)posop) + 1), static_cast<size_t>(-offset));
+                }
+            }
         };
         
     public:
         inline explicit function_builder(builder& b, function_descriptor& fd) noexcept
             : builder_{ b }, dr_{ fd }
-        {}
+        {
+            make_label();
+        }
 
-        inline instruction_entry* position() { return dr_.instructions.empty() ? nullptr : &dr_.instructions.back(); }
+        function_builder(function_builder const&) = delete;
+        function_builder& operator=(function_builder const&) = delete;
+
+        inline instruction_entry* current_entry()
+        {
+            return dr_.instructions.empty() ? nullptr : &dr_.instructions.back();
+        }
+
+        inline instruction_entry* make_label()
+        {
+            instruction_entry* ie = current_entry();
+            labels_[ie] = ie ? -1 : 0;
+            GLOBAL_LOG_INFO() << "after make_label: " << labels_.size();
+            return ie;
+        }
+
+        inline void remove_label(instruction_entry const* ie)
+        {
+            labels_.erase(ie);
+        }
 
         void append_push_pooled_const(variable_type&&);
 
@@ -160,8 +199,17 @@ public:
 
         void remove(instruction_entry* e)
         {
-            dr_.instructions.erase(dr_.instructions.s_iterator_to(*e));
+            auto it = dr_.instructions.s_iterator_to(*e);
+            if (auto lit = labels_.find(e); lit != labels_.end()) {
+                labels_.erase(lit);
+                if (it != dr_.instructions.begin()) {
+                    auto pit = it; --pit;
+                    labels_[&*pit] = -1;
+                }
+            }
+            dr_.instructions.erase(it);
             builder_.free_entry(*e);
+            GLOBAL_LOG_INFO() << "after removing: " << labels_.size();
         }
 
         void materialize();
@@ -274,6 +322,8 @@ void builder<ContextT>::function_builder::block::append_uint(size_t uval)
 template <typename ContextT>
 void builder<ContextT>::function_builder::materialize()
 {
+    GLOBAL_LOG_INFO() << "materialize: " << labels_.size();
+
     dr_.address = builder_.vm_.get_ip(); // needs here to enable recursive calls
 
     // build blocks
@@ -342,9 +392,29 @@ void builder<ContextT>::function_builder::materialize()
             }
             break;
         }
+        case op_t::jt:
+        case op_t::jf:
+        case op_t::jmp:
+        {
+            block& cur_block = blocks.back();
+            cur_block.operation = e.operation;
+            cur_block.operand = get<instruction_entry const*>(e.operand);
+            cur_block.op_supposed_size = 2;
+            blocks.emplace_back();
+            break;
+        }
 
         default:
             THROW_NOT_IMPLEMENTED_ERROR("function_builder::materialize");
+        }
+        auto it = labels_.find(&e);
+        if (it != labels_.end()) {
+            if (!blocks.back().code.empty()) {
+                it->second = static_cast<int>(blocks.size());
+                blocks.emplace_back();
+            } else { // new block has been already appended
+                it->second = static_cast<int>(blocks.size() - 1);
+            }
         }
     }
 
@@ -353,8 +423,52 @@ void builder<ContextT>::function_builder::materialize()
         dr_.free(builder_);
         return;
     }
-    THROW_NOT_IMPLEMENTED_ERROR("function_builder::materialize");
-    
+
+    boost::container::small_vector<int_least32_t, 16> block_offsets;
+    block_offsets.resize(blocks.size(), 0);
+
+
+    int_least32_t accum_offset = 0;
+    size_t block_index = 0;
+    for (block& b : blocks) {
+        block_offsets[block_index++] = accum_offset;
+        accum_offset += static_cast<int_least32_t>(b.code.size()) + b.op_supposed_size;
+    }
+
+    block_index = 0;
+    for (block & b : blocks) {
+        if (b.operand) {
+            auto it = labels_.find(b.operand);
+            BOOST_ASSERT(it != labels_.end());
+            if (b.op_applied) {
+                b.code.resize(b.code.size() - b.op_supposed_size);
+            }
+            size_t csz = b.code.size();
+            int_least32_t jmp_offset = static_cast<int_least32_t>(block_offsets[it->second]) - static_cast<int_least32_t>(block_offsets[block_index] + csz + b.op_supposed_size);
+            switch (b.operation) {
+            case op_t::noop:
+                break;
+            case op_t::jt:
+                b.append_relative_jump(op_t::jtp, jmp_offset); break;
+            case op_t::jf:
+                b.append_relative_jump(op_t::jfp, jmp_offset); break;
+            case op_t::jmp:
+                b.append_relative_jump(op_t::jmpp, jmp_offset); break;
+            default:
+                THROW_INTERNAL_ERROR("unexpected final block operation");
+            }
+            uint8_t real_op_sz = static_cast<uint8_t>(b.code.size() - csz);
+            if (real_op_sz != b.op_supposed_size) {
+                THROW_NOT_IMPLEMENTED_ERROR("function_builder::materialize");
+            }
+        }
+        ++block_index;
+    }
+
+    for (block& b : blocks) {
+        builder_.vm_.append(b.code);
+    }
+    dr_.free(builder_);
 }
 
 }

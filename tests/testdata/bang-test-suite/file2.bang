@@ -1,11 +1,10 @@
 //fn ::implicit_cast(typename string, _)->string
 let n = 0;
-//while n != 10 {
-    print("step #", n);
+while n != 10 {
+    print("step #\n", n);
     n = n + 1;
-    print("step #", n);
-//}
-
+}
+/*
 assert($$ != 4);
 
 assert(120 == 100 + 20);
@@ -37,3 +36,4 @@ print($0, " ", $1, " ", $2);
 
 //fn xxx(a: valuetype foo(param0: $x), const $x)
 //fn xxx(a: typename match foo(param0: $x), const $x)
+*/

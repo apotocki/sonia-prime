@@ -25,6 +25,8 @@ struct declaration_visitor : static_visitor<void>
 
     void operator()(fn_decl_t const&) const;
 
+    void operator()(while_decl_t const&) const;
+
     void operator()(let_statement_decl_t const&) const;
     //void operator()(assign_decl_t const&) const;
 

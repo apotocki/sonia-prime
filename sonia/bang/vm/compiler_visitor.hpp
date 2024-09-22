@@ -11,6 +11,7 @@
 #include "bang_vm.hpp"
 #include "push_value_visitor.hpp"
 
+#include "sonia/bang/semantic.hpp"
 #include "sonia/bang/entities/functions/function_entity.hpp"
 
 namespace sonia::lang::bang::vm {
@@ -20,18 +21,21 @@ class compiler_visitor_base : public static_visitor<void>
 protected:
     unit& unit_;
     internal_function_entity const* fn_context_;
-    mutable asm_builder_t::function_builder fnbuilder_;
+    asm_builder_t::function_builder& fnbuilder_;
+
+    using breaks_t = boost::container::small_vector<asm_builder_t::instruction_entry*, 4>;
+    mutable boost::container::small_vector<std::pair<asm_builder_t::instruction_entry*, breaks_t*>, 4> loop_stack_; // [{loop start, [loop brakes]}]
 
 public:
-    compiler_visitor_base(unit& u, asm_builder_t::function_builder b, internal_function_entity const& ife)
+    compiler_visitor_base(unit& u, asm_builder_t::function_builder & b, internal_function_entity const& ife)
         : unit_{ u }
-        , fnbuilder_{ std::move(b) }
+        , fnbuilder_{ b }
         , fn_context_{ &ife }
     {}
 
-    compiler_visitor_base(unit& u, asm_builder_t::function_builder b)
+    compiler_visitor_base(unit& u, asm_builder_t::function_builder & b)
         : unit_{ u }
-        , fnbuilder_{ std::move(b) }
+        , fnbuilder_{ b }
         , fn_context_{ nullptr }
     {}
 
@@ -99,42 +103,139 @@ public:
     }
 
     void operator()(semantic::invoke_function const& invf) const;
-};
-
-class inline_compiler_visitor : public compiler_visitor_base
-{
-    mutable boost::container::small_vector<asm_builder_t::instruction_entry*, 4> rpositions_;
-
-public:
-    using compiler_visitor_base::compiler_visitor_base;
-    
-    using compiler_visitor_base::operator();
 
     void operator()(std::vector<semantic::expression_t> const& evec) const
     {
         for (auto const& e : evec) {
             //GLOBAL_LOG_INFO() << unit_.print(e);
-            apply_visitor(*this, e);
+            apply(e);
         }
     }
+
+    void operator()(semantic::loop_scope_t const& s) const
+    {
+        auto scope_begin_pos = fnbuilder_.make_label();
+        breaks_t breaks;
+
+        loop_stack_.emplace_back(scope_begin_pos, std::addressof(breaks));
+        SCOPE_EXIT([this] { loop_stack_.pop_back(); });
+
+        for (auto const& e : s.branch) {
+            apply(e);
+        }
+        auto scope_end_pos = fnbuilder_.make_label();
+
+        for (asm_builder_t::instruction_entry* pbi : breaks) {
+            pbi->operation = asm_builder_t::op_t::jmp;
+            pbi->operand = scope_end_pos;
+        }
+    }
+
+    void operator()(semantic::loop_continuer const&) const
+    {
+        if (loop_stack_.empty()) {
+            throw exception("there is no enclosing loop for the cotinue statement");
+        }
+        fnbuilder_.append_jmp(loop_stack_.back().first);
+    }
+
+    void operator()(semantic::loop_breaker const&) const
+    {
+        if (loop_stack_.empty()) {
+            throw exception("there is no enclosing loop for the break statement");
+        }
+        fnbuilder_.append_noop();
+        loop_stack_.back().second->emplace_back(fnbuilder_.current_entry());
+    }
+
+    inline void operator()(semantic::conditional_t const& c) const
+    {
+        if (c.false_branch.empty() && c.true_branch.empty()) return;
+        fnbuilder_.append_noop();
+        auto branch_pt = fnbuilder_.current_entry();
+        if (c.false_branch.empty()) {
+            for (auto const& e : c.true_branch) {
+                apply(e);
+            }
+            auto branch_end_pt = fnbuilder_.make_label();
+            branch_pt->operation = asm_builder_t::op_t::jf;
+            branch_pt->operand = branch_end_pt;
+        } else if (c.true_branch.empty()) {
+            for (auto const& e : c.false_branch) {
+                apply(e);
+            }
+            auto branch_end_pt = fnbuilder_.make_label();
+            branch_pt->operation = asm_builder_t::op_t::jt;
+            branch_pt->operand = branch_end_pt;
+        } else {
+            for (auto const& e : c.true_branch) {
+                apply(e);
+            }
+            fnbuilder_.append_noop();
+            auto true_branch_end_pt = fnbuilder_.make_label();
+            for (auto const& e : c.false_branch) {
+                apply(e);
+            }
+            auto branch_end_pt = fnbuilder_.make_label();
+            branch_pt->operation = asm_builder_t::op_t::jf;
+            branch_pt->operand = true_branch_end_pt;
+            true_branch_end_pt->operation = asm_builder_t::op_t::jmp;
+            true_branch_end_pt->operand = branch_end_pt;
+        }
+    }
+
+    virtual void apply(semantic::expression_t const&) const = 0;
+};
+
+template <typename DerivedT>
+class compiler_visitor_generic : public compiler_visitor_base
+{
+    
+public:
+    using generic_base_t = compiler_visitor_generic;
+    using compiler_visitor_base::compiler_visitor_base;
+
+    using compiler_visitor_base::operator();
+
+    void apply(semantic::expression_t const& e) const override
+    {
+        apply_visitor(derived(), e);
+    }
+
+protected:
+    inline DerivedT const& derived() const noexcept { return static_cast<DerivedT const&>(*this); }
+};
+
+class inline_compiler_visitor : public compiler_visitor_generic<inline_compiler_visitor>
+{
+    mutable boost::container::small_vector<asm_builder_t::instruction_entry*, 4> rpositions_;
+
+public:
+    using generic_base_t::generic_base_t;
+    
+    using generic_base_t::operator();
 
     inline void operator()(semantic::return_statement const&) const
     {
         fnbuilder_.append_noop();
-        rpositions_.push_back(fnbuilder_.position());
+        rpositions_.push_back(fnbuilder_.current_entry());
     }
 
     void finalize()
     {
-        auto fin_pos = fnbuilder_.position();
+        auto fin_pos = fnbuilder_.make_label();
         while (!rpositions_.empty() && rpositions_.back() == fin_pos) { // inline fn returns right at the code end
-            fnbuilder_.remove(rpositions_.back());
+            fnbuilder_.remove(rpositions_.back()); // fin_pos label is moved here
             rpositions_.pop_back();
-            fin_pos = fnbuilder_.position();
+            fin_pos = fnbuilder_.current_entry(); // just update actual value
         }
-        for (auto rpos : rpositions_) {
-            rpos->operation = asm_builder_t::op_t::jmp;
-            rpos->operand = fin_pos;
+        if (rpositions_.empty()) {
+            fnbuilder_.remove_label(fin_pos);
+        } else {
+            for (auto rpos : rpositions_) {
+                rpos->operation = asm_builder_t::op_t::jmp;
+                rpos->operand = fin_pos;
+            }
         }
         size_t param_count = fn_context_->parameter_count(); // including captured_variables
         if (!fn_context_->is_void()) {
@@ -152,22 +253,14 @@ public:
     }
 };
 
-class compiler_visitor : public compiler_visitor_base
+class compiler_visitor : public compiler_visitor_generic<compiler_visitor>
 {
 public:
     mutable optional<asm_builder_t::instruction_entry*> local_return_position;
 
-    using compiler_visitor_base::compiler_visitor_base;
+    using generic_base_t::generic_base_t;
 
-    using compiler_visitor_base::operator();
-
-    void operator()(std::vector<semantic::expression_t> const& evec) const
-    {
-        for (auto const& e : evec) {
-            //GLOBAL_LOG_INFO() << unit_.print(e);
-            apply_visitor(*this, e);
-        }
-    }
+    using generic_base_t::operator();
 
     inline void operator()(semantic::return_statement const&) const
     {
@@ -175,7 +268,7 @@ public:
             fnbuilder_.append_jmp(*local_return_position);
             return;
         } else if (fn_context_) {
-            local_return_position = fnbuilder_.position();
+            local_return_position = fnbuilder_.make_label();
             size_t param_count = fn_context_->parameter_count(); // including captured_variables
             if (!fn_context_->is_void()) {
                 fnbuilder_.append_fset(-static_cast<intptr_t>(param_count));
@@ -190,10 +283,12 @@ public:
         fnbuilder_.append_ret();
     }
 
+
+#if 0
     inline void operator()(semantic::conditional_t const& c) const
     {
         THROW_NOT_IMPLEMENTED_ERROR("compiler_visitor conditional_t");
-#if 0
+
         size_t branch_pt = unit_.bvm().get_ip();
         if (c.false_branch.empty() && c.true_branch.empty()) return;
         if (c.false_branch.empty()) {
@@ -226,9 +321,9 @@ public:
             unit_.bvm().append_jfx(true_branch_end_pt + jmpxsz - branch_pt);
             unit_.bvm().swap_code_blocks(branch_pt, true_branch_end_pt + jmpxsz);
         }
-#endif
-    }
 
+    }
+#endif
 
 
     inline void operator()(semantic::not_empty_condition_t const& n) const

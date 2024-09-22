@@ -237,8 +237,8 @@ expression_visitor::result_type expression_visitor::do_assign(binary_expression_
 
     if (variable_entity const* ve = dynamic_cast<variable_entity const*>(e.value()); ve) {
         expression_visitor rvis{ ctx, expected_result_t{ ve->get_type(), op.location() } };
-        auto opterr = apply_visitor(rvis, op.positioned_args[1]);
-        if (opterr) return std::move(opterr);
+        auto res = apply_visitor(rvis, op.positioned_args[1]);
+        if (!res) return std::move(res);
         if (ve->is_weak()) {
             THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN");
             //ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });

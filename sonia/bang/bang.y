@@ -275,11 +275,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 // TYPE EXPRESSIONS
 %token TYPENAME
-//%token BOOL
-%token INT
-%token FLOAT
-//%token STRING_WORD
-//%token DECIMAL_WORD "reserved word `decimal`"
+
 %token WEAK "weak modifier"
 %token CONST "const modifier"
 
@@ -287,7 +283,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 //%type<bang_preliminary_tuple_t> opt-type-list
 
 // STATEMENTS
-
+%token WHILE
 
 // EXPRESSIONS
 %token <annotated_bool> TRUE "true"
@@ -366,6 +362,8 @@ generic-decl:
         { $2.kind = $1; $$ = fn_decl_t{ std::move($2), { return_decl_t{ std::move($4) } } }; }
     | let-decl
         { $$ = std::move($1); }
+    | WHILE syntax-expression OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+        { $$ = while_decl_t{ std::move($2), std::move($4) }; IGNORE($3); }
     | compound-expression END_STATEMENT
         { $$ = expression_decl_t{ std::move($1) }; }
 
@@ -707,11 +705,13 @@ opt-type-list:
 compound-expression:
       syntax-expression OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($2), std::move($1), std::move($3) }; }
+    /*
     | syntax-expression OPEN_BRACE opt-named-expr-list-any CLOSE_BRACE
         { 
            $$ = function_call_t{ std::move($2), std::move($1), std::move($3) };
             //$$ = function_call_t{}; IGNORE($1, $2, $3);
         }
+    */
     | syntax-expression ASSIGN syntax-expression
         { $$ = binary_expression_t{ binary_operator_type::ASSIGN, std::move($1), std::move($3), std::move($2) }; }
     ;

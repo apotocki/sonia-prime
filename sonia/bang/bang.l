@@ -127,6 +127,8 @@ INCLUDE					"include"
 INLINE					"inline"
 TYPENAME				"typename"
 
+WHILE					"while"
+
 TRUE					"true"
 FALSE					"false"
 
@@ -301,6 +303,8 @@ HASHTAG					"#"
 	{INLINE} { return (bang_lang::parser::token::INLINE); }
 	{TYPENAME} { return (bang_lang::parser::token::TYPENAME); }
 	
+	{WHILE} { return (bang_lang::parser::token::WHILE); }
+
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
 	{CONST} { return (bang_lang::parser::token::CONST); }
 

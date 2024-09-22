@@ -1376,9 +1376,9 @@ inline std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem
     case blob_type::flt64:
         return os << b.bp.f64value << (with_types ? ":f64"sv : ""sv);
     case blob_type::bigint:
-        return os << as<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>(b) << ":bigint"sv;
+        return os << as<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>(b) << (with_types ? ":bigint"sv : ""sv);
     case blob_type::decimal:
-        return os << as<sonia::mp::basic_decimal<invocation_bigint_limb_type, 1, 8>>(b) << ":decimal"sv;
+        return os << as<sonia::mp::basic_decimal<invocation_bigint_limb_type, 1, 8>>(b) << (with_types ? ":decimal"sv : ""sv);
     case blob_type::string:
         if (with_types)
             return os << '"' << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) } << '"';

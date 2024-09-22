@@ -451,6 +451,14 @@ struct not_empty_condition
     std::vector<SemanticExpressionT> branch;
 };
 
+template <typename SemanticExpressionT>
+struct loop_scope
+{
+    std::vector<SemanticExpressionT> branch;
+};
+
+struct loop_continuer {};
+struct loop_breaker{};
 //template <typename SemanticExpressionT>
 //struct logic_tree_node
 //{
@@ -464,15 +472,17 @@ struct not_empty_condition
 using expression_t = make_recursive_variant<
     empty_t, // no op
     push_variable, push_value, push_by_offset, truncate_values,
-    set_variable, set_by_offset, invoke_function, return_statement,
+    set_variable, set_by_offset, invoke_function, return_statement, loop_breaker, loop_continuer,
     std::vector<recursive_variant_>,
     conditional<recursive_variant_>,
-    not_empty_condition<recursive_variant_>
+    not_empty_condition<recursive_variant_>,
+    loop_scope<recursive_variant_>
     //logic_tree_node<recursive_variant_>
 >::type;
 
 using conditional_t = conditional<expression_t>;
 using not_empty_condition_t = not_empty_condition<expression_t>;
+using loop_scope_t = loop_scope<expression_t>;
 //using logic_tree_node_t = logic_tree_node<expression_t>;
 
 }

@@ -830,6 +830,13 @@ struct fn_decl : fn_pure_t
     std::vector<DeclT> body;
 };
 
+template <typename DeclT>
+struct while_decl
+{
+    syntax_expression_t condition;
+    std::vector<DeclT> body;
+};
+
 struct enum_decl
 {
     annotated_qname_identifier aname;
@@ -871,18 +878,19 @@ using expression_decl_t = expression_decl<syntax_expression_t>;
 
 using declaration_t = variant<
     extern_var, let_statement_decl_t, expression_decl_t,
-    fn_pure_t, fn_decl<infunction_declaration_t>
+    fn_pure_t, fn_decl<infunction_declaration_t>, while_decl<infunction_declaration_t>
 >;
 
 using generic_declaration_t = variant<
     extern_var, let_statement_decl_t, expression_decl_t,
-    fn_pure_t, fn_decl<infunction_declaration_t>, include_decl, type_decl, enum_decl
+    fn_pure_t, fn_decl<infunction_declaration_t>, while_decl<infunction_declaration_t>, include_decl, type_decl, enum_decl
 >;
 
 using declaration_set_t = std::vector<generic_declaration_t>;
 
 using fn_decl_t = fn_decl<infunction_declaration_t>;
 
+using while_decl_t = while_decl<infunction_declaration_t>;
 
 template <typename LocationT>
 void update_location(LocationT & loc, const char* text)

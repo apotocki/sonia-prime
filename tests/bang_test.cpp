@@ -109,7 +109,7 @@ void bang_suite_test()
 
         sonia::lang::bang::language lang;
         std::ostringstream output;
-        //lang.set_cout_writer([&output](string_view str) { output << str; });
+        lang.set_cout_writer([&output](string_view str) { output << str; });
         lang.load(srcpath, args);
 
         BOOST_CHECK_EQUAL(expected_output, output.str());

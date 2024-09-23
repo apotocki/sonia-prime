@@ -443,6 +443,10 @@ struct conditional
     //condition_type type;
     std::vector<SemanticExpressionT> true_branch;
     std::vector<SemanticExpressionT> false_branch;
+    uint8_t true_branch_finished : 1;
+    uint8_t false_branch_finished : 1;
+
+    conditional() : true_branch_finished{0}, false_branch_finished{0} {}
 };
 
 template <typename SemanticExpressionT>

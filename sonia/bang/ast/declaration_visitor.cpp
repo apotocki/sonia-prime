@@ -75,11 +75,13 @@ void declaration_visitor::operator()(while_decl_t const& wd) const
         apply_visitor(*this, d);
     }
     ctx.append_expression(semantic::loop_continuer{});
+    cond.true_branch_finished = 1;
     ctx.collapse_chains(bst);
 
     ctx.push_chain(cond.false_branch);
     ctx.append_expression(semantic::truncate_values(1, false)); // remove result of left expression
     ctx.append_expression(semantic::loop_breaker{});
+    cond.false_branch_finished = 1;
     ctx.collapse_chains(bst);
 
     ctx.pop_ns();

@@ -156,7 +156,6 @@ public:
         {
             instruction_entry* ie = current_entry();
             labels_[ie] = ie ? -1 : 0;
-            GLOBAL_LOG_INFO() << "after make_label: " << labels_.size();
             return ie;
         }
 
@@ -209,7 +208,6 @@ public:
             }
             dr_.instructions.erase(it);
             builder_.free_entry(*e);
-            GLOBAL_LOG_INFO() << "after removing: " << labels_.size();
         }
 
         void materialize();
@@ -322,8 +320,6 @@ void builder<ContextT>::function_builder::block::append_uint(size_t uval)
 template <typename ContextT>
 void builder<ContextT>::function_builder::materialize()
 {
-    GLOBAL_LOG_INFO() << "materialize: " << labels_.size();
-
     dr_.address = builder_.vm_.get_ip(); // needs here to enable recursive calls
 
     // build blocks

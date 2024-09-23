@@ -131,8 +131,10 @@ annotated_qname_identifier parser_context::make_qname_identifier(annotated_strin
 
 annotated_string parser_context::make_string(annotated_string_view str) const
 {
+    boost::container::small_vector<char, 128> buff;
+    parsers::normilize_json_string(str.value.begin(), str.value.end(), std::back_inserter(buff));
     //return {utf8_to_utf32(str.value), str.location};
-    return { small_string{str.value.data(), str.value.size()}, str.location };
+    return { small_string{buff.data(), buff.size()}, str.location };
 }
 
 //integer_literal parser_context::make_integer_literal(string_view str)

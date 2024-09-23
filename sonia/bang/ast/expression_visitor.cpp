@@ -752,7 +752,7 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t c
     if (!fnvar) {
         THROW_NOT_IMPLEMENTED_ERROR("fn object expression is not implemented yet");
     }
-    GLOBAL_LOG_INFO() << u().print(fnvar->name.value);
+    //GLOBAL_LOG_INFO() << "function call: " << u().print(fnvar->name.value);
     functional const* fnl = ctx.lookup_functional(fnvar->name.value);
     if (!fnl) {
         return std::unexpected(make_error<undeclared_identifier_error>(fnvar->name));

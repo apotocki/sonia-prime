@@ -120,8 +120,11 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 %token LET
 %token VAR
-%token RETURN
 %token EXTERN
+
+%token <sonia::lang::lex::resource_location> CONTINUE   "continue"
+%token <sonia::lang::lex::resource_location> BREAK      "break"
+%token RETURN
 
 %token FOR
 %token VOID_
@@ -225,12 +228,13 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 // DECLARATIONS
 %token INCLUDE
-%type <declaration_set_t> declaration_any
-%type <generic_declaration_t> generic-decl
-%type <let_statement_decl_t> let-decl-start let-decl-start-with-opt-type let-decl
+%type <declaration_set_t> statement_any
+%type <declaration> statement
+%type <infunction_declaration_set_t> infunction-statement-any
+%type <infunction_declaration> infunction-statement
+%type <generic_statement> generic-statement
 
-%type <std::vector<infunction_declaration_t>> infunction_declaration_any
-%type <infunction_declaration_t> opt-infunction-decl
+%type <let_statement_decl_t> let-decl-start let-decl-start-with-opt-type let-decl
 
 //%type <identifier_chain_t> identifier-chain
 
@@ -284,6 +288,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 // STATEMENTS
 %token WHILE
+%token IF
 
 // EXPRESSIONS
 %token <annotated_bool> TRUE "true"
@@ -293,9 +298,6 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %type <named_expression_term_list_t> opt-named-expr-list-any opt-named-expr-list
 %type <named_expression_term_t> opt-named-expr
 %type <expression_list_t> expression-list-any
-
-//%type <statement_list_t> statement-list-any statement-list
-//%type <statement_t> base-statement statement
 
 //%type <named_expression_term_t> named-arg
 //%type <named_expression_term_list_t> arg-list arg-list-not-empty
@@ -309,7 +311,6 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 ////%type <ct_expression_ptr_t> ct_expression ct-function-call
 ////%type <std::vector<ct_expression_ptr_t>> ct_expression_list ct_expression_list_not_empty
-////%type <statement_ptr_t> statement
 ////%type <std::vector<statement_ptr_t>>
 
 %destructor { } <*>
@@ -318,15 +319,15 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %%
 
 begin:
-	declaration_any END { ctx.set_declarations(std::move($1)); }
+	statement_any END { ctx.set_declarations(std::move($1)); }
 	;
 
-declaration_any:
+statement_any:
       %empty
         { $$ = {}; }
-    | declaration_any END_STATEMENT
+    | statement_any END_STATEMENT
         { $$ = std::move($1); }
-	| declaration_any generic-decl
+	| statement_any statement
         {
 	        $$ = std::move($1);
             $$.emplace_back(std::move($2));
@@ -337,7 +338,7 @@ declaration_any:
         {
             ctx.push_ns(std::move($2));
         }
-        OPEN_BRACE declaration_any CLOSE_BRACE
+        OPEN_BRACE statement_any CLOSE_BRACE
         {
             $$ = std::move($5);
             ctx.pop_ns();
@@ -345,7 +346,7 @@ declaration_any:
 */
     ;
 
-generic-decl:
+statement:
       EXTERN VAR identifier COLON type-expr END_STATEMENT
         { $$ = extern_var{ std::move($3), std::move($5) }; }
     | EXTERN FN fn-decl END_STATEMENT
@@ -356,17 +357,18 @@ generic-decl:
         { $$ = std::move($1); }
     //| type-decl
     //    { $$ = std::move($1); }
-    | fn-start-decl fn-decl OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+    | fn-start-decl fn-decl OPEN_BRACE infunction-statement-any CLOSE_BRACE
         { $2.kind = $1; $$ = fn_decl_t{ std::move($2), std::move($4) }; IGNORE($3); }
     | fn-start-decl fn-decl ARROWEXPR syntax-expression END_STATEMENT
         { $2.kind = $1; $$ = fn_decl_t{ std::move($2), { return_decl_t{ std::move($4) } } }; }
+    | generic-statement
+        { $$ = apply_visitor(statement_adopt_visitor<declaration>{}, $1); }
+    /*
     | let-decl
         { $$ = std::move($1); }
-    | WHILE syntax-expression OPEN_BRACE infunction_declaration_any CLOSE_BRACE
-        { $$ = while_decl_t{ std::move($2), std::move($4) }; IGNORE($3); }
     | compound-expression END_STATEMENT
-        { $$ = expression_decl_t{ std::move($1) }; }
-
+        { $$ = expression_statement_t{ std::move($1) }; }
+        */
 /*
     | EXTERN FN IDENTIFIER OPEN_PARENTHESIS arg-list CLOSE_PARENTHESIS ARROW expr END_STATEMENT
         { $$ = extern_function_decl{ctx.make_identifier($3), function_def{std::move($5), std::move($8)}}; }
@@ -397,25 +399,38 @@ let-decl-start-with-opt-type :
         { $$ = std::move($1); $$.type = std::move($3); }
     ;
 
-infunction_declaration_any:
+infunction-statement-any:
       %empty
         { $$ = {}; }
-    | infunction_declaration_any END_STATEMENT
+    | infunction-statement-any END_STATEMENT
         { $$ = std::move($1); }
-	| infunction_declaration_any opt-infunction-decl
+	| infunction-statement-any infunction-statement
         {
 	        $$ = std::move($1);
             $$.emplace_back(std::move($2));
         }
     ;
 
-opt-infunction-decl:
+generic-statement:
       let-decl
         { $$ = std::move($1); }
     | RETURN syntax-expression END_STATEMENT
         { $$ = return_decl_t{ std::move($2) }; }
+    | WHILE syntax-expression OPEN_BRACE infunction-statement-any CLOSE_BRACE
+        { $$ = while_decl_t{ std::move($2), std::move($4) }; IGNORE($3); }
+    | IF syntax-expression OPEN_BRACE infunction-statement-any CLOSE_BRACE
+        { $$ = if_decl_t{ std::move($2), std::move($4) }; IGNORE($3); }
     | compound-expression END_STATEMENT
-        { $$ = expression_decl_t{ std::move($1) }; }
+        { $$ = expression_statement_t{ std::move($1) }; }
+    ;
+
+infunction-statement:
+      generic-statement
+        { $$ = apply_visitor(statement_adopt_visitor<infunction_declaration>{}, $1); }
+    | BREAK
+        { $$ = break_statement_t{ std::move($1) }; }
+    | CONTINUE
+        { $$ = continue_statement_t{ std::move($1) }; }
     ;
 
 identifier:
@@ -720,11 +735,11 @@ compound-expression:
 expression:
       POINT identifier
         { $$ = case_expression { std::move($2), std::move($1) }; }
-    //| FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+    //| FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction-statement-any CLOSE_BRACE
     //    { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), nullopt, std::move($6), std::move($1)}; IGNORE($5); }
-    //| OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+    //| OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction-statement-any CLOSE_BRACE
     //    { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, $1}, std::move($2), nullopt, std::move($5), $1}; IGNORE($4); }
-    //| FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS ARROW type-expr OPEN_BRACE infunction_declaration_any CLOSE_BRACE
+    //| FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS ARROW type-expr OPEN_BRACE infunction-statement-any CLOSE_BRACE
     //    { $$ = lambda_t{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), std::move($6), std::move($8), std::move($1)}; IGNORE($7); }
     | OPEN_SQUARE_BRACKET expression-list-any CLOSE_SQUARE_BRACKET
         { $$ = expression_vector_t{ {std::move($2)}, std::move($1) }; }
@@ -798,13 +813,6 @@ using-decl:
         { $$ = using_decl{ctx.ns(), $2, std::move($4) }; }
     ;
 
-statement:
-      base-statement
-    | FOR OPEN_PARENTHESIS base-statement expr END_STATEMENT expr CLOSE_PARENTHESIS OPEN_BRACE statement-list-any CLOSE_BRACE
-        { $$ =  sonia::make_shared<for_statement_t>(std::move($3), std::move($4), std::move($6), std::move($9)); }
-    | RETURN expr END_STATEMENT
-        { $$ =  return_statement_t { std::move($2) }; }
-    ;
 */
 /*
    expr-with-comma END_STATEMENT

@@ -122,12 +122,16 @@ ENUM					"enum"
 TYPE					"type"
 EXTENDS					"extends"
 EXTERN                  "extern"
-RETURN                  "return"
 INCLUDE					"include"
 INLINE					"inline"
 TYPENAME				"typename"
 
+CONTINUE                "continue"
+BREAK					"break"
+RETURN                  "return"
+
 WHILE					"while"
+IF						"if"
 
 TRUE					"true"
 FALSE					"false"
@@ -298,12 +302,16 @@ HASHTAG					"#"
 	{TYPE} { return (bang_lang::parser::token::TYPE); }
 	{EXTENDS} { return (bang_lang::parser::token::EXTENDS); }
 	{EXTERN} { return (bang_lang::parser::token::EXTERN); }
-	{RETURN} { return (bang_lang::parser::token::RETURN); }
 	{INCLUDE} { return (bang_lang::parser::token::INCLUDE); }
 	{INLINE} { return (bang_lang::parser::token::INLINE); }
 	{TYPENAME} { return (bang_lang::parser::token::TYPENAME); }
 	
 	{WHILE} { return (bang_lang::parser::token::WHILE); }
+	{IF} { return (bang_lang::parser::token::IF); }
+
+	{CONTINUE} { variant_emplace(location); return (bang_lang::parser::token::CONTINUE); }
+	{BREAK} { variant_emplace(location); return (bang_lang::parser::token::BREAK); }
+	{RETURN} { return (bang_lang::parser::token::RETURN); }
 
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
 	{CONST} { return (bang_lang::parser::token::CONST); }

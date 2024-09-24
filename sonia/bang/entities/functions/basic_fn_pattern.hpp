@@ -31,7 +31,7 @@ protected:
 
 class generic_fn_pattern : public basic_fn_pattern
 {
-    shared_ptr<std::vector<infunction_declaration_t>> body_;
+    shared_ptr<std::vector<infunction_declaration>> body_;
     fn_kind kind_;
 
 public:

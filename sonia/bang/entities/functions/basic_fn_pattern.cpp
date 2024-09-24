@@ -594,7 +594,7 @@ std::expected<entity_identifier, error_storage> basic_fn_pattern::apply(fn_compi
 
 generic_fn_pattern::generic_fn_pattern(fn_compiler_context& ctx, fn_decl_t const& fnd)
     : basic_fn_pattern{ ctx, fnd }
-    , body_{ make_shared<std::vector<infunction_declaration_t>>(fnd.body)}
+    , body_{ make_shared<std::vector<infunction_declaration>>(fnd.body)}
     , kind_{ fnd.kind }
 {
 

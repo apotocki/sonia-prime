@@ -25,18 +25,24 @@ struct declaration_visitor : static_visitor<void>
 
     void operator()(fn_decl_t const&) const;
 
+    void operator()(if_decl_t const&) const;
     void operator()(while_decl_t const&) const;
+    void operator()(continue_statement_t const&) const;
+    void operator()(break_statement_t const&) const;
 
     void operator()(let_statement_decl_t const&) const;
     //void operator()(assign_decl_t const&) const;
 
-    void operator()(expression_decl_t const&) const;
+    void operator()(expression_statement_t const&) const;
 
     void operator()(return_decl_t const&) const;
 
     void append_fnsig(fn_pure_t& /*in*/, functional** ppf = nullptr) const;
     
     //function_entity& append_fnent(fn_pure_t&, function_signature& sig, span<infunction_declaration_t>) const;
+
+    //void operator()(type_decl const&) const { THROW_INTERNAL_ERROR(); }
+    //void operator()(include_decl const&) const { THROW_INTERNAL_ERROR(); }
 
     unit& u() const noexcept;
 };

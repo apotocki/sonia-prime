@@ -90,7 +90,7 @@ public:
     struct build_data
     {
         functional::binding_set_t bindings;
-        shared_ptr<std::vector<infunction_declaration_t>> body;
+        shared_ptr<std::vector<infunction_declaration>> body;
     };
 
     internal_function_entity(qname_identifier name, entity_signature&& sig, shared_ptr<build_data> bd)

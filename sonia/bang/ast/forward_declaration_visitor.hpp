@@ -15,7 +15,7 @@ struct forward_declaration_visitor : static_visitor<void>
 {
     fn_compiler_context& ctx;
     parser_context& pctx;
-    std::vector<declaration_t> decls;
+    std::vector<infunction_declaration> decls;
     std::vector<type_entity*> types;
 
     explicit forward_declaration_visitor(fn_compiler_context& c, lang::bang::parser_context& p) : ctx{ c }, pctx{ p } {}
@@ -26,9 +26,13 @@ struct forward_declaration_visitor : static_visitor<void>
 
     void operator()(type_decl&);
 
+    void operator()(extern_var&) { THROW_NOT_IMPLEMENTED_ERROR("extern_var"); }
+
     template <typename T>
     void operator()(T & d)
     {
+        //infunction_declaration_adopt_visitor vis{};
+        //decls.emplace_back(apply_visitor(vis, d));
         decls.emplace_back(std::move(d));
     }
 };

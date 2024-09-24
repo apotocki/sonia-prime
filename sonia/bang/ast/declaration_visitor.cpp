@@ -39,7 +39,7 @@ void declaration_visitor::operator()(extern_var const& d) const
 #endif
 }
 
-void declaration_visitor::operator()(expression_decl_t const& ed) const
+void declaration_visitor::operator()(expression_statement_t const& ed) const
 {
     auto bst = ctx.expressions_branch(); // store branch
     entity_identifier void_eid = u().get_void_entity_identifier();
@@ -51,6 +51,32 @@ void declaration_visitor::operator()(expression_decl_t const& ed) const
         ctx.append_expression(semantic::truncate_values(1, false));
     }
     ctx.collapse_chains(bst);
+}
+
+void declaration_visitor::operator()(if_decl_t const& stm) const
+{
+    ctx.pushed_unnamed_ns();
+    expression_visitor vis{ ctx, expected_result_t{ u().get_bool_entity_identifier(), get_start_location(stm.condition) } };
+    if (auto res = apply_visitor(vis, stm.condition); !res) {
+        throw exception(u().print(*res.error()));
+    }
+    ctx.append_expression(semantic::conditional_t{});
+    semantic::conditional_t& cond = get<semantic::conditional_t>(ctx.expressions().back());
+
+    auto bst = ctx.expressions_branch(); // store branch
+
+    ctx.push_chain(cond.true_branch);
+    ctx.append_expression(semantic::truncate_values(1, false)); // remove result of left expression
+
+    for (infunction_declaration const& d : stm.body) {
+        apply_visitor(*this, d);
+    }
+    ctx.collapse_chains(bst);
+    ctx.push_chain(cond.false_branch);
+    ctx.append_expression(semantic::truncate_values(1, false)); // remove result of left expression
+    ctx.collapse_chains(bst);
+
+    ctx.pop_ns();
 }
 
 void declaration_visitor::operator()(while_decl_t const& wd) const
@@ -71,7 +97,7 @@ void declaration_visitor::operator()(while_decl_t const& wd) const
     ctx.push_chain(cond.true_branch);
     ctx.append_expression(semantic::truncate_values(1, false)); // remove result of left expression
         
-    for (infunction_declaration_t const& d : wd.body) {
+    for (infunction_declaration const& d : wd.body) {
         apply_visitor(*this, d);
     }
     ctx.append_expression(semantic::loop_continuer{});
@@ -86,6 +112,18 @@ void declaration_visitor::operator()(while_decl_t const& wd) const
 
     ctx.pop_ns();
     ctx.pop_chain();
+}
+
+void declaration_visitor::operator()(continue_statement_t const&) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor continue_statement_t");
+}
+
+void declaration_visitor::operator()(break_statement_t const&) const
+{
+    // to do: check the existance of enclisong loop (or switch)
+    //THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor break_statement_t");
+    ctx.append_expression(semantic::loop_breaker{});
 }
 
 void declaration_visitor::append_fnsig(fn_pure_t& fndecl, functional ** ppf) const

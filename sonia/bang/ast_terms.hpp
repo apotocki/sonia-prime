@@ -50,6 +50,9 @@ using annotated_integer = annotated<mp::integer>;
 using annotated_decimal = annotated<mp::decimal>;
 using annotated_string = annotated<small_string>;
 
+struct declaration;
+struct infunction_declaration;
+
 //using elementary_expression = variant<
 //    null_t, bool, decimal, small_u32string, 
 //struct annotated_number
@@ -477,12 +480,39 @@ struct return_decl
 };
 
 template <typename ExprT>
-struct infunction_declaration
+struct while_decl
 {
-    using type = variant<
-        let_statement_decl<ExprT>, expression_decl<ExprT>, return_decl<ExprT>
-    >;
+    ExprT condition;
+    std::vector<infunction_declaration> body;
 };
+
+struct break_statement_t
+{
+    lex::resource_location location;
+};
+
+struct continue_statement_t
+{
+    lex::resource_location location;
+};
+
+template <typename ExprT>
+struct if_decl
+{
+    ExprT condition;
+    std::vector<infunction_declaration> body;
+};
+
+//template <typename ExprT>
+//struct infunction_declaration
+//{
+//    template <typename DT> using if_decl_t = if_decl<ExprT, DT>;
+//    template <typename DT> using while_decl_t = while_decl<ExprT, DT>;
+//    using type = typename make_recursive_variant<
+//        let_statement_decl<ExprT>, expression_decl<ExprT>, return_decl<ExprT>,
+//        if_decl_t<recursive_variant_>, while_decl_t<recursive_variant_>
+//    >::type;
+//};
 
 template <typename ExprT>
 struct not_empty_expression
@@ -592,7 +622,7 @@ struct fn_pure
 template <typename ExprT>
 struct lambda : fn_pure<ExprT>
 {
-    std::vector<typename infunction_declaration<ExprT>::type> body;
+    std::vector<infunction_declaration> body;
     lex::resource_location start;
 };
 
@@ -824,18 +854,12 @@ using extension_list_t = std::vector<annotated_qname_identifier>;
 
 using fn_pure_t = fn_pure<syntax_expression_t>;
 
-template <typename DeclT>
-struct fn_decl : fn_pure_t
+struct fn_decl_t : fn_pure_t
 {
-    std::vector<DeclT> body;
+    std::vector<infunction_declaration> body;
 };
 
-template <typename DeclT>
-struct while_decl
-{
-    syntax_expression_t condition;
-    std::vector<DeclT> body;
-};
+
 
 struct enum_decl
 {
@@ -870,27 +894,74 @@ struct include_decl
     annotated_string path;
 };
 
-using infunction_declaration_t = typename infunction_declaration<syntax_expression_t>::type;
 using return_decl_t = return_decl<syntax_expression_t>;
 using let_statement_decl_t = let_statement_decl<syntax_expression_t>;
-using expression_decl_t = expression_decl<syntax_expression_t>;
+using expression_statement_t = expression_decl<syntax_expression_t>;
 //using assign_decl_t = assign_decl<syntax_expression_t>;
 
-using declaration_t = variant<
-    extern_var, let_statement_decl_t, expression_decl_t,
-    fn_pure_t, fn_decl<infunction_declaration_t>, while_decl<infunction_declaration_t>
+//using infunction_declaration_t = typename infunction_declaration<syntax_expression_t>::type;
+//using fn_decl_t = fn_decl<infunction_declaration_t>;
+using if_decl_t = if_decl<syntax_expression_t>;
+using while_decl_t = while_decl<syntax_expression_t>;
+
+using generic_statement = variant<
+    let_statement_decl_t, expression_statement_t, return_decl_t, while_decl_t, if_decl_t, fn_decl_t
 >;
 
-using generic_declaration_t = variant<
-    extern_var, let_statement_decl_t, expression_decl_t,
-    fn_pure_t, fn_decl<infunction_declaration_t>, while_decl<infunction_declaration_t>, include_decl, type_decl, enum_decl
+using declaration_var_type = variant<
+    extern_var, let_statement_decl_t, expression_statement_t, fn_pure_t,
+    include_decl, type_decl, enum_decl, return_decl_t,
+    fn_decl_t, if_decl_t, while_decl_t
 >;
 
-using declaration_set_t = std::vector<generic_declaration_t>;
+using infunction_declaration_var_type = variant<
+    let_statement_decl_t, expression_statement_t, fn_pure_t,
+    fn_decl_t, if_decl_t, while_decl_t, continue_statement_t, break_statement_t, return_decl_t
+>;
 
-using fn_decl_t = fn_decl<infunction_declaration_t>;
+struct declaration : declaration_var_type { using declaration_var_type::declaration_var_type; };
 
-using while_decl_t = while_decl<infunction_declaration_t>;
+struct infunction_declaration : infunction_declaration_var_type { using infunction_declaration_var_type::infunction_declaration_var_type; };
+
+//using declaration_t = variant<
+//    extern_var, let_statement_decl_t, expression_statement_t, fn_pure_t,
+//    include_decl, type_decl, enum_decl, return_decl_t,
+//    fn_decl_t, if_decl_t, while_decl_t
+//>;
+
+template <typename StatementT>
+struct statement_adopt_visitor : static_visitor<StatementT>
+{
+    statement_adopt_visitor() = default;
+    template <typename IDT>
+    inline StatementT operator()(IDT& v) const { return StatementT{ std::move(v) }; }
+};
+//using declaration_t = make_recursive_variant<
+//    extern_var, let_statement_decl_t, expression_statement_t, fn_pure_t,
+//    include_decl, type_decl, enum_decl, return_decl_t,
+//    fn_decl<infunction_declaration_t>, if_decl<expression_statement_t, infunction_declaration_t>, while_decl<expression_statement_t, infunction_declaration_t>
+//>::type;
+    
+
+//using declaration_t = variant<
+//    extern_var, let_statement_decl_t, expression_statement_t,
+//    fn_pure_t, fn_decl<infunction_declaration_t>,
+//    if_decl<infunction_declaration_t>,
+//    while_decl<infunction_declaration_t>
+//>;
+//
+//using generic_declaration_t = variant<
+//    extern_var, let_statement_decl_t, expression_statement_t,
+//    fn_pure_t, fn_decl<infunction_declaration_t>,
+//    if_decl<infunction_declaration_t>,
+//    while_decl<infunction_declaration_t>,
+//    include_decl, type_decl, enum_decl
+//>;
+
+using declaration_set_t = std::vector<declaration>;
+using infunction_declaration_set_t = std::vector<infunction_declaration>;
+
+
 
 template <typename LocationT>
 void update_location(LocationT & loc, const char* text)

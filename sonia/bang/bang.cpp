@@ -43,7 +43,7 @@ public:
     smart_blob call(string_view name, span<const std::pair<string_view, const blob_result>> namedargs, span<const blob_result> args);
 
 protected:
-    void compile(lang::bang::parser_context&, declaration_set_t, span<string_view> args);
+    void compile(lang::bang::parser_context&, statement_set_t, span<string_view> args);
     void do_compile(internal_function_entity&);
 
     void bootstrap();
@@ -119,7 +119,7 @@ void bang_impl::bootstrap()
     parser_context parser{ unit_ };
     auto exp_decls = parser.parse_string(string_view{bang_bootstrap_code});
     if (!exp_decls.has_value()) throw exception(exp_decls.error());
-    declaration_set_t& decls = *exp_decls;
+    statement_set_t& decls = *exp_decls;
     
     fn_compiler_context ctx{ unit_, qname{} };
 
@@ -151,7 +151,7 @@ void bang_impl::load(string_view code, span<string_view> args)
     compile(parser, std::move(*exp_decls), args);
 }
 
-void bang_impl::compile(lang::bang::parser_context & pctx, declaration_set_t decls, span<string_view> args)
+void bang_impl::compile(lang::bang::parser_context & pctx, statement_set_t decls, span<string_view> args)
 {
     identifier main_id = unit_.new_identifier();
     fn_compiler_context ctx{ unit_, qname{ main_id } };

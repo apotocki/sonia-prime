@@ -115,7 +115,6 @@ struct arg_resolving_by_value_visitor : static_visitor<std::expected<entity_iden
 
     result_type operator()(entity_identifier const& eid, lex::resource_location eidloc = {}) const
     {
-        entity const& param_entity = ctx.u().eregistry().get(eid);
         BOOST_ASSERT(eid);
         const_expression_visitor evis{ ctx, expected_result_t{ eid, eidloc } };
         if (auto err = apply_visitor(evis, expr_it.next_expression()); err) {
@@ -164,7 +163,9 @@ struct arg_resolving_by_value_type_visitor : static_visitor<std::expected<entity
                 if (!res) break; // skip error
                 // do not condider cast's weight inpact for pack_entity cases
                 ++pack_size;
-                if (!expr_it.has_next_expression()) break;
+                auto neres = expr_it.has_next_expression();
+                if (!neres) return std::unexpected(std::move(neres.error()));
+                if (!neres.value()) break;
             }
             weight -= pack_size; // put down as pack_entity
             ctx.append_expression(semantic::push_value{ uint64_t{pack_size} });
@@ -274,14 +275,20 @@ public:
         return {};
     }
 
-    bool has_next_expression() const
+    std::expected<bool, error_storage> has_next_expression() const
     {
-        if (positioned_args_set_t::iterator const* p = get<positioned_args_set_t::iterator>(&arg_iterator_); p)
-            return *p != positioned_.end();
-        if (!cur_name_) return true;
+        if (positioned_args_set_t::iterator const* p = get<positioned_args_set_t::iterator>(&arg_iterator_); p) {
+            return !cur_name_ && *p != positioned_.end();
+        }
         bound_args_set_t::iterator const& nit = get<bound_args_set_t::iterator>(arg_iterator_);
-        if (nit == named_.end()) return false;
-        return nit->first == cur_name_;
+        if (cur_name_) {
+            if (nit == named_.end()) return false;
+            return nit->first == cur_name_;
+        }
+        if (nit != named_.end()) {
+            return std::unexpected(make_error<basic_general_error>(get_start_location(*nit->second), "unmatched argument"sv, nit->first));
+        }
+        return !positioned_.empty();
     }
 
     syntax_expression_t const& next_expression()
@@ -291,14 +298,20 @@ public:
             cur_expression_ = std::addressof(*(*p)++);
         } else {
             bound_args_set_t::iterator& nit = get<bound_args_set_t::iterator>(arg_iterator_);
-            BOOST_ASSERT(nit != named_.end());
-            if (!cur_name_) {
-                cur_name_ = nit->first;
+            if (nit == named_.end()) {
+                auto pit = positioned_.begin();
+                BOOST_ASSERT(pit != positioned_.end());
+                cur_expression_ = std::addressof(*pit);
+                arg_iterator_ = ++pit;
             } else {
-                BOOST_ASSERT(nit->first == cur_name_);
+                if (!cur_name_) {
+                    cur_name_ = nit->first;
+                } else {
+                    BOOST_ASSERT(nit->first == cur_name_);
+                }
+                cur_expression_ = std::addressof(*nit->second);
+                ++nit;
             }
-            cur_expression_ = std::addressof(*nit->second);
-            ++nit;
         }
         return *cur_expression_;
     }
@@ -309,56 +322,70 @@ public:
         return *cur_expression_;
     }
 
-    bool has_next_parameter() const
-    {
-        if (positioned_fields_t::iterator const* p = get<positioned_fields_t::iterator>(&param_iterator_); p)
-            return *p != fd_.positioned_fields().end();
-        
-        //named_fields_t::iterator const& nit = get<named_fields_t::iterator>(param_iterator_);
-        BOOST_ASSERT(get<named_fields_t::iterator>(param_iterator_) != fd_.named_fields().end());
-        return true;
-    }
+    //bool has_next_parameter() const
+    //{
+    //    if (positioned_fields_t::iterator const* p = get<positioned_fields_t::iterator>(&param_iterator_); p)
+    //        return *p != fd_.positioned_fields().end();
+    //    
+    //    //named_fields_t::iterator const& nit = get<named_fields_t::iterator>(param_iterator_);
+    //    BOOST_ASSERT(get<named_fields_t::iterator>(param_iterator_) != fd_.named_fields().end());
+    //    return true;
+    //}
 
-    function_descriptor::generic_field const& next_parameter()
+    function_descriptor::generic_field const* next_parameter()
     {
         if (positioned_fields_t::iterator * p = get<positioned_fields_t::iterator>(&param_iterator_); p) {
-            return *(*p)++;
+            if (*p != fd_.positioned_fields().end()) {
+                cur_name_ = {};
+                return std::addressof(*(*p)++);
+            }
+            return nullptr;
         }
         named_fields_t::iterator& nit = get<named_fields_t::iterator>(param_iterator_);
+        cur_name_ = nit->ename.value;
         function_descriptor::generic_field const& result = *nit++;
-        cur_name_ = {};
+        
         if (nit == fd_.named_fields().end()) {
             param_iterator_ = fd_.positioned_fields().begin();
         }
-        return result;
+        return &result;
     }
 
     std::expected<int, error_storage> try_match(fn_compiler_context& ctx, functional::match_descriptor& md)
     {
         int match_weight = 0;
         boost::container::small_vector<fn_compiler_context::expr_vec_t, 8> arg_branches;
-        size_t argnum = 0;
+        size_t rt_argnum = 0, argnum = 0;
 
         auto estate = ctx.expressions_state();
 
-        while (has_next_expression()) {
-            if (!has_next_parameter()) {
+        for (;;) {
+            // need calling first to prepare cur_name_
+            //function_descriptor::generic_field const* pparam = has_next_parameter() ? &next_parameter() : nullptr;
+            function_descriptor::generic_field const* pparam = next_parameter();
+            auto res = has_next_expression();
+            if (!res) return std::unexpected(std::move(res.error()));
+            if (!res.value()) {
+                if (!pparam) break; // matchng finished
+                THROW_NOT_IMPLEMENTED_ERROR("default parameter value");
+            }
+            if (!pparam) {
                 return std::unexpected(make_error<basic_general_error>(get_start_location(next_expression()), "unmatched argument"sv));
             }
+            
             entity_identifier param_entity;
-            function_descriptor::generic_field const& param = next_parameter();
             bool is_runtime_argument = false;
-            if (param.constraint) {
+            if (pparam->constraint) {
                 std::expected<entity_identifier, error_storage> res;
-                switch (param.constraint_type) {
+                switch (pparam->constraint_type) {
                 case parameter_constraint_modifier_t::value_type_constraint:
                 {
-                    if (arg_branches.size() <= argnum) arg_branches.resize(argnum + 1);
-                    ctx.push_chain(arg_branches[argnum]);
+                    if (arg_branches.size() <= rt_argnum) arg_branches.resize(rt_argnum + 1);
+                    ctx.push_chain(arg_branches[rt_argnum]);
                     is_runtime_argument = true;
                     
                     arg_resolving_by_value_type_visitor arvis{ ctx, md.bindings, *this };
-                    res = apply_visitor(arvis, *param.constraint);
+                    res = apply_visitor(arvis, *pparam->constraint);
                     match_weight += arvis.weight;
                     break;
                 }
@@ -366,7 +393,7 @@ public:
                 case parameter_constraint_modifier_t::value_constraint:
                 {
                     arg_resolving_by_value_visitor arvis{ ctx, md.bindings, *this };
-                    res = apply_visitor(arvis, *param.constraint);
+                    res = apply_visitor(arvis, *pparam->constraint);
                     break;
                 }
                 default:
@@ -375,8 +402,8 @@ public:
                 if (!res.has_value()) return std::unexpected(std::move(res.error()));
                 param_entity = res.value();
             } else {
-                if (arg_branches.size() <= argnum) arg_branches.resize(argnum + 1);
-                ctx.push_chain(arg_branches[argnum]);
+                if (arg_branches.size() <= rt_argnum) arg_branches.resize(rt_argnum + 1);
+                ctx.push_chain(arg_branches[rt_argnum]);
                 is_runtime_argument = true;
 
                 expression_visitor evis{ ctx, nullptr };
@@ -387,15 +414,13 @@ public:
             }
 
             if (param_entity) { // entity was resolved
-                if (is_runtime_argument) { // if not const or a typename
-                    if (cur_name_) {
-                        md.signature.set(argnum, cur_name_, { param_entity, false });
-                    } else {
-                        md.signature.set(argnum, { param_entity, false });
-                    }
+                if (cur_name_) {
+                    md.signature.set(argnum, cur_name_, { param_entity, !is_runtime_argument });
+                } else {
+                    md.signature.set(argnum, { param_entity, !is_runtime_argument });
                 }
                 
-                for (annotated_identifier const& ai : param.bindings) {
+                for (annotated_identifier const& ai : pparam->bindings) {
                     auto it = md.bindings.find(ai);
                     if (it == md.bindings.end()) {
                         md.bindings.insert(it, std::pair{ ai, param_entity });
@@ -407,7 +432,8 @@ public:
             } // else can't resolve due to the lack of matched parameters
 
             estate.restore();
-            if (is_runtime_argument) ++argnum;
+            if (is_runtime_argument) ++rt_argnum;
+            ++argnum;
         }
 
         // to do: check all resolved
@@ -416,6 +442,7 @@ public:
             auto res = apply_visitor(arvis, *retexpr);
             if (!res.has_value()) return std::unexpected(std::move(res.error()));
             md.result = res.value();
+            md.signature.set_result({ res.value(), false });
         }
 
         for (auto& branch : arg_branches) {
@@ -594,7 +621,7 @@ std::expected<entity_identifier, error_storage> basic_fn_pattern::apply(fn_compi
 
 generic_fn_pattern::generic_fn_pattern(fn_compiler_context& ctx, fn_decl_t const& fnd)
     : basic_fn_pattern{ ctx, fnd }
-    , body_{ make_shared<std::vector<infunction_declaration>>(fnd.body)}
+    , body_{ make_shared<std::vector<infunction_statement>>(fnd.body)}
     , kind_{ fnd.kind }
 {
 

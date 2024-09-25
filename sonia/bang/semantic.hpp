@@ -459,6 +459,7 @@ template <typename SemanticExpressionT>
 struct loop_scope
 {
     std::vector<SemanticExpressionT> branch;
+    std::vector<SemanticExpressionT> continue_branch;
 };
 
 struct loop_continuer {};

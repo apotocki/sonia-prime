@@ -50,8 +50,8 @@ using annotated_integer = annotated<mp::integer>;
 using annotated_decimal = annotated<mp::decimal>;
 using annotated_string = annotated<small_string>;
 
-struct declaration;
-struct infunction_declaration;
+struct statement;
+struct infunction_statement;
 
 //using elementary_expression = variant<
 //    null_t, bool, decimal, small_u32string, 
@@ -483,7 +483,8 @@ template <typename ExprT>
 struct while_decl
 {
     ExprT condition;
-    std::vector<infunction_declaration> body;
+    std::vector<infunction_statement> body;
+    optional<ExprT> continue_expression; // called before condition strating eith second condition check (like c/c++ for expression)
 };
 
 struct break_statement_t
@@ -500,11 +501,12 @@ template <typename ExprT>
 struct if_decl
 {
     ExprT condition;
-    std::vector<infunction_declaration> body;
+    std::vector<infunction_statement> true_body;
+    std::vector<infunction_statement> false_body;
 };
 
 //template <typename ExprT>
-//struct infunction_declaration
+//struct infunction_statement
 //{
 //    template <typename DT> using if_decl_t = if_decl<ExprT, DT>;
 //    template <typename DT> using while_decl_t = while_decl<ExprT, DT>;
@@ -622,7 +624,7 @@ struct fn_pure
 template <typename ExprT>
 struct lambda : fn_pure<ExprT>
 {
-    std::vector<infunction_declaration> body;
+    std::vector<infunction_statement> body;
     lex::resource_location start;
 };
 
@@ -856,7 +858,7 @@ using fn_pure_t = fn_pure<syntax_expression_t>;
 
 struct fn_decl_t : fn_pure_t
 {
-    std::vector<infunction_declaration> body;
+    std::vector<infunction_statement> body;
 };
 
 
@@ -899,29 +901,33 @@ using let_statement_decl_t = let_statement_decl<syntax_expression_t>;
 using expression_statement_t = expression_decl<syntax_expression_t>;
 //using assign_decl_t = assign_decl<syntax_expression_t>;
 
-//using infunction_declaration_t = typename infunction_declaration<syntax_expression_t>::type;
+//using infunction_declaration_t = typename infunction_statement<syntax_expression_t>::type;
 //using fn_decl_t = fn_decl<infunction_declaration_t>;
 using if_decl_t = if_decl<syntax_expression_t>;
 using while_decl_t = while_decl<syntax_expression_t>;
 
-using generic_statement = variant<
-    let_statement_decl_t, expression_statement_t, return_decl_t, while_decl_t, if_decl_t, fn_decl_t
+using finished_statement_type = variant<
+    while_decl_t, if_decl_t, fn_decl_t
 >;
 
-using declaration_var_type = variant<
+using generic_statement_type = variant<
+    let_statement_decl_t, expression_statement_t, return_decl_t, fn_decl_t
+>;
+
+using statement_type = variant<
     extern_var, let_statement_decl_t, expression_statement_t, fn_pure_t,
     include_decl, type_decl, enum_decl, return_decl_t,
     fn_decl_t, if_decl_t, while_decl_t
 >;
 
-using infunction_declaration_var_type = variant<
+using infunction_statement_type = variant<
     let_statement_decl_t, expression_statement_t, fn_pure_t,
     fn_decl_t, if_decl_t, while_decl_t, continue_statement_t, break_statement_t, return_decl_t
 >;
 
-struct declaration : declaration_var_type { using declaration_var_type::declaration_var_type; };
+struct statement : statement_type { using statement_type::statement_type; };
 
-struct infunction_declaration : infunction_declaration_var_type { using infunction_declaration_var_type::infunction_declaration_var_type; };
+struct infunction_statement : infunction_statement_type { using infunction_statement_type::infunction_statement_type; };
 
 //using declaration_t = variant<
 //    extern_var, let_statement_decl_t, expression_statement_t, fn_pure_t,
@@ -958,8 +964,8 @@ struct statement_adopt_visitor : static_visitor<StatementT>
 //    include_decl, type_decl, enum_decl
 //>;
 
-using declaration_set_t = std::vector<declaration>;
-using infunction_declaration_set_t = std::vector<infunction_declaration>;
+using statement_set_t = std::vector<statement>;
+using infunction_declaration_set_t = std::vector<infunction_statement>;
 
 
 

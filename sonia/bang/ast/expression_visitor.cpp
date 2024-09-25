@@ -46,6 +46,8 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
         return false;
     }
 
+    //GLOBAL_LOG_DEBUG() << ("expected type: %1%, actual type: %2%"_fmt % u().print(expected_result->type) % u().print(typeeid)).str();
+
     functional const& fn = u().fregistry().resolve(u().get_implicit_cast_qname_identifier());
     lex::resource_location expr_loc = get_start_location(e);
     pure_call_t cast_call{ expected_result->location };

@@ -15,7 +15,7 @@ struct forward_declaration_visitor : static_visitor<void>
 {
     fn_compiler_context& ctx;
     parser_context& pctx;
-    std::vector<infunction_declaration> decls;
+    std::vector<infunction_statement> decls;
     std::vector<type_entity*> types;
 
     explicit forward_declaration_visitor(fn_compiler_context& c, lang::bang::parser_context& p) : ctx{ c }, pctx{ p } {}

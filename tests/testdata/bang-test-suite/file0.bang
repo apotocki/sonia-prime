@@ -1,2 +1,2 @@
 print("Hello from Bang!");
-assert($$ == 0); // no arguments
+assert($$ == 0) // no arguments

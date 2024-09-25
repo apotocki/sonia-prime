@@ -132,6 +132,7 @@ RETURN                  "return"
 
 WHILE					"while"
 IF						"if"
+ELSE					"else"
 
 TRUE					"true"
 FALSE					"false"
@@ -308,6 +309,7 @@ HASHTAG					"#"
 	
 	{WHILE} { return (bang_lang::parser::token::WHILE); }
 	{IF} { return (bang_lang::parser::token::IF); }
+	{ELSE} { return (bang_lang::parser::token::ELSE); }
 
 	{CONTINUE} { variant_emplace(location); return (bang_lang::parser::token::CONTINUE); }
 	{BREAK} { variant_emplace(location); return (bang_lang::parser::token::BREAK); }

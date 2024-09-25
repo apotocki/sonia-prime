@@ -1,6 +1,37 @@
 let n = 0;
-while n != 22 {
+while true; n = n + 1 {
+    print(n);
+    if n != 5 { continue }
+    n = n + 1;
+    break
+}
+while n != 11 {
+    print(n);
+    n = n + 1
+}
+while n != 13; n = n + 1 {
+    print(n);
+}
+while false { n = n + 1; break }
+while true {
     print(n);
     n = n + 1;
+    if n == 16 { break }
 }
-assert(n == 22);
+while true {
+    print(n);
+    n = n + 1;
+    if n != 18 { continue }
+    break
+}
+while true {
+    if n != 22 {
+        print(n);
+        n = n + 1;
+        continue
+    } else {
+        break
+    }
+}
+assert(n == 22)
+

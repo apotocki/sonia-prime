@@ -136,7 +136,7 @@ void internal_function_entity::build(unit& u)
     }
 
     declaration_visitor dvis{ fnctx };
-    for (infunction_declaration const& d : *bd_->body) {
+    for (infunction_statement const& d : *bd_->body) {
         apply_visitor(dvis, d);
     }
     fnctx.finish_frame(); // unknown result type is resolving here

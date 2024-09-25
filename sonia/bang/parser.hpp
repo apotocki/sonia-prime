@@ -48,7 +48,7 @@ public:
     //identifier make_required_identifier(string_view);
     //small_u32string make_string(string_view);
 
-    void set_declarations(declaration_set_t);
+    void set_statements(statement_set_t);
 
     void append_error(std::string errmsg);
 
@@ -56,11 +56,11 @@ public:
 
     void pop_resource() { resource_stack_.pop_back(); }
 
-    std::expected<declaration_set_t, std::string> parse(fs::path const& f);
-    std::expected<declaration_set_t, std::string> parse_string(string_view);
+    std::expected<statement_set_t, std::string> parse(fs::path const& f);
+    std::expected<statement_set_t, std::string> parse_string(string_view);
 
 private:
-    std::expected<declaration_set_t, std::string> parse(string_view code);
+    std::expected<statement_set_t, std::string> parse(string_view code);
 
     unit& unit_;
 
@@ -70,7 +70,7 @@ private:
 
     std::vector<std::string> error_messages_;
     
-    declaration_set_t declarations_;
+    statement_set_t declarations_;
 };
 
 }

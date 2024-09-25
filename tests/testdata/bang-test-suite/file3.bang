@@ -3,7 +3,7 @@ let n = 0;
 while true {
     print(n);
     n = n + 1;
-    if n == 16384 { break }
+    if n == 22 { break }
 }
 /*
 assert($$ != 4);

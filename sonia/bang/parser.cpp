@@ -162,7 +162,7 @@ mp::decimal parser_context::make_decimal(string_view str) const
 //    return utf8_to_utf32(str);
 //}
 
-void parser_context::set_declarations(declaration_set_t ds)
+void parser_context::set_statements(statement_set_t ds)
 {
     declarations_ = std::move(ds);
 }
@@ -180,7 +180,7 @@ shared_ptr<lex::code_resource> parser_context::get_resource() const
     return resource_stack_.back();
 }
 
-std::expected<declaration_set_t, std::string> parser_context::parse(fs::path const& f)
+std::expected<statement_set_t, std::string> parser_context::parse(fs::path const& f)
 {
     std::vector<char> code;
     try {
@@ -198,14 +198,14 @@ std::expected<declaration_set_t, std::string> parser_context::parse(fs::path con
     return parse(string_view { code.data(), code.size() });
 }
 
-std::expected<declaration_set_t, std::string> parser_context::parse_string(string_view code)
+std::expected<statement_set_t, std::string> parser_context::parse_string(string_view code)
 {
     resource_stack_.emplace_back(make_shared<string_resource>(code));
     SCOPE_EXIT([this] { resource_stack_.pop_back(); });
     return parse(code);
 }
 
-std::expected<declaration_set_t, std::string> parser_context::parse(string_view code)
+std::expected<statement_set_t, std::string> parser_context::parse(string_view code)
 {
     auto sc_data = std::make_unique<lex::scanner_data>();
 

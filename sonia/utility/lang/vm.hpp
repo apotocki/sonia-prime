@@ -525,37 +525,37 @@ struct printer
 
     inline size_t operator()(identity_type<op::jt>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
     {
-        generic_print(address, "jt"sv) << " ("sv << std::boolalpha << ctx.is_true(ctx.stack_back()) << ") 0x"sv << std::hex << jmp_address << "\n";
+        generic_print(address, "jt"sv) << " 0x"sv << std::hex << jmp_address << " ("sv << std::boolalpha << ctx.is_true(ctx.stack_back()) << ")\n";
         return next_address;
     }
 
-    inline size_t operator()(identity_type<op::jtp>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jtp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        generic_print(address, "jtp"sv) << " 0x"sv << std::hex << (next_address + jmp_offset) << "\n";
+        generic_print(address, "jtp"sv) << " 0x"sv << std::hex << (next_address + jmp_offset) << " ("sv << std::boolalpha << ctx.is_true(ctx.stack_back()) << ")\n";
         return next_address;
     }
 
-    inline size_t operator()(identity_type<op::jtn>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jtn>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        generic_print(address, "jtn"sv) << " 0x"sv << std::hex << (next_address - jmp_offset) << "\n";
+        generic_print(address, "jtn"sv) << " 0x"sv << std::hex << (next_address - jmp_offset) << " ("sv << std::boolalpha << ctx.is_true(ctx.stack_back()) << ")\n";
         return next_address;
     }
 
     inline size_t operator()(identity_type<op::jf>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
     {
-        generic_print(address, "jf"sv) << " ("sv << std::boolalpha << ctx.is_true(ctx.stack_back()) << ") 0x"sv << std::hex << jmp_address << "\n";
+        generic_print(address, "jf"sv) << " 0x"sv << std::hex << jmp_address << " ("sv << std::boolalpha << ctx.is_true(ctx.stack_back()) << ")\n";
         return next_address;
     }
 
-    inline size_t operator()(identity_type<op::jfp>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jfp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        generic_print(address, "jfp"sv) << " 0x"sv << std::hex << (next_address + jmp_offset) << "\n";
+        generic_print(address, "jfp"sv) << " 0x"sv << std::hex << (next_address + jmp_offset) << " ("sv << std::boolalpha << ctx.is_true(ctx.stack_back()) << ")\n";
         return next_address;
     }
 
-    inline size_t operator()(identity_type<op::jfn>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jfn>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        generic_print(address, "jfn"sv) << " 0x"sv << std::hex << (next_address - jmp_offset) << "\n";
+        generic_print(address, "jfn"sv) << " 0x"sv << std::hex << (next_address - jmp_offset) << " ("sv << std::boolalpha << ctx.is_true(ctx.stack_back()) << ")\n";
         return next_address;
     }
 
@@ -701,32 +701,44 @@ struct runner
 
     inline size_t operator()(identity_type<op::jt>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
     {
-        return ctx.is_true(ctx.stack_back()) ? jmp_address : next_address;
+        size_t result = ctx.is_true(ctx.stack_back()) ? jmp_address : next_address;
+        ctx.stack_pop();
+        return result;
     }
 
     inline size_t operator()(identity_type<op::jtp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_true(ctx.stack_back()) ? (next_address + jmp_offset) : next_address;
+        size_t result = ctx.is_true(ctx.stack_back()) ? (next_address + jmp_offset) : next_address;
+        ctx.stack_pop();
+        return result;
     }
 
     inline size_t operator()(identity_type<op::jtn>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_true(ctx.stack_back()) ? (next_address - jmp_offset) : next_address;
+        size_t result = ctx.is_true(ctx.stack_back()) ? (next_address - jmp_offset) : next_address;
+        ctx.stack_pop();
+        return result;
     }
 
     inline size_t operator()(identity_type<op::jf>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
     {
-        return ctx.is_true(ctx.stack_back()) ? next_address : jmp_address;
+        size_t result = ctx.is_true(ctx.stack_back()) ? next_address : jmp_address;
+        ctx.stack_pop();
+        return result;
     }
 
     inline size_t operator()(identity_type<op::jfp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_true(ctx.stack_back()) ? next_address : (next_address + jmp_offset);
+        size_t result = ctx.is_true(ctx.stack_back()) ? next_address : (next_address + jmp_offset);
+        ctx.stack_pop();
+        return result;
     }
 
     inline size_t operator()(identity_type<op::jfn>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_true(ctx.stack_back()) ? next_address : (next_address - jmp_offset);
+        size_t result = ctx.is_true(ctx.stack_back()) ? next_address : (next_address - jmp_offset);
+        ctx.stack_pop();
+        return result;
     }
 
     inline optional<size_t> operator()(identity_type<op::ret>, ContextT& ctx, size_t) const
@@ -1118,9 +1130,9 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
 template <typename ContextT>
 void virtual_stack_machine<ContextT>::run(ContextT& ctx, size_t address)
 {
-    //sequence_runner<printer<ContextT>, runner<ContextT>> rn{ printer<ContextT>{std::cout}, {}};
+    sequence_runner<printer<ContextT>, runner<ContextT>> rn{ printer<ContextT>{std::cout}, {}};
     //printer<ContextT> rn{ std::cout };
-    runner<ContextT> rn;
+    //runner<ContextT> rn;
     traverse(ctx, address, rn);
 }
 

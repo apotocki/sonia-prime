@@ -89,14 +89,15 @@ vm::context::context(unit& u, invocation::invocable* penv)
 
 bool vm::context::is_true(variable_type const& v) const noexcept
 {
-    blob_result const* br = &v.get();
-    while (br->type == blob_type::blob_reference) {
-        br = data_of<blob_result>(*br);
-    }
-    if (br->type == blob_type::boolean) {
-        return !!br->bp.ui8value;
-    }
-    return true;
+    return v.as<bool>();
+    //blob_result const* br = &v.get();
+    //while (br->type == blob_type::blob_reference) {
+    //    br = data_of<blob_result>(*br);
+    //}
+    //if (br->type == blob_type::boolean) {
+    //    return !!br->bp.ui8value;
+    //}
+    //return true;
 }
 
 size_t vm::context::callp(size_t ret_address)

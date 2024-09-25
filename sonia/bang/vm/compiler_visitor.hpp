@@ -114,9 +114,23 @@ public:
 
     void operator()(semantic::loop_scope_t const& s) const
     {
+        if (!s.continue_branch.empty()) {
+            fnbuilder_.append_noop();
+        }
         auto scope_begin_pos = fnbuilder_.make_label();
-        breaks_t breaks;
 
+        if (!s.continue_branch.empty()) {
+            //fnbuilder_.append_noop();
+            //auto jmpentry = fnbuilder_.current_entry();
+            for (auto const& e : s.continue_branch) {
+                apply(e);
+            }
+            auto loop_begin_pos = fnbuilder_.make_label();
+            scope_begin_pos->operation = asm_builder_t::op_t::jmp;
+            scope_begin_pos->operand = loop_begin_pos;
+        }
+        
+        breaks_t breaks;
         loop_stack_.emplace_back(scope_begin_pos, std::addressof(breaks));
         SCOPE_EXIT([this] { loop_stack_.pop_back(); });
 

@@ -27,7 +27,7 @@ void limbs_encode_decode_test(int base, int digit_count)
         std::string_view numstrv = numstr;
         auto optres = sonia::mp::to_limbs<LimbT>(numstrv, base, std::allocator<LimbT>{});
         auto [limbs, size, allocsize, sign] = *optres;
-        defer{ std::allocator<LimbT>{}.deallocate(limbs, allocsize); };
+        defer{ if (limbs) std::allocator<LimbT>{}.deallocate(limbs, allocsize); };
         //*
         bool reversed = false;
         std::span sp0{ limbs, size };
@@ -47,7 +47,7 @@ void limbs_encode_decode_test(int base, int digit_count)
 
 void mp_enc_dec_test()
 {
-    /*
+    //*
     limbs_encode_decode_test<uint64_t>(8, 1024);
     limbs_encode_decode_test<uint32_t>(8, 1024);
     limbs_encode_decode_test<uint16_t>(8, 1024);
@@ -64,7 +64,7 @@ void mp_enc_dec_test()
     limbs_encode_decode_test<uint8_t>(32, 1024);
     //*/
 
-    /*
+    //*
     limbs_encode_decode_test<uint8_t>(10, 1024);
     limbs_encode_decode_test<uint16_t>(10, 1024);
     limbs_encode_decode_test<uint32_t>(10, 1024);
@@ -78,6 +78,7 @@ void mp_enc_dec_test()
         limbs_encode_decode_test<uint16_t>(base, dcount);
         limbs_encode_decode_test<uint8_t>(base, dcount);
     }
+
     //limbs_encode_decode_test<uint64_t>(10, 1024);
 }
 
@@ -358,15 +359,13 @@ std::string tohex(double a, double r, double g, double b)
 
 void mp_test_registrar()
 {
-
-
-    std::cout << tohex(1.0, 0.957, 0.961, 0.961) << "\n";
+    //std::cout << tohex(1.0, 0.957, 0.961, 0.961) << "\n";
     //std::cout << tohex(1.0, 0.247, 0.247, 0.275) << "\n";
 
-    //register_test(BOOST_TEST_CASE(&mp_enc_dec_test));
-    register_test(BOOST_TEST_CASE_SILENT(&mp_ct_test));
-    register_test(BOOST_TEST_CASE(&mp_integer_test));
-    register_test(BOOST_TEST_CASE(&mp_integer_test2));
+    register_test(BOOST_TEST_CASE(&mp_enc_dec_test));
+    //register_test(BOOST_TEST_CASE_SILENT(&mp_ct_test));
+    //register_test(BOOST_TEST_CASE(&mp_integer_test));
+    //register_test(BOOST_TEST_CASE(&mp_integer_test2));
 }
 
 #ifdef AUTO_TEST_REGISTRATION

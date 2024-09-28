@@ -16,7 +16,7 @@
 
 namespace sonia::mp {
 
-// limbs are desructed during the string conversion
+// limbs are destructed during the string conversion
 template <std::unsigned_integral LimbT, typename OutputIteratorT>
 requires(!std::is_const_v<LimbT>)
 OutputIteratorT bc_get_str(std::span<LimbT> limbs, int base, std::string_view alphabet, OutputIteratorT oi)
@@ -108,7 +108,7 @@ OutputIteratorT bc_get_str(std::span<LimbT> limbs, int base, std::string_view al
             for (;;) {
                 auto [d, f] = umul1<LimbT>(frac, base);
                 frac = f;
-                *s = alphabet[static_cast<uint8_t>(d)];
+                *s = alphabet[d & 0xff];
                 if (s == tempbuff) break;
                 --s;
             }
@@ -120,7 +120,7 @@ OutputIteratorT bc_get_str(std::span<LimbT> limbs, int base, std::string_view al
     {
         auto [q, r] = div1<LimbT>(ul, base);
         ul = q;
-        *oi = alphabet[static_cast<uint8_t>(r)];
+        *oi = alphabet[r & 0xff];
     }
     
     return std::move(oi);
@@ -132,7 +132,7 @@ OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& rev
     using namespace std::string_view_literals;
     using limb_type = std::remove_cv_t<LimbT>;
 
-    if (base < 2 || base > (alphabet.empty() ? 62 : alphabet.size())) {
+    if (base < 2 || base > (alphabet.empty() ? detail::default_alphabet_big.size() : alphabet.size())) {
         throw std::invalid_argument("wrong base");
     }
     if (limbs.empty() || (limbs.size() == 1 && !limbs.front())) {
@@ -143,7 +143,7 @@ OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& rev
     }
 
     if (alphabet.empty()) {
-        alphabet = base <= 36 ? detail::default_alphabet : detail::default_alphabet_big;
+        alphabet = base <= detail::default_alphabet.size() ? detail::default_alphabet : detail::default_alphabet_big;
     }
 
     if (!(base & (base - 1))) {
@@ -185,14 +185,17 @@ OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& rev
         }
     }
 
-    //if (un < 35)
-    reversed = true;
-    if constexpr (std::is_const_v<LimbT>) {
-        std::vector<limb_type> mls( limbs.begin(), limbs.end() );
-        return bc_get_str(std::span{mls}, base, alphabet, std::move(out));
-    } else {
-        return bc_get_str(limbs, base, alphabet, std::move(out));
-    }
+    //if (limbs.size() < 35) {
+        reversed = true;
+        if constexpr (std::is_const_v<LimbT>) {
+            std::vector<limb_type> mls( limbs.begin(), limbs.end() );
+            return bc_get_str(std::span{mls}, base, alphabet, std::move(out));
+        } else {
+            return bc_get_str(limbs, base, alphabet, std::move(out));
+        }
+    //} else {
+    
+    //}
 
     /*
     powtab_mem = new mp_limb_t[2 + un];

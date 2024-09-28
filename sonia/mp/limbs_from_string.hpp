@@ -53,6 +53,59 @@ inline const unsigned char default_alphabet_big_map[] =
     51,52,53,54,55,56,57,58,59,60,61
 };
 
+template <std::integral CharT>
+inline int sign_parser(std::basic_string_view<CharT>& str)
+{
+    while (!str.empty() && std::isspace(str.front())) str = str.substr(1);
+    if (!str.empty()) {
+        if (str.front() == '-') {
+            str = str.substr(1);
+            return -1;
+        } else if (str.front() == '+') {
+            str = str.substr(1);
+        }
+    }
+    return 1;
+}
+
+template <std::integral CharT>
+inline unsigned int base_guesser(std::basic_string_view<CharT>& str)
+{
+    unsigned int base;
+    // use or skip prefix
+    if (str.size() > 1 && str.front() == '0') {
+        char c = str[1];
+        if (c == 'X' || c == 'x') {
+            base = 16;
+            str = str.substr(2);
+        } else if (c == 'b' || c == 'B') {
+            base = 2;
+            str = str.substr(2);
+        } else {
+            base = 8;
+            str = str.substr(1);
+        }
+    } else {
+        base = 10;
+    }
+    return base;
+}
+
+template <std::integral CharT>
+inline void base_prefix_skipper(std::basic_string_view<CharT>& str, unsigned int base)
+{
+    if (str.size() > 1 && str.front() == '0') {
+        char c = str[1];
+        if (base == 16 && (c == 'X' || c == 'x')) {
+            str = str.substr(2);
+        } else if (base == 16 && (c == 'b' || c == 'B')) {
+            str = str.substr(2);
+        } else if (base == 8) {
+            str = str.substr(1);
+        }
+    }
+}
+
 }
 
 namespace sonia::mp {
@@ -64,9 +117,12 @@ namespace sonia::mp {
 //    throw std::runtime_error("to_limbs from integer is not implemented"); //&
 //}
 
-template <std::unsigned_integral LimbT, typename AllocatorT>
+
+
+template <std::unsigned_integral LimbT, std::integral CharT, typename AllocatorT, typename MapperT>
 requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
-std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_limbs(std::string_view & str, unsigned int base, AllocatorT && alloc, std::span<const unsigned char> alphabet_map = {}) noexcept
+std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr>
+to_limbs(std::basic_string_view<CharT> & str, unsigned int base, int sign, AllocatorT && alloc, MapperT const& alphabet_mapper) noexcept
 {
     using namespace sonia::arithmetic;
     using result_t = std::tuple<LimbT*, size_t, size_t, int>;
@@ -74,62 +130,23 @@ std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_li
 
     result_t result{ nullptr, 0, 0, 1 };
 
-    std::string_view orig_str = str;
-
-    while (!str.empty() && std::isspace(str.front())) str = str.substr(1);
-    if (!str.empty()) {
-        if (str.front() == '-') {
-            str = str.substr(1);
-            std::get<3>(result) = -1;
-        } else if (str.front() == '+') {
-            str = str.substr(1);
-        }
-    }
-
-    // use or skip prefix
-    if (str.size() > 1 && str.front() == '0') {
-        char c = str[1];
-        if ((0 == base || 16 == base) && (c == 'X' || c == 'x')) {
-            base = 16;
-            str = str.substr(2);
-        } else if ((0 == base || 2 == base) && (c == 'b' || c == 'B')) {
-            base = 2;
-            str = str.substr(2);
-        } else if (0 == base || 8 == base) {
-            base = 2;
-            str = str.substr(2);
-        }
-    } else if (!base) {
-        base = 10;
-    }
-
     if (str.empty()) {
         return std::unexpected(std::make_exception_ptr(std::invalid_argument("no value"s)));
-    } else if (base < 2 || base > 255) {
+    }
+
+    if (base < 2) {
         return std::unexpected(std::make_exception_ptr(std::invalid_argument((std::ostringstream{} << "wrong base: "sv << base).str())));
     }
-    
-    if (alphabet_map.empty()) {
-        if (base > 62) {
-            return std::unexpected(std::make_exception_ptr(std::invalid_argument((std::ostringstream{} << "An alphabet must be specified for a base greater than 62, current base: "sv << base).str())));
-        }
-        alphabet_map = base <= 36 ? std::span{ detail::default_alphabet_map } : std::span{ detail::default_alphabet_big_map };
+    if (base > 255 && (std::numeric_limits<LimbT>::max)() < base) {
+        return std::unexpected(std::make_exception_ptr(std::invalid_argument((std::ostringstream{} << "not implemented, the base "sv << base << " is too big for the given limb type "sv << typeid(LimbT).name()).str())));
     }
-
+    
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
 
-    auto get_digit = [alphabet_map, base](const char* pc) noexcept {
-        unsigned char c = *pc;
-        if (c < alphabet_map.size()) {
-            if (LimbT d = alphabet_map[c]; d < base) {
-                return d;
-            }
-        }
-        return static_cast<LimbT>(base);
-    };
+    auto get_digit = [alphabet_mapper, base](const CharT* pc) noexcept { return static_cast<LimbT>(alphabet_mapper(*pc, base)); };
     
     try {
-        const char* pc = str.data(), * pce = pc + str.size();
+        const CharT* pc = str.data(), * pce = pc + str.size();
 
         if (!(base & (base - 1))) { // base is a power of 2
             // size estimation
@@ -167,7 +184,7 @@ std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_li
             LimbT big_base = ipow<LimbT>(base, digits_per_limb);
 
             LimbT limb = get_digit(pc);
-            if (limb == base) { // can't parse a digit
+            if (limb >= base) { // can't parse a digit
                 str = { pc, pce };
                 throw std::invalid_argument((std::ostringstream{} << "unacceptable character '"sv << *pc << '\'').str());
             }
@@ -183,7 +200,7 @@ std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_li
             for (; !limb; limb = get_digit(pc)) {
                 if (++pc == pce) return make_zero_result(str, pc, pce, alloc);
             }
-            if (limb == base) return make_zero_result(str, pc, pce, alloc);
+            if (limb >= base) return make_zero_result(str, pc, pce, alloc);
             ++pc;
 
             size_t left_digits = pce - pc;
@@ -192,15 +209,15 @@ std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_li
             std::get<2>(result) = limbs_count;
 
             for (;;) {
-                LimbT tmp;
                 auto pack_sz = (std::min)(digits_per_limb - 1, left_digits);
                 for (auto k = pack_sz; k != 0; --k, ++pc) {
-                    tmp = get_digit(pc);
-                    if (tmp == base) [[unlikely]] {
+                    LimbT tmp = get_digit(pc);
+                    if (tmp >= base) [[unlikely]] {
                         pack_sz -= k;
+                        pce = pc;
                         break;
                     }
-                    limb = limb * base + get_digit(pc);
+                    limb = limb * base + tmp;
                 }
                 if (std::get<1>(result)) {
                     LimbT mpr = pack_sz == digits_per_limb - 1 ? big_base : ipow<LimbT>(base, pack_sz + 1);
@@ -210,22 +227,51 @@ std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_li
                     *(std::get<0>(result) + std::get<1>(result)) = limb;
                     ++std::get<1>(result);
                 }
-                if (pc == pce || tmp == base) break;
+                if (pc == pce) break;
                 limb = get_digit(pc);
-                if (limb == base) [[unlikely]] break;
+                if (limb >= base) [[unlikely]] break;
                 ++pc;
                 left_digits -= digits_per_limb;
             }
         }
-        str = { pc, pce };
+        str = { pc, pc + str.size() };
         return result;
     } catch (...) {
         if (auto* ptr = std::get<0>(result); ptr) {
             alloc_traits_t::deallocate(alloc, ptr, std::get<2>(result));
         }
-        str = orig_str;
         return std::unexpected(std::current_exception());
     }
+}
+
+template <std::unsigned_integral LimbT, std::integral CharT, typename AllocatorT>
+requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
+inline std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr>
+to_limbs(std::basic_string_view<CharT>& str, unsigned int base, AllocatorT&& alloc) noexcept
+{
+    if (base > 62) {
+        return std::unexpected(std::make_exception_ptr(std::invalid_argument((std::ostringstream{} << "An alphabet must be specified for a base greater than 62, current base: "sv << base).str())));
+    }
+    int sign = detail::sign_parser(str);
+    detail::base_prefix_skipper(str, base);
+    return to_limbs<LimbT>(str, base, sign, std::forward<AllocatorT>(alloc),
+        base <= 36 ?
+            [](CharT c, int base) { return c < sizeof(detail::default_alphabet_map) ? detail::default_alphabet_map[c] : base; } :
+            [](CharT c, int base) { return c < sizeof(detail::default_alphabet_big_map) ? detail::default_alphabet_big_map[c] : base; });
+}
+
+
+template <std::unsigned_integral LimbT, std::integral CharT, typename AllocatorT>
+requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
+inline std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr>
+to_limbs(std::basic_string_view<CharT>& str, AllocatorT&& alloc) noexcept
+{
+    int sign = detail::sign_parser(str);
+    auto base = detail::base_guesser(str);
+    return to_limbs<LimbT>(str, base, sign, std::forward<AllocatorT>(alloc),
+        [](CharT c, unsigned int base) {
+            return c < sizeof(detail::default_alphabet_map) ? detail::default_alphabet_map[c] : base; 
+        });
 }
 
 }

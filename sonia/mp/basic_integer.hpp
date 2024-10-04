@@ -74,7 +74,15 @@ struct integer_holder : AllocatorT
     struct sso_allocator_type
     {
         using value_type = LimbT;
-        
+        using size_type = std::size_t;
+        using difference_type = std::ptrdiff_t;
+        using propagate_on_container_move_assignment = std::true_type;
+
+        template <typename U> requires is_same_v<LimbT, U> struct rebind
+        {
+            using other = sso_allocator_type;
+        };
+
         integer_holder& holder_;
         bool sso_allocation_ = false;
         inline explicit sso_allocator_type(integer_holder& h) noexcept : holder_{ h } {}
@@ -235,7 +243,9 @@ struct integer_holder : AllocatorT
         if (std::equal_to<LimbT*>()(limbs, inplace_limbs_)) {
             // assert (sz <= N);
             if (sz < N || !(limbs[N - 1] & ~last_limb_mask)) { // sso case
-                return inplaced_set_masks(sz, sign);
+                if (sz) inplaced_set_masks(sz, sign);
+                else init_zero();
+                return;
             } else { // need allocate
                 limbsdata = allocate(sz + limbs_data_sizeof_in_limbs);
                 std::copy(limbs, limbs + sz, limbsdata + limbs_data_sizeof_in_limbs);
@@ -345,7 +355,7 @@ struct integer_holder : AllocatorT
         return { buff.data(), cnt };
     }
 
-    inline void inplaced_set_masks(size_t sz, int sign)
+    inline void inplaced_set_masks(size_t sz, int sign) noexcept
     {
         // limbs[N - 1] is 0 or the last limb
         LimbT mask = in_place_mask | (sign < 0 ? sign_mask : 0);
@@ -354,6 +364,19 @@ struct integer_holder : AllocatorT
         }
         LimbT& ctl = integer_holder::ctl_limb(inplace_limbs_);
         ctl = (ctl & last_limb_mask) | mask;
+    }
+
+    inline static void inplaced_truncate(LimbT& ctl, size_t sz) noexcept
+    {
+        assert(sz <= N);
+        LimbT cnt_fragment = static_cast<LimbT>(sz - 1) << (limb_bits - 2 - limb_count_bits);
+        ctl = (ctl & ~limb_count_mask) | cnt_fragment;
+    }
+
+    inline static void inplaced_set_high_limb(LimbT& ctl, LimbT l) noexcept
+    {
+        assert(l <= last_limb_mask);
+        ctl = (ctl & ~last_limb_mask) | l;
     }
 
     void set_allocated(limbs_data * limbsdata)
@@ -475,23 +498,29 @@ struct integer_holder : AllocatorT
         set_allocated(rhs_ld);
     }
 
-    std::pair<std::span<const LimbT>, LimbT> limbs() const noexcept
+    std::pair<LimbT, std::span<const LimbT>> limbs() const noexcept
     {
         LimbT ctl = ctl_limb();
         if (is_inplaced(ctl)) {
             if constexpr (N == 1) {
-                return { {}, ctl & last_limb_mask };
+                return { ctl & last_limb_mask, {} };
             } else {
                 if (auto sz = inplaced_size(ctl); sz != N) {
-                    return { std::span{ inplace_limbs_, sz }, 0 };
+                    return { 0, std::span{ inplace_limbs_, sz } };
                 } else {
-                    return { std::span{ inplace_limbs_, N - 1 }, ctl & last_limb_mask };
+                    return { ctl & last_limb_mask, std::span{ inplace_limbs_, N - 1 } };
                 }
             }
         } else {
             auto [ldata, limbs] = allocated_data_and_limbs();
-            return { std::span{limbs, ldata->size}, 0 };
+            return { 0, std::span{limbs, ldata->size} };
         }
+    }
+
+    inline std::pair<LimbT, std::span<LimbT>> limbs() noexcept
+    {
+        auto[l, sp] = std::as_const(*this).limbs();
+        return { l, std::span{const_cast<LimbT*>(sp.data()), sp.size()} };
     }
 
     inline basic_integer_view<LimbT> significand() const noexcept
@@ -784,6 +813,28 @@ public:
     inline basic_integer& operator%= (basic_integer_view<LimbT> r) { *this = *this % r; return *this; }
     inline basic_integer& operator%= (basic_integer const& r) { *this = *this % r; return *this; }
 
+    // returns q, store r
+    basic_integer div_qr(basic_integer_view<LimbT> divider)
+    {
+        return build_new([this, &divider](auto& qih) {
+            auto [sh, sl] = aholder_.limbs();
+            qih.init(sonia::mp::div_qr<LimbT>(sh, sl, sgn(), divider, qih.sso_allocator()));
+
+            LimbT & ctl = aholder_.ctl_limb();
+            if (alloc_holder::is_inplaced(ctl)) {
+                size_t newsz = sl.size() + (sh ? 1 : 0);
+                if (actualN == newsz) {
+                    alloc_holder::inplaced_set_high_limb(ctl, sh);
+                } else { // newsz < actualN => sh is a part of inplace limbs, just update size
+                    alloc_holder::inplaced_truncate(ctl, newsz);
+                }
+            } else { // sh is already updated (because allocated), just update size
+                detail::limbs_data* ldata = aholder_.allocated_data();
+                ldata->size = static_cast<uint32_t>(sl.size() + (sh ? 1 : 0));
+            }
+        });
+    }
+
     inline int sgn() const noexcept { return aholder_.is_zero() ? 0 : (aholder_.is_negative() ? -1 : 1); }
 
     inline void negate() noexcept
@@ -798,7 +849,7 @@ public:
     inline LimbT const* raw_data() const noexcept { return aholder_.laundered_data(); }
     inline LimbT * raw_data() noexcept { return aholder_.laundered_data(); }
 
-    inline std::pair<std::span<const LimbT>, LimbT> limbs() const noexcept
+    inline std::pair<LimbT, std::span<const LimbT>> limbs() const noexcept
     {
         return aholder_.limbs();
     }
@@ -820,8 +871,8 @@ public:
         if (val.is_negative()) result.push_back('-');
         if (show_base) {
             switch (base) {
-            case 8: result.push_back('0'); break;
-            case 16: result.push_back('0'); result.push_back('x'); break;
+                case 8: result.push_back('0'); break;
+                case 16: result.push_back('0'); result.push_back('x'); break;
             }
         }
         size_t offset = result.size();
@@ -869,8 +920,8 @@ std::strong_ordering operator <=>(basic_integer<LimbT, LN, AllocatorLT> const& l
     if (lhs.is_negative() && !rhs.is_negative()) return std::strong_ordering::less;
     if (!lhs.is_negative() && rhs.is_negative()) return std::strong_ordering::greater;
 
-    auto [llimbs, last_llimb] = lhs.limbs();
-    auto [rlimbs, last_rlimb] = rhs.limbs();
+    auto [last_llimb, llimbs] = lhs.limbs();
+    auto [last_rlimb, rlimbs] = rhs.limbs();
 
     // getting significant limb sizes
     size_t llimbs_sz = llimbs.size(), rlimbs_sz = rlimbs.size();
@@ -908,8 +959,8 @@ bool operator ==(basic_integer<LimbT, LN, AllocatorLT> const& lhs, basic_integer
 {
     if ((lhs.is_negative() && !rhs.is_negative()) || (!lhs.is_negative() && rhs.is_negative())) return false;
 
-    auto [llimbs, last_llimb] = lhs.limbs();
-    auto [rlimbs, last_rlimb] = rhs.limbs();
+    auto [last_llimb, llimbs] = lhs.limbs();
+    auto [last_rlimb, rlimbs] = rhs.limbs();
 
     // getting significant limb sizes
     size_t llimbs_sz = llimbs.size(), rlimbs_sz = rlimbs.size();

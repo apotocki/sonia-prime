@@ -30,8 +30,7 @@ OutputIteratorT bc_get_str(std::span<LimbT> limbs, int base, std::string_view al
     constexpr uint32_t limb_bit_count = std::numeric_limits<LimbT>::digits;
     using limb_traits_t = uint_t<limb_bit_count>;
     
-    static_assert(sizeof(LimbT) <= 8);
-    char tempbuff[64]; // not more than 64 chars per limb
+    char tempbuff[std::numeric_limits<LimbT>::digits]; // not more than the number of bits in the LimbT type (worst case when base = 2)
 
     if (base == 10) { // questionable choice
         while (limbs.size() > 1) {
@@ -185,7 +184,7 @@ OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& rev
         }
     }
 
-    //if (limbs.size() < 35) {
+    if (limbs.size() < 35) {
         reversed = true;
         if constexpr (std::is_const_v<LimbT>) {
             std::vector<limb_type> mls( limbs.begin(), limbs.end() );
@@ -193,9 +192,29 @@ OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& rev
         } else {
             return bc_get_str(limbs, base, alphabet, std::move(out));
         }
-    //} else {
-    
-    //}
+    } else {
+        using namespace sonia::arithmetic;
+        namespace mpa = sonia::mp::arithmetic;
+
+        constexpr uint32_t limb_bit_count = std::numeric_limits<limb_type>::digits;
+
+        size_t chars_per_limb = size_t(std::floor(double(limb_bit_count) / std::log2(base)));
+
+
+        std::vector<limb_type> powtab;
+        powtab.reserve(2 + limbs.size());
+
+        limb_type logb2 = static_cast<limb_type>(std::floor(std::logl(2) / std::logl(base) * std::powl(2, limb_bit_count)));
+        size_t ndig = umul1<limb_type>(logb2, static_cast<limb_type>(limb_bit_count * limbs.size())).first;
+        size_t xn = 1 + ndig / chars_per_limb;
+
+        if constexpr (std::is_const_v<LimbT>) {
+            std::vector<limb_type> mls(limbs.begin(), limbs.end());
+            return bc_get_str(std::span{ mls }, base, alphabet, std::move(out));
+        } else {
+            return bc_get_str(limbs, base, alphabet, std::move(out));
+        }
+    }
 
     /*
     powtab_mem = new mp_limb_t[2 + un];
@@ -223,5 +242,6 @@ OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& rev
     return std::move(out);
     */
 }
+
 
 }

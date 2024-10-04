@@ -88,8 +88,8 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
                     result = { nullptr, 0, 0, 1 };
                     return result;
                 }
-                last_l = *--lb;
-                last_r = *--rb;
+                last_l = *--le;
+                last_r = *--re;
             }
             if (last_l < last_r) {
                 std::swap(lb, rb);
@@ -148,22 +148,21 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
 
 template <std::unsigned_integral LimbT, typename AllocatorT>
 requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
-[[nodiscard]] std::tuple<std::remove_cv_t<LimbT>*, size_t, size_t, int> div(basic_integer_view<LimbT> l, basic_integer_view<LimbT> r, AllocatorT&& alloc)
+[[nodiscard]] std::tuple<LimbT*, size_t, size_t, int> div(basic_integer_view<LimbT> l, basic_integer_view<LimbT> r, AllocatorT&& alloc)
 {
-    using limb_t = std::remove_cv_t<LimbT>;
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
 
     return l.with_limbs([r, &alloc](std::span<const LimbT> llimbs, int lsign) {
         return r.with_limbs([llimbs, lsign, &alloc](std::span<const LimbT> rlimbs, int rsign) {
-            std::tuple<limb_t*, size_t, size_t, int> result;
+            std::tuple<LimbT*, size_t, size_t, int> result;
 
             size_t margsz = llimbs.size() + rlimbs.size();
             std::get<2>(result) = margsz;
-            limb_t* pls = alloc_traits_t::allocate(alloc, std::get<2>(result));
+            LimbT* pls = alloc_traits_t::allocate(alloc, std::get<2>(result));
             std::get<3>(result) = !(lsign + rsign) ? -1 : 1;
             std::span q{ pls, llimbs.size() };
             std::span res{ pls + llimbs.size(), rlimbs.size() };
-            arithmetic::udiv<limb_t>(llimbs, rlimbs, q, res);
+            arithmetic::udiv<LimbT>(llimbs, rlimbs, q, res);
             std::get<0>(result) = q.data();
             std::get<1>(result) = q.size();
             assert(q.size() <= margsz);
@@ -173,6 +172,40 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
             return result;
         });
     });
+}
+
+// s and d must be normilized (no heading zeros in sl and dl)
+template <std::unsigned_integral LimbT, typename AllocatorT>
+requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
+[[nodiscard]] std::tuple<LimbT*, size_t, size_t, int> div_qr(LimbT& sh, std::span<LimbT>& sl, int ssign, basic_integer_view<LimbT> d, AllocatorT&& alloc)
+{
+    using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
+
+    std::tuple<LimbT*, size_t, size_t, int> result;
+    size_t ssz = sl.size() + (sh ? 1 : 0);
+    if (!ssz) [[unlikely]] { result = { nullptr, 0, 0, 1 }; return result; }
+    auto [dh, dl] = d.limbs();
+    unsigned int dh_cnt = dh ? 1 : 0;
+    size_t dsz = dl.size() + dh_cnt;
+    if (dsz > ssz) { result = { nullptr, 0, 0, 1 }; return result; }
+    size_t qsz = ssz - dsz + 1;
+    get<2>(result) = qsz;
+    LimbT* qlimbs = alloc_traits_t::allocate(alloc, std::get<2>(result));
+    get<3>(result) = !(ssign + d.sgn()) ? -1 : 1;
+    SCOPE_EXCEPTIONAL_EXIT([&alloc, &result] { alloc_traits_t::deallocate(alloc, get<0>(result), get<2>(result)); });
+
+    size_t dauxspace = (dl.size() + dh_cnt);
+    LimbT* daux = alloc_traits_t::allocate(alloc, 2 * dauxspace);
+    LimbT* daux_tmp = std::copy(dl.begin(), dl.end(), daux);
+    if (dh_cnt) *daux_tmp++ = dh;
+    SCOPE_EXIT([&alloc, daux, dauxspace] { alloc_traits_t::deallocate(alloc, daux, 2 * dauxspace); });
+
+    std::span<LimbT> q{ qlimbs, qsz };
+    sh = arithmetic::udiv<LimbT>(sl, &sh, { daux, dauxspace }, { daux_tmp, dauxspace }, q);
+    assert(q.data() == qlimbs);
+    std::get<0>(result) = qlimbs;
+    std::get<1>(result) = q.size();
+    return result;
 }
 
 template <std::unsigned_integral LimbT, typename AllocatorT>
@@ -228,16 +261,16 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     for (;;) {
         if (n & 1) {
             result = mul(base, rview, alloc);
-            if (ralloc) { alloc_traits_t::deallocate(alloc, const_cast<LimbT*>(rview.limbs().data()), ralloc); }
+            if (ralloc) { alloc_traits_t::deallocate(alloc, const_cast<LimbT*>(rview.data()), ralloc); }
             rview = basic_integer_view<LimbT>{ std::span{std::get<0>(result), std::get<1>(result)}, std::get<3>(result) }; ralloc = std::get<2>(result);
         }
         n >>= 1;
         if (!n) break;
         auto [limbs, sz, rsz, sign] = mul(base, base, alloc);
-        if (balloc) { alloc_traits_t::deallocate(alloc, const_cast<LimbT*>(base.limbs().data()), balloc); }
+        if (balloc) { alloc_traits_t::deallocate(alloc, const_cast<LimbT*>(base.data()), balloc); }
         base = basic_integer_view<LimbT>{ std::span{limbs, sz}, sign }; balloc = rsz;
     }
-    if (balloc) { alloc_traits_t::deallocate(alloc, const_cast<LimbT*>(base.limbs().data()), balloc); }
+    if (balloc) { alloc_traits_t::deallocate(alloc, const_cast<LimbT*>(base.data()), balloc); }
     while (std::get<1>(result) && !*(std::get<0>(result) + std::get<1>(result) - 1)) {
         --std::get<1>(result);
     }

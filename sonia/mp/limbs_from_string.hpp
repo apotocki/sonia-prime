@@ -234,7 +234,7 @@ to_limbs(std::basic_string_view<CharT> & str, unsigned int base, int sign, Alloc
                 left_digits -= digits_per_limb;
             }
         }
-        str = { pc, pc + str.size() };
+        str = { pc, str.data() + str.size() };
         return result;
     } catch (...) {
         if (auto* ptr = std::get<0>(result); ptr) {

@@ -79,7 +79,7 @@ inline static const unsigned char clz_tab[129] =
 };
 
 template <std::unsigned_integral T>
-inline constexpr unsigned int generic_count_leading_zeros(T x)
+inline constexpr unsigned int generic_count_leading_zeros(T x) noexcept
 {
     T shift;
 									
@@ -97,7 +97,7 @@ inline constexpr unsigned int generic_count_leading_zeros(T x)
 }
 
 template <std::unsigned_integral T, unsigned int bits = std::numeric_limits<T>::digits>
-inline constexpr unsigned int consteval_count_leading_zeros(T x)
+inline constexpr unsigned int consteval_count_leading_zeros(T x) noexcept
 {
     if constexpr (bits == 1) {
         return x ? 0 : 1;
@@ -112,13 +112,13 @@ inline constexpr unsigned int consteval_count_leading_zeros(T x)
 }
 
 template <std::unsigned_integral T, unsigned int bits = std::numeric_limits<T>::digits>
-inline constexpr unsigned int consteval_log2(T x)
+inline constexpr unsigned int consteval_log2(T x) noexcept
 {
     return bits - consteval_count_leading_zeros<T, bits>(x) - 1;
 }
 
 template <std::unsigned_integral T>
-inline constexpr unsigned int count_leading_zeros(T x)
+inline constexpr unsigned int count_leading_zeros(T x) noexcept
 {
     if (std::is_constant_evaluated()) {
         return consteval_count_leading_zeros(x);
@@ -140,7 +140,7 @@ inline constexpr unsigned int count_leading_zeros(T x)
 }
 
 template <typename T>
-inline constexpr T ipow(T base, size_t exp)
+inline constexpr T ipow(T base, size_t exp) noexcept
 {
     T result = 1;
     for (;;) {
@@ -154,13 +154,13 @@ inline constexpr T ipow(T base, size_t exp)
 }
 
 template <std::unsigned_integral T>
-inline constexpr int ucmp1(T a, T b)
+inline constexpr int ucmp1(T a, T b) noexcept
 {
     return a < b ? -1 : (a > b ? 1 : 0);
 };
 
 template <std::unsigned_integral T>
-inline constexpr std::pair<T, T> uadd1(T a, T b)
+inline constexpr std::pair<T, T> uadd1(T a, T b) noexcept
 {
     T nextc = 0;
     T r = a + b;
@@ -169,7 +169,7 @@ inline constexpr std::pair<T, T> uadd1(T a, T b)
 };
 
 template <std::unsigned_integral T>
-inline constexpr std::pair<T, T> uadd1c(T a, T b, T c)
+inline constexpr std::pair<T, T> uadd1c(T a, T b, T c) noexcept
 {
     T nextc = 0;
     T r0 = a + b;
@@ -177,17 +177,17 @@ inline constexpr std::pair<T, T> uadd1c(T a, T b, T c)
     T r = r0 + c;
     if (r < r0) ++nextc;
     return { nextc, r };
-};
+}
 
 template <std::unsigned_integral T>
-inline constexpr std::pair<T, T> usub1(T a, T b)
+inline constexpr std::pair<T, T> usub1(T a, T b) noexcept
 {
     T nextc = a < b;
     return { nextc, a - b };
-};
+}
 
 template <std::unsigned_integral T>
-inline constexpr std::pair<T, T> usub1c(T a, T b, T c)
+inline constexpr std::pair<T, T> usub1c(T a, T b, T c) noexcept
 {
     T nextc = a < b;
     T r = a - b;
@@ -196,7 +196,7 @@ inline constexpr std::pair<T, T> usub1c(T a, T b, T c)
 };
 
 template <std::unsigned_integral T>
-inline void add2(T & sh, T & sl, T ah, T al, T bh, T bl)
+inline constexpr void add2(T & sh, T & sl, T ah, T al, T bh, T bl) noexcept
 {
     if constexpr (sizeof(T) >= sizeof(unsigned long long int)) {
         sl = al + bl;
@@ -211,7 +211,7 @@ inline void add2(T & sh, T & sl, T ah, T al, T bh, T bl)
 }
 
 template <std::unsigned_integral T>
-inline constexpr auto umul1(T u, T v) -> std::pair<T, T>
+inline constexpr auto umul1(T u, T v) noexcept -> std::pair<T, T>
 {
     if constexpr (sizeof(T) >= sizeof(unsigned long long int)) {
         constexpr int hbsz = std::numeric_limits<T>::digits / 2;
@@ -251,7 +251,7 @@ inline constexpr auto umul1(T u, T v) -> std::pair<T, T>
 //  https://gmplib.org/~tege/division-paper.pdf
 
 template <std::unsigned_integral T>
-void udiv2by1(T& q, T& r, T u1, T u0, T d, T v)
+void udiv2by1(T& q, T& r, T u1, T u0, T d, T v) noexcept
 {
     assert(d >= (((T)1) << (std::numeric_limits<T>::digits - 1)));
     auto [q1, q0] = umul1(u1, v);
@@ -268,7 +268,7 @@ void udiv2by1(T& q, T& r, T u1, T u0, T d, T v)
 }
 
 template <std::integral T>
-inline constexpr auto div1(T u, T d)->std::pair<T, T>
+inline constexpr auto div1(T u, T d) noexcept -> std::pair<T, T>
 {
 #if 1
     return { u / d, u % d };
@@ -278,8 +278,10 @@ inline constexpr auto div1(T u, T d)->std::pair<T, T>
 #endif
 }
 
+// {u1, u0} / d -> {q, r}
+// 'norm' means that u1 high bit is set to 1
 template <std::unsigned_integral T>
-constexpr auto udiv2by1norm(T u1, T u0, T d) -> std::pair<T, T>
+constexpr auto udiv2by1norm(T u1, T u0, T d) noexcept -> std::pair<T, T>
 {
     assert(u1 < d);
     constexpr int bsz = std::numeric_limits<T>::digits;
@@ -322,8 +324,9 @@ constexpr auto udiv2by1norm(T u1, T u0, T d) -> std::pair<T, T>
     }
 }
 
+// {u1, u0} / d -> {q, r}
 template <std::unsigned_integral T>
-constexpr auto udiv2by1(T u1, T u0, T d) -> std::pair<T, T>
+constexpr auto udiv2by1(T u1, T u0, T d) noexcept -> std::pair<T, T>
 {
     assert(u1 < d); // => d != 0
     constexpr int bsz = std::numeric_limits<T>::digits;
@@ -344,6 +347,40 @@ constexpr auto udiv2by1(T u1, T u0, T d) -> std::pair<T, T>
         using h_t = typename uint_t<bsz * 2>::least;
         h_t u = (((h_t)u1) << bsz) | u0;
         return { T(u / d), T(u % d) };
+    }
+}
+
+template <std::unsigned_integral T>
+inline constexpr T sqrt(T m) noexcept // returns floor(sqrt(m))
+{
+    if (!m) return m;
+    T u = (T(1) << ((std::numeric_limits<T>::digits - count_leading_zeros(m) + 1) / 2)) - 1;
+    //T u = m - 1;
+    //T u2 = (T(1) << ((std::numeric_limits<T>::digits - count_leading_zeros(m) - 1) / 2 + 1));
+    //if (u2 < u) {
+    //    std::cout << "!m: " << (uint64_t)m << ",  u: " << (uint64_t)u << "\n";
+    //} else if (u < u2) {
+    //    std::cout << "m: " << (uint64_t)m << ",  u: " << (uint64_t)u << "\n";
+    //}
+    for (;;) {
+        T s = u;
+        T t = s + m / s;
+        u = t / 2;
+        if (u >= s) [[unlikely]] return s;
+    }
+}
+
+template <std::unsigned_integral T>
+inline constexpr T sqrt(T mh, T ml) noexcept // returns floor(sqrt(m))
+{
+    if (!mh && !ml) return ml;
+    for (T u = mh ? (std::numeric_limits<T>::max)() : ml;;) {
+        T s = u;
+        auto [h, l] = udiv2by1(mh, ml, s);
+        assert(h == 0);
+        auto [c, tl] = uadd1(l, s);
+        u = (tl >> 2) | (c << (std::numeric_limits<T>::digits - 1));
+        if (u >= s) [[unlikely]] return s;
     }
 }
 

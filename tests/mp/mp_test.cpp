@@ -8,6 +8,11 @@
 #undef BOOST_ENABLE_ASSERT_HANDLER
 #include "applied/sonia_test.hpp"
 
+#include <fstream>
+#include <iostream>
+
+#include "sonia/filesystem.hpp"
+
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/mp/integer_view.hpp"
 #include "sonia/mp/integer_view_arithmetic.hpp"
@@ -45,8 +50,45 @@ void limbs_encode_decode_test(int base, int digit_count)
     }
 }
 
+template <std::unsigned_integral T>
+void test_sqrt()
+{
+    namespace sa = sonia::arithmetic;
+    for (T v = 0; v < (std::numeric_limits<T>::max)(); ++v)
+    {
+        //std::cout << "sqrt(" << (int)v << ") = " << (int)sa::sqrt<T>(v) << "\n";
+        T v1 = v + 1;
+        T s = sa::sqrt<T>(v1);
+        if ( !(v & 0xffffff)) {
+            std::cout << "sqrt(" << (unsigned int)v1 << ") = " << (int)sa::sqrt<T>(v1) << "\n";
+        }
+        bool flag = s * s <= v1 && ((uint64_t)(s + 1)) * ((uint64_t)(s + 1)) > v1;
+        BOOST_CHECK(flag);
+        if (!flag) {
+            std::cout << "wrong sqrt(" << std::hex << (unsigned int)v1 << ") = " << (unsigned int)sa::sqrt<T>(v1) << "\n";
+            break;
+        }
+    }
+}
+
 void mp_enc_dec_test()
 {
+    namespace ct = sonia::mpct;
+
+    std::cout << "uint8_t...\n";
+    test_sqrt<uint8_t>();
+    std::cout << "uint16_t...\n";
+    test_sqrt<uint16_t>();
+    std::cout << "uint32_t...\n";
+    test_sqrt<uint32_t>();
+
+    constexpr uint64_t m = 0x12341234ull * 0x12341234ull;
+    constexpr uint64_t r = sonia::arithmetic::sqrt<uint64_t>(m);
+    static_assert(r == 0x12341234ull);
+
+#if 0
+    limbs_encode_decode_test<uint64_t>(10, 1024);
+
     //*
     limbs_encode_decode_test<uint64_t>(8, 1024);
     limbs_encode_decode_test<uint32_t>(8, 1024);
@@ -80,6 +122,7 @@ void mp_enc_dec_test()
     }
 
     //limbs_encode_decode_test<uint64_t>(10, 1024);
+#endif
 }
 
 void mp_ct_test()
@@ -357,12 +400,72 @@ std::string tohex(double a, double r, double g, double b)
     return ss.str();
 }
 
+using namespace sonia;
+
+void div_test()
+{
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path suitedir{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "mp" };
+    fs::path filepath = suitedir / "test_div_data.txt";
+
+    std::ifstream file;
+    file.exceptions(std::ifstream::badbit);
+    file.open(filepath.string().c_str());
+    
+    int cnt = 0;
+    for (;;)
+    {
+        std::string s_str, d_str, q_str, r_str, emt_str;
+        if (!std::getline(file, s_str) || s_str.empty()) break;
+        std::getline(file, d_str);
+        std::getline(file, q_str);
+        std::getline(file, r_str);
+        std::getline(file, emt_str);
+        BOOST_REQUIRE(emt_str.empty());
+
+        // q * d = s - r
+        mp::integer s{ s_str, 10 };
+        mp::integer d{ d_str, 10 };
+        mp::integer q{ q_str, 10 };
+        mp::integer r{ r_str, 10 };
+
+        //if (cnt >= 180) {
+            //auto s_calc = q * d + r - s;
+            auto c1 = q.limbs();
+            auto d1 = d.limbs();
+            BOOST_CHECK_EQUAL(q * d + r - s, 0);
+            auto q_calc = s.div_qr(d);
+            auto c0 = q_calc.limbs();
+        
+            auto r0 = s.limbs();
+            auto r1 = r.limbs();
+
+            BOOST_CHECK_EQUAL(q_calc, q);
+            BOOST_CHECK_EQUAL(s, r);
+        //}
+        //auto s_calc = q * d + r;
+        //BOOST_CHECK_EQUAL(s_calc, mp::integer{ 0 });
+        //BOOST_CHECK_EQUAL(s_calc, s);
+
+        //std::istringstream iss(line);
+        //int a, b;
+        //if (!(iss >> a >> b)) { break; } // error
+
+        // process pair (a,b)
+
+        std::cout << "done #" << cnt++ << "\n";
+    }
+
+    //std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(suite_text));
+
+}
+
 void mp_test_registrar()
 {
     //std::cout << tohex(1.0, 0.957, 0.961, 0.961) << "\n";
     //std::cout << tohex(1.0, 0.247, 0.247, 0.275) << "\n";
-
-    register_test(BOOST_TEST_CASE(&mp_enc_dec_test));
+    register_test(BOOST_TEST_CASE(&div_test));
+    //register_test(BOOST_TEST_CASE(&mp_enc_dec_test));
     //register_test(BOOST_TEST_CASE_SILENT(&mp_ct_test));
     //register_test(BOOST_TEST_CASE(&mp_integer_test));
     //register_test(BOOST_TEST_CASE(&mp_integer_test2));

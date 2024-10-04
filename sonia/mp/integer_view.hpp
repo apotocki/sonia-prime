@@ -190,15 +190,19 @@ public:
     inline bool is_negative() const noexcept { return ctl_.sign() < 0; }
     inline bool is_inplace() const noexcept { return ctl_.inplace_bit; }
 
-    inline std::span<const_limb_t> limbs() const noexcept
+    inline std::pair<LimbT, std::span<const LimbT>> limbs() const noexcept
     {
-        return is_inplace()
-            ? std::span<const_limb_t>{ inplace_value_, size() }
-            : std::span<const_limb_t>{ limbs_, size() };
+        if (is_inplace()) {
+            return { 0, std::span{inplace_value_, size()} };
+        } else {
+            if (!ctl_.skip_bits) {
+                return { 0, std::span{limbs_, size() } };
+            }
+            if (!size()) [[unlikely]] return { 0, {} };
+            return { limbs_[size() - 1] & last_limb_mask(), std::span{limbs_, size() - 1 } };
+        }
     }
 
-    inline operator std::span<const_limb_t>() const noexcept { return limbs(); }
-    
     inline size_t most_significant_skipping_bits() const noexcept { return ctl_.skip_bits; }
 
     inline LimbT last_limb_mask() const noexcept
@@ -235,8 +239,9 @@ public:
     template <typename FunctorT, typename AllocatorT = std::allocator<LimbT>>
     inline decltype(auto) with_limbs(FunctorT const& ftor, AllocatorT && alloc = AllocatorT{}) const
     {
+        std::span<const_limb_t> limbs{ data(), size() };
         if (!ctl_.skip_bits) {
-            return ftor(limbs(), sgn());
+            return ftor(limbs, sgn());
         } else if (size() << basic_integer_view_auto_buffer_size) {
             LimbT buff[basic_integer_view_auto_buffer_size];
             std::copy(limbs_, limbs_ + size(), buff);

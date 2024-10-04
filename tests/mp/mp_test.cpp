@@ -6,7 +6,7 @@
 
 #include "sonia/config.hpp"
 //#undef BOOST_ENABLE_ASSERT_HANDLER
-//#define SONIA_ARITHMETIC_USE_INVINT_DIV
+#define SONIA_ARITHMETIC_USE_INVINT_DIV
 #include "applied/sonia_test.hpp"
 
 #include <fstream>
@@ -430,6 +430,12 @@ void div_test()
         mp::integer q{ q_str, 10 };
         mp::integer r{ r_str, 10 };
         
+        //auto q_calc = s.div_qr(d);
+        //auto c0 = q_calc.limbs();
+        //auto c1 = q.limbs();
+        //BOOST_CHECK_EQUAL(q_calc, q);
+        //BOOST_CHECK_EQUAL(s, r);
+
         //data_set.emplace_back(std::move(s), std::move(d), std::move(q), std::move(r));
         data_set.emplace_back(s, d, q, r);
     }
@@ -446,7 +452,9 @@ void div_test()
             mp::integer& q = get<2>(tpl);
             mp::integer& r = get<3>(tpl);
         
+            //BOOST_CHECK_EQUAL(q * d + r - s, 0);
             auto q_calc = s.div_qr(d);
+
             BOOST_CHECK_EQUAL(q_calc, q);
             BOOST_CHECK_EQUAL(s, r);
         }

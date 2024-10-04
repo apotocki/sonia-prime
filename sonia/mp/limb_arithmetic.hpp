@@ -392,20 +392,23 @@ auto udivby1(std::span<LimbT> ls) -> std::pair<LimbT, LimbT>
     }
 }
 
-template <std::unsigned_integral LimbT>
-inline LimbT udivby1(std::span<LimbT> ul, LimbT * uh, LimbT dh, std::span<LimbT> q)
+template <std::unsigned_integral LimbT, typename QOutputIteratorT>
+inline LimbT udivby1(LimbT& uh, std::span<LimbT> ul, LimbT d, QOutputIteratorT q)
 {
-    if (!*uh) {
-        ul.front() = udivby1((std::span<const LimbT>)ul, dh, q);
+    throw std::runtime_error("not implemented");
+#if 0
+    if (!uh) {
+        ul.front() = udivby1((std::span<const LimbT>)ul, d, q);
         std::fill(ul.begin() + 1, ul.end(), 0);
-        return *uh;
+        return uh;
     }
     throw std::runtime_error("not implemented");
+#endif
 }
 
 // r = U * 2 ^ shift
 template <std::unsigned_integral LimbT>
-LimbT ushift_left(std::span<const LimbT> ul, LimbT & uh, unsigned int shift, std::span<LimbT> rl) noexcept
+LimbT ushift_left(LimbT& uh, std::span<const LimbT> ul, unsigned int shift, std::span<LimbT> rl) noexcept
 {
     assert(shift < std::numeric_limits<LimbT>::digits);
     assert(rl.size() == ul.size());
@@ -427,15 +430,15 @@ LimbT ushift_left(std::span<const LimbT> ul, LimbT & uh, unsigned int shift, std
 }
 
 template <std::unsigned_integral LimbT>
-inline LimbT ushift_left(std::span<LimbT> ul, unsigned int shift) noexcept
+inline LimbT ushift_left(std::span<LimbT> u, unsigned int shift) noexcept
 {
-    auto sp = ul.subspan(0, ul.size() - 1);
-    return ushift_left<LimbT>(ul.subspan(0, ul.size() - 1), ul.back(), shift, sp);
+    auto sp = u.subspan(0, u.size() - 1);
+    return ushift_left<LimbT>(u.back(), u.subspan(0, u.size() - 1), shift, sp);
 }
 
 // r = [U / 2 ^ shift]
 template <std::unsigned_integral LimbT>
-LimbT ushift_right(std::span<const LimbT> ul, LimbT& uh, unsigned int shift, std::span<LimbT> rl)
+LimbT ushift_right(LimbT& uh, std::span<const LimbT> ul, unsigned int shift, std::span<LimbT> rl)
 {
     assert(shift < std::numeric_limits<LimbT>::digits);
     assert(rl.size() == ul.size());
@@ -457,29 +460,31 @@ LimbT ushift_right(std::span<const LimbT> ul, LimbT& uh, unsigned int shift, std
 }
 
 // prereqs: u >= d, d.back() > 0
-// {uh, ul} / d -> q; rl -> ul, returns rh
+// {uh, ul} / d -> q(from high to low); rl -> ul, returns rh
 // uh can be 0, daux.size() >= d.size()
-template <std::unsigned_integral LimbT>
-inline LimbT udiv(std::span<LimbT> & ul, LimbT * puh, std::span<LimbT> d, std::span<LimbT> daux, std::span<LimbT>& q)
+template <std::unsigned_integral LimbT, typename QOutputIteratorT>
+inline LimbT udiv(LimbT& uh, std::span<LimbT> & ul, std::span<LimbT> d, std::span<LimbT> daux, QOutputIteratorT qit)
 {
     assert(d.back());
     assert(daux.size() >= d.size());
-   // constexpr uint32_t limb_bit_count = std::numeric_limits<LimbT>::digits;
 
     if (d.size() == 1) {
-        return udivby1(ul, puh, d.back(), q);
+        return udivby1(uh, ul, d.back(), qit);
     }
-    
-    if (!*puh) {
+
+    LimbT* puh;
+    if (!uh) {
         puh = &ul.back();
         ul = ul.subspan(0, ul.size() - 1);
+    } else {
+        puh = &uh;
     }
 
     // normalization
     LimbT uhhstore = 0;
     int shift = sonia::arithmetic::count_leading_zeros(d.back());
     if (shift) {
-        uhhstore = ushift_left<LimbT>(ul, *puh, shift, ul);
+        uhhstore = ushift_left<LimbT>(*puh, ul, shift, ul);
         ushift_left<LimbT>(d, shift); // returns 0
     }
     LimbT* puhh = &uhhstore;
@@ -510,9 +515,6 @@ inline LimbT udiv(std::span<LimbT> & ul, LimbT * puh, std::span<LimbT> d, std::s
         }
     }
 
-    q = q.subspan(0, m + (u_gt_d ? 1 : 0));
-    LimbT* pqb = q.data(), * pqj = pqb + q.size();
-
     if (u_gt_d) {
         //  u <- u - B^m, q(m) <- 1
         auto dsp = d.subspan(0, d.size() - 2);
@@ -525,10 +527,13 @@ inline LimbT udiv(std::span<LimbT> & ul, LimbT * puh, std::span<LimbT> d, std::s
             std::tie(uc, *puh) = sonia::arithmetic::usub1(*puh, d[d.size() - 2]);
         }
         std::tie(uc, *puhh) = sonia::arithmetic::usub1c(*puhh, d.back(), uc);
-        *--pqj = 1;
+        *qit = 1;
+    } else {
+        *qit = 0;
     }
-    
-    if (pqb != pqj) {
+    --qit;
+
+    if (m) {
         auto dsp = d.subspan(0, d.size() - 1);
         auto dauxsp = daux.subspan(0, daux.size() - 1);
 
@@ -537,23 +542,21 @@ inline LimbT udiv(std::span<LimbT> & ul, LimbT * puh, std::span<LimbT> d, std::s
 #endif
         do {
             LimbT dummy;
-            --pqj;
-        
+            LimbT qj;
             for (;;)
             {
                 if (*puhh < d.back()) {
 #if defined(SONIA_ARITHMETIC_USE_INVINT_DIV)
-                    sonia::arithmetic::udiv2by1<LimbT>(*pqj, dummy, *puhh, *puh, d.back(), dinv);
+                    sonia::arithmetic::udiv2by1<LimbT>(qj, dummy, *puhh, *puh, d.back(), dinv);
 #else
-                    std::tie(*pqj, dummy) = sonia::arithmetic::udiv2by1norm<LimbT>(*puhh, *puh, d.back());
+                    std::tie(qj, dummy) = sonia::arithmetic::udiv2by1norm<LimbT>(*puhh, *puh, d.back());
 #endif
-                    
-                    if (!*pqj) break;
+                    if (!qj) break;
                 } else {
-                    *pqj = (std::numeric_limits<LimbT>::max)();
+                    qj = (std::numeric_limits<LimbT>::max)();
                 }
             
-                LimbT dh = umul1<LimbT>(d, *pqj, daux);
+                LimbT dh = umul1<LimbT>(d, qj, daux);
             
                 // u - dh * B^j
                 auto usp = ul.subspan(ul.size() - dauxsp.size(), dauxsp.size());
@@ -563,7 +566,7 @@ inline LimbT udiv(std::span<LimbT> & ul, LimbT * puh, std::span<LimbT> d, std::s
 
                 if (uc) {
                     do {
-                        --*pqj;
+                        --qj;
                         uc = uadd<LimbT>(usp, dsp, usp);
                         std::tie(uc, *puh) = sonia::arithmetic::uadd1c(*puh, d.back(), uc);
                         std::tie(uc, *puhh) = sonia::arithmetic::uadd1(*puhh, uc);
@@ -575,14 +578,15 @@ inline LimbT udiv(std::span<LimbT> & ul, LimbT * puh, std::span<LimbT> d, std::s
             puhh = puh;
             puh = &ul.back();
             ul = ul.subspan(0, ul.size() - 1);
-        } while (pqb != pqj);
+            *qit = qj; --qit;
+        } while (--m);
     }
     if (*puhh) {
         puh = puhh;
         ul = { ul.data(), ul.size() + 1 };
     }
     if (shift) {
-        ushift_right<LimbT>(ul, *puh, shift, ul);
+        ushift_right<LimbT>(*puh, ul, shift, ul);
     }
     return *puh;
 }

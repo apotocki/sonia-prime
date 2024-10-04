@@ -814,28 +814,9 @@ public:
     inline basic_integer& operator%= (basic_integer_view<LimbT> r) { *this = *this % r; return *this; }
     inline basic_integer& operator%= (basic_integer const& r) { *this = *this % r; return *this; }
 
-    // returns q, store r
-    basic_integer div_qr(basic_integer_view<LimbT> divider)
-    {
-        return build_new([this, &divider](auto& qih) {
-            auto [sh, sl] = aholder_.limbs();
-            qih.init(sonia::mp::div_qr<LimbT>(sh, sl, sgn(), divider, qih.sso_allocator()));
-
-            LimbT & ctl = aholder_.ctl_limb();
-            if (alloc_holder::is_inplaced(ctl)) {
-                size_t newsz = sl.size() + (sh ? 1 : 0);
-                if (actualN == newsz) {
-                    alloc_holder::inplaced_set_high_limb(ctl, sh);
-                } else { // newsz < actualN => sh is a part of inplace limbs, just update size
-                    alloc_holder::inplaced_truncate(ctl, newsz);
-                }
-            } else { // sh is already updated (because allocated), just update size
-                detail::limbs_data* ldata = aholder_.allocated_data();
-                ldata->size = static_cast<uint32_t>(sl.size() + (sh ? 1 : 0));
-            }
-        });
-    }
-
+    // return self / divider, r -> self
+    basic_integer div_qr(basic_integer_view<LimbT> divider);
+    
     inline int sgn() const noexcept { return aholder_.is_zero() ? 0 : (aholder_.is_negative() ? -1 : 1); }
 
     inline void negate() noexcept
@@ -1006,6 +987,63 @@ inline size_t hash_value(basic_integer<LimbT, N, AllocatorT> const& v) noexcept
 {
     return hash_value((basic_integer_view<LimbT>)v);
 }
+
+template <std::unsigned_integral LimbT, size_t N, typename AllocatorT>
+basic_integer<LimbT, N, AllocatorT> basic_integer<LimbT, N, AllocatorT>::div_qr(basic_integer_view<LimbT> divider)
+{
+    return build_new([this, &divider](auto& qih) {
+        auto [sh, sl] = aholder_.limbs();
+        size_t ssz = sl.size() + (sh ? 1 : 0);
+        if (!ssz) [[unlikely]] {
+            qih.init_zero();
+            return;
+        }
+
+        auto [dh, dl] = divider.limbs();
+        unsigned int dh_cnt = dh ? 1 : 0;
+        size_t dsz = dl.size() + dh_cnt;
+        if (dsz > ssz) {
+            qih.init_zero();
+            return;
+        }
+
+        auto alloc = qih.sso_allocator();
+        size_t qsz = ssz - dsz + 1;
+        std::tuple<LimbT*, size_t, size_t, int> result{
+            alloc.allocate(qsz),
+            0, qsz, !(sgn() + divider.sgn()) ? -1 : 1
+        };
+        SCOPE_EXCEPTIONAL_EXIT([&alloc, &result] { alloc.deallocate(get<0>(result), get<2>(result)); });
+
+        ///
+        std::array<LimbT, 32> buff;
+        LimbT* daux = (dsz * 2) <= buff.size() ? buff.data() : aholder_.allocate(2 * dsz);
+        LimbT* daux_tmp = std::copy(dl.begin(), dl.end(), daux);
+        if (dh_cnt) *daux_tmp++ = dh;
+        SCOPE_EXIT([this, &buff, daux, dsz] { if (daux != buff.data()) aholder_.deallocate(daux, 2 * dsz); });
+        ///
+
+        std::span<LimbT> q{ get<0>(result), qsz };
+        sh = arithmetic::udiv<LimbT>(sh, sl, { daux, dsz }, { daux_tmp, dsz }, &q.back());
+        std::get<1>(result) = qsz - (q.back() ? 0 : 1);
+
+        qih.init(result); // sonia::mp::div_qr<LimbT>(sh, sl, sgn(), divider, qih.sso_allocator()));
+
+        LimbT & ctl = aholder_.ctl_limb();
+        if (alloc_holder::is_inplaced(ctl)) {
+            size_t newsz = sl.size() + (sh ? 1 : 0);
+            if (actualN == newsz) {
+                alloc_holder::inplaced_set_high_limb(ctl, sh);
+            } else { // newsz < actualN => sh is a part of inplace limbs, just update size
+                alloc_holder::inplaced_truncate(ctl, newsz);
+            }
+        } else { // sh is already updated (because allocated), just update size
+            detail::limbs_data* ldata = aholder_.allocated_data();
+            ldata->size = static_cast<uint32_t>(sl.size() + (sh ? 1 : 0));
+        }
+    });
+}
+
 
 using integer = basic_integer<uint64_t, 1>;
 

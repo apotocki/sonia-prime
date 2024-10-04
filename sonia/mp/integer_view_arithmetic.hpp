@@ -174,39 +174,39 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     });
 }
 
-// s and d must be normilized (no heading zeros in sl and dl)
-template <std::unsigned_integral LimbT, typename AllocatorT>
-requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
-[[nodiscard]] std::tuple<LimbT*, size_t, size_t, int> div_qr(LimbT& sh, std::span<LimbT>& sl, int ssign, basic_integer_view<LimbT> d, AllocatorT&& alloc)
-{
-    using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
-
-    std::tuple<LimbT*, size_t, size_t, int> result;
-    size_t ssz = sl.size() + (sh ? 1 : 0);
-    if (!ssz) [[unlikely]] { result = { nullptr, 0, 0, 1 }; return result; }
-    auto [dh, dl] = d.limbs();
-    unsigned int dh_cnt = dh ? 1 : 0;
-    size_t dsz = dl.size() + dh_cnt;
-    if (dsz > ssz) { result = { nullptr, 0, 0, 1 }; return result; }
-    size_t qsz = ssz - dsz + 1;
-    get<2>(result) = qsz;
-    LimbT* qlimbs = alloc_traits_t::allocate(alloc, std::get<2>(result));
-    get<3>(result) = !(ssign + d.sgn()) ? -1 : 1;
-    SCOPE_EXCEPTIONAL_EXIT([&alloc, &result] { alloc_traits_t::deallocate(alloc, get<0>(result), get<2>(result)); });
-
-    size_t dauxspace = (dl.size() + dh_cnt);
-    LimbT* daux = alloc_traits_t::allocate(alloc, 2 * dauxspace);
-    LimbT* daux_tmp = std::copy(dl.begin(), dl.end(), daux);
-    if (dh_cnt) *daux_tmp++ = dh;
-    SCOPE_EXIT([&alloc, daux, dauxspace] { alloc_traits_t::deallocate(alloc, daux, 2 * dauxspace); });
-
-    std::span<LimbT> q{ qlimbs, qsz };
-    sh = arithmetic::udiv<LimbT>(sl, &sh, { daux, dauxspace }, { daux_tmp, dauxspace }, q);
-    assert(q.data() == qlimbs);
-    std::get<0>(result) = qlimbs;
-    std::get<1>(result) = q.size();
-    return result;
-}
+//// s and d must be normilized (no heading zeros in sl and dl)
+//template <std::unsigned_integral LimbT, typename AllocatorT>
+//requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
+//[[nodiscard]] std::tuple<LimbT*, size_t, size_t, int> div_qr(LimbT& sh, std::span<LimbT>& sl, int ssign, basic_integer_view<LimbT> d, AllocatorT&& alloc)
+//{
+//    using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
+//
+//    std::tuple<LimbT*, size_t, size_t, int> result;
+//    size_t ssz = sl.size() + (sh ? 1 : 0);
+//    if (!ssz) [[unlikely]] { result = { nullptr, 0, 0, 1 }; return result; }
+//    auto [dh, dl] = d.limbs();
+//    unsigned int dh_cnt = dh ? 1 : 0;
+//    size_t dsz = dl.size() + dh_cnt;
+//    if (dsz > ssz) { result = { nullptr, 0, 0, 1 }; return result; }
+//    size_t qsz = ssz - dsz + 1;
+//    get<2>(result) = qsz;
+//    LimbT* qlimbs = alloc_traits_t::allocate(alloc, std::get<2>(result));
+//    get<3>(result) = !(ssign + d.sgn()) ? -1 : 1;
+//    SCOPE_EXCEPTIONAL_EXIT([&alloc, &result] { alloc_traits_t::deallocate(alloc, get<0>(result), get<2>(result)); });
+//
+//    size_t dauxspace = (dl.size() + dh_cnt);
+//    LimbT* daux = alloc_traits_t::allocate(alloc, 2 * dauxspace);
+//    LimbT* daux_tmp = std::copy(dl.begin(), dl.end(), daux);
+//    if (dh_cnt) *daux_tmp++ = dh;
+//    SCOPE_EXIT([&alloc, daux, dauxspace] { alloc_traits_t::deallocate(alloc, daux, 2 * dauxspace); });
+//
+//    std::span<LimbT> q{ qlimbs, qsz };
+//    sh = arithmetic::udiv<LimbT>(sl, &sh, { daux, dauxspace }, { daux_tmp, dauxspace }, q);
+//    assert(q.data() == qlimbs);
+//    std::get<0>(result) = qlimbs;
+//    std::get<1>(result) = q.size();
+//    return result;
+//}
 
 template <std::unsigned_integral LimbT, typename AllocatorT>
 requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)

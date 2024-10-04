@@ -170,8 +170,9 @@ struct integer_holder : AllocatorT
             } else {
                 LimbT* limbsdata = allocate(rhs_ldata->size + limbs_data_sizeof_in_limbs);
                 std::copy(rhs_limbs, rhs_limbs + rhs_ldata->size, limbsdata + limbs_data_sizeof_in_limbs);
-                new (limbsdata) detail::limbs_data{ *rhs_ldata };
-                set_allocated(reinterpret_cast<detail::limbs_data*>(limbsdata));
+                detail::limbs_data * ldata = new (limbsdata) detail::limbs_data{ *rhs_ldata };
+                ldata->allocated_size = (uint32_t)rhs_ldata->size;
+                set_allocated(ldata);
             }
         }
     }

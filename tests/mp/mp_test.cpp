@@ -5,7 +5,8 @@
 #define TEST_FOLDER "mp_test"
 
 #include "sonia/config.hpp"
-#undef BOOST_ENABLE_ASSERT_HANDLER
+//#undef BOOST_ENABLE_ASSERT_HANDLER
+//#define SONIA_ARITHMETIC_USE_INVINT_DIV
 #include "applied/sonia_test.hpp"
 
 #include <fstream>
@@ -412,7 +413,8 @@ void div_test()
     file.exceptions(std::ifstream::badbit);
     file.open(filepath.string().c_str());
     
-    int cnt = 0;
+    using data_tpl_t = std::tuple<mp::integer, mp::integer, mp::integer, mp::integer>;
+    std::vector<data_tpl_t> data_set;
     for (;;)
     {
         std::string s_str, d_str, q_str, r_str, emt_str;
@@ -423,25 +425,48 @@ void div_test()
         std::getline(file, emt_str);
         BOOST_REQUIRE(emt_str.empty());
 
-        // q * d = s - r
         mp::integer s{ s_str, 10 };
         mp::integer d{ d_str, 10 };
         mp::integer q{ q_str, 10 };
         mp::integer r{ r_str, 10 };
+        
+        //data_set.emplace_back(std::move(s), std::move(d), std::move(q), std::move(r));
+        data_set.emplace_back(s, d, q, r);
+    }
+    std::cout << "loaded #" << data_set.size() << "\n";
+
+    for (int test_cnt = 0; test_cnt < 32; ++test_cnt)
+    {
+        std::vector<data_tpl_t> data_set_copy = data_set;
+        auto start = std::chrono::steady_clock::now();
+        for (auto & tpl : data_set_copy)
+        {
+            mp::integer& s = get<0>(tpl);
+            mp::integer& d = get<1>(tpl);
+            mp::integer& q = get<2>(tpl);
+            mp::integer& r = get<3>(tpl);
+        
+            auto q_calc = s.div_qr(d);
+            BOOST_CHECK_EQUAL(q_calc, q);
+            BOOST_CHECK_EQUAL(s, r);
+        }
+        auto finish = std::chrono::steady_clock::now();
+        std::cout << "done in: " << (finish - start) << "\n";
+    }
+        // q * d = s - r
 
         //if (cnt >= 180) {
             //auto s_calc = q * d + r - s;
-            auto c1 = q.limbs();
-            auto d1 = d.limbs();
-            BOOST_CHECK_EQUAL(q * d + r - s, 0);
-            auto q_calc = s.div_qr(d);
-            auto c0 = q_calc.limbs();
-        
-            auto r0 = s.limbs();
-            auto r1 = r.limbs();
+            //auto c1 = q.limbs();
+            //auto d1 = d.limbs();
+            //BOOST_CHECK_EQUAL(q * d + r - s, 0);
+            //auto q_calc = s.div_qr(d);
+            //auto c0 = q_calc.limbs();
+            //auto r0 = s.limbs();
+            //auto r1 = r.limbs();
 
-            BOOST_CHECK_EQUAL(q_calc, q);
-            BOOST_CHECK_EQUAL(s, r);
+            //BOOST_CHECK_EQUAL(q_calc, q);
+            //BOOST_CHECK_EQUAL(s, r);
         //}
         //auto s_calc = q * d + r;
         //BOOST_CHECK_EQUAL(s_calc, mp::integer{ 0 });
@@ -453,9 +478,10 @@ void div_test()
 
         // process pair (a,b)
 
-        std::cout << "done #" << cnt++ << "\n";
-    }
+        //std::cout << "done #" << cnt++ << "\n";
 
+    //auto finish = std::chrono::steady_clock::now();
+    //std::cout << "done in: " << (finish - start) << "\n";
     //std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(suite_text));
 
 }

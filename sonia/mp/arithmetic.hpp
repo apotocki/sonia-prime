@@ -13,13 +13,13 @@
 #include <utility>
 #include <cassert>
 
-#if defined(__SIZEOF_INT128__) && !defined(__CUDACC__) && !defined(_MSC_VER)
-#  define PLATFORM_HAS_INT128
-#endif
-
 namespace sonia {
 
-template <int Bits> struct uint_t;
+template <int Bits> struct uint_t
+{
+    using least = void;
+    using fast = void;
+};
 
 template <> struct uint_t<8>
 {
@@ -64,6 +64,15 @@ template <> struct uint_t<64>
     static constexpr least max_dec_log2 = 64; // 63.1..
     */
 };
+
+#if defined(__SIZEOF_INT128__) && !defined(__CUDACC__) && !defined(_MSC_VER)
+#  define PLATFORM_HAS_INT128
+template <> struct uint_t<128>
+{
+    using least = uint_least128_t;
+    using fast = uint_fast128_t;
+};
+#endif
 
 }
 
@@ -198,12 +207,12 @@ inline constexpr std::pair<T, T> usub1c(T a, T b, T c) noexcept
 template <std::unsigned_integral T>
 inline constexpr void add2(T & sh, T & sl, T ah, T al, T bh, T bl) noexcept
 {
-    if constexpr (sizeof(T) >= sizeof(unsigned long long int)) {
+    constexpr int bsz = std::numeric_limits<T>::digits;
+    using h_t = typename uint_t<bsz * 2>::least;
+    if constexpr (std::is_void_v<h_t>) {
         sl = al + bl;
         sh = ah + bh + (sl < al);
     } else {
-        constexpr int bsz = std::numeric_limits<T>::digits;
-        using h_t = typename uint_t<bsz * 2>::least;
         h_t result = ((((h_t)ah) << bsz) | al) + ((((h_t)bh) << bsz) | bl);
         sl = (T)(result & (std::numeric_limits<T>::max)());
         sh = (T)(result >> bsz);
@@ -213,7 +222,8 @@ inline constexpr void add2(T & sh, T & sl, T ah, T al, T bh, T bl) noexcept
 template <std::unsigned_integral T>
 inline constexpr auto umul1(T u, T v) noexcept -> std::pair<T, T>
 {
-    if constexpr (sizeof(T) >= sizeof(unsigned long long int)) {
+    constexpr int bsz = std::numeric_limits<T>::digits;
+    if constexpr (std::is_void_v<typename uint_t<bsz * 2>::least>) {
         constexpr int hbsz = std::numeric_limits<T>::digits / 2;
         constexpr T lmask = ((T)1 << hbsz) - 1;
 
@@ -236,7 +246,6 @@ inline constexpr auto umul1(T u, T v) noexcept -> std::pair<T, T>
         }
         return { x3 + ((T)x1 >> hbsz), (x1 << hbsz) + ((T)x0 & lmask) };
     } else {
-        constexpr int bsz = std::numeric_limits<T>::digits;
         using h_t = typename uint_t<bsz * 2>::least;
         constexpr h_t lmask = ((h_t)1 << bsz) - 1;
 
@@ -285,8 +294,8 @@ constexpr auto udiv2by1norm(T u1, T u0, T d) noexcept -> std::pair<T, T>
 {
     assert(u1 < d);
     constexpr int bsz = std::numeric_limits<T>::digits;
-
-    if constexpr (sizeof(T) >= sizeof(unsigned long long int)) {
+    using h_t = typename uint_t<bsz * 2>::least;
+    if constexpr (std::is_void_v<h_t>) {
         assert(d & (T(1) << (bsz - 1)));
         constexpr T lmask = (T(1) << (bsz / 2)) - 1;
         T d1 = d >> (bsz / 2);
@@ -318,9 +327,9 @@ constexpr auto udiv2by1norm(T u1, T u0, T d) noexcept -> std::pair<T, T>
         }
         return { (q1 << (bsz / 2)) | q0, r0 - m };
     } else {
-        using h_t = typename uint_t<bsz * 2>::least;
         h_t u = (((h_t)u1) << bsz) | u0;
-        return { u / d, u % d };
+        auto [q, r] = div1<h_t>(u, d);
+        return { T(q), T(r) };
     }
 }
 
@@ -330,8 +339,8 @@ constexpr auto udiv2by1(T u1, T u0, T d) noexcept -> std::pair<T, T>
 {
     assert(u1 < d); // => d != 0
     constexpr int bsz = std::numeric_limits<T>::digits;
-
-    if constexpr (sizeof(T) >= sizeof(unsigned long long int)) {
+    using h_t = typename uint_t<bsz * 2>::least;
+    if constexpr (std::is_void_v<h_t>) {
         constexpr T highbit = T(1) << (bsz - 1);
         if (!(d & highbit)) {
             int shift = count_leading_zeros(d);
@@ -343,10 +352,9 @@ constexpr auto udiv2by1(T u1, T u0, T d) noexcept -> std::pair<T, T>
         }
         return udiv2by1norm(u1, u0, d);
     } else {
-        assert(d);
-        using h_t = typename uint_t<bsz * 2>::least;
         h_t u = (((h_t)u1) << bsz) | u0;
-        return { T(u / d), T(u % d) };
+        auto [q, r] = div1<h_t>(u, d);
+        return { T(q), T(r) };
     }
 }
 

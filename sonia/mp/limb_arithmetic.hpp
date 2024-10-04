@@ -464,6 +464,7 @@ inline LimbT udiv(std::span<LimbT> & ul, LimbT * puh, std::span<LimbT> d, std::s
 {
     assert(d.back());
     assert(daux.size() >= d.size());
+   // constexpr uint32_t limb_bit_count = std::numeric_limits<LimbT>::digits;
 
     if (d.size() == 1) {
         return udivby1(ul, puh, d.back(), q);
@@ -530,6 +531,10 @@ inline LimbT udiv(std::span<LimbT> & ul, LimbT * puh, std::span<LimbT> d, std::s
     if (pqb != pqj) {
         auto dsp = d.subspan(0, d.size() - 1);
         auto dauxsp = daux.subspan(0, daux.size() - 1);
+
+#if defined(SONIA_ARITHMETIC_USE_INVINT_DIV)
+        auto [dinv, _] = sonia::arithmetic::udiv2by1<LimbT>(~d.back() + 1, 0, d.back());
+#endif
         do {
             LimbT dummy;
             --pqj;
@@ -537,7 +542,12 @@ inline LimbT udiv(std::span<LimbT> & ul, LimbT * puh, std::span<LimbT> d, std::s
             for (;;)
             {
                 if (*puhh < d.back()) {
-                    std::tie(*pqj, dummy) = sonia::arithmetic::udiv2by1<LimbT>(*puhh, *puh, d.back());
+#if defined(SONIA_ARITHMETIC_USE_INVINT_DIV)
+                    sonia::arithmetic::udiv2by1<LimbT>(*pqj, dummy, *puhh, *puh, d.back(), dinv);
+#else
+                    std::tie(*pqj, dummy) = sonia::arithmetic::udiv2by1norm<LimbT>(*puhh, *puh, d.back());
+#endif
+                    
                     if (!*pqj) break;
                 } else {
                     *pqj = (std::numeric_limits<LimbT>::max)();

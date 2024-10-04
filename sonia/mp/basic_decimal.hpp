@@ -317,10 +317,12 @@ struct decimal_holder : AllocatorT
                 inplaced_set_masks(rhs_ldata->size, rhs_ldata->sign ? -1 : 1, rhs.integral_exponent<int64_t>());
             } else {
                 size_t exp_sz = rhs_ldata->allocated_exponent ? (size_t)std::abs(rhs_ldata->exponent) : 0;
-                LimbT* limbsdata = allocate(rhs_ldata->size + exp_sz + data_sizeof_in_limbs);
+                size_t allocsz = rhs_ldata->size + exp_sz;
+                LimbT* limbsdata = allocate(allocsz + data_sizeof_in_limbs);
                 std::copy(rhs_limbs, rhs_limbs + rhs_ldata->size + exp_sz, limbsdata + data_sizeof_in_limbs);
-                new (limbsdata) DataT{ *rhs_ldata };
-                set_allocated(reinterpret_cast<DataT*>(limbsdata));
+                DataT* ldata = new (limbsdata) DataT{ *rhs_ldata };
+                ldata->allocated_size = (uint32_t)(allocsz);
+                set_allocated(ldata);
             }
         }
     }

@@ -1006,6 +1006,10 @@ basic_integer<LimbT, N, AllocatorT> basic_integer<LimbT, N, AllocatorT>::div_qr(
             qih.init_zero();
             return;
         }
+        if (!dh) {
+            dh = dl.back();
+            dl = dl.subspan(0, dl.size() - 1);
+        }
 
         auto alloc = qih.sso_allocator();
         size_t qsz = ssz - dsz + 1;
@@ -1016,15 +1020,16 @@ basic_integer<LimbT, N, AllocatorT> basic_integer<LimbT, N, AllocatorT>::div_qr(
         SCOPE_EXCEPTIONAL_EXIT([&alloc, &result] { alloc.deallocate(get<0>(result), get<2>(result)); });
 
         ///
-        std::array<LimbT, 32> buff;
-        LimbT* daux = (dsz * 2) <= buff.size() ? buff.data() : aholder_.allocate(2 * dsz);
-        LimbT* daux_tmp = std::copy(dl.begin(), dl.end(), daux);
-        if (dh_cnt) *daux_tmp++ = dh;
-        SCOPE_EXIT([this, &buff, daux, dsz] { if (daux != buff.data()) aholder_.deallocate(daux, 2 * dsz); });
+        //std::array<LimbT, 32> buff;
+        //LimbT* daux = (dsz * 2) <= buff.size() ? buff.data() : aholder_.allocate(2 * dsz);
+        //LimbT* daux_tmp = std::copy(dl.begin(), dl.end(), daux);
+        //if (dh_cnt) *daux_tmp++ = dh;
+        //SCOPE_EXIT([this, &buff, daux, dsz] { if (daux != buff.data()) aholder_.deallocate(daux, 2 * dsz); });
         ///
 
         std::span<LimbT> q{ get<0>(result), qsz };
-        sh = arithmetic::udiv<LimbT>(sh, sl, { daux, dsz }, { daux_tmp, dsz }, &q.back());
+        //sh = arithmetic::udiv<LimbT>(sh, sl, { daux, dsz }, { daux_tmp, dsz }, &q.back());
+        sh = arithmetic::udiv<LimbT>(sh, sl, dh, dl, &q.back(), std::allocator<LimbT>{});
         std::get<1>(result) = qsz - (q.back() ? 0 : 1);
 
         qih.init(result); // sonia::mp::div_qr<LimbT>(sh, sl, sgn(), divider, qih.sso_allocator()));

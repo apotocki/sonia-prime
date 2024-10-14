@@ -19,6 +19,9 @@
 #include "sonia/mp/integer_view_arithmetic.hpp"
 #include "sonia/mp/limbs_from_string.hpp"
 
+#pragma warning(disable : 4244 4146)
+#include "gmp.h"
+
 template <typename LimbT>
 void limbs_encode_decode_test(int base, int digit_count)
 {
@@ -403,6 +406,83 @@ std::string tohex(double a, double r, double g, double b)
 
 using namespace sonia;
 
+void div_gmp_test()
+{
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path suitedir{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "mp" };
+    fs::path filepath = suitedir / "test_div_data.txt";
+
+    std::ifstream file;
+    file.exceptions(std::ifstream::badbit);
+    file.open(filepath.string().c_str());
+
+    using data_tpl_t = std::tuple<mpz_t, mpz_t, mpz_t, mpz_t>;
+    std::vector<data_tpl_t> data_set;
+
+    for (;;)
+    {
+        std::string s_str, d_str, q_str, r_str, emt_str;
+        if (!std::getline(file, s_str) || s_str.empty()) break;
+        std::getline(file, d_str);
+        std::getline(file, q_str);
+        std::getline(file, r_str);
+        std::getline(file, emt_str);
+        BOOST_REQUIRE(emt_str.empty());
+
+        data_set.emplace_back();
+        data_tpl_t& tpl = data_set.back();
+        
+        mpz_init_set_str(get<0>(tpl), s_str.c_str(), 10);
+        mpz_init_set_str(get<1>(tpl), d_str.c_str(), 10);
+        mpz_init_set_str(get<2>(tpl), q_str.c_str(), 10);
+        mpz_init_set_str(get<3>(tpl), r_str.c_str(), 10);
+    }
+    std::cout << "loaded #" << data_set.size() << "\n";
+    for (int test_cnt = 0; test_cnt < 32; ++test_cnt)
+    {
+        //std::vector<data_tpl_t> data_set_copy = data_set;
+        auto start = std::chrono::steady_clock::now();
+        for (auto& tpl : data_set)
+        {
+            mpz_t& s = get<0>(tpl);
+            mpz_t& d = get<1>(tpl);
+            mpz_t& q = get<2>(tpl);
+            mpz_t& r = get<3>(tpl);
+
+            //BOOST_CHECK_EQUAL(q * d + r - s, 0);
+            mpz_t q_calc, r_calc;
+            mpz_init(q_calc);
+            mpz_init(r_calc);
+            mpz_fdiv_qr(q_calc, r_calc, s, d);
+            
+            //size_t sz = q_calc->_mp_size;
+            //mp_limb_t* pl = q_calc->_mp_d;
+            //mp_limb_t* pr = q->_mp_d;
+            //for (size_t i = 0; i < sz; ++i) {
+            //    if (pl[i] != pr[i]) {
+            //        int v = mpz_cmp(q_calc, q);
+            //    }
+            //}
+
+            //int v = mpz_cmp(q_calc, q);
+            //int v1 = mpz_cmp(q, q_calc);
+            BOOST_CHECK(mpz_cmp(q_calc, q) == 0);
+            BOOST_CHECK(mpz_cmp(r_calc, r) == 0);
+            mpz_clear(q_calc);
+            mpz_clear(r_calc);
+        }
+        auto finish = std::chrono::steady_clock::now();
+        std::cout << "done in: " << (finish - start) << "\n";
+    }
+    for (auto& tpl : data_set)
+    {
+        mpz_clear(get<0>(tpl));
+        mpz_clear(get<1>(tpl));
+        mpz_clear(get<2>(tpl));
+        mpz_clear(get<3>(tpl));
+    }
+}
+
 void div_test()
 {
     char const* path = std::getenv("TESTS_HOME");
@@ -430,17 +510,30 @@ void div_test()
         mp::integer q{ q_str, 10 };
         mp::integer r{ r_str, 10 };
         
-        //auto q_calc = s.div_qr(d);
-        //auto c0 = q_calc.limbs();
-        //auto c1 = q.limbs();
-        //BOOST_CHECK_EQUAL(q_calc, q);
-        //BOOST_CHECK_EQUAL(s, r);
-
-        //data_set.emplace_back(std::move(s), std::move(d), std::move(q), std::move(r));
-        data_set.emplace_back(s, d, q, r);
+#if 0
+    //    if (data_set.size() == 0xb4) {
+            auto c1 = q.limbs();
+            auto r1 = r.limbs();
+            
+            auto q_calc = s.div_qr(d);
+            auto c0 = q_calc.limbs();
+            auto r0 = s.limbs();
+            
+            //for(size_t i = 0; i < c0.second.size(); ++i) {
+            //    if (c0.second[i] != c1.second[i]) {
+            //        size_t p = i;
+            //    }
+            //}
+            BOOST_CHECK_EQUAL(q_calc, q);
+            BOOST_CHECK_EQUAL(s, r);
+    //    }
+#endif
+        data_set.emplace_back(std::move(s), std::move(d), std::move(q), std::move(r));
+        //std::cout << "tested #" << data_set.size() << "\n";
+        //data_set.emplace_back(s, d, q, r);
     }
     std::cout << "loaded #" << data_set.size() << "\n";
-
+    
     for (int test_cnt = 0; test_cnt < 32; ++test_cnt)
     {
         std::vector<data_tpl_t> data_set_copy = data_set;
@@ -491,13 +584,13 @@ void div_test()
     //auto finish = std::chrono::steady_clock::now();
     //std::cout << "done in: " << (finish - start) << "\n";
     //std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(suite_text));
-
 }
 
 void mp_test_registrar()
 {
     //std::cout << tohex(1.0, 0.957, 0.961, 0.961) << "\n";
     //std::cout << tohex(1.0, 0.247, 0.247, 0.275) << "\n";
+    //register_test(BOOST_TEST_CASE(&div_gmp_test));
     register_test(BOOST_TEST_CASE(&div_test));
     //register_test(BOOST_TEST_CASE(&mp_enc_dec_test));
     //register_test(BOOST_TEST_CASE_SILENT(&mp_ct_test));

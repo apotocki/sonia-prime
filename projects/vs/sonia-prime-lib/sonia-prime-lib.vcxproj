@@ -646,6 +646,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\vector.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\shared_handle.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\simple_queue.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\small_array.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\array_view.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\span.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\streaming\tuple.hpp" />

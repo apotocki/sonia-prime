@@ -2247,6 +2247,9 @@
     <ClInclude Include="..\..\..\sonia\bang\vm\vmasm_builder.hpp">
       <Filter>sonia.bang\vm</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\small_array.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

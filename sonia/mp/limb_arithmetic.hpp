@@ -13,7 +13,99 @@
 #include "arithmetic.hpp"
 #include "ct.hpp"
 
+#include "sonia/utility/scope_exit.hpp"
+#include "sonia/utility/small_array.hpp"
+
+#ifndef DC_DIV_QR_THRESHOLD
+#   define DC_DIV_QR_THRESHOLD 50
+#endif
+
+#ifndef SONIA_MP_INPLACE_LIMB_RESERVE_COUNT
+#   define SONIA_MP_INPLACE_LIMB_RESERVE_COUNT 8
+#endif
+
 namespace sonia::mp::arithmetic {
+
+using sonia::container::small_array;
+
+template <std::unsigned_integral LimbT>
+inline void ushift_right(std::span<const LimbT> u, size_t shift, LimbT* r) noexcept
+{
+    assert(!u.empty());
+    
+    size_t lshift = std::numeric_limits<LimbT>::digits - shift;
+
+    LimbT const* ub = u.data(), * ue = ub + u.size() - 1;
+    LimbT* re = r + u.size() - 1;
+
+    LimbT result = *ue << lshift;
+    *re = (*ue) >> shift;
+    while (ub != ue) {
+        *re-- |= (*--ue) << lshift;
+        *re = (*ue) >> shift;
+    }
+    return result;
+}
+
+// inplace
+template <std::unsigned_integral LimbT>
+inline LimbT ushift_right(std::span<LimbT> u, size_t shift) noexcept
+{
+    return ushift_right<LimbT>(u, shift, u.data());
+}
+
+template <std::unsigned_integral LimbT>
+inline LimbT ushift_right(LimbT& uh, std::span<const LimbT> u, size_t shift, LimbT* r) noexcept
+{
+    assert(shift < std::numeric_limits<LimbT>::digits);
+    size_t lshift = std::numeric_limits<LimbT>::digits - shift;
+    LimbT result;
+    
+    if (u.empty()) {
+        result = uh << lshift;
+    } else {
+        LimbT const* ub = u.data(), * ue = ub + u.size() - 1;
+        LimbT* re = r + u.size() - 1;
+
+        LimbT result = *ue << lshift;
+        *re = (*ue) >> shift;
+        while (ub != ue) {
+            *re-- |= (*--ue) << lshift;
+            *re = (*ue) >> shift;
+        }
+        *re |= uh << lshift;
+    }
+    uh >>= shift;
+
+    return result;
+}
+
+//// r = [U / 2 ^ shift]
+//template <std::unsigned_integral LimbT>
+//LimbT ushift_right(LimbT& uh, std::span<const LimbT> ul, unsigned int shift, LimbT* rl)
+//{
+//    assert(shift < std::numeric_limits<LimbT>::digits);
+//    size_t lshift = std::numeric_limits<LimbT>::digits - shift;
+//    LimbT rll = uh << lshift;
+//    uh >>= shift;
+//    if (!ul.empty()) {
+//        LimbT const* ub = ul.data(), * ue = ub + ul.size() - 1;
+//        LimbT* re = rl + ul.size() - 1;
+//        for (;; --re, --ue) {
+//            LimbT tmp = rll | ((*ue) >> shift);
+//            rll = (*ue) << lshift;
+//            *re = tmp;
+//            if (ub == ue) [[unlikely]] break;
+//        }
+//    }
+//    return rll;
+//}
+
+template <std::unsigned_integral LimbT>
+inline LimbT ushift_right(LimbT& uh, std::span<LimbT> u, size_t shift) noexcept
+{
+    return ushift_right<LimbT>(uh, u, shift, u.data());
+}
 
 template <std::unsigned_integral LimbT>
 inline void uor(std::span<const LimbT> u, std::span<const LimbT> v, std::span<LimbT> r)
@@ -82,36 +174,68 @@ inline LimbT uadd_partial_unchecked(LimbT const*& ub, LimbT const* vb, LimbT con
     return c;
 }
 
+// inplace version
+template <std::unsigned_integral LimbT>
+inline LimbT uadd_partial_unchecked(LimbT *& ub, LimbT const* vb, LimbT const* ve)
+{
+    LimbT c = 0;
+    for (; vb != ve; ++ub, ++vb) {
+        std::tie(c, *ub) = sonia::arithmetic::uadd1c(*ub, *vb, c);
+    }
+    return c;
+}
+
 // u size must be >= v size
 template <std::unsigned_integral LimbT>
 inline LimbT uadd_unchecked(LimbT const* ub, LimbT const* ue, LimbT const* vb, LimbT const* ve, LimbT* rb)
 {
     LimbT c = uadd_partial_unchecked(ub, vb, ve, rb);
-    for (; ub != ue; ++ub, ++rb) {
-        std::tie(c, *rb) = sonia::arithmetic::uadd1(*ub, c);
+    if (c) {
+        if (ub == ue) return c;
+        do {
+            std::tie(c, *rb++) = sonia::arithmetic::uadd1(*ub++, c);
+            if (ub == ue) return c;
+        } while (c);
+    }
+    std::copy(ub, ue, rb);
+    return c;
+}
+
+// u size must be >= v size
+// inplace version
+template <std::unsigned_integral LimbT>
+inline LimbT uadd_unchecked(LimbT * ub, LimbT const* ue, LimbT const* vb, LimbT const* ve)
+{
+    LimbT c = uadd_partial_unchecked(ub, vb, ve);
+    if (c && ub != ue) {
+        do {
+            std::tie(c, *ub) = sonia::arithmetic::uadd1(*ub, c);
+            if (!c) return c;
+            ++ub;
+        } while (ub != ue);
     }
     return c;
 }
 
 // u size must be >= v size
 template <std::unsigned_integral LimbT>
-inline LimbT uadd_unchecked(LimbT const* ub, LimbT const* ue, LimbT last_u, LimbT const* vb, LimbT const* ve, LimbT last_v, LimbT*& rb)
+inline LimbT uadd_unchecked(LimbT uh, LimbT const* ub, LimbT const* ue, LimbT vh, LimbT const* vb, LimbT const* ve, LimbT*& rb)
 {
     LimbT c = uadd_partial_unchecked(ub, vb, ve, rb);
     if (ub != ue) {
-        std::tie(c, *rb++) = sonia::arithmetic::uadd1c(*ub++, last_v, c);
+        std::tie(c, *rb++) = sonia::arithmetic::uadd1c(*ub++, vh, c);
         for (; ub != ue; ++ub, ++rb) {
             std::tie(c, *rb) = sonia::arithmetic::uadd1(*ub, c);
         }
-        std::tie(c, *rb++) = sonia::arithmetic::uadd1(last_u, c);
+        std::tie(c, *rb++) = sonia::arithmetic::uadd1(uh, c);
     } else {
-        std::tie(c, *rb++) = sonia::arithmetic::uadd1c(last_u, last_v, c);
+        std::tie(c, *rb++) = sonia::arithmetic::uadd1c(uh, vh, c);
     }
     return c;
 }
 
 template <std::unsigned_integral LimbT>
-inline LimbT uadd(std::span<const LimbT> u, std::span<const LimbT> v, std::span<LimbT> r)
+inline LimbT uadd(std::span<const LimbT> u, std::span<const LimbT> v, std::span<LimbT> r) noexcept
 {
     assert(r.size() >= (std::max)(u.size(), v.size()));
     LimbT const* ub = u.data(), * ue = ub + u.size();
@@ -124,6 +248,28 @@ inline LimbT uadd(std::span<const LimbT> u, std::span<const LimbT> v, std::span<
         return uadd_unchecked(vb, ve, ub, ue, rb);
     }
 }
+
+// inplace +=
+template <std::unsigned_integral LimbT>
+inline LimbT uadd(std::span<LimbT> u, std::span<const LimbT> v) noexcept
+{
+    return uadd<LimbT>(u, v, u);
+}
+
+// prereqs: ur.size() + 1 >= v.size()
+//template <std::unsigned_integral LimbT>
+//LimbT uadd(LimbT& urh, std::span<LimbT> ur, std::span<const LimbT> v)
+//{
+//    auto vlsp = v.subspan((std::max)(ur.size(), v.size()));
+//    LimbT c = uadd<LimbT>(ur, vlsp, ur);
+//    if (vlsp.size() < v.size()) {
+//        assert(vlsp.size() + 1 == v.size());
+//        std::tie(c, urh) = sonia::arithmetic::uadd1c(urh, v.front(), c);
+//    } else {
+//        std::tie(c, urh) = sonia::arithmetic::uadd1(urh, c);
+//    }
+//    return c;
+//}
 
 // u size must be >= v size
 template <std::unsigned_integral LimbT>
@@ -159,16 +305,17 @@ LimbT usub(std::span<const LimbT> u, std::span<const LimbT> v, std::span<LimbT> 
     assert(r.size() >= (std::max)(u.size(), v.size()));
     LimbT const* ub = u.data(), * ue = ub + u.size();
     LimbT const* vb = v.data(), * ve = vb + v.size();
-    LimbT* rb = r.data(), * re = rb + r.size();
+    LimbT* rb = r.data(); // , * re = rb + r.size();
     LimbT c = 0;
     for (;; ++ub, ++vb, ++rb) {
         if (ub != ue) {
             if (vb != ve) {
                 std::tie(c , *rb) = sonia::arithmetic::usub1c(*ub, *vb, c);
                 continue;
-            } else {
+            } else if (c) {
                 do {
                     std::tie(c, *rb) = sonia::arithmetic::usub1(*ub, c);
+                    if (!c) break;
                     ++ub; ++rb;
                 } while (ub != ue);
             }
@@ -181,6 +328,23 @@ LimbT usub(std::span<const LimbT> u, std::span<const LimbT> v, std::span<LimbT> 
     }
 }
 
+// prereqs: ur.size() + 1 = v.size()
+//template <std::unsigned_integral LimbT>
+//LimbT usub(LimbT& uh, std::span<LimbT> ul, std::span<const LimbT> v) noexcept
+//{
+//    assert(ul.size() + 1 == v.size());
+//    auto vlsp = v.subspan((std::max)(ul.size(), v.size()));
+//    LimbT c = usub<LimbT>(ul, vlsp, ul);
+//    if (vlsp.size() < v.size()) {
+//        assert(vlsp.size() + 1 == v.size());
+//        std::tie(c, uh) = sonia::arithmetic::usub1c(uh, v.back(), c);
+//    } else {
+//        std::tie(c, uh) = sonia::arithmetic::usub1(uh, c);
+//    }
+//    return c;
+//}
+
+
 //template <std::unsigned_integral LimbT>
 //inline LimbT usub(LimbT & uhh, LimbT & uh, std::span<LimbT> ul, LimbT vh, std::span<const LimbT> vl) noexcept
 //{
@@ -191,6 +355,7 @@ LimbT usub(std::span<const LimbT> u, std::span<const LimbT> v, std::span<LimbT> 
 //    return c;
 //}
 
+// (c, [u]) <- [u] * v + cl; returns c
 template <std::unsigned_integral LimbT>
 inline LimbT umul1(std::span<LimbT> u, LimbT v, LimbT cl = 0) noexcept
 {
@@ -203,30 +368,124 @@ inline LimbT umul1(std::span<LimbT> u, LimbT v, LimbT cl = 0) noexcept
     return cl;
 }
 
-// u * v + cl -> p; returns pcl
+
+// (c, p[u.size()]) <- [u] * v + cl; returns c
 template <std::unsigned_integral LimbT>
-inline LimbT umul1(std::span<const LimbT> u, LimbT v, std::span<LimbT> p, LimbT cl = 0) noexcept
+inline LimbT umul1(std::span<const LimbT> u, LimbT v, LimbT* p, LimbT cl = 0) noexcept
 {
-    assert(p.size() >= u.size());
-    LimbT * pb = p.data();
     for (LimbT const& e : u) {
         auto [h, l] = sonia::arithmetic::umul1(e, v);
         l += cl;
         cl = (l < cl) + h;
-        *pb++ = l;
+        *p++ = l;
     }
     return cl;
 }
 
+// (c, p[u.size()]) <- [u] * v + p[u.size()]; returns c
 template <std::unsigned_integral LimbT>
-inline void umul(std::span<const LimbT> u, std::span<const LimbT> v, std::span<LimbT> r) noexcept
+inline LimbT umul1_add(std::span<const LimbT> u, LimbT v, LimbT* p, LimbT cl = 0) noexcept
 {
-    if (!u.size() || !v.size()) [[unlikely]] return;
+    for (LimbT const& e : u) {
+        auto [h, l] = sonia::arithmetic::umul1(e, v);
+        auto [ph, pl] = sonia::arithmetic::uadd1c(l, *p, cl);
+        cl = h + ph;
+        *p++ = pl;
+    }
+    return cl;
+}
+
+// (uh, [ul]) * v + cl -> (pcl, ph, p[ul.size()]); returns {pcl, ph}
+template <std::unsigned_integral LimbT>
+inline std::pair<LimbT, LimbT> umul1(LimbT uh, std::span<const LimbT> ul, LimbT v, LimbT* p, LimbT cl = 0) noexcept
+{
+    LimbT pcl = umul1<LimbT>(ul, v, p, cl);
+    auto [h, ph] = sonia::arithmetic::umul1(uh, v);
+    ph += pcl;
+    pcl = (ph < pcl) + h;
+    return { pcl, ph };
+}
+
+// (c, ph, p[ul.size()]) <- (uhh, uh, [ul]) * v + cl; returns (c, ph)
+template <std::unsigned_integral LimbT>
+inline std::tuple<LimbT, LimbT, LimbT> umul1(LimbT uhh, LimbT uh, std::span<const LimbT> ul, LimbT v, LimbT* p, LimbT cl = 0) noexcept
+{
+    LimbT pcl = umul1<LimbT>(ul, v, p, cl);
+    auto [h, ph] = sonia::arithmetic::umul1<LimbT>(uh, v);
+    ph += pcl;
+    pcl = (ph < pcl) + h;
+    auto [hh, phh] = sonia::arithmetic::umul1<LimbT>(uhh, v);
+    phh += pcl;
+    pcl = (phh < pcl) + hh;
+    return { pcl, phh, ph };
+}
+
+// (c, p[size(ul) + 2]) <- (uhh, uh, [ul]) * v + p[size(ul)] + cl; returns c
+template <std::unsigned_integral LimbT>
+inline LimbT umul1_add(LimbT uhh, LimbT uh, std::span<const LimbT> ul, LimbT v, LimbT* p, LimbT cl = 0) noexcept
+{
+    LimbT pcl = umul1_sum<LimbT>(ul, v, p, cl);
+    p += ul.size();
+    auto [h, ph] = sonia::arithmetic::umul1<LimbT>(uh, v);
+    auto [rc, rh] = sonia::arithmetic::uadd1c(ph, *p, pcl);
+    *p++ = rh;
+    auto [hh, phh] = sonia::arithmetic::umul1<LimbT>(uhh, v);
+    auto [rch, rhh] = sonia::arithmetic::uadd1c(phh, *p, rc);
+    *p++ = rh;
+    return rch;
+}
+
+//template <std::unsigned_integral LimbT>
+//inline void umul(std::span<const LimbT> u, std::span<const LimbT> v, std::span<LimbT> r) noexcept
+//{
+//    if (!u.size() || !v.size()) [[unlikely]] return;
+//
+//    LimbT const* ub = u.data(), * ue = ub + u.size();
+//    LimbT const* vb = v.data(), * ve = vb + v.size();
+//    LimbT* rb = r.data(), * re = rb + r.size();
+//    assert(r.size() >= u.size() + v.size());
+//
+//    // first line
+//    LimbT cl = 0;
+//    do {
+//        auto [h, l] = sonia::arithmetic::umul1(*ub, *vb);
+//        l += cl;
+//        cl = (l < cl) + h;
+//        *rb = l;
+//        ++ub; ++rb;
+//    } while (ub != ue);
+//    if (cl) { *rb++ = cl; }
+//    while (rb != re) { *rb++ = 0; }
+//    rb = r.data() + u.size();
+//
+//    // next lines
+//    for (++vb; vb != ve; ++vb) {
+//        cl = 0;
+//        ub = u.data();
+//        rb -= u.size() - 1;
+//        do {
+//            auto [h, l] = sonia::arithmetic::umul1(*ub, *vb);
+//            auto [h1, l1] = sonia::arithmetic::uadd1c(l, *rb, cl);
+//            cl = h + h1;
+//            *rb = l1;
+//            ++ub; ++rb;
+//        } while (ub != ue);
+//        if (cl) {
+//            *rb = sonia::arithmetic::uadd1(*rb, cl).second;
+//        }
+//    }
+//}
+
+// base case mul: {u} * {v} -> {rb, re}
+// returns re
+template <std::unsigned_integral LimbT>
+inline LimbT* umul(std::span<const LimbT> u, std::span<const LimbT> v, LimbT* r) noexcept
+{
+    if (u.empty() || v.empty()) [[unlikely]] return r;
 
     LimbT const* ub = u.data(), * ue = ub + u.size();
     LimbT const* vb = v.data(), * ve = vb + v.size();
-    LimbT* rb = r.data(), * re = rb + r.size();
-    assert(r.size() >= u.size() + v.size());
+    LimbT* rb = r;
 
     // first line
     LimbT cl = 0;
@@ -237,9 +496,7 @@ inline void umul(std::span<const LimbT> u, std::span<const LimbT> v, std::span<L
         *rb = l;
         ++ub; ++rb;
     } while (ub != ue);
-    if (cl) { *rb++ = cl; }
-    while (rb != re) { *rb++ = 0; }
-    rb = r.data() + u.size();
+    *rb = cl;
 
     // next lines
     for (++vb; vb != ve; ++vb) {
@@ -253,10 +510,17 @@ inline void umul(std::span<const LimbT> u, std::span<const LimbT> v, std::span<L
             *rb = l1;
             ++ub; ++rb;
         } while (ub != ue);
-        if (cl) {
-            *rb = sonia::arithmetic::uadd1(*rb, cl).second;
-        }
+        *rb = cl;
     }
+    return rb + 1;
+}
+
+template <std::unsigned_integral LimbT>
+inline void umul(std::span<const LimbT> u, std::span<const LimbT> v, std::span<LimbT> r) noexcept
+{
+    assert(r.size() >= u.size() + v.size());
+    LimbT* re = umul(u, v, r.data());
+    std::fill(re, r.data() + r.size(), 0);
 }
 
 // returns residual
@@ -408,17 +672,16 @@ inline LimbT udivby1(LimbT& uh, std::span<LimbT> ul, LimbT d, QOutputIteratorT q
 
 // r = U * 2 ^ shift
 template <std::unsigned_integral LimbT>
-LimbT ushift_left(LimbT& uh, std::span<const LimbT> ul, unsigned int shift, std::span<LimbT> rl) noexcept
+LimbT ushift_left(LimbT& uh, std::span<const LimbT> ul, unsigned int shift, LimbT* rl) noexcept
 {
     assert(shift < std::numeric_limits<LimbT>::digits);
-    assert(rl.size() == ul.size());
     size_t rshift = std::numeric_limits<LimbT>::digits - shift;
     LimbT uhh = uh >> rshift;
     uh <<= shift;
     if (!ul.empty()) {
         uh |= ul.back() >> rshift;
         LimbT const* ub = ul.data(), * ue = ub + ul.size() - 1;
-        LimbT* re = rl.data() + ul.size() - 1;
+        LimbT* re = rl + ul.size() - 1;
         for (;;--re) {
             *re = (*ue) << shift;
             if (ub == ue) [[unlikely]] break;
@@ -432,38 +695,327 @@ LimbT ushift_left(LimbT& uh, std::span<const LimbT> ul, unsigned int shift, std:
 template <std::unsigned_integral LimbT>
 inline LimbT ushift_left(std::span<LimbT> u, unsigned int shift) noexcept
 {
-    auto sp = u.subspan(0, u.size() - 1);
-    return ushift_left<LimbT>(u.back(), u.subspan(0, u.size() - 1), shift, sp);
+    return ushift_left<LimbT>(u.back(), u.subspan(0, u.size() - 1), shift, u.data());
 }
 
-// r = [U / 2 ^ shift]
-template <std::unsigned_integral LimbT>
-LimbT ushift_right(LimbT& uh, std::span<const LimbT> ul, unsigned int shift, std::span<LimbT> rl)
+
+// base case u / d
+// prereqs: u < d * B^m, d normilized, where m = size(u) - size(d) in limbs, B = 2^bitsize(limb)
+// returns {rhh, rh}; [rl] -> u
+template <std::unsigned_integral LimbT, typename QOutputIteratorT, typename AllocatorT>
+std::pair<LimbT, LimbT> udiv_bc_unorm(LimbT* puhh, LimbT* puh, std::span<LimbT>& ul, LimbT dh, std::span<const LimbT> dl, QOutputIteratorT qit, AllocatorT& alloc)
 {
-    assert(shift < std::numeric_limits<LimbT>::digits);
-    assert(rl.size() == ul.size());
-    size_t lshift = std::numeric_limits<LimbT>::digits - shift;
-    size_t lmask = ~((LimbT(1) << shift) - 1);
-    LimbT rll = uh << lshift;
-    uh >>= shift;
-    if (!ul.empty()) {
-        LimbT const* ub = ul.data(), * ue = ub + ul.size() - 1;
-        LimbT* re = rl.data() + ul.size() - 1;
-        for (;; --re, --ue) {
-            LimbT tmp = rll | ((*ue) >> shift);
-            rll = (*ue) << lshift;
-            *re = tmp;
-            if (ub == ue) [[unlikely]] break;
+    assert(*puhh <= dh);
+
+    size_t m = ul.size() - dl.size() + 1;
+    
+    if (m) {
+        small_array<LimbT, SONIA_MP_INPLACE_LIMB_RESERVE_COUNT, AllocatorT> daux{ dl.size(), alloc };
+
+#if defined(SONIA_ARITHMETIC_USE_INVINT_DIV)
+        auto [dinv, _] = sonia::arithmetic::udiv2by1<LimbT>(~dh + 1, 0, dh);
+#endif
+        do {
+            LimbT dummy;
+            LimbT qj;
+            for (;;)
+            {
+                if (*puhh < dh) {
+#if defined(SONIA_ARITHMETIC_USE_INVINT_DIV)
+                    sonia::arithmetic::udiv2by1<LimbT>(qj, dummy, *puhh, *puh, dh, dinv);
+#else
+                    std::tie(qj, dummy) = sonia::arithmetic::udiv2by1norm<LimbT>(*puhh, *puh, dh);
+#endif
+                    if (!qj) break;
+                } else {
+                    qj = (std::numeric_limits<LimbT>::max)();
+                }
+            
+                auto [mdhh, mdh] = umul1<LimbT>(dh, dl, qj, daux.data());
+                
+                // u - dh * B^j
+                auto usp = ul.subspan(ul.size() - dl.size(), dl.size());
+                LimbT uc = usub<LimbT>(usp, daux, usp);
+                std::tie(uc, *puh) = sonia::arithmetic::usub1c(*puh, mdh, uc);
+                std::tie(uc, *puhh) = sonia::arithmetic::usub1c(*puhh, mdhh, uc);
+
+                if (uc) {
+                    do {
+                        --qj;
+                        uc = uadd<LimbT>(usp, dl, usp);
+                        std::tie(uc, *puh) = sonia::arithmetic::uadd1c(*puh, dh, uc);
+                        std::tie(uc, *puhh) = sonia::arithmetic::uadd1(*puhh, uc);
+                    } while (!uc);
+                }
+                break;
+            }
+            assert(!*puhh);
+            puhh = puh;
+            puh = &ul.back();
+            ul = ul.subspan(0, ul.size() - 1);
+            *qit = qj; --qit;
+        } while (--m);
+    }
+    return { *puhh, *puh };
+}
+
+template <std::unsigned_integral LimbT>
+LimbT do_udiv_unorm(LimbT* puhh, LimbT* puh, std::span<LimbT>& ul, LimbT dh, std::span<const LimbT> dl)
+{
+    LimbT uc, tmphh, tmph;
+    std::tie(uc, tmphh) = sonia::arithmetic::usub1(*puhh, dh);
+    if (!uc) { // dh <= *puhh
+        if (dl.empty()) {
+            *puhh = tmphh;
+        } else {
+            //if (dl.size() == 1) {
+            //    std::tie(uc, tmph) = sonia::arithmetic::usub1(*puh, dl.front());
+            //    std::tie(uc, tmphh) = sonia::arithmetic::usub1(tmphh, uc);
+            //    if (!uc) {
+            //        *puhh = tmphh;
+            //        *puh = tmph;
+            //    }
+            //}
+
+            auto dl1 = dl.subspan(0, dl.size() - 1);
+            auto ul1 = ul.subspan(ul.size() - dl1.size(), dl1.size());
+
+            uc = usub<LimbT>(ul1, dl1, ul1);
+            std::tie(uc, tmph) = sonia::arithmetic::usub1c(*puh, dl.back(), uc);
+            std::tie(uc, tmphh) = sonia::arithmetic::usub1(tmphh, uc);
+            if (!uc) {
+                *puhh = tmphh;
+                *puh = tmph;
+            } else {
+                uadd<LimbT>(ul1, dl1, ul1);
+            }
         }
     }
-    return rll;
+    return 1 - uc;
 }
+
+// base case u / d
+// prereqs: u < d * B^m, d normilized, where m = size(u) - size(d) in limbs, B = 2^bitsize(limb)
+// returns {rhh, rh}; [rl] -> u
+template <std::unsigned_integral LimbT, typename QOutputIteratorT, typename AllocatorT>
+std::pair<LimbT, LimbT> udiv_bc(LimbT* puhh, LimbT* puh, std::span<LimbT>& ul, LimbT dh, std::span<const LimbT> dl, QOutputIteratorT qit, AllocatorT& alloc)
+{
+    *qit-- = do_udiv_unorm(puhh, puh, ul, dh, dl);
+    return udiv_bc_unorm<LimbT>(puhh, puh, ul, dh, dl, std::move(qit), alloc);
+}
+
+//
+template <std::unsigned_integral LimbT, typename QOutputIteratorT, typename AllocatorT>
+std::pair<LimbT, LimbT> udiv_svoboda(LimbT* puhh, LimbT* puh, std::span<LimbT>& ul, LimbT dh, std::span<const LimbT> dl, QOutputIteratorT qit, AllocatorT& alloc)
+{
+    using allocator_type = std::remove_cvref_t<AllocatorT>;
+    using alloc_traits_t = std::allocator_traits<allocator_type>;
+
+    *qit-- = do_udiv_unorm(puhh, puh, ul, dh, dl);
+
+    size_t m = ul.size() + 1 - dl.size();
+    if (!m) return { *puhh, *puh };
+
+    small_array<LimbT, SONIA_MP_INPLACE_LIMB_RESERVE_COUNT, AllocatorT> auxbuff(dl.size() + 1 /*dh*/ + 2, alloc);
+    std::fill(auxbuff.begin(), auxbuff.end() - 1, 0);
+    auxbuff.back() = 1;
+    
+    LimbT k[3];
+    auto tmpsp = auxbuff.span().subspan(0, dl.size() + 1);
+    udiv_bc(&auxbuff.back(), &auxbuff.back() - 1, tmpsp, dh, dl, k + 2, alloc);
+    // ceiling: if reminder != 0 => k = k+1
+    for (LimbT const* pr = tmpsp.data() + dl.size();;) {
+        if (*pr) {
+            LimbT uc;
+            std::tie(uc, k[0]) = sonia::arithmetic::uadd1<LimbT>(k[0], 1);
+            if (uc) ++k[1];
+            break;
+        }
+        if (pr == tmpsp.data()) break;
+        --pr;
+    }
+
+    //d1 = k*d, reuse auxbuff for d1
+    auto d1 = auxbuff.span();
+    
+    //(dh*B^(dl.size()) + dl) * k = dh * k + dl * k
+    LimbT kdh[3];
+    umul<LimbT>(dl, { k, 2 }, d1); // dl * k
+    kdh[2] = umul1<LimbT>({ k, 2 }, dh, kdh);
+    uadd<LimbT>({ d1.data() + dl.size(), d1.size() - dl.size() }, { kdh, 3 });
+    assert(d1[dl.size() + 1] == 0);
+    assert(d1[dl.size() + 2] == 1);
+    auto d1l = std::span{ d1.data(), d1.size() - 2 };
+    //LimbT d1h = d1.back();
+
+    size_t m1 = m - 1;
+    
+    small_array<LimbT, SONIA_MP_INPLACE_LIMB_RESERVE_COUNT, AllocatorT> q1{ m1, alloc };
+    if (m1) {
+        LimbT* pq1 = &q1.back();
+        auto q1sp = q1.span();
+
+        // daux stores qj * d1
+        small_array<LimbT, SONIA_MP_INPLACE_LIMB_RESERVE_COUNT, AllocatorT> daux{ d1.size(), alloc };
+        LimbT& dauxhh = daux.back();
+        LimbT& dauxh = *(&dauxhh - 1);
+        auto dauxl = daux.subspan(0, d1.size() - 2);
+
+        for (;;) {
+            // q(j) = a(n+j)
+            LimbT qj = *puhh;
+        
+            // A <- A - qj*d1*B^(j-1)
+            LimbT uc = umul1<LimbT>(d1, qj, dauxl.data());
+            assert(!uc);
+        
+            auto usp = ul.subspan(ul.size() - dauxl.size(), dauxl.size());
+        
+            uc = usub<LimbT>(usp, dauxl, usp);
+            std::tie(uc, *puh) = sonia::arithmetic::usub1c(*puh, dauxh, uc);
+            std::tie(uc, *puhh) = sonia::arithmetic::usub1c(*puhh, dauxhh, uc);
+            if (*puhh) { // <=> if uc != 0 then gj <- gj - 1, A <- A + d1*B^(j-1)
+                --qj;
+                uc = uadd<LimbT>(usp, d1l, usp);
+                std::tie(uc, *puh) = sonia::arithmetic::uadd1<LimbT>(*puh, uc); // d1h = 0
+                //std::tie(uc, *puhh) = sonia::arithmetic::uadd1c<LimbT>(*puhh, 1, uc); // d1hh = 1
+                //assert(uc);
+                *puhh = 0;
+            }
+            puhh = puh;
+            puh = &ul.back();
+            ul = ul.subspan(0, ul.size() - 1);
+            *pq1 = qj;
+            if (pq1 == q1.data()) break;
+            --pq1;
+        }
+    }
+    // q0 = r1 div d
+    LimbT q0arr[2];
+    auto qr = udiv_bc<LimbT>(puhh, puh, ul, dh, dl, q0arr + 1, alloc);
+    
+    // q = k * q1, we need aux buffer for q to reorder q limbs
+    small_array<LimbT, SONIA_MP_INPLACE_LIMB_RESERVE_COUNT, AllocatorT> q(m1 + 2, alloc);
+    LimbT* qb = q.data();
+    LimbT *qe = umul<LimbT>(q1, { k, 2 }, qb) - 1;
+    auto [q0, qbval] = sonia::arithmetic::uadd1(*qb, q0arr[0]);
+    *qb = qbval; q0 += q0arr[1];
+    if (q0) {
+        LimbT* qit = qb;
+        do {
+            ++qit;
+            std::tie(q0, *qit) = sonia::arithmetic::uadd1(*qit, q0);
+        } while (q0);
+    }
+
+    while (qe != qb) {
+        *qit-- = *--qe;
+    }
+    return qr;
+}
+
+
+// divide and conquer
+// prereqs: u >= d, d normilized
+template <std::unsigned_integral LimbT, typename QOutputIteratorT, typename AllocatorT>
+inline void udiv_dv(LimbT* puhh, LimbT* puh, std::span<LimbT>& ul, std::span<LimbT> d, QOutputIteratorT qit, AllocatorT& alloc)
+{
+    // B (base) = 2^std::numetic_limits<LimbT>::digits;
+
+    using allocator_type = std::remove_cvref_t<AllocatorT>;
+    using alloc_traits_t = std::allocator_traits<allocator_type>;
+
+    size_t m = ul.size() - d.size() + 2;
+    if (m < DC_DIV_QR_THRESHOLD || d.size() < 2)
+        return udiv_bc(puh, puhh, ul, d, std::move(qit));
+
+    size_t k = m / 2;
+    size_t thr = 2 * k;;
+    assert(ul.size() >= thr);
+    auto ul1 = ul.subspan(thr);
+    auto d1 = d.subspan(k);
+    auto d0 = d.subspan(0, k);
+
+    size_t q1sz = 2 + ul1.size() - d1.size();
+    LimbT* q1 = alloc_traits_t::allocate(alloc, q1sz);
+    SCOPE_EXIT([&alloc, q1, q1sz] { alloc_traits_t::deallocate(alloc, q1, q1sz); });
+
+    LimbT r1h = udiv_dv<LimbT>(puhh, puh, ul1, d1, q1 + q1sz - 1, alloc);
+    size_t realq1sz = q1sz;
+    if (!q1[q1sz - 1]) --realq1sz;
+    // here u1 = r1
+    ul1 = ul.subspan(0, thr + ul1.size());
+    // now u1 = r1*B^2k + (u mod B^2k)
+    
+    // u1 - q1 * d0 * B^k
+    size_t q1d0sz = realq1sz * d0.size();
+    LimbT* q1d0 = alloc_traits_t::allocate(alloc, q1d0sz);
+    SCOPE_EXIT([&alloc, q1d0, q1d0sz] { alloc_traits_t::deallocate(alloc, q1d0, q1d0sz); });
+    umul<LimbT>({ q1, realq1sz }, d0, { q1d0, q1d0sz });
+    
+    auto ul2 = ul1.subspan(k); // ul2 = u1 div B^k
+    LimbT c = usub<LimbT>(r1h, ul2, { q1d0, q1d0sz });
+}
+
+template <std::unsigned_integral LimbT, typename QOutputIteratorT, typename AllocatorT>
+LimbT udiv(LimbT uh, std::span<LimbT>& ul, LimbT dh, std::span<const LimbT> dl, QOutputIteratorT qit, AllocatorT && alloc)
+{
+    using allocator_type = std::remove_cvref_t<AllocatorT>;
+    using alloc_traits_t = std::allocator_traits<allocator_type>;
+
+    LimbT* puh;
+    if (!uh) {
+        puh = &ul.back();
+        ul = ul.subspan(0, ul.size() - 1);
+    } else {
+        puh = &uh;
+    }
+
+    // normalization
+    small_array<LimbT, SONIA_MP_INPLACE_LIMB_RESERVE_COUNT, AllocatorT> optdnorm(0, alloc);
+    const LimbT* dlnorm;
+    LimbT uhhstore = 0;
+    int shift = sonia::arithmetic::count_leading_zeros(dh);
+    if (shift) {
+        optdnorm.reset(dl.size());
+        ushift_left<LimbT>(dh, dl, shift, optdnorm.data()); // returns 0
+        uhhstore = ushift_left<LimbT>(*puh, ul, shift, ul.data());
+        dlnorm = optdnorm.data();
+    } else {
+        dlnorm = dl.data();
+    }
+    
+    LimbT* puhh = &uhhstore;
+    if (!uhhstore) {
+        puhh = puh;
+        puh = &ul.back();
+        ul = ul.subspan(0, ul.size() - 1);
+    }
+    assert(*puhh);
+    //auto [rhh, rh] = udiv_dv(puhh, puh, ul, dh, { dlnorm, dl.size() }, std::move(qit), alloc);
+    auto [rhh, rh] = udiv_svoboda(puhh, puh, ul, dh, { dlnorm, dl.size() }, std::move(qit), alloc);
+    //auto [rhh, rh] = udiv_bc(puhh, puh, ul, dh, { dlnorm, dl.size() }, std::move(qit), alloc);
+    if (shift) {
+        ushift_right<LimbT>(rh, ul, shift); // returns 0
+        if (rhh) {
+            rh |= (rhh << (std::numeric_limits<LimbT>::digits - shift));
+        }
+    } else if (rhh) {
+        ul = { ul.data(), ul.size() + 1 };
+        assert(ul.back() == rh);
+        rh = rhh;
+    }
+    
+    return rh;
+}
+
+
 
 // prereqs: u >= d, d.back() > 0
 // {uh, ul} / d -> q(from high to low); rl -> ul, returns rh
 // uh can be 0, daux.size() >= d.size()
 template <std::unsigned_integral LimbT, typename QOutputIteratorT>
-inline LimbT udiv(LimbT& uh, std::span<LimbT> & ul, std::span<LimbT> d, std::span<LimbT> daux, QOutputIteratorT qit)
+LimbT udiv2(LimbT& uh, std::span<LimbT> & ul, std::span<LimbT> d, std::span<LimbT> daux, QOutputIteratorT qit)
 {
     assert(d.back());
     assert(daux.size() >= d.size());
@@ -484,7 +1036,7 @@ inline LimbT udiv(LimbT& uh, std::span<LimbT> & ul, std::span<LimbT> d, std::spa
     LimbT uhhstore = 0;
     int shift = sonia::arithmetic::count_leading_zeros(d.back());
     if (shift) {
-        uhhstore = ushift_left<LimbT>(*puh, ul, shift, ul);
+        uhhstore = ushift_left<LimbT>(*puh, ul, shift, ul.data());
         ushift_left<LimbT>(d, shift); // returns 0
     }
     LimbT* puhh = &uhhstore;
@@ -556,7 +1108,7 @@ inline LimbT udiv(LimbT& uh, std::span<LimbT> & ul, std::span<LimbT> d, std::spa
                     qj = (std::numeric_limits<LimbT>::max)();
                 }
             
-                LimbT dh = umul1<LimbT>(d, qj, daux);
+                LimbT dh = umul1<LimbT>(d, qj, daux.data());
             
                 // u - dh * B^j
                 auto usp = ul.subspan(ul.size() - dauxsp.size(), dauxsp.size());
@@ -586,9 +1138,26 @@ inline LimbT udiv(LimbT& uh, std::span<LimbT> & ul, std::span<LimbT> d, std::spa
         ul = { ul.data(), ul.size() + 1 };
     }
     if (shift) {
-        ushift_right<LimbT>(*puh, ul, shift, ul);
+        ushift_right<LimbT>(*puh, ul, shift, ul.data());
     }
     return *puh;
+}
+
+template <std::unsigned_integral LimbT, typename QOutputIteratorT, typename AllocatorT>
+LimbT udiv2(LimbT& uh, std::span<LimbT>& ul, LimbT dh, std::span<const LimbT> dl, QOutputIteratorT qit, AllocatorT&& alloc)
+{
+    using allocator_type = std::remove_cvref_t<AllocatorT>;
+    using alloc_traits_t = std::allocator_traits<allocator_type>;
+
+    std::span<LimbT> d{ alloc_traits_t::allocate(alloc, dl.size() + 1), dl.size() + 1 };
+    std::span<LimbT> daux{ alloc_traits_t::allocate(alloc, dl.size() + 1), dl.size() + 1 };
+    std::copy(dl.begin(), dl.end(), d.data()); d.back() = dh;
+    SCOPE_EXIT([&alloc, d, daux] {
+        alloc_traits_t::deallocate(alloc, d.data(), d.size());
+        alloc_traits_t::deallocate(alloc, daux.data(), daux.size());
+        });
+
+    return udiv2<LimbT>(uh, ul, d, daux, std::move(qit));
 }
 
 template <std::unsigned_integral LimbT>
@@ -631,27 +1200,7 @@ inline void ushift_left(std::span<const LimbT> u, size_t shift, std::span<LimbT>
     }
 }
 
-template <std::unsigned_integral LimbT>
-inline void ushift_right(std::span<const LimbT> u, size_t shift, std::span<LimbT> r)
-{
-    assert(r.size() >= u.size());
-    if (u.empty()) [[unlikely]] {
-        return;
-    }
-    LimbT const* ub = u.data(), * ue = ub + u.size() - 1;
-    LimbT* rb = r.data(), * re = rb + u.size() - 1;
 
-    size_t lshift = std::numeric_limits<LimbT>::digits - shift;
-
-    *re = (*ue) >> shift;
-    for (;;) {
-        if (ub == ue) [[unlikely]] return;
-        LimbT const* nue = ue - 1;
-        --re;
-        *re = (*nue >> shift) | (*ue << lshift);
-        --ue;
-    }
-}
 
 template <std::unsigned_integral LimbT>
 auto sqrt_rem(std::span<const LimbT> m, std::span<LimbT> s) noexcept

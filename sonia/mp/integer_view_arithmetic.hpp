@@ -74,7 +74,7 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
         std::get<2>(result) = ctmp + margsz;
         std::get<0>(result) = alloc_traits_t::allocate(alloc, std::get<2>(result));
         LimbT* res = std::get<0>(result);
-        LimbT c = arithmetic::uadd_unchecked(lb, le, last_l, rb, re, last_r, res);
+        LimbT c = arithmetic::uadd_unchecked(last_l, lb, le, last_r, rb, re, res);
         if (c) {
             *res = c;
             std::get<1>(result) = margsz + 1;

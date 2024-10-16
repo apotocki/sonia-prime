@@ -692,7 +692,12 @@
     <ClCompile Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\bang.tab.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\bang.tab.cpp">
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4244</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4244</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4244</DisableSpecificWarnings>
+      <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4244</DisableSpecificWarnings>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\bang.yy.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_errors.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp" />

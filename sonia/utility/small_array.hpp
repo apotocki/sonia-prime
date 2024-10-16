@@ -156,6 +156,8 @@ public:
     inline operator std::span<T>() const noexcept { return std::span{ data(), size() }; }
     inline std::span<T> span() const noexcept { return std::span{ data(), size() }; }
 
+    inline std::span<T> first(size_t sz) const noexcept { return { data(), sz }; }
+    inline std::span<T> last(size_t sz) const noexcept { return { data() + size_ - sz, sz }; }
     inline std::span<T> subspan(size_t offset) const noexcept { return { data() + offset, size() - offset }; }
     inline std::span<T> subspan(size_t offset, size_t count) const noexcept { return { data() + offset, count }; }
 

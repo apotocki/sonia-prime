@@ -419,13 +419,15 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
 
     unsigned int shift = n & (std::numeric_limits<LimbT>::digits - 1);
     size_t rsz = (n >> sonia::arithmetic::consteval_log2(size_t(std::numeric_limits<LimbT>::digits)));
-    get<1>(result) = get<2>(result) = rsz + !!shift + ls.size() + !!h;
-    LimbT* pls = get<0>(result) = alloc_traits_t::allocate(alloc, get<2>(result));
-    std::fill(pls, pls + rsz, 0);
+    get<1>(result) = get<2>(result) = rsz + !!shift + ls.size() + 1;
+    get<0>(result) = alloc_traits_t::allocate(alloc, get<2>(result));
+    std::fill(get<0>(result), get<0>(result) + rsz, 0);
     if (shift) {
-        arithmetic::ushift_left<LimbT>(h, ls, shift, pls + rsz);
+        LimbT c = arithmetic::ushift_left<LimbT>(h, ls, shift, get<0>(result) + rsz);
+        *(get<0>(result) + rsz + ls.size()) = h;
+        *(get<0>(result) + get<1>(result) - 1) = c;
     } else {
-        std::copy(ls.begin(), ls.end(), pls + rsz);
+        *std::copy(ls.begin(), ls.end(), get<0>(result) + rsz) = h;
     }
     while (get<1>(result) && !*(get<0>(result) + get<1>(result) - 1)) {
         --get<1>(result);
@@ -458,15 +460,14 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     unsigned int shift = n & (std::numeric_limits<LimbT>::digits - 1);
     
     if (ls.size() >= rsz) {
-        auto ls_sp = ls.last(rsz);
+        auto ls_sp = ls.subspan(rsz);
         LimbT* rlast = get<0>(result) + get<2>(result) - 1;
         if (shift) {
             arithmetic::ushift_right<LimbT>(h, ls_sp, shift, get<0>(result));
-            *rlast = h;
         } else {
-            *rlast-- = h;
             std::copy_backward(ls_sp.begin(), ls_sp.end(), rlast);
         }
+        *rlast = h;
     } else {
         assert(get<2>(result) == 1);
         *get<0>(result) = h >> shift;

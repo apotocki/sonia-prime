@@ -122,7 +122,7 @@ int bigint_create(lua_State* L)
             size_t strsz;
             char const* strval = lua_tolstring(L, 1, &strsz);
             string_view str{ strval, strsz };
-            auto opt_limbs = mp::to_limbs<limb_type>(str, 0, limbs_allocator);
+            auto opt_limbs = mp::to_limbs<limb_type>(str, limbs_allocator);
             if (!opt_limbs.has_value()) {
                 std::rethrow_exception(opt_limbs.error());
             } else if (!str.empty()) {

@@ -265,9 +265,6 @@
     <Filter Include="sonia.bang\entities\ellipsis">
       <UniqueIdentifier>{c7793df5-9618-486e-8a33-49b10971c99a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.bang\entities\compare">
-      <UniqueIdentifier>{d915d722-0322-4d4f-8238-06e1998bb35b}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.bang\entities\functions">
       <UniqueIdentifier>{8614d0a0-74fa-441c-8923-33d6f9047e45}</UniqueIdentifier>
     </Filter>
@@ -2229,9 +2226,6 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\entity_signature.hpp">
       <Filter>sonia.bang\entities</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\compare\compare_patterns.hpp">
-      <Filter>sonia.bang\entities\compare</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\basic_fn_pattern.hpp">
       <Filter>sonia.bang\entities\functions</Filter>
     </ClInclude>
@@ -2602,9 +2596,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.cpp">
       <Filter>sonia.bang\ast</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\entities\compare\compare_patterns.cpp">
-      <Filter>sonia.bang\entities\compare</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\basic_fn_pattern.cpp">
       <Filter>sonia.bang\entities\functions</Filter>

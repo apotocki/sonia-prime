@@ -128,7 +128,7 @@ to_limbs(std::basic_string_view<CharT> & str, unsigned int base, int sign, Alloc
     using result_t = std::tuple<LimbT*, size_t, size_t, int>;
     constexpr size_t limb_bit_count = std::numeric_limits<LimbT>::digits;
 
-    result_t result{ nullptr, 0, 0, 1 };
+    result_t result{ nullptr, 0, 0, sign };
 
     if (str.empty()) {
         return std::unexpected(std::make_exception_ptr(std::invalid_argument("no value"s)));

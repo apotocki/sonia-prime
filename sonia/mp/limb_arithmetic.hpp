@@ -56,7 +56,7 @@ inline LimbT ushift_right(std::span<LimbT> u, unsigned int shift) noexcept
 }
 
 template <std::unsigned_integral LimbT>
-inline LimbT ushift_right(LimbT& uh, std::span<const LimbT> u, unsigned int shift, LimbT* r) noexcept
+inline LimbT ushift_right(LimbT& uh, std::span<const LimbT> u, unsigned int shift, LimbT* rb) noexcept
 {
     assert(shift < std::numeric_limits<LimbT>::digits);
     size_t lshift = std::numeric_limits<LimbT>::digits - shift;
@@ -66,15 +66,14 @@ inline LimbT ushift_right(LimbT& uh, std::span<const LimbT> u, unsigned int shif
         result = uh << lshift;
     } else {
         LimbT const* ub = u.data(), * ue = &u.back();
-        LimbT* re = r + u.size() - 1;
 
         result = *ub << lshift;
-        *re = (*ue) >> shift;
+        *rb = (*ub) >> shift;
         while (ub != ue) {
-            *re-- |= (*--ue) << lshift;
-            *re = (*ue) >> shift;
+            *rb++ |= (*++ub) << lshift;
+            *rb = (*ub) >> shift;
         }
-        *re |= uh << lshift;
+        *rb |= uh << lshift;
     }
     uh >>= shift;
 

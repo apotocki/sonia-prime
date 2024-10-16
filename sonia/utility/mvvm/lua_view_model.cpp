@@ -63,6 +63,8 @@ public:
     bool newindex(string_view key, blob_result&& value) override
     {
         SCOPE_EXIT([&value](){ blob_result_unpin(&value); });
+        return ctx_.view_model::try_set_property(key, value);
+        /*
         if (!ctx_.view_model::try_set_property(key, value)) {
             blob_result args[] = { string_blob_result(key), value };
             smart_blob result = ctx_.do_call_method("setProperty", std::span{args});
@@ -70,6 +72,7 @@ public:
             return result.as<bool>();
         }
         return true;
+        */
     }
 
     blob_result invoke(string_view name, std::span<const blob_result> args) override
@@ -86,13 +89,18 @@ public:
 bool lua_view_model::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept
 {
     if (view_model::try_invoke(methodname, args, result)) return true;
-    //GLOBAL_LOG_INFO() << "invoking lua: " << methodname;
-    vm_lua_resolver rslv{ *this };
-    result = as_cstring<32>(methodname, [args, &rslv, this](cstring_view methodname_cstr) {
-        return lua::language::eval_inplace(methodname_cstr, args, &rslv);
-    });
-    //GLOBAL_LOG_INFO() << "lua result: " << *result;
-    return true;
+    try {
+        //GLOBAL_LOG_INFO() << "invoking lua: " << methodname;
+        vm_lua_resolver rslv{ *this };
+        result = as_cstring<32>(methodname, [args, &rslv, this](cstring_view methodname_cstr) {
+            return lua::language::eval_inplace(methodname_cstr, args, &rslv);
+        });
+        //GLOBAL_LOG_INFO() << "lua result: " << *result;
+        return true;
+    } catch (...) {
+        GLOBAL_LOG_WARN() << boost::current_exception_diagnostic_information();
+        return false;
+    }
 }
 
 /*

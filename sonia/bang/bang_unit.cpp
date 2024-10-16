@@ -14,7 +14,6 @@
 #include "entities/internal_type_entity.hpp"
 #include "entities/ellipsis/ellipsis_pattern.hpp"
 #include "entities/functions/external_fn_pattern.hpp"
-#include "entities/compare/compare_patterns.hpp"
 
 #include "semantic/expression_printer.hpp"
 

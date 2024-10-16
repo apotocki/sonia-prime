@@ -256,7 +256,6 @@
     <ClInclude Include="..\..\..\sonia\bang\bang.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.tab.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.yy.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\entities\compare\compare_patterns.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\const_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.hpp" />
@@ -702,7 +701,6 @@
     <ClCompile Include="..\..\..\sonia\bang\bang_errors.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_unit.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\entities\compare\compare_patterns.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\enum_entity.cpp" />

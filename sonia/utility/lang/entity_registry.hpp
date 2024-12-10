@@ -39,6 +39,11 @@ public:
         }
     }
 
+    inline void clear() noexcept
+    {
+        set_.clear();
+    }
+
 private:
     struct entity_wrapper
     {

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "qname.hpp"
+#include <utility>
 
 namespace sonia::lang {
 
@@ -14,16 +14,17 @@ class entity
 public:
     using identifier_type = IdentifierT;
 
-    explicit entity(IdentifierT id = {}) : id_{ std::move(id) } {}
+    inline explicit entity(IdentifierT id = {}) noexcept
+        : id_{ std::move(id) }
+    {}
 
     virtual ~entity() = default;
 
-    inline void set_location(LocationT l) { location_ = std::move(l); }
+    inline LocationT const& location() const noexcept { return location_; }
+    inline void set_location(LocationT l) noexcept { location_ = std::move(l); }
 
-    IdentifierT id() const { return id_; }
-    LocationT const& location() const { return location_; }
-
-    void set_id(IdentifierT idval) { id_ = idval; }
+    inline IdentifierT id() const noexcept { return id_; }
+    inline void set_id(IdentifierT idval) noexcept { id_ = idval; }
 
 protected:
     IdentifierT id_;

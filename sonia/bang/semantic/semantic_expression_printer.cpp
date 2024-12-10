@@ -20,7 +20,7 @@ void expression_printer_visitor::operator()(empty_t const& i) const
     ss << "noop\n"sv;
 }
 
-void expression_printer_visitor::operator()(std::vector<expression_t> const& evec) const
+void expression_printer_visitor::operator()(expression_list_t const& evec) const
 {
     ++indent_cnt;
     for (expression_t const& e : evec) {

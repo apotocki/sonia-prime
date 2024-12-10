@@ -7,31 +7,28 @@
 #include "sonia/utility/lang/entity.hpp"
 #include "ast_terms.hpp"
 
-#include "sonia/bang/entities/entity_signature.hpp"
-
 namespace sonia::lang::bang {
 
-//using entity = sonia::lang::entity<qname_identifier, lex::resource_location>;
 using entity_base_t = sonia::lang::entity<entity_identifier, lex::resource_location>;
 
 class entity_visitor;
 
 class unit;
 
+class fn_compiler_context;
+
+class entity_signature;
+
 class entity : public entity_base_t
 {
     entity_identifier entity_type_;
 
 public:
-    entity() = default;
-
-    explicit entity(entity_identifier type)
-        : entity_type_{ type }
-    {}
+    using entity_base_t::entity_base_t;
 
     virtual bool is(fn_compiler_context&, entity_identifier eid) const noexcept { return eid == entity_type_; }
 
-    virtual entity_identifier get_type() const noexcept { return entity_type_; }
+    inline entity_identifier get_type() const noexcept { return entity_type_; }
 
     inline void set_type(entity_identifier eid) noexcept { entity_type_ = eid; }
 
@@ -51,58 +48,6 @@ public:
 };
 
 inline size_t hash_value(entity const& e) noexcept { return e.hash(); }
-
-// entities whose identities are based on their signatures
-class signatured_entity : public entity
-{
-public:
-    using entity::entity;
-
-    size_t hash() const noexcept override final
-    {
-        return hash_value(*signature());
-    }
-
-    bool equal(entity const& rhs) const noexcept override final
-    {
-        if (signatured_entity const* pr = dynamic_cast<signatured_entity const*>(&rhs); pr) {
-            return *pr->signature() == *signature();
-        }
-        return false;
-    }
-
-    std::ostream& print_to(std::ostream& os, unit const& u) const override;
-};
-
-// auxiliary type for entity lookups by a signature
-struct indirect_signatured_entity : signatured_entity
-{
-    entity_signature& sig_;
-
-public:
-    explicit indirect_signatured_entity(entity_signature& s) : sig_{ s } {}
-
-    inline entity_signature const* signature() const noexcept override final { return &sig_; }
-};
-
-struct basic_signatured_entity : signatured_entity
-{
-    entity_signature sig_;
-
-    basic_signatured_entity() = default;
-
-    explicit basic_signatured_entity(entity_identifier type)
-        : signatured_entity{ type }
-    {}
-
-    basic_signatured_entity(entity_identifier type, entity_signature&& sgn)
-        : signatured_entity{ type }, sig_{ std::move(sgn) }
-    {}
-
-    inline void set_signature(entity_signature && sgn) { sig_ = std::move(sgn); }
-
-    entity_signature const* signature() const noexcept override final { return &sig_; }
-};
 
 template <typename ValueT>
 class value_entity : public entity
@@ -130,7 +75,7 @@ public:
 
     std::ostream& print_to(std::ostream& os, unit const& u) const override
     {
-        return entity::print_to(os, u) << "("sv << value_ << ")"sv;
+        return entity::print_to(os, u) << "value_entity("sv << value_ << ")"sv;
     }
 
 private:

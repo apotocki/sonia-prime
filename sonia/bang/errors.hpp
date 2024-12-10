@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "semantic.hpp"
+#include "sonia/bang/entities/signatured_entity.hpp"
 
 namespace sonia::lang::bang {
 
@@ -179,6 +180,7 @@ public:
 class type_mismatch_error : public general_with_see_location_error
 {
     entity_identifier expected_;
+
 public:
     type_mismatch_error(lex::resource_location loc, entity_identifier actual, entity_identifier expected, lex::resource_location seeloc)
         : general_with_see_location_error{ loc, ""sv, seeloc, actual }

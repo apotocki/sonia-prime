@@ -12,19 +12,19 @@ preliminary_type_visitor::result_type preliminary_type_visitor::operator()(bang_
     entity_identifier element_type = apply_visitor(*this, v.type);
     functional& ellipsis_fnl = ctx.u().fregistry().resolve(ctx.u().get_ellipsis_qname_identifier());
 
-    named_expression_term_list_t ellipsis_args;
-    ellipsis_args.emplace_back(entity_expression{ element_type, });
+    named_expression_list_t ellipsis_args;
+    ellipsis_args.emplace_back(annotated_entity_identifier{ element_type, });
     pure_call_t ellipsis_call{ lex::resource_location{}, std::move(ellipsis_args) };
-    functional::match_descriptor md;
-    auto ptrn = ellipsis_fnl.find(ctx, ellipsis_call, md);
-    if (!ptrn.has_value()) {
-        throw exception(ctx.u().print(*ptrn.error()));
+    auto match = ellipsis_fnl.find(ctx, ellipsis_call, {});
+    if (!match) {
+        throw exception(ctx.u().print(*match.error()));
     }
-    auto r = ptrn.value()->const_apply(ctx, md);
-    if (!r.has_value()) {
+    auto [ptrn, pmd] = std::move(*match);
+    auto r = ptrn->const_apply(ctx, *pmd);
+    if (!r) {
         throw exception(ctx.u().print(*r.error()));
     }
-    return r.value();
+    return *r;
 }
 
 preliminary_type_visitor::result_type preliminary_type_visitor::operator()(annotated_qname const& v) const

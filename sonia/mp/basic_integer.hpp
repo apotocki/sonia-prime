@@ -607,7 +607,10 @@ std::exception_ptr from_integer_string(integer_holder<LimbT, N, AllocatorT>& dh,
     using storage_type = integer_holder<LimbT, N, AllocatorT>;
     std::string_view orig_str = str;
 
-    auto opt_tpl = to_limbs<LimbT>(str, base, dh.sso_allocator());
+    auto opt_tpl = base ? 
+          to_limbs<LimbT>(str, base, dh.sso_allocator())
+        : to_limbs<LimbT>(str, dh.sso_allocator());
+
     if (!opt_tpl.has_value()) {
         std::string error;
         try { std::rethrow_exception(opt_tpl.error()); } catch (std::exception const& e) { error = e.what(); }

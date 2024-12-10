@@ -36,59 +36,59 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
         return false;
     }
 
-    if (typeeid == expected_result->type) {
+    if (typeeid == expected_result.value) {
         ctx.context_type = typeeid;
         return false;
     }
 
-    if (expected_result->type == u().get_any_entity_identifier()) {
-        ctx.context_type = expected_result->type;
+    if (expected_result.value == u().get_any_entity_identifier()) {
+        ctx.context_type = expected_result.value;
         return false;
     }
 
-    //GLOBAL_LOG_DEBUG() << ("expected type: %1%, actual type: %2%"_fmt % u().print(expected_result->type) % u().print(typeeid)).str();
+    //GLOBAL_LOG_DEBUG() << ("expected type: %1%, actual type: %2%"_fmt % u().print(expected_result.value) % u().print(typeeid)).str();
 
     functional const& fn = u().fregistry().resolve(u().get_implicit_cast_qname_identifier());
     lex::resource_location expr_loc = get_start_location(e);
-    pure_call_t cast_call{ expected_result->location };
-    cast_call.named_args.emplace_back(u().get_to_parameter_identifier(), entity_expression{ expected_result->type, expected_result->location });
-    cast_call.positioned_args.emplace_back(context_value{ typeeid, expr_loc });
+    pure_call_t cast_call{ expected_result.location };
+    cast_call.emplace_back(annotated_identifier{ u().get_to_parameter_identifier() }, annotated_entity_identifier{ expected_result.value, expected_result.location });
+    cast_call.emplace_back(context_value{ typeeid, expr_loc });
 
-    functional::match_descriptor md;
-    auto ptrn = fn.find(ctx, cast_call, md);
-    if (!ptrn.has_value()) {
+    auto match = fn.find(ctx, cast_call, expected_result);
+    if (!match) {
         //return std::move(ptrn.error());
         return std::unexpected(append_cause(
-            make_error<cast_error>(expr_loc /*expected_result->location*/, expected_result->type, typeeid, e),
-            std::move(ptrn.error())
+            make_error<cast_error>(expr_loc /*expected_result.location*/, expected_result.value, typeeid, e),
+            std::move(match.error())
         ));
     }
-    auto optres = ptrn.value()->apply(ctx, md);
-    if (!optres.has_value()) return std::unexpected(std::move(optres.error()));
+    auto [ptrn, pmd] = std::move(*match);
+    auto optres = ptrn->apply(ctx, *pmd);
+    if (!optres) return std::unexpected(std::move(optres.error()));
 
     return true;
 
     //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor apply_cast");
 #if 0
     
-    entity const& ent = u().eregistry().get(expected_result->type);
+    entity const& ent = u().eregistry().get(expected_result.value);
     entity_signature const* esig = ent.signature();
     if (!esig) {
-        return make_error<basic_general_error>(expected_result->location, "type is expected"sv);
+        return make_error<basic_general_error>(expected_result.location, "type is expected"sv);
     }
     functional const* fn = u().fregistry().find(esig->name());
     if (!fn) {
-        return make_error<cast_error>(expected_result->location, expected_result->type, typeeid, e);
+        return make_error<cast_error>(expected_result.location, expected_result.value, typeeid, e);
     }
 
     lex::resource_location expr_loc = get_start_location(e);
-    pure_call_t cast_call{ expected_result->location };
+    pure_call_t cast_call{ expected_result.location };
     cast_call.positioned_args.emplace_back(context_value{ typeeid, expr_loc });
 
     auto ptrn = fn->find(ctx, cast_call);
     if (!ptrn.has_value()) {
         return ptrn.error();
-        //return make_error<cast_error>(expected_result->location, expected_result->type, typeeid, e);
+        //return make_error<cast_error>(expected_result.location, expected_result.value, typeeid, e);
     }
     auto r = ptrn.value()->apply(ctx);
     if (!r.has_value()) {
@@ -96,7 +96,7 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
     }
     
     return {};
-    //THROW_NOT_IMPLEMENTED_ERROR("expected type: %1%, but actual type: %2%"_fmt % u().print(expected_result->type) % u().print(typeeid));
+    //THROW_NOT_IMPLEMENTED_ERROR("expected type: %1%, but actual type: %2%"_fmt % u().print(expected_result.value) % u().print(typeeid));
 #endif
 }
 
@@ -107,12 +107,12 @@ expression_visitor::result_type expression_visitor::operator()(context_value con
         ctx.context_type = v.type;
         return {};
     }
-    if (v.type == expected_result->type) return {};
-    if (expected_result->type == u().get_any_entity_identifier()) {
-        ctx.context_type = expected_result->type;
+    if (v.type == expected_result.value) return {};
+    if (expected_result.value == u().get_any_entity_identifier()) {
+        ctx.context_type = expected_result.value;
         return {};
     }
-    THROW_INTERNAL_ERROR("expected type: %1%, but actual type: %2%"_fmt % u().print(expected_result->type) % u().print(v.type));
+    THROW_INTERNAL_ERROR("expected type: %1%, but actual type: %2%"_fmt % u().print(expected_result.value) % u().print(v.type));
 }
 
 //template <typename ExprT>
@@ -120,13 +120,13 @@ expression_visitor::result_type expression_visitor::operator()(context_value con
 //{
 //    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::apply_cast");
 //#if 0
-//    if (!expected_result || (t.which() == expected_result->type.which() && expected_result->type == t)) {
+//    if (!expected_result || (t.which() == expected_result.value.which() && expected_result.value == t)) {
 //        ctx.context_type = t;
 //        return {};
 //    }
 //    return apply_visitor(
-//          expression_implicit_cast_visitor{ ctx, t, [this, &e] { return error_context{e, expected_result->location}; } }
-//        , expected_result->type);
+//          expression_implicit_cast_visitor{ ctx, t, [this, &e] { return error_context{e, expected_result.location}; } }
+//        , expected_result.value);
 //#endif
 //}
 
@@ -138,8 +138,19 @@ expression_visitor::result_type expression_visitor::operator()(annotated_bool co
 
 expression_visitor::result_type expression_visitor::operator()(annotated_integer const& d) const
 {
+    // optimisation. We don't need entities on the semantic expressions layer. Just values are enough.
+#if 0
+    integer_literal_entity val{ d.value };
+    val.set_type(u().get_integer_entity_identifier());
+    entity const& valent = u().eregistry().find_or_create(val, [&val]() {
+        return make_shared<integer_literal_entity>(std::move(val));
+    });
+    ctx.append_expression(semantic::push_value{ valent.id() });
+    return apply_cast(u().get_integer_entity_identifier(), d);
+#else
     ctx.append_expression(semantic::push_value{ d.value });
     return apply_cast(u().get_integer_entity_identifier(), d);
+#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(annotated_decimal const& d) const
@@ -198,8 +209,8 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
             if (!expected_result) {
                 THROW_NOT_IMPLEMENTED_ERROR("forward functional template");
             }
-            expression_fn_visitor dvis{ ctx, *fnptr, [this, &var] { return error_context{var, expected_result->location}; } };
-            return apply_visitor(dvis, expected_result->type);
+            expression_fn_visitor dvis{ ctx, *fnptr, [this, &var] { return error_context{var, expected_result.location}; } };
+            return apply_visitor(dvis, expected_result.value);
         }
         /*
         // to do: look for variable first
@@ -234,12 +245,12 @@ expression_visitor::result_type expression_visitor::do_assign(binary_expression_
     //GLOBAL_LOG_INFO() << "left expression: " << ctx.u().print(op.left);
     //size_t start_result_pos = result.size();
     lvalue_expression_visitor lvis{ ctx };
-    auto e = apply_visitor(lvis, op.positioned_args[0]);
-    if (!e.has_value()) return std::unexpected(std::move(e.error()));
+    auto e = apply_visitor(lvis, op[0].value());
+    if (!e) return std::unexpected(std::move(e.error()));
 
-    if (variable_entity const* ve = dynamic_cast<variable_entity const*>(e.value()); ve) {
-        expression_visitor rvis{ ctx, expected_result_t{ ve->get_type(), op.location() } };
-        auto res = apply_visitor(rvis, op.positioned_args[1]);
+    if (variable_entity const* ve = dynamic_cast<variable_entity const*>(*e); ve) {
+        expression_visitor rvis{ ctx, annotated_entity_identifier{ ve->get_type(), op.location() } };
+        auto res = apply_visitor(rvis, op[1].value());
         if (!res) return std::move(res);
         if (ve->is_weak()) {
             THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN");
@@ -279,19 +290,19 @@ expression_visitor::result_type expression_visitor::do_assign(binary_expression_
     */
 }
 
-expression_visitor::result_type expression_visitor::operator()(entity_expression const& ee) const
+expression_visitor::result_type expression_visitor::operator()(annotated_entity_identifier const& ee) const
 {
-    entity const& ent = ctx.u().eregistry().get(ee.id);
+    entity const& ent = u().eregistry().get(ee.value);
     if (expected_result) {
-        if (ent.is(ctx, expected_result->type)) {
-            ctx.append_expression(semantic::push_value{ ee.id });
-            ctx.context_type = expected_result->type;
+        if (ent.is(ctx, expected_result.value)) {
+            ctx.append_expression(semantic::push_value{ ee.value });
+            ctx.context_type = expected_result.value;
             return {};
         }
-        GLOBAL_LOG_INFO() << "expected: " << u().print(expected_result->type) << ", actual: " << u().print(ent.id());
+        GLOBAL_LOG_INFO() << "expected: " << u().print(expected_result.value) << ", actual: " << u().print(ent.id());
         THROW_NOT_IMPLEMENTED_ERROR("expression_visitor entity_expression");
     }
-    ctx.append_expression(semantic::push_value{ ee.id });
+    ctx.append_expression(semantic::push_value{ ee.value });
     ctx.context_type = ent.get_type();
     return {};
 }
@@ -336,7 +347,7 @@ expression_visitor::result_type expression_visitor::operator()(logic_and_express
     auto plcond = make_shared<semantic::logic_tree_node_t>();
     ctx.push_chain(plcond->condition_expression);
 
-    bang_type const* exprt = expected_result ? &expected_result->type : nullptr;
+    bang_type const* exprt = expected_result ? &expected_result.value : nullptr;
     bang_type ut = make_union_type(bang_any_t{}, exprt);
     expression_visitor largvis{ ctx, expected_result_t{ ut, op.location } };
     auto ltype = apply_visitor(largvis, op.left);
@@ -385,7 +396,7 @@ expression_visitor::result_type expression_visitor::operator()(logic_or_expressi
     auto plcond = make_shared<semantic::logic_tree_node_t>();
     ctx.push_chain(plcond->condition_expression);
 
-    bang_type const* exprt = expected_result ? &expected_result->type : nullptr;
+    bang_type const* exprt = expected_result ? &expected_result.value : nullptr;
     bang_type ut = make_union_type(bang_any_t{}, exprt);
     expression_visitor largvis{ ctx, expected_result_t {ut, op.location }};
     auto ltype = apply_visitor(largvis, op.left);
@@ -431,7 +442,7 @@ expression_visitor::result_type expression_visitor::operator()(binary_operator_t
     
 #if 0
     auto largvis = expected_result
-        ? expression_visitor{ ctx, expected_result_t{ bang_type{bang_any_t{}} || expected_result->type, expected_result->location }}
+        ? expression_visitor{ ctx, expected_result_t{ bang_type{bang_any_t{}} || expected_result.value, expected_result.location }}
         : expression_visitor{ ctx, nullptr };
 
     if (auto opterr = apply_visitor(largvis, op.left); opterr) return opterr;
@@ -468,7 +479,7 @@ expression_visitor::result_type expression_visitor::operator()(binary_operator_t
 
 #if 0
     auto largvis = expected_result
-        ? expression_visitor{ ctx, expected_result_t{ expected_result->type || bang_any_t{}, expected_result->location }}
+        ? expression_visitor{ ctx, expected_result_t{ expected_result.value || bang_any_t{}, expected_result.location }}
         : expression_visitor{ ctx, nullptr };
     
     if (auto opterr = apply_visitor(largvis, op.left); opterr) return opterr;
@@ -577,8 +588,8 @@ expression_visitor::result_type expression_visitor::operator()(case_expression c
     }
 
     return apply_visitor(
-        expression_cast_to_enum_visitor{ ctx, ce,  [this, &ce] { return error_context{ce, expected_result->location}; } },
-        expected_result->type
+        expression_cast_to_enum_visitor{ ctx, ce,  [this, &ce] { return error_context{ce, expected_result.location}; } },
+        expected_result.value
     );
 #endif
 }
@@ -609,7 +620,7 @@ expression_visitor::result_type expression_visitor::operator()(not_empty_express
 
 #if 0
     auto subvis = expected_result
-        ? expression_visitor{ ctx, expected_result_t{ expected_result->type || bang_tuple_t{}, expected_result->location } }
+        ? expression_visitor{ ctx, expected_result_t{ expected_result.value || bang_tuple_t{}, expected_result.location } }
         : expression_visitor{ ctx, nullptr };
 
     if (auto opterr = apply_visitor(subvis, me.value); opterr) return opterr;
@@ -663,7 +674,7 @@ expression_visitor::result_type expression_visitor::operator()(expression_vector
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor expression_vector_t");
 #if 0
     if (expected_result) {
-        return apply_visitor(vector_expression_visitor{ ctx, vec, expected_result->location }, expected_result->type);
+        return apply_visitor(vector_expression_visitor{ ctx, vec, expected_result.location }, expected_result.value);
     }
 
     // no expected_result case
@@ -714,11 +725,11 @@ inline expression_visitor::result_type expression_visitor::operator()(qname_iden
 template <std::derived_from<pure_call_t> CallExpressionT>
 expression_visitor::result_type expression_visitor::operator()(functional const& fnl, CallExpressionT const& call) const
 {
-    functional::match_descriptor md;
-    auto ptrn = fnl.find(ctx, call, md);
-    if (!ptrn.has_value()) return std::unexpected(std::move(ptrn.error()));
-    auto optres = ptrn.value()->apply(ctx, md);
-    if (!optres.has_value()) return std::unexpected(std::move(optres.error()));
+    auto match = fnl.find(ctx, call, expected_result);
+    if (!match) return std::unexpected(std::move(match.error()));
+    auto [ptrn, pmd] = std::move(*match);
+    auto optres = ptrn->apply(ctx, *pmd);
+    if (!optres) return std::unexpected(std::move(optres.error()));
     return apply_cast(optres.value(), call);
 }
 
@@ -777,6 +788,45 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t c
 
 expression_visitor::result_type expression_visitor::operator()(chained_expression_t&) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR();
+}
+
+expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_expression_list_t const& nel) const
+{
+    if (!expected_result) {
+        // e.g. case: let val = (a, b, c)
+        functional const& tuple_fn = u().fregistry().resolve(u().get_tuple_qname_identifier());
+        pure_call_t tuple_call{ expression_location_visitor{}(nel) };
+        for (opt_named_syntax_expression_t const& ne : nel) {
+            if (auto const* pname = ne.name(); pname) {
+                tuple_call.emplace_back(annotated_identifier{pname->value}, ne.value());
+            } else {
+                tuple_call.emplace_back(ne.value());
+            }
+        }
+        auto match = tuple_fn.find(ctx, tuple_call, expected_result);
+        if (!match) return std::unexpected(match.error());
+        auto [ptrn, pmd] = std::move(*match);
+        auto optres = ptrn->apply(ctx, *pmd);
+        if (!optres) return std::unexpected(std::move(optres.error()));
+        return false; // no implicit cast
+    }
+        ////// build tuple
+        //// build tuple signature
+        //entity_signature isg{ u().get_tuple_qname_identifier() };
+        //boost::container::small_vector<size_t, 8> codepoints;
+        //codepoints.emplace_back(ctx.current_expressions_pointer().second);
+        //for (opt_named_syntax_expression_t const& ne : nel) {
+        //    if (auto res = apply_visitor(*this, ne.value()); !res) return res;
+        //    if (auto const* pname = ne.name(); pname) {
+        //        isg.push(pname->value, field_descriptor{ ctx.context_type, false});
+        //    } else {
+        //        isg.push(field_descriptor{ ctx.context_type, false });
+        //    }
+        //    codepoints.emplace_back(ctx.current_expressions_pointer().second);
+        //}
+        //THROW_NOT_IMPLEMENTED_ERROR();
+
     THROW_NOT_IMPLEMENTED_ERROR();
 }
 

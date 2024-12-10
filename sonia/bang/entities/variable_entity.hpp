@@ -4,14 +4,7 @@
 
 #pragma once
 
-#include <vector>
-#include <boost/unordered_set.hpp>
-
-#include "sonia/shared_ptr.hpp"
-
-#include "sonia/bang/semantic.hpp"
-
-#include <ranges>
+#include "sonia/bang/semantic_fwd.hpp"
 
 namespace sonia::lang::bang {
 
@@ -25,24 +18,26 @@ public:
         EXTERN, STATIC, LOCAL, SCOPE_LOCAL
     };
 
-    explicit variable_entity(entity_identifier type, qname_identifier name, kind k)
-        : entity{ std::move(type) }
+    inline variable_entity(entity_identifier type, qname_identifier name, kind k) noexcept
+        : entity{ }
         , name_{ std::move(name) }
         , kind_{ k }
-    {}
+    {
+        set_type(type);
+    }
 
-    qname_identifier name() const { return name_; }
+    inline qname_identifier name() const noexcept { return name_; }
 
     inline kind const& varkind() const noexcept { return kind_; }
-    inline bool is_weak() const { return is_weak_; }
+    inline bool is_weak() const noexcept { return is_weak_; }
 
     inline intptr_t index() const noexcept { return index_; }
-    void set_index(intptr_t val) { index_ = val; }
+    inline void set_index(intptr_t val) noexcept { index_ = val; }
 
-    inline void set_weak(bool val = true) { is_weak_ = val; }
+    inline void set_weak(bool val = true) noexcept { is_weak_ = val; }
 
-    size_t hash() const noexcept override { return hash_value(name_); }
-    bool equal(entity const& rhs) const noexcept
+    inline size_t hash() const noexcept override { return hash_value(name_); }
+    inline bool equal(entity const& rhs) const noexcept
     { 
         if (variable_entity const* verhs = dynamic_cast<variable_entity const*>(&rhs); verhs) {
             return verhs->name_ == name_;

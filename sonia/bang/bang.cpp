@@ -34,6 +34,7 @@ public:
     bang_impl();
     bang_impl(bang_impl const&) = delete;
     bang_impl& operator=(bang_impl const&) = delete;
+    ~bang_impl();
 
     void set_cout_writer(function<void(string_view)> writer) { unit_.set_cout_writer(std::move(writer)); }
     void set_environment(invocation::invocable* penv) { penv_ = penv; }
@@ -112,6 +113,11 @@ inline fn ::not_equal(_, _)->bool => !($0 == $1);
 bang_impl::bang_impl()
     : vmasm_{ unit_.bvm() }
 {}
+
+bang_impl::~bang_impl()
+{
+    default_ctx_ = nullopt;
+}
 
 void bang_impl::bootstrap()
 {
@@ -240,7 +246,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, statement_set_t decls
     //auto& bvm = unit_.bvm();
     //size_t main_address = bvm.get_ip();
     for (semantic::expression_t const& e : ctx.expressions()) {
-        //GLOBAL_LOG_INFO() << "\n"sv << unit_.print(e);
+        //GLOBAL_LOG_INFO() << "expression:\n"sv << unit_.print(e);
         apply_visitor(vmcvis, e);
     }
     if (!vmcvis.local_return_position) { // no explicit return
@@ -269,7 +275,7 @@ void bang_impl::do_compile(internal_function_entity& fe)
     
     if (fe.is_inline()) return;
 
-    asm_builder_t::function_descriptor & fd = vmasm_.resolve_function(vmasm::fn_identity<qname_identifier>{ fe.name() });
+    asm_builder_t::function_descriptor & fd = vmasm_.resolve_function(vmasm::fn_identity<entity_identifier>{ fe.id() });
     if (fd.address) return; // already compiled
 
     size_t param_count = fe.parameter_count();

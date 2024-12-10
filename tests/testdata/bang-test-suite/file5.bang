@@ -1,0 +1,40 @@
+//fn ::implicit_cast(typename string, _)->string
+let n = 0;
+while true {
+    print(n);
+    n = n + 1;
+    if n == 22 { break }
+}
+/*
+assert($$ != 4);
+
+assert(120 == 100 + 20);
+
+let x = 100;
+let y = x + 20;
+assert(120 == y);
+assert(120 == x + 20);
+assert(120 == 100 + 20);
+
+//extern fn print(... any); // implicit declaration
+//fn string(const __id) {
+//    return __stringinize(__id)
+//}
+//inline fn ::not_equal(decimal, decimal)->bool { return !($0 == $1); }
+//inline fn ::not_equal[($T0, $T1)->bool { return !($0 == $1); }
+//inline fn ::not_equal($T0, $T1) { return !($0 == $1); }
+
+//inline fn ::not_equal($T0, $T1) => !($0 == $1);
+//inline fn ::not_equal(_, _) => !($0 == $1);
+
+//let x = ($$ != 4);
+assert($$ != 4);
+//assert(3 == $$);
+print($0, " ", $1, " ", $2);
+
+
+//fn xxx(a: foo(param0: $x), const $x)
+
+//fn xxx(a: valuetype foo(param0: $x), const $x)
+//fn xxx(a: typename match foo(param0: $x), const $x)
+*/

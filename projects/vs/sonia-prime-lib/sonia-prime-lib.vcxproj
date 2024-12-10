@@ -240,6 +240,7 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_string_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\utility.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\ct_expression_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_implicit_cast_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_fn_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.hpp" />
@@ -259,7 +260,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\const_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\entities\entity_signature.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\signatured_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\enum_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functional.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functional_entity.hpp" />
@@ -267,7 +268,9 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\basic_fn_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\external_fn_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\function_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\functions\parameter_type_expression_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\internal_type_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\type_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\variable_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors.hpp" />
@@ -276,6 +279,7 @@
     <ClInclude Include="..\..\..\sonia\bang\parser.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\semantic.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\semantic\expression_printer.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\semantic\managed_expression_list.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\semantic_fwd.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\terms.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\unit.hpp" />
@@ -540,6 +544,7 @@
     <ClInclude Include="..\..\..\sonia\utility\iterators\value_as_iterator.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\json_cast.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\json\value.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\lang\compiler.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lang\entity.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lang\entity_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\lang\identifier_builder.hpp" />
@@ -681,6 +686,7 @@
     <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_utility.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\ast\ct_expression_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\declaration_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\expression_visitor.cpp">
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">/bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -714,9 +720,17 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\basic_fn_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\external_fn_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\function_entity.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\functions\parameter_type_expression_visitor.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\type_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\library\bang_library.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\parser.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\semantic\managed_expression_list.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\semantic\semantic_expression_printer.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\vm\bang_vm.cpp" />
     <ClCompile Include="..\..\..\sonia\fibers\algo\algorithm.cpp">
@@ -744,10 +758,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\fibers\context.cpp">
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">stdcpp17</LanguageStandard>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">stdcpp17</LanguageStandard>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">stdcpp17</LanguageStandard>
-      <LanguageStandard Condition="'$(Configuration)|$(Platform)'=='Release|x64'">stdcpp17</LanguageStandard>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>

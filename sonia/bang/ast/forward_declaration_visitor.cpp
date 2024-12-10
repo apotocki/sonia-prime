@@ -99,4 +99,9 @@ void forward_declaration_visitor::operator()(type_decl & td)
 #endif
 }
 
+void forward_declaration_visitor::operator()(external_struct_decl& sd)
+{
+    THROW_NOT_IMPLEMENTED_ERROR("forward_declaration_visitor external_struct_decl");
+}
+
 }

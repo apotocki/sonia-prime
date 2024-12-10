@@ -7,14 +7,39 @@
 
 #include "sonia/exceptions.hpp"
 
-#include "../unit.hpp"
-#include "../semantic.hpp"
+#include "sonia/bang/errors.hpp"
+#include "sonia/bang/semantic.hpp"
 
 #include "sonia/utility/invocation/invocation.hpp"
 
 #include "sonia/bang/entities/const_entity.hpp"
+#include "sonia/bang/entities/variable_entity.hpp"
+
+#include "sonia/utility/lang/compiler.hpp"
+
+#include "sonia/bang/semantic/managed_expression_list.hpp"
 
 namespace sonia::lang::bang {
+
+class entity_task_id : public compiler_task_id
+{
+    entity const& entity_;
+
+public:
+    inline explicit entity_task_id(entity const& e) : entity_{e} {}
+
+    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(entity_task_id);
+
+    bool equal(compiler_task_id const& tid) const noexcept override
+    {
+        if (entity_task_id const* et = dynamic_cast<entity_task_id const*>(&tid); et) {
+            return entity_.equal(et->entity_);
+        }
+        return false;
+    }
+
+    size_t hash() const noexcept override { return entity_.hash(); }
+};
 
 /*
 class expression_scope
@@ -47,6 +72,10 @@ private:
 };
 */
 
+class unit;
+class function_descriptor;
+class functional;
+
 class fn_compiler_context
 {
     unit& unit_;
@@ -54,36 +83,24 @@ class fn_compiler_context
     qname ns_;
     size_t base_ns_size_;
     size_t local_variable_count_ = 0;
-    
+    compiler_worker_id worker_id_;
+
 public:
-    using expr_vec_t = std::vector<semantic::expression_t>;
+    fn_compiler_context(unit& u, qname ns);
 
-    fn_compiler_context(unit& u, qname ns)
-        : unit_{ u }
-        , parent_{ nullptr }
-        , ns_{ std::move(ns) }
-    {
-        init();
-    }
-
-    fn_compiler_context(fn_compiler_context& parent, qname_view nested)
-        : unit_{ parent.unit_ }
-        , ns_{ parent.ns() / nested }
-        , parent_{ nested.has_prefix(parent.ns()) ? &parent : nullptr }
-    {
-        init();
-    }
+    fn_compiler_context(fn_compiler_context& parent, qname_view nested);
 
     fn_compiler_context(fn_compiler_context const&) = delete;
     fn_compiler_context& operator=(fn_compiler_context const&) = delete;
 
+    ~fn_compiler_context();
+
     qname_view ns() const { return ns_; }
     qname_view base_ns() const { return span{ns_.parts().data(), base_ns_size_}; }
 
-    void pushed_unnamed_ns()
-    {
-        ns_ = ns_ / unit_.new_identifier();
-    }
+    compiler_task_tracer::task_guard try_lock_task(compiler_task_id const&);
+
+    void pushed_unnamed_ns();
 
     void pop_ns()
     {
@@ -177,22 +194,7 @@ public:
 #endif
     }
 
-    variable_entity& create_captured_variable_chain(variable_entity& v)
-    {
-        if (!parent_) {
-            THROW_INTERNAL_ERROR("can't find fn context for variable: '%1%', current context ns: '%2%'"_fmt %
-                u().print(v.name()) % u().print(ns())
-            );
-        }
-        qname_view name_qv = u().fregistry().resolve(v.name()).name();
-        qname_view vardefscope = name_qv.parent();
-        if (vardefscope.has_prefix(parent_->base_ns())) {
-            return new_captured_variable(name_qv.back(), v.get_type(), v);
-        } else {
-            variable_entity& parentvar = parent_->create_captured_variable_chain(v);
-            return new_captured_variable(name_qv.back(), v.get_type(), parentvar);
-        }
-    }
+    variable_entity& create_captured_variable_chain(variable_entity& v);
 
     /*
     variable_entity const& new_variable(identifier name, bang_generic_type t, bool is_const)
@@ -206,26 +208,7 @@ public:
     }
     */
 
-    void finish_frame()
-    {
-        /*
-        if (local_variable_count_ == 1) {
-            expressions_.front() = semantic::push_value{ null_t{} };
-        } else if (local_variable_count_) {
-            std::vector<semantic::expression_t> prolog;
-            prolog.resize(local_variable_count_, semantic::push_value{ null_t{} });
-            expressions_.front() = std::move(prolog);
-        }
-        */
-        if (!result) {
-            if (accum_result) {
-                result = accum_result;
-            } else { // no explicit return
-                result = u().get_void_entity_identifier();
-                expressions_.push_back(semantic::return_statement{});
-            }
-        }
-    }
+    void finish_frame();
 
     //local_variable_entity const& get_variable(size_t index) const
     //{
@@ -246,25 +229,22 @@ public:
 
     //inline span<const semantic::expression_type> expressions() const noexcept { return expressions_; }
 
-    expr_vec_t& expressions() { return *expr_stack_.back(); }
-    expr_vec_t& expressions(size_t branch_offset) { return *expr_stack_[expr_stack_.size() - branch_offset - 1]; }
+    semantic::expression_list_t& expressions() { return *expr_stack_.back(); }
+    semantic::expression_list_t& expressions(size_t branch_offset) { return *expr_stack_[expr_stack_.size() - branch_offset - 1]; }
     size_t expressions_branch() const { return expr_stack_.size(); }
-    void append_expression(semantic::expression_t && e)
-    {
-        expressions().emplace_back(std::move(e));
-    }
+    void append_expression(semantic::expression_t&&);
+    
+    //std::pair<size_t, expression_list_t::iterator> current_expressions_pointer() const
+    //{
+    //    return { expr_stack_.size() - 1, expr_stack_.back()->size() - 1 };
+    //}
 
-    std::pair<size_t, size_t> current_expressions_pointer() const
-    {
-        return { expr_stack_.size() - 1, expr_stack_.back()->size() - 1 };
-    }
+    //void set_expression(std::pair<size_t, expression_list_t::iterator> ep, semantic::expression_t&& e)
+    //{
+    //    (*expr_stack_[ep.first])[ep.second] = std::move(e);
+    //}
 
-    void set_expression(std::pair<size_t, size_t> ep, semantic::expression_t&& e)
-    {
-        (*expr_stack_[ep.first])[ep.second] = std::move(e);
-    }
-
-    void push_chain(expr_vec_t& chain_vec)
+    void push_chain(semantic::expression_list_t& chain_vec)
     {
         expr_stack_.emplace_back(&chain_vec);
     }
@@ -295,87 +275,35 @@ public:
         entity_identifier cur_type_;
 
     public:
-        expressions_state_type(fn_compiler_context& ctx)
-            : pctx_{&ctx}, cursize_{ ctx.expressions().size() }, stack_size_{ ctx.expr_stack_.size() }, cur_type_{ ctx.context_type }
-        {}
+        expressions_state_type(fn_compiler_context&) noexcept;
+            
         expressions_state_type(expressions_state_type const&) = delete;
-        expressions_state_type(expressions_state_type && rhs)
-            : pctx_{ rhs.pctx_ }, cursize_{ rhs.cursize_ }, stack_size_{ rhs.stack_size_ }, cur_type_{ rhs.cur_type_ }
-        {
-            rhs.pctx_ = nullptr;
-        }
+        expressions_state_type(expressions_state_type&&) noexcept;
         expressions_state_type& operator=(expressions_state_type const&) = delete;
         expressions_state_type& operator=(expressions_state_type &&) = delete;
-        ~expressions_state_type()
-        {
-            if (pctx_) {
-                restore();
-            }
-        }
+        ~expressions_state_type();
 
-        void restore()
-        {
-            pctx_->expr_stack_.resize(stack_size_);
-            pctx_->expressions().resize(cursize_);
-            pctx_->context_type = cur_type_;
-        }
+        void restore();
 
-        void detach()
-        {
-            pctx_ = nullptr;
-        }
-
-        void restore_and_detach()
-        {
-            restore();
-            detach();
-        }
+        void detach() noexcept;
+        void restore_and_detach();
     };
 
-    expressions_state_type expressions_state() { return expressions_state_type{*this}; }
+    inline expressions_state_type expressions_state() noexcept { return expressions_state_type{*this}; }
 
     entity_identifier result;
     entity_identifier accum_result;
     entity_identifier context_type;
 
-    void accumulate_result_type(entity_identifier t)
-    {
-        if (!accum_result) {
-            accum_result = std::move(t);
-        } else {
-            THROW_NOT_IMPLEMENTED_ERROR("compiler context: accumulate_result_type");
-#if 0
-            accum_result = make_union_type(*accum_result, &t);
-#endif
-        }
-    }
-
-    entity_identifier compute_result_type()
-    {
-        if (result) { return result; }
-        else if (!accum_result) {
-            accum_result = unit_.get_void_entity_identifier();
-        }
-        return accum_result;
-    }
+    void accumulate_result_type(entity_identifier t);
+    entity_identifier compute_result_type();
 
 private:
-    void init()
-    {
-        assert(ns_.is_absolute());
-        base_ns_size_ = ns_.parts().size();
-        expressions_.emplace_back(empty_t{}); // reserve for frame initilalization expressions
-        expr_stack_.emplace_back(&expressions_);
-    }
+    void init();
 
 private:
-    expr_vec_t expressions_;
-    std::vector<expr_vec_t*> expr_stack_;
-
-    //boost::container::small_vector<qname, 8> ns_stack_;
-    //std::vector<shared_ptr<variable_entity>> variables_;
-    //boost::container::small_vector<expression_scope, 8> scope_stack_;
-    
+    semantic::managed_expression_list expressions_;
+    std::vector<semantic::expression_list_t*> expr_stack_;
 };
 
 }

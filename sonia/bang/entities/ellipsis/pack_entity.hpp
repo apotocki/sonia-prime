@@ -16,15 +16,13 @@ public:
     pack_entity(entity_identifier type, entity_signature&& sig)
         : signatured_entity{ type }, sig_{ std::move(sig) }
     {
-        //BOOST_ASSERT(sig_.named_fields().empty());
-        //BOOST_ASSERT(sig_.positioned_fields().size() == 1);
-        BOOST_ASSERT(sig_.names().empty());
-        BOOST_ASSERT(sig_.fields().size() == 1);
+        BOOST_ASSERT(sig_.named_fields().empty());
+        BOOST_ASSERT(sig_.positioned_fields().size() == 1);
     }
 
     inline entity_signature const* signature() const noexcept override final { return &sig_; }
 
-    entity_identifier element_type() const { return sig_.fields().front().entity_id(); }
+    entity_identifier element_type() const { return sig_.positioned_fields().front().entity_id(); }
 
     void visit(entity_visitor const& v) const override { v(*this); }
 };

@@ -8,10 +8,10 @@
 
 namespace sonia::lang::bang {
 
-class ellipsis_pattern : public functional::pattern
+class tuple_pattern : public functional::pattern
 {
 public:
-    ellipsis_pattern() = default;
+    tuple_pattern() = default;
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional_match_descriptor&) const override;

@@ -10,6 +10,7 @@ namespace sonia::lang::bang {
 
 class type_entity;
 class parser_context;
+class fn_compiler_context;
 
 struct forward_declaration_visitor : static_visitor<void>
 {
@@ -23,6 +24,8 @@ struct forward_declaration_visitor : static_visitor<void>
     void operator()(include_decl&);
 
     void operator()(enum_decl&);
+
+    void operator()(external_struct_decl&);
 
     void operator()(type_decl&);
 

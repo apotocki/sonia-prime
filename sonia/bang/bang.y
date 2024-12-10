@@ -109,7 +109,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token SLASH                "`/`"
 %token PERCENT              "`%`"
 %token AMPERSAND            "`&`"
-%token BITOR                "`|`"
+%token <sonia::lang::lex::resource_location> BITOR      "`|`"
 %token <sonia::lang::lex::resource_location> EXCLPT     "`!`" 
 %token TILDA                "`~`"
 %token EXCL                 "`^`"
@@ -187,7 +187,6 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %left LOWEST
 
 %left ELLIPSIS
-
 %left COLON
 
 // 15 priority
@@ -221,6 +220,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 // 1 priority
 %right IDENTIFIER INTERNAL_IDENTIFIER RESERVED_IDENTIFIER
 
+
 // STATEMENTS
 %token INCLUDE
 %type <statement> statement
@@ -237,7 +237,8 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 //%type <identifier_chain_t> identifier-chain
 
 // QNAME
-%type <sonia::lang::bang::annotated_identifier> identifier
+%type <sonia::lang::bang::annotated_identifier> identifier internal_identifier
+//%type <sonia::lang::bang::annotated_identifier> any_identifier
 %type <sonia::lang::bang::annotated_qname> qname
 
 
@@ -255,9 +256,12 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 // TYPES
 %token TYPE
+%token STRUCT
 %token EXTENDS
-%type <type_decl> type-decl
-%type <extension_list_t> type-extension-any type-extension-list
+/* %type <type_decl> type-decl struct-decl */
+%type <external_struct_decl> struct-decl
+//%type <extension_list_t> type-extension-list
+//%type <extension_list_t> type-extension-any
 %type <field_list_t> field-list field-list-opt
 %type <field_t> field-decl
 %type <parameter_t> parameter-decl
@@ -269,11 +273,11 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 %type <parameter_constraint_modifier_t> parameter-constraint-modifier parameter-constraint-modifier-opt
 %type <parameter_constraint_set_t> parameter-constraint-set
-    %type <syntax_expression_t> syntax-expression syntax-expression-wo-ii concept-expression
+%type <syntax_expression_t> parameter-matched-type basic-parameter-matched-type
 
 %type <parameter_woa_list_t> parameter-list-opt parameter-list // for unification, empty assignment
-%type <parameter_woa_list_t> parameter-woa-list-opt parameter-woa-list
-%type <parameter_woa_t> parameter-woa-decl // with optional assignement
+//%type <parameter_woa_list_t> parameter-woa-list-opt parameter-woa-list
+//%type <parameter_woa_t> parameter-woa-decl // with optional assignement
 
 // TYPE EXPRESSIONS
 %token TYPENAME
@@ -290,10 +294,11 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token <annotated_bool> TRUE "true"
 %token <annotated_bool> FALSE "false"
 
+%type <syntax_expression_t> syntax-expression syntax-expression-wo-ii concept-expression
 %type <syntax_expression_t> compound-expression
-%type <named_expression_term_list_t> opt-named-expr-list-any opt-named-expr-list
-%type <named_expression_term_t> opt-named-expr
-%type <expression_list_t> expression-list-any
+%type <named_expression_list_t> opt-named-expr-list-any opt-named-expr-list
+%type <named_expression_t> opt-named-expr
+//%type <expression_list_t> expression-list-any
 
 //%type <named_expression_term_t> named-arg
 //%type <named_expression_term_list_t> arg-list arg-list-not-empty
@@ -359,6 +364,8 @@ statement:
         { $$ = include_decl{ctx.make_string(std::move($2)) }; }
     | enum-decl
         { $$ = std::move($1); }
+    | EXTERN STRUCT struct-decl
+        { $$ = std::move($3); }
     //| type-decl
     //    { $$ = std::move($1); }
     
@@ -460,6 +467,20 @@ identifier:
 */  
 	;
 
+internal_identifier:
+    INTERNAL_IDENTIFIER
+        { $$ = ctx.make_identifier($1); }
+    ;
+
+/*
+any_identifier:
+      identifier
+    | INTERNAL_IDENTIFIER
+        { $$ = ctx.make_identifier(std::move($1)); }
+    | RESERVED_IDENTIFIER
+        { $$ = ctx.make_identifier(std::move($1)); }
+    ;
+*/
 ///////////////////////////////////////////////// QNAME
 qname:
     DBLCOLON identifier
@@ -512,13 +533,23 @@ case-decl:
         { $$ = $1.value; }
     ;
 ///////////////////////////////////////////////// TYPES
+
+struct-decl:
+    qname ARROW OPEN_PARENTHESIS field-list-opt CLOSE_PARENTHESIS
+    {
+        $$ = external_struct_decl{ctx.make_qname_identifier(annotated_qname{ctx.ns() / std::move($1.value), $1.location}), std::move($4)}; IGNORE($3);
+    }
+    ;
+/*
 type-decl:
     TYPE qname type-extension-any OPEN_BRACE parameter-woa-list-opt CLOSE_BRACE
     {
         $$ = type_decl{ctx.make_qname_identifier(annotated_qname{ctx.ns() / std::move($2.value), $2.location}), std::move($3), std::move($5)}; IGNORE($4);
     }
     ;
+*/
 
+/*
 type-extension-any:
     %empty { $$ = {}; }
     |
@@ -532,6 +563,7 @@ type-extension-list:
     type-extension-list COMMA qname
         { $$ = std::move($1); $$.emplace_back(ctx.make_qname_identifier(std::move($3))); }
     ;
+*/
 
 field-list-opt:
        %empty { $$ = {}; }
@@ -553,12 +585,14 @@ field-decl:
     ;
 
 parameter-name-decl:
-      IDENTIFIER INTERNAL_IDENTIFIER COLON
-        { $$ = parameter_name{ctx.make_identifier(std::move($1)), ctx.make_identifier($2)}; }
-    | IDENTIFIER COLON
-        { $$ = parameter_name{ctx.make_identifier(std::move($1)), nullopt}; }
-    | INTERNAL_IDENTIFIER COLON
-        { $$ = parameter_name{nullopt, ctx.make_identifier(std::move($1))}; }
+      identifier[id] internal_identifier[intid] COLON
+        { $$ = named_parameter_name{ std::move($id), std::move($intid) }; }
+    | identifier[id] COLON
+        { $$ = named_parameter_name{ std::move($id), nullopt }; }
+    | internal_identifier[intid] COLON
+        { $$ = unnamed_parameter_name{ std::move($intid) }; }
+    | internal_identifier[intid] ELLIPSIS COLON
+        { $$ = varnamed_parameter_name{ std::move($intid)}; IGNORE($2); }
     ;
 
 parameter-constraint-modifier:
@@ -566,8 +600,6 @@ parameter-constraint-modifier:
         { $$ = parameter_constraint_modifier_t::typename_constraint; }
     | CONST
         { $$ = parameter_constraint_modifier_t::value_constraint; }
-    //| %empty
-    //    { $$ = parameter_constraint_modifier_t::value_type_constraint; }
     ;
 
 parameter-constraint-modifier-opt:
@@ -576,19 +608,71 @@ parameter-constraint-modifier-opt:
         { $$ = parameter_constraint_modifier_t::value_type_constraint; }
     ;
 
+basic-parameter-matched-type:
+      qname
+        { $$ = variable_identifier{ std::move($qname) }; }
+    | qname OPEN_PARENTHESIS opt-named-expr-list-any[parameters] CLOSE_PARENTHESIS
+        { $$ = function_call_t{ std::move($OPEN_PARENTHESIS), variable_identifier{ std::move($qname) }, std::move($parameters) }; }
+    | basic-parameter-matched-type[left] BITOR basic-parameter-matched-type[right]
+        { $$ = binary_expression_t{ binary_operator_type::BIT_OR, std::move($left), std::move($right), std::move($BITOR) }; }
+    ;
+
+parameter-matched-type:
+      basic-parameter-matched-type
+    | basic-parameter-matched-type ELLIPSIS
+        { $$ = bang_parameter_pack_t{ std::move($1) }; IGNORE($ELLIPSIS); }
+    | INTERNAL_IDENTIFIER[id]
+        { $$ = variable_identifier{ ctx.make_qname(std::move($id)), true }; }
+    | INTERNAL_IDENTIFIER[id] ELLIPSIS
+        { $$ = bang_parameter_pack_t{variable_identifier{ ctx.make_qname(std::move($id)), true }}; IGNORE($ELLIPSIS); }
+    ;
+
+parameter-constraint-set:
+      parameter-matched-type[match]
+        { $$ = parameter_constraint_set_t{ std::move($match), {}, {} }; }
+    | concept-expression[concept]
+        { $$ = parameter_constraint_set_t{ nullopt, {std::move($concept)}, {} }; }
+    | UNDERSCORE
+        { $$ = parameter_constraint_set_t{}; }
+    | parameter-constraint-set concept-expression[concept]
+        { $$ = std::move($1); $$.concepts.emplace_back(std::move($concept)); }
+    ;
+    
+parameter-decl:
+      parameter-name-decl[name] parameter-constraint-modifier-opt[mod] parameter-constraint-set[constraint]
+        { $$ = parameter_t{ std::move($name), std::move($mod), std::move($constraint) }; }
+    | parameter-constraint-modifier[mod] parameter-constraint-set[constraint]
+        { $$ = parameter_t{ unnamed_parameter_name{}, std::move($mod), std::move($constraint) }; }
+    | parameter-constraint-set[constraint]
+        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::value_type_constraint, std::move($constraint) }; }
+    ;
+
+parameter-list-opt:
+       %empty { $$ = {}; }
+    |  parameter-list
+    ;
+
+parameter-list:
+      parameter-decl
+        { $$ = parameter_woa_list_t{ parameter_woa_t{std::move($1)} }; }
+    | parameter-list COMMA parameter-decl
+        { $$ = std::move($1); $$.emplace_back(std::move($3)); }
+    ;
+/*
 // one optional syntax-expression, and arbitrary count of concept-expression or internal idetifiers
 parameter-constraint-set:
       syntax-expression-wo-ii
         { $$ = parameter_constraint_set_t{ std::move($1), {}, {} }; }
-    | INTERNAL_IDENTIFIER
-        { $$ = parameter_constraint_set_t{ nullopt, {}, { ctx.make_identifier(std::move($1)) } }; }
+    | internal_identifier[id]
+        { $$ = parameter_constraint_set_t{ nullopt, {}, { std::move($id) } }; }
     | concept-expression
         { $$ = parameter_constraint_set_t{ nullopt, {std::move($1)}, {} }; }
-    | parameter-constraint-set INTERNAL_IDENTIFIER
-        { $$ = std::move($1); $$.bindings.emplace_back(ctx.make_identifier(std::move($2))); }
+    | parameter-constraint-set internal_identifier[id]
+        { $$ = std::move($1); $$.bindings.emplace_back(std::move($id)); }
     | parameter-constraint-set concept-expression
         { $$ = std::move($1); $$.concepts.emplace_back(std::move($2)); }
     ;
+*/
 
 concept-expression:
     AT_SYMBOL qname
@@ -608,11 +692,19 @@ syntax-expression-wo-ii:
     | STRING
         { $$ = ctx.make_string(std::move($1)); }
     | RESERVED_IDENTIFIER
-        { $$ = variable_identifier{ctx.make_qname(std::move($1)), true}; }
+        { $$ = variable_identifier{ ctx.make_qname(std::move($1)), true }; }
     | qname
         { $$ = variable_identifier{ std::move($1) }; }
-    | OPEN_PARENTHESIS syntax-expression CLOSE_PARENTHESIS
-        { $$ = std::move($2); IGNORE($1); }
+    | OPEN_PARENTHESIS opt-named-expr-list CLOSE_PARENTHESIS
+        {
+            if ($2.size() == 1 && !$2.front().has_name()) { // single unnamed expression => extract
+                $$ = std::move($2.front().value());
+            } else {
+                $$ = opt_named_syntax_expression_list_t{ std::move($2), std::move($1) };
+            }
+        }
+    | syntax-expression POINT identifier
+        { $$ = member_expression_t{ std::move($1), std::move($3) }; IGNORE($2); }
     | EXCLPT syntax-expression
 		{ $$ = unary_expression_t{ unary_operator_type::NEGATE, true, std::move($2), std::move($1) }; }
     | syntax-expression ELLIPSIS
@@ -627,6 +719,29 @@ syntax-expression-wo-ii:
     
     | compound-expression
         { $$ = std::move($1); }
+    ;
+
+opt-named-expr-list-any:
+    %empty
+        { $$ = named_expression_list_t{}; }
+    | opt-named-expr-list
+    ;
+
+opt-named-expr-list:
+      opt-named-expr
+        { $$ = named_expression_list_t{std::move($1)}; }
+    | opt-named-expr-list COMMA opt-named-expr
+        {
+            $$ = std::move($1);
+            $$.emplace_back(std::move($3));
+		}
+	;
+
+opt-named-expr:
+      identifier COLON syntax-expression
+        { $$ = named_expression_t{ std::move($1), std::move($3) }; }
+    | syntax-expression
+        { $$ = named_expression_t{ std::move($1) }; }
     ;
 
 syntax-expression:
@@ -655,29 +770,10 @@ parameter-constraint-decl:
     ;
 */
 
-parameter-decl:
-      parameter-name-decl parameter-constraint-modifier-opt parameter-constraint-set
-        { $$ = parameter_t{ std::move($1), std::move($2), std::move($3) }; }
-    | parameter-constraint-modifier parameter-constraint-set
-        { $$ = parameter_t{ {}, std::move($1), std::move($2) }; }
-    | parameter-constraint-set
-        { $$ = parameter_t{ {}, parameter_constraint_modifier_t::value_type_constraint, std::move($1) }; }
-    | UNDERSCORE
-        { $$ = parameter_t{ {}, parameter_constraint_modifier_t::value_type_constraint, {} }; }
-    ;
 
-parameter-list-opt:
-       %empty { $$ = {}; }
-    |  parameter-list
-    ;
 
-parameter-list:
-      parameter-decl
-        { $$ = parameter_woa_list_t{ parameter_woa_t{std::move($1)} }; }
-    | parameter-list COMMA parameter-decl
-        { $$ = std::move($1); $$.emplace_back(std::move($3)); }
-    ;
 
+/*
 parameter-woa-list-opt:
        %empty { $$ = {}; }
     |  parameter-woa-list
@@ -696,17 +792,18 @@ parameter-woa-decl:
     | parameter-decl ASSIGN syntax-expression
         { $$ = parameter_woa_t{ std::move($1), std::move($3) }; IGNORE($2); }
     ;
+*/
 
 // TYPE EXPRESSIONS
 type-expr:
       qname
         { $$ = std::move($1); }
-    | qname OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
-        { $$ = std::move($1); IGNORE($2); IGNORE($3); }
-    | INTERNAL_IDENTIFIER
-        { $$ = ctx.make_identifier(std::move($1)); }
-    | INTERNAL_IDENTIFIER OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
-        { $$ = ctx.make_identifier(std::move($1)); IGNORE($2); IGNORE($3); }
+    //| qname OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
+    //    { $$ = std::move($1); IGNORE($2); IGNORE($3); }
+    | internal_identifier[id]
+        { $$ = std::move($id); }
+    //| internal_identifier[id] OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
+    //    { $$ = std::move($id); IGNORE($2); IGNORE($3); }
     | OPEN_SQUARE_BRACKET type-expr CLOSE_SQUARE_BRACKET
         { $$ = bang_preliminary_vector_t{std::move($2)}; IGNORE($1); }
     | OPEN_PARENTHESIS field-list-opt CLOSE_PARENTHESIS
@@ -719,6 +816,7 @@ type-expr:
             uni.members.emplace_back(std::move($1));
             uni.members.emplace_back(std::move($3));
             $$ = std::move(uni);
+            IGNORE($BITOR);
         }
     | type-expr ARROW type-expr
         { $$ = bang_preliminary_fn_t{std::move($1), std::move($3)}; }
@@ -764,8 +862,7 @@ expression:
         { $$ = expression_vector_t{ {std::move($2)}, std::move($1) }; }
     | expression QMARK
         { $$ = not_empty_expression_t{ std::move($1) }; }
-    | expression POINT identifier
-        { $$ = member_expression_t { std::move($1), std::move($3) }; IGNORE($2); }
+
     //| expression QMARK POINT identifier
     //    { $$ = member_expression_t { std::move($1), std::move($4), true }; IGNORE($3); }
     | expression LOGIC_AND expression
@@ -787,6 +884,7 @@ expression:
 
     */
 
+    /*
 expression-list-any:
     %empty
         { $$ = expression_list_t{}; }
@@ -795,29 +893,9 @@ expression-list-any:
     | expression-list-any COMMA syntax-expression
         { $$ = std::move($1); $$.emplace_back(std::move($3)); }
     ;
+    */
 
-opt-named-expr-list-any:
-    %empty
-        { $$ = named_expression_term_list_t{}; }
-    | opt-named-expr-list
-    ;
 
-opt-named-expr-list:
-      opt-named-expr
-        { $$ = named_expression_term_list_t{std::move($1)}; }
-    | opt-named-expr-list COMMA opt-named-expr
-        {
-            $$ = std::move($1);
-            $$.push_back(std::move($3));
-		}
-	;
-
-opt-named-expr:
-      IDENTIFIER COLON syntax-expression
-        { $$ = named_expression_term_t{ std::tuple{ctx.make_identifier(std::move($1)), std::move($3)} }; }
-    | syntax-expression
-        { $$ = named_expression_term_t{ std::move($1) }; }
-    ;
 
 //identifier-chain:
 //      identifier

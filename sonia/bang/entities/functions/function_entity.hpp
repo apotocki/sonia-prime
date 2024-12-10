@@ -12,16 +12,16 @@ namespace sonia::lang::bang {
 class function_entity : public signatured_entity
 {
 protected:
-    qname_identifier name_;
+    qname name_;
     entity_signature sig_;
     entity_identifier result_type_;
 
 public:
-    function_entity(qname_identifier name, entity_signature&& sig)
-        : name_{ name }, sig_{ std::move(sig) }
+    function_entity(qname && name, entity_signature&& sig)
+        : name_{ std::move(name) }, sig_{ std::move(sig) }
     {}
 
-    inline qname_identifier name() const noexcept { return name_; }
+    inline qname_view name() const noexcept { return name_; }
 
     //function_entity(qname_identifier name, shared_ptr<fieldset_t> fs, entity_identifier result_type)
     //    : name_{ name }, fs_{ std::move(fs) }, result_type_ { result_type }, is_inline_{ 0 }
@@ -33,7 +33,7 @@ public:
     size_t parameter_count() const noexcept;
 
     //void set_fn_signature(unit&, entity_signature&& fnsig);
-    void build_fn_signature(unit& u, entity_identifier rt);
+    //void build_fn_signature(unit& u, entity_identifier rt);
 
     inline entity_identifier get_result_type() const noexcept { return result_type_; }
     inline void set_result_type(entity_identifier val) noexcept { result_type_ = val; }
@@ -80,7 +80,8 @@ private:
 
 class internal_function_entity : public function_entity
 {
-    std::vector<semantic::expression_t> body_;
+    //qname_view ns_;
+    semantic::managed_expression_list body_;
 
     uint64_t is_built_ : 1;
     uint64_t is_inline_ : 1;
@@ -89,18 +90,19 @@ class internal_function_entity : public function_entity
 public:
     struct build_data
     {
-        functional::binding_set_t bindings;
+        functional_binding_set bindings;
         shared_ptr<std::vector<infunction_statement>> body;
     };
 
-    internal_function_entity(qname_identifier name, entity_signature&& sig, shared_ptr<build_data> bd)
-        : function_entity{ name, std::move(sig) }
+    internal_function_entity(qname && name, entity_signature&& sig, shared_ptr<build_data> bd, unit & u)
+        : function_entity{ std::move(name), std::move(sig) }
         , bd_{ std::move(bd) }
         , is_inline_{ 0 }
         , is_built_{ 0 }
+        , body_{ u }
     {}
 
-    std::span<const semantic::expression_t> body() const { return body_; }
+    semantic::expression_list_t const& body() const { return body_; }
 
     void visit(entity_visitor const& v) const override { v(*this); }
 
@@ -132,8 +134,8 @@ class external_function_entity : public function_entity
     uint32_t is_void_ : 1;
 
 public:
-    external_function_entity(qname_identifier name, entity_signature&& sig, size_t fnid)
-        : function_entity{ name, std::move(sig) }, extfnid_{ static_cast<uint32_t>(fnid) }
+    external_function_entity(qname && name, entity_signature&& sig, size_t fnid)
+        : function_entity{ std::move(name), std::move(sig) }, extfnid_{ static_cast<uint32_t>(fnid) }
     {}
 
     inline size_t extfnid() const noexcept { return extfnid_; }
@@ -147,6 +149,8 @@ public:
         os << "external fn(id: "sv << extfnid_ << ")"sv;
         return signatured_entity::print_to(os, u);
     }
+
+    void build(unit&) override {}
 
 protected:
     void set_void(bool val) noexcept { is_void_ = val ? 1 : 0; }

@@ -10,6 +10,7 @@
 
 namespace sonia::lang::bang {
 
+#if 0
 struct parameter_pack_element_type_visitor : static_visitor<std::expected<pattern_expression_t, error_storage>>
 {
     fn_compiler_context& ctx;
@@ -43,11 +44,11 @@ struct parameter_pack_element_type_visitor : static_visitor<std::expected<patter
     result_type operator()(entity_identifier eid)
     {
         functional& ellipsis_fnl = u().fregistry().resolve(u().get_ellipsis_qname_identifier());
-        named_expression_term_list_t ellipsis_args;
-        ellipsis_args.emplace_back(entity_expression{ eid });
+        named_expression_list_t ellipsis_args;
+        ellipsis_args.emplace_back(annotated_entity_identifier{ eid });
         pure_call_t ellipsis_call{ lex::resource_location{}, std::move(ellipsis_args) };
         functional::match_descriptor md;
-        auto ptrn = ellipsis_fnl.find(ctx, ellipsis_call, md);
+        auto ptrn = ellipsis_fnl.find(ctx, ellipsis_call, {}, md);
         if (!ptrn.has_value()) {
             return std::unexpected(std::move(ptrn.error()));
         }
@@ -75,9 +76,9 @@ struct parameter_visitor : static_visitor<std::expected<pattern_expression_t, er
         THROW_NOT_IMPLEMENTED_ERROR("parameter_visitor not implemented expression");
     }
 
-    result_type operator()(entity_expression const& ee)
+    result_type operator()(annotated_entity_identifier const& ee)
     {
-        return ee.id;
+        return ee.value;
     }
 
     result_type operator()(variable_identifier const& var)
@@ -86,9 +87,6 @@ struct parameter_visitor : static_visitor<std::expected<pattern_expression_t, er
             // check for function parameter
             identifier varid = *var.name.value.begin();
             if (auto it = fd_.varparams().find(varid); it != fd_.varparams().end()) {
-                return pattern_variable{ varid };
-            }
-            if (auto it = fd_.variables().find(varid); it != fd_.variables().end()) {
                 return pattern_variable{ varid };
             }
         }
@@ -136,6 +134,7 @@ struct parameter_visitor : static_visitor<std::expected<pattern_expression_t, er
         //}
     }
 };
+#endif
 
 //std::expected<int, error_storage> fn_compiler_context::build_fieldset(fn_pure_t const& pure_decl, patern_fieldset_t& fs)
 //{
@@ -202,8 +201,50 @@ struct parameter_visitor : static_visitor<std::expected<pattern_expression_t, er
 //    return 0;
 //}
 
+fn_compiler_context::fn_compiler_context(unit& u, qname ns)
+    : unit_{ u }
+    , parent_{ nullptr }
+    , ns_{ std::move(ns) }
+    , expressions_{ u }
+{
+    init();
+}
+
+fn_compiler_context::fn_compiler_context(fn_compiler_context& parent, qname_view nested)
+    : unit_{ parent.unit_ }
+    , ns_{ parent.ns() / nested }
+    , parent_{ nested.has_prefix(parent.ns()) ? &parent : nullptr }
+    , expressions_{ parent.unit_ }
+{
+    init();
+}
+
+void fn_compiler_context::init()
+{
+    assert(ns_.is_absolute());
+    base_ns_size_ = ns_.parts().size();
+    expr_stack_.emplace_back(&expressions_);
+}
+
+fn_compiler_context::~fn_compiler_context()
+{
+
+}
+
+compiler_task_tracer::task_guard fn_compiler_context::try_lock_task(compiler_task_id const& tid)
+{
+    return unit_.task_tracer().try_lock_task(tid, worker_id_);
+}
+
+void fn_compiler_context::pushed_unnamed_ns()
+{
+    ns_ = ns_ / unit_.new_identifier();
+}
+
 error_storage fn_compiler_context::build_function_descriptor(fn_pure_t const& pure_decl, function_descriptor& fd)
 {
+    THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context::build_function_descriptor");
+#if 0
     qname fn_qname = ns() / pure_decl.name();
 
     //if (!fn_qname.has_prefix(ns())) {
@@ -236,18 +277,20 @@ error_storage fn_compiler_context::build_function_descriptor(fn_pure_t const& pu
     };
 
     for (auto& param : params) {
+        auto [external_name, internal_name, varname] = apply_visitor(param_name_retriever{}, param.name);
+        
         if (param.modifier == parameter_constraint_modifier_t::typename_constraint || param.modifier == parameter_constraint_modifier_t::value_constraint) {
-            if (param.name.internal_name) {
-                if (auto err = put_var(*param.name.internal_name); err) { return err; }
-            } else if (param.name.external_name) {
-                if (auto err = put_var(*param.name.external_name); err) { return err; }
+            if (internal_name) {
+                if (auto err = put_var(*internal_name); err) { return err; }
+            } else if (external_name) {
+                if (auto err = put_var(*external_name); err) { return err; }
             }
         }
-        if (param.name.external_name) {
-            if (auto err = check_name(*param.name.external_name); err) { return err; }
+        if (external_name) {
+            if (auto err = check_name(*external_name); err) { return err; }
         }
-        if (param.name.internal_name) {
-            if (auto err = check_name(*param.name.internal_name); err) { return err; }
+        if (internal_name) {
+            if (auto err = check_name(*internal_name); err) { return err; }
         }
     }
 
@@ -255,6 +298,8 @@ error_storage fn_compiler_context::build_function_descriptor(fn_pure_t const& pu
     parameter_visitor pvis{ fnctx, fd };
 
     for (auto& param : params) {
+        auto [external_name, internal_name, varname] = apply_visitor(param_name_retriever{}, param.name);
+
         function_descriptor::generic_field fld;
         parameter_constraint_set_t const& constraints = param.constraints;
         if (constraints.type_expression) {
@@ -270,14 +315,14 @@ error_storage fn_compiler_context::build_function_descriptor(fn_pure_t const& pu
         fld.bindings.reserve(constraints.bindings.size());
         std::ranges::copy(constraints.bindings, std::back_inserter(fld.bindings));
         fld.constraint_type = param.modifier;
-        fld.iname = param.name.internal_name;
+        if (internal_name) fld.iname = *internal_name;
         //bool constraint_is_typename = constraint_entity.is(*this, unit_.get_typename_entity_identifier());
         //param_constraint_type ct = constraint_is_typename ?
         //    (parampair.type.is_const ? param_constraint_type::const_constraint : param_constraint_type::type_constaint)
         //    : param_constraint_type::value_constaint;
 
-        if (param.name.external_name) {
-            nfields.emplace_back(*param.name.external_name, std::move(fld));
+        if (external_name) {
+            nfields.emplace_back(*external_name, std::move(fld));
         } else {
             pfields.emplace_back(std::move(fld));
         }
@@ -297,7 +342,7 @@ error_storage fn_compiler_context::build_function_descriptor(fn_pure_t const& pu
         if (!rtres.has_value()) return std::move(rtres.error());
         fd.set_result_type(rtres.value());
     }
-
+#endif
     return {};
 
     //boost::container::small_vector<annotated_identifier, 16> aux;
@@ -381,6 +426,115 @@ variable_entity& fn_compiler_context::new_variable(annotated_identifier name, en
     fnl.set_default_entity(ve->id());
     
     return *ve;
+}
+
+variable_entity& fn_compiler_context::create_captured_variable_chain(variable_entity& v)
+{
+    if (!parent_) {
+        THROW_INTERNAL_ERROR("can't find fn context for variable: '%1%', current context ns: '%2%'"_fmt %
+            u().print(v.name()) % u().print(ns())
+        );
+    }
+    qname_view name_qv = u().fregistry().resolve(v.name()).name();
+    qname_view vardefscope = name_qv.parent();
+    if (vardefscope.has_prefix(parent_->base_ns())) {
+        return new_captured_variable(name_qv.back(), v.get_type(), v);
+    } else {
+        variable_entity& parentvar = parent_->create_captured_variable_chain(v);
+        return new_captured_variable(name_qv.back(), v.get_type(), parentvar);
+    }
+}
+
+void fn_compiler_context::finish_frame()
+{
+    /*
+    if (local_variable_count_ == 1) {
+        expressions_.front() = semantic::push_value{ null_t{} };
+    } else if (local_variable_count_) {
+        std::vector<semantic::expression_t> prolog;
+        prolog.resize(local_variable_count_, semantic::push_value{ null_t{} });
+        expressions_.front() = std::move(prolog);
+    }
+    */
+    if (!result) {
+        if (accum_result) {
+            result = accum_result;
+        } else { // no explicit return
+            result = u().get_void_entity_identifier();
+            u().push_back_expression(expressions_, semantic::return_statement{});
+        }
+    }
+}
+
+void fn_compiler_context::accumulate_result_type(entity_identifier t)
+{
+    if (!accum_result) {
+        accum_result = std::move(t);
+    } else {
+        THROW_NOT_IMPLEMENTED_ERROR("compiler context: accumulate_result_type");
+#if 0
+        accum_result = make_union_type(*accum_result, &t);
+#endif
+    }
+}
+
+entity_identifier fn_compiler_context::compute_result_type()
+{
+    if (result) { return result; }
+    else if (!accum_result) {
+        accum_result = unit_.get_void_entity_identifier();
+    }
+    return accum_result;
+}
+
+fn_compiler_context::expressions_state_type::expressions_state_type(fn_compiler_context& ctx) noexcept
+    : pctx_{ &ctx }
+    , cursize_{ ctx.expressions().size() }
+    , stack_size_{ ctx.expr_stack_.size() }
+    , cur_type_{ ctx.context_type }
+{}
+
+fn_compiler_context::expressions_state_type::expressions_state_type(expressions_state_type&& rhs) noexcept
+    : pctx_{ rhs.pctx_ }
+    , cursize_{ rhs.cursize_ }
+    , stack_size_{ rhs.stack_size_ }
+    , cur_type_{ rhs.cur_type_ }
+{
+    rhs.pctx_ = nullptr;
+}
+
+fn_compiler_context::expressions_state_type::~expressions_state_type()
+{
+    if (pctx_) {
+        restore();
+    }
+}
+
+void fn_compiler_context::expressions_state_type::detach() noexcept
+{
+    pctx_ = nullptr;
+}
+
+void fn_compiler_context::expressions_state_type::restore_and_detach()
+{
+    restore();
+    detach();
+}
+
+void fn_compiler_context::expressions_state_type::restore()
+{
+    pctx_->expr_stack_.resize(stack_size_);
+    auto& elist = pctx_->expressions();
+    while (elist.size() > cursize_) {
+        pctx_->u().release(elist.pop_back());
+    }
+    //pctx_->expressions().resize(cursize_);
+    pctx_->context_type = cur_type_;
+}
+
+void fn_compiler_context::append_expression(semantic::expression_t&& e)
+{
+    unit_.push_back_expression(expressions(), std::move(e));
 }
 
 }

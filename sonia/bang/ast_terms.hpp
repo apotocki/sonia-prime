@@ -20,6 +20,7 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/variant.hpp"
 #include "sonia/function.hpp"
+#include "sonia/small_vector.hpp"
 #include "sonia/utility/functional/variant_compare_three_way.hpp"
 #include "sonia/mp/basic_decimal.hpp"
 
@@ -28,7 +29,6 @@
 namespace sonia::lang::bang {
 
 class unit;
-class fn_compiler_context;
 
 template <typename T>
 struct annotated
@@ -38,6 +38,8 @@ struct annotated
 
     inline bool operator==(annotated const& r) const noexcept { return value == r.value; }
     inline auto operator<=>(annotated const& r) const noexcept { return value <=> r.value; }
+
+    inline explicit operator bool() const noexcept { return (bool)value; }
 };
 
 using annotated_string_view = annotated<string_view>;
@@ -83,10 +85,45 @@ enum class parameter_constraint_modifier_t : uint8_t
     value_constraint = 3
 };
 
-struct parameter_name
+// e.g. fn (externalName: string); fn (externalName $internalName: string);
+struct named_parameter_name
 {
-    optional<annotated_identifier> external_name;
+    annotated_identifier external_name;
     optional<annotated_identifier> internal_name;
+};
+
+// e.g. fn ($internalName: string); fn (string);
+struct unnamed_parameter_name
+{
+    optional<annotated_identifier> internal_name;
+};
+
+// e.g. fn ($varName ... : string);
+struct varnamed_parameter_name
+{
+    annotated_identifier varname;
+};
+
+using parameter_name = variant<named_parameter_name, unnamed_parameter_name, varnamed_parameter_name>;
+
+struct param_name_retriever : static_visitor<std::tuple<annotated_identifier const*, annotated_identifier const*, bool>>
+{
+    param_name_retriever() = default;
+
+    inline result_type operator()(named_parameter_name const& np) const
+    {
+        return { &np.external_name, np.internal_name ? &*np.internal_name : nullptr, false };
+    }
+
+    inline result_type operator()(unnamed_parameter_name const& np) const
+    {
+        return { nullptr, np.internal_name ? &*np.internal_name : nullptr, false };
+    }
+
+    inline result_type operator()(varnamed_parameter_name const& np) const
+    {
+        return { nullptr, &np.varname, true };
+    }
 };
 
 //template <typename T>
@@ -103,33 +140,48 @@ struct parameter_name
 //    {}
 //};
 
-
-template <typename T>
-struct field
+template <typename TermT>
+struct opt_named_term
 {
-    optional<annotated_identifier> name;
-    T type;
+    using named_pair_t = std::tuple<annotated_identifier, TermT>;
+    variant<named_pair_t, TermT, nullptr_t> term;
 
-    field() = default;
+    inline opt_named_term() noexcept : term{nullptr} {}
 
+    inline explicit opt_named_term(TermT && t) noexcept : term{ std::move(t) } {}
+    
     template <typename NameT>
-    inline field(NameT&& n, T&& t)
-        : name{ std::forward<NameT>(n) }
-        , type{ std::move(t) }
+    inline explicit opt_named_term(NameT&& narg, TermT&& t) noexcept
+        : term{ named_pair_t{std::forward<NameT>(narg), std::move(t)} }
     {}
 
-    inline explicit field(T&& t)
-        : type{ std::move(t) }
-    {}
+    inline bool has_name() const noexcept { return !!get<named_pair_t>(&term); }
+    inline const annotated_identifier * name() const noexcept
+    {
+        if (named_pair_t const* p = get<named_pair_t>(&term); p) return &get<0>(*p);
+        return nullptr;
+    }
+
+    inline TermT const& value() const noexcept
+    {
+        if (named_pair_t const* p = get<named_pair_t>(&term); p) return get<1>(*p);
+        return get<TermT>(term);
+    }
+
+    inline TermT & value()  noexcept
+    {
+        if (named_pair_t * p = get<named_pair_t>(&term); p) return get<1>(*p);
+        return get<TermT>(term);
+    }
 };
 
-template <typename T>
-using field_list = std::vector<field<T>>;
+template <typename TermT>
+using opt_named_term_list = small_vector<opt_named_term<TermT>, 2>;
 
 
 template <typename T> struct bang_preliminary_tuple
 {
-    field_list<T> fields;
+    opt_named_term_list<T> fields;
     inline bool operator==(bang_preliminary_tuple const&) const = default;
 };
 
@@ -149,7 +201,7 @@ template <class TupleT, typename T> struct bang_fn_base
         if (auto * ptuple = sonia::get<TupleT>(&a); ptuple) {
             arg = std::move(*ptuple);
         } else {
-            arg.fields.emplace_back(nullopt, std::move(a));
+            arg.fields.emplace_back(std::move(a));
         }
     }
 
@@ -194,7 +246,7 @@ template <typename T> struct bang_preliminary_union
     }
 };
 
-// void type is expressedby the empty tuple
+// void type is expressed by the empty tuple
 
 using bang_preliminary_type = make_recursive_variant<
     annotated_qname,
@@ -214,8 +266,8 @@ using bang_preliminary_union_t = bang_preliminary_union<bang_preliminary_type>;
 using bang_preliminary_fn_t = bang_preliminary_fn<bang_preliminary_type>;
 using bang_preliminary_parameter_pack_t = bang_parameter_pack<bang_preliminary_type>;
 
-using field_t = field<bang_preliminary_type>;
-using field_list_t = field_list<bang_preliminary_type>;
+using field_t = opt_named_term<bang_preliminary_type>;
+using field_list_t = opt_named_term_list<bang_preliminary_type>;
 // ========================================================================
 
 // ========================================================================
@@ -238,7 +290,7 @@ using field_list_t = field_list<bang_preliminary_type>;
 */
 
 #define BANG_UNARY_OPERATOR_ENUM (NEGATE)
-#define BANG_BINARY_OPERATOR_ENUM (ASSIGN)(LOGIC_AND)(LOGIC_OR)(CONCAT)(PLUS)(EQ)(NE)
+#define BANG_BINARY_OPERATOR_ENUM (ASSIGN)(LOGIC_AND)(LOGIC_OR)(BIT_OR)(CONCAT)(PLUS)(EQ)(NE)
 enum class unary_operator_type
 {
     BOOST_PP_SEQ_FOR_EACH(BANG_PRINT_SIMPLE_ENUM, _, BANG_UNARY_OPERATOR_ENUM)
@@ -309,15 +361,6 @@ inline auto bang_binary_switcher(BinaryExprT && exp, VisitorT && vis) {
 //struct concat_expression : binary_expression<binary_operator_type::CONCAT, ExprT> {};
 
 template <typename ExprT>
-struct named_expression_term
-{
-    variant<std::tuple<annotated_identifier, ExprT>, ExprT> term;
-};
-
-template <typename ExprT>
-using named_expression_term_list = std::vector<named_expression_term<ExprT>>;
-
-template <typename ExprT>
 struct expression_vector
 {
     boost::container::small_vector<ExprT, 4> elements;
@@ -327,29 +370,41 @@ struct expression_vector
 template <typename ExprT>
 struct pure_call
 {
-    boost::container::small_vector<ExprT, 4> positioned_args;
-    boost::container::small_vector<std::tuple<annotated_identifier, ExprT>, 8> named_args;
+    opt_named_term_list<ExprT> args_;
+    //boost::container::small_vector<ExprT, 4> positioned_args;
+    //boost::container::small_vector<std::tuple<annotated_identifier, ExprT>, 8> named_args;
     lex::resource_location location_; // operator or OPEN_PARENTHESIS location
 
     explicit pure_call(lex::resource_location loc) : location_{ std::move(loc) } {}
 
-    pure_call(lex::resource_location loc, named_expression_term_list<ExprT> && args)
+    pure_call(lex::resource_location loc, opt_named_term_list<ExprT>&& args)
         : location_{ std::move(loc) }
-    {
-        for (named_expression_term<ExprT> & narg : args) {
-            if (auto const* pure_expr = get<ExprT>(&narg.term); pure_expr) {
-                positioned_args.emplace_back(std::move(*pure_expr));
-            } else if (auto const* named_expr = get<std::tuple<annotated_identifier, ExprT>>(&narg.term); named_expr) {
-                named_args.emplace_back(std::move(std::get<0>(*named_expr)), std::move(std::get<1>(*named_expr)));
-            } else {
-                THROW_INTERNAL_ERROR();
-            }
-        }
-        std::ranges::sort(named_args, {}, [](auto const& pair) { return std::get<0>(pair).value; });
-        // to do: check for repeated named args
-    }
+        , args_{ std::move(args) }
+    {}
 
-    lex::resource_location const& location() const { return location_; }
+    //pure_call(lex::resource_location loc, opt_named_term_list<ExprT> && args)
+    //    : location_{ std::move(loc) }
+    //{
+    //    for (opt_named_term<ExprT> & narg : args) {
+    //        if (auto const* pure_expr = get<ExprT>(&narg.term); pure_expr) {
+    //            positioned_args.emplace_back(std::move(*pure_expr));
+    //        } else if (auto const* named_expr = get<std::tuple<annotated_identifier, ExprT>>(&narg.term); named_expr) {
+    //            named_args.emplace_back(std::move(std::get<0>(*named_expr)), std::move(std::get<1>(*named_expr)));
+    //        } else {
+    //            THROW_INTERNAL_ERROR();
+    //        }
+    //    }
+    //    std::ranges::sort(named_args, {}, [](auto const& pair) { return std::get<0>(pair).value; });
+    //    // to do: check for repeated named args
+    //}
+
+
+    inline void emplace_back(annotated_identifier name, ExprT expr) { args_.emplace_back(std::move(name), std::move(expr)); }
+    inline void emplace_back(ExprT expr) { args_.emplace_back(std::move(expr)); }
+
+    inline opt_named_term<ExprT> const& operator[](size_t index) const noexcept { return args_[index]; }
+    inline std::span<const opt_named_term<ExprT>> args() const noexcept { return args_; }
+    inline lex::resource_location const& location() const noexcept { return location_; }
 };
 
 template <typename ExprT>
@@ -357,7 +412,7 @@ struct function_call : pure_call<ExprT>
 {
     using base_t = pure_call<ExprT>;
     ExprT fn_object;
-    function_call(lex::resource_location && callloc, ExprT && n, named_expression_term_list<ExprT> && args)
+    function_call(lex::resource_location && callloc, ExprT && n, opt_named_term_list<ExprT> && args)
         : base_t{ std::move(callloc), std::move(args) }
         , fn_object{ std::move(n) }
     {}
@@ -376,10 +431,11 @@ struct unary_expression : pure_call<ExprT>
         : base_t{ std::move(loc) }
         , op{ opval }
     {
-        base_t::positioned_args.emplace_back(std::forward<ET>(e));
+        base_t::args_.emplace_back(opt_named_term<ExprT>(std::forward<ET>(e)));
+        //base_t::positioned_args.emplace_back(std::forward<ET>(e));
     }
 
-    lex::resource_location const& start() const { return get_start_location(base_t::positioned_args.front()); }
+    lex::resource_location const& start() const { return get_start_location(base_t::args_.front().value()); }
 };
 
 template <typename ExprT>
@@ -393,11 +449,13 @@ struct binary_expression : pure_call<ExprT>
         : base_t{ std::move(loc) }
         , op{ opval }
     {
-        base_t::positioned_args.emplace_back(std::forward<LeftET>(le));
-        base_t::positioned_args.emplace_back(std::forward<RightET>(re));
+        base_t::args_.emplace_back(opt_named_term<ExprT>(std::forward<LeftET>(le)));
+        base_t::args_.emplace_back(opt_named_term<ExprT>(std::forward<RightET>(re)));
+        //base_t::positioned_args.emplace_back(std::forward<LeftET>(le));
+        //base_t::positioned_args.emplace_back(std::forward<RightET>(re));
     }
 
-    lex::resource_location const& start() const { return get_start_location(base_t::positioned_args.front()); }
+    lex::resource_location const& start() const { return get_start_location(base_t::args_.front().value()); }
 };
 
 template <typename ExprT>
@@ -522,9 +580,14 @@ struct not_empty_expression
     ExprT value;
 };
 
-struct entity_expression
+//struct entity_expression
+//{
+//    entity_identifier id;
+//    lex::resource_location location;
+//};
+
+template <typename T> struct opt_named_syntax_expression_list : opt_named_term_list<T>
 {
-    entity_identifier id;
     lex::resource_location location;
 };
 
@@ -539,10 +602,15 @@ using syntax_expression_t = make_recursive_variant<
     //assign_expression<>, logic_and_expression<>, logic_or_expression<>, concat_expression<>,
     expression_vector<recursive_variant_>,
     function_call<recursive_variant_>,
-    entity_expression
+    annotated_entity_identifier,
+    opt_named_syntax_expression_list<recursive_variant_>
+    
     //, chained_expression<recursive_variant_>
     //, ctprocedure
 >::type;
+
+using opt_named_syntax_expression_t = opt_named_term<syntax_expression_t>;
+using opt_named_syntax_expression_list_t = opt_named_syntax_expression_list<syntax_expression_t>;
 
 using bang_parameter_pack_t = bang_parameter_pack<syntax_expression_t>;
 
@@ -617,8 +685,8 @@ struct fn_pure
     optional<ExprT> result;
     fn_kind kind = fn_kind::DEFAULT;
 
-    qname_view name() const { return aname.value; }
-    lex::resource_location const& location() const { return aname.location; }
+    inline qname_view name() const noexcept { return aname.value; }
+    inline lex::resource_location const& location() const noexcept { return aname.location; }
 };
 
 template <typename ExprT>
@@ -633,8 +701,8 @@ using expression_list_t = boost::container::small_vector<syntax_expression_t, 4>
 using opt_chain_t = opt_chain<syntax_expression_t>;
 using opt_chain_link_t = opt_chain_link<syntax_expression_t>;
 using chained_expression_t = chained_expression<syntax_expression_t>;
-using named_expression_term_t = named_expression_term<syntax_expression_t>;
-using named_expression_term_list_t = named_expression_term_list<syntax_expression_t>;
+using named_expression_t = opt_named_term<syntax_expression_t>;
+using named_expression_list_t = opt_named_term_list<syntax_expression_t>;
 using not_empty_expression_t = not_empty_expression<syntax_expression_t>;
 using member_expression_t = member_expression<syntax_expression_t>;
 using unary_expression_t = unary_expression<syntax_expression_t>;
@@ -667,7 +735,7 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     inline result_type operator()(member_expression_t const& me) const noexcept { return me.start(); }
     inline result_type operator()(property_expression const& me) const noexcept { return me.name.location; }
     inline result_type operator()(lambda_t const& le) const noexcept { return le.start; }
-    inline result_type operator()(entity_expression const& ee) const noexcept { return ee.location; }
+    //inline result_type operator()(annotated_entity_identifier const& ee) const noexcept { return ee.location; }
 
     inline result_type operator()(unary_expression_t const& ue) const noexcept { return ue.start(); }
     inline result_type operator()(binary_expression_t const& be) const noexcept { return be.start(); }
@@ -675,6 +743,8 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     inline result_type operator()(expression_vector_t const& v) const noexcept { return v.start; }
     inline result_type operator()(function_call_t const& f) const noexcept { return f.start(); }
 
+    inline result_type operator()(opt_named_syntax_expression_list_t const& sl) const noexcept { return sl.location; }
+    
     //template <typename T>
     //inline lex::resource_location const& operator()(T const&) const
     //{
@@ -883,6 +953,14 @@ struct type_decl
     lex::resource_location const& location() const { return aname.location; }
 };
 
+struct external_struct_decl
+{
+    annotated_qname_identifier aname;
+    field_list_t fields;
+
+    qname_identifier name() const { return aname.value; }
+    lex::resource_location const& location() const { return aname.location; }
+};
 
 
 struct extern_var
@@ -916,7 +994,7 @@ using generic_statement_type = variant<
 
 using statement_type = variant<
     extern_var, let_statement_decl_t, expression_statement_t, fn_pure_t,
-    include_decl, type_decl, enum_decl, return_decl_t,
+    include_decl, external_struct_decl, type_decl, enum_decl, return_decl_t,
     fn_decl_t, if_decl_t, while_decl_t
 >;
 

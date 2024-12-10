@@ -120,6 +120,7 @@ LET						"let"
 VAR						"var"
 ENUM					"enum"
 TYPE					"type"
+STRUCT					"struct"
 EXTENDS					"extends"
 EXTERN                  "extern"
 INCLUDE					"include"
@@ -301,6 +302,7 @@ HASHTAG					"#"
 	{VAR} { return (bang_lang::parser::token::VAR); }
 	{ENUM} { return (bang_lang::parser::token::ENUM); }
 	{TYPE} { return (bang_lang::parser::token::TYPE); }
+	{STRUCT} { return (bang_lang::parser::token::STRUCT); }
 	{EXTENDS} { return (bang_lang::parser::token::EXTENDS); }
 	{EXTERN} { return (bang_lang::parser::token::EXTERN); }
 	{INCLUDE} { return (bang_lang::parser::token::INCLUDE); }
@@ -340,7 +342,7 @@ HASHTAG					"#"
 	{ASSIGN}                { variant_emplace(location); return (bang_lang::parser::token::ASSIGN); }
 	{POINT}					{ variant_emplace(location); return (bang_lang::parser::token::POINT);	}
 	{UNDERSCORE}			{ return (bang_lang::parser::token::UNDERSCORE); }
-	{BITOR}				    { return (bang_lang::parser::token::BITOR);	}
+	{BITOR}				    { variant_emplace(location); return (bang_lang::parser::token::BITOR);	}
 	{EXCLPT}                { variant_emplace(location); return (bang_lang::parser::token::EXCLPT); }
 	{QMARK}                 { return (bang_lang::parser::token::QMARK); }
 	{DBLCOLON}              { return (bang_lang::parser::token::DBLCOLON); }

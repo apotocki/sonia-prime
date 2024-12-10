@@ -9,32 +9,33 @@
 
 namespace sonia::lang::bang {
 
-struct expected_result_t
-{
-    entity_identifier type;
-    lex::resource_location const& location;
-};
+//struct expected_result_t
+//{
+//    entity_identifier type;
+//    lex::resource_location const& location;
+//};
 
 // returns true if implicit cast was applied
 struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
 {
     fn_compiler_context& ctx;
-    optional<expected_result_t> expected_result;
+    //optional<expected_result_t> expected_result;
+    annotated_entity_identifier expected_result;
 
     // to do: set a flag to notice unneeded result
     explicit expression_visitor(fn_compiler_context& c)
         : ctx{ c }
     {}
 
-    expression_visitor(fn_compiler_context& c, expected_result_t && er)
+    expression_visitor(fn_compiler_context& c, annotated_entity_identifier && er)
         : ctx{ c }
         , expected_result{ std::move(er) }
     {}
 
-    expression_visitor(fn_compiler_context& c, optional<expected_result_t> opter)
-        : ctx{ c }
-        , expected_result{ std::move(opter) }
-    {}
+    //expression_visitor(fn_compiler_context& c, optional<expected_result_t> opter)
+    //    : ctx{ c }
+    //    , expected_result{ std::move(opter) }
+    //{}
 
     expression_visitor(fn_compiler_context& c, nullptr_t)
         : ctx{ c }
@@ -59,7 +60,7 @@ struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
 
     result_type operator()(lambda_t&) const;
 
-    result_type operator()(entity_expression const& ee) const;
+    result_type operator()(annotated_entity_identifier const& ee) const;
 
     result_type operator()(function_call_t const&) const;
     result_type operator()(unary_expression_t const& be) const;
@@ -75,8 +76,11 @@ struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
     //result_type operator()(binary_operator_t<binary_operator_type::PLUS>, binary_expression_t&) const;
     //result_type operator()(binary_operator_t<binary_operator_type::CONCAT>, binary_expression_t &) const;
 
+    result_type operator()(opt_named_syntax_expression_list_t const&) const;
+
     function_entity& handle_lambda(lambda_t&) const;
     std::expected<function_entity const*, error_storage> handle_property_get(annotated_identifier id) const;
+
 
 
     template <typename T>

@@ -56,12 +56,12 @@ void declaration_visitor::operator()(expression_statement_t const& ed) const
 void declaration_visitor::operator()(if_decl_t const& stm) const
 {
     ctx.pushed_unnamed_ns();
-    expression_visitor vis{ ctx, expected_result_t{ u().get_bool_entity_identifier(), get_start_location(stm.condition) } };
+    expression_visitor vis{ ctx, { u().get_bool_entity_identifier(), get_start_location(stm.condition) } };
     if (auto res = apply_visitor(vis, stm.condition); !res) {
         throw exception(u().print(*res.error()));
     }
     ctx.append_expression(semantic::conditional_t{});
-    semantic::conditional_t& cond = get<semantic::conditional_t>(ctx.expressions().back());
+    semantic::conditional_t & cond = get<semantic::conditional_t>(ctx.expressions().back());
 
     auto bst = ctx.expressions_branch(); // store branch
 
@@ -104,7 +104,7 @@ void declaration_visitor::operator()(while_decl_t const& wd) const
 
     ctx.push_chain(get<semantic::loop_scope_t>(ctx.expressions().back()).branch);
 
-    expression_visitor vis{ ctx, expected_result_t{ u().get_bool_entity_identifier(), get_start_location(wd.condition) } };
+    expression_visitor vis{ ctx, { u().get_bool_entity_identifier(), get_start_location(wd.condition) } };
     if (auto res = apply_visitor(vis, wd.condition); !res) {
         throw exception(u().print(*res.error()));
     }
@@ -320,9 +320,11 @@ function_entity & declaration_visitor::append_fnent(fn_pure_t& fnd, function_sig
 
 void declaration_visitor::operator()(fn_decl_t const& fnd) const
 {
-    auto fnptrn = make_shared<generic_fn_pattern>(ctx, fnd);
-    functional& f = u().resolve_functional(fnptrn->fn_qname_id());
-    f.push(std::move(fnptrn));
+    qname fn_qname = ctx.ns() / fnd.name();
+    functional& fnl = ctx.u().resolve_functional(fn_qname);
+
+    auto fnptrn = make_shared<generic_fn_pattern>(ctx, fnl, fnd);
+    fnl.push(std::move(fnptrn));
 
 #if 0
     //---------------
@@ -391,7 +393,7 @@ void declaration_visitor::operator()(let_statement_decl_t const& ld) const
     }
     ctx.context_type = ctx.u().get_void_entity_identifier();
     if (ld.expression) {
-        auto evis = vartype ? expression_visitor{ ctx, expected_result_t{ vartype, ld.location() } } : expression_visitor{ ctx };
+        auto evis = vartype ? expression_visitor{ ctx, { vartype, ld.location() } } : expression_visitor{ ctx };
         if (auto res = apply_visitor(evis, *ld.expression); !res) {
             /*
             BOOST_ASSERT(vartype);
@@ -419,7 +421,7 @@ void declaration_visitor::operator()(let_statement_decl_t const& ld) const
 //    if (!e.has_value()) throw exception(ctx.u().print(*e.error()));
 //    
 //    if (variable_entity const* ve = dynamic_cast<variable_entity const*>(e.value()); ve) {
-//        expression_visitor rvis{ ctx, expected_result_t{ ve->get_type(), ad.location } };
+//        expression_visitor rvis{ ctx, { ve->get_type(), ad.location } };
 //        auto opterr = apply_visitor(rvis, ad.rvalue);
 //        if (ve->is_weak()) {
 //            THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor assign_decl_t");
@@ -440,7 +442,7 @@ void declaration_visitor::operator()(return_decl_t const& rd) const
 {
     ctx.context_type = ctx.u().get_void_entity_identifier();
     size_t initial_branch = ctx.expressions_branch();
-    auto evis = ctx.result ? expression_visitor{ ctx, expected_result_t{ ctx.result, rd.location } } : expression_visitor{ ctx };
+    auto evis = ctx.result ? expression_visitor{ ctx, { ctx.result, rd.location } } : expression_visitor{ ctx };
     if (auto res = apply_visitor(evis, rd.expression); !res) {
         throw exception(ctx.u().print(*res.error()));
     }

@@ -104,7 +104,7 @@ public:
 
     void operator()(semantic::invoke_function const& invf) const;
 
-    void operator()(std::vector<semantic::expression_t> const& evec) const
+    void operator()(semantic::expression_list_t const& evec) const
     {
         for (auto const& e : evec) {
             //GLOBAL_LOG_INFO() << unit_.print(e);
@@ -114,12 +114,12 @@ public:
 
     void operator()(semantic::loop_scope_t const& s) const
     {
-        if (!s.continue_branch.empty()) {
+        if (s.continue_branch) {
             fnbuilder_.append_noop();
         }
         auto scope_begin_pos = fnbuilder_.make_label();
 
-        if (!s.continue_branch.empty()) {
+        if (s.continue_branch) {
             //fnbuilder_.append_noop();
             //auto jmpentry = fnbuilder_.current_entry();
             for (auto const& e : s.continue_branch) {
@@ -178,17 +178,17 @@ public:
 
     inline void operator()(semantic::conditional_t const& c) const
     {
-        if (c.false_branch.empty() && c.true_branch.empty()) return;
+        if (!c.false_branch && !c.true_branch) return;
         fnbuilder_.append_noop();
         auto branch_pt = fnbuilder_.current_entry();
-        if (c.false_branch.empty()) {
+        if (!c.false_branch) {
             for (auto const& e : c.true_branch) {
                 apply(e);
             }
             auto branch_end_pt = fnbuilder_.make_label();
             branch_pt->operation = asm_builder_t::op_t::jf;
             branch_pt->operand = branch_end_pt;
-        } else if (c.true_branch.empty()) {
+        } else if (!c.true_branch) {
             for (auto const& e : c.false_branch) {
                 apply(e);
             }
@@ -406,7 +406,7 @@ void compiler_visitor_base::operator()(semantic::invoke_function const& invf) co
             ivis.finalize();
             fnbuilder_.append_popfp();
         } else {
-            vmasm::fn_identity<qname_identifier> fnident{ fe->name() };
+            vmasm::fn_identity fnident{ fe->id() };
             fnbuilder_.append_call(fnident);
 
             //bvm().append_push_static_const(i64_blob_result((fe->parameter_count() + 1) * (fe->is_void() ? -1 : 1)));

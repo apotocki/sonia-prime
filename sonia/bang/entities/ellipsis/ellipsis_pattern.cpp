@@ -5,41 +5,45 @@
 #include "sonia/config.hpp"
 #include "ellipsis_pattern.hpp"
 
-#include "sonia/bang/entities/entity_signature.hpp"
+#include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "pack_entity.hpp"
 
 namespace sonia::lang::bang {
 
-// opeator ...(typename)
-std::expected<int, error_storage> ellipsis_pattern::is_matched(fn_compiler_context& ctx, pure_call_t const& call, functional::match_descriptor& md) const
+// operator ...(typename)
+std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
 {
-    if (!call.named_args.empty()) {
-        return std::unexpected(make_error<basic_general_error>(std::get<0>(call.named_args.front()).location, "unexpected named argument"sv));
-    }
-    if (call.positioned_args.empty()) {
+    if (call.args().empty()) {
         return std::unexpected(make_error<basic_general_error>(call.location(), "an argument is expected"sv));
     }
-    if (call.positioned_args.size() != 1) {
-        return std::unexpected(make_error<basic_general_error>(get_start_location(call.positioned_args[1]), "unexpected argument"sv));
+    auto const& opt_named_expr = call.args().front();
+    if (annotated_identifier const* optname = opt_named_expr.name(); optname) {
+        return std::unexpected(make_error<basic_general_error>(optname->location, "unexpected named argument"sv, optname->value));
     }
-    auto const& expr = call.positioned_args.front();
 
-    expression_visitor evis{ ctx, expected_result_t{ ctx.u().get_typename_entity_identifier(), get_start_location(expr) } };
+    if (call.args().size() != 1) {
+        return std::unexpected(make_error<basic_general_error>(get_start_location(call.args()[1].value()), "unexpected argument"sv));
+    }
+    
+    auto const& expr = opt_named_expr.value();
+
+    expression_visitor evis{ ctx, annotated_entity_identifier{ ctx.u().get_typename_entity_identifier(), get_start_location(expr) } };
     if (auto res = apply_visitor(evis, expr); !res) return std::unexpected(std::move(res.error()));
 
-    md.signature.set_name(ctx.u().get_ellipsis_qname_identifier());
+    auto pmd = make_shared<functional_match_descriptor>(ctx.u());
+    pmd->signature.set_name(ctx.u().get_ellipsis_qname_identifier());
 
-    std::span<semantic::expression_t> args = ctx.expressions();
+    auto& args = ctx.expressions();
     semantic::push_value const* pv = get<semantic::push_value>(&args.back());
     BOOST_ASSERT(pv);
     entity_identifier const* peid = get<entity_identifier>(&pv->value);
     BOOST_ASSERT(peid); // must be entity_identifier
-    md.signature.push({*peid, true});
-    return 0;
+    pmd->signature.set(0, {*peid, true});
+    return pmd;
 }
 
-std::expected<entity_identifier, error_storage> ellipsis_pattern::const_apply(fn_compiler_context& ctx, functional::match_descriptor& md) const
+std::expected<entity_identifier, error_storage> ellipsis_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     BOOST_ASSERT(md.signature.named_fields().empty());
     BOOST_ASSERT(md.signature.positioned_fields().size() == 1);

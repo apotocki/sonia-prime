@@ -1,5 +1,5 @@
 [
-
+    /*
     {
         "src": "file0.bang",
         "output": "Hello from Bang!"
@@ -8,16 +8,18 @@
         "src": "file1.bang",
         "arguments": [ "Hello", "from", "Bang!" ],
         "output": "Hello from Bang!"
-    },
-    /* */
+    },*/
     {
         "src": "file2.bang",
-        "output": "0123456789101112131415161718192021"
-    } /*, 
-
+        "output": "hello 0 hello world 22 1"
+    } /* , 
     {
         "src": "file3.bang",
         "output": "0123456789101112131415161718192021"
+    }
+    {
+        "src": "file4.bang",
+        "output": ""
     }
     */
 ]

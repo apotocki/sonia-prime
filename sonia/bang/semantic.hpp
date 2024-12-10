@@ -6,14 +6,16 @@
 
 #include <bit>
 #include <vector>
+
+#include <boost/intrusive/list.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+
 #include "sonia/variant.hpp"
 #include "sonia/string.hpp"
 
 #include "semantic_fwd.hpp"
 
 namespace sonia::lang::bang {
-
-class functional;
 
 // ======================================================================== types
 struct bang_object_t
@@ -411,8 +413,9 @@ struct function_signature
 
 
 namespace semantic {
+
 struct push_by_offset { size_t offset; }; // offset from the stack top
-  struct push_variable { variable_entity const* entity; };
+struct push_variable { variable_entity const* entity; };
 struct push_value { value_t value; };
 struct set_variable { variable_entity const* entity; };
 struct set_by_offset { size_t offset; }; // offset from the stack top
@@ -437,33 +440,7 @@ struct invoke_function
 //    optionality
 //};
 
-template <typename SemanticExpressionT>
-struct conditional
-{
-    //condition_type type;
-    std::vector<SemanticExpressionT> true_branch;
-    std::vector<SemanticExpressionT> false_branch;
-    uint8_t true_branch_finished : 1;
-    uint8_t false_branch_finished : 1;
 
-    conditional() : true_branch_finished{0}, false_branch_finished{0} {}
-};
-
-template <typename SemanticExpressionT>
-struct not_empty_condition
-{
-    std::vector<SemanticExpressionT> branch;
-};
-
-template <typename SemanticExpressionT>
-struct loop_scope
-{
-    std::vector<SemanticExpressionT> branch;
-    std::vector<SemanticExpressionT> continue_branch;
-};
-
-struct loop_continuer {};
-struct loop_breaker{};
 //template <typename SemanticExpressionT>
 //struct logic_tree_node
 //{
@@ -473,12 +450,105 @@ struct loop_breaker{};
 //    shared_ptr<logic_tree_node> false_branch;
 //};
 
-// make_recursive_variant<
+template <class ExprT>
+class expression_list
+{
+    struct entry : boost::intrusive::list_base_hook<>
+    {
+        ExprT value;
+        template <typename ArgT>
+        requires !std::is_same_v<entry, std::remove_cvref_t<ArgT>>
+        inline explicit entry(ArgT&& arg) : value{ std::forward<ArgT>(arg) }
+#if 1
+        {}
+#else
+        {
+            static size_t cnt = 0;
+            entry_num = cnt++;
+            if (entry_num == 3) {
+                entry_num = 3;
+            }
+            GLOBAL_LOG_INFO() << "created entry: " << entry_num;
+        }
+
+        ~entry() {
+            GLOBAL_LOG_INFO() << "deleted entry: " << entry_num;
+        }
+        size_t entry_num;
+#endif
+        entry(entry const&) = delete;
+        entry& operator=(entry const&) = delete;
+    };
+
+    using instruction_list_t = boost::intrusive::list<
+        entry,
+        boost::intrusive::base_hook<entry>>;
+
+    instruction_list_t list_;
+
+    static ExprT const& to_cexpr(entry const& e) noexcept { return e.value; }
+    static ExprT & to_expr(entry & e) noexcept { return e.value; }
+
+public:
+    using entry_type = entry;
+    using iterator = boost::transform_iterator<decltype(&to_expr), typename instruction_list_t::iterator>;
+    using const_iterator = boost::transform_iterator<decltype(&to_cexpr), typename instruction_list_t::const_iterator>;
+
+    inline explicit operator bool() const noexcept { return !list_.empty(); }
+
+    inline const_iterator begin() const noexcept { return const_iterator{ list_.begin(), to_cexpr }; }
+    inline const_iterator end() const noexcept { return const_iterator{ list_.end(), to_cexpr }; }
+    inline const_iterator last() const noexcept { return const_iterator{ --list_.end(), to_cexpr }; }
+    inline size_t size() const noexcept { return list_.size(); }
+
+    inline ExprT const& front() const noexcept { return list_.front().value; }
+    inline ExprT & front() noexcept { return list_.front().value; }
+    inline ExprT const& back() const noexcept { return list_.back().value; }
+    inline ExprT & back() noexcept { return list_.back().value; }
+    inline entry_type& back_entry() noexcept { return list_.back(); }
+
+    inline void push_back(entry_type& e) noexcept { list_.push_back(e); }
+    inline entry_type&& pop_back() noexcept { entry_type& be = list_.back(); list_.pop_back(); return std::move(be); }
+
+    void splice_back(expression_list& other, const_iterator first, const_iterator last) noexcept
+    {
+        list_.splice(list_.end(), other.list_, first.base(), last.base());
+    }
+};
+
+template <typename SemanticExpressionT>
+struct conditional
+{
+    //condition_type type;
+    expression_list<SemanticExpressionT> true_branch;
+    expression_list<SemanticExpressionT> false_branch;
+    uint8_t true_branch_finished : 1;
+    uint8_t false_branch_finished : 1;
+
+    conditional() : true_branch_finished{ 0 }, false_branch_finished{ 0 } {}
+};
+
+template <typename SemanticExpressionT>
+struct not_empty_condition
+{
+    expression_list<SemanticExpressionT> branch;
+};
+
+template <typename SemanticExpressionT>
+struct loop_scope
+{
+    expression_list<SemanticExpressionT> branch;
+    expression_list<SemanticExpressionT> continue_branch;
+};
+
+struct loop_continuer {};
+struct loop_breaker {};
+
 using expression_t = make_recursive_variant<
     empty_t, // no op
     push_variable, push_value, push_by_offset, truncate_values,
     set_variable, set_by_offset, invoke_function, return_statement, loop_breaker, loop_continuer,
-    std::vector<recursive_variant_>,
+    expression_list<recursive_variant_>,
     conditional<recursive_variant_>,
     not_empty_condition<recursive_variant_>,
     loop_scope<recursive_variant_>
@@ -490,6 +560,8 @@ using not_empty_condition_t = not_empty_condition<expression_t>;
 using loop_scope_t = loop_scope<expression_t>;
 //using logic_tree_node_t = logic_tree_node<expression_t>;
 
+using expression_list_t = expression_list<expression_t>;
+
 }
 
 using semantic_expression_pair = std::pair<semantic::expression_t, bang_type>;
@@ -500,22 +572,6 @@ class function_scope_type
 {
 
 };
-
-/*
-class function_t
-{
-public:
-    virtual ~function_t() = default;
-};
-
-class implemented_function : public function_t
-{
-public:
-    qname name;
-    std::vector<semantic::expression_t> body;
-    bool is_inline = false;
-};
-*/
 
 }
 

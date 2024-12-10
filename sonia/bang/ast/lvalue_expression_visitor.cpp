@@ -178,7 +178,12 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(cha
     THROW_NOT_IMPLEMENTED_ERROR();
 }
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(entity_expression const& ee) const
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_entity_identifier const& ee) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR();
+}
+
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(opt_named_syntax_expression_list_t const& el) const
 {
     THROW_NOT_IMPLEMENTED_ERROR();
 }

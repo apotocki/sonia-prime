@@ -15,6 +15,7 @@
 #include "sonia/utility/lang/parameterized_identifier_registry.hpp"
 #include "sonia/utility/lang/qname_registry.hpp"
 #include "sonia/utility/lang/entity_registry.hpp"
+#include "sonia/utility/lang/compiler.hpp"
 
 #include "boost/conversion/unicode/utf.hpp"
 #include "boost/conversion/push_iterator.hpp"
@@ -84,6 +85,10 @@ class unit
 
     std::vector<small_string> strings_;
 
+    compiler_task_tracer task_tracer_;
+
+    object_pool<semantic::expression_list_t::entry_type> semantic_expression_list_entry_pool_;
+
 public:
     enum class builtin_type
     {
@@ -103,6 +108,7 @@ public:
     };
 
     unit();
+    ~unit();
 
     void set_efn(size_t idx, qname_identifier);
 
@@ -130,6 +136,8 @@ public:
     piregistry_t& piregistry() { return piregistry_; }
     eregistry_t& eregistry() { return eregistry_; }
     
+    inline compiler_task_tracer & task_tracer() noexcept { return task_tracer_; }
+
     // global constants rotine
     //size_t allocate_constant_index();
 
@@ -142,9 +150,10 @@ public:
     inline entity_identifier get_decimal_entity_identifier() const noexcept { return decimal_entity_identifier_; }
     inline entity_identifier get_integer_entity_identifier() const noexcept { return integer_entity_identifier_; }
     inline entity_identifier get_bool_entity_identifier() const noexcept { return bool_entity_identifier_; }
-
+    
     inline qname_identifier get_fn_qname_identifier() const noexcept { return fn_qname_identifier_; }
     inline qname_identifier get_ellipsis_qname_identifier() const noexcept { return ellipsis_qname_identifier_; }
+    inline qname_identifier get_tuple_qname_identifier() const noexcept { return tuple_qname_identifier_; }
     inline qname_identifier get_string_qname_identifier() const noexcept { return string_qname_identifier_; }
     inline qname_identifier get_decimal_qname_identifier() const noexcept { return decimal_qname_identifier_; }
     inline qname_identifier get_integer_qname_identifier() const noexcept { return integer_qname_identifier_; }
@@ -237,6 +246,9 @@ public:
         }
     }
 
+    void push_back_expression(semantic::expression_list_t&, semantic::expression_t&&);
+    void release(semantic::expression_list_t::entry_type&&);
+
 protected:
     void setup_type(string_view type_name, qname_identifier&, entity_identifier&);
 
@@ -254,6 +266,7 @@ private:
 
     qname_identifier fn_qname_identifier_; // :: __fn -- the marker of a function type
     qname_identifier ellipsis_qname_identifier_; // :: ...
+    qname_identifier tuple_qname_identifier_; //(...)
     qname_identifier string_qname_identifier_; // :: string
     qname_identifier decimal_qname_identifier_; // :: decimal
     qname_identifier integer_qname_identifier_; // :: integer

@@ -40,33 +40,7 @@ public:
     std::vector<entity const*> bases;
 
     void treat(fn_compiler_context&);
-    /*
-    struct function_descriptor
-    {
-        shared_ptr<function_t> fn;
-        std::vector<identifier> param_names;
 
-        friend inline bool operator==(function_descriptor const& l, function_descriptor const& r)
-        {
-            return range_equal{}(l.param_names, r.param_names);
-        }
-
-        friend inline bool operator==(function_descriptor const& l, span<const identifier> r)
-        {
-            return range_equal{}(l.param_names, r);
-        }
-
-        friend inline bool operator==(span<const identifier> const& l, function_descriptor const& r)
-        {
-            return range_equal{}(l, r.param_names);
-        }
-
-        friend inline size_t hash_value(function_descriptor const& v)
-        {
-            return hasher{}(v.param_names);
-        }
-    };
-    */
 private:
     bool handling_ = false;
     bool handled_ = false;

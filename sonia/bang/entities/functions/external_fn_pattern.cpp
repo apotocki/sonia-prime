@@ -10,29 +10,31 @@
 
 namespace sonia::lang::bang {
 
-std::expected<entity_identifier, error_storage> external_fn_pattern::const_apply(fn_compiler_context& ctx, functional::match_descriptor&) const
+std::expected<entity_identifier, error_storage> external_fn_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor&) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("external_fn_pattern::const_apply");
 }
 
-//std::expected<entity_identifier, error_storage> external_fn_pattern::apply(fn_compiler_context& ctx, functional::match_descriptor&) const
-//{
-//    THROW_NOT_IMPLEMENTED_ERROR("external_fn_pattern::apply");
-//#if 0
-//    ctx.append_expression(semantic::invoke_external_function{ extfnid_ });
-//    ctx.pop_chain(); // function call chain
-//    pattern_expression_t const* r = fd_.result_type();
-//    BOOST_ASSERT(r);
-//
-//    return fd_.result_type();
-//#endif
-//}
+#if 0
+std::expected<entity_identifier, error_storage> external_fn_pattern::apply(fn_compiler_context& ctx, functional::match_descriptor&) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR("external_fn_pattern::apply");
+#if 0
+    ctx.append_expression(semantic::invoke_function{ extfnid_ });
+    ctx.pop_chain(); // function call chain
+    pattern_expression_t const* r = fd_.result_type();
+    BOOST_ASSERT(r);
 
-shared_ptr<entity> external_fn_pattern::build(unit& u, functional::match_descriptor& md) const
+    return fd_.result_type();
+#endif
+}
+#endif
+
+shared_ptr<entity> external_fn_pattern::build(unit& u, functional_match_descriptor& md) const
 {
     BOOST_ASSERT(md.result);
-    auto pfe = make_shared<external_function_entity>(fn_qname_id(), std::move(md.signature), extfnid_);
-    pfe->build_fn_signature(u, md.result);
+    auto pfe = make_shared<external_function_entity>(fn_qname() / u.new_identifier(), std::move(md.signature), extfnid_);
+    //pfe->build_fn_signature(u, md.result);
     return pfe;
     //THROW_NOT_IMPLEMENTED_ERROR("external_fn_pattern::build");
 }

@@ -14,6 +14,7 @@
 #include "entities/internal_type_entity.hpp"
 #include "entities/ellipsis/ellipsis_pattern.hpp"
 #include "entities/functions/external_fn_pattern.hpp"
+#include "entities/tuple/tuple_pattern.hpp"
 
 #include "semantic/expression_printer.hpp"
 
@@ -85,10 +86,10 @@ qname_identifier unit::make_qname_identifier(string_view sv)
 std::string unit::describe_efn(size_t fn_index) const
 {
     auto pair = bvm_->efns().at(fn_index);
-    if (std::get<1>(pair).empty()) {
-        return ("#%1% at 0x%2$x"_fmt % fn_index % (uintptr_t)std::get<0>(pair)).str();
+    if (get<1>(pair).empty()) {
+        return ("#%1% at 0x%2$x"_fmt % fn_index % (uintptr_t)get<0>(pair)).str();
     } else {
-        return ("#%1% '%2%'"_fmt % fn_index % std::string(std::get<1>(pair))).str();
+        return ("#%1% '%2%'"_fmt % fn_index % std::string(get<1>(pair))).str();
     }
 }
 
@@ -104,12 +105,12 @@ void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
 
     // if the result is not defined we can not resove it (e.g. from the function body) => suppose that it is void
     if (!fndecl.result) {
-        fndecl.result = entity_expression(get_void_entity_identifier(), fndecl.location());
+        fndecl.result = annotated_entity_identifier{ get_void_entity_identifier(), fndecl.location() };
     }
 
-    auto eptrn = make_shared<external_fn_pattern>(ctx, fndecl, fn_identifier_counter_);
-    functional& f = ctx.u().fregistry().resolve(eptrn->fn_qname_id());
-    f.push(eptrn);
+    qname fn_qname = ctx.ns() / fndecl.name();
+    functional& f = ctx.u().resolve_functional(fn_qname);
+    f.push(make_shared<external_fn_pattern>(ctx, f, fndecl, fn_identifier_counter_));
 
     // to do: mangled name
     bvm_->set_efn(fn_identifier_counter_++, pfn, small_string{print(fndecl.name())});
@@ -143,6 +144,7 @@ unit::unit()
     , piregistry_{ identifier_builder_ }
     , fn_identifier_counter_ { (size_t)virtual_stack_machine::builtin_fn::eof_type }
     , bvm_{ std::make_unique<virtual_stack_machine>() }
+    , semantic_expression_list_entry_pool_{ 128, 128 }
 {
     //set_extern("string(const __id)"sv, &bang_print_string);
 
@@ -246,12 +248,13 @@ unit::unit()
     // string
     setup_type("string"sv, string_qname_identifier_, string_entity_identifier_);
         
-
     // tuple
-    qname_identifier tuple_qnid = make_qname_identifier("tuple"sv);
-    
+    tuple_qname_identifier_ = make_qname_identifier("tuple"sv);
+    functional& tuple_fnl = fregistry().resolve(tuple_qname_identifier_);
+    tuple_fnl.push(make_shared<tuple_pattern>());
+
     // void
-    auto void_entity = make_shared<basic_signatured_entity>(typename_entity_identifier_, entity_signature{ tuple_qnid });
+    auto void_entity = make_shared<basic_signatured_entity>(typename_entity_identifier_, entity_signature{ tuple_qname_identifier_ });
     eregistry().insert(void_entity);
 
     void_entity_identifier_ = void_entity->id();
@@ -298,6 +301,11 @@ unit::unit()
     set_extern("negate(any)->bool"sv, &bang_negate);
     set_extern("__plus(integer,integer)->integer"sv, &bang_operator_plus_integer);
     set_extern("__plus(decimal,decimal)->decimal"sv, &bang_operator_plus_decimal);
+}
+
+unit::~unit()
+{
+    eregistry_.clear();
 }
 
 void unit::setup_type(string_view type_name, qname_identifier& qnid, entity_identifier& eid)
@@ -408,21 +416,19 @@ std::string unit::print(entity_signature const& sgn) const
         ss << '(';
         bool first = true;
 
-        auto name_it = sgn.names().begin();
-        for (auto const& f : sgn.named_fields()) {
+        //auto name_it = sgn.names().begin();
+        for (auto const& [name, fd] : sgn.named_fields()) {
             if (first) first = false;
             else ss << ", "sv;
-            ss << print(*name_it) << ": "sv;
-            if (f.is_const()) ss << "const "sv;
-            ss << print(f.entity_id());
-            ++name_it;
+            ss << print(name) << ": "sv;
+            if (fd.is_const()) ss << "const "sv;
+            ss << print(fd.entity_id());
         }
-        BOOST_ASSERT(name_it == sgn.names().end());
-        for (auto const&f : sgn.positioned_fields()) {
+        for (auto const& fd : sgn.positioned_fields()) {
             if (first) first = false;
             else ss << ", "sv;
-            if (f.is_const()) ss << "const "sv;
-            ss << print(f.entity_id());
+            if (fd.is_const()) ss << "const "sv;
+            ss << print(fd.entity_id());
         }
 
         ss << ")";
@@ -432,7 +438,7 @@ std::string unit::print(entity_signature const& sgn) const
 
 std::string unit::print(qname_view qn) const
 {
-    boost::container::small_vector<char, 32> result;
+    small_vector<char, 32> result;
     name_printer(qn, std::back_inserter(result), [](identifier const& id, string_view prefix, auto & oi) {
         std::ostringstream ss;
         ss << prefix << "@"sv << id.value;
@@ -496,10 +502,10 @@ struct type_printer_visitor : static_visitor<void>
         ss << '(';
         for (auto const& f : tpl.fields) {
             if (&f != &tpl.fields.front()) ss << ',';
-            if (f.name) {
-                ss << u_.print(f.name->value) << ": "sv;
+            if (auto* pname = f.name(); pname) {
+                ss << u_.print(pname->value) << ": "sv;
             }
-            apply_visitor(*this, f.type);
+            apply_visitor(*this, f.value());
         }
         ss << ')';
     }
@@ -764,16 +770,16 @@ struct expr_printer_visitor : static_visitor<void>
     void operator()(unary_expression_t const& be) const
     {
         ss << "unary("sv << (int)be.op << ", "sv;
-        apply_visitor(*this, be.positioned_args[0]);
+        apply_visitor(*this, be[0].value());
         ss << ')';
     }
 
     void operator()(binary_expression_t const& be) const
     {
         ss << "binary("sv << (int)be.op << ", "sv;
-        apply_visitor(*this, be.positioned_args[0]);
+        apply_visitor(*this, be[0].value());
         ss << ", "sv;
-        apply_visitor(*this, be.positioned_args[1]);
+        apply_visitor(*this, be[1].value());
         ss << ')';
     }
 
@@ -787,11 +793,26 @@ struct expr_printer_visitor : static_visitor<void>
         THROW_NOT_IMPLEMENTED_ERROR();
     }
 
-    void operator()(entity_expression const& f) const
+    void operator()(annotated_entity_identifier const& f) const
     {
         THROW_NOT_IMPLEMENTED_ERROR();
     }
 
+    void operator()(opt_named_syntax_expression_list_t const& nel) const
+    {
+        ss << '(';
+        bool is_first = true;
+        for (auto const& ne: nel) {
+            if (is_first) is_first = false;
+            else ss << ", "sv;
+            if (auto const* pname = ne.name(); pname) {
+                this->operator()(pname->value);
+                ss << ": "sv;
+            }
+            apply_visitor(*this, ne.value());
+        }
+        ss << ')';
+    }
     /*
     template <typename T>
     void operator()(T const& te) const
@@ -874,4 +895,16 @@ functional& unit::resolve_functional(qname_identifier fid)
     //functional& f = fregistry().resolve(fid);
 }
 
+void unit::push_back_expression(semantic::expression_list_t& l, semantic::expression_t&& e)
+{
+    semantic::expression_list_t::entry_type * pentry = semantic_expression_list_entry_pool_.new_object(std::move(e));
+    l.push_back(*pentry);
 }
+
+void unit::release(semantic::expression_list_t::entry_type&& e)
+{
+    semantic_expression_list_entry_pool_.delete_object(&e);
+}
+
+}
+

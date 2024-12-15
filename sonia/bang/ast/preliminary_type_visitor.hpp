@@ -24,7 +24,7 @@ struct preliminary_type_visitor : static_visitor<entity_identifier>
 {
     fn_compiler_context& ctx;
 
-    preliminary_type_visitor(fn_compiler_context& c)
+    inline explicit preliminary_type_visitor(fn_compiler_context& c) noexcept
         : ctx{ c }
     {}
 
@@ -44,6 +44,9 @@ struct preliminary_type_visitor : static_visitor<entity_identifier>
     {
         THROW_NOT_IMPLEMENTED_ERROR();
     }
+
+private:
+    unit& u() const noexcept;
 };
 
 #if 0

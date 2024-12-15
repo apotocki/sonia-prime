@@ -8,10 +8,10 @@
 
 namespace sonia::lang::bang {
 
-class tuple_pattern : public functional::pattern
+class create_identifier_pattern : public functional::pattern
 {
 public:
-    tuple_pattern() = default;
+    create_identifier_pattern() = default;
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;

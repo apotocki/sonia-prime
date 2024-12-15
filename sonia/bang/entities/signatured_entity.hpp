@@ -142,17 +142,26 @@ class signatured_entity : public entity
 public:
     using entity::entity;
 
-    size_t hash() const noexcept override final
+    inline size_t hash() const noexcept override final
     {
         return hash_value(*signature());
     }
 
+    inline bool equal(signatured_entity const& rhs) const noexcept
+    {
+        return *rhs.signature() == *signature();
+    }
+
     bool equal(entity const& rhs) const noexcept override final
     {
-        if (signatured_entity const* pr = dynamic_cast<signatured_entity const*>(&rhs); pr) {
-            return *pr->signature() == *signature();
-        }
-        return false;
+        entity_signature const* prhssig = rhs.signature();
+        if (!prhssig) return false;
+        return *signature() == *prhssig;
+
+        //if (signatured_entity const* pr = dynamic_cast<signatured_entity const*>(&rhs); pr) {
+        //    return equal(*pr);
+        //}
+        //return false;
     }
 
     std::ostream& print_to(std::ostream& os, unit const& u) const override;

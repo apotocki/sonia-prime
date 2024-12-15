@@ -29,7 +29,7 @@ struct forward_declaration_visitor : static_visitor<void>
 
     void operator()(type_decl&);
 
-    void operator()(extern_var&) { THROW_NOT_IMPLEMENTED_ERROR("extern_var"); }
+    //void operator()(extern_var&) { THROW_NOT_IMPLEMENTED_ERROR("extern_var"); }
 
     template <typename T>
     void operator()(T & d)

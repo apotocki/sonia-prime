@@ -158,8 +158,8 @@ std::string vm::context::ecall_describe(size_t fn_index) const
     case builtin_fn::weak_create: return "weak_create";
     case builtin_fn::weak_lock: return "weak_lock";
     case builtin_fn::function_constructor: return "function_constructor";
-    case builtin_fn::extern_object_create: return "extern_object_create";
-    case builtin_fn::extern_object_set_property: return "extern_object_set_property";
+    //case builtin_fn::extern_object_create: return "extern_object_create";
+    //case builtin_fn::extern_object_set_property: return "extern_object_set_property";
     case builtin_fn::extern_object_get_property: return "extern_object_get_property";
     case builtin_fn::extern_variable_get: return "extern_variable_get";
     case builtin_fn::extern_variable_set: return "extern_variable_set";
@@ -178,7 +178,7 @@ std::string vm::context::ecall_describe(size_t fn_index) const
 
 small_string vm::context::generate_object_id() const
 {
-    using buff_t = boost::container::small_vector<char, 16>;
+    using buff_t = small_vector<char, 16>;
     buff_t tailored_name = { '_', 'i', 'd' };
     bool reversed;
     mp::to_string(std::span{ &id_counter_, 1 }, std::back_inserter(tailored_name), reversed);
@@ -189,7 +189,7 @@ small_string vm::context::generate_object_id() const
 
 small_string vm::context::camel2kebab(string_view cc)
 {
-    boost::container::small_vector<char, 64> buff;
+    small_vector<char, 64> buff;
     bool first = true;
     for (char c : cc) {
         if (std::isupper(c)) {
@@ -295,19 +295,19 @@ void vm::context::construct_extern_object()
 #endif
 
 // type -> obj
-void vm::context::extern_object_create()
-{
-    string_view name = stack_back().as<string_view>();
-    if (name.starts_with("::"sv)) {
-        name = name.substr(2);
-        name = name.substr(2);
-    }
-    smart_blob resobj = penv_->invoke("create"sv, { string_blob_result(camel2kebab(name)) });
-    if (resobj->type == blob_type::error) {
-        throw exception(resobj.as<std::string>());
-    }
-    stack_back().replace(std::move(resobj));
-}
+//void vm::context::extern_object_create()
+//{
+//    string_view name = stack_back().as<string_view>();
+//    if (name.starts_with("::"sv)) {
+//        name = name.substr(2);
+//        name = name.substr(2);
+//    }
+//    smart_blob resobj = penv_->invoke("create"sv, { string_blob_result(camel2kebab(name)) });
+//    if (resobj->type == blob_type::error) {
+//        throw exception(resobj.as<std::string>());
+//    }
+//    stack_back().replace(std::move(resobj));
+//}
 
 // (obj, propName)->value
 void vm::context::extern_object_get_property()
@@ -321,14 +321,14 @@ void vm::context::extern_object_get_property()
 }
 
 // (obj, value, propName)->(obj, value)
-void vm::context::extern_object_set_property()
-{
-    using namespace sonia::invocation;
-    shared_ptr<invocable> obj = stack_back(2).as<wrapper_object<shared_ptr<invocable>>>().value;
-    string_view prop_name = stack_back().as<string_view>();
-    obj->set_property(camel2kebab(prop_name), *stack_back(1));
-    stack_pop();
-}
+//void vm::context::extern_object_set_property()
+//{
+//    using namespace sonia::invocation;
+//    shared_ptr<invocable> obj = stack_back(2).as<wrapper_object<shared_ptr<invocable>>>().value;
+//    string_view prop_name = stack_back().as<string_view>();
+//    obj->set_property(camel2kebab(prop_name), *stack_back(1));
+//    stack_pop();
+//}
 
 void vm::context::construct_function()
 {
@@ -455,8 +455,8 @@ virtual_stack_machine::virtual_stack_machine()
     set_efn((size_t)builtin_fn::weak_create, [](vm::context& ctx) { ctx.weak_create(); });
     set_efn((size_t)builtin_fn::weak_lock, [](vm::context& ctx) { ctx.weak_lock(); });
     set_efn((size_t)builtin_fn::function_constructor, [](vm::context& ctx) { ctx.construct_function(); });
-    set_efn((size_t)builtin_fn::extern_object_create, [](vm::context& ctx) { ctx.extern_object_create(); });
-    set_efn((size_t)builtin_fn::extern_object_set_property, [](vm::context& ctx) { ctx.extern_object_set_property(); });
+    //set_efn((size_t)builtin_fn::extern_object_create, [](vm::context& ctx) { ctx.extern_object_create(); });
+    //set_efn((size_t)builtin_fn::extern_object_set_property, [](vm::context& ctx) { ctx.extern_object_set_property(); });
     set_efn((size_t)builtin_fn::extern_object_get_property, [](vm::context& ctx) { ctx.extern_object_get_property(); });
     set_efn((size_t)builtin_fn::extern_function_call, [](vm::context& ctx) { ctx.extern_function_call(); });
     set_efn((size_t)builtin_fn::extern_variable_get, [](vm::context& ctx) { ctx.extern_variable_get(); });

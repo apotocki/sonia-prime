@@ -141,4 +141,29 @@ void bang_int2dec(vm::context& ctx)
     ctx.stack_back().replace(std::move(res));
 }
 
+void bang_create_extern_object(vm::context& ctx)
+{
+    string_view name = ctx.stack_back().as<string_view>();
+    if (name.starts_with("::"sv)) {
+        name = name.substr(2);
+        name = name.substr(2);
+    }
+
+    smart_blob resobj = ctx.env().invoke("create"sv, { string_blob_result(ctx.camel2kebab(name)) });
+    if (resobj->type == blob_type::error) {
+        throw exception(resobj.as<std::string>());
+    }
+    ctx.stack_back().replace(std::move(resobj));
+}
+
+// (obj, propName, value)->obj
+void bang_set_object_property(vm::context& ctx)
+{
+    using namespace sonia::invocation;
+    shared_ptr<invocable> obj = ctx.stack_back(2).as<wrapper_object<shared_ptr<invocable>>>().value;
+    string_view prop_name = ctx.stack_back(1).as<string_view>();
+    obj->set_property(ctx.camel2kebab(prop_name), *ctx.stack_back());
+    ctx.stack_pop(2);
+}
+
 }

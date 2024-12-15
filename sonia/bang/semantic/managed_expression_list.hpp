@@ -22,6 +22,7 @@ public:
     managed_expression_list(managed_expression_list &&) = default;
     managed_expression_list& operator= (managed_expression_list &&) = default;
 
+    inline void clear() noexcept { clear(*this); }
     void clear(expression_list_t&) noexcept;
 
     ~managed_expression_list();

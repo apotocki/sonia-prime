@@ -31,6 +31,7 @@ inline unit& expression_visitor::u() const noexcept { return ctx.u(); }
 template <typename ExprT>
 inline expression_visitor::result_type expression_visitor::apply_cast(entity_identifier typeeid, ExprT const& e) const
 {
+    BOOST_ASSERT(typeeid);
     if (!expected_result) {
         ctx.context_type = typeeid;
         return false;
@@ -62,9 +63,9 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
             std::move(match.error())
         ));
     }
-    auto [ptrn, pmd] = std::move(*match);
-    auto optres = ptrn->apply(ctx, *pmd);
-    if (!optres) return std::unexpected(std::move(optres.error()));
+    
+    if (auto err = match->apply(ctx); err)
+        return std::unexpected(std::move(err));
 
     return true;
 
@@ -727,10 +728,9 @@ expression_visitor::result_type expression_visitor::operator()(functional const&
 {
     auto match = fnl.find(ctx, call, expected_result);
     if (!match) return std::unexpected(std::move(match.error()));
-    auto [ptrn, pmd] = std::move(*match);
-    auto optres = ptrn->apply(ctx, *pmd);
-    if (!optres) return std::unexpected(std::move(optres.error()));
-    return apply_cast(optres.value(), call);
+    
+    if (auto err = match->apply(ctx); err) return std::unexpected(std::move(err));
+    return apply_cast(ctx.context_type, call);
 }
 
 expression_visitor::result_type expression_visitor::operator()(function_call_t const& proc) const
@@ -806,9 +806,9 @@ expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_
         }
         auto match = tuple_fn.find(ctx, tuple_call, expected_result);
         if (!match) return std::unexpected(match.error());
-        auto [ptrn, pmd] = std::move(*match);
-        auto optres = ptrn->apply(ctx, *pmd);
-        if (!optres) return std::unexpected(std::move(optres.error()));
+       
+        if (auto err = match->apply(ctx); err)
+            return std::unexpected(std::move(err));
         return false; // no implicit cast
     }
         ////// build tuple

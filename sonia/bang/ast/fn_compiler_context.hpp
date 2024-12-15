@@ -3,9 +3,10 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #pragma once
-#include <boost/unordered_map.hpp>
+//#include <boost/unordered_map.hpp>
 
 #include "sonia/exceptions.hpp"
+#include "sonia/small_vector.hpp"
 
 #include "sonia/bang/errors.hpp"
 #include "sonia/bang/semantic.hpp"
@@ -108,7 +109,7 @@ public:
         ns_.truncate(ns_.parts().size() - 1);
     }
 
-    unit& u() const { return unit_; }
+    inline unit& u() const noexcept { return unit_; }
 
     //std::expected<int, error_storage> build_fieldset(fn_pure_t const&, patern_fieldset_t&);
     error_storage build_function_descriptor(fn_pure_t const& pure_decl, function_descriptor& fds);
@@ -177,9 +178,9 @@ public:
     //    return new_variable(argid, std::move(t), variable_entity::kind::SCOPE_LOCAL);
     //}
 
-    variable_entity& new_variable(annotated_identifier name, entity_identifier t, variable_entity::kind k);
+    variable_entity& new_variable(annotated_identifier, entity_identifier type, variable_entity::kind);
 
-    boost::container::small_vector<std::pair<variable_entity*, variable_entity*>, 16> captured_variables;
+    small_vector<std::pair<variable_entity*, variable_entity*>, 16> captured_variables;
 
     variable_entity& new_captured_variable(identifier name, entity_identifier t, variable_entity& caption)
     {

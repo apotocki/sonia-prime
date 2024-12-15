@@ -222,30 +222,33 @@ std::expected<entity_identifier, error_storage> parameter_matcher::apply_binding
     THROW_NOT_IMPLEMENTED_ERROR("parameter_matcher::apply_binding");
 }
 
-variant<std::pair<entity_identifier, int>, parameter_matcher::postpone_t, error_storage> parameter_matcher::try_forward_match(fn_compiler_context& ctx, syntax_expression_t const& se, functional_binding_set& b) const
+variant<int, parameter_matcher::postpone_t, error_storage> parameter_matcher::try_forward_match(fn_compiler_context& ctx, syntax_expression_t const& se, functional_binding_set& b, parameter_match_result& mr) const
 {
     if (variadic) return postpone_t{};
-    auto res = try_match(ctx, se, b);
+    auto res = try_match(ctx, se, b, mr);
     if (!res) return std::move(res.error());
     return *res;
 }
 
-std::expected<std::pair<entity_identifier, int>, error_storage> parameter_matcher::try_match(fn_compiler_context& ctx, syntax_expression_t const& e, functional_binding_set& binding) const
+std::expected<int, error_storage> parameter_matcher::try_match(fn_compiler_context& ctx, syntax_expression_t const& e, functional_binding_set& binding, parameter_match_result& mr) const
 {
     //if (constraint.which()) { // not empty
         switch (descriptor_.modifier) {
             case parameter_constraint_modifier_t::value_type_constraint:
             {
+                auto last_expr_it = ctx.expressions().last();
                 if (auto const& optexpr = descriptor_.constraints.type_expression; optexpr) {
                     value_type_constraint_match_visitor vtcv{ ctx, e, binding };
                     auto res = apply_visitor(vtcv, *optexpr);
                     if (!res) return std::unexpected(std::move(res.error()));
-                    return std::pair{*res, vtcv.weight};
+                    mr.append_result(is_variadic(), *res, last_expr_it, ctx.expressions());
+                    return vtcv.weight;
                 } else {
                     expression_visitor evis{ ctx };
                     auto res = apply_visitor(evis, e);
                     if (!res) return std::unexpected(std::move(res.error()));
-                    return std::pair{ ctx.context_type, -1 };
+                    mr.append_result(is_variadic(), ctx.context_type, last_expr_it, ctx.expressions());
+                    return -1; // unspecified type constraint has less priority than specified one
                 }
             }
             case parameter_constraint_modifier_t::typename_constraint:
@@ -258,9 +261,28 @@ std::expected<std::pair<entity_identifier, int>, error_storage> parameter_matche
                     value_type_constraint_visitor vtcv{ ctx, binding };
                     auto res = apply_visitor(vtcv, *optexpr);
                     if (!res) return std::unexpected(std::move(res.error())); // perhaps pattern?
-                    if (*res == *argres) return std::pair{ *res, 0 };
+                    if (*res == *argres) {
+                        mr.append_result(is_variadic(), *res);
+                        return 0;
+                    }
                     return std::unexpected(make_error<type_mismatch_error>(get_start_location(e), *argres, *res, get_start_location(*optexpr)));
                 }
+                THROW_NOT_IMPLEMENTED_ERROR("parameter_matcher::try_match");
+            }
+            case parameter_constraint_modifier_t::value_constraint:
+            {
+                if (auto const& optexpr = descriptor_.constraints.type_expression; optexpr) {
+                    value_type_constraint_visitor vtcv{ ctx, binding };
+                    auto res = apply_visitor(vtcv, *optexpr);
+                    if (!res) return std::unexpected(std::move(res.error())); // perhaps pattern?
+
+                    ct_expression_visitor evis{ ctx, annotated_entity_identifier{ *res, get_start_location(*optexpr) } };
+                    auto argres = apply_visitor(evis, e);
+                    if (!argres) return std::unexpected(std::move(argres.error()));
+                    mr.append_result(is_variadic(), *argres);
+                    return 0;
+                }
+
                 THROW_NOT_IMPLEMENTED_ERROR("parameter_matcher::try_match");
             }
         }
@@ -285,9 +307,9 @@ std::expected<std::pair<entity_identifier, int>, error_storage> varnamed_matcher
 //    }
 //};
 
-std::expected<std::pair<entity_identifier, int>, error_storage> named_parameter_matcher::try_match(fn_compiler_context& ctx, syntax_expression_t const& e, functional_binding_set& bs) const
+std::expected<int, error_storage> named_parameter_matcher::try_match(fn_compiler_context& ctx, syntax_expression_t const& e, functional_binding_set& bs, parameter_match_result& mr) const
 {
-    return impl_->try_match(ctx, e, bs);
+    return impl_->try_match(ctx, e, bs, mr);
     //THROW_NOT_IMPLEMENTED_ERROR("named_parameter_matcher::try_match");
 }
 
@@ -442,6 +464,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         throw circular_dependency_error({ make_error<basic_general_error>(location_, "resolving function signature"sv, fn_qname_id()) });
     }
 
+    parameter_match_result rmatch; // function's return
     // prepare binding
     auto pmd = make_shared<functional_match_descriptor>(ctx.u());
     pmd->bindings.reset(local_variables_.size());
@@ -451,7 +474,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
 
     // deal with result match
     if (expected_result_type && result_matcher_ && result_matcher_->is_pattern()) {
-        auto res = result_matcher_->try_match(ctx, expected_result_type, pmd->bindings);
+        auto res = result_matcher_->try_match(ctx, expected_result_type, pmd->bindings, rmatch);
         if (!res) return std::unexpected(std::move(res.error()));
         pmd->result = expected_result_type.value;
     }
@@ -465,16 +488,15 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         }
     };
 
-    semantic::expression_list_t::const_iterator prev_argument_expression_it = pmd->call_expressions.end();
+    //semantic::expression_list_t::const_iterator prev_argument_expression_it = pmd->call_expressions.end();
 
     for (auto const& arg : call.args()) { // { argname, expr }
         annotated_identifier const* pargname = arg.name();
         if (pargname) {
             if (named_parameter_matcher const* nmtch = get_matcher(pargname->value); nmtch) {
-                auto match = nmtch->try_match(ctx, arg.value(), pmd->bindings);
+                auto match = nmtch->try_match(ctx, arg.value(), pmd->bindings, pmd->get_match_result(pargname->value));
                 if (!match) return std::unexpected(std::move(match.error()));
-                pmd->weight += match->second;
-                pmd->signature.set(pargname->value, field_descriptor{ match->first, false });
+                pmd->weight += *match;
             } else if (varnamed_matcher_) {
                 if (auto match = varnamed_matcher_->try_match(ctx, pargname->value, arg.value(), pmd->bindings); !match) {
                     return std::unexpected(std::move(match.error()));
@@ -483,7 +505,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
                 // note: in fact must never be here due to the quick check procedure
                 return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch"sv, pargname->value));
             }
-            pmd->push_named_argument_expressions(pargname->value, prev_argument_expression_it, pmd->call_expressions);
             continue;
         }
 
@@ -491,12 +512,10 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
             return std::unexpected(result_error(arg));
         }
 
-        auto exp = (*start_matcher_it)->try_forward_match(ctx, arg.value(), pmd->bindings);
+        auto exp = (*start_matcher_it)->try_forward_match(ctx, arg.value(), pmd->bindings, pmd->get_match_result(start_matcher_it - matchers_.begin()));
         if (error_storage* err = get<error_storage>(&exp); err) return std::unexpected(std::move(*err));
-        if (auto * pmatch = get<std::pair<entity_identifier, int>>(&exp); pmatch) {
-            pmd->push_unnamed_argument_expressions(start_matcher_it - matchers_.begin(), prev_argument_expression_it, pmd->call_expressions);
-            pmd->weight += pmatch->second;
-            pmd->signature.set(start_matcher_it - matchers_.begin(), field_descriptor{ pmatch->first, false });
+        if (auto * pmatchweight = get<int>(&exp); pmatchweight) {
+            pmd->weight += *pmatchweight;
             ++start_matcher_it;
             continue;
         }
@@ -504,10 +523,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
 
         for (auto next_matcher_it = start_matcher_it + 1;;) {
             if (next_matcher_it != end_matcher_it) {
-                exp = (*next_matcher_it)->try_forward_match(ctx, arg.value(), pmd->bindings);
-                if (auto* pmatch = get<std::pair<entity_identifier, int>>(&exp); pmatch) {
-                    pmd->push_unnamed_argument_expressions(next_matcher_it - matchers_.begin(), prev_argument_expression_it, pmd->call_expressions);
-                    pmd->weight += pmatch->second;
+                exp = (*next_matcher_it)->try_forward_match(ctx, arg.value(), pmd->bindings, pmd->get_match_result(next_matcher_it - matchers_.begin()));
+                if (auto* pmatchweight = get<int>(&exp); pmatchweight) {
+                    pmd->weight += *pmatchweight;
                     start_matcher_it = next_matcher_it; ++start_matcher_it;
                     break;
                 }
@@ -517,14 +535,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
                 }
             }
             // here: next_matcher_it == end_matcher_it || get<error_storage>(&exp) != null
-            std::expected<std::pair<entity_identifier, int>, error_storage> res;
+            std::expected<int, error_storage> res;
             for (;;) {
                 --next_matcher_it;
-                res = (*next_matcher_it)->try_match(ctx, arg.value(), pmd->bindings);
+                res = (*next_matcher_it)->try_match(ctx, arg.value(), pmd->bindings, pmd->get_match_result(next_matcher_it - matchers_.begin()));
                 if (res) {
-                    pmd->push_unnamed_argument_expressions(next_matcher_it - matchers_.begin(), prev_argument_expression_it, pmd->call_expressions);
                     start_matcher_it = next_matcher_it; // this is a variadic matcher
-                    pmd->weight += res->second;
+                    pmd->weight += *res;
                     break;
                 }
                 if (next_matcher_it == start_matcher_it) {
@@ -567,6 +584,26 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
 #endif
     }
 
+    size_t argpos = 0;
+    for (auto const& [param_name, param_mod] : parameters_) {
+        auto [external_name, internal_name, varname] = apply_visitor(param_name_retriever{}, param_name);
+        if (varname) continue;
+        if (external_name) {
+            parameter_match_result& pmr = pmd->get_match_result(external_name->value);
+            if (pmr.is_undefined()) {
+                // to do: check default
+                return std::unexpected(make_error<basic_general_error>(external_name->location, "unmatched parameter"sv, external_name->value));
+            }
+        } else {
+            parameter_match_result& pmr = pmd->get_match_result(argpos++);
+            if (pmr.is_undefined()) {
+                // to do: check default
+                return std::unexpected(make_error<basic_general_error>(internal_name->location, (std::ostringstream() << "unmatched parameter $"sv << argpos).str()));
+            }
+        }
+    }
+
+
     if (!pmd->result && result_matcher_) {
         auto res = result_matcher_->apply_binding(ctx, pmd->bindings);
         if (!res) return std::unexpected(std::move(res.error()));
@@ -575,15 +612,16 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
     return pmd;
 }
 
-std::expected<entity_identifier, error_storage> basic_fn_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+error_storage basic_fn_pattern::apply(fn_compiler_context& ctx, qname_identifier functional_id, functional_match_descriptor& md) const
 {
     // fnsig -> fn entity
     // if fn entity exists => all nested qnames(functionals) are defined (e.g. argument variables, function body qname)
     // => all nested qnames shoud be defined in the build procedure
-    indirect_signatured_entity smpl{ md.signature };
+    entity_signature sig = md.build_signature(ctx.u(), functional_id);
+    indirect_signatured_entity smpl{ sig };
 
-    entity& e = ctx.u().eregistry().find_or_create(smpl, [this, &ctx, &md]() {
-        return build(ctx.u(), md);
+    entity& e = ctx.u().eregistry().find_or_create(smpl, [this, &ctx, &sig]() {
+        return build(ctx.u(), std::move(sig));
     });
 
     BOOST_ASSERT(dynamic_cast<function_entity*>(&e));
@@ -614,36 +652,22 @@ std::expected<entity_identifier, error_storage> basic_fn_pattern::apply(fn_compi
             continue;
         }
         
-        if (external_name) {
-            auto argspan = md.get_named_arguments(external_name->value);
-            BOOST_ASSERT(!argspan.empty());
-            auto matcherit = named_matchers_.find(external_name->value);
-            BOOST_ASSERT(matcherit != named_matchers_.end());
-            for (auto rng : argspan) {
-                ++rng.second;
-                args.splice_back(md.call_expressions, rng.first, rng.second);
-            }
-            if (matcherit->is_variadic()) {
-                ctx.u().push_back_expression(args, semantic::push_value(mp::integer{ argspan.size() }));
-            }
-        } else {
-            auto argspan = md.get_position_arguments(argpos);
-            BOOST_ASSERT(!argspan.empty());
-            for (auto rng : argspan) {
-                ++rng.second;
-                args.splice_back(md.call_expressions, rng.first, rng.second);
-            }
-            BOOST_ASSERT(matchers_.size() > argpos);
-            if (matchers_[argpos++]->is_variadic()) {
-                ctx.u().push_back_expression(args, semantic::push_value(mp::integer{ argspan.size() }));
-            }
+        parameter_match_result& pmr = external_name ? 
+            md.get_match_result(external_name->value) : md.get_match_result(argpos++);
+        
+        for (auto rng : pmr.expressions) {
+            ++rng.second;
+            args.splice_back(md.call_expressions, rng.first, rng.second);
+        }
+        if (pmr.is_variadic()) {
+            ctx.u().push_back_expression(args, semantic::push_value(mp::integer{ pmr.result.size() }));
         }
     }
 
     BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
     ctx.u().push_back_expression(args, semantic::invoke_function(e.id()));
-
-    return rt;
+    ctx.context_type = rt;
+    return {};
 }
 
 basic_fn_pattern2::basic_fn_pattern2(fn_compiler_context& ctx, fn_pure_t const& fnd)
@@ -1216,9 +1240,10 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern2:
 #endif
 }
 
-std::expected<entity_identifier, error_storage> basic_fn_pattern2::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+error_storage basic_fn_pattern2::apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
 {
-    indirect_signatured_entity smpl{ md.signature };
+    entity_signature sig = md.build_signature(ctx.u(), fid);
+    indirect_signatured_entity smpl{ sig };
 
     entity & e = ctx.u().eregistry().find_or_create(smpl, [this, &ctx, &md]() {
         return build(ctx.u(), md);
@@ -1241,7 +1266,8 @@ std::expected<entity_identifier, error_storage> basic_fn_pattern2::apply(fn_comp
 
     ctx.append_expression(semantic::invoke_function(e.id()));
     ctx.pop_chain(); // pop function call chain
-    return rt;
+    ctx.context_type = rt;
+    return {};
 
     //THROW_NOT_IMPLEMENTED_ERROR("generic_fn_pattern::apply");
 #if 0
@@ -1266,12 +1292,12 @@ generic_fn_pattern::generic_fn_pattern(fn_compiler_context& ctx, functional cons
 
 }
 
-std::expected<entity_identifier, error_storage> generic_fn_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor&) const
+std::expected<entity_identifier, error_storage> generic_fn_pattern::const_apply(fn_compiler_context& ctx, qname_identifier, functional_match_descriptor&) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern::const_apply");
 }
 
-shared_ptr<entity> generic_fn_pattern::build(unit& u, functional_match_descriptor& md) const
+shared_ptr<entity> generic_fn_pattern::build(unit& u, entity_signature&& signature) const
 {
     qname_view fnqn = fn_qname();
     qname fn_ns = fnqn / u.new_identifier();
@@ -1289,22 +1315,22 @@ shared_ptr<entity> generic_fn_pattern::build(unit& u, functional_match_descripto
 
     size_t posarg_num = 0, paramnum = 0;
     size_t paramcount = 0; // +fnctx.captured_variables.size();
-    for (auto const& f : md.signature.positioned_fields()) {
+    for (auto const& f : signature.positioned_fields()) {
         if (!f.is_const()) ++paramcount;
     }
-    for (auto const& [_, f] : md.signature.named_fields()) {
+    for (auto const& [_, f] : signature.named_fields()) {
         if (!f.is_const()) ++paramcount;
     }
     for (auto const& [param_name, param_mod] : parameters_) {
         if (param_mod != parameter_constraint_modifier_t::value_type_constraint) continue;
         auto [external_name, internal_name, varname] = apply_visitor(param_name_retriever{}, param_name);
         if (external_name) { // named parameter
-            field_descriptor const* fd = md.signature.find_field(external_name->value);
+            field_descriptor const* fd = signature.find_field(external_name->value);
             BOOST_ASSERT(fd);
-            auto var_entity = append_local_var(fn_ns / (internal_name ? internal_name->value : external_name->value), fd->entity_id());
+            auto var_entity = append_local_var(fn_ns / ((internal_name && internal_name->value) ? internal_name->value : external_name->value), fd->entity_id());
             var_entity->set_index(paramnum - paramcount); ++paramnum;
         } else {
-            field_descriptor const* fd = md.signature.find_field(posarg_num);
+            field_descriptor const* fd = signature.find_field(posarg_num);
             BOOST_ASSERT(fd);
 
             bool reversed = false;
@@ -1314,7 +1340,7 @@ shared_ptr<entity> generic_fn_pattern::build(unit& u, functional_match_descripto
             auto var_entity = append_local_var(fn_ns / posargid, fd->entity_id());
             var_entity->set_index(paramnum - paramcount);
 
-            if (internal_name) {
+            if (internal_name && internal_name->value) {
                 var_entity = append_local_var(fn_ns / internal_name->value, fd->entity_id());
                 var_entity->set_index(paramnum - paramcount);
             }
@@ -1324,10 +1350,21 @@ shared_ptr<entity> generic_fn_pattern::build(unit& u, functional_match_descripto
         }
     }
 
+    argname[1] = '$';
+    identifier numargid = u.slregistry().resolve(string_view{ argname.data(), 2 });
+
+    integer_literal_entity smpl{ posarg_num };
+    smpl.set_type(u.get_integer_entity_identifier());
+    entity const& numargent = u.eregistry().find_or_create(smpl, [&smpl]() {
+        return make_shared<integer_literal_entity>(std::move(smpl));
+    });
+    functional& numargfn = u.fregistry().resolve(fn_ns / numargid);
+    numargfn.set_default_entity(numargent.id());
+
     auto pife = make_shared<internal_function_entity>(
         std::move(fn_ns),
-        std::move(md.signature),
-        make_shared<internal_function_entity::build_data>(std::move(md.bindings), body_),
+        std::move(signature),
+        make_shared<internal_function_entity::build_data>(/*std::move(md.bindings),*/ body_),
         u);
 
     pife->set_inline(kind_ == fn_kind::INLINE);

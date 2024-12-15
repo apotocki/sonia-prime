@@ -58,23 +58,6 @@ public:
         fnbuilder_.append_setr(sv.offset);
     }
 
-    void operator()(semantic::push_variable const& pv) const
-    {
-        auto varkind = pv.entity->varkind();
-        if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
-            fnbuilder_.append_fpush(pv.entity->index());
-            return;
-        } else if (varkind == variable_entity::kind::EXTERN) {
-            string_view varname = unit_.as_string(unit_.fregistry().resolve(pv.entity->name()).name().back());
-            smart_blob strbr{ string_blob_result(varname) };
-            strbr.allocate();
-            fnbuilder_.append_push_pooled_const(std::move(strbr));
-            fnbuilder_.append_ecall((size_t)virtual_stack_machine::builtin_fn::extern_variable_get);
-        } else {
-            THROW_NOT_IMPLEMENTED_ERROR();
-        }
-    }
-
     inline void operator()(semantic::truncate_values const& c) const
     {
         if (c.keep_back) {

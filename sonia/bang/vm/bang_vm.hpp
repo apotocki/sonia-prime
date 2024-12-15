@@ -131,8 +131,8 @@ public:
     void extern_variable_get();
     void extern_variable_set();
     //void construct_extern_object();
-    void extern_object_create();
-    void extern_object_set_property();
+    //void extern_object_create();
+    //void extern_object_set_property();
     void extern_object_get_property();
     void extern_function_call();
     void construct_function();
@@ -261,6 +261,14 @@ public:
 
     small_string generate_object_id() const;
 
+    inline invocation::invocable& env() const
+    {
+        if (!penv_) {
+            throw exception("The environment object is not defined.");
+        }
+        return *penv_;
+    }
+
 private:
     mutable size_t id_counter_{ 0 };
     unit& unit_;
@@ -291,7 +299,7 @@ public:
         arrayify, unpack,
         referify, weak_create, weak_lock,
         function_constructor,
-        extern_object_create, extern_object_set_property, extern_object_get_property,
+        /*extern_object_create, extern_object_set_property,*/ extern_object_get_property,
         extern_variable_get, extern_variable_set,
         extern_function_call,
         eof_type

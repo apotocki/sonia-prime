@@ -11,7 +11,7 @@
     },*/
     {
         "src": "file2.bang",
-        "output": "hello 0 hello world 22 1"
+        "output": "hello 0 hello, world 22 1 hello, world 22 22 42 2"
     } /* , 
     {
         "src": "file3.bang",

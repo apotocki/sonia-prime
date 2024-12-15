@@ -95,7 +95,7 @@ struct named_parameter_name
 // e.g. fn ($internalName: string); fn (string);
 struct unnamed_parameter_name
 {
-    optional<annotated_identifier> internal_name;
+    annotated_identifier internal_name;
 };
 
 // e.g. fn ($varName ... : string);
@@ -112,12 +112,12 @@ struct param_name_retriever : static_visitor<std::tuple<annotated_identifier con
 
     inline result_type operator()(named_parameter_name const& np) const
     {
-        return { &np.external_name, np.internal_name ? &*np.internal_name : nullptr, false };
+        return { &np.external_name, get_pointer(np.internal_name), false };
     }
 
     inline result_type operator()(unnamed_parameter_name const& np) const
     {
-        return { nullptr, np.internal_name ? &*np.internal_name : nullptr, false };
+        return { nullptr, &np.internal_name, false };
     }
 
     inline result_type operator()(varnamed_parameter_name const& np) const
@@ -999,7 +999,7 @@ using statement_type = variant<
 >;
 
 using infunction_statement_type = variant<
-    let_statement_decl_t, expression_statement_t, fn_pure_t,
+    extern_var, let_statement_decl_t, expression_statement_t, fn_pure_t,
     fn_decl_t, if_decl_t, while_decl_t, continue_statement_t, break_statement_t, return_decl_t
 >;
 

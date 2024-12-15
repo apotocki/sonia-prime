@@ -21,22 +21,9 @@ inline unit& declaration_visitor::u() const noexcept { return ctx.u(); }
 
 void declaration_visitor::operator()(extern_var const& d) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor extern_var");
-#if 0
-    preliminary_type_visitor tqvis{ ctx };
-    bang_type vartype = apply_visitor(tqvis, d.type);
-    
-    qname var_qname = ctx.ns() / d.name.value;
-    qname_identifier var_qnameid = ctx.u().qnregistry().resolve(var_qname);
-    auto e = ctx.u().eregistry().find(var_qnameid);
-    if (!e) {
-        auto ve = sonia::make_shared<variable_entity>(var_qnameid, std::move(vartype), variable_entity::kind::EXTERN);
-        ve->set_location(d.name.location);
-        ctx.u().eregistry().insert(ve);
-    } else {
-        throw exception(ctx.u().print(identifier_redefinition_error{ annotated_qname_identifier{var_qnameid, d.name.location}, e->location() }));
-    }
-#endif
+    entity_identifier vartype = apply_visitor(preliminary_type_visitor{ ctx }, d.type);
+    u().new_variable(qname{d.name.value}, d.name.location, vartype, variable_entity::kind::EXTERN);
+    //THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor extern_var");
 }
 
 void declaration_visitor::operator()(expression_statement_t const& ed) const
@@ -391,7 +378,7 @@ void declaration_visitor::operator()(let_statement_decl_t const& ld) const
     if (ld.type) {
         vartype = apply_visitor(preliminary_type_visitor{ ctx }, *ld.type);
     }
-    ctx.context_type = ctx.u().get_void_entity_identifier();
+    ctx.context_type = u().get_void_entity_identifier();
     if (ld.expression) {
         auto evis = vartype ? expression_visitor{ ctx, { vartype, ld.location() } } : expression_visitor{ ctx };
         if (auto res = apply_visitor(evis, *ld.expression); !res) {
@@ -402,7 +389,7 @@ void declaration_visitor::operator()(let_statement_decl_t const& ld) const
                     ctx.u().print(*etype.error())).str()
             }));
             */
-            throw exception(ctx.u().print(*res.error()));
+            throw exception(u().print(*res.error()));
         }
     }
     variable_entity& ve = ctx.new_variable(ld.aname, vartype.self_or(ctx.context_type), variable_entity::kind::LOCAL);

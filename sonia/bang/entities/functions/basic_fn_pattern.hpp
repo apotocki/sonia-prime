@@ -15,6 +15,8 @@ namespace sonia::lang::bang {
 class basic_fn_pattern;
 class parameter_type_expression_visitor;
 
+
+
 class parameter_matcher
 {
     friend class parameter_type_expression_visitor;
@@ -38,10 +40,12 @@ public:
 
     error_storage build(fn_compiler_context&, basic_fn_pattern const&);
     bool is_pattern() const noexcept;
-    std::expected<std::pair<entity_identifier, int>, error_storage> try_match(fn_compiler_context& ctx, syntax_expression_t const&, functional_binding_set&) const; // returns weight delta if matched
+
+    // returns match weight or error
+    std::expected<int, error_storage> try_match(fn_compiler_context& ctx, syntax_expression_t const&, functional_binding_set&, parameter_match_result&) const; // returns weight delta if matched
     
-    // returns match weight or postpone ir error
-    variant<std::pair<entity_identifier, int>, postpone_t, error_storage> try_forward_match(fn_compiler_context& ctx, syntax_expression_t const&, functional_binding_set&) const;
+    // returns match weight or postpone or error
+    variant<int, postpone_t, error_storage> try_forward_match(fn_compiler_context& ctx, syntax_expression_t const&, functional_binding_set&, parameter_match_result&) const;
 
 
     std::expected<entity_identifier, error_storage> apply_binding(fn_compiler_context& ctx, functional_binding_set&) const;
@@ -81,7 +85,7 @@ public:
 
     inline bool is_variadic() const noexcept { return impl_->is_variadic(); }
 
-    std::expected<std::pair<entity_identifier, int>, error_storage> try_match(fn_compiler_context& ctx, syntax_expression_t const&, functional_binding_set&) const;
+    std::expected<int, error_storage> try_match(fn_compiler_context& ctx, syntax_expression_t const&, functional_binding_set&, parameter_match_result&) const;
 
 private:
     annotated_identifier external_name_;
@@ -137,10 +141,10 @@ public:
     inline bool has_varnamed() const noexcept { return !!varnamed_matcher_; }
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
-    std::expected<entity_identifier, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    error_storage apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 
 protected:
-    virtual shared_ptr<entity> build(unit&, functional_match_descriptor&) const = 0;
+    virtual shared_ptr<entity> build(unit&, entity_signature&&) const = 0;
 };
 
 class basic_fn_pattern2 : public functional::pattern
@@ -157,7 +161,7 @@ public:
 
     inline qname_identifier fn_qname_id() const noexcept { return fd_.id(); }
 
-    std::expected<entity_identifier, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    error_storage apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 
 protected:
     virtual shared_ptr<entity> build(unit&, functional_match_descriptor&) const = 0;
@@ -171,10 +175,10 @@ class generic_fn_pattern : public basic_fn_pattern
 public:
     generic_fn_pattern(fn_compiler_context&, functional const&, fn_decl_t const&);
     
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 
 protected:
-    shared_ptr<entity> build(unit&, functional_match_descriptor&) const override;
+    shared_ptr<entity> build(unit&, entity_signature&&) const override;
 };
 
 }

@@ -14,13 +14,20 @@ namespace sonia::lang::bang {
 struct ct_expression_visitor : static_visitor<std::expected<entity_identifier, error_storage>>
 {
     fn_compiler_context& ctx;
+    annotated_entity_identifier expected_result;
 
     explicit ct_expression_visitor(fn_compiler_context& c)
         : ctx{ c }
     {}
 
-    result_type operator()(annotated_entity_identifier const& ee) const;
+    ct_expression_visitor(fn_compiler_context& c, annotated_entity_identifier&& er)
+        : ctx{ c }
+        , expected_result{ std::move(er) }
+    {}
 
+    result_type operator()(annotated_string const&) const;
+    result_type operator()(annotated_entity_identifier const&) const;
+    result_type operator()(function_call_t const&) const;
 
     template <typename T>
     result_type operator()(T const& v) const
@@ -30,6 +37,12 @@ struct ct_expression_visitor : static_visitor<std::expected<entity_identifier, e
 
 private:
     unit& u() const noexcept;
+
+    template <typename ExprT>
+    result_type apply_cast(entity_identifier, ExprT const& e) const;
+
+    template <std::derived_from<pure_call_t> CallExpressionT>
+    result_type operator()(functional const& fnl, CallExpressionT const& call) const;
 };
 
 }

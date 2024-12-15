@@ -7,20 +7,21 @@
 
 namespace sonia::lang::bang {
 
+inline unit& preliminary_type_visitor::u() const noexcept { return ctx.u(); }
+
 preliminary_type_visitor::result_type preliminary_type_visitor::operator()(bang_preliminary_parameter_pack_t const& v) const
 {
     entity_identifier element_type = apply_visitor(*this, v.type);
-    functional& ellipsis_fnl = ctx.u().fregistry().resolve(ctx.u().get_ellipsis_qname_identifier());
+    functional& ellipsis_fnl = u().fregistry().resolve(ctx.u().get_ellipsis_qname_identifier());
 
     named_expression_list_t ellipsis_args;
     ellipsis_args.emplace_back(annotated_entity_identifier{ element_type, });
     pure_call_t ellipsis_call{ lex::resource_location{}, std::move(ellipsis_args) };
     auto match = ellipsis_fnl.find(ctx, ellipsis_call, {});
     if (!match) {
-        throw exception(ctx.u().print(*match.error()));
+        throw exception(u().print(*match.error()));
     }
-    auto [ptrn, pmd] = std::move(*match);
-    auto r = ptrn->const_apply(ctx, *pmd);
+    auto r = match->const_apply(ctx);
     if (!r) {
         throw exception(ctx.u().print(*r.error()));
     }
@@ -29,19 +30,15 @@ preliminary_type_visitor::result_type preliminary_type_visitor::operator()(bang_
 
 preliminary_type_visitor::result_type preliminary_type_visitor::operator()(annotated_qname const& v) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("preliminary_type_visitor  annotated_qname");
-#if 0
-    qname_identifier qnid = ctx.u().qnregistry().resolve(v.value);
-    functional const* fn = ctx.resolve_functional(qnid);
+    functional const* fn = ctx.lookup_functional(v.value);
     if (!fn) {
-        throw exception(ctx.u().print(*make_error<undeclared_identifier_error>(v.location, qnid)));
+        throw exception(ctx.u().print(*make_error<undeclared_identifier_error>(v.location, v.value)));
     }
     entity_identifier type_eid = fn->default_entity();
     if (!type_eid) {
         throw exception(ctx.u().print(*make_error<basic_general_error>(v.location, "is not a type"sv)));
     }
     return type_eid;
-#endif
 }
 
 preliminary_type_visitor::result_type preliminary_type_visitor::operator()(annotated_identifier const& v) const

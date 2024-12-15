@@ -415,7 +415,6 @@ struct function_signature
 namespace semantic {
 
 struct push_by_offset { size_t offset; }; // offset from the stack top
-struct push_variable { variable_entity const* entity; };
 struct push_value { value_t value; };
 struct set_variable { variable_entity const* entity; };
 struct set_by_offset { size_t offset; }; // offset from the stack top
@@ -498,7 +497,7 @@ public:
 
     inline const_iterator begin() const noexcept { return const_iterator{ list_.begin(), to_cexpr }; }
     inline const_iterator end() const noexcept { return const_iterator{ list_.end(), to_cexpr }; }
-    inline const_iterator last() const noexcept { return const_iterator{ --list_.end(), to_cexpr }; }
+    inline const_iterator last() const noexcept { const_iterator r = end(); if (!list_.empty()) --r; return r; }
     inline size_t size() const noexcept { return list_.size(); }
 
     inline ExprT const& front() const noexcept { return list_.front().value; }
@@ -546,7 +545,7 @@ struct loop_breaker {};
 
 using expression_t = make_recursive_variant<
     empty_t, // no op
-    push_variable, push_value, push_by_offset, truncate_values,
+    push_value, push_by_offset, truncate_values,
     set_variable, set_by_offset, invoke_function, return_statement, loop_breaker, loop_continuer,
     expression_list<recursive_variant_>,
     conditional<recursive_variant_>,

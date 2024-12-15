@@ -5,7 +5,7 @@
 #pragma once
 
 #include <expected>
-//#include <boost/container/flat_map.hpp>
+#include <boost/container/flat_map.hpp>
 #include <boost/unordered_set.hpp>
 
 #include "sonia/shared_ptr.hpp"
@@ -42,17 +42,50 @@ public:
     }
 };
 
-struct functional_match_descriptor
+struct parameter_match_result
 {
-    functional_binding_set bindings;
-    entity_signature signature;
-    entity_identifier result;
-    semantic::managed_expression_list call_expressions;
-
+    enum class modifier : uint8_t
+    {
+        undefined = 0,
+        is_expr = 1,
+        is_constexpr = 2,
+        is_uniadic = 4,
+        is_variadic = 8,
+    };
     using se_cont_iterator = semantic::expression_list_t::const_iterator;
     using se_rng_t = std::pair<se_cont_iterator, se_cont_iterator>;
-    small_vector<std::pair<identifier, small_vector<se_rng_t, 8>>, 8> named_arguments; // arg name -> [expressions]
-    small_vector<small_vector<se_rng_t, 8>, 8> unnamed_arguments; // argnum -> [expressions]
+
+    small_vector<se_rng_t, 4> expressions;
+    small_vector<entity_identifier, 4> result;
+    uint8_t mod = (uint8_t)modifier::undefined;
+
+    void append_result(bool variadic, entity_identifier, se_cont_iterator before_start_it, semantic::expression_list_t&);
+    void append_result(bool variadic, entity_identifier);
+
+    void set_constexpr(bool);
+    void set_variadic(bool);
+
+    inline bool is_undefined() const noexcept { return mod == (uint8_t)modifier::undefined; }
+    inline bool is_constexpr() const noexcept { return !!(mod & (uint8_t)modifier::is_constexpr); }
+    inline bool is_variadic() const noexcept { return !!(mod & (uint8_t)modifier::is_variadic); }
+};
+
+class functional_match_descriptor
+{
+    //using se_cont_iterator = semantic::expression_list_t::const_iterator;
+    //using se_rng_t = std::pair<se_cont_iterator, se_cont_iterator>;
+    //small_vector<std::pair<identifier, small_vector<se_rng_t, 8>>, 8> named_arguments; // arg name -> [expressions]
+    //small_vector<small_vector<se_rng_t, 8>, 8> unnamed_arguments; // argnum -> [expressions]
+    
+    std::list<parameter_match_result> pmrs_;
+    boost::container::small_flat_map<identifier, parameter_match_result*, 8> named_matches_;
+    small_vector<parameter_match_result*, 8> positional_matches_;
+
+public:
+    functional_binding_set bindings;
+    semantic::managed_expression_list call_expressions;
+    
+    entity_identifier result;
     int weight{ 0 };
 
     inline explicit functional_match_descriptor(unit& u) noexcept : call_expressions{ u } {}
@@ -60,16 +93,20 @@ struct functional_match_descriptor
     functional_match_descriptor(functional_match_descriptor const&) = delete;
     functional_match_descriptor& operator= (functional_match_descriptor const&) = delete;
 
-    void push_named_argument_expressions(identifier, se_cont_iterator &, semantic::managed_expression_list const&);
-    void push_unnamed_argument_expressions(size_t, se_cont_iterator&, semantic::managed_expression_list const&);
+    //void push_named_argument_expressions(identifier, se_cont_iterator &, semantic::managed_expression_list const&);
+    //void push_unnamed_argument_expressions(size_t, se_cont_iterator&, semantic::managed_expression_list const&);
 
-    span<const se_rng_t> get_named_arguments(identifier) const noexcept;
-    span<const se_rng_t> get_position_arguments(size_t pos) const noexcept;
+    //span<const se_rng_t> get_named_arguments(identifier) const noexcept;
+    //span<const se_rng_t> get_position_arguments(size_t pos) const noexcept;
 
-    inline void reset() noexcept { signature.reset_fields(); result = {}; }
+    parameter_match_result& get_match_result(identifier);
+    parameter_match_result& get_match_result(size_t);
+
+    entity_signature build_signature(unit&, qname_identifier);
+    void reset() noexcept;
 
 private:
-    static void do_prepare_range(se_cont_iterator& it_before, semantic::managed_expression_list const& exprs, optional<se_rng_t>& rng);
+    //static void do_prepare_range(se_cont_iterator& it_before, semantic::managed_expression_list const& exprs, optional<se_rng_t>& rng);
 };
 
 using functional_match_descriptor_ptr = shared_ptr<functional_match_descriptor>;
@@ -79,9 +116,7 @@ class functional
 public:
     using identifier_type = qname_identifier;
     using qname_view_type = qname_view;
-    //using binding_set_t = small_vector<std::pair<identifier, small_vector<entity_identifier, 1>>, 16>;
-    //using binding_set_t = boost::container::small_flat_map<annotated_identifier, entity_identifier, 16>;
-
+    
     class pattern
     {
     protected:
@@ -90,11 +125,33 @@ public:
 
     public:
         virtual std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const& expected_result) const = 0; // returns the match weight or an error
-        virtual std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx, functional_match_descriptor&) const = 0; // returns const value
-        virtual std::expected<entity_identifier, error_storage> apply(fn_compiler_context& ctx, functional_match_descriptor&) const; // returns type of result
+        virtual std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const = 0; // returns const value
+        virtual error_storage apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const;
 
         inline mp::decimal const& get_weight() const noexcept { return weight_; }
         inline lex::resource_location const& location() const noexcept { return location_; }
+    };
+
+    class match
+    {
+        qname_identifier fid_;
+        pattern const* ptrn_;
+        functional_match_descriptor_ptr md_;
+
+    public:
+        inline match(qname_identifier fid, pattern const* p, functional_match_descriptor_ptr md) noexcept
+            : fid_{ fid }, ptrn_{ p }, md_{ std::move(md) } 
+        {}
+        
+        inline error_storage apply(fn_compiler_context& ctx)
+        {
+            return ptrn_->apply(ctx, fid_, *md_);
+        }
+
+        inline std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx)
+        {
+            return ptrn_->const_apply(ctx, fid_, *md_);
+        }
     };
 
     functional(qname_identifier idval, qname_view qv)
@@ -116,7 +173,7 @@ public:
     }
 
     // looking by argument expressions
-    std::expected<std::pair<functional::pattern const*, functional_match_descriptor_ptr>, error_storage> find(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const& expected_result) const;
+    std::expected<match, error_storage> find(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const& expected_result) const;
 
 private:
     qname_identifier id_;
@@ -221,7 +278,7 @@ public:
     virtual fieldset_t const& get_fieldset() const noexcept = 0;
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx, functional_match_descriptor&) const override;
+    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 };
 
 

@@ -10,54 +10,158 @@
 
 namespace sonia::lang::bang {
 
-void functional_match_descriptor::do_prepare_range(se_cont_iterator& it_before, semantic::managed_expression_list const& exprs, optional<se_rng_t> & rng)
+void parameter_match_result::append_result(bool variadic, entity_identifier r, se_cont_iterator before_start_it, semantic::expression_list_t& exprs)
 {
-    if (!exprs) {
-        rng.emplace(exprs.begin(), exprs.end());
+    set_variadic(variadic);
+    set_constexpr(false);
+    result.emplace_back(r);
+
+    if (exprs) {
+        if (before_start_it == exprs.end()) {
+            before_start_it = exprs.begin();
+        } else {
+            ++before_start_it;
+        }
+        expressions.emplace_back(before_start_it, exprs.last());
+    }
+}
+
+void parameter_match_result::append_result(bool variadic, entity_identifier r)
+{
+    set_variadic(variadic);
+    set_constexpr(true);
+    result.emplace_back(r);
+}
+
+void parameter_match_result::set_constexpr(bool ce_val)
+{
+    if (mod == (uint8_t)modifier::undefined) {
+        mod = (uint8_t)(ce_val ? modifier::is_constexpr : modifier::is_expr);
+    } else if (ce_val) {
+        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_expr));
+        mod |= (uint8_t)modifier::is_constexpr;
     } else {
-        rng.emplace(it_before, exprs.last());
-        if (rng->first != exprs.end()) ++rng->first;
-        else rng->first = exprs.begin();
-        it_before = rng->second;
+        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_constexpr));
+        mod |= (uint8_t)modifier::is_expr;
     }
 }
 
-void functional_match_descriptor::push_named_argument_expressions(identifier argid, se_cont_iterator& it_before, semantic::managed_expression_list const& exprs)
+void parameter_match_result::set_variadic(bool v_val)
 {
-    optional<se_rng_t> rng;
-    do_prepare_range(it_before, exprs, rng);
-    
-    auto nait = std::lower_bound(named_arguments.begin(), named_arguments.end(), argid, [](auto const& pair, identifier id) { return pair.first < id; });
-    if (nait == named_arguments.end() || nait->first != argid) {
-        named_arguments.emplace(nait, argid, std::initializer_list{ *rng });
+    if (mod == (uint8_t)modifier::undefined) {
+        mod = (uint8_t)(v_val ? modifier::is_variadic : modifier::is_uniadic);
+    } else if (v_val) {
+        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_uniadic));
+        mod |= (uint8_t)modifier::is_variadic;
     } else {
-        nait->second.emplace_back(std::move(*rng));
+        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_variadic));
+        mod |= (uint8_t)modifier::is_uniadic;
     }
 }
 
-void functional_match_descriptor::push_unnamed_argument_expressions(size_t argnum, se_cont_iterator& it_before, semantic::managed_expression_list const& exprs)
+//void functional_match_descriptor::do_prepare_range(se_cont_iterator& it_before, semantic::managed_expression_list const& exprs, optional<se_rng_t> & rng)
+//{
+//    if (!exprs) {
+//        rng.emplace(exprs.begin(), exprs.end());
+//    } else {
+//        rng.emplace(it_before, exprs.last());
+//        if (rng->first != exprs.end()) ++rng->first;
+//        else rng->first = exprs.begin();
+//        it_before = rng->second;
+//    }
+//}
+
+parameter_match_result& functional_match_descriptor::get_match_result(identifier param_name)
 {
-    optional<se_rng_t> rng;
-    do_prepare_range(it_before, exprs, rng);
+    auto it = named_matches_.find(param_name);
+    if (it == named_matches_.end()) {
+        pmrs_.emplace_back();
+        named_matches_.emplace_hint(it, param_name, &pmrs_.back());
+        return pmrs_.back();
+    }
+    return *it->second;
+}
+
+parameter_match_result& functional_match_descriptor::get_match_result(size_t pos)
+{
+    while (positional_matches_.size() <= pos) {
+        pmrs_.emplace_back();
+        positional_matches_.push_back(&pmrs_.back());
+    }
+    return *positional_matches_[pos];
+}
+
+entity_signature functional_match_descriptor::build_signature(unit & u, qname_identifier name)
+{
+    entity_signature signature{ name };
+    for (auto [nm, pmr] : named_matches_) {
+        bool is_const = pmr->is_constexpr();
+        for (entity_identifier eid : pmr->result) {
+            signature.set(nm, field_descriptor{ eid, is_const });
+        }
+    }
+    size_t argnum = 0;
+    for (auto pmr : positional_matches_) {
+        bool is_const = pmr->is_constexpr();
+        for (entity_identifier eid : pmr->result) {
+            signature.set(argnum++, field_descriptor{ eid, is_const });
+        }
+    }
+    if (result) {
+        signature.set_result(field_descriptor{ result, false });
+    }
+    return signature;
     
-    if (unnamed_arguments.size() <= argnum) {
-        unnamed_arguments.resize(argnum + 1);
-    }
-    unnamed_arguments[argnum].emplace_back(std::move(*rng));
+    //pmd->signature.set(pargname->value, field_descriptor{ match->first, false });
+    //pmd->signature.set(start_matcher_it - matchers_.begin(), field_descriptor{ pmatch->first, false });
 }
 
-span<const functional_match_descriptor::se_rng_t> functional_match_descriptor::get_named_arguments(identifier argid) const noexcept
+void functional_match_descriptor::reset() noexcept
 {
-    auto nait = std::lower_bound(named_arguments.begin(), named_arguments.end(), argid, [](auto const& pair, identifier id) { return pair.first < id; });
-    if (nait == named_arguments.end() || nait->first != argid) [[unlikely]] return {};
-    return nait->second;
+    positional_matches_.clear();
+    named_matches_.clear();
+    pmrs_.clear();
+    bindings.reset(0);
+    call_expressions.clear();
+    result = {};
 }
 
-span<const functional_match_descriptor::se_rng_t> functional_match_descriptor::get_position_arguments(size_t pos) const noexcept
-{
-    if (unnamed_arguments.size() <= pos) [[unlikely]] return {};
-    return unnamed_arguments[pos];
-}
+//void functional_match_descriptor::push_named_argument_expressions(identifier argid, se_cont_iterator& it_before, semantic::managed_expression_list const& exprs)
+//{
+//    optional<se_rng_t> rng;
+//    do_prepare_range(it_before, exprs, rng);
+//    
+//    auto nait = std::lower_bound(named_arguments.begin(), named_arguments.end(), argid, [](auto const& pair, identifier id) { return pair.first < id; });
+//    if (nait == named_arguments.end() || nait->first != argid) {
+//        named_arguments.emplace(nait, argid, std::initializer_list{ *rng });
+//    } else {
+//        nait->second.emplace_back(std::move(*rng));
+//    }
+//}
+
+//void functional_match_descriptor::push_unnamed_argument_expressions(size_t argnum, se_cont_iterator& it_before, semantic::managed_expression_list const& exprs)
+//{
+//    optional<se_rng_t> rng;
+//    do_prepare_range(it_before, exprs, rng);
+//    
+//    if (unnamed_arguments.size() <= argnum) {
+//        unnamed_arguments.resize(argnum + 1);
+//    }
+//    unnamed_arguments[argnum].emplace_back(std::move(*rng));
+//}
+//
+//span<const functional_match_descriptor::se_rng_t> functional_match_descriptor::get_named_arguments(identifier argid) const noexcept
+//{
+//    auto nait = std::lower_bound(named_arguments.begin(), named_arguments.end(), argid, [](auto const& pair, identifier id) { return pair.first < id; });
+//    if (nait == named_arguments.end() || nait->first != argid) [[unlikely]] return {};
+//    return nait->second;
+//}
+//
+//span<const functional_match_descriptor::se_rng_t> functional_match_descriptor::get_position_arguments(size_t pos) const noexcept
+//{
+//    if (unnamed_arguments.size() <= pos) [[unlikely]] return {};
+//    return unnamed_arguments[pos];
+//}
 
 function_descriptor::named_field const* function_descriptor::find_named_field(identifier name) const
 {
@@ -67,7 +171,7 @@ function_descriptor::named_field const* function_descriptor::find_named_field(id
     return nullptr;
 }
 
-std::expected<std::pair<functional::pattern const*, functional_match_descriptor_ptr>, error_storage> functional::find(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& expected_result) const
+std::expected<functional::match, error_storage> functional::find(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& expected_result) const
 {
     alt_error err;
     mp::decimal major_weight = 0;
@@ -114,13 +218,12 @@ std::expected<std::pair<functional::pattern const*, functional_match_descriptor_
     if (alternatives.size() > 1) {
         std::vector<ambiguity_error::alternative> as;
         for (alternative_t const& a : alternatives) {
-            a.second->signature.set_name(id_);
-            as.emplace_back(get<0>(a)->location(), get<1>(a)->signature);
+            as.emplace_back(get<0>(a)->location(), get<1>(a)->build_signature(ctx.u(), id_));
         }
         return std::unexpected(make_error<ambiguity_error>(annotated_qname_identifier{ id_, call.location() }, std::move(as)));
     }
-    alternatives.front().second->signature.set_name(id_);
-    return std::move(alternatives.front());
+    auto [ptrn, md] = alternatives.front();
+    return match{ id_, ptrn, std::move(md) };
 }
 
 std::expected<functional_match_descriptor_ptr, error_storage> fieldset_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
@@ -181,16 +284,17 @@ std::expected<functional_match_descriptor_ptr, error_storage> fieldset_pattern::
 #endif
 }
 
-std::expected<entity_identifier, error_storage> functional::pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+error_storage functional::pattern::apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
 {
-    auto r = const_apply(ctx, md);
-    if (!r) return std::move(r);
+    auto r = const_apply(ctx, fid, md);
+    if (!r) return std::move(r.error());
     ctx.append_expression(semantic::push_value{*r});
     entity const& e = ctx.u().eregistry().get(*r);
-    return e.get_type();
+    ctx.context_type = e.get_type();
+    return {};
 }
 
-std::expected<entity_identifier, error_storage> fieldset_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor&) const
+std::expected<entity_identifier, error_storage> fieldset_pattern::const_apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor&) const
 {
     // , std::span<semantic::expression_type> args
     THROW_NOT_IMPLEMENTED_ERROR("fn_pattern::const_apply");

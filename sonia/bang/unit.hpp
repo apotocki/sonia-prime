@@ -146,6 +146,7 @@ public:
     inline entity_identifier get_typename_entity_identifier() const noexcept { return typename_entity_identifier_; }
     inline entity_identifier get_void_entity_identifier() const noexcept { return void_entity_identifier_; }
     inline entity_identifier get_any_entity_identifier() const noexcept { return any_entity_identifier_; }
+    inline entity_identifier get_identifier_entity_identifier() const noexcept { return identifier_entity_identifier_; }
     inline entity_identifier get_string_entity_identifier() const noexcept { return string_entity_identifier_; }
     inline entity_identifier get_decimal_entity_identifier() const noexcept { return decimal_entity_identifier_; }
     inline entity_identifier get_integer_entity_identifier() const noexcept { return integer_entity_identifier_; }
@@ -174,6 +175,7 @@ public:
     //void push_entity(shared_ptr<entity>);
 
     void set_extern(string_view sign, void(*pfn)(vm::context&));
+    variable_entity& new_variable(qname_view, lex::resource_location const&, entity_identifier type, variable_entity::kind);
 
     //void put_function(shared_ptr<function_t> f)
     //{
@@ -267,6 +269,8 @@ private:
     qname_identifier fn_qname_identifier_; // :: __fn -- the marker of a function type
     qname_identifier ellipsis_qname_identifier_; // :: ...
     qname_identifier tuple_qname_identifier_; //(...)
+    qname_identifier identifier_qname_identifier_; // result of __id(string)
+    qname_identifier object_qname_identifier_; // ::object
     qname_identifier string_qname_identifier_; // :: string
     qname_identifier decimal_qname_identifier_; // :: decimal
     qname_identifier integer_qname_identifier_; // :: integer
@@ -281,6 +285,8 @@ private:
     entity_identifier void_entity_identifier_;
     entity_identifier any_entity_identifier_;
     entity_identifier typename_entity_identifier_;
+    entity_identifier identifier_entity_identifier_;
+    entity_identifier object_entity_identifier_;
     entity_identifier string_entity_identifier_;
     entity_identifier decimal_entity_identifier_;
     entity_identifier integer_entity_identifier_;

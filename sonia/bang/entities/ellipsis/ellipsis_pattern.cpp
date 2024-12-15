@@ -32,24 +32,25 @@ std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::
     if (auto res = apply_visitor(evis, expr); !res) return std::unexpected(std::move(res.error()));
 
     auto pmd = make_shared<functional_match_descriptor>(ctx.u());
-    pmd->signature.set_name(ctx.u().get_ellipsis_qname_identifier());
+    //pmd->signature.set_name(ctx.u().get_ellipsis_qname_identifier());
 
     auto& args = ctx.expressions();
     semantic::push_value const* pv = get<semantic::push_value>(&args.back());
     BOOST_ASSERT(pv);
     entity_identifier const* peid = get<entity_identifier>(&pv->value);
     BOOST_ASSERT(peid); // must be entity_identifier
-    pmd->signature.set(0, {*peid, true});
+    pmd->get_match_result(0).append_result(true, *peid);
     return pmd;
 }
 
-std::expected<entity_identifier, error_storage> ellipsis_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<entity_identifier, error_storage> ellipsis_pattern::const_apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
 {
-    BOOST_ASSERT(md.signature.named_fields().empty());
-    BOOST_ASSERT(md.signature.positioned_fields().size() == 1);
+    entity_signature signature = md.build_signature(ctx.u(), fid);
+    BOOST_ASSERT(signature.named_fields().empty());
+    BOOST_ASSERT(signature.positioned_fields().size() == 1);
 
-    entity const& entres = ctx.u().eregistry().find_or_create(indirect_signatured_entity{ md.signature }, [&ctx, &md]() {
-        return make_shared<pack_entity>(ctx.u().get_typename_entity_identifier(), std::move(md.signature));
+    entity const& entres = ctx.u().eregistry().find_or_create(indirect_signatured_entity{ signature }, [&ctx, &signature]() {
+        return make_shared<pack_entity>(ctx.u().get_typename_entity_identifier(), std::move(signature));
     });
     ctx.pop_chain();
     return entres.id();

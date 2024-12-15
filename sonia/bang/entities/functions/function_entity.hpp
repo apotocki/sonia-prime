@@ -90,7 +90,7 @@ class internal_function_entity : public function_entity
 public:
     struct build_data
     {
-        functional_binding_set bindings;
+        /*functional_binding_set bindings;*/
         shared_ptr<std::vector<infunction_statement>> body;
     };
 
@@ -136,11 +136,15 @@ class external_function_entity : public function_entity
 public:
     external_function_entity(qname && name, entity_signature&& sig, size_t fnid)
         : function_entity{ std::move(name), std::move(sig) }, extfnid_{ static_cast<uint32_t>(fnid) }
-    {}
+    {
+        BOOST_ASSERT(sig.result());
+        BOOST_ASSERT(sig.result()->entity_id());
+        set_result_type(sig.result()->entity_id());
+    }
 
     inline size_t extfnid() const noexcept { return extfnid_; }
 
-    bool is_void() const noexcept override { return !!is_void_; }
+    inline bool is_void() const noexcept override { return !!is_void_; }
 
     void visit(entity_visitor const& v) const override { v(*this); }
 

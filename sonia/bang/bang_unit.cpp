@@ -14,6 +14,7 @@
 #include "entities/internal_type_entity.hpp"
 #include "entities/ellipsis/ellipsis_pattern.hpp"
 #include "entities/functions/external_fn_pattern.hpp"
+#include "entities/functions/create_identifier_pattern.hpp"
 #include "entities/tuple/tuple_pattern.hpp"
 
 #include "semantic/expression_printer.hpp"
@@ -139,6 +140,21 @@ void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
 #endif
 }
 
+variable_entity& unit::new_variable(qname_view var_qname, lex::resource_location const& loc, entity_identifier t, variable_entity::kind k)
+{
+    functional& fnl = fregistry().resolve(var_qname);
+    if (fnl.default_entity()) {
+        throw exception(print(identifier_redefinition_error{ annotated_qname_identifier{fnl.id(), loc}, eregistry().get(fnl.default_entity()).location() }));
+    }
+    auto ve = sonia::make_shared<variable_entity>(std::move(t), fnl.id(), k);
+    ve->set_location(loc);
+    
+    eregistry().insert(ve);
+    fnl.set_default_entity(ve->id());
+
+    return *ve;
+}
+
 unit::unit()
     : slregistry_{ identifier_builder_ }
     , piregistry_{ identifier_builder_ }
@@ -248,6 +264,12 @@ unit::unit()
     // string
     setup_type("string"sv, string_qname_identifier_, string_entity_identifier_);
         
+    // object
+    setup_type("object"sv, object_qname_identifier_, object_entity_identifier_);
+
+    // identifier
+    setup_type("__identifier"sv, identifier_qname_identifier_, identifier_entity_identifier_);
+
     // tuple
     tuple_qname_identifier_ = make_qname_identifier("tuple"sv);
     functional& tuple_fnl = fregistry().resolve(tuple_qname_identifier_);
@@ -256,8 +278,12 @@ unit::unit()
     // void
     auto void_entity = make_shared<basic_signatured_entity>(typename_entity_identifier_, entity_signature{ tuple_qname_identifier_ });
     eregistry().insert(void_entity);
-
     void_entity_identifier_ = void_entity->id();
+
+    // __id
+    qname_identifier idfn = make_qname_identifier("__id"sv);
+    functional& idfnl = fregistry().resolve(idfn);
+    idfnl.push(make_shared<create_identifier_pattern>());
 
     //// parameters
     to_parameter_identifier_ = make_identifier("to");
@@ -291,8 +317,13 @@ unit::unit()
     //string_fnl.push();
 
     set_extern("print(string...)"sv, &bang_print_string);
-    set_extern("implicit_cast(to: typename string, _)->string"sv, &bang_tostring);
+    //set_extern("implicit_cast(to: typename string, _)->string"sv, &bang_tostring);
+    set_extern("to_string(_)->string"sv, &bang_tostring);
     set_extern("implicit_cast(to: typename decimal, integer)->decimal"sv, &bang_int2dec);
+    set_extern("create_extern_object(string)->object"sv, &bang_create_extern_object);
+    //set_extern("set(self: object, property: const __identifier, any)"sv, &bang_set_object_property);
+    set_extern("set(self: object, property: string, any)->object"sv, &bang_set_object_property);
+
     //set_extern("string(any)->string"sv, &bang_tostring);
     set_extern("assert(bool)"sv, &bang_assert);
 

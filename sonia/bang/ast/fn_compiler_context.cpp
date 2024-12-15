@@ -415,17 +415,9 @@ functional const* fn_compiler_context::lookup_functional(qname_view name) const
 variable_entity& fn_compiler_context::new_variable(annotated_identifier name, entity_identifier t, variable_entity::kind k)
 {
     qname var_qname = ns() / name.value;
-    functional& fnl = unit_.fregistry().resolve(var_qname);
-    if (fnl.default_entity()) {
-        throw exception(unit_.print(identifier_redefinition_error{ annotated_qname_identifier{fnl.id(), name.location}, unit_.eregistry().get(fnl.default_entity()).location() }));
-    }
-    auto ve = sonia::make_shared<variable_entity>(std::move(t), fnl.id(), k);
-    ve->set_location(name.location);
-    ve->set_index(allocate_local_variable_index());
-    unit_.eregistry().insert(ve);
-    fnl.set_default_entity(ve->id());
-    
-    return *ve;
+    variable_entity& var = u().new_variable(var_qname, name.location, t, k);
+    var.set_index(allocate_local_variable_index());
+    return var;
 }
 
 variable_entity& fn_compiler_context::create_captured_variable_chain(variable_entity& v)

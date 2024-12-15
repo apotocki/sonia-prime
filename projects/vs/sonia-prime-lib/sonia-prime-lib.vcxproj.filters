@@ -2262,6 +2262,9 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\ct_expression_visitor.hpp">
       <Filter>sonia.bang\ast</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.hpp">
+      <Filter>sonia.bang\entities\functions</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2638,6 +2641,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\ast\ct_expression_visitor.cpp">
       <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.cpp">
+      <Filter>sonia.bang\entities\functions</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

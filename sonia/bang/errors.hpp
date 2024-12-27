@@ -27,6 +27,7 @@ class alt_error;
 class ambiguity_error;
 class circular_dependency_error;
 
+
 class error_visitor
 {
 public:
@@ -121,7 +122,7 @@ protected:
     lex::resource_location location_;
     string_t description_;
     object_t object_;
-    optional< lex::resource_location> refloc_;
+    optional<lex::resource_location> refloc_;
 
 public:
     basic_general_error(lex::resource_location loc, string_t descr, object_t obj = null_t{})
@@ -272,10 +273,10 @@ class left_not_an_object_error : public general_error
 {
     lex::resource_location location_;
     identifier right_;
-    bang_type type_;
+    entity_identifier type_;
 
 public:
-    left_not_an_object_error(lex::resource_location loc, identifier right, bang_type type)
+    left_not_an_object_error(lex::resource_location loc, identifier right, entity_identifier type)
         : location_{ std::move(loc) }, right_{ right }, type_{ std::move(type) }
     {}
 
@@ -301,26 +302,6 @@ public:
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override { return "is not rvalue"sv; }
 };
-
-class function_call_match_error : public general_error
-{
-public:
-    annotated_qname_identifier functional_;
-    //function_signature const* signature_;
-    error_storage reason_;
-
-    function_call_match_error(annotated_qname_identifier f, /*function_signature const* signature,*/ error_storage reason)
-        : functional_{ f }
-        //, signature_{ signature }
-        , reason_{ reason } {}
-
-    void visit(error_visitor& vis) const override { vis(*this); }
-
-    lex::resource_location const& location() const noexcept override { return functional_.location; }
-    string_t object(unit const&) const noexcept override;
-    string_t description(unit const&) const noexcept override;
-};
-
 
 class error_printer_visitor : public error_visitor
 {

@@ -25,7 +25,8 @@ class fn_compiler_context;
 
 class functional_binding_set
 {
-    small_vector<std::pair<identifier, small_vector<entity_identifier, 1>>, 16> binding_;
+    using value_type = variant<entity_identifier, mp::integer>;
+    small_vector<std::pair<identifier, small_vector<value_type, 1>>, 16> binding_;
 
 public:
     inline void reset(size_t cnt)
@@ -34,11 +35,21 @@ public:
         binding_.resize(cnt);
     }
 
-    optional<span<const entity_identifier>> lookup(identifier id)
+    optional<span<const value_type>> lookup(identifier id)
     {
         auto it = std::lower_bound(binding_.begin(), binding_.end(), id, [](auto const& pair, identifier id) { return pair.first < id; });
         if (it == binding_.end() || it->first != id) return {};
         return span{ it->second.data(), it->second.size() };
+    }
+
+    void emplace_back(identifier id, value_type value)
+    {
+        auto it = std::lower_bound(binding_.begin(), binding_.end(), id, [](auto const& pair, identifier id) { return pair.first < id; });
+        if (it == binding_.end() || it->first != id) {
+            it = binding_.emplace(it, id, small_vector<value_type, 1>{ std::move(value) });
+        } else {
+            it->second.emplace_back(std::move(value));
+        }
     }
 };
 
@@ -96,6 +107,18 @@ public:
     //void push_named_argument_expressions(identifier, se_cont_iterator &, semantic::managed_expression_list const&);
     //void push_unnamed_argument_expressions(size_t, se_cont_iterator&, semantic::managed_expression_list const&);
 
+    template <typename FT>
+    inline void for_each_named_match(FT && ft) const
+    {
+        for (auto [nm, pmr] : named_matches_) std::forward<FT>(ft)(nm, *pmr);
+    }
+
+    template <typename FT>
+    inline void for_each_positional_match(FT&& ft) const
+    {
+        for (auto pmr : positional_matches_) std::forward<FT>(ft)(*pmr);
+    }
+
     //span<const se_rng_t> get_named_arguments(identifier) const noexcept;
     //span<const se_rng_t> get_position_arguments(size_t pos) const noexcept;
 
@@ -130,6 +153,8 @@ public:
 
         inline mp::decimal const& get_weight() const noexcept { return weight_; }
         inline lex::resource_location const& location() const noexcept { return location_; }
+
+        virtual std::ostream& print(unit const&, std::ostream& s) const { return s << "some pattern"; }
     };
 
     class match
@@ -174,6 +199,7 @@ public:
 
     // looking by argument expressions
     std::expected<match, error_storage> find(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const& expected_result) const;
+    inline std::expected<match, error_storage> find(fn_compiler_context& ctx, pure_call_t const& c) const { return find(ctx, c, annotated_entity_identifier{}); }
 
 private:
     qname_identifier id_;

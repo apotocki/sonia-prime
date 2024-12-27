@@ -35,10 +35,6 @@ struct preliminary_type_visitor : static_visitor<entity_identifier>
 
     result_type operator()(bang_preliminary_parameter_pack_t const& v) const;
 
-    result_type operator()(annotated_qname const& v) const;
-
-    result_type operator()(annotated_identifier const& v) const;
-
     template <typename T>
     result_type operator()(T const& v) const
     {

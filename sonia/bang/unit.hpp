@@ -54,6 +54,8 @@ class virtual_stack_machine;
 
 namespace vm { class context; }
 
+class external_fn_pattern;
+
 class unit
 {
     using identifier_builder_t = identifier_builder<identifier>;
@@ -151,7 +153,10 @@ public:
     inline entity_identifier get_decimal_entity_identifier() const noexcept { return decimal_entity_identifier_; }
     inline entity_identifier get_integer_entity_identifier() const noexcept { return integer_entity_identifier_; }
     inline entity_identifier get_bool_entity_identifier() const noexcept { return bool_entity_identifier_; }
-    
+                             
+    inline entity_identifier get_arrayify_entity_identifier() const noexcept { return arrayify_entity_identifier_; }
+    inline entity_identifier get_array_at_entity_identifier() const noexcept { return array_at_entity_identifier_; }
+
     inline qname_identifier get_fn_qname_identifier() const noexcept { return fn_qname_identifier_; }
     inline qname_identifier get_ellipsis_qname_identifier() const noexcept { return ellipsis_qname_identifier_; }
     inline qname_identifier get_tuple_qname_identifier() const noexcept { return tuple_qname_identifier_; }
@@ -161,20 +166,27 @@ public:
     inline qname_identifier get_bool_qname_identifier() const noexcept { return bool_qname_identifier_; }
     inline qname_identifier get_any_qname_identifier() const noexcept { return any_qname_identifier_; }
 
+    //inline qname_identifier get_arrayify_qname_identifier() const noexcept { return arrayify_qname_identifier_; }
+    inline qname_identifier get_make_tuple_qname_identifier() const noexcept { return make_tuple_qname_identifier_; }
+    inline qname_identifier get_new_qname_identifier() const noexcept { return new_qname_identifier_; }
     inline qname_identifier get_eq_qname_identifier() const noexcept { return eq_qname_identifier_; }
     inline qname_identifier get_ne_qname_identifier() const noexcept { return ne_qname_identifier_; }
     inline qname_identifier get_plus_qname_identifier() const noexcept { return plus_qname_identifier_; }
     inline qname_identifier get_negate_qname_identifier() const noexcept { return negate_qname_identifier_; }
     inline qname_identifier get_implicit_cast_qname_identifier() const noexcept { return implicit_cast_qname_identifier_; }
+    inline qname_identifier get_get_qname_identifier() const noexcept { return get_qname_identifier_; }
+    inline qname_identifier get_set_qname_identifier() const noexcept { return set_qname_identifier_; }
 
     //inline identifier get_fn_result_identifier() const noexcept { return fn_result_identifier_; }
+    inline identifier get_type_parameter_identifier() const noexcept { return type_parameter_identifier_; }
     inline identifier get_to_parameter_identifier() const noexcept { return to_parameter_identifier_; }
+    inline identifier get_self_parameter_identifier() const noexcept { return self_parameter_identifier_; }
+    inline identifier get_property_parameter_identifier() const noexcept { return property_parameter_identifier_; }
 
     functional& resolve_functional(qname_identifier);
 
     //void push_entity(shared_ptr<entity>);
 
-    void set_extern(string_view sign, void(*pfn)(vm::context&));
     variable_entity& new_variable(qname_view, lex::resource_location const&, entity_identifier type, variable_entity::kind);
 
     //void put_function(shared_ptr<function_t> f)
@@ -215,9 +227,7 @@ public:
 
     std::string print(lex::resource_location const&) const;
 
-    std::string print(bang_preliminary_type const& tp) const;
-    
-    std::string print(bang_type const& tp) const;
+    //std::string print(bang_preliminary_type const& tp) const;
     
     std::string print(syntax_expression_t const&) const;
     std::string print(semantic::expression_t const&) const;
@@ -262,9 +272,23 @@ protected:
     template <typename OutputIteratorT, typename UndefinedFT>
     OutputIteratorT name_printer(qname_view const&, OutputIteratorT, UndefinedFT const&) const;
 
+
+    std::pair<functional*, fn_pure_t> parse_extern_fn(string_view signature);
+
+    template <std::derived_from<external_fn_pattern> PT>
+    void set_extern(string_view sign, void(*pfn)(vm::context&));
+
+    template <std::derived_from<functional::pattern> PT>
+    void set_const_extern(string_view sig);
+
+    entity_identifier set_builtin_extern(string_view name, void(*pfn)(vm::context&));
+
 private:
     //identifier fn_result_identifier_; // ->
+    identifier type_parameter_identifier_; // type:
     identifier to_parameter_identifier_; // to:
+    identifier self_parameter_identifier_; // self:
+    identifier property_parameter_identifier_; // property:
 
     qname_identifier fn_qname_identifier_; // :: __fn -- the marker of a function type
     qname_identifier ellipsis_qname_identifier_; // :: ...
@@ -276,11 +300,17 @@ private:
     qname_identifier integer_qname_identifier_; // :: integer
     qname_identifier bool_qname_identifier_; // :: bool
     qname_identifier any_qname_identifier_; // :: any
+
+    //qname_identifier arrayify_qname_identifier_; // arrayify(...)
+    qname_identifier make_tuple_qname_identifier_; // make_tuple(...)
     qname_identifier eq_qname_identifier_; // :: ==
     qname_identifier ne_qname_identifier_; // :: !=
     qname_identifier plus_qname_identifier_; // binary +
     qname_identifier negate_qname_identifier_; // :: !
+    qname_identifier new_qname_identifier_; // new
     qname_identifier implicit_cast_qname_identifier_;
+    qname_identifier get_qname_identifier_;
+    qname_identifier set_qname_identifier_;
 
     entity_identifier void_entity_identifier_;
     entity_identifier any_entity_identifier_;
@@ -291,6 +321,9 @@ private:
     entity_identifier decimal_entity_identifier_;
     entity_identifier integer_entity_identifier_;
     entity_identifier bool_entity_identifier_;
+
+    entity_identifier arrayify_entity_identifier_; // builtin ::arrayify(...)->array
+    entity_identifier array_at_entity_identifier_; // builtin ::array_at(array, index)-> elementT
 
     // entities registry:
     //qname -> entity

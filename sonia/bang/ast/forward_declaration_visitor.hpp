@@ -25,7 +25,7 @@ struct forward_declaration_visitor : static_visitor<void>
 
     void operator()(enum_decl&);
 
-    void operator()(external_struct_decl&);
+    //void operator()(struct_decl&);
 
     void operator()(type_decl&);
 

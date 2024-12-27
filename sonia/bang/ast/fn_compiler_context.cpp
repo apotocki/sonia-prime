@@ -4,7 +4,6 @@
 
 #include "sonia/config.hpp"
 #include "fn_compiler_context.hpp"
-#include "preliminary_type_visitor.hpp"
 
 #include <boost/container/flat_map.hpp>
 

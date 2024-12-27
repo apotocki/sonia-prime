@@ -120,7 +120,7 @@ void error_printer_visitor::operator()(alt_error const& err)
     bool first = true;
     for (auto const &e : err.alternatives) {
         if (!first) {
-            s_ << "\n or \n";
+            s_ << "\n and \n";
         } else { first = false; }
         e->visit(*this);
     }
@@ -165,25 +165,9 @@ general_error::string_t parameter_not_found_error::description(unit const& u) co
         u.print(param.value) % u.print(entity_name)).str();
 }
 
-general_error::string_t function_call_match_error::object(unit const& u) const noexcept
-{
-    return u.print(functional_.value);
-}
 
-general_error::string_t function_call_match_error::description(unit const& u) const noexcept
-{
-    std::ostringstream ss;
-    //if (signature_) {
-    //    ss << "can't match the function signature: "sv;
-    //    ss << u.print(signature_->fn_type);
-    //} else {
-        ss << "can't match the function call";
-    //}
-    if (reason_) {
-        ss << ", caused by: \n" << u.print(*reason_);
-    }
-    return ss.str();
-}
+
+
 
 general_error::string_t type_mismatch_error::description(unit const& u) const noexcept
 {

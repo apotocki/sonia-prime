@@ -12,7 +12,8 @@ namespace sonia::lang::bang {
 
 std::expected<entity_identifier, error_storage> external_fn_pattern::const_apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor&) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("external_fn_pattern::const_apply");
+    //THROW_NOT_IMPLEMENTED_ERROR("external_fn_pattern::const_apply");
+    return std::unexpected(make_shared<basic_general_error>(location(), "can't evaluate as a const expression"sv, fid));
 }
 
 #if 0
@@ -32,7 +33,7 @@ std::expected<entity_identifier, error_storage> external_fn_pattern::apply(fn_co
 
 shared_ptr<entity> external_fn_pattern::build(unit& u, entity_signature&& signature) const
 {
-    return make_shared<external_function_entity>(fn_qname() / u.new_identifier(), std::move(signature), extfnid_);
+    return make_shared<external_function_entity>(u, fn_qname() / u.new_identifier(), std::move(signature), extfnid_);
 }
 
 }

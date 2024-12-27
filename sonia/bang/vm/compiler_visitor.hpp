@@ -253,7 +253,8 @@ public:
             }
         }
         size_t param_count = fn_context_->parameter_count(); // including captured_variables
-        if (!fn_context_->is_void()) {
+        BOOST_ASSERT(fn_context_->get_result_type());
+        if (fn_context_->get_result_type() != unit_.get_void_entity_identifier()) {
             fnbuilder_.append_fset(-static_cast<intptr_t>(param_count));
             fnbuilder_.append_truncatefp(-static_cast<intptr_t>(param_count) + 1);
         } else {
@@ -285,7 +286,8 @@ public:
         } else if (fn_context_) {
             local_return_position = fnbuilder_.make_label();
             size_t param_count = fn_context_->parameter_count(); // including captured_variables
-            if (!fn_context_->is_void()) {
+            BOOST_ASSERT(fn_context_->get_result_type());
+            if (fn_context_->get_result_type() != unit_.get_void_entity_identifier()) {
                 fnbuilder_.append_fset(-static_cast<intptr_t>(param_count));
                 fnbuilder_.append_truncatefp(-static_cast<intptr_t>(param_count) + 1);
             } else {

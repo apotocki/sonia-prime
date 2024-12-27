@@ -65,17 +65,21 @@ public:
     //inline span<const field_descriptor> positioned_fields() const noexcept { return fields().subspan(names_.size()); }
     //inline span<const field_descriptor> named_fields() const noexcept { return fields().subspan(0, names_.size()); }
 
-    field_descriptor const* find_field(identifier field_name) const noexcept
+    inline size_t field_count() const noexcept { return named_fields_.size() + fields_.size(); }
+
+    field_descriptor const* find_field(identifier field_name, size_t * pindex = nullptr) const noexcept
     {
         if (auto it = named_fields_.find(field_name); it != named_fields_.end()) {
+            if (pindex) *pindex = std::distance(named_fields_.begin(), it);
             return &it->second;
         }
         return nullptr;
     }
 
-    field_descriptor const* find_field(size_t index) const noexcept
+    field_descriptor const* find_field(size_t index, size_t* pindex = nullptr) const noexcept
     {
         if (index < fields_.size()) {
+            if (pindex) *pindex = index + named_fields_.size();
             return& fields_[index];
         }
         return nullptr;

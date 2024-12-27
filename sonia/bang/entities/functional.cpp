@@ -8,6 +8,9 @@
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/entities/ellipsis/pack_entity.hpp"
 
+#include "sonia/bang/errors/function_call_match_error.hpp"
+#include "sonia/bang/errors/pattern_match_error.hpp"
+
 namespace sonia::lang::bang {
 
 void parameter_match_result::append_result(bool variadic, entity_identifier r, se_cont_iterator before_start_it, semantic::expression_list_t& exprs)
@@ -191,7 +194,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
                 //err.alternatives.emplace_back(
                 //    make_error<function_call_match_error>(annotated_qname_identifier{ id_, call.location() }, sig, std::move(optres))
                 //);
-                err.alternatives.emplace_back(std::move(match_descriptor.error()));
+                err.alternatives.emplace_back(make_error<pattern_match_error>(*p, std::move(match_descriptor.error())));
             }
         } else {
             int match_weight = (**match_descriptor).weight;

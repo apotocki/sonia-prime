@@ -8,7 +8,6 @@
 #include <algorithm>
 
 #include "ast/fn_compiler_context.hpp"
-#include "ast/preliminary_type_visitor.hpp"
 #include "sonia/bang/unit.hpp"
 
 namespace sonia::lang::bang {
@@ -24,6 +23,7 @@ std::ostream& signatured_entity::print_to(std::ostream& os, unit const& u) const
     //return entity::print_to(os, u) << "<"sv << u.print(*signature()) << ">"sv;
 }
 
+#if 0
 class type_mangler_visitor : static_visitor<qname_identifier>
 {
     unit & u_;
@@ -46,7 +46,7 @@ public:
         //return obj.name();
     }
 
-    inline result_type operator()(bang_fn_t const& fn) const
+    inline result_type operator()(bang_fn_type_t const& fn) const
     {
         THROW_NOT_IMPLEMENTED_ERROR();
         /*
@@ -99,7 +99,7 @@ public:
         */
     }
 };
-
+#endif
 
 #if 0
 void function_signature::setup(fn_compiler_context& ctx, parameter_woa_list_t & params)
@@ -174,7 +174,7 @@ void function_signature::build_mangled_id(unit& u)
     }
     mangled_id = u.piregistry().resolve(ps);
 }
-#endif
+
 
 bang_type make_union_type(bang_type arg0, bang_type const* parg1)
 {
@@ -254,5 +254,5 @@ bang_type operator- (bang_union_t const& l, bang_type const& r)
         return result;
     }
 }
-
+#endif
 }

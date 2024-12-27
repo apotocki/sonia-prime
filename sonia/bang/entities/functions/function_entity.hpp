@@ -38,17 +38,10 @@ public:
     inline entity_identifier get_result_type() const noexcept { return result_type_; }
     inline void set_result_type(entity_identifier val) noexcept { result_type_ = val; }
 
-    virtual bool is_void() const noexcept = 0;
-
     virtual void build(unit&)
     {
         THROW_NOT_IMPLEMENTED_ERROR("function_entity::build");
     }
-
-    
-
-protected:
-    virtual void set_void(bool val = true) noexcept = 0;
 
 #if 0
 public:
@@ -85,7 +78,7 @@ class internal_function_entity : public function_entity
 
     uint64_t is_built_ : 1;
     uint64_t is_inline_ : 1;
-    uint64_t is_void_ : 1;
+    //uint64_t is_void_ : 1;
 
 public:
     struct build_data
@@ -94,20 +87,12 @@ public:
         shared_ptr<std::vector<infunction_statement>> body;
     };
 
-    internal_function_entity(qname && name, entity_signature&& sig, shared_ptr<build_data> bd, unit & u)
-        : function_entity{ std::move(name), std::move(sig) }
-        , bd_{ std::move(bd) }
-        , is_inline_{ 0 }
-        , is_built_{ 0 }
-        , body_{ u }
-    {}
+    internal_function_entity(unit& u, qname&& name, entity_signature&& sig, shared_ptr<build_data> bd);
 
     semantic::expression_list_t const& body() const { return body_; }
 
     void visit(entity_visitor const& v) const override { v(*this); }
 
-    bool is_void() const noexcept override { return !!is_void_; }
-    
     bool is_inline() const { return !!is_inline_; }
     void set_inline(bool val = true) { is_inline_ = val ? 1 : 0; }
 
@@ -121,30 +106,18 @@ public:
 
     void build(unit&) override;
 
-protected:
-    void set_void(bool val) noexcept { is_void_ = val ? 1 : 0; }
-
 private:
     shared_ptr<build_data> bd_;
 };
 
 class external_function_entity : public function_entity
 {
-    uint32_t extfnid_: 31;
-    uint32_t is_void_ : 1;
+    uint32_t extfnid_;
 
 public:
-    external_function_entity(qname && name, entity_signature&& sig, size_t fnid)
-        : function_entity{ std::move(name), std::move(sig) }, extfnid_{ static_cast<uint32_t>(fnid) }
-    {
-        BOOST_ASSERT(sig.result());
-        BOOST_ASSERT(sig.result()->entity_id());
-        set_result_type(sig.result()->entity_id());
-    }
+    external_function_entity(unit& u, qname&& name, entity_signature&& sig, size_t fnid);
 
     inline size_t extfnid() const noexcept { return extfnid_; }
-
-    inline bool is_void() const noexcept override { return !!is_void_; }
 
     void visit(entity_visitor const& v) const override { v(*this); }
 
@@ -155,9 +128,6 @@ public:
     }
 
     void build(unit&) override {}
-
-protected:
-    void set_void(bool val) noexcept { is_void_ = val ? 1 : 0; }
 };
 
 }

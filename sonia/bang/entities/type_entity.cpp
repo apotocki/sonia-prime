@@ -7,7 +7,6 @@
 
 #include "../ast/fn_compiler_context.hpp"
 #include "../ast/expression_visitor.hpp"
-#include "../ast/preliminary_type_visitor.hpp"
 
 namespace sonia::lang::bang {
 

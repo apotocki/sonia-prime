@@ -6,10 +6,40 @@
 #include "function_entity.hpp"
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
-#include "sonia/bang/ast/preliminary_type_visitor.hpp"
 #include "sonia/bang/ast/declaration_visitor.hpp"
 
 namespace sonia::lang::bang {
+
+size_t function_entity::parameter_count() const noexcept
+{
+    // to do: include captured parameters
+    size_t cnt = 0;
+    for (auto const& f : sig_.positioned_fields()) {
+        if (!f.is_const()) ++cnt;
+    }
+    for (auto const& [_, f] : sig_.named_fields()) {
+        if (!f.is_const()) ++cnt;
+    }
+    return cnt;
+}
+
+internal_function_entity::internal_function_entity(unit& u, qname&& name, entity_signature&& sig, shared_ptr<build_data> bd)
+    : function_entity{ std::move(name), std::move(sig) }
+    , bd_{ std::move(bd) }
+    , is_inline_{ 0 }
+    , is_built_{ 0 }
+    , body_{ u }
+{
+
+}
+
+external_function_entity::external_function_entity(unit& u, qname&& name, entity_signature&& sig, size_t fnid)
+    : function_entity{ std::move(name), std::move(sig) }, extfnid_{ static_cast<uint32_t>(fnid) }
+{
+    BOOST_ASSERT(sig.result());
+    BOOST_ASSERT(sig.result()->entity_id());
+    set_result_type(sig.result()->entity_id());
+}
 
 //size_t function_entity::hash() const noexcept
 //{
@@ -43,18 +73,7 @@ namespace sonia::lang::bang {
 //    return false;
 //}
 
-size_t function_entity::parameter_count() const noexcept
-{
-    // to do: include captured parameters
-    size_t cnt = 0;
-    for (auto const& f : sig_.positioned_fields()) {
-        if (!f.is_const()) ++cnt;
-    }
-    for (auto const& [_, f] : sig_.named_fields()) {
-        if (!f.is_const()) ++cnt;
-    }
-    return cnt;
-}
+
 
 //void function_entity::set_fn_signature(unit& u, entity_signature&& fnsig)
 //{

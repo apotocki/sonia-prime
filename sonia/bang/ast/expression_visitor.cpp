@@ -4,11 +4,8 @@
 
 #include "sonia/config.hpp"
 #include "expression_visitor.hpp"
-#include "expression_implicit_cast_visitor.hpp"
-#include "expression_vector_visitor.hpp"
-#include "expression_fn_visitor.hpp"
-#include "expression_type_visitor.hpp"
-#include "lvalue_expression_visitor.hpp"
+
+#include "assign_expression_visitor.hpp"
 #include "declaration_visitor.hpp"
 
 #include "sonia/utility/scope_exit.hpp"
@@ -17,10 +14,8 @@
 #include "../entities/enum_entity.hpp"
 #include "../entities/functional_entity.hpp"
 
-#include "casts/expression_cast_to_enum_visitor.hpp"
-#include "sonia/bang/errors.hpp"
 
-#include "vector_expression_visitor.hpp"
+#include "sonia/bang/errors.hpp"
 
 #include <expected>
 
@@ -166,6 +161,12 @@ expression_visitor::result_type expression_visitor::operator()(annotated_string 
     return apply_cast(u().get_string_entity_identifier(), s);
 }
 
+expression_visitor::result_type expression_visitor::operator()(annotated_identifier const& i) const
+{
+    ctx.append_expression(semantic::push_value{ i.value });
+    return apply_cast(u().get_identifier_entity_identifier(), i);
+}
+
 //expression_visitor::result_type expression_visitor::operator()(annotated_qname const& aqn) const
 //{
 //    GLOBAL_LOG_INFO() << ctx.u().print(aqn.value);
@@ -245,10 +246,13 @@ expression_visitor::result_type expression_visitor::do_assign(binary_expression_
     //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN");
     //GLOBAL_LOG_INFO() << "left expression: " << ctx.u().print(op.left);
     //size_t start_result_pos = result.size();
-    lvalue_expression_visitor lvis{ ctx };
-    auto e = apply_visitor(lvis, op[0].value());
-    if (!e) return std::unexpected(std::move(e.error()));
+    assign_expression_visitor lvis{ ctx, op.location(), op[1].value() };
 
+    auto e = apply_visitor(lvis, op[0].value());
+    if (e) return std::unexpected(std::move(e));
+
+    return false;
+#if 0
     if (variable_entity const* ve = dynamic_cast<variable_entity const*>(*e); ve) {
         expression_visitor rvis{ ctx, annotated_entity_identifier{ ve->get_type(), op.location() } };
         auto res = apply_visitor(rvis, op[1].value());
@@ -277,6 +281,7 @@ expression_visitor::result_type expression_visitor::do_assign(binary_expression_
         THROW_NOT_IMPLEMENTED_ERROR();
 #endif
     }
+#endif
 
     /*
     if (variable_identifier const* varnm = get<variable_identifier>(&op.left); varnm) {
@@ -635,11 +640,25 @@ expression_visitor::result_type expression_visitor::operator()(not_empty_express
 #endif
 }
 
-expression_visitor::result_type expression_visitor::operator()(member_expression_t & me) const
+expression_visitor::result_type expression_visitor::operator()(member_expression_t const& me) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor member_expression_t");
+    functional const& fn = u().fregistry().resolve(u().get_get_qname_identifier());
+    pure_call_t get_call{ me.start() };
+    get_call.emplace_back(annotated_identifier{ u().get_self_parameter_identifier() }, me.object);
+    get_call.emplace_back(annotated_identifier{ u().get_property_parameter_identifier() }, me.property);
+
+    auto match = fn.find(ctx, get_call);
+    if (!match) {
+        return std::unexpected(append_cause(
+            make_error<basic_general_error>(me.start(), "can't resolve"sv, syntax_expression_t{ me }),
+            std::move(match.error())
+        ));
+    }
+
+    if (auto err = match->apply(ctx); err) return std::unexpected(std::move(err));
+    return apply_cast(ctx.context_type, me);
+    
 #if 0
-    if (auto opterr = apply_visitor(expression_visitor{ ctx, nullptr }, me.object); opterr) return opterr;
     /*
     if (auto* uotype = ctx.context_type.as<bang_union_t>(); me.is_object_optional && uotype && uotype->has(bang_tuple_t{})) {
         ctx.append_expression(std::move(semantic::not_empty_condition_t{}));
@@ -733,6 +752,32 @@ expression_visitor::result_type expression_visitor::operator()(functional const&
     return apply_cast(ctx.context_type, call);
 }
 
+expression_visitor::result_type expression_visitor::operator()(new_expression_t const& ne) const
+{
+    functional const& fn = u().fregistry().resolve(u().get_new_qname_identifier());
+    pure_call_t new_call{ ne.location };
+    new_call.emplace_back(annotated_identifier{ u().get_type_parameter_identifier() }, ne.name);
+    for (auto const& arg: ne.arguments) {
+        if (annotated_identifier const* optname = arg.name(); optname) {
+            new_call.emplace_back(*optname, arg.value());
+        } else {
+            new_call.emplace_back(arg.value());
+        }
+    }
+    auto match = fn.find(ctx, new_call, expected_result);
+    if (!match) {
+        return std::unexpected(append_cause(
+            make_error<basic_general_error>(ne.location, "can't instantiate the object"sv, ne.name),
+            std::move(match.error())
+        ));
+    }
+
+    if (auto err = match->apply(ctx); err)
+        return std::unexpected(std::move(err));
+
+    return false;
+}
+
 expression_visitor::result_type expression_visitor::operator()(function_call_t const& proc) const
 {
     //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor function_call_t");
@@ -795,8 +840,8 @@ expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_
 {
     if (!expected_result) {
         // e.g. case: let val = (a, b, c)
-        functional const& tuple_fn = u().fregistry().resolve(u().get_tuple_qname_identifier());
-        pure_call_t tuple_call{ expression_location_visitor{}(nel) };
+        functional const& tuple_fn = u().fregistry().resolve(u().get_make_tuple_qname_identifier());
+        pure_call_t tuple_call{ nel.location };
         for (opt_named_syntax_expression_t const& ne : nel) {
             if (auto const* pname = ne.name(); pname) {
                 tuple_call.emplace_back(annotated_identifier{pname->value}, ne.value());

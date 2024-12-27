@@ -69,7 +69,7 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(not
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(member_expression_t const& me) const
 {
-    if (auto res = apply_visitor(expression_visitor{ ctx, nullptr }, me.object); !res) {
+    if (auto res = apply_visitor(expression_visitor{ ctx }, me.object); !res) {
         return std::unexpected(std::move(res.error()));
     }
     /*
@@ -79,7 +79,8 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(mem
         ctx.context_type = *uotype - bang_tuple_t{};
     }
     */
-    return handle_property_set(me.name);
+    THROW_NOT_IMPLEMENTED_ERROR("lvalue_expression_visitor::handle_property_set");
+    //return handle_property_set(me.property);
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(property_expression const& pe) const

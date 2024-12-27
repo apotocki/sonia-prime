@@ -15,8 +15,6 @@ namespace sonia::lang::bang {
 class basic_fn_pattern;
 class parameter_type_expression_visitor;
 
-
-
 class parameter_matcher
 {
     friend class parameter_type_expression_visitor;
@@ -47,8 +45,9 @@ public:
     // returns match weight or postpone or error
     variant<int, postpone_t, error_storage> try_forward_match(fn_compiler_context& ctx, syntax_expression_t const&, functional_binding_set&, parameter_match_result&) const;
 
-
     std::expected<entity_identifier, error_storage> apply_binding(fn_compiler_context& ctx, functional_binding_set&) const;
+
+    std::ostream& print(unit const&, std::ostream&) const;
 };
 
 class varnamed_matcher : public parameter_matcher
@@ -86,6 +85,8 @@ public:
     inline bool is_variadic() const noexcept { return impl_->is_variadic(); }
 
     std::expected<int, error_storage> try_match(fn_compiler_context& ctx, syntax_expression_t const&, functional_binding_set&, parameter_match_result&) const;
+
+    std::ostream& print(unit const& u, std::ostream& s) const { return impl_->print(u, s); }
 
 private:
     annotated_identifier external_name_;
@@ -125,7 +126,7 @@ protected:
     boost::container::small_flat_set<named_parameter_matcher, 8, named_parameter_matcher_less> named_matchers_;
     small_vector<shared_ptr<parameter_matcher>, 8> matchers_; // also for variadic named
     shared_ptr<parameter_matcher> result_matcher_;
-    boost::container::small_flat_set<identifier, 16> local_variables_;
+    //boost::container::small_flat_set<identifier, 16> local_variables_;
 
     uint8_t has_varpack_ : 1;
 
@@ -136,44 +137,32 @@ public:
     inline qname_identifier fn_qname_id() const noexcept { return fnl_.id(); }
     inline qname_view fn_qname() const noexcept { return fnl_.name(); }
 
-    optional<size_t> get_local_variable_index(identifier) const;
+    //optional<size_t> get_local_variable_index(identifier) const;
     named_parameter_matcher const* get_matcher(identifier) const;
     inline bool has_varnamed() const noexcept { return !!varnamed_matcher_; }
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
+
+    std::ostream& print(unit const&, std::ostream& s) const override;
+};
+
+class runtime_fn_pattern : public basic_fn_pattern
+{
+public:
+    using basic_fn_pattern::basic_fn_pattern;
     error_storage apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 
-protected:
     virtual shared_ptr<entity> build(unit&, entity_signature&&) const = 0;
 };
 
-class basic_fn_pattern2 : public functional::pattern
-{
-protected:
-    function_descriptor fd_;
-
-    mutable bool building_ = false;
-
-public:
-    basic_fn_pattern2(fn_compiler_context&, fn_pure_t const&);
-
-    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
-
-    inline qname_identifier fn_qname_id() const noexcept { return fd_.id(); }
-
-    error_storage apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
-
-protected:
-    virtual shared_ptr<entity> build(unit&, functional_match_descriptor&) const = 0;
-};
-
-class generic_fn_pattern : public basic_fn_pattern
+class generic_fn_pattern: public runtime_fn_pattern
 {
     shared_ptr<std::vector<infunction_statement>> body_;
     fn_kind kind_;
 
 public:
     generic_fn_pattern(fn_compiler_context&, functional const&, fn_decl_t const&);
+    
     
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 

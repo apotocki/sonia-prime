@@ -152,7 +152,7 @@ std::string vm::context::ecall_describe(size_t fn_index) const
     using builtin_fn = virtual_stack_machine::builtin_fn;
     switch ((builtin_fn)fn_index) {
     case builtin_fn::is_nil: return "is_nil";
-    case builtin_fn::arrayify: return "arrayify";
+    //case builtin_fn::arrayify: return "arrayify";
     case builtin_fn::unpack: return "unpack";
     case builtin_fn::referify: return "referify";
     case builtin_fn::weak_create: return "weak_create";
@@ -350,29 +350,6 @@ void vm::context::is_nil()
     stack_push(bool_blob_result(val.is_nil() || ::is_nil(unref(*val))));
 }
 
-void vm::context::arrayify()
-{
-    boost::container::small_vector<blob_result, 4> elements;
-
-    size_t argcount = stack_back().as<size_t>();
-    elements.reserve(argcount);
-
-    SCOPE_EXCEPTIONAL_EXIT([&elements]() {
-        for (auto& e : elements) blob_result_unpin(&e);
-    });
-
-    for (size_t i = argcount; i > 0; --i) {
-        elements.emplace_back(*stack_back(i));
-        blob_result_pin(&elements.back());
-    }
-    smart_blob r{ array_blob_result(span{elements.data(), elements.size()}) };
-    r.allocate();
-    //GLOBAL_LOG_INFO() << "arrayify address: " << std::hex << r->bp.data;
-
-    stack_pop(argcount + 1);
-    stack_push(std::move(r));
-}
-
 void vm::context::unpack()
 {
     smart_blob arr = std::move(stack_back());
@@ -449,7 +426,7 @@ void vm::context::call_function_object()
 virtual_stack_machine::virtual_stack_machine()
 {
     set_efn((size_t)builtin_fn::is_nil, [](vm::context& ctx) { ctx.is_nil(); });
-    set_efn((size_t)builtin_fn::arrayify, [](vm::context& ctx) { ctx.arrayify(); });
+    //set_efn((size_t)builtin_fn::arrayify, [](vm::context& ctx) { ctx.arrayify(); });
     set_efn((size_t)builtin_fn::unpack, [](vm::context& ctx) { ctx.unpack(); });
     set_efn((size_t)builtin_fn::referify, [](vm::context& ctx) { ctx.referify(); });
     set_efn((size_t)builtin_fn::weak_create, [](vm::context& ctx) { ctx.weak_create(); });

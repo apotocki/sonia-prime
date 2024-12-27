@@ -28,22 +28,5 @@ preliminary_type_visitor::result_type preliminary_type_visitor::operator()(bang_
     return *r;
 }
 
-preliminary_type_visitor::result_type preliminary_type_visitor::operator()(annotated_qname const& v) const
-{
-    functional const* fn = ctx.lookup_functional(v.value);
-    if (!fn) {
-        throw exception(ctx.u().print(*make_error<undeclared_identifier_error>(v.location, v.value)));
-    }
-    entity_identifier type_eid = fn->default_entity();
-    if (!type_eid) {
-        throw exception(ctx.u().print(*make_error<basic_general_error>(v.location, "is not a type"sv)));
-    }
-    return type_eid;
-}
-
-preliminary_type_visitor::result_type preliminary_type_visitor::operator()(annotated_identifier const& v) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR();
-}
 
 }

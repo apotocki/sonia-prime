@@ -9,23 +9,23 @@
 
 namespace sonia::lang::bang {
 
-class external_fn_pattern : public basic_fn_pattern
+class external_fn_pattern : public runtime_fn_pattern
 {
     size_t extfnid_;
 
 public:
     external_fn_pattern(fn_compiler_context& ctx, functional const& fnl, fn_pure_t& decl, size_t extfnid)
-        : basic_fn_pattern{ ctx, fnl, decl }
+        : runtime_fn_pattern{ ctx, fnl, decl }
         , extfnid_{ extfnid }
     {}
 
     //fieldset_t const& get_fieldset() const noexcept override { return fd_; }
-
+    
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
     //std::expected<entity_identifier, error_storage> apply(fn_compiler_context&, functional::match_descriptor&) const override;
 
 protected:
-    shared_ptr<entity> build(unit&, entity_signature&&) const override;
+    shared_ptr<entity> build(unit&, entity_signature&&) const;
 };
 
 }

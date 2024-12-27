@@ -17,9 +17,15 @@ foo_xn(arg1: "world", arg0: " hello,", 22, 42);
 extern fn set_external_property(object, string, _);
 extern fn get_external_property(object, string) -> any;
 
-struct View => (cookie: object, proto: typename prototype(disabled: bool));
-
+struct View => (cookie: object, proto: typename metaobject(disabled: bool));
+fn 
 fn get(self:View, property: __id("object")) -> object { }
 fn set(self:View, property: const __identifier $ID, $value: View::proto.$ID)) {
     set_external_property(self.object, $ID, $value);
+}
+
+struct view {
+    let cookie: object;
+    let proto = const metaobject(disabled: bool);
+    fn get(property: const __identifier $ID, $value: proto.$ID)) { return object.$ID
 }

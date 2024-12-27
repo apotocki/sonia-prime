@@ -28,6 +28,7 @@ struct bang_object_t
     entity_identifier id() const;
 };
 
+#if 0
 template <typename T> struct bang_tuple
 {
     std::vector<T> fields;
@@ -50,6 +51,7 @@ template <typename T> struct bang_tuple
 
     inline bool empty() const noexcept { return fields.empty() && named_fields.empty(); }
 };
+#endif
 
 template <typename T> using bang_fn = bang_fn_base<bang_tuple<T>, T>;
 
@@ -75,6 +77,7 @@ template <typename T> struct bang_bunion
     */
 };
 
+#if 0
 template <typename T> struct bang_union
 {
     boost::container::small_vector<T, 8> other_members;
@@ -256,6 +259,7 @@ template <typename T> struct bang_union
         return it != other_members.end() && *it == t;
     }
 };
+#endif
 
 //using bang_type_variant = make_recursive_variant<
 //    bang_any_t, bang_bool_t, bang_int_t, bang_float_t, bang_decimal_t, bang_string_t, bang_object_t,
@@ -268,6 +272,7 @@ template <typename T> struct bang_union
 //>::type;
 
 
+#if 0
 struct bang_type;
 using bang_type_variant = variant<
     bang_any_t, bang_object_t,
@@ -303,16 +308,17 @@ struct bang_type : bang_type_variant
     T const* as() const { return get<T>(static_cast<bang_type_variant const*>(this)); }
 };
 
-using bang_vector_t = bang_vector<bang_type>;
-using bang_array_t = bang_array<bang_type>;
-using bang_tuple_t = bang_tuple<bang_type>;
-using bang_union_t = bang_union<bang_type>;
-using bang_bunion_t = bang_bunion<bang_type>;
+//using bang_vector_t = bang_vector<bang_type>;
+//using bang_array_t = bang_array<bang_type>;
+//using bang_tuple_t = bang_tuple<bang_type>;
+//using bang_union_t = bang_union<bang_type>;
+//using bang_bunion_t = bang_bunion<bang_type>;
 using bang_fn_t = bang_fn<bang_type>;
 
 bang_type make_union_type(bang_type, bang_type const*);
 bang_type operator|| (bang_type const& l, bang_type const& r);
 bang_type operator- (bang_union_t const& l, bang_type const& r);
+#endif
 // ======================================================================== function
 
 //class symbol
@@ -563,14 +569,7 @@ using expression_list_t = expression_list<expression_t>;
 
 }
 
-using semantic_expression_pair = std::pair<semantic::expression_t, bang_type>;
-
-
-
-class function_scope_type
-{
-
-};
+//using semantic_expression_pair = std::pair<semantic::expression_t, bang_type>;
 
 }
 

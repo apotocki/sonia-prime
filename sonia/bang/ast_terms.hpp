@@ -179,10 +179,10 @@ template <typename TermT>
 using opt_named_term_list = small_vector<opt_named_term<TermT>, 2>;
 
 
-template <typename T> struct bang_preliminary_tuple
+template <typename T> struct bang_tuple
 {
     opt_named_term_list<T> fields;
-    inline bool operator==(bang_preliminary_tuple const&) const = default;
+    inline bool operator==(bang_tuple const&) const = default;
 };
 
 template <class TupleT, typename T> struct bang_fn_base
@@ -214,7 +214,7 @@ template <class TupleT, typename T> struct bang_fn_base
     }
 };
 
-template <typename T> using bang_preliminary_fn = bang_fn_base<bang_preliminary_tuple<T>, T>;
+template <typename T> using bang_fn_type = bang_fn_base<bang_tuple<T>, T>;
 
 template <typename T> struct bang_array
 {
@@ -230,17 +230,17 @@ template <typename T> struct bang_array
 template <typename T> struct bang_vector
 {
     T type;
-    inline bool operator==(bang_vector const&) const = default;
-    inline auto operator<=>(bang_vector const& r) const { return variant_compare_three_way{}(type, r.type); }
+    inline bool operator==(bang_vector const&) const noexcept = default;
+    inline auto operator<=>(bang_vector const& r) const noexcept { return variant_compare_three_way{}(type, r.type); }
 };
 
 template <typename T> struct bang_parameter_pack : bang_vector<T> {};
 
-template <typename T> struct bang_preliminary_union
+template <typename T> struct bang_union
 {
-    boost::container::small_vector<T, 8> members;
-    inline bool operator==(bang_preliminary_union const&) const = default;
-    inline auto operator<=>(bang_preliminary_union const& r) const
+    small_vector<T, 8> members;
+    inline bool operator==(bang_union const&) const = default;
+    inline auto operator<=>(bang_union const& r) const
     {
         return std::lexicographical_compare_three_way(members.begin(), members.end(), r.members.begin(), r.members.end(), variant_compare_three_way{});
     }
@@ -251,23 +251,22 @@ template <typename T> struct bang_preliminary_union
 using bang_preliminary_type = make_recursive_variant<
     annotated_qname,
     annotated_identifier,
-    bang_preliminary_fn<recursive_variant_>,
+    bang_fn_type<recursive_variant_>,
     bang_vector<recursive_variant_>,
     bang_array<recursive_variant_>,
     bang_parameter_pack<recursive_variant_>,
-    bang_preliminary_tuple<recursive_variant_>,
-    bang_preliminary_union<recursive_variant_>
+    bang_tuple<recursive_variant_>,
+    bang_union<recursive_variant_>
 >::type;
 
-using bang_preliminary_vector_t = bang_vector<bang_preliminary_type>;
-using bang_preliminary_array_t = bang_array<bang_preliminary_type>;
-using bang_preliminary_tuple_t = bang_preliminary_tuple<bang_preliminary_type>;
-using bang_preliminary_union_t = bang_preliminary_union<bang_preliminary_type>;
-using bang_preliminary_fn_t = bang_preliminary_fn<bang_preliminary_type>;
+//using bang_preliminary_vector_t = bang_vector<bang_preliminary_type>;
+//using bang_preliminary_array_t = bang_array<bang_preliminary_type>;
+//using bang_tuple_t = bang_tuple<bang_preliminary_type>;
+//using bang_union_t = bang_union<bang_preliminary_type>;
+//using bang_fn_type_t = bang_fn_type<bang_preliminary_type>;
 using bang_preliminary_parameter_pack_t = bang_parameter_pack<bang_preliminary_type>;
 
-using field_t = opt_named_term<bang_preliminary_type>;
-using field_list_t = opt_named_term_list<bang_preliminary_type>;
+
 // ========================================================================
 
 // ========================================================================
@@ -363,7 +362,7 @@ inline auto bang_binary_switcher(BinaryExprT && exp, VisitorT && vis) {
 template <typename ExprT>
 struct expression_vector
 {
-    boost::container::small_vector<ExprT, 4> elements;
+    small_vector<ExprT, 4> elements;
     lex::resource_location start;
 };
 
@@ -371,8 +370,8 @@ template <typename ExprT>
 struct pure_call
 {
     opt_named_term_list<ExprT> args_;
-    //boost::container::small_vector<ExprT, 4> positioned_args;
-    //boost::container::small_vector<std::tuple<annotated_identifier, ExprT>, 8> named_args;
+    //small_vector<ExprT, 4> positioned_args;
+    //small_vector<std::tuple<annotated_identifier, ExprT>, 8> named_args;
     lex::resource_location location_; // operator or OPEN_PARENTHESIS location
 
     explicit pure_call(lex::resource_location loc) : location_{ std::move(loc) } {}
@@ -481,7 +480,7 @@ template <typename ExprT>
 struct member_expression
 {
     ExprT object;
-    annotated_identifier name;
+    annotated_identifier property;
     //bool is_object_optional = false;
 
     lex::resource_location const& start() const { return get_start_location(object); }
@@ -504,17 +503,7 @@ struct context_value
     lex::resource_location location;
 };
 
-template <typename ExprT>
-struct let_statement_decl
-{
-    annotated_identifier aname;
-    optional<ExprT> expression;
-    optional<bang_preliminary_type> type;
-    bool weakness;
 
-    identifier const& name() const { return aname.value; }
-    lex::resource_location const& location() const { return aname.location; }
-};
 
 //template <typename ExprT>
 //struct assign_decl
@@ -580,6 +569,14 @@ struct not_empty_expression
     ExprT value;
 };
 
+template <typename ExprT>
+struct new_expression
+{
+    lex::resource_location location;
+    ExprT name;
+    opt_named_term_list<ExprT> arguments;
+};
+
 //struct entity_expression
 //{
 //    entity_identifier id;
@@ -593,8 +590,10 @@ template <typename T> struct opt_named_syntax_expression_list : opt_named_term_l
 
 using syntax_expression_t = make_recursive_variant<
     variable_identifier,
-    annotated_bool, annotated_integer, annotated_decimal, annotated_string,
-    bang_parameter_pack<recursive_variant_>,
+    annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier,
+    bang_fn_type<recursive_variant_>,
+    bang_array<recursive_variant_>, bang_vector<recursive_variant_>, bang_tuple<recursive_variant_>,
+    bang_union<recursive_variant_>, bang_parameter_pack<recursive_variant_>,
     context_value, case_expression, property_expression, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
     //lambda<recursive_variant_>,
     unary_expression<recursive_variant_>,
@@ -602,6 +601,7 @@ using syntax_expression_t = make_recursive_variant<
     //assign_expression<>, logic_and_expression<>, logic_or_expression<>, concat_expression<>,
     expression_vector<recursive_variant_>,
     function_call<recursive_variant_>,
+    new_expression<recursive_variant_>,
     annotated_entity_identifier,
     opt_named_syntax_expression_list<recursive_variant_>
     
@@ -613,6 +613,18 @@ using opt_named_syntax_expression_t = opt_named_term<syntax_expression_t>;
 using opt_named_syntax_expression_list_t = opt_named_syntax_expression_list<syntax_expression_t>;
 
 using bang_parameter_pack_t = bang_parameter_pack<syntax_expression_t>;
+
+struct field_t
+{
+    annotated_identifier name;
+    parameter_constraint_modifier_t modifier;
+    syntax_expression_t type;
+    optional<syntax_expression_t> value;
+};
+using field_list_t = std::vector<field_t>;
+
+//using field_t = opt_named_term<bang_preliminary_type>;
+//using field_list_t = opt_named_term_list<bang_preliminary_type>;
 
 struct parameter_constraint_set_t
 {
@@ -697,7 +709,7 @@ struct lambda : fn_pure<ExprT>
 };
 
 using lambda_t = lambda<syntax_expression_t>;
-using expression_list_t = boost::container::small_vector<syntax_expression_t, 4>;
+using expression_list_t = small_vector<syntax_expression_t, 4>;
 using opt_chain_t = opt_chain<syntax_expression_t>;
 using opt_chain_link_t = opt_chain_link<syntax_expression_t>;
 using chained_expression_t = chained_expression<syntax_expression_t>;
@@ -708,54 +720,21 @@ using member_expression_t = member_expression<syntax_expression_t>;
 using unary_expression_t = unary_expression<syntax_expression_t>;
 using binary_expression_t = binary_expression<syntax_expression_t>;
 using pure_call_t = pure_call<syntax_expression_t>;
+using new_expression_t = new_expression<syntax_expression_t>;
 using function_call_t = function_call<syntax_expression_t>;
 using expression_vector_t = expression_vector<syntax_expression_t>;
 
+using bang_fn_type_t = bang_fn_type<syntax_expression_t>;
+using bang_tuple_t = bang_tuple<syntax_expression_t>;
+using bang_vector_t = bang_vector<syntax_expression_t>;
+using bang_array_t = bang_array<syntax_expression_t>;
+using bang_union_t = bang_union<syntax_expression_t>;
 //template <unary_operator_type Op> using unary_expression_t = unary_expression<Op, syntax_expression_t>;
 
 template <typename T> struct is_unary_expression : false_type {};
 template <typename T> requires(std::is_same_v<decltype(T::op), const unary_operator_type>) struct is_unary_expression<T> : true_type {};
 
-struct expression_location_visitor : static_visitor<lex::resource_location const&>
-{
-    expression_location_visitor() = default;
-
-    template <typename T>
-    inline result_type operator()(annotated<T> const& ae) const noexcept { return ae.location; }
-
-    inline result_type operator()(bang_parameter_pack_t const& v) const noexcept
-    { 
-        return apply_visitor(*this, v.type);
-    }
-
-    inline result_type operator()(context_value const& v) const noexcept { return v.location; }
-    inline result_type operator()(variable_identifier const& v) const noexcept { return v.name.location; }
-    inline result_type operator()(case_expression const& ce) const noexcept { return ce.start; }
-    inline result_type operator()(not_empty_expression_t const& me) const noexcept { return apply_visitor(*this, me.value); }
-    inline result_type operator()(member_expression_t const& me) const noexcept { return me.start(); }
-    inline result_type operator()(property_expression const& me) const noexcept { return me.name.location; }
-    inline result_type operator()(lambda_t const& le) const noexcept { return le.start; }
-    //inline result_type operator()(annotated_entity_identifier const& ee) const noexcept { return ee.location; }
-
-    inline result_type operator()(unary_expression_t const& ue) const noexcept { return ue.start(); }
-    inline result_type operator()(binary_expression_t const& be) const noexcept { return be.start(); }
-
-    inline result_type operator()(expression_vector_t const& v) const noexcept { return v.start; }
-    inline result_type operator()(function_call_t const& f) const noexcept { return f.start(); }
-
-    inline result_type operator()(opt_named_syntax_expression_list_t const& sl) const noexcept { return sl.location; }
-    
-    //template <typename T>
-    //inline lex::resource_location const& operator()(T const&) const
-    //{
-    //    THROW_NOT_IMPLEMENTED_ERROR();
-    //}
-};
-
-inline lex::resource_location const& get_start_location(syntax_expression_t const& e)
-{
-    return apply_visitor(expression_location_visitor{}, e);
-}
+lex::resource_location const& get_start_location(syntax_expression_t const&);
 
 // {particular location or expression, optional reference location}
 struct error_context
@@ -931,7 +910,14 @@ struct fn_decl_t : fn_pure_t
     std::vector<infunction_statement> body;
 };
 
+struct struct_decl
+{
+    annotated_qname aname;
+    field_list_t fields;
 
+    qname_view name() const { return aname.value; }
+    lex::resource_location const& location() const { return aname.location; }
+};
 
 struct enum_decl
 {
@@ -953,20 +939,10 @@ struct type_decl
     lex::resource_location const& location() const { return aname.location; }
 };
 
-struct external_struct_decl
-{
-    annotated_qname_identifier aname;
-    field_list_t fields;
-
-    qname_identifier name() const { return aname.value; }
-    lex::resource_location const& location() const { return aname.location; }
-};
-
-
 struct extern_var
 {
     annotated_identifier name;
-    bang_preliminary_type type;
+    syntax_expression_t type;
 };
 
 struct include_decl
@@ -974,8 +950,18 @@ struct include_decl
     annotated_string path;
 };
 
+struct let_statement
+{
+    annotated_identifier aname;
+    optional<syntax_expression_t> expression;
+    optional<syntax_expression_t> type;
+    bool weakness;
+
+    identifier const& name() const { return aname.value; }
+    lex::resource_location const& location() const { return aname.location; }
+};
+
 using return_decl_t = return_decl<syntax_expression_t>;
-using let_statement_decl_t = let_statement_decl<syntax_expression_t>;
 using expression_statement_t = expression_decl<syntax_expression_t>;
 //using assign_decl_t = assign_decl<syntax_expression_t>;
 
@@ -984,22 +970,23 @@ using expression_statement_t = expression_decl<syntax_expression_t>;
 using if_decl_t = if_decl<syntax_expression_t>;
 using while_decl_t = while_decl<syntax_expression_t>;
 
+// statements that don't need ';' separator at the end
 using finished_statement_type = variant<
-    while_decl_t, if_decl_t, fn_decl_t
+    while_decl_t, if_decl_t, fn_decl_t, struct_decl
 >;
 
 using generic_statement_type = variant<
-    let_statement_decl_t, expression_statement_t, return_decl_t, fn_decl_t
+    let_statement, expression_statement_t, return_decl_t, fn_decl_t, struct_decl
 >;
 
 using statement_type = variant<
-    extern_var, let_statement_decl_t, expression_statement_t, fn_pure_t,
-    include_decl, external_struct_decl, type_decl, enum_decl, return_decl_t,
+    extern_var, let_statement, expression_statement_t, fn_pure_t,
+    include_decl, struct_decl, type_decl, enum_decl, return_decl_t,
     fn_decl_t, if_decl_t, while_decl_t
 >;
 
 using infunction_statement_type = variant<
-    extern_var, let_statement_decl_t, expression_statement_t, fn_pure_t,
+    extern_var, let_statement, expression_statement_t, fn_pure_t, struct_decl,
     fn_decl_t, if_decl_t, while_decl_t, continue_statement_t, break_statement_t, return_decl_t
 >;
 

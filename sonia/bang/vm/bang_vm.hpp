@@ -123,7 +123,7 @@ public:
 
     // builtins
     void is_nil();
-    void arrayify();
+    //void arrayify();
     void unpack();
     void referify();
     void weak_create();
@@ -296,7 +296,7 @@ public:
     enum class builtin_fn
     {
         is_nil = 0,
-        arrayify, unpack,
+        /*arrayify,*/ unpack,
         referify, weak_create, weak_lock,
         function_constructor,
         /*extern_object_create, extern_object_set_property,*/ extern_object_get_property,

@@ -7,11 +7,11 @@
 
 #include "fn_compiler_context.hpp"
 #include "expression_visitor.hpp"
-#include "lvalue_expression_visitor.hpp"
-#include "preliminary_type_visitor.hpp"
+#include "ct_expression_visitor.hpp"
 
 #include "../entities/enum_entity.hpp"
 #include "../entities/type_entity.hpp"
+#include "../entities/struct/struct_entity.hpp"
 #include "../entities/functional_entity.hpp"
 #include "../entities/functions/basic_fn_pattern.hpp"
 
@@ -21,9 +21,28 @@ inline unit& declaration_visitor::u() const noexcept { return ctx.u(); }
 
 void declaration_visitor::operator()(extern_var const& d) const
 {
-    entity_identifier vartype = apply_visitor(preliminary_type_visitor{ ctx }, d.type);
-    u().new_variable(qname{d.name.value}, d.name.location, vartype, variable_entity::kind::EXTERN);
+    auto vartype = apply_visitor(ct_expression_visitor{ ctx }, d.type);
+    if (!vartype) {
+        throw exception{ u().print(*vartype.error()) };
+    }
+    //entity_identifier vartype = apply_visitor(preliminary_type_visitor{ ctx }, d.type);
+    u().new_variable(qname{d.name.value}, d.name.location, *vartype, variable_entity::kind::EXTERN);
     //THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor extern_var");
+}
+
+void declaration_visitor::operator()(struct_decl const& sd) const
+{
+    // to do: check the allowence of absolute qname
+    qname sqn = ctx.ns() / sd.name();
+    functional & fnl = u().fregistry().resolve(sqn);
+    if (fnl.default_entity()) {
+        throw exception{ u().print(identifier_redefinition_error{ annotated_qname_identifier{fnl.id(), sd.location() }, u().eregistry().get(fnl.default_entity()).location() }) };
+    }
+    entity_signature esig{ fnl.id() };
+    auto se = sonia::make_shared<struct_entity>(u().get_typename_entity_identifier(), std::move(esig), sd.fields);
+    se->set_location(sd.location());
+    u().eregistry().insert(se);
+    fnl.set_default_entity(se->id());
 }
 
 void declaration_visitor::operator()(expression_statement_t const& ed) const
@@ -372,11 +391,15 @@ void declaration_visitor::operator()(fn_decl_t const& fnd) const
 #endif
 }
 
-void declaration_visitor::operator()(let_statement_decl_t const& ld) const
+void declaration_visitor::operator()(let_statement const& ld) const
 {
     entity_identifier vartype;
     if (ld.type) {
-        vartype = apply_visitor(preliminary_type_visitor{ ctx }, *ld.type);
+        auto optvartype = apply_visitor(ct_expression_visitor{ ctx }, *ld.type);
+        if (!optvartype) {
+            throw exception{ u().print(*optvartype.error()) };
+        }
+        vartype = *optvartype;
     }
     ctx.context_type = u().get_void_entity_identifier();
     if (ld.expression) {

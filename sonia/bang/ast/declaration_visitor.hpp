@@ -15,11 +15,13 @@ struct declaration_visitor : static_visitor<void>
 {
     fn_compiler_context& ctx;
 
-    explicit declaration_visitor(fn_compiler_context& c) : ctx{ c } {}
+    inline explicit declaration_visitor(fn_compiler_context& c) noexcept : ctx{ c } {}
 
     //void operator()(empty_t const&) const {}
 
     void operator()(extern_var const&) const;
+
+    void operator()(struct_decl const&) const;
 
     void operator()(fn_pure_t const&) const;
 
@@ -30,7 +32,7 @@ struct declaration_visitor : static_visitor<void>
     void operator()(continue_statement_t const&) const;
     void operator()(break_statement_t const&) const;
 
-    void operator()(let_statement_decl_t const&) const;
+    void operator()(let_statement const&) const;
     //void operator()(assign_decl_t const&) const;
 
     void operator()(expression_statement_t const&) const;

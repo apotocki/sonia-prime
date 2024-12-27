@@ -19,7 +19,6 @@ namespace sonia::lang::bang {
 struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
 {
     fn_compiler_context& ctx;
-    //optional<expected_result_t> expected_result;
     annotated_entity_identifier expected_result;
 
     // to do: set a flag to notice unneeded result
@@ -46,14 +45,15 @@ struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
 
     result_type operator()(case_expression const&) const;
     result_type operator()(not_empty_expression_t&) const;
-    result_type operator()(member_expression_t&) const;
+    result_type operator()(member_expression_t const&) const;
     result_type operator()(property_expression&) const;
 
     result_type operator()(annotated_bool const&) const;
     result_type operator()(annotated_integer const&) const;
     result_type operator()(annotated_decimal const&) const;
     result_type operator()(annotated_string const&) const;
-    
+    result_type operator()(annotated_identifier const&) const;
+
     result_type operator()(expression_vector_t &) const;
 
     result_type operator()(chained_expression_t&) const;
@@ -62,11 +62,11 @@ struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
 
     result_type operator()(annotated_entity_identifier const& ee) const;
 
+    result_type operator()(new_expression_t const& be) const;
     result_type operator()(function_call_t const&) const;
     result_type operator()(unary_expression_t const& be) const;
     result_type operator()(binary_expression_t const& be) const;
-        
-
+    
     
     result_type operator()(binary_operator_t<binary_operator_type::LOGIC_AND>, binary_expression_t &) const;
     result_type operator()(binary_operator_t<binary_operator_type::LOGIC_OR>, binary_expression_t &) const;

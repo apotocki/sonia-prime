@@ -126,7 +126,7 @@ public:
 // ======================================================================== values
 struct function_value { qname_identifier mangled_name; };
 using value_t = make_recursive_variant<
-    null_t, bool, uint64_t, mp::integer, mp::decimal, small_string, // shared_ptr<beng_object>,
+    null_t, bool, uint64_t, mp::integer, mp::decimal, small_string, identifier,// shared_ptr<beng_object>,
     entity_identifier, function_value,
     std::vector<recursive_variant_>
 >::type; // to do: tuples

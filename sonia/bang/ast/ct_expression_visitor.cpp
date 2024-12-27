@@ -19,7 +19,7 @@ inline ct_expression_visitor::result_type ct_expression_visitor::apply_cast(enti
     entity const& ent = u().eregistry().get(eid);
     entity_identifier typeeid = ent.get_type();
     if (typeeid == expected_result.value ) {
-        return typeeid;
+        return eid;
     }
 
     //GLOBAL_LOG_DEBUG() << ("expected type: %1%, actual type: %2%"_fmt % u().print(expected_result.value) % u().print(typeeid)).str();
@@ -55,9 +55,35 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_s
     return apply_cast(entid, sv);
 }
 
+ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_identifier const& iv) const
+{
+    identifier_entity id_ent{ iv.value };
+    entity_identifier entid = ctx.u().eregistry().find_or_create(id_ent, [this, &id_ent]() {
+        auto result = make_shared<identifier_entity>(std::move(id_ent));
+        result->set_type(u().get_identifier_entity_identifier());
+        return result;
+    }).id();
+
+    return apply_cast(entid, iv);
+}
+
 ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_entity_identifier const& ee) const
 {
     return apply_cast(ee.value, ee);
+}
+
+ct_expression_visitor::result_type ct_expression_visitor::operator()(variable_identifier const vi) const
+{
+    if (functional const* fl = ctx.lookup_functional(vi.name.value); fl) {
+        if (entity_identifier eid = fl->default_entity(); eid) { // variable or const
+            entity const& ent = u().eregistry().get(eid);
+            if (variable_entity const* pve = dynamic_cast<variable_entity const*>(&ent); pve) {
+                return std::unexpected(make_shared<basic_general_error>(vi.name.location, "can't evaluate the variable as a const expression"sv, vi.name.value));
+            }
+            return apply_cast(eid, vi);
+        }
+    }
+    return std::unexpected(make_error<undeclared_identifier_error>(vi.name));
 }
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(function_call_t const& proc) const

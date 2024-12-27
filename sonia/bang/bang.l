@@ -126,6 +126,7 @@ EXTERN                  "extern"
 INCLUDE					"include"
 INLINE					"inline"
 TYPENAME				"typename"
+NEW						"new"
 
 CONTINUE                "continue"
 BREAK					"break"
@@ -141,6 +142,7 @@ FALSE					"false"
 WEAK					"weak"
 CONST					"const"
 
+APOSTROPHE				"`"
 AT_SYMBOL				"@"
 END_STATEMENT			";"
 COMMA					","
@@ -169,7 +171,7 @@ NE                      "!="
 ELLIPSIS				"..."
 
 /*
-NEW						"new"
+
 FOR						"for"
 VOID					"void"
 AUTO                    "auto"
@@ -308,7 +310,8 @@ HASHTAG					"#"
 	{INCLUDE} { return (bang_lang::parser::token::INCLUDE); }
 	{INLINE} { return (bang_lang::parser::token::INLINE); }
 	{TYPENAME} { return (bang_lang::parser::token::TYPENAME); }
-	
+	{NEW} { variant_emplace(location); return (bang_lang::parser::token::NEW); }
+
 	{WHILE} { return (bang_lang::parser::token::WHILE); }
 	{IF} { return (bang_lang::parser::token::IF); }
 	{ELSE} { return (bang_lang::parser::token::ELSE); }
@@ -329,6 +332,7 @@ HASHTAG					"#"
 		return (bang_lang::parser::token::FALSE);
 	}
 	
+	{APOSTROPHE}			{ return (bang_lang::parser::token::APOSTROPHE); }
 	{AT_SYMBOL}				{ return (bang_lang::parser::token::AT_SYMBOL); }
 	{OPEN_BRACE}			{ variant_emplace(location); return (bang_lang::parser::token::OPEN_BRACE); }
 	{CLOSE_BRACE}			{ return (bang_lang::parser::token::CLOSE_BRACE); }

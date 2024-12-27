@@ -26,9 +26,12 @@ struct ct_expression_visitor : static_visitor<std::expected<entity_identifier, e
     {}
 
     result_type operator()(annotated_string const&) const;
+    result_type operator()(annotated_identifier const&) const;
     result_type operator()(annotated_entity_identifier const&) const;
     result_type operator()(function_call_t const&) const;
 
+    result_type operator()(variable_identifier const vi) const;
+    
     template <typename T>
     result_type operator()(T const& v) const
     {

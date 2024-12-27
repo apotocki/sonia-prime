@@ -9,6 +9,7 @@
 #include "parser.hpp"
 
 #include "vm/bang_vm.hpp"
+#include "library/library.hpp"
 
 #include "ast/fn_compiler_context.hpp"
 #include "ast/forward_declaration_visitor.hpp"
@@ -107,7 +108,7 @@ using namespace sonia::lang::bang;
 
 const char bang_bootstrap_code[] = R"#(
 inline fn ::not_equal(_, _)->bool => !($0 == $1);
-inline fn ::set(self: object, property: const __identifier, any)->object => set(self: self, to_string(property), $0);
+//inline fn ::set(self: object, property: const __identifier, any)->object => set(self: self, to_string(property), $0);
 )#";
 
 bang_impl::bang_impl()
@@ -346,7 +347,7 @@ void bang_impl::run(span<string_view> args)
     }
     if (!args.empty()) {
         ctx.stack_push(ui64_blob_result(args.size()));
-        ctx.arrayify();
+        bang_arrayify(ctx);
     } else {
         ctx.stack_push(nil_blob_result());
     }

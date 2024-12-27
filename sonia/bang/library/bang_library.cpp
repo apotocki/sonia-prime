@@ -56,6 +56,56 @@ void bang_print_string(vm::context& ctx)
     ctx.stack_pop(argcount + 1);
 }
 
+void bang_arrayify(vm::context& ctx)
+{
+    small_vector<blob_result, 4> elements;
+    size_t argcount = ctx.stack_back().as<size_t>();
+    elements.reserve(argcount);
+
+    SCOPE_EXCEPTIONAL_EXIT([&elements]() {
+        for (auto& e : elements) blob_result_unpin(&e);
+    });
+
+    for (size_t i = argcount; i > 0; --i) {
+        elements.emplace_back(*ctx.stack_back(i));
+        blob_result_pin(&elements.back());
+    }
+    smart_blob r{ array_blob_result(span{elements.data(), elements.size()}) };
+    r.allocate();
+    elements.clear();
+    ctx.stack_pop(argcount + 1);
+    ctx.stack_push(std::move(r));
+}
+
+void bang_array_at(vm::context& ctx)
+{
+    auto idx = ctx.stack_back().as<size_t>();
+    auto arr = ctx.stack_back(1).as<blob_result>();
+    if (!is_array(arr)) {
+        throw exception("expected array, got %1%"_fmt % arr);
+    }
+    smart_blob result;
+    blob_type_selector(arr, [idx, &result](auto ident, blob_result b) {
+        using type = typename decltype(ident)::type;
+        if constexpr (std::is_same_v<type, std::nullptr_t>) { }
+        else if constexpr (std::is_void_v<type>) { }
+        //else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"; }
+        else {
+            using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
+            size_t sz = array_size_of<fstype>(b);
+            if (idx >= sz) {
+                throw exception("index out of range");
+            }
+            fstype const& e = data_of<fstype>(b)[idx];
+            blob_result res = particular_blob_result(e);
+            result = res;
+        }
+    });
+
+    ctx.stack_pop();
+    ctx.stack_back().replace(smart_blob{ result });
+}
+
 void bang_negate(vm::context& ctx)
 {
     auto val = *ctx.stack_back();

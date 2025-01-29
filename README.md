@@ -1,3 +1,5 @@
+[<img src="https://api.gitsponsors.com/api/badge/img?id=163590865" height="50">](https://api.gitsponsors.com/api/badge/link?p=JIgjqZk6mEUjtjYW74MthbwOLUCGgXAL55iwwm+zutMswtKsZAmZPwq6rS3Akd04TuVxU08RALjgn2oYmlNw3HPbg1Uy4DnOts6PHDbXX2Tg4eSskwuVBzN6JyY1mr6GgzRDT3pQMYuNUK6mYfpxgg==)
+
 # sonia-prime
 master: [![Build status](https://circleci.com/gh/apotocki/sonia.one/tree/master.svg?style=shield)](<https://app.circleci.com/pipelines/github/apotocki/sonia.one?branch=master>)
 

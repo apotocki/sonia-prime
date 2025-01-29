@@ -78,7 +78,7 @@ external_function_entity::external_function_entity(unit& u, qname&& name, entity
 //void function_entity::set_fn_signature(unit& u, entity_signature&& fnsig)
 //{
 //    indirect_signatured_entity te{ fnsig };
-//    entity const& fnte = u.eregistry().find_or_create(te, [&fnsig, &u]() {
+//    entity const& fnte = u.eregistry_find_or_create(te, [&fnsig, &u]() {
 //        return make_shared<basic_signatured_entity>(u.get_typename_entity_identifier(), std::move(fnsig));
 //    });
 //    field_descriptor const* fd = fnsig.find_field(u.get_fn_result_identifier());
@@ -93,7 +93,7 @@ external_function_entity::external_function_entity(unit& u, qname&& name, entity
 //
 //    // resolve function type entity
 //    indirect_signatured_entity te{fnsig};
-//    entity const& fnte = u.eregistry().find_or_create(te, [&te, &u]() {
+//    entity const& fnte = u.eregistry_find_or_create(te, [&te, &u]() {
 //        te.set_type(u.get_typename_entity_identifier());
 //        return make_shared<type_entity>(std::move(te));
 //    });
@@ -112,9 +112,10 @@ void internal_function_entity::build(unit& u)
     }
     
     declaration_visitor dvis{ fnctx };
-    for (infunction_statement const& d : *bd_->body) {
-        apply_visitor(dvis, d);
-    }
+    if (auto err = dvis.apply(*bd_->body); err) throw exception(u.print(*err));
+    //for (infunction_statement const& d : *bd_->body) {
+    //    apply_visitor(dvis, d);
+    //}
     fnctx.finish_frame(); // unknown result type is resolving here
 
     if (!result_type_) {
@@ -151,7 +152,7 @@ void internal_function_entity::build(unit& u)
 //    }
 //
 //    indirect_signatured_entity te{ fnsig };
-//    entity const& fnte = u.eregistry().find_or_create(te, [&fnsig, &u]() {
+//    entity const& fnte = u.eregistry_find_or_create(te, [&fnsig, &u]() {
 //        return make_shared<basic_signatured_entity>(u.get_typename_entity_identifier(), std::move(fnsig));
 //    });
 //    set_type(fnte.id());
@@ -190,7 +191,7 @@ void internal_function_entity::build(unit& u)
 //        ++argindex;
 //
 //        auto var_entity = make_shared<variable_entity>(f.constraint, param_qname_id, variable_entity::kind::SCOPE_LOCAL);
-//        u.eregistry().insert(var_entity);
+//        u.eregistry_insert(var_entity);
 //        functional& param_fnl = u.fregistry().resolve(param_qname_id);
 //        param_fnl.set_default_entity(var_entity->id());
 //        params.emplace_back(var_entity.get());

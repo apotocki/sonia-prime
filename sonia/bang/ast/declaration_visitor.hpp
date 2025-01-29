@@ -4,44 +4,62 @@
 
 #pragma once
 
-#include "../semantic.hpp"
+#include "sonia/small_vector.hpp"
+
+#include "sonia/bang/semantic.hpp"
+#include "sonia/bang/errors.hpp"
 
 namespace sonia::lang::bang {
 
 class functional;
 class function_entity;
 
-struct declaration_visitor : static_visitor<void>
+class declaration_visitor : public static_visitor<error_storage>
 {
     fn_compiler_context& ctx;
+    mutable small_vector<span<const statement>, 4> decl_stack_;
 
-    inline explicit declaration_visitor(fn_compiler_context& c) noexcept : ctx{ c } {}
+public:
+    inline explicit declaration_visitor(fn_compiler_context& c) noexcept
+        : ctx{ c }
+    {}
+
+    [[nodiscard]] error_storage apply(span<const statement>) const;
 
     //void operator()(empty_t const&) const {}
 
-    void operator()(extern_var const&) const;
+    [[nodiscard]] result_type operator()(include_decl const&) const;
 
-    void operator()(struct_decl const&) const;
+    [[nodiscard]] result_type operator()(extern_var const&) const;
 
-    void operator()(fn_pure_t const&) const;
+    [[nodiscard]] result_type operator()(using_decl const&) const;
 
-    void operator()(fn_decl_t const&) const;
+    [[nodiscard]] result_type operator()(struct_decl const&) const;
 
-    void operator()(if_decl_t const&) const;
-    void operator()(while_decl_t const&) const;
-    void operator()(continue_statement_t const&) const;
-    void operator()(break_statement_t const&) const;
+    [[nodiscard]] result_type operator()(fn_pure const&) const;
 
-    void operator()(let_statement const&) const;
+    [[nodiscard]] result_type operator()(fn_decl_t const&) const;
+
+    [[nodiscard]] result_type operator()(if_decl_t const&) const;
+    [[nodiscard]] result_type operator()(while_decl_t const&) const;
+    [[nodiscard]] result_type operator()(continue_statement_t const&) const;
+    [[nodiscard]] result_type operator()(break_statement_t const&) const;
+
+    [[nodiscard]] result_type operator()(let_statement const&) const;
     //void operator()(assign_decl_t const&) const;
 
-    void operator()(expression_statement_t const&) const;
+    [[nodiscard]] result_type operator()(expression_statement_t const&) const;
 
-    void operator()(return_decl_t const&) const;
+    [[nodiscard]] result_type operator()(return_decl_t const&) const;
 
-    void append_fnsig(fn_pure_t& /*in*/, functional** ppf = nullptr) const;
+    template <typename T>
+    result_type operator()(T const& d) const {
+        THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor");
+    }
+
+    void append_fnsig(fn_pure& /*in*/, functional** ppf = nullptr) const;
     
-    //function_entity& append_fnent(fn_pure_t&, function_signature& sig, span<infunction_declaration_t>) const;
+    //function_entity& append_fnent(fn_pure&, function_signature& sig, span<infunction_declaration_t>) const;
 
     //void operator()(type_decl const&) const { THROW_INTERNAL_ERROR(); }
     //void operator()(include_decl const&) const { THROW_INTERNAL_ERROR(); }

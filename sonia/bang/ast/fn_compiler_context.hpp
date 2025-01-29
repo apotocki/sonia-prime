@@ -10,11 +10,12 @@
 
 #include "sonia/bang/errors.hpp"
 #include "sonia/bang/semantic.hpp"
+#include "sonia/bang/unit.hpp"
 
 #include "sonia/utility/invocation/invocation.hpp"
 
-#include "sonia/bang/entities/const_entity.hpp"
 #include "sonia/bang/entities/variable_entity.hpp"
+#include "sonia/bang/entities/functional.hpp"
 
 #include "sonia/utility/lang/compiler.hpp"
 
@@ -40,6 +41,26 @@ public:
     }
 
     size_t hash() const noexcept override { return entity_.hash(); }
+};
+
+class qname_task_id : public compiler_task_id
+{
+    qname_identifier qnmid_;
+
+public:
+    inline explicit qname_task_id(qname_identifier qnmid) : qnmid_{ qnmid } {}
+
+    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(qname_task_id);
+
+    bool equal(compiler_task_id const& tid) const noexcept override
+    {
+        if (qname_task_id const* et = dynamic_cast<qname_task_id const*>(&tid); et) {
+            return qnmid_ == et->qnmid_;
+        }
+        return false;
+    }
+
+    size_t hash() const noexcept override { return hash_value(qnmid_); }
 };
 
 /*
@@ -73,10 +94,6 @@ private:
 };
 */
 
-class unit;
-class function_descriptor;
-class functional;
-
 class fn_compiler_context
 {
     unit& unit_;
@@ -85,9 +102,10 @@ class fn_compiler_context
     size_t base_ns_size_;
     size_t local_variable_count_ = 0;
     compiler_worker_id worker_id_;
+    small_vector<functional_binding_set const*, 4> bindings_;
 
 public:
-    fn_compiler_context(unit& u, qname ns);
+    fn_compiler_context(unit& u, qname ns = {});
 
     fn_compiler_context(fn_compiler_context& parent, qname_view nested);
 
@@ -98,6 +116,10 @@ public:
 
     qname_view ns() const { return ns_; }
     qname_view base_ns() const { return span{ns_.parts().data(), base_ns_size_}; }
+
+    entity_identifier get_bound(identifier) const;
+    inline void push_binding(functional_binding_set const* binding) { bindings_.push_back(binding); }
+    inline void pop_binding() { bindings_.pop_back(); }
 
     compiler_task_tracer::task_guard try_lock_task(compiler_task_id const&);
 
@@ -111,11 +133,15 @@ public:
 
     inline unit& u() const noexcept { return unit_; }
 
-    //std::expected<int, error_storage> build_fieldset(fn_pure_t const&, patern_fieldset_t&);
-    error_storage build_function_descriptor(fn_pure_t const& pure_decl, function_descriptor& fds);
+    //std::expected<int, error_storage> build_fieldset(fn_pure const&, patern_fieldset_t&);
+    //error_storage build_function_descriptor(fn_pure const& pure_decl, function_descriptor& fds);
 
-    functional const* lookup_functional(qname_view name) const;
-
+    functional const* lookup_functional(qname_view) const;
+    std::expected<qname_identifier, error_storage> lookup_qname(annotated_qname const&) const;
+    std::expected<entity_identifier, error_storage> lookup_entity(annotated_qname const&);
+    std::expected<functional::match, error_storage> find(builtin_qnid, pure_call_t const&, annotated_entity_identifier const& expected_result = annotated_entity_identifier{});
+    std::expected<functional::match, error_storage> find(qname_identifier, pure_call_t const&, annotated_entity_identifier const& expected_result = annotated_entity_identifier{});
+    
     // to do: resolving depends on qname
     shared_ptr<entity> resolve_entity(qname_identifier name) const
     {
@@ -189,7 +215,7 @@ public:
         qname var_qname = base_ns() / name;
         auto ve = sonia::make_shared<variable_entity>(u().qnregistry().resolve(var_qname), std::move(t), variable_entity::kind::LOCAL);
         ve->set_weak(caption.is_weak());
-        unit_.eregistry().insert(ve);
+        unit_.eregistry_insert(ve);
         captured_variables.emplace_back(&caption, ve.get());
         return *ve;
 #endif
@@ -202,7 +228,7 @@ public:
     {
         qname var_qname = ns + name;
         auto ve = sonia::make_shared<local_variable_entity>(std::move(var_qname), std::move(t), is_const);
-        unit_.eregistry().insert(ve);
+        unit_.eregistry_insert(ve);
         ve->set_index(variables_.size());
         variables_.emplace_back(std::move(ve));
         return *variables_.back();

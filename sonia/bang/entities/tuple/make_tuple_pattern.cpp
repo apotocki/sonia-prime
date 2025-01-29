@@ -8,7 +8,7 @@
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 
-#include "tuple_entity.hpp"
+#include "sonia/bang/entities/signatured_entity.hpp"
 
 namespace sonia::lang::bang {
 
@@ -27,44 +27,18 @@ std::expected<functional_match_descriptor_ptr, error_storage> make_tuple_pattern
         pmr->append_result(false, ctx.context_type, last_expr_it, ctx.expressions());
     }
     return pmd;
-#if 0
-    if (!call.named_args.empty()) {
-        return std::unexpected(make_error<basic_general_error>(std::get<0>(call.named_args.front()).location, "unexpected named argument"sv));
-    }
-    if (call.positioned_args.empty()) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "an argument is expected"sv));
-    }
-    if (call.positioned_args.size() != 1) {
-        return std::unexpected(make_error<basic_general_error>(get_start_location(call.positioned_args[1]), "unexpected argument"sv));
-    }
-    auto const& expr = call.positioned_args.front();
-
-    expression_visitor evis{ ctx, expected_result_t{ ctx.u().get_typename_entity_identifier(), get_start_location(expr) } };
-    if (auto res = apply_visitor(evis, expr); !res) return std::unexpected(std::move(res.error()));
-
-    md.signature.set_name(ctx.u().get_ellipsis_qname_identifier());
-
-    std::span<semantic::expression_t> args = ctx.expressions();
-    semantic::push_value const* pv = get<semantic::push_value>(&args.back());
-    BOOST_ASSERT(pv);
-    entity_identifier const* peid = get<entity_identifier>(&pv->value);
-    BOOST_ASSERT(peid); // must be entity_identifier
-    md.signature.push({*peid, true});
-    return 0;
-#endif
-    
 }
 
 error_storage make_tuple_pattern::apply(fn_compiler_context& ctx, qname_identifier functional_id, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    entity_signature sig = md.build_signature(u, u.get_tuple_qname_identifier());
+    entity_signature sig = md.build_signature(u, u.get(builtin_qnid::tuple));
     indirect_signatured_entity smpl{ sig };
 
-    entity& e = ctx.u().eregistry().find_or_create(smpl, [this, &u, &sig]() {
-        return make_shared<tuple_entity>(u.get_typename_entity_identifier(), std::move(sig));
+    entity& e = ctx.u().eregistry_find_or_create(smpl, [this, &u, &sig]() {
+        return make_shared<basic_signatured_entity>(u.get(builtin_eid::typename_), std::move(sig));
     });
-    BOOST_ASSERT(dynamic_cast<tuple_entity*>(&e));
+    BOOST_ASSERT(e.signature() && e.signature()->name() == u.get(builtin_qnid::tuple));
 
     size_t argcount = 0;
     // push call expressions in the right order
@@ -88,7 +62,7 @@ error_storage make_tuple_pattern::apply(fn_compiler_context& ctx, qname_identifi
     BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
     if (argcount > 1) {
         u.push_back_expression(args, semantic::push_value{ mp::integer{ argcount } });
-        u.push_back_expression(args, semantic::invoke_function(u.get_arrayify_entity_identifier()));
+        u.push_back_expression(args, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
     ctx.context_type = e.id();
     return {};
@@ -101,7 +75,7 @@ std::expected<entity_identifier, error_storage> make_tuple_pattern::const_apply(
     BOOST_ASSERT(md.signature.named_fields().empty());
     BOOST_ASSERT(md.signature.positioned_fields().size() == 1);
 
-    entity const& entres = ctx.u().eregistry().find_or_create(indirect_signatured_entity{ md.signature }, [&ctx, &md]() {
+    entity const& entres = ctx.u().eregistry_find_or_create(indirect_signatured_entity{ md.signature }, [&ctx, &md]() {
         return make_shared<pack_entity>(ctx.u().get_typename_entity_identifier(), std::move(md.signature));
     });
     ctx.pop_chain();

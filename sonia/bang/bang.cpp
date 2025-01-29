@@ -12,7 +12,6 @@
 #include "library/library.hpp"
 
 #include "ast/fn_compiler_context.hpp"
-#include "ast/forward_declaration_visitor.hpp"
 #include "ast/declaration_visitor.hpp"
 
 #include "entities/functions/function_entity.hpp"
@@ -46,7 +45,7 @@ public:
 
 protected:
     void compile(lang::bang::parser_context&, statement_set_t, span<string_view> args);
-    void do_compile(internal_function_entity&);
+    void do_compile(internal_function_entity const&);
 
     void bootstrap();
 
@@ -124,17 +123,15 @@ void bang_impl::bootstrap()
 {
     if (bootstrapped_) return;
     parser_context parser{ unit_ };
-    auto exp_decls = parser.parse_string(string_view{bang_bootstrap_code});
+    auto exp_decls = parser.parse_string(string_view{ bang_bootstrap_code });
     if (!exp_decls.has_value()) throw exception(exp_decls.error());
     statement_set_t& decls = *exp_decls;
     
-    fn_compiler_context ctx{ unit_, qname{} };
-
-    forward_declaration_visitor fdvis{ ctx, parser };
-    for (auto& d : decls) { apply_visitor(fdvis, d); }
+    fn_compiler_context ctx{ unit_ };
 
     declaration_visitor dvis{ ctx };
-    for (auto& d : fdvis.decls) { apply_visitor(dvis, d); }
+    if (auto err = dvis.apply(*exp_decls); err) throw exception(unit_.print(*err));
+    for (auto& d : *exp_decls) { apply_visitor(dvis, d); }
     ctx.finish_frame();
 
     bootstrapped_ = true;
@@ -161,7 +158,8 @@ void bang_impl::load(string_view code, span<string_view> args)
 void bang_impl::compile(lang::bang::parser_context & pctx, statement_set_t decls, span<string_view> args)
 {
     identifier main_id = unit_.new_identifier();
-    fn_compiler_context ctx{ unit_, qname{ main_id } };
+    //fn_compiler_context ctx{ unit_, qname{ main_id } };
+    fn_compiler_context ctx{ unit_ };
     size_t argindex = 0;
     std::array<char, 16> argname = { '$' };
     for (string_view arg : args) {
@@ -170,27 +168,29 @@ void bang_impl::compile(lang::bang::parser_context & pctx, statement_set_t decls
         if (reversed) std::reverse(argname.data() + 1, epos);
 
         string_literal_entity smpl{arg};
-        smpl.set_type(unit_.get_string_entity_identifier());
-        entity const& argent = unit_.eregistry().find_or_create(smpl, [&smpl]() {
+        smpl.set_type(unit_.get(builtin_eid::string));
+        entity const& argent = unit_.eregistry_find_or_create(smpl, [&smpl]() {
             return make_shared<string_literal_entity>(std::move(smpl));
         });
         identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), epos });
         functional& arg_fnl = unit_.fregistry().resolve(ctx.ns() / argid);
-        arg_fnl.set_default_entity(argent.id());
+        if (auto err = arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id() }); err) {
+            throw exception(unit_.print(*err));
+        }
+            
         //ctx.new_const_entity(string_view{ argname.data(), epos }, std::move(ent));
         ++argindex;
     }
     argname[1] = '$';
     integer_literal_entity smpl{ argindex };
-    smpl.set_type(unit_.get_integer_entity_identifier());
-    entity const& argent = unit_.eregistry().find_or_create(smpl, [&smpl]() {
+    smpl.set_type(unit_.get(builtin_eid::integer));
+    entity const& argent = unit_.eregistry_find_or_create(smpl, [&smpl]() {
         return make_shared<integer_literal_entity>(std::move(smpl));
     });
     identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), 2 });
     functional& arg_fnl = unit_.fregistry().resolve(ctx.ns() / argid);
-    arg_fnl.set_default_entity(argent.id());
-
-    
+    BOOST_VERIFY(!arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id() }));
+        
 
     if (!default_ctx_) {
         default_ctx_.emplace(unit_, qname{});
@@ -198,10 +198,10 @@ void bang_impl::compile(lang::bang::parser_context & pctx, statement_set_t decls
 
     // separate declarations
     // retrieve forward declarations
-    forward_declaration_visitor fdvis{ *default_ctx_, pctx };
-    for (auto& d : decls) {
-        apply_visitor(fdvis, d);
-    }
+    //forward_declaration_visitor fdvis{ *default_ctx_, pctx };
+    //for (auto& d : decls) {
+    //    apply_visitor(fdvis, d);
+    //}
 
     // treat types
     //for (type_entity* pte : fdvis.types) {
@@ -209,9 +209,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, statement_set_t decls
     //}
 
     declaration_visitor dvis{ ctx };
-    for (auto& d : fdvis.decls) {
-        apply_visitor(dvis, d);
-    }
+    if (auto err = dvis.apply(decls); err) throw exception(unit_.print(*err));
     ctx.finish_frame();
 
 
@@ -231,7 +229,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, statement_set_t decls
     
 
     // at first compile all functions
-    unit_.eregistry().traverse([this](entity& e) {
+    unit_.eregistry_traverse([this](entity& e) {
         //GLOBAL_LOG_INFO() << unit_.print(e);
         if (auto fe = dynamic_cast<internal_function_entity*>(&e); fe) {
             do_compile(*fe);
@@ -266,12 +264,12 @@ void bang_impl::compile(lang::bang::parser_context & pctx, statement_set_t decls
     //do_compile(vmcvis, *main_function_);
 }
 
-void bang_impl::do_compile(internal_function_entity& fe)
+void bang_impl::do_compile(internal_function_entity const& fe)
 {
     GLOBAL_LOG_INFO() << "compiling function: " << unit_.print(fe.name());
 
     if (!fe.is_built()) {
-        fe.build(unit_);
+        const_cast<internal_function_entity&>(fe).build(unit_);
     }
     
     if (fe.is_inline()) return;

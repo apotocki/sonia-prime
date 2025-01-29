@@ -5,6 +5,9 @@
 #pragma once
 
 #include <utility>
+#ifdef SONIA_LANG_DEBUG
+#   include <string>
+#endif
 
 namespace sonia::lang {
 
@@ -12,6 +15,9 @@ template <typename IdentifierT, typename LocationT>
 class entity
 {
 public:
+#ifdef SONIA_LANG_DEBUG
+    std::string debug_name;
+#endif
     using identifier_type = IdentifierT;
 
     inline explicit entity(IdentifierT id = {}) noexcept

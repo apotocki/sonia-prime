@@ -30,7 +30,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_
     
     auto const& expr = opt_named_expr.value();
 
-    ct_expression_visitor evis{ ctx, annotated_entity_identifier{ ctx.u().get_string_entity_identifier(), get_start_location(expr) } };
+    ct_expression_visitor evis{ ctx, annotated_entity_identifier{ ctx.u().get(builtin_eid::string), get_start_location(expr) } };
 
     auto res = apply_visitor(evis, expr);
     if (!res) return std::unexpected(std::move(res.error()));
@@ -42,14 +42,15 @@ std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_
 
 std::expected<entity_identifier, error_storage> create_identifier_pattern::const_apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
 {
+    unit& u = ctx.u();
     entity_identifier strid = md.get_match_result(0).result.front();
-    string_literal_entity const& str_ent = static_cast<string_literal_entity const&>(ctx.u().eregistry().get(strid));
-    identifier id = ctx.u().slregistry().resolve(str_ent.value());
+    string_literal_entity const& str_ent = static_cast<string_literal_entity const&>(u.eregistry_get(strid));
+    identifier id = u.slregistry().resolve(str_ent.value());
     identifier_entity id_ent{ id };
 
-    return ctx.u().eregistry().find_or_create(id_ent, [&ctx, id]() {
+    return ctx.u().eregistry_find_or_create(id_ent, [&u, id]() {
         auto result = make_shared<identifier_entity>(id);
-        result->set_type(ctx.u().get_identifier_entity_identifier());
+        result->set_type(u.get(builtin_eid::identifier));
         return result;
     }).id();
 }

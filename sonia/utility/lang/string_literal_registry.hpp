@@ -56,8 +56,13 @@ IdentifierT string_literal_registry<IdentifierT, StringT, MutexT>::resolve(strin
     auto it = set_.find(name, hasher(), sonia::range_equal());
     if (it == set_.end()) {
         auto id = ib_();
+#ifndef SONIA_LANG_DEBUG
         set_.insert(it, name_part_item{ StringT{name}, id });
         return id;
+#else
+        it = set_.insert(it, name_part_item{ StringT{name}, id });
+        const_cast<IdentifierT&>(it->id).debug_name = it->name;
+#endif
     }
     return it->id;
 }

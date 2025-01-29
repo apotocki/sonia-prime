@@ -246,27 +246,6 @@ template <typename T> struct bang_union
     }
 };
 
-// void type is expressed by the empty tuple
-
-using bang_preliminary_type = make_recursive_variant<
-    annotated_qname,
-    annotated_identifier,
-    bang_fn_type<recursive_variant_>,
-    bang_vector<recursive_variant_>,
-    bang_array<recursive_variant_>,
-    bang_parameter_pack<recursive_variant_>,
-    bang_tuple<recursive_variant_>,
-    bang_union<recursive_variant_>
->::type;
-
-//using bang_preliminary_vector_t = bang_vector<bang_preliminary_type>;
-//using bang_preliminary_array_t = bang_array<bang_preliminary_type>;
-//using bang_tuple_t = bang_tuple<bang_preliminary_type>;
-//using bang_union_t = bang_union<bang_preliminary_type>;
-//using bang_fn_type_t = bang_fn_type<bang_preliminary_type>;
-using bang_preliminary_parameter_pack_t = bang_parameter_pack<bang_preliminary_type>;
-
-
 // ========================================================================
 
 // ========================================================================
@@ -480,7 +459,8 @@ template <typename ExprT>
 struct member_expression
 {
     ExprT object;
-    annotated_identifier property;
+    ExprT property;
+    //annotated_identifier property;
     //bool is_object_optional = false;
 
     lex::resource_location const& start() const { return get_start_location(object); }
@@ -495,6 +475,11 @@ struct variable_identifier
 {
     annotated_qname name;
     bool implicit; // true for identifiers started with $, e.g.: $0, $$
+};
+
+struct placeholder
+{
+    lex::resource_location location;
 };
 
 struct context_value
@@ -530,7 +515,7 @@ template <typename ExprT>
 struct while_decl
 {
     ExprT condition;
-    std::vector<infunction_statement> body;
+    std::vector<statement> body;
     optional<ExprT> continue_expression; // called before condition strating eith second condition check (like c/c++ for expression)
 };
 
@@ -548,8 +533,8 @@ template <typename ExprT>
 struct if_decl
 {
     ExprT condition;
-    std::vector<infunction_statement> true_body;
-    std::vector<infunction_statement> false_body;
+    std::vector<statement> true_body;
+    std::vector<statement> false_body;
 };
 
 //template <typename ExprT>
@@ -589,8 +574,8 @@ template <typename T> struct opt_named_syntax_expression_list : opt_named_term_l
 };
 
 using syntax_expression_t = make_recursive_variant<
-    variable_identifier,
-    annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier,
+    placeholder, variable_identifier,
+    annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier, annotated_qname,
     bang_fn_type<recursive_variant_>,
     bang_array<recursive_variant_>, bang_vector<recursive_variant_>, bang_tuple<recursive_variant_>,
     bang_union<recursive_variant_>, bang_parameter_pack<recursive_variant_>,
@@ -623,9 +608,6 @@ struct field_t
 };
 using field_list_t = std::vector<field_t>;
 
-//using field_t = opt_named_term<bang_preliminary_type>;
-//using field_list_t = opt_named_term_list<bang_preliminary_type>;
-
 struct parameter_constraint_set_t
 {
     optional<syntax_expression_t> type_expression;
@@ -633,8 +615,7 @@ struct parameter_constraint_set_t
     std::vector<annotated_identifier> bindings;
 };
 
-template <typename T>
-struct parameter
+struct parameter_t
 {
     parameter_name name;
     parameter_constraint_modifier_t modifier;
@@ -656,12 +637,11 @@ struct parameter
     //inline bool operator==(parameter const&) const = default;
 };
 
-template <typename T>
-using parameter_list = std::vector<parameter<T>>;
+using parameter_list_t = std::vector<parameter_t>;
 
-using parameter_t = parameter<bang_preliminary_type>;
+//using parameter_t = parameter<bang_preliminary_type>;
 //using parameter_type_t = parameter_type<bang_preliminary_type>;
-using parameter_list_t = parameter_list<bang_preliminary_type>;
+//using parameter_list_t = parameter_list<bang_preliminary_type>;
 
 
 
@@ -683,32 +663,33 @@ struct parameter_woa : parameter_t
 
 template <typename ExprT> using parameter_woa_list = std::vector<parameter_woa<ExprT>>;
 
+using parameter_woa_t = parameter_woa<syntax_expression_t>;
+using parameter_woa_list_t = parameter_woa_list<syntax_expression_t>;
+
 enum class fn_kind : int8_t
 {
     DEFAULT,
     INLINE
 };
 
-template <typename ExprT>
 struct fn_pure
 {
     annotated_qname aname;
-    parameter_woa_list<ExprT> parameters;
-    optional<ExprT> result;
+    parameter_woa_list_t parameters;
+    optional<syntax_expression_t> result;
     fn_kind kind = fn_kind::DEFAULT;
 
     inline qname_view name() const noexcept { return aname.value; }
     inline lex::resource_location const& location() const noexcept { return aname.location; }
 };
 
-template <typename ExprT>
-struct lambda : fn_pure<ExprT>
+struct lambda : fn_pure
 {
     std::vector<infunction_statement> body;
     lex::resource_location start;
 };
 
-using lambda_t = lambda<syntax_expression_t>;
+
 using expression_list_t = small_vector<syntax_expression_t, 4>;
 using opt_chain_t = opt_chain<syntax_expression_t>;
 using opt_chain_link_t = opt_chain_link<syntax_expression_t>;
@@ -740,7 +721,7 @@ lex::resource_location const& get_start_location(syntax_expression_t const&);
 struct error_context
 {
     variant<lex::resource_location, syntax_expression_t> loc_or_expr;
-    optional<lex::resource_location> refloc;
+    lex::resource_location refloc;
 
     lex::resource_location const& location() const
     {
@@ -866,12 +847,7 @@ inline bool operator== (function_def const& l, function_def const& r)
 */
 
 /*
-struct using_decl
-{
-    qname ns;
-    identifier name;
-    expression_terms_t value;
-};
+
 
 struct function_decl
 {
@@ -896,27 +872,58 @@ struct extern_function_decl
 //}
 */
 
-
-
-using parameter_woa_t = parameter_woa<syntax_expression_t>;
-using parameter_woa_list_t = parameter_woa_list<syntax_expression_t>;
-
 using extension_list_t = std::vector<annotated_qname_identifier>;
 
-using fn_pure_t = fn_pure<syntax_expression_t>;
-
-struct fn_decl_t : fn_pure_t
+struct fn_decl_t : fn_pure
 {
-    std::vector<infunction_statement> body;
+    std::vector<statement> body;
+};
+
+struct using_decl
+{
+    annotated_qname aname;
+    optional<parameter_woa_list_t> parameters;
+    syntax_expression_t expression;
+
+    qname_view name() const { return aname.value; }
+    lex::resource_location const& location() const { return aname.location; }
 };
 
 struct struct_decl
 {
-    annotated_qname aname;
+    variant<annotated_qname, fn_pure> decl;
     field_list_t fields;
 
-    qname_view name() const { return aname.value; }
-    lex::resource_location const& location() const { return aname.location; }
+    inline bool is_function() const noexcept
+    {
+        return get<fn_pure>(&decl) != nullptr;
+    }
+
+    fn_pure const* as_fn() const noexcept
+    {
+        return get<fn_pure>(&decl);
+    }
+
+    annotated_qname const* as_name() const noexcept
+    {
+        return get<annotated_qname>(&decl);
+    }
+
+    inline qname_view name() const noexcept
+    {
+        if (auto const* pfn = get<fn_pure>(&decl); pfn) {
+            return pfn->name();
+        }
+        return get<annotated_qname>(decl).value;
+    }
+
+    lex::resource_location const& location() const noexcept
+    {
+        if (auto const* pfn = get<fn_pure>(&decl); pfn) {
+            return pfn->location();
+        }
+        return get<annotated_qname>(decl).location;
+    }
 };
 
 struct enum_decl
@@ -976,26 +983,26 @@ using finished_statement_type = variant<
 >;
 
 using generic_statement_type = variant<
-    let_statement, expression_statement_t, return_decl_t, fn_decl_t, struct_decl
+    let_statement, expression_statement_t, return_decl_t, fn_decl_t, struct_decl, using_decl
 >;
 
 using statement_type = variant<
-    extern_var, let_statement, expression_statement_t, fn_pure_t,
-    include_decl, struct_decl, type_decl, enum_decl, return_decl_t,
-    fn_decl_t, if_decl_t, while_decl_t
+    extern_var, let_statement, expression_statement_t, fn_pure,
+    include_decl, struct_decl, using_decl, enum_decl, return_decl_t,
+    fn_decl_t, if_decl_t, while_decl_t, break_statement_t, continue_statement_t
 >;
 
-using infunction_statement_type = variant<
-    extern_var, let_statement, expression_statement_t, fn_pure_t, struct_decl,
-    fn_decl_t, if_decl_t, while_decl_t, continue_statement_t, break_statement_t, return_decl_t
->;
+//using infunction_statement_type = variant<
+//    extern_var, let_statement, expression_statement_t, fn_pure, struct_decl, using_decl,
+//    fn_decl_t, if_decl_t, while_decl_t, continue_statement_t, break_statement_t, return_decl_t
+//>;
 
 struct statement : statement_type { using statement_type::statement_type; };
 
-struct infunction_statement : infunction_statement_type { using infunction_statement_type::infunction_statement_type; };
+//struct infunction_statement : infunction_statement_type { using infunction_statement_type::infunction_statement_type; };
 
 //using declaration_t = variant<
-//    extern_var, let_statement_decl_t, expression_statement_t, fn_pure_t,
+//    extern_var, let_statement_decl_t, expression_statement_t, fn_pure,
 //    include_decl, type_decl, enum_decl, return_decl_t,
 //    fn_decl_t, if_decl_t, while_decl_t
 //>;
@@ -1008,7 +1015,7 @@ struct statement_adopt_visitor : static_visitor<StatementT>
     inline StatementT operator()(IDT& v) const { return StatementT{ std::move(v) }; }
 };
 //using declaration_t = make_recursive_variant<
-//    extern_var, let_statement_decl_t, expression_statement_t, fn_pure_t,
+//    extern_var, let_statement_decl_t, expression_statement_t, fn_pure,
 //    include_decl, type_decl, enum_decl, return_decl_t,
 //    fn_decl<infunction_declaration_t>, if_decl<expression_statement_t, infunction_declaration_t>, while_decl<expression_statement_t, infunction_declaration_t>
 //>::type;
@@ -1016,21 +1023,21 @@ struct statement_adopt_visitor : static_visitor<StatementT>
 
 //using declaration_t = variant<
 //    extern_var, let_statement_decl_t, expression_statement_t,
-//    fn_pure_t, fn_decl<infunction_declaration_t>,
+//    fn_pure, fn_decl<infunction_declaration_t>,
 //    if_decl<infunction_declaration_t>,
 //    while_decl<infunction_declaration_t>
 //>;
 //
 //using generic_declaration_t = variant<
 //    extern_var, let_statement_decl_t, expression_statement_t,
-//    fn_pure_t, fn_decl<infunction_declaration_t>,
+//    fn_pure, fn_decl<infunction_declaration_t>,
 //    if_decl<infunction_declaration_t>,
 //    while_decl<infunction_declaration_t>,
 //    include_decl, type_decl, enum_decl
 //>;
 
 using statement_set_t = std::vector<statement>;
-using infunction_declaration_set_t = std::vector<infunction_statement>;
+//using infunction_declaration_set_t = std::vector<infunction_statement>;
 
 
 

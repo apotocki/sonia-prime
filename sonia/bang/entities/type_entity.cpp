@@ -192,7 +192,7 @@ std::expected<function_entity const*, error_storage> type_entity2::find_field_ge
     fnent->set_inline();
     fnent->body.emplace_back(semantic::push_value{ ctx.u().as_string(f.value) });
     fnent->body.emplace_back(ctx.u().get_builtin_function(unit::builtin_fn::extern_object_get_property));
-    ctx.u().eregistry().insert(fnent);
+    ctx.u().eregistry_insert(fnent);
     return fnent.get();
 #endif
 }
@@ -226,7 +226,7 @@ std::expected<function_entity const*, error_storage> type_entity2::find_field_se
     fnent->body.emplace_back(semantic::push_value{ ctx.u().as_string(f.value) });
     fnent->body.emplace_back(ctx.u().get_builtin_function(unit::builtin_fn::extern_object_set_property));
     fnent->body.emplace_back(semantic::truncate_values(1, true)); // remove object reference, preserve value
-    ctx.u().eregistry().insert(fnent);
+    ctx.u().eregistry_insert(fnent);
     return fnent.get();
 #endif
 }

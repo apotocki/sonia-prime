@@ -25,7 +25,11 @@ struct ct_expression_visitor : static_visitor<std::expected<entity_identifier, e
         , expected_result{ std::move(er) }
     {}
 
+    result_type operator()(annotated_bool const&) const;
+    result_type operator()(annotated_integer const&) const;
+    result_type operator()(annotated_decimal const&) const;
     result_type operator()(annotated_string const&) const;
+    result_type operator()(annotated_qname const&) const;
     result_type operator()(annotated_identifier const&) const;
     result_type operator()(annotated_entity_identifier const&) const;
     result_type operator()(function_call_t const&) const;
@@ -45,7 +49,7 @@ private:
     result_type apply_cast(entity_identifier, ExprT const& e) const;
 
     template <std::derived_from<pure_call_t> CallExpressionT>
-    result_type operator()(functional const& fnl, CallExpressionT const& call) const;
+    result_type operator()(builtin_qnid, CallExpressionT const&) const;
 };
 
 }

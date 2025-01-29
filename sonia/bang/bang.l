@@ -113,14 +113,17 @@ RESERVED_IDENTIFIER		$([$0]|([1-9][0-9]*))
 
 INTEGER                 [0-9]+
 EXPONENT                [eE][+-]?[0-9]+
-DECIMAL                 ([0-9]+"."?|[0-9]*"."[0-9]+){EXPONENT}?
+/*DECIMAL                 ([0-9]+"."?|[0-9]*"."[0-9]+){EXPONENT}?*/
+DECIMAL                 [0-9]+"."?[0-9]*{EXPONENT}?
+DECIMAL_S               "."[0-9]*{EXPONENT}?
+INTEGER_INDEX			"."([0]|([1-9][0-9]*))
 
 FN						"fn"
 LET						"let"
 VAR						"var"
 ENUM					"enum"
-TYPE					"type"
 STRUCT					"struct"
+USING					"using"
 EXTENDS					"extends"
 EXTERN                  "extern"
 INCLUDE					"include"
@@ -176,7 +179,6 @@ FOR						"for"
 VOID					"void"
 AUTO                    "auto"
 CONST_                  "const"
-USING                   "using"
 THROW                   "throw"
 DELETE_                 "delete"
 SIZEOF                  "sizeof"
@@ -303,8 +305,8 @@ HASHTAG					"#"
 	{LET} { return (bang_lang::parser::token::LET); }
 	{VAR} { return (bang_lang::parser::token::VAR); }
 	{ENUM} { return (bang_lang::parser::token::ENUM); }
-	{TYPE} { return (bang_lang::parser::token::TYPE); }
 	{STRUCT} { return (bang_lang::parser::token::STRUCT); }
+	{USING} { return (bang_lang::parser::token::USING); }
 	{EXTENDS} { return (bang_lang::parser::token::EXTENDS); }
 	{EXTERN} { return (bang_lang::parser::token::EXTERN); }
 	{INCLUDE} { return (bang_lang::parser::token::INCLUDE); }
@@ -345,7 +347,7 @@ HASHTAG					"#"
 	{CLOSE_SQUARE_BRACKET}	{ return (bang_lang::parser::token::CLOSE_SQUARE_BRACKET); }
 	{ASSIGN}                { variant_emplace(location); return (bang_lang::parser::token::ASSIGN); }
 	{POINT}					{ variant_emplace(location); return (bang_lang::parser::token::POINT);	}
-	{UNDERSCORE}			{ return (bang_lang::parser::token::UNDERSCORE); }
+	{UNDERSCORE}			{ variant_emplace(location); return (bang_lang::parser::token::UNDERSCORE); }
 	{BITOR}				    { variant_emplace(location); return (bang_lang::parser::token::BITOR);	}
 	{EXCLPT}                { variant_emplace(location); return (bang_lang::parser::token::EXCLPT); }
 	{QMARK}                 { return (bang_lang::parser::token::QMARK); }
@@ -361,24 +363,32 @@ HASHTAG					"#"
 	{ELLIPSIS}              { variant_emplace(location); return (bang_lang::parser::token::ELLIPSIS); }
 
 	{IDENTIFIER} {
-		variant_emplace(annotated_string_view{text_view, location});
+		variant_emplace(annotated_string_view{ text_view, location });
 		return (bang_lang::parser::token::IDENTIFIER);
 	}
 	{INTERNAL_IDENTIFIER} {
-		variant_emplace(annotated_string_view{text_view, location});
+		variant_emplace(annotated_string_view{ text_view, location });
 		return (bang_lang::parser::token::INTERNAL_IDENTIFIER);
 	}
 
 	{RESERVED_IDENTIFIER}  {
-		variant_emplace(annotated_string_view{text_view, location});
+		variant_emplace(annotated_string_view{ text_view, location });
 		return (bang_lang::parser::token::RESERVED_IDENTIFIER);
 	}
 
 	{INTEGER} {
-		variant_emplace(annotated_integer{ctx.make_integer(text_view), location});
+		variant_emplace(annotated_integer{ ctx.make_integer(text_view), location });
 		return (bang_lang::parser::token::INTEGER);
 	}
+	{INTEGER_INDEX} {
+		variant_emplace(annotated_string_view{ text_view, location });
+		return (bang_lang::parser::token::INTEGER_INDEX);
+	}
 	{DECIMAL} {
+		variant_emplace(annotated_decimal{ ctx.make_decimal(text_view), location });
+		return (bang_lang::parser::token::DECIMAL);
+	}
+	{DECIMAL_S} {
 		variant_emplace(annotated_decimal{ctx.make_decimal(text_view), location});
 		return (bang_lang::parser::token::DECIMAL);
 	}
@@ -388,7 +398,6 @@ HASHTAG					"#"
 	{AUTO} { return (bang_lang::parser::token::AUTO); }
 	{CONST_} { return (bang_lang::parser::token::CONST_); }
 	{DELETE_} { return (bang_lang::parser::token::DELETE_); }
-	{USING} { return (bang_lang::parser::token::USING); }
 	{SIZEOF} { return (bang_lang::parser::token::SIZEOF); }
     
 	

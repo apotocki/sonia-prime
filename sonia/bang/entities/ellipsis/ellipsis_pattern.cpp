@@ -28,7 +28,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::
     
     auto const& expr = opt_named_expr.value();
 
-    expression_visitor evis{ ctx, annotated_entity_identifier{ ctx.u().get_typename_entity_identifier(), get_start_location(expr) } };
+    expression_visitor evis{ ctx, annotated_entity_identifier{ ctx.u().get(builtin_eid::typename_), get_start_location(expr) } };
     if (auto res = apply_visitor(evis, expr); !res) return std::unexpected(std::move(res.error()));
 
     auto pmd = make_shared<functional_match_descriptor>(ctx.u());
@@ -45,12 +45,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::
 
 std::expected<entity_identifier, error_storage> ellipsis_pattern::const_apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
 {
-    entity_signature signature = md.build_signature(ctx.u(), fid);
+    unit& u = ctx.u();
+    entity_signature signature = md.build_signature(u, fid);
     BOOST_ASSERT(signature.named_fields().empty());
     BOOST_ASSERT(signature.positioned_fields().size() == 1);
 
-    entity const& entres = ctx.u().eregistry().find_or_create(indirect_signatured_entity{ signature }, [&ctx, &signature]() {
-        return make_shared<pack_entity>(ctx.u().get_typename_entity_identifier(), std::move(signature));
+    entity const& entres = u.eregistry_find_or_create(indirect_signatured_entity{ signature }, [&u, &signature]() {
+        return make_shared<pack_entity>(u.get(builtin_eid::typename_), std::move(signature));
     });
     ctx.pop_chain();
     return entres.id();

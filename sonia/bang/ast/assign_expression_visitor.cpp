@@ -15,11 +15,10 @@ inline unit& assign_expression_visitor::u() const noexcept { return ctx_.u(); }
 
 assign_expression_visitor::result_type assign_expression_visitor::operator()(variable_identifier const& v) const
 {
-    functional const* pfn = ctx_.lookup_functional(v.name.value);
-    if (!pfn) return make_error<undeclared_identifier_error>(v.name);
-    if (!pfn->default_entity()) return make_error<assign_error>(assign_location_, syntax_expression_t{ v });
-    
-    entity const& ent = u().eregistry().get(pfn->default_entity());
+    auto eid = ctx_.lookup_entity(v.name);
+    if (!eid) return std::move(eid.error());
+    if (!*eid) return make_error<assign_error>(assign_location_, syntax_expression_t{ v });
+    entity const& ent = u().eregistry_get(*eid);
     if (variable_entity const* ve = dynamic_cast<variable_entity const*>(&ent); ve) {
         expression_visitor rvis{ ctx_, annotated_entity_identifier{ ve->get_type(), assign_location_ } };
         auto res = apply_visitor(rvis, rhs_);
@@ -43,13 +42,12 @@ assign_expression_visitor::result_type assign_expression_visitor::operator()(mem
     //    return std::move(res.error());
     //}
 
-    functional const& fn = u().fregistry().resolve(u().get_set_qname_identifier());
     pure_call_t set_call{ assign_location_ };
-    set_call.emplace_back(annotated_identifier{ u().get_self_parameter_identifier() }, me.object);
-    set_call.emplace_back(annotated_identifier{ u().get_property_parameter_identifier() }, me.property );
+    set_call.emplace_back(annotated_identifier{ u().get(builtin_id::self) }, me.object);
+    set_call.emplace_back(annotated_identifier{ u().get(builtin_id::property) }, me.property);
     set_call.emplace_back(rhs_);
 
-    auto match = fn.find(ctx_, set_call);
+    auto match = ctx_.find(builtin_qnid::set, set_call);
     if (!match) {
         return append_cause(
             make_error<basic_general_error>(assign_location_, "can't assign"sv, syntax_expression_t{ me }),
@@ -80,7 +78,7 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(var
 {
     functional const* pfn = ctx.lookup_functional(v.name.value);
     if (pfn && pfn->default_entity()) {
-        return &ctx.u().eregistry().get(pfn->default_entity());
+        return &ctx.u().eregistry_get(pfn->default_entity());
     }
     return std::unexpected(make_error<undeclared_identifier_error>(v.name));
 }

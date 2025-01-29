@@ -27,7 +27,6 @@ class alt_error;
 class ambiguity_error;
 class circular_dependency_error;
 
-
 class error_visitor
 {
 public:
@@ -48,6 +47,8 @@ public:
 
     inline void set_cause(shared_ptr<error> cause) noexcept { cause_ = std::move(cause); }
     inline shared_ptr<error> const& cause() const { return cause_; }
+
+    [[noreturn]] void rethrow(unit&) const;
 };
 
 using error_storage = shared_ptr<error>;
@@ -91,16 +92,6 @@ private:
     std::vector<alternative> alternatives_;
 };
 
-class circular_dependency_error : public error
-{
-public:
-    std::vector<error_storage> circle_items;
-    void visit(error_visitor& vis) const override { vis(*this); }
-
-    explicit circular_dependency_error(std::vector<error_storage> errs)
-        : circle_items{ std::move(errs) }
-    {}
-};
 
 class general_error : public error
 {
@@ -111,7 +102,7 @@ public:
     virtual lex::resource_location const& location() const = 0;
     virtual string_t object(unit const&) const = 0;
     virtual string_t description(unit const&) const = 0;
-    virtual lex::resource_location const* see_location() const { return nullptr; }
+    virtual lex::resource_location const* ref_location() const noexcept { return nullptr; }
 };
 
 class basic_general_error : public general_error
@@ -120,17 +111,17 @@ protected:
     using object_t = variant<null_t, syntax_expression_t, qname, qname_view, qname_identifier, entity_identifier, identifier>;
 
     lex::resource_location location_;
+    lex::resource_location reflocation_;
     string_t description_;
     object_t object_;
-    optional<lex::resource_location> refloc_;
 
 public:
-    basic_general_error(lex::resource_location loc, string_t descr, object_t obj = null_t{})
-        : location_{std::move(loc)}, description_{descr}, object_{std::move(obj)}
+    basic_general_error(lex::resource_location loc, string_t descr, object_t obj = null_t{}, lex::resource_location refloc = {})
+        : location_{ std::move(loc) }, description_{ descr }, object_{ std::move(obj) }, reflocation_{ std::move(refloc) }
     {}
 
     basic_general_error(error_context const& errctx, string_t descr)
-        : location_{ errctx.location() }, description_{ descr }, refloc_{ errctx.refloc }
+        : location_{ errctx.location() }, description_{ descr }, reflocation_{ errctx.refloc }
     {
         if (auto optexpr = errctx.expression(); optexpr) {
             object_ = *optexpr;
@@ -142,7 +133,7 @@ public:
     lex::resource_location const& location() const noexcept override { return location_; }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override { return description_; }
-    lex::resource_location const* see_location() const noexcept override { return refloc_ ? &*refloc_ : nullptr; }
+    lex::resource_location const* ref_location() const noexcept override { return reflocation_ ? &reflocation_ : nullptr; }
 };
 
 class undeclared_identifier_error : public general_error
@@ -165,51 +156,7 @@ public:
     string_t description(unit const&) const noexcept override { return "undeclared identifier"sv; }
 };
 
-class general_with_see_location_error : public basic_general_error
-{
-    lex::resource_location seelocation_;
-public:
-    general_with_see_location_error(lex::resource_location loc, string_t descr, lex::resource_location seeloc, object_t obj = null_t{})
-        : basic_general_error{ std::move(loc), descr, std::move(obj) }, seelocation_{ std::move(seeloc) }
-    {}
 
-    void visit(error_visitor& vis) const override { vis(*this); }
-
-    lex::resource_location const* see_location() const noexcept override { return &seelocation_; }
-};
-
-class type_mismatch_error : public general_with_see_location_error
-{
-    entity_identifier expected_;
-
-public:
-    type_mismatch_error(lex::resource_location loc, entity_identifier actual, entity_identifier expected, lex::resource_location seeloc)
-        : general_with_see_location_error{ loc, ""sv, seeloc, actual }
-        , expected_{ expected }
-    {}
-
-    string_t description(unit const&) const noexcept override;
-};
-
-class identifier_redefinition_error : public general_error
-{
-    variant<qname_identifier, identifier> name_;
-    lex::resource_location location_;
-    lex::resource_location seelocation_;
-
-public:
-    template <typename SomethingT>
-    identifier_redefinition_error(annotated<SomethingT> n, lex::resource_location seeloc)
-        : name_{ std::move(n.value) }, location_{ std::move(n.location) }, seelocation_{ std::move(seeloc) }
-    {}
-
-    void visit(error_visitor& vis) const override { vis(*this); }
-
-    lex::resource_location const& location() const noexcept override { return location_; }
-    string_t object(unit const&) const noexcept override;
-    string_t description(unit const&) const noexcept override { return "identifier redefinition"sv; }
-    lex::resource_location const* see_location() const override { return &seelocation_; }
-};
 
 class parameter_not_found_error : public general_error
 {
@@ -235,7 +182,7 @@ public:
     optional<syntax_expression_t> expr_;
     entity_identifier from_;
     entity_identifier to_;
-    optional<lex::resource_location> refloc_;
+    lex::resource_location refloc_;
 
     cast_error(lex::resource_location loc, entity_identifier to, entity_identifier from = {}, optional<syntax_expression_t> expr = nullopt)
         : location_{ std::move(loc) }, from_{std::move(from)}, to_{ std::move(to) }, expr_{ std::move(expr) }
@@ -250,7 +197,7 @@ public:
     lex::resource_location const& location() const noexcept override { return location_; }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override;
-    lex::resource_location const* see_location() const noexcept override { return refloc_ ? &*refloc_ : nullptr; }
+    lex::resource_location const* ref_location() const noexcept override { return refloc_ ? &refloc_ : nullptr; }
 };
 
 class unknown_case_error : public general_error

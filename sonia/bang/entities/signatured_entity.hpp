@@ -115,6 +115,11 @@ public:
         fields_[pos] = std::move(fd);
     }
 
+    void push_back(field_descriptor fd)
+    {
+        fields_.push_back(std::move(fd));
+    }
+
     inline void set_result(field_descriptor fd) noexcept { result_ = std::move(fd); }
 
     //void normilize()
@@ -189,13 +194,14 @@ struct basic_signatured_entity : signatured_entity
     basic_signatured_entity() = default;
 
     explicit basic_signatured_entity(entity_identifier type)
-        : signatured_entity{ type }
     {
+        set_type(type);
     }
 
     basic_signatured_entity(entity_identifier type, entity_signature&& sgn)
-        : signatured_entity{ type }, sig_{ std::move(sgn) }
+        : sig_{ std::move(sgn) }
     {
+        set_type(type);
     }
 
     inline void set_signature(entity_signature&& sgn) { sig_ = std::move(sgn); }

@@ -50,9 +50,12 @@ void bang_print_string(vm::context& ctx)
 {
     size_t argcount = ctx.stack_back().as<size_t>();
     unit & u = ctx.get_unit();
+    std::ostringstream res;
     for (size_t i = argcount; i > 0; --i) {
-        u.write_cout(ctx.stack_back(i).as<string_view>());
+        print_to_stream(res, *ctx.stack_back(i), false);
+        //u.write_cout(ctx.stack_back(i).as<string_view>());
     }
+    u.write_cout(res.str());
     ctx.stack_pop(argcount + 1);
 }
 

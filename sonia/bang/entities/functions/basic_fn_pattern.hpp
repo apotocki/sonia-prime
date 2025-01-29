@@ -22,6 +22,8 @@ class parameter_matcher
 protected:
     pattern_parameter_descriptor descriptor_;
 
+    small_vector<annotated_identifier, 2> internal_names_;
+
     // built
     //std::vector<syntax_expression_t> concepts;
     //pattern_expression_t constraint;
@@ -32,7 +34,9 @@ protected:
 public:
     struct postpone_t {};
 
-    explicit parameter_matcher(pattern_parameter_descriptor descr) noexcept;
+    explicit parameter_matcher(annotated_identifier name, pattern_parameter_descriptor) noexcept;
+    
+    inline void push_internal_name(annotated_identifier id) { internal_names_.push_back(std::move(id)); }
 
     inline bool is_variadic() const noexcept { return variadic; }
 
@@ -52,15 +56,15 @@ public:
 
 class varnamed_matcher : public parameter_matcher
 {
-    annotated_identifier variadic_internal_name_;
+    //annotated_identifier variadic_internal_name_;
 
 public:
     explicit varnamed_matcher(annotated_identifier vin, pattern_parameter_descriptor descr)
-        : variadic_internal_name_{ std::move(vin) }
-        , parameter_matcher{ std::move(descr) }
+        : parameter_matcher{ std::move(vin), std::move(descr) }
+        //, variadic_internal_name_{ std::move(vin) }
     {}
 
-    std::expected<std::pair<entity_identifier, int>, error_storage> try_match(fn_compiler_context& ctx, identifier argname, syntax_expression_t const&, functional_binding_set&) const;
+    std::expected<std::pair<entity_identifier, int>, error_storage> try_match(fn_compiler_context& ctx, syntax_expression_t const&, functional_binding_set&) const;
 };
 
 class named_parameter_matcher
@@ -75,8 +79,8 @@ public:
     named_parameter_matcher(annotated_identifier enm, annotated_identifier const* inm, pattern_parameter_descriptor descr, size_t index)
         : external_name_{ std::move(enm) }, index_{ index }
     {
-        if (inm) internal_name_.emplace(*inm);
-        impl_ = make_shared<named_parameter_impl>(std::move(descr));
+        //if (inm) internal_name_.emplace(inm ? );
+        impl_ = make_shared<named_parameter_impl>(inm ? *inm : external_name_, std::move(descr));
     }
 
     inline annotated_identifier const& external_name() const noexcept { return external_name_; }
@@ -90,7 +94,7 @@ public:
 
 private:
     annotated_identifier external_name_;
-    optional<annotated_identifier> internal_name_;
+    //optional<annotated_identifier> internal_name_;
     shared_ptr<named_parameter_impl> impl_;
     size_t index_;
 };
@@ -121,7 +125,7 @@ class basic_fn_pattern : public functional::pattern
 {
 protected:
     functional const& fnl_;
-    std::vector<std::tuple<parameter_name, parameter_constraint_modifier_t>> parameters_;
+    std::vector<std::tuple<parameter_name, parameter_constraint_modifier_t>> parameters_; // in the order of declaration (fn_pure)
     optional<varnamed_matcher> varnamed_matcher_;
     boost::container::small_flat_set<named_parameter_matcher, 8, named_parameter_matcher_less> named_matchers_;
     small_vector<shared_ptr<parameter_matcher>, 8> matchers_; // also for variadic named
@@ -131,7 +135,7 @@ protected:
     uint8_t has_varpack_ : 1;
 
 public:
-    basic_fn_pattern(fn_compiler_context&, functional const&, fn_pure_t const&);
+    basic_fn_pattern(fn_compiler_context&, functional const&, fn_pure const&);
     //void build(fn_compiler_context&) const;
 
     inline qname_identifier fn_qname_id() const noexcept { return fnl_.id(); }
@@ -144,6 +148,9 @@ public:
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override;
+
+protected:
+    void build_scope(fn_compiler_context&, functional_match_descriptor&) const;
 };
 
 class runtime_fn_pattern : public basic_fn_pattern
@@ -152,12 +159,12 @@ public:
     using basic_fn_pattern::basic_fn_pattern;
     error_storage apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 
-    virtual shared_ptr<entity> build(unit&, entity_signature&&) const = 0;
+    virtual shared_ptr<entity> build(fn_compiler_context&, functional_match_descriptor&, entity_signature&&) const = 0;
 };
 
 class generic_fn_pattern: public runtime_fn_pattern
 {
-    shared_ptr<std::vector<infunction_statement>> body_;
+    shared_ptr<std::vector<statement>> body_;
     fn_kind kind_;
 
 public:
@@ -167,7 +174,7 @@ public:
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 
 protected:
-    shared_ptr<entity> build(unit&, entity_signature&&) const override;
+    shared_ptr<entity> build(fn_compiler_context&, functional_match_descriptor&, entity_signature&&) const override;
 };
 
 }

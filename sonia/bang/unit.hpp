@@ -28,33 +28,39 @@
 
 namespace sonia::lang::bang {
 
-/*
-struct variable_descriptor
-{
-    identifier name;
-    bang_generic_type type;
-    uint32_t index : 31;
-    uint32_t is_const : 1;
-
-    explicit variable_descriptor(size_t idx) : index { static_cast<uint32_t>(idx) } {}
-
-    friend inline bool operator==(variable_descriptor const& l, variable_descriptor const& r) noexcept { return l.name == r.name; }
-    friend inline auto operator<=>(variable_descriptor const& l, variable_descriptor const& r) noexcept { return l.name <=> r.name; }
-    friend inline size_t hash_value(variable_descriptor const& v) noexcept { return hash_value(v.name); }
-};
-
-struct variable_equal_to
-{
-    inline bool operator()(variable_descriptor const& l, identifier const& r) const noexcept { return l.name == r; }
-    inline bool operator()(identifier const& l, variable_descriptor const& r) const noexcept { return l == r.name; }
-};
-*/
-
 class virtual_stack_machine;
 
 namespace vm { class context; }
 
 class external_fn_pattern;
+
+enum class builtin_id : size_t
+{
+    type = 0, // type:
+    to, // to:
+    self, // self:
+    property, // property:
+    object, // object:
+    numargs, // $$
+    eof_builtin_id_value
+};
+
+enum class builtin_qnid : size_t
+{
+    fn = 0,
+    ellipsis, tuple, identifier, qname, object, string, decimal, integer, boolean, any,
+    metaobject, typeof,
+    make_tuple, new_, eq, ne, plus, negate, implicit_cast, get, set,
+    eof_builtin_qnids_value
+};
+
+enum class builtin_eid : size_t
+{
+    typename_ = 0, void_, any, identifier, qname, object, string, decimal, integer, boolean, metaobject,
+    arrayify, // builtin ::arrayify(...)->array
+    array_at, // builtin ::array_at(array, index)-> elementT
+    eof_builtin_eid_value
+};
 
 class unit
 {
@@ -81,7 +87,8 @@ class unit
     // semantic
     std::vector<semantic::expression_t> root_expressions_;
 
-    std::vector<qname_identifier> builtins_;
+    // vm builtin id -> qname
+    std::vector<qname_identifier> vm_builtins_;
 
     size_t fn_identifier_counter_;
 
@@ -136,8 +143,32 @@ public:
     functional_registry_t& fregistry() { return functional_registry_; }
 
     piregistry_t& piregistry() { return piregistry_; }
-    eregistry_t& eregistry() { return eregistry_; }
     
+    ////// entity registry routines
+    void eregistry_insert(shared_ptr<entity>);
+    entity const& eregistry_get(entity_identifier) const;
+    template <typename FactoryT>
+    inline entity & eregistry_find_or_create(entity const& sample, FactoryT const& factory)
+    {
+#ifdef SONIA_LANG_DEBUG
+        return eregistry_.find_or_create(sample, [this, &factory]() {
+            shared_ptr<entity> e = factory();
+            std::ostringstream ss;
+            e->print_to(ss, *this);
+            e->debug_name = ss.str();
+            return e;
+        });
+#else
+        return eregistry_.find_or_create(sample, factory);
+#endif
+    }
+
+    template <typename FtorT>
+    inline void eregistry_traverse(FtorT const& ftor) const
+    {
+        eregistry_.traverse(ftor);
+    }
+
     inline compiler_task_tracer & task_tracer() noexcept { return task_tracer_; }
 
     // global constants rotine
@@ -145,49 +176,16 @@ public:
 
     virtual_stack_machine& bvm() { return *bvm_; }
 
-    inline entity_identifier get_typename_entity_identifier() const noexcept { return typename_entity_identifier_; }
-    inline entity_identifier get_void_entity_identifier() const noexcept { return void_entity_identifier_; }
-    inline entity_identifier get_any_entity_identifier() const noexcept { return any_entity_identifier_; }
-    inline entity_identifier get_identifier_entity_identifier() const noexcept { return identifier_entity_identifier_; }
-    inline entity_identifier get_string_entity_identifier() const noexcept { return string_entity_identifier_; }
-    inline entity_identifier get_decimal_entity_identifier() const noexcept { return decimal_entity_identifier_; }
-    inline entity_identifier get_integer_entity_identifier() const noexcept { return integer_entity_identifier_; }
-    inline entity_identifier get_bool_entity_identifier() const noexcept { return bool_entity_identifier_; }
-                             
-    inline entity_identifier get_arrayify_entity_identifier() const noexcept { return arrayify_entity_identifier_; }
-    inline entity_identifier get_array_at_entity_identifier() const noexcept { return array_at_entity_identifier_; }
-
-    inline qname_identifier get_fn_qname_identifier() const noexcept { return fn_qname_identifier_; }
-    inline qname_identifier get_ellipsis_qname_identifier() const noexcept { return ellipsis_qname_identifier_; }
-    inline qname_identifier get_tuple_qname_identifier() const noexcept { return tuple_qname_identifier_; }
-    inline qname_identifier get_string_qname_identifier() const noexcept { return string_qname_identifier_; }
-    inline qname_identifier get_decimal_qname_identifier() const noexcept { return decimal_qname_identifier_; }
-    inline qname_identifier get_integer_qname_identifier() const noexcept { return integer_qname_identifier_; }
-    inline qname_identifier get_bool_qname_identifier() const noexcept { return bool_qname_identifier_; }
-    inline qname_identifier get_any_qname_identifier() const noexcept { return any_qname_identifier_; }
-
-    //inline qname_identifier get_arrayify_qname_identifier() const noexcept { return arrayify_qname_identifier_; }
-    inline qname_identifier get_make_tuple_qname_identifier() const noexcept { return make_tuple_qname_identifier_; }
-    inline qname_identifier get_new_qname_identifier() const noexcept { return new_qname_identifier_; }
-    inline qname_identifier get_eq_qname_identifier() const noexcept { return eq_qname_identifier_; }
-    inline qname_identifier get_ne_qname_identifier() const noexcept { return ne_qname_identifier_; }
-    inline qname_identifier get_plus_qname_identifier() const noexcept { return plus_qname_identifier_; }
-    inline qname_identifier get_negate_qname_identifier() const noexcept { return negate_qname_identifier_; }
-    inline qname_identifier get_implicit_cast_qname_identifier() const noexcept { return implicit_cast_qname_identifier_; }
-    inline qname_identifier get_get_qname_identifier() const noexcept { return get_qname_identifier_; }
-    inline qname_identifier get_set_qname_identifier() const noexcept { return set_qname_identifier_; }
-
-    //inline identifier get_fn_result_identifier() const noexcept { return fn_result_identifier_; }
-    inline identifier get_type_parameter_identifier() const noexcept { return type_parameter_identifier_; }
-    inline identifier get_to_parameter_identifier() const noexcept { return to_parameter_identifier_; }
-    inline identifier get_self_parameter_identifier() const noexcept { return self_parameter_identifier_; }
-    inline identifier get_property_parameter_identifier() const noexcept { return property_parameter_identifier_; }
+    inline entity_identifier get(builtin_eid bi) const noexcept { return builtin_eids_[(size_t)bi]; }
+    inline qname_identifier get(builtin_qnid bi) const noexcept { return builtin_qnids_[(size_t)bi]; }
+    inline functional const& fget(builtin_qnid bi) const noexcept { return functional_registry_.resolve(builtin_qnids_[(size_t)bi]); }
+    inline identifier get(builtin_id bi) const noexcept { return builtin_ids_[(size_t)bi]; }
 
     functional& resolve_functional(qname_identifier);
 
     //void push_entity(shared_ptr<entity>);
 
-    variable_entity& new_variable(qname_view, lex::resource_location const&, entity_identifier type, variable_entity::kind);
+    //variable_entity& new_variable(qname_view, lex::resource_location const&, entity_identifier type, variable_entity::kind);
 
     //void put_function(shared_ptr<function_t> f)
     //{
@@ -273,7 +271,7 @@ protected:
     OutputIteratorT name_printer(qname_view const&, OutputIteratorT, UndefinedFT const&) const;
 
 
-    std::pair<functional*, fn_pure_t> parse_extern_fn(string_view signature);
+    std::pair<functional*, fn_pure> parse_extern_fn(string_view signature);
 
     template <std::derived_from<external_fn_pattern> PT>
     void set_extern(string_view sign, void(*pfn)(vm::context&));
@@ -285,45 +283,23 @@ protected:
 
 private:
     //identifier fn_result_identifier_; // ->
-    identifier type_parameter_identifier_; // type:
-    identifier to_parameter_identifier_; // to:
-    identifier self_parameter_identifier_; // self:
-    identifier property_parameter_identifier_; // property:
+    std::array<identifier, (size_t)builtin_id::eof_builtin_id_value> builtin_ids_;
+    std::array<qname_identifier, (size_t)builtin_qnid::eof_builtin_qnids_value> builtin_qnids_;
+    std::array<entity_identifier, (size_t)builtin_eid::eof_builtin_eid_value> builtin_eids_;
 
-    qname_identifier fn_qname_identifier_; // :: __fn -- the marker of a function type
-    qname_identifier ellipsis_qname_identifier_; // :: ...
-    qname_identifier tuple_qname_identifier_; //(...)
-    qname_identifier identifier_qname_identifier_; // result of __id(string)
-    qname_identifier object_qname_identifier_; // ::object
-    qname_identifier string_qname_identifier_; // :: string
-    qname_identifier decimal_qname_identifier_; // :: decimal
-    qname_identifier integer_qname_identifier_; // :: integer
-    qname_identifier bool_qname_identifier_; // :: bool
-    qname_identifier any_qname_identifier_; // :: any
+    //entity_identifier typename_entity_identifier_;
+    //entity_identifier void_entity_identifier_;
+    //entity_identifier any_entity_identifier_;
+    //entity_identifier identifier_entity_identifier_;
+    //entity_identifier object_entity_identifier_;
+    //entity_identifier string_entity_identifier_;
+    //entity_identifier decimal_entity_identifier_;
+    //entity_identifier integer_entity_identifier_;
+    //entity_identifier bool_entity_identifier_;
+    //entity_identifier metaobject_entity_identifier_;
 
-    //qname_identifier arrayify_qname_identifier_; // arrayify(...)
-    qname_identifier make_tuple_qname_identifier_; // make_tuple(...)
-    qname_identifier eq_qname_identifier_; // :: ==
-    qname_identifier ne_qname_identifier_; // :: !=
-    qname_identifier plus_qname_identifier_; // binary +
-    qname_identifier negate_qname_identifier_; // :: !
-    qname_identifier new_qname_identifier_; // new
-    qname_identifier implicit_cast_qname_identifier_;
-    qname_identifier get_qname_identifier_;
-    qname_identifier set_qname_identifier_;
-
-    entity_identifier void_entity_identifier_;
-    entity_identifier any_entity_identifier_;
-    entity_identifier typename_entity_identifier_;
-    entity_identifier identifier_entity_identifier_;
-    entity_identifier object_entity_identifier_;
-    entity_identifier string_entity_identifier_;
-    entity_identifier decimal_entity_identifier_;
-    entity_identifier integer_entity_identifier_;
-    entity_identifier bool_entity_identifier_;
-
-    entity_identifier arrayify_entity_identifier_; // builtin ::arrayify(...)->array
-    entity_identifier array_at_entity_identifier_; // builtin ::array_at(array, index)-> elementT
+    //entity_identifier arrayify_entity_identifier_; // builtin ::arrayify(...)->array
+    //entity_identifier array_at_entity_identifier_; // builtin ::array_at(array, index)-> elementT
 
     // entities registry:
     //qname -> entity

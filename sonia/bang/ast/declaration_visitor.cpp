@@ -5,6 +5,8 @@
 #include "sonia/config.hpp"
 #include "declaration_visitor.hpp"
 
+#include "sonia/small_vector.hpp"
+
 #include "fn_compiler_context.hpp"
 #include "expression_visitor.hpp"
 #include "ct_expression_visitor.hpp"
@@ -15,56 +17,143 @@
 #include "../entities/functional_entity.hpp"
 #include "../entities/functions/basic_fn_pattern.hpp"
 
+#include "sonia/bang/parser.hpp"
+
+#include "sonia/bang/entities/functions/expression_resolver.hpp"
+#include "sonia/bang/entities/struct/struct_fn_pattern.hpp"
+
+#include "sonia/bang/errors/identifier_redefinition_error.hpp"
+
 namespace sonia::lang::bang {
 
 inline unit& declaration_visitor::u() const noexcept { return ctx.u(); }
 
-void declaration_visitor::operator()(extern_var const& d) const
+error_storage declaration_visitor::apply(span<const statement> initial_decls) const
+{
+    decl_stack_.clear();
+    decl_stack_.emplace_back(initial_decls);
+    for (; !decl_stack_.empty(); ) {
+        if (decl_stack_.back().empty()) {
+            decl_stack_.pop_back();
+            continue;
+        }
+        size_t index = decl_stack_.size() - 1;
+        if (auto err = apply_visitor(*this, decl_stack_.back().front()); err) return err;
+        decl_stack_[index] = decl_stack_[index].subspan(1);
+    }
+    return {};
+}
+
+error_storage declaration_visitor::operator()(include_decl const& d) const
+{
+    fs::path fpath{ u8string_view{reinterpret_cast<char8_t const*>(d.path.value.data()), d.path.value.size() } };
+
+    parser_context pctx{ u() };
+    auto exp_decls = pctx.parse(fpath);
+    if (!exp_decls.has_value()) {
+        throw exception{ ctx.u().print(basic_general_error{ d.path.location, exp_decls.error() }) };
+    }
+    decl_stack_.emplace_back(*exp_decls);
+    return {};
+}
+
+error_storage declaration_visitor::operator()(extern_var const& d) const
 {
     auto vartype = apply_visitor(ct_expression_visitor{ ctx }, d.type);
     if (!vartype) {
-        throw exception{ u().print(*vartype.error()) };
+        return std::move(vartype.error());
     }
     //entity_identifier vartype = apply_visitor(preliminary_type_visitor{ ctx }, d.type);
-    u().new_variable(qname{d.name.value}, d.name.location, *vartype, variable_entity::kind::EXTERN);
+    //u().new_variable(qname{d.name.value}, d.name.location, *vartype, variable_entity::kind::EXTERN);
+    ctx.new_variable(d.name, *vartype, variable_entity::kind::EXTERN);
     //THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor extern_var");
+    return {};
 }
 
-void declaration_visitor::operator()(struct_decl const& sd) const
+error_storage declaration_visitor::operator()(using_decl const& ud) const
 {
     // to do: check the allowence of absolute qname
-    qname sqn = ctx.ns() / sd.name();
-    functional & fnl = u().fregistry().resolve(sqn);
-    if (fnl.default_entity()) {
-        throw exception{ u().print(identifier_redefinition_error{ annotated_qname_identifier{fnl.id(), sd.location() }, u().eregistry().get(fnl.default_entity()).location() }) };
+    qname uqn = ctx.ns() / ud.name();
+    functional& fnl = u().fregistry().resolve(uqn);
+    if (!ud.parameters) {
+        return fnl.set_default_entity(make_shared<expression_resolver>(ud.location(), ud.expression));
+    } else {
+        THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor using_decl");
     }
-    entity_signature esig{ fnl.id() };
-    auto se = sonia::make_shared<struct_entity>(u().get_typename_entity_identifier(), std::move(esig), sd.fields);
-    se->set_location(sd.location());
-    u().eregistry().insert(se);
-    fnl.set_default_entity(se->id());
+    //entity_signature esig{ fnl.id() };
+    //auto se = sonia::make_shared<type_entity>(u().get_typename_entity_identifier(), std::move(esig));
+    //se->set_location(ud.location());
+    //u().eregistry_insert(se);
+    //fnl.set_default_entity(se->id());
+    return {};
 }
 
-void declaration_visitor::operator()(expression_statement_t const& ed) const
+error_storage declaration_visitor::operator()(struct_decl const& sd) const
+{
+    struct struct_decl_visitor : static_visitor<error_storage>
+    {
+        fn_compiler_context& ctx;
+        field_list_t const& fields;
+
+        struct_decl_visitor(fn_compiler_context& c, field_list_t const& fs) noexcept : ctx{ c }, fields{ fs } {}
+
+        error_storage operator()(annotated_qname const& qn) const
+        {
+            unit& u = ctx.u();
+            functional& fnl = u.fregistry().resolve(ctx.ns() / qn.value);
+            auto sent = make_shared<struct_entity>(u.get(builtin_eid::typename_), entity_signature{ fnl.id() }, fields);
+            u.eregistry_insert(sent);
+            return fnl.set_default_entity(annotated_entity_identifier{ sent->id(), qn.location });
+        }
+
+        error_storage operator()(fn_pure const& fn) const
+        {
+            // to do: check the allowence of absolute qname
+            qname fn_qname = ctx.ns() / fn.name();
+            functional& fnl = ctx.u().fregistry().resolve(fn_qname);
+            fnl.push(make_shared<struct_fn_pattern>(ctx, fnl, fn, fields));
+            return {};
+        };
+    };
+
+    return apply_visitor(struct_decl_visitor{ ctx, sd.fields }, sd.decl);
+    
+    //if (auto const* pfn = sd.as_fn(); pfn) {
+    //    functional& fnl = u().fregistry().resolve(ctx.ns() / pfn->name());
+    //    fnl.push(make_shared<struct_fn_pattern>(ctx, fnl, *pfn, sd.fields));
+    //    return {};
+    //} else {
+    //    annotated_qname const* aqn = sd.as_name();
+    //    BOOST_ASSERT(aqn);
+    //    functional& fnl = u().fregistry().resolve(ctx.ns() / aqn->value);
+
+    //    auto sent = make_shared<struct_entity>(ctx.u().get(builtin_eid::typename_), entity_signature{ fnl.id() });
+    //    u().eregistry_insert(sent);
+    //    return fnl.set_default_entity(annotated_entity_identifier{ sent->id(), aqn->location });
+    //}
+}
+
+error_storage declaration_visitor::operator()(expression_statement_t const& ed) const
 {
     auto bst = ctx.expressions_branch(); // store branch
-    entity_identifier void_eid = u().get_void_entity_identifier();
+    entity_identifier void_eid = u().get(builtin_eid::void_);
     ctx.context_type = void_eid;
     if (auto res = apply_visitor(expression_visitor{ ctx }, ed.expression); !res) {
-        throw exception(u().print(*res.error()));
+        return std::move(res.error());
     }
     if (ctx.context_type != void_eid) {
         ctx.append_expression(semantic::truncate_values(1, false));
     }
     ctx.collapse_chains(bst);
+    return {};
 }
 
-void declaration_visitor::operator()(if_decl_t const& stm) const
+error_storage declaration_visitor::operator()(if_decl_t const& stm) const
 {
     ctx.pushed_unnamed_ns();
-    expression_visitor vis{ ctx, { u().get_bool_entity_identifier(), get_start_location(stm.condition) } };
+    expression_visitor vis{ ctx, { u().get(builtin_eid::boolean), get_start_location(stm.condition) } };
     if (auto res = apply_visitor(vis, stm.condition); !res) {
-        throw exception(u().print(*res.error()));
+        return std::move(res.error());
     }
     ctx.append_expression(semantic::conditional_t{});
     semantic::conditional_t & cond = get<semantic::conditional_t>(ctx.expressions().back());
@@ -73,7 +162,7 @@ void declaration_visitor::operator()(if_decl_t const& stm) const
 
     if (!stm.true_body.empty()) {
         ctx.push_chain(cond.true_branch);
-        for (infunction_statement const& d : stm.true_body) {
+        for (auto const& d : stm.true_body) {
             apply_visitor(*this, d);
         }
         ctx.collapse_chains(bst);
@@ -83,15 +172,16 @@ void declaration_visitor::operator()(if_decl_t const& stm) const
     if (!stm.false_body.empty()) {
         ctx.pushed_unnamed_ns();
         ctx.push_chain(cond.false_branch);
-        for (infunction_statement const& d : stm.false_body) {
+        for (auto const& d : stm.false_body) {
             apply_visitor(*this, d);
         }
         ctx.collapse_chains(bst);
         ctx.pop_ns();
     }
+    return {};
 }
 
-void declaration_visitor::operator()(while_decl_t const& wd) const
+error_storage declaration_visitor::operator()(while_decl_t const& wd) const
 {
     ctx.pushed_unnamed_ns();
     ctx.append_expression(std::move(semantic::loop_scope_t{}));
@@ -99,20 +189,20 @@ void declaration_visitor::operator()(while_decl_t const& wd) const
         ctx.push_chain(get<semantic::loop_scope_t>(ctx.expressions().back()).continue_branch);
         expression_visitor vis{ ctx };
         if (auto res = apply_visitor(vis, *wd.continue_expression); !res) {
-            throw exception(u().print(*res.error()));
+            return std::move(res.error());
         }
-        if (ctx.context_type != u().get_void_entity_identifier()) {
+        if (ctx.context_type != u().get(builtin_eid::void_)) {
             ctx.append_expression(semantic::truncate_values(1, false));
-            ctx.context_type = u().get_void_entity_identifier();
+            ctx.context_type = u().get(builtin_eid::void_);
         }
         ctx.pop_chain();
     }
 
     ctx.push_chain(get<semantic::loop_scope_t>(ctx.expressions().back()).branch);
 
-    expression_visitor vis{ ctx, { u().get_bool_entity_identifier(), get_start_location(wd.condition) } };
+    expression_visitor vis{ ctx, { u().get(builtin_eid::boolean), get_start_location(wd.condition) } };
     if (auto res = apply_visitor(vis, wd.condition); !res) {
-        throw exception(u().print(*res.error()));
+        return std::move(res.error());
     }
 
     if (auto const* ppv = get<semantic::push_value>(&ctx.expressions().back())) {
@@ -122,17 +212,17 @@ void declaration_visitor::operator()(while_decl_t const& wd) const
             ctx.pop_ns(); // restore ns
             ctx.pop_chain(); // loop_scope_t chain
             ctx.expressions().pop_back(); // semantic::loop_scope_t{}
-            return;
+            return {};
         }
         ctx.expressions().pop_back(); // push_value(true)
-        for (infunction_statement const& d : wd.body) {
+        for (auto const& d : wd.body) {
             apply_visitor(*this, d);
         }
         
         ctx.append_expression(semantic::loop_continuer{});
         ctx.pop_ns(); // restore ns
         ctx.pop_chain(); // loop_scope_t chain
-        return;
+        return {};
     }
     ctx.append_expression(semantic::conditional_t{});
     semantic::conditional_t& cond = get<semantic::conditional_t>(ctx.expressions().back());
@@ -141,7 +231,7 @@ void declaration_visitor::operator()(while_decl_t const& wd) const
 
     ctx.push_chain(cond.true_branch);
         
-    for (infunction_statement const& d : wd.body) {
+    for (auto const& d : wd.body) {
         apply_visitor(*this, d);
     }
     
@@ -156,23 +246,27 @@ void declaration_visitor::operator()(while_decl_t const& wd) const
 
     ctx.pop_chain();
     ctx.pop_ns();
+
+    return {};
 }
 
-void declaration_visitor::operator()(continue_statement_t const&) const
+error_storage declaration_visitor::operator()(continue_statement_t const&) const
 {
     // to do: check the existance of enclisong loop
     //THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor continue_statement_t");
     ctx.append_expression(semantic::loop_continuer{});
+    return {};
 }
 
-void declaration_visitor::operator()(break_statement_t const&) const
+error_storage declaration_visitor::operator()(break_statement_t const&) const
 {
     // to do: check the existance of enclisong loop (or switch)
     //THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor break_statement_t");
     ctx.append_expression(semantic::loop_breaker{});
+    return {};
 }
 
-void declaration_visitor::append_fnsig(fn_pure_t& fndecl, functional ** ppf) const
+void declaration_visitor::append_fnsig(fn_pure& fndecl, functional ** ppf) const
 {
 #if 0
     qname fn_qname = ctx.ns() / fndecl.name();
@@ -214,7 +308,7 @@ void declaration_visitor::append_fnsig(fn_pure_t& fndecl, functional ** ppf) con
     if (!e) {
         fe = make_shared<functional_entity>(fn_qnameid);
         fe->set_location(fd.location());
-        ctx.u().eregistry().insert(fe);
+        ctx.u().eregistry_insert(fe);
     } else if (fe = dynamic_pointer_cast<functional_entity>(e); !fe) {
         throw exception(ctx.u().print(identifier_redefinition_error{annotated_qname_identifier{fn_qnameid, fd.location()}, e->location()}));
     }
@@ -224,9 +318,9 @@ void declaration_visitor::append_fnsig(fn_pure_t& fndecl, functional ** ppf) con
 }
 
 // extern function declaration
-void declaration_visitor::operator()(fn_pure_t const& fd) const
+error_storage declaration_visitor::operator()(fn_pure const& fd) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_pure_t");
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_pure");
 #if 0
     shared_ptr<functional_entity> fe;
     function_signature& sig = append_fnsig(fd, fe);
@@ -245,7 +339,7 @@ void declaration_visitor::operator()(fn_pure_t const& fd) const
         // call itself
         fnent->body.emplace_back(ctx.u().get_builtin_function(unit::builtin_fn::extern_function_call));
 
-        ctx.u().eregistry().insert(fnent);
+        ctx.u().eregistry_insert(fnent);
 
         // for not inline calls
         fnent->set_index(ctx.allocate_local_variable_index());
@@ -265,7 +359,7 @@ void declaration_visitor::operator()(fn_pure_t const& fd) const
 }
 
 #if 0
-function_entity & declaration_visitor::append_fnent(fn_pure_t& fnd, function_signature& sig, span<infunction_declaration_t> body) const
+function_entity & declaration_visitor::append_fnent(fn_pure& fnd, function_signature& sig, span<infunction_declaration_t> body) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor append_fnent");
 #if 0
@@ -312,7 +406,7 @@ function_entity & declaration_visitor::append_fnent(fn_pure_t& fnd, function_sig
     
     fnent->body = std::move(fnctx.expressions());
     fnent->captured_variables = std::move(fnctx.captured_variables);
-    ctx.u().eregistry().insert(fnent);
+    ctx.u().eregistry_insert(fnent);
 
     fnent->set_index(ctx.allocate_local_variable_index());
 
@@ -324,14 +418,14 @@ function_entity & declaration_visitor::append_fnent(fn_pure_t& fnd, function_sig
 }
 #endif
 
-void declaration_visitor::operator()(fn_decl_t const& fnd) const
+error_storage declaration_visitor::operator()(fn_decl_t const& fnd) const
 {
     qname fn_qname = ctx.ns() / fnd.name();
     functional& fnl = ctx.u().resolve_functional(fn_qname);
 
     auto fnptrn = make_shared<generic_fn_pattern>(ctx, fnl, fnd);
     fnl.push(std::move(fnptrn));
-
+    return {};
 #if 0
     //---------------
     fieldset fnfs;
@@ -391,17 +485,17 @@ void declaration_visitor::operator()(fn_decl_t const& fnd) const
 #endif
 }
 
-void declaration_visitor::operator()(let_statement const& ld) const
+error_storage declaration_visitor::operator()(let_statement const& ld) const
 {
     entity_identifier vartype;
     if (ld.type) {
         auto optvartype = apply_visitor(ct_expression_visitor{ ctx }, *ld.type);
         if (!optvartype) {
-            throw exception{ u().print(*optvartype.error()) };
+            return std::move(optvartype.error());
         }
         vartype = *optvartype;
     }
-    ctx.context_type = u().get_void_entity_identifier();
+    ctx.context_type = u().get(builtin_eid::void_);
     if (ld.expression) {
         auto evis = vartype ? expression_visitor{ ctx, { vartype, ld.location() } } : expression_visitor{ ctx };
         if (auto res = apply_visitor(evis, *ld.expression); !res) {
@@ -412,7 +506,7 @@ void declaration_visitor::operator()(let_statement const& ld) const
                     ctx.u().print(*etype.error())).str()
             }));
             */
-            throw exception(u().print(*res.error()));
+            return std::move(res.error());
         }
     }
     variable_entity& ve = ctx.new_variable(ld.aname, vartype.self_or(ctx.context_type), variable_entity::kind::LOCAL);
@@ -422,6 +516,7 @@ void declaration_visitor::operator()(let_statement const& ld) const
     } 
     // else do not set variable because we have a result of the expression on stack and consider it as a variable initialization
     // if (ld.expression) { ctx.append_expression(semantic::set_variable{ &ve }); }
+    return {};
 }
 
 //void declaration_visitor::operator()(assign_decl_t const& ad) const
@@ -448,19 +543,20 @@ void declaration_visitor::operator()(let_statement const& ld) const
 //    }
 //}
 
-void declaration_visitor::operator()(return_decl_t const& rd) const
+error_storage declaration_visitor::operator()(return_decl_t const& rd) const
 {
-    ctx.context_type = ctx.u().get_void_entity_identifier();
+    ctx.context_type = ctx.u().get(builtin_eid::void_);
     size_t initial_branch = ctx.expressions_branch();
     auto evis = ctx.result ? expression_visitor{ ctx, { ctx.result, rd.location } } : expression_visitor{ ctx };
     if (auto res = apply_visitor(evis, rd.expression); !res) {
-        throw exception(ctx.u().print(*res.error()));
+        return std::move(res.error());
     }
     ctx.collapse_chains(initial_branch);
     if (!ctx.result) {
         ctx.accumulate_result_type(std::move(ctx.context_type));
     }
     ctx.append_expression(semantic::return_statement{});
+    return {};
 }
 
 }

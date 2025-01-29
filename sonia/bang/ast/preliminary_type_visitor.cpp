@@ -6,7 +6,7 @@
 #include "preliminary_type_visitor.hpp"
 
 namespace sonia::lang::bang {
-
+#if 0
 inline unit& preliminary_type_visitor::u() const noexcept { return ctx.u(); }
 
 preliminary_type_visitor::result_type preliminary_type_visitor::operator()(bang_preliminary_parameter_pack_t const& v) const
@@ -27,6 +27,6 @@ preliminary_type_visitor::result_type preliminary_type_visitor::operator()(bang_
     }
     return *r;
 }
-
+#endif
 
 }

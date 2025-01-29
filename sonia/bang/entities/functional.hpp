@@ -8,8 +8,10 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/unordered_set.hpp>
 
+#include "sonia/variant.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/small_vector.hpp"
+#include "sonia/concurrency.hpp"
 #include "sonia/utility/lang/qname.hpp"
 
 #include "sonia/bang/semantic.hpp"
@@ -35,7 +37,7 @@ public:
         binding_.resize(cnt);
     }
 
-    optional<span<const value_type>> lookup(identifier id)
+    optional<span<const value_type>> lookup(identifier id) const
     {
         auto it = std::lower_bound(binding_.begin(), binding_.end(), id, [](auto const& pair, identifier id) { return pair.first < id; });
         if (it == binding_.end() || it->first != id) return {};
@@ -68,6 +70,7 @@ struct parameter_match_result
 
     small_vector<se_rng_t, 4> expressions;
     small_vector<entity_identifier, 4> result;
+    small_vector<annotated_identifier, 2> internal_names;
     uint8_t mod = (uint8_t)modifier::undefined;
 
     void append_result(bool variadic, entity_identifier, se_cont_iterator before_start_it, semantic::expression_list_t&);
@@ -95,11 +98,12 @@ class functional_match_descriptor
 public:
     functional_binding_set bindings;
     semantic::managed_expression_list call_expressions;
-    
+    lex::resource_location location;
     entity_identifier result;
     int weight{ 0 };
 
     inline explicit functional_match_descriptor(unit& u) noexcept : call_expressions{ u } {}
+    virtual ~functional_match_descriptor() = default;
 
     functional_match_descriptor(functional_match_descriptor const&) = delete;
     functional_match_descriptor& operator= (functional_match_descriptor const&) = delete;
@@ -110,19 +114,32 @@ public:
     template <typename FT>
     inline void for_each_named_match(FT && ft) const
     {
-        for (auto [nm, pmr] : named_matches_) std::forward<FT>(ft)(nm, *pmr);
+        for (auto [nm, pmr] : named_matches_) {
+            if constexpr (std::is_invocable_v<FT, identifier, parameter_match_result&>) {
+                std::forward<FT>(ft)(nm, *pmr);
+            } else {
+                std::forward<FT>(ft)(*pmr);
+            }
+        }
     }
 
     template <typename FT>
     inline void for_each_positional_match(FT&& ft) const
     {
-        for (auto pmr : positional_matches_) std::forward<FT>(ft)(*pmr);
+        size_t pos = 0;
+        for (auto pmr : positional_matches_) {
+            if constexpr (std::is_invocable_v<FT, size_t, parameter_match_result&>) {
+                std::forward<FT>(ft)(pos++, *pmr);
+            } else {
+                std::forward<FT>(ft)(*pmr);
+            }
+        }
     }
 
     //span<const se_rng_t> get_named_arguments(identifier) const noexcept;
     //span<const se_rng_t> get_position_arguments(size_t pos) const noexcept;
 
-    parameter_match_result& get_match_result(identifier);
+    parameter_match_result& get_match_result(identifier /* external name */);
     parameter_match_result& get_match_result(size_t);
 
     entity_signature build_signature(unit&, qname_identifier);
@@ -168,7 +185,7 @@ public:
             : fid_{ fid }, ptrn_{ p }, md_{ std::move(md) } 
         {}
         
-        inline error_storage apply(fn_compiler_context& ctx)
+        inline [[nodiscard]] error_storage apply(fn_compiler_context& ctx)
         {
             return ptrn_->apply(ctx, fid_, *md_);
         }
@@ -177,6 +194,14 @@ public:
         {
             return ptrn_->const_apply(ctx, fid_, *md_);
         }
+    };
+
+    class entity_resolver
+    {
+    public:
+        virtual ~entity_resolver() = default;
+        virtual std::expected<entity_identifier, error_storage> const_resolve(fn_compiler_context&) const = 0;
+        virtual lex::resource_location const& location() const = 0;
     };
 
     functional(qname_identifier idval, qname_view qv)
@@ -189,23 +214,25 @@ public:
     inline qname_identifier id() const noexcept { return id_; }
     inline qname_view name() const noexcept { return qname_view{ qnameids_, true }; }
 
-    inline entity_identifier const& default_entity() const noexcept { return default_entity_; }
-    inline void set_default_entity(entity_identifier e) noexcept { default_entity_ = std::move(e); }
+    entity_identifier default_entity(fn_compiler_context&) const;
+    [[nodiscard]] error_storage set_default_entity(annotated_entity_identifier);
+    [[nodiscard]] error_storage set_default_entity(shared_ptr<entity_resolver>);
 
     void push(shared_ptr<pattern> p)
     {
         patterns_.push_back(std::move(p));
     }
 
-    // looking by argument expressions
-    std::expected<match, error_storage> find(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const& expected_result) const;
-    inline std::expected<match, error_storage> find(fn_compiler_context& ctx, pure_call_t const& c) const { return find(ctx, c, annotated_entity_identifier{}); }
+    // looking by argument expressions (pattern matching)
+    std::expected<match, error_storage> find(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const& expected_result = annotated_entity_identifier{}) const;
 
 private:
     qname_identifier id_;
     small_vector<identifier, 4> qnameids_;
-    entity_identifier default_entity_; // corresponds to name without call
+    mutable variant<annotated_entity_identifier, shared_ptr<entity_resolver>> default_entity_; // corresponds to name without call
     small_vector<shared_ptr<pattern>, 1> patterns_;
+
+    mutable fibers::mutex default_entity_mtx_;
 };
 
 //struct pattern_local_variable { size_t var_index; };

@@ -16,6 +16,12 @@
 
 #define VM_INSTRUCTION_ENTRIED_POOL_SIZE 128
 
+#ifdef SONIA_LANG_DEBUG
+#   define SONIA_VM_FN_IDENTITY_STORE_SIZE (2 * sizeof(void*) + sizeof(std::string_view))
+#else
+#   define SONIA_VM_FN_IDENTITY_STORE_SIZE (2 * sizeof(void*))
+#endif
+
 namespace sonia::vmasm {
 
 using namespace sonia::vm;
@@ -60,7 +66,7 @@ public:
     using vm_t = virtual_stack_machine<ContextT>;
     using op_t = typename vm_t::op;
 
-    using function_identity_store_t = automatic_polymorphic<function_identity, 2 * sizeof(void*)>;
+    using function_identity_store_t = automatic_polymorphic<function_identity, SONIA_VM_FN_IDENTITY_STORE_SIZE>;
 
     struct instruction_entry;
     using operand_t = variant<null_t, size_t, instruction_entry const*, function_identity_store_t>;

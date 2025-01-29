@@ -4,22 +4,23 @@
 
 #pragma once
 
+#include <boost/unordered_map.hpp>
+
 #include "sonia/variant.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/utility/invocation/invocation.hpp"
 #include "sonia/utility/invocation/invocable.hpp"
 #include "sonia/utility/lang/vm.hpp"
-#include <boost/unordered_map.hpp>
-//#include "../extern.hpp"
-#include "../terms.hpp"
-#include "sonia/bang/unit.hpp"
 
+#include "sonia/bang/terms.hpp"
+#include "sonia/bang/unit.hpp"
 #include "sonia/bang/vm/vmasm_builder.hpp"
 
 namespace sonia::lang::bang::vm {
 
-static_assert(sizeof(vmasm::fn_identity<identifier>) <= 2 * sizeof(void*));
-static_assert(sizeof(vmasm::fn_identity<qname_identifier>) <= 2 * sizeof(void*));
+static_assert(sizeof(vmasm::fn_identity<identifier>) <= SONIA_VM_FN_IDENTITY_STORE_SIZE);
+static_assert(sizeof(vmasm::fn_identity<qname_identifier>) <= SONIA_VM_FN_IDENTITY_STORE_SIZE);
+
 /*
 class variable
 {

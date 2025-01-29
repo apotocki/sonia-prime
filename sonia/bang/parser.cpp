@@ -12,8 +12,6 @@
 
 #include "sonia/mp/integer_view.hpp"
 
-//#include "maat/lang/environment.hpp"
-
 //using namespace sonia;
 //using namespace sonia::lang;
 using namespace sonia::lang::bang;
@@ -28,17 +26,6 @@ using YYLTYPE = bang_lang::parser::location_type;
 #include "unit.hpp"
 
 namespace sonia::lang::bang {
-
-/*
-expression_list handle_call_op(expression_list& x, expression_list& y, operator_type op)
-{
-
-    x.insert(x.end(), std::make_move_iterator(y.begin()), std::make_move_iterator(y.end()));
-    x.push_back(op);
-    return std::move(x);
-    
-}
-*/
 
 class file_resource : public lex::code_resource
 {
@@ -83,20 +70,6 @@ small_u32string utf8_to_utf32(string_view sv)
         result.push_back(c32);
     }
     return small_u32string{ result.data(), result.size() };
-}
-
-void parser_context::push_ns(qname qn)
-{
-    if (qn.is_absolute()) {
-        ns_stack_.push_back(std::move(qn));
-    } else {
-        ns_stack_.push_back(ns_stack_.back() / qn);
-    }
-}
-
-void parser_context::pop_ns()
-{
-    ns_stack_.pop_back();
 }
 
 identifier parser_context::new_identifier() const

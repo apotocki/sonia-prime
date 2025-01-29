@@ -19,7 +19,7 @@
 #include "sonia/bang/errors.hpp"
 
 namespace sonia::lang::bang {
-
+#if 0
 struct preliminary_type_visitor : static_visitor<entity_identifier>
 {
     fn_compiler_context& ctx;
@@ -45,7 +45,7 @@ private:
     unit& u() const noexcept;
 };
 
-#if 0
+
 struct preliminary_type_visitor : static_visitor<bang_type>
 {
     fn_compiler_context& ctx;

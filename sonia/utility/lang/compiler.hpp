@@ -53,7 +53,7 @@ class compiler_worker_id
     fibers::fiber::id id_;
 
 public:
-    inline compiler_worker_id() : id_{ this_fiber::get_id() } {}
+    inline compiler_worker_id() noexcept : id_{ this_fiber::get_id() } {}
 
     friend inline bool operator== (compiler_worker_id const& l, compiler_worker_id const& r) noexcept
     {

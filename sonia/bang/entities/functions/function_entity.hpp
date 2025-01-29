@@ -84,7 +84,7 @@ public:
     struct build_data
     {
         /*functional_binding_set bindings;*/
-        shared_ptr<std::vector<infunction_statement>> body;
+        shared_ptr<std::vector<statement>> body;
     };
 
     internal_function_entity(unit& u, qname&& name, entity_signature&& sig, shared_ptr<build_data> bd);

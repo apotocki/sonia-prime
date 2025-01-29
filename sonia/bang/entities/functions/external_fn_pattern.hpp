@@ -14,7 +14,7 @@ class external_fn_pattern : public runtime_fn_pattern
     size_t extfnid_;
 
 public:
-    external_fn_pattern(fn_compiler_context& ctx, functional const& fnl, fn_pure_t& decl, size_t extfnid)
+    external_fn_pattern(fn_compiler_context& ctx, functional const& fnl, fn_pure& decl, size_t extfnid)
         : runtime_fn_pattern{ ctx, fnl, decl }
         , extfnid_{ extfnid }
     {}
@@ -25,7 +25,7 @@ public:
     //std::expected<entity_identifier, error_storage> apply(fn_compiler_context&, functional::match_descriptor&) const override;
 
 protected:
-    shared_ptr<entity> build(unit&, entity_signature&&) const;
+    shared_ptr<entity> build(fn_compiler_context&, functional_match_descriptor&, entity_signature&&) const;
 };
 
 }

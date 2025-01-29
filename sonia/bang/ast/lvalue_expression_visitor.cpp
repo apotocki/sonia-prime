@@ -19,8 +19,8 @@ namespace sonia::lang::bang {
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(variable_identifier const& v) const
 {
     functional const* pfn = ctx.lookup_functional(v.name.value);
-    if (pfn && pfn->default_entity()) {
-        return &ctx.u().eregistry().get(pfn->default_entity());
+    if (pfn && pfn->default_entity(ctx)) {
+        return &ctx.u().eregistry_get(pfn->default_entity(ctx));
     }
     return std::unexpected(make_error<undeclared_identifier_error>(v.name));
 }
@@ -88,7 +88,7 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(pro
     return handle_property_set(pe.name);
 }
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(lambda_t const&) const
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(lambda const&) const
 {
     THROW_NOT_IMPLEMENTED_ERROR();
 }

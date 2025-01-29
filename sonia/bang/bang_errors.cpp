@@ -4,50 +4,48 @@
 
 #include "sonia/config.hpp"
 #include "errors.hpp"
-#include "unit.hpp"
+
+#include "errors/utility.hpp"
 
 namespace sonia::lang::bang {
 
-std::string error_printer_visitor::print_general(lex::resource_location const& loc, string_view errstr, string_view object, lex::resource_location const* optseeloc)
+void error::rethrow(unit& u) const
 {
-    if (object.empty() && !optseeloc) {
-        return ("%1%(%2%,%3%): %4%"_fmt % loc.resource % loc.line % loc.column % errstr).str();
-    } else if (object.empty() && optseeloc) {
-        return ("%1%(%2%,%3%): %4%, see declaration at %5%(%6%,%7%)"_fmt 
-            % loc.resource % loc.line % loc.column % errstr
-            % optseeloc->resource % optseeloc->line % optseeloc->column
-        ).str();
-    } else if (!object.empty() && !optseeloc) {
-        return ("%1%(%2%,%3%): `%4%`: %5%"_fmt % loc.resource % loc.line % loc.column % object % errstr).str();
-    } else {
-        return ("%1%(%2%,%3%): `%4%`: %5%, see declaration at %6%(%7%,%8%)"_fmt
-            % loc.resource % loc.line % loc.column % object % errstr
-            % optseeloc->resource % optseeloc->line % optseeloc->column
-        ).str();
-    }
+    throw exception{ u.print(*this) };
 }
 
-struct printer_resolver_visitor : static_visitor<std::string>
+std::string error_printer_visitor::print_general(lex::resource_location const& loc, string_view errstr, string_view object, lex::resource_location const* optseeloc)
 {
-    unit const& u_;
-    explicit printer_resolver_visitor(unit const& u) : u_{ u } {}
-
-    inline result_type operator()(null_t const&) const { return {}; }
-
-    template <typename T>
-    inline result_type operator()(T const& val) const
-    {
-        return u_.print(val);
+    std::ostringstream errss;
+    if (loc) {
+        write(errss, loc) << ": "sv;
     }
-};
+    if (!object.empty()) {
+        errss << '`' << object << "`: "sv;
+    }
+    errss << errstr;
+    if (optseeloc) {
+        errss << ", see declaration at "sv;
+        write(errss, *optseeloc);
+    }
 
-struct string_resolver_visitor : static_visitor<string_view>
-{
-    string_resolver_visitor() = default;
-
-    inline result_type operator()(std::string const& str) const { return str; }
-    inline result_type operator()(string_view str) const { return str; }
-};
+    return errss.str();
+    //if (object.empty() && !optseeloc) {
+    //    return ("%1%(%2%,%3%): %4%"_fmt % loc.resource % loc.line % loc.column % errstr).str();
+    //} else if (object.empty() && optseeloc) {
+    //    return ("%1%(%2%,%3%): %4%, see declaration at %5%(%6%,%7%)"_fmt 
+    //        % loc.resource % loc.line % loc.column % errstr
+    //        % optseeloc->resource % optseeloc->line % optseeloc->column
+    //    ).str();
+    //} else if (!object.empty() && !optseeloc) {
+    //    return ("%1%(%2%,%3%): `%4%`: %5%"_fmt % loc.resource % loc.line % loc.column % object % errstr).str();
+    //} else {
+    //    return ("%1%(%2%,%3%): `%4%`: %5%, see declaration at %6%(%7%,%8%)"_fmt
+    //        % loc.resource % loc.line % loc.column % object % errstr
+    //        % optseeloc->resource % optseeloc->line % optseeloc->column
+    //    ).str();
+    //}
+}
 
 void error_printer_visitor::operator()(general_error const& err)
 {
@@ -55,7 +53,7 @@ void error_printer_visitor::operator()(general_error const& err)
         err.location(),
         apply_visitor(string_resolver_visitor{}, err.description(u_)),
         apply_visitor(string_resolver_visitor{}, err.object(u_)),
-        err.see_location()
+        err.ref_location()
     );
 }
 
@@ -97,11 +95,6 @@ general_error::string_t unknown_case_error::description(unit const& u) const noe
 general_error::string_t undeclared_identifier_error::object(unit const& u) const noexcept
 {
     return u.print(idname_.value);
-}
-
-general_error::string_t identifier_redefinition_error::object(unit const& u) const noexcept
-{
-    return apply_visitor(printer_resolver_visitor{ u }, name_);
 }
 
 general_error::string_t left_not_an_object_error::description(unit const& u) const noexcept
@@ -147,17 +140,6 @@ void error_printer_visitor::operator()(ambiguity_error const& err)
     }
 }
 
-void error_printer_visitor::operator()(circular_dependency_error const& err)
-{
-    bool first = true;
-    for (auto const& e : err.circle_items) {
-        if (!first) {
-            s_ << "\n -------------- \n";
-        }
-        else { first = false; }
-        e->visit(*this);
-    }
-}
 
 general_error::string_t parameter_not_found_error::description(unit const& u) const noexcept
 {
@@ -165,16 +147,6 @@ general_error::string_t parameter_not_found_error::description(unit const& u) co
         u.print(param.value) % u.print(entity_name)).str();
 }
 
-
-
-
-
-general_error::string_t type_mismatch_error::description(unit const& u) const noexcept
-{
-    std::ostringstream ss;
-    ss << "type mismatch error, expected: " << u.print(expected_);
-    return ss.str();
-}
 //void error_printer_visitor::operator()(parameter_not_found_error const& err)
 //{
 //    s_ << ("parameter `%1%` of `%2%` is not found"_fmt % u_.print(err.param.value) % u_.print(err.entity_name)).str();

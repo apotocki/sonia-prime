@@ -9,7 +9,7 @@
 #include "sonia/string.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/shared_ptr.hpp"
-#include <boost/container/small_vector.hpp>
+#include "sonia/small_vector.hpp"
 
 namespace sonia::lang {
 
@@ -19,21 +19,24 @@ namespace sonia::lang {
 template <std::integral ValueT, typename TagT = void>
 struct identifier
 {
+#ifdef SONIA_LANG_DEBUG
+    string_view debug_name;
+#endif
+
     using value_type = ValueT;
     value_type value;
-    //value_type value : 31;
-    //value_type is_required : 1;
 
     inline bool empty() const noexcept { return !value; }
     inline explicit operator bool() const noexcept { return !empty(); }
 
-    identifier() : value{ 0 } /*, is_required{ 0 }*/ {}
-    explicit identifier(value_type val/*, bool is_required_val = false*/) : value{ val }/*, is_required{ value_type(is_required_val ? 1 : 0) }*/ {}
+    inline identifier() noexcept : value{ 0 } {}
+    inline explicit identifier(value_type val) noexcept : value{ val } {}
 
     template <std::integral IT>
     inline explicit identifier(IT val) : value{ static_cast<value_type>(val) }
     {
-        // to do: bounds checking
+        BOOST_ASSERT((std::numeric_limits<value_type>::max)() >= val);
+        BOOST_ASSERT((std::numeric_limits<value_type>::min)() <= val);
     }
 
     friend inline bool operator== (identifier const& l, identifier const& r) noexcept
@@ -52,13 +55,13 @@ struct identifier
 };
 
 template <std::integral ValueT, typename TagT = void>
-inline size_t hash_value(identifier<ValueT, TagT> const& v)
+inline size_t hash_value(identifier<ValueT, TagT> const& v) noexcept
 {
     return hash<typename identifier<ValueT, TagT>::value_type>{}(v.value);
 }
 
 template <typename T, typename Traits, std::integral ValueT, typename TagT>
-std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits> & os, identifier<ValueT, TagT> idval)
+inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits> & os, identifier<ValueT, TagT> idval)
 {
     return os << idval.value;
 }
@@ -90,6 +93,8 @@ struct resource_location
     int line;
     int column;
     shared_ptr<code_resource> resource;
+
+    explicit operator bool() const noexcept { return !!resource; }
 };
 
 struct resource_span
@@ -102,7 +107,7 @@ struct resource_span
 struct scanner_data
 {
     const char* str_buff_begin;
-    boost::container::small_vector<resource_location, 8> loc_stack;
+    small_vector<resource_location, 8> loc_stack;
 };
 
 inline void undefined_lexem(const char* ltext, size_t sz)

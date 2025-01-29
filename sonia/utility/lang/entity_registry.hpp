@@ -30,7 +30,7 @@ public:
     //StringT const* resolve(IdentifierT) const noexcept;
 
     template <typename FtorT>
-    void traverse(FtorT const& ftor)
+    void traverse(FtorT const& ftor) const
     {
         //THROW_NOT_IMPLEMENTED_ERROR("entity_registry traverse");
         lock_guard guard(set_mtx_);
@@ -80,7 +80,11 @@ EntityT & entity_registry<EntityT, MutexT>::find_or_create(EntityT const& sample
     auto it = index.find(sample);
     if (it == index.end()) {
         it = index.insert(it, entity_wrapper{ factory() });
-        it->value->set_id(entity_identifier_type{ set_.size() });
+        entity_identifier_type eid{ set_.size() };
+#ifdef SONIA_LANG_DEBUG
+        eid.debug_name = it->value->debug_name;
+#endif
+        it->value->set_id(eid);
     }
     return *it->value;
 }
@@ -89,7 +93,7 @@ template <typename EntityT,typename MutexT>
 EntityT const& entity_registry<EntityT, MutexT>::get(entity_identifier_type eid) const
 {
     lock_guard guard(set_mtx_);
-    if (eid.raw() > set_.size()) [[unlikely]] {
+    if (!eid.raw() || eid.raw() > set_.size()) [[unlikely]] {
         THROW_INTERNAL_ERROR("no entity with id: %1%"_fmt % eid);
     }
     return *set_.template get<0>().at(eid.raw() - 1).value;
@@ -99,11 +103,15 @@ template <typename EntityT, typename MutexT>
 void entity_registry<EntityT, MutexT>::insert(shared_ptr<EntityT> e)
 {
     lock_guard guard(set_mtx_);
-    auto& index = set_.get<1>();
+    auto& index = set_.template get<1>();
     auto it = index.find(*e);
     if (it == index.end()) {
         it = index.insert(it, entity_wrapper{ std::move(e) });
-        it->value->set_id(entity_identifier_type{ set_.size() });
+        entity_identifier_type eid{ set_.size() };
+#ifdef SONIA_LANG_DEBUG
+        eid.debug_name = it->value->debug_name;
+#endif
+        it->value->set_id(eid);
         return;
     }
     THROW_INTERNAL_ERROR("an equivalent entity has bean already registered");

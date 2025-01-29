@@ -43,7 +43,7 @@ struct lvalue_expression_visitor : static_visitor<std::expected<entity const*, e
     result_type operator()(expression_vector_t const&) const;
     result_type operator()(chained_expression_t&) const;
 
-    result_type operator()(lambda_t const&) const;
+    result_type operator()(lambda const&) const;
     result_type operator()(function_call_t const&) const;
     result_type operator()(annotated_entity_identifier const&) const;
 

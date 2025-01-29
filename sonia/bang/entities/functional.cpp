@@ -10,6 +10,8 @@
 
 #include "sonia/bang/errors/function_call_match_error.hpp"
 #include "sonia/bang/errors/pattern_match_error.hpp"
+#include "sonia/bang/errors/circular_dependency_error.hpp"
+#include "sonia/bang/errors/identifier_redefinition_error.hpp"
 
 namespace sonia::lang::bang {
 
@@ -174,6 +176,59 @@ function_descriptor::named_field const* function_descriptor::find_named_field(id
     return nullptr;
 }
 
+entity_identifier functional::default_entity(fn_compiler_context& ctx) const
+{
+    shared_ptr<entity_resolver> resolver;
+    {
+        lock_guard lock{ default_entity_mtx_ };
+        if (auto* p = get<annotated_entity_identifier>(&default_entity_); p) return p->value;
+        resolver = get<shared_ptr<entity_resolver>>(default_entity_);
+    }
+    
+    compiler_task_tracer::task_guard tg = ctx.try_lock_task(qname_task_id{ id_ });
+    if (!tg) {
+        throw circular_dependency_error({ make_error<basic_general_error>(resolver->location(), "resolving name"sv, id_) });
+    }
+
+    {
+        lock_guard lock{ default_entity_mtx_ };
+        if (auto * p = get<annotated_entity_identifier>(&default_entity_); p) return p->value;
+    }
+        
+    auto deid = resolver->const_resolve(ctx);
+    if (!deid) deid.error()->rethrow(ctx.u());
+    {
+        lock_guard lock{ default_entity_mtx_ };
+        default_entity_ = annotated_entity_identifier{ *deid, resolver->location() };
+    }
+
+    return *deid;
+}
+
+error_storage functional::set_default_entity(annotated_entity_identifier e)
+{
+    lock_guard lock{ default_entity_mtx_ };
+    if (auto* p = get<annotated_entity_identifier>(&default_entity_); !p || *p) {
+        return make_error<identifier_redefinition_error>(
+            annotated_qname_identifier{ id(), e.location },
+            p ? p->location : get<shared_ptr<entity_resolver>>(default_entity_)->location());
+    }
+    default_entity_ = std::move(e);
+    return {};
+}
+
+error_storage functional::set_default_entity(shared_ptr<entity_resolver> e)
+{
+    lock_guard lock{ default_entity_mtx_ };
+    if (auto* p = get<annotated_entity_identifier>(&default_entity_); !p || *p) {
+        return make_error<identifier_redefinition_error>(
+            annotated_qname_identifier{ id(), e->location() },
+            p ? p->location : get<shared_ptr<entity_resolver>>(default_entity_)->location());
+    }
+    default_entity_ = std::move(e);
+    return {};
+}
+
 std::expected<functional::match, error_storage> functional::find(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& expected_result) const
 {
     alt_error err;
@@ -245,7 +300,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> fieldset_pattern::
             return make_error<basic_general_error>(get_start_location(*expr_it), "positioned argument mismatch"sv);
         }
         entity_identifier param_type = posarg->constraint;
-        entity const& param_entity = ctx.u().eregistry().get(param_type);
+        entity const& param_entity = ctx.u().eregistry_get(param_type);
         if (pack_entity const* pent = dynamic_cast<pack_entity const*>(&param_entity); pent) {
             uint64_t pack_size = 0;
             //ctx.append_expression(semantic::push_value{ uint64_t{pack_size} });
@@ -274,7 +329,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> fieldset_pattern::
     }
     while (posarg != psp.end()) {
         entity_identifier param_type = posarg->constraint;
-        entity const& param_entity = ctx.u().eregistry().get(param_type);
+        entity const& param_entity = ctx.u().eregistry_get(param_type);
         if (pack_entity const* pent = dynamic_cast<pack_entity const*>(&param_entity); pent) {
             ctx.append_expression(semantic::push_value{ uint64_t{0} }); // set empty argument pack
             ++posarg;
@@ -292,7 +347,7 @@ error_storage functional::pattern::apply(fn_compiler_context& ctx, qname_identif
     auto r = const_apply(ctx, fid, md);
     if (!r) return std::move(r.error());
     ctx.append_expression(semantic::push_value{*r});
-    entity const& e = ctx.u().eregistry().get(*r);
+    entity const& e = ctx.u().eregistry_get(*r);
     ctx.context_type = e.get_type();
     return {};
 }

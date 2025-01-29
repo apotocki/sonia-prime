@@ -10,6 +10,7 @@
 #include "sonia/variant.hpp"
 #include "sonia/type_traits.hpp"
 #include "sonia/filesystem.hpp"
+#include "sonia/small_vector.hpp"
 
 #include "ast_terms.hpp"
 #include "sonia/logger/logger.hpp"
@@ -21,17 +22,9 @@ class unit;
 class parser_context
 {
 public:
-    explicit parser_context(unit& u)
+    inline explicit parser_context(unit& u) noexcept
         : unit_{ u }
-    {
-        ns_stack_.push_back({});
-    }
-
-    qname const& ns() const { return ns_stack_.back(); }
-
-    void push_ns(qname);
-    void pop_ns();
-    //qname const& ns() const { return ns_stack_.back(); }
+    {}
 
     annotated_string make_string(annotated_string_view) const;
     mp::integer make_integer(string_view) const;
@@ -54,8 +47,6 @@ public:
 
     shared_ptr<lex::code_resource> get_resource() const;
 
-    void pop_resource() { resource_stack_.pop_back(); }
-
     std::expected<statement_set_t, std::string> parse(fs::path const& f);
     std::expected<statement_set_t, std::string> parse_string(string_view);
 
@@ -64,10 +55,8 @@ private:
 
     unit& unit_;
 
-    boost::container::small_vector<shared_ptr<lex::code_resource>, 8> resource_stack_;
+    small_vector<shared_ptr<lex::code_resource>, 8> resource_stack_;
     
-    boost::container::small_vector<qname, 8> ns_stack_;
-
     std::vector<std::string> error_messages_;
     
     statement_set_t declarations_;

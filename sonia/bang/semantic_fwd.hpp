@@ -63,7 +63,7 @@ public:
 
     ValueT const& value() const { return value_; }
 
-    size_t hash() const noexcept override { return hash_value(value_); }
+    size_t hash() const noexcept override { return hasher{}(value_); }
 
     bool equal(entity const& rhs) const noexcept override
     {
@@ -93,9 +93,11 @@ private:
 
 class pack_entity;
 using string_literal_entity = value_entity<small_string>;
+using bool_literal_entity = value_entity<bool>;
 using integer_literal_entity = value_entity<mp::integer>;
 using decimal_literal_entity = value_entity<mp::decimal>;
 using identifier_entity = value_entity<identifier>;
+using qname_identifier_entity = value_entity<qname_identifier>;
 
 class enum_entity;
 class variable_entity;
@@ -111,9 +113,11 @@ public:
     virtual ~entity_visitor() = default;
 
     virtual void operator()(string_literal_entity const&) const = 0;
+    virtual void operator()(bool_literal_entity const&) const = 0;
     virtual void operator()(integer_literal_entity const&) const = 0;
     virtual void operator()(decimal_literal_entity const&) const = 0;
     virtual void operator()(identifier_entity const&) const = 0;
+    virtual void operator()(qname_identifier_entity const&) const = 0;
     virtual void operator()(pack_entity const&) const = 0;
     virtual void operator()(function_entity const&) const = 0;
     virtual void operator()(external_function_entity const&) const = 0;

@@ -14,6 +14,7 @@
 #include "../entities/enum_entity.hpp"
 #include "../entities/functional_entity.hpp"
 
+#include "ct_expression_visitor.hpp"
 
 #include "sonia/bang/errors.hpp"
 
@@ -37,20 +38,19 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
         return false;
     }
 
-    if (expected_result.value == u().get_any_entity_identifier()) {
+    if (expected_result.value == u().get(builtin_eid::any)) {
         ctx.context_type = expected_result.value;
         return false;
     }
 
     //GLOBAL_LOG_DEBUG() << ("expected type: %1%, actual type: %2%"_fmt % u().print(expected_result.value) % u().print(typeeid)).str();
 
-    functional const& fn = u().fregistry().resolve(u().get_implicit_cast_qname_identifier());
     lex::resource_location expr_loc = get_start_location(e);
     pure_call_t cast_call{ expected_result.location };
-    cast_call.emplace_back(annotated_identifier{ u().get_to_parameter_identifier() }, annotated_entity_identifier{ expected_result.value, expected_result.location });
+    cast_call.emplace_back(annotated_identifier{ u().get(builtin_id::to) }, annotated_entity_identifier{ expected_result.value, expected_result.location });
     cast_call.emplace_back(context_value{ typeeid, expr_loc });
 
-    auto match = fn.find(ctx, cast_call, expected_result);
+    auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expected_result);
     if (!match) {
         //return std::move(ptrn.error());
         return std::unexpected(append_cause(
@@ -63,73 +63,17 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
         return std::unexpected(std::move(err));
 
     return true;
-
-    //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor apply_cast");
-#if 0
-    
-    entity const& ent = u().eregistry().get(expected_result.value);
-    entity_signature const* esig = ent.signature();
-    if (!esig) {
-        return make_error<basic_general_error>(expected_result.location, "type is expected"sv);
-    }
-    functional const* fn = u().fregistry().find(esig->name());
-    if (!fn) {
-        return make_error<cast_error>(expected_result.location, expected_result.value, typeeid, e);
-    }
-
-    lex::resource_location expr_loc = get_start_location(e);
-    pure_call_t cast_call{ expected_result.location };
-    cast_call.positioned_args.emplace_back(context_value{ typeeid, expr_loc });
-
-    auto ptrn = fn->find(ctx, cast_call);
-    if (!ptrn.has_value()) {
-        return ptrn.error();
-        //return make_error<cast_error>(expected_result.location, expected_result.value, typeeid, e);
-    }
-    auto r = ptrn.value()->apply(ctx);
-    if (!r.has_value()) {
-        return r.error();
-    }
-    
-    return {};
-    //THROW_NOT_IMPLEMENTED_ERROR("expected type: %1%, but actual type: %2%"_fmt % u().print(expected_result.value) % u().print(typeeid));
-#endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(context_value const& v) const
 {
-    // just verify condition
-    if (!expected_result) {
-        ctx.context_type = v.type;
-        return {};
-    }
-    if (v.type == expected_result.value) return {};
-    if (expected_result.value == u().get_any_entity_identifier()) {
-        ctx.context_type = expected_result.value;
-        return {};
-    }
-    THROW_INTERNAL_ERROR("expected type: %1%, but actual type: %2%"_fmt % u().print(expected_result.value) % u().print(v.type));
+    return apply_cast(v.type, v);
 }
-
-//template <typename ExprT>
-//inline expression_visitor::result_type expression_visitor::apply_cast(bang_type const& t, ExprT const& e) const
-//{
-//    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::apply_cast");
-//#if 0
-//    if (!expected_result || (t.which() == expected_result.value.which() && expected_result.value == t)) {
-//        ctx.context_type = t;
-//        return {};
-//    }
-//    return apply_visitor(
-//          expression_implicit_cast_visitor{ ctx, t, [this, &e] { return error_context{e, expected_result.location}; } }
-//        , expected_result.value);
-//#endif
-//}
 
 expression_visitor::result_type expression_visitor::operator()(annotated_bool const& b) const
 {
     ctx.append_expression(semantic::push_value{ b.value });
-    return apply_cast(u().get_bool_entity_identifier(), b);
+    return apply_cast(u().get(builtin_eid::boolean), b);
 }
 
 expression_visitor::result_type expression_visitor::operator()(annotated_integer const& d) const
@@ -138,33 +82,33 @@ expression_visitor::result_type expression_visitor::operator()(annotated_integer
 #if 0
     integer_literal_entity val{ d.value };
     val.set_type(u().get_integer_entity_identifier());
-    entity const& valent = u().eregistry().find_or_create(val, [&val]() {
+    entity const& valent = u().eregistry_find_or_create(val, [&val]() {
         return make_shared<integer_literal_entity>(std::move(val));
     });
     ctx.append_expression(semantic::push_value{ valent.id() });
     return apply_cast(u().get_integer_entity_identifier(), d);
 #else
     ctx.append_expression(semantic::push_value{ d.value });
-    return apply_cast(u().get_integer_entity_identifier(), d);
+    return apply_cast(u().get(builtin_eid::integer), d);
 #endif
 }
 
 expression_visitor::result_type expression_visitor::operator()(annotated_decimal const& d) const
 {
     ctx.append_expression(semantic::push_value{ d.value });
-    return apply_cast(u().get_decimal_entity_identifier(), d);
+    return apply_cast(u().get(builtin_eid::decimal), d);
 }
 
 expression_visitor::result_type expression_visitor::operator()(annotated_string const& s) const
 {
     ctx.append_expression(semantic::push_value{ s.value });
-    return apply_cast(u().get_string_entity_identifier(), s);
+    return apply_cast(u().get(builtin_eid::string), s);
 }
 
 expression_visitor::result_type expression_visitor::operator()(annotated_identifier const& i) const
 {
     ctx.append_expression(semantic::push_value{ i.value });
-    return apply_cast(u().get_identifier_entity_identifier(), i);
+    return apply_cast(u().get(builtin_eid::identifier), i);
 }
 
 //expression_visitor::result_type expression_visitor::operator()(annotated_qname const& aqn) const
@@ -177,12 +121,13 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
 {
  //   THROW_NOT_IMPLEMENTED_ERROR("expression_visitor variable_identifier");
 #if 1
-    if (functional const* fl = ctx.lookup_functional(var.name.value); fl) {
-        if (entity_identifier eid = fl->default_entity(); eid) { // variable or const
-            ctx.append_expression(semantic::push_value{ eid });
-            entity const& ent = u().eregistry().get(eid);
-            return apply_cast(ent.get_type(), var);
-        }
+    auto opteid = ctx.lookup_entity(var.name);
+    if (!opteid) return std::unexpected(std::move(opteid.error()));
+    if (auto eid = *opteid; eid) {
+        ctx.append_expression(semantic::push_value{ eid });
+        entity const& ent = u().eregistry_get(eid);
+        return apply_cast(ent.get_type(), var);
+    }
 #if 0
         shared_ptr<entity> e = ctx.resolve_entity(var.name.value);
         if (auto varptr = dynamic_cast<variable_entity*>(e.get()); varptr) {
@@ -222,7 +167,6 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
         }
         */
 #endif
-    }
     return std::unexpected(make_error<undeclared_identifier_error>(var.name));
 #endif
 }
@@ -298,7 +242,7 @@ expression_visitor::result_type expression_visitor::do_assign(binary_expression_
 
 expression_visitor::result_type expression_visitor::operator()(annotated_entity_identifier const& ee) const
 {
-    entity const& ent = u().eregistry().get(ee.value);
+    entity const& ent = u().eregistry_get(ee.value);
     if (expected_result) {
         if (ent.is(ctx, expected_result.value)) {
             ctx.append_expression(semantic::push_value{ ee.value });
@@ -521,7 +465,7 @@ expression_visitor::result_type expression_visitor::operator()(unary_expression_
 {
     switch (be.op) {
     case unary_operator_type::NEGATE:
-        return this->operator()(u().get_negate_qname_identifier(), be);
+        return this->operator()(builtin_qnid::negate, be);
     }
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor unary_expression_t");
 }
@@ -530,11 +474,11 @@ expression_visitor::result_type expression_visitor::operator()(binary_expression
 {
     switch (be.op) {
     case binary_operator_type::EQ:
-        return this->operator()(u().get_eq_qname_identifier(), be);
+        return this->operator()(builtin_qnid::eq, be);
     case binary_operator_type::NE:
-        return this->operator()(u().get_ne_qname_identifier(), be);
+        return this->operator()(builtin_qnid::ne, be);
     case binary_operator_type::PLUS:
-        return this->operator()(u().get_plus_qname_identifier(), be);
+        return this->operator()(builtin_qnid::plus, be);
     case binary_operator_type::ASSIGN:
         return do_assign(be);
     }
@@ -642,12 +586,12 @@ expression_visitor::result_type expression_visitor::operator()(not_empty_express
 
 expression_visitor::result_type expression_visitor::operator()(member_expression_t const& me) const
 {
-    functional const& fn = u().fregistry().resolve(u().get_get_qname_identifier());
     pure_call_t get_call{ me.start() };
-    get_call.emplace_back(annotated_identifier{ u().get_self_parameter_identifier() }, me.object);
-    get_call.emplace_back(annotated_identifier{ u().get_property_parameter_identifier() }, me.property);
+    get_call.emplace_back(annotated_identifier{ u().get(builtin_id::self), get_start_location(me.object) }, me.object);
+    get_call.emplace_back(annotated_identifier{ u().get(builtin_id::property), get_start_location(me.property) }, me.property);
 
-    auto match = fn.find(ctx, get_call);
+    auto match = ctx.find(builtin_qnid::get, get_call, expected_result);
+    
     if (!match) {
         return std::unexpected(append_cause(
             make_error<basic_general_error>(me.start(), "can't resolve"sv, syntax_expression_t{ me }),
@@ -710,7 +654,7 @@ expression_visitor::result_type expression_visitor::operator()(expression_vector
 #endif
 }
 
-function_entity& expression_visitor::handle_lambda(lambda_t& l) const
+function_entity& expression_visitor::handle_lambda(lambda& l) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor handle_lambda");
 #if 0
@@ -723,7 +667,7 @@ function_entity& expression_visitor::handle_lambda(lambda_t& l) const
 #endif
 }
 
-expression_visitor::result_type expression_visitor::operator()(lambda_t & l) const
+expression_visitor::result_type expression_visitor::operator()(lambda & l) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor lambda_t");
 
@@ -735,28 +679,17 @@ expression_visitor::result_type expression_visitor::operator()(lambda_t & l) con
 }
 
 template <std::derived_from<pure_call_t> CallExpressionT>
-inline expression_visitor::result_type expression_visitor::operator()(qname_identifier fnqn, CallExpressionT const& call) const
+expression_visitor::result_type expression_visitor::operator()(builtin_qnid qnid, CallExpressionT const& call) const
 {
-    //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor qname_identifier CallExpressionT");
-    functional const& fn = u().fregistry().resolve(fnqn);
-    return this->operator()(fn, call);
-}
-
-template <std::derived_from<pure_call_t> CallExpressionT>
-expression_visitor::result_type expression_visitor::operator()(functional const& fnl, CallExpressionT const& call) const
-{
-    auto match = fnl.find(ctx, call, expected_result);
-    if (!match) return std::unexpected(std::move(match.error()));
-    
+    auto match = ctx.find(qnid, call, expected_result);
     if (auto err = match->apply(ctx); err) return std::unexpected(std::move(err));
     return apply_cast(ctx.context_type, call);
 }
 
 expression_visitor::result_type expression_visitor::operator()(new_expression_t const& ne) const
 {
-    functional const& fn = u().fregistry().resolve(u().get_new_qname_identifier());
     pure_call_t new_call{ ne.location };
-    new_call.emplace_back(annotated_identifier{ u().get_type_parameter_identifier() }, ne.name);
+    new_call.emplace_back(annotated_identifier{ u().get(builtin_id::type) }, ne.name);
     for (auto const& arg: ne.arguments) {
         if (annotated_identifier const* optname = arg.name(); optname) {
             new_call.emplace_back(*optname, arg.value());
@@ -764,7 +697,8 @@ expression_visitor::result_type expression_visitor::operator()(new_expression_t 
             new_call.emplace_back(arg.value());
         }
     }
-    auto match = fn.find(ctx, new_call, expected_result);
+
+    auto match = ctx.find(builtin_qnid::new_, new_call, expected_result);
     if (!match) {
         return std::unexpected(append_cause(
             make_error<basic_general_error>(ne.location, "can't instantiate the object"sv, ne.name),
@@ -806,29 +740,38 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t c
     }
 #endif
 
-    variable_identifier const* fnvar = get<variable_identifier>(&proc.fn_object);
-    if (!fnvar) {
-        THROW_NOT_IMPLEMENTED_ERROR("fn object expression is not implemented yet");
-    }
-    //GLOBAL_LOG_INFO() << "function call: " << u().print(fnvar->name.value);
-    functional const* fnl = ctx.lookup_functional(fnvar->name.value);
-    if (!fnl) {
-        return std::unexpected(make_error<undeclared_identifier_error>(fnvar->name));
-    }
+    ct_expression_visitor vis{ ctx, annotated_entity_identifier{ u().get(builtin_eid::qname), proc.location() } };
+    auto qn_ent_id = apply_visitor(vis, proc.fn_object);
+    if (!qn_ent_id) return std::unexpected(std::move(qn_ent_id.error()));
+    qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(u().eregistry_get(*qn_ent_id));
     
-    //shared_ptr<entity> e = ctx.resolve_entity(fnvar->name.value);
-    //if (!e) [[unlikely]] {
-    //    return make_error<undeclared_identifier_error>(fnvar->name);
-    //}
-    //shared_ptr<functional_entity> fnl = dynamic_pointer_cast<functional_entity>(e);
-    //if (!fnl) [[unlikely]] {
-    //    // to do: can be variable
-    //    return make_error<basic_general_error>(fnvar->name.location, "is not callable"sv, fnvar->name.value);
-    //}
-    
-    return this->operator()(*fnl, proc);
+    auto match = ctx.find(qname_ent.value(), proc, expected_result);
+    if (auto err = match->apply(ctx); err) return std::unexpected(std::move(err));
+    return apply_cast(ctx.context_type, proc);
 
-    //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::operator()(function_call_t");
+    //annotated_qname const* fnvar = get<annotated_qname>(&proc.fn_object);
+    //if (!fnvar) {
+    //    THROW_NOT_IMPLEMENTED_ERROR("fn object expression is not implemented yet");
+    //}
+    ////GLOBAL_LOG_INFO() << "function call: " << u().print(fnvar->name.value);
+    //functional const* fnl = ctx.lookup_functional(fnvar->value);
+    //if (!fnl) {
+    //    return std::unexpected(make_error<undeclared_identifier_error>(*fnvar));
+    //}
+    //
+    ////shared_ptr<entity> e = ctx.resolve_entity(fnvar->name.value);
+    ////if (!e) [[unlikely]] {
+    ////    return make_error<undeclared_identifier_error>(fnvar->name);
+    ////}
+    ////shared_ptr<functional_entity> fnl = dynamic_pointer_cast<functional_entity>(e);
+    ////if (!fnl) [[unlikely]] {
+    ////    // to do: can be variable
+    ////    return make_error<basic_general_error>(fnvar->name.location, "is not callable"sv, fnvar->name.value);
+    ////}
+    //
+    //return this->operator()(*fnl, proc);
+
+    ////THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::operator()(function_call_t");
 }
 
 expression_visitor::result_type expression_visitor::operator()(chained_expression_t&) const
@@ -840,7 +783,6 @@ expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_
 {
     if (!expected_result) {
         // e.g. case: let val = (a, b, c)
-        functional const& tuple_fn = u().fregistry().resolve(u().get_make_tuple_qname_identifier());
         pure_call_t tuple_call{ nel.location };
         for (opt_named_syntax_expression_t const& ne : nel) {
             if (auto const* pname = ne.name(); pname) {
@@ -849,7 +791,7 @@ expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_
                 tuple_call.emplace_back(ne.value());
             }
         }
-        auto match = tuple_fn.find(ctx, tuple_call, expected_result);
+        auto match = ctx.find(builtin_qnid::make_tuple, tuple_call, expected_result);
         if (!match) return std::unexpected(match.error());
        
         if (auto err = match->apply(ctx); err)

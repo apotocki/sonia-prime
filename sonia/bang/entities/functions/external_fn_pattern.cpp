@@ -31,8 +31,9 @@ std::expected<entity_identifier, error_storage> external_fn_pattern::apply(fn_co
 }
 #endif
 
-shared_ptr<entity> external_fn_pattern::build(unit& u, entity_signature&& signature) const
+shared_ptr<entity> external_fn_pattern::build(fn_compiler_context& ctx, functional_match_descriptor&, entity_signature&& signature) const
 {
+    unit& u = ctx.u();
     return make_shared<external_function_entity>(u, fn_qname() / u.new_identifier(), std::move(signature), extfnid_);
 }
 

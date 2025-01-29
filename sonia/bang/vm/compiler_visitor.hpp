@@ -254,7 +254,7 @@ public:
         }
         size_t param_count = fn_context_->parameter_count(); // including captured_variables
         BOOST_ASSERT(fn_context_->get_result_type());
-        if (fn_context_->get_result_type() != unit_.get_void_entity_identifier()) {
+        if (fn_context_->get_result_type() != unit_.get(builtin_eid::void_)) {
             fnbuilder_.append_fset(-static_cast<intptr_t>(param_count));
             fnbuilder_.append_truncatefp(-static_cast<intptr_t>(param_count) + 1);
         } else {
@@ -287,7 +287,7 @@ public:
             local_return_position = fnbuilder_.make_label();
             size_t param_count = fn_context_->parameter_count(); // including captured_variables
             BOOST_ASSERT(fn_context_->get_result_type());
-            if (fn_context_->get_result_type() != unit_.get_void_entity_identifier()) {
+            if (fn_context_->get_result_type() != unit_.get(builtin_eid::void_)) {
                 fnbuilder_.append_fset(-static_cast<intptr_t>(param_count));
                 fnbuilder_.append_truncatefp(-static_cast<intptr_t>(param_count) + 1);
             } else {
@@ -379,7 +379,7 @@ public:
 
 void compiler_visitor_base::operator()(semantic::invoke_function const& invf) const
 {
-    entity const& e = unit_.eregistry().get(invf.fn);
+    entity const& e = unit_.eregistry_get(invf.fn);
     if (auto fe = dynamic_cast<internal_function_entity const*>(&e); fe) {
         if (fe->is_inline()) {
             inline_compiler_visitor ivis{ unit_, fnbuilder_, *fe };

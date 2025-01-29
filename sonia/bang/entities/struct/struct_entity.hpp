@@ -4,22 +4,36 @@
 
 #pragma once
 
+#include <atomic>
+
+#include "sonia/concurrency.hpp"
+
 #include "sonia/bang/entities/signatured_entity.hpp"
+#include "sonia/bang/errors.hpp"
 
 namespace sonia::lang::bang {
 
 class struct_entity : public basic_signatured_entity
 {
     field_list_t fields_;
-    bool built_ = false;
+
+    mutable entity_identifier underlying_tuple_eid_;
+    mutable entity_identifier underlying_tuple_constructor_eid_;
+    
+    // to do: something equivalent to the std::once_flag but for fibers
+    mutable fibers::mutex mtx_;
+    mutable std::atomic_bool built_ = false;
 
 public:
-    explicit struct_entity(entity_identifier type, entity_signature && sgn, field_list_t const& fields)
+    explicit struct_entity(entity_identifier type, entity_signature && sgn, field_list_t const& f)
         : basic_signatured_entity{ std::move(type), std::move(sgn) }
-        , fields_{ fields }
-    { }
+        , fields_{ f }
+    {}
 
-    void build(fn_compiler_context&);
+    std::expected<entity_identifier, error_storage> underlying_tuple_eid(fn_compiler_context&) const;
+    std::expected<entity_identifier, error_storage> underlying_tuple_constructor_eid(fn_compiler_context&) const;
+
+    error_storage build(fn_compiler_context&) const;
     //std::expected<function_entity const*, error_storage> find_field_getter(fn_compiler_context&, annotated_identifier const&) const;
     //std::expected<function_entity const*, error_storage> find_field_setter(fn_compiler_context&, annotated_identifier const&) const;
     //std::expected<function_signature const*, error_storage> find(fn_compiler_context&, pure_call_t&) const override;

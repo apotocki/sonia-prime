@@ -144,6 +144,12 @@ inline size_t hash_value(qname_identifier const& v) noexcept
     return hasher{}(v.raw());
 }
 
+template <typename T, typename Traits>
+inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& os, qname_identifier idval)
+{
+    return os << idval.raw();
+}
+
 template <typename IdentifierT>
 class qname_view : public span<const IdentifierT>
 {

@@ -58,7 +58,7 @@ struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
 
     result_type operator()(chained_expression_t&) const;
 
-    result_type operator()(lambda_t&) const;
+    result_type operator()(lambda&) const;
 
     result_type operator()(annotated_entity_identifier const& ee) const;
 
@@ -78,7 +78,7 @@ struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
 
     result_type operator()(opt_named_syntax_expression_list_t const&) const;
 
-    function_entity& handle_lambda(lambda_t&) const;
+    function_entity& handle_lambda(lambda&) const;
     std::expected<function_entity const*, error_storage> handle_property_get(annotated_identifier id) const;
 
 
@@ -96,10 +96,7 @@ private:
     result_type apply_cast(entity_identifier, ExprT const& e) const;
 
     template <std::derived_from<pure_call_t> CallExpressionT>
-    result_type operator()(qname_identifier fnqn, CallExpressionT const& call) const;
-
-    template <std::derived_from<pure_call_t> CallExpressionT>
-    result_type operator()(functional const& fnl, CallExpressionT const& call) const;
+    result_type operator()(builtin_qnid, CallExpressionT const&) const;
 
     result_type do_assign(binary_expression_t const&) const;
 };

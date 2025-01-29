@@ -119,7 +119,7 @@ public:
 
     void operator()(entity_identifier const& eid) const
     {
-        entity const& e = unit_.eregistry().get(eid);
+        entity const& e = unit_.eregistry_get(eid);
         e.visit(*this);
     }
 
@@ -135,6 +135,11 @@ public:
         this->operator()(sle.value());
     }
 
+    void operator()(bool_literal_entity const& ble) const override
+    {
+        this->operator()(ble.value());
+    }
+
     void operator()(integer_literal_entity const& ile) const override
     {
         this->operator()(ile.value());
@@ -146,6 +151,11 @@ public:
     }
 
     void operator()(identifier_entity const& ie) const override
+    {
+        this->operator()(ie.value());
+    }
+
+    void operator()(qname_identifier_entity const& ie) const override
     {
         this->operator()(ie.value());
     }

@@ -50,7 +50,7 @@ std::expected<entity_identifier, error_storage> tuple_pattern::const_apply(fn_co
     BOOST_ASSERT(md.signature.named_fields().empty());
     BOOST_ASSERT(md.signature.positioned_fields().size() == 1);
 
-    entity const& entres = ctx.u().eregistry().find_or_create(indirect_signatured_entity{ md.signature }, [&ctx, &md]() {
+    entity const& entres = ctx.u().eregistry_find_or_create(indirect_signatured_entity{ md.signature }, [&ctx, &md]() {
         return make_shared<pack_entity>(ctx.u().get_typename_entity_identifier(), std::move(md.signature));
     });
     ctx.pop_chain();

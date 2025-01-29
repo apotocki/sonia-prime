@@ -6,6 +6,11 @@
 #include "fn_compiler_context.hpp"
 
 #include <boost/container/flat_map.hpp>
+#include <boost/range/adaptor/reversed.hpp>
+
+#include "sonia/bang/entities/functional.hpp"
+
+#include "sonia/bang/errors/identifier_redefinition_error.hpp"
 
 namespace sonia::lang::bang {
 
@@ -135,7 +140,7 @@ struct parameter_visitor : static_visitor<std::expected<pattern_expression_t, er
 };
 #endif
 
-//std::expected<int, error_storage> fn_compiler_context::build_fieldset(fn_pure_t const& pure_decl, patern_fieldset_t& fs)
+//std::expected<int, error_storage> fn_compiler_context::build_fieldset(fn_pure const& pure_decl, patern_fieldset_t& fs)
 //{
 ////    THROW_NOT_IMPLEMENTED_ERROR("function_descriptor::build_fieldset");
 //    
@@ -230,6 +235,20 @@ fn_compiler_context::~fn_compiler_context()
 
 }
 
+entity_identifier fn_compiler_context::get_bound(identifier name) const
+{
+    for (functional_binding_set const* binding : boost::adaptors::reverse(bindings_)) {
+        if (auto optval = binding->lookup(name); optval && !optval->empty()) {
+            if (optval->size() == 1) {
+                if (entity_identifier const* pe = get<entity_identifier>(&optval->front()); pe) return *pe;
+            } else {
+                THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context::get_bound variadic bound value");
+            }
+        }
+    }
+    return {};
+}
+
 compiler_task_tracer::task_guard fn_compiler_context::try_lock_task(compiler_task_id const& tid)
 {
     return unit_.task_tracer().try_lock_task(tid, worker_id_);
@@ -240,7 +259,8 @@ void fn_compiler_context::pushed_unnamed_ns()
     ns_ = ns_ / unit_.new_identifier();
 }
 
-error_storage fn_compiler_context::build_function_descriptor(fn_pure_t const& pure_decl, function_descriptor& fd)
+#if 0
+error_storage fn_compiler_context::build_function_descriptor(fn_pure const& pure_decl, function_descriptor& fd)
 {
     THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context::build_function_descriptor");
 #if 0
@@ -349,7 +369,7 @@ error_storage fn_compiler_context::build_function_descriptor(fn_pure_t const& pu
 
     //for (auto& parampair : params) {
     //    entity_identifier constraint_eid = apply_visitor(tqvis, parampair.type.value);
-    //    entity const& constraint_entity = unit_.eregistry().get(constraint_eid);
+    //    entity const& constraint_entity = unit_.eregistry_get(constraint_eid);
     //    bool constraint_is_typename = constraint_entity.is(*this, unit_.get_typename_entity_identifier());
     //    param_constraint_type ct = constraint_is_typename ? 
     //          (parampair.type.is_const ? param_constraint_type::const_constraint : param_constraint_type::type_constaint)
@@ -394,6 +414,7 @@ error_storage fn_compiler_context::build_function_descriptor(fn_pure_t const& pu
     //return res;
     ////THROW_NOT_IMPLEMENTED_ERROR("function_descriptor::function_descriptor");
 }
+#endif
 
 functional const* fn_compiler_context::lookup_functional(qname_view name) const
 {
@@ -411,12 +432,57 @@ functional const* fn_compiler_context::lookup_functional(qname_view name) const
     }
 }
 
+std::expected<qname_identifier, error_storage> fn_compiler_context::lookup_qname(annotated_qname const& name) const
+{
+    functional const* pfn = lookup_functional(name.value);
+    if (pfn) return pfn->id();
+    return std::unexpected(make_error<undeclared_identifier_error>(name));
+}
+
+std::expected<entity_identifier, error_storage> fn_compiler_context::lookup_entity(annotated_qname const& name)
+{
+    if (name.value.is_relative() && name.value.size() == 1) {
+        identifier varid = *name.value.begin();
+        entity_identifier eid = get_bound(varid);
+        if (eid) return eid;
+    }
+
+    functional const* pfn = lookup_functional(name.value);
+    if (pfn) return pfn->default_entity(*this);
+    return std::unexpected(make_error<undeclared_identifier_error>(name));
+}
+
+std::expected<functional::match, error_storage> fn_compiler_context::find(builtin_qnid qnid, pure_call_t const& call, annotated_entity_identifier const& expected_result)
+{
+    functional const& fn = u().fget(qnid);
+    return fn.find(*this, call, expected_result);
+}
+
+std::expected<functional::match, error_storage> fn_compiler_context::find(qname_identifier qnid, pure_call_t const& call, annotated_entity_identifier const& expected_result)
+{
+    functional const& fn = u().fregistry().resolve(qnid);
+    return fn.find(*this, call, expected_result);
+}
+
 variable_entity& fn_compiler_context::new_variable(annotated_identifier name, entity_identifier t, variable_entity::kind k)
 {
     qname var_qname = ns() / name.value;
-    variable_entity& var = u().new_variable(var_qname, name.location, t, k);
-    var.set_index(allocate_local_variable_index());
-    return var;
+    //variable_entity& var = u().new_variable(var_qname, name.location, t, k);
+
+    functional& fnl = u().fregistry().resolve(var_qname);
+    
+    auto ve = sonia::make_shared<variable_entity>(std::move(t), fnl.id(), k);
+    ve->set_location(name.location);
+
+    u().eregistry_insert(ve);
+    if (auto err = fnl.set_default_entity(annotated_entity_identifier{ ve->id(), name.location }); err) {
+        throw exception(u().print(*err));
+    }
+
+    if (k != variable_entity::kind::EXTERN) {
+        ve->set_index(allocate_local_variable_index());
+    }
+    return *ve;
 }
 
 variable_entity& fn_compiler_context::create_captured_variable_chain(variable_entity& v)
@@ -438,20 +504,11 @@ variable_entity& fn_compiler_context::create_captured_variable_chain(variable_en
 
 void fn_compiler_context::finish_frame()
 {
-    /*
-    if (local_variable_count_ == 1) {
-        expressions_.front() = semantic::push_value{ null_t{} };
-    } else if (local_variable_count_) {
-        std::vector<semantic::expression_t> prolog;
-        prolog.resize(local_variable_count_, semantic::push_value{ null_t{} });
-        expressions_.front() = std::move(prolog);
-    }
-    */
     if (!result) {
         if (accum_result) {
             result = accum_result;
         } else { // no explicit return
-            result = u().get_void_entity_identifier();
+            result = u().get(builtin_eid::void_);
             u().push_back_expression(expressions_, semantic::return_statement{});
         }
     }
@@ -473,7 +530,7 @@ entity_identifier fn_compiler_context::compute_result_type()
 {
     if (result) { return result; }
     else if (!accum_result) {
-        accum_result = unit_.get_void_entity_identifier();
+        accum_result = unit_.get(builtin_eid::void_);
     }
     return accum_result;
 }

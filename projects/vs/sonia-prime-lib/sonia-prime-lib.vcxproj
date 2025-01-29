@@ -253,7 +253,6 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_type_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_vector_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_visitor.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.tab.hpp" />
@@ -262,7 +261,11 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\functions\expression_resolver.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\extern\to_string_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\functions\signature_matcher.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\typeof_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\signatured_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\enum_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functional.hpp" />
@@ -275,16 +278,21 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\internal_type_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\struct\new_struct_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_fn_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_get_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\make_tuple_pattern.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_get_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\type_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\variable_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors\assign_error.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\errors\circular_dependency_error.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors\function_call_match_error.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\errors\identifier_redefinition_error.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors\pattern_match_error.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\errors\type_mismatch_error.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\errors\utility.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\library\library.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\location.hh" />
     <ClInclude Include="..\..\..\sonia\bang\parser.hpp" />
@@ -483,6 +491,7 @@
     <ClInclude Include="..\..\..\sonia\utility\caches\clock.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\utility.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\barrier.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\concurrency\call_once.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\debug_mutex.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\datetime\basic_datetime.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\datetime\datetime.hpp" />
@@ -710,7 +719,6 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\ast\fn_compiler_context.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang.cpp" />
@@ -737,6 +745,7 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\basic_fn_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\functions\expression_resolver.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\external_fn_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\extern\to_string_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\function_entity.cpp" />
@@ -746,16 +755,23 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\functions\signature_matcher.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\typeof_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\new_struct_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_entity.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_fn_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_get_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\make_tuple_pattern.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_get_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\type_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\errors\assign_error.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\errors\circular_dependency_error.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\errors\function_call_match_error.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\errors\identifier_redefinition_error.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\errors\pattern_match_error.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\errors\type_mismatch_error.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\library\bang_library.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\parser.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\semantic\managed_expression_list.cpp" />
@@ -1120,7 +1136,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;SONIA_LANG_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include;$(ProjectDir)..\..\..\..\..\tpls\bzip2\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\conversion\include;$(ProjectDir)..\..\..\..\..\tpls\xz\include;$(ProjectDir)..\..\..\..\..\tpls\lua\include;$(ProjectDir)..\..\..\..\..\tpls\jni;$(ProjectDir)..\..\..\..\..\tpls\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>

@@ -17,40 +17,50 @@
 #include "sonia/bang/semantic.hpp"
 #include "sonia/bang/errors.hpp"
 
-//#include "sonia/bang/ast/fn_compiler_context.hpp"
-
 #include "sonia/bang/semantic/managed_expression_list.hpp"
 
 namespace sonia::lang::bang {
 
 class fn_compiler_context;
 
-class functional_binding_set
+class functional_binding
 {
-    using value_type = variant<entity_identifier, mp::integer>;
-    small_vector<std::pair<identifier, small_vector<value_type, 1>>, 16> binding_;
+public:
+    virtual ~functional_binding() = default;
+
+    virtual optional<span<const entity_identifier>> lookup(identifier id) const noexcept = 0;
+};
+
+class functional_binding_set : public functional_binding
+{
+    small_vector<entity_identifier, 16> binding_;
+    small_vector<identifier, 16> binding_names_;
 
 public:
-    inline void reset(size_t cnt)
+    inline void reset() noexcept
     {
         binding_.clear();
-        binding_.resize(cnt);
+        binding_names_.clear();
     }
 
-    optional<span<const value_type>> lookup(identifier id) const
+    optional<span<const entity_identifier>> lookup(identifier id) const noexcept override
     {
-        auto it = std::lower_bound(binding_.begin(), binding_.end(), id, [](auto const& pair, identifier id) { return pair.first < id; });
-        if (it == binding_.end() || it->first != id) return {};
-        return span{ it->second.data(), it->second.size() };
+        auto it = std::lower_bound(binding_names_.begin(), binding_names_.end(), id);
+        if (it == binding_names_.end() || *it != id) return {};
+        auto bit = it;
+        for (++it; it != binding_names_.end() && *it == id; ++it);
+        return span{ binding_.data() + (bit - binding_names_.begin()), static_cast<size_t>(it - bit) };
     }
 
-    void emplace_back(identifier id, value_type value)
+    void emplace_back(identifier id, entity_identifier value)
     {
-        auto it = std::lower_bound(binding_.begin(), binding_.end(), id, [](auto const& pair, identifier id) { return pair.first < id; });
-        if (it == binding_.end() || it->first != id) {
-            it = binding_.emplace(it, id, small_vector<value_type, 1>{ std::move(value) });
+        auto it = std::lower_bound(binding_names_.begin(), binding_names_.end(), id);
+        if (it == binding_names_.end() || *it != id) {
+            it = binding_names_.emplace(it, id);
+            binding_.emplace(binding_.begin() + (it - binding_names_.begin()), std::move(value));
         } else {
-            it->second.emplace_back(std::move(value));
+            for (++it; it != binding_names_.end() && *it == id; ++it);
+            binding_.emplace(binding_.begin() + (it - binding_names_.begin()), std::move(value));
         }
     }
 };
@@ -84,7 +94,7 @@ struct parameter_match_result
     inline bool is_variadic() const noexcept { return !!(mod & (uint8_t)modifier::is_variadic); }
 };
 
-class functional_match_descriptor
+class functional_match_descriptor : public functional_binding
 {
     //using se_cont_iterator = semantic::expression_list_t::const_iterator;
     //using se_rng_t = std::pair<se_cont_iterator, se_cont_iterator>;
@@ -107,6 +117,8 @@ public:
 
     functional_match_descriptor(functional_match_descriptor const&) = delete;
     functional_match_descriptor& operator= (functional_match_descriptor const&) = delete;
+
+    optional<span<const entity_identifier>> lookup(identifier id) const noexcept override;
 
     //void push_named_argument_expressions(identifier, se_cont_iterator &, semantic::managed_expression_list const&);
     //void push_unnamed_argument_expressions(size_t, se_cont_iterator&, semantic::managed_expression_list const&);
@@ -136,8 +148,12 @@ public:
         }
     }
 
-    //span<const se_rng_t> get_named_arguments(identifier) const noexcept;
-    //span<const se_rng_t> get_position_arguments(size_t pos) const noexcept;
+    template <typename FT>
+    inline void for_each_match(FT&& ft) const
+    {
+        for_each_named_match(std::forward<FT>(ft));
+        for_each_positional_match(std::forward<FT>(ft));
+    }
 
     parameter_match_result& get_match_result(identifier /* external name */);
     parameter_match_result& get_match_result(size_t);
@@ -214,7 +230,7 @@ public:
     inline qname_identifier id() const noexcept { return id_; }
     inline qname_view name() const noexcept { return qname_view{ qnameids_, true }; }
 
-    entity_identifier default_entity(fn_compiler_context&) const;
+    std::expected<entity_identifier, error_storage> default_entity(fn_compiler_context&) const;
     [[nodiscard]] error_storage set_default_entity(annotated_entity_identifier);
     [[nodiscard]] error_storage set_default_entity(shared_ptr<entity_resolver>);
 

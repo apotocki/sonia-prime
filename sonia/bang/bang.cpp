@@ -139,20 +139,28 @@ void bang_impl::bootstrap()
 
 void bang_impl::load(fs::path const& f, span<string_view> args)
 {
-    bootstrap();
-    parser_context parser{ unit_ };
-    auto exp_decls = parser.parse(f);
-    if (!exp_decls.has_value()) throw exception(exp_decls.error());
-    compile(parser, std::move(*exp_decls), args);
+    try {
+        bootstrap();
+        parser_context parser{ unit_ };
+        auto exp_decls = parser.parse(f);
+        if (!exp_decls.has_value()) throw exception(exp_decls.error());
+        compile(parser, std::move(*exp_decls), args);
+    } catch (error const& e) {
+        throw exception(unit_.print(e));
+    }
 }
 
 void bang_impl::load(string_view code, span<string_view> args)
 {
-    bootstrap();
-    parser_context parser{ unit_ };
-    auto exp_decls = parser.parse_string(code);
-    if (!exp_decls.has_value()) throw exception(exp_decls.error());
-    compile(parser, std::move(*exp_decls), args);
+    try {
+        bootstrap();
+        parser_context parser{ unit_ };
+        auto exp_decls = parser.parse_string(code);
+        if (!exp_decls.has_value()) throw exception(exp_decls.error());
+        compile(parser, std::move(*exp_decls), args);
+    } catch (error const& e) {
+        throw exception(unit_.print(e));
+    }
 }
 
 void bang_impl::compile(lang::bang::parser_context & pctx, statement_set_t decls, span<string_view> args)

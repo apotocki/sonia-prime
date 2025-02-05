@@ -561,12 +561,12 @@ struct printer
 
     inline void operator()(identity_type<op::pop>, ContextT& ctx, size_t address) const
     {
-        generic_print(address, "pop"sv) << ' ' << std::dec << (ctx.stack_size() - 1) << " ("sv << ctx.stack_back() << ")\n"sv;
+        generic_print(address, "pop"sv) << " ["sv << std::dec << (ctx.stack_size() - 1) << "] ("sv << ctx.stack_back() << ")\n"sv;
     }
 
     inline void operator()(identity_type<op::popn>, ContextT& ctx, size_t address, size_t n) const
     {
-        generic_print(address, "popn"sv) << ' ' << std::dec  << (ctx.stack_size() - n - 1) << " - "sv << (ctx.stack_size() - 1) << " ("sv;
+        generic_print(address, "popn"sv) << " ["sv << std::dec  << (ctx.stack_size() - n - 1) << " - "sv << (ctx.stack_size() - 1) << "] ("sv;
         auto sp = ctx.stack_span(0, n);
         if (!sp.empty()) {
             ss << sp.front();
@@ -679,7 +679,20 @@ struct printer
     }
     inline void operator()(identity_type<op::truncatefpn>, ContextT& ctx, size_t address, size_t cnt) const
     {
-        generic_print(address, "truncatefpn"sv) << " " << std::dec << (ctx.frame_stack_back() - cnt) << '\n';
+        size_t min_idx = ctx.frame_stack_back() - cnt;
+        //generic_print(address, "truncatefpn"sv) << " " << std::dec << min_idx << '\n';
+        generic_print(address, "truncatefpn"sv) << " ["sv << std::dec << min_idx << " - "sv << (ctx.stack_size() - 1) << "] ("sv;
+        auto sp = ctx.stack_span(0, ctx.stack_size() - min_idx);
+        if (!sp.empty()) {
+            ss << sp.front();
+            sp = sp.subspan(1);
+        }
+        while (!sp.empty()) {
+            ss << ", "sv;
+            ss << sp.front();
+            sp = sp.subspan(1);
+        }
+        ss << ")\n"sv;
     }
 };
 

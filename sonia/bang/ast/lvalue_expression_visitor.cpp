@@ -20,7 +20,11 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(var
 {
     functional const* pfn = ctx.lookup_functional(v.name.value);
     if (pfn && pfn->default_entity(ctx)) {
-        return &ctx.u().eregistry_get(pfn->default_entity(ctx));
+        if (auto opteid = pfn->default_entity(ctx); opteid) {
+            return &ctx.u().eregistry_get(*opteid);
+        } else {
+            return std::unexpected(std::move(opteid.error()));
+        }
     }
     return std::unexpected(make_error<undeclared_identifier_error>(v.name));
 }
@@ -83,19 +87,21 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(mem
     //return handle_property_set(me.property);
 }
 
+#if 0
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(property_expression const& pe) const
 {
     return handle_property_set(pe.name);
 }
+#endif
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(lambda const&) const
 {
     THROW_NOT_IMPLEMENTED_ERROR();
 }
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(case_expression const& ce) const
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(context_identifier const& ci) const
 {
-    return std::unexpected(make_error<wrong_lvalue_error>(ce));
+    return std::unexpected(make_error<wrong_lvalue_error>(ci));
 }
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(annotated_bool const& ab) const

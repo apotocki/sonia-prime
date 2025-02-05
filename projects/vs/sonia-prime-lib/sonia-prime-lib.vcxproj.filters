@@ -2334,6 +2334,9 @@
     <ClInclude Include="..\..\..\sonia\utility\concurrency\call_once.hpp">
       <Filter>sonia.utility\concurrency</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_set_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2767,6 +2770,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\errors\identifier_redefinition_error.cpp">
       <Filter>sonia.bang\errors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_set_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\variable_entity.cpp">
+      <Filter>sonia.bang\entities</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -237,10 +237,11 @@ fn_compiler_context::~fn_compiler_context()
 
 entity_identifier fn_compiler_context::get_bound(identifier name) const
 {
-    for (functional_binding_set const* binding : boost::adaptors::reverse(bindings_)) {
+    for (functional_binding const* binding : boost::adaptors::reverse(bindings_)) {
         if (auto optval = binding->lookup(name); optval && !optval->empty()) {
             if (optval->size() == 1) {
-                if (entity_identifier const* pe = get<entity_identifier>(&optval->front()); pe) return *pe;
+                return optval->front();
+                //if (entity_identifier const* pe = get<entity_identifier>(&optval->front()); pe) return *pe;
             } else {
                 THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context::get_bound variadic bound value");
             }

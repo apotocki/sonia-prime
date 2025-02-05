@@ -10,17 +10,11 @@ namespace sonia::lang::bang {
 
 class struct_fn_pattern : public basic_fn_pattern
 {
-    field_list_t fields_;
+    variant<field_list_t, statement_set_t> body_;
 
 public:
-    struct_fn_pattern(fn_compiler_context&, functional const&, fn_pure const&, field_list_t const&);
+    struct_fn_pattern(fn_compiler_context&, functional const&, fn_pure const&, variant<field_list_t, statement_set_t> const&);
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
-
-private:
-    //std::expected<entity_identifier, error_storage> get_underlying_tuple_eid(fn_compiler_context& callee_ctx, qname_identifier fid) const;
-    //std::expected<entity_identifier, error_storage> get_underlying_tuple_constructor_eid(fn_compiler_context& callee_ctx, qname_identifier fid) const;
-    //error_storage get_underlying(fn_compiler_context& callee_ctx, qname_identifier fid) const;
-    //void build(fn_compiler_context& callee_ctx, qname_identifier fid);
 };
 
 }

@@ -125,13 +125,14 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 %token <sonia::lang::lex::resource_location> NEW        "`new`"
 %token WHILE                "`while`"
+%token FOR                  "`for`"
+%token IN                   "`in`"
 %token IF                   "`if`"
 %token ELSE                 "`else`"
 %token <sonia::lang::lex::resource_location> CONTINUE   "`continue`"
 %token <sonia::lang::lex::resource_location> BREAK      "`break`"
 %token RETURN               "`return`"
 
-%token FOR
 %token AUTO
 %token USING
 %token THROW
@@ -427,16 +428,22 @@ braced-statements:
     ;
 
 finished_statement:
-      WHILE syntax-expression braced-statements
-        { $$ = while_decl_t{ std::move($2), std::move($3) }; }
-    | WHILE syntax-expression END_STATEMENT syntax-expression braced-statements
-        { $$ = while_decl_t{ std::move($2), std::move($5), std::move($4) }; }
-    | IF syntax-expression braced-statements
-        { $$ = if_decl_t{ std::move($2), std::move($3) }; }
-    | IF syntax-expression braced-statements ELSE braced-statements
-        { $$ = if_decl_t{ std::move($2), std::move($3), std::move($5) }; }
-    | fn-start-decl fn-decl braced-statements
-        { $2.kind = $1; $$ = fn_decl_t{ std::move($2), std::move($3) };  }
+      WHILE syntax-expression[condition] braced-statements[body]
+        { $$ = while_decl{ std::move($condition), std::move($body) }; }
+    | WHILE syntax-expression[condition] END_STATEMENT syntax-expression[continue] braced-statements[body]
+        { $$ = while_decl{ std::move($condition), std::move($body), std::move($continue) }; }
+    | FOR syntax-expression[iter] IN syntax-expression[coll] braced-statements[body]
+        { $$ = for_decl{ std::move($iter), std::move($coll), std::move($body) }; }
+    | IF syntax-expression braced-statements[body]
+        { $$ = if_decl{ std::move($2), std::move($body) }; }
+    | IF syntax-expression braced-statements[trueBody] ELSE braced-statements[falseBody]
+        { $$ = if_decl{ std::move($2), std::move($trueBody), std::move($falseBody) }; }
+    | fn-start-decl fn-decl braced-statements[body]
+        { $2.kind = $1; $$ = fn_decl_t{ std::move($2), std::move($body) };  }
+    | STRUCT qname braced-statements[body]
+        { $$ = struct_decl{ std::move($qname), std::move($body) }; }
+    | STRUCT qname OPEN_PARENTHESIS[beginParams] parameter-list-opt[parameters] CLOSE_PARENTHESIS braced-statements[body]
+        { $$ = struct_decl{ fn_pure{ std::move($qname), std::move($parameters) }, std::move($body) }; IGNORE($beginParams); }
     ;
 
 infunction-statement-set:
@@ -546,7 +553,7 @@ struct-decl:
       qname ARROWEXPR OPEN_PARENTHESIS[begin] field-list-opt[fields] CLOSE_PARENTHESIS
         { $$ = struct_decl{ std::move($qname), std::move($fields) }; IGNORE($begin); }
     | qname OPEN_PARENTHESIS[beginParams] parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROWEXPR OPEN_PARENTHESIS[begin] field-list-opt[fields] CLOSE_PARENTHESIS
-        { $$ = struct_decl{ fn_pure{ std::move($qname), std::move($parameters), nullopt }, std::move($fields) }; IGNORE($beginParams); IGNORE($begin); }
+        { $$ = struct_decl{ fn_pure{ std::move($qname), std::move($parameters) }, std::move($fields) }; IGNORE($beginParams); IGNORE($begin); }
     ;
 
 ///////////////////////////////////////////////// ALIASES
@@ -778,6 +785,8 @@ syntax-expression-wo-ii:
                 $$ = opt_named_syntax_expression_list_t{ std::move($2), std::move($1) };
             }
         }
+    | POINT identifier
+        { $$ = context_identifier { std::move($identifier), std::move($POINT) }; }
     //| syntax-expression[object] POINT syntax-expression[property]
     //    { $$ = member_expression_t{ std::move($object), std::move($property) }; IGNORE($2); }
     | syntax-expression[object] POINT identifier[property]
@@ -956,8 +965,6 @@ opt-type-list:
 
     /*
 expression:
-      POINT identifier
-        { $$ = case_expression { std::move($2), std::move($1) }; }
     //| FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction-statement-any CLOSE_BRACE
     //    { $$ = lambda{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), nullopt, std::move($6), std::move($1)}; IGNORE($5); }
     //| OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction-statement-any CLOSE_BRACE

@@ -102,7 +102,7 @@ class fn_compiler_context
     size_t base_ns_size_;
     size_t local_variable_count_ = 0;
     compiler_worker_id worker_id_;
-    small_vector<functional_binding_set const*, 4> bindings_;
+    small_vector<functional_binding const*, 4> bindings_;
 
 public:
     fn_compiler_context(unit& u, qname ns = {});
@@ -118,7 +118,7 @@ public:
     qname_view base_ns() const { return span{ns_.parts().data(), base_ns_size_}; }
 
     entity_identifier get_bound(identifier) const;
-    inline void push_binding(functional_binding_set const* binding) { bindings_.push_back(binding); }
+    inline void push_binding(functional_binding const* binding) { bindings_.push_back(binding); }
     inline void pop_binding() { bindings_.pop_back(); }
 
     compiler_task_tracer::task_guard try_lock_task(compiler_task_id const&);

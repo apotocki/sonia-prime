@@ -35,13 +35,13 @@ void expression_printer_visitor::operator()(push_value const& v) const
     ss << "push "sv;
     value_printer_visitor vis{ u_, ss };
     apply_visitor(vis, v.value);
-    ss << "\n"sv;
+    ss << '\n';
 }
 
 void expression_printer_visitor::operator()(invoke_function const& f) const
 {
     do_indent();
-    ss << "invoke "sv << f.fn << "\n"sv;
+    ss << "invoke "sv << f.fn << '\n';
 }
 
 void expression_printer_visitor::operator()(return_statement const&) const
@@ -50,9 +50,14 @@ void expression_printer_visitor::operator()(return_statement const&) const
     ss << "return\n"sv;
 }
 
+void expression_printer_visitor::operator()(truncate_values const& tv) const
+{
+    ss << "truncate count: "sv << tv.count << ", keep back: "sv << tv.keep_back;
+}
+
 void value_printer_visitor::operator()(null_t const&) const
 {
-    ss << "nil";
+    ss << "nil"sv;
 }
 
 void value_printer_visitor::operator()(bool v) const
@@ -67,7 +72,7 @@ void value_printer_visitor::operator()(entity_identifier eid) const
 
 void value_printer_visitor::operator()(function_value const& fval) const
 {
-    ss << "fn" << u_.print(fval.mangled_name);
+    ss << "fn"sv << u_.print(fval.mangled_name);
 }
 
 }

@@ -52,11 +52,12 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
 
     auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expected_result);
     if (!match) {
-        //return std::move(ptrn.error());
-        return std::unexpected(append_cause(
-            make_error<cast_error>(expr_loc /*expected_result.location*/, expected_result.value, typeeid, e),
-            std::move(match.error())
-        ));
+        // ignore casting error details
+        return std::unexpected(make_error<cast_error>(expr_loc /*expected_result.location*/, expected_result.value, typeeid, e));
+        //return std::unexpected(append_cause(
+        //    make_error<cast_error>(expr_loc /*expected_result.location*/, expected_result.value, typeeid, e),
+        //    std::move(match.error())
+        //));
     }
     
     if (auto err = match->apply(ctx); err)
@@ -528,9 +529,9 @@ template expression_visitor::result_type expression_visitor::operator()(binary_o
 //    THROW_NOT_IMPLEMENTED_ERROR();
 //}
 
-expression_visitor::result_type expression_visitor::operator()(case_expression const& ce) const
+expression_visitor::result_type expression_visitor::operator()(context_identifier const& ci) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor case_expression");
+    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor context_identifier");
 
 #if 0
     if (!expected_result) {
@@ -618,10 +619,10 @@ expression_visitor::result_type expression_visitor::operator()(member_expression
 #endif
 }
 
+#if 0
 expression_visitor::result_type expression_visitor::operator()(property_expression& pe)  const
 {
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor property_expression");
-#if 0
     //if (ctx.context_type == bang_tuple_t{}) {
     //    return std::unexpected(make_error<left_not_an_object_error>(pe.name.location, pe.name.value, bang_tuple_t{}));
     //}
@@ -630,8 +631,8 @@ expression_visitor::result_type expression_visitor::operator()(property_expressi
 
     function_entity const* getter = expgetter.value();
     return apply_cast(getter->result_type(), pe);
-#endif
 }
+#endif
 
 expression_visitor::result_type expression_visitor::operator()(expression_vector_t & vec) const
 {
@@ -746,6 +747,7 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t c
     qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(u().eregistry_get(*qn_ent_id));
     
     auto match = ctx.find(qname_ent.value(), proc, expected_result);
+    if (!match) return std::unexpected(match.error());
     if (auto err = match->apply(ctx); err) return std::unexpected(std::move(err));
     return apply_cast(ctx.context_type, proc);
 

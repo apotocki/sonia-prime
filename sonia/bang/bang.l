@@ -136,6 +136,8 @@ BREAK					"break"
 RETURN                  "return"
 
 WHILE					"while"
+FOR						"for"
+IN						"in"
 IF						"if"
 ELSE					"else"
 
@@ -175,7 +177,6 @@ ELLIPSIS				"..."
 
 /*
 
-FOR						"for"
 VOID					"void"
 AUTO                    "auto"
 CONST_                  "const"
@@ -315,6 +316,8 @@ HASHTAG					"#"
 	{NEW} { variant_emplace(location); return (bang_lang::parser::token::NEW); }
 
 	{WHILE} { return (bang_lang::parser::token::WHILE); }
+	{FOR} { return (bang_lang::parser::token::FOR); }
+	{IN} { return (bang_lang::parser::token::IN); }
 	{IF} { return (bang_lang::parser::token::IF); }
 	{ELSE} { return (bang_lang::parser::token::ELSE); }
 
@@ -393,7 +396,6 @@ HASHTAG					"#"
 		return (bang_lang::parser::token::DECIMAL);
 	}
 	/*
-	{FOR} { return (bang_lang::parser::token::FOR); }
 	{VOID} { return (bang_lang::parser::token::VOID_); }
 	{AUTO} { return (bang_lang::parser::token::AUTO); }
 	{CONST_} { return (bang_lang::parser::token::CONST_); }

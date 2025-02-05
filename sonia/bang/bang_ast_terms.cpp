@@ -22,10 +22,9 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     inline result_type operator()(context_value const& v) const noexcept { return v.location; }
     inline result_type operator()(variable_identifier const& v) const noexcept { return v.name.location; }
     inline result_type operator()(annotated_qname const& qn) const noexcept { return qn.location; }
-    inline result_type operator()(case_expression const& ce) const noexcept { return ce.start; }
+    inline result_type operator()(context_identifier const& ce) const noexcept { return ce.start; }
     inline result_type operator()(not_empty_expression_t const& me) const noexcept { return apply_visitor(*this, me.value); }
     inline result_type operator()(member_expression_t const& me) const noexcept { return me.start(); }
-    inline result_type operator()(property_expression const& me) const noexcept { return me.name.location; }
     inline result_type operator()(lambda const& le) const noexcept { return le.start; }
     //inline result_type operator()(annotated_entity_identifier const& ee) const noexcept { return ee.location; }
 

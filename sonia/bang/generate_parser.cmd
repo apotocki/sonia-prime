@@ -9,5 +9,5 @@ SET PATH=%PATH%;%MSYS_HOME%\usr\bin
 
 flex --nounistd bang.l
 bison.exe -d -v -Wother -Wcounterexamples --output=bang.tab.cpp bang.y
-
+echo done
 ENDLOCAL

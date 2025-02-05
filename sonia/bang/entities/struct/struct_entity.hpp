@@ -6,32 +6,52 @@
 
 #include <atomic>
 
-#include "sonia/concurrency.hpp"
+//#include "sonia/concurrency.hpp"
+#include "sonia/shared_ptr.hpp"
 
 #include "sonia/bang/entities/signatured_entity.hpp"
+#include "sonia/bang/entities/functional.hpp"
 #include "sonia/bang/errors.hpp"
 
 namespace sonia::lang::bang {
 
+class functional_match_descriptor;
+
 class struct_entity : public basic_signatured_entity
 {
-    field_list_t fields_;
+    friend class struct_builder_visitor;
+
+    qname name_;
+    variant<field_list_t, statement_set_t> body_;
 
     mutable entity_identifier underlying_tuple_eid_;
     mutable entity_identifier underlying_tuple_constructor_eid_;
+    mutable shared_ptr<functional_match_descriptor> pmd_; // pehaps partial initialized make_tuple_match descriptor
     
-    // to do: something equivalent to the std::once_flag but for fibers
-    mutable fibers::mutex mtx_;
-    mutable std::atomic_bool built_ = false;
+    enum class build_state : long
+    {
+        not_built,
+        underlying_tuple_built = 1,
+        underlying_constructor_built = 3
+    };
+
+    mutable std::atomic<build_state> built_{ build_state::not_built };
+
+    error_storage build(fn_compiler_context& extctx, field_list_t const& fl) const;
+    error_storage build(fn_compiler_context& extctx, statement_set_t const& fl) const;
 
 public:
-    explicit struct_entity(entity_identifier type, entity_signature && sgn, field_list_t const& f)
+    explicit struct_entity(qname qn, entity_identifier type, entity_signature && sgn, variant<field_list_t, statement_set_t> const& body)
         : basic_signatured_entity{ std::move(type), std::move(sgn) }
-        , fields_{ f }
+        , name_{ qn }
+        , body_{ body }
     {}
 
+    inline qname_view name() const noexcept { return name_; }
+
+    std::expected<functional::match, error_storage> find_init(fn_compiler_context&, pure_call_t const&) const;
     std::expected<entity_identifier, error_storage> underlying_tuple_eid(fn_compiler_context&) const;
-    std::expected<entity_identifier, error_storage> underlying_tuple_constructor_eid(fn_compiler_context&) const;
+    std::expected<functional_match_descriptor const*, error_storage> underlying_tuple_initializer(fn_compiler_context&) const;
 
     error_storage build(fn_compiler_context&) const;
     //std::expected<function_entity const*, error_storage> find_field_getter(fn_compiler_context&, annotated_identifier const&) const;

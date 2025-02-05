@@ -11,6 +11,7 @@ namespace sonia::lang::bang {
 void error_printer_visitor::operator()(circular_dependency_error const& err)
 {
     bool first = true;
+    s_ << "circular dependency error: "sv;
     for (auto const& e : err.circle_items) {
         if (!first) {
             s_ << "\n -------------- \n";

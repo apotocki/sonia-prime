@@ -92,16 +92,16 @@ error_storage declaration_visitor::operator()(struct_decl const& sd) const
 {
     struct struct_decl_visitor : static_visitor<error_storage>
     {
-        fn_compiler_context& ctx;
-        field_list_t const& fields;
+        fn_compiler_context& ctx_;
+        struct_decl const& sd_;
 
-        struct_decl_visitor(fn_compiler_context& c, field_list_t const& fs) noexcept : ctx{ c }, fields{ fs } {}
+        struct_decl_visitor(fn_compiler_context& c, struct_decl const& sd) noexcept : ctx_{ c }, sd_{ sd } {}
 
         error_storage operator()(annotated_qname const& qn) const
         {
-            unit& u = ctx.u();
-            functional& fnl = u.fregistry().resolve(ctx.ns() / qn.value);
-            auto sent = make_shared<struct_entity>(u.get(builtin_eid::typename_), entity_signature{ fnl.id() }, fields);
+            unit& u = ctx_.u();
+            functional& fnl = u.fregistry().resolve(ctx_.ns() / qn.value);
+            auto sent = make_shared<struct_entity>(qname{ fnl.name() }, u.get(builtin_eid::typename_), entity_signature{ fnl.id() }, sd_.body);
             u.eregistry_insert(sent);
             return fnl.set_default_entity(annotated_entity_identifier{ sent->id(), qn.location });
         }
@@ -109,28 +109,14 @@ error_storage declaration_visitor::operator()(struct_decl const& sd) const
         error_storage operator()(fn_pure const& fn) const
         {
             // to do: check the allowence of absolute qname
-            qname fn_qname = ctx.ns() / fn.name();
-            functional& fnl = ctx.u().fregistry().resolve(fn_qname);
-            fnl.push(make_shared<struct_fn_pattern>(ctx, fnl, fn, fields));
+            qname fn_qname = ctx_.ns() / fn.name();
+            functional& fnl = ctx_.u().fregistry().resolve(fn_qname);
+            fnl.push(make_shared<struct_fn_pattern>(ctx_, fnl, fn, sd_.body));
             return {};
         };
     };
 
-    return apply_visitor(struct_decl_visitor{ ctx, sd.fields }, sd.decl);
-    
-    //if (auto const* pfn = sd.as_fn(); pfn) {
-    //    functional& fnl = u().fregistry().resolve(ctx.ns() / pfn->name());
-    //    fnl.push(make_shared<struct_fn_pattern>(ctx, fnl, *pfn, sd.fields));
-    //    return {};
-    //} else {
-    //    annotated_qname const* aqn = sd.as_name();
-    //    BOOST_ASSERT(aqn);
-    //    functional& fnl = u().fregistry().resolve(ctx.ns() / aqn->value);
-
-    //    auto sent = make_shared<struct_entity>(ctx.u().get(builtin_eid::typename_), entity_signature{ fnl.id() });
-    //    u().eregistry_insert(sent);
-    //    return fnl.set_default_entity(annotated_entity_identifier{ sent->id(), aqn->location });
-    //}
+    return apply_visitor(struct_decl_visitor{ ctx, sd }, sd.decl);
 }
 
 error_storage declaration_visitor::operator()(expression_statement_t const& ed) const
@@ -145,10 +131,13 @@ error_storage declaration_visitor::operator()(expression_statement_t const& ed) 
         ctx.append_expression(semantic::truncate_values(1, false));
     }
     ctx.collapse_chains(bst);
+    
+    //GLOBAL_LOG_INFO() << '\n' << u().print(ctx.expressions());
+    
     return {};
 }
 
-error_storage declaration_visitor::operator()(if_decl_t const& stm) const
+error_storage declaration_visitor::operator()(if_decl const& stm) const
 {
     ctx.pushed_unnamed_ns();
     expression_visitor vis{ ctx, { u().get(builtin_eid::boolean), get_start_location(stm.condition) } };
@@ -181,7 +170,12 @@ error_storage declaration_visitor::operator()(if_decl_t const& stm) const
     return {};
 }
 
-error_storage declaration_visitor::operator()(while_decl_t const& wd) const
+error_storage declaration_visitor::operator()(for_decl const& fd) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor for_decl");
+}
+
+error_storage declaration_visitor::operator()(while_decl const& wd) const
 {
     ctx.pushed_unnamed_ns();
     ctx.append_expression(std::move(semantic::loop_scope_t{}));

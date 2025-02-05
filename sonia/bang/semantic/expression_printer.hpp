@@ -64,6 +64,7 @@ public:
     void operator()(push_value const&) const;
     void operator()(invoke_function const&) const;
     void operator()(return_statement const&) const;
+    void operator()(truncate_values const&) const;
 
     template <typename T>
     void operator()(T const& se) const

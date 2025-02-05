@@ -76,6 +76,12 @@ void parameter_match_result::set_variadic(bool v_val)
 //    }
 //}
 
+
+optional<span<const entity_identifier>> functional_match_descriptor::lookup(identifier id) const noexcept
+{
+    return bindings.lookup(id);
+}
+
 parameter_match_result& functional_match_descriptor::get_match_result(identifier param_name)
 {
     auto it = named_matches_.find(param_name);
@@ -126,7 +132,7 @@ void functional_match_descriptor::reset() noexcept
     positional_matches_.clear();
     named_matches_.clear();
     pmrs_.clear();
-    bindings.reset(0);
+    bindings.reset();
     call_expressions.clear();
     result = {};
 }
@@ -176,7 +182,7 @@ function_descriptor::named_field const* function_descriptor::find_named_field(id
     return nullptr;
 }
 
-entity_identifier functional::default_entity(fn_compiler_context& ctx) const
+std::expected<entity_identifier, error_storage> functional::default_entity(fn_compiler_context& ctx) const
 {
     shared_ptr<entity_resolver> resolver;
     {
@@ -187,7 +193,7 @@ entity_identifier functional::default_entity(fn_compiler_context& ctx) const
     
     compiler_task_tracer::task_guard tg = ctx.try_lock_task(qname_task_id{ id_ });
     if (!tg) {
-        throw circular_dependency_error({ make_error<basic_general_error>(resolver->location(), "resolving name"sv, id_) });
+        return std::unexpected(make_error<circular_dependency_error>(make_error<basic_general_error>(resolver->location(), "resolving name"sv, id_)));
     }
 
     {
@@ -196,7 +202,7 @@ entity_identifier functional::default_entity(fn_compiler_context& ctx) const
     }
         
     auto deid = resolver->const_resolve(ctx);
-    if (!deid) deid.error()->rethrow(ctx.u());
+    if (!deid) return std::unexpected(std::move(deid.error()));
     {
         lock_guard lock{ default_entity_mtx_ };
         default_entity_ = annotated_entity_identifier{ *deid, resolver->location() };
@@ -229,6 +235,24 @@ error_storage functional::set_default_entity(shared_ptr<entity_resolver> e)
     return {};
 }
 
+struct expression_stack_checker
+{
+#ifndef NDEBUG
+    size_t branch_count;
+    size_t brach_size;
+
+    inline expression_stack_checker(fn_compiler_context& ctx) noexcept : branch_count{ ctx.expressions_branch() }, brach_size{ ctx.expressions().size() } {}
+    
+    inline bool check(fn_compiler_context& ctx) noexcept
+    {
+        return branch_count == ctx.expressions_branch() && brach_size == ctx.expressions().size();
+    }
+#else
+    inline expression_stack_checker(fn_compiler_context& ctx) noexcept : ctx{ ctx } {}
+    inline bool check(fn_compiler_context&) noexcept { return true; }
+#endif
+};
+
 std::expected<functional::match, error_storage> functional::find(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& expected_result) const
 {
     alt_error err;
@@ -237,13 +261,15 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
     using alternative_t = std::pair<pattern const*, functional_match_descriptor_ptr>;
     small_vector<alternative_t, 2> alternatives;
 
+    expression_stack_checker expr_stack_state{ ctx };
+
     for (auto const& p : patterns_) {
         auto cmp = major_weight <=> p->get_weight();
         if (cmp == std::strong_ordering::greater) continue;
-        //auto temp_pmd = make_shared<functional_match_descriptor>{ ctx.u() };
-        //temp_md.signature = entity_signature{ id_ };
-        //ctx.push_chain(temp_md.call_expressions);
         auto match_descriptor = p->try_match(ctx, call, expected_result);
+
+        BOOST_ASSERT(expr_stack_state.check(ctx));
+
         if (!match_descriptor) {
             if (alternatives.empty()) { // no need to store errors if a match exists
                 //err.alternatives.emplace_back(

@@ -16,6 +16,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> make_tuple_pattern
 {
     size_t pos_arg_num = 0;
     auto pmd = make_shared<functional_match_descriptor>(ctx.u());
+    auto estate = ctx.expressions_state();
+    ctx.push_chain(pmd->call_expressions);
     for (auto const& arg : call.args()) {
         auto last_expr_it = ctx.expressions().last();
         expression_visitor evis{ ctx };

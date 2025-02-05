@@ -13,93 +13,26 @@
 
 namespace sonia::lang::bang {
 
-struct_fn_pattern::struct_fn_pattern(fn_compiler_context& ctx, functional const& fnl, fn_pure const& fnd, field_list_t const& fds)
+struct_fn_pattern::struct_fn_pattern(fn_compiler_context& ctx, functional const& fnl, fn_pure const& fnd, variant<field_list_t, statement_set_t> const& body)
     : basic_fn_pattern{ ctx, fnl, fnd }
-    , fields_{ fds }
-{ }
-
-#if 0
-std::expected<entity_identifier, error_storage> struct_fn_pattern::get_underlying_tuple_eid(fn_compiler_context& callee_ctx, qname_identifier fid) const
-{
-    {
-        lock_guard lock{ mtx_ };
-        if (underlying_tuple_eid_) return underlying_tuple_eid_;
-    }
-
-    if (auto err = get_underlying(callee_ctx, fid); err) return std::unexpected(std::move(err));
-
-    return underlying_tuple_eid_;
-}
-
-
-std::expected<entity_identifier, error_storage> struct_fn_pattern::get_underlying_tuple_constructor_eid(fn_compiler_context& callee_ctx, qname_identifier fid) const
-{
-    {
-        lock_guard lock{ mtx_ };
-        if (underlying_tuple_constructor_eid_) return underlying_tuple_constructor_eid_;
-    }
-
-    if (auto err = get_underlying(callee_ctx, fid); err) return std::unexpected(std::move(err));
-
-    return underlying_tuple_constructor_eid_;
-}
-#endif
-
-#if 0
-error_storage struct_fn_pattern::get_underlying(fn_compiler_context& callee_ctx, qname_identifier fid) const
-{
-    {
-        lock_guard lock{ mtx_ };
-        if (underlying_tuple_eid_) return {};
-    }
-
-    compiler_task_tracer::task_guard tg = callee_ctx.try_lock_task(qname_task_id{ fid });
-    if (!tg) {
-        throw circular_dependency_error({ make_error<basic_general_error>(location(), "resolving underlying tuple type"sv, fid) });
-    }
-
-    {
-        // double check
-        lock_guard lock{ mtx_ };
-        if (underlying_tuple_eid_) return {};
-    }
-
-    unit& u = callee_ctx.u();
-
-    // build underlying tuple type
-    fn_compiler_context ctx{ callee_ctx.u() };
-    auto tpleid = struct_utility::build_tuple(ctx, fields_);
-    if (!tpleid) return std::move(tpleid.error());
-
-    {
-        lock_guard lock{ mtx_ };
-        underlying_tuple_eid_ = *tpleid;
-    }
-    return {};
-}
-#endif
+    , body_{ body }
+{}
 
 std::expected<entity_identifier, error_storage> struct_fn_pattern::const_apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
 {
-    unit& u = ctx.u();
-    entity_signature sig = md.build_signature(u, fid);
+    entity_signature sig = md.build_signature(ctx.u(), fid);
     indirect_signatured_entity smpl{ sig };
 
-    return u.eregistry_find_or_create(smpl, [this, &ctx, &sig]() {
-        return make_shared<struct_entity>(ctx.u().get(builtin_eid::typename_), std::move(sig), fields_);
+    return ctx.u().eregistry_find_or_create(smpl, [this, &ctx, &sig, &md]() {
+        unit& u = ctx.u();
+        qname struct_ns = fn_qname() / u.new_identifier();
+        fn_compiler_context struct_ctx{ ctx, struct_ns };
+        build_scope(struct_ctx, md);
+        // u.fregistry().resolve(struct_ns).name() // do we need a functional to store qname?
+        auto res = make_shared<struct_entity>(std::move(struct_ns), u.get(builtin_eid::typename_), std::move(sig), body_);
+        res->set_location(location());
+        return res;
     }).id();
-
-    //struct_entity const& se = static_cast<struct_entity const&>(u.eregistry_find_or_create(smpl, [this, &ctx, &sig]() {
-    //    return make_shared<struct_entity>(ctx.u().get(builtin_eid::typename_), std::move(sig), fields_);
-    //}));
-
-    //se.build(ctx);
-    //return se.id();
 }
-
-//void struct_fn_pattern::build(fn_compiler_context& callee_ctx, qname_identifier fid)
-//{
-//    
-//}
 
 }

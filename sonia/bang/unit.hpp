@@ -42,6 +42,7 @@ enum class builtin_id : size_t
     property, // property:
     object, // object:
     numargs, // $$
+    init, // init
     eof_builtin_id_value
 };
 
@@ -229,6 +230,7 @@ public:
     
     std::string print(syntax_expression_t const&) const;
     std::string print(semantic::expression_t const&) const;
+    std::string print(semantic::expression_list_t const& elist) const;
 
     std::string print(error const&) const;
 

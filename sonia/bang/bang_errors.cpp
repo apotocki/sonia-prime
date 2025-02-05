@@ -84,7 +84,7 @@ general_error::string_t cast_error::description(unit const& u) const noexcept
 
 general_error::string_t unknown_case_error::object(unit const& u) const noexcept
 {
-    return u.print(ce_.name.value);
+    return u.print(ci_.name.value);
 }
 
 general_error::string_t unknown_case_error::description(unit const& u) const noexcept

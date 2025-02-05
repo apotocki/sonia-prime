@@ -144,6 +144,7 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(function_ca
     qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(u().eregistry_get(*qn_ent_id));
     
     auto match = ctx.find(qname_ent.value(), proc, expected_result);
+    if (!match) return std::unexpected(match.error());
     if (auto res = match->const_apply(ctx); !res) return std::unexpected(std::move(res.error()));
     else return apply_cast(*res, proc);
 }
@@ -152,6 +153,7 @@ template <std::derived_from<pure_call_t> CallExpressionT>
 ct_expression_visitor::result_type ct_expression_visitor::operator()(builtin_qnid qnid, CallExpressionT const& call) const
 {
     auto match = ctx.find(qnid, call, expected_result);
+    if (!match) return std::unexpected(match.error());
     if (auto res = match->const_apply(ctx); !res) return std::unexpected(std::move(res.error()));
     else return apply_cast(*res, call);
 }

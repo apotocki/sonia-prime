@@ -13,6 +13,17 @@
 
 namespace sonia::lang::bang {
 
+class tuple_get_match_descriptor : public functional_match_descriptor
+{
+    size_t property_index_;
+
+public:
+    using functional_match_descriptor::functional_match_descriptor;
+
+    inline size_t property_index() const noexcept { return property_index_; }
+    inline void set_property_index(size_t index) noexcept { property_index_ = index; }
+};
+
 std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
 {
     unit& u = ctx.u();
@@ -21,7 +32,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
     
     entity const* pte = nullptr;
     entity const* ppname = nullptr;
-    shared_ptr<functional_match_descriptor> pmd;
+    shared_ptr<tuple_get_match_descriptor> pmd;
+    auto estate = ctx.expressions_state();
+
     for (auto const& arg : call.args()) {
         annotated_identifier const* pargname = arg.name();
         if (!pargname) {
@@ -29,7 +42,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
             return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
         }
         if (pargname->value == slfid && !pte) {
-            pmd = make_shared<functional_match_descriptor>(u);
+            pmd = make_shared<tuple_get_match_descriptor>(u);
+            ctx.push_chain(pmd->call_expressions);
             auto last_expr_it = ctx.expressions().last();
             expression_visitor evis{ ctx };
             auto res = apply_visitor(evis, arg.value());
@@ -82,11 +96,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
         return std::unexpected(make_error<basic_general_error>(call.location(), "no such field"sv, ppname->id()));
     }
 
-    if (pes->field_count() > 1) {
-        pmd->bindings.emplace_back(propid, mp::integer{ index }); // property <- property index
-    } else { // else: no need to bind property index 
-        BOOST_ASSERT(index == 0);
-    }
+    pmd->set_property_index(index);
+    BOOST_ASSERT(pes->field_count() > 1 || !index);
 
     pmd->result = fd->entity_id();
     return pmd;
@@ -110,13 +121,8 @@ error_storage tuple_get_pattern::apply(fn_compiler_context& ctx, qname_identifie
 
     BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
 
-    auto optsp = md.bindings.lookup(u.get(builtin_id::property));
-    if (optsp) {
-        BOOST_ASSERT(optsp->size() == 1);
-        mp::integer const* propindex = get<mp::integer>(&optsp->front());
-        BOOST_ASSERT(propindex);
-    
-        u.push_back_expression(args, semantic::push_value{ *propindex });
+    if (size_t propindex = static_cast<tuple_get_match_descriptor&>(md).property_index(); propindex) {
+        u.push_back_expression(args, semantic::push_value{ propindex });
         u.push_back_expression(args, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
 

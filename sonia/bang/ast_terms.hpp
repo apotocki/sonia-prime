@@ -55,6 +55,8 @@ using annotated_string = annotated<small_string>;
 struct statement;
 struct infunction_statement;
 
+using statement_set_t = std::vector<statement>;
+
 //using elementary_expression = variant<
 //    null_t, bool, decimal, small_u32string, 
 //struct annotated_number
@@ -449,7 +451,7 @@ struct chained_expression
 };
 
 // e.g. backgroundColor: .red
-struct case_expression
+struct context_identifier
 {
     annotated_identifier name;
     lex::resource_location start;
@@ -464,11 +466,6 @@ struct member_expression
     //bool is_object_optional = false;
 
     lex::resource_location const& start() const { return get_start_location(object); }
-};
-
-struct property_expression
-{
-    annotated_identifier name;
 };
 
 struct variable_identifier
@@ -511,14 +508,6 @@ struct return_decl
     lex::resource_location location;
 };
 
-template <typename ExprT>
-struct while_decl
-{
-    ExprT condition;
-    std::vector<statement> body;
-    optional<ExprT> continue_expression; // called before condition strating eith second condition check (like c/c++ for expression)
-};
-
 struct break_statement_t
 {
     lex::resource_location location;
@@ -529,24 +518,7 @@ struct continue_statement_t
     lex::resource_location location;
 };
 
-template <typename ExprT>
-struct if_decl
-{
-    ExprT condition;
-    std::vector<statement> true_body;
-    std::vector<statement> false_body;
-};
 
-//template <typename ExprT>
-//struct infunction_statement
-//{
-//    template <typename DT> using if_decl_t = if_decl<ExprT, DT>;
-//    template <typename DT> using while_decl_t = while_decl<ExprT, DT>;
-//    using type = typename make_recursive_variant<
-//        let_statement_decl<ExprT>, expression_decl<ExprT>, return_decl<ExprT>,
-//        if_decl_t<recursive_variant_>, while_decl_t<recursive_variant_>
-//    >::type;
-//};
 
 template <typename ExprT>
 struct not_empty_expression
@@ -579,7 +551,7 @@ using syntax_expression_t = make_recursive_variant<
     bang_fn_type<recursive_variant_>,
     bang_array<recursive_variant_>, bang_vector<recursive_variant_>, bang_tuple<recursive_variant_>,
     bang_union<recursive_variant_>, bang_parameter_pack<recursive_variant_>,
-    context_value, case_expression, property_expression, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
+    context_value, context_identifier, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
     //lambda<recursive_variant_>,
     unary_expression<recursive_variant_>,
     binary_expression<recursive_variant_>,
@@ -892,7 +864,7 @@ struct using_decl
 struct struct_decl
 {
     variant<annotated_qname, fn_pure> decl;
-    field_list_t fields;
+    variant<field_list_t, statement_set_t> body;
 
     inline bool is_function() const noexcept
     {
@@ -974,12 +946,31 @@ using expression_statement_t = expression_decl<syntax_expression_t>;
 
 //using infunction_declaration_t = typename infunction_statement<syntax_expression_t>::type;
 //using fn_decl_t = fn_decl<infunction_declaration_t>;
-using if_decl_t = if_decl<syntax_expression_t>;
-using while_decl_t = while_decl<syntax_expression_t>;
+
+struct if_decl
+{
+    syntax_expression_t condition;
+    std::vector<statement> true_body;
+    std::vector<statement> false_body;
+};
+
+struct while_decl
+{
+    syntax_expression_t condition;
+    std::vector<statement> body;
+    optional<syntax_expression_t> continue_expression; // called before condition strating eith second condition check (like c/c++ for expression)
+};
+
+struct for_decl
+{
+    syntax_expression_t iter;
+    syntax_expression_t coll;
+    std::vector<statement> body;
+};
 
 // statements that don't need ';' separator at the end
 using finished_statement_type = variant<
-    while_decl_t, if_decl_t, fn_decl_t, struct_decl
+    while_decl, for_decl, if_decl, fn_decl_t, struct_decl
 >;
 
 using generic_statement_type = variant<
@@ -989,7 +980,7 @@ using generic_statement_type = variant<
 using statement_type = variant<
     extern_var, let_statement, expression_statement_t, fn_pure,
     include_decl, struct_decl, using_decl, enum_decl, return_decl_t,
-    fn_decl_t, if_decl_t, while_decl_t, break_statement_t, continue_statement_t
+    fn_decl_t, if_decl, while_decl, for_decl, break_statement_t, continue_statement_t
 >;
 
 //using infunction_statement_type = variant<
@@ -1036,7 +1027,7 @@ struct statement_adopt_visitor : static_visitor<StatementT>
 //    include_decl, type_decl, enum_decl
 //>;
 
-using statement_set_t = std::vector<statement>;
+
 //using infunction_declaration_set_t = std::vector<infunction_statement>;
 
 

@@ -162,9 +162,10 @@ struct value_type_constraint_match_visitor : static_visitor<std::expected<entity
     result_type operator()(annotated_qname_identifier const& aqi) const
     {
         functional const& fnl = ctx.u().fregistry().resolve(aqi.value);
-        entity_identifier eid = fnl.default_entity(ctx);
-        if (eid) {
-            return this->operator()(eid, aqi.location);
+        auto opteid = fnl.default_entity(ctx);
+        if (!opteid) return opteid;
+        if (*opteid) {
+            return this->operator()(*opteid, aqi.location);
         }
 
         return std::unexpected(make_error<basic_general_error>(aqi.location, "not a variable or constant"sv, expr));
@@ -614,17 +615,17 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         }
     }
 
-    compiler_task_tracer::task_guard tg = ctx.try_lock_task(pattern_task_id{ *this });
-    if (!tg) {
-        throw circular_dependency_error({ make_error<basic_general_error>(location_, "resolving function signature"sv, fn_qname_id()) });
-    }
+    //compiler_task_tracer::task_guard tg = ctx.try_lock_task(pattern_task_id{ *this });
+    //if (!tg) {
+    //    return std::unexpected(make_error<circular_dependency_error>(make_error<basic_general_error>(location_, "resolving function signature"sv, fn_qname_id())));
+    //}
 
     parameter_match_result rmatch; // function's return
+
     // prepare binding
     auto pmd = make_shared<functional_match_descriptor>(ctx.u());
-    ctx.push_binding(&pmd->bindings);
+    ctx.push_binding(pmd.get());
     SCOPE_EXIT([&ctx] { ctx.pop_binding(); });
-    //pmd->bindings.reset(local_variables_.size());
 
     auto estate = ctx.expressions_state();
     ctx.push_chain(pmd->call_expressions);
@@ -1040,8 +1041,8 @@ struct result_resolving_visitor : static_visitor<std::expected<entity_identifier
     result_type operator()(annotated_qname_identifier const& aqi) const
     {
         functional const& fnl = ctx.u().fregistry().resolve(aqi.value);
-        entity_identifier eid = fnl.default_entity(ctx);
-        if (eid) return eid;
+        auto opteid = fnl.default_entity(ctx);
+        if (!opteid || *opteid) return opteid;
         return std::unexpected(make_error<basic_general_error>(aqi.location, "not a variable or constant"sv, fnl.name()));
     }
 

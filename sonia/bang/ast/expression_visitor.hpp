@@ -43,10 +43,9 @@ struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
     result_type operator()(context_value const&) const;
     result_type operator()(variable_identifier const&) const;
 
-    result_type operator()(case_expression const&) const;
+    result_type operator()(context_identifier const&) const;
     result_type operator()(not_empty_expression_t&) const;
     result_type operator()(member_expression_t const&) const;
-    result_type operator()(property_expression&) const;
 
     result_type operator()(annotated_bool const&) const;
     result_type operator()(annotated_integer const&) const;

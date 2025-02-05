@@ -203,15 +203,15 @@ public:
 class unknown_case_error : public general_error
 {
 public:
-    case_expression ce_;
+    context_identifier ci_;
     qname_identifier enum_name_;
-    unknown_case_error(case_expression const& ce, qname_identifier enum_name)
-        : ce_{ ce }, enum_name_{ enum_name }
+    unknown_case_error(context_identifier const& ci, qname_identifier enum_name)
+        : ci_{ ci }, enum_name_{ enum_name }
     {}
 
     void visit(error_visitor& vis) const override { vis(*this); }
 
-    lex::resource_location const& location() const noexcept override { return ce_.name.location; }
+    lex::resource_location const& location() const noexcept override { return ci_.name.location; }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override;
 };

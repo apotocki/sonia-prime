@@ -40,8 +40,9 @@ public:
 
     [[nodiscard]] result_type operator()(fn_decl_t const&) const;
 
-    [[nodiscard]] result_type operator()(if_decl_t const&) const;
-    [[nodiscard]] result_type operator()(while_decl_t const&) const;
+    [[nodiscard]] result_type operator()(if_decl const&) const;
+    [[nodiscard]] result_type operator()(while_decl const&) const;
+    [[nodiscard]] result_type operator()(for_decl const&) const;
     [[nodiscard]] result_type operator()(continue_statement_t const&) const;
     [[nodiscard]] result_type operator()(break_statement_t const&) const;
 

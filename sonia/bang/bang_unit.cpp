@@ -19,6 +19,7 @@
 #include "entities/functions/extern/to_string_pattern.hpp"
 #include "entities/tuple/make_tuple_pattern.hpp"
 #include "entities/tuple/tuple_get_pattern.hpp"
+#include "entities/tuple/tuple_set_pattern.hpp"
 #include "entities/struct/new_struct_pattern.hpp"
 #include "entities/struct/struct_get_pattern.hpp"
 #include "entities/metaobject/metaobject_pattern.hpp"
@@ -607,11 +608,6 @@ struct expr_printer_visitor : static_visitor<void>
         ss << ", "sv << u_.print(c.property) << ")"sv;
     }
 
-    void operator()(property_expression const& c) const
-    {
-        ss << "PROPERTY("sv << u_.print(c.name.value) << ")"sv;
-    }
-
     void operator()(expression_vector_t const& ev) const
     {
         ss << '[';
@@ -662,9 +658,9 @@ struct expr_printer_visitor : static_visitor<void>
         ss << ')';
     }
 
-    void operator()(case_expression const& f) const
+    void operator()(context_identifier const& f) const
     {
-        THROW_NOT_IMPLEMENTED_ERROR();
+        ss << "CONTEXT("sv << u_.print(f.name.value) << ")"sv;
     }
 
     void operator()(lambda const& f) const
@@ -715,6 +711,15 @@ std::string unit::print(syntax_expression_t const& e) const
     std::ostringstream ss;
     expr_printer_visitor vis{ *this, ss };
     apply_visitor(vis, e);
+    return ss.str();
+}
+
+std::string unit::print(semantic::expression_list_t const& elist) const
+{
+    std::ostringstream ss;
+    for (auto const& e : elist) {
+        ss << print(e);
+    }
     return ss.str();
 }
 
@@ -888,6 +893,32 @@ unit::unit()
     set_extern("operator_plus(decimal,decimal)->decimal"sv, &bang_operator_plus_decimal);
     set_extern("decimal(text: string)->decimal|()"sv, &bang_to_decimal);
 #endif
+
+    //// ids
+    builtin_ids_[(size_t)builtin_id::type] = make_identifier("__type"sv);
+    builtin_ids_[(size_t)builtin_id::to] = make_identifier("to"sv);
+    builtin_ids_[(size_t)builtin_id::self] = make_identifier("self"sv);
+    builtin_ids_[(size_t)builtin_id::property] = make_identifier("property"sv);
+    builtin_ids_[(size_t)builtin_id::object] = make_identifier("object"sv);
+    builtin_ids_[(size_t)builtin_id::numargs] = make_identifier("$$"sv);
+    builtin_ids_[(size_t)builtin_id::init] = make_identifier("init"sv);
+
+    //// types
+    builtin_qnids_[(size_t)builtin_qnid::any] = make_qname_identifier("any");
+    builtin_qnids_[(size_t)builtin_qnid::tuple] = make_qname_identifier("tuple");
+
+    //// operations
+    builtin_qnids_[(size_t)builtin_qnid::new_] = make_qname_identifier("new"sv);
+    builtin_qnids_[(size_t)builtin_qnid::typeof] = make_qname_identifier("typeof");
+    builtin_qnids_[(size_t)builtin_qnid::make_tuple] = make_qname_identifier("make_tuple");
+    builtin_qnids_[(size_t)builtin_qnid::implicit_cast] = make_qname_identifier("implicit_cast");
+    builtin_qnids_[(size_t)builtin_qnid::eq] = make_qname_identifier("equal");
+    builtin_qnids_[(size_t)builtin_qnid::ne] = make_qname_identifier("not_equal");
+    builtin_qnids_[(size_t)builtin_qnid::plus] = make_qname_identifier("__plus");
+    builtin_qnids_[(size_t)builtin_qnid::negate] = make_qname_identifier("negate");
+    builtin_qnids_[(size_t)builtin_qnid::get] = make_qname_identifier("get");
+    builtin_qnids_[(size_t)builtin_qnid::set] = make_qname_identifier("set");
+
     // typename
     auto typename_qname_identifier = make_qname_identifier("typename");
     auto typename_entity = make_shared<basic_signatured_entity>();
@@ -898,8 +929,6 @@ unit::unit()
     typename_entity->set_type(get(builtin_eid::typename_));
 
     // any
-    builtin_qnids_[(size_t)builtin_qnid::any] = make_qname_identifier("any");
-
     auto any_entity = make_shared<basic_signatured_entity>(get(builtin_eid::typename_), entity_signature{ get(builtin_qnid::any) });
     eregistry_insert(any_entity);
     builtin_eids_[(size_t)builtin_eid::any] = any_entity->id();
@@ -930,37 +959,26 @@ unit::unit()
     // metaobject
     setup_type("metaobject"sv, builtin_qnids_[(size_t)builtin_qnid::metaobject], builtin_eids_[(size_t)builtin_eid::metaobject]);
 
-    // tuple
-    builtin_qnids_[(size_t)builtin_qnid::tuple] = make_qname_identifier("tuple");
-    
     // void
     auto void_entity = make_shared<basic_signatured_entity>(get(builtin_eid::typename_), entity_signature{ get(builtin_qnid::tuple) });
     eregistry_insert(void_entity);
     builtin_eids_[(size_t)builtin_eid::void_] = void_entity->id();
 
-    //// operations
-    builtin_qnids_[(size_t)builtin_qnid::typeof] = make_qname_identifier("typeof");
-    builtin_qnids_[(size_t)builtin_qnid::make_tuple] = make_qname_identifier("make_tuple");
-    builtin_qnids_[(size_t)builtin_qnid::implicit_cast] = make_qname_identifier("implicit_cast");
-    builtin_qnids_[(size_t)builtin_qnid::eq] = make_qname_identifier("equal");
-    builtin_qnids_[(size_t)builtin_qnid::ne] = make_qname_identifier("not_equal");
-    builtin_qnids_[(size_t)builtin_qnid::plus] = make_qname_identifier("__plus");
-    builtin_qnids_[(size_t)builtin_qnid::negate] = make_qname_identifier("negate");
-    builtin_qnids_[(size_t)builtin_qnid::get] = make_qname_identifier("get");
-    builtin_qnids_[(size_t)builtin_qnid::set] = make_qname_identifier("set");
+
 
     /////// built in patterns
     // make_tuple(...) -> tuple(...)
     functional& make_tuple_fnl = fregistry().resolve(get(builtin_qnid::make_tuple));
     make_tuple_fnl.push(make_shared<make_tuple_pattern>());
     
-    
-    qname_identifier getfn = make_qname_identifier("get"sv);
-    functional& get_fnl = fregistry().resolve(getfn);
+    functional& get_fnl = fregistry().resolve(get(builtin_qnid::get));
     // get(self: tuple(), property: __identifier)->T;
     get_fnl.push(make_shared<tuple_get_pattern>());
     // get(self: @structure, property: __identifier)->T;
     get_fnl.push(make_shared<struct_get_pattern>());
+
+    functional& set_fnl = fregistry().resolve(get(builtin_qnid::set));
+    set_fnl.push(make_shared<tuple_set_pattern>());
 
     // __id(const string) -> __identifier
     qname_identifier idfn = make_qname_identifier("__id"sv);
@@ -976,7 +994,6 @@ unit::unit()
     typeof_fnl.push(make_shared<typeof_pattern>());
 
     // new(type: typename $T @struct, ...) -> $T
-    builtin_qnids_[(size_t)builtin_qnid::new_] = make_qname_identifier("new"sv);
     functional& newfnl = fregistry().resolve(get(builtin_qnid::new_));
     newfnl.push(make_shared<new_struct_pattern>());
 
@@ -986,13 +1003,6 @@ unit::unit()
     functional& ellipsis_fnl = fregistry().resolve(get(builtin_qnid::ellipsis));
     ellipsis_fnl.push(make_shared<ellipsis_pattern>());
 
-    //// parameters
-    builtin_ids_[(size_t)builtin_id::type] = make_identifier("__type"sv);
-    builtin_ids_[(size_t)builtin_id::to] = make_identifier("to"sv);
-    builtin_ids_[(size_t)builtin_id::self] = make_identifier("self"sv);
-    builtin_ids_[(size_t)builtin_id::property] = make_identifier("property"sv);
-    builtin_ids_[(size_t)builtin_id::object] = make_identifier("object"sv);
-    builtin_ids_[(size_t)builtin_id::numargs] = make_identifier("$$"sv);
 
     //fn_result_identifier_ = make_identifier("->");
 
@@ -1026,4 +1036,3 @@ unit::unit()
 }
 
 }
-

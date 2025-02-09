@@ -244,6 +244,7 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\ct_expression_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_implicit_cast_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_fn_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\ast\functional_declaration_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\vector_expression_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast_terms.hpp" />
@@ -299,10 +300,11 @@
     <ClInclude Include="..\..\..\sonia\bang\parser.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\semantic.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\semantic\expression_printer.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\semantic\managed_expression_list.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\semantic_fwd.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\terms.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\unit.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\utility\linked_list.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\utility\linked_list.ipp" />
     <ClInclude Include="..\..\..\sonia\bang\vm\bang_vm.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\vm\compiler_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\vm\push_value_visitor.hpp" />
@@ -720,6 +722,7 @@
       <AdditionalOptions Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">/bigobj %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\ast\fn_compiler_context.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\ast\functional_declaration_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang.cpp" />
@@ -776,8 +779,7 @@
     <ClCompile Include="..\..\..\sonia\bang\errors\pattern_match_error.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\errors\type_mismatch_error.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\library\bang_library.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\parser.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\semantic\managed_expression_list.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\bang_parser.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\semantic\semantic_expression_printer.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\vm\bang_vm.cpp" />
     <ClCompile Include="..\..\..\sonia\fibers\algo\algorithm.cpp">

@@ -6,6 +6,7 @@
 #include "expression_printer.hpp"
 
 #include "sonia/bang/unit.hpp"
+#include "sonia/bang/utility/linked_list.ipp"
 
 namespace sonia::lang::bang::semantic {
 
@@ -20,10 +21,20 @@ void expression_printer_visitor::operator()(empty_t const& i) const
     ss << "noop\n"sv;
 }
 
+void expression_printer_visitor::operator()(expression_span esp) const
+{
+    ++indent_cnt;
+    while (!esp) {
+        apply_visitor(*this, esp.front());
+        esp.pop_front();
+    }
+    --indent_cnt;
+}
+
 void expression_printer_visitor::operator()(expression_list_t const& evec) const
 {
     ++indent_cnt;
-    for (expression_t const& e : evec) {
+    for (expression const& e : evec) {
         apply_visitor(*this, e);
     }
     --indent_cnt;

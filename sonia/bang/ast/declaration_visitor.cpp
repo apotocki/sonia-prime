@@ -5,8 +5,6 @@
 #include "sonia/config.hpp"
 #include "declaration_visitor.hpp"
 
-#include "sonia/small_vector.hpp"
-
 #include "fn_compiler_context.hpp"
 #include "expression_visitor.hpp"
 #include "ct_expression_visitor.hpp"
@@ -28,7 +26,7 @@ namespace sonia::lang::bang {
 
 inline unit& declaration_visitor::u() const noexcept { return ctx.u(); }
 
-error_storage declaration_visitor::apply(span<const statement> initial_decls) const
+error_storage declaration_visitor::apply(statement_span initial_decls) const
 {
     decl_stack_.clear();
     decl_stack_.emplace_back(initial_decls);
@@ -51,8 +49,9 @@ error_storage declaration_visitor::operator()(include_decl const& d) const
     parser_context pctx{ u() };
     auto exp_decls = pctx.parse(fpath);
     if (!exp_decls.has_value()) {
-        throw exception{ ctx.u().print(basic_general_error{ d.path.location, exp_decls.error() }) };
+        return make_error<basic_general_error>(d.path.location, exp_decls.error());
     }
+    u().push_ast(fpath, std::move(pctx.statements()));
     decl_stack_.emplace_back(*exp_decls);
     return {};
 }
@@ -150,20 +149,31 @@ error_storage declaration_visitor::operator()(if_decl const& stm) const
     auto bst = ctx.expressions_branch(); // store branch
 
     if (!stm.true_body.empty()) {
-        ctx.push_chain(cond.true_branch);
-        for (auto const& d : stm.true_body) {
-            apply_visitor(*this, d);
+        semantic::managed_expression_list true_branch{ u() };
+        ctx.push_chain(true_branch);
+        if (auto err = apply(stm.true_body); err) {
+            return std::move(err);
         }
+        cond.true_branch = ctx.store_semantic_expressions(std::move(true_branch));
+        
+        //for (auto const& d : stm.true_body) {
+        //    apply_visitor(*this, d);
+        //}
         ctx.collapse_chains(bst);
     }
     ctx.pop_ns();
 
     if (!stm.false_body.empty()) {
         ctx.pushed_unnamed_ns();
-        ctx.push_chain(cond.false_branch);
-        for (auto const& d : stm.false_body) {
-            apply_visitor(*this, d);
+        semantic::managed_expression_list false_branch{ u() };
+        ctx.push_chain(false_branch);
+        if (auto err = apply(stm.false_body); err) {
+            return std::move(err);
         }
+        cond.false_branch = ctx.store_semantic_expressions(std::move(false_branch));
+        //for (auto const& d : stm.false_body) {
+        //    apply_visitor(*this, d);
+        //}
         ctx.collapse_chains(bst);
         ctx.pop_ns();
     }
@@ -180,7 +190,10 @@ error_storage declaration_visitor::operator()(while_decl const& wd) const
     ctx.pushed_unnamed_ns();
     ctx.append_expression(std::move(semantic::loop_scope_t{}));
     if (wd.continue_expression) {
-        ctx.push_chain(get<semantic::loop_scope_t>(ctx.expressions().back()).continue_branch);
+        semantic::loop_scope_t& ls = get<semantic::loop_scope_t>(ctx.expressions().back());
+        semantic::managed_expression_list continue_branch{ u() };
+        ctx.push_chain(continue_branch);
+        
         expression_visitor vis{ ctx };
         if (auto res = apply_visitor(vis, *wd.continue_expression); !res) {
             return std::move(res.error());
@@ -189,10 +202,14 @@ error_storage declaration_visitor::operator()(while_decl const& wd) const
             ctx.append_expression(semantic::truncate_values(1, false));
             ctx.context_type = u().get(builtin_eid::void_);
         }
+        ls.continue_branch = ctx.store_semantic_expressions(std::move(continue_branch));
         ctx.pop_chain();
     }
 
-    ctx.push_chain(get<semantic::loop_scope_t>(ctx.expressions().back()).branch);
+    semantic::loop_scope_t& ls = get<semantic::loop_scope_t>(ctx.expressions().back());
+    semantic::managed_expression_list branch{ u() };
+    ctx.push_chain(branch);
+    //ctx.push_chain(get<semantic::loop_scope_t>(ctx.expressions().back()).branch);
 
     expression_visitor vis{ ctx, { u().get(builtin_eid::boolean), get_start_location(wd.condition) } };
     if (auto res = apply_visitor(vis, wd.condition); !res) {
@@ -209,11 +226,15 @@ error_storage declaration_visitor::operator()(while_decl const& wd) const
             return {};
         }
         ctx.expressions().pop_back(); // push_value(true)
-        for (auto const& d : wd.body) {
-            apply_visitor(*this, d);
+        if (auto err = apply(wd.body); err) {
+            return std::move(err);
         }
+        //for (auto const& d : wd.body) {
+        //    apply_visitor(*this, d);
+        //}
         
         ctx.append_expression(semantic::loop_continuer{});
+        ls.branch = ctx.store_semantic_expressions(std::move(branch));
         ctx.pop_ns(); // restore ns
         ctx.pop_chain(); // loop_scope_t chain
         return {};
@@ -223,21 +244,29 @@ error_storage declaration_visitor::operator()(while_decl const& wd) const
 
     auto bst = ctx.expressions_branch(); // store branch
 
-    ctx.push_chain(cond.true_branch);
-        
-    for (auto const& d : wd.body) {
-        apply_visitor(*this, d);
+    semantic::managed_expression_list true_branch{ u() };
+    ctx.push_chain(true_branch);
+
+    if (auto err = apply(wd.body); err) {
+        return std::move(err);
     }
+    //for (auto const& d : wd.body) {
+    //    apply_visitor(*this, d);
+    //}
     
     ctx.append_expression(semantic::loop_continuer{});
+    cond.true_branch = ctx.store_semantic_expressions(std::move(true_branch));
     cond.true_branch_finished = 1;
     ctx.collapse_chains(bst);
 
-    ctx.push_chain(cond.false_branch);
+    semantic::managed_expression_list false_branch{ u() };
+    ctx.push_chain(false_branch);
     ctx.append_expression(semantic::loop_breaker{});
+    cond.false_branch = ctx.store_semantic_expressions(std::move(false_branch));
     cond.false_branch_finished = 1;
     ctx.collapse_chains(bst);
 
+    ls.branch = ctx.store_semantic_expressions(std::move(branch));
     ctx.pop_chain();
     ctx.pop_ns();
 

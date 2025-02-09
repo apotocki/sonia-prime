@@ -87,6 +87,14 @@ public:
 
     void operator()(semantic::invoke_function const& invf) const;
 
+    void operator()(semantic::expression_span esp) const
+    {
+        while (!esp.empty()) {
+            apply(esp.front());
+            esp.pop_front();
+        }
+    }
+
     void operator()(semantic::expression_list_t const& evec) const
     {
         for (auto const& e : evec) {
@@ -105,9 +113,10 @@ public:
         if (s.continue_branch) {
             //fnbuilder_.append_noop();
             //auto jmpentry = fnbuilder_.current_entry();
-            for (auto const& e : s.continue_branch) {
+            s.continue_branch.for_each([this](semantic::expression const& e) {
                 apply(e);
-            }
+            });
+            
             auto loop_begin_pos = fnbuilder_.make_label();
             scope_begin_pos->operation = asm_builder_t::op_t::jmp;
             scope_begin_pos->operand = loop_begin_pos;
@@ -117,9 +126,9 @@ public:
         loop_stack_.emplace_back(scope_begin_pos, std::addressof(breaks));
         SCOPE_EXIT([this] { loop_stack_.pop_back(); });
 
-        for (auto const& e : s.branch) {
+        s.branch.for_each([this](semantic::expression const& e) {
             apply(e);
-        }
+        });
         auto scope_end_pos = fnbuilder_.make_label();
 
         // optimization: remove redundant breaks
@@ -165,30 +174,32 @@ public:
         fnbuilder_.append_noop();
         auto branch_pt = fnbuilder_.current_entry();
         if (!c.false_branch) {
-            for (auto const& e : c.true_branch) {
+            c.true_branch.for_each([this](semantic::expression const& e) {
                 apply(e);
-            }
+            });
             auto branch_end_pt = fnbuilder_.make_label();
             branch_pt->operation = asm_builder_t::op_t::jf;
             branch_pt->operand = branch_end_pt;
         } else if (!c.true_branch) {
-            for (auto const& e : c.false_branch) {
+            c.false_branch.for_each([this](semantic::expression const& e) {
                 apply(e);
-            }
+            });
             auto branch_end_pt = fnbuilder_.make_label();
             branch_pt->operation = asm_builder_t::op_t::jt;
             branch_pt->operand = branch_end_pt;
         } else {
-            for (auto const& e : c.true_branch) {
+            c.true_branch.for_each([this](semantic::expression const& e) {
                 apply(e);
-            }
+            });
+            
             if (!c.true_branch_finished) {
                 fnbuilder_.append_noop();
             }
             auto true_branch_end_pt = fnbuilder_.make_label();
-            for (auto const& e : c.false_branch) {
+            c.false_branch.for_each([this](semantic::expression const& e) {
                 apply(e);
-            }
+            });
+            
             auto branch_end_pt = fnbuilder_.make_label();
             branch_pt->operation = asm_builder_t::op_t::jf;
             branch_pt->operand = true_branch_end_pt;
@@ -199,7 +210,7 @@ public:
         }
     }
 
-    virtual void apply(semantic::expression_t const&) const = 0;
+    virtual void apply(semantic::expression const&) const = 0;
 };
 
 template <typename DerivedT>
@@ -212,7 +223,7 @@ public:
 
     using compiler_visitor_base::operator();
 
-    void apply(semantic::expression_t const& e) const override
+    void apply(semantic::expression const& e) const override
     {
         apply_visitor(derived(), e);
     }

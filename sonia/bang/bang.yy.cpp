@@ -6497,7 +6497,7 @@ YY_RULE_SETUP
 #line 331 "bang.l"
 {
 		variant_emplace(annotated_bool{true, location});
-		return (bang_lang::parser::token::TRUE);
+		return (bang_lang::parser::token::TRUE_WORD);
 	}
 	YY_BREAK
 case 40:
@@ -6505,7 +6505,7 @@ YY_RULE_SETUP
 #line 335 "bang.l"
 {
 		variant_emplace(annotated_bool{false, location});
-		return (bang_lang::parser::token::FALSE);
+		return (bang_lang::parser::token::FALSE_WORD);
 	}
 	YY_BREAK
 case 41:

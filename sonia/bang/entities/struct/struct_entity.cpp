@@ -8,6 +8,8 @@
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
+#include "sonia/bang/ast/declaration_visitor.hpp"
+
 #include "sonia/bang/errors/circular_dependency_error.hpp"
 
 namespace sonia::lang::bang {
@@ -127,8 +129,11 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
     return {};
 }
 
-error_storage struct_entity::build(fn_compiler_context& extctx, statement_set_t const& fl) const
+error_storage struct_entity::build(fn_compiler_context& ctx, statement_span const& sts) const
 {
+    declaration_visitor dvis{ ctx };
+    if (auto err = dvis.apply(sts); err) return std::move(err);
+    
     THROW_NOT_IMPLEMENTED_ERROR("struct_entity::build(statement_set_t)");
 }
 

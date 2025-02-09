@@ -43,9 +43,9 @@ error_storage make_tuple_pattern::apply(fn_compiler_context& ctx, qname_identifi
     BOOST_ASSERT(e.signature() && e.signature()->name() == u.get(builtin_qnid::tuple));
 
     size_t argcount = 0;
+    
     // push call expressions in the right order
-    ctx.append_expression(semantic::expression_list_t{});
-    semantic::expression_list_t& args = get<semantic::expression_list_t&>(ctx.expressions().back());
+    semantic::managed_expression_list args{ u };
 
     md.for_each_named_match([&argcount, &args, &md](identifier name, parameter_match_result const& mr) {
         for (auto rng : mr.expressions) {
@@ -66,6 +66,7 @@ error_storage make_tuple_pattern::apply(fn_compiler_context& ctx, qname_identifi
         u.push_back_expression(args, semantic::push_value{ mp::integer{ argcount } });
         u.push_back_expression(args, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
+    ctx.append_expression(ctx.store_semantic_expressions(std::move(args)));
     ctx.context_type = e.id();
     return {};
 }

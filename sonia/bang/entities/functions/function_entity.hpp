@@ -81,13 +81,7 @@ class internal_function_entity : public function_entity
     //uint64_t is_void_ : 1;
 
 public:
-    struct build_data
-    {
-        /*functional_binding_set bindings;*/
-        shared_ptr<std::vector<statement>> body;
-    };
-
-    internal_function_entity(unit& u, qname&& name, entity_signature&& sig, shared_ptr<build_data> bd);
+    internal_function_entity(unit& u, qname&& name, entity_signature&& sig, statement_span bd);
 
     semantic::expression_list_t const& body() const { return body_; }
 
@@ -107,7 +101,7 @@ public:
     void build(unit&) override;
 
 private:
-    shared_ptr<build_data> bd_;
+    statement_span sts_;
 };
 
 class external_function_entity : public function_entity

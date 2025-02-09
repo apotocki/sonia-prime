@@ -17,8 +17,6 @@
 #include "sonia/bang/semantic.hpp"
 #include "sonia/bang/errors.hpp"
 
-#include "sonia/bang/semantic/managed_expression_list.hpp"
-
 namespace sonia::lang::bang {
 
 class fn_compiler_context;

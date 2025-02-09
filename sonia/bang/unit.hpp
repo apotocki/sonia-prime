@@ -76,6 +76,10 @@ class unit
     using eregistry_t = entity_registry<entity>;
     
 
+    // pools first
+    object_pool<semantic::expression_list_t::entry_type> semantic_expression_list_entry_pool_;
+    object_pool<statement_entry> statements_entry_pool_;
+
     identifier_builder_t identifier_builder_;
     //entity_identifier_builder_t entity_identifier_builder_;
     slregistry_t slregistry_;
@@ -85,8 +89,11 @@ class unit
     piregistry_t piregistry_;
     eregistry_t eregistry_;
 
+    // ast store
+    managed_statement_list ast_;
+
     // semantic
-    std::vector<semantic::expression_t> root_expressions_;
+    semantic::expression_span root_expressions_;
 
     // vm builtin id -> qname
     std::vector<qname_identifier> vm_builtins_;
@@ -97,7 +104,7 @@ class unit
 
     compiler_task_tracer task_tracer_;
 
-    object_pool<semantic::expression_list_t::entry_type> semantic_expression_list_entry_pool_;
+
 
 public:
     enum class builtin_type
@@ -229,7 +236,7 @@ public:
     //std::string print(bang_preliminary_type const& tp) const;
     
     std::string print(syntax_expression_t const&) const;
-    std::string print(semantic::expression_t const&) const;
+    std::string print(semantic::expression const&) const;
     std::string print(semantic::expression_list_t const& elist) const;
 
     std::string print(error const&) const;
@@ -258,8 +265,14 @@ public:
         }
     }
 
-    void push_back_expression(semantic::expression_list_t&, semantic::expression_t&&);
+    void push_back_expression(semantic::expression_list_t&, semantic::expression&&);
     void release(semantic::expression_list_t::entry_type&&);
+
+    statement_entry& acquire(statement&& st);
+    //void push_back_statement(statement_list&, statement&&);
+    void release(statement_entry_type&&);
+
+    statement_span push_ast(fs::path const&, managed_statement_list&&);
 
 protected:
     void setup_type(string_view type_name, qname_identifier&, entity_identifier&);

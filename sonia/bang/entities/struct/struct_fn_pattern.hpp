@@ -10,10 +10,10 @@ namespace sonia::lang::bang {
 
 class struct_fn_pattern : public basic_fn_pattern
 {
-    variant<field_list_t, statement_set_t> body_;
+    variant<field_list_t, statement_span> body_;
 
 public:
-    struct_fn_pattern(fn_compiler_context&, functional const&, fn_pure const&, variant<field_list_t, statement_set_t> const&);
+    struct_fn_pattern(fn_compiler_context&, functional const&, fn_pure const&, variant<field_list_t, statement_span> const&);
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 };
 

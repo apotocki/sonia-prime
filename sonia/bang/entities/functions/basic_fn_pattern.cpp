@@ -17,8 +17,6 @@
 #include "sonia/bang/entities/functions/function_entity.hpp"
 #include "sonia/bang/entities/ellipsis/pack_entity.hpp"
 
-#include "sonia/bang/semantic/managed_expression_list.hpp"
-
 #include "sonia/bang/errors/circular_dependency_error.hpp"
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
@@ -878,8 +876,8 @@ error_storage runtime_fn_pattern::apply(fn_compiler_context& ctx, qname_identifi
     }
 
     // push call expressions in the right order
-    ctx.append_expression(semantic::expression_list_t{});
-    semantic::expression_list_t& args = get<semantic::expression_list_t&>(ctx.expressions().back());
+    semantic::managed_expression_list args{ ctx.u() };
+    
     size_t argpos = 0;
     for (auto const& [param_name, param_mod] : parameters_) {
         auto [external_name, internal_name, varname] = apply_visitor(param_name_retriever{}, param_name);
@@ -903,6 +901,7 @@ error_storage runtime_fn_pattern::apply(fn_compiler_context& ctx, qname_identifi
 
     BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
     ctx.u().push_back_expression(args, semantic::invoke_function(e.id()));
+    ctx.append_expression(ctx.store_semantic_expressions(std::move(args)));
     ctx.context_type = rt;
     return {};
 }
@@ -1061,11 +1060,9 @@ struct result_resolving_visitor : static_visitor<std::expected<entity_identifier
 
 generic_fn_pattern::generic_fn_pattern(fn_compiler_context& ctx, functional const& fnl, fn_decl_t const& fnd)
     : runtime_fn_pattern{ ctx, fnl, fnd }
-    , body_{ make_shared<std::vector<statement>>(fnd.body)}
+    , body_{ fnd.body }
     , kind_{ fnd.kind }
-{
-
-}
+{ }
 
 std::expected<entity_identifier, error_storage> generic_fn_pattern::const_apply(fn_compiler_context& ctx, qname_identifier, functional_match_descriptor&) const
 {
@@ -1163,7 +1160,7 @@ shared_ptr<entity> generic_fn_pattern::build(fn_compiler_context& ctx, functiona
         ctx.u(),
         qname{ ent_ctx.ns() },
         std::move(signature),
-        make_shared<internal_function_entity::build_data>(/*std::move(md.bindings),*/ body_));
+        /*std::move(md.bindings),*/ body_);
 
     pife->set_inline(kind_ == fn_kind::INLINE);
 

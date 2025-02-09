@@ -14,19 +14,19 @@ namespace sonia::lang::bang {
 class functional;
 class function_entity;
 
-class declaration_visitor : public static_visitor<error_storage>
+class functional_declaration_visitor : public static_visitor<error_storage>
 {
     fn_compiler_context& ctx;
-    mutable small_vector<statement_span, 4> decl_stack_;
+    mutable small_vector<span<const statement>, 4> decl_stack_;
 
 public:
-    inline explicit declaration_visitor(fn_compiler_context& c) noexcept
+    inline explicit functional_declaration_visitor(fn_compiler_context& c) noexcept
         : ctx{ c }
     {}
 
-    [[nodiscard]] error_storage apply(statement_span) const;
+    [[nodiscard]] error_storage apply(span<const statement>) const;
 
-    //void operator()(empty_t const&) const {}
+/*
 
     [[nodiscard]] result_type operator()(include_decl const&) const;
 
@@ -53,17 +53,18 @@ public:
 
     [[nodiscard]] result_type operator()(return_decl_t const&) const;
 
-    template <typename T>
-    result_type operator()(T const& d) const {
-        THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor");
-    }
-
-    void append_fnsig(fn_pure& /*in*/, functional** ppf = nullptr) const;
+    void append_fnsig(fn_pure&, functional** ppf = nullptr) const;
     
     //function_entity& append_fnent(fn_pure&, function_signature& sig, span<infunction_declaration_t>) const;
 
     //void operator()(type_decl const&) const { THROW_INTERNAL_ERROR(); }
     //void operator()(include_decl const&) const { THROW_INTERNAL_ERROR(); }
+    */
+
+    template <typename T>
+    result_type operator()(T const& d) const {
+        THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor");
+    }
 
     unit& u() const noexcept;
 };

@@ -141,8 +141,8 @@ IN						"in"
 IF						"if"
 ELSE					"else"
 
-TRUE					"true"
-FALSE					"false"
+TRUE_WORD				"true"
+FALSE_WORD				"false"
 
 WEAK					"weak"
 CONST					"const"
@@ -328,13 +328,13 @@ HASHTAG					"#"
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
 	{CONST} { return (bang_lang::parser::token::CONST); }
 
-	{TRUE} {
+	{TRUE_WORD} {
 		variant_emplace(annotated_bool{true, location});
-		return (bang_lang::parser::token::TRUE);
+		return (bang_lang::parser::token::TRUE_WORD);
 	}
-	{FALSE} {
+	{FALSE_WORD} {
 		variant_emplace(annotated_bool{false, location});
-		return (bang_lang::parser::token::FALSE);
+		return (bang_lang::parser::token::FALSE_WORD);
 	}
 	
 	{APOSTROPHE}			{ return (bang_lang::parser::token::APOSTROPHE); }

@@ -164,12 +164,11 @@ public:
 
 class generic_fn_pattern: public runtime_fn_pattern
 {
-    shared_ptr<std::vector<statement>> body_;
+    statement_span body_;
     fn_kind kind_;
 
 public:
     generic_fn_pattern(fn_compiler_context&, functional const&, fn_decl_t const&);
-    
     
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 

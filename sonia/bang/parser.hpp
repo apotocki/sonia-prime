@@ -24,6 +24,7 @@ class parser_context
 public:
     inline explicit parser_context(unit& u) noexcept
         : unit_{ u }
+        , statements_{ u }
     {}
 
     annotated_string make_string(annotated_string_view) const;
@@ -38,28 +39,34 @@ public:
     annotated_qname_identifier make_qname_identifier(annotated_qname) const;
     annotated_qname_identifier make_qname_identifier(annotated_string_view, bool is_abs) const;
 
+    managed_statement_list new_statement_list() const;
+    statement_span push(managed_statement_list&&);
+
     //identifier make_required_identifier(string_view);
     //small_u32string make_string(string_view);
 
-    void set_statements(statement_set_t);
+    void set_root_statements(managed_statement_list&&);
+    inline managed_statement_list const& statements() const noexcept { return statements_; }
+    inline managed_statement_list& statements() noexcept { return statements_; }
 
     void append_error(std::string errmsg);
 
-    shared_ptr<lex::code_resource> get_resource() const;
+    inline shared_ptr<lex::code_resource> get_resource() const noexcept { return resource_; }
 
-    std::expected<statement_set_t, std::string> parse(fs::path const& f);
-    std::expected<statement_set_t, std::string> parse_string(string_view);
+    std::expected<statement_span, std::string> parse(fs::path const& f, fs::path const* base_path = nullptr);
+    std::expected<statement_span, std::string> parse_string(string_view);
 
 private:
-    std::expected<statement_set_t, std::string> parse(string_view code);
+    std::expected<statement_span, std::string> parse(string_view code);
 
     unit& unit_;
 
-    small_vector<shared_ptr<lex::code_resource>, 8> resource_stack_;
+    shared_ptr<lex::code_resource> resource_;
     
     std::vector<std::string> error_messages_;
     
-    statement_set_t declarations_;
+    statement_span root_statements_;
+    managed_statement_list statements_;
 };
 
 }

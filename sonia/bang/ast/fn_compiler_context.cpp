@@ -209,7 +209,7 @@ fn_compiler_context::fn_compiler_context(unit& u, qname ns)
     : unit_{ u }
     , parent_{ nullptr }
     , ns_{ std::move(ns) }
-    , expressions_{ u }
+    , expression_store_{ u }
 {
     init();
 }
@@ -218,7 +218,7 @@ fn_compiler_context::fn_compiler_context(fn_compiler_context& parent, qname_view
     : unit_{ parent.unit_ }
     , ns_{ parent.ns() / nested }
     , parent_{ nested.has_prefix(parent.ns()) ? &parent : nullptr }
-    , expressions_{ parent.unit_ }
+    , expression_store_{ parent.unit_ }
 {
     init();
 }
@@ -227,12 +227,13 @@ void fn_compiler_context::init()
 {
     assert(ns_.is_absolute());
     base_ns_size_ = ns_.parts().size();
-    expr_stack_.emplace_back(&expressions_);
+    expr_stack_.emplace_back(&root_expressions_);
 }
 
 fn_compiler_context::~fn_compiler_context()
 {
-
+    // move expressions to remove
+    expression_store_.splice_back(root_expressions_);
 }
 
 entity_identifier fn_compiler_context::get_bound(identifier name) const
@@ -510,7 +511,7 @@ void fn_compiler_context::finish_frame()
             result = accum_result;
         } else { // no explicit return
             result = u().get(builtin_eid::void_);
-            u().push_back_expression(expressions_, semantic::return_statement{});
+            u().push_back_expression(root_expressions_, semantic::return_statement{});
         }
     }
 }
@@ -581,7 +582,14 @@ void fn_compiler_context::expressions_state_type::restore()
     pctx_->context_type = cur_type_;
 }
 
-void fn_compiler_context::append_expression(semantic::expression_t&& e)
+semantic::expression_span fn_compiler_context::store_semantic_expressions(semantic::managed_expression_list&& el)
+{
+    semantic::expression_span res = el;
+    expression_store_.splice_back(el);
+    return res;
+}
+
+void fn_compiler_context::append_expression(semantic::expression&& e)
 {
     unit_.push_back_expression(expressions(), std::move(e));
 }

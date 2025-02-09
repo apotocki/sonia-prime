@@ -60,6 +60,7 @@ public:
         : u_{ u }, ss{ s }, indent{ indentstr }, indent_cnt{ icnt } {}
 
     void operator()(empty_t const&) const;
+    void operator()(expression_span) const;
     void operator()(expression_list_t const&) const;
     void operator()(push_value const&) const;
     void operator()(invoke_function const&) const;

@@ -18,8 +18,7 @@
 #include "sonia/bang/entities/functional.hpp"
 
 #include "sonia/utility/lang/compiler.hpp"
-
-#include "sonia/bang/semantic/managed_expression_list.hpp"
+#include "sonia/bang/utility/linked_list.ipp"
 
 namespace sonia::lang::bang {
 
@@ -259,8 +258,10 @@ public:
     semantic::expression_list_t& expressions() { return *expr_stack_.back(); }
     semantic::expression_list_t& expressions(size_t branch_offset) { return *expr_stack_[expr_stack_.size() - branch_offset - 1]; }
     size_t expressions_branch() const { return expr_stack_.size(); }
-    void append_expression(semantic::expression_t&&);
+    void append_expression(semantic::expression&&);
     
+    semantic::expression_span store_semantic_expressions(semantic::managed_expression_list&&);
+
     //std::pair<size_t, expression_list_t::iterator> current_expressions_pointer() const
     //{
     //    return { expr_stack_.size() - 1, expr_stack_.back()->size() - 1 };
@@ -329,8 +330,9 @@ private:
     void init();
 
 private:
-    semantic::managed_expression_list expressions_;
-    std::vector<semantic::expression_list_t*> expr_stack_;
+    semantic::expression_list_t root_expressions_;
+    small_vector<semantic::expression_list_t*, 8> expr_stack_;
+    semantic::managed_expression_list expression_store_;
 };
 
 }

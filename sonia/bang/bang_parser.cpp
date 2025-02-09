@@ -24,6 +24,7 @@ using YYLTYPE = bang_lang::parser::location_type;
 #include "bang.yy.hpp"
 
 #include "unit.hpp"
+#include "sonia/bang/utility/linked_list.ipp"
 
 namespace sonia::lang::bang {
 
@@ -135,50 +136,48 @@ mp::decimal parser_context::make_decimal(string_view str) const
 //    return utf8_to_utf32(str);
 //}
 
-void parser_context::set_statements(statement_set_t ds)
-{
-    declarations_ = std::move(ds);
-}
-
 void parser_context::append_error(std::string errmsg)
 {
     error_messages_.push_back(std::move(errmsg));
 }
 
-
-
-shared_ptr<lex::code_resource> parser_context::get_resource() const
+managed_statement_list parser_context::new_statement_list() const
 {
-    if (resource_stack_.empty()) return {};
-    return resource_stack_.back();
+    return managed_statement_list{ unit_ };
 }
 
-std::expected<statement_set_t, std::string> parser_context::parse(fs::path const& f)
+statement_span parser_context::push(managed_statement_list&& msl)
+{
+    statement_span result = msl;
+    statements_.splice_back(msl);
+    BOOST_ASSERT(!msl);
+    return result;
+}
+
+void parser_context::set_root_statements(managed_statement_list&& sts)
+{
+    root_statements_ = push(std::move(sts));
+}
+
+std::expected<statement_span, std::string> parser_context::parse(fs::path const& f, fs::path const* base_path)
 {
     std::vector<char> code;
     try {
-        fs::path const* base_path = nullptr;
-        shared_ptr<lex::code_resource> cur_res = resource_stack_.empty() ? shared_ptr<lex::code_resource>{} : resource_stack_.back();
-        if (auto const* pfr = dynamic_cast<file_resource const*>(cur_res.get()); pfr) {
-            base_path = &pfr->path();
-        }
         code = unit_.get_file_content(f, base_path);
     } catch (std::exception const& e) {
         return std::unexpected(e.what());
     }
-    resource_stack_.emplace_back(make_shared<file_resource>(f));
-    SCOPE_EXIT([this]{ resource_stack_.pop_back(); });
+    resource_ = make_shared<file_resource>(f);
     return parse(string_view { code.data(), code.size() });
 }
 
-std::expected<statement_set_t, std::string> parser_context::parse_string(string_view code)
+std::expected<statement_span, std::string> parser_context::parse_string(string_view code)
 {
-    resource_stack_.emplace_back(make_shared<string_resource>(code));
-    SCOPE_EXIT([this] { resource_stack_.pop_back(); });
+    resource_ = make_shared<string_resource>(code);
     return parse(code);
 }
 
-std::expected<statement_set_t, std::string> parser_context::parse(string_view code)
+std::expected<statement_span, std::string> parser_context::parse(string_view code)
 {
     auto sc_data = std::make_unique<lex::scanner_data>();
 
@@ -222,7 +221,7 @@ std::expected<statement_set_t, std::string> parser_context::parse(string_view co
         }
         return std::unexpected(ss.str());
     }
-    return std::move(declarations_);
+    return root_statements_;
 }
 
 }

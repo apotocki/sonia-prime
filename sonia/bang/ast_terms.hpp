@@ -12,8 +12,6 @@
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/cat.hpp>
 
-#include <boost/container/small_vector.hpp>
-
 #include "sonia/string.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/optional.hpp"
@@ -24,6 +22,7 @@
 #include "sonia/utility/functional/variant_compare_three_way.hpp"
 #include "sonia/mp/basic_decimal.hpp"
 
+#include "sonia/bang/utility/linked_list.hpp"
 #include "terms.hpp"
 
 namespace sonia::lang::bang {
@@ -52,10 +51,10 @@ using annotated_integer = annotated<mp::integer>;
 using annotated_decimal = annotated<mp::decimal>;
 using annotated_string = annotated<small_string>;
 
-struct statement;
 struct infunction_statement;
 
-using statement_set_t = std::vector<statement>;
+struct statement_entry;
+using statement_span = linked_list_node_span<statement_entry>;
 
 //using elementary_expression = variant<
 //    null_t, bool, decimal, small_u32string, 
@@ -729,22 +728,12 @@ struct expression_group;
 //struct comma {};
 //using syntax_expression_t = boost::variant<operator_type, identifier, decimal, string_literal, integer_literal, function_t>;
 //using syntax_expression_t = boost::variant<qname, numeric_literal, expression_group>;
-//using expression_list = std::vector<syntax_expression_t>;
 
 //using expression_term_t = boost::variant<qname, u32string, string_literal, numeric, numeric_literal, procedure, ctprocedure>;
 
 using expression_terms_t = std::vector<expression_term_t>;
 //using signature_named_expression_terms_t = std::tuple<identifier, expression_terms_t>;
 //using signature_named_expression_terms_list_t = std::vector<signature_named_expression_terms_t>;
-
-
-//struct procedure
-//{
-//    call_type type;
-//    qname name;
-//    expression_list args;
-//};
-
 
 
 struct ctprocedure
@@ -848,7 +837,7 @@ using extension_list_t = std::vector<annotated_qname_identifier>;
 
 struct fn_decl_t : fn_pure
 {
-    std::vector<statement> body;
+    statement_span body;
 };
 
 struct using_decl
@@ -864,7 +853,7 @@ struct using_decl
 struct struct_decl
 {
     variant<annotated_qname, fn_pure> decl;
-    variant<field_list_t, statement_set_t> body;
+    variant<field_list_t, statement_span> body;
 
     inline bool is_function() const noexcept
     {
@@ -950,14 +939,14 @@ using expression_statement_t = expression_decl<syntax_expression_t>;
 struct if_decl
 {
     syntax_expression_t condition;
-    std::vector<statement> true_body;
-    std::vector<statement> false_body;
+    statement_span true_body;
+    statement_span false_body;
 };
 
 struct while_decl
 {
     syntax_expression_t condition;
-    std::vector<statement> body;
+    statement_span body;
     optional<syntax_expression_t> continue_expression; // called before condition strating eith second condition check (like c/c++ for expression)
 };
 
@@ -965,7 +954,7 @@ struct for_decl
 {
     syntax_expression_t iter;
     syntax_expression_t coll;
-    std::vector<statement> body;
+    statement_span body;
 };
 
 // statements that don't need ';' separator at the end
@@ -977,7 +966,7 @@ using generic_statement_type = variant<
     let_statement, expression_statement_t, return_decl_t, fn_decl_t, struct_decl, using_decl
 >;
 
-using statement_type = variant<
+using statement = variant<
     extern_var, let_statement, expression_statement_t, fn_pure,
     include_decl, struct_decl, using_decl, enum_decl, return_decl_t,
     fn_decl_t, if_decl, while_decl, for_decl, break_statement_t, continue_statement_t
@@ -988,7 +977,14 @@ using statement_type = variant<
 //    fn_decl_t, if_decl_t, while_decl_t, continue_statement_t, break_statement_t, return_decl_t
 //>;
 
-struct statement : statement_type { using statement_type::statement_type; };
+using statement_entry_type = linked_list_node<statement>;
+using statement_list = linked_list<statement>;
+//struct statement : statement_type { using statement_type::statement_type; };
+
+struct statement_entry : statement_entry_type { using statement_entry_type::statement_entry_type; };
+using managed_statement_list = managed_linked_list<statement, unit>;
+
+static_assert(sizeof(statement_entry) == sizeof(statement_entry_type));
 
 //struct infunction_statement : infunction_statement_type { using infunction_statement_type::infunction_statement_type; };
 
@@ -1029,8 +1025,6 @@ struct statement_adopt_visitor : static_visitor<StatementT>
 
 
 //using infunction_declaration_set_t = std::vector<infunction_statement>;
-
-
 
 template <typename LocationT>
 void update_location(LocationT & loc, const char* text)

@@ -7,17 +7,17 @@
 #include <bit>
 #include <vector>
 
-#include <boost/intrusive/list.hpp>
-#include <boost/iterator/transform_iterator.hpp>
-
 #include "sonia/variant.hpp"
 #include "sonia/string.hpp"
+
+#include "sonia/bang/utility/linked_list.hpp"
 
 #include "semantic_fwd.hpp"
 
 namespace sonia::lang::bang {
 
 // ======================================================================== types
+#if 0
 struct bang_object_t
 {
     entity const* value;
@@ -28,7 +28,6 @@ struct bang_object_t
     entity_identifier id() const;
 };
 
-#if 0
 template <typename T> struct bang_tuple
 {
     std::vector<T> fields;
@@ -455,117 +454,55 @@ struct invoke_function
 //    shared_ptr<logic_tree_node> false_branch;
 //};
 
-template <class ExprT>
-class expression_list
-{
-    struct entry : boost::intrusive::list_base_hook<>
-    {
-        ExprT value;
-        template <typename ArgT>
-        requires !std::is_same_v<entry, std::remove_cvref_t<ArgT>>
-        inline explicit entry(ArgT&& arg) : value{ std::forward<ArgT>(arg) }
-#if 1
-        {}
-#else
-        {
-            static size_t cnt = 0;
-            entry_num = cnt++;
-            if (entry_num == 3) {
-                entry_num = 3;
-            }
-            GLOBAL_LOG_INFO() << "created entry: " << entry_num;
-        }
+struct expression_entry;
+using expression_span = linked_list_node_span<expression_entry>;
 
-        ~entry() {
-            GLOBAL_LOG_INFO() << "deleted entry: " << entry_num;
-        }
-        size_t entry_num;
-#endif
-        entry(entry const&) = delete;
-        entry& operator=(entry const&) = delete;
-    };
-
-    using instruction_list_t = boost::intrusive::list<
-        entry,
-        boost::intrusive::base_hook<entry>>;
-
-    instruction_list_t list_;
-
-    static ExprT const& to_cexpr(entry const& e) noexcept { return e.value; }
-    static ExprT & to_expr(entry & e) noexcept { return e.value; }
-
-public:
-    using entry_type = entry;
-    using iterator = boost::transform_iterator<decltype(&to_expr), typename instruction_list_t::iterator>;
-    using const_iterator = boost::transform_iterator<decltype(&to_cexpr), typename instruction_list_t::const_iterator>;
-
-    inline explicit operator bool() const noexcept { return !list_.empty(); }
-
-    inline const_iterator begin() const noexcept { return const_iterator{ list_.begin(), to_cexpr }; }
-    inline const_iterator end() const noexcept { return const_iterator{ list_.end(), to_cexpr }; }
-    inline const_iterator last() const noexcept { const_iterator r = end(); if (!list_.empty()) --r; return r; }
-    inline size_t size() const noexcept { return list_.size(); }
-
-    inline ExprT const& front() const noexcept { return list_.front().value; }
-    inline ExprT & front() noexcept { return list_.front().value; }
-    inline ExprT const& back() const noexcept { return list_.back().value; }
-    inline ExprT & back() noexcept { return list_.back().value; }
-    inline entry_type& back_entry() noexcept { return list_.back(); }
-
-    inline void push_back(entry_type& e) noexcept { list_.push_back(e); }
-    inline entry_type&& pop_back() noexcept { entry_type& be = list_.back(); list_.pop_back(); return std::move(be); }
-
-    void splice_back(expression_list& other, const_iterator first, const_iterator last) noexcept
-    {
-        list_.splice(list_.end(), other.list_, first.base(), last.base());
-    }
-};
-
-template <typename SemanticExpressionT>
-struct conditional
+struct conditional_t
 {
     //condition_type type;
-    expression_list<SemanticExpressionT> true_branch;
-    expression_list<SemanticExpressionT> false_branch;
+    expression_span true_branch;
+    expression_span false_branch;
     uint8_t true_branch_finished : 1;
     uint8_t false_branch_finished : 1;
 
-    conditional() : true_branch_finished{ 0 }, false_branch_finished{ 0 } {}
+    conditional_t() : true_branch_finished{ 0 }, false_branch_finished{ 0 } {}
 };
 
-template <typename SemanticExpressionT>
-struct not_empty_condition
+struct not_empty_condition_t
 {
-    expression_list<SemanticExpressionT> branch;
+    expression_span branch;
 };
 
-template <typename SemanticExpressionT>
-struct loop_scope
+struct loop_scope_t
 {
-    expression_list<SemanticExpressionT> branch;
-    expression_list<SemanticExpressionT> continue_branch;
+    expression_span branch;
+    expression_span continue_branch;
 };
 
 struct loop_continuer {};
 struct loop_breaker {};
 
-using expression_t = make_recursive_variant<
+using expression = variant<
     empty_t, // no op
     push_value, push_by_offset, truncate_values,
     set_variable, set_by_offset, invoke_function, return_statement, loop_breaker, loop_continuer,
-    expression_list<recursive_variant_>,
-    conditional<recursive_variant_>,
-    not_empty_condition<recursive_variant_>,
-    loop_scope<recursive_variant_>
+    expression_span,
+    conditional_t,
+    not_empty_condition_t,
+    loop_scope_t
     //logic_tree_node<recursive_variant_>
->::type;
+>;
 
-using conditional_t = conditional<expression_t>;
-using not_empty_condition_t = not_empty_condition<expression_t>;
-using loop_scope_t = loop_scope<expression_t>;
+using expression_entry_type = linked_list_node<expression>;
+struct expression_entry : expression_entry_type { using expression_entry_type::expression_entry_type; };
+
+//using conditional_t = conditional<expression>;
+//using not_empty_condition_t = not_empty_condition<expression>;
+//using loop_scope_t = loop_scope<expression>;
 //using logic_tree_node_t = logic_tree_node<expression_t>;
 
-using expression_list_t = expression_list<expression_t>;
+using expression_list_t = linked_list<expression>;
+using managed_expression_list = managed_linked_list<expression, unit>;
 
 }
 
@@ -576,16 +513,16 @@ using expression_list_t = expression_list<expression_t>;
 
 ///#include "entities/type_entity.hpp"
 
-namespace sonia::lang::bang {
-
-inline entity_identifier bang_object_t::id() const
-{
-    return value->id();
-}
-
-inline auto bang_object_t::operator<=>(bang_object_t const& rhs) const
-{
-    return value->id() <=> rhs.value->id();
-};
-
-}
+//namespace sonia::lang::bang {
+//
+//inline entity_identifier bang_object_t::id() const
+//{
+//    return value->id();
+//}
+//
+//inline auto bang_object_t::operator<=>(bang_object_t const& rhs) const
+//{
+//    return value->id() <=> rhs.value->id();
+//};
+//
+//}

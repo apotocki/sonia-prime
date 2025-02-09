@@ -23,9 +23,9 @@ size_t function_entity::parameter_count() const noexcept
     return cnt;
 }
 
-internal_function_entity::internal_function_entity(unit& u, qname&& name, entity_signature&& sig, shared_ptr<build_data> bd)
+internal_function_entity::internal_function_entity(unit& u, qname&& name, entity_signature&& sig, statement_span sts)
     : function_entity{ std::move(name), std::move(sig) }
-    , bd_{ std::move(bd) }
+    , sts_{ std::move(sts) }
     , is_inline_{ 0 }
     , is_built_{ 0 }
     , body_{ u }
@@ -112,7 +112,7 @@ void internal_function_entity::build(unit& u)
     }
     
     declaration_visitor dvis{ fnctx };
-    if (auto err = dvis.apply(*bd_->body); err) throw exception(u.print(*err));
+    if (auto err = dvis.apply(sts_); err) throw exception(u.print(*err));
     //for (infunction_statement const& d : *bd_->body) {
     //    apply_visitor(dvis, d);
     //}
@@ -125,7 +125,7 @@ void internal_function_entity::build(unit& u)
 
     BOOST_ASSERT(fnctx.expressions_branch() == 1);
     body_.splice_back(fnctx.expressions(), fnctx.expressions().begin(), fnctx.expressions().end());
-    bd_.reset();
+    //sts_.reset();
     is_built_ = 1;
 }
 

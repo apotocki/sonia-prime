@@ -22,7 +22,7 @@ class struct_entity : public basic_signatured_entity
     friend class struct_builder_visitor;
 
     qname name_;
-    variant<field_list_t, statement_set_t> body_;
+    variant<field_list_t, statement_span> body_;
 
     mutable entity_identifier underlying_tuple_eid_;
     mutable entity_identifier underlying_tuple_constructor_eid_;
@@ -37,11 +37,11 @@ class struct_entity : public basic_signatured_entity
 
     mutable std::atomic<build_state> built_{ build_state::not_built };
 
-    error_storage build(fn_compiler_context& extctx, field_list_t const& fl) const;
-    error_storage build(fn_compiler_context& extctx, statement_set_t const& fl) const;
+    error_storage build(fn_compiler_context& struct_ctx, field_list_t const&) const;
+    error_storage build(fn_compiler_context& struct_ctx, statement_span const&) const;
 
 public:
-    explicit struct_entity(qname qn, entity_identifier type, entity_signature && sgn, variant<field_list_t, statement_set_t> const& body)
+    explicit struct_entity(qname qn, entity_identifier type, entity_signature && sgn, variant<field_list_t, statement_span> const& body)
         : basic_signatured_entity{ std::move(type), std::move(sgn) }
         , name_{ qn }
         , body_{ body }
@@ -53,7 +53,7 @@ public:
     std::expected<entity_identifier, error_storage> underlying_tuple_eid(fn_compiler_context&) const;
     std::expected<functional_match_descriptor const*, error_storage> underlying_tuple_initializer(fn_compiler_context&) const;
 
-    error_storage build(fn_compiler_context&) const;
+    error_storage build(fn_compiler_context& external_ctx) const;
     //std::expected<function_entity const*, error_storage> find_field_getter(fn_compiler_context&, annotated_identifier const&) const;
     //std::expected<function_entity const*, error_storage> find_field_setter(fn_compiler_context&, annotated_identifier const&) const;
     //std::expected<function_signature const*, error_storage> find(fn_compiler_context&, pure_call_t&) const override;

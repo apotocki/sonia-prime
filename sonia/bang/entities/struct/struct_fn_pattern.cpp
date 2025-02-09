@@ -13,7 +13,7 @@
 
 namespace sonia::lang::bang {
 
-struct_fn_pattern::struct_fn_pattern(fn_compiler_context& ctx, functional const& fnl, fn_pure const& fnd, variant<field_list_t, statement_set_t> const& body)
+struct_fn_pattern::struct_fn_pattern(fn_compiler_context& ctx, functional const& fnl, fn_pure const& fnd, variant<field_list_t, statement_span> const& body)
     : basic_fn_pattern{ ctx, fnl, fnd }
     , body_{ body }
 {}

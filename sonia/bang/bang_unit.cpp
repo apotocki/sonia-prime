@@ -222,6 +222,17 @@ std::vector<char> unit::get_file_content(fs::path const& rpath, fs::path const* 
     }
 }
 
+statement_span unit::push_ast(fs::path const&, managed_statement_list&& msl)
+{
+    if (msl) {
+        statement_span sp{ static_cast<statement_entry*>(&msl.front_entry()), static_cast<statement_entry*>(&msl.back_entry()) };
+        ast_.splice_back(msl);
+        BOOST_ASSERT(!msl);
+        return sp;
+    }
+    return {};
+}
+
 template <typename OutputIteratorT, typename UndefinedFT>
 OutputIteratorT unit::identifier_printer(identifier const& id, string_view prefix, OutputIteratorT oi, UndefinedFT const& uf) const
 {
@@ -345,9 +356,7 @@ struct type_printer_visitor : static_visitor<void>
     //inline void operator()(bang_string_t) const { ss << "string"sv; }
     inline void operator()(annotated_qname const& qn) const { ss << u_.print(qn.value); }
     inline void operator()(annotated_identifier const& obj) const { ss << u_.print(obj.value); }
-    inline void operator()(bang_object_t const& obj) const {
-        ss << u_.print(obj.id());
-    }
+    //inline void operator()(bang_object_t const& obj) const { ss << u_.print(obj.id()); }
         
     template <typename TupleT, typename FamilyT>
     inline void operator()(bang_fn_base<TupleT, FamilyT> const& fn) const
@@ -723,7 +732,7 @@ std::string unit::print(semantic::expression_list_t const& elist) const
     return ss.str();
 }
 
-std::string unit::print(semantic::expression_t const& e) const
+std::string unit::print(semantic::expression const& e) const
 {
     std::ostringstream ss;
     semantic::expression_printer_visitor vis{ *this, ss };
@@ -788,15 +797,25 @@ functional& unit::resolve_functional(qname_identifier fid)
     //functional& f = fregistry().resolve(fid);
 }
 
-void unit::push_back_expression(semantic::expression_list_t& l, semantic::expression_t&& e)
+void unit::push_back_expression(semantic::expression_list_t& l, semantic::expression&& e)
 {
     semantic::expression_list_t::entry_type * pentry = semantic_expression_list_entry_pool_.new_object(std::move(e));
     l.push_back(*pentry);
 }
 
+statement_entry& unit::acquire(statement&& st)
+{
+    return *statements_entry_pool_.new_object(std::move(st));
+}
+
 void unit::release(semantic::expression_list_t::entry_type&& e)
 {
     semantic_expression_list_entry_pool_.delete_object(&e);
+}
+
+void unit::release(statement_entry_type&& e)
+{
+    statements_entry_pool_.delete_object(static_cast<statement_entry*>(&e));
 }
 
 entity const& unit::eregistry_get(entity_identifier eid) const
@@ -820,6 +839,8 @@ unit::unit()
     , fn_identifier_counter_ { (size_t)virtual_stack_machine::builtin_fn::eof_type }
     , bvm_{ std::make_unique<virtual_stack_machine>() }
     , semantic_expression_list_entry_pool_{ 128, 128 }
+    , statements_entry_pool_{ 128, 128 }
+    , ast_{ *this }
 {
     //set_extern("string(const __id)"sv, &bang_print_string);
 

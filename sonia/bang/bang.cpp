@@ -44,7 +44,7 @@ public:
     smart_blob call(string_view name, span<const std::pair<string_view, const blob_result>> namedargs, span<const blob_result> args);
 
 protected:
-    void compile(lang::bang::parser_context&, statement_set_t, span<string_view> args);
+    void compile(statement_span, span<string_view> args);
     void do_compile(internal_function_entity const&);
 
     void bootstrap();
@@ -123,15 +123,15 @@ void bang_impl::bootstrap()
 {
     if (bootstrapped_) return;
     parser_context parser{ unit_ };
-    auto exp_decls = parser.parse_string(string_view{ bang_bootstrap_code });
-    if (!exp_decls.has_value()) throw exception(exp_decls.error());
-    statement_set_t& decls = *exp_decls;
+    auto decls = parser.parse_string(string_view{ bang_bootstrap_code });
+    if (!decls.has_value()) throw exception(decls.error());
+    unit_.push_ast({}, std::move(parser.statements()));
     
     fn_compiler_context ctx{ unit_ };
 
     declaration_visitor dvis{ ctx };
-    if (auto err = dvis.apply(*exp_decls); err) throw exception(unit_.print(*err));
-    for (auto& d : *exp_decls) { apply_visitor(dvis, d); }
+    if (auto err = dvis.apply(*decls); err) throw exception(unit_.print(*err));
+    //for (auto& d : *exp_decls) { apply_visitor(dvis, d); }
     ctx.finish_frame();
 
     bootstrapped_ = true;
@@ -142,9 +142,10 @@ void bang_impl::load(fs::path const& f, span<string_view> args)
     try {
         bootstrap();
         parser_context parser{ unit_ };
-        auto exp_decls = parser.parse(f);
-        if (!exp_decls.has_value()) throw exception(exp_decls.error());
-        compile(parser, std::move(*exp_decls), args);
+        auto decls = parser.parse(f);
+        if (!decls.has_value()) throw exception(decls.error());
+        unit_.push_ast(f, std::move(parser.statements()));
+        compile(std::move(*decls), args);
     } catch (error const& e) {
         throw exception(unit_.print(e));
     }
@@ -155,15 +156,16 @@ void bang_impl::load(string_view code, span<string_view> args)
     try {
         bootstrap();
         parser_context parser{ unit_ };
-        auto exp_decls = parser.parse_string(code);
-        if (!exp_decls.has_value()) throw exception(exp_decls.error());
-        compile(parser, std::move(*exp_decls), args);
+        auto decls = parser.parse_string(code);
+        if (!decls.has_value()) throw exception(decls.error());
+        unit_.push_ast({}, std::move(parser.statements()));
+        compile(std::move(*decls), args);
     } catch (error const& e) {
         throw exception(unit_.print(e));
     }
 }
 
-void bang_impl::compile(lang::bang::parser_context & pctx, statement_set_t decls, span<string_view> args)
+void bang_impl::compile(statement_span decls, span<string_view> args)
 {
     identifier main_id = unit_.new_identifier();
     //fn_compiler_context ctx{ unit_, qname{ main_id } };
@@ -252,7 +254,7 @@ void bang_impl::compile(lang::bang::parser_context & pctx, statement_set_t decls
     vm::compiler_visitor vmcvis{ unit_, fb };
     //auto& bvm = unit_.bvm();
     //size_t main_address = bvm.get_ip();
-    for (semantic::expression_t const& e : ctx.expressions()) {
+    for (semantic::expression const& e : ctx.expressions()) {
         //GLOBAL_LOG_INFO() << "expression:\n"sv << unit_.print(e);
         apply_visitor(vmcvis, e);
     }

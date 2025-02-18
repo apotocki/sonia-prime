@@ -32,6 +32,11 @@ public:
         , init_match_{ std::move(m) }
     {}
 
+    error_storage apply_init(fn_compiler_context& ctx)
+    {
+        return init_match_.apply(ctx);
+    }
+
     //void push_back(annotated_identifier const* name, functional::match&& m)
     //{
     //    arguments_.emplace_back(name ? *name : annotated_identifier{}, std::move(m));
@@ -79,8 +84,14 @@ std::expected<functional_match_descriptor_ptr, error_storage> new_struct_pattern
         }
     }
 
-    auto init_match = pse->find_init(ctx, init_call);
-    if (!init_match) return std::unexpected(std::move(init_match.error()));
+    
+    auto init_match = ctx.find(builtin_qnid::init, init_call, annotated_entity_identifier{ pse->id(), pse->location() });
+    if (!init_match) {
+        return std::unexpected(append_cause(
+            make_error<basic_general_error>(call.location(), "no constructuctor found"sv, u.get(builtin_qnid::new_)),
+            std::move(init_match.error())
+        ));
+    }
 
     return make_shared<new_struct_match_descriptor>(u, *pse, *init_match);
     //ctx.context_type = pse->id(); // for context_value
@@ -124,7 +135,7 @@ error_storage new_struct_pattern::apply(fn_compiler_context& ctx, qname_identifi
     BOOST_ASSERT(dynamic_cast<new_struct_match_descriptor*>(&md));
     new_struct_match_descriptor& nsmd = static_cast<new_struct_match_descriptor&>(md);
 
-    THROW_NOT_IMPLEMENTED_ERROR("new_struct_pattern::apply");
+    return nsmd.apply_init(ctx);
 #if 0
     struct_entity const& se = nsmd.get_struct_entity();
     auto uteid = se.underlying_tuple_eid(ctx);

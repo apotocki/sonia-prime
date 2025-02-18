@@ -98,13 +98,27 @@ public:
         return *this;
     }
     */
-    void set(identifier field_name, field_descriptor && fd)
+
+    template <typename FactoryT>
+    requires std::invocable<FactoryT, nullptr_t>
+    inline void set(identifier field_name, FactoryT && f)
     {
         if (auto it = named_fields_.find(field_name); it != named_fields_.end()) {
-            it->second = std::move(fd);
+            std::forward<FactoryT>(f)(&it->second);
         } else {
-            named_fields_.emplace_hint(it, field_name, std::move(fd));
+            named_fields_.emplace_hint(it, field_name, std::forward<FactoryT>(f)(nullptr));
         }
+    }
+
+    inline void set(identifier field_name, field_descriptor&& fd)
+    {
+        set(field_name, [&fd](auto p) {
+            if constexpr (std::is_same_v<std::remove_cvref_t<decltype(p)>, nullptr_t>) {
+                return std::move(fd);
+            } else {
+                THROW_INTERNAL_ERROR("field_descriptor::set : field has already been set");
+            }
+        });
     }
 
     void set(size_t pos, field_descriptor fd)
@@ -207,6 +221,7 @@ struct basic_signatured_entity : signatured_entity
     inline void set_signature(entity_signature&& sgn) { sig_ = std::move(sgn); }
 
     entity_signature const* signature() const noexcept override final { return &sig_; }
+    entity_signature * signature() noexcept { return &sig_; }
 };
 
 #if 0

@@ -42,7 +42,7 @@ qname_identifier unit::get_function_entity_identifier(string_view signature)
     auto decls = parser.parse_string((string_view)("extern fn %1%;"_fmt % signature).str());
 
     fn_compiler_context ctx{ *this, qname{} };
-    auto& fndecl = get<fn_pure>(decls->front());
+    auto& fndecl = get<fn_pure_t>(decls->front());
     fndecl.aname.value.set_absolute();
 
     THROW_NOT_IMPLEMENTED_ERROR("unit get_function_entity_identifier");
@@ -104,7 +104,7 @@ std::string unit::describe_efn(size_t fn_index) const
     }
 }
 
-std::pair<functional*, fn_pure> unit::parse_extern_fn(string_view signature)
+std::pair<functional*, fn_pure_t> unit::parse_extern_fn(string_view signature)
 {
     parser_context parser{ *this };
     auto decls = parser.parse_string((string_view)("extern fn ::%1%;"_fmt % signature).str());
@@ -112,7 +112,7 @@ std::pair<functional*, fn_pure> unit::parse_extern_fn(string_view signature)
         throw exception(decls.error());
     }
 
-    fn_pure fndecl = sonia::get<fn_pure>(decls->front());
+    fn_pure_t fndecl = sonia::get<fn_pure_t>(decls->front());
 
     // if the result is not defined we can not resove it (e.g. from the function body) => suppose that it is void
     if (!fndecl.result) {
@@ -127,7 +127,10 @@ void unit::set_const_extern(string_view signature)
 {
     auto [pf, fndecl] = parse_extern_fn(signature);
     fn_compiler_context ctx{ *this, qname{} };
-    auto ptrn = make_shared<PT>(ctx, *pf, fndecl);
+    auto ptrn = make_shared<PT>(*pf);
+    if (auto err = ptrn->init(ctx, fndecl); err) {
+        throw exception(print(*err));
+    }
     pf->push(ptrn);
 }
 
@@ -136,7 +139,10 @@ void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
 {
     auto [pf, fndecl] = parse_extern_fn(signature);
     fn_compiler_context ctx{ *this, qname{} };
-    auto ptrn = make_shared<PT>(ctx, *pf, fndecl, fn_identifier_counter_);
+    auto ptrn = make_shared<PT>(*pf, fn_identifier_counter_);
+    if (auto err = ptrn->init(ctx, fndecl); err) {
+        throw exception(print(*err));
+    }
     pf->push(ptrn);
 
     // to do: mangled name
@@ -672,7 +678,7 @@ struct expr_printer_visitor : static_visitor<void>
         ss << "CONTEXT("sv << u_.print(f.name.value) << ")"sv;
     }
 
-    void operator()(lambda const& f) const
+    void operator()(lambda_t const& f) const
     {
         THROW_NOT_IMPLEMENTED_ERROR();
     }
@@ -930,6 +936,7 @@ unit::unit()
 
     //// operations
     builtin_qnids_[(size_t)builtin_qnid::new_] = make_qname_identifier("new"sv);
+    builtin_qnids_[(size_t)builtin_qnid::init] = make_qname_identifier("init"sv);
     builtin_qnids_[(size_t)builtin_qnid::typeof] = make_qname_identifier("typeof");
     builtin_qnids_[(size_t)builtin_qnid::make_tuple] = make_qname_identifier("make_tuple");
     builtin_qnids_[(size_t)builtin_qnid::implicit_cast] = make_qname_identifier("implicit_cast");

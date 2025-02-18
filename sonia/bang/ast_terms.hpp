@@ -51,8 +51,6 @@ using annotated_integer = annotated<mp::integer>;
 using annotated_decimal = annotated<mp::decimal>;
 using annotated_string = annotated<small_string>;
 
-struct infunction_statement;
-
 struct statement_entry;
 using statement_span = linked_list_node_span<statement_entry>;
 
@@ -544,53 +542,22 @@ template <typename T> struct opt_named_syntax_expression_list : opt_named_term_l
     lex::resource_location location;
 };
 
-using syntax_expression_t = make_recursive_variant<
-    placeholder, variable_identifier,
-    annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier, annotated_qname,
-    bang_fn_type<recursive_variant_>,
-    bang_array<recursive_variant_>, bang_vector<recursive_variant_>, bang_tuple<recursive_variant_>,
-    bang_union<recursive_variant_>, bang_parameter_pack<recursive_variant_>,
-    context_value, context_identifier, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
-    //lambda<recursive_variant_>,
-    unary_expression<recursive_variant_>,
-    binary_expression<recursive_variant_>,
-    //assign_expression<>, logic_and_expression<>, logic_or_expression<>, concat_expression<>,
-    expression_vector<recursive_variant_>,
-    function_call<recursive_variant_>,
-    new_expression<recursive_variant_>,
-    annotated_entity_identifier,
-    opt_named_syntax_expression_list<recursive_variant_>
-    
-    //, chained_expression<recursive_variant_>
-    //, ctprocedure
->::type;
-
-using opt_named_syntax_expression_t = opt_named_term<syntax_expression_t>;
-using opt_named_syntax_expression_list_t = opt_named_syntax_expression_list<syntax_expression_t>;
-
-using bang_parameter_pack_t = bang_parameter_pack<syntax_expression_t>;
-
-struct field_t
+template <typename ExprT>
+struct parameter_constraint_set
 {
-    annotated_identifier name;
-    parameter_constraint_modifier_t modifier;
-    syntax_expression_t type;
-    optional<syntax_expression_t> value;
-};
-using field_list_t = std::vector<field_t>;
-
-struct parameter_constraint_set_t
-{
-    optional<syntax_expression_t> type_expression;
-    std::vector<syntax_expression_t> concepts;
+    optional<ExprT> type_expression;
+    std::vector<ExprT> concepts;
     std::vector<annotated_identifier> bindings;
 };
 
-struct parameter_t
+
+
+template <typename ExprT>
+struct parameter
 {
     parameter_name name;
     parameter_constraint_modifier_t modifier;
-    parameter_constraint_set_t constraints;
+    parameter_constraint_set<ExprT> constraints;
 
     //parameter() = default;
 
@@ -608,17 +575,10 @@ struct parameter_t
     //inline bool operator==(parameter const&) const = default;
 };
 
-using parameter_list_t = std::vector<parameter_t>;
-
-//using parameter_t = parameter<bang_preliminary_type>;
-//using parameter_type_t = parameter_type<bang_preliminary_type>;
-//using parameter_list_t = parameter_list<bang_preliminary_type>;
-
-
-
 template <typename ExprT>
-struct parameter_woa : parameter_t
+struct parameter_woa : parameter<ExprT>
 {
+    using parameter_t = parameter<ExprT>;
     optional<ExprT> value;
 
     parameter_woa() = default;
@@ -634,31 +594,78 @@ struct parameter_woa : parameter_t
 
 template <typename ExprT> using parameter_woa_list = std::vector<parameter_woa<ExprT>>;
 
-using parameter_woa_t = parameter_woa<syntax_expression_t>;
-using parameter_woa_list_t = parameter_woa_list<syntax_expression_t>;
-
 enum class fn_kind : int8_t
 {
     DEFAULT,
     INLINE
 };
 
+template <typename ExprT>
 struct fn_pure
 {
     annotated_qname aname;
-    parameter_woa_list_t parameters;
-    optional<syntax_expression_t> result;
+    parameter_woa_list<ExprT> parameters;
+    optional<ExprT> result;
     fn_kind kind = fn_kind::DEFAULT;
 
     inline qname_view name() const noexcept { return aname.value; }
     inline lex::resource_location const& location() const noexcept { return aname.location; }
 };
 
-struct lambda : fn_pure
+template <typename ExprT>
+struct lambda : fn_pure<ExprT>
 {
-    std::vector<infunction_statement> body;
-    lex::resource_location start;
+    statement_span body;
+
+    lambda(lex::resource_location loc, parameter_woa_list<ExprT>&& params, statement_span&& b, optional<ExprT> rtype = nullopt)
+        : fn_pure<ExprT>{ annotated_qname{ {}, std::move(loc) }, std::move(params), std::move(rtype) }
+        , body{ std::move(b) }
+    {}
 };
+
+using syntax_expression_t = make_recursive_variant<
+    placeholder, variable_identifier,
+    annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier, annotated_qname,
+    bang_fn_type<recursive_variant_>,
+    bang_array<recursive_variant_>, bang_vector<recursive_variant_>, bang_tuple<recursive_variant_>,
+    bang_union<recursive_variant_>, bang_parameter_pack<recursive_variant_>,
+    context_value, context_identifier, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
+    lambda<recursive_variant_>,
+    unary_expression<recursive_variant_>,
+    binary_expression<recursive_variant_>,
+    //assign_expression<>, logic_and_expression<>, logic_or_expression<>, concat_expression<>,
+    expression_vector<recursive_variant_>,
+    function_call<recursive_variant_>,
+    new_expression<recursive_variant_>,
+    annotated_entity_identifier,
+    opt_named_syntax_expression_list<recursive_variant_>
+    
+    //, chained_expression<recursive_variant_>
+    //, ctprocedure
+>::type;
+
+using parameter_constraint_set_t = parameter_constraint_set<syntax_expression_t>;
+using parameter_t = parameter<syntax_expression_t>;
+using fn_pure_t = fn_pure<syntax_expression_t>;
+using lambda_t = lambda<syntax_expression_t>;
+using opt_named_syntax_expression_t = opt_named_term<syntax_expression_t>;
+using opt_named_syntax_expression_list_t = opt_named_syntax_expression_list<syntax_expression_t>;
+
+using bang_parameter_pack_t = bang_parameter_pack<syntax_expression_t>;
+
+struct field_t
+{
+    annotated_identifier name;
+    parameter_constraint_modifier_t modifier;
+    syntax_expression_t type;
+    optional<syntax_expression_t> value;
+};
+using field_list_t = std::vector<field_t>;
+
+using parameter_list_t = std::vector<parameter_t>;
+
+using parameter_woa_t = parameter_woa<syntax_expression_t>;
+using parameter_woa_list_t = parameter_woa_list<syntax_expression_t>;
 
 
 using expression_list_t = small_vector<syntax_expression_t, 4>;
@@ -835,7 +842,7 @@ struct extern_function_decl
 
 using extension_list_t = std::vector<annotated_qname_identifier>;
 
-struct fn_decl_t : fn_pure
+struct fn_decl_t : fn_pure_t
 {
     statement_span body;
 };
@@ -852,17 +859,17 @@ struct using_decl
 
 struct struct_decl
 {
-    variant<annotated_qname, fn_pure> decl;
+    variant<annotated_qname, fn_pure_t> decl;
     variant<field_list_t, statement_span> body;
 
     inline bool is_function() const noexcept
     {
-        return get<fn_pure>(&decl) != nullptr;
+        return get<fn_pure_t>(&decl) != nullptr;
     }
 
-    fn_pure const* as_fn() const noexcept
+    fn_pure_t const* as_fn() const noexcept
     {
-        return get<fn_pure>(&decl);
+        return get<fn_pure_t>(&decl);
     }
 
     annotated_qname const* as_name() const noexcept
@@ -872,7 +879,7 @@ struct struct_decl
 
     inline qname_view name() const noexcept
     {
-        if (auto const* pfn = get<fn_pure>(&decl); pfn) {
+        if (auto const* pfn = get<fn_pure_t>(&decl); pfn) {
             return pfn->name();
         }
         return get<annotated_qname>(decl).value;
@@ -880,7 +887,7 @@ struct struct_decl
 
     lex::resource_location const& location() const noexcept
     {
-        if (auto const* pfn = get<fn_pure>(&decl); pfn) {
+        if (auto const* pfn = get<fn_pure_t>(&decl); pfn) {
             return pfn->location();
         }
         return get<annotated_qname>(decl).location;
@@ -933,7 +940,6 @@ using return_decl_t = return_decl<syntax_expression_t>;
 using expression_statement_t = expression_decl<syntax_expression_t>;
 //using assign_decl_t = assign_decl<syntax_expression_t>;
 
-//using infunction_declaration_t = typename infunction_statement<syntax_expression_t>::type;
 //using fn_decl_t = fn_decl<infunction_declaration_t>;
 
 struct if_decl
@@ -967,7 +973,7 @@ using generic_statement_type = variant<
 >;
 
 using statement = variant<
-    extern_var, let_statement, expression_statement_t, fn_pure,
+    extern_var, let_statement, expression_statement_t, fn_pure_t,
     include_decl, struct_decl, using_decl, enum_decl, return_decl_t,
     fn_decl_t, if_decl, while_decl, for_decl, break_statement_t, continue_statement_t
 >;
@@ -985,8 +991,6 @@ struct statement_entry : statement_entry_type { using statement_entry_type::stat
 using managed_statement_list = managed_linked_list<statement, unit>;
 
 static_assert(sizeof(statement_entry) == sizeof(statement_entry_type));
-
-//struct infunction_statement : infunction_statement_type { using infunction_statement_type::infunction_statement_type; };
 
 //using declaration_t = variant<
 //    extern_var, let_statement_decl_t, expression_statement_t, fn_pure,
@@ -1023,8 +1027,6 @@ struct statement_adopt_visitor : static_visitor<StatementT>
 //    include_decl, type_decl, enum_decl
 //>;
 
-
-//using infunction_declaration_set_t = std::vector<infunction_statement>;
 
 template <typename LocationT>
 void update_location(LocationT & loc, const char* text)

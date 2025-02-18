@@ -51,7 +51,7 @@ enum class builtin_qnid : size_t
     fn = 0,
     ellipsis, tuple, identifier, qname, object, string, decimal, integer, boolean, any,
     metaobject, typeof,
-    make_tuple, new_, eq, ne, plus, negate, implicit_cast, get, set,
+    make_tuple, new_, init, eq, ne, plus, negate, implicit_cast, get, set,
     eof_builtin_qnids_value
 };
 
@@ -171,6 +171,16 @@ public:
 #endif
     }
 
+    inline identifier_entity const& eregistry_find_or_create(identifier id)
+    {
+        identifier_entity sample{ id };
+        return static_cast<identifier_entity&>(eregistry_find_or_create(sample, [this, id]() {
+            auto result = make_shared<identifier_entity>(id);
+            result->set_type(get(builtin_eid::identifier));
+            return result;
+        }));
+    }
+
     template <typename FtorT>
     inline void eregistry_traverse(FtorT const& ftor) const
     {
@@ -286,7 +296,7 @@ protected:
     OutputIteratorT name_printer(qname_view const&, OutputIteratorT, UndefinedFT const&) const;
 
 
-    std::pair<functional*, fn_pure> parse_extern_fn(string_view signature);
+    std::pair<functional*, fn_pure_t> parse_extern_fn(string_view signature);
 
     template <std::derived_from<external_fn_pattern> PT>
     void set_extern(string_view sign, void(*pfn)(vm::context&));

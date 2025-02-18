@@ -15,14 +15,16 @@ struct ct_expression_visitor : static_visitor<std::expected<entity_identifier, e
 {
     fn_compiler_context& ctx;
     annotated_entity_identifier expected_result;
+    bool is_type_expected; // type or entity
 
     explicit ct_expression_visitor(fn_compiler_context& c)
         : ctx{ c }
     {}
 
-    ct_expression_visitor(fn_compiler_context& c, annotated_entity_identifier&& er)
+    ct_expression_visitor(fn_compiler_context& c, annotated_entity_identifier&& er, bool is_type_expected_value = true)
         : ctx{ c }
         , expected_result{ std::move(er) }
+        , is_type_expected { is_type_expected_value }
     {}
 
     result_type operator()(annotated_bool const&) const;

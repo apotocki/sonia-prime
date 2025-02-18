@@ -57,7 +57,7 @@ struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
 
     result_type operator()(chained_expression_t&) const;
 
-    result_type operator()(lambda&) const;
+    result_type operator()(lambda_t&) const;
 
     result_type operator()(annotated_entity_identifier const& ee) const;
 
@@ -77,7 +77,7 @@ struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
 
     result_type operator()(opt_named_syntax_expression_list_t const&) const;
 
-    function_entity& handle_lambda(lambda&) const;
+    function_entity& handle_lambda(lambda_t&) const;
     std::expected<function_entity const*, error_storage> handle_property_get(annotated_identifier id) const;
 
 

@@ -10,23 +10,21 @@ namespace sonia::lang::bang {
 
 class variable_entity : public entity
 {
-    qname_identifier name_;
-
 public:
     enum class kind
     {
         EXTERN, STATIC, LOCAL, SCOPE_LOCAL
     };
 
-    inline variable_entity(entity_identifier type, qname_identifier name, kind k) noexcept
+    inline variable_entity(entity_identifier type, qname_identifier nameval, kind k) noexcept
         : entity{ }
-        , name_{ std::move(name) }
+        , name{ std::move(nameval) }
         , kind_{ k }
     {
         set_type(type);
     }
 
-    inline qname_identifier name() const noexcept { return name_; }
+    qname_identifier name;
 
     inline kind const& varkind() const noexcept { return kind_; }
     inline bool is_weak() const noexcept { return is_weak_; }
@@ -36,11 +34,11 @@ public:
 
     inline void set_weak(bool val = true) noexcept { is_weak_ = val; }
 
-    inline size_t hash() const noexcept override { return hash_value(name_); }
+    inline size_t hash() const noexcept override { return hash_value(name); }
     inline bool equal(entity const& rhs) const noexcept
     { 
         if (variable_entity const* verhs = dynamic_cast<variable_entity const*>(&rhs); verhs) {
-            return verhs->name_ == name_;
+            return verhs->name == name;
         }
         return false;
     }

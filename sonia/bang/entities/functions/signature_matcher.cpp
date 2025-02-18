@@ -10,7 +10,7 @@
 
 namespace sonia::lang::bang {
 
-signature_matcher_visitor::signature_matcher_visitor(fn_compiler_context & ctx, functional_binding_set& bs, entity_identifier eid)
+signature_matcher_visitor::signature_matcher_visitor(fn_compiler_context & ctx, functional_binding& bs, entity_identifier eid)
     : ctx_{ ctx }
     , binding_{ bs }
     , eid_ { eid }
@@ -21,18 +21,17 @@ signature_matcher_visitor::signature_matcher_visitor(fn_compiler_context & ctx, 
 signature_matcher_visitor::result_type signature_matcher_visitor::operator()(variable_identifier const& var) const
 {
     auto opteid = ctx_.lookup_entity(var.name);
-    if (!opteid) {
+    if (!opteid) return std::move(opteid.error());
+    if (!*opteid) {
         if (var.implicit) { // var.name.value.is_relative() && var.name.value.size() == 1) {
             // bind variable
             BOOST_ASSERT(var.name.value.is_relative() && var.name.value.size() == 1);
             identifier varid = *var.name.value.begin();
-            binding_.emplace_back(varid, eid_);
+            binding_.emplace_back(annotated_identifier{ varid, var.name.location }, eid_);
             return {};
         }
-        return std::move(opteid.error());
+        return make_error<undeclared_identifier_error>(var.name);
     }
-    BOOST_ASSERT(*opteid);
-    //if (!*opteid) return make_error<undeclared_identifier_error>(var.name);
 
     if (*opteid != eid_) {
         return make_error<basic_general_error>(var.name.location, "argument mismatch"sv, var);

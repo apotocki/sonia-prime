@@ -75,6 +75,13 @@ public:
 
     std::ostream& print_to(std::ostream& os, unit const& u) const override
     {
+#ifdef SONIA_LANG_DEBUG
+        if constexpr (std::is_same_v<ValueT, identifier>) {
+            return entity::print_to(os, u) << "identifier_entity("sv << value_.debug_name << ")"sv;
+        } else {
+            return entity::print_to(os, u) << "value_entity("sv << value_ << ")"sv;
+        }
+#endif
         return entity::print_to(os, u) << "value_entity("sv << value_ << ")"sv;
     }
 
@@ -98,6 +105,8 @@ using integer_literal_entity = value_entity<mp::integer>;
 using decimal_literal_entity = value_entity<mp::decimal>;
 using identifier_entity = value_entity<identifier>;
 using qname_identifier_entity = value_entity<qname_identifier>;
+
+using entity_ptr = shared_ptr<entity>;
 
 class enum_entity;
 class variable_entity;

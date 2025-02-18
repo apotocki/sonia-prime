@@ -229,7 +229,6 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 // 1 priority
 %right IDENTIFIER INTERNAL_IDENTIFIER RESERVED_IDENTIFIER
 
-
 // STATEMENTS
 %token INCLUDE
 %type <statement> statement infunction-statement
@@ -253,7 +252,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token INLINE
 %token <sonia::lang::lex::resource_location> FN "`fn`"
 %type <fn_kind> fn-start-decl
-%type <fn_pure> fn-decl
+%type <fn_pure_t> fn-decl
 %type <sonia::lang::bang::annotated_qname> fn-name
 
 // ENUMERATIONS
@@ -309,7 +308,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token <annotated_bool> FALSE_WORD "false"
 
 %type <syntax_expression_t> syntax-expression syntax-expression-wo-ii concept-expression
-%type <syntax_expression_t> apostrophe-expression new-expression call-expression compound-expression
+%type <syntax_expression_t> apostrophe-expression new-expression call-expression lambda-expression compound-expression
 //%type <named_expression_list_t> opt-named-expr-list-any opt-named-expr-list
 //%type <named_expression_t> opt-named-expr
 //%type <expression_list_t> expression-list-any
@@ -372,8 +371,8 @@ finished_statement_any:
 statement:
       EXTERN VAR identifier COLON type-expr[type]
         { $$ = extern_var{ std::move($identifier), std::move($type) }; }
-    | EXTERN fn-decl[fn]
-        { $$ = std::move($fn); }
+    | EXTERN FN fn-decl[fn]
+        { $$ = std::move($fn); IGNORE_TERM($FN); }
     | INCLUDE STRING
         { $$ = include_decl{ctx.make_string(std::move($STRING)) }; }
     | enum-decl[enum]
@@ -381,9 +380,9 @@ statement:
     //| type-decl
     //    { $$ = std::move($1); }
     
-    | fn-start-decl fn-decl[fn] ARROWEXPR syntax-expression[type]
+    | fn-start-decl[fnkind] fn-decl[fn] ARROWEXPR syntax-expression[type]
         {
-            $2.kind = $1;
+            $2.kind = $fnkind;
             auto sts = ctx.new_statement_list();
             sts.emplace_back(return_decl_t{ std::move($type) });
             $$ = fn_decl_t{ std::move($fn), ctx.push(std::move(sts)) };
@@ -451,12 +450,12 @@ finished_statement:
         { $$ = if_decl{ std::move($2), ctx.push(std::move($body)) }; }
     | IF syntax-expression braced-statements[trueBody] ELSE braced-statements[falseBody]
         { $$ = if_decl{ std::move($2), ctx.push(std::move($trueBody)), ctx.push(std::move($falseBody)) }; }
-    | fn-start-decl fn-decl braced-statements[body]
-        { $2.kind = $1; $$ = fn_decl_t{ std::move($2), ctx.push(std::move($body)) };  }
+    | fn-start-decl[fnkind] fn-decl[fn] braced-statements[body]
+        { $fn.kind = $fnkind; $$ = fn_decl_t{ std::move($fn), ctx.push(std::move($body)) }; }
     | STRUCT qname braced-statements[body]
         { $$ = struct_decl{ std::move($qname), ctx.push(std::move($body)) }; }
     | STRUCT qname OPEN_PARENTHESIS[beginParams] parameter-list-opt[parameters] CLOSE_PARENTHESIS braced-statements[body]
-        { $$ = struct_decl{ fn_pure{ std::move($qname), std::move($parameters) }, ctx.push(std::move($body)) }; IGNORE_TERM($beginParams); }
+        { $$ = struct_decl{ fn_pure_t{ std::move($qname), std::move($parameters) }, ctx.push(std::move($body)) }; IGNORE_TERM($beginParams); }
     ;
 
 infunction-statement-set:
@@ -520,10 +519,10 @@ qname:
 
 ///////////////////////////////////////////////// FUNCTIONS
 fn-start-decl:
-      %empty
-        { $$ = fn_kind::DEFAULT; }
-    | INLINE
-        { $$ = fn_kind::INLINE; }
+      FN
+        { $$ = fn_kind::DEFAULT; IGNORE_TERM($FN); }
+    | INLINE FN
+        { $$ = fn_kind::INLINE; IGNORE_TERM($FN); }
     ;
 
 fn-name:
@@ -532,10 +531,10 @@ fn-name:
     ;
 
 fn-decl:
-      FN fn-name[name] OPEN_PARENTHESIS parameter-list-opt[parameters] CLOSE_PARENTHESIS
-        { $$ = fn_pure{ std::move($name), std::move($parameters), nullopt }; IGNORE_TERM($OPEN_PARENTHESIS); IGNORE_TERM($FN); }
-    | FN fn-name[name] OPEN_PARENTHESIS parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROW syntax-expression[type]
-        { $$ = fn_pure{ std::move($name), std::move($parameters), std::move($type) }; IGNORE_TERM($OPEN_PARENTHESIS); IGNORE_TERM($FN); }
+      fn-name[name] OPEN_PARENTHESIS parameter-list-opt[parameters] CLOSE_PARENTHESIS
+        { $$ = fn_pure_t{ std::move($name), std::move($parameters), nullopt }; IGNORE_TERM($OPEN_PARENTHESIS); }
+    | fn-name[name] OPEN_PARENTHESIS parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROW type-expr[type]
+        { $$ = fn_pure_t{ std::move($name), std::move($parameters), std::move($type) }; IGNORE_TERM($OPEN_PARENTHESIS); }
     ;
 
 ///////////////////////////////////////////////// ENUMERATIONS
@@ -570,7 +569,7 @@ struct-decl:
       qname ARROWEXPR OPEN_PARENTHESIS[begin] field-list-opt[fields] CLOSE_PARENTHESIS
         { $$ = struct_decl{ std::move($qname), std::move($fields) }; IGNORE_TERM($begin); }
     | qname OPEN_PARENTHESIS[beginParams] parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROWEXPR OPEN_PARENTHESIS[begin] field-list-opt[fields] CLOSE_PARENTHESIS
-        { $$ = struct_decl{ fn_pure{ std::move($qname), std::move($parameters) }, std::move($fields) }; IGNORE_TERM($beginParams); IGNORE_TERM($begin); }
+        { $$ = struct_decl{ fn_pure_t{ std::move($qname), std::move($parameters) }, std::move($fields) }; IGNORE_TERM($beginParams); IGNORE_TERM($begin); }
     ;
 
 ///////////////////////////////////////////////// ALIASES
@@ -812,8 +811,6 @@ syntax-expression-wo-ii:
          { $$ = member_expression_t{ std::move($object), annotated_integer{ ctx.make_integer($property.value.substr(1)), $property.location } }; IGNORE_TERM($2); }
     | EXCLPT syntax-expression
 		{ $$ = unary_expression_t{ unary_operator_type::NEGATE, true, std::move($2), std::move($1) }; }
-    | syntax-expression ELLIPSIS
-        { $$ = bang_parameter_pack_t{ std::move($1)}; IGNORE_TERM($2); }
     | syntax-expression PLUS syntax-expression
         { $$ = binary_expression_t{ binary_operator_type::PLUS, std::move($1), std::move($3), std::move($2) }; }
 //////////////////////////// 3 priority
@@ -828,6 +825,7 @@ syntax-expression-wo-ii:
     | apostrophe-expression
     | new-expression
     | compound-expression
+    | lambda-expression
     ;
 
 apostrophe-expression:
@@ -853,10 +851,21 @@ call-expression:
         { $$ = function_call_t{ std::move($start), std::move($nameExpr), std::move($arguments) }; }
     | apostrophe-expression[nameExpr] OPEN_PARENTHESIS[start] argument-list-opt[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($start), std::move($nameExpr), std::move($arguments) }; }
+    | lambda-expression[lambda] OPEN_PARENTHESIS[start] argument-list-opt[arguments] CLOSE_PARENTHESIS
+        { $$ = function_call_t{ std::move($start), std::move($lambda), std::move($arguments) }; }
+    ;
+
+lambda-expression:
+      fn-start-decl[fnkind] OPEN_PARENTHESIS[start] parameter-list-opt[parameters] CLOSE_PARENTHESIS braced-statements[body]
+        { $$ = lambda_t{std::move($start), std::move($parameters), std::move($body) }; IGNORE_TERM($fnkind);  }
+    | fn-start-decl[fnkind] OPEN_PARENTHESIS[start] parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROW type-expr[type] braced-statements[body]
+        { $$ = lambda_t{std::move($start), std::move($parameters), std::move($body), std::move($type)}; IGNORE_TERM($fnkind); }
     ;
 
 compound-expression:
-      call-expression
+        call-expression
+      | syntax-expression ELLIPSIS
+        { $$ = bang_parameter_pack_t{ std::move($1)}; IGNORE_TERM($2); }
     /*
     | syntax-expression OPEN_BRACE argument-list-opt[arguments] CLOSE_BRACE
         { 
@@ -943,8 +952,9 @@ parameter-woa-decl:
 type-expr:
       qname
         { $$ = variable_identifier{ std::move($qname) }; }
-    //| qname OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
-    //    { $$ = std::move($1); IGNORE_TERM($2); IGNORE_TERM($3); }
+    | call-expression
+    //| qname OPEN_PARENTHESIS[start] argument-list-opt[arguments] CLOSE_PARENTHESIS
+    //    { $$ = std::move($1); IGNORE_TERM($start); IGNORE_TERM($arguments); }
     | INTERNAL_IDENTIFIER[id]
         { $$ = variable_identifier{ ctx.make_qname(std::move($id)), true }; }
     //| internal_identifier[id] OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
@@ -982,13 +992,7 @@ opt-type-list:
 
     /*
 expression:
-    //| FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction-statement-any CLOSE_BRACE
-    //    { $$ = lambda{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), nullopt, std::move($6), std::move($1)}; IGNORE_TERM($5); }
-    //| OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS OPEN_BRACE infunction-statement-any CLOSE_BRACE
-    //    { $$ = lambda{annotated_qname{qname{ctx.new_identifier()}, $1}, std::move($2), nullopt, std::move($5), $1}; IGNORE_TERM($4); }
-    //| FN OPEN_PARENTHESIS parameter-woa-list-opt CLOSE_PARENTHESIS ARROW type-expr OPEN_BRACE infunction-statement-any CLOSE_BRACE
-    //    { $$ = lambda{annotated_qname{qname{ctx.new_identifier()}, std::move($2)}, std::move($3), std::move($6), std::move($8), std::move($1)}; IGNORE_TERM($7); }
-    | OPEN_SQUARE_BRACKET expression-list-any CLOSE_SQUARE_BRACKET
+      OPEN_SQUARE_BRACKET expression-list-any CLOSE_SQUARE_BRACKET
         { $$ = expression_vector_t{ {std::move($2)}, std::move($1) }; }
     | expression QMARK
         { $$ = not_empty_expression_t{ std::move($1) }; }

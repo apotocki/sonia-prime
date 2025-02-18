@@ -655,7 +655,7 @@ expression_visitor::result_type expression_visitor::operator()(expression_vector
 #endif
 }
 
-function_entity& expression_visitor::handle_lambda(lambda& l) const
+function_entity& expression_visitor::handle_lambda(lambda_t& l) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor handle_lambda");
 #if 0
@@ -668,7 +668,7 @@ function_entity& expression_visitor::handle_lambda(lambda& l) const
 #endif
 }
 
-expression_visitor::result_type expression_visitor::operator()(lambda & l) const
+expression_visitor::result_type expression_visitor::operator()(lambda_t & l) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor lambda_t");
 

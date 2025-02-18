@@ -75,7 +75,7 @@ public:
         if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
             fnbuilder_.append_fset(pv.entity->index());
         } else if (varkind == variable_entity::kind::EXTERN) {
-            string_view varname = unit_.as_string(unit_.fregistry().resolve(pv.entity->name()).name().back());
+            string_view varname = unit_.as_string(unit_.fregistry().resolve(pv.entity->name).name().back());
             smart_blob strbr{ string_blob_result(varname) };
             strbr.allocate();
             fnbuilder_.append_push_pooled_const(std::move(strbr));

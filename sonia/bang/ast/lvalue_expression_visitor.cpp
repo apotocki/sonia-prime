@@ -94,7 +94,7 @@ lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(pro
 }
 #endif
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(lambda const&) const
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(lambda_t const&) const
 {
     THROW_NOT_IMPLEMENTED_ERROR();
 }

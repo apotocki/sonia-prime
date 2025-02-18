@@ -26,39 +26,33 @@ class functional_binding
 public:
     virtual ~functional_binding() = default;
 
-    virtual optional<span<const entity_identifier>> lookup(identifier id) const noexcept = 0;
+    using value_type = variant<entity_identifier, shared_ptr<entity>>;
+
+    // bouund entity_identifier can not be changed, but bound entity can be updated
+    virtual optional<value_type> lookup(identifier) const noexcept = 0;
+    virtual void emplace_back(annotated_identifier, value_type) = 0;
 };
 
 class functional_binding_set : public functional_binding
 {
-    small_vector<entity_identifier, 16> binding_;
+    small_vector<value_type, 16> binding_;
     small_vector<identifier, 16> binding_names_;
+    small_vector<lex::resource_location, 16> binding_locations_;
 
 public:
-    inline void reset() noexcept
-    {
-        binding_.clear();
-        binding_names_.clear();
-    }
+    inline void reset() noexcept;
+    
+    optional<value_type> lookup(identifier) const noexcept override;
 
-    optional<span<const entity_identifier>> lookup(identifier id) const noexcept override
-    {
-        auto it = std::lower_bound(binding_names_.begin(), binding_names_.end(), id);
-        if (it == binding_names_.end() || *it != id) return {};
-        auto bit = it;
-        for (++it; it != binding_names_.end() && *it == id; ++it);
-        return span{ binding_.data() + (bit - binding_names_.begin()), static_cast<size_t>(it - bit) };
-    }
+    void emplace_back(annotated_identifier, value_type) override;
 
-    void emplace_back(identifier id, entity_identifier value)
+    template <typename FT>
+    requires std::is_invocable_v<FT, identifier, lex::resource_location const&, value_type&>
+    void for_each(FT && ftor)
     {
-        auto it = std::lower_bound(binding_names_.begin(), binding_names_.end(), id);
-        if (it == binding_names_.end() || *it != id) {
-            it = binding_names_.emplace(it, id);
-            binding_.emplace(binding_.begin() + (it - binding_names_.begin()), std::move(value));
-        } else {
-            for (++it; it != binding_names_.end() && *it == id; ++it);
-            binding_.emplace(binding_.begin() + (it - binding_names_.begin()), std::move(value));
+        for (auto it = binding_names_.begin(), eit = binding_names_.end(); it != eit; ++it) {
+            auto pos = it - binding_names_.begin();
+            std::forward<FT>(ftor)(*it, binding_locations_[pos], binding_[pos]);
         }
     }
 };
@@ -78,7 +72,6 @@ struct parameter_match_result
 
     small_vector<se_rng_t, 4> expressions;
     small_vector<entity_identifier, 4> result;
-    small_vector<annotated_identifier, 2> internal_names;
     uint8_t mod = (uint8_t)modifier::undefined;
 
     void append_result(bool variadic, entity_identifier, se_cont_iterator before_start_it, semantic::expression_list_t&);
@@ -92,7 +85,7 @@ struct parameter_match_result
     inline bool is_variadic() const noexcept { return !!(mod & (uint8_t)modifier::is_variadic); }
 };
 
-class functional_match_descriptor : public functional_binding
+class functional_match_descriptor
 {
     //using se_cont_iterator = semantic::expression_list_t::const_iterator;
     //using se_rng_t = std::pair<se_cont_iterator, se_cont_iterator>;
@@ -115,11 +108,6 @@ public:
 
     functional_match_descriptor(functional_match_descriptor const&) = delete;
     functional_match_descriptor& operator= (functional_match_descriptor const&) = delete;
-
-    optional<span<const entity_identifier>> lookup(identifier id) const noexcept override;
-
-    //void push_named_argument_expressions(identifier, se_cont_iterator &, semantic::managed_expression_list const&);
-    //void push_unnamed_argument_expressions(size_t, se_cont_iterator&, semantic::managed_expression_list const&);
 
     template <typename FT>
     inline void for_each_named_match(FT && ft) const

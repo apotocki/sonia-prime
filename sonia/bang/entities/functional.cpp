@@ -15,6 +15,37 @@
 
 namespace sonia::lang::bang {
 
+void functional_binding_set::reset() noexcept
+{
+    binding_.clear();
+    binding_names_.clear();
+}
+
+optional<functional_binding::value_type> functional_binding_set::lookup(identifier id) const noexcept
+{
+    auto it = std::lower_bound(binding_names_.begin(), binding_names_.end(), id);
+    if (it == binding_names_.end() || *it != id) return nullopt;
+    return binding_[it - binding_names_.begin()];
+    //auto bit = it;
+    //for (++it; it != binding_names_.end() && *it == id; ++it);
+    //return span{ binding_.data() + (bit - binding_names_.begin()), static_cast<size_t>(it - bit) };
+}
+
+void functional_binding_set::emplace_back(annotated_identifier id, value_type value)
+{
+    auto it = std::lower_bound(binding_names_.begin(), binding_names_.end(), id.value);
+    if (it == binding_names_.end() || *it != id.value) {
+        it = binding_names_.emplace(it, id.value);
+        auto pos = it - binding_names_.begin();
+        binding_.emplace(binding_.begin() + pos, std::move(value));
+        binding_locations_.emplace(binding_locations_.begin() + pos, id.location);
+    } else {
+        THROW_INTERNAL_ERROR("functional_binding_set::emplace_back duplicate binding");
+        //for (++it; it != binding_names_.end() && *it == id; ++it);
+        //binding_.emplace(binding_.begin() + (it - binding_names_.begin()), std::move(value));
+    }
+}
+
 void parameter_match_result::append_result(bool variadic, entity_identifier r, se_cont_iterator before_start_it, semantic::expression_list_t& exprs)
 {
     set_variadic(variadic);
@@ -76,11 +107,6 @@ void parameter_match_result::set_variadic(bool v_val)
 //    }
 //}
 
-
-optional<span<const entity_identifier>> functional_match_descriptor::lookup(identifier id) const noexcept
-{
-    return bindings.lookup(id);
-}
 
 parameter_match_result& functional_match_descriptor::get_match_result(identifier param_name)
 {
@@ -281,7 +307,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
             int match_weight = (**match_descriptor).weight;
             if (cmp == std::strong_ordering::less || minor_weight < match_weight) {
                 major_weight = p->get_weight();
-                minor_weight = (**match_descriptor).weight;
+                minor_weight = match_weight;
                 alternatives.clear();
                 alternatives.emplace_back(p.get(), std::move(*match_descriptor));
             } else if (minor_weight == match_weight) { // cmp == std::strong_ordering::equal

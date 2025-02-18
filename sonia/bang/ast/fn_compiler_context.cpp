@@ -239,13 +239,13 @@ fn_compiler_context::~fn_compiler_context()
 entity_identifier fn_compiler_context::get_bound(identifier name) const
 {
     for (functional_binding const* binding : boost::adaptors::reverse(bindings_)) {
-        if (auto optval = binding->lookup(name); optval && !optval->empty()) {
-            if (optval->size() == 1) {
-                return optval->front();
+        if (auto optval = binding->lookup(name); optval) {
+            //if (optval.size() == 1) {
+                return get<entity_identifier>(*optval);
                 //if (entity_identifier const* pe = get<entity_identifier>(&optval->front()); pe) return *pe;
-            } else {
-                THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context::get_bound variadic bound value");
-            }
+            //} else {
+            //    THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context::get_bound variadic bound value");
+            //}
         }
     }
     return {};
@@ -451,7 +451,8 @@ std::expected<entity_identifier, error_storage> fn_compiler_context::lookup_enti
 
     functional const* pfn = lookup_functional(name.value);
     if (pfn) return pfn->default_entity(*this);
-    return std::unexpected(make_error<undeclared_identifier_error>(name));
+    return entity_identifier{}; // undeclared
+    //return std::unexpected(make_error<undeclared_identifier_error>(name));
 }
 
 std::expected<functional::match, error_storage> fn_compiler_context::find(builtin_qnid qnid, pure_call_t const& call, annotated_entity_identifier const& expected_result)
@@ -491,10 +492,10 @@ variable_entity& fn_compiler_context::create_captured_variable_chain(variable_en
 {
     if (!parent_) {
         THROW_INTERNAL_ERROR("can't find fn context for variable: '%1%', current context ns: '%2%'"_fmt %
-            u().print(v.name()) % u().print(ns())
+            u().print(v.name) % u().print(ns())
         );
     }
-    qname_view name_qv = u().fregistry().resolve(v.name()).name();
+    qname_view name_qv = u().fregistry().resolve(v.name).name();
     qname_view vardefscope = name_qv.parent();
     if (vardefscope.has_prefix(parent_->base_ns())) {
         return new_captured_variable(name_qv.back(), v.get_type(), v);

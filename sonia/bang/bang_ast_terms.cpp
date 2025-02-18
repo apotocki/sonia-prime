@@ -25,7 +25,7 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     inline result_type operator()(context_identifier const& ce) const noexcept { return ce.start; }
     inline result_type operator()(not_empty_expression_t const& me) const noexcept { return apply_visitor(*this, me.value); }
     inline result_type operator()(member_expression_t const& me) const noexcept { return me.start(); }
-    inline result_type operator()(lambda const& le) const noexcept { return le.start; }
+    inline result_type operator()(lambda_t const& le) const noexcept { return le.location(); }
     //inline result_type operator()(annotated_entity_identifier const& ee) const noexcept { return ee.location; }
 
     inline result_type operator()(unary_expression_t const& ue) const noexcept { return ue.start(); }

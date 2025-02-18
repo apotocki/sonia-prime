@@ -22,6 +22,8 @@ public:
 
     inline entity_signature const* signature() const noexcept override final { return &sig_; }
 
+    inline entity_signature * signature() noexcept { return &sig_; }
+
     entity_identifier element_type() const { return sig_.positioned_fields().front().entity_id(); }
 
     void visit(entity_visitor const& v) const override { v(*this); }

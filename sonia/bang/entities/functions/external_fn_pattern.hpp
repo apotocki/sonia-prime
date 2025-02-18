@@ -14,10 +14,11 @@ class external_fn_pattern : public runtime_fn_pattern
     size_t extfnid_;
 
 public:
-    external_fn_pattern(fn_compiler_context& ctx, functional const& fnl, fn_pure& decl, size_t extfnid)
-        : runtime_fn_pattern{ ctx, fnl, decl }
+    external_fn_pattern(functional const& fnl, size_t extfnid)
+        : runtime_fn_pattern{ fnl }
         , extfnid_{ extfnid }
     {}
+
 
     //fieldset_t const& get_fieldset() const noexcept override { return fd_; }
     

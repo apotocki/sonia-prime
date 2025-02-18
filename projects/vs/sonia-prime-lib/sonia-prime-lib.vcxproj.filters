@@ -2346,6 +2346,9 @@
     <ClInclude Include="..\..\..\sonia\bang\utility\linked_list.ipp">
       <Filter>sonia.bang\utility</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\variable_pack_entity.hpp">
+      <Filter>sonia.bang\entities\ellipsis</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

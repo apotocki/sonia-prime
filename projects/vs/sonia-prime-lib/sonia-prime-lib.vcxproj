@@ -261,6 +261,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\const_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\variable_pack_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\expression_resolver.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\extern\to_string_pattern.hpp" />

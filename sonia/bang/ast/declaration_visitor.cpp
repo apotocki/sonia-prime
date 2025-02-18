@@ -105,13 +105,15 @@ error_storage declaration_visitor::operator()(struct_decl const& sd) const
             return fnl.set_default_entity(annotated_entity_identifier{ sent->id(), qn.location });
         }
 
-        error_storage operator()(fn_pure const& fn) const
+        error_storage operator()(fn_pure_t const& fn) const
         {
             // to do: check the allowence of absolute qname
             qname fn_qname = ctx_.ns() / fn.name();
             functional& fnl = ctx_.u().fregistry().resolve(fn_qname);
-            fnl.push(make_shared<struct_fn_pattern>(ctx_, fnl, fn, sd_.body));
-            return {};
+            auto ptrn = make_shared<struct_fn_pattern>(fnl, sd_.body);
+            error_storage err = ptrn->init(ctx_, fn);
+            if (!err) fnl.push(std::move(ptrn));
+            return err;
         };
     };
 
@@ -289,7 +291,7 @@ error_storage declaration_visitor::operator()(break_statement_t const&) const
     return {};
 }
 
-void declaration_visitor::append_fnsig(fn_pure& fndecl, functional ** ppf) const
+void declaration_visitor::append_fnsig(fn_pure_t& fndecl, functional ** ppf) const
 {
 #if 0
     qname fn_qname = ctx.ns() / fndecl.name();
@@ -341,7 +343,7 @@ void declaration_visitor::append_fnsig(fn_pure& fndecl, functional ** ppf) const
 }
 
 // extern function declaration
-error_storage declaration_visitor::operator()(fn_pure const& fd) const
+error_storage declaration_visitor::operator()(fn_pure_t const& fd) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor fn_pure");
 #if 0
@@ -446,9 +448,10 @@ error_storage declaration_visitor::operator()(fn_decl_t const& fnd) const
     qname fn_qname = ctx.ns() / fnd.name();
     functional& fnl = ctx.u().resolve_functional(fn_qname);
 
-    auto fnptrn = make_shared<generic_fn_pattern>(ctx, fnl, fnd);
-    fnl.push(std::move(fnptrn));
-    return {};
+    auto fnptrn = make_shared<generic_fn_pattern>(fnl);
+    error_storage err = fnptrn->init(ctx, fnd);
+    if (!err) fnl.push(std::move(fnptrn));
+    return err;
 #if 0
     //---------------
     fieldset fnfs;

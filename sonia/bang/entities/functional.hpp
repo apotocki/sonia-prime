@@ -242,13 +242,6 @@ private:
 //using pattern_expression_t = variant<nullptr_t, annotated_qname_identifier, entity_identifier, pattern_local_variable, pattern_variable>;
 using patern_fieldset_t = fieldset<boost::container::small_vector<syntax_expression_t, 1>>;
 
-struct pattern_parameter_descriptor
-{
-    parameter_constraint_modifier_t modifier;
-    parameter_constraint_set_t constraints;
-    optional<syntax_expression_t> default_value;
-};
-
 class function_descriptor
 {
 public:

@@ -118,23 +118,24 @@ error_storage tuple_set_pattern::apply(fn_compiler_context& ctx, qname_identifie
     unit& u = ctx.u();
 
     // push call expressions in the right order
-    semantic::managed_expression_list args{ u };
     
+    semantic::expression_list_t& exprs = ctx.expressions();
+
     // only one named argument is expected
-    md.for_each_named_match([&args, &md](identifier name, parameter_match_result const& mr) {
+    md.for_each_named_match([&exprs, &md](identifier name, parameter_match_result const& mr) {
         for (auto rng : mr.expressions) {
             ++rng.second;
-            args.splice_back(md.call_expressions, rng.first, rng.second);
+            exprs.splice_back(md.call_expressions, rng.first, rng.second);
         }
     });
 
     BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
 
     if (size_t propindex = static_cast<tuple_set_match_descriptor&>(md).property_index(); propindex) {
-        u.push_back_expression(args, semantic::push_value{ propindex });
-        u.push_back_expression(args, semantic::invoke_function(u.get(builtin_eid::array_at)));
+        u.push_back_expression(exprs, semantic::push_value{ propindex });
+        u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
-    ctx.append_expression(ctx.store_semantic_expressions(std::move(args)));
+
     ctx.context_type = md.result;
     return {};
 }

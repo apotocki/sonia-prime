@@ -221,42 +221,43 @@ Grammar
   126                        | "`(`" argument-list "`)`"
   127                        | "`.`" identifier
   128                        | syntax-expression "`.`" identifier
-  129                        | syntax-expression INTEGER_INDEX
-  130                        | "`!`" syntax-expression
-  131                        | syntax-expression "`+`" syntax-expression
-  132                        | syntax-expression "`==`" syntax-expression
-  133                        | syntax-expression "`!=`" syntax-expression
-  134                        | apostrophe-expression
-  135                        | new-expression
-  136                        | compound-expression
-  137                        | lambda-expression
+  129                        | syntax-expression "`.`" apostrophe-expression
+  130                        | syntax-expression INTEGER_INDEX
+  131                        | "`!`" syntax-expression
+  132                        | syntax-expression "`+`" syntax-expression
+  133                        | syntax-expression "`==`" syntax-expression
+  134                        | syntax-expression "`!=`" syntax-expression
+  135                        | apostrophe-expression
+  136                        | new-expression
+  137                        | compound-expression
+  138                        | lambda-expression
 
-  138 apostrophe-expression: "APOSTROPHE" syntax-expression "APOSTROPHE"
+  139 apostrophe-expression: "APOSTROPHE" syntax-expression "APOSTROPHE"
 
-  139 new-expression: "`new`" qname
-  140               | "`new`" apostrophe-expression
-  141               | "`new`" qname "`(`" argument-list-opt "`)`"
-  142               | "`new`" apostrophe-expression "`(`" argument-list-opt "`)`"
+  140 new-expression: "`new`" qname
+  141               | "`new`" apostrophe-expression
+  142               | "`new`" qname "`(`" argument-list-opt "`)`"
+  143               | "`new`" apostrophe-expression "`(`" argument-list-opt "`)`"
 
-  143 call-expression: qname "`(`" argument-list-opt "`)`"
-  144                | call-expression "`(`" argument-list-opt "`)`"
-  145                | apostrophe-expression "`(`" argument-list-opt "`)`"
-  146                | lambda-expression "`(`" argument-list-opt "`)`"
+  144 call-expression: qname "`(`" argument-list-opt "`)`"
+  145                | call-expression "`(`" argument-list-opt "`)`"
+  146                | apostrophe-expression "`(`" argument-list-opt "`)`"
+  147                | lambda-expression "`(`" argument-list-opt "`)`"
 
-  147 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" braced-statements
-  148                  | fn-start-decl "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements
+  148 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" braced-statements
+  149                  | fn-start-decl "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements
 
-  149 compound-expression: call-expression
-  150                    | syntax-expression "`...`"
+  150 compound-expression: call-expression
+  151                    | syntax-expression "`...`"
 
-  151 type-expr: qname
-  152          | call-expression
-  153          | INTERNAL_IDENTIFIER
-  154          | "`[`" type-expr "`]`"
-  155          | "`(`" argument-list-opt "`)`"
-  156          | type-expr "`[`" INTEGER "`]`"
-  157          | type-expr "`|`" type-expr
-  158          | type-expr "`->`" type-expr
+  152 type-expr: qname
+  153          | call-expression
+  154          | INTERNAL_IDENTIFIER
+  155          | "`[`" type-expr "`]`"
+  156          | "`(`" argument-list-opt "`)`"
+  157          | type-expr "`[`" INTEGER "`]`"
+  158          | type-expr "`|`" type-expr
+  159          | type-expr "`->`" type-expr
 
 
 Terminals, with rules where they appear
@@ -267,19 +268,19 @@ Terminals, with rules where they appear
     COMMENT_END (259)
     STRING <sonia::lang::bang::annotated_string_view> (260) 12 123
     IDENTIFIER <sonia::lang::bang::annotated_string_view> (261) 49
-    INTERNAL_IDENTIFIER <sonia::lang::bang::annotated_string_view> (262) 50 86 97 98 108 109 115 153
+    INTERNAL_IDENTIFIER <sonia::lang::bang::annotated_string_view> (262) 50 86 97 98 108 109 115 154
     RESERVED_IDENTIFIER <sonia::lang::bang::annotated_string_view> (263) 124
-    INTEGER_INDEX <sonia::lang::bang::annotated_string_view> (264) 122 129
-    INTEGER <sonia::lang::bang::annotated_integer> (265) 119 156
+    INTEGER_INDEX <sonia::lang::bang::annotated_string_view> (264) 122 130
+    INTEGER <sonia::lang::bang::annotated_integer> (265) 119 157
     DECIMAL <sonia::lang::bang::annotated_decimal> (266) 120
     DECIMAL_S <sonia::lang::bang::annotated_decimal> (267) 121
     OPERATOR_TERM <sonia::string_view> (268)
     "`=`" <sonia::lang::lex::resource_location> (269) 19 45 76 83
-    "APOSTROPHE" (270) 138
+    "APOSTROPHE" (270) 139
     "`@`" (271) 114
     "`_`" <sonia::lang::lex::resource_location> (272) 110
     "`->*`" (273)
-    "`->`" (274) 59 148 158
+    "`->`" (274) 59 149 159
     "`=>`" (275) 14 66 67 68 69
     "`~>`" (276)
     "`.*`" (277)
@@ -289,12 +290,12 @@ Terminals, with rules where they appear
     "`>>`" (281)
     "`<=`" (282)
     "`>=`" (283)
-    "`==`" <sonia::lang::lex::resource_location> (284) 132
-    "`!=`" <sonia::lang::lex::resource_location> (285) 133
+    "`==`" <sonia::lang::lex::resource_location> (284) 133
+    "`!=`" <sonia::lang::lex::resource_location> (285) 134
     "`&&`" <sonia::lang::lex::resource_location> (286)
     "`||`" <sonia::lang::lex::resource_location> (287)
     "`..`" <sonia::lang::lex::resource_location> (288)
-    "`...`" <sonia::lang::lex::resource_location> (289) 98 107 109 150
+    "`...`" <sonia::lang::lex::resource_location> (289) 98 107 109 151
     "`+=`" (290)
     "`-=`" (291)
     "`*=`" (292)
@@ -307,24 +308,24 @@ Terminals, with rules where they appear
     "`^=`" (299)
     "`:`" (300) 10 23 77 82 83 95 96 97 98
     "`::`" (301) 51 53
-    "`(`" <sonia::lang::lex::resource_location> (302) 39 58 59 66 67 69 85 112 126 141 142 143 144 145 146 147 148 155
-    "`)`" (303) 39 58 59 66 67 69 85 112 126 141 142 143 144 145 146 147 148 155
+    "`(`" <sonia::lang::lex::resource_location> (302) 39 58 59 66 67 69 85 112 126 142 143 144 145 146 147 148 149 156
+    "`)`" (303) 39 58 59 66 67 69 85 112 126 142 143 144 145 146 147 148 149 156
     "`{`" <sonia::lang::lex::resource_location> (304) 31 60
     "`}`" (305) 31 60
-    "`[`" <sonia::lang::lex::resource_location> (306) 154 156
-    "`]`" (307) 154 156
+    "`[`" <sonia::lang::lex::resource_location> (306) 155 157
+    "`]`" (307) 155 157
     "`<`" (308)
     "`>`" (309)
     "`;`" (310) 7 9 28 30 33
-    "`.`" <sonia::lang::lex::resource_location> (311) 127 128
-    "`+`" <sonia::lang::lex::resource_location> (312) 131
+    "`.`" <sonia::lang::lex::resource_location> (311) 127 128 129
+    "`+`" <sonia::lang::lex::resource_location> (312) 132
     "`-`" (313)
     "`*`" (314)
     "`/`" (315)
     "`%`" (316)
     "`&`" (317)
-    "`|`" <sonia::lang::lex::resource_location> (318) 87 113 157
-    "`!`" <sonia::lang::lex::resource_location> (319) 130
+    "`|`" <sonia::lang::lex::resource_location> (318) 87 113 158
+    "`!`" <sonia::lang::lex::resource_location> (319) 131
     "`~`" (320)
     "`^`" (321)
     "," (322) 64 73 81 91
@@ -334,7 +335,7 @@ Terminals, with rules where they appear
     LET (326) 20 21
     VAR (327) 10
     EXTERN (328) 10 11
-    "`new`" <sonia::lang::lex::resource_location> (329) 57 139 140 141 142
+    "`new`" <sonia::lang::lex::resource_location> (329) 57 140 141 142 143
     "`while`" (330) 32 33
     "`for`" (331) 34
     "`in`" (332) 34
@@ -394,7 +395,7 @@ Nonterminals, with rules where they appear
         on right: 26 28 29 41
     braced-statements <managed_statement_list> (109)
         on left: 31
-        on right: 32 33 34 35 36 37 38 39 147 148
+        on right: 32 33 34 35 36 37 38 39 148 149
     finished_statement <finished_statement_type> (110)
         on left: 32 33 34 35 36 37 38 39
         on right: 6 8 27 29
@@ -415,10 +416,10 @@ Nonterminals, with rules where they appear
         on right: 95
     qname <sonia::lang::bang::annotated_qname> (116)
         on left: 51 52 53
-        on right: 38 39 53 56 60 66 67 68 69 84 85 111 112 114 125 139 141 143 151
+        on right: 38 39 53 56 60 66 67 68 69 84 85 111 112 114 125 140 142 144 152
     fn-start-decl <fn_kind> (117)
         on left: 54 55
-        on right: 14 37 147 148
+        on right: 14 37 148 149
     fn-name <sonia::lang::bang::annotated_qname> (118)
         on left: 56 57
         on right: 58 59
@@ -445,7 +446,7 @@ Nonterminals, with rules where they appear
         on right: 17
     argument-list-opt <named_expression_list_t> (126)
         on left: 70 71
-        on right: 85 112 141 142 143 144 145 146 155
+        on right: 85 112 142 143 144 145 146 147 156
     argument-list <named_expression_list_t> (127)
         on left: 72 73
         on right: 71 73 126
@@ -469,7 +470,7 @@ Nonterminals, with rules where they appear
         on right: 82 83 87
     parameter-list-opt <parameter_woa_list_t> (134)
         on left: 88 89
-        on right: 39 58 59 67 69 147 148
+        on right: 39 58 59 67 69 148 149
     parameter-list <parameter_woa_list_t> (135)
         on left: 90 91
         on right: 89 91
@@ -499,28 +500,28 @@ Nonterminals, with rules where they appear
         on right: 104 105
     syntax-expression <syntax_expression_t> (144)
         on left: 115 116
-        on right: 14 19 32 33 34 35 36 43 45 68 69 74 75 83 128 129 130 131 132 133 138 150
+        on right: 14 19 32 33 34 35 36 43 45 68 69 74 75 83 128 129 130 131 132 133 134 139 151
     syntax-expression-wo-ii <syntax_expression_t> (145)
-        on left: 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137
+        on left: 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138
         on right: 116
     apostrophe-expression <syntax_expression_t> (146)
-        on left: 138
-        on right: 134 140 142 145
+        on left: 139
+        on right: 129 135 141 143 146
     new-expression <syntax_expression_t> (147)
-        on left: 139 140 141 142
-        on right: 135
+        on left: 140 141 142 143
+        on right: 136
     call-expression <syntax_expression_t> (148)
-        on left: 143 144 145 146
-        on right: 144 149 152
+        on left: 144 145 146 147
+        on right: 145 150 153
     lambda-expression <syntax_expression_t> (149)
-        on left: 147 148
-        on right: 137 146
+        on left: 148 149
+        on right: 138 147
     compound-expression <syntax_expression_t> (150)
-        on left: 149 150
-        on right: 44 136
+        on left: 150 151
+        on right: 44 137
     type-expr <syntax_expression_t> (151)
-        on left: 151 152 153 154 155 156 157 158
-        on right: 10 23 59 148 154 156 157 158
+        on left: 152 153 154 155 156 157 158 159
+        on right: 10 23 59 149 155 157 158 159
 
 
 State 0
@@ -638,7 +639,7 @@ State 8
 
 State 9
 
-  138 apostrophe-expression: "APOSTROPHE" . syntax-expression "APOSTROPHE"
+  139 apostrophe-expression: "APOSTROPHE" . syntax-expression "APOSTROPHE"
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -729,7 +730,7 @@ State 12
 
 State 13
 
-  130 syntax-expression-wo-ii: "`!`" . syntax-expression
+  131 syntax-expression-wo-ii: "`!`" . syntax-expression
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -784,10 +785,10 @@ State 15
 
 State 16
 
-  139 new-expression: "`new`" . qname
-  140               | "`new`" . apostrophe-expression
-  141               | "`new`" . qname "`(`" argument-list-opt "`)`"
-  142               | "`new`" . apostrophe-expression "`(`" argument-list-opt "`)`"
+  140 new-expression: "`new`" . qname
+  141               | "`new`" . apostrophe-expression
+  142               | "`new`" . qname "`(`" argument-list-opt "`)`"
+  143               | "`new`" . apostrophe-expression "`(`" argument-list-opt "`)`"
 
     IDENTIFIER    shift, and go to state 2
     "APOSTROPHE"  shift, and go to state 9
@@ -1144,7 +1145,7 @@ State 39
 
    53 qname: qname . "`::`" identifier
   125 syntax-expression-wo-ii: qname .
-  143 call-expression: qname . "`(`" argument-list-opt "`)`"
+  144 call-expression: qname . "`(`" argument-list-opt "`)`"
 
     "`::`"  shift, and go to state 86
     "`(`"   shift, and go to state 87
@@ -1156,8 +1157,8 @@ State 40
 
    14 statement: fn-start-decl . fn-decl "`=>`" syntax-expression
    37 finished_statement: fn-start-decl . fn-decl braced-statements
-  147 lambda-expression: fn-start-decl . "`(`" parameter-list-opt "`)`" braced-statements
-  148                  | fn-start-decl . "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements
+  148 lambda-expression: fn-start-decl . "`(`" parameter-list-opt "`)`" braced-statements
+  149                  | fn-start-decl . "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements
 
     IDENTIFIER  shift, and go to state 2
     "`::`"      shift, and go to state 10
@@ -1181,11 +1182,12 @@ State 42
 
    45 generic-statement: syntax-expression . "`=`" syntax-expression
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`=`"          shift, and go to state 94
@@ -1205,56 +1207,56 @@ State 43
 
 State 44
 
-  134 syntax-expression-wo-ii: apostrophe-expression .
-  145 call-expression: apostrophe-expression . "`(`" argument-list-opt "`)`"
+  135 syntax-expression-wo-ii: apostrophe-expression .
+  146 call-expression: apostrophe-expression . "`(`" argument-list-opt "`)`"
 
     "`(`"  shift, and go to state 100
-
-    $default  reduce using rule 134 (syntax-expression-wo-ii)
-
-
-State 45
-
-  135 syntax-expression-wo-ii: new-expression .
 
     $default  reduce using rule 135 (syntax-expression-wo-ii)
 
 
+State 45
+
+  136 syntax-expression-wo-ii: new-expression .
+
+    $default  reduce using rule 136 (syntax-expression-wo-ii)
+
+
 State 46
 
-  144 call-expression: call-expression . "`(`" argument-list-opt "`)`"
-  149 compound-expression: call-expression .
+  145 call-expression: call-expression . "`(`" argument-list-opt "`)`"
+  150 compound-expression: call-expression .
 
     "`(`"  shift, and go to state 101
 
-    $default  reduce using rule 149 (compound-expression)
+    $default  reduce using rule 150 (compound-expression)
 
 
 State 47
 
-  137 syntax-expression-wo-ii: lambda-expression .
-  146 call-expression: lambda-expression . "`(`" argument-list-opt "`)`"
+  138 syntax-expression-wo-ii: lambda-expression .
+  147 call-expression: lambda-expression . "`(`" argument-list-opt "`)`"
 
     "`(`"  shift, and go to state 102
 
-    $default  reduce using rule 137 (syntax-expression-wo-ii)
+    $default  reduce using rule 138 (syntax-expression-wo-ii)
 
 
 State 48
 
    44 generic-statement: compound-expression .
-  136 syntax-expression-wo-ii: compound-expression .
+  137 syntax-expression-wo-ii: compound-expression .
 
     "end of file"  reduce using rule 44 (generic-statement)
     "`}`"          reduce using rule 44 (generic-statement)
     "`;`"          reduce using rule 44 (generic-statement)
-    $default       reduce using rule 136 (syntax-expression-wo-ii)
+    $default       reduce using rule 137 (syntax-expression-wo-ii)
 
 
 State 49
 
-  147 lambda-expression: fn-start-decl . "`(`" parameter-list-opt "`)`" braced-statements
-  148                  | fn-start-decl . "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements
+  148 lambda-expression: fn-start-decl . "`(`" parameter-list-opt "`)`" braced-statements
+  149                  | fn-start-decl . "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements
 
     "`(`"  shift, and go to state 88
 
@@ -1262,12 +1264,13 @@ State 49
 State 50
 
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  138 apostrophe-expression: "APOSTROPHE" syntax-expression . "APOSTROPHE"
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  139 apostrophe-expression: "APOSTROPHE" syntax-expression . "APOSTROPHE"
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "APOSTROPHE"   shift, and go to state 103
@@ -1280,9 +1283,9 @@ State 50
 
 State 51
 
-  136 syntax-expression-wo-ii: compound-expression .
+  137 syntax-expression-wo-ii: compound-expression .
 
-    $default  reduce using rule 136 (syntax-expression-wo-ii)
+    $default  reduce using rule 137 (syntax-expression-wo-ii)
 
 
 State 52
@@ -1359,11 +1362,12 @@ State 57
 
    75 argument: syntax-expression .
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -1385,17 +1389,18 @@ State 58
 State 59
 
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  130                        | "`!`" syntax-expression .
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  131                        | "`!`" syntax-expression .
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`.`"          shift, and go to state 98
 
-    $default  reduce using rule 130 (syntax-expression-wo-ii)
+    $default  reduce using rule 131 (syntax-expression-wo-ii)
 
 
 State 60
@@ -1440,23 +1445,23 @@ State 63
 State 64
 
    53 qname: qname . "`::`" identifier
-  139 new-expression: "`new`" qname .
-  141               | "`new`" qname . "`(`" argument-list-opt "`)`"
+  140 new-expression: "`new`" qname .
+  142               | "`new`" qname . "`(`" argument-list-opt "`)`"
 
     "`::`"  shift, and go to state 86
     "`(`"   shift, and go to state 112
 
-    $default  reduce using rule 139 (new-expression)
+    $default  reduce using rule 140 (new-expression)
 
 
 State 65
 
-  140 new-expression: "`new`" apostrophe-expression .
-  142               | "`new`" apostrophe-expression . "`(`" argument-list-opt "`)`"
+  141 new-expression: "`new`" apostrophe-expression .
+  143               | "`new`" apostrophe-expression . "`(`" argument-list-opt "`)`"
 
     "`(`"  shift, and go to state 113
 
-    $default  reduce using rule 140 (new-expression)
+    $default  reduce using rule 141 (new-expression)
 
 
 State 66
@@ -1464,11 +1469,12 @@ State 66
    32 finished_statement: "`while`" syntax-expression . braced-statements
    33                   | "`while`" syntax-expression . "`;`" syntax-expression braced-statements
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -1486,11 +1492,12 @@ State 67
 
    34 finished_statement: "`for`" syntax-expression . "`in`" syntax-expression braced-statements
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -1506,11 +1513,12 @@ State 68
    35 finished_statement: "`if`" syntax-expression . braced-statements
    36                   | "`if`" syntax-expression . braced-statements "`else`" braced-statements
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -1527,11 +1535,12 @@ State 69
 
    43 generic-statement: "`return`" syntax-expression .
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -1724,7 +1733,7 @@ State 86
 
 State 87
 
-  143 call-expression: qname "`(`" . argument-list-opt "`)`"
+  144 call-expression: qname "`(`" . argument-list-opt "`)`"
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -1765,8 +1774,8 @@ State 87
 
 State 88
 
-  147 lambda-expression: fn-start-decl "`(`" . parameter-list-opt "`)`" braced-statements
-  148                  | fn-start-decl "`(`" . parameter-list-opt "`)`" "`->`" type-expr braced-statements
+  148 lambda-expression: fn-start-decl "`(`" . parameter-list-opt "`)`" braced-statements
+  149                  | fn-start-decl "`(`" . parameter-list-opt "`)`" "`->`" type-expr braced-statements
 
     IDENTIFIER           shift, and go to state 2
     INTERNAL_IDENTIFIER  shift, and go to state 137
@@ -1829,9 +1838,9 @@ State 92
 
 State 93
 
-  129 syntax-expression-wo-ii: syntax-expression INTEGER_INDEX .
+  130 syntax-expression-wo-ii: syntax-expression INTEGER_INDEX .
 
-    $default  reduce using rule 129 (syntax-expression-wo-ii)
+    $default  reduce using rule 130 (syntax-expression-wo-ii)
 
 
 State 94
@@ -1871,7 +1880,7 @@ State 94
 
 State 95
 
-  132 syntax-expression-wo-ii: syntax-expression "`==`" . syntax-expression
+  133 syntax-expression-wo-ii: syntax-expression "`==`" . syntax-expression
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -1906,7 +1915,7 @@ State 95
 
 State 96
 
-  133 syntax-expression-wo-ii: syntax-expression "`!=`" . syntax-expression
+  134 syntax-expression-wo-ii: syntax-expression "`!=`" . syntax-expression
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -1941,23 +1950,26 @@ State 96
 
 State 97
 
-  150 compound-expression: syntax-expression "`...`" .
+  151 compound-expression: syntax-expression "`...`" .
 
-    $default  reduce using rule 150 (compound-expression)
+    $default  reduce using rule 151 (compound-expression)
 
 
 State 98
 
   128 syntax-expression-wo-ii: syntax-expression "`.`" . identifier
+  129                        | syntax-expression "`.`" . apostrophe-expression
 
-    IDENTIFIER  shift, and go to state 2
+    IDENTIFIER    shift, and go to state 2
+    "APOSTROPHE"  shift, and go to state 9
 
-    identifier  go to state 159
+    identifier             go to state 159
+    apostrophe-expression  go to state 160
 
 
 State 99
 
-  131 syntax-expression-wo-ii: syntax-expression "`+`" . syntax-expression
+  132 syntax-expression-wo-ii: syntax-expression "`+`" . syntax-expression
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -1981,7 +1993,7 @@ State 99
     identifier               go to state 38
     qname                    go to state 39
     fn-start-decl            go to state 49
-    syntax-expression        go to state 160
+    syntax-expression        go to state 161
     syntax-expression-wo-ii  go to state 43
     apostrophe-expression    go to state 44
     new-expression           go to state 45
@@ -1992,48 +2004,7 @@ State 99
 
 State 100
 
-  145 call-expression: apostrophe-expression "`(`" . argument-list-opt "`)`"
-
-    STRING               shift, and go to state 1
-    IDENTIFIER           shift, and go to state 2
-    INTERNAL_IDENTIFIER  shift, and go to state 3
-    RESERVED_IDENTIFIER  shift, and go to state 4
-    INTEGER_INDEX        shift, and go to state 5
-    INTEGER              shift, and go to state 6
-    DECIMAL              shift, and go to state 7
-    DECIMAL_S            shift, and go to state 8
-    "APOSTROPHE"         shift, and go to state 9
-    "`::`"               shift, and go to state 10
-    "`(`"                shift, and go to state 11
-    "`.`"                shift, and go to state 12
-    "`!`"                shift, and go to state 13
-    "`new`"              shift, and go to state 16
-    INLINE               shift, and go to state 23
-    "`fn`"               shift, and go to state 24
-    "true"               shift, and go to state 27
-    "false"              shift, and go to state 28
-
-    $default  reduce using rule 70 (argument-list-opt)
-
-    identifier               go to state 53
-    qname                    go to state 39
-    fn-start-decl            go to state 49
-    argument-list-opt        go to state 161
-    argument-list            go to state 136
-    argument                 go to state 55
-    argument-name            go to state 56
-    syntax-expression        go to state 57
-    syntax-expression-wo-ii  go to state 43
-    apostrophe-expression    go to state 44
-    new-expression           go to state 45
-    call-expression          go to state 46
-    lambda-expression        go to state 47
-    compound-expression      go to state 51
-
-
-State 101
-
-  144 call-expression: call-expression "`(`" . argument-list-opt "`)`"
+  146 call-expression: apostrophe-expression "`(`" . argument-list-opt "`)`"
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -2072,9 +2043,9 @@ State 101
     compound-expression      go to state 51
 
 
-State 102
+State 101
 
-  146 call-expression: lambda-expression "`(`" . argument-list-opt "`)`"
+  145 call-expression: call-expression "`(`" . argument-list-opt "`)`"
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -2113,11 +2084,52 @@ State 102
     compound-expression      go to state 51
 
 
+State 102
+
+  147 call-expression: lambda-expression "`(`" . argument-list-opt "`)`"
+
+    STRING               shift, and go to state 1
+    IDENTIFIER           shift, and go to state 2
+    INTERNAL_IDENTIFIER  shift, and go to state 3
+    RESERVED_IDENTIFIER  shift, and go to state 4
+    INTEGER_INDEX        shift, and go to state 5
+    INTEGER              shift, and go to state 6
+    DECIMAL              shift, and go to state 7
+    DECIMAL_S            shift, and go to state 8
+    "APOSTROPHE"         shift, and go to state 9
+    "`::`"               shift, and go to state 10
+    "`(`"                shift, and go to state 11
+    "`.`"                shift, and go to state 12
+    "`!`"                shift, and go to state 13
+    "`new`"              shift, and go to state 16
+    INLINE               shift, and go to state 23
+    "`fn`"               shift, and go to state 24
+    "true"               shift, and go to state 27
+    "false"              shift, and go to state 28
+
+    $default  reduce using rule 70 (argument-list-opt)
+
+    identifier               go to state 53
+    qname                    go to state 39
+    fn-start-decl            go to state 49
+    argument-list-opt        go to state 164
+    argument-list            go to state 136
+    argument                 go to state 55
+    argument-name            go to state 56
+    syntax-expression        go to state 57
+    syntax-expression-wo-ii  go to state 43
+    apostrophe-expression    go to state 44
+    new-expression           go to state 45
+    call-expression          go to state 46
+    lambda-expression        go to state 47
+    compound-expression      go to state 51
+
+
 State 103
 
-  138 apostrophe-expression: "APOSTROPHE" syntax-expression "APOSTROPHE" .
+  139 apostrophe-expression: "APOSTROPHE" syntax-expression "APOSTROPHE" .
 
-    $default  reduce using rule 138 (apostrophe-expression)
+    $default  reduce using rule 139 (apostrophe-expression)
 
 
 State 104
@@ -2167,7 +2179,7 @@ State 107
     identifier               go to state 53
     qname                    go to state 39
     fn-start-decl            go to state 49
-    argument                 go to state 164
+    argument                 go to state 165
     argument-name            go to state 56
     syntax-expression        go to state 57
     syntax-expression-wo-ii  go to state 43
@@ -2182,11 +2194,12 @@ State 108
 
    74 argument: argument-name syntax-expression .
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -2209,7 +2222,7 @@ State 110
 
    10 statement: EXTERN VAR identifier . "`:`" type-expr
 
-    "`:`"  shift, and go to state 165
+    "`:`"  shift, and go to state 166
 
 
 State 111
@@ -2221,48 +2234,7 @@ State 111
 
 State 112
 
-  141 new-expression: "`new`" qname "`(`" . argument-list-opt "`)`"
-
-    STRING               shift, and go to state 1
-    IDENTIFIER           shift, and go to state 2
-    INTERNAL_IDENTIFIER  shift, and go to state 3
-    RESERVED_IDENTIFIER  shift, and go to state 4
-    INTEGER_INDEX        shift, and go to state 5
-    INTEGER              shift, and go to state 6
-    DECIMAL              shift, and go to state 7
-    DECIMAL_S            shift, and go to state 8
-    "APOSTROPHE"         shift, and go to state 9
-    "`::`"               shift, and go to state 10
-    "`(`"                shift, and go to state 11
-    "`.`"                shift, and go to state 12
-    "`!`"                shift, and go to state 13
-    "`new`"              shift, and go to state 16
-    INLINE               shift, and go to state 23
-    "`fn`"               shift, and go to state 24
-    "true"               shift, and go to state 27
-    "false"              shift, and go to state 28
-
-    $default  reduce using rule 70 (argument-list-opt)
-
-    identifier               go to state 53
-    qname                    go to state 39
-    fn-start-decl            go to state 49
-    argument-list-opt        go to state 166
-    argument-list            go to state 136
-    argument                 go to state 55
-    argument-name            go to state 56
-    syntax-expression        go to state 57
-    syntax-expression-wo-ii  go to state 43
-    apostrophe-expression    go to state 44
-    new-expression           go to state 45
-    call-expression          go to state 46
-    lambda-expression        go to state 47
-    compound-expression      go to state 51
-
-
-State 113
-
-  142 new-expression: "`new`" apostrophe-expression "`(`" . argument-list-opt "`)`"
+  142 new-expression: "`new`" qname "`(`" . argument-list-opt "`)`"
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -2301,6 +2273,47 @@ State 113
     compound-expression      go to state 51
 
 
+State 113
+
+  143 new-expression: "`new`" apostrophe-expression "`(`" . argument-list-opt "`)`"
+
+    STRING               shift, and go to state 1
+    IDENTIFIER           shift, and go to state 2
+    INTERNAL_IDENTIFIER  shift, and go to state 3
+    RESERVED_IDENTIFIER  shift, and go to state 4
+    INTEGER_INDEX        shift, and go to state 5
+    INTEGER              shift, and go to state 6
+    DECIMAL              shift, and go to state 7
+    DECIMAL_S            shift, and go to state 8
+    "APOSTROPHE"         shift, and go to state 9
+    "`::`"               shift, and go to state 10
+    "`(`"                shift, and go to state 11
+    "`.`"                shift, and go to state 12
+    "`!`"                shift, and go to state 13
+    "`new`"              shift, and go to state 16
+    INLINE               shift, and go to state 23
+    "`fn`"               shift, and go to state 24
+    "true"               shift, and go to state 27
+    "false"              shift, and go to state 28
+
+    $default  reduce using rule 70 (argument-list-opt)
+
+    identifier               go to state 53
+    qname                    go to state 39
+    fn-start-decl            go to state 49
+    argument-list-opt        go to state 168
+    argument-list            go to state 136
+    argument                 go to state 55
+    argument-name            go to state 56
+    syntax-expression        go to state 57
+    syntax-expression-wo-ii  go to state 43
+    apostrophe-expression    go to state 44
+    new-expression           go to state 45
+    call-expression          go to state 46
+    lambda-expression        go to state 47
+    compound-expression      go to state 51
+
+
 State 114
 
    31 braced-statements: "`{`" . infunction-statement-set "`}`"
@@ -2323,12 +2336,12 @@ State 114
     "`while`"            shift, and go to state 17
     "`for`"              shift, and go to state 18
     "`if`"               shift, and go to state 19
-    "`continue`"         shift, and go to state 168
-    "`break`"            shift, and go to state 169
+    "`continue`"         shift, and go to state 169
+    "`break`"            shift, and go to state 170
     "`return`"           shift, and go to state 20
     INLINE               shift, and go to state 23
     "`fn`"               shift, and go to state 24
-    STRUCT               shift, and go to state 170
+    STRUCT               shift, and go to state 171
     "true"               shift, and go to state 27
     "false"              shift, and go to state 28
 
@@ -2337,15 +2350,15 @@ State 114
     let-decl                           go to state 33
     let-decl-start                     go to state 34
     let-decl-start-with-opt-type       go to state 35
-    infunction-statement-any           go to state 171
-    finished-infunction-statement-any  go to state 172
-    finished_statement                 go to state 173
-    infunction-statement-set           go to state 174
-    generic-statement                  go to state 175
-    infunction-statement               go to state 176
+    infunction-statement-any           go to state 172
+    finished-infunction-statement-any  go to state 173
+    finished_statement                 go to state 174
+    infunction-statement-set           go to state 175
+    generic-statement                  go to state 176
+    infunction-statement               go to state 177
     identifier                         go to state 38
     qname                              go to state 39
-    fn-start-decl                      go to state 177
+    fn-start-decl                      go to state 178
     syntax-expression                  go to state 42
     syntax-expression-wo-ii            go to state 43
     apostrophe-expression              go to state 44
@@ -2381,7 +2394,7 @@ State 115
     identifier               go to state 38
     qname                    go to state 39
     fn-start-decl            go to state 49
-    syntax-expression        go to state 178
+    syntax-expression        go to state 179
     syntax-expression-wo-ii  go to state 43
     apostrophe-expression    go to state 44
     new-expression           go to state 45
@@ -2423,7 +2436,7 @@ State 117
     identifier               go to state 38
     qname                    go to state 39
     fn-start-decl            go to state 49
-    syntax-expression        go to state 179
+    syntax-expression        go to state 180
     syntax-expression-wo-ii  go to state 43
     apostrophe-expression    go to state 44
     new-expression           go to state 45
@@ -2437,7 +2450,7 @@ State 118
    35 finished_statement: "`if`" syntax-expression braced-statements .
    36                   | "`if`" syntax-expression braced-statements . "`else`" braced-statements
 
-    "`else`"  shift, and go to state 180
+    "`else`"  shift, and go to state 181
 
     $default  reduce using rule 35 (finished_statement)
 
@@ -2468,7 +2481,7 @@ State 119
     identifier               go to state 38
     qname                    go to state 39
     fn-start-decl            go to state 49
-    syntax-expression        go to state 181
+    syntax-expression        go to state 182
     syntax-expression-wo-ii  go to state 43
     apostrophe-expression    go to state 44
     new-expression           go to state 45
@@ -2493,7 +2506,7 @@ State 120
 
     identifier                     go to state 142
     qname                          go to state 143
-    parameter-list-opt             go to state 182
+    parameter-list-opt             go to state 183
     parameter-list                 go to state 145
     parameter-decl                 go to state 146
     parameter-name-decl            go to state 147
@@ -2512,17 +2525,17 @@ State 121
 
     $default  reduce using rule 61 (case-list-opt)
 
-    identifier     go to state 183
-    case-list-opt  go to state 184
-    case-list      go to state 185
-    case-decl      go to state 186
+    identifier     go to state 184
+    case-list-opt  go to state 185
+    case-list      go to state 186
+    case-decl      go to state 187
 
 
 State 122
 
    66 struct-decl: qname "`=>`" . "`(`" field-list-opt "`)`"
 
-    "`(`"  shift, and go to state 187
+    "`(`"  shift, and go to state 188
 
 
 State 123
@@ -2542,7 +2555,7 @@ State 123
 
     identifier                     go to state 142
     qname                          go to state 143
-    parameter-list-opt             go to state 188
+    parameter-list-opt             go to state 189
     parameter-list                 go to state 145
     parameter-decl                 go to state 146
     parameter-name-decl            go to state 147
@@ -2562,14 +2575,14 @@ State 124
 
 State 125
 
-  153 type-expr: INTERNAL_IDENTIFIER .
+  154 type-expr: INTERNAL_IDENTIFIER .
 
-    $default  reduce using rule 153 (type-expr)
+    $default  reduce using rule 154 (type-expr)
 
 
 State 126
 
-  155 type-expr: "`(`" . argument-list-opt "`)`"
+  156 type-expr: "`(`" . argument-list-opt "`)`"
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -2595,7 +2608,7 @@ State 126
     identifier               go to state 53
     qname                    go to state 39
     fn-start-decl            go to state 49
-    argument-list-opt        go to state 189
+    argument-list-opt        go to state 190
     argument-list            go to state 136
     argument                 go to state 55
     argument-name            go to state 56
@@ -2610,7 +2623,7 @@ State 126
 
 State 127
 
-  154 type-expr: "`[`" . type-expr "`]`"
+  155 type-expr: "`[`" . type-expr "`]`"
 
     IDENTIFIER           shift, and go to state 2
     INTERNAL_IDENTIFIER  shift, and go to state 125
@@ -2627,41 +2640,41 @@ State 127
     apostrophe-expression  go to state 129
     call-expression        go to state 130
     lambda-expression      go to state 131
-    type-expr              go to state 190
+    type-expr              go to state 191
 
 
 State 128
 
    53 qname: qname . "`::`" identifier
-  143 call-expression: qname . "`(`" argument-list-opt "`)`"
-  151 type-expr: qname .
+  144 call-expression: qname . "`(`" argument-list-opt "`)`"
+  152 type-expr: qname .
 
     "`::`"  shift, and go to state 86
     "`(`"   shift, and go to state 87
 
-    $default  reduce using rule 151 (type-expr)
+    $default  reduce using rule 152 (type-expr)
 
 
 State 129
 
-  145 call-expression: apostrophe-expression . "`(`" argument-list-opt "`)`"
+  146 call-expression: apostrophe-expression . "`(`" argument-list-opt "`)`"
 
     "`(`"  shift, and go to state 100
 
 
 State 130
 
-  144 call-expression: call-expression . "`(`" argument-list-opt "`)`"
-  152 type-expr: call-expression .
+  145 call-expression: call-expression . "`(`" argument-list-opt "`)`"
+  153 type-expr: call-expression .
 
     "`(`"  shift, and go to state 101
 
-    $default  reduce using rule 152 (type-expr)
+    $default  reduce using rule 153 (type-expr)
 
 
 State 131
 
-  146 call-expression: lambda-expression . "`(`" argument-list-opt "`)`"
+  147 call-expression: lambda-expression . "`(`" argument-list-opt "`)`"
 
     "`(`"  shift, and go to state 102
 
@@ -2669,13 +2682,13 @@ State 131
 State 132
 
    23 let-decl-start-with-opt-type: let-decl-start "`:`" type-expr .
-  156 type-expr: type-expr . "`[`" INTEGER "`]`"
-  157          | type-expr . "`|`" type-expr
-  158          | type-expr . "`->`" type-expr
+  157 type-expr: type-expr . "`[`" INTEGER "`]`"
+  158          | type-expr . "`|`" type-expr
+  159          | type-expr . "`->`" type-expr
 
-    "`->`"  shift, and go to state 191
-    "`[`"   shift, and go to state 192
-    "`|`"   shift, and go to state 193
+    "`->`"  shift, and go to state 192
+    "`[`"   shift, and go to state 193
+    "`|`"   shift, and go to state 194
 
     $default  reduce using rule 23 (let-decl-start-with-opt-type)
 
@@ -2684,11 +2697,12 @@ State 133
 
    19 let-decl: let-decl-start-with-opt-type "`=`" syntax-expression .
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -2709,9 +2723,9 @@ State 134
 
 State 135
 
-  143 call-expression: qname "`(`" argument-list-opt . "`)`"
+  144 call-expression: qname "`(`" argument-list-opt . "`)`"
 
-    "`)`"  shift, and go to state 194
+    "`)`"  shift, and go to state 195
 
 
 State 136
@@ -2731,8 +2745,8 @@ State 137
   108 parameter-matched-type: INTERNAL_IDENTIFIER .
   109                       | INTERNAL_IDENTIFIER . "`...`"
 
-    "`...`"  shift, and go to state 195
-    "`:`"    shift, and go to state 196
+    "`...`"  shift, and go to state 196
+    "`:`"    shift, and go to state 197
 
     $default  reduce using rule 108 (parameter-matched-type)
 
@@ -2745,7 +2759,7 @@ State 138
     "`::`"      shift, and go to state 10
 
     identifier  go to state 38
-    qname       go to state 197
+    qname       go to state 198
 
 
 State 139
@@ -2775,12 +2789,12 @@ State 142
    95 parameter-name-decl: identifier . internal_identifier "`:`"
    96                    | identifier . "`:`"
 
-    INTERNAL_IDENTIFIER  shift, and go to state 198
-    "`:`"                shift, and go to state 199
+    INTERNAL_IDENTIFIER  shift, and go to state 199
+    "`:`"                shift, and go to state 200
 
     $default  reduce using rule 52 (qname)
 
-    internal_identifier  go to state 200
+    internal_identifier  go to state 201
 
 
 State 143
@@ -2790,17 +2804,17 @@ State 143
   112                             | qname . "`(`" argument-list-opt "`)`"
 
     "`::`"  shift, and go to state 86
-    "`(`"   shift, and go to state 201
+    "`(`"   shift, and go to state 202
 
     $default  reduce using rule 111 (basic-parameter-matched-type)
 
 
 State 144
 
-  147 lambda-expression: fn-start-decl "`(`" parameter-list-opt . "`)`" braced-statements
-  148                  | fn-start-decl "`(`" parameter-list-opt . "`)`" "`->`" type-expr braced-statements
+  148 lambda-expression: fn-start-decl "`(`" parameter-list-opt . "`)`" braced-statements
+  149                  | fn-start-decl "`(`" parameter-list-opt . "`)`" "`->`" type-expr braced-statements
 
-    "`)`"  shift, and go to state 202
+    "`)`"  shift, and go to state 203
 
 
 State 145
@@ -2808,7 +2822,7 @@ State 145
    89 parameter-list-opt: parameter-list .
    91 parameter-list: parameter-list . "," parameter-decl
 
-    ","  shift, and go to state 203
+    ","  shift, and go to state 204
 
     $default  reduce using rule 89 (parameter-list-opt)
 
@@ -2829,8 +2843,8 @@ State 147
 
     $default  reduce using rule 100 (parameter-constraint-modifier-opt)
 
-    parameter-constraint-modifier-opt  go to state 204
-    parameter-constraint-modifier      go to state 205
+    parameter-constraint-modifier-opt  go to state 205
+    parameter-constraint-modifier      go to state 206
 
 
 State 148
@@ -2838,14 +2852,14 @@ State 148
    93 parameter-decl: parameter-constraint-modifier . parameter-constraint-set
 
     IDENTIFIER           shift, and go to state 2
-    INTERNAL_IDENTIFIER  shift, and go to state 206
+    INTERNAL_IDENTIFIER  shift, and go to state 207
     "`@`"                shift, and go to state 138
     "`_`"                shift, and go to state 139
     "`::`"               shift, and go to state 10
 
     identifier                    go to state 38
     qname                         go to state 143
-    parameter-constraint-set      go to state 207
+    parameter-constraint-set      go to state 208
     parameter-matched-type        go to state 150
     basic-parameter-matched-type  go to state 151
     concept-expression            go to state 152
@@ -2860,7 +2874,7 @@ State 149
 
     $default  reduce using rule 94 (parameter-decl)
 
-    concept-expression  go to state 208
+    concept-expression  go to state 209
 
 
 State 150
@@ -2876,8 +2890,8 @@ State 151
   107                       | basic-parameter-matched-type . "`...`"
   113 basic-parameter-matched-type: basic-parameter-matched-type . "`|`" basic-parameter-matched-type
 
-    "`...`"  shift, and go to state 209
-    "`|`"    shift, and go to state 210
+    "`...`"  shift, and go to state 210
+    "`|`"    shift, and go to state 211
 
     $default  reduce using rule 106 (parameter-matched-type)
 
@@ -2906,7 +2920,7 @@ State 153
 
     identifier                     go to state 142
     qname                          go to state 143
-    parameter-list-opt             go to state 211
+    parameter-list-opt             go to state 212
     parameter-list                 go to state 145
     parameter-decl                 go to state 146
     parameter-name-decl            go to state 147
@@ -2943,7 +2957,7 @@ State 154
     identifier               go to state 38
     qname                    go to state 39
     fn-start-decl            go to state 49
-    syntax-expression        go to state 212
+    syntax-expression        go to state 213
     syntax-expression-wo-ii  go to state 43
     apostrophe-expression    go to state 44
     new-expression           go to state 45
@@ -2963,11 +2977,12 @@ State 156
 
    45 generic-statement: syntax-expression "`=`" syntax-expression .
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -2982,35 +2997,37 @@ State 156
 State 157
 
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  132                        | syntax-expression "`==`" syntax-expression .
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
-
-    INTEGER_INDEX  shift, and go to state 93
-    "`.`"          shift, and go to state 98
-    "`+`"          shift, and go to state 99
-
-    $default  reduce using rule 132 (syntax-expression-wo-ii)
-
-
-State 158
-
-  128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  133                        | syntax-expression "`!=`" syntax-expression .
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  133                        | syntax-expression "`==`" syntax-expression .
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`.`"          shift, and go to state 98
     "`+`"          shift, and go to state 99
 
     $default  reduce using rule 133 (syntax-expression-wo-ii)
+
+
+State 158
+
+  128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  134                        | syntax-expression "`!=`" syntax-expression .
+  151 compound-expression: syntax-expression . "`...`"
+
+    INTEGER_INDEX  shift, and go to state 93
+    "`.`"          shift, and go to state 98
+    "`+`"          shift, and go to state 99
+
+    $default  reduce using rule 134 (syntax-expression-wo-ii)
 
 
 State 159
@@ -3022,49 +3039,57 @@ State 159
 
 State 160
 
-  128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  131                        | syntax-expression "`+`" syntax-expression .
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129 syntax-expression-wo-ii: syntax-expression "`.`" apostrophe-expression .
 
-    INTEGER_INDEX  shift, and go to state 93
-    "`.`"          shift, and go to state 98
-
-    $default  reduce using rule 131 (syntax-expression-wo-ii)
+    $default  reduce using rule 129 (syntax-expression-wo-ii)
 
 
 State 161
 
-  145 call-expression: apostrophe-expression "`(`" argument-list-opt . "`)`"
+  128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  132                        | syntax-expression "`+`" syntax-expression .
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
-    "`)`"  shift, and go to state 213
+    INTEGER_INDEX  shift, and go to state 93
+    "`.`"          shift, and go to state 98
+
+    $default  reduce using rule 132 (syntax-expression-wo-ii)
 
 
 State 162
 
-  144 call-expression: call-expression "`(`" argument-list-opt . "`)`"
+  146 call-expression: apostrophe-expression "`(`" argument-list-opt . "`)`"
 
     "`)`"  shift, and go to state 214
 
 
 State 163
 
-  146 call-expression: lambda-expression "`(`" argument-list-opt . "`)`"
+  145 call-expression: call-expression "`(`" argument-list-opt . "`)`"
 
     "`)`"  shift, and go to state 215
 
 
 State 164
 
+  147 call-expression: lambda-expression "`(`" argument-list-opt . "`)`"
+
+    "`)`"  shift, and go to state 216
+
+
+State 165
+
    73 argument-list: argument-list "," argument .
 
     $default  reduce using rule 73 (argument-list)
 
 
-State 165
+State 166
 
    10 statement: EXTERN VAR identifier "`:`" . type-expr
 
@@ -3083,38 +3108,38 @@ State 165
     apostrophe-expression  go to state 129
     call-expression        go to state 130
     lambda-expression      go to state 131
-    type-expr              go to state 216
-
-
-State 166
-
-  141 new-expression: "`new`" qname "`(`" argument-list-opt . "`)`"
-
-    "`)`"  shift, and go to state 217
+    type-expr              go to state 217
 
 
 State 167
 
-  142 new-expression: "`new`" apostrophe-expression "`(`" argument-list-opt . "`)`"
+  142 new-expression: "`new`" qname "`(`" argument-list-opt . "`)`"
 
     "`)`"  shift, and go to state 218
 
 
 State 168
 
+  143 new-expression: "`new`" apostrophe-expression "`(`" argument-list-opt . "`)`"
+
+    "`)`"  shift, and go to state 219
+
+
+State 169
+
    48 infunction-statement: "`continue`" .
 
     $default  reduce using rule 48 (infunction-statement)
 
 
-State 169
+State 170
 
    47 infunction-statement: "`break`" .
 
     $default  reduce using rule 47 (infunction-statement)
 
 
-State 170
+State 171
 
    38 finished_statement: STRUCT . qname braced-statements
    39                   | STRUCT . qname "`(`" parameter-list-opt "`)`" braced-statements
@@ -3123,20 +3148,20 @@ State 170
     "`::`"      shift, and go to state 10
 
     identifier  go to state 38
-    qname       go to state 219
+    qname       go to state 220
 
 
-State 171
+State 172
 
    30 finished-infunction-statement-any: infunction-statement-any . "`;`"
    40 infunction-statement-set: infunction-statement-any .
 
-    "`;`"  shift, and go to state 220
+    "`;`"  shift, and go to state 221
 
     $default  reduce using rule 40 (infunction-statement-set)
 
 
-State 172
+State 173
 
    26 infunction-statement-any: finished-infunction-statement-any . infunction-statement
    28 finished-infunction-statement-any: finished-infunction-statement-any . "`;`"
@@ -3154,7 +3179,7 @@ State 172
     "APOSTROPHE"         shift, and go to state 9
     "`::`"               shift, and go to state 10
     "`(`"                shift, and go to state 11
-    "`;`"                shift, and go to state 221
+    "`;`"                shift, and go to state 222
     "`.`"                shift, and go to state 12
     "`!`"                shift, and go to state 13
     LET                  shift, and go to state 14
@@ -3162,12 +3187,12 @@ State 172
     "`while`"            shift, and go to state 17
     "`for`"              shift, and go to state 18
     "`if`"               shift, and go to state 19
-    "`continue`"         shift, and go to state 168
-    "`break`"            shift, and go to state 169
+    "`continue`"         shift, and go to state 169
+    "`break`"            shift, and go to state 170
     "`return`"           shift, and go to state 20
     INLINE               shift, and go to state 23
     "`fn`"               shift, and go to state 24
-    STRUCT               shift, and go to state 170
+    STRUCT               shift, and go to state 171
     "true"               shift, and go to state 27
     "false"              shift, and go to state 28
 
@@ -3176,12 +3201,12 @@ State 172
     let-decl                      go to state 33
     let-decl-start                go to state 34
     let-decl-start-with-opt-type  go to state 35
-    finished_statement            go to state 222
-    generic-statement             go to state 175
-    infunction-statement          go to state 223
+    finished_statement            go to state 223
+    generic-statement             go to state 176
+    infunction-statement          go to state 224
     identifier                    go to state 38
     qname                         go to state 39
-    fn-start-decl                 go to state 177
+    fn-start-decl                 go to state 178
     syntax-expression             go to state 42
     syntax-expression-wo-ii       go to state 43
     apostrophe-expression         go to state 44
@@ -3191,39 +3216,39 @@ State 172
     compound-expression           go to state 48
 
 
-State 173
+State 174
 
    27 finished-infunction-statement-any: finished_statement .
 
     $default  reduce using rule 27 (finished-infunction-statement-any)
 
 
-State 174
+State 175
 
    31 braced-statements: "`{`" infunction-statement-set . "`}`"
 
-    "`}`"  shift, and go to state 224
+    "`}`"  shift, and go to state 225
 
 
-State 175
+State 176
 
    46 infunction-statement: generic-statement .
 
     $default  reduce using rule 46 (infunction-statement)
 
 
-State 176
+State 177
 
    25 infunction-statement-any: infunction-statement .
 
     $default  reduce using rule 25 (infunction-statement-any)
 
 
-State 177
+State 178
 
    37 finished_statement: fn-start-decl . fn-decl braced-statements
-  147 lambda-expression: fn-start-decl . "`(`" parameter-list-opt "`)`" braced-statements
-  148                  | fn-start-decl . "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements
+  148 lambda-expression: fn-start-decl . "`(`" parameter-list-opt "`)`" braced-statements
+  149                  | fn-start-decl . "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements
 
     IDENTIFIER  shift, and go to state 2
     "`::`"      shift, and go to state 10
@@ -3233,39 +3258,19 @@ State 177
     identifier  go to state 38
     qname       go to state 90
     fn-name     go to state 91
-    fn-decl     go to state 225
-
-
-State 178
-
-   33 finished_statement: "`while`" syntax-expression "`;`" syntax-expression . braced-statements
-  128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
-
-    INTEGER_INDEX  shift, and go to state 93
-    "`==`"         shift, and go to state 95
-    "`!=`"         shift, and go to state 96
-    "`...`"        shift, and go to state 97
-    "`{`"          shift, and go to state 114
-    "`.`"          shift, and go to state 98
-    "`+`"          shift, and go to state 99
-
-    braced-statements  go to state 226
+    fn-decl     go to state 226
 
 
 State 179
 
-   34 finished_statement: "`for`" syntax-expression "`in`" syntax-expression . braced-statements
+   33 finished_statement: "`while`" syntax-expression "`;`" syntax-expression . braced-statements
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -3280,22 +3285,45 @@ State 179
 
 State 180
 
-   36 finished_statement: "`if`" syntax-expression braced-statements "`else`" . braced-statements
+   34 finished_statement: "`for`" syntax-expression "`in`" syntax-expression . braced-statements
+  128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
-    "`{`"  shift, and go to state 114
+    INTEGER_INDEX  shift, and go to state 93
+    "`==`"         shift, and go to state 95
+    "`!=`"         shift, and go to state 96
+    "`...`"        shift, and go to state 97
+    "`{`"          shift, and go to state 114
+    "`.`"          shift, and go to state 98
+    "`+`"          shift, and go to state 99
 
     braced-statements  go to state 228
 
 
 State 181
 
+   36 finished_statement: "`if`" syntax-expression braced-statements "`else`" . braced-statements
+
+    "`{`"  shift, and go to state 114
+
+    braced-statements  go to state 229
+
+
+State 182
+
    68 using-decl: qname "`=>`" syntax-expression .
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -3307,45 +3335,45 @@ State 181
     $default  reduce using rule 68 (using-decl)
 
 
-State 182
+State 183
 
    69 using-decl: qname "`(`" parameter-list-opt . "`)`" "`=>`" syntax-expression
 
-    "`)`"  shift, and go to state 229
+    "`)`"  shift, and go to state 230
 
 
-State 183
+State 184
 
    65 case-decl: identifier .
 
     $default  reduce using rule 65 (case-decl)
 
 
-State 184
+State 185
 
    60 enum-decl: ENUM qname "`{`" case-list-opt . "`}`"
 
-    "`}`"  shift, and go to state 230
+    "`}`"  shift, and go to state 231
 
 
-State 185
+State 186
 
    62 case-list-opt: case-list .
    64 case-list: case-list . "," case-decl
 
-    ","  shift, and go to state 231
+    ","  shift, and go to state 232
 
     $default  reduce using rule 62 (case-list-opt)
 
 
-State 186
+State 187
 
    63 case-list: case-decl .
 
     $default  reduce using rule 63 (case-list)
 
 
-State 187
+State 188
 
    66 struct-decl: qname "`=>`" "`(`" . field-list-opt "`)`"
 
@@ -3353,72 +3381,43 @@ State 187
 
     $default  reduce using rule 78 (field-list-opt)
 
-    identifier      go to state 232
-    field-list-opt  go to state 233
-    field-list      go to state 234
-    field           go to state 235
-
-
-State 188
-
-   39 finished_statement: STRUCT qname "`(`" parameter-list-opt . "`)`" braced-statements
-   67 struct-decl: qname "`(`" parameter-list-opt . "`)`" "`=>`" "`(`" field-list-opt "`)`"
-
-    "`)`"  shift, and go to state 236
+    identifier      go to state 233
+    field-list-opt  go to state 234
+    field-list      go to state 235
+    field           go to state 236
 
 
 State 189
 
-  155 type-expr: "`(`" argument-list-opt . "`)`"
+   39 finished_statement: STRUCT qname "`(`" parameter-list-opt . "`)`" braced-statements
+   67 struct-decl: qname "`(`" parameter-list-opt . "`)`" "`=>`" "`(`" field-list-opt "`)`"
 
     "`)`"  shift, and go to state 237
 
 
 State 190
 
-  154 type-expr: "`[`" type-expr . "`]`"
-  156          | type-expr . "`[`" INTEGER "`]`"
-  157          | type-expr . "`|`" type-expr
-  158          | type-expr . "`->`" type-expr
+  156 type-expr: "`(`" argument-list-opt . "`)`"
 
-    "`->`"  shift, and go to state 191
-    "`[`"   shift, and go to state 192
-    "`]`"   shift, and go to state 238
-    "`|`"   shift, and go to state 193
+    "`)`"  shift, and go to state 238
 
 
 State 191
 
-  158 type-expr: type-expr "`->`" . type-expr
+  155 type-expr: "`[`" type-expr . "`]`"
+  157          | type-expr . "`[`" INTEGER "`]`"
+  158          | type-expr . "`|`" type-expr
+  159          | type-expr . "`->`" type-expr
 
-    IDENTIFIER           shift, and go to state 2
-    INTERNAL_IDENTIFIER  shift, and go to state 125
-    "APOSTROPHE"         shift, and go to state 9
-    "`::`"               shift, and go to state 10
-    "`(`"                shift, and go to state 126
-    "`[`"                shift, and go to state 127
-    INLINE               shift, and go to state 23
-    "`fn`"               shift, and go to state 24
-
-    identifier             go to state 38
-    qname                  go to state 128
-    fn-start-decl          go to state 49
-    apostrophe-expression  go to state 129
-    call-expression        go to state 130
-    lambda-expression      go to state 131
-    type-expr              go to state 239
+    "`->`"  shift, and go to state 192
+    "`[`"   shift, and go to state 193
+    "`]`"   shift, and go to state 239
+    "`|`"   shift, and go to state 194
 
 
 State 192
 
-  156 type-expr: type-expr "`[`" . INTEGER "`]`"
-
-    INTEGER  shift, and go to state 240
-
-
-State 193
-
-  157 type-expr: type-expr "`|`" . type-expr
+  159 type-expr: type-expr "`->`" . type-expr
 
     IDENTIFIER           shift, and go to state 2
     INTERNAL_IDENTIFIER  shift, and go to state 125
@@ -3435,34 +3434,63 @@ State 193
     apostrophe-expression  go to state 129
     call-expression        go to state 130
     lambda-expression      go to state 131
-    type-expr              go to state 241
+    type-expr              go to state 240
+
+
+State 193
+
+  157 type-expr: type-expr "`[`" . INTEGER "`]`"
+
+    INTEGER  shift, and go to state 241
 
 
 State 194
 
-  143 call-expression: qname "`(`" argument-list-opt "`)`" .
+  158 type-expr: type-expr "`|`" . type-expr
 
-    $default  reduce using rule 143 (call-expression)
+    IDENTIFIER           shift, and go to state 2
+    INTERNAL_IDENTIFIER  shift, and go to state 125
+    "APOSTROPHE"         shift, and go to state 9
+    "`::`"               shift, and go to state 10
+    "`(`"                shift, and go to state 126
+    "`[`"                shift, and go to state 127
+    INLINE               shift, and go to state 23
+    "`fn`"               shift, and go to state 24
+
+    identifier             go to state 38
+    qname                  go to state 128
+    fn-start-decl          go to state 49
+    apostrophe-expression  go to state 129
+    call-expression        go to state 130
+    lambda-expression      go to state 131
+    type-expr              go to state 242
 
 
 State 195
 
+  144 call-expression: qname "`(`" argument-list-opt "`)`" .
+
+    $default  reduce using rule 144 (call-expression)
+
+
+State 196
+
    98 parameter-name-decl: INTERNAL_IDENTIFIER "`...`" . "`:`"
   109 parameter-matched-type: INTERNAL_IDENTIFIER "`...`" .
 
-    "`:`"  shift, and go to state 242
+    "`:`"  shift, and go to state 243
 
     $default  reduce using rule 109 (parameter-matched-type)
 
 
-State 196
+State 197
 
    97 parameter-name-decl: INTERNAL_IDENTIFIER "`:`" .
 
     $default  reduce using rule 97 (parameter-name-decl)
 
 
-State 197
+State 198
 
    53 qname: qname . "`::`" identifier
   114 concept-expression: "`@`" qname .
@@ -3472,28 +3500,28 @@ State 197
     $default  reduce using rule 114 (concept-expression)
 
 
-State 198
+State 199
 
    50 internal_identifier: INTERNAL_IDENTIFIER .
 
     $default  reduce using rule 50 (internal_identifier)
 
 
-State 199
+State 200
 
    96 parameter-name-decl: identifier "`:`" .
 
     $default  reduce using rule 96 (parameter-name-decl)
 
 
-State 200
+State 201
 
    95 parameter-name-decl: identifier internal_identifier . "`:`"
 
-    "`:`"  shift, and go to state 243
+    "`:`"  shift, and go to state 244
 
 
-State 201
+State 202
 
   112 basic-parameter-matched-type: qname "`(`" . argument-list-opt "`)`"
 
@@ -3521,7 +3549,7 @@ State 201
     identifier               go to state 53
     qname                    go to state 39
     fn-start-decl            go to state 49
-    argument-list-opt        go to state 244
+    argument-list-opt        go to state 245
     argument-list            go to state 136
     argument                 go to state 55
     argument-name            go to state 56
@@ -3534,18 +3562,18 @@ State 201
     compound-expression      go to state 51
 
 
-State 202
+State 203
 
-  147 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" . braced-statements
-  148                  | fn-start-decl "`(`" parameter-list-opt "`)`" . "`->`" type-expr braced-statements
+  148 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" . braced-statements
+  149                  | fn-start-decl "`(`" parameter-list-opt "`)`" . "`->`" type-expr braced-statements
 
-    "`->`"  shift, and go to state 245
+    "`->`"  shift, and go to state 246
     "`{`"   shift, and go to state 114
 
-    braced-statements  go to state 246
+    braced-statements  go to state 247
 
 
-State 203
+State 204
 
    91 parameter-list: parameter-list "," . parameter-decl
 
@@ -3559,7 +3587,7 @@ State 203
 
     identifier                     go to state 142
     qname                          go to state 143
-    parameter-decl                 go to state 247
+    parameter-decl                 go to state 248
     parameter-name-decl            go to state 147
     parameter-constraint-modifier  go to state 148
     parameter-constraint-set       go to state 149
@@ -3568,42 +3596,42 @@ State 203
     concept-expression             go to state 152
 
 
-State 204
+State 205
 
    92 parameter-decl: parameter-name-decl parameter-constraint-modifier-opt . parameter-constraint-set
 
     IDENTIFIER           shift, and go to state 2
-    INTERNAL_IDENTIFIER  shift, and go to state 206
+    INTERNAL_IDENTIFIER  shift, and go to state 207
     "`@`"                shift, and go to state 138
     "`_`"                shift, and go to state 139
     "`::`"               shift, and go to state 10
 
     identifier                    go to state 38
     qname                         go to state 143
-    parameter-constraint-set      go to state 248
+    parameter-constraint-set      go to state 249
     parameter-matched-type        go to state 150
     basic-parameter-matched-type  go to state 151
     concept-expression            go to state 152
 
 
-State 205
+State 206
 
    99 parameter-constraint-modifier-opt: parameter-constraint-modifier .
 
     $default  reduce using rule 99 (parameter-constraint-modifier-opt)
 
 
-State 206
+State 207
 
   108 parameter-matched-type: INTERNAL_IDENTIFIER .
   109                       | INTERNAL_IDENTIFIER . "`...`"
 
-    "`...`"  shift, and go to state 249
+    "`...`"  shift, and go to state 250
 
     $default  reduce using rule 108 (parameter-matched-type)
 
 
-State 207
+State 208
 
    93 parameter-decl: parameter-constraint-modifier parameter-constraint-set .
   105 parameter-constraint-set: parameter-constraint-set . concept-expression
@@ -3612,24 +3640,24 @@ State 207
 
     $default  reduce using rule 93 (parameter-decl)
 
-    concept-expression  go to state 208
+    concept-expression  go to state 209
 
 
-State 208
+State 209
 
   105 parameter-constraint-set: parameter-constraint-set concept-expression .
 
     $default  reduce using rule 105 (parameter-constraint-set)
 
 
-State 209
+State 210
 
   107 parameter-matched-type: basic-parameter-matched-type "`...`" .
 
     $default  reduce using rule 107 (parameter-matched-type)
 
 
-State 210
+State 211
 
   113 basic-parameter-matched-type: basic-parameter-matched-type "`|`" . basic-parameter-matched-type
 
@@ -3639,26 +3667,27 @@ State 210
 
     identifier                    go to state 38
     qname                         go to state 143
-    basic-parameter-matched-type  go to state 250
-
-
-State 211
-
-   58 fn-decl: fn-name "`(`" parameter-list-opt . "`)`"
-   59        | fn-name "`(`" parameter-list-opt . "`)`" "`->`" type-expr
-
-    "`)`"  shift, and go to state 251
+    basic-parameter-matched-type  go to state 251
 
 
 State 212
 
+   58 fn-decl: fn-name "`(`" parameter-list-opt . "`)`"
+   59        | fn-name "`(`" parameter-list-opt . "`)`" "`->`" type-expr
+
+    "`)`"  shift, and go to state 252
+
+
+State 213
+
    14 statement: fn-start-decl fn-decl "`=>`" syntax-expression .
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -3670,104 +3699,104 @@ State 212
     $default  reduce using rule 14 (statement)
 
 
-State 213
-
-  145 call-expression: apostrophe-expression "`(`" argument-list-opt "`)`" .
-
-    $default  reduce using rule 145 (call-expression)
-
-
 State 214
 
-  144 call-expression: call-expression "`(`" argument-list-opt "`)`" .
-
-    $default  reduce using rule 144 (call-expression)
-
-
-State 215
-
-  146 call-expression: lambda-expression "`(`" argument-list-opt "`)`" .
+  146 call-expression: apostrophe-expression "`(`" argument-list-opt "`)`" .
 
     $default  reduce using rule 146 (call-expression)
 
 
+State 215
+
+  145 call-expression: call-expression "`(`" argument-list-opt "`)`" .
+
+    $default  reduce using rule 145 (call-expression)
+
+
 State 216
 
-   10 statement: EXTERN VAR identifier "`:`" type-expr .
-  156 type-expr: type-expr . "`[`" INTEGER "`]`"
-  157          | type-expr . "`|`" type-expr
-  158          | type-expr . "`->`" type-expr
+  147 call-expression: lambda-expression "`(`" argument-list-opt "`)`" .
 
-    "`->`"  shift, and go to state 191
-    "`[`"   shift, and go to state 192
-    "`|`"   shift, and go to state 193
-
-    $default  reduce using rule 10 (statement)
+    $default  reduce using rule 147 (call-expression)
 
 
 State 217
 
-  141 new-expression: "`new`" qname "`(`" argument-list-opt "`)`" .
+   10 statement: EXTERN VAR identifier "`:`" type-expr .
+  157 type-expr: type-expr . "`[`" INTEGER "`]`"
+  158          | type-expr . "`|`" type-expr
+  159          | type-expr . "`->`" type-expr
 
-    $default  reduce using rule 141 (new-expression)
+    "`->`"  shift, and go to state 192
+    "`[`"   shift, and go to state 193
+    "`|`"   shift, and go to state 194
+
+    $default  reduce using rule 10 (statement)
 
 
 State 218
 
-  142 new-expression: "`new`" apostrophe-expression "`(`" argument-list-opt "`)`" .
+  142 new-expression: "`new`" qname "`(`" argument-list-opt "`)`" .
 
     $default  reduce using rule 142 (new-expression)
 
 
 State 219
 
+  143 new-expression: "`new`" apostrophe-expression "`(`" argument-list-opt "`)`" .
+
+    $default  reduce using rule 143 (new-expression)
+
+
+State 220
+
    38 finished_statement: STRUCT qname . braced-statements
    39                   | STRUCT qname . "`(`" parameter-list-opt "`)`" braced-statements
    53 qname: qname . "`::`" identifier
 
     "`::`"  shift, and go to state 86
-    "`(`"   shift, and go to state 252
+    "`(`"   shift, and go to state 253
     "`{`"   shift, and go to state 114
 
     braced-statements  go to state 124
 
 
-State 220
+State 221
 
    30 finished-infunction-statement-any: infunction-statement-any "`;`" .
 
     $default  reduce using rule 30 (finished-infunction-statement-any)
 
 
-State 221
+State 222
 
    28 finished-infunction-statement-any: finished-infunction-statement-any "`;`" .
 
     $default  reduce using rule 28 (finished-infunction-statement-any)
 
 
-State 222
+State 223
 
    29 finished-infunction-statement-any: finished-infunction-statement-any finished_statement .
 
     $default  reduce using rule 29 (finished-infunction-statement-any)
 
 
-State 223
+State 224
 
    26 infunction-statement-any: finished-infunction-statement-any infunction-statement .
 
     $default  reduce using rule 26 (infunction-statement-any)
 
 
-State 224
+State 225
 
    31 braced-statements: "`{`" infunction-statement-set "`}`" .
 
     $default  reduce using rule 31 (braced-statements)
 
 
-State 225
+State 226
 
    37 finished_statement: fn-start-decl fn-decl . braced-statements
 
@@ -3776,162 +3805,162 @@ State 225
     braced-statements  go to state 155
 
 
-State 226
+State 227
 
    33 finished_statement: "`while`" syntax-expression "`;`" syntax-expression braced-statements .
 
     $default  reduce using rule 33 (finished_statement)
 
 
-State 227
+State 228
 
    34 finished_statement: "`for`" syntax-expression "`in`" syntax-expression braced-statements .
 
     $default  reduce using rule 34 (finished_statement)
 
 
-State 228
+State 229
 
    36 finished_statement: "`if`" syntax-expression braced-statements "`else`" braced-statements .
 
     $default  reduce using rule 36 (finished_statement)
 
 
-State 229
+State 230
 
    69 using-decl: qname "`(`" parameter-list-opt "`)`" . "`=>`" syntax-expression
 
-    "`=>`"  shift, and go to state 253
+    "`=>`"  shift, and go to state 254
 
 
-State 230
+State 231
 
    60 enum-decl: ENUM qname "`{`" case-list-opt "`}`" .
 
     $default  reduce using rule 60 (enum-decl)
 
 
-State 231
+State 232
 
    64 case-list: case-list "," . case-decl
 
     IDENTIFIER  shift, and go to state 2
 
-    identifier  go to state 183
-    case-decl   go to state 254
-
-
-State 232
-
-   82 field: identifier . "`:`" parameter-constraint-modifier-opt field-type-expr
-   83      | identifier . "`:`" parameter-constraint-modifier-opt field-type-expr "`=`" syntax-expression
-
-    "`:`"  shift, and go to state 255
+    identifier  go to state 184
+    case-decl   go to state 255
 
 
 State 233
 
-   66 struct-decl: qname "`=>`" "`(`" field-list-opt . "`)`"
+   82 field: identifier . "`:`" parameter-constraint-modifier-opt field-type-expr
+   83      | identifier . "`:`" parameter-constraint-modifier-opt field-type-expr "`=`" syntax-expression
 
-    "`)`"  shift, and go to state 256
+    "`:`"  shift, and go to state 256
 
 
 State 234
 
+   66 struct-decl: qname "`=>`" "`(`" field-list-opt . "`)`"
+
+    "`)`"  shift, and go to state 257
+
+
+State 235
+
    79 field-list-opt: field-list .
    81 field-list: field-list . "," field
 
-    ","  shift, and go to state 257
+    ","  shift, and go to state 258
 
     $default  reduce using rule 79 (field-list-opt)
 
 
-State 235
+State 236
 
    80 field-list: field .
 
     $default  reduce using rule 80 (field-list)
 
 
-State 236
+State 237
 
    39 finished_statement: STRUCT qname "`(`" parameter-list-opt "`)`" . braced-statements
    67 struct-decl: qname "`(`" parameter-list-opt "`)`" . "`=>`" "`(`" field-list-opt "`)`"
 
-    "`=>`"  shift, and go to state 258
+    "`=>`"  shift, and go to state 259
     "`{`"   shift, and go to state 114
 
-    braced-statements  go to state 259
-
-
-State 237
-
-  155 type-expr: "`(`" argument-list-opt "`)`" .
-
-    $default  reduce using rule 155 (type-expr)
+    braced-statements  go to state 260
 
 
 State 238
 
-  154 type-expr: "`[`" type-expr "`]`" .
+  156 type-expr: "`(`" argument-list-opt "`)`" .
 
-    $default  reduce using rule 154 (type-expr)
+    $default  reduce using rule 156 (type-expr)
 
 
 State 239
 
-  156 type-expr: type-expr . "`[`" INTEGER "`]`"
-  157          | type-expr . "`|`" type-expr
-  158          | type-expr . "`->`" type-expr
-  158          | type-expr "`->`" type-expr .
+  155 type-expr: "`[`" type-expr "`]`" .
 
-    $default  reduce using rule 158 (type-expr)
+    $default  reduce using rule 155 (type-expr)
 
 
 State 240
 
-  156 type-expr: type-expr "`[`" INTEGER . "`]`"
+  157 type-expr: type-expr . "`[`" INTEGER "`]`"
+  158          | type-expr . "`|`" type-expr
+  159          | type-expr . "`->`" type-expr
+  159          | type-expr "`->`" type-expr .
 
-    "`]`"  shift, and go to state 260
+    $default  reduce using rule 159 (type-expr)
 
 
 State 241
 
-  156 type-expr: type-expr . "`[`" INTEGER "`]`"
-  157          | type-expr . "`|`" type-expr
-  157          | type-expr "`|`" type-expr .
-  158          | type-expr . "`->`" type-expr
+  157 type-expr: type-expr "`[`" INTEGER . "`]`"
 
-    "`->`"  shift, and go to state 191
-    "`[`"   shift, and go to state 192
-
-    $default  reduce using rule 157 (type-expr)
+    "`]`"  shift, and go to state 261
 
 
 State 242
+
+  157 type-expr: type-expr . "`[`" INTEGER "`]`"
+  158          | type-expr . "`|`" type-expr
+  158          | type-expr "`|`" type-expr .
+  159          | type-expr . "`->`" type-expr
+
+    "`->`"  shift, and go to state 192
+    "`[`"   shift, and go to state 193
+
+    $default  reduce using rule 158 (type-expr)
+
+
+State 243
 
    98 parameter-name-decl: INTERNAL_IDENTIFIER "`...`" "`:`" .
 
     $default  reduce using rule 98 (parameter-name-decl)
 
 
-State 243
+State 244
 
    95 parameter-name-decl: identifier internal_identifier "`:`" .
 
     $default  reduce using rule 95 (parameter-name-decl)
 
 
-State 244
+State 245
 
   112 basic-parameter-matched-type: qname "`(`" argument-list-opt . "`)`"
 
-    "`)`"  shift, and go to state 261
+    "`)`"  shift, and go to state 262
 
 
-State 245
+State 246
 
-  148 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" "`->`" . type-expr braced-statements
+  149 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" "`->`" . type-expr braced-statements
 
     IDENTIFIER           shift, and go to state 2
     INTERNAL_IDENTIFIER  shift, and go to state 125
@@ -3948,24 +3977,24 @@ State 245
     apostrophe-expression  go to state 129
     call-expression        go to state 130
     lambda-expression      go to state 131
-    type-expr              go to state 262
-
-
-State 246
-
-  147 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" braced-statements .
-
-    $default  reduce using rule 147 (lambda-expression)
+    type-expr              go to state 263
 
 
 State 247
+
+  148 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" braced-statements .
+
+    $default  reduce using rule 148 (lambda-expression)
+
+
+State 248
 
    91 parameter-list: parameter-list "," parameter-decl .
 
     $default  reduce using rule 91 (parameter-list)
 
 
-State 248
+State 249
 
    92 parameter-decl: parameter-name-decl parameter-constraint-modifier-opt parameter-constraint-set .
   105 parameter-constraint-set: parameter-constraint-set . concept-expression
@@ -3974,17 +4003,17 @@ State 248
 
     $default  reduce using rule 92 (parameter-decl)
 
-    concept-expression  go to state 208
+    concept-expression  go to state 209
 
 
-State 249
+State 250
 
   109 parameter-matched-type: INTERNAL_IDENTIFIER "`...`" .
 
     $default  reduce using rule 109 (parameter-matched-type)
 
 
-State 250
+State 251
 
   113 basic-parameter-matched-type: basic-parameter-matched-type . "`|`" basic-parameter-matched-type
   113                             | basic-parameter-matched-type "`|`" basic-parameter-matched-type .
@@ -3992,17 +4021,17 @@ State 250
     $default  reduce using rule 113 (basic-parameter-matched-type)
 
 
-State 251
+State 252
 
    58 fn-decl: fn-name "`(`" parameter-list-opt "`)`" .
    59        | fn-name "`(`" parameter-list-opt "`)`" . "`->`" type-expr
 
-    "`->`"  shift, and go to state 263
+    "`->`"  shift, and go to state 264
 
     $default  reduce using rule 58 (fn-decl)
 
 
-State 252
+State 253
 
    39 finished_statement: STRUCT qname "`(`" . parameter-list-opt "`)`" braced-statements
 
@@ -4018,7 +4047,7 @@ State 252
 
     identifier                     go to state 142
     qname                          go to state 143
-    parameter-list-opt             go to state 264
+    parameter-list-opt             go to state 265
     parameter-list                 go to state 145
     parameter-decl                 go to state 146
     parameter-name-decl            go to state 147
@@ -4029,7 +4058,7 @@ State 252
     concept-expression             go to state 152
 
 
-State 253
+State 254
 
    69 using-decl: qname "`(`" parameter-list-opt "`)`" "`=>`" . syntax-expression
 
@@ -4055,7 +4084,7 @@ State 253
     identifier               go to state 38
     qname                    go to state 39
     fn-start-decl            go to state 49
-    syntax-expression        go to state 265
+    syntax-expression        go to state 266
     syntax-expression-wo-ii  go to state 43
     apostrophe-expression    go to state 44
     new-expression           go to state 45
@@ -4064,14 +4093,14 @@ State 253
     compound-expression      go to state 51
 
 
-State 254
+State 255
 
    64 case-list: case-list "," case-decl .
 
     $default  reduce using rule 64 (case-list)
 
 
-State 255
+State 256
 
    82 field: identifier "`:`" . parameter-constraint-modifier-opt field-type-expr
    83      | identifier "`:`" . parameter-constraint-modifier-opt field-type-expr "`=`" syntax-expression
@@ -4081,71 +4110,71 @@ State 255
 
     $default  reduce using rule 100 (parameter-constraint-modifier-opt)
 
-    parameter-constraint-modifier-opt  go to state 266
-    parameter-constraint-modifier      go to state 205
+    parameter-constraint-modifier-opt  go to state 267
+    parameter-constraint-modifier      go to state 206
 
 
-State 256
+State 257
 
    66 struct-decl: qname "`=>`" "`(`" field-list-opt "`)`" .
 
     $default  reduce using rule 66 (struct-decl)
 
 
-State 257
+State 258
 
    81 field-list: field-list "," . field
 
     IDENTIFIER  shift, and go to state 2
 
-    identifier  go to state 232
-    field       go to state 267
-
-
-State 258
-
-   67 struct-decl: qname "`(`" parameter-list-opt "`)`" "`=>`" . "`(`" field-list-opt "`)`"
-
-    "`(`"  shift, and go to state 268
+    identifier  go to state 233
+    field       go to state 268
 
 
 State 259
+
+   67 struct-decl: qname "`(`" parameter-list-opt "`)`" "`=>`" . "`(`" field-list-opt "`)`"
+
+    "`(`"  shift, and go to state 269
+
+
+State 260
 
    39 finished_statement: STRUCT qname "`(`" parameter-list-opt "`)`" braced-statements .
 
     $default  reduce using rule 39 (finished_statement)
 
 
-State 260
-
-  156 type-expr: type-expr "`[`" INTEGER "`]`" .
-
-    $default  reduce using rule 156 (type-expr)
-
-
 State 261
+
+  157 type-expr: type-expr "`[`" INTEGER "`]`" .
+
+    $default  reduce using rule 157 (type-expr)
+
+
+State 262
 
   112 basic-parameter-matched-type: qname "`(`" argument-list-opt "`)`" .
 
     $default  reduce using rule 112 (basic-parameter-matched-type)
 
 
-State 262
-
-  148 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" "`->`" type-expr . braced-statements
-  156 type-expr: type-expr . "`[`" INTEGER "`]`"
-  157          | type-expr . "`|`" type-expr
-  158          | type-expr . "`->`" type-expr
-
-    "`->`"  shift, and go to state 191
-    "`{`"   shift, and go to state 114
-    "`[`"   shift, and go to state 192
-    "`|`"   shift, and go to state 193
-
-    braced-statements  go to state 269
-
-
 State 263
+
+  149 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" "`->`" type-expr . braced-statements
+  157 type-expr: type-expr . "`[`" INTEGER "`]`"
+  158          | type-expr . "`|`" type-expr
+  159          | type-expr . "`->`" type-expr
+
+    "`->`"  shift, and go to state 192
+    "`{`"   shift, and go to state 114
+    "`[`"   shift, and go to state 193
+    "`|`"   shift, and go to state 194
+
+    braced-statements  go to state 270
+
+
+State 264
 
    59 fn-decl: fn-name "`(`" parameter-list-opt "`)`" "`->`" . type-expr
 
@@ -4164,25 +4193,26 @@ State 263
     apostrophe-expression  go to state 129
     call-expression        go to state 130
     lambda-expression      go to state 131
-    type-expr              go to state 270
-
-
-State 264
-
-   39 finished_statement: STRUCT qname "`(`" parameter-list-opt . "`)`" braced-statements
-
-    "`)`"  shift, and go to state 271
+    type-expr              go to state 271
 
 
 State 265
 
+   39 finished_statement: STRUCT qname "`(`" parameter-list-opt . "`)`" braced-statements
+
+    "`)`"  shift, and go to state 272
+
+
+State 266
+
    69 using-decl: qname "`(`" parameter-list-opt "`)`" "`=>`" syntax-expression .
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -4194,28 +4224,28 @@ State 265
     $default  reduce using rule 69 (using-decl)
 
 
-State 266
+State 267
 
    82 field: identifier "`:`" parameter-constraint-modifier-opt . field-type-expr
    83      | identifier "`:`" parameter-constraint-modifier-opt . field-type-expr "`=`" syntax-expression
 
     IDENTIFIER           shift, and go to state 2
-    INTERNAL_IDENTIFIER  shift, and go to state 272
+    INTERNAL_IDENTIFIER  shift, and go to state 273
     "`::`"               shift, and go to state 10
 
     identifier       go to state 38
-    qname            go to state 273
-    field-type-expr  go to state 274
+    qname            go to state 274
+    field-type-expr  go to state 275
 
 
-State 267
+State 268
 
    81 field-list: field-list "," field .
 
     $default  reduce using rule 81 (field-list)
 
 
-State 268
+State 269
 
    67 struct-decl: qname "`(`" parameter-list-opt "`)`" "`=>`" "`(`" . field-list-opt "`)`"
 
@@ -4223,81 +4253,81 @@ State 268
 
     $default  reduce using rule 78 (field-list-opt)
 
-    identifier      go to state 232
-    field-list-opt  go to state 275
-    field-list      go to state 234
-    field           go to state 235
-
-
-State 269
-
-  148 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements .
-
-    $default  reduce using rule 148 (lambda-expression)
+    identifier      go to state 233
+    field-list-opt  go to state 276
+    field-list      go to state 235
+    field           go to state 236
 
 
 State 270
 
-   59 fn-decl: fn-name "`(`" parameter-list-opt "`)`" "`->`" type-expr .
-  156 type-expr: type-expr . "`[`" INTEGER "`]`"
-  157          | type-expr . "`|`" type-expr
-  158          | type-expr . "`->`" type-expr
+  149 lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements .
 
-    "`->`"  shift, and go to state 191
-    "`[`"   shift, and go to state 192
-    "`|`"   shift, and go to state 193
+    $default  reduce using rule 149 (lambda-expression)
+
+
+State 271
+
+   59 fn-decl: fn-name "`(`" parameter-list-opt "`)`" "`->`" type-expr .
+  157 type-expr: type-expr . "`[`" INTEGER "`]`"
+  158          | type-expr . "`|`" type-expr
+  159          | type-expr . "`->`" type-expr
+
+    "`->`"  shift, and go to state 192
+    "`[`"   shift, and go to state 193
+    "`|`"   shift, and go to state 194
 
     $default  reduce using rule 59 (fn-decl)
 
 
-State 271
+State 272
 
    39 finished_statement: STRUCT qname "`(`" parameter-list-opt "`)`" . braced-statements
 
     "`{`"  shift, and go to state 114
 
-    braced-statements  go to state 259
+    braced-statements  go to state 260
 
 
-State 272
+State 273
 
    86 field-type-expr: INTERNAL_IDENTIFIER .
 
     $default  reduce using rule 86 (field-type-expr)
 
 
-State 273
+State 274
 
    53 qname: qname . "`::`" identifier
    84 field-type-expr: qname .
    85                | qname . "`(`" argument-list-opt "`)`"
 
     "`::`"  shift, and go to state 86
-    "`(`"   shift, and go to state 276
+    "`(`"   shift, and go to state 277
 
     $default  reduce using rule 84 (field-type-expr)
 
 
-State 274
+State 275
 
    82 field: identifier "`:`" parameter-constraint-modifier-opt field-type-expr .
    83      | identifier "`:`" parameter-constraint-modifier-opt field-type-expr . "`=`" syntax-expression
    87 field-type-expr: field-type-expr . "`|`" field-type-expr
 
-    "`=`"  shift, and go to state 277
-    "`|`"  shift, and go to state 278
+    "`=`"  shift, and go to state 278
+    "`|`"  shift, and go to state 279
 
     $default  reduce using rule 82 (field)
 
 
-State 275
+State 276
 
    67 struct-decl: qname "`(`" parameter-list-opt "`)`" "`=>`" "`(`" field-list-opt . "`)`"
 
-    "`)`"  shift, and go to state 279
+    "`)`"  shift, and go to state 280
 
 
-State 276
+State 277
 
    85 field-type-expr: qname "`(`" . argument-list-opt "`)`"
 
@@ -4325,7 +4355,7 @@ State 276
     identifier               go to state 53
     qname                    go to state 39
     fn-start-decl            go to state 49
-    argument-list-opt        go to state 280
+    argument-list-opt        go to state 281
     argument-list            go to state 136
     argument                 go to state 55
     argument-name            go to state 56
@@ -4338,7 +4368,7 @@ State 276
     compound-expression      go to state 51
 
 
-State 277
+State 278
 
    83 field: identifier "`:`" parameter-constraint-modifier-opt field-type-expr "`=`" . syntax-expression
 
@@ -4364,7 +4394,7 @@ State 277
     identifier               go to state 38
     qname                    go to state 39
     fn-start-decl            go to state 49
-    syntax-expression        go to state 281
+    syntax-expression        go to state 282
     syntax-expression-wo-ii  go to state 43
     apostrophe-expression    go to state 44
     new-expression           go to state 45
@@ -4373,42 +4403,43 @@ State 277
     compound-expression      go to state 51
 
 
-State 278
+State 279
 
    87 field-type-expr: field-type-expr "`|`" . field-type-expr
 
     IDENTIFIER           shift, and go to state 2
-    INTERNAL_IDENTIFIER  shift, and go to state 272
+    INTERNAL_IDENTIFIER  shift, and go to state 273
     "`::`"               shift, and go to state 10
 
     identifier       go to state 38
-    qname            go to state 273
-    field-type-expr  go to state 282
+    qname            go to state 274
+    field-type-expr  go to state 283
 
 
-State 279
+State 280
 
    67 struct-decl: qname "`(`" parameter-list-opt "`)`" "`=>`" "`(`" field-list-opt "`)`" .
 
     $default  reduce using rule 67 (struct-decl)
 
 
-State 280
+State 281
 
    85 field-type-expr: qname "`(`" argument-list-opt . "`)`"
 
-    "`)`"  shift, and go to state 283
+    "`)`"  shift, and go to state 284
 
 
-State 281
+State 282
 
    83 field: identifier "`:`" parameter-constraint-modifier-opt field-type-expr "`=`" syntax-expression .
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
-  129                        | syntax-expression . INTEGER_INDEX
-  131                        | syntax-expression . "`+`" syntax-expression
-  132                        | syntax-expression . "`==`" syntax-expression
-  133                        | syntax-expression . "`!=`" syntax-expression
-  150 compound-expression: syntax-expression . "`...`"
+  129                        | syntax-expression . "`.`" apostrophe-expression
+  130                        | syntax-expression . INTEGER_INDEX
+  132                        | syntax-expression . "`+`" syntax-expression
+  133                        | syntax-expression . "`==`" syntax-expression
+  134                        | syntax-expression . "`!=`" syntax-expression
+  151 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 93
     "`==`"         shift, and go to state 95
@@ -4420,7 +4451,7 @@ State 281
     $default  reduce using rule 83 (field)
 
 
-State 282
+State 283
 
    87 field-type-expr: field-type-expr . "`|`" field-type-expr
    87                | field-type-expr "`|`" field-type-expr .
@@ -4428,7 +4459,7 @@ State 282
     $default  reduce using rule 87 (field-type-expr)
 
 
-State 283
+State 284
 
    85 field-type-expr: qname "`(`" argument-list-opt "`)`" .
 

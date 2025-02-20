@@ -50,15 +50,16 @@ public:
     size_t hash() const noexcept override { return std::bit_cast<size_t>(pattern_); }
 };
 
-parameter_matcher::parameter_matcher(annotated_identifier name, pattern_parameter_descriptor descr) noexcept
-    : descriptor_{ std::move(descr) }
+parameter_matcher::parameter_matcher(annotated_identifier name, parameter_constraint_modifier_t mod, parameter_constraint_set_t cs) noexcept
+    : modifier_{ mod }
+    , constraints_ { std::move(cs) }
 {
     internal_names_.emplace_back(name.value);
-    if (auto const& optexpr = descriptor_.constraints.type_expression; optexpr) {
+    if (auto const& optexpr = constraints_.type_expression; optexpr) {
         if (bang_parameter_pack_t const* pp = get<bang_parameter_pack_t>(&*optexpr); pp) {
             variadic = true;
             syntax_expression_t texpr = std::move(pp->type);
-            descriptor_.constraints.type_expression = std::move(texpr);
+            constraints_.type_expression = std::move(texpr);
         }
     }
 }
@@ -89,13 +90,13 @@ bool parameter_matcher::is_pattern() const noexcept
 
 std::ostream& parameter_matcher::print(unit const& u, std::ostream& ss) const
 {
-    switch (descriptor_.modifier) {
+    switch (modifier_) {
     case parameter_constraint_modifier_t::value_constraint:
         ss << "const "; break;
     case parameter_constraint_modifier_t::typename_constraint:
         ss << "typename "; break;
     }
-    if (syntax_expression_t const* pte = get_pointer(descriptor_.constraints.type_expression); pte) {
+    if (syntax_expression_t const* pte = get_pointer(constraints_.type_expression); pte) {
         ss << u.print(*pte);
     } else {
         ss << '_';
@@ -157,9 +158,10 @@ struct type_constraint_match_visitor : static_visitor<std::expected<entity_ident
     fn_compiler_context& callee_ctx;
     syntax_expression_t const& cexpr;
     functional_binding& binding; // to forward it to signature_matcher_visitor
+    bool matching_type;
 
-    type_constraint_match_visitor(fn_compiler_context& caller, fn_compiler_context& callee, syntax_expression_t const& ce, functional_binding& b)
-        : caller_ctx{ caller }, callee_ctx{ callee }, cexpr{ ce }, binding{ b }
+    type_constraint_match_visitor(fn_compiler_context& caller, fn_compiler_context& callee, syntax_expression_t const& ce, functional_binding& b, bool is_type_matching = false)
+        : caller_ctx{ caller }, callee_ctx{ callee }, cexpr{ ce }, binding{ b }, matching_type { is_type_matching }
     {}
 
     result_type operator()(annotated_qname_identifier const& aqi) const
@@ -234,7 +236,7 @@ struct type_constraint_match_visitor : static_visitor<std::expected<entity_ident
             return std::unexpected(make_error<undeclared_identifier_error>(var.name));
         }
 
-        return apply_visitor(ct_expression_visitor{ caller_ctx, annotated_entity_identifier{ *opteid }, false }, cexpr);
+        return apply_visitor(ct_expression_visitor{ caller_ctx, annotated_entity_identifier{ *opteid }, matching_type }, cexpr);
     }
 
     template <typename T>
@@ -459,7 +461,7 @@ variant<int, parameter_matcher::postpone_t, error_storage> parameter_matcher::tr
 
 void parameter_matcher::bind_names(span<const annotated_identifier> names, entity_identifier type_or_value, functional_binding& binding) const
 {
-    switch (descriptor_.modifier) {
+    switch (modifier_) {
     case parameter_constraint_modifier_t::value_type_constraint:
     {
         shared_ptr<entity> pentity = make_shared<variable_entity>(type_or_value, qname_identifier{}, variable_entity::kind::SCOPE_LOCAL);
@@ -510,12 +512,12 @@ std::expected<int, error_storage> parameter_matcher::try_match(fn_compiler_conte
 {
     //if (constraint.which()) { // not empty
     int weight;
-    switch (descriptor_.modifier) {
+    switch (modifier_) {
         case parameter_constraint_modifier_t::value_type_constraint:
         {
             entity_identifier vtype_result;
             auto last_expr_it = caller_ctx.expressions().last();
-            if (auto const& optexpr = descriptor_.constraints.type_expression; optexpr) {
+            if (auto const& optexpr = constraints_.type_expression; optexpr) {
                 value_type_constraint_match_visitor vtcv{ caller_ctx, callee_ctx, e, binding };
                 auto res = apply_visitor(vtcv, *optexpr);
                 if (!res) return std::unexpected(std::move(res.error()));
@@ -540,7 +542,7 @@ std::expected<int, error_storage> parameter_matcher::try_match(fn_compiler_conte
             auto argres = apply_visitor(evis, e);
             if (!argres) return std::unexpected(std::move(argres.error()));
 
-            if (auto const& optexpr = descriptor_.constraints.type_expression; optexpr) {
+            if (auto const& optexpr = constraints_.type_expression; optexpr) {
                 type_constraint_match_visitor vtcv{ caller_ctx, callee_ctx, annotated_entity_identifier{ *argres, get_start_location(e) }, binding };
                 auto res = apply_visitor(vtcv, *optexpr);
                 if (!res) return std::unexpected(std::move(res.error())); // perhaps pattern?
@@ -561,7 +563,7 @@ std::expected<int, error_storage> parameter_matcher::try_match(fn_compiler_conte
         }
         case parameter_constraint_modifier_t::value_constraint:
         {
-            if (auto const& optexpr = descriptor_.constraints.type_expression; optexpr) {
+            if (auto const& optexpr = constraints_.type_expression; optexpr) {
                 value_type_constraint_visitor vtcv{ callee_ctx, binding };
                 auto res = apply_visitor(vtcv, *optexpr);
                 if (!res) return std::unexpected(std::move(res.error())); // perhaps pattern?
@@ -668,18 +670,6 @@ void varnamed_parameter_matcher::update_binding(unit& u, entity_identifier type_
 //    THROW_NOT_IMPLEMENTED_ERROR("varnamed_matcher::match_forward");
 //}
 
-
-
-//class concrete_named_parameter_impl : public named_parameter_matcher::named_parameter_impl
-//{
-//public:
-//    explicit concrete_named_parameter_impl(pattern_parameter_descriptor descr)
-//        : descr_{ std::move(descr) }
-//    {
-//
-//    }
-//};
-
 //std::expected<int, error_storage> named_parameter_matcher::try_match(fn_compiler_context& ctx, syntax_expression_t const& e, functional_binding_set& bs, parameter_match_result& mr) const
 //{
 //    return impl_->try_match(ctx, e, bs, mr);
@@ -714,12 +704,12 @@ error_storage basic_fn_pattern::init(fn_compiler_context& ctx, fn_pure_t const& 
     std::array<char, 16> argname = { '$' };
 
     for (auto& param : params) {
-        pattern_parameter_descriptor pdescr{ param.modifier, param.constraints, param.value };
         auto [external_name, internal_name, varname] = apply_visitor(param_name_retriever{}, param.name);
 
         parameters_.emplace_back(
             external_name ? *external_name : annotated_identifier{},
             std::initializer_list<annotated_identifier>{},
+            param.value,
             param.modifier,
             varname);
         
@@ -728,8 +718,8 @@ error_storage basic_fn_pattern::init(fn_compiler_context& ctx, fn_pure_t const& 
             if (varnamed_matcher_) {
                 return make_error<basic_general_error>(external_name->location, "Multiple variadic named parameters are not allowed."sv, external_name->value);
             }
-            varnamed_matcher_.emplace(*internal_name, std::move(pdescr));
-            get<1>(parameters_.back()).emplace_back(*internal_name);
+            varnamed_matcher_.emplace(*internal_name, param.modifier, param.constraints);
+            parameters_.back().inames.emplace_back(*internal_name);
         } else if (!external_name) {
             // auto numeration internal parameter
             size_t argindex = matchers_.size();
@@ -738,31 +728,26 @@ error_storage basic_fn_pattern::init(fn_compiler_context& ctx, fn_pure_t const& 
             if (reversed) std::reverse(argname.data() + 1, epos);
             identifier nid = ctx.u().slregistry().resolve(string_view{ argname.data(), epos });
             annotated_identifier generated_internal_name{ nid, /* to do: get location of constraint */ };
-            auto m = make_shared<parameter_matcher>(generated_internal_name, std::move(pdescr));
+            auto m = make_shared<parameter_matcher>(generated_internal_name, param.modifier, param.constraints);
             if (internal_name) { 
                 m->push_internal_name(*internal_name);
-                get<1>(parameters_.back()).emplace_back(*internal_name);
+                parameters_.back().inames.emplace_back(*internal_name);
             }
-            get<1>(parameters_.back()).emplace_back(generated_internal_name);
+            parameters_.back().inames.emplace_back(generated_internal_name);
             matchers_.emplace_back(std::move(m));
         } else {
-            get<1>(parameters_.back()).emplace_back(internal_name ? *internal_name : *external_name);
+            parameters_.back().inames.emplace_back(internal_name ? *internal_name : *external_name);
             auto it = named_matchers_.find(external_name->value);
             if (it != named_matchers_.end()) {
                 // change type to to some variadic?
                 return make_error<basic_general_error>(it->external_name().location, "duplicate parameter name"sv, it->external_name().value);
             }
-            named_matchers_.emplace_hint(it, *external_name, internal_name, std::move(pdescr));
+            named_matchers_.emplace_hint(it, *external_name, internal_name, param.modifier, param.constraints);
         }
     }
 
     if (fnd.result) {
         result_constraints_.emplace(parameter_constraint_set_t{ .type_expression = *fnd.result });
-        //result_matcher_.emplace(pattern_parameter_descriptor{ 
-        //    .modifier = parameter_constraint_modifier_t::value_type_constraint,
-        //    .constraints = parameter_constraint_set_t{ .type_expression = *fnd.result },
-        //    .default_value = {}
-        //});
     }
 
     return {};
@@ -856,6 +841,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
     fn_compiler_context callee_ctx{ ctx, fnl_.name() };
     auto pmd = make_shared<functional_match_descriptor>(ctx.u());
     callee_ctx.push_binding(pmd->bindings);
+    callee_ctx.push_chain(pmd->call_expressions); // for default value expressions
     if (varnamed_matcher_) { pmd->weight -= 1; }
     //SCOPE_EXIT([&ctx] { ctx.pop_binding(); }); //no need, temporary context
 
@@ -947,55 +933,30 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
             }
             break;
         }
-#if 0
-        continue;
-
-        auto next_matcher_it = start_matcher_it; ++next_matcher_it;
-
-        while (next_matcher_it != end_matcher_it) {
-            exp = (*next_matcher_it)->try_forward_match(ctx, arg.value(), pmd->bindings);
-            if (get<error_storage>(&exp)) break;
-            if (auto* pmatch = get<std::pair<entity_identifier, int>>(&exp); pmatch) {
-                pmd->push_unnamed_argument_expressions(next_matcher_it - matchers_.begin(), prev_argument_expression_it, pmd->call_expressions);
-                pmd->weight += pmatch->second;
-                start_matcher_it = next_matcher_it; ++start_matcher_it;
-                break;
-            }
-            BOOST_ASSERT(get<parameter_matcher::postpone_t>(&exp));
-            ++next_matcher_it;
-        }
-
-        std::expected<std::pair<entity_identifier, int>, error_storage> res;
-        do {
-            --next_matcher_it;
-            res = (*next_matcher_it)->try_match(ctx, arg.value(), pmd->bindings);
-            if (res) {
-                start_matcher_it = next_matcher_it; // this is a variadic matcher
-                pmd->weight += res->second;
-                break;
-            }
-        } while (next_matcher_it != start_matcher_it);
-        if (!res) {
-            return std::unexpected(std::move(res.error()));
-        }
-#endif
     }
 
     size_t argpos = 0;
-    for (auto const& [external_name, internal_names, param_mod, varname] : parameters_) {
+    for (parameter_descriptor const& pd : parameters_) {
         //auto [external_name, internal_name, varname] = apply_visitor(param_name_retriever{}, param_name);
-        if (varname) continue;
-        if (external_name) {
-            parameter_match_result& pmr = pmd->get_match_result(external_name.value);
+        if (pd.is_varnamed) continue;
+        if (pd.ename) {
+            parameter_match_result& pmr = pmd->get_match_result(pd.ename.value);
             if (pmr.is_undefined()) {
-                // to do: check default
-                return std::unexpected(make_error<basic_general_error>(external_name.location, "unmatched parameter"sv, external_name.value));
+                if (pd.default_value) {
+                    named_parameter_matcher const* nmtch = get_matcher(pd.ename.value);
+                    BOOST_ASSERT(nmtch);
+                    auto match = nmtch->try_match(callee_ctx, callee_ctx, *pd.default_value, pmd->bindings, pmr);
+                    if (!match) return std::unexpected(std::move(match.error()));
+                    pmd->weight += *match;
+                    continue;
+                }
+                return std::unexpected(make_error<basic_general_error>(pd.ename.location, "unmatched parameter"sv, pd.ename.value));
             }
         } else {
             parameter_match_result& pmr = pmd->get_match_result(argpos++);
             if (pmr.is_undefined()) {
                 // to do: check default
-                return std::unexpected(make_error<basic_general_error>(internal_names.front().location, (std::ostringstream() << "unmatched parameter $"sv << argpos).str()));
+                return std::unexpected(make_error<basic_general_error>(pd.inames.front().location, (std::ostringstream() << "unmatched parameter $"sv << argpos).str()));
             }
         }
     }
@@ -1019,16 +980,16 @@ std::ostream& basic_fn_pattern::print(unit const& u, std::ostream& ss) const
     size_t posargnum = 0;
     bool first = true;
     ss << '(';
-    for (auto const& [external_name, internal_names, param_mod, varname] : parameters_) {
+    for (parameter_descriptor const& pd : parameters_) {
         if (first) first = false;
         else ss << ", "sv;
         //auto [external_name, internal_name, varname] = apply_visitor(param_name_retriever{}, param_name);
-        if (varname) {
+        if (pd.is_varnamed) {
             ss << "... : "sv;
             varnamed_matcher_->print(u, ss);
-        } else if (external_name) {
-            ss << u.print(external_name.value) << ": "sv;
-            named_parameter_matcher const* nm = get_matcher(external_name.value);
+        } else if (pd.ename) {
+            ss << u.print(pd.ename.value) << ": "sv;
+            named_parameter_matcher const* nm = get_matcher(pd.ename.value);
             nm->print(u, ss);
         } else {
             parameter_matcher const& m = *matchers_[posargnum++];
@@ -1060,25 +1021,50 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
             if constexpr (std::is_same_v<std::decay_t<decltype(e)>, entity_ptr>) {
                 // e is entity_ptr
                 if (variable_entity* pve = dynamic_cast<variable_entity*>(e.get()); pve) {
-                    pve->set_index(argindex++);
+                    pve->set_index(argindex);
                     pve->name = fnl.id();
                 
                     if (!pve->id()) { // need register if has no id
                         u.eregistry_insert(e);
                     }
                     BOOST_VERIFY(!fnl.set_default_entity(annotated_entity_identifier{ e->id(), name.location }));
+                } else {
+                    THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern::build_scope unknown entity");
                 }
             } // else skip not variable entities
         }), *bsp);
     };
 
-    for (auto const& [external_name, internal_names, param_mod, varname] : boost::adaptors::reverse(parameters_))
+    // first process only variables in reverse order
+    for (parameter_descriptor const& pd : boost::adaptors::reverse(parameters_))
     {
-        BOOST_ASSERT(!external_name || internal_names.size() == 1);
-        BOOST_ASSERT(external_name || !internal_names.empty());
+        BOOST_ASSERT(!pd.ename || pd.inames.size() == 1);
+        BOOST_ASSERT(pd.ename || !pd.inames.empty());
 
-        for (annotated_identifier name : internal_names) {
-            scope_appender(name);
+        if (pd.modifier != parameter_constraint_modifier_t::value_type_constraint) continue;
+
+        if (!pd.is_varnamed) {
+            --argindex;
+            for (annotated_identifier name : pd.inames) {
+                scope_appender(name);
+            }
+            continue;
+        }
+
+        auto optpackent = md.bindings.lookup(pd.inames.front().value);
+        BOOST_ASSERT(optpackent);
+        entity_ptr* packent = get<entity_ptr>(&*optpackent);
+        BOOST_ASSERT(packent && *packent);
+        BOOST_ASSERT((*packent)->get_type() == ctx.u().get(builtin_eid::metaobject));
+        entity_signature const* psig = (*packent)->signature();
+        BOOST_ASSERT(psig);
+        BOOST_ASSERT(psig->named_fields().empty());
+        for (auto const& f : boost::adaptors::reverse(psig->positioned_fields())) {
+            entity const& packargid = u.eregistry_get(f.entity_id());
+            BOOST_ASSERT(packargid.get_type() == ctx.u().get(builtin_eid::identifier));
+            identifier_entity const& packargid_ent = static_cast<identifier_entity const&>(packargid);
+            --argindex;
+            scope_appender(annotated_identifier{ packargid_ent.value(), pd.inames.front().location });
         }
     }
 
@@ -1209,15 +1195,71 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
 #endif
 }
 
+size_t basic_fn_pattern::apply_arguments(fn_compiler_context& ctx, functional_match_descriptor& md) const
+{
+    unit& u = ctx.u();
+
+    // push call expressions in the right order
+    semantic::expression_list_t& exprs = ctx.expressions();
+
+    size_t argcount = 0;
+    auto expression_appender = [&u, &exprs, &argcount](functional_match_descriptor& md, parameter_match_result& pmr) {
+        for (auto rng : pmr.expressions) {
+            ++rng.second;
+            exprs.splice_back(md.call_expressions, rng.first, rng.second);
+            ++argcount;
+        }
+        if (pmr.is_variadic()) {
+            u.push_back_expression(exprs, semantic::push_value(mp::integer{ pmr.result.size() }));
+        }
+    };
+
+    size_t argpos = 0;
+    for (parameter_descriptor const& pd : parameters_) {
+
+        if (pd.modifier != parameter_constraint_modifier_t::value_type_constraint) {
+            if (!pd.ename) ++argpos;
+            continue;
+        }
+        
+        if (!pd.is_varnamed) {
+            parameter_match_result& pmr = pd.ename ?
+                md.get_match_result(pd.ename.value) : md.get_match_result(argpos++);
+            expression_appender(md, pmr);
+            continue;
+        }
+        
+        auto optpackent = md.bindings.lookup(pd.inames.front().value);
+        BOOST_ASSERT(optpackent);
+        entity_ptr* packent = get<entity_ptr>(&*optpackent);
+        BOOST_ASSERT(packent && *packent);
+        BOOST_ASSERT((*packent)->get_type() == ctx.u().get(builtin_eid::metaobject));
+        entity_signature const* psig = (*packent)->signature();
+        BOOST_ASSERT(psig);
+        BOOST_ASSERT(psig->named_fields().empty());
+        for (auto const& f : psig->positioned_fields()) {
+            entity const& packargid = u.eregistry_get(f.entity_id());
+            BOOST_ASSERT(packargid.get_type() == ctx.u().get(builtin_eid::identifier));
+            identifier_entity const& packargid_ent = static_cast<identifier_entity const&>(packargid);
+            parameter_match_result& pmr = md.get_match_result(packargid_ent.value());
+            expression_appender(md, pmr);
+        }
+    }
+
+    BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
+    return argcount;
+}
+
 error_storage runtime_fn_pattern::apply(fn_compiler_context& ctx, qname_identifier functional_id, functional_match_descriptor& md) const
 {
+    unit& u = ctx.u();
     // fnsig -> fn entity
     // if fn entity exists => all nested qnames(functionals) are defined (e.g. argument variables, function body qname)
     // => all nested qnames shoud be defined in the build procedure
-    entity_signature sig = md.build_signature(ctx.u(), functional_id);
+    entity_signature sig = md.build_signature(u, functional_id);
     indirect_signatured_entity smpl{ sig };
 
-    entity& e = ctx.u().eregistry_find_or_create(smpl, [this, &ctx, &md, &sig]() {
+    entity& e = u.eregistry_find_or_create(smpl, [this, &ctx, &md, &sig]() {
         return build(ctx, md, std::move(sig));
     });
 
@@ -1237,33 +1279,10 @@ error_storage runtime_fn_pattern::apply(fn_compiler_context& ctx, qname_identifi
         }
     }
 
-    // push call expressions in the right order
-    semantic::managed_expression_list args{ ctx.u() };
-    
-    size_t argpos = 0;
-    for (auto const& [external_name, internal_names, param_mod, varname] : parameters_) {
-        //auto [external_name, internal_name, varname] = apply_visitor(param_name_retriever{}, param_name);
+    apply_arguments(ctx, md);
 
-        if (param_mod != parameter_constraint_modifier_t::value_type_constraint) {
-            if (!external_name) ++argpos;
-            continue;
-        }
-        
-        parameter_match_result& pmr = external_name ? 
-            md.get_match_result(external_name.value) : md.get_match_result(argpos++);
-        
-        for (auto rng : pmr.expressions) {
-            ++rng.second;
-            args.splice_back(md.call_expressions, rng.first, rng.second);
-        }
-        if (pmr.is_variadic()) {
-            ctx.u().push_back_expression(args, semantic::push_value(mp::integer{ pmr.result.size() }));
-        }
-    }
+    u.push_back_expression(ctx.expressions(), semantic::invoke_function(e.id()));
 
-    BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
-    ctx.u().push_back_expression(args, semantic::invoke_function(e.id()));
-    ctx.append_expression(ctx.store_semantic_expressions(std::move(args)));
     ctx.context_type = rt;
     return {};
 }

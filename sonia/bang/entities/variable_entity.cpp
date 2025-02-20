@@ -11,7 +11,7 @@ namespace sonia::lang::bang {
 
 std::ostream& variable_entity::print_to(std::ostream& os, unit const& u) const
 {
-    return os << "VAR "sv << u.print(name);
+    return os << "VAR("sv << this->index() << ") "sv << u.print(name);
 }
 
 }

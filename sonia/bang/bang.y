@@ -807,6 +807,8 @@ syntax-expression-wo-ii:
     //    { $$ = member_expression_t{ std::move($object), std::move($property) }; IGNORE_TERM($2); }
     | syntax-expression[object] POINT identifier[property]
          { $$ = member_expression_t{ std::move($object), std::move($property) }; IGNORE_TERM($2); }
+    | syntax-expression[object] POINT apostrophe-expression[property]
+         { $$ = member_expression_t{ std::move($object), std::move($property) }; IGNORE_TERM($2); }
     | syntax-expression[object] INTEGER_INDEX[property]
          { $$ = member_expression_t{ std::move($object), annotated_integer{ ctx.make_integer($property.value.substr(1)), $property.location } }; IGNORE_TERM($2); }
     | EXCLPT syntax-expression

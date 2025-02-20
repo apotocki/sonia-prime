@@ -89,7 +89,7 @@ public:
 
     void operator()(semantic::expression_span esp) const
     {
-        while (!esp.empty()) {
+        while (esp) {
             apply(esp.front());
             esp.pop_front();
         }

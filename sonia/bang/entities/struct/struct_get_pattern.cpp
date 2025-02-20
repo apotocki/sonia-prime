@@ -16,12 +16,16 @@ namespace sonia::lang::bang {
 class struct_get_match_descriptor : public functional_match_descriptor
 {
     size_t property_index_;
+    size_t fields_count_;
 
 public:
     using functional_match_descriptor::functional_match_descriptor;
 
     inline size_t property_index() const noexcept { return property_index_; }
+    inline size_t fields_count() const noexcept { return fields_count_; }
+
     inline void set_property_index(size_t index) noexcept { property_index_ = index; }
+    inline void set_fields_count(size_t index) noexcept { fields_count_ = index; }
 };
 
 /**
@@ -99,6 +103,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
     }
 
     pmd->set_property_index(index);
+    pmd->set_fields_count(ptplsig->field_count());
     BOOST_ASSERT(ptplsig->field_count() > 1 || !index);
 
     pmd->result = fd->entity_id();
@@ -110,23 +115,24 @@ error_storage struct_get_pattern::apply(fn_compiler_context& ctx, qname_identifi
     unit& u = ctx.u();
 
     // push call expressions in the right order
-    semantic::managed_expression_list args{ u };
+    semantic::expression_list_t& exprs = ctx.expressions();
 
     // only one named argument is expected
-    md.for_each_named_match([&args, &md](identifier name, parameter_match_result const& mr) {
+    md.for_each_named_match([&exprs, &md](identifier name, parameter_match_result const& mr) {
         for (auto rng : mr.expressions) {
             ++rng.second;
-            args.splice_back(md.call_expressions, rng.first, rng.second);
+            exprs.splice_back(md.call_expressions, rng.first, rng.second);
         }
     });
 
     BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
-
-    if (size_t propindex = static_cast<struct_get_match_descriptor&>(md).property_index(); propindex) {
-        u.push_back_expression(args, semantic::push_value{ propindex });
-        u.push_back_expression(args, semantic::invoke_function(u.get(builtin_eid::array_at)));
+    
+    struct_get_match_descriptor& smd = static_cast<struct_get_match_descriptor&>(md);
+    if (smd.fields_count() > 1) {
+        u.push_back_expression(exprs, semantic::push_value{ smd.property_index() });
+        u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
-    ctx.append_expression(ctx.store_semantic_expressions(std::move(args)));
+    
     ctx.context_type = md.result;
     return {};
 }

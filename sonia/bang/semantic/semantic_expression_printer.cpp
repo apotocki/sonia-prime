@@ -24,7 +24,7 @@ void expression_printer_visitor::operator()(empty_t const& i) const
 void expression_printer_visitor::operator()(expression_span esp) const
 {
     ++indent_cnt;
-    while (!esp) {
+    while (esp) {
         apply_visitor(*this, esp.front());
         esp.pop_front();
     }

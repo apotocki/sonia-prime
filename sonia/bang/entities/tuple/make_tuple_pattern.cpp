@@ -45,28 +45,28 @@ error_storage make_tuple_pattern::apply(fn_compiler_context& ctx, qname_identifi
     size_t argcount = 0;
     
     // push call expressions in the right order
-    semantic::managed_expression_list args{ u };
+    semantic::expression_list_t& exprs = ctx.expressions();
 
-    md.for_each_named_match([&argcount, &args, &md](identifier name, parameter_match_result const& mr) {
+    md.for_each_named_match([&argcount, &exprs, &md](identifier name, parameter_match_result const& mr) {
         for (auto rng : mr.expressions) {
             ++rng.second;
-            args.splice_back(md.call_expressions, rng.first, rng.second);
+            exprs.splice_back(md.call_expressions, rng.first, rng.second);
         }
         ++argcount;
     });
-    md.for_each_positional_match([&argcount, &args, &md](parameter_match_result const& mr) {
+    md.for_each_positional_match([&argcount, &exprs, &md](parameter_match_result const& mr) {
         for (auto rng : mr.expressions) {
             ++rng.second;
-            args.splice_back(md.call_expressions, rng.first, rng.second);
+            exprs.splice_back(md.call_expressions, rng.first, rng.second);
         }
         ++argcount;
     });
     BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
     if (argcount > 1) {
-        u.push_back_expression(args, semantic::push_value{ mp::integer{ argcount } });
-        u.push_back_expression(args, semantic::invoke_function(u.get(builtin_eid::arrayify)));
+        u.push_back_expression(exprs, semantic::push_value{ mp::integer{ argcount } });
+        u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
-    ctx.append_expression(ctx.store_semantic_expressions(std::move(args)));
+
     ctx.context_type = e.id();
     return {};
 }

@@ -28,7 +28,8 @@ inline ct_expression_visitor::result_type ct_expression_visitor::apply_cast(enti
     if (!expected_result || u().get(builtin_eid::any) == expected_result.value) return eid;
     if (!is_type_expected) {
         if (eid == expected_result.value) return eid;
-        THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::apply_cast const cast check");
+        return std::unexpected(make_error<cast_error>(get_start_location(e), expected_result.value, eid, e));
+        //THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::apply_cast const cast check");
     } else {
         entity const& ent = u().eregistry_get(eid);
         entity_identifier typeeid = ent.get_type();

@@ -43,7 +43,7 @@ struct linked_list_node_span : std::pair<EntryT*, EntryT*>
 
     template <typename FtorT> void for_each(FtorT&& ftor) const;
 
-    void emplace_back(EntryT*);
+    //void emplace_back(EntryT*);
     void pop_front();
     linked_list_node_span subspan(size_t) const;
 };

@@ -9,16 +9,19 @@
 #include "expression_visitor.hpp"
 #include "ct_expression_visitor.hpp"
 
-#include "../entities/enum_entity.hpp"
-#include "../entities/type_entity.hpp"
-#include "../entities/struct/struct_entity.hpp"
-#include "../entities/functional_entity.hpp"
-#include "../entities/functions/basic_fn_pattern.hpp"
+#include "sonia/bang/entities/enum_entity.hpp"
+#include "sonia/bang/entities/type_entity.hpp"
+
+#include "sonia/bang/entities/struct/struct_entity.hpp"
+#include "sonia/bang/entities/struct/struct_fn_pattern.hpp"
+#include "sonia/bang/entities/struct/struct_init_pattern.hpp"
+
+#include "sonia/bang/entities/functional_entity.hpp"
+#include "sonia/bang/entities/functions/basic_fn_pattern.hpp"
 
 #include "sonia/bang/parser.hpp"
 
 #include "sonia/bang/entities/functions/expression_resolver.hpp"
-#include "sonia/bang/entities/struct/struct_fn_pattern.hpp"
 
 #include "sonia/bang/errors/identifier_redefinition_error.hpp"
 
@@ -87,37 +90,57 @@ error_storage declaration_visitor::operator()(using_decl const& ud) const
     return {};
 }
 
+/*
+struct field_t
+{
+    annotated_identifier name;
+    parameter_constraint_modifier_t modifier;
+    syntax_expression_t type;
+    optional<syntax_expression_t> value;
+};
+
+struct parameter
+{
+    parameter_name name;
+    parameter_constraint_modifier_t modifier;
+    parameter_constraint_set<ExprT> constraints;
+};
+
+using parameter_name = variant<named_parameter_name, unnamed_parameter_name, varnamed_parameter_name>;
+*/
 error_storage declaration_visitor::operator()(struct_decl const& sd) const
 {
-    struct struct_decl_visitor : static_visitor<error_storage>
-    {
-        fn_compiler_context& ctx_;
-        struct_decl const& sd_;
-
-        struct_decl_visitor(fn_compiler_context& c, struct_decl const& sd) noexcept : ctx_{ c }, sd_{ sd } {}
-
-        error_storage operator()(annotated_qname const& qn) const
-        {
-            unit& u = ctx_.u();
-            functional& fnl = u.fregistry().resolve(ctx_.ns() / qn.value);
-            auto sent = make_shared<struct_entity>(qname{ fnl.name() }, u.get(builtin_eid::typename_), entity_signature{ fnl.id() }, sd_.body);
+    return apply_visitor(make_functional_visitor<error_storage>([this, &sd](auto const& v) {
+        unit& u = ctx.u();
+        if constexpr (std::is_same_v<annotated_qname const&, decltype(v)>) {
+            annotated_qname const& qn = v;
+            
+            functional& fnl = u.fregistry().resolve(ctx.ns() / qn.value);
+            auto sent = make_shared<struct_entity>(qname{ fnl.name() }, u.get(builtin_eid::typename_), entity_signature{ fnl.id() }, sd.body);
             u.eregistry_insert(sent);
-            return fnl.set_default_entity(annotated_entity_identifier{ sent->id(), qn.location });
-        }
+            annotated_entity_identifier aeid{ sent->id(), qn.location };
+            if (auto err = fnl.set_default_entity(aeid); err) return err;
 
-        error_storage operator()(fn_pure_t const& fn) const
-        {
+            functional& init_fnl = u.fregistry().resolve(u.get(builtin_qnid::init));
+            auto initptrn = make_shared<struct_init_pattern>(init_fnl, sd.body);
+            if (error_storage err = initptrn->init(ctx, aeid); err) return err;
+            init_fnl.push(std::move(initptrn));
+        } else { // if constexpr (std::is_same_v<fn_pure_t const&, decltype(v)>) {
             // to do: check the allowence of absolute qname
-            qname fn_qname = ctx_.ns() / fn.name();
-            functional& fnl = ctx_.u().fregistry().resolve(fn_qname);
-            auto ptrn = make_shared<struct_fn_pattern>(fnl, sd_.body);
-            error_storage err = ptrn->init(ctx_, fn);
-            if (!err) fnl.push(std::move(ptrn));
-            return err;
-        };
-    };
+            fn_pure_t const& fn = v;
+            qname fn_qname = ctx.ns() / fn.name();
+            functional& fnl = u.fregistry().resolve(fn_qname);
+            auto ptrn = make_shared<struct_fn_pattern>(fnl, sd.body);
+            if (error_storage err = ptrn->init(ctx, fn); err) return err;
+            fnl.push(std::move(ptrn));
 
-    return apply_visitor(struct_decl_visitor{ ctx, sd }, sd.decl);
+            functional& init_fnl = u.fregistry().resolve(u.get(builtin_qnid::init));
+            auto initptrn = make_shared<struct_init_pattern>(init_fnl, sd.body);
+            if (error_storage err = initptrn->init(ctx, annotated_qname{ fn_qname, fn.location() }, fn.parameters); err) return err;
+            init_fnl.push(std::move(initptrn));
+        }
+        return error_storage{};
+    }), sd.decl);
 }
 
 error_storage declaration_visitor::operator()(expression_statement_t const& ed) const

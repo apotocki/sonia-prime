@@ -389,7 +389,7 @@ struct function_call : pure_call<ExprT>
 {
     using base_t = pure_call<ExprT>;
     ExprT fn_object;
-    function_call(lex::resource_location && callloc, ExprT && n, opt_named_term_list<ExprT> && args)
+    function_call(lex::resource_location && callloc, ExprT && n, opt_named_term_list<ExprT> && args = {})
         : base_t{ std::move(callloc), std::move(args) }
         , fn_object{ std::move(n) }
     {}

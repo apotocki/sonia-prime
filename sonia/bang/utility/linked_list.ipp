@@ -48,16 +48,16 @@ template <typename FtorT> void linked_list_node_span<EntryT>::for_each(FtorT&& f
     }
 }
 
-template <class EntryT>
-inline void linked_list_node_span<EntryT>::emplace_back(EntryT* se)
-{
-    if (!pair_t::first) [[unlikely]] {
-        pair_t::first = se;
-    } else {
-        BOOST_ASSERT(pair_t::second->next_ == se);
-        pair_t::second = se;
-    }
-}
+//template <class EntryT>
+//inline void linked_list_node_span<EntryT>::emplace_back(EntryT* se)
+//{
+//    if (!pair_t::first) [[unlikely]] {
+//        pair_t::first = se;
+//    } else {
+//        BOOST_ASSERT(pair_t::second->next_ == se);
+//        pair_t::second = se;
+//    }
+//}
 
 template <class EntryT>
 inline void linked_list_node_span<EntryT>::pop_front()

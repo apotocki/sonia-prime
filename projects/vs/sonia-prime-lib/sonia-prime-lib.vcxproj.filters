@@ -2349,6 +2349,9 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\variable_pack_entity.hpp">
       <Filter>sonia.bang\entities\ellipsis</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_init_pattern.hpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2788,6 +2791,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\ast\functional_declaration_visitor.cpp">
       <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_init_pattern.cpp">
+      <Filter>sonia.bang\entities\struct</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -20,9 +20,9 @@ class parameter_matcher
     friend class parameter_type_expression_visitor;
 
 protected:
-    pattern_parameter_descriptor descriptor_;
-
     small_vector<annotated_identifier, 2> internal_names_;
+    parameter_constraint_modifier_t modifier_;
+    parameter_constraint_set_t constraints_;
 
     // built
     //std::vector<syntax_expression_t> concepts;
@@ -34,7 +34,7 @@ protected:
 public:
     struct postpone_t {};
 
-    explicit parameter_matcher(annotated_identifier name, pattern_parameter_descriptor) noexcept;
+    explicit parameter_matcher(annotated_identifier name, parameter_constraint_modifier_t, parameter_constraint_set_t) noexcept;
     
     inline void push_internal_name(annotated_identifier id) { internal_names_.push_back(std::move(id)); }
 
@@ -59,8 +59,8 @@ protected:
 class named_parameter_matcher : public parameter_matcher
 {
 public:
-    named_parameter_matcher(annotated_identifier enm, annotated_identifier const* inm, pattern_parameter_descriptor descr)
-        : parameter_matcher{ inm ? *inm : enm, std::move(descr) }
+    inline named_parameter_matcher(annotated_identifier enm, annotated_identifier const* inm, parameter_constraint_modifier_t mod, parameter_constraint_set_t cs)
+        : parameter_matcher{ inm ? *inm : enm, mod, std::move(cs) }
         , external_name_{ enm }
     {}
 
@@ -73,8 +73,8 @@ private:
 class varnamed_parameter_matcher : public parameter_matcher
 {
 public:
-    varnamed_parameter_matcher(annotated_identifier vin, pattern_parameter_descriptor descr)
-        : parameter_matcher{ std::move(vin), std::move(descr) }
+    inline varnamed_parameter_matcher(annotated_identifier vin, parameter_constraint_modifier_t mod, parameter_constraint_set_t cs)
+        : parameter_matcher{ std::move(vin), mod, std::move(cs) }
     {}
 
     void update_binding(unit&, entity_identifier, functional_binding&) const override;
@@ -107,9 +107,17 @@ class basic_fn_pattern : public functional::pattern
 protected:
     functional const& fnl_;
 
-    // in the order of declaration (fn_pure) [external name, internal names, constraint modifier, is_varnamed]
-    std::vector<std::tuple<annotated_identifier, small_vector<annotated_identifier, 2>, parameter_constraint_modifier_t, bool>> parameters_;
-    //std::vector<std::tuple<parameter_name, parameter_constraint_modifier_t, small_vector<annotated_identifier, 2>>> parameters_;
+    struct parameter_descriptor
+    {
+        annotated_identifier ename;
+        small_vector<annotated_identifier, 2> inames;
+        optional<syntax_expression_t> default_value;
+        parameter_constraint_modifier_t modifier;
+        bool is_varnamed;
+    };
+
+    // in the order of declaration (fn_pure)
+    small_vector<parameter_descriptor, 8> parameters_;
 
     optional<varnamed_parameter_matcher> varnamed_matcher_;
     boost::container::small_flat_set<named_parameter_matcher, 8, named_parameter_matcher_less> named_matchers_;
@@ -136,6 +144,7 @@ public:
 
 protected:
     void build_scope(fn_compiler_context&, functional_match_descriptor&) const;
+    size_t apply_arguments(fn_compiler_context&, functional_match_descriptor&) const;
 };
 
 class runtime_fn_pattern : public basic_fn_pattern
@@ -144,6 +153,7 @@ public:
     using basic_fn_pattern::basic_fn_pattern;
     error_storage apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 
+protected:
     virtual shared_ptr<entity> build(fn_compiler_context&, functional_match_descriptor&, entity_signature&&) const = 0;
 };
 

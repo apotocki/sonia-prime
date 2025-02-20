@@ -295,7 +295,7 @@ void bang_impl::do_compile(internal_function_entity const& fe)
 
     vm::compiler_visitor vmcvis{ unit_, fb, fe };
     for (auto const& e : fe.body()) {
-        //GLOBAL_LOG_INFO() << "\n"sv << unit_.print(e);
+        //GLOBAL_LOG_INFO() << unit_.print(e); // << "\n"sv
         apply_visitor(vmcvis, e);
     }
     fb.materialize();

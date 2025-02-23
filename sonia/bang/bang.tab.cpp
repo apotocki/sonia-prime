@@ -2443,159 +2443,159 @@ namespace bang_lang {
 #line 2444 "bang.tab.cpp"
     break;
 
-  case 18: // statement: USING using-decl
-#line 395 "bang.y"
-        { yylhs.value.as < statement > () = std::move(yystack_[0].value.as < using_decl > ()); }
+  case 18: // let-decl: let-decl-start-with-opt-type
+#line 398 "bang.y"
+        { yylhs.value.as < let_statement > () = std::move(yystack_[0].value.as < let_statement > ()); }
 #line 2450 "bang.tab.cpp"
     break;
 
-  case 19: // let-decl: let-decl-start-with-opt-type
+  case 19: // let-decl: let-decl-start-with-opt-type "`=`" syntax-expression
 #line 400 "bang.y"
-        { yylhs.value.as < let_statement > () = std::move(yystack_[0].value.as < let_statement > ()); }
+        { yylhs.value.as < let_statement > () = std::move(yystack_[2].value.as < let_statement > ()); yylhs.value.as < let_statement > ().expression = std::move(yystack_[0].value.as < syntax_expression_t > ()); IGNORE_TERM(yystack_[1].value.as < sonia::lang::lex::resource_location > ()); }
 #line 2456 "bang.tab.cpp"
     break;
 
-  case 20: // let-decl: let-decl-start-with-opt-type "`=`" syntax-expression
-#line 402 "bang.y"
-        { yylhs.value.as < let_statement > () = std::move(yystack_[2].value.as < let_statement > ()); yylhs.value.as < let_statement > ().expression = std::move(yystack_[0].value.as < syntax_expression_t > ()); IGNORE_TERM(yystack_[1].value.as < sonia::lang::lex::resource_location > ()); }
+  case 20: // let-decl-start: LET identifier
+#line 405 "bang.y"
+        { yylhs.value.as < let_statement > () = let_statement{ std::move(yystack_[0].value.as < sonia::lang::bang::annotated_identifier > ()), {}, {}, false }; }
 #line 2462 "bang.tab.cpp"
     break;
 
-  case 21: // let-decl-start: LET identifier
+  case 21: // let-decl-start: LET "weak modifier" identifier
 #line 407 "bang.y"
-        { yylhs.value.as < let_statement > () = let_statement{ std::move(yystack_[0].value.as < sonia::lang::bang::annotated_identifier > ()), {}, {}, false }; }
+        { yylhs.value.as < let_statement > () = let_statement{ std::move(yystack_[0].value.as < sonia::lang::bang::annotated_identifier > ()), {}, {}, true }; }
 #line 2468 "bang.tab.cpp"
     break;
 
-  case 22: // let-decl-start: LET "weak modifier" identifier
-#line 409 "bang.y"
-        { yylhs.value.as < let_statement > () = let_statement{ std::move(yystack_[0].value.as < sonia::lang::bang::annotated_identifier > ()), {}, {}, true }; }
+  case 22: // let-decl-start-with-opt-type: let-decl-start
+#line 411 "bang.y"
+      { yylhs.value.as < let_statement > () = yystack_[0].value.as < let_statement > (); }
 #line 2474 "bang.tab.cpp"
     break;
 
-  case 23: // let-decl-start-with-opt-type: let-decl-start
+  case 23: // let-decl-start-with-opt-type: let-decl-start "`:`" type-expr
 #line 413 "bang.y"
-      { yylhs.value.as < let_statement > () = yystack_[0].value.as < let_statement > (); }
+        { yylhs.value.as < let_statement > () = std::move(yystack_[2].value.as < let_statement > ()); yylhs.value.as < let_statement > ().type = std::move(yystack_[0].value.as < syntax_expression_t > ()); }
 #line 2480 "bang.tab.cpp"
     break;
 
-  case 24: // let-decl-start-with-opt-type: let-decl-start "`:`" type-expr
-#line 415 "bang.y"
-        { yylhs.value.as < let_statement > () = std::move(yystack_[2].value.as < let_statement > ()); yylhs.value.as < let_statement > ().type = std::move(yystack_[0].value.as < syntax_expression_t > ()); }
+  case 24: // infunction-statement-any: %empty
+#line 418 "bang.y"
+        { yylhs.value.as < managed_statement_list > () = ctx.new_statement_list(); }
 #line 2486 "bang.tab.cpp"
     break;
 
-  case 25: // infunction-statement-any: %empty
+  case 25: // infunction-statement-any: infunction-statement
 #line 420 "bang.y"
-        { yylhs.value.as < managed_statement_list > () = ctx.new_statement_list(); }
+        { yylhs.value.as < managed_statement_list > () = ctx.new_statement_list(); yylhs.value.as < managed_statement_list > ().emplace_back(std::move(yystack_[0].value.as < statement > ())); }
 #line 2492 "bang.tab.cpp"
     break;
 
-  case 26: // infunction-statement-any: infunction-statement
+  case 26: // infunction-statement-any: finished-infunction-statement-any infunction-statement
 #line 422 "bang.y"
-        { yylhs.value.as < managed_statement_list > () = ctx.new_statement_list(); yylhs.value.as < managed_statement_list > ().emplace_back(std::move(yystack_[0].value.as < statement > ())); }
+        { yystack_[1].value.as < managed_statement_list > ().emplace_back(std::move(yystack_[0].value.as < statement > ())); yylhs.value.as < managed_statement_list > () = std::move(yystack_[1].value.as < managed_statement_list > ()); }
 #line 2498 "bang.tab.cpp"
     break;
 
-  case 27: // infunction-statement-any: finished-infunction-statement-any infunction-statement
-#line 424 "bang.y"
-        { yystack_[1].value.as < managed_statement_list > ().emplace_back(std::move(yystack_[0].value.as < statement > ())); yylhs.value.as < managed_statement_list > () = std::move(yystack_[1].value.as < managed_statement_list > ()); }
+  case 27: // finished-infunction-statement-any: finished_statement
+#line 427 "bang.y"
+        { yylhs.value.as < managed_statement_list > () = ctx.new_statement_list(); yylhs.value.as < managed_statement_list > ().emplace_back(std::move(yystack_[0].value.as < finished_statement_type > ())); }
 #line 2504 "bang.tab.cpp"
     break;
 
-  case 28: // finished-infunction-statement-any: finished_statement
-#line 429 "bang.y"
-        { yylhs.value.as < managed_statement_list > () = ctx.new_statement_list(); yylhs.value.as < managed_statement_list > ().emplace_back(std::move(yystack_[0].value.as < finished_statement_type > ())); }
+  case 28: // finished-infunction-statement-any: finished-infunction-statement-any "`;`"
+#line 428 "bang.y"
+                                                           { yylhs.value.as < managed_statement_list > () = std::move(yystack_[1].value.as < managed_statement_list > ()); }
 #line 2510 "bang.tab.cpp"
     break;
 
-  case 29: // finished-infunction-statement-any: finished-infunction-statement-any "`;`"
+  case 29: // finished-infunction-statement-any: finished-infunction-statement-any finished_statement
 #line 430 "bang.y"
-                                                           { yylhs.value.as < managed_statement_list > () = std::move(yystack_[1].value.as < managed_statement_list > ()); }
+        { yystack_[1].value.as < managed_statement_list > ().emplace_back(std::move(yystack_[0].value.as < finished_statement_type > ())); yylhs.value.as < managed_statement_list > () = std::move(yystack_[1].value.as < managed_statement_list > ()); }
 #line 2516 "bang.tab.cpp"
     break;
 
-  case 30: // finished-infunction-statement-any: finished-infunction-statement-any finished_statement
+  case 30: // finished-infunction-statement-any: infunction-statement-any "`;`"
 #line 432 "bang.y"
-        { yystack_[1].value.as < managed_statement_list > ().emplace_back(std::move(yystack_[0].value.as < finished_statement_type > ())); yylhs.value.as < managed_statement_list > () = std::move(yystack_[1].value.as < managed_statement_list > ()); }
+        { yylhs.value.as < managed_statement_list > () = std::move(yystack_[1].value.as < managed_statement_list > ()); }
 #line 2522 "bang.tab.cpp"
     break;
 
-  case 31: // finished-infunction-statement-any: infunction-statement-any "`;`"
-#line 434 "bang.y"
-        { yylhs.value.as < managed_statement_list > () = std::move(yystack_[1].value.as < managed_statement_list > ()); }
+  case 31: // braced-statements: "`{`" infunction-statement-set "`}`"
+#line 437 "bang.y"
+        { yylhs.value.as < managed_statement_list > () = std::move(yystack_[1].value.as < managed_statement_list > ()); IGNORE_TERM(yystack_[2].value.as < sonia::lang::lex::resource_location > ()); }
 #line 2528 "bang.tab.cpp"
     break;
 
-  case 32: // braced-statements: "`{`" infunction-statement-set "`}`"
-#line 439 "bang.y"
-        { yylhs.value.as < managed_statement_list > () = std::move(yystack_[1].value.as < managed_statement_list > ()); IGNORE_TERM(yystack_[2].value.as < sonia::lang::lex::resource_location > ()); }
+  case 32: // finished_statement: "`while`" syntax-expression braced-statements
+#line 442 "bang.y"
+        { yylhs.value.as < finished_statement_type > () = while_decl{ std::move(yystack_[1].value.as < syntax_expression_t > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
 #line 2534 "bang.tab.cpp"
     break;
 
-  case 33: // finished_statement: "`while`" syntax-expression braced-statements
+  case 33: // finished_statement: "`while`" syntax-expression "`;`" syntax-expression braced-statements
 #line 444 "bang.y"
-        { yylhs.value.as < finished_statement_type > () = while_decl{ std::move(yystack_[1].value.as < syntax_expression_t > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
+        { yylhs.value.as < finished_statement_type > () = while_decl{ std::move(yystack_[3].value.as < syntax_expression_t > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())), std::move(yystack_[1].value.as < syntax_expression_t > ()) }; }
 #line 2540 "bang.tab.cpp"
     break;
 
-  case 34: // finished_statement: "`while`" syntax-expression "`;`" syntax-expression braced-statements
+  case 34: // finished_statement: "`for`" syntax-expression "`in`" syntax-expression braced-statements
 #line 446 "bang.y"
-        { yylhs.value.as < finished_statement_type > () = while_decl{ std::move(yystack_[3].value.as < syntax_expression_t > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())), std::move(yystack_[1].value.as < syntax_expression_t > ()) }; }
+        { yylhs.value.as < finished_statement_type > () = for_decl{ std::move(yystack_[3].value.as < syntax_expression_t > ()), std::move(yystack_[1].value.as < syntax_expression_t > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
 #line 2546 "bang.tab.cpp"
     break;
 
-  case 35: // finished_statement: "`for`" syntax-expression "`in`" syntax-expression braced-statements
+  case 35: // finished_statement: "`if`" syntax-expression braced-statements
 #line 448 "bang.y"
-        { yylhs.value.as < finished_statement_type > () = for_decl{ std::move(yystack_[3].value.as < syntax_expression_t > ()), std::move(yystack_[1].value.as < syntax_expression_t > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
+        { yylhs.value.as < finished_statement_type > () = if_decl{ std::move(yystack_[1].value.as < syntax_expression_t > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
 #line 2552 "bang.tab.cpp"
     break;
 
-  case 36: // finished_statement: "`if`" syntax-expression braced-statements
+  case 36: // finished_statement: "`if`" syntax-expression braced-statements "`else`" braced-statements
 #line 450 "bang.y"
-        { yylhs.value.as < finished_statement_type > () = if_decl{ std::move(yystack_[1].value.as < syntax_expression_t > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
+        { yylhs.value.as < finished_statement_type > () = if_decl{ std::move(yystack_[3].value.as < syntax_expression_t > ()), ctx.push(std::move(yystack_[2].value.as < managed_statement_list > ())), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
 #line 2558 "bang.tab.cpp"
     break;
 
-  case 37: // finished_statement: "`if`" syntax-expression braced-statements "`else`" braced-statements
+  case 37: // finished_statement: fn-start-decl fn-decl braced-statements
 #line 452 "bang.y"
-        { yylhs.value.as < finished_statement_type > () = if_decl{ std::move(yystack_[3].value.as < syntax_expression_t > ()), ctx.push(std::move(yystack_[2].value.as < managed_statement_list > ())), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
+        { yystack_[1].value.as < fn_pure_t > ().kind = yystack_[2].value.as < fn_kind > (); yylhs.value.as < finished_statement_type > () = fn_decl_t{ std::move(yystack_[1].value.as < fn_pure_t > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
 #line 2564 "bang.tab.cpp"
     break;
 
-  case 38: // finished_statement: fn-start-decl fn-decl braced-statements
+  case 38: // finished_statement: STRUCT qname braced-statements
 #line 454 "bang.y"
-        { yystack_[1].value.as < fn_pure_t > ().kind = yystack_[2].value.as < fn_kind > (); yylhs.value.as < finished_statement_type > () = fn_decl_t{ std::move(yystack_[1].value.as < fn_pure_t > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
+        { yylhs.value.as < finished_statement_type > () = struct_decl{ std::move(yystack_[1].value.as < sonia::lang::bang::annotated_qname > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
 #line 2570 "bang.tab.cpp"
     break;
 
-  case 39: // finished_statement: STRUCT qname braced-statements
+  case 39: // finished_statement: STRUCT qname "`(`" parameter-list-opt "`)`" braced-statements
 #line 456 "bang.y"
-        { yylhs.value.as < finished_statement_type > () = struct_decl{ std::move(yystack_[1].value.as < sonia::lang::bang::annotated_qname > ()), ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; }
+        { yylhs.value.as < finished_statement_type > () = struct_decl{ fn_pure_t{ std::move(yystack_[4].value.as < sonia::lang::bang::annotated_qname > ()), std::move(yystack_[2].value.as < parameter_woa_list_t > ()) }, ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; IGNORE_TERM(yystack_[3].value.as < sonia::lang::lex::resource_location > ()); }
 #line 2576 "bang.tab.cpp"
     break;
 
-  case 40: // finished_statement: STRUCT qname "`(`" parameter-list-opt "`)`" braced-statements
-#line 458 "bang.y"
-        { yylhs.value.as < finished_statement_type > () = struct_decl{ fn_pure_t{ std::move(yystack_[4].value.as < sonia::lang::bang::annotated_qname > ()), std::move(yystack_[2].value.as < parameter_woa_list_t > ()) }, ctx.push(std::move(yystack_[0].value.as < managed_statement_list > ())) }; IGNORE_TERM(yystack_[3].value.as < sonia::lang::lex::resource_location > ()); }
+  case 40: // infunction-statement-set: infunction-statement-any
+#line 461 "bang.y"
+        { yylhs.value.as < managed_statement_list > () = std::move(yystack_[0].value.as < managed_statement_list > ()); }
 #line 2582 "bang.tab.cpp"
     break;
 
-  case 41: // infunction-statement-set: infunction-statement-any
+  case 41: // infunction-statement-set: finished-infunction-statement-any
 #line 463 "bang.y"
         { yylhs.value.as < managed_statement_list > () = std::move(yystack_[0].value.as < managed_statement_list > ()); }
 #line 2588 "bang.tab.cpp"
     break;
 
-  case 42: // infunction-statement-set: finished-infunction-statement-any
-#line 465 "bang.y"
-        { yylhs.value.as < managed_statement_list > () = std::move(yystack_[0].value.as < managed_statement_list > ()); }
+  case 42: // generic-statement: let-decl
+#line 468 "bang.y"
+        { yylhs.value.as < generic_statement_type > () = std::move(yystack_[0].value.as < let_statement > ()); }
 #line 2594 "bang.tab.cpp"
     break;
 
-  case 43: // generic-statement: let-decl
+  case 43: // generic-statement: USING using-decl
 #line 470 "bang.y"
-        { yylhs.value.as < generic_statement_type > () = std::move(yystack_[0].value.as < let_statement > ()); }
+        { yylhs.value.as < generic_statement_type > () = std::move(yystack_[0].value.as < using_decl > ()); }
 #line 2600 "bang.tab.cpp"
     break;
 
@@ -2987,7 +2987,7 @@ namespace bang_lang {
 
   case 108: // parameter-matched-type: basic-parameter-matched-type "`...`"
 #line 729 "bang.y"
-        { yylhs.value.as < syntax_expression_t > () = bang_parameter_pack_t{ std::move(yystack_[1].value.as < syntax_expression_t > ()) }; IGNORE_TERM(yystack_[0].value.as < sonia::lang::lex::resource_location > ()); }
+        { yylhs.value.as < syntax_expression_t > () = unary_expression_t{ unary_operator_type::ELLIPSIS, false, std::move(yystack_[1].value.as < syntax_expression_t > ()), std::move(yystack_[0].value.as < sonia::lang::lex::resource_location > ()) }; }
 #line 2992 "bang.tab.cpp"
     break;
 
@@ -2999,7 +2999,7 @@ namespace bang_lang {
 
   case 110: // parameter-matched-type: INTERNAL_IDENTIFIER "`...`"
 #line 733 "bang.y"
-        { yylhs.value.as < syntax_expression_t > () = bang_parameter_pack_t{variable_identifier{ ctx.make_qname(std::move(yystack_[1].value.as < sonia::lang::bang::annotated_string_view > ())), true }}; IGNORE_TERM(yystack_[0].value.as < sonia::lang::lex::resource_location > ()); }
+        { yylhs.value.as < syntax_expression_t > () = unary_expression_t{ unary_operator_type::ELLIPSIS, false, variable_identifier{ ctx.make_qname(std::move(yystack_[1].value.as < sonia::lang::bang::annotated_string_view > ())), true }, std::move(yystack_[0].value.as < sonia::lang::lex::resource_location > ()) }; }
 #line 3004 "bang.tab.cpp"
     break;
 
@@ -3239,13 +3239,13 @@ namespace bang_lang {
 
   case 149: // lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" braced-statements
 #line 862 "bang.y"
-        { yylhs.value.as < syntax_expression_t > () = lambda_t{std::move(yystack_[3].value.as < sonia::lang::lex::resource_location > ()), std::move(yystack_[2].value.as < parameter_woa_list_t > ()), std::move(yystack_[0].value.as < managed_statement_list > ()) }; IGNORE_TERM(yystack_[4].value.as < fn_kind > ());  }
+        { yylhs.value.as < syntax_expression_t > () = lambda_t{ yystack_[4].value.as < fn_kind > (), std::move(yystack_[3].value.as < sonia::lang::lex::resource_location > ()), std::move(yystack_[2].value.as < parameter_woa_list_t > ()), std::move(yystack_[0].value.as < managed_statement_list > ()) }; }
 #line 3244 "bang.tab.cpp"
     break;
 
   case 150: // lambda-expression: fn-start-decl "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements
 #line 864 "bang.y"
-        { yylhs.value.as < syntax_expression_t > () = lambda_t{std::move(yystack_[5].value.as < sonia::lang::lex::resource_location > ()), std::move(yystack_[4].value.as < parameter_woa_list_t > ()), std::move(yystack_[0].value.as < managed_statement_list > ()), std::move(yystack_[1].value.as < syntax_expression_t > ())}; IGNORE_TERM(yystack_[6].value.as < fn_kind > ()); }
+        { yylhs.value.as < syntax_expression_t > () = lambda_t{ yystack_[6].value.as < fn_kind > (), std::move(yystack_[5].value.as < sonia::lang::lex::resource_location > ()), std::move(yystack_[4].value.as < parameter_woa_list_t > ()), std::move(yystack_[0].value.as < managed_statement_list > ()), std::move(yystack_[1].value.as < syntax_expression_t > ()) }; }
 #line 3250 "bang.tab.cpp"
     break;
 
@@ -3257,48 +3257,48 @@ namespace bang_lang {
 
   case 152: // compound-expression: syntax-expression "`...`"
 #line 870 "bang.y"
-        { yylhs.value.as < syntax_expression_t > () = bang_parameter_pack_t{ std::move(yystack_[1].value.as < syntax_expression_t > ())}; IGNORE_TERM(yystack_[0].value.as < sonia::lang::lex::resource_location > ()); }
+        { yylhs.value.as < syntax_expression_t > () = unary_expression_t{ unary_operator_type::ELLIPSIS, false, std::move(yystack_[1].value.as < syntax_expression_t > ()), std::move(yystack_[0].value.as < sonia::lang::lex::resource_location > ()) }; }
 #line 3262 "bang.tab.cpp"
     break;
 
   case 153: // type-expr: qname
-#line 956 "bang.y"
+#line 957 "bang.y"
         { yylhs.value.as < syntax_expression_t > () = variable_identifier{ std::move(yystack_[0].value.as < sonia::lang::bang::annotated_qname > ()) }; }
 #line 3268 "bang.tab.cpp"
     break;
 
   case 154: // type-expr: call-expression
-#line 957 "bang.y"
+#line 958 "bang.y"
       { yylhs.value.as < syntax_expression_t > () = yystack_[0].value.as < syntax_expression_t > (); }
 #line 3274 "bang.tab.cpp"
     break;
 
   case 155: // type-expr: INTERNAL_IDENTIFIER
-#line 961 "bang.y"
+#line 962 "bang.y"
         { yylhs.value.as < syntax_expression_t > () = variable_identifier{ ctx.make_qname(std::move(yystack_[0].value.as < sonia::lang::bang::annotated_string_view > ())), true }; }
 #line 3280 "bang.tab.cpp"
     break;
 
   case 156: // type-expr: "`[`" type-expr "`]`"
-#line 965 "bang.y"
+#line 966 "bang.y"
         { yylhs.value.as < syntax_expression_t > () = bang_vector_t{std::move(yystack_[1].value.as < syntax_expression_t > ())}; IGNORE_TERM(yystack_[2].value.as < sonia::lang::lex::resource_location > ()); }
 #line 3286 "bang.tab.cpp"
     break;
 
   case 157: // type-expr: "`(`" argument-list-opt "`)`"
-#line 967 "bang.y"
+#line 968 "bang.y"
         { yylhs.value.as < syntax_expression_t > () = bang_tuple_t{ std::move(yystack_[1].value.as < named_expression_list_t > ()) }; IGNORE_TERM(yystack_[2].value.as < sonia::lang::lex::resource_location > ()); }
 #line 3292 "bang.tab.cpp"
     break;
 
   case 158: // type-expr: type-expr "`[`" INTEGER "`]`"
-#line 969 "bang.y"
+#line 970 "bang.y"
         { yylhs.value.as < syntax_expression_t > () = bang_array_t{std::move(yystack_[3].value.as < syntax_expression_t > ()), (size_t)yystack_[1].value.as < sonia::lang::bang::annotated_integer > ().value}; IGNORE_TERM(yystack_[2].value.as < sonia::lang::lex::resource_location > ()); }
 #line 3298 "bang.tab.cpp"
     break;
 
   case 159: // type-expr: type-expr "`|`" type-expr
-#line 971 "bang.y"
+#line 972 "bang.y"
         {
             bang_union_t uni{};
             uni.members.emplace_back(std::move(yystack_[2].value.as < syntax_expression_t > ()));
@@ -3310,7 +3310,7 @@ namespace bang_lang {
     break;
 
   case 160: // type-expr: type-expr "`->`" type-expr
-#line 979 "bang.y"
+#line 980 "bang.y"
         { yylhs.value.as < syntax_expression_t > () = bang_fn_type_t{std::move(yystack_[2].value.as < syntax_expression_t > ()), std::move(yystack_[0].value.as < syntax_expression_t > ())}; }
 #line 3316 "bang.tab.cpp"
     break;
@@ -3712,30 +3712,30 @@ namespace bang_lang {
        4,   124,    50,   116,   125,   123,   120,   121,   122,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,    55,     0,     0,   118,   119,     0,
-       0,     0,     5,    43,    23,    19,     7,    16,    53,   126,
+       0,     0,     5,    42,    22,    18,     7,    16,    53,   126,
        0,    14,     0,   117,   136,   137,   151,   139,   138,     0,
        0,   138,    52,    53,     0,    73,     0,    76,   128,   132,
-       0,    21,     0,     0,   141,   142,     0,     0,     0,    44,
-       0,    18,    13,    56,     0,     0,    17,     1,     2,    10,
+       0,    20,     0,     0,   141,   142,     0,     0,     0,    44,
+       0,    43,    13,    56,     0,     0,    17,     1,     2,    10,
        3,     8,     6,     9,     0,     0,     0,    71,    89,    58,
       57,     0,     0,   131,     0,     0,     0,   152,     0,     0,
-      71,    71,    71,   140,    77,    78,   127,     0,    75,    22,
-       0,    12,    71,    71,    25,     0,    33,     0,    36,     0,
-      89,    62,     0,    89,    39,   155,    71,     0,   153,     0,
-     154,     0,    24,    20,    54,     0,    72,   109,     0,   111,
+      71,    71,    71,   140,    77,    78,   127,     0,    75,    21,
+       0,    12,    71,    71,    24,     0,    32,     0,    35,     0,
+      89,    62,     0,    89,    38,   155,    71,     0,   153,     0,
+     154,     0,    23,    19,    54,     0,    72,   109,     0,   111,
      102,   103,    53,   112,     0,    90,    91,   101,     0,    95,
-     104,   107,   105,    89,     0,    38,    46,   134,   135,   129,
+     104,   107,   105,    89,     0,    37,    46,   134,   135,   129,
      130,   133,     0,     0,     0,    74,     0,     0,     0,    49,
-      48,     0,    41,    42,    28,     0,    47,    26,     0,     0,
+      48,     0,    40,    41,    27,     0,    47,    25,     0,     0,
        0,     0,    69,     0,    66,     0,    63,    64,    79,     0,
        0,     0,     0,     0,     0,   145,   110,    98,   115,    51,
       97,     0,    71,     0,     0,     0,   100,   109,    94,   106,
      108,     0,     0,    15,   147,   146,   148,    11,   143,   144,
-       0,    31,    29,    30,    27,    32,     0,    34,    35,    37,
+       0,    30,    28,    29,    26,    31,     0,    33,    34,    36,
        0,    61,     0,     0,     0,    80,    81,     0,   157,   156,
      160,     0,   159,    99,    96,     0,     0,   149,    92,    93,
      110,   114,    59,    89,     0,    65,   101,    67,     0,     0,
-      40,   158,   113,     0,     0,     0,    70,     0,    82,    79,
+      39,   158,   113,     0,     0,     0,    70,     0,    82,    79,
      150,    60,     0,    87,    85,    83,     0,    71,     0,     0,
       68,     0,    84,    88,    86
   };
@@ -3823,7 +3823,7 @@ namespace bang_lang {
        0,     0,     0,     0,     0,   222,    12,     0,     0,     0,
        0,     0,     0,     0,    13,     0,     0,     0,     0,     0,
        0,    14,     0,     0,    16,    17,    18,     0,    19,     0,
-     169,   170,    20,     0,     0,     0,     0,     0,     0,    23,
+     169,   170,    20,     0,    21,     0,     0,     0,     0,    23,
       24,     0,   171,     0,     0,     0,     0,    27,    28,     1,
        2,     3,     4,     5,     6,     7,     8,     0,     0,     9,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
@@ -3832,7 +3832,7 @@ namespace bang_lang {
       10,    11,     0,     0,     0,     0,     0,     0,     0,     0,
       12,     0,     0,     0,     0,     0,     0,     0,    13,     0,
        0,     0,     0,     0,     0,    14,     0,     0,    16,    17,
-      18,     0,    19,     0,   169,   170,    20,     0,     0,     0,
+      18,     0,    19,     0,   169,   170,    20,     0,    21,     0,
        0,     0,     0,    23,    24,     0,   171,     0,     0,     0,
        0,    27,    28
   };
@@ -3898,7 +3898,7 @@ namespace bang_lang {
       -1,    -1,    -1,    -1,    -1,    55,    56,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    64,    -1,    -1,    -1,    -1,    -1,
       -1,    71,    -1,    -1,    74,    75,    76,    -1,    78,    -1,
-      80,    81,    82,    -1,    -1,    -1,    -1,    -1,    -1,    89,
+      80,    81,    82,    -1,    84,    -1,    -1,    -1,    -1,    89,
       90,    -1,    92,    -1,    -1,    -1,    -1,    97,    98,     5,
        6,     7,     8,     9,    10,    11,    12,    -1,    -1,    15,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
@@ -3907,7 +3907,7 @@ namespace bang_lang {
       46,    47,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       56,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    64,    -1,
       -1,    -1,    -1,    -1,    -1,    71,    -1,    -1,    74,    75,
-      76,    -1,    78,    -1,    80,    81,    82,    -1,    -1,    -1,
+      76,    -1,    78,    -1,    80,    81,    82,    -1,    84,    -1,
       -1,    -1,    -1,    89,    90,    -1,    92,    -1,    -1,    -1,
       -1,    97,    98
   };
@@ -3950,10 +3950,10 @@ namespace bang_lang {
   parser::yyr1_[] =
   {
        0,    99,   100,   100,   101,   101,   101,   102,   102,   102,
-     102,   103,   103,   103,   103,   103,   103,   103,   103,   104,
-     104,   105,   105,   106,   106,   107,   107,   107,   108,   108,
-     108,   108,   109,   110,   110,   110,   110,   110,   110,   110,
-     110,   111,   111,   112,   112,   112,   112,   113,   113,   113,
+     102,   103,   103,   103,   103,   103,   103,   103,   104,   104,
+     105,   105,   106,   106,   107,   107,   107,   108,   108,   108,
+     108,   109,   110,   110,   110,   110,   110,   110,   110,   110,
+     111,   111,   112,   112,   112,   112,   112,   113,   113,   113,
      114,   115,   116,   116,   116,   117,   117,   118,   118,   119,
      119,   120,   121,   121,   122,   122,   123,   124,   124,   125,
      125,   126,   126,   127,   127,   128,   128,   129,   129,   130,
@@ -3972,10 +3972,10 @@ namespace bang_lang {
   parser::yyr2_[] =
   {
        0,     2,     2,     2,     0,     1,     2,     1,     2,     2,
-       2,     5,     3,     2,     1,     4,     1,     2,     2,     1,
-       3,     2,     3,     1,     3,     0,     1,     2,     1,     2,
-       2,     2,     3,     3,     5,     5,     3,     5,     3,     3,
-       6,     1,     1,     1,     2,     1,     3,     1,     1,     1,
+       2,     5,     3,     2,     1,     4,     1,     2,     1,     3,
+       2,     3,     1,     3,     0,     1,     2,     1,     2,     2,
+       2,     3,     3,     5,     5,     3,     5,     3,     3,     6,
+       1,     1,     1,     2,     2,     1,     3,     1,     1,     1,
        1,     1,     2,     1,     3,     1,     2,     1,     1,     4,
        6,     5,     0,     1,     1,     3,     1,     5,     8,     3,
        6,     0,     1,     1,     3,     2,     1,     2,     2,     0,
@@ -4041,10 +4041,10 @@ namespace bang_lang {
   parser::yyrline_[] =
   {
        0,   336,   336,   337,   341,   343,   345,   362,   364,   365,
-     367,   372,   374,   376,   378,   383,   390,   392,   394,   399,
-     401,   406,   408,   413,   414,   419,   421,   423,   428,   430,
-     431,   433,   438,   443,   445,   447,   449,   451,   453,   455,
-     457,   462,   464,   469,   471,   473,   475,   480,   482,   484,
+     367,   372,   374,   376,   378,   383,   390,   392,   397,   399,
+     404,   406,   411,   412,   417,   419,   421,   426,   428,   429,
+     431,   436,   441,   443,   445,   447,   449,   451,   453,   455,
+     460,   462,   467,   469,   471,   473,   475,   480,   482,   484,
      489,   497,   512,   514,   516,   522,   524,   529,   530,   534,
      536,   542,   549,   551,   555,   558,   563,   569,   571,   578,
      580,   611,   612,   616,   618,   623,   625,   630,   632,   638,
@@ -4055,8 +4055,8 @@ namespace bang_lang {
      782,   784,   786,   788,   790,   792,   794,   796,   804,   808,
      810,   812,   814,   816,   822,   824,   827,   828,   829,   830,
      834,   839,   841,   843,   845,   850,   852,   854,   856,   861,
-     863,   868,   869,   955,   957,   960,   964,   966,   968,   970,
-     978
+     863,   868,   869,   956,   958,   961,   965,   967,   969,   971,
+     979
   };
 
   void
@@ -4146,5 +4146,5 @@ namespace bang_lang {
 } // bang_lang
 #line 4148 "bang.tab.cpp"
 
-#line 1355 "bang.y"
+#line 1356 "bang.y"
 

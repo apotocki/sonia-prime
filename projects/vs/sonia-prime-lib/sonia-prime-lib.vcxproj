@@ -260,13 +260,15 @@
     <ClInclude Include="..\..\..\sonia\bang\bang.yy.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\const_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\variable_pack_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\expression_resolver.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\extern\to_string_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\signature_matcher.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\empty_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\head_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\tail_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\typeof_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\signatured_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\enum_entity.hpp" />
@@ -740,7 +742,6 @@
     <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_unit.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\enum_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functional.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functional_entity.cpp">
@@ -762,8 +763,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\signature_matcher.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_empty_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_head_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\typeof_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_tail_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_typeof_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\new_struct_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_fn_pattern.cpp" />

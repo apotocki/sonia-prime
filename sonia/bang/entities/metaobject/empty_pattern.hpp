@@ -4,20 +4,16 @@
 
 #pragma once
 
-#include "sonia/bang/entities/functional.hpp"
+#include "metaobject_argument_pattern.hpp"
 
 namespace sonia::lang::bang {
 
-class metaobject_typeof_pattern : public functional::pattern
+class metaobject_empty_pattern : public metaobject_argument_pattern
 {
 public:
-    metaobject_typeof_pattern() = default;
+    metaobject_empty_pattern() = default;
 
-    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
-
-protected:
-    //shared_ptr<entity> build(unit&, entity_signature&&) const override;
 };
 
 }

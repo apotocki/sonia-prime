@@ -17,8 +17,8 @@
 //#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
 #include "sonia/bang/entities/functional_entity.hpp"
 #include "sonia/bang/entities/functions/function_entity.hpp"
-#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
-#include "sonia/bang/entities/ellipsis/variable_pack_entity.hpp"
+//#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
+//#include "sonia/bang/entities/ellipsis/variable_pack_entity.hpp"
 #include "sonia/bang/entities/variable_entity.hpp"
 
 #include "sonia/bang/errors/circular_dependency_error.hpp"
@@ -56,9 +56,9 @@ parameter_matcher::parameter_matcher(annotated_identifier name, parameter_constr
 {
     internal_names_.emplace_back(name.value);
     if (auto const& optexpr = constraints_.type_expression; optexpr) {
-        if (bang_parameter_pack_t const* pp = get<bang_parameter_pack_t>(&*optexpr); pp) {
+        if (unary_expression_t const* pp = get<unary_expression_t>(&*optexpr); pp && pp->op == unary_operator_type::ELLIPSIS) {
             variadic = true;
-            syntax_expression_t texpr = std::move(pp->type);
+            syntax_expression_t texpr = std::move(pp->args().front().value());
             constraints_.type_expression = std::move(texpr);
         }
     }
@@ -202,7 +202,7 @@ struct type_constraint_match_visitor : static_visitor<std::expected<entity_ident
             return std::unexpected(make_error<basic_general_error>(fc.location(), "argument mismatch"sv, cexpr));
         }
 
-        if (qname_ent.value() != psig->name()) {
+        if (qname_ent.value() != psig->name) {
             return std::unexpected(make_error<basic_general_error>(fc.location(), "argument mismatch"sv, cexpr));
         }
 
@@ -273,19 +273,21 @@ struct value_type_constraint_match_visitor : static_visitor<std::expected<entity
     result_type operator()(entity_identifier const& eid, lex::resource_location eidloc = {}) const
     {
         entity const& param_entity = callee_ctx.u().eregistry_get(eid);
+#if 0
         if (pack_entity const* pent = dynamic_cast<pack_entity const*>(&param_entity); pent) {
             //syntax_expression_t const& expr = expr_it.next_expression();
             expression_visitor evis{ caller_ctx, { pent->element_type(), get_start_location(expr) } };
             auto res = apply_visitor(evis, expr);
             if (!res) return std::unexpected(std::move(res.error()));
         } else {
+#endif
             BOOST_ASSERT(eid);
             expression_visitor evis{ caller_ctx, { eid, eidloc } };
             auto res = apply_visitor(evis, expr);
             if (!res) {
                 return std::unexpected(std::move(res.error()));
             } else if (res.value()) { --weight; }
-        }
+        //}
         return caller_ctx.context_type;
 
         //GLOBAL_LOG_INFO() << ctx.u().print(eid);
@@ -377,7 +379,7 @@ struct value_type_constraint_match_visitor : static_visitor<std::expected<entity
             return std::unexpected(make_error<basic_general_error>(fc.location(), "argument mismatch"sv, expr));
         }
 
-        if (qname_ent.value() != psig->name()) {
+        if (qname_ent.value() != psig->name) {
             return std::unexpected(make_error<basic_general_error>(fc.location(), "argument mismatch"sv, expr));
         }
 
@@ -492,7 +494,7 @@ void parameter_matcher::update_binding(unit& u, entity_identifier type_or_value,
 
         auto optpack = binding.lookup(argid.value);
         if (!optpack) {
-            auto pent = make_shared<basic_signatured_entity>(u.get(builtin_eid::metaobject), entity_signature{}); // empty pack
+            auto pent = make_shared<basic_signatured_entity>(u.get(builtin_eid::metaobject), entity_signature{ u.get(builtin_qnid::metaobject) }); // empty pack
             psig = pent->signature();
             for (annotated_identifier const& iname : internal_names_) {
                 binding.emplace_back(iname, pent);
@@ -628,7 +630,8 @@ void varnamed_parameter_matcher::update_binding(unit& u, entity_identifier type_
     
     auto optval = binding.lookup(name.value);
     if (!optval) {
-        entity_signature sig{};
+        entity_signature sig{ u.get(builtin_qnid::metaobject) };
+        sig.result = field_descriptor{ u.get(builtin_eid::metaobject) };
         sig.push_back(field_descriptor{ argname_eid, true });
         binding.emplace_back(name, make_shared<basic_signatured_entity>(u.get(builtin_eid::metaobject), std::move(sig)));
     } else {
@@ -636,7 +639,7 @@ void varnamed_parameter_matcher::update_binding(unit& u, entity_identifier type_
         shared_ptr<basic_signatured_entity> pentity = dynamic_pointer_cast<basic_signatured_entity>(*get<shared_ptr<entity>>(&*optval));
         BOOST_ASSERT(pentity);
         entity_signature& sig = *pentity->signature();
-        if (sig.positioned_fields().end() == std::find_if(sig.positioned_fields().begin(), sig.positioned_fields().end(),
+        if (sig.fields().end() == std::find_if(sig.fields().begin(), sig.fields().end(),
             [argname_eid](field_descriptor const& fd) { return fd.entity_id() == argname_eid; })) {
             sig.push_back(field_descriptor{ argname_eid, true });
         }
@@ -650,7 +653,7 @@ void varnamed_parameter_matcher::update_binding(unit& u, entity_identifier type_
         
         auto optpack = binding.lookup(argid.value);
         if (!optpack) {
-            auto pent = make_shared<basic_signatured_entity>(u.get(builtin_eid::metaobject), entity_signature{}); // empty pack
+            auto pent = make_shared<basic_signatured_entity>(u.get(builtin_eid::metaobject), entity_signature{ u.get(builtin_qnid::metaobject) }); // empty pack
             psig = pent->signature();
             binding.emplace_back(argid, std::move(pent));
         } else {
@@ -1058,8 +1061,8 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
         BOOST_ASSERT((*packent)->get_type() == ctx.u().get(builtin_eid::metaobject));
         entity_signature const* psig = (*packent)->signature();
         BOOST_ASSERT(psig);
-        BOOST_ASSERT(psig->named_fields().empty());
-        for (auto const& f : boost::adaptors::reverse(psig->positioned_fields())) {
+        BOOST_ASSERT(psig->named_fields_indices().empty());
+        for (auto const& f : boost::adaptors::reverse(psig->fields())) {
             entity const& packargid = u.eregistry_get(f.entity_id());
             BOOST_ASSERT(packargid.get_type() == ctx.u().get(builtin_eid::identifier));
             identifier_entity const& packargid_ent = static_cast<identifier_entity const&>(packargid);
@@ -1236,8 +1239,8 @@ size_t basic_fn_pattern::apply_arguments(fn_compiler_context& ctx, functional_ma
         BOOST_ASSERT((*packent)->get_type() == ctx.u().get(builtin_eid::metaobject));
         entity_signature const* psig = (*packent)->signature();
         BOOST_ASSERT(psig);
-        BOOST_ASSERT(psig->named_fields().empty());
-        for (auto const& f : psig->positioned_fields()) {
+        BOOST_ASSERT(psig->named_fields_indices().empty());
+        for (auto const& f : psig->fields()) {
             entity const& packargid = u.eregistry_get(f.entity_id());
             BOOST_ASSERT(packargid.get_type() == ctx.u().get(builtin_eid::identifier));
             identifier_entity const& packargid_ent = static_cast<identifier_entity const&>(packargid);

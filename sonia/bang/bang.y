@@ -391,8 +391,6 @@ statement:
         { $$ = apply_visitor(statement_adopt_visitor<statement>{}, $1); }
     | STRUCT struct-decl[struct]
         { $$ = std::move($struct); }
-    | USING using-decl[alias]
-        { $$ = std::move($alias); }
 	;
  
 let-decl:
@@ -459,7 +457,7 @@ finished_statement:
     ;
 
 infunction-statement-set:
-    infunction-statement-any[sts]
+      infunction-statement-any[sts]
         { $$ = std::move($sts); }
     | finished-infunction-statement-any[sts]
         { $$ = std::move($sts); }
@@ -468,6 +466,8 @@ infunction-statement-set:
 generic-statement:
       let-decl
         { $$ = std::move($1); }
+    | USING using-decl[alias]
+        { $$ = std::move($alias); }
     | RETURN syntax-expression
         { $$ = return_decl_t{ std::move($2) }; }
     | compound-expression
@@ -725,12 +725,12 @@ parameter-constraint-set:
 
 parameter-matched-type:
       basic-parameter-matched-type
-    | basic-parameter-matched-type ELLIPSIS
-        { $$ = bang_parameter_pack_t{ std::move($1) }; IGNORE_TERM($ELLIPSIS); }
+    | basic-parameter-matched-type[expr] ELLIPSIS
+        { $$ = unary_expression_t{ unary_operator_type::ELLIPSIS, false, std::move($expr), std::move($ELLIPSIS) }; }
     | INTERNAL_IDENTIFIER[id]
         { $$ = variable_identifier{ ctx.make_qname(std::move($id)), true }; }
     | INTERNAL_IDENTIFIER[id] ELLIPSIS
-        { $$ = bang_parameter_pack_t{variable_identifier{ ctx.make_qname(std::move($id)), true }}; IGNORE_TERM($ELLIPSIS); }
+        { $$ = unary_expression_t{ unary_operator_type::ELLIPSIS, false, variable_identifier{ ctx.make_qname(std::move($id)), true }, std::move($ELLIPSIS) }; }
     ;
 
 basic-parameter-matched-type:
@@ -859,15 +859,16 @@ call-expression:
 
 lambda-expression:
       fn-start-decl[fnkind] OPEN_PARENTHESIS[start] parameter-list-opt[parameters] CLOSE_PARENTHESIS braced-statements[body]
-        { $$ = lambda_t{std::move($start), std::move($parameters), std::move($body) }; IGNORE_TERM($fnkind);  }
+        { $$ = lambda_t{ $fnkind, std::move($start), std::move($parameters), std::move($body) }; }
     | fn-start-decl[fnkind] OPEN_PARENTHESIS[start] parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROW type-expr[type] braced-statements[body]
-        { $$ = lambda_t{std::move($start), std::move($parameters), std::move($body), std::move($type)}; IGNORE_TERM($fnkind); }
+        { $$ = lambda_t{ $fnkind, std::move($start), std::move($parameters), std::move($body), std::move($type) }; }
     ;
 
 compound-expression:
         call-expression
-      | syntax-expression ELLIPSIS
-        { $$ = bang_parameter_pack_t{ std::move($1)}; IGNORE_TERM($2); }
+      | syntax-expression[expr] ELLIPSIS
+        { $$ = unary_expression_t{ unary_operator_type::ELLIPSIS, false, std::move($expr), std::move($ELLIPSIS) }; }
+
     /*
     | syntax-expression OPEN_BRACE argument-list-opt[arguments] CLOSE_BRACE
         { 

@@ -467,6 +467,8 @@ expression_visitor::result_type expression_visitor::operator()(unary_expression_
     switch (be.op) {
     case unary_operator_type::NEGATE:
         return this->operator()(builtin_qnid::negate, be);
+    case unary_operator_type::ELLIPSIS:
+        return this->operator()(builtin_qnid::ellipsis, be);
     }
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor unary_expression_t");
 }

@@ -41,46 +41,52 @@ struct field_descriptor
 
 class entity_signature
 {
-    qname_identifier name_; // a functional name that produces the signatured entity
-    boost::container::small_flat_map<identifier, field_descriptor, 4> named_fields_;
+    boost::container::small_flat_multimap<identifier, uint32_t, 4> named_fields_indices_;
+    small_vector<uint32_t, 4> positioned_fields_indices_;
     small_vector<field_descriptor, 4> fields_;
-
-    // If a function declaration does not have an explicitly declared result type
-    // (and should therefore be determined by the function body)
-    // the result type doesn't take part in signature identification.
-    optional<field_descriptor> result_;
 
 public:
     entity_signature() noexcept = default;
 
-    explicit entity_signature(qname_identifier qid) noexcept : name_{ qid } {}
+    explicit entity_signature(qname_identifier qid) noexcept : name{ qid } {}
 
-    inline qname_identifier name() const noexcept { return name_; }
-    inline void set_name(qname_identifier val) noexcept { name_ = val; }
+    // a functional name that produces the signatured entity
+    qname_identifier name;
 
-    inline span<const std::pair<identifier, field_descriptor>> named_fields() const noexcept { return named_fields_; }
-    inline span<const field_descriptor> positioned_fields() const noexcept { return fields_; }
-    //inline span<const identifier> names() const noexcept { return names_; }
-    inline const field_descriptor* result() const noexcept { return get_pointer(result_); }
-    //inline span<const field_descriptor> positioned_fields() const noexcept { return fields().subspan(names_.size()); }
-    //inline span<const field_descriptor> named_fields() const noexcept { return fields().subspan(0, names_.size()); }
+    // If a function declaration does not have an explicitly declared result type
+    // (and should therefore be determined by the function body)
+    // the result type doesn't take part in signature identification.
+    optional<field_descriptor> result;
 
-    inline size_t field_count() const noexcept { return named_fields_.size() + fields_.size(); }
+    inline span<const field_descriptor> fields() const noexcept { return fields_; }
+    inline size_t field_count() const noexcept { return fields_.size(); }
 
-    field_descriptor const* find_field(identifier field_name, size_t * pindex = nullptr) const noexcept
+    inline span<const std::pair<identifier, uint32_t>> named_fields_indices() const noexcept { return named_fields_indices_; }
+    inline span<const uint32_t> positioned_fields_indices() const noexcept { return positioned_fields_indices_; }
+
+    inline field_descriptor const* find_field(identifier field_name, size_t * pindex = nullptr) const noexcept
     {
-        if (auto it = named_fields_.find(field_name); it != named_fields_.end()) {
-            if (pindex) *pindex = std::distance(named_fields_.begin(), it);
-            return &it->second;
+        if (auto it = named_fields_indices_.find(field_name); it != named_fields_indices_.end()) {
+            if (pindex) *pindex = it->second; // std::distance(named_fields_indices_.begin(), it);
+            return &fields_[it->second];
         }
         return nullptr;
     }
 
-    field_descriptor const* find_field(size_t index, size_t* pindex = nullptr) const noexcept
+    inline field_descriptor const* find_field(size_t index, size_t* pindex = nullptr) const noexcept
+    {
+        if (index < positioned_fields_indices_.size()) {
+            uint32_t offs = positioned_fields_indices_[index];
+            if (pindex) *pindex = offs;
+            return& fields_[offs];
+        }
+        return nullptr;
+    }
+
+    field_descriptor const* get_field(size_t index) const noexcept
     {
         if (index < fields_.size()) {
-            if (pindex) *pindex = index + named_fields_.size();
-            return& fields_[index];
+            return &fields_[index];
         }
         return nullptr;
     }
@@ -99,6 +105,7 @@ public:
     }
     */
 
+#if 0
     template <typename FactoryT>
     requires std::invocable<FactoryT, nullptr_t>
     inline void set(identifier field_name, FactoryT && f)
@@ -128,13 +135,18 @@ public:
         }
         fields_[pos] = std::move(fd);
     }
-
-    void push_back(field_descriptor fd)
+#endif
+    void push_back(identifier field_name, field_descriptor fd)
     {
+        named_fields_indices_.insert(std::pair{ field_name, static_cast<uint32_t>(fields_.size()) });
         fields_.push_back(std::move(fd));
     }
 
-    inline void set_result(field_descriptor fd) noexcept { result_ = std::move(fd); }
+    void push_back(field_descriptor fd)
+    {
+        positioned_fields_indices_.push_back(static_cast<uint32_t>(fields_.size()));
+        fields_.push_back(std::move(fd));
+    }
 
     //void normilize()
     //{
@@ -143,19 +155,24 @@ public:
     //    std::ranges::stable_sort(std::ranges::zip_view(names, nfields), {}, [](auto const& v) { return get<0>(v); });
     //}
 
-    inline void reset_fields() noexcept { fields_.clear(); named_fields_.clear(); }
+    inline void reset_fields() noexcept
+    {
+        fields_.clear();
+        named_fields_indices_.clear();
+        positioned_fields_indices_.clear();
+    }
 
     friend inline bool operator== (entity_signature const& l, entity_signature const& r) noexcept
     {
-        return l.name_ == r.name_ &&
+        return l.name == r.name &&
             range_equal()(l.fields_, r.fields_) &&
-            range_equal()(l.named_fields_, r.named_fields_) &&
-            l.result_ == r.result_;
+            range_equal()(l.named_fields_indices_, r.named_fields_indices_) &&
+            l.result == r.result;
     }
 
-    friend inline size_t hash_value(entity_signature const& v)
+    friend inline size_t hash_value(entity_signature const& v) noexcept
     {
-        return hasher{}(v.name_, span{ v.named_fields_ }, span{ v.fields_ }, v.result_);
+        return hasher{}(v.name, span{ v.named_fields_indices_ }, span{ v.fields_ }, v.result);
     }
 };
 

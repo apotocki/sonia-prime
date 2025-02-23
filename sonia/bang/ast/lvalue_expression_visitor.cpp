@@ -50,11 +50,6 @@ std::expected<entity const*, error_storage> lvalue_expression_visitor::handle_pr
 #endif
 }
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(bang_parameter_pack_t const&) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR();
-}
-
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(not_empty_expression_t const& ne) const
 {
     THROW_NOT_IMPLEMENTED_ERROR();

@@ -2235,9 +2235,6 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp">
       <Filter>sonia.bang\entities\ellipsis</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.hpp">
-      <Filter>sonia.bang\entities\ellipsis</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\signatured_entity.hpp">
       <Filter>sonia.bang\entities</Filter>
     </ClInclude>
@@ -2346,11 +2343,20 @@
     <ClInclude Include="..\..\..\sonia\bang\utility\linked_list.ipp">
       <Filter>sonia.bang\utility</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\variable_pack_entity.hpp">
-      <Filter>sonia.bang\entities\ellipsis</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_init_pattern.hpp">
       <Filter>sonia.bang\entities\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\head_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\tail_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\empty_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2693,9 +2699,6 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.cpp">
       <Filter>sonia.bang\entities\ellipsis</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\pack_entity.cpp">
-      <Filter>sonia.bang\entities\ellipsis</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\ast\fn_compiler_context.cpp">
       <Filter>sonia.bang\ast</Filter>
     </ClCompile>
@@ -2771,7 +2774,7 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\signature_matcher.cpp">
       <Filter>sonia.bang\entities\functions</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\typeof_pattern.cpp">
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_typeof_pattern.cpp">
       <Filter>sonia.bang\entities\metaobject</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\errors\type_mismatch_error.cpp">
@@ -2794,6 +2797,18 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_init_pattern.cpp">
       <Filter>sonia.bang\entities\struct</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_head_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_tail_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_empty_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

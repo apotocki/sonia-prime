@@ -52,12 +52,13 @@ enum class builtin_qnid : size_t
     ellipsis, tuple, identifier, qname, object, string, decimal, integer, boolean, any,
     metaobject, typeof,
     make_tuple, new_, init, eq, ne, plus, negate, implicit_cast, get, set,
+    head, tail, empty,
     eof_builtin_qnids_value
 };
 
 enum class builtin_eid : size_t
 {
-    typename_ = 0, void_, any, identifier, qname, object, string, decimal, integer, boolean, metaobject,
+    typename_ = 0, void_, true_, false_, any, identifier, qname, object, string, decimal, integer, boolean, metaobject,
     arrayify, // builtin ::arrayify(...)->array
     array_at, // builtin ::array_at(array, index)-> elementT
     eof_builtin_eid_value

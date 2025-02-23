@@ -12,7 +12,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> typeof_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
 {
     unit& u = ctx.u();
     identifier objid = u.get(builtin_id::object);
@@ -57,7 +57,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> typeof_pattern::tr
     return pmd;
 }
 
-std::expected<entity_identifier, error_storage> typeof_pattern::const_apply(fn_compiler_context& ctx, qname_identifier functional_id, functional_match_descriptor& md) const
+std::expected<entity_identifier, error_storage> metaobject_typeof_pattern::const_apply(fn_compiler_context& ctx, qname_identifier functional_id, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_identifier mobj = md.get_match_result(u.get(builtin_id::object)).result.front();
@@ -66,7 +66,7 @@ std::expected<entity_identifier, error_storage> typeof_pattern::const_apply(fn_c
     entity const& metaobject_ent = u.eregistry_get(mobj);
     entity_signature const* objsignature = metaobject_ent.signature();
     BOOST_ASSERT(objsignature);
-    BOOST_ASSERT(objsignature->name() == u.get(builtin_qnid::metaobject));
+    BOOST_ASSERT(objsignature->name == u.get(builtin_qnid::metaobject));
     
     identifier_entity const& prop_ent = static_cast<identifier_entity const&>(u.eregistry_get(prop));
 

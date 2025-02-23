@@ -233,8 +233,6 @@ template <typename T> struct bang_vector
     inline auto operator<=>(bang_vector const& r) const noexcept { return variant_compare_three_way{}(type, r.type); }
 };
 
-template <typename T> struct bang_parameter_pack : bang_vector<T> {};
-
 template <typename T> struct bang_union
 {
     small_vector<T, 8> members;
@@ -266,7 +264,7 @@ template <typename T> struct bang_union
     (COMMA)
 */
 
-#define BANG_UNARY_OPERATOR_ENUM (NEGATE)
+#define BANG_UNARY_OPERATOR_ENUM (NEGATE)(ELLIPSIS)
 #define BANG_BINARY_OPERATOR_ENUM (ASSIGN)(LOGIC_AND)(LOGIC_OR)(BIT_OR)(CONCAT)(PLUS)(EQ)(NE)
 enum class unary_operator_type
 {
@@ -617,8 +615,8 @@ struct lambda : fn_pure<ExprT>
 {
     statement_span body;
 
-    lambda(lex::resource_location loc, parameter_woa_list<ExprT>&& params, statement_span&& b, optional<ExprT> rtype = nullopt)
-        : fn_pure<ExprT>{ annotated_qname{ {}, std::move(loc) }, std::move(params), std::move(rtype) }
+    lambda(fn_kind kind, lex::resource_location loc, parameter_woa_list<ExprT>&& params, statement_span&& b, optional<ExprT> rtype = nullopt)
+        : fn_pure<ExprT>{ annotated_qname{ {}, std::move(loc) }, std::move(params), std::move(rtype), kind }
         , body{ std::move(b) }
     {}
 };
@@ -628,7 +626,7 @@ using syntax_expression_t = make_recursive_variant<
     annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier, annotated_qname,
     bang_fn_type<recursive_variant_>,
     bang_array<recursive_variant_>, bang_vector<recursive_variant_>, bang_tuple<recursive_variant_>,
-    bang_union<recursive_variant_>, bang_parameter_pack<recursive_variant_>,
+    bang_union<recursive_variant_>,
     context_value, context_identifier, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
     lambda<recursive_variant_>,
     unary_expression<recursive_variant_>,
@@ -650,8 +648,6 @@ using fn_pure_t = fn_pure<syntax_expression_t>;
 using lambda_t = lambda<syntax_expression_t>;
 using opt_named_syntax_expression_t = opt_named_term<syntax_expression_t>;
 using opt_named_syntax_expression_list_t = opt_named_syntax_expression_list<syntax_expression_t>;
-
-using bang_parameter_pack_t = bang_parameter_pack<syntax_expression_t>;
 
 struct field_t
 {

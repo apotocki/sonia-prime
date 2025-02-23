@@ -32,8 +32,6 @@ struct lvalue_expression_visitor : static_visitor<std::expected<entity const*, e
     result_type operator()(not_empty_expression_t const&) const;
     result_type operator()(member_expression_t const &) const;
 
-    result_type operator()(bang_parameter_pack_t const&) const;
-
     result_type operator()(annotated_bool const&) const;
     result_type operator()(annotated_integer const&) const;
     result_type operator()(annotated_decimal const&) const;

@@ -14,11 +14,6 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     template <typename T>
     inline result_type operator()(annotated<T> const& ae) const noexcept { return ae.location; }
 
-    inline result_type operator()(bang_parameter_pack_t const& v) const noexcept
-    {
-        return apply_visitor(*this, v.type);
-    }
-
     inline result_type operator()(context_value const& v) const noexcept { return v.location; }
     inline result_type operator()(variable_identifier const& v) const noexcept { return v.name.location; }
     inline result_type operator()(annotated_qname const& qn) const noexcept { return qn.location; }

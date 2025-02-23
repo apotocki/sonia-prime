@@ -67,41 +67,41 @@ Grammar
    14          | fn-start-decl fn-decl "`=>`" syntax-expression
    15          | generic-statement
    16          | STRUCT struct-decl
-   17          | USING using-decl
 
-   18 let-decl: let-decl-start-with-opt-type
-   19         | let-decl-start-with-opt-type "`=`" syntax-expression
+   17 let-decl: let-decl-start-with-opt-type
+   18         | let-decl-start-with-opt-type "`=`" syntax-expression
 
-   20 let-decl-start: LET identifier
-   21               | LET "weak modifier" identifier
+   19 let-decl-start: LET identifier
+   20               | LET "weak modifier" identifier
 
-   22 let-decl-start-with-opt-type: let-decl-start
-   23                             | let-decl-start "`:`" type-expr
+   21 let-decl-start-with-opt-type: let-decl-start
+   22                             | let-decl-start "`:`" type-expr
 
-   24 infunction-statement-any: %empty
-   25                         | infunction-statement
-   26                         | finished-infunction-statement-any infunction-statement
+   23 infunction-statement-any: %empty
+   24                         | infunction-statement
+   25                         | finished-infunction-statement-any infunction-statement
 
-   27 finished-infunction-statement-any: finished_statement
-   28                                  | finished-infunction-statement-any "`;`"
-   29                                  | finished-infunction-statement-any finished_statement
-   30                                  | infunction-statement-any "`;`"
+   26 finished-infunction-statement-any: finished_statement
+   27                                  | finished-infunction-statement-any "`;`"
+   28                                  | finished-infunction-statement-any finished_statement
+   29                                  | infunction-statement-any "`;`"
 
-   31 braced-statements: "`{`" infunction-statement-set "`}`"
+   30 braced-statements: "`{`" infunction-statement-set "`}`"
 
-   32 finished_statement: "`while`" syntax-expression braced-statements
-   33                   | "`while`" syntax-expression "`;`" syntax-expression braced-statements
-   34                   | "`for`" syntax-expression "`in`" syntax-expression braced-statements
-   35                   | "`if`" syntax-expression braced-statements
-   36                   | "`if`" syntax-expression braced-statements "`else`" braced-statements
-   37                   | fn-start-decl fn-decl braced-statements
-   38                   | STRUCT qname braced-statements
-   39                   | STRUCT qname "`(`" parameter-list-opt "`)`" braced-statements
+   31 finished_statement: "`while`" syntax-expression braced-statements
+   32                   | "`while`" syntax-expression "`;`" syntax-expression braced-statements
+   33                   | "`for`" syntax-expression "`in`" syntax-expression braced-statements
+   34                   | "`if`" syntax-expression braced-statements
+   35                   | "`if`" syntax-expression braced-statements "`else`" braced-statements
+   36                   | fn-start-decl fn-decl braced-statements
+   37                   | STRUCT qname braced-statements
+   38                   | STRUCT qname "`(`" parameter-list-opt "`)`" braced-statements
 
-   40 infunction-statement-set: infunction-statement-any
-   41                         | finished-infunction-statement-any
+   39 infunction-statement-set: infunction-statement-any
+   40                         | finished-infunction-statement-any
 
-   42 generic-statement: let-decl
+   41 generic-statement: let-decl
+   42                  | USING using-decl
    43                  | "`return`" syntax-expression
    44                  | compound-expression
    45                  | syntax-expression "`=`" syntax-expression
@@ -275,7 +275,7 @@ Terminals, with rules where they appear
     DECIMAL <sonia::lang::bang::annotated_decimal> (266) 120
     DECIMAL_S <sonia::lang::bang::annotated_decimal> (267) 121
     OPERATOR_TERM <sonia::string_view> (268)
-    "`=`" <sonia::lang::lex::resource_location> (269) 19 45 76 83
+    "`=`" <sonia::lang::lex::resource_location> (269) 18 45 76 83
     "APOSTROPHE" (270) 139
     "`@`" (271) 114
     "`_`" <sonia::lang::lex::resource_location> (272) 110
@@ -306,17 +306,17 @@ Terminals, with rules where they appear
     "`&=`" (297)
     "`|=`" (298)
     "`^=`" (299)
-    "`:`" (300) 10 23 77 82 83 95 96 97 98
+    "`:`" (300) 10 22 77 82 83 95 96 97 98
     "`::`" (301) 51 53
-    "`(`" <sonia::lang::lex::resource_location> (302) 39 58 59 66 67 69 85 112 126 142 143 144 145 146 147 148 149 156
-    "`)`" (303) 39 58 59 66 67 69 85 112 126 142 143 144 145 146 147 148 149 156
-    "`{`" <sonia::lang::lex::resource_location> (304) 31 60
-    "`}`" (305) 31 60
+    "`(`" <sonia::lang::lex::resource_location> (302) 38 58 59 66 67 69 85 112 126 142 143 144 145 146 147 148 149 156
+    "`)`" (303) 38 58 59 66 67 69 85 112 126 142 143 144 145 146 147 148 149 156
+    "`{`" <sonia::lang::lex::resource_location> (304) 30 60
+    "`}`" (305) 30 60
     "`[`" <sonia::lang::lex::resource_location> (306) 155 157
     "`]`" (307) 155 157
     "`<`" (308)
     "`>`" (309)
-    "`;`" (310) 7 9 28 30 33
+    "`;`" (310) 7 9 27 29 32
     "`.`" <sonia::lang::lex::resource_location> (311) 127 128 129
     "`+`" <sonia::lang::lex::resource_location> (312) 132
     "`-`" (313)
@@ -332,20 +332,20 @@ Terminals, with rules where they appear
     "`$`" (323)
     "`?`" (324)
     "`#`" (325)
-    LET (326) 20 21
+    LET (326) 19 20
     VAR (327) 10
     EXTERN (328) 10 11
     "`new`" <sonia::lang::lex::resource_location> (329) 57 140 141 142 143
-    "`while`" (330) 32 33
-    "`for`" (331) 34
-    "`in`" (332) 34
-    "`if`" (333) 35 36
-    "`else`" (334) 36
+    "`while`" (330) 31 32
+    "`for`" (331) 33
+    "`in`" (332) 33
+    "`if`" (333) 34 35
+    "`else`" (334) 35
     "`continue`" <sonia::lang::lex::resource_location> (335) 48
     "`break`" <sonia::lang::lex::resource_location> (336) 47
     "`return`" (337) 43
     AUTO (338)
-    USING (339) 17
+    USING (339) 42
     THROW (340)
     SIZEOF (341)
     LOWEST (342)
@@ -353,10 +353,10 @@ Terminals, with rules where they appear
     INLINE (344) 55
     "`fn`" <sonia::lang::lex::resource_location> (345) 11 54 55
     ENUM (346) 60
-    STRUCT (347) 16 38 39
+    STRUCT (347) 16 37 38
     EXTENDS (348)
     TYPENAME (349) 101
-    "weak modifier" (350) 21
+    "weak modifier" (350) 20
     "const modifier" (351) 102
     "true" <annotated_bool> (352) 117
     "false" <annotated_bool> (353) 118
@@ -376,56 +376,56 @@ Nonterminals, with rules where they appear
         on left: 6 7 8 9
         on right: 2 5 7 8
     statement <statement> (103)
-        on left: 10 11 12 13 14 15 16 17
+        on left: 10 11 12 13 14 15 16
         on right: 4 5
     let-decl <let_statement> (104)
-        on left: 18 19
-        on right: 42
+        on left: 17 18
+        on right: 41
     let-decl-start <let_statement> (105)
-        on left: 20 21
-        on right: 22 23
+        on left: 19 20
+        on right: 21 22
     let-decl-start-with-opt-type <let_statement> (106)
-        on left: 22 23
-        on right: 18 19
+        on left: 21 22
+        on right: 17 18
     infunction-statement-any <managed_statement_list> (107)
-        on left: 24 25 26
-        on right: 30 40
+        on left: 23 24 25
+        on right: 29 39
     finished-infunction-statement-any <managed_statement_list> (108)
-        on left: 27 28 29 30
-        on right: 26 28 29 41
+        on left: 26 27 28 29
+        on right: 25 27 28 40
     braced-statements <managed_statement_list> (109)
-        on left: 31
-        on right: 32 33 34 35 36 37 38 39 148 149
+        on left: 30
+        on right: 31 32 33 34 35 36 37 38 148 149
     finished_statement <finished_statement_type> (110)
-        on left: 32 33 34 35 36 37 38 39
-        on right: 6 8 27 29
+        on left: 31 32 33 34 35 36 37 38
+        on right: 6 8 26 28
     infunction-statement-set <managed_statement_list> (111)
-        on left: 40 41
-        on right: 31
+        on left: 39 40
+        on right: 30
     generic-statement <generic_statement_type> (112)
-        on left: 42 43 44 45
+        on left: 41 42 43 44 45
         on right: 15 46
     infunction-statement <statement> (113)
         on left: 46 47 48
-        on right: 25 26
+        on right: 24 25
     identifier <sonia::lang::bang::annotated_identifier> (114)
         on left: 49
-        on right: 10 20 21 51 52 53 65 76 77 82 83 95 96 127 128
+        on right: 10 19 20 51 52 53 65 76 77 82 83 95 96 127 128
     internal_identifier <sonia::lang::bang::annotated_identifier> (115)
         on left: 50
         on right: 95
     qname <sonia::lang::bang::annotated_qname> (116)
         on left: 51 52 53
-        on right: 38 39 53 56 60 66 67 68 69 84 85 111 112 114 125 140 142 144 152
+        on right: 37 38 53 56 60 66 67 68 69 84 85 111 112 114 125 140 142 144 152
     fn-start-decl <fn_kind> (117)
         on left: 54 55
-        on right: 14 37 148 149
+        on right: 14 36 148 149
     fn-name <sonia::lang::bang::annotated_qname> (118)
         on left: 56 57
         on right: 58 59
     fn-decl <fn_pure_t> (119)
         on left: 58 59
-        on right: 11 14 37
+        on right: 11 14 36
     enum-decl <enum_decl> (120)
         on left: 60
         on right: 13
@@ -443,7 +443,7 @@ Nonterminals, with rules where they appear
         on right: 16
     using-decl <using_decl> (125)
         on left: 68 69
-        on right: 17
+        on right: 42
     argument-list-opt <named_expression_list_t> (126)
         on left: 70 71
         on right: 85 112 142 143 144 145 146 147 156
@@ -470,7 +470,7 @@ Nonterminals, with rules where they appear
         on right: 82 83 87
     parameter-list-opt <parameter_woa_list_t> (134)
         on left: 88 89
-        on right: 39 58 59 67 69 148 149
+        on right: 38 58 59 67 69 148 149
     parameter-list <parameter_woa_list_t> (135)
         on left: 90 91
         on right: 89 91
@@ -500,7 +500,7 @@ Nonterminals, with rules where they appear
         on right: 104 105
     syntax-expression <syntax_expression_t> (144)
         on left: 115 116
-        on right: 14 19 32 33 34 35 36 43 45 68 69 74 75 83 128 129 130 131 132 133 134 139 151
+        on right: 14 18 31 32 33 34 35 43 45 68 69 74 75 83 128 129 130 131 132 133 134 139 151
     syntax-expression-wo-ii <syntax_expression_t> (145)
         on left: 117 118 119 120 121 122 123 124 125 126 127 128 129 130 131 132 133 134 135 136 137 138
         on right: 116
@@ -521,7 +521,7 @@ Nonterminals, with rules where they appear
         on right: 44 137
     type-expr <syntax_expression_t> (151)
         on left: 152 153 154 155 156 157 158 159
-        on right: 10 23 59 149 155 157 158 159
+        on right: 10 22 59 149 155 157 158 159
 
 
 State 0
@@ -765,8 +765,8 @@ State 13
 
 State 14
 
-   20 let-decl-start: LET . identifier
-   21               | LET . "weak modifier" identifier
+   19 let-decl-start: LET . identifier
+   20               | LET . "weak modifier" identifier
 
     IDENTIFIER       shift, and go to state 2
     "weak modifier"  shift, and go to state 60
@@ -801,8 +801,8 @@ State 16
 
 State 17
 
-   32 finished_statement: "`while`" . syntax-expression braced-statements
-   33                   | "`while`" . syntax-expression "`;`" syntax-expression braced-statements
+   31 finished_statement: "`while`" . syntax-expression braced-statements
+   32                   | "`while`" . syntax-expression "`;`" syntax-expression braced-statements
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -837,7 +837,7 @@ State 17
 
 State 18
 
-   34 finished_statement: "`for`" . syntax-expression "`in`" syntax-expression braced-statements
+   33 finished_statement: "`for`" . syntax-expression "`in`" syntax-expression braced-statements
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -872,8 +872,8 @@ State 18
 
 State 19
 
-   35 finished_statement: "`if`" . syntax-expression braced-statements
-   36                   | "`if`" . syntax-expression braced-statements "`else`" braced-statements
+   34 finished_statement: "`if`" . syntax-expression braced-statements
+   35                   | "`if`" . syntax-expression braced-statements "`else`" braced-statements
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -943,7 +943,7 @@ State 20
 
 State 21
 
-   17 statement: USING . using-decl
+   42 generic-statement: USING . using-decl
 
     IDENTIFIER  shift, and go to state 2
     "`::`"      shift, and go to state 10
@@ -988,8 +988,8 @@ State 25
 State 26
 
    16 statement: STRUCT . struct-decl
-   38 finished_statement: STRUCT . qname braced-statements
-   39                   | STRUCT . qname "`(`" parameter-list-opt "`)`" braced-statements
+   37 finished_statement: STRUCT . qname braced-statements
+   38                   | STRUCT . qname "`(`" parameter-list-opt "`)`" braced-statements
 
     IDENTIFIER  shift, and go to state 2
     "`::`"      shift, and go to state 10
@@ -1095,29 +1095,29 @@ State 32
 
 State 33
 
-   42 generic-statement: let-decl .
+   41 generic-statement: let-decl .
 
-    $default  reduce using rule 42 (generic-statement)
+    $default  reduce using rule 41 (generic-statement)
 
 
 State 34
 
-   22 let-decl-start-with-opt-type: let-decl-start .
-   23                             | let-decl-start . "`:`" type-expr
+   21 let-decl-start-with-opt-type: let-decl-start .
+   22                             | let-decl-start . "`:`" type-expr
 
     "`:`"  shift, and go to state 84
 
-    $default  reduce using rule 22 (let-decl-start-with-opt-type)
+    $default  reduce using rule 21 (let-decl-start-with-opt-type)
 
 
 State 35
 
-   18 let-decl: let-decl-start-with-opt-type .
-   19         | let-decl-start-with-opt-type . "`=`" syntax-expression
+   17 let-decl: let-decl-start-with-opt-type .
+   18         | let-decl-start-with-opt-type . "`=`" syntax-expression
 
     "`=`"  shift, and go to state 85
 
-    $default  reduce using rule 18 (let-decl)
+    $default  reduce using rule 17 (let-decl)
 
 
 State 36
@@ -1156,7 +1156,7 @@ State 39
 State 40
 
    14 statement: fn-start-decl . fn-decl "`=>`" syntax-expression
-   37 finished_statement: fn-start-decl . fn-decl braced-statements
+   36 finished_statement: fn-start-decl . fn-decl braced-statements
   148 lambda-expression: fn-start-decl . "`(`" parameter-list-opt "`)`" braced-statements
   149                  | fn-start-decl . "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements
 
@@ -1405,7 +1405,7 @@ State 59
 
 State 60
 
-   21 let-decl-start: LET "weak modifier" . identifier
+   20 let-decl-start: LET "weak modifier" . identifier
 
     IDENTIFIER  shift, and go to state 2
 
@@ -1414,9 +1414,9 @@ State 60
 
 State 61
 
-   20 let-decl-start: LET identifier .
+   19 let-decl-start: LET identifier .
 
-    $default  reduce using rule 20 (let-decl-start)
+    $default  reduce using rule 19 (let-decl-start)
 
 
 State 62
@@ -1466,8 +1466,8 @@ State 65
 
 State 66
 
-   32 finished_statement: "`while`" syntax-expression . braced-statements
-   33                   | "`while`" syntax-expression . "`;`" syntax-expression braced-statements
+   31 finished_statement: "`while`" syntax-expression . braced-statements
+   32                   | "`while`" syntax-expression . "`;`" syntax-expression braced-statements
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
   129                        | syntax-expression . "`.`" apostrophe-expression
   130                        | syntax-expression . INTEGER_INDEX
@@ -1490,7 +1490,7 @@ State 66
 
 State 67
 
-   34 finished_statement: "`for`" syntax-expression . "`in`" syntax-expression braced-statements
+   33 finished_statement: "`for`" syntax-expression . "`in`" syntax-expression braced-statements
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
   129                        | syntax-expression . "`.`" apostrophe-expression
   130                        | syntax-expression . INTEGER_INDEX
@@ -1510,8 +1510,8 @@ State 67
 
 State 68
 
-   35 finished_statement: "`if`" syntax-expression . braced-statements
-   36                   | "`if`" syntax-expression . braced-statements "`else`" braced-statements
+   34 finished_statement: "`if`" syntax-expression . braced-statements
+   35                   | "`if`" syntax-expression . braced-statements "`else`" braced-statements
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
   129                        | syntax-expression . "`.`" apostrophe-expression
   130                        | syntax-expression . INTEGER_INDEX
@@ -1565,9 +1565,9 @@ State 70
 
 State 71
 
-   17 statement: USING using-decl .
+   42 generic-statement: USING using-decl .
 
-    $default  reduce using rule 17 (statement)
+    $default  reduce using rule 42 (generic-statement)
 
 
 State 72
@@ -1595,8 +1595,8 @@ State 74
 
 State 75
 
-   38 finished_statement: STRUCT qname . braced-statements
-   39                   | STRUCT qname . "`(`" parameter-list-opt "`)`" braced-statements
+   37 finished_statement: STRUCT qname . braced-statements
+   38                   | STRUCT qname . "`(`" parameter-list-opt "`)`" braced-statements
    53 qname: qname . "`::`" identifier
    66 struct-decl: qname . "`=>`" "`(`" field-list-opt "`)`"
    67            | qname . "`(`" parameter-list-opt "`)`" "`=>`" "`(`" field-list-opt "`)`"
@@ -1667,7 +1667,7 @@ State 83
 
 State 84
 
-   23 let-decl-start-with-opt-type: let-decl-start "`:`" . type-expr
+   22 let-decl-start-with-opt-type: let-decl-start "`:`" . type-expr
 
     IDENTIFIER           shift, and go to state 2
     INTERNAL_IDENTIFIER  shift, and go to state 125
@@ -1689,7 +1689,7 @@ State 84
 
 State 85
 
-   19 let-decl: let-decl-start-with-opt-type "`=`" . syntax-expression
+   18 let-decl: let-decl-start-with-opt-type "`=`" . syntax-expression
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -1828,7 +1828,7 @@ State 91
 State 92
 
    14 statement: fn-start-decl fn-decl . "`=>`" syntax-expression
-   37 finished_statement: fn-start-decl fn-decl . braced-statements
+   36 finished_statement: fn-start-decl fn-decl . braced-statements
 
     "`=>`"  shift, and go to state 154
     "`{`"   shift, and go to state 114
@@ -2213,9 +2213,9 @@ State 108
 
 State 109
 
-   21 let-decl-start: LET "weak modifier" identifier .
+   20 let-decl-start: LET "weak modifier" identifier .
 
-    $default  reduce using rule 21 (let-decl-start)
+    $default  reduce using rule 20 (let-decl-start)
 
 
 State 110
@@ -2316,7 +2316,7 @@ State 113
 
 State 114
 
-   31 braced-statements: "`{`" . infunction-statement-set "`}`"
+   30 braced-statements: "`{`" . infunction-statement-set "`}`"
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -2339,13 +2339,14 @@ State 114
     "`continue`"         shift, and go to state 169
     "`break`"            shift, and go to state 170
     "`return`"           shift, and go to state 20
+    USING                shift, and go to state 21
     INLINE               shift, and go to state 23
     "`fn`"               shift, and go to state 24
     STRUCT               shift, and go to state 171
     "true"               shift, and go to state 27
     "false"              shift, and go to state 28
 
-    $default  reduce using rule 24 (infunction-statement-any)
+    $default  reduce using rule 23 (infunction-statement-any)
 
     let-decl                           go to state 33
     let-decl-start                     go to state 34
@@ -2370,7 +2371,7 @@ State 114
 
 State 115
 
-   33 finished_statement: "`while`" syntax-expression "`;`" . syntax-expression braced-statements
+   32 finished_statement: "`while`" syntax-expression "`;`" . syntax-expression braced-statements
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -2405,14 +2406,14 @@ State 115
 
 State 116
 
-   32 finished_statement: "`while`" syntax-expression braced-statements .
+   31 finished_statement: "`while`" syntax-expression braced-statements .
 
-    $default  reduce using rule 32 (finished_statement)
+    $default  reduce using rule 31 (finished_statement)
 
 
 State 117
 
-   34 finished_statement: "`for`" syntax-expression "`in`" . syntax-expression braced-statements
+   33 finished_statement: "`for`" syntax-expression "`in`" . syntax-expression braced-statements
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -2447,12 +2448,12 @@ State 117
 
 State 118
 
-   35 finished_statement: "`if`" syntax-expression braced-statements .
-   36                   | "`if`" syntax-expression braced-statements . "`else`" braced-statements
+   34 finished_statement: "`if`" syntax-expression braced-statements .
+   35                   | "`if`" syntax-expression braced-statements . "`else`" braced-statements
 
     "`else`"  shift, and go to state 181
 
-    $default  reduce using rule 35 (finished_statement)
+    $default  reduce using rule 34 (finished_statement)
 
 
 State 119
@@ -2540,7 +2541,7 @@ State 122
 
 State 123
 
-   39 finished_statement: STRUCT qname "`(`" . parameter-list-opt "`)`" braced-statements
+   38 finished_statement: STRUCT qname "`(`" . parameter-list-opt "`)`" braced-statements
    67 struct-decl: qname "`(`" . parameter-list-opt "`)`" "`=>`" "`(`" field-list-opt "`)`"
 
     IDENTIFIER           shift, and go to state 2
@@ -2568,9 +2569,9 @@ State 123
 
 State 124
 
-   38 finished_statement: STRUCT qname braced-statements .
+   37 finished_statement: STRUCT qname braced-statements .
 
-    $default  reduce using rule 38 (finished_statement)
+    $default  reduce using rule 37 (finished_statement)
 
 
 State 125
@@ -2681,7 +2682,7 @@ State 131
 
 State 132
 
-   23 let-decl-start-with-opt-type: let-decl-start "`:`" type-expr .
+   22 let-decl-start-with-opt-type: let-decl-start "`:`" type-expr .
   157 type-expr: type-expr . "`[`" INTEGER "`]`"
   158          | type-expr . "`|`" type-expr
   159          | type-expr . "`->`" type-expr
@@ -2690,12 +2691,12 @@ State 132
     "`[`"   shift, and go to state 193
     "`|`"   shift, and go to state 194
 
-    $default  reduce using rule 23 (let-decl-start-with-opt-type)
+    $default  reduce using rule 22 (let-decl-start-with-opt-type)
 
 
 State 133
 
-   19 let-decl: let-decl-start-with-opt-type "`=`" syntax-expression .
+   18 let-decl: let-decl-start-with-opt-type "`=`" syntax-expression .
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
   129                        | syntax-expression . "`.`" apostrophe-expression
   130                        | syntax-expression . INTEGER_INDEX
@@ -2711,7 +2712,7 @@ State 133
     "`.`"          shift, and go to state 98
     "`+`"          shift, and go to state 99
 
-    $default  reduce using rule 19 (let-decl)
+    $default  reduce using rule 18 (let-decl)
 
 
 State 134
@@ -2968,9 +2969,9 @@ State 154
 
 State 155
 
-   37 finished_statement: fn-start-decl fn-decl braced-statements .
+   36 finished_statement: fn-start-decl fn-decl braced-statements .
 
-    $default  reduce using rule 37 (finished_statement)
+    $default  reduce using rule 36 (finished_statement)
 
 
 State 156
@@ -3141,8 +3142,8 @@ State 170
 
 State 171
 
-   38 finished_statement: STRUCT . qname braced-statements
-   39                   | STRUCT . qname "`(`" parameter-list-opt "`)`" braced-statements
+   37 finished_statement: STRUCT . qname braced-statements
+   38                   | STRUCT . qname "`(`" parameter-list-opt "`)`" braced-statements
 
     IDENTIFIER  shift, and go to state 2
     "`::`"      shift, and go to state 10
@@ -3153,20 +3154,20 @@ State 171
 
 State 172
 
-   30 finished-infunction-statement-any: infunction-statement-any . "`;`"
-   40 infunction-statement-set: infunction-statement-any .
+   29 finished-infunction-statement-any: infunction-statement-any . "`;`"
+   39 infunction-statement-set: infunction-statement-any .
 
     "`;`"  shift, and go to state 221
 
-    $default  reduce using rule 40 (infunction-statement-set)
+    $default  reduce using rule 39 (infunction-statement-set)
 
 
 State 173
 
-   26 infunction-statement-any: finished-infunction-statement-any . infunction-statement
-   28 finished-infunction-statement-any: finished-infunction-statement-any . "`;`"
-   29                                  | finished-infunction-statement-any . finished_statement
-   41 infunction-statement-set: finished-infunction-statement-any .
+   25 infunction-statement-any: finished-infunction-statement-any . infunction-statement
+   27 finished-infunction-statement-any: finished-infunction-statement-any . "`;`"
+   28                                  | finished-infunction-statement-any . finished_statement
+   40 infunction-statement-set: finished-infunction-statement-any .
 
     STRING               shift, and go to state 1
     IDENTIFIER           shift, and go to state 2
@@ -3190,13 +3191,14 @@ State 173
     "`continue`"         shift, and go to state 169
     "`break`"            shift, and go to state 170
     "`return`"           shift, and go to state 20
+    USING                shift, and go to state 21
     INLINE               shift, and go to state 23
     "`fn`"               shift, and go to state 24
     STRUCT               shift, and go to state 171
     "true"               shift, and go to state 27
     "false"              shift, and go to state 28
 
-    $default  reduce using rule 41 (infunction-statement-set)
+    $default  reduce using rule 40 (infunction-statement-set)
 
     let-decl                      go to state 33
     let-decl-start                go to state 34
@@ -3218,14 +3220,14 @@ State 173
 
 State 174
 
-   27 finished-infunction-statement-any: finished_statement .
+   26 finished-infunction-statement-any: finished_statement .
 
-    $default  reduce using rule 27 (finished-infunction-statement-any)
+    $default  reduce using rule 26 (finished-infunction-statement-any)
 
 
 State 175
 
-   31 braced-statements: "`{`" infunction-statement-set . "`}`"
+   30 braced-statements: "`{`" infunction-statement-set . "`}`"
 
     "`}`"  shift, and go to state 225
 
@@ -3239,14 +3241,14 @@ State 176
 
 State 177
 
-   25 infunction-statement-any: infunction-statement .
+   24 infunction-statement-any: infunction-statement .
 
-    $default  reduce using rule 25 (infunction-statement-any)
+    $default  reduce using rule 24 (infunction-statement-any)
 
 
 State 178
 
-   37 finished_statement: fn-start-decl . fn-decl braced-statements
+   36 finished_statement: fn-start-decl . fn-decl braced-statements
   148 lambda-expression: fn-start-decl . "`(`" parameter-list-opt "`)`" braced-statements
   149                  | fn-start-decl . "`(`" parameter-list-opt "`)`" "`->`" type-expr braced-statements
 
@@ -3263,7 +3265,7 @@ State 178
 
 State 179
 
-   33 finished_statement: "`while`" syntax-expression "`;`" syntax-expression . braced-statements
+   32 finished_statement: "`while`" syntax-expression "`;`" syntax-expression . braced-statements
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
   129                        | syntax-expression . "`.`" apostrophe-expression
   130                        | syntax-expression . INTEGER_INDEX
@@ -3285,7 +3287,7 @@ State 179
 
 State 180
 
-   34 finished_statement: "`for`" syntax-expression "`in`" syntax-expression . braced-statements
+   33 finished_statement: "`for`" syntax-expression "`in`" syntax-expression . braced-statements
   128 syntax-expression-wo-ii: syntax-expression . "`.`" identifier
   129                        | syntax-expression . "`.`" apostrophe-expression
   130                        | syntax-expression . INTEGER_INDEX
@@ -3307,7 +3309,7 @@ State 180
 
 State 181
 
-   36 finished_statement: "`if`" syntax-expression braced-statements "`else`" . braced-statements
+   35 finished_statement: "`if`" syntax-expression braced-statements "`else`" . braced-statements
 
     "`{`"  shift, and go to state 114
 
@@ -3389,7 +3391,7 @@ State 188
 
 State 189
 
-   39 finished_statement: STRUCT qname "`(`" parameter-list-opt . "`)`" braced-statements
+   38 finished_statement: STRUCT qname "`(`" parameter-list-opt . "`)`" braced-statements
    67 struct-decl: qname "`(`" parameter-list-opt . "`)`" "`=>`" "`(`" field-list-opt "`)`"
 
     "`)`"  shift, and go to state 237
@@ -3750,8 +3752,8 @@ State 219
 
 State 220
 
-   38 finished_statement: STRUCT qname . braced-statements
-   39                   | STRUCT qname . "`(`" parameter-list-opt "`)`" braced-statements
+   37 finished_statement: STRUCT qname . braced-statements
+   38                   | STRUCT qname . "`(`" parameter-list-opt "`)`" braced-statements
    53 qname: qname . "`::`" identifier
 
     "`::`"  shift, and go to state 86
@@ -3763,42 +3765,42 @@ State 220
 
 State 221
 
-   30 finished-infunction-statement-any: infunction-statement-any "`;`" .
-
-    $default  reduce using rule 30 (finished-infunction-statement-any)
-
-
-State 222
-
-   28 finished-infunction-statement-any: finished-infunction-statement-any "`;`" .
-
-    $default  reduce using rule 28 (finished-infunction-statement-any)
-
-
-State 223
-
-   29 finished-infunction-statement-any: finished-infunction-statement-any finished_statement .
+   29 finished-infunction-statement-any: infunction-statement-any "`;`" .
 
     $default  reduce using rule 29 (finished-infunction-statement-any)
 
 
+State 222
+
+   27 finished-infunction-statement-any: finished-infunction-statement-any "`;`" .
+
+    $default  reduce using rule 27 (finished-infunction-statement-any)
+
+
+State 223
+
+   28 finished-infunction-statement-any: finished-infunction-statement-any finished_statement .
+
+    $default  reduce using rule 28 (finished-infunction-statement-any)
+
+
 State 224
 
-   26 infunction-statement-any: finished-infunction-statement-any infunction-statement .
+   25 infunction-statement-any: finished-infunction-statement-any infunction-statement .
 
-    $default  reduce using rule 26 (infunction-statement-any)
+    $default  reduce using rule 25 (infunction-statement-any)
 
 
 State 225
 
-   31 braced-statements: "`{`" infunction-statement-set "`}`" .
+   30 braced-statements: "`{`" infunction-statement-set "`}`" .
 
-    $default  reduce using rule 31 (braced-statements)
+    $default  reduce using rule 30 (braced-statements)
 
 
 State 226
 
-   37 finished_statement: fn-start-decl fn-decl . braced-statements
+   36 finished_statement: fn-start-decl fn-decl . braced-statements
 
     "`{`"  shift, and go to state 114
 
@@ -3807,23 +3809,23 @@ State 226
 
 State 227
 
-   33 finished_statement: "`while`" syntax-expression "`;`" syntax-expression braced-statements .
+   32 finished_statement: "`while`" syntax-expression "`;`" syntax-expression braced-statements .
 
-    $default  reduce using rule 33 (finished_statement)
+    $default  reduce using rule 32 (finished_statement)
 
 
 State 228
 
-   34 finished_statement: "`for`" syntax-expression "`in`" syntax-expression braced-statements .
+   33 finished_statement: "`for`" syntax-expression "`in`" syntax-expression braced-statements .
 
-    $default  reduce using rule 34 (finished_statement)
+    $default  reduce using rule 33 (finished_statement)
 
 
 State 229
 
-   36 finished_statement: "`if`" syntax-expression braced-statements "`else`" braced-statements .
+   35 finished_statement: "`if`" syntax-expression braced-statements "`else`" braced-statements .
 
-    $default  reduce using rule 36 (finished_statement)
+    $default  reduce using rule 35 (finished_statement)
 
 
 State 230
@@ -3884,7 +3886,7 @@ State 236
 
 State 237
 
-   39 finished_statement: STRUCT qname "`(`" parameter-list-opt "`)`" . braced-statements
+   38 finished_statement: STRUCT qname "`(`" parameter-list-opt "`)`" . braced-statements
    67 struct-decl: qname "`(`" parameter-list-opt "`)`" . "`=>`" "`(`" field-list-opt "`)`"
 
     "`=>`"  shift, and go to state 259
@@ -4033,7 +4035,7 @@ State 252
 
 State 253
 
-   39 finished_statement: STRUCT qname "`(`" . parameter-list-opt "`)`" braced-statements
+   38 finished_statement: STRUCT qname "`(`" . parameter-list-opt "`)`" braced-statements
 
     IDENTIFIER           shift, and go to state 2
     INTERNAL_IDENTIFIER  shift, and go to state 137
@@ -4140,9 +4142,9 @@ State 259
 
 State 260
 
-   39 finished_statement: STRUCT qname "`(`" parameter-list-opt "`)`" braced-statements .
+   38 finished_statement: STRUCT qname "`(`" parameter-list-opt "`)`" braced-statements .
 
-    $default  reduce using rule 39 (finished_statement)
+    $default  reduce using rule 38 (finished_statement)
 
 
 State 261
@@ -4198,7 +4200,7 @@ State 264
 
 State 265
 
-   39 finished_statement: STRUCT qname "`(`" parameter-list-opt . "`)`" braced-statements
+   38 finished_statement: STRUCT qname "`(`" parameter-list-opt . "`)`" braced-statements
 
     "`)`"  shift, and go to state 272
 
@@ -4282,7 +4284,7 @@ State 271
 
 State 272
 
-   39 finished_statement: STRUCT qname "`(`" parameter-list-opt "`)`" . braced-statements
+   38 finished_statement: STRUCT qname "`(`" parameter-list-opt "`)`" . braced-statements
 
     "`{`"  shift, and go to state 114
 

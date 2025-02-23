@@ -14,10 +14,7 @@ size_t function_entity::parameter_count() const noexcept
 {
     // to do: include captured parameters
     size_t cnt = 0;
-    for (auto const& f : sig_.positioned_fields()) {
-        if (!f.is_const()) ++cnt;
-    }
-    for (auto const& [_, f] : sig_.named_fields()) {
+    for (auto const& f : sig_.fields()) {
         if (!f.is_const()) ++cnt;
     }
     return cnt;
@@ -36,9 +33,9 @@ internal_function_entity::internal_function_entity(unit& u, qname&& name, entity
 external_function_entity::external_function_entity(unit& u, qname&& name, entity_signature&& sig, size_t fnid)
     : function_entity{ std::move(name), std::move(sig) }, extfnid_{ static_cast<uint32_t>(fnid) }
 {
-    BOOST_ASSERT(sig.result());
-    BOOST_ASSERT(sig.result()->entity_id());
-    set_result_type(sig.result()->entity_id());
+    BOOST_ASSERT(sig.result);
+    BOOST_ASSERT(sig.result->entity_id());
+    set_result_type(sig.result->entity_id());
 }
 
 //size_t function_entity::hash() const noexcept

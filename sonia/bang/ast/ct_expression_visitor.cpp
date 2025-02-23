@@ -133,7 +133,7 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_q
     return std::unexpected(optqnid.error());
 }
 
-ct_expression_visitor::result_type ct_expression_visitor::operator()(variable_identifier const vi) const
+ct_expression_visitor::result_type ct_expression_visitor::operator()(variable_identifier const& vi) const
 {
     auto opteid = ctx.lookup_entity(vi.name);
     if (!opteid) return opteid;
@@ -167,6 +167,11 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(builtin_qni
     if (!match) return std::unexpected(match.error());
     if (auto res = match->const_apply(ctx); !res) return std::unexpected(std::move(res.error()));
     else return apply_cast(*res, call);
+}
+
+ct_expression_visitor::result_type ct_expression_visitor::operator()(lambda_t const& l) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::operator()(lambda_t const&)");
 }
 
 }

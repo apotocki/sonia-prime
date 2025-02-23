@@ -98,7 +98,7 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
         if (!res) return std::move(res.error());
         bool is_const = f.modifier != parameter_constraint_modifier_t::value_type_constraint;
         if (f.name) {
-            tuple_signature.set(f.name.value, field_descriptor{ *res, is_const });
+            tuple_signature.push_back(f.name.value, field_descriptor{ *res, is_const });
         } else {
             tuple_signature.push_back(field_descriptor{ *res, is_const });
             if (!is_const) ++pos_arg_num;

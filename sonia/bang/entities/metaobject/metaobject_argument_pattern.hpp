@@ -8,16 +8,15 @@
 
 namespace sonia::lang::bang {
 
-class metaobject_typeof_pattern : public functional::pattern
+class metaobject_argument_pattern : public functional::pattern
 {
 public:
-    metaobject_typeof_pattern() = default;
+    metaobject_argument_pattern() = default;
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
 
 protected:
-    //shared_ptr<entity> build(unit&, entity_signature&&) const override;
+    entity_signature const& argument_signature(fn_compiler_context&, functional_match_descriptor&) const;
 };
 
 }

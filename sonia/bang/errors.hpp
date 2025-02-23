@@ -141,8 +141,8 @@ class undeclared_identifier_error : public general_error
     annotated_qname idname_;
 
 public:
-    explicit undeclared_identifier_error(annotated_qname idname)
-        : idname_{ idname }
+    inline explicit undeclared_identifier_error(annotated_qname idname) noexcept
+        : idname_{ std::move(idname) }
     {}
 
     undeclared_identifier_error(lex::resource_location loc, qname_view idname)

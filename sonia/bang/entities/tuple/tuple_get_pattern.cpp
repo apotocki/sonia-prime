@@ -50,7 +50,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
             if (!res) return std::unexpected(std::move(res.error()));
             if (ctx.context_type) {
                 entity const& some_entity = ctx.u().eregistry_get(ctx.context_type);
-                if (auto psig = some_entity.signature(); psig && psig->name() == u.get(builtin_qnid::tuple)) {
+                if (auto psig = some_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
                     pte = &some_entity;
                     pmd->get_match_result(pargname->value).append_result(false, ctx.context_type, last_expr_it, ctx.expressions());
                     continue;

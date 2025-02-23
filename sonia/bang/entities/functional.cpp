@@ -6,7 +6,7 @@
 #include "functional.hpp"
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
-#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
+//#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
 
 #include "sonia/bang/errors/function_call_match_error.hpp"
 #include "sonia/bang/errors/pattern_match_error.hpp"
@@ -134,18 +134,18 @@ entity_signature functional_match_descriptor::build_signature(unit & u, qname_id
     for (auto [nm, pmr] : named_matches_) {
         bool is_const = pmr->is_constexpr();
         for (entity_identifier eid : pmr->result) {
-            signature.set(nm, field_descriptor{ eid, is_const });
+            signature.push_back(nm, field_descriptor{ eid, is_const });
         }
     }
-    size_t argnum = 0;
+    //size_t argnum = 0;
     for (auto pmr : positional_matches_) {
         bool is_const = pmr->is_constexpr();
         for (entity_identifier eid : pmr->result) {
-            signature.set(argnum++, field_descriptor{ eid, is_const });
+            signature.push_back(field_descriptor{ eid, is_const });
         }
     }
     if (result) {
-        signature.set_result(field_descriptor{ result, false });
+        signature.result = field_descriptor{ result };
     }
     return signature;
     

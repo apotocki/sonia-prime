@@ -34,6 +34,7 @@ std::expected<entity_identifier, error_storage> metaobject_pattern::const_apply(
     BOOST_ASSERT(functional_id == u.get(builtin_qnid::metaobject));
     
     entity_signature sig = md.build_signature(u, functional_id);
+    sig.result = field_descriptor{ u.get(builtin_eid::metaobject) };
     indirect_signatured_entity smpl{ sig };
 
     return u.eregistry_find_or_create(smpl, [&u, &sig]() {

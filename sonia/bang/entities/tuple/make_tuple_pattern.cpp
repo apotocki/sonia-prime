@@ -40,7 +40,7 @@ error_storage make_tuple_pattern::apply(fn_compiler_context& ctx, qname_identifi
     entity& e = ctx.u().eregistry_find_or_create(smpl, [this, &u, &sig]() {
         return make_shared<basic_signatured_entity>(u.get(builtin_eid::typename_), std::move(sig));
     });
-    BOOST_ASSERT(e.signature() && e.signature()->name() == u.get(builtin_qnid::tuple));
+    BOOST_ASSERT(e.signature() && e.signature()->name == u.get(builtin_qnid::tuple));
 
     size_t argcount = 0;
     

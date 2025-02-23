@@ -22,8 +22,13 @@
 #include "entities/tuple/tuple_set_pattern.hpp"
 #include "entities/struct/new_struct_pattern.hpp"
 #include "entities/struct/struct_get_pattern.hpp"
+
 #include "entities/metaobject/metaobject_pattern.hpp"
 #include "entities/metaobject/typeof_pattern.hpp"
+#include "entities/metaobject/head_pattern.hpp"
+#include "entities/metaobject/tail_pattern.hpp"
+#include "entities/metaobject/empty_pattern.hpp"
+
 #include "semantic/expression_printer.hpp"
 
 namespace sonia::lang::bang {
@@ -157,7 +162,7 @@ entity_identifier unit::set_builtin_extern(string_view name, void(*pfn)(vm::cont
     qname qn{ make_identifier(name) };
     qname_identifier qid = fregistry().resolve(qn).id();
     entity_signature sig{ qid };
-    sig.set_result(field_descriptor{ get(builtin_eid::any), false });
+    sig.result = field_descriptor{ get(builtin_eid::any), false };
     auto pent = make_shared<external_function_entity>(*this, std::move(qn), std::move(sig), fn_identifier_counter_);
     eregistry_insert(pent);
     bvm_->set_efn(fn_identifier_counter_++, pfn, small_string{ name });
@@ -303,27 +308,24 @@ std::string unit::print(entity const& e) const
 std::string unit::print(entity_signature const& sgn) const
 {
     std::ostringstream ss;
-    ss << print(sgn.name());
-    if (!sgn.positioned_fields().empty() || !sgn.named_fields().empty()) {
+    ss << print(sgn.name);
+    if (!sgn.fields().empty()) {
         ss << '(';
         bool first = true;
 
-        //auto name_it = sgn.names().begin();
-        for (auto const& [name, fd] : sgn.named_fields()) {
+        for (uint32_t i = 0; i < sgn.fields().size(); ++i) {
             if (first) first = false;
             else ss << ", "sv;
-            ss << print(name) << ": "sv;
-            if (fd.is_const()) ss << "const "sv;
-            ss << print(fd.entity_id());
-        }
-        for (auto const& fd : sgn.positioned_fields()) {
-            if (first) first = false;
-            else ss << ", "sv;
+
+            auto const& fd = sgn.fields()[i];
+            if (auto nit = std::ranges::find(sgn.named_fields_indices(), i, &std::pair<identifier, uint32_t>::second); nit != sgn.named_fields_indices().end()) {
+                ss << print(nit->first) << ": "sv;
+            }
             if (fd.is_const()) ss << "const "sv;
             ss << print(fd.entity_id());
         }
 
-        ss << ")";
+        ss <<')';
     }
     return ss.str();
 }
@@ -635,12 +637,6 @@ struct expr_printer_visitor : static_visitor<void>
         ss << ']';
     }
 
-    void operator()(bang_parameter_pack_t const& p) const
-    {
-        apply_visitor(*this, p.type);
-        ss << "..."sv;
-    }
-
     void operator()(function_call_t const& f) const
     {
         ss << "CALL("sv;
@@ -946,6 +942,9 @@ unit::unit()
     builtin_qnids_[(size_t)builtin_qnid::negate] = make_qname_identifier("negate");
     builtin_qnids_[(size_t)builtin_qnid::get] = make_qname_identifier("get");
     builtin_qnids_[(size_t)builtin_qnid::set] = make_qname_identifier("set");
+    builtin_qnids_[(size_t)builtin_qnid::head] = make_qname_identifier("head");
+    builtin_qnids_[(size_t)builtin_qnid::tail] = make_qname_identifier("tail");
+    builtin_qnids_[(size_t)builtin_qnid::empty] = make_qname_identifier("empty");
 
     // typename
     auto typename_qname_identifier = make_qname_identifier("typename");
@@ -992,7 +991,17 @@ unit::unit()
     eregistry_insert(void_entity);
     builtin_eids_[(size_t)builtin_eid::void_] = void_entity->id();
 
+    // true_
+    auto true_entity = make_shared<bool_literal_entity>(true);
+    true_entity->set_type(get(builtin_eid::boolean));
+    eregistry_insert(true_entity);
+    builtin_eids_[(size_t)builtin_eid::true_] = true_entity->id();
 
+    // false_
+    auto false_entity = make_shared<bool_literal_entity>(false);
+    false_entity->set_type(get(builtin_eid::boolean));
+    eregistry_insert(false_entity);
+    builtin_eids_[(size_t)builtin_eid::false_] = false_entity->id();
 
     /////// built in patterns
     // make_tuple(...) -> tuple(...)
@@ -1019,11 +1028,25 @@ unit::unit()
 
     // typeof(object: const metaobject, property: const __identifier) -> typename
     functional& typeof_fnl = fregistry().resolve(get(builtin_qnid::typeof));
-    typeof_fnl.push(make_shared<typeof_pattern>());
+    typeof_fnl.push(make_shared<metaobject_typeof_pattern>());
+
+    // head(metaobject) -> ???
+    functional& head_fnl = fregistry().resolve(get(builtin_qnid::head));
+    head_fnl.push(make_shared<metaobject_head_pattern>());
+
+    // tail(metaobject) -> @metaobject
+    functional& tail_fnl = fregistry().resolve(get(builtin_qnid::tail));
+    tail_fnl.push(make_shared<metaobject_tail_pattern>());
+
+    // empty(metaobject) -> bool
+    functional& empty_fnl = fregistry().resolve(get(builtin_qnid::empty));
+    empty_fnl.push(make_shared<metaobject_empty_pattern>());
 
     // new(type: typename $T @struct, ...) -> $T
     functional& newfnl = fregistry().resolve(get(builtin_qnid::new_));
     newfnl.push(make_shared<new_struct_pattern>());
+
+
 
     // operator...(type: typename)
     builtin_qnids_[(size_t)builtin_qnid::ellipsis] = make_qname_identifier("..."sv);

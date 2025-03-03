@@ -8,6 +8,12 @@
 #   define BOOST_ENABLE_ASSERT_HANDLER
 #endif
 
+#ifdef NDEBUG
+constexpr bool sonia_is_debug = false;
+#else
+constexpr bool sonia_is_debug = true;
+#endif
+
 // VC specific
 #if defined(_MSC_VER) & !defined(_CRT_SECURE_NO_WARNINGS) 
 #   define _CRT_SECURE_NO_WARNINGS

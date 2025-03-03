@@ -18,9 +18,11 @@ namespace sonia::lang::bang {
 
 lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(variable_identifier const& v) const
 {
+    ctx.lookup_entity()
     functional const* pfn = ctx.lookup_functional(v.name.value);
-    if (pfn && pfn->default_entity(ctx)) {
-        if (auto opteid = pfn->default_entity(ctx); opteid) {
+    if (pfn)  && pfn->default_entity(ctx)) {
+        auto eid = pfn->default_entity(ctx);
+        if (pteid) {
             return &ctx.u().eregistry_get(*opteid);
         } else {
             return std::unexpected(std::move(opteid.error()));

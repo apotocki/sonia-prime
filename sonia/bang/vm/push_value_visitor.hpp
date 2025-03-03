@@ -120,7 +120,16 @@ public:
     void operator()(entity_identifier const& eid) const
     {
         entity const& e = unit_.eregistry_get(eid);
-        e.visit(*this);
+        if (e.id() != unit_.get(builtin_eid::void_)) {
+            e.visit(*this);
+        } else {
+            fnbuilder_.append_push_pooled_const(smart_blob{});
+        }
+    }
+
+    void operator()(entity_ptr const& eptr) const
+    {
+        eptr->visit(*this);
     }
 
     template <typename T>
@@ -160,11 +169,6 @@ public:
         this->operator()(ie.value());
     }
 
-    void operator()(pack_entity const&) const override
-    {
-        THROW_NOT_IMPLEMENTED_ERROR();
-    }
-
     void operator()(functional_entity const&) const override
     {
         THROW_NOT_IMPLEMENTED_ERROR();
@@ -180,28 +184,20 @@ public:
         THROW_NOT_IMPLEMENTED_ERROR();
     }
 
-    void operator()(variable_entity const& ve) const override
+    void operator()(extern_variable_entity const& ve) const override
     {
-        auto varkind = ve.varkind();
-        if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
-            fnbuilder_.append_fpush(ve.index());
-            return;
-        } else if (varkind == variable_entity::kind::EXTERN) {
-            string_view varname = unit_.as_string(unit_.fregistry().resolve(ve.name).name().back());
-            smart_blob strbr{ string_blob_result(varname) };
-            strbr.allocate();
-            fnbuilder_.append_push_pooled_const(std::move(strbr));
-            fnbuilder_.append_ecall((size_t)virtual_stack_machine::builtin_fn::extern_variable_get);
+        string_view varname = unit_.as_string(unit_.fregistry().resolve(ve.name).name().back());
+        smart_blob strbr{ string_blob_result(varname) };
+        strbr.allocate();
+        fnbuilder_.append_push_pooled_const(std::move(strbr));
+        fnbuilder_.append_ecall((size_t)virtual_stack_machine::builtin_fn::extern_variable_get);
 #if 0
-            string_view varname = unit_.as_string(unit_.qnregistry().resolve(pv.entity->name()).back());
-            smart_blob strbr{ string_blob_result(varname) };
-            strbr.allocate();
-            bvm().append_push_static_const(std::move(strbr));
-            bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_variable_get);
+        string_view varname = unit_.as_string(unit_.qnregistry().resolve(pv.entity->name()).back());
+        smart_blob strbr{ string_blob_result(varname) };
+        strbr.allocate();
+        bvm().append_push_static_const(std::move(strbr));
+        bvm().append_ecall(virtual_stack_machine::builtin_fn::extern_variable_get);
 #endif
-        } else {
-            THROW_NOT_IMPLEMENTED_ERROR();
-        }
     }
 };
 

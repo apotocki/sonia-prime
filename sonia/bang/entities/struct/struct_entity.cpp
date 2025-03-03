@@ -7,6 +7,7 @@
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
+#include "sonia/bang/ast/expression_visitor.hpp"
 
 #include "sonia/bang/ast/declaration_visitor.hpp"
 
@@ -96,7 +97,7 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
         ct_expression_visitor evis{ ctx };
         auto res = apply_visitor(evis, f.type);
         if (!res) return std::move(res.error());
-        bool is_const = f.modifier != parameter_constraint_modifier_t::value_type_constraint;
+        bool is_const = f.modifier != field_modifier_t::value;
         if (f.name) {
             tuple_signature.push_back(f.name.value, field_descriptor{ *res, is_const });
         } else {

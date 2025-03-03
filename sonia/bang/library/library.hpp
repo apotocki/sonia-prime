@@ -14,6 +14,7 @@ void bang_decimal_equal(vm::context&);
 void bang_tostring(vm::context&);
 void bang_print_string(vm::context&);
 void bang_arrayify(vm::context&);
+void bang_array_tail(vm::context&);
 void bang_array_at(vm::context&);
 
 void bang_create_extern_object(vm::context&);

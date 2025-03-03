@@ -65,7 +65,11 @@ public:
     //void operator()(type_decl const&) const { THROW_INTERNAL_ERROR(); }
     //void operator()(include_decl const&) const { THROW_INTERNAL_ERROR(); }
 
+private:
     unit& u() const noexcept;
+
+    // for the case when condition is a runtime evaluated expression
+    [[nodiscard]] error_storage do_rt_if_decl(if_decl const&) const;
 };
 
 }

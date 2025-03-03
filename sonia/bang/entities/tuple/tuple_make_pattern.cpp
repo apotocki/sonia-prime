@@ -3,16 +3,17 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "make_tuple_pattern.hpp"
+#include "tuple_make_pattern.hpp"
 
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 
+#include "sonia/bang/ast/expression_visitor.hpp"
 #include "sonia/bang/entities/signatured_entity.hpp"
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> make_tuple_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
 {
     size_t pos_arg_num = 0;
     auto pmd = make_shared<functional_match_descriptor>(ctx.u());
@@ -31,7 +32,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> make_tuple_pattern
     return pmd;
 }
 
-error_storage make_tuple_pattern::apply(fn_compiler_context& ctx, qname_identifier functional_id, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> tuple_make_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_signature sig = md.build_signature(u, u.get(builtin_qnid::tuple));
@@ -45,7 +46,7 @@ error_storage make_tuple_pattern::apply(fn_compiler_context& ctx, qname_identifi
     size_t argcount = 0;
     
     // push call expressions in the right order
-    semantic::expression_list_t& exprs = ctx.expressions();
+    semantic::managed_expression_list exprs{ u };
 
     md.for_each_named_match([&argcount, &exprs, &md](identifier name, parameter_match_result const& mr) {
         for (auto rng : mr.expressions) {
@@ -68,22 +69,7 @@ error_storage make_tuple_pattern::apply(fn_compiler_context& ctx, qname_identifi
     }
 
     ctx.context_type = e.id();
-    return {};
-}
-
-std::expected<entity_identifier, error_storage> make_tuple_pattern::const_apply(fn_compiler_context& ctx, qname_identifier, functional_match_descriptor& md) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("make_tuple_pattern::const_apply");
-#if 0
-    BOOST_ASSERT(md.signature.named_fields().empty());
-    BOOST_ASSERT(md.signature.positioned_fields().size() == 1);
-
-    entity const& entres = ctx.u().eregistry_find_or_create(indirect_signatured_entity{ md.signature }, [&ctx, &md]() {
-        return make_shared<pack_entity>(ctx.u().get_typename_entity_identifier(), std::move(md.signature));
-    });
-    ctx.pop_chain();
-    return entres.id();
-#endif
+    return std::move(exprs);
 }
 
 }

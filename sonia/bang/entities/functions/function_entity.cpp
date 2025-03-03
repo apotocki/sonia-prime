@@ -25,17 +25,14 @@ internal_function_entity::internal_function_entity(unit& u, qname&& name, entity
     , sts_{ std::move(sts) }
     , is_inline_{ 0 }
     , is_built_{ 0 }
-    , body_{ u }
-{
-
-}
+{ }
 
 external_function_entity::external_function_entity(unit& u, qname&& name, entity_signature&& sig, size_t fnid)
     : function_entity{ std::move(name), std::move(sig) }, extfnid_{ static_cast<uint32_t>(fnid) }
 {
     BOOST_ASSERT(sig.result);
     BOOST_ASSERT(sig.result->entity_id());
-    set_result_type(sig.result->entity_id());
+    result = *sig.result;
 }
 
 //size_t function_entity::hash() const noexcept
@@ -103,9 +100,10 @@ void internal_function_entity::build(unit& u)
     BOOST_ASSERT(!is_built_);
 
     fn_compiler_context fnctx{ u, name_ };
+    fnctx.push_binding(bound_arguments);
 
-    if (result_type_) { 
-        fnctx.result = result_type_;
+    if (result.entity_id()) { 
+        fnctx.result = result.entity_id();
     }
     
     declaration_visitor dvis{ fnctx };
@@ -115,13 +113,24 @@ void internal_function_entity::build(unit& u)
     //}
     fnctx.finish_frame(); // unknown result type is resolving here
 
-    if (!result_type_) {
-        result_type_ = fnctx.compute_result_type();
+    if (!result.entity_id()) {
+        result = field_descriptor{ fnctx.compute_result_type() };
     }
     //    THROW_NOT_IMPLEMENTED_ERROR("internal_function_entity::build resolving return type");
 
     BOOST_ASSERT(fnctx.expressions_branch() == 1);
-    body_.splice_back(fnctx.expressions(), fnctx.expressions().begin(), fnctx.expressions().end());
+    body = fnctx.expressions();
+    fnctx.expression_store().splice_back(fnctx.expressions());
+    u.store(std::move(fnctx.expression_store()));
+
+    BOOST_ASSERT(!fnctx.expressions());
+    BOOST_ASSERT(!fnctx.expression_store());
+
+    GLOBAL_LOG_INFO() << "built inline function beagin: " << u.print(*this);
+    body.for_each([&u](semantic::expression const& e) {
+        GLOBAL_LOG_INFO() << u.print(e);
+    });
+    GLOBAL_LOG_INFO() << "built inline function end: " << u.print(*this);
     //sts_.reset();
     is_built_ = 1;
 }

@@ -60,6 +60,7 @@ enum class builtin_eid : size_t
 {
     typename_ = 0, void_, true_, false_, any, identifier, qname, object, string, decimal, integer, boolean, metaobject,
     arrayify, // builtin ::arrayify(...)->array
+    array_tail, // builtin ::array_tail(array)-> array
     array_at, // builtin ::array_at(array, index)-> elementT
     eof_builtin_eid_value
 };
@@ -94,7 +95,7 @@ class unit
     managed_statement_list ast_;
 
     // semantic
-    semantic::expression_span root_expressions_;
+    semantic::managed_expression_list expressions_;
 
     // vm builtin id -> qname
     std::vector<qname_identifier> vm_builtins_;
@@ -278,6 +279,7 @@ public:
 
     void push_back_expression(semantic::expression_list_t&, semantic::expression&&);
     void release(semantic::expression_list_t::entry_type&&);
+    void store(semantic::managed_expression_list&&);
 
     statement_entry& acquire(statement&& st);
     //void push_back_statement(statement_list&, statement&&);
@@ -312,17 +314,6 @@ private:
     std::array<identifier, (size_t)builtin_id::eof_builtin_id_value> builtin_ids_;
     std::array<qname_identifier, (size_t)builtin_qnid::eof_builtin_qnids_value> builtin_qnids_;
     std::array<entity_identifier, (size_t)builtin_eid::eof_builtin_eid_value> builtin_eids_;
-
-    //entity_identifier typename_entity_identifier_;
-    //entity_identifier void_entity_identifier_;
-    //entity_identifier any_entity_identifier_;
-    //entity_identifier identifier_entity_identifier_;
-    //entity_identifier object_entity_identifier_;
-    //entity_identifier string_entity_identifier_;
-    //entity_identifier decimal_entity_identifier_;
-    //entity_identifier integer_entity_identifier_;
-    //entity_identifier bool_entity_identifier_;
-    //entity_identifier metaobject_entity_identifier_;
 
     //entity_identifier arrayify_entity_identifier_; // builtin ::arrayify(...)->array
     //entity_identifier array_at_entity_identifier_; // builtin ::array_at(array, index)-> elementT

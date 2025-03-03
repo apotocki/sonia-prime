@@ -289,7 +289,7 @@ inline bool contains_string(blob_result const& val) noexcept
 }
 
 template <typename T>
-inline size_t array_size_of(blob_result const& val) noexcept
+inline size_t array_size_of(blob_result const& val) noexcept(!sonia_is_debug)
 {
     size_t raw_sz = (val.inplace_size ? (size_t)val.inplace_size : (size_t)val.bp.size);
     BOOST_ASSERT(0 == raw_sz % sizeof(T));
@@ -596,14 +596,14 @@ inline blob_result optional_blob_result(sonia::optional<T> const& value)
 }
 
 template <typename T, size_t EV>
-requires(std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_same_v<blob_result, std::remove_cv_t<T>>)
+requires std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_same_v<sonia::float16, std::remove_cv_t<T>> || std::is_same_v<blob_result, std::remove_cv_t<T>>
 inline blob_result array_blob_result(std::span<T, EV> arr)
 {
     return make_blob_result(arrayify(blob_type_for<T>()), arr.data(), static_cast<uint32_t>(arr.size() * sizeof(T)));
 }
 
 template <typename T, size_t N>
-requires(std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_same_v<blob_result, std::remove_cv_t<T>>)
+requires std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_same_v<sonia::float16, std::remove_cv_t<T>> || std::is_same_v<blob_result, std::remove_cv_t<T>>
 inline blob_result array_blob_result(T(&arr)[N])
 {
     return make_blob_result(arrayify(blob_type_for<T>()), arr, static_cast<uint32_t>(N * sizeof(T)));

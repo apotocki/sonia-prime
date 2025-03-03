@@ -165,6 +165,7 @@ BITOR                   "|"
 EXCLPT                  "!"
 QMARK                   "?"
 PLUS                    "+"
+TILDA                   "~"
 DBLCOLON                "::"
 LOGIC_OR                "||"
 LOGIC_AND               "&&"
@@ -356,6 +357,7 @@ HASHTAG					"#"
 	{QMARK}                 { return (bang_lang::parser::token::QMARK); }
 	{DBLCOLON}              { return (bang_lang::parser::token::DBLCOLON); }
 	{PLUS}					{ variant_emplace(location); return (bang_lang::parser::token::PLUS); }
+	{TILDA}                 { variant_emplace(location); return (bang_lang::parser::token::TILDA); }
 	{LOGIC_OR}              { variant_emplace(location); return (bang_lang::parser::token::LOGIC_OR); }
     {LOGIC_AND}             { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
 	{ARROW}                 { return (bang_lang::parser::token::ARROW); }

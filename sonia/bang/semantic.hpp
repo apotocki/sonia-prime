@@ -13,6 +13,7 @@
 #include "sonia/bang/utility/linked_list.hpp"
 
 #include "semantic_fwd.hpp"
+//#include "sonia/bang/entities/variable_entity.hpp"
 
 namespace sonia::lang::bang {
 
@@ -421,7 +422,24 @@ namespace semantic {
 
 struct push_by_offset { size_t offset; }; // offset from the stack top
 struct push_value { value_t value; };
-struct set_variable { variable_entity const* entity; };
+struct push_local_variable
+{
+#ifdef SONIA_LANG_DEBUG
+    identifier debug_name;
+#endif
+    intptr_t index;
+
+    inline explicit push_local_variable(local_variable const& v) noexcept
+        : index{ v.index }
+    {
+#ifdef SONIA_LANG_DEBUG
+        debug_name = v.name.value;
+#endif
+    }
+};
+
+struct set_local_variable { intptr_t index; };
+struct set_variable { extern_variable_entity const* entity; };
 struct set_by_offset { size_t offset; }; // offset from the stack top
 struct truncate_values {
     uint32_t count : 31;
@@ -484,8 +502,8 @@ struct loop_breaker {};
 
 using expression = variant<
     empty_t, // no op
-    push_value, push_by_offset, truncate_values,
-    set_variable, set_by_offset, invoke_function, return_statement, loop_breaker, loop_continuer,
+    push_value, push_local_variable, push_by_offset, truncate_values,
+    set_local_variable, set_variable, set_by_offset, invoke_function, return_statement, loop_breaker, loop_continuer,
     expression_span,
     conditional_t,
     not_empty_condition_t,

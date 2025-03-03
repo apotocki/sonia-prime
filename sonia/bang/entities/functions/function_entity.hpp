@@ -14,8 +14,7 @@ class function_entity : public signatured_entity
 protected:
     qname name_;
     entity_signature sig_;
-    entity_identifier result_type_;
-
+    
 public:
     function_entity(qname && name, entity_signature&& sig)
         : name_{ std::move(name) }, sig_{ std::move(sig) }
@@ -35,8 +34,7 @@ public:
     //void set_fn_signature(unit&, entity_signature&& fnsig);
     //void build_fn_signature(unit& u, entity_identifier rt);
 
-    inline entity_identifier get_result_type() const noexcept { return result_type_; }
-    inline void set_result_type(entity_identifier val) noexcept { result_type_ = val; }
+    field_descriptor result;
 
     virtual void build(unit&)
     {
@@ -73,17 +71,11 @@ private:
 
 class internal_function_entity : public function_entity
 {
-    //qname_view ns_;
-    semantic::managed_expression_list body_;
-
-    uint64_t is_built_ : 1;
-    uint64_t is_inline_ : 1;
-    //uint64_t is_void_ : 1;
-
 public:
-    internal_function_entity(unit& u, qname&& name, entity_signature&& sig, statement_span bd);
+    semantic::expression_span body;
+    functional_binding_set bound_arguments;
 
-    semantic::expression_list_t const& body() const { return body_; }
+    internal_function_entity(unit& u, qname&& name, entity_signature&& sig, statement_span bd);
 
     void visit(entity_visitor const& v) const override { v(*this); }
 
@@ -101,7 +93,11 @@ public:
     void build(unit&) override;
 
 private:
+    //qname_view ns_;
     statement_span sts_;
+    uint64_t is_built_ : 1;
+    uint64_t is_inline_ : 1;
+    //uint64_t is_void_ : 1;
 };
 
 class external_function_entity : public function_entity

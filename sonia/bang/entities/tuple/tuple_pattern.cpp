@@ -43,7 +43,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_pattern::try
     
 }
 
-std::expected<entity_identifier, error_storage> tuple_pattern::const_apply(fn_compiler_context& ctx, qname_identifier, functional_match_descriptor& md) const
+std::expected<entity_identifier, error_storage> tuple_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("tuple_pattern::const_apply");
 #if 0

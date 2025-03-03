@@ -114,7 +114,7 @@ public:
         builder& builder_;
         function_descriptor& dr_;
 
-        boost::unordered_map<instruction_entry const*, int> labels_; // ie -> blocknum, negative means undefined
+        boost::unordered_map<instruction_entry const*, std::pair<int, int>> labels_; // ie -> {refs; blocknum, negative means undefined}
 
         struct block
         {
@@ -147,7 +147,7 @@ public:
         inline explicit function_builder(builder& b, function_descriptor& fd) noexcept
             : builder_{ b }, dr_{ fd }
         {
-            make_label();
+            make_label(nullptr, -1);
         }
 
         function_builder(function_builder const&) = delete;
@@ -161,13 +161,28 @@ public:
         inline instruction_entry* make_label()
         {
             instruction_entry* ie = current_entry();
-            labels_[ie] = ie ? -1 : 0;
+            make_label(ie, ie ? -1 : 0);
+            return ie;
+        }
+
+        inline instruction_entry* make_label(instruction_entry* ie, int value)
+        {
+            auto it = labels_.find(ie);
+            if (it != labels_.end()) {
+                ++it->second.first;
+            } else {
+                labels_.emplace_hint(it, ie, std::make_pair(1, value));
+            }
             return ie;
         }
 
         inline void remove_label(instruction_entry const* ie)
         {
-            labels_.erase(ie);
+            auto it = labels_.find(ie);
+            BOOST_ASSERT(it != labels_.end());
+            if (--it->second.first == 0) {
+                labels_.erase(it);
+            }
         }
 
         void append_push_pooled_const(variable_type&&);
@@ -209,7 +224,7 @@ public:
                 labels_.erase(lit);
                 if (it != dr_.instructions.begin()) {
                     auto pit = it; --pit;
-                    labels_[&*pit] = -1;
+                    make_label(&*pit, -1);
                 }
             }
             dr_.instructions.erase(it);
@@ -412,10 +427,10 @@ void builder<ContextT>::function_builder::materialize()
         auto it = labels_.find(&e);
         if (it != labels_.end()) {
             if (!blocks.back().code.empty()) {
-                it->second = static_cast<int>(blocks.size());
+                it->second.second = static_cast<int>(blocks.size());
                 blocks.emplace_back();
             } else { // new block has been already appended
-                it->second = static_cast<int>(blocks.size() - 1);
+                it->second.second = static_cast<int>(blocks.size() - 1);
             }
         }
     }
@@ -446,7 +461,7 @@ void builder<ContextT>::function_builder::materialize()
                 b.code.resize(b.code.size() - b.op_supposed_size);
             }
             size_t csz = b.code.size();
-            int_least32_t jmp_offset = static_cast<int_least32_t>(block_offsets[it->second]) - static_cast<int_least32_t>(block_offsets[block_index] + csz + b.op_supposed_size);
+            int_least32_t jmp_offset = static_cast<int_least32_t>(block_offsets[it->second.second]) - static_cast<int_least32_t>(block_offsets[block_index] + csz + b.op_supposed_size);
             switch (b.operation) {
             case op_t::noop:
                 break;

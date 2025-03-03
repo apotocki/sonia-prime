@@ -8,6 +8,8 @@
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
+#include "sonia/bang/errors/type_mismatch_error.hpp"
+
 namespace sonia::lang::bang {
 
 signature_matcher_visitor::signature_matcher_visitor(fn_compiler_context & ctx, functional_binding& bs, entity_identifier eid)
@@ -20,23 +22,27 @@ signature_matcher_visitor::signature_matcher_visitor(fn_compiler_context & ctx, 
 
 signature_matcher_visitor::result_type signature_matcher_visitor::operator()(variable_identifier const& var) const
 {
-    auto opteid = ctx_.lookup_entity(var.name);
-    if (!opteid) return std::move(opteid.error());
-    if (!*opteid) {
-        if (var.implicit) { // var.name.value.is_relative() && var.name.value.size() == 1) {
-            // bind variable
-            BOOST_ASSERT(var.name.value.is_relative() && var.name.value.size() == 1);
-            identifier varid = *var.name.value.begin();
-            binding_.emplace_back(annotated_identifier{ varid, var.name.location }, eid_);
-            return {};
+    auto optent = ctx_.lookup_entity(var.name);
+    return apply_visitor(make_functional_visitor<error_storage>([this, &var](auto & eid_or_var)
+    {
+        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, entity_identifier>) {
+            if (!eid_or_var) { // if not defined
+                if (var.implicit) { // var to bind
+                    // bind variable
+                    BOOST_ASSERT(var.name.value.is_relative() && var.name.value.size() == 1);
+                    identifier varid = *var.name.value.begin();
+                    binding_.emplace_back(annotated_identifier{ varid, var.name.location }, eid_);
+                    return error_storage{};
+                }
+                return make_error<undeclared_identifier_error>(var.name);
+            } else if (eid_or_var != eid_) {
+                return make_error<type_mismatch_error>(var.name.location, eid_or_var, eid_);
+            }
+            return error_storage{};
+        } else { // local_variable
+            return make_error<basic_general_error>(var.name.location, "argument mismatch"sv, var);
         }
-        return make_error<undeclared_identifier_error>(var.name);
-    }
-
-    if (*opteid != eid_) {
-        return make_error<basic_general_error>(var.name.location, "argument mismatch"sv, var);
-    }
-    return {};
+    }), optent);
 }
 
 #if 0

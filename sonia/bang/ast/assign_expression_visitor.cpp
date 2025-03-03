@@ -15,25 +15,34 @@ inline unit& assign_expression_visitor::u() const noexcept { return ctx_.u(); }
 
 assign_expression_visitor::result_type assign_expression_visitor::operator()(variable_identifier const& v) const
 {
-    auto eid = ctx_.lookup_entity(v.name);
-    if (!eid) return std::move(eid.error());
-    if (!*eid) return make_error<assign_error>(assign_location_, syntax_expression_t{ v });
-    entity const& ent = u().eregistry_get(*eid);
-    if (variable_entity const* ve = dynamic_cast<variable_entity const*>(&ent); ve) {
-        expression_visitor rvis{ ctx_, annotated_entity_identifier{ ve->get_type(), assign_location_ } };
-        auto res = apply_visitor(rvis, rhs_);
-        if (!res) return std::move(res.error());
-        if (ve->is_weak()) {
-            THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN");
-            //ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });
+    auto e = ctx_.lookup_entity(v.name);
+    return apply_visitor(make_functional_visitor<error_storage>([this, &v](auto & eid_or_var) -> error_storage
+    {
+        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, local_variable>) {
+            expression_visitor rvis{ ctx_, annotated_entity_identifier{ eid_or_var.type, assign_location_ } };
+            auto res = apply_visitor(rvis, rhs_);
+            if (!res) return std::move(res.error());
+            if (eid_or_var.is_weak) {
+                THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN weak");
+                //ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });
+            }
+            ctx_.append_expression(semantic::set_local_variable{ eid_or_var.index });
+            if (eid_or_var.is_weak) {
+                ctx_.append_expression(semantic::truncate_values(1, false));
+            }
+            return error_storage{};
+        } else {
+            if (!eid_or_var) return make_error<undeclared_identifier_error>(v.name);
+            if (auto const* peve = dynamic_cast<extern_variable_entity const*>(&u().eregistry_get(eid_or_var)); peve) {
+                expression_visitor rvis{ ctx_, annotated_entity_identifier{ peve->get_type(), assign_location_ } };
+                auto res = apply_visitor(rvis, rhs_);
+                if (!res) return std::move(res.error());
+                ctx_.append_expression(semantic::set_variable{ peve });
+                return error_storage{};
+            }
+            return make_error<assign_error>(assign_location_, syntax_expression_t{ v });
         }
-        ctx_.append_expression(semantic::set_variable{ ve });
-        if (ve->is_weak()) {
-            ctx_.append_expression(semantic::truncate_values(1, false));
-        }
-        return {};
-    }
-    return make_error<assign_error>(assign_location_, syntax_expression_t{ v });
+    }), e);
 }
 
 assign_expression_visitor::result_type assign_expression_visitor::operator()(member_expression_t const& me) const
@@ -64,7 +73,6 @@ assign_expression_visitor::result_type assign_expression_visitor::operator()(mem
         ctx.context_type = *uotype - bang_tuple_t{};
     }
     */
-    THROW_NOT_IMPLEMENTED_ERROR("lvalue_expression_visitor::handle_property_set");
     //return handle_property_set(me.property);
 }
 

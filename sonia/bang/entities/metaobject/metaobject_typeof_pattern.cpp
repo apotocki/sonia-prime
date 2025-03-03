@@ -57,7 +57,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
     return pmd;
 }
 
-std::expected<entity_identifier, error_storage> metaobject_typeof_pattern::const_apply(fn_compiler_context& ctx, qname_identifier functional_id, functional_match_descriptor& md) const
+std::expected<entity_identifier, error_storage> metaobject_typeof_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_identifier mobj = md.get_match_result(u.get(builtin_id::object)).result.front();

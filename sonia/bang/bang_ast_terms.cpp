@@ -18,6 +18,7 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     inline result_type operator()(variable_identifier const& v) const noexcept { return v.name.location; }
     inline result_type operator()(annotated_qname const& qn) const noexcept { return qn.location; }
     inline result_type operator()(context_identifier const& ce) const noexcept { return ce.start; }
+    inline result_type operator()(placeholder const& ph) const noexcept { return ph.location; }
     inline result_type operator()(not_empty_expression_t const& me) const noexcept { return apply_visitor(*this, me.value); }
     inline result_type operator()(member_expression_t const& me) const noexcept { return me.start(); }
     inline result_type operator()(lambda_t const& le) const noexcept { return le.location(); }
@@ -34,7 +35,7 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     inline result_type operator()(new_expression_t const& ne) const noexcept { return ne.location; }
 
     template <typename T>
-    inline lex::resource_location const& operator()(T const&) const
+    inline lex::resource_location const& operator()(T const& e) const
     {
         THROW_NOT_IMPLEMENTED_ERROR();
     }

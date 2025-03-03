@@ -8,6 +8,7 @@
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
+#include "sonia/bang/ast/expression_visitor.hpp"
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
@@ -106,11 +107,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
     pmd->set_fields_count(ptplsig->field_count());
     BOOST_ASSERT(ptplsig->field_count() > 1 || !index);
 
-    pmd->result = fd->entity_id();
+    pmd->result = *fd;
     return pmd;
 }
 
-error_storage struct_get_pattern::apply(fn_compiler_context& ctx, qname_identifier functional_id, functional_match_descriptor& md) const
+error_storage struct_get_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
 
@@ -133,11 +134,11 @@ error_storage struct_get_pattern::apply(fn_compiler_context& ctx, qname_identifi
         u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
     
-    ctx.context_type = md.result;
+    ctx.context_type = md.result.entity_id();
     return {};
 }
 
-std::expected<entity_identifier, error_storage> struct_get_pattern::const_apply(fn_compiler_context& ctx, qname_identifier, functional_match_descriptor& md) const
+std::expected<entity_identifier, error_storage> struct_get_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("tuple_get_pattern::const_apply");
 }

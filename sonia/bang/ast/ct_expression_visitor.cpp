@@ -9,8 +9,6 @@
 
 namespace sonia::lang::bang {
 
-inline unit& ct_expression_visitor::u() const noexcept { return ctx.u(); }
-
 template <typename ExprT>
 inline ct_expression_visitor::result_type ct_expression_visitor::apply_cast(entity_identifier eid, ExprT const& e) const
 {
@@ -41,7 +39,7 @@ inline ct_expression_visitor::result_type ct_expression_visitor::apply_cast(enti
 
         lex::resource_location expr_loc = get_start_location(e);
         pure_call_t cast_call{ expected_result.location };
-        cast_call.emplace_back(annotated_identifier{ u().get(builtin_id::to) }, annotated_entity_identifier{ expected_result.value, expected_result.location });
+        //cast_call.emplace_back(annotated_identifier{ u().get(builtin_id::to) }, annotated_entity_identifier{ expected_result.value, expected_result.location });
         cast_call.emplace_back(annotated_entity_identifier{ typeeid, expr_loc });
 
         auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expected_result);
@@ -135,16 +133,17 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_q
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(variable_identifier const& vi) const
 {
-    auto opteid = ctx.lookup_entity(vi.name);
-    if (!opteid) return opteid;
-    if (auto eid = *opteid; eid) {
-        entity const& ent = u().eregistry_get(eid);
-        if (variable_entity const* pve = dynamic_cast<variable_entity const*>(&ent); pve) {
+    auto optent = ctx.lookup_entity(vi.name);
+        
+    return apply_visitor(make_functional_visitor<result_type>([this, &vi](auto & eid_or_var) -> result_type
+    {
+        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, local_variable>) {
             return std::unexpected(make_shared<basic_general_error>(vi.name.location, "can't evaluate the variable as a const expression"sv, vi.name.value));
+        } else {
+            if (!eid_or_var) return std::unexpected(make_error<undeclared_identifier_error>(vi.name));
+            return apply_cast(eid_or_var, vi);
         }
-        return apply_cast(eid, vi);
-    }
-    return std::unexpected(make_error<undeclared_identifier_error>(vi.name));
+    }), optent);
 }
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(function_call_t const& proc) const
@@ -160,6 +159,25 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(function_ca
     else return apply_cast(*res, proc);
 }
 
+ct_expression_visitor::result_type ct_expression_visitor::operator()(member_expression_t const& me) const
+{
+    pure_call_t get_call{ me.start() };
+    get_call.emplace_back(annotated_identifier{ u().get(builtin_id::self), get_start_location(me.object) }, me.object);
+    get_call.emplace_back(annotated_identifier{ u().get(builtin_id::property), get_start_location(me.property) }, me.property);
+
+    auto match = ctx.find(builtin_qnid::get, get_call, expected_result);
+
+    if (!match) {
+        return std::unexpected(append_cause(
+            make_error<basic_general_error>(me.start(), "can't resolve"sv, syntax_expression_t{ me }),
+            std::move(match.error())
+        ));
+    }
+
+    if (auto err = match->const_apply(ctx); err) return err;
+    return apply_cast(ctx.context_type, me);
+}
+
 template <std::derived_from<pure_call_t> CallExpressionT>
 ct_expression_visitor::result_type ct_expression_visitor::operator()(builtin_qnid qnid, CallExpressionT const& call) const
 {
@@ -167,6 +185,23 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(builtin_qni
     if (!match) return std::unexpected(match.error());
     if (auto res = match->const_apply(ctx); !res) return std::unexpected(std::move(res.error()));
     else return apply_cast(*res, call);
+}
+
+ct_expression_visitor::result_type ct_expression_visitor::operator()(opt_named_syntax_expression_list_t const& nel) const
+{
+    auto res = base_expression_visitor::operator()(nel);
+    if (!res) return std::unexpected(res.error());
+    return apply_visitor(make_functional_visitor<result_type>([this](auto & v) -> result_type {
+        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+            return v;
+        } else {
+            if (ctx.context_type == u().get(builtin_eid::void_)) {
+                BOOST_ASSERT(v.empty());
+                return ctx.context_type;
+            }
+            THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::operator()(opt_named_syntax_expression_list_t const&)");
+        }
+    }), res->first);
 }
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(lambda_t const& l) const

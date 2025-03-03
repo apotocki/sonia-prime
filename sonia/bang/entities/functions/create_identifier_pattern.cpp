@@ -40,7 +40,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_
     return pmd;
 }
 
-std::expected<entity_identifier, error_storage> create_identifier_pattern::const_apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
+std::expected<entity_identifier, error_storage> create_identifier_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_identifier strid = md.get_match_result(0).result.front();

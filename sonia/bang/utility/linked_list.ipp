@@ -43,8 +43,11 @@ inline auto& linked_list_node_span<EntryT>::back() const noexcept { return pair_
 template <class EntryT>
 template <typename FtorT> void linked_list_node_span<EntryT>::for_each(FtorT&& ftor) const
 {
-    for (EntryT* e = pair_t::first; e; e = static_cast<EntryT*>(linked_list<typename EntryT::value_type>::next(*e))) {
+    for (EntryT* e = pair_t::first;;)
+    {
         ftor(e->value);
+        if (e == pair_t::second) break;
+        e = static_cast<EntryT*>(linked_list<typename EntryT::value_type>::next(*e));
     }
 }
 

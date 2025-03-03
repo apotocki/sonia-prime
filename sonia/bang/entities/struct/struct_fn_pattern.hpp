@@ -14,7 +14,7 @@ class struct_fn_pattern : public basic_fn_pattern
 
 public:
     struct_fn_pattern(functional const&, variant<field_list_t, statement_span> const&);
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
+    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional_match_descriptor&) const override;
 };
 
 }

@@ -40,6 +40,19 @@ void expression_printer_visitor::operator()(expression_list_t const& evec) const
     --indent_cnt;
 }
 
+void expression_printer_visitor::operator()(conditional_t const& c) const
+{
+    do_indent();
+    if (c.true_branch) {
+        ss << "if true\n"sv;
+        this->operator()(c.true_branch);
+    }
+    if (c.false_branch) {
+        ss << "if false\n"sv;
+        this->operator()(c.false_branch);
+    }
+}
+
 void expression_printer_visitor::operator()(push_value const& v) const
 {
     do_indent();
@@ -47,6 +60,17 @@ void expression_printer_visitor::operator()(push_value const& v) const
     value_printer_visitor vis{ u_, ss };
     apply_visitor(vis, v.value);
     ss << '\n';
+}
+
+void expression_printer_visitor::operator()(push_local_variable const& lv) const
+{
+    do_indent();
+    ss << "push VAR("sv << lv.index;
+#ifdef SONIA_LANG_DEBUG
+    ss << ") "sv << u_.print(lv.debug_name) << '\n';
+#else
+    ss << ")\n"sv;
+#endif
 }
 
 void expression_printer_visitor::operator()(invoke_function const& f) const
@@ -63,6 +87,7 @@ void expression_printer_visitor::operator()(return_statement const&) const
 
 void expression_printer_visitor::operator()(truncate_values const& tv) const
 {
+    do_indent();
     ss << "truncate count: "sv << tv.count << ", keep back: "sv << tv.keep_back;
 }
 

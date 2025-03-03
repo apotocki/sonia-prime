@@ -5,6 +5,8 @@
 #pragma once
 //#include <boost/unordered_map.hpp>
 
+#include <boost/container/flat_set.hpp>
+
 #include "sonia/exceptions.hpp"
 #include "sonia/small_vector.hpp"
 
@@ -102,6 +104,7 @@ class fn_compiler_context
     size_t local_variable_count_ = 0;
     compiler_worker_id worker_id_;
     small_vector<functional_binding const*, 4> bindings_;
+    boost::container::small_flat_set<local_variable, 8, local_variable_compare> variables_;
 
 public:
     fn_compiler_context(unit& u, qname ns = {});
@@ -116,11 +119,12 @@ public:
     qname_view ns() const { return ns_; }
     qname_view base_ns() const { return span{ns_.parts().data(), base_ns_size_}; }
 
-    entity_identifier get_bound(identifier) const;
+    optional<variant<entity_identifier, local_variable const&>> get_bound(identifier) const noexcept;
     inline void push_binding(functional_binding const& binding)
     {
         bindings_.push_back(std::addressof(binding));
     }
+
     inline void pop_binding() { bindings_.pop_back(); }
 
     compiler_task_tracer::task_guard try_lock_task(compiler_task_id const&);
@@ -140,10 +144,11 @@ public:
 
     functional const* lookup_functional(qname_view) const;
     std::expected<qname_identifier, error_storage> lookup_qname(annotated_qname const&) const;
-    std::expected<entity_identifier, error_storage> lookup_entity(annotated_qname const&);
+    variant<entity_identifier, local_variable const&> lookup_entity(annotated_qname const&);
     std::expected<functional::match, error_storage> find(builtin_qnid, pure_call_t const&, annotated_entity_identifier const& expected_result = annotated_entity_identifier{});
     std::expected<functional::match, error_storage> find(qname_identifier, pure_call_t const&, annotated_entity_identifier const& expected_result = annotated_entity_identifier{});
     
+#if 0
     // to do: resolving depends on qname
     shared_ptr<entity> resolve_entity(qname_identifier name) const
     {
@@ -178,12 +183,12 @@ public:
         return nullptr;
 #endif
     }
-
+#endif
     //semantic::expression_type build_expression(bang_generic_type const& result_type, expression_t const& e);
 
     size_t local_variable_count() const { return local_variable_count_; }
     //span<std::pair<variable_entity*, variable_entity*>> captured_variables() { return captured_variables_; }
-    size_t allocate_local_variable_index() { return local_variable_count_++; }
+    intptr_t allocate_local_variable_index() { return static_cast<intptr_t>(local_variable_count_++); }
     //size_t allocate_captured_variable_index() { return captured_variable_count_++; }
     
     //void new_const_entity(string_view name, shared_ptr<const_entity> ent)
@@ -206,8 +211,9 @@ public:
     //    return new_variable(argid, std::move(t), variable_entity::kind::SCOPE_LOCAL);
     //}
 
-    variable_entity& new_variable(annotated_identifier, entity_identifier type, variable_entity::kind);
+    local_variable& new_variable(annotated_identifier, entity_identifier type);
 
+#if 0
     small_vector<std::pair<variable_entity*, variable_entity*>, 16> captured_variables;
 
     variable_entity& new_captured_variable(identifier name, entity_identifier t, variable_entity& caption)
@@ -224,7 +230,7 @@ public:
     }
 
     variable_entity& create_captured_variable_chain(variable_entity& v);
-
+#endif
     /*
     variable_entity const& new_variable(identifier name, bang_generic_type t, bool is_const)
     {
@@ -264,6 +270,7 @@ public:
     void append_expression(semantic::expression&&);
     
     semantic::expression_span store_semantic_expressions(semantic::managed_expression_list&&);
+    semantic::managed_expression_list& expression_store() { return expression_store_; }
 
     //std::pair<size_t, expression_list_t::iterator> current_expressions_pointer() const
     //{
@@ -337,18 +344,5 @@ private:
     small_vector<semantic::expression_list_t*, 8> expr_stack_;
     semantic::managed_expression_list expression_store_;
 };
-
-}
-
-#include "expression_visitor.hpp"
-
-namespace sonia::lang::bang {
-
-//semantic::expression_type fn_compiler_context::build_expression(bang_generic_type const& result_type, expression_t const& e)
-//{
-//    expression_visitor evis{ *this, &result_type };
-//    semantic_expression_pair pair = apply_visitor(evis, e);
-//    return std::get<0>(pair);
-//}
 
 }

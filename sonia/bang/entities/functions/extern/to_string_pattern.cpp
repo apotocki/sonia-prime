@@ -10,9 +10,9 @@
 
 namespace sonia::lang::bang {
 
-error_storage to_string_pattern::apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
+error_storage to_string_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
-    auto r = const_apply(ctx, fid, md);
+    auto r = const_apply(ctx, md);
     if (!r) return std::move(r.error());
     ctx.append_expression(semantic::push_value{ *r });
     entity const& e = ctx.u().eregistry_get(*r);
@@ -20,7 +20,7 @@ error_storage to_string_pattern::apply(fn_compiler_context& ctx, qname_identifie
     return {};
 }
 
-std::expected<entity_identifier, error_storage> to_string_pattern::const_apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
+std::expected<entity_identifier, error_storage> to_string_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_identifier strid = md.get_match_result(0).result.front();

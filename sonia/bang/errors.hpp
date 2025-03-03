@@ -48,7 +48,7 @@ public:
     inline void set_cause(shared_ptr<error> cause) noexcept { cause_ = std::move(cause); }
     inline shared_ptr<error> const& cause() const { return cause_; }
 
-    [[noreturn]] void rethrow(unit&) const;
+    [[noreturn]] virtual void rethrow(unit&) const;
 };
 
 using error_storage = shared_ptr<error>;

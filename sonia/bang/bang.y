@@ -243,7 +243,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 //%type <identifier_chain_t> identifier-chain
 
 // QNAME
-%type <sonia::lang::bang::annotated_identifier> identifier internal_identifier
+%type <sonia::lang::bang::annotated_identifier> identifier internal-identifier internal-identifier-opt
 //%type <sonia::lang::bang::annotated_identifier> any_identifier
 %type <sonia::lang::bang::annotated_qname> qname
 
@@ -280,17 +280,13 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %type <field_list_t> field-list field-list-opt
 %type <field_t> field
 %type <syntax_expression_t> field-type-expr
+%type <sonia::optional<syntax_expression_t>> field-default-value-opt
 
-%type <parameter_woa_list_t>  parameter-list parameter-list-opt // for unification, empty assignment
+%type <parameter_list_t>  parameter-list parameter-list-opt // for unification, empty assignment
 %type <parameter_t> parameter-decl
-%type <parameter_name> parameter-name-decl
-%type <parameter_constraint_modifier_t> parameter-constraint-modifier parameter-constraint-modifier-opt
-%type <parameter_constraint_set_t> parameter-constraint-set
-%type <syntax_expression_t> parameter-matched-type basic-parameter-matched-type
-
-
-//%type <parameter_woa_list_t> parameter-woa-list-opt parameter-woa-list
-//%type <parameter_woa_t> parameter-woa-decl // with optional assignement
+%type <parameter_constraint_set_t> parameter-constraint-set parameter-value-constraint-set // parameter-concept-set parameter-concept-set-opt
+%type <syntax_expression_t> parameter-matched-type parameter-matched-value basic-parameter-matched-type 
+%type <sonia::optional<syntax_expression_t>> parameter-default-value-opt
 
 // TYPE EXPRESSIONS
 %token TYPENAME
@@ -380,11 +376,11 @@ statement:
     //| type-decl
     //    { $$ = std::move($1); }
     
-    | fn-start-decl[fnkind] fn-decl[fn] ARROWEXPR syntax-expression[type]
+    | fn-start-decl[fnkind] fn-decl[fn] ARROWEXPR syntax-expression[body]
         {
             $2.kind = $fnkind;
             auto sts = ctx.new_statement_list();
-            sts.emplace_back(return_decl_t{ std::move($type) });
+            sts.emplace_back(return_decl_t{ std::move($body) });
             $$ = fn_decl_t{ std::move($fn), ctx.push(std::move(sts)) };
         }
     | generic-statement
@@ -493,7 +489,7 @@ identifier:
 */  
 	;
 
-internal_identifier:
+internal-identifier:
     INTERNAL_IDENTIFIER
         { $$ = ctx.make_identifier($INTERNAL_IDENTIFIER); }
     ;
@@ -509,7 +505,7 @@ any_identifier:
 */
 ///////////////////////////////////////////////// QNAME
 qname:
-    DBLCOLON identifier
+      DBLCOLON identifier
         { $$ = annotated_qname{ qname{$2.value}, std::move($2.location) }; }
     | identifier
         { $$ = annotated_qname{ qname{$1.value, false}, std::move($1.location) }; }
@@ -572,24 +568,6 @@ struct-decl:
         { $$ = struct_decl{ fn_pure_t{ std::move($qname), std::move($parameters) }, std::move($fields) }; IGNORE_TERM($beginParams); IGNORE_TERM($begin); }
     ;
 
-///////////////////////////////////////////////// ALIASES
-
-using-decl:
-      qname ARROWEXPR syntax-expression[expr]
-        { $$ = using_decl{ std::move($qname), nullopt, std::move($expr) }; }
-    | qname OPEN_PARENTHESIS[beginParams] parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROWEXPR syntax-expression[expr]
-        { $$ = using_decl{ std::move($qname), std::move($parameters), std::move($expr) }; IGNORE_TERM($beginParams); }
-    ;
-
-/*
-type-decl:
-    TYPE qname type-extension-any OPEN_BRACE parameter-woa-list-opt CLOSE_BRACE
-    {
-        $$ = type_decl{ctx.make_qname_identifier(annotated_qname{ctx.ns() / std::move($2.value), $2.location}), std::move($3), std::move($5)}; IGNORE_TERM($4);
-    }
-    ;
-*/
-
 /*
 type-extension-any:
     %empty { $$ = {}; }
@@ -605,6 +583,20 @@ type-extension-list:
         { $$ = std::move($1); $$.emplace_back(ctx.make_qname_identifier(std::move($3))); }
     ;
 */
+
+///////////////////////////////////////////////// ALIASES
+
+using-decl:
+      qname ARROWEXPR syntax-expression[expr]
+        { 
+            $$ = using_decl{ std::move($qname), nullopt, std::move($expr) };
+        }
+    | qname OPEN_PARENTHESIS[beginParams] parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROWEXPR syntax-expression[expr]
+        {
+            $$ = using_decl{ std::move($qname), std::move($parameters), std::move($expr) }; IGNORE_TERM($beginParams);
+        }
+    ;
+
 
 ////////////////////// ARGUMENTS (aka function call arguments)
 argument-list-opt:
@@ -646,12 +638,22 @@ field-list:
         { $$ = std::move($list); $$.emplace_back(std::move($field)); }
     ;
 
+field-default-value-opt:
+      %empty { $$ = nullopt; }
+    | ASSIGN syntax-expression[value] { $$ = std::move($value); IGNORE_TERM($ASSIGN); }
+    ;
+
 field:
-      identifier COLON parameter-constraint-modifier-opt[mod] field-type-expr[type]
-        { $$ = field_t{ std::move($identifier), std::move($mod), std::move($type) }; }
+      identifier COLON field-type-expr[type] field-default-value-opt[default]
+        { $$ = field_t{ std::move($identifier), field_modifier_t::value, std::move($type), std::move($default) }; }
+    | identifier ARROWEXPR field-type-expr[type] field-default-value-opt[default]
+        { $$ = field_t{ std::move($identifier), field_modifier_t::const_value, std::move($type), std::move($default) }; }
+    /*
     | identifier COLON parameter-constraint-modifier-opt[mod] field-type-expr[type] ASSIGN syntax-expression[value]
         { $$ = field_t{ std::move($identifier), std::move($mod), std::move($type), std::move($value) }; IGNORE_TERM($ASSIGN); }
+    */
     ;
+
 
 field-type-expr:
       qname
@@ -664,6 +666,7 @@ field-type-expr:
         { $$ = binary_expression_t{ binary_operator_type::BIT_OR, std::move($left), std::move($right), std::move($BITOR) }; }
     ;
     
+////////////////////// PARAMETERS (function parameters declaration)
 
 parameter-list-opt:
        %empty { $$ = {}; }
@@ -672,44 +675,47 @@ parameter-list-opt:
 
 parameter-list:
       parameter-decl
-        { $$ = parameter_woa_list_t{ parameter_woa_t{std::move($1)} }; }
+        { $$ = parameter_list_t{ parameter_t{std::move($1)} }; }
     | parameter-list COMMA parameter-decl
         { $$ = std::move($1); $$.emplace_back(std::move($3)); }
     ;
 
+internal-identifier-opt:
+      %empty { $$ = annotated_identifier{}; }
+    | internal-identifier[intid] { $$ = $intid; }
+    ;
+
+parameter-default-value-opt:
+      %empty { $$ = nullopt; }
+    | ASSIGN syntax-expression[value] { $$ = std::move($value); IGNORE_TERM($ASSIGN); }
+    ;
+
 parameter-decl:
-      parameter-name-decl[name] parameter-constraint-modifier-opt[mod] parameter-constraint-set[constraint]
-        { $$ = parameter_t{ std::move($name), std::move($mod), std::move($constraint) }; }
-    | parameter-constraint-modifier[mod] parameter-constraint-set[constraint]
-        { $$ = parameter_t{ unnamed_parameter_name{}, std::move($mod), std::move($constraint) }; }
-    | parameter-constraint-set[constraint]
-        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::value_type_constraint, std::move($constraint) }; }
-    ;
+      identifier[id] internal-identifier-opt[intid] COLON parameter-constraint-set[constraint] parameter-default-value-opt[default]
+        { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::value_type, std::move($constraint), std::move($default) }; }
+    | identifier[id] internal-identifier-opt[intid] COLON CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
+        { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
+    | identifier[id] internal-identifier-opt[intid] ARROWEXPR parameter-value-constraint-set[constraint]
+        { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
+    
+    | INTERNAL_IDENTIFIER[intid] COLON parameter-constraint-set[constraint] parameter-default-value-opt[default]
+        { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::value_type, std::move($constraint), std::move($default) }; }
+    | INTERNAL_IDENTIFIER[intid] COLON CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
+        { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
+    | INTERNAL_IDENTIFIER[intid] ARROWEXPR parameter-value-constraint-set[constraint]
+        { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
+    
+    | INTERNAL_IDENTIFIER[intid] ELLIPSIS COLON parameter-constraint-set[constraint]
+        { $$ = parameter_t{ varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::value_type, std::move($constraint) }; IGNORE_TERM($ELLIPSIS); }
+    | INTERNAL_IDENTIFIER[intid] ELLIPSIS COLON CONST parameter-constraint-set[constraint]
+        { $$ = parameter_t{ varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint) }; IGNORE_TERM($ELLIPSIS); }
 
-parameter-name-decl:
-      identifier[id] internal_identifier[intid] COLON
-        { $$ = named_parameter_name{ std::move($id), std::move($intid) }; }
-    | identifier[id] COLON
-        { $$ = named_parameter_name{ std::move($id), nullopt }; }
-    | INTERNAL_IDENTIFIER[intid] COLON
-        { $$ = unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }; }
-    //| internal_identifier[intid] ELLIPSIS COLON
-    //    { $$ = varnamed_parameter_name{ std::move($intid)}; IGNORE_TERM($ELLIPSIS); }
-    | INTERNAL_IDENTIFIER[intid] ELLIPSIS COLON
-        { $$ = varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }; IGNORE_TERM($ELLIPSIS); }
-    ;
-
-parameter-constraint-modifier-opt:
-      parameter-constraint-modifier
-    | %empty
-        { $$ = parameter_constraint_modifier_t::value_type_constraint; }
-    ;
-
-parameter-constraint-modifier:
-      TYPENAME
-        { $$ = parameter_constraint_modifier_t::typename_constraint; }
-    | CONST
-        { $$ = parameter_constraint_modifier_t::value_constraint; }
+    | parameter-constraint-set[constraint] parameter-default-value-opt[default]
+        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::value_type, std::move($constraint), std::move($default) }; }
+    | CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
+        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
+    | ARROWEXPR parameter-value-constraint-set[constraint]
+        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
     ;
 
 parameter-constraint-set:
@@ -717,10 +723,36 @@ parameter-constraint-set:
         { $$ = parameter_constraint_set_t{ std::move($match), {}, {} }; }
     | concept-expression[concept]
         { $$ = parameter_constraint_set_t{ nullopt, {std::move($concept)}, {} }; }
-    //| UNDERSCORE
-    //    { $$ = parameter_constraint_set_t{}; }
     | parameter-constraint-set concept-expression[concept]
         { $$ = std::move($1); $$.concepts.emplace_back(std::move($concept)); }
+    ;
+
+parameter-value-constraint-set:
+      parameter-matched-value[match]
+        { $$ = parameter_constraint_set_t{ std::move($match), {}, {} }; }
+    | concept-expression[concept]
+        { $$ = parameter_constraint_set_t{ nullopt, {std::move($concept)}, {} }; }
+    | parameter-value-constraint-set concept-expression[concept]
+        { $$ = std::move($1); $$.concepts.emplace_back(std::move($concept)); }
+    ;
+
+    /*
+parameter-concept-set-opt:
+      %empty
+        { $$ = parameter_constraint_set_t{ nullopt, {}, {} }; }
+    | parameter-concept-set
+    ;
+
+parameter-concept-set:
+      concept-expression[concept]
+        { $$ = parameter_constraint_set_t{ nullopt, {std::move($concept)}, {} }; }
+    | parameter-concept-set concept-expression[concept]
+        { $$ = std::move($1); $$.concepts.emplace_back(std::move($concept)); }
+    ;
+    */
+
+parameter-matched-value:
+      syntax-expression
     ;
 
 parameter-matched-type:
@@ -733,27 +765,33 @@ parameter-matched-type:
         { $$ = unary_expression_t{ unary_operator_type::ELLIPSIS, false, variable_identifier{ ctx.make_qname(std::move($id)), true }, std::move($ELLIPSIS) }; }
     ;
 
+
 basic-parameter-matched-type:
       UNDERSCORE
         { $$ = placeholder{ std::move($UNDERSCORE) }; }
+        /*
+    | type-expr
+        { $$ = std::move($1); }
+        */
     | qname
         { $$ = variable_identifier{ std::move($qname) }; }
+
     | qname OPEN_PARENTHESIS argument-list-opt[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($OPEN_PARENTHESIS), std::move($qname), std::move($arguments) }; }
     | basic-parameter-matched-type[left] BITOR basic-parameter-matched-type[right]
         { $$ = binary_expression_t{ binary_operator_type::BIT_OR, std::move($left), std::move($right), std::move($BITOR) }; }
     ;
-
+    
 /*
 // one optional syntax-expression, and arbitrary count of concept-expression or internal idetifiers
 parameter-constraint-set:
       syntax-expression-wo-ii
         { $$ = parameter_constraint_set_t{ std::move($1), {}, {} }; }
-    | internal_identifier[id]
+    | internal-identifier[id]
         { $$ = parameter_constraint_set_t{ nullopt, {}, { std::move($id) } }; }
     | concept-expression
         { $$ = parameter_constraint_set_t{ nullopt, {std::move($1)}, {} }; }
-    | parameter-constraint-set internal_identifier[id]
+    | parameter-constraint-set internal-identifier[id]
         { $$ = std::move($1); $$.bindings.emplace_back(std::move($id)); }
     | parameter-constraint-set concept-expression
         { $$ = std::move($1); $$.concepts.emplace_back(std::move($2)); }
@@ -793,12 +831,12 @@ syntax-expression-wo-ii:
         { $$ = variable_identifier{ ctx.make_qname(std::move($RESERVED_IDENTIFIER)), true }; }
     | qname
         { $$ = variable_identifier{ std::move($qname) }; }
-    | OPEN_PARENTHESIS argument-list[list] CLOSE_PARENTHESIS
+    | OPEN_PARENTHESIS[start] argument-list[list] CLOSE_PARENTHESIS
         {
             if ($list.size() == 1 && !$list.front().has_name()) { // single unnamed expression => extract
                 $$ = std::move($list.front().value());
             } else {
-                $$ = opt_named_syntax_expression_list_t{ std::move($2), std::move($1) };
+                $$ = opt_named_syntax_expression_list_t{ std::move($list), std::move($start) };
             }
         }
     | POINT identifier
@@ -960,12 +998,13 @@ type-expr:
     //    { $$ = std::move($1); IGNORE_TERM($start); IGNORE_TERM($arguments); }
     | INTERNAL_IDENTIFIER[id]
         { $$ = variable_identifier{ ctx.make_qname(std::move($id)), true }; }
-    //| internal_identifier[id] OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
+    //| internal-identifier[id] OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
     //    { $$ = std::move($id); IGNORE_TERM($2); IGNORE_TERM($3); }
     | OPEN_SQUARE_BRACKET type-expr CLOSE_SQUARE_BRACKET
         { $$ = bang_vector_t{std::move($2)}; IGNORE_TERM($OPEN_SQUARE_BRACKET); }
-    | OPEN_PARENTHESIS argument-list-opt[elements] CLOSE_PARENTHESIS
-        { $$ = bang_tuple_t{ std::move($elements) }; IGNORE_TERM($OPEN_PARENTHESIS); }
+    | OPEN_PARENTHESIS[start] argument-list-opt[elements] CLOSE_PARENTHESIS
+        { $$ = opt_named_syntax_expression_list_t{ std::move($elements), std::move($start) }; }
+        //{ $$ = bang_tuple_t{ std::move($elements) }; IGNORE_TERM($OPEN_PARENTHESIS); }
     | type-expr[type] OPEN_SQUARE_BRACKET INTEGER[size] CLOSE_SQUARE_BRACKET
         { $$ = bang_array_t{std::move($type), (size_t)$size.value}; IGNORE_TERM($OPEN_SQUARE_BRACKET); }
     | type-expr[ltype] BITOR type-expr[rtype]

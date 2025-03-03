@@ -28,6 +28,8 @@ struct field_descriptor
     inline entity_identifier entity_id() const noexcept { return entity_id_; }
     inline bool is_const() const noexcept { return is_const_; }
 
+    inline explicit operator bool() const noexcept { return !!entity_id_; }
+
     friend inline bool operator== (field_descriptor const& l, field_descriptor const& r) noexcept
     {
         return l.entity_id_ == r.entity_id_ && l.is_const_ == r.is_const_;

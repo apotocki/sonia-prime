@@ -13,8 +13,8 @@ class to_string_pattern : public basic_fn_pattern
 public:
     using basic_fn_pattern::basic_fn_pattern;
 
-    error_storage apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
+    error_storage apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional_match_descriptor&) const override;
 };
 
 }

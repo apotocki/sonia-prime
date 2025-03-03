@@ -33,6 +33,7 @@ protected:
 
 public:
     struct postpone_t {};
+    struct ignore_t {}; // for the case when argument is void
 
     explicit parameter_matcher(annotated_identifier name, parameter_constraint_modifier_t, parameter_constraint_set_t) noexcept;
     
@@ -43,11 +44,11 @@ public:
     error_storage build(fn_compiler_context&, basic_fn_pattern const&);
     bool is_pattern() const noexcept;
 
-    // returns match weight or error
-    std::expected<int, error_storage> try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const&, functional_binding&, parameter_match_result&) const; // returns weight delta if matched
+    // returns match weight or ignore or error
+    variant<int, ignore_t, error_storage> try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const&, functional_binding&, parameter_match_result&) const; // returns weight delta if matched
     
-    // returns match weight or postpone or error
-    variant<int, postpone_t, error_storage> try_forward_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const&, functional_binding_set&, parameter_match_result&) const;
+    // returns match weight or ignore or postpone or error
+    variant<int, ignore_t, postpone_t, error_storage> try_forward_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const&, functional_binding_set&, parameter_match_result&) const;
 
     std::ostream& print(unit const&, std::ostream&) const;
 
@@ -79,7 +80,7 @@ public:
 
     void update_binding(unit&, entity_identifier, functional_binding&) const override;
     
-    std::expected<int, error_storage> try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, annotated_identifier, syntax_expression_t const&, functional_binding&, parameter_match_result&) const;
+    variant<int, ignore_t, error_storage> try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, annotated_identifier, syntax_expression_t const&, functional_binding&, parameter_match_result&) const;
 };
 
 struct named_parameter_matcher_less
@@ -122,17 +123,18 @@ protected:
     optional<varnamed_parameter_matcher> varnamed_matcher_;
     boost::container::small_flat_set<named_parameter_matcher, 8, named_parameter_matcher_less> named_matchers_;
     small_vector<shared_ptr<parameter_matcher>, 8> matchers_; // also for variadic named
-    optional<parameter_constraint_set_t> result_constraints_;
-
-    uint8_t has_varpack_ : 1;
-
+    
 public:
     explicit basic_fn_pattern(functional const&) noexcept;
-    error_storage init(fn_compiler_context& ctx, fn_pure_t const& fnd);
+    error_storage init(fn_compiler_context&, parameter_list_t const& parameters);
+    error_storage init(fn_compiler_context&, fn_pure_t const& fnd);
     //void build(fn_compiler_context&) const;
 
     inline qname_identifier fn_qname_id() const noexcept { return fnl_.id(); }
     inline qname_view fn_qname() const noexcept { return fnl_.name(); }
+
+    optional<std::pair<parameter_constraint_set_t, parameter_constraint_modifier_t>> result_constraints;
+
 
     //optional<size_t> get_local_variable_index(identifier) const;
     named_parameter_matcher const* get_matcher(identifier) const;
@@ -140,21 +142,43 @@ public:
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
 
+    std::expected<application_result_t, error_storage> generic_apply(fn_compiler_context&, functional_match_descriptor&) const override;
+
     std::ostream& print(unit const&, std::ostream& s) const override;
 
 protected:
-    void build_scope(fn_compiler_context&, functional_match_descriptor&) const;
-    size_t apply_arguments(fn_compiler_context&, functional_match_descriptor&) const;
+    void build_scope(fn_compiler_context&, functional_match_descriptor&, functional_binding_set& bound_arguments /* out */) const;
+    size_t apply_arguments(fn_compiler_context&, functional_match_descriptor&, semantic::expression_list_t& result_expressions) const;
+
+    // builds entity that represents the function
+    virtual shared_ptr<entity> build(fn_compiler_context&, functional_match_descriptor&, entity_signature&&) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern::build");
+    }
+
+private:
+    uint8_t has_varpack_ : 1;
+};
+
+class functional_pattern : public basic_fn_pattern
+{
+    statement_span body_;
+
+public:
+    using basic_fn_pattern::basic_fn_pattern;
+    inline void set_body(statement_span body) noexcept { body_ = body; }
+
+    
 };
 
 class runtime_fn_pattern : public basic_fn_pattern
 {
 public:
     using basic_fn_pattern::basic_fn_pattern;
-    error_storage apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
+    //error_storage apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
 protected:
-    virtual shared_ptr<entity> build(fn_compiler_context&, functional_match_descriptor&, entity_signature&&) const = 0;
+    
 };
 
 class generic_fn_pattern: public runtime_fn_pattern
@@ -167,7 +191,7 @@ public:
     
     error_storage init(fn_compiler_context& ctx, fn_decl_t const& fnd);
 
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
+    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
 protected:
     shared_ptr<entity> build(fn_compiler_context&, functional_match_descriptor&, entity_signature&&) const override;

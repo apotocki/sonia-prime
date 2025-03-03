@@ -3,11 +3,12 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "tuple_set_pattern.hpp"
+#include "set_pattern.hpp"
 
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
+#include "sonia/bang/ast/expression_visitor.hpp"
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
@@ -113,7 +114,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
 #endif
 }
 
-error_storage tuple_set_pattern::apply(fn_compiler_context& ctx, qname_identifier functional_id, functional_match_descriptor& md) const
+error_storage tuple_set_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
 
@@ -136,11 +137,11 @@ error_storage tuple_set_pattern::apply(fn_compiler_context& ctx, qname_identifie
         u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
 
-    ctx.context_type = md.result;
+    ctx.context_type = md.result.entity_id();
     return {};
 }
 
-std::expected<entity_identifier, error_storage> tuple_set_pattern::const_apply(fn_compiler_context& ctx, qname_identifier, functional_match_descriptor& md) const
+std::expected<entity_identifier, error_storage> tuple_set_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("tuple_set_pattern::const_apply");
 }

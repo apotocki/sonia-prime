@@ -8,6 +8,7 @@
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
+#include "sonia/bang/ast/expression_visitor.hpp"
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
@@ -15,13 +16,11 @@ namespace sonia::lang::bang {
 
 class tuple_get_match_descriptor : public functional_match_descriptor
 {
-    size_t property_index_;
-
 public:
     using functional_match_descriptor::functional_match_descriptor;
 
-    inline size_t property_index() const noexcept { return property_index_; }
-    inline void set_property_index(size_t index) noexcept { property_index_ = index; }
+    size_t property_index;
+    size_t fields_count;
 };
 
 std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
@@ -96,41 +95,69 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
         return std::unexpected(make_error<basic_general_error>(call.location(), "no such field"sv, ppname->id()));
     }
 
-    pmd->set_property_index(index);
-    BOOST_ASSERT(pes->field_count() > 1 || !index);
+    // get non const fields count and index
+    size_t fields_count = pes->fields().size();
 
-    pmd->result = fd->entity_id();
+    field_descriptor const* b_fd = &pes->fields().front(), *e_fd = b_fd + pes->fields().size();
+    for (; b_fd != fd; ++b_fd) {
+        if (b_fd->is_const()) { --index; --fields_count; }
+    }
+    for (; b_fd != e_fd; ++b_fd) {
+        if (b_fd->is_const()) { --fields_count; }
+    }
+
+    pmd->property_index = index;
+    pmd->fields_count = fields_count;
+    
+    BOOST_ASSERT(pes->field_count() > 1 || !index);
+    
+    pmd->result = *fd;
     return pmd;
 }
 
-error_storage tuple_get_pattern::apply(fn_compiler_context& ctx, qname_identifier functional_id, functional_match_descriptor& md) const
+std::expected<tuple_get_pattern::application_result_t, error_storage> tuple_get_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
+    auto& tmd = static_cast<tuple_get_match_descriptor&>(md);
+
+    if (tmd.result.is_const()) {
+        return tmd.result.entity_id();
+    }
 
     // push call expressions in the right order
-    semantic::expression_list_t& exprs = ctx.expressions();
+    semantic::managed_expression_list exprs{ u };
 
     // only one named argument is expected
-    md.for_each_named_match([&exprs, &md](identifier name, parameter_match_result const& mr) {
+    tmd.for_each_named_match([&exprs, &tmd](identifier name, parameter_match_result const& mr) {
         for (auto rng : mr.expressions) {
             ++rng.second;
-            exprs.splice_back(md.call_expressions, rng.first, rng.second);
+            exprs.splice_back(tmd.call_expressions, rng.first, rng.second);
         }
     });
 
     BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
 
-    if (size_t propindex = static_cast<tuple_get_match_descriptor&>(md).property_index(); propindex) {
-        u.push_back_expression(exprs, semantic::push_value{ propindex });
+    if (tmd.fields_count > 1) {
+        u.push_back_expression(exprs, semantic::push_value{ tmd.property_index });
         u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
-    ctx.context_type = md.result;
-    return {};
+
+    ctx.context_type = md.result.entity_id();
+    return std::move(exprs);
 }
 
-std::expected<entity_identifier, error_storage> tuple_get_pattern::const_apply(fn_compiler_context& ctx, qname_identifier, functional_match_descriptor& md) const
+std::expected<entity_identifier, error_storage> tuple_get_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("tuple_get_pattern::const_apply");
+    auto res = generic_apply(ctx, md);
+    if (!res) return std::unexpected(std::move(res.error()));
+    using result_t = std::expected<entity_identifier, error_storage>;
+    return apply_visitor(make_functional_visitor<result_t>([&ctx, &md](auto && eid_or_el) -> result_t {
+        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_el)>, entity_identifier>) {
+            return eid_or_el;
+        } else {
+            return std::unexpected(make_shared<basic_general_error>(md.location, "can't evaluate as a const expression"sv));
+        }
+    }), *res);
 }
 
 }

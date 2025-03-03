@@ -21,11 +21,11 @@ void functional_binding_set::reset() noexcept
     binding_names_.clear();
 }
 
-optional<functional_binding::value_type> functional_binding_set::lookup(identifier id) const noexcept
+functional_binding::value_type const* functional_binding_set::lookup(identifier id) const noexcept
 {
     auto it = std::lower_bound(binding_names_.begin(), binding_names_.end(), id);
-    if (it == binding_names_.end() || *it != id) return nullopt;
-    return binding_[it - binding_names_.begin()];
+    if (it == binding_names_.end() || *it != id) return nullptr;
+    return &binding_[it - binding_names_.begin()];
     //auto bit = it;
     //for (++it; it != binding_names_.end() && *it == id; ++it);
     //return span{ binding_.data() + (bit - binding_names_.begin()), static_cast<size_t>(it - bit) };
@@ -55,8 +55,10 @@ void parameter_match_result::append_result(bool variadic, entity_identifier r, s
     if (exprs) {
         if (before_start_it == exprs.end()) {
             before_start_it = exprs.begin();
+            BOOST_ASSERT(before_start_it != exprs.end());
         } else {
             ++before_start_it;
+            BOOST_ASSERT(before_start_it != exprs.end());
         }
         expressions.emplace_back(before_start_it, exprs.last());
     }
@@ -144,7 +146,7 @@ entity_signature functional_match_descriptor::build_signature(unit & u, qname_id
             signature.push_back(field_descriptor{ eid, is_const });
         }
     }
-    if (result) {
+    if (result.entity_id()) {
         signature.result = field_descriptor{ result };
     }
     return signature;
@@ -208,18 +210,18 @@ function_descriptor::named_field const* function_descriptor::find_named_field(id
     return nullptr;
 }
 
-std::expected<entity_identifier, error_storage> functional::default_entity(fn_compiler_context& ctx) const
+entity_identifier functional::default_entity(fn_compiler_context& ctx) const
 {
     shared_ptr<entity_resolver> resolver;
     {
         lock_guard lock{ default_entity_mtx_ };
-        if (auto* p = get<annotated_entity_identifier>(&default_entity_); p) return p->value;
+        if (auto* p = get<annotated_entity_identifier>(&default_entity_); p) return p->value; // if not defined, return empty entity_identifier here
         resolver = get<shared_ptr<entity_resolver>>(default_entity_);
     }
     
     compiler_task_tracer::task_guard tg = ctx.try_lock_task(qname_task_id{ id_ });
     if (!tg) {
-        return std::unexpected(make_error<circular_dependency_error>(make_error<basic_general_error>(resolver->location(), "resolving name"sv, id_)));
+        throw circular_dependency_error(make_error<basic_general_error>(resolver->location(), "resolving name"sv, id_));
     }
 
     {
@@ -228,7 +230,7 @@ std::expected<entity_identifier, error_storage> functional::default_entity(fn_co
     }
         
     auto deid = resolver->const_resolve(ctx);
-    if (!deid) return std::unexpected(std::move(deid.error()));
+    if (!deid) deid.error()->rethrow(ctx.u());
     {
         lock_guard lock{ default_entity_mtx_ };
         default_entity_ = annotated_entity_identifier{ *deid, resolver->location() };
@@ -237,28 +239,26 @@ std::expected<entity_identifier, error_storage> functional::default_entity(fn_co
     return *deid;
 }
 
-error_storage functional::set_default_entity(annotated_entity_identifier e)
+void functional::set_default_entity(annotated_entity_identifier e)
 {
     lock_guard lock{ default_entity_mtx_ };
     if (auto* p = get<annotated_entity_identifier>(&default_entity_); !p || *p) {
-        return make_error<identifier_redefinition_error>(
+        throw identifier_redefinition_error(
             annotated_qname_identifier{ id(), e.location },
             p ? p->location : get<shared_ptr<entity_resolver>>(default_entity_)->location());
     }
     default_entity_ = std::move(e);
-    return {};
 }
 
-error_storage functional::set_default_entity(shared_ptr<entity_resolver> e)
+void functional::set_default_entity(shared_ptr<entity_resolver> e)
 {
     lock_guard lock{ default_entity_mtx_ };
     if (auto* p = get<annotated_entity_identifier>(&default_entity_); !p || *p) {
-        return make_error<identifier_redefinition_error>(
+        throw identifier_redefinition_error(
             annotated_qname_identifier{ id(), e->location() },
             p ? p->location : get<shared_ptr<entity_resolver>>(default_entity_)->location());
     }
     default_entity_ = std::move(e);
-    return {};
 }
 
 struct expression_stack_checker
@@ -333,81 +333,66 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
         return std::unexpected(make_error<ambiguity_error>(annotated_qname_identifier{ id_, call.location() }, std::move(as)));
     }
     auto [ptrn, md] = alternatives.front();
-    return match{ id_, ptrn, std::move(md) };
+    return match{ ptrn, std::move(md) };
 }
 
-std::expected<functional_match_descriptor_ptr, error_storage> fieldset_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+error_storage functional::pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("fn_pattern::is_matched");
-#if 0
-    for (auto const& tpl : call.named_args) { // {argname, expr, exprloc}
-        THROW_NOT_IMPLEMENTED_ERROR("fn_pattern::is_matched, named argument");
-    }
-    fieldset_t const& fs = get_fieldset();
-    auto psp = fs.positioned_fields();
-    auto posarg = psp.begin();
+    auto res = generic_apply(ctx, md);
+    if (!res) return std::move(res.error());
 
-    for (auto expr_it = call.positioned_args.begin(), expr_eit = call.positioned_args.end(); expr_it != expr_eit;) {
-        if (posarg == psp.end()) {
-            return make_error<basic_general_error>(get_start_location(*expr_it), "positioned argument mismatch"sv);
-        }
-        entity_identifier param_type = posarg->constraint;
-        entity const& param_entity = ctx.u().eregistry_get(param_type);
-        if (pack_entity const* pent = dynamic_cast<pack_entity const*>(&param_entity); pent) {
-            uint64_t pack_size = 0;
-            //ctx.append_expression(semantic::push_value{ uint64_t{pack_size} });
-            //auto pack_size_expr_pointer = ctx.current_expressions_pointer();
-            for (;;) {
-                expression_visitor evis{ ctx, expected_result_t{ pent->element_type(), get_start_location(*expr_it) } };
-                if (auto opterr = apply_visitor(evis, *expr_it); opterr) {
-                    ++posarg;
-                    if (posarg == psp.end()) return std::move(opterr);
-                    break;
-                }
-                ++pack_size;
-                if (++expr_it == expr_eit) {
-                    ++posarg;
-                    break;
-                }
-            }
-            ctx.append_expression(semantic::push_value{ uint64_t{pack_size} });
-            //ctx.set_expression(pack_size_expr_pointer, semantic::push_value{ uint64_t{pack_size} });
+    return apply_visitor(make_functional_visitor<error_storage>([&ctx, &md](auto && eid_or_el) -> error_storage {
+        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_el)>, entity_identifier>) {
+            ctx.append_expression(semantic::push_value{ eid_or_el });
+            entity const& e = ctx.u().eregistry_get(eid_or_el);
+            ctx.context_type = e.get_type();
         } else {
-            expression_visitor evis{ ctx, expected_result_t{ param_type, get_start_location(*expr_it) } };
-            if (auto opterr = apply_visitor(evis, *expr_it); opterr) return std::move(opterr);
-            ++expr_it;
-            ++posarg;
+            ctx.expressions().splice_back(eid_or_el);
         }
-    }
-    while (posarg != psp.end()) {
-        entity_identifier param_type = posarg->constraint;
-        entity const& param_entity = ctx.u().eregistry_get(param_type);
-        if (pack_entity const* pent = dynamic_cast<pack_entity const*>(&param_entity); pent) {
-            ctx.append_expression(semantic::push_value{ uint64_t{0} }); // set empty argument pack
-            ++posarg;
-            continue;
-        }
-        return make_error<basic_general_error>(call.location(), "positioned argument mismatch"sv);
-    }
-    // to do: replace expressions according signature
-    return {};
-#endif
+        return error_storage{};
+    }), *res);
 }
 
-error_storage functional::pattern::apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
+std::expected<entity_identifier, error_storage> functional::pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
-    auto r = const_apply(ctx, fid, md);
-    if (!r) return std::move(r.error());
-    ctx.append_expression(semantic::push_value{*r});
-    entity const& e = ctx.u().eregistry_get(*r);
-    ctx.context_type = e.get_type();
-    return {};
+    auto res = generic_apply(ctx, md);
+    if (!res) return std::unexpected(res.error());
+    using result_t = std::expected<entity_identifier, error_storage>;
+    return apply_visitor(make_functional_visitor<result_t>([&ctx](auto & v) -> result_t {
+        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+            return v;
+        } else {
+            if (ctx.context_type == ctx.u().get(builtin_eid::void_)) {
+                BOOST_ASSERT(v.empty());
+                return ctx.context_type;
+            }
+            THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::operator()(opt_named_syntax_expression_list_t const&)");
+        }
+    }), *res);
 }
 
-std::expected<entity_identifier, error_storage> fieldset_pattern::const_apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor&) const
+std::expected<syntax_expression_t const*, error_storage> try_match_single_unnamed(fn_compiler_context& ctx, pure_call_t const& call)
 {
-    // , std::span<semantic::expression_type> args
-    THROW_NOT_IMPLEMENTED_ERROR("fn_pattern::const_apply");
+    unit& u = ctx.u();
+    syntax_expression_t const* matched_arg = nullptr;
+
+    for (auto const& arg : call.args()) {
+        annotated_identifier const* pargname = arg.name();
+        if (pargname) {
+            return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch, unexpected argument"sv, *pargname));
+        }
+        syntax_expression_t const& e = arg.value();
+        if (matched_arg) {
+            return std::unexpected(make_error<basic_general_error>(get_start_location(e), "argument mismatch, unexpected argument"sv, e));
+        }
+        matched_arg = &e;
+    }
+
+    if (!matched_arg) {
+        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv));
+    }
+
+    return matched_arg;
 }
 
 }

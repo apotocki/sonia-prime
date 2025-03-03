@@ -8,12 +8,14 @@
 
 namespace sonia::lang::bang {
 
-class metaobject_empty_pattern : public metaobject_argument_pattern
+class metaobject_tail_pattern : public metaobject_argument_pattern
 {
 public:
-    metaobject_empty_pattern() = default;
+    metaobject_tail_pattern() = default;
 
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
+    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional_match_descriptor&) const override;
+
+    std::ostream& print(unit const&, std::ostream& s) const override { return s << "tail(metaobject)"sv; }
 };
 
 }

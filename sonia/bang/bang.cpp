@@ -106,7 +106,9 @@ namespace sonia::lang::bang::detail {
 using namespace sonia::lang::bang;
 
 const char bang_bootstrap_code[] = R"#(
-inline fn ::not_equal(_, _)->bool => !($0 == $1);
+inline fn not_equal(_, _)->bool => !($0 == $1);
+using negate(=>true) => false;
+using negate(=>false) => true;
 //inline fn ::set(self: object, property: const __identifier, any)->object => set(self: self, to_string(property), $0);
 )#";
 
@@ -184,9 +186,7 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
         });
         identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), epos });
         functional& arg_fnl = unit_.fregistry().resolve(ctx.ns() / argid);
-        if (auto err = arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id() }); err) {
-            throw exception(unit_.print(*err));
-        }
+        arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id() });
             
         //ctx.new_const_entity(string_view{ argname.data(), epos }, std::move(ent));
         ++argindex;
@@ -199,7 +199,7 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
     });
     identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), 2 });
     functional& arg_fnl = unit_.fregistry().resolve(ctx.ns() / argid);
-    BOOST_VERIFY(!arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id() }));
+    arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id() });
         
 
     if (!default_ctx_) {
@@ -294,10 +294,10 @@ void bang_impl::do_compile(internal_function_entity const& fe)
     }
 
     vm::compiler_visitor vmcvis{ unit_, fb, fe };
-    for (auto const& e : fe.body()) {
+    fe.body.for_each([&vmcvis](semantic::expression const& e) {
         //GLOBAL_LOG_INFO() << unit_.print(e); // << "\n"sv
         apply_visitor(vmcvis, e);
-    }
+    });
     fb.materialize();
     if (fd.index) {
         unit_.bvm().set_const(*fd.index, smart_blob{ ui64_blob_result(*fd.address) });

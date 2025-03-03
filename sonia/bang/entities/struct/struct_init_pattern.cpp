@@ -20,9 +20,20 @@ struct_init_pattern::struct_init_pattern(functional const& fnl, variant<field_li
         if constexpr (std::is_same_v<std::decay_t<decltype(body)>, field_list_t>) {
             field_list_t const& fl = body;
             for (field_t const& f : fl) {
+                // to do: fix it for const/exact
+                parameter_constraint_modifier_t pcm = [](field_modifier_t fm) -> parameter_constraint_modifier_t {
+                    switch (fm)
+                    {
+                    case sonia::lang::bang::field_modifier_t::value:
+                        return parameter_constraint_modifier_t::value_type;
+                    case sonia::lang::bang::field_modifier_t::const_value:
+                        return parameter_constraint_modifier_t::const_value_type;
+                    default:
+                        THROW_INTERNAL_ERROR("struct_init_pattern::struct_init_pattern(field_list_t)");
+                    }
+                }(f.modifier);
                 body_parameters_.emplace_back(
-                    parameter_t{ named_parameter_name{ f.name }, f.modifier, parameter_constraint_set_t{ f.type } },
-                    f.value
+                     named_parameter_name{ f.name }, pcm, parameter_constraint_set_t{ f.type }, f.value
                 );
             }
         } else {
@@ -39,7 +50,7 @@ error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_enti
     return basic_fn_pattern::init(ctx, init_fn);
 }
 
-error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_qname name, parameter_woa_list_t const& fparameters)
+error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_qname name, parameter_list_t const& fparameters)
 {
     function_call_t rpattern{ lex::resource_location{ name.location }, syntax_expression_t{ name } };
     for (parameter_t const& param : fparameters) {
@@ -74,23 +85,23 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_init_patter
     return res;
 }
 
-error_storage struct_init_pattern::apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
+error_storage struct_init_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     // create tuple instance
     unit& u = ctx.u();
-    size_t argcount = apply_arguments(ctx, md);
+    size_t argcount = apply_arguments(ctx, md, ctx.expressions());
 
     if (argcount > 1) {
         u.push_back_expression(ctx.expressions(), semantic::push_value{ mp::integer{ argcount } });
         u.push_back_expression(ctx.expressions(), semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
 
-    BOOST_ASSERT(md.result);
-    ctx.context_type = md.result;
+    BOOST_ASSERT(md.result.entity_id());
+    ctx.context_type = md.result.entity_id();
     return {};
 }
 
-std::expected<entity_identifier, error_storage> struct_init_pattern::const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const
+std::expected<entity_identifier, error_storage> struct_init_pattern::const_apply(fn_compiler_context&, functional_match_descriptor&) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("struct_init_pattern::const_apply");
 }

@@ -127,7 +127,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> new_struct_pattern
 #endif
 }
 
-error_storage new_struct_pattern::apply(fn_compiler_context& ctx, qname_identifier fid, functional_match_descriptor& md) const
+error_storage new_struct_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     // create tuple instance
     unit& u = ctx.u();
@@ -207,7 +207,7 @@ error_storage new_struct_pattern::apply(fn_compiler_context& ctx, qname_identifi
     //THROW_NOT_IMPLEMENTED_ERROR("new_struct_pattern::apply");
 }
 
-std::expected<entity_identifier, error_storage> new_struct_pattern::const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const
+std::expected<entity_identifier, error_storage> new_struct_pattern::const_apply(fn_compiler_context&, functional_match_descriptor&) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("new_struct_pattern::const_apply");
 }

@@ -28,12 +28,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_pattern
     return pmd;
 }
 
-std::expected<entity_identifier, error_storage> metaobject_pattern::const_apply(fn_compiler_context& ctx, qname_identifier functional_id, functional_match_descriptor& md) const
+std::expected<entity_identifier, error_storage> metaobject_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    BOOST_ASSERT(functional_id == u.get(builtin_qnid::metaobject));
     
-    entity_signature sig = md.build_signature(u, functional_id);
+    entity_signature sig = md.build_signature(u, u.get(builtin_qnid::metaobject));
     sig.result = field_descriptor{ u.get(builtin_eid::metaobject) };
     indirect_signatured_entity smpl{ sig };
 

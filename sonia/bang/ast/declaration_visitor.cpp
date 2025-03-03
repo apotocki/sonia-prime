@@ -31,9 +31,9 @@ inline unit& declaration_visitor::u() const noexcept { return ctx.u(); }
 
 error_storage declaration_visitor::apply(statement_span initial_decls) const
 {
-    decl_stack_.clear();
+    size_t initial_stack_size = decl_stack_.size();
     decl_stack_.emplace_back(initial_decls);
-    for (; !decl_stack_.empty(); ) {
+    do {
         if (decl_stack_.back().empty()) {
             decl_stack_.pop_back();
             continue;
@@ -41,7 +41,7 @@ error_storage declaration_visitor::apply(statement_span initial_decls) const
         size_t index = decl_stack_.size() - 1;
         if (auto err = apply_visitor(*this, decl_stack_.back().front()); err) return err;
         decl_stack_[index] = decl_stack_[index].subspan(1);
-    }
+    } while (decl_stack_.size() > initial_stack_size);
     return {};
 }
 
@@ -65,10 +65,14 @@ error_storage declaration_visitor::operator()(extern_var const& d) const
     if (!vartype) {
         return std::move(vartype.error());
     }
-    //entity_identifier vartype = apply_visitor(preliminary_type_visitor{ ctx }, d.type);
-    //u().new_variable(qname{d.name.value}, d.name.location, *vartype, variable_entity::kind::EXTERN);
-    ctx.new_variable(d.name, *vartype, variable_entity::kind::EXTERN);
-    //THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor extern_var");
+
+    qname var_qname = ctx.ns() / d.name.value;
+    functional& fnl = u().fregistry().resolve(var_qname);
+    auto ve = sonia::make_shared<extern_variable_entity>(std::move(*vartype), fnl.id());
+    ve->set_location(d.name.location);
+    u().eregistry_insert(ve);
+    
+    fnl.set_default_entity(annotated_entity_identifier{ ve->id(), d.name.location });
     return {};
 }
 
@@ -78,9 +82,19 @@ error_storage declaration_visitor::operator()(using_decl const& ud) const
     qname uqn = ctx.ns() / ud.name();
     functional& fnl = u().fregistry().resolve(uqn);
     if (!ud.parameters) {
-        return fnl.set_default_entity(make_shared<expression_resolver>(ud.location(), ud.expression));
+        fnl.set_default_entity(make_shared<expression_resolver>(ud.location(), ud.expression));
     } else {
-        THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor using_decl");
+        auto fnptrn = make_shared<basic_fn_pattern>(fnl);
+        error_storage err = fnptrn->init(ctx, *ud.parameters);
+        if (!err) {
+            fnptrn->result_constraints.emplace(parameter_constraint_set_t{ .type_expression = ud.expression }, parameter_constraint_modifier_t::const_value);
+            //managed_statement_list sts{ u() };
+            //sts.emplace_back(return_decl_t{ ud.expression });
+            //fnptrn->set_body(sts);
+            //u().push_ast({}, std::move(sts));
+            fnl.push(std::move(fnptrn));
+        }
+        return err;
     }
     //entity_signature esig{ fnl.id() };
     //auto se = sonia::make_shared<type_entity>(u().get_typename_entity_identifier(), std::move(esig));
@@ -119,7 +133,7 @@ error_storage declaration_visitor::operator()(struct_decl const& sd) const
             auto sent = make_shared<struct_entity>(qname{ fnl.name() }, u.get(builtin_eid::typename_), entity_signature{ fnl.id() }, sd.body);
             u.eregistry_insert(sent);
             annotated_entity_identifier aeid{ sent->id(), qn.location };
-            if (auto err = fnl.set_default_entity(aeid); err) return err;
+            fnl.set_default_entity(aeid);
 
             functional& init_fnl = u.fregistry().resolve(u.get(builtin_qnid::init));
             auto initptrn = make_shared<struct_init_pattern>(init_fnl, sd.body);
@@ -161,48 +175,53 @@ error_storage declaration_visitor::operator()(expression_statement_t const& ed) 
     return {};
 }
 
-error_storage declaration_visitor::operator()(if_decl const& stm) const
+error_storage declaration_visitor::do_rt_if_decl(if_decl const& stm) const
 {
-    ctx.pushed_unnamed_ns();
-    expression_visitor vis{ ctx, { u().get(builtin_eid::boolean), get_start_location(stm.condition) } };
-    if (auto res = apply_visitor(vis, stm.condition); !res) {
-        return std::move(res.error());
-    }
     ctx.append_expression(semantic::conditional_t{});
-    semantic::conditional_t & cond = get<semantic::conditional_t>(ctx.expressions().back());
+    semantic::conditional_t& cond = get<semantic::conditional_t>(ctx.expressions().back());
 
     auto bst = ctx.expressions_branch(); // store branch
 
     if (!stm.true_body.empty()) {
+        ctx.pushed_unnamed_ns();
+        SCOPE_EXIT([this] { ctx.pop_ns(); });
         semantic::managed_expression_list true_branch{ u() };
         ctx.push_chain(true_branch);
-        if (auto err = apply(stm.true_body); err) {
-            return std::move(err);
-        }
+        if (auto err = apply(stm.true_body); err) return std::move(err);
         cond.true_branch = ctx.store_semantic_expressions(std::move(true_branch));
-        
-        //for (auto const& d : stm.true_body) {
-        //    apply_visitor(*this, d);
-        //}
         ctx.collapse_chains(bst);
     }
-    ctx.pop_ns();
 
     if (!stm.false_body.empty()) {
         ctx.pushed_unnamed_ns();
+        SCOPE_EXIT([this] { ctx.pop_ns(); });
         semantic::managed_expression_list false_branch{ u() };
         ctx.push_chain(false_branch);
-        if (auto err = apply(stm.false_body); err) {
-            return std::move(err);
-        }
+        if (auto err = apply(stm.false_body); err) return std::move(err);
         cond.false_branch = ctx.store_semantic_expressions(std::move(false_branch));
-        //for (auto const& d : stm.false_body) {
-        //    apply_visitor(*this, d);
-        //}
         ctx.collapse_chains(bst);
-        ctx.pop_ns();
     }
     return {};
+}
+
+error_storage declaration_visitor::operator()(if_decl const& stm) const
+{
+    base_expression_visitor vis{ ctx, { u().get(builtin_eid::boolean), get_start_location(stm.condition) } };
+    auto res = apply_visitor(vis, stm.condition);
+    if (!res) return std::move(res.error());
+
+    return apply_visitor(make_functional_visitor<error_storage>([this, &stm](auto & v) -> error_storage {
+        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) { // "if constexpr" case
+            BOOST_ASSERT(v == u().get(builtin_eid::false_) || v == u().get(builtin_eid::true_));
+            statement_span body = (v == u().get(builtin_eid::true_) ? stm.true_body : stm.false_body);
+            ctx.pushed_unnamed_ns();
+            SCOPE_EXIT([this] { ctx.pop_ns(); });
+            return apply(body);
+        } else {
+            ctx.expressions().splice_back(v);
+            return do_rt_if_decl(stm);
+        }
+    }), res->first);
 }
 
 error_storage declaration_visitor::operator()(for_decl const& fd) const
@@ -558,10 +577,11 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
             return std::move(res.error());
         }
     }
-    variable_entity& ve = ctx.new_variable(ld.aname, vartype.self_or(ctx.context_type), variable_entity::kind::LOCAL);
-    ve.set_weak(ld.weakness);
+    local_variable ve = ctx.new_variable(ld.aname, vartype.self_or(ctx.context_type));
+    ve.is_weak = ld.weakness;
     if (!ld.expression) {
-        ctx.append_expression(semantic::push_value{ null }); // just declaration, initializtion just declared variable
+        // to do: check nullability
+        ctx.append_expression(semantic::push_value{ null }); // just declaration, initialization just declared variable
     } 
     // else do not set variable because we have a result of the expression on stack and consider it as a variable initialization
     // if (ld.expression) { ctx.append_expression(semantic::set_variable{ &ve }); }

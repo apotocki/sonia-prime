@@ -26,10 +26,10 @@ class functional_binding
 public:
     virtual ~functional_binding() = default;
 
-    using value_type = variant<entity_identifier, shared_ptr<entity>>;
+    using value_type = variant<entity_identifier, shared_ptr<entity>, local_variable>;
 
-    // bouund entity_identifier can not be changed, but bound entity can be updated
-    virtual optional<value_type> lookup(identifier) const noexcept = 0;
+    // bound entity_identifier can not be changed, but bound entity can be updated
+    virtual value_type const* lookup(identifier) const noexcept = 0;
     virtual void emplace_back(annotated_identifier, value_type) = 0;
 };
 
@@ -42,7 +42,7 @@ class functional_binding_set : public functional_binding
 public:
     inline void reset() noexcept;
     
-    optional<value_type> lookup(identifier) const noexcept override;
+    value_type const* lookup(identifier) const noexcept override;
 
     void emplace_back(annotated_identifier, value_type) override;
 
@@ -55,6 +55,8 @@ public:
             std::forward<FT>(ftor)(*it, binding_locations_[pos], binding_[pos]);
         }
     }
+
+    inline bool empty() const noexcept { return binding_.empty(); }
 };
 
 struct parameter_match_result
@@ -100,7 +102,7 @@ public:
     functional_binding_set bindings;
     semantic::managed_expression_list call_expressions;
     lex::resource_location location;
-    entity_identifier result;
+    field_descriptor result;
     int weight{ 0 };
 
     inline explicit functional_match_descriptor(unit& u) noexcept : call_expressions{ u } {}
@@ -147,6 +149,8 @@ public:
     entity_signature build_signature(unit&, qname_identifier);
     void reset() noexcept;
 
+    virtual bool is_constexpr() const noexcept { return call_expressions.empty(); }
+
 private:
     //static void do_prepare_range(se_cont_iterator& it_before, semantic::managed_expression_list const& exprs, optional<se_rng_t>& rng);
 };
@@ -167,8 +171,15 @@ public:
 
     public:
         virtual std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const& expected_result) const = 0; // returns the match weight or an error
-        virtual std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const = 0; // returns const value
-        virtual error_storage apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const;
+        virtual std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional_match_descriptor&) const;
+        
+        virtual error_storage apply(fn_compiler_context&, functional_match_descriptor&) const;
+
+        using application_result_t = variant<entity_identifier, semantic::managed_expression_list>;
+        virtual std::expected<application_result_t, error_storage> generic_apply(fn_compiler_context&, functional_match_descriptor&) const
+        {
+            THROW_NOT_IMPLEMENTED_ERROR("functional::pattern::generic_apply");
+        }
 
         inline mp::decimal const& get_weight() const noexcept { return weight_; }
         inline lex::resource_location const& location() const noexcept { return location_; }
@@ -178,24 +189,32 @@ public:
 
     class match
     {
-        qname_identifier fid_;
         pattern const* ptrn_;
         functional_match_descriptor_ptr md_;
 
     public:
-        inline match(qname_identifier fid, pattern const* p, functional_match_descriptor_ptr md) noexcept
-            : fid_{ fid }, ptrn_{ p }, md_{ std::move(md) } 
-        {}
+        inline match(pattern const* p, functional_match_descriptor_ptr md) noexcept
+            : ptrn_{ p }, md_{ std::move(md) } 
+        {
+            BOOST_ASSERT(md_);
+        }
         
+        inline std::expected<pattern::application_result_t, error_storage> generic_apply(fn_compiler_context& ctx) const
+        {
+            return ptrn_->generic_apply(ctx, *md_);
+        }
+
         inline [[nodiscard]] error_storage apply(fn_compiler_context& ctx)
         {
-            return ptrn_->apply(ctx, fid_, *md_);
+            return ptrn_->apply(ctx, *md_);
         }
 
         inline std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx)
         {
-            return ptrn_->const_apply(ctx, fid_, *md_);
+            return ptrn_->const_apply(ctx, *md_);
         }
+
+        inline bool is_constexpr() const noexcept { return md_->is_constexpr(); }
     };
 
     class entity_resolver
@@ -216,9 +235,12 @@ public:
     inline qname_identifier id() const noexcept { return id_; }
     inline qname_view name() const noexcept { return qname_view{ qnameids_, true }; }
 
-    std::expected<entity_identifier, error_storage> default_entity(fn_compiler_context&) const;
-    [[nodiscard]] error_storage set_default_entity(annotated_entity_identifier);
-    [[nodiscard]] error_storage set_default_entity(shared_ptr<entity_resolver>);
+    // returns empty entity_identifier if not resolved
+    // throws on resolving error (e.g. circular_dependency_error)
+    entity_identifier default_entity(fn_compiler_context&) const;
+
+    void set_default_entity(annotated_entity_identifier); // can throw redefinition_error
+    void set_default_entity(shared_ptr<entity_resolver>); // can throw redefinition_error
 
     void push(shared_ptr<pattern> p)
     {
@@ -316,21 +338,9 @@ private:
     qname_identifier id_;
 };
 
-class fieldset_pattern : public functional::pattern
-{
-public:
-    fieldset_pattern() = default;
+// utility
 
-    using fieldset_t = patern_fieldset_t;
-
-    virtual fieldset_t const& get_fieldset() const noexcept = 0;
-
-    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, qname_identifier, functional_match_descriptor&) const override;
-};
-
-
-
+std::expected<syntax_expression_t const*, error_storage> try_match_single_unnamed(fn_compiler_context&, pure_call_t const&);
 
 
 }

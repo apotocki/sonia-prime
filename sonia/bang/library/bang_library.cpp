@@ -109,6 +109,49 @@ void bang_array_at(vm::context& ctx)
     ctx.stack_back().replace(smart_blob{ result });
 }
 
+void bang_array_tail(vm::context& ctx)
+{
+    auto arr = ctx.stack_back().as<blob_result>();
+    if (!is_array(arr)) {
+        throw exception("expected array, got %1%"_fmt % arr);
+    }
+
+    blob_type_selector(arr, [&ctx](auto ident, blob_result b) {
+        using type = typename decltype(ident)::type;
+        if constexpr (std::is_same_v<type, std::nullptr_t>) { }
+        else if constexpr (std::is_void_v<type>) { }
+        else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { 
+            THROW_NOT_IMPLEMENTED_ERROR("bigint tail");
+        } else if constexpr (std::is_same_v<type, sonia::basic_string_view<char>>) {
+            THROW_NOT_IMPLEMENTED_ERROR("string tail");
+        } else {
+            using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
+            size_t argcount = array_size_of<fstype>(b);
+
+            if (argcount == 2) {
+                smart_blob result = particular_blob_result(data_of<fstype>(b)[1]);
+                blob_result_pin(&*result);
+                ctx.stack_back().replace(std::move(result));
+                return;
+            }
+            small_vector<fstype, 4> elements;
+            elements.reserve(argcount - 1);
+
+            for (size_t i = 1; i < argcount; ++i) {
+                elements.push_back(data_of<fstype>(b)[i]);
+                if constexpr (std::is_same_v<fstype, blob_result>) {
+                    blob_result_pin(&elements.back());
+                }
+            }
+
+            smart_blob r{ array_blob_result(span{elements.data(), elements.size()}) };
+            r.allocate();
+            elements.clear();
+            ctx.stack_back().replace(std::move(r));
+        }
+    });
+}
+
 void bang_negate(vm::context& ctx)
 {
     auto val = *ctx.stack_back();

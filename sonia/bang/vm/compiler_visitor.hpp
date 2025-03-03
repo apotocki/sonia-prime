@@ -48,6 +48,11 @@ public:
         apply_visitor(vis, pv.value);
     }
 
+    void operator()(semantic::push_local_variable const& pv) const
+    {
+        fnbuilder_.append_fpush(pv.index);
+    }
+
     void operator()(semantic::push_by_offset const& pv) const
     {
         fnbuilder_.append_pushr(pv.offset);
@@ -67,22 +72,20 @@ public:
         }
     }
 
+    void operator()(semantic::set_local_variable const& lv) const
+    {
+        fnbuilder_.append_fset(lv.index);
+    }
+
     void operator()(semantic::set_variable const& pv) const
     {
         using namespace lang::bang;
 
-        auto varkind = pv.entity->varkind();
-        if (varkind == variable_entity::kind::LOCAL || varkind == variable_entity::kind::SCOPE_LOCAL) {
-            fnbuilder_.append_fset(pv.entity->index());
-        } else if (varkind == variable_entity::kind::EXTERN) {
-            string_view varname = unit_.as_string(unit_.fregistry().resolve(pv.entity->name).name().back());
-            smart_blob strbr{ string_blob_result(varname) };
-            strbr.allocate();
-            fnbuilder_.append_push_pooled_const(std::move(strbr));
-            fnbuilder_.append_ecall((size_t)virtual_stack_machine::builtin_fn::extern_variable_set);
-        } else {
-            THROW_NOT_IMPLEMENTED_ERROR();
-        }
+        string_view varname = unit_.as_string(unit_.fregistry().resolve(pv.entity->name).name().back());
+        smart_blob strbr{ string_blob_result(varname) };
+        strbr.allocate();
+        fnbuilder_.append_push_pooled_const(std::move(strbr));
+        fnbuilder_.append_ecall((size_t)virtual_stack_machine::builtin_fn::extern_variable_set);
     }
 
     void operator()(semantic::invoke_function const& invf) const;
@@ -264,8 +267,8 @@ public:
             }
         }
         size_t param_count = fn_context_->parameter_count(); // including captured_variables
-        BOOST_ASSERT(fn_context_->get_result_type());
-        if (fn_context_->get_result_type() != unit_.get(builtin_eid::void_)) {
+        BOOST_ASSERT(fn_context_->result.entity_id());
+        if (fn_context_->result.entity_id() != unit_.get(builtin_eid::void_)) {
             fnbuilder_.append_fset(-static_cast<intptr_t>(param_count));
             fnbuilder_.append_truncatefp(-static_cast<intptr_t>(param_count) + 1);
         } else {
@@ -297,8 +300,8 @@ public:
         } else if (fn_context_) {
             local_return_position = fnbuilder_.make_label();
             size_t param_count = fn_context_->parameter_count(); // including captured_variables
-            BOOST_ASSERT(fn_context_->get_result_type());
-            if (fn_context_->get_result_type() != unit_.get(builtin_eid::void_)) {
+            BOOST_ASSERT(fn_context_->result.entity_id());
+            if (fn_context_->result.entity_id() != unit_.get(builtin_eid::void_)) {
                 fnbuilder_.append_fset(-static_cast<intptr_t>(param_count));
                 fnbuilder_.append_truncatefp(-static_cast<intptr_t>(param_count) + 1);
             } else {
@@ -393,14 +396,16 @@ void compiler_visitor_base::operator()(semantic::invoke_function const& invf) co
     entity const& e = unit_.eregistry_get(invf.fn);
     if (auto fe = dynamic_cast<internal_function_entity const*>(&e); fe) {
         if (fe->is_inline()) {
+            GLOBAL_LOG_INFO() << "entering inline function: " << unit_.print(invf.fn);
             inline_compiler_visitor ivis{ unit_, fnbuilder_, *fe };
             fnbuilder_.append_pushfp();
-            for (auto const& e : fe->body()) {
-                //GLOBAL_LOG_INFO() << unit_.print(e);
+            fe->body.for_each([this, &ivis](semantic::expression const& e) {
+                GLOBAL_LOG_INFO() << unit_.print(e);
                 apply_visitor(ivis, e);
-            }
+            });
             ivis.finalize();
             fnbuilder_.append_popfp();
+            GLOBAL_LOG_INFO() << "leaving inline function: " << unit_.print(invf.fn);
         } else {
             vmasm::fn_identity fnident{ fe->id() };
             fnbuilder_.append_call(fnident);

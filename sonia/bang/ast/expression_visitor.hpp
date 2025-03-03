@@ -4,8 +4,8 @@
 
 #pragma once
 #include "sonia/bang/unit.hpp"
-#include "sonia/bang/semantic.hpp"
-#include "sonia/bang/errors.hpp"
+
+#include "base_expression_visitor.hpp"
 
 namespace sonia::lang::bang {
 
@@ -16,19 +16,18 @@ namespace sonia::lang::bang {
 //};
 
 // returns true if implicit cast was applied
-struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
+struct expression_visitor 
+    : base_expression_visitor
+    , static_visitor<std::expected<bool, error_storage>>
 {
-    fn_compiler_context& ctx;
-    annotated_entity_identifier expected_result;
-
+    using result_type = std::expected<bool, error_storage>;
     // to do: set a flag to notice unneeded result
     explicit expression_visitor(fn_compiler_context& c)
-        : ctx{ c }
+        : base_expression_visitor{ c }
     {}
 
     expression_visitor(fn_compiler_context& c, annotated_entity_identifier && er)
-        : ctx{ c }
-        , expected_result{ std::move(er) }
+        : base_expression_visitor{ c, std::move(er) }
     {}
 
     //expression_visitor(fn_compiler_context& c, optional<expected_result_t> opter)
@@ -36,9 +35,9 @@ struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
     //    , expected_result{ std::move(opter) }
     //{}
 
-    expression_visitor(fn_compiler_context& c, nullptr_t)
-        : ctx{ c }
-    {}
+    //expression_visitor(fn_compiler_context& c, nullptr_t)
+    //    : base_expression_visitor{ c }
+    //{}
 
     result_type operator()(context_value const&) const;
     result_type operator()(variable_identifier const&) const;
@@ -89,8 +88,6 @@ struct expression_visitor : static_visitor<std::expected<bool, error_storage>>
     }
 
 private:
-    unit& u() const noexcept;
-
     template <typename ExprT>
     result_type apply_cast(entity_identifier, ExprT const& e) const;
 

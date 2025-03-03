@@ -44,10 +44,10 @@ public:
 
     friend inline bool operator==(entity const& l, entity const& r) noexcept { return l.equal(r); }
 
+    friend inline size_t hash_value(entity const& e) noexcept { return e.hash(); }
+
     virtual std::ostream& print_to(std::ostream& os, unit const& u) const;
 };
-
-inline size_t hash_value(entity const& e) noexcept { return e.hash(); }
 
 template <typename ValueT>
 class value_entity : public entity
@@ -78,6 +78,8 @@ public:
 #ifdef SONIA_LANG_DEBUG
         if constexpr (std::is_same_v<ValueT, identifier>) {
             return entity::print_to(os, u) << "identifier_entity("sv << value_.debug_name << ")"sv;
+        } else if constexpr (std::is_same_v<ValueT, bool>) {
+            return entity::print_to(os, u) << "boolean_entity("sv << (value_ ? "true"sv : "false"sv) << ")"sv;
         } else {
             return entity::print_to(os, u) << "value_entity("sv << value_ << ")"sv;
         }
@@ -98,7 +100,6 @@ private:
 //    bool is(fn_compiler_context&, entity_identifier eid) const override { return eid == entity_type_; }
 //};
 
-class pack_entity;
 using string_literal_entity = value_entity<small_string>;
 using bool_literal_entity = value_entity<bool>;
 using integer_literal_entity = value_entity<mp::integer>;
@@ -109,12 +110,11 @@ using qname_identifier_entity = value_entity<qname_identifier>;
 using entity_ptr = shared_ptr<entity>;
 
 class enum_entity;
-class variable_entity;
 class functional_entity;
 class function_entity;
 class external_function_entity;
 class type_entity;
-class variable_entity;
+class extern_variable_entity;
 
 class entity_visitor
 {
@@ -127,13 +127,54 @@ public:
     virtual void operator()(decimal_literal_entity const&) const = 0;
     virtual void operator()(identifier_entity const&) const = 0;
     virtual void operator()(qname_identifier_entity const&) const = 0;
-    virtual void operator()(pack_entity const&) const = 0;
     virtual void operator()(function_entity const&) const = 0;
     virtual void operator()(external_function_entity const&) const = 0;
-    virtual void operator()(variable_entity const&) const = 0;
+    virtual void operator()(extern_variable_entity const&) const = 0;
 
     virtual void operator()(functional_entity const&) const = 0;
+};
 
+class local_variable
+{
+public:
+    annotated_identifier name;
+    entity_identifier type;
+    intptr_t index;
+    bool is_weak = false;
+
+    inline friend size_t hash_value(local_variable const& lv) noexcept
+    {
+        return hash_value(lv.name.value);
+    }
+
+    inline friend bool operator==(local_variable const& l, local_variable const& r) noexcept
+    {
+        return l.name.value == r.name.value;
+    }
+
+    inline friend auto operator<=>(local_variable const& l, local_variable const& r) noexcept
+    {
+        return l.name.value <=> r.name.value;
+    }
+};
+
+struct local_variable_compare
+{
+    using is_transparent = void;
+    inline bool operator()(local_variable const& l, local_variable const& r) const noexcept
+    {
+        return l < r;
+    }
+
+    inline bool operator()(identifier const& l, local_variable const& r) const noexcept
+    {
+        return l < r.name.value;
+    }
+
+    inline bool operator()(local_variable const& l, identifier const& r) const noexcept
+    {
+        return l.name.value < r;
+    }
 };
 
 // ======================================================================== values

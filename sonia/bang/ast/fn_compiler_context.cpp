@@ -236,19 +236,24 @@ fn_compiler_context::~fn_compiler_context()
     expression_store_.splice_back(root_expressions_);
 }
 
-entity_identifier fn_compiler_context::get_bound(identifier name) const
+optional<variant<entity_identifier, local_variable const&>> fn_compiler_context::get_bound(identifier name) const noexcept
 {
+    // first look for local variables
+    if (auto lvit = variables_.find(name); lvit != variables_.end()) {
+        return *lvit;
+    }
+
+    // then look for bound entities
     for (functional_binding const* binding : boost::adaptors::reverse(bindings_)) {
         if (auto optval = binding->lookup(name); optval) {
-            //if (optval.size() == 1) {
-                return get<entity_identifier>(*optval);
-                //if (entity_identifier const* pe = get<entity_identifier>(&optval->front()); pe) return *pe;
-            //} else {
-            //    THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context::get_bound variadic bound value");
-            //}
+            if (entity_identifier const* eid = get<entity_identifier>(optval); eid) return *eid;
+            if (local_variable const* lv = get<local_variable>(optval); lv) return *lv;
+            // temporary entity is bound
+            // it's not propper value to return, so just skip it
+            // ?? or return nullopt ??
         }
     }
-    return {};
+    return nullopt;
 }
 
 compiler_task_tracer::task_guard fn_compiler_context::try_lock_task(compiler_task_id const& tid)
@@ -441,18 +446,18 @@ std::expected<qname_identifier, error_storage> fn_compiler_context::lookup_qname
     return std::unexpected(make_error<undeclared_identifier_error>(name));
 }
 
-std::expected<entity_identifier, error_storage> fn_compiler_context::lookup_entity(annotated_qname const& name)
+variant<entity_identifier, local_variable const&> fn_compiler_context::lookup_entity(annotated_qname const& name)
 {
+    using result_t = variant<entity_identifier, local_variable>;
     if (name.value.is_relative() && name.value.size() == 1) {
         identifier varid = *name.value.begin();
-        entity_identifier eid = get_bound(varid);
-        if (eid) return eid;
+        auto optbv = get_bound(varid);
+        if (optbv) return std::move(*optbv);
     }
 
     functional const* pfn = lookup_functional(name.value);
     if (pfn) return pfn->default_entity(*this);
     return entity_identifier{}; // undeclared
-    //return std::unexpected(make_error<undeclared_identifier_error>(name));
 }
 
 std::expected<functional::match, error_storage> fn_compiler_context::find(builtin_qnid qnid, pure_call_t const& call, annotated_entity_identifier const& expected_result)
@@ -467,8 +472,16 @@ std::expected<functional::match, error_storage> fn_compiler_context::find(qname_
     return fn.find(*this, call, expected_result);
 }
 
-variable_entity& fn_compiler_context::new_variable(annotated_identifier name, entity_identifier t, variable_entity::kind k)
+local_variable & fn_compiler_context::new_variable(annotated_identifier name, entity_identifier t)
 {
+    auto it = variables_.find(name.value);
+    if (it != variables_.end()) {
+        throw identifier_redefinition_error(name, it->name.location);
+    }
+    it = variables_.insert(it, local_variable{ .name = std::move(name), .type = std::move(t), .index = allocate_local_variable_index(), .is_weak = false });
+    return *it;
+    
+#if 0
     qname var_qname = ns() / name.value;
     //variable_entity& var = u().new_variable(var_qname, name.location, t, k);
 
@@ -482,12 +495,13 @@ variable_entity& fn_compiler_context::new_variable(annotated_identifier name, en
         throw exception(u().print(*err));
     }
 
-    if (k != variable_entity::kind::EXTERN) {
-        ve->set_index(allocate_local_variable_index());
-    }
+    ve->set_index(allocate_local_variable_index());
+
     return *ve;
+#endif
 }
 
+#if 0
 variable_entity& fn_compiler_context::create_captured_variable_chain(variable_entity& v)
 {
     if (!parent_) {
@@ -504,6 +518,7 @@ variable_entity& fn_compiler_context::create_captured_variable_chain(variable_en
         return new_captured_variable(name_qv.back(), v.get_type(), parentvar);
     }
 }
+#endif
 
 void fn_compiler_context::finish_frame()
 {

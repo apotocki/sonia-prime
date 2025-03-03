@@ -6,26 +6,27 @@
 #include <expected>
 
 #include "sonia/bang/unit.hpp"
-#include "sonia/bang/semantic.hpp"
-#include "sonia/bang/errors.hpp"
+
+#include "base_expression_visitor.hpp"
 
 namespace sonia::lang::bang {
 
-struct ct_expression_visitor : static_visitor<std::expected<entity_identifier, error_storage>>
+struct ct_expression_visitor 
+    : base_expression_visitor
+    , static_visitor<std::expected<entity_identifier, error_storage>>
 {
-    fn_compiler_context& ctx;
-    annotated_entity_identifier expected_result;
-    bool is_type_expected; // type or entity
+    using result_type = std::expected<entity_identifier, error_storage>;
 
-    explicit ct_expression_visitor(fn_compiler_context& c)
-        : ctx{ c }
+    inline explicit ct_expression_visitor(fn_compiler_context& c) noexcept
+        : base_expression_visitor{ c }
     {}
 
     ct_expression_visitor(fn_compiler_context& c, annotated_entity_identifier&& er, bool is_type_expected_value = true)
-        : ctx{ c }
-        , expected_result{ std::move(er) }
-        , is_type_expected { is_type_expected_value }
-    {}
+        : base_expression_visitor{ c, std::move(er) }
+        
+    {
+        is_type_expected = is_type_expected_value;
+    }
 
     result_type operator()(annotated_bool const&) const;
     result_type operator()(annotated_integer const&) const;
@@ -35,9 +36,12 @@ struct ct_expression_visitor : static_visitor<std::expected<entity_identifier, e
     result_type operator()(annotated_identifier const&) const;
     result_type operator()(annotated_entity_identifier const&) const;
     result_type operator()(function_call_t const&) const;
+    result_type operator()(member_expression_t const&) const;
 
     result_type operator()(variable_identifier const&) const;
     result_type operator()(lambda_t const&) const;
+
+    result_type operator()(opt_named_syntax_expression_list_t const&) const;
 
     template <typename T>
     result_type operator()(T const& v) const
@@ -46,8 +50,6 @@ struct ct_expression_visitor : static_visitor<std::expected<entity_identifier, e
     }
 
 private:
-    unit& u() const noexcept;
-
     template <typename ExprT>
     result_type apply_cast(entity_identifier, ExprT const& e) const;
 

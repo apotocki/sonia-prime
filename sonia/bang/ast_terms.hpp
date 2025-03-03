@@ -79,28 +79,28 @@ struct bang_any_t { BANG_TRIVIAL_CMP(bang_any_t) };
 
 enum class parameter_constraint_modifier_t : uint8_t
 {
-    value_type_constraint = 0,
-    typename_constraint = 2,
-    value_constraint = 3
+    value_type = 0,
+    const_value_type = 1,
+    const_value = 2
 };
 
 // e.g. fn (externalName: string); fn (externalName $internalName: string);
 struct named_parameter_name
 {
-    annotated_identifier external_name;
-    optional<annotated_identifier> internal_name;
+    annotated_identifier external_name; // can not be empty
+    annotated_identifier internal_name; // can be empty
 };
 
 // e.g. fn ($internalName: string); fn (string);
 struct unnamed_parameter_name
 {
-    annotated_identifier internal_name;
+    annotated_identifier internal_name; // can be empty
 };
 
 // e.g. fn ($varName ... : string);
 struct varnamed_parameter_name
 {
-    annotated_identifier varname;
+    annotated_identifier varname; // can not be empty
 };
 
 using parameter_name = variant<named_parameter_name, unnamed_parameter_name, varnamed_parameter_name>;
@@ -111,12 +111,12 @@ struct param_name_retriever : static_visitor<std::tuple<annotated_identifier con
 
     inline result_type operator()(named_parameter_name const& np) const
     {
-        return { &np.external_name, get_pointer(np.internal_name), false };
+        return { &np.external_name, np.internal_name ? &np.internal_name : nullptr, false };
     }
 
     inline result_type operator()(unnamed_parameter_name const& np) const
     {
-        return { nullptr, &np.internal_name, false };
+        return { nullptr, np.internal_name ? &np.internal_name : nullptr, false };
     }
 
     inline result_type operator()(varnamed_parameter_name const& np) const
@@ -557,6 +557,7 @@ struct parameter
     parameter_constraint_modifier_t modifier;
     parameter_constraint_set<ExprT> constraints;
 
+    optional<ExprT> value; // default value
     //parameter() = default;
 
     //explicit inline parameter(parameter_constraint_set_t cs)
@@ -573,24 +574,7 @@ struct parameter
     //inline bool operator==(parameter const&) const = default;
 };
 
-template <typename ExprT>
-struct parameter_woa : parameter<ExprT>
-{
-    using parameter_t = parameter<ExprT>;
-    optional<ExprT> value;
-
-    parameter_woa() = default;
-
-    explicit inline parameter_woa(parameter_t&& p) : parameter_t{ std::move(p) } {}
-
-    template <typename EArgT>
-    inline parameter_woa(parameter_t&& p, EArgT&& earg)
-        : parameter_t{ std::move(p) }
-        , value{ std::forward<EArgT>(earg) }
-    {}
-};
-
-template <typename ExprT> using parameter_woa_list = std::vector<parameter_woa<ExprT>>;
+template <typename ExprT> using parameter_list = std::vector<parameter<ExprT>>;
 
 enum class fn_kind : int8_t
 {
@@ -602,7 +586,7 @@ template <typename ExprT>
 struct fn_pure
 {
     annotated_qname aname;
-    parameter_woa_list<ExprT> parameters;
+    parameter_list<ExprT> parameters;
     optional<ExprT> result;
     fn_kind kind = fn_kind::DEFAULT;
 
@@ -615,7 +599,7 @@ struct lambda : fn_pure<ExprT>
 {
     statement_span body;
 
-    lambda(fn_kind kind, lex::resource_location loc, parameter_woa_list<ExprT>&& params, statement_span&& b, optional<ExprT> rtype = nullopt)
+    lambda(fn_kind kind, lex::resource_location loc, parameter_list<ExprT>&& params, statement_span&& b, optional<ExprT> rtype = nullopt)
         : fn_pure<ExprT>{ annotated_qname{ {}, std::move(loc) }, std::move(params), std::move(rtype), kind }
         , body{ std::move(b) }
     {}
@@ -649,20 +633,22 @@ using lambda_t = lambda<syntax_expression_t>;
 using opt_named_syntax_expression_t = opt_named_term<syntax_expression_t>;
 using opt_named_syntax_expression_list_t = opt_named_syntax_expression_list<syntax_expression_t>;
 
+enum class field_modifier_t : uint8_t
+{
+    value = 0,
+    const_value = 1
+};
+
 struct field_t
 {
     annotated_identifier name;
-    parameter_constraint_modifier_t modifier;
+    field_modifier_t modifier;
     syntax_expression_t type;
     optional<syntax_expression_t> value;
 };
 using field_list_t = std::vector<field_t>;
 
-using parameter_list_t = std::vector<parameter_t>;
-
-using parameter_woa_t = parameter_woa<syntax_expression_t>;
-using parameter_woa_list_t = parameter_woa_list<syntax_expression_t>;
-
+using parameter_list_t = parameter_list<syntax_expression_t>;
 
 using expression_list_t = small_vector<syntax_expression_t, 4>;
 using opt_chain_t = opt_chain<syntax_expression_t>;
@@ -846,7 +832,7 @@ struct fn_decl_t : fn_pure_t
 struct using_decl
 {
     annotated_qname aname;
-    optional<parameter_woa_list_t> parameters;
+    optional<parameter_list_t> parameters;
     syntax_expression_t expression;
 
     qname_view name() const { return aname.value; }
@@ -904,7 +890,7 @@ struct type_decl
 {
     annotated_qname_identifier aname;
     extension_list_t bases;
-    parameter_woa_list_t parameters;
+    parameter_list_t parameters;
 
     qname_identifier name() const { return aname.value; }
     lex::resource_location const& location() const { return aname.location; }

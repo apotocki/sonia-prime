@@ -17,17 +17,22 @@
 #include "entities/functions/external_fn_pattern.hpp"
 #include "entities/functions/create_identifier_pattern.hpp"
 #include "entities/functions/extern/to_string_pattern.hpp"
-#include "entities/tuple/make_tuple_pattern.hpp"
+
+#include "entities/tuple/tuple_make_pattern.hpp"
 #include "entities/tuple/tuple_get_pattern.hpp"
-#include "entities/tuple/tuple_set_pattern.hpp"
+#include "entities/tuple/set_pattern.hpp"
+#include "entities/tuple/tuple_empty_pattern.hpp"
+#include "entities/tuple/tuple_head_pattern.hpp"
+#include "entities/tuple/tuple_tail_pattern.hpp"
+
 #include "entities/struct/new_struct_pattern.hpp"
 #include "entities/struct/struct_get_pattern.hpp"
 
 #include "entities/metaobject/metaobject_pattern.hpp"
 #include "entities/metaobject/typeof_pattern.hpp"
-#include "entities/metaobject/head_pattern.hpp"
-#include "entities/metaobject/tail_pattern.hpp"
-#include "entities/metaobject/empty_pattern.hpp"
+#include "entities/metaobject/metaobject_head_pattern.hpp"
+#include "entities/metaobject/metaobject_tail_pattern.hpp"
+#include "entities/metaobject/metaobject_empty_pattern.hpp"
 
 #include "semantic/expression_printer.hpp"
 
@@ -198,9 +203,7 @@ void unit::setup_type(string_view type_name, qname_identifier& qnid, entity_iden
     functional& some_type_fnl = fregistry().resolve(qnid);
     auto some_type_entity = make_shared<basic_signatured_entity>(get(builtin_eid::typename_), entity_signature{ qnid });
     eregistry_insert(some_type_entity);
-    if (auto err = some_type_fnl.set_default_entity(annotated_entity_identifier{ some_type_entity->id() }); err) {
-        throw exception(print(*err));
-    }
+    some_type_fnl.set_default_entity(annotated_entity_identifier{ some_type_entity->id() });
     eid = some_type_entity->id();
 }
 
@@ -242,6 +245,11 @@ statement_span unit::push_ast(fs::path const&, managed_statement_list&& msl)
         return sp;
     }
     return {};
+}
+
+void unit::store(semantic::managed_expression_list&& el)
+{
+    expressions_.splice_back(el);
 }
 
 template <typename OutputIteratorT, typename UndefinedFT>
@@ -843,6 +851,7 @@ unit::unit()
     , semantic_expression_list_entry_pool_{ 128, 128 }
     , statements_entry_pool_{ 128, 128 }
     , ast_{ *this }
+    , expressions_ { *this }
 {
     //set_extern("string(const __id)"sv, &bang_print_string);
 
@@ -960,7 +969,7 @@ unit::unit()
     eregistry_insert(any_entity);
     builtin_eids_[(size_t)builtin_eid::any] = any_entity->id();
     functional& any_fnl = fregistry().resolve(get(builtin_qnid::any));
-    BOOST_VERIFY(!any_fnl.set_default_entity(annotated_entity_identifier{ any_entity->id() }));
+    any_fnl.set_default_entity(annotated_entity_identifier{ any_entity->id() });
 
     // bool
     setup_type("bool"sv, builtin_qnids_[(size_t)builtin_qnid::boolean], builtin_eids_[(size_t)builtin_eid::boolean]);
@@ -1006,7 +1015,7 @@ unit::unit()
     /////// built in patterns
     // make_tuple(...) -> tuple(...)
     functional& make_tuple_fnl = fregistry().resolve(get(builtin_qnid::make_tuple));
-    make_tuple_fnl.push(make_shared<make_tuple_pattern>());
+    make_tuple_fnl.push(make_shared<tuple_make_pattern>());
     
     functional& get_fnl = fregistry().resolve(get(builtin_qnid::get));
     // get(self: tuple(), property: __identifier)->T;
@@ -1033,14 +1042,17 @@ unit::unit()
     // head(metaobject) -> ???
     functional& head_fnl = fregistry().resolve(get(builtin_qnid::head));
     head_fnl.push(make_shared<metaobject_head_pattern>());
+    head_fnl.push(make_shared<tuple_head_pattern>());
 
     // tail(metaobject) -> @metaobject
     functional& tail_fnl = fregistry().resolve(get(builtin_qnid::tail));
     tail_fnl.push(make_shared<metaobject_tail_pattern>());
+    tail_fnl.push(make_shared<tuple_tail_pattern>());
 
     // empty(metaobject) -> bool
     functional& empty_fnl = fregistry().resolve(get(builtin_qnid::empty));
     empty_fnl.push(make_shared<metaobject_empty_pattern>());
+    empty_fnl.push(make_shared<tuple_empty_pattern>());
 
     // new(type: typename $T @struct, ...) -> $T
     functional& newfnl = fregistry().resolve(get(builtin_qnid::new_));
@@ -1064,6 +1076,7 @@ unit::unit()
     builtin_qnids_[(size_t)builtin_qnid::fn] = make_qname_identifier("__fn"sv);
     
     builtin_eids_[(size_t)builtin_eid::arrayify] = set_builtin_extern("__arrayify"sv, &bang_arrayify);
+    builtin_eids_[(size_t)builtin_eid::array_tail] = set_builtin_extern("__array_tail"sv, &bang_array_tail);
     builtin_eids_[(size_t)builtin_eid::array_at] = set_builtin_extern("__array_at"sv, &bang_array_at);
     //set_extern<external_fn_pattern>("arrayify(...)->any"sv, &bang_arrayify);
 
@@ -1071,7 +1084,7 @@ unit::unit()
     //set_extern("implicit_cast(to: typename string, _)->string"sv, &bang_tostring);
     set_const_extern<to_string_pattern>("to_string(const __identifier)->string"sv);
     set_extern<external_fn_pattern>("to_string(_)->string"sv, &bang_tostring);
-    set_extern<external_fn_pattern>("implicit_cast(to: typename decimal, integer)->decimal"sv, &bang_int2dec);
+    set_extern<external_fn_pattern>("implicit_cast(integer)->decimal"sv, &bang_int2dec);
     set_extern<external_fn_pattern>("create_extern_object(string)->object"sv, &bang_create_extern_object);
     //set_extern<external_fn_pattern>("set(self: object, property: const __identifier, any)"sv, &bang_set_object_property);
     set_extern<external_fn_pattern>("set(self: object, property: string, any)->object"sv, &bang_set_object_property);
@@ -1080,8 +1093,8 @@ unit::unit()
     set_extern<external_fn_pattern>("assert(bool)"sv, &bang_assert);
 
     // temporary
-    set_extern<external_fn_pattern>("equal(any,any)->bool"sv, &bang_any_equal);
-    set_extern<external_fn_pattern>("negate(any)->bool"sv, &bang_negate);
+    set_extern<external_fn_pattern>("equal(_,_)->bool"sv, &bang_any_equal);
+    //set_extern<external_fn_pattern>("negate(_)->bool"sv, &bang_negate);
     set_extern<external_fn_pattern>("__plus(integer,integer)->integer"sv, &bang_operator_plus_integer);
     set_extern<external_fn_pattern>("__plus(decimal,decimal)->decimal"sv, &bang_operator_plus_decimal);
 }

@@ -22,8 +22,6 @@
 
 namespace sonia::lang::bang {
 
-inline unit& expression_visitor::u() const noexcept { return ctx.u(); }
-
 template <typename ExprT>
 inline expression_visitor::result_type expression_visitor::apply_cast(entity_identifier typeeid, ExprT const& e) const
 {
@@ -47,7 +45,7 @@ inline expression_visitor::result_type expression_visitor::apply_cast(entity_ide
 
     lex::resource_location expr_loc = get_start_location(e);
     pure_call_t cast_call{ expected_result.location };
-    cast_call.emplace_back(annotated_identifier{ u().get(builtin_id::to) }, annotated_entity_identifier{ expected_result.value, expected_result.location });
+    //cast_call.emplace_back(annotated_identifier{ u().get(builtin_id::to) }, annotated_entity_identifier{ expected_result.value, expected_result.location });
     cast_call.emplace_back(context_value{ typeeid, expr_loc });
 
     auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expected_result);
@@ -122,13 +120,27 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
 {
  //   THROW_NOT_IMPLEMENTED_ERROR("expression_visitor variable_identifier");
 #if 1
-    auto opteid = ctx.lookup_entity(var.name);
-    if (!opteid) return std::unexpected(std::move(opteid.error()));
-    if (auto eid = *opteid; eid) {
-        ctx.append_expression(semantic::push_value{ eid });
-        entity const& ent = u().eregistry_get(eid);
-        return apply_cast(ent.get_type(), var);
-    }
+    auto optent = ctx.lookup_entity(var.name);
+    return apply_visitor(make_functional_visitor<result_type>([this, &var](auto eid_or_var) -> result_type
+        {
+            if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, entity_identifier>) {
+                if (eid_or_var) {
+                    ctx.append_expression(semantic::push_value{ eid_or_var });
+                    entity const& ent = u().eregistry_get(eid_or_var);
+                    return apply_cast(ent.get_type(), var);
+                }
+                return std::unexpected(make_error<undeclared_identifier_error>(var.name));
+            } else { // if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, local_variable>) {
+                ctx.append_expression(semantic::push_local_variable{ eid_or_var });
+                return apply_cast(eid_or_var.type, var);
+            }
+        }), optent);
+
+    //if (auto eid = *opteid; eid) {
+    //    ctx.append_expression(semantic::push_value{ eid });
+    //    entity const& ent = u().eregistry_get(eid);
+    //    return apply_cast(ent.get_type(), var);
+    //}
 #if 0
         shared_ptr<entity> e = ctx.resolve_entity(var.name.value);
         if (auto varptr = dynamic_cast<variable_entity*>(e.get()); varptr) {
@@ -168,7 +180,7 @@ expression_visitor::result_type expression_visitor::operator()(variable_identifi
         }
         */
 #endif
-    return std::unexpected(make_error<undeclared_identifier_error>(var.name));
+    //return std::unexpected(make_error<undeclared_identifier_error>(var.name));
 #endif
 }
 
@@ -685,6 +697,7 @@ template <std::derived_from<pure_call_t> CallExpressionT>
 expression_visitor::result_type expression_visitor::operator()(builtin_qnid qnid, CallExpressionT const& call) const
 {
     auto match = ctx.find(qnid, call, expected_result);
+    if (!match) return std::unexpected(std::move(match.error()));
     if (auto err = match->apply(ctx); err) return std::unexpected(std::move(err));
     return apply_cast(ctx.context_type, call);
 }
@@ -785,23 +798,34 @@ expression_visitor::result_type expression_visitor::operator()(chained_expressio
 
 expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_expression_list_t const& nel) const
 {
-    if (!expected_result) {
-        // e.g. case: let val = (a, b, c)
-        pure_call_t tuple_call{ nel.location };
-        for (opt_named_syntax_expression_t const& ne : nel) {
-            if (auto const* pname = ne.name(); pname) {
-                tuple_call.emplace_back(annotated_identifier{pname->value}, ne.value());
-            } else {
-                tuple_call.emplace_back(ne.value());
-            }
+    auto res = base_expression_visitor::operator()(nel);
+    if (!res) return std::unexpected(res.error());
+    return apply_visitor(make_functional_visitor<result_type>([this, casted = res->second](auto & v) -> result_type {
+        if constexpr (std::is_same_v<semantic::managed_expression_list, std::decay_t<decltype(v)>>) {
+            ctx.expressions().splice_back(v);
+            return casted;
+        } else {
+            THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::operator()(opt_named_syntax_expression_list_t const&)");
         }
-        auto match = ctx.find(builtin_qnid::make_tuple, tuple_call, expected_result);
-        if (!match) return std::unexpected(match.error());
-       
-        if (auto err = match->apply(ctx); err)
-            return std::unexpected(std::move(err));
-        return false; // no implicit cast
-    }
+    }), res->first);
+
+    //if (!expected_result) {
+    //    // e.g. case: let val = (a, b, c)
+    //    pure_call_t tuple_call{ nel.location };
+    //    for (opt_named_syntax_expression_t const& ne : nel) {
+    //        if (auto const* pname = ne.name(); pname) {
+    //            tuple_call.emplace_back(annotated_identifier{pname->value}, ne.value());
+    //        } else {
+    //            tuple_call.emplace_back(ne.value());
+    //        }
+    //    }
+    //    auto match = ctx.find(builtin_qnid::make_tuple, tuple_call, expected_result);
+    //    if (!match) return std::unexpected(match.error());
+    //   
+    //    if (auto err = match->apply(ctx); err)
+    //        return std::unexpected(std::move(err));
+    //    return false; // no implicit cast
+    //}
         ////// build tuple
         //// build tuple signature
         //entity_signature isg{ u().get_tuple_qname_identifier() };

@@ -289,6 +289,9 @@
     <Filter Include="sonia.bang\utility">
       <UniqueIdentifier>{6eb522b8-21df-4b83-b9fb-46c592be6d9b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.bang\entities\enum">
+      <UniqueIdentifier>{ed5d4027-b37c-44de-86a0-d0c0b86a6639}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -2034,9 +2037,6 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_visitor.hpp">
       <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\enum_entity.hpp">
-      <Filter>sonia.bang\entities</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\functional_entity.hpp">
       <Filter>sonia.bang\entities</Filter>
     </ClInclude>
@@ -2289,7 +2289,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_entity.hpp">
       <Filter>sonia.bang\entities\struct</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\struct\new_struct_pattern.hpp">
+    <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_new_pattern.hpp">
       <Filter>sonia.bang\entities\struct</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_make_pattern.hpp">
@@ -2327,9 +2327,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\concurrency\call_once.hpp">
       <Filter>sonia.utility\concurrency</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\set_pattern.hpp">
-      <Filter>sonia.bang\entities\tuple</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\ast\functional_declaration_visitor.hpp">
       <Filter>sonia.bang\ast</Filter>
@@ -2377,6 +2374,21 @@
       <Filter>sonia.bang\errors</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\value_type_match_visitor.hpp">
+      <Filter>sonia.bang\entities\functions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_set_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\enum\enum_entity.hpp">
+      <Filter>sonia.bang\entities\enum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\enum\enum_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\enum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functions\match_utility.ipp">
       <Filter>sonia.bang\entities\functions</Filter>
     </ClInclude>
   </ItemGroup>
@@ -2663,9 +2675,6 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\type_entity.cpp">
       <Filter>sonia.bang\entities</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\entities\enum_entity.cpp">
-      <Filter>sonia.bang\entities</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp">
       <Filter>sonia.bang</Filter>
     </ClCompile>
@@ -2771,7 +2780,7 @@
     <ClCompile Include="..\..\..\sonia\bang\bang_ast_terms.cpp">
       <Filter>sonia.bang</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\entities\struct\new_struct_pattern.cpp">
+    <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_new_pattern.cpp">
       <Filter>sonia.bang\entities\struct</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_make_pattern.cpp">
@@ -2851,6 +2860,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\value_type_match_visitor.cpp">
       <Filter>sonia.bang\entities\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\enum\enum_entity.cpp">
+      <Filter>sonia.bang\entities\enum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\enum\enum_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\enum</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

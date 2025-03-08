@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "new_struct_pattern.hpp"
+#include "struct_new_pattern.hpp"
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
@@ -19,34 +19,18 @@ namespace sonia::lang::bang {
 
 class new_struct_match_descriptor : public functional_match_descriptor
 {
-    struct_entity const& se_;
-    functional::match init_match_;
-    //small_vector<std::tuple<annotated_identifier, functional::match>, 16> arguments_;
-
 public:
-    using functional_match_descriptor::functional_match_descriptor;
+    struct_entity const& se;
+    functional::match init_match;
 
     new_struct_match_descriptor(unit& u, struct_entity const& se, functional::match m)
         : functional_match_descriptor{ u }
-        , se_{ se }
-        , init_match_{ std::move(m) }
+        , se{ se }
+        , init_match{ std::move(m) }
     {}
-
-    error_storage apply_init(fn_compiler_context& ctx)
-    {
-        return init_match_.apply(ctx);
-    }
-
-    //void push_back(annotated_identifier const* name, functional::match&& m)
-    //{
-    //    arguments_.emplace_back(name ? *name : annotated_identifier{}, std::move(m));
-    //}
-
-    inline struct_entity const& get_struct_entity() const noexcept { return se_; }
-    //inline span<std::tuple<annotated_identifier, functional::match>> arguments() noexcept { return arguments_; }
 };
 
-std::expected<functional_match_descriptor_ptr, error_storage> new_struct_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
 {
     unit& u = ctx.u();
 
@@ -127,7 +111,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> new_struct_pattern
 #endif
 }
 
-error_storage new_struct_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> struct_new_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     // create tuple instance
     unit& u = ctx.u();
@@ -135,7 +119,7 @@ error_storage new_struct_pattern::apply(fn_compiler_context& ctx, functional_mat
     BOOST_ASSERT(dynamic_cast<new_struct_match_descriptor*>(&md));
     new_struct_match_descriptor& nsmd = static_cast<new_struct_match_descriptor&>(md);
 
-    return nsmd.apply_init(ctx);
+    return nsmd.init_match.generic_apply(ctx);
 #if 0
     struct_entity const& se = nsmd.get_struct_entity();
     auto uteid = se.underlying_tuple_eid(ctx);
@@ -204,17 +188,14 @@ error_storage new_struct_pattern::apply(fn_compiler_context& ctx, functional_mat
     //struct_utility::create_tuple_instance(ctx, uteid);
 
     // assign fields
-    //THROW_NOT_IMPLEMENTED_ERROR("new_struct_pattern::apply");
+    //THROW_NOT_IMPLEMENTED_ERROR("struct_new_pattern::apply");
 }
 
-std::expected<entity_identifier, error_storage> new_struct_pattern::const_apply(fn_compiler_context&, functional_match_descriptor&) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("new_struct_pattern::const_apply");
-}
 
-std::ostream& new_struct_pattern::print(unit const&, std::ostream& s) const
+
+std::ostream& struct_new_pattern::print(unit const&, std::ostream& s) const
 {
-    return s << "new structure";
+    return s << "new structure"sv;
 }
 
 }

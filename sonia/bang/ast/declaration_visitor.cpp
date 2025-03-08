@@ -9,12 +9,13 @@
 #include "expression_visitor.hpp"
 #include "ct_expression_visitor.hpp"
 
-#include "sonia/bang/entities/enum_entity.hpp"
-#include "sonia/bang/entities/type_entity.hpp"
+//#include "sonia/bang/entities/type_entity.hpp"
 
 #include "sonia/bang/entities/struct/struct_entity.hpp"
 #include "sonia/bang/entities/struct/struct_fn_pattern.hpp"
 #include "sonia/bang/entities/struct/struct_init_pattern.hpp"
+
+#include "sonia/bang/entities/enum/enum_entity.hpp"
 
 #include "sonia/bang/entities/functional_entity.hpp"
 #include "sonia/bang/entities/functions/basic_fn_pattern.hpp"
@@ -88,10 +89,6 @@ error_storage declaration_visitor::operator()(using_decl const& ud) const
         error_storage err = fnptrn->init(ctx, *ud.parameters);
         if (!err) {
             fnptrn->result_constraints.emplace(parameter_constraint_set_t{ .type_expression = ud.expression }, parameter_constraint_modifier_t::const_value);
-            //managed_statement_list sts{ u() };
-            //sts.emplace_back(return_decl_t{ ud.expression });
-            //fnptrn->set_body(sts);
-            //u().push_ast({}, std::move(sts));
             fnl.push(std::move(fnptrn));
         }
         return err;
@@ -155,6 +152,17 @@ error_storage declaration_visitor::operator()(struct_decl const& sd) const
         }
         return error_storage{};
     }), sd.decl);
+}
+
+error_storage declaration_visitor::operator()(enum_decl const& ed) const
+{
+    unit& u = ctx.u();
+    functional& fnl = u.fregistry().resolve(ctx.ns() / ed.name.value);
+    auto eent = make_shared<enum_entity>(qname{ fnl.name() }, u.get(builtin_eid::typename_), entity_signature{ fnl.id() }, ed.cases);
+    u.eregistry_insert(eent);
+    annotated_entity_identifier aeid{ eent->id(), ed.name.location };
+    fnl.set_default_entity(aeid);
+    return {};
 }
 
 error_storage declaration_visitor::operator()(expression_statement_t const& ed) const
@@ -563,29 +571,50 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         }
         vartype = *optvartype;
     }
-    ctx.context_type = u().get(builtin_eid::void_);
-    if (ld.expression) {
-        auto evis = vartype ? expression_visitor{ ctx, { vartype, ld.location() } } : expression_visitor{ ctx };
-        if (auto res = apply_visitor(evis, *ld.expression); !res) {
-            /*
-            BOOST_ASSERT(vartype);
-            throw exception(ctx.u().print(basic_general_error{ld.location(),
-                ("`%1%` initializing: can not convert to `%2%`\n%3%"_fmt % ctx.u().print(ld.name()) % ctx.u().print(*vartype) %
-                    ctx.u().print(*etype.error())).str()
-            }));
-            */
-            return std::move(res.error());
+
+    auto res = apply_visitor(base_expression_visitor{ ctx, { vartype, ld.location() } }, ld.expression.value_or(annotated_nil{ ld.location() }));
+    if (!res) { return std::move(res.error()); }
+    return apply_visitor(make_functional_visitor<error_storage>([this, &ld, vartype](auto & v) {
+        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+            entity const& e = u().eregistry_get(v);
+            BOOST_ASSERT(!vartype || vartype == e.get_type());
+            if (dynamic_cast<empty_entity const*>(&e)) {
+                ctx.new_constant(ld.aname, v);
+                return error_storage{};
+            } else {
+                u().push_back_expression(ctx.expressions(), semantic::push_value{ v });
+                ctx.context_type = e.get_type();
+            }
+        } else {
+            BOOST_ASSERT(!vartype || vartype == ctx.context_type);
+            ctx.expressions().splice_back(v);
         }
-    }
-    local_variable ve = ctx.new_variable(ld.aname, vartype.self_or(ctx.context_type));
-    ve.is_weak = ld.weakness;
-    if (!ld.expression) {
-        // to do: check nullability
-        ctx.append_expression(semantic::push_value{ null }); // just declaration, initialization just declared variable
-    } 
-    // else do not set variable because we have a result of the expression on stack and consider it as a variable initialization
-    // if (ld.expression) { ctx.append_expression(semantic::set_variable{ &ve }); }
-    return {};
+        local_variable ve = ctx.new_variable(ld.aname, ctx.context_type);
+        ve.is_weak = ld.weakness;
+        return error_storage{};
+    }), res->first);
+
+    //    auto evis = vartype ? expression_visitor{ ctx, { vartype, ld.location() } } : expression_visitor{ ctx };
+    //    if (auto res = apply_visitor(evis, *ld.expression); !res) {
+    //        /*
+    //        BOOST_ASSERT(vartype);
+    //        throw exception(ctx.u().print(basic_general_error{ld.location(),
+    //            ("`%1%` initializing: can not convert to `%2%`\n%3%"_fmt % ctx.u().print(ld.name()) % ctx.u().print(*vartype) %
+    //                ctx.u().print(*etype.error())).str()
+    //        }));
+    //        */
+    //        return std::move(res.error());
+    //    }
+    //}
+    //local_variable ve = ctx.new_variable(ld.aname, vartype.self_or(ctx.context_type));
+    //ve.is_weak = ld.weakness;
+    //if (!ld.expression) {
+    //    // to do: check nullability
+    //    ctx.append_expression(semantic::push_value{ null }); // just declaration, initialization just declared variable
+    //} 
+    //// else do not set variable because we have a result of the expression on stack and consider it as a variable initialization
+    //// if (ld.expression) { ctx.append_expression(semantic::set_variable{ &ve }); }
+    //return {};
 }
 
 //void declaration_visitor::operator()(assign_decl_t const& ad) const

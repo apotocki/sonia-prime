@@ -141,11 +141,13 @@ IN						"in"
 IF						"if"
 ELSE					"else"
 
+NIL_WORD                "nil"
 TRUE_WORD				"true"
 FALSE_WORD				"false"
 
 WEAK					"weak"
 CONST					"const"
+MUT						"mut"
 
 APOSTROPHE				"`"
 AT_SYMBOL				"@"
@@ -328,7 +330,12 @@ HASHTAG					"#"
 
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
 	{CONST} { return (bang_lang::parser::token::CONST); }
+	{MUT} { return (bang_lang::parser::token::MUT); }
 
+	{NIL_WORD} {
+		variant_emplace(annotated_nil{location});
+		return (bang_lang::parser::token::NIL_WORD);
+	}
 	{TRUE_WORD} {
 		variant_emplace(annotated_bool{true, location});
 		return (bang_lang::parser::token::TRUE_WORD);

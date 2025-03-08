@@ -169,6 +169,11 @@ public:
         this->operator()(ie.value());
     }
 
+    void operator()(empty_entity const&) const override
+    {
+        fnbuilder_.append_push_pooled_const(smart_blob{}); // === nil
+    }
+
     void operator()(functional_entity const&) const override
     {
         THROW_NOT_IMPLEMENTED_ERROR();

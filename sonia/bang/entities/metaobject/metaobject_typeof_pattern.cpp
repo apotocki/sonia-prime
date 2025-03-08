@@ -51,8 +51,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
     if (!prop) return std::unexpected(std::move(prop.error()));
 
     auto pmd = make_shared<functional_match_descriptor>(u);
-    pmd->get_match_result(objid).append_result(false, *obj);
-    pmd->get_match_result(propid).append_result(false, *prop);
+    pmd->get_match_result(objid).append_result(*obj);
+    pmd->get_match_result(propid).append_result(*prop);
     pmd->location = call.location();
     return pmd;
 }
@@ -60,8 +60,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
 std::expected<entity_identifier, error_storage> metaobject_typeof_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    entity_identifier mobj = md.get_match_result(u.get(builtin_id::object)).result.front();
-    entity_identifier prop = md.get_match_result(u.get(builtin_id::property)).result.front();
+    entity_identifier mobj = md.get_match_result(u.get(builtin_id::object)).results.front().first;
+    entity_identifier prop = md.get_match_result(u.get(builtin_id::property)).results.front().first;
 
     entity const& metaobject_ent = u.eregistry_get(mobj);
     entity_signature const* objsignature = metaobject_ent.signature();

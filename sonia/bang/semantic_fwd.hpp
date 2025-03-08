@@ -49,6 +49,8 @@ public:
     virtual std::ostream& print_to(std::ostream& os, unit const& u) const;
 };
 
+using entity_ptr = shared_ptr<entity>;
+
 template <typename ValueT>
 class value_entity : public entity
 {
@@ -91,15 +93,6 @@ private:
     ValueT value_;
 };
 
-//class basic_entity : public entity
-//{
-//    entity_identifier entity_type_;
-//public:
-//    using entity::entity;
-//    void set_type(entity_identifier eid) { entity_type_ = eid; }
-//    bool is(fn_compiler_context&, entity_identifier eid) const override { return eid == entity_type_; }
-//};
-
 using string_literal_entity = value_entity<small_string>;
 using bool_literal_entity = value_entity<bool>;
 using integer_literal_entity = value_entity<mp::integer>;
@@ -107,8 +100,7 @@ using decimal_literal_entity = value_entity<mp::decimal>;
 using identifier_entity = value_entity<identifier>;
 using qname_identifier_entity = value_entity<qname_identifier>;
 
-using entity_ptr = shared_ptr<entity>;
-
+class empty_entity;
 class enum_entity;
 class functional_entity;
 class function_entity;
@@ -127,11 +119,34 @@ public:
     virtual void operator()(decimal_literal_entity const&) const = 0;
     virtual void operator()(identifier_entity const&) const = 0;
     virtual void operator()(qname_identifier_entity const&) const = 0;
+    virtual void operator()(empty_entity const&) const = 0;
+
     virtual void operator()(function_entity const&) const = 0;
     virtual void operator()(external_function_entity const&) const = 0;
     virtual void operator()(extern_variable_entity const&) const = 0;
 
     virtual void operator()(functional_entity const&) const = 0;
+};
+
+// typed empty_entity: entities with different types are not equal
+class empty_entity : public entity
+{
+public:
+    inline explicit empty_entity(entity_identifier type) noexcept { set_type(type); }
+
+    void visit(entity_visitor const& v) const override { v(*this); }
+
+    bool equal(entity const& rhs) const noexcept override
+    {
+        if (empty_entity const* pr = dynamic_cast<empty_entity const*>(&rhs); pr) {
+            return pr->get_type() == get_type();
+        }
+        return false;
+    }
+
+    size_t hash() const noexcept override { return hash_value(get_type()); }
+
+    std::ostream& print_to(std::ostream& os, unit const& u) const override;
 };
 
 class local_variable

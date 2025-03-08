@@ -19,7 +19,7 @@ public:
 
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const override;
 
-    std::ostream& print(unit const&, std::ostream& s) const override { return s << "tail(tuple)"sv; }
+    std::ostream& print(unit const&, std::ostream& s) const override { return s << "tail(@tuple)"sv; }
 };
 
 }

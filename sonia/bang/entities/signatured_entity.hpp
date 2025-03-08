@@ -25,6 +25,10 @@ struct field_descriptor
     entity_identifier entity_id_;
     bool is_const_;
 
+    inline explicit field_descriptor(entity_identifier eid = {}, bool is_const_val = false) noexcept
+        : entity_id_{ eid }, is_const_{ is_const_val }
+    {}
+
     inline entity_identifier entity_id() const noexcept { return entity_id_; }
     inline bool is_const() const noexcept { return is_const_; }
 

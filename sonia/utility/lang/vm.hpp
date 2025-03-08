@@ -665,7 +665,7 @@ struct printer
 
     inline void operator()(identity_type<op::pushfp>, ContextT& ctx, size_t address) const
     {
-        generic_print(address, "pushfp"sv) << "\n";
+        generic_print(address, "pushfp"sv) << ", fp: "sv << std::dec << static_cast<uint32_t>(ctx.stack_size()) << "\n";
     }
 
     inline void operator()(identity_type<op::popfp>, ContextT& ctx, size_t address) const

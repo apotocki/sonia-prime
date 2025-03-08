@@ -17,7 +17,7 @@ public:
 
     std::expected<application_result_t, error_storage> generic_apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
-    std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const override;
+    //std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override { return s << "head(tuple)"sv; }
 };

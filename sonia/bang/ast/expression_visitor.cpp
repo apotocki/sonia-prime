@@ -11,8 +11,8 @@
 #include "sonia/utility/scope_exit.hpp"
 
 #include "fn_compiler_context.hpp"
-#include "../entities/enum_entity.hpp"
-#include "../entities/functional_entity.hpp"
+#include "sonia/bang/entities/enum/enum_entity.hpp"
+#include "sonia/bang/entities/functional_entity.hpp"
 
 #include "ct_expression_visitor.hpp"
 

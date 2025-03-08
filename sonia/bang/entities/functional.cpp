@@ -23,22 +23,25 @@ void functional_binding_set::reset() noexcept
 
 functional_binding::value_type const* functional_binding_set::lookup(identifier id) const noexcept
 {
-    auto it = std::lower_bound(binding_names_.begin(), binding_names_.end(), id);
-    if (it == binding_names_.end() || *it != id) return nullptr;
-    return &binding_[it - binding_names_.begin()];
-    //auto bit = it;
-    //for (++it; it != binding_names_.end() && *it == id; ++it);
-    //return span{ binding_.data() + (bit - binding_names_.begin()), static_cast<size_t>(it - bit) };
+    return lookup(id, nullptr);
 }
 
-void functional_binding_set::emplace_back(annotated_identifier id, value_type value)
+functional_binding::value_type const* functional_binding_set::lookup(identifier id, lex::resource_location const** ppl) const noexcept
+{
+    auto it = std::lower_bound(binding_names_.begin(), binding_names_.end(), id);
+    if (it == binding_names_.end() || *it != id) return nullptr;
+    if (ppl) *ppl = &binding_locations_[it - binding_names_.begin()];
+    return &binding_[it - binding_names_.begin()];
+}
+
+functional_binding::value_type& functional_binding_set::emplace_back(annotated_identifier id, value_type value)
 {
     auto it = std::lower_bound(binding_names_.begin(), binding_names_.end(), id.value);
     if (it == binding_names_.end() || *it != id.value) {
         it = binding_names_.emplace(it, id.value);
         auto pos = it - binding_names_.begin();
-        binding_.emplace(binding_.begin() + pos, std::move(value));
         binding_locations_.emplace(binding_locations_.begin() + pos, id.location);
+        return *binding_.emplace(binding_.begin() + pos, std::move(value));
     } else {
         THROW_INTERNAL_ERROR("functional_binding_set::emplace_back duplicate binding");
         //for (++it; it != binding_names_.end() && *it == id; ++it);
@@ -46,56 +49,57 @@ void functional_binding_set::emplace_back(annotated_identifier id, value_type va
     }
 }
 
-void parameter_match_result::append_result(bool variadic, entity_identifier r, se_cont_iterator before_start_it, semantic::expression_list_t& exprs)
+void parameter_match_result::append_result(entity_identifier r, se_iterator before_start_it, semantic::expression_list_t& exprs)
 {
-    set_variadic(variadic);
-    set_constexpr(false);
-    result.emplace_back(r);
-
+    results.emplace_back(r, semantic::expression_span{});
     if (exprs) {
+        auto& el = results.back().second;
         if (before_start_it == exprs.end()) {
-            before_start_it = exprs.begin();
-            BOOST_ASSERT(before_start_it != exprs.end());
+            el = exprs; // semantic::expression_span{ exprs };
         } else {
             ++before_start_it;
-            BOOST_ASSERT(before_start_it != exprs.end());
+            if (before_start_it != exprs.end()) {
+                //semantic::expression_entry* b = static_cast<semantic::expression_entry*>(&*before_start_it.base());
+                //semantic::expression_entry* e = static_cast<semantic::expression_entry*>(&exprs.back_entry());
+                semantic::expression_entry_type* b = &*before_start_it.base();
+                semantic::expression_entry_type* e = &exprs.back_entry();
+                el = semantic::expression_span{ b, e };
+                //el = semantic::expression_span{ &*before_start_it.base(), &exprs.back_entry() };
+            }
         }
-        expressions.emplace_back(before_start_it, exprs.last());
     }
 }
 
-void parameter_match_result::append_result(bool variadic, entity_identifier r)
+void parameter_match_result::append_result(entity_identifier r)
 {
-    set_variadic(variadic);
-    set_constexpr(true);
-    result.emplace_back(r);
+    results.emplace_back(r, nullopt);
 }
 
-void parameter_match_result::set_constexpr(bool ce_val)
-{
-    if (mod == (uint8_t)modifier::undefined) {
-        mod = (uint8_t)(ce_val ? modifier::is_constexpr : modifier::is_expr);
-    } else if (ce_val) {
-        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_expr));
-        mod |= (uint8_t)modifier::is_constexpr;
-    } else {
-        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_constexpr));
-        mod |= (uint8_t)modifier::is_expr;
-    }
-}
-
-void parameter_match_result::set_variadic(bool v_val)
-{
-    if (mod == (uint8_t)modifier::undefined) {
-        mod = (uint8_t)(v_val ? modifier::is_variadic : modifier::is_uniadic);
-    } else if (v_val) {
-        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_uniadic));
-        mod |= (uint8_t)modifier::is_variadic;
-    } else {
-        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_variadic));
-        mod |= (uint8_t)modifier::is_uniadic;
-    }
-}
+//void parameter_match_result::set_constexpr(bool ce_val)
+//{
+//    if (mod == (uint8_t)modifier::undefined) {
+//        mod = (uint8_t)(ce_val ? modifier::is_constexpr : modifier::is_expr);
+//    } else if (ce_val) {
+//        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_expr));
+//        mod |= (uint8_t)modifier::is_constexpr;
+//    } else {
+//        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_constexpr));
+//        mod |= (uint8_t)modifier::is_expr;
+//    }
+//}
+//
+//void parameter_match_result::set_variadic(bool v_val)
+//{
+//    if (mod == (uint8_t)modifier::undefined) {
+//        mod = (uint8_t)(v_val ? modifier::is_variadic : modifier::is_uniadic);
+//    } else if (v_val) {
+//        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_uniadic));
+//        mod |= (uint8_t)modifier::is_variadic;
+//    } else {
+//        BOOST_ASSERT(!(mod & (uint8_t)modifier::is_variadic));
+//        mod |= (uint8_t)modifier::is_uniadic;
+//    }
+//}
 
 //void functional_match_descriptor::do_prepare_range(se_cont_iterator& it_before, semantic::managed_expression_list const& exprs, optional<se_rng_t> & rng)
 //{
@@ -134,16 +138,16 @@ entity_signature functional_match_descriptor::build_signature(unit & u, qname_id
 {
     entity_signature signature{ name };
     for (auto [nm, pmr] : named_matches_) {
-        bool is_const = pmr->is_constexpr();
-        for (entity_identifier eid : pmr->result) {
-            signature.push_back(nm, field_descriptor{ eid, is_const });
+        for (auto const& pair : pmr->results) {
+            bool is_const = !pair.second;
+            signature.push_back(nm, field_descriptor{ pair.first, is_const });
         }
     }
     //size_t argnum = 0;
     for (auto pmr : positional_matches_) {
-        bool is_const = pmr->is_constexpr();
-        for (entity_identifier eid : pmr->result) {
-            signature.push_back(field_descriptor{ eid, is_const });
+        for (auto const& pair : pmr->results) {
+            bool is_const = !pair.second;
+            signature.push_back(field_descriptor{ pair.first, is_const });
         }
     }
     if (result.entity_id()) {
@@ -162,7 +166,7 @@ void functional_match_descriptor::reset() noexcept
     pmrs_.clear();
     bindings.reset();
     call_expressions.clear();
-    result = {};
+    result = field_descriptor{};
 }
 
 //void functional_match_descriptor::push_named_argument_expressions(identifier argid, se_cont_iterator& it_before, semantic::managed_expression_list const& exprs)
@@ -345,7 +349,11 @@ error_storage functional::pattern::apply(fn_compiler_context& ctx, functional_ma
         if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_el)>, entity_identifier>) {
             ctx.append_expression(semantic::push_value{ eid_or_el });
             entity const& e = ctx.u().eregistry_get(eid_or_el);
-            ctx.context_type = e.get_type();
+            //if (e.get_type() == ctx.u().get(builtin_eid::typename_)) {
+            //  ctx.context_type = eid_or_el;
+            //} else {
+                ctx.context_type = e.get_type();
+            //}
         } else {
             ctx.expressions().splice_back(eid_or_el);
         }

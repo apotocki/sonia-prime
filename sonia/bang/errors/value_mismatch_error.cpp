@@ -8,24 +8,18 @@
 
 namespace sonia::lang::bang {
 
-struct value_mismatch_expected_printer_visitor : static_visitor<void>
-{
-    unit const& u_;
-    std::ostream& s_;
-    explicit value_mismatch_expected_printer_visitor(unit const& u, std::ostream & s) : u_{ u }, s_ { s } {}
-
-    template <typename T>
-    inline void operator()(T const& val) const
-    {
-        s_ << u_.print(val);
-    }
-};
-
 general_error::string_t value_mismatch_error::description(unit const& u) const noexcept
 {
     std::ostringstream ss;
     ss << "value mismatch error, expected: ";
-    apply_visitor(value_mismatch_expected_printer_visitor{ u, ss }, expected_);
+    apply_visitor(make_functional_visitor<void>([&u, &ss](auto const& val) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(val)>, std::string> || 
+            std::is_same_v<std::decay_t<decltype(val)>, string_view>) {
+            ss << val;
+        } else {
+            ss << u.print(val);
+        }
+    }), expected_);
     return ss.str();
 }
 

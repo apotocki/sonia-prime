@@ -88,15 +88,15 @@ annotated_qname parser_context::make_qname(annotated_string_view astr) const
     return annotated_qname{ qname{unit_.slregistry().resolve(astr.value), false}, std::move(astr.location) };
 }
 
-annotated_qname_identifier parser_context::make_qname_identifier(annotated_qname aqn) const
-{
-    return annotated_qname_identifier{ unit_.fregistry().resolve(aqn.value).id(), aqn.location };
-}
-
-annotated_qname_identifier parser_context::make_qname_identifier(annotated_string_view asv, bool is_abs) const
-{
-    return annotated_qname_identifier{ unit_.fregistry().resolve(qname{unit_.slregistry().resolve(asv.value), is_abs}).id(), asv.location };
-}
+//annotated_qname_identifier parser_context::make_qname_identifier(annotated_qname aqn) const
+//{
+//    return annotated_qname_identifier{ unit_.fregistry().resolve(aqn.value).id(), aqn.location };
+//}
+//
+//annotated_qname_identifier parser_context::make_qname_identifier(annotated_string_view asv, bool is_abs) const
+//{
+//    return annotated_qname_identifier{ unit_.fregistry().resolve(qname{unit_.slregistry().resolve(asv.value), is_abs}).id(), asv.location };
+//}
 
 //identifier parser_context::make_required_identifier(string_view str)
 //{

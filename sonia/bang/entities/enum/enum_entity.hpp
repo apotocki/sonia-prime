@@ -4,19 +4,29 @@
 
 #pragma once
 
-#include "../semantic_fwd.hpp"
+#include "sonia/optional.hpp"
+#include "sonia/bang/entities/signatured_entity.hpp"
 
 namespace sonia::lang::bang {
 
-class enum_entity : public entity
+class enum_entity : public basic_signatured_entity
 {
-    qname_identifier name_;
+    qname name_;
+    std::vector<identifier> cases_;
+    mutable entity_identifier underlying_tuple_eid_;
 
 public:
-    explicit enum_entity(entity_identifier eid, qname_identifier name) 
-        : entity { std::move(eid) }, name_{ name }
+    explicit enum_entity(qname qn, entity_identifier type, entity_signature&& sgn, std::vector<identifier> cases)
+        : basic_signatured_entity{ std::move(type), std::move(sgn) }
+        , name_{ qn }
+        , cases_{ std::move(cases) }
     {}
 
+    inline qname_view name() const noexcept { return name_; }
+
+    optional<size_t> find(identifier) const;
+
+    /*
     struct enum_case
     {
         identifier name;
@@ -31,7 +41,8 @@ public:
 
     std::vector<enum_case> cases;
 
-    enum_case const* find(identifier);
+    
+    */
 };
 
 }

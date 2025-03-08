@@ -27,7 +27,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern
 
         annotated_identifier const* pargname = arg.name();
         parameter_match_result* pmr = pargname ? &pmd->get_match_result(pargname->value) : &pmd->get_match_result(pos_arg_num++);
-        pmr->append_result(false, ctx.context_type, last_expr_it, ctx.expressions());
+        pmr->append_result(ctx.context_type, last_expr_it, ctx.expressions());
     }
     return pmd;
 }
@@ -49,16 +49,16 @@ std::expected<functional::pattern::application_result_t, error_storage> tuple_ma
     semantic::managed_expression_list exprs{ u };
 
     md.for_each_named_match([&argcount, &exprs, &md](identifier name, parameter_match_result const& mr) {
-        for (auto rng : mr.expressions) {
-            ++rng.second;
-            exprs.splice_back(md.call_expressions, rng.first, rng.second);
+        for (auto const& [_, optspan] : mr.results) {
+            BOOST_ASSERT(optspan);
+            exprs.splice_back(md.call_expressions, *optspan);
         }
         ++argcount;
     });
     md.for_each_positional_match([&argcount, &exprs, &md](parameter_match_result const& mr) {
-        for (auto rng : mr.expressions) {
-            ++rng.second;
-            exprs.splice_back(md.call_expressions, rng.first, rng.second);
+        for (auto const& [_, optspan] : mr.results) {
+            BOOST_ASSERT(optspan);
+            exprs.splice_back(md.call_expressions, *optspan);
         }
         ++argcount;
     });

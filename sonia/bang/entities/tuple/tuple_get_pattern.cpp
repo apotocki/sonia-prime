@@ -12,16 +12,9 @@
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
+//#include "sonia/bang/entities/functions/match_utility.ipp"
+
 namespace sonia::lang::bang {
-
-class tuple_get_match_descriptor : public functional_match_descriptor
-{
-public:
-    using functional_match_descriptor::functional_match_descriptor;
-
-    size_t property_index;
-    size_t fields_count;
-};
 
 std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
 {
@@ -36,27 +29,56 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
 
     for (auto const& arg : call.args()) {
         annotated_identifier const* pargname = arg.name();
+        auto const& argexpr = arg.value();
         if (!pargname) {
-            auto const& argexpr = arg.value();
             return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
         }
-        if (pargname->value == slfid && !pte) {
-            pmd = make_shared<tuple_get_match_descriptor>(u);
-            ctx.push_chain(pmd->call_expressions);
-            auto last_expr_it = ctx.expressions().last();
-            expression_visitor evis{ ctx };
-            auto res = apply_visitor(evis, arg.value());
+        if (pargname->value == slfid) {
+            auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
             if (!res) return std::unexpected(std::move(res.error()));
-            if (ctx.context_type) {
-                entity const& some_entity = ctx.u().eregistry_get(ctx.context_type);
-                if (auto psig = some_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
-                    pte = &some_entity;
-                    pmd->get_match_result(pargname->value).append_result(false, ctx.context_type, last_expr_it, ctx.expressions());
-                    continue;
+            
+            auto err = apply_visitor(make_functional_visitor<error_storage>([&ctx, &argexpr, &pte, &pmd, pargname](auto & v) -> error_storage {
+                entity_identifier argtype;
+                if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+                    if (v == ctx.u().get(builtin_eid::void_)) {
+                        return make_error<type_mismatch_error>(get_start_location(argexpr), v, "not void"sv);
+                    }
+                } else {
+                    if (ctx.context_type == ctx.u().get(builtin_eid::void_)) return {}; // skip
+                    argtype = ctx.context_type;
                 }
-            }
-            return std::unexpected(make_error<type_mismatch_error>(pargname->location, ctx.context_type, u.get(builtin_qnid::tuple)));
-           //return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch, expected a tuple"sv, pargname->value));
+                
+                if (!pte) {
+                    if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+                        entity const& arg_entity = ctx.u().eregistry_get(v);
+                        if (auto psig = arg_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
+                            // argument is typename tuple
+                            pmd = make_shared<tuple_get_match_descriptor>(ctx.u());
+                            auto& mr = pmd->get_match_result(pargname->value);
+                            mr.append_result(v);
+                            return {};
+                        } else {
+                            argtype = arg_entity.get_type();
+                        }
+                    }
+
+                    entity const& some_entity = ctx.u().eregistry_get(argtype);
+                    if (auto psig = some_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
+                        pte = &some_entity;
+                        pmd = make_shared<tuple_get_match_descriptor>(ctx.u());
+                        auto& mr = pmd->get_match_result(pargname->value);
+                        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+                            mr.append_result(argtype);
+                        } else {
+                            mr.append_result(argtype, v.end(), v);
+                            pmd->call_expressions.splice_back(v);
+                        }
+                        return {};
+                    }
+                }
+                return make_error<basic_general_error>(pargname->location, "argument mismatch"sv, pargname->value);
+            }), res->first);
+            if (err) return std::unexpected(std::move(err));
         } else if (pargname->value == propid && !ppname) {
             ct_expression_visitor evis{ ctx };
             auto res = apply_visitor(evis, arg.value());
@@ -77,22 +99,26 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
         return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter: `self`"sv));
     } else if (!ppname) {
         return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter: `property`"sv));
-    }
+    }   
+    return check_match(std::move(pmd), call, *pte, *ppname);
+}
 
-    entity_signature const* pes = pte->signature();
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern::check_match(shared_ptr<tuple_get_match_descriptor> pmd, pure_call_t const& call, entity const& te, entity const& pname) const
+{
+    entity_signature const* pes = te.signature();
     BOOST_ASSERT(pes);
     size_t index;
     field_descriptor const* fd;
-    if (identifier_entity const* pie = dynamic_cast<identifier_entity const*>(ppname); pie) {
+    if (identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&pname); pie) {
         fd = pes->find_field(pie->value(), &index);
-    } else if (integer_literal_entity const* pile = dynamic_cast<integer_literal_entity const*>(ppname); pile) {
+    } else if (integer_literal_entity const* pile = dynamic_cast<integer_literal_entity const*>(&pname); pile) {
         fd = pes->find_field((size_t)pile->value(), &index);
     } else {
-        return std::unexpected(make_error<basic_general_error>(ppname->location(), "argument mismatch, expected an identifier or index"sv, ppname->id()));
+        return std::unexpected(make_error<basic_general_error>(pname.location(), "argument mismatch, expected an identifier or index"sv, pname.id()));
     }
     
     if (!fd) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "no such field"sv, ppname->id()));
+        return std::unexpected(make_error<basic_general_error>(call.location(), "no such field"sv, pname.id()));
     }
 
     // get non const fields count and index
@@ -129,9 +155,9 @@ std::expected<tuple_get_pattern::application_result_t, error_storage> tuple_get_
 
     // only one named argument is expected
     tmd.for_each_named_match([&exprs, &tmd](identifier name, parameter_match_result const& mr) {
-        for (auto rng : mr.expressions) {
-            ++rng.second;
-            exprs.splice_back(tmd.call_expressions, rng.first, rng.second);
+        for (auto const& [_, optspan] : mr.results) {
+            BOOST_ASSERT(optspan);
+            exprs.splice_back(tmd.call_expressions, *optspan);
         }
     });
 

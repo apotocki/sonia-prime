@@ -55,6 +55,11 @@ inline ct_expression_visitor::result_type ct_expression_visitor::apply_cast(enti
     }
 }
 
+//ct_expression_visitor::result_type ct_expression_visitor::operator()(context_value const& cv) const
+//{
+//
+//}
+
 ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_bool const& bv) const
 {
     bool_literal_entity bool_ent{ bv.value };

@@ -25,14 +25,12 @@ class struct_entity : public basic_signatured_entity
     variant<field_list_t, statement_span> body_;
 
     mutable entity_identifier underlying_tuple_eid_;
-    mutable entity_identifier underlying_tuple_constructor_eid_;
-    mutable shared_ptr<functional_match_descriptor> pmd_; // pehaps partial initialized make_tuple_match descriptor
+    //mutable shared_ptr<functional_match_descriptor> pmd_; // pehaps partial initialized make_tuple_match descriptor
     
     enum class build_state : long
     {
         not_built,
-        underlying_tuple_built = 1,
-        underlying_constructor_built = 3
+        underlying_tuple_built = 1
     };
 
     mutable std::atomic<build_state> built_{ build_state::not_built };
@@ -49,9 +47,9 @@ public:
 
     inline qname_view name() const noexcept { return name_; }
 
-    std::expected<functional::match, error_storage> find_init(fn_compiler_context&, pure_call_t const&) const;
+    //std::expected<functional::match, error_storage> find_init(fn_compiler_context&, pure_call_t const&) const;
     std::expected<entity_identifier, error_storage> underlying_tuple_eid(fn_compiler_context&) const;
-    std::expected<functional_match_descriptor const*, error_storage> underlying_tuple_initializer(fn_compiler_context&) const;
+    //std::expected<functional_match_descriptor const*, error_storage> underlying_tuple_initializer(fn_compiler_context&) const;
 
     error_storage build(fn_compiler_context& external_ctx) const;
     //std::expected<function_entity const*, error_storage> find_field_getter(fn_compiler_context&, annotated_identifier const&) const;

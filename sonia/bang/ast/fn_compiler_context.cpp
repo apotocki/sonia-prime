@@ -228,6 +228,7 @@ void fn_compiler_context::init()
     assert(ns_.is_absolute());
     base_ns_size_ = ns_.parts().size();
     expr_stack_.emplace_back(&root_expressions_);
+    push_binding(locals_); // first look for local variables
 }
 
 fn_compiler_context::~fn_compiler_context()
@@ -238,11 +239,6 @@ fn_compiler_context::~fn_compiler_context()
 
 optional<variant<entity_identifier, local_variable const&>> fn_compiler_context::get_bound(identifier name) const noexcept
 {
-    // first look for local variables
-    if (auto lvit = variables_.find(name); lvit != variables_.end()) {
-        return *lvit;
-    }
-
     // then look for bound entities
     for (functional_binding const* binding : boost::adaptors::reverse(bindings_)) {
         if (auto optval = binding->lookup(name); optval) {
@@ -474,31 +470,22 @@ std::expected<functional::match, error_storage> fn_compiler_context::find(qname_
 
 local_variable & fn_compiler_context::new_variable(annotated_identifier name, entity_identifier t)
 {
-    auto it = variables_.find(name.value);
-    if (it != variables_.end()) {
-        throw identifier_redefinition_error(name, it->name.location);
+    lex::resource_location const* ploc;
+    functional_binding::value_type const* pv = locals_.lookup(name.value, &ploc);
+    if (pv) {
+        throw identifier_redefinition_error(name, *ploc);
     }
-    it = variables_.insert(it, local_variable{ .name = std::move(name), .type = std::move(t), .index = allocate_local_variable_index(), .is_weak = false });
-    return *it;
-    
-#if 0
-    qname var_qname = ns() / name.value;
-    //variable_entity& var = u().new_variable(var_qname, name.location, t, k);
+    return get<local_variable>(locals_.emplace_back(name, local_variable{ .name = std::move(name), .type = std::move(t), .index = allocate_local_variable_index(), .is_weak = false }));
+}
 
-    functional& fnl = u().fregistry().resolve(var_qname);
-    
-    auto ve = sonia::make_shared<variable_entity>(std::move(t), fnl.id(), k);
-    ve->set_location(name.location);
-
-    u().eregistry_insert(ve);
-    if (auto err = fnl.set_default_entity(annotated_entity_identifier{ ve->id(), name.location }); err) {
-        throw exception(u().print(*err));
+void fn_compiler_context::new_constant(annotated_identifier name, entity_identifier eid)
+{
+    lex::resource_location const* ploc;
+    functional_binding::value_type const* pv = locals_.lookup(name.value, &ploc);
+    if (pv) {
+        throw identifier_redefinition_error(name, *ploc);
     }
-
-    ve->set_index(allocate_local_variable_index());
-
-    return *ve;
-#endif
+    locals_.emplace_back(name, eid);
 }
 
 #if 0

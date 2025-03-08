@@ -14,20 +14,20 @@
 
 namespace sonia::lang::bang {
 
-class struct_get_match_descriptor : public functional_match_descriptor
-{
-    size_t property_index_;
-    size_t fields_count_;
-
-public:
-    using functional_match_descriptor::functional_match_descriptor;
-
-    inline size_t property_index() const noexcept { return property_index_; }
-    inline size_t fields_count() const noexcept { return fields_count_; }
-
-    inline void set_property_index(size_t index) noexcept { property_index_ = index; }
-    inline void set_fields_count(size_t index) noexcept { fields_count_ = index; }
-};
+//class struct_get_match_descriptor : public functional_match_descriptor
+//{
+//    size_t property_index_;
+//    size_t fields_count_;
+//
+//public:
+//    using functional_match_descriptor::functional_match_descriptor;
+//
+//    inline size_t property_index() const noexcept { return property_index_; }
+//    inline size_t fields_count() const noexcept { return fields_count_; }
+//
+//    inline void set_property_index(size_t index) noexcept { property_index_ = index; }
+//    inline void set_fields_count(size_t index) noexcept { fields_count_ = index; }
+//};
 
 /**
     inline fn::get(self: $T @structure, property: const __identifier @has_property($T)) =>
@@ -42,7 +42,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
     
     struct_entity const* pse = nullptr;
     entity const* ppname = nullptr;
-    shared_ptr<struct_get_match_descriptor> pmd;
+    shared_ptr<tuple_get_match_descriptor> pmd;
     auto estate = ctx.expressions_state();
     for (auto const& arg : call.args()) {
         annotated_identifier const* pargname = arg.name();
@@ -51,7 +51,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
             return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
         }
         if (pargname->value == slfid && !pse) {
-            pmd = make_shared<struct_get_match_descriptor>(u);
+            pmd = make_shared<tuple_get_match_descriptor>(u);
             ctx.push_chain(pmd->call_expressions);
             auto last_expr_it = ctx.expressions().last();
             expression_visitor evis{ ctx };
@@ -61,7 +61,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
                 entity const& some_entity = ctx.u().eregistry_get(ctx.context_type);
                 pse = dynamic_cast<struct_entity const*>(&some_entity);
                 if (pse) {
-                    pmd->get_match_result(pargname->value).append_result(false, ctx.context_type, last_expr_it, ctx.expressions());
+                    pmd->get_match_result(pargname->value).append_result(ctx.context_type, last_expr_it, ctx.expressions());
                     continue;
                 }
             }
@@ -86,61 +86,59 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
     auto uteid = pse->underlying_tuple_eid(ctx);
     if (!uteid) return std::unexpected(std::move(uteid.error()));
     entity const& utplent = u.eregistry_get(*uteid);
-    entity_signature const* ptplsig = utplent.signature();
-    BOOST_ASSERT(ptplsig);
-
-    size_t index;
-    field_descriptor const* fd;
-    if (identifier_entity const* pie = dynamic_cast<identifier_entity const*>(ppname); pie) {
-        fd = ptplsig->find_field(pie->value(), &index);
-    } else if (integer_literal_entity const* pile = dynamic_cast<integer_literal_entity const*>(ppname); pile) {
-        fd = ptplsig->find_field((size_t)pile->value(), &index);
-    } else {
-        return std::unexpected(make_error<basic_general_error>(ppname->location(), "argument mismatch, expected an identifier or index"sv, ppname->id()));
-    }
     
-    if (!fd) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "no such field"sv, ppname->id()));
-    }
+    return check_match(std::move(pmd), call, utplent, *ppname);
 
-    pmd->set_property_index(index);
-    pmd->set_fields_count(ptplsig->field_count());
-    BOOST_ASSERT(ptplsig->field_count() > 1 || !index);
+    //entity_signature const* ptplsig = utplent.signature();
+    //BOOST_ASSERT(ptplsig);
 
-    pmd->result = *fd;
-    return pmd;
+    //size_t index;
+    //field_descriptor const* fd;
+    //if (identifier_entity const* pie = dynamic_cast<identifier_entity const*>(ppname); pie) {
+    //    fd = ptplsig->find_field(pie->value(), &index);
+    //} else if (integer_literal_entity const* pile = dynamic_cast<integer_literal_entity const*>(ppname); pile) {
+    //    fd = ptplsig->find_field((size_t)pile->value(), &index);
+    //} else {
+    //    return std::unexpected(make_error<basic_general_error>(ppname->location(), "argument mismatch, expected an identifier or index"sv, ppname->id()));
+    //}
+    //
+    //if (!fd) {
+    //    return std::unexpected(make_error<basic_general_error>(call.location(), "no such field"sv, ppname->id()));
+    //}
+
+    //pmd->set_property_index(index);
+    //pmd->set_fields_count(ptplsig->field_count());
+    //BOOST_ASSERT(ptplsig->field_count() > 1 || !index);
+
+    //pmd->result = *fd;
+    //return pmd;
 }
 
-error_storage struct_get_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
-{
-    unit& u = ctx.u();
-
-    // push call expressions in the right order
-    semantic::expression_list_t& exprs = ctx.expressions();
-
-    // only one named argument is expected
-    md.for_each_named_match([&exprs, &md](identifier name, parameter_match_result const& mr) {
-        for (auto rng : mr.expressions) {
-            ++rng.second;
-            exprs.splice_back(md.call_expressions, rng.first, rng.second);
-        }
-    });
-
-    BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
-    
-    struct_get_match_descriptor& smd = static_cast<struct_get_match_descriptor&>(md);
-    if (smd.fields_count() > 1) {
-        u.push_back_expression(exprs, semantic::push_value{ smd.property_index() });
-        u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
-    }
-    
-    ctx.context_type = md.result.entity_id();
-    return {};
-}
-
-std::expected<entity_identifier, error_storage> struct_get_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("tuple_get_pattern::const_apply");
-}
+//error_storage struct_get_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+//{
+//    unit& u = ctx.u();
+//
+//    // push call expressions in the right order
+//    semantic::expression_list_t& exprs = ctx.expressions();
+//
+//    // only one named argument is expected
+//    md.for_each_named_match([&exprs, &md](identifier name, parameter_match_result const& mr) {
+//        for (auto rng : mr.expressions) {
+//            ++rng.second;
+//            exprs.splice_back(md.call_expressions, rng.first, rng.second);
+//        }
+//    });
+//
+//    BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
+//    
+//    struct_get_match_descriptor& smd = static_cast<struct_get_match_descriptor&>(md);
+//    if (smd.fields_count() > 1) {
+//        u.push_back_expression(exprs, semantic::push_value{ smd.property_index() });
+//        u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
+//    }
+//    
+//    ctx.context_type = md.result.entity_id();
+//    return {};
+//}
 
 }

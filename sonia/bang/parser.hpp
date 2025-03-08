@@ -36,8 +36,8 @@ public:
     
     annotated_qname make_qname(annotated_string_view) const;
 
-    annotated_qname_identifier make_qname_identifier(annotated_qname) const;
-    annotated_qname_identifier make_qname_identifier(annotated_string_view, bool is_abs) const;
+    //annotated_qname_identifier make_qname_identifier(annotated_qname) const;
+    //annotated_qname_identifier make_qname_identifier(annotated_string_view, bool is_abs) const;
 
     managed_statement_list new_statement_list() const;
     statement_span push(managed_statement_list&&);

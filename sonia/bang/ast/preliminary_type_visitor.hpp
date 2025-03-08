@@ -13,7 +13,6 @@
 #include "fn_compiler_context.hpp"
 #include "../entities/internal_type_entity.hpp"
 #include "../entities/type_entity.hpp"
-#include "../entities/enum_entity.hpp"
 
 #include "sonia/utility/functional/variant_compare_three_way.hpp"
 #include "sonia/bang/errors.hpp"

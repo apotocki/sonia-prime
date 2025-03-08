@@ -232,10 +232,10 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 // STATEMENTS
 %token INCLUDE
 %type <statement> statement infunction-statement
-%type <finished_statement_type> finished_statement
+%type <finished_statement_type> finished-statement
 %type <generic_statement_type> generic-statement
 
-%type <managed_statement_list> statement_any finished_statement_any
+%type <managed_statement_list> statement_any finished-statement-any
 %type <managed_statement_list> infunction-statement-any finished-infunction-statement-any infunction-statement-set braced-statements
 
 %type <let_statement> let-decl-start let-decl-start-with-opt-type let-decl
@@ -293,6 +293,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 %token WEAK "weak modifier"
 %token CONST "const modifier"
+%token MUT "mut modifier"
 
 //%type <bang_preliminary_type> type-expr
 //%type<bang_preliminary_tuple_t> opt-type-list
@@ -300,6 +301,8 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 
 // EXPRESSIONS
+%token <annotated_nil> NIL_WORD "nil"
+
 %token <annotated_bool> TRUE_WORD "true"
 %token <annotated_bool> FALSE_WORD "false"
 
@@ -330,7 +333,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 begin:
 	  statement_any END { ctx.set_root_statements(std::move($1)); }
-    | finished_statement_any END { ctx.set_root_statements(std::move($1)); }
+    | finished-statement-any END { ctx.set_root_statements(std::move($1)); }
 	;
 
 statement_any:
@@ -338,7 +341,7 @@ statement_any:
         { $$ = ctx.new_statement_list(); }
     | statement
         { $$ = ctx.new_statement_list(); $$.emplace_back(std::move($statement)); }
-    | finished_statement_any[sts] statement
+    | finished-statement-any[sts] statement
         { $sts.emplace_back(std::move($statement)); $$ = std::move($sts); }
 /*
     |
@@ -354,11 +357,11 @@ statement_any:
 */
     ;
 
-finished_statement_any:
-      finished_statement[st]
+finished-statement-any:
+      finished-statement[st]
         { $$ = ctx.new_statement_list(); $$.emplace_back(std::move($st)); }
-    | finished_statement_any[sts] END_STATEMENT { $$ = std::move($sts); }
-    | finished_statement_any[sts] finished_statement[st]
+    | finished-statement-any[sts] END_STATEMENT { $$ = std::move($sts); }
+    | finished-statement-any[sts] finished-statement[st]
         { $sts.emplace_back(std::move($st)); $$ = std::move($sts); }
     | statement_any[sts] END_STATEMENT
         { $$ = std::move($sts); }
@@ -371,8 +374,7 @@ statement:
         { $$ = std::move($fn); IGNORE_TERM($FN); }
     | INCLUDE STRING
         { $$ = include_decl{ctx.make_string(std::move($STRING)) }; }
-    | enum-decl[enum]
-        { $$ = std::move($enum); }
+
     //| type-decl
     //    { $$ = std::move($1); }
     
@@ -419,10 +421,10 @@ infunction-statement-any:
     ;
 
 finished-infunction-statement-any:
-      finished_statement[st]
+      finished-statement[st]
         { $$ = ctx.new_statement_list(); $$.emplace_back(std::move($st)); }
     | finished-infunction-statement-any[sts] END_STATEMENT { $$ = std::move($sts); }
-    | finished-infunction-statement-any[sts] finished_statement[st]
+    | finished-infunction-statement-any[sts] finished-statement[st]
         { $sts.emplace_back(std::move($st)); $$ = std::move($sts); }
     | infunction-statement-any[sts] END_STATEMENT
         { $$ = std::move($sts); }
@@ -433,7 +435,7 @@ braced-statements:
         { $$ = std::move($sts); IGNORE_TERM($1); }
     ;
 
-finished_statement:
+finished-statement:
       WHILE syntax-expression[condition] braced-statements[body]
         { $$ = while_decl{ std::move($condition), ctx.push(std::move($body)) }; }
     | WHILE syntax-expression[condition] END_STATEMENT syntax-expression[continue] braced-statements[body]
@@ -450,6 +452,8 @@ finished_statement:
         { $$ = struct_decl{ std::move($qname), ctx.push(std::move($body)) }; }
     | STRUCT qname OPEN_PARENTHESIS[beginParams] parameter-list-opt[parameters] CLOSE_PARENTHESIS braced-statements[body]
         { $$ = struct_decl{ fn_pure_t{ std::move($qname), std::move($parameters) }, ctx.push(std::move($body)) }; IGNORE_TERM($beginParams); }
+    | ENUM enum-decl[enum]
+        { $$ = std::move($enum); }
     ;
 
 infunction-statement-set:
@@ -535,23 +539,19 @@ fn-decl:
 
 ///////////////////////////////////////////////// ENUMERATIONS
 enum-decl:
-    ENUM qname OPEN_BRACE case-list-opt[cases] CLOSE_BRACE
-    {
-        $$ = enum_decl{ ctx.make_qname_identifier(std::move($qname)), std::move($cases) }; IGNORE_TERM($OPEN_BRACE);
-    }
+    qname OPEN_BRACE case-list-opt[cases] CLOSE_BRACE
+        { $$ = enum_decl{ std::move($qname), std::move($cases) }; IGNORE_TERM($OPEN_BRACE); }
     ;
 
 case-list-opt:
       %empty { $$ = {}; }
-    |
-      case-list
+    | case-list
     ;
 
 case-list:
       case-decl
         { $$ = std::vector<sonia::lang::bang::identifier>{std::move($1)}; }
-    |
-      case-list COMMA case-decl
+    | case-list COMMA case-decl
         { $$ = std::move($1); $$.emplace_back(std::move($3)); }
     ;
 
@@ -695,6 +695,8 @@ parameter-decl:
         { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::value_type, std::move($constraint), std::move($default) }; }
     | identifier[id] internal-identifier-opt[intid] COLON CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
         { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
+    | identifier[id] internal-identifier-opt[intid] COLON MUT parameter-constraint-set[constraint] parameter-default-value-opt[default]
+        { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; }
     | identifier[id] internal-identifier-opt[intid] ARROWEXPR parameter-value-constraint-set[constraint]
         { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
     
@@ -702,6 +704,8 @@ parameter-decl:
         { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::value_type, std::move($constraint), std::move($default) }; }
     | INTERNAL_IDENTIFIER[intid] COLON CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
         { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
+    | INTERNAL_IDENTIFIER[intid] COLON MUT parameter-constraint-set[constraint] parameter-default-value-opt[default]
+        { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; }
     | INTERNAL_IDENTIFIER[intid] ARROWEXPR parameter-value-constraint-set[constraint]
         { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
     
@@ -709,11 +713,15 @@ parameter-decl:
         { $$ = parameter_t{ varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::value_type, std::move($constraint) }; IGNORE_TERM($ELLIPSIS); }
     | INTERNAL_IDENTIFIER[intid] ELLIPSIS COLON CONST parameter-constraint-set[constraint]
         { $$ = parameter_t{ varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint) }; IGNORE_TERM($ELLIPSIS); }
+    | INTERNAL_IDENTIFIER[intid] ELLIPSIS COLON MUT parameter-constraint-set[constraint]
+        { $$ = parameter_t{ varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint) }; IGNORE_TERM($ELLIPSIS); }
 
     | parameter-constraint-set[constraint] parameter-default-value-opt[default]
         { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::value_type, std::move($constraint), std::move($default) }; }
     | CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
         { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
+    | MUT parameter-constraint-set[constraint] parameter-default-value-opt[default]
+        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; }
     | ARROWEXPR parameter-value-constraint-set[constraint]
         { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
     ;
@@ -813,7 +821,9 @@ syntax-expression:
 
 // without internal identifiers
 syntax-expression-wo-ii:
-      TRUE_WORD
+      NIL_WORD
+        { $$ = std::move($1); }
+    | TRUE_WORD
         { $$ = std::move($1); }
     | FALSE_WORD
         { $$ = std::move($1); }
@@ -840,7 +850,7 @@ syntax-expression-wo-ii:
             }
         }
     | POINT identifier
-        { $$ = context_identifier { std::move($identifier), std::move($POINT) }; }
+        { $$ = std::move($identifier); IGNORE_TERM($POINT); }
     //| syntax-expression[object] POINT syntax-expression[property]
     //    { $$ = member_expression_t{ std::move($object), std::move($property) }; IGNORE_TERM($2); }
     | syntax-expression[object] POINT identifier[property]

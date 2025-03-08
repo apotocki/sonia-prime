@@ -126,11 +126,11 @@ void internal_function_entity::build(unit& u)
     BOOST_ASSERT(!fnctx.expressions());
     BOOST_ASSERT(!fnctx.expression_store());
 
-    GLOBAL_LOG_INFO() << "built inline function beagin: " << u.print(*this);
-    body.for_each([&u](semantic::expression const& e) {
-        GLOBAL_LOG_INFO() << u.print(e);
-    });
-    GLOBAL_LOG_INFO() << "built inline function end: " << u.print(*this);
+    //GLOBAL_LOG_INFO() << "built inline function begin: " << u.print(*this);
+    //body.for_each([&u](semantic::expression const& e) {
+    //    GLOBAL_LOG_INFO() << u.print(e);
+    //});
+    //GLOBAL_LOG_INFO() << "built inline function end: " << u.print(*this);
     //sts_.reset();
     is_built_ = 1;
 }

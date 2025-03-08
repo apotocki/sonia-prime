@@ -11,7 +11,7 @@ namespace sonia::lang::bang {
 
 class value_mismatch_error : public basic_general_error
 {
-    variant<entity_identifier, qname_identifier> expected_;
+    variant<entity_identifier, qname_identifier, std::string, string_view> expected_;
 
 public:
     template <typename ExpectedArgT>

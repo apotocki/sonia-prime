@@ -53,8 +53,8 @@ public:
     std::ostream& print(unit const&, std::ostream&) const;
 
 protected:
-    void bind_names(span<const annotated_identifier> names, entity_identifier type_or_value, functional_binding&) const;
-    virtual void update_binding(unit&, entity_identifier type_or_value, functional_binding&) const;
+    void bind_names(span<const annotated_identifier> names, field_descriptor const& type_or_value, functional_binding&) const;
+    virtual void update_binding(unit&, field_descriptor const& type_or_value, functional_binding&) const;
 };
 
 class named_parameter_matcher : public parameter_matcher
@@ -78,7 +78,7 @@ public:
         : parameter_matcher{ std::move(vin), mod, std::move(cs) }
     {}
 
-    void update_binding(unit&, entity_identifier, functional_binding&) const override;
+    void update_binding(unit&, field_descriptor const&, functional_binding&) const override;
     
     variant<int, ignore_t, error_storage> try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, annotated_identifier, syntax_expression_t const&, functional_binding&, parameter_match_result&) const;
 };

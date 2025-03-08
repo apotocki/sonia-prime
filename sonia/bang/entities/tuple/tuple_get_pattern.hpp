@@ -15,11 +15,24 @@ public:
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
     
-    std::expected<tuple_get_pattern::application_result_t, error_storage> generic_apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<functional::pattern::application_result_t, error_storage> generic_apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
     std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override { return s << "get(self: tuple, property: integer|__identifier)"sv; }
+
+
+protected:
+    class tuple_get_match_descriptor : public functional_match_descriptor
+    {
+    public:
+        using functional_match_descriptor::functional_match_descriptor;
+
+        size_t property_index;
+        size_t fields_count;
+    };
+
+    std::expected<functional_match_descriptor_ptr, error_storage> check_match(shared_ptr<tuple_get_match_descriptor>, pure_call_t const& call, entity const&, entity const&) const;
 };
 
 }

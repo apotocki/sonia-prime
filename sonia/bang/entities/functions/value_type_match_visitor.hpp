@@ -11,7 +11,7 @@ namespace sonia::lang::bang {
 class fn_compiler_context;
 
 // if result entity_identifier is empty -> ignore  (void argument case)
-struct value_type_match_visitor : static_visitor<std::expected<entity_identifier, error_storage>>
+struct value_type_match_visitor : static_visitor<std::expected<functional::pattern::application_result_t, error_storage>>
 {
     fn_compiler_context& caller_ctx;
     fn_compiler_context& callee_ctx;
@@ -36,7 +36,8 @@ struct value_type_match_visitor : static_visitor<std::expected<entity_identifier
     }
 
 private:
-    result_type operator()(entity_identifier const&, lex::resource_location = {}) const;
+    result_type match_type(entity_identifier const&, lex::resource_location = {}) const;
+
 };
 
 }

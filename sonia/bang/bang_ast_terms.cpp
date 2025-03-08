@@ -11,14 +11,20 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
 {
     expression_location_visitor() = default;
 
+    inline result_type operator()(placeholder const& ph) const noexcept { return ph.location; }
+    inline result_type operator()(variable_identifier const& v) const noexcept { return v.name.location; }
+    inline result_type operator()(annotated_nil const& an) const noexcept { return an.location; }
+
     template <typename T>
     inline result_type operator()(annotated<T> const& ae) const noexcept { return ae.location; }
+    
+    inline result_type operator()(bang_fn_type_t const& b) const noexcept { return this->operator()(b.arg); }
 
     inline result_type operator()(context_value const& v) const noexcept { return v.location; }
-    inline result_type operator()(variable_identifier const& v) const noexcept { return v.name.location; }
+    
     inline result_type operator()(annotated_qname const& qn) const noexcept { return qn.location; }
     inline result_type operator()(context_identifier const& ce) const noexcept { return ce.start; }
-    inline result_type operator()(placeholder const& ph) const noexcept { return ph.location; }
+    
     inline result_type operator()(not_empty_expression_t const& me) const noexcept { return apply_visitor(*this, me.value); }
     inline result_type operator()(member_expression_t const& me) const noexcept { return me.start(); }
     inline result_type operator()(lambda_t const& le) const noexcept { return le.location(); }

@@ -43,6 +43,11 @@ value_match_visitor::result_type value_match_visitor::operator()(annotated_qname
     //return std::unexpected(make_error<basic_general_error>(aqi.location, "not a variable or constant"sv, expr));
 }
 
+value_match_visitor::result_type value_match_visitor::operator()(annotated_entity_identifier const& aeid) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR("value_match_visitor not implemented expression");
+}
+
 value_match_visitor::result_type value_match_visitor::operator()(function_call_t const& fc) const
 {
     unit& u = callee_ctx.u();

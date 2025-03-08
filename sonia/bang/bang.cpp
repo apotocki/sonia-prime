@@ -289,9 +289,10 @@ void bang_impl::do_compile(internal_function_entity const& fe)
 
     size_t param_count = fe.parameter_count();
     asm_builder_t::function_builder fb{ vmasm_, fd };// = vmasm_.create_function(vmasm::fn_identity<qname_identifier>{ fe.name() });
-    if (param_count) {
-        fb.append_pushfp(); // for accessing function arguments and local variables
-    }
+
+    // for accessing function arguments and local variables by zero-based index
+    fb.append_pushfp(); // for accessing function arguments and local variables
+    // append_popfp will be inserted in return statement handler
 
     vm::compiler_visitor vmcvis{ unit_, fb, fe };
     fe.body.for_each([&vmcvis](semantic::expression const& e) {
@@ -302,6 +303,7 @@ void bang_impl::do_compile(internal_function_entity const& fe)
     if (fd.index) {
         unit_.bvm().set_const(*fd.index, smart_blob{ ui64_blob_result(*fd.address) });
     }
+
 #if 0
     //size_t param_count = fe.parameter_count(); // including captured_variables
 

@@ -118,6 +118,12 @@ inline base_expression_visitor::result_type base_expression_visitor::apply_cast(
     }), *r);
 }
 
+base_expression_visitor::result_type base_expression_visitor::operator()(context_value const& v) const
+{
+    ctx.context_type = v.type;
+    return apply_cast(semantic::managed_expression_list{ u() }, v);
+}
+
 base_expression_visitor::result_type base_expression_visitor::operator()(annotated_string const& sv) const
 {
     string_literal_entity str_ent{ sv.value };
@@ -127,6 +133,18 @@ base_expression_visitor::result_type base_expression_visitor::operator()(annotat
         return result;
     });
     return apply_cast(ent, sv);
+}
+
+base_expression_visitor::result_type base_expression_visitor::operator()(annotated_identifier const& iv) const
+{
+    identifier_entity id_ent{ iv.value };
+    entity const& ent = u().eregistry_find_or_create(id_ent, [this, &id_ent]() {
+        auto result = make_shared<identifier_entity>(std::move(id_ent));
+        result->set_type(u().get(builtin_eid::identifier));
+        return result;
+    });
+
+    return apply_cast(ent, iv);
 }
 
 base_expression_visitor::result_type base_expression_visitor::operator()(variable_identifier const& var) const
@@ -147,6 +165,33 @@ base_expression_visitor::result_type base_expression_visitor::operator()(variabl
         }
     }), optent);
 }
+
+base_expression_visitor::result_type base_expression_visitor::operator()(member_expression_t const& me) const
+{
+    pure_call_t get_call{ me.start() };
+    get_call.emplace_back(annotated_identifier{ u().get(builtin_id::self), get_start_location(me.object) }, me.object);
+    get_call.emplace_back(annotated_identifier{ u().get(builtin_id::property), get_start_location(me.property) }, me.property);
+
+    auto match = ctx.find(builtin_qnid::get, get_call, expected_result);
+
+    if (!match) {
+        return std::unexpected(append_cause(
+            make_error<basic_general_error>(me.start(), "can't resolve"sv, syntax_expression_t{ me }),
+            std::move(match.error())
+        ));
+    }
+
+    auto res = match->generic_apply(ctx);
+    return apply_cast(std::move(res), me);
+}
+
+//base_expression_visitor::result_type base_expression_visitor::operator()(context_identifier const& ci) const
+//{
+//    if (!expected_result) {
+//        return std::unexpected(make_error<basic_general_error>(ci.start, "no context type to resolve the context identifier"sv, ci.name.value));
+//    }
+//    THROW_EOF_ERROR("base_expression_visitor context_identifier");
+//}
 
 base_expression_visitor::result_type base_expression_visitor::operator()(opt_named_syntax_expression_list_t const& nel) const
 {
@@ -188,6 +233,30 @@ base_expression_visitor::result_type base_expression_visitor::operator()(functio
     if (!match) return std::unexpected(match.error());
     auto res = match->generic_apply(ctx);
     return apply_cast(std::move(res), proc);
+}
+
+base_expression_visitor::result_type base_expression_visitor::operator()(new_expression_t const& ne) const
+{
+    pure_call_t new_call{ ne.location };
+    new_call.emplace_back(annotated_identifier{ u().get(builtin_id::type) }, ne.name);
+    for (auto const& arg: ne.arguments) {
+        if (annotated_identifier const* optname = arg.name(); optname) {
+            new_call.emplace_back(*optname, arg.value());
+        } else {
+            new_call.emplace_back(arg.value());
+        }
+    }
+
+    auto match = ctx.find(builtin_qnid::new_, new_call, expected_result);
+    if (!match) {
+        return std::unexpected(append_cause(
+            make_error<basic_general_error>(ne.location, "can't instantiate the object"sv, ne.name),
+            std::move(match.error())
+        ));
+    }
+
+    auto res = match->generic_apply(ctx);
+    return apply_cast(std::move(res), ne);
 }
 
 template <std::derived_from<pure_call_t> CallExpressionT>

@@ -38,7 +38,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argumen
     if (!obj) return std::unexpected(std::move(obj.error()));
 
     auto pmd = make_shared<functional_match_descriptor>(u);
-    pmd->get_match_result(0).append_result(false, *obj);
+    pmd->get_match_result(0).append_result(*obj);
     pmd->location = call.location();
     return pmd;
 }
@@ -46,7 +46,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argumen
 entity_signature const& metaobject_argument_pattern::argument_signature(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    entity_identifier mobj = md.get_match_result(0).result.front();
+    auto& [mobj, _] = md.get_match_result(0).results.front();
     entity const& metaobject_ent = u.eregistry_get(mobj);
     entity_signature const* objsignature = metaobject_ent.signature();
     BOOST_ASSERT(objsignature);

@@ -12,8 +12,6 @@
 
 namespace sonia::lang::bang {
 
-template <class ElementT> class linked_list_span;
-
 template <class ElementT>
 class linked_list_node : public boost::intrusive::list_base_hook<>
 {
@@ -36,6 +34,12 @@ struct linked_list_node_span : std::pair<EntryT*, EntryT*>
     inline linked_list_node_span() noexcept : pair_t{ nullptr, nullptr } {}
     inline explicit linked_list_node_span(EntryT* b, EntryT* e = nullptr) noexcept : pair_t{ b, e } {}
 
+    template <typename BaseEntryT>
+    requires std::is_base_of_v<BaseEntryT, EntryT>
+    inline explicit linked_list_node_span(BaseEntryT* b, BaseEntryT* e = nullptr) noexcept
+        : pair_t{ static_cast<EntryT*>(b), static_cast<EntryT*>(e) }
+    {}
+
     auto& front() const noexcept;
     auto& back() const noexcept;
     inline bool empty() const noexcept { return pair_t::first == nullptr; }
@@ -51,22 +55,21 @@ struct linked_list_node_span : std::pair<EntryT*, EntryT*>
 template <class ElementT>
 class linked_list
 {
-    friend class linked_list_span<ElementT>;
+public:
+    using entry_type = linked_list_node<ElementT>;
 
-    using entry_t = linked_list_node<ElementT>;
-    
+private:
     using list_t = boost::intrusive::list<
-        entry_t,
+        entry_type,
         //boost::intrusive::member_hook<entry, boost::intrusive::list_member_hook<>, &entry::member_hook_>>;
-        boost::intrusive::base_hook<entry_t>>;
+        boost::intrusive::base_hook<entry_type>>;
 
     list_t list_;
 
-    static ElementT const& to_cexpr(entry_t const& e) noexcept { return e.value; }
-    static ElementT & to_expr(entry_t& e) noexcept { return e.value; }
+    static ElementT const& to_cexpr(entry_type const& e) noexcept { return e.value; }
+    static ElementT & to_expr(entry_type& e) noexcept { return e.value; }
 
 public:
-    using entry_type = entry_t;
     using iterator = boost::transform_iterator<decltype(&to_expr), typename list_t::iterator>;
     using const_iterator = boost::transform_iterator<decltype(&to_cexpr), typename list_t::const_iterator>;
 
@@ -79,8 +82,12 @@ public:
     inline explicit operator bool() const noexcept { return !list_.empty(); }
 
     inline const_iterator begin() const noexcept { return const_iterator{ list_.begin(), to_cexpr }; }
+    inline iterator begin() noexcept { return iterator{ list_.begin(), to_expr }; }
     inline const_iterator end() const noexcept { return const_iterator{ list_.end(), to_cexpr }; }
+    inline iterator end() noexcept { return iterator{ list_.end(), to_expr }; }
     inline const_iterator last() const noexcept { const_iterator r = end(); if (!list_.empty()) --r; return r; }
+    inline iterator last() noexcept { iterator r = end(); if (!list_.empty()) --r; return r; }
+
     inline size_t size() const noexcept { return list_.size(); }
     inline bool empty() const noexcept { return list_.empty(); }
 
@@ -91,7 +98,7 @@ public:
     inline ElementT & back() noexcept { return list_.back().value; }
     inline entry_type& back_entry() noexcept { return list_.back(); }
 
-    template <std::derived_from<entry_t> EntryT>
+    template <std::derived_from<entry_type> EntryT>
     operator linked_list_node_span<EntryT>() noexcept
     {
         if (!empty()) {
@@ -103,9 +110,20 @@ public:
     inline void push_back(entry_type& e) noexcept { list_.push_back(e); }
     inline entry_type&& pop_back() noexcept { entry_type& be = list_.back(); list_.pop_back(); return std::move(be); }
 
-    inline void splice_back(linked_list& other, const_iterator first, const_iterator last) noexcept
+    inline void splice_back(linked_list& other, const_iterator b, const_iterator e) noexcept
     {
-        list_.splice(list_.end(), other.list_, first.base(), last.base());
+        list_.splice(list_.end(), other.list_, b.base(), e.base());
+    }
+
+    template <std::derived_from<entry_type> EntryT>
+    inline void splice_back(linked_list& other, linked_list_node_span<EntryT> const& csp) noexcept
+    {
+        if (csp) {
+            list_.splice(list_.end(), other.list_,
+                list_t::s_iterator_to(*csp.first),
+                ++list_t::s_iterator_to(*csp.second)
+            );
+        }
     }
 
     inline void splice_back(linked_list& other) noexcept
@@ -117,12 +135,6 @@ public:
     inline static entry_type* prev(entry_type& e) noexcept { return std::addressof(*--list_t::s_iterator_to(e)); }
 };
 
-template <class ElementT>
-class linked_list_span
-{
-    using list_t = linked_list<ElementT>;
-    list_t& list_;
-};
 
 template <class ElementT, class ManagerT>
 class managed_linked_list : public linked_list<ElementT>

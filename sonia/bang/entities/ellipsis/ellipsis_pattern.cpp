@@ -68,19 +68,19 @@ std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::
     return std::unexpected(make_error<basic_general_error>(call.location(), "argument mismatch"sv, *object_arg));
 }
 
-error_storage push_by_name(fn_compiler_context& ctx, annotated_qname const& name, semantic::managed_expression_list & result)
+std::expected<field_descriptor, error_storage> push_by_name(fn_compiler_context& ctx, annotated_qname const& name, semantic::managed_expression_list & result)
 {
     auto optent = ctx.lookup_entity(name);
-    
-    return apply_visitor(make_functional_visitor<error_storage>([&ctx, &name, &result](auto& eid_or_var) -> error_storage
+    using result_t = std::expected<field_descriptor, error_storage>;
+    return apply_visitor(make_functional_visitor<result_t>([&ctx, &name, &result](auto& eid_or_var) -> result_t
     {
         if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, entity_identifier>) {
-            if (!eid_or_var) return make_error<undeclared_identifier_error>(std::move(name));
-            THROW_NOT_IMPLEMENTED_ERROR("ellipsis_pattern::apply(not a variable)");
+            if (!eid_or_var) return std::unexpected(make_error<undeclared_identifier_error>(std::move(name)));
+            return field_descriptor{ eid_or_var, true };
         } else {
             ctx.u().push_back_expression(result, semantic::push_local_variable{ eid_or_var });
             ctx.context_type = eid_or_var.type;
-            return error_storage{};
+            return field_descriptor{ eid_or_var.type, false };
         }
     }), optent);
 }
@@ -93,14 +93,18 @@ std::expected<functional::pattern::application_result_t, error_storage> ellipsis
     using result_t = std::expected<functional::pattern::application_result_t, error_storage>;
     return apply_visitor(make_functional_visitor<result_t>([&ctx, &nsmd](auto const* pe) -> result_t {
         unit& u = ctx.u();
+        
         semantic::managed_expression_list l{ u };
         if constexpr (std::is_same_v<decltype(pe), identifier_entity const*>) {
             annotated_qname varname{ qname{ pe->value(), false }, nsmd.location };
-            if (auto err = push_by_name(ctx, varname, l); err) return std::unexpected(std::move(err));
+            auto res = push_by_name(ctx, varname, l);
+            if (!res) return std::unexpected(std::move(res.error()));
+            if (res->is_const()) return res->entity_id(); // constexpr case
             return std::move(l);
         } else {
             basic_signatured_entity const* bse = pe;
             // make tuple
+            size_t argcount = 0; // runtime arguments
             entity_signature sig{ u.get(builtin_qnid::tuple) };
             for (auto const& field : bse->signature()->fields()) {
                 entity const& metaobject_ent = u.eregistry_get(field.entity_id());
@@ -109,11 +113,12 @@ std::expected<functional::pattern::application_result_t, error_storage> ellipsis
                     return std::unexpected(make_error<basic_general_error>(nsmd.location, "identifier is expected"sv, metaobject_ent.id()));
                 }
                 annotated_qname varname{ qname{ pie->value(), false }, nsmd.location };
-                auto err = push_by_name(ctx, varname, l);
-                if (err) return std::unexpected(std::move(err));
-                sig.push_back(pie->value(), field_descriptor{ ctx.context_type });
+                auto res = push_by_name(ctx, varname, l);
+                if (!res) return std::unexpected(std::move(res.error()));
+                sig.push_back(pie->value(), *res);
+                if (!res->is_const()) ++argcount;
             }
-            size_t argcount = sig.field_count();
+            
             indirect_signatured_entity smpl{ sig };
             entity& tplent = ctx.u().eregistry_find_or_create(smpl, [&u, &sig]() {
                 return make_shared<basic_signatured_entity>(u.get(builtin_eid::typename_), std::move(sig));
@@ -123,8 +128,12 @@ std::expected<functional::pattern::application_result_t, error_storage> ellipsis
                 u.push_back_expression(l, semantic::invoke_function(u.get(builtin_eid::arrayify)));
             }
 
-            ctx.context_type = tplent.id();
-            return std::move(l);
+            if (!argcount) { // constexpr case
+                return tplent.id();
+            } else {
+                ctx.context_type = tplent.id();
+                return std::move(l);
+            }
         }
     }), nsmd.argument());
 }

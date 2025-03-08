@@ -25,6 +25,8 @@ struct value_match_visitor : static_visitor<std::expected<entity_identifier, err
 
     result_type operator()(annotated_qname_identifier const&) const;
     
+    result_type operator()(annotated_entity_identifier const&) const;
+
     result_type operator()(function_call_t const&) const;
     
     result_type operator()(variable_identifier const&) const;

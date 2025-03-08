@@ -97,6 +97,8 @@ std::ostream& parameter_matcher::print(unit const& u, std::ostream& ss) const
     switch (modifier_) {
     case parameter_constraint_modifier_t::const_value_type:
         ss << "const "; break;
+    case parameter_constraint_modifier_t::mutable_value_type:
+        ss << "mut "; break;
     case parameter_constraint_modifier_t::const_value:
         ss << "=> "; break;
     }
@@ -176,25 +178,20 @@ variant<int, parameter_matcher::ignore_t, parameter_matcher::postpone_t, error_s
     return try_match(caller_ctx, callee_ctx, se, b, mr);
 }
 
-void parameter_matcher::bind_names(span<const annotated_identifier> names, entity_identifier type_or_value, functional_binding& binding) const
+void parameter_matcher::bind_names(span<const annotated_identifier> names, field_descriptor const& type_or_value, functional_binding& binding) const
 {
-    switch (modifier_) {
-    case parameter_constraint_modifier_t::value_type:
-    {
+    if (type_or_value.is_const()) {
         for (auto const& iname : names) {
-            binding.emplace_back(iname, local_variable{ .name = iname, .type = type_or_value, .is_weak = false });
+            binding.emplace_back(iname, type_or_value.entity_id());
         }
-        break;
-    }
-
-    default:
+    } else {
         for (auto const& iname : names) {
-            binding.emplace_back(iname, type_or_value);
+            binding.emplace_back(iname, local_variable{ .name = iname, .type = type_or_value.entity_id(), .is_weak = false });
         }
     }
 }
 
-void parameter_matcher::update_binding(unit& u, entity_identifier type_or_value, functional_binding& binding) const
+void parameter_matcher::update_binding(unit& u, field_descriptor const& type_or_value, functional_binding& binding) const
 {
     BOOST_ASSERT(!internal_names_.empty());
     annotated_identifier argid = internal_names_.front();
@@ -230,29 +227,50 @@ variant<int, parameter_matcher::ignore_t, error_storage> parameter_matcher::try_
     int weight;
     switch (modifier_) {
         case parameter_constraint_modifier_t::value_type:
+        case parameter_constraint_modifier_t::mutable_value_type:
         {
-            entity_identifier vtype_result;
-            auto last_expr_it = caller_ctx.expressions().last();
+            field_descriptor type_or_value;
+            
             if (auto const& optexpr = constraints_.type_expression; optexpr) {
                 value_type_match_visitor vtcv{ caller_ctx, callee_ctx, e, binding };
                 auto res = apply_visitor(vtcv, *optexpr);
                 if (!res) return std::move(res.error());
-                vtype_result = *res;
-                if (!vtype_result) return parameter_matcher::ignore_t{};
-                mr.append_result(is_variadic(), vtype_result, last_expr_it, caller_ctx.expressions());
+                if (!apply_visitor(make_functional_visitor<bool>([this, &caller_ctx, &mr, &type_or_value](auto& v) -> bool {
+                    if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+                        if (modifier_ != parameter_constraint_modifier_t::mutable_value_type) {
+                            mr.append_result(v);
+                            type_or_value = field_descriptor{ v, true };
+                        } else {
+                            semantic::managed_expression_list l{ caller_ctx.u() };
+                            caller_ctx.u().push_back_expression(l, semantic::push_value(v));
+                            type_or_value = field_descriptor{ caller_ctx.u().eregistry_get(v).get_type(), false };
+                            caller_ctx.context_type = type_or_value.entity_id();
+                            mr.append_result(type_or_value.entity_id(), l.end(), l);
+                            caller_ctx.expressions().splice_back(l);
+                        }
+                    } else {
+                        if (caller_ctx.context_type == caller_ctx.u().get(builtin_eid::void_)) return false;
+                        mr.append_result(caller_ctx.context_type, v.end(), v);
+                        caller_ctx.expressions().splice_back(v);
+                        type_or_value = field_descriptor{ caller_ctx.context_type, false };
+                    }
+                    return true;
+                }), *res)) return parameter_matcher::ignore_t{};
                 weight = vtcv.weight;
             } else {
+                auto last_expr_it = caller_ctx.expressions().last();
                 expression_visitor evis{ caller_ctx };
                 auto res = apply_visitor(evis, e);
                 if (!res) return std::move(res.error());
-                vtype_result = caller_ctx.context_type;
-                mr.append_result(is_variadic(), vtype_result, last_expr_it, caller_ctx.expressions());
+                mr.append_result(caller_ctx.context_type, last_expr_it, caller_ctx.expressions());
+                type_or_value = field_descriptor{ caller_ctx.context_type, false };
                 weight = -1; // unspecified type constraint has less priority than specified one
             }
             
-            update_binding(caller_ctx.u(), vtype_result, binding);
+            update_binding(caller_ctx.u(), type_or_value, binding);
             break;
         }
+        
         case parameter_constraint_modifier_t::const_value_type:
         {
             if (auto const& optexpr = constraints_.type_expression; optexpr) {
@@ -263,8 +281,8 @@ variant<int, parameter_matcher::ignore_t, error_storage> parameter_matcher::try_
                 ct_expression_visitor evis{ caller_ctx, annotated_entity_identifier{ *res, get_start_location(*optexpr) } };
                 auto argres = apply_visitor(evis, e);
                 if (!argres) return std::move(argres.error());
-                mr.append_result(is_variadic(), *argres);
-                update_binding(caller_ctx.u(), *argres, binding); // bind const value
+                mr.append_result(*argres);
+                update_binding(caller_ctx.u(), field_descriptor{ *argres, true }, binding); // bind const value
                 weight = 0;
                 break;
             }
@@ -288,8 +306,8 @@ variant<int, parameter_matcher::ignore_t, error_storage> parameter_matcher::try_
             } else {
                 weight = -1; // unspecified type constraint has less priority than specified one
             }
-            mr.append_result(is_variadic(), *argres);
-            update_binding(caller_ctx.u(), *argres, binding); // bind const value
+            mr.append_result(*argres);
+            update_binding(caller_ctx.u(), field_descriptor{ *argres, true }, binding); // bind const value
             break;
             //for (identifier name : internal_names_) {
             //    binding.emplace_back(name, *argres); // bind typename
@@ -319,9 +337,9 @@ public:
         return binding_.lookup(id);
     }
 
-    inline void emplace_back(annotated_identifier id, value_type value) override final
+    inline value_type& emplace_back(annotated_identifier id, value_type value) override final
     {
-        binding_.emplace_back(std::move(id), std::move(value));
+        return binding_.emplace_back(std::move(id), std::move(value));
     }
 };
 
@@ -339,7 +357,7 @@ variant<int, parameter_matcher::ignore_t, error_storage> varnamed_parameter_matc
     }), r);
 }
 
-void varnamed_parameter_matcher::update_binding(unit& u, entity_identifier type_or_value, functional_binding& binding) const
+void varnamed_parameter_matcher::update_binding(unit& u, field_descriptor const& type_or_value, functional_binding& binding) const
 {
     BOOST_ASSERT(internal_names_.size() == 1);
     annotated_identifier name = internal_names_.front();
@@ -625,12 +643,15 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         }
 
         if (start_matcher_it == end_matcher_it) {
-            functional_binding_set tmp;
-            value_type_match_visitor vtcv{ ctx, callee_ctx, arg.value(), tmp };
-            auto res = vtcv.operator()(placeholder{});
-            if (res && !*res) { // ignore void
-                continue;
-            }
+            auto res = apply_visitor(base_expression_visitor{ ctx }, arg.value());
+            if (!res) return std::unexpected(result_error(arg));
+            if (!apply_visitor(make_functional_visitor<bool>([&ctx](auto& v) -> bool {
+                if constexpr (std::is_same_v<semantic::managed_expression_list, std::decay_t<decltype(v)>>) {
+                    return ctx.context_type != ctx.u().get(builtin_eid::void_);
+                } else {
+                    return true;
+                }
+            }), res->first)) continue; // ignore void
             return std::unexpected(result_error(arg));
         }
 
@@ -688,7 +709,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         if (pd.is_varnamed) continue;
         if (pd.ename) {
             parameter_match_result& pmr = pmd->get_match_result(pd.ename.value);
-            if (pmr.is_undefined()) {
+            if (!pmr) {
                 if (pd.default_value) {
                     named_parameter_matcher const* nmtch = get_matcher(pd.ename.value);
                     BOOST_ASSERT(nmtch);
@@ -701,7 +722,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
             }
         } else {
             parameter_match_result& pmr = pmd->get_match_result(argpos++);
-            if (pmr.is_undefined()) {
+            if (!pmr) {
                 // to do: check default
                 
                 return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv, pd.inames.front().value, pd.inames.front().location));
@@ -763,14 +784,16 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
     unit& u = ctx.u();
     intptr_t argindex = 0;
 
-    auto argument_appender = [&md, &argindex, &bound_arguments](annotated_identifier name) {
+    auto argument_appender = [&md, &argindex, &bound_arguments](annotated_identifier name) -> bool {
         functional_binding::value_type const* bsp = md.bindings.lookup(name.value);
         BOOST_ASSERT(bsp);
-        local_variable const* plv = get<local_variable>(bsp);
-        BOOST_ASSERT(plv);
-        local_variable lv = *plv;
-        lv.index = argindex;
-        bound_arguments.emplace_back(name, std::move(lv));
+        if (local_variable const* plv = get<local_variable>(bsp); plv) {
+            local_variable lv = *plv;
+            lv.index = argindex;
+            bound_arguments.emplace_back(name, std::move(lv));
+            return true;
+        }
+        return false;
     };
 
     // first process only variables in reverse order
@@ -779,13 +802,16 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
         BOOST_ASSERT(!pd.ename || pd.inames.size() == 1);
         BOOST_ASSERT(pd.ename || !pd.inames.empty());
 
-        if (pd.modifier != parameter_constraint_modifier_t::value_type) continue;
+        if (pd.modifier != parameter_constraint_modifier_t::value_type && pd.modifier != parameter_constraint_modifier_t::mutable_value_type) continue;
 
         if (!pd.is_varnamed) {
+
             --argindex;
+            bool argindex_used = false;
             for (annotated_identifier name : pd.inames) {
-                argument_appender(name);
+                argindex_used |= argument_appender(name);
             }
+            if (!argindex_used) ++argindex;
             continue;
         }
 
@@ -801,8 +827,14 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
             entity const& packargid = u.eregistry_get(f.entity_id());
             BOOST_ASSERT(packargid.get_type() == ctx.u().get(builtin_eid::identifier));
             identifier_entity const& packargid_ent = static_cast<identifier_entity const&>(packargid);
-            --argindex;
-            argument_appender(annotated_identifier{ packargid_ent.value(), pd.inames.front().location });
+            parameter_match_result& pmr = md.get_match_result(packargid_ent.value());
+            for (auto const& [eid, optspan] : pmr.results) {
+                if (optspan) {
+                    // to do: fix variadic arguments with the same name
+                    --argindex;
+                    argument_appender(annotated_identifier{ packargid_ent.value(), pd.inames.front().location });
+                }
+            }
         }
     }
 
@@ -816,9 +848,7 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
             } else if constexpr (std::is_same_v<std::decay_t<decltype(e)>, entity_ptr>) {
                 if (auto eid = e->id(); eid) return eid;
                 if (e->get_type() == u.get(builtin_eid::metaobject)) {
-                    //shared_ptr<basic_signatured_entity> pentity = dynamic_pointer_cast<basic_signatured_entity>(e);
-                    u.eregistry_insert(e);
-                    return e->id();
+                    return u.eregistry_find_or_create(*e, [&e]() { return std::move(e); }).id();
                 }
                 entity& ent = *e;
                 // need register
@@ -940,20 +970,23 @@ size_t basic_fn_pattern::apply_arguments(fn_compiler_context& ctx, functional_ma
 
     size_t argcount = 0;
     auto expression_appender = [&u, &exprs, &argcount](functional_match_descriptor& md, parameter_match_result& pmr) {
-        for (auto rng : pmr.expressions) {
-            ++rng.second;
-            exprs.splice_back(md.call_expressions, rng.first, rng.second);
-            ++argcount;
+        size_t non_constexpr_count = 0;
+        for (auto [rt, optrng] : pmr.results) {
+            if (optrng) {
+                ++non_constexpr_count;
+                exprs.splice_back(md.call_expressions, *optrng);
+            }
+            argcount += non_constexpr_count;
         }
-        if (pmr.is_variadic()) {
-            u.push_back_expression(exprs, semantic::push_value(mp::integer{ pmr.result.size() }));
-        }
+        //if (variadic) {
+        //    u.push_back_expression(exprs, semantic::push_value(mp::integer{ non_constexpr_count }));
+        //}
     };
 
     size_t argpos = 0;
     for (parameter_descriptor const& pd : parameters_) {
 
-        if (pd.modifier != parameter_constraint_modifier_t::value_type) {
+        if (pd.modifier != parameter_constraint_modifier_t::mutable_value_type && pd.modifier != parameter_constraint_modifier_t::value_type) {
             if (!pd.ename) ++argpos;
             continue;
         }

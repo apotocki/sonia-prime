@@ -41,6 +41,11 @@ struct annotated
     inline explicit operator bool() const noexcept { return (bool)value; }
 };
 
+struct annotated_nil
+{
+    lex::resource_location location;
+};
+
 using annotated_string_view = annotated<string_view>;
 using annotated_identifier = annotated<identifier>;
 using annotated_qname = annotated<qname>;
@@ -79,9 +84,10 @@ struct bang_any_t { BANG_TRIVIAL_CMP(bang_any_t) };
 
 enum class parameter_constraint_modifier_t : uint8_t
 {
-    value_type = 0,
-    const_value_type = 1,
-    const_value = 2
+    mutable_value_type = 1,
+    const_value_type = 2,
+    value_type = 3,
+    const_value = 4
 };
 
 // e.g. fn (externalName: string); fn (externalName $internalName: string);
@@ -607,7 +613,7 @@ struct lambda : fn_pure<ExprT>
 
 using syntax_expression_t = make_recursive_variant<
     placeholder, variable_identifier,
-    annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier, annotated_qname,
+    annotated_nil, annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier, annotated_qname,
     bang_fn_type<recursive_variant_>,
     bang_array<recursive_variant_>, bang_vector<recursive_variant_>, bang_tuple<recursive_variant_>,
     bang_union<recursive_variant_>,
@@ -878,23 +884,20 @@ struct struct_decl
 
 struct enum_decl
 {
-    annotated_qname_identifier aname;
+    annotated_qname name;
     std::vector<identifier> cases;
-
-    qname_identifier name() const { return aname.value; }
-    lex::resource_location const& location() const { return aname.location; }
 };
 
 // e.g: type View(disabled: bool, enabled: bool, hidden:bool, empty: bool, backgroundColor: Color);
-struct type_decl
-{
-    annotated_qname_identifier aname;
-    extension_list_t bases;
-    parameter_list_t parameters;
-
-    qname_identifier name() const { return aname.value; }
-    lex::resource_location const& location() const { return aname.location; }
-};
+//struct type_decl
+//{
+//    annotated_qname_identifier aname;
+//    extension_list_t bases;
+//    parameter_list_t parameters;
+//
+//    qname_identifier name() const { return aname.value; }
+//    lex::resource_location const& location() const { return aname.location; }
+//};
 
 struct extern_var
 {
@@ -947,7 +950,7 @@ struct for_decl
 
 // statements that don't need ';' separator at the end
 using finished_statement_type = variant<
-    while_decl, for_decl, if_decl, fn_decl_t, struct_decl
+    while_decl, for_decl, if_decl, fn_decl_t, struct_decl, enum_decl
 >;
 
 using generic_statement_type = variant<

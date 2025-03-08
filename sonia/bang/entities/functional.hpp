@@ -30,7 +30,7 @@ public:
 
     // bound entity_identifier can not be changed, but bound entity can be updated
     virtual value_type const* lookup(identifier) const noexcept = 0;
-    virtual void emplace_back(annotated_identifier, value_type) = 0;
+    virtual value_type& emplace_back(annotated_identifier, value_type) = 0;
 };
 
 class functional_binding_set : public functional_binding
@@ -44,7 +44,9 @@ public:
     
     value_type const* lookup(identifier) const noexcept override;
 
-    void emplace_back(annotated_identifier, value_type) override;
+    value_type const* lookup(identifier, lex::resource_location const**) const noexcept;
+
+    value_type& emplace_back(annotated_identifier, value_type) override;
 
     template <typename FT>
     requires std::is_invocable_v<FT, identifier, lex::resource_location const&, value_type&>
@@ -61,30 +63,31 @@ public:
 
 struct parameter_match_result
 {
-    enum class modifier : uint8_t
-    {
-        undefined = 0,
-        is_expr = 1,
-        is_constexpr = 2,
-        is_uniadic = 4,
-        is_variadic = 8,
-    };
-    using se_cont_iterator = semantic::expression_list_t::const_iterator;
-    using se_rng_t = std::pair<se_cont_iterator, se_cont_iterator>;
+    //enum class modifier : uint8_t
+    //{
+    //    undefined = 0,
+    //    is_expr = 1,
+    //    is_constexpr = 2,
+    //    is_uniadic = 4,
+    //    is_variadic = 8,
+    //};
+    using se_iterator = semantic::expression_list_t::iterator;
+    //using se_rng_t = std::pair<se_cont_iterator, se_cont_iterator>;
 
-    small_vector<se_rng_t, 4> expressions;
-    small_vector<entity_identifier, 4> result;
-    uint8_t mod = (uint8_t)modifier::undefined;
+    small_vector<std::pair<entity_identifier, optional<semantic::expression_span>>, 4> results;
+    //uint8_t mod = (uint8_t)modifier::undefined;
 
-    void append_result(bool variadic, entity_identifier, se_cont_iterator before_start_it, semantic::expression_list_t&);
-    void append_result(bool variadic, entity_identifier);
+    void append_result(entity_identifier, se_iterator before_start_it, semantic::expression_list_t&);
+    void append_result(entity_identifier);
 
-    void set_constexpr(bool);
-    void set_variadic(bool);
+    inline explicit operator bool() const noexcept { return !results.empty(); }
 
-    inline bool is_undefined() const noexcept { return mod == (uint8_t)modifier::undefined; }
-    inline bool is_constexpr() const noexcept { return !!(mod & (uint8_t)modifier::is_constexpr); }
-    inline bool is_variadic() const noexcept { return !!(mod & (uint8_t)modifier::is_variadic); }
+    //void set_constexpr(bool);
+    //void set_variadic(bool);
+
+    //inline bool is_undefined() const noexcept { return mod == (uint8_t)modifier::undefined; }
+    //inline bool is_constexpr() const noexcept { return !!(mod & (uint8_t)modifier::is_constexpr); }
+    //inline bool is_variadic() const noexcept { return !!(mod & (uint8_t)modifier::is_variadic); }
 };
 
 class functional_match_descriptor

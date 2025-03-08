@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "set_pattern.hpp"
+#include "tuple_set_pattern.hpp"
 
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/ast/fn_compiler_context.hpp"
@@ -58,7 +58,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
                 entity const& some_entity = ctx.u().eregistry_get(ctx.context_type);
                 if (auto psig = some_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
                     pte = &some_entity;
-                    pmd->get_match_result(pargname->value).append_result(false, ctx.context_type, last_expr_it, ctx.expressions());
+                    pmd->get_match_result(pargname->value).append_result(ctx.context_type, last_expr_it, ctx.expressions());
                     continue;
                 }
             }
@@ -124,9 +124,9 @@ error_storage tuple_set_pattern::apply(fn_compiler_context& ctx, functional_matc
 
     // only one named argument is expected
     md.for_each_named_match([&exprs, &md](identifier name, parameter_match_result const& mr) {
-        for (auto rng : mr.expressions) {
-            ++rng.second;
-            exprs.splice_back(md.call_expressions, rng.first, rng.second);
+        for (auto& [_, optspan] : mr.results) {
+            BOOST_ASSERT(optspan);
+            exprs.splice_back(md.call_expressions, *optspan);
         }
     });
 

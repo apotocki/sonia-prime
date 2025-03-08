@@ -23,6 +23,11 @@ std::ostream& signatured_entity::print_to(std::ostream& os, unit const& u) const
     //return entity::print_to(os, u) << "<"sv << u.print(*signature()) << ">"sv;
 }
 
+std::ostream& empty_entity::print_to(std::ostream& os, unit const& u) const
+{
+    return u.eregistry_get(get_type()).print_to(os << "empty: "sv, u);
+}
+
 #if 0
 class type_mangler_visitor : static_visitor<qname_identifier>
 {

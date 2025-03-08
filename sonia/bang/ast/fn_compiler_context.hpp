@@ -5,7 +5,7 @@
 #pragma once
 //#include <boost/unordered_map.hpp>
 
-#include <boost/container/flat_set.hpp>
+//#include <boost/container/flat_set.hpp>
 
 #include "sonia/exceptions.hpp"
 #include "sonia/small_vector.hpp"
@@ -104,7 +104,7 @@ class fn_compiler_context
     size_t local_variable_count_ = 0;
     compiler_worker_id worker_id_;
     small_vector<functional_binding const*, 4> bindings_;
-    boost::container::small_flat_set<local_variable, 8, local_variable_compare> variables_;
+    functional_binding_set locals_;
 
 public:
     fn_compiler_context(unit& u, qname ns = {});
@@ -212,6 +212,7 @@ public:
     //}
 
     local_variable& new_variable(annotated_identifier, entity_identifier type);
+    void new_constant(annotated_identifier, entity_identifier);
 
 #if 0
     small_vector<std::pair<variable_entity*, variable_entity*>, 16> captured_variables;

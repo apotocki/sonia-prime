@@ -36,14 +36,14 @@ std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_
     if (!res) return std::unexpected(std::move(res.error()));
 
     auto pmd = make_shared<functional_match_descriptor>(ctx.u());
-    pmd->get_match_result(0).append_result(false, *res);
+    pmd->get_match_result(0).append_result(*res);
     return pmd;
 }
 
 std::expected<entity_identifier, error_storage> create_identifier_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    entity_identifier strid = md.get_match_result(0).result.front();
+    entity_identifier strid = md.get_match_result(0).results.front().first;
     string_literal_entity const& str_ent = static_cast<string_literal_entity const&>(u.eregistry_get(strid));
     identifier id = u.slregistry().resolve(str_ent.value());
     return ctx.u().eregistry_find_or_create(id).id();

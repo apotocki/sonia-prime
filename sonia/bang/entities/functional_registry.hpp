@@ -21,8 +21,8 @@ class functional_registry
     using qname_view_t = typename FunctionalT::qname_view_type;
 
 public:
-    FunctionalT* find(qname_view_t) const noexcept;
-    FunctionalT& resolve(qname_view_t) noexcept;
+    FunctionalT* find(qname_view_t) const noexcept(!sonia_is_debug);
+    FunctionalT& resolve(qname_view_t) noexcept(!sonia_is_debug);
     FunctionalT& resolve(identifier_type qid) const;
 
 private:
@@ -48,7 +48,7 @@ private:
 };
 
 template <typename FunctionalT, typename MutexT>
-FunctionalT* functional_registry<FunctionalT, MutexT>::find(qname_view_t qnv) const noexcept
+FunctionalT* functional_registry<FunctionalT, MutexT>::find(qname_view_t qnv) const noexcept(!sonia_is_debug)
 {
     BOOST_ASSERT(qnv.is_absolute());
     lock_guard guard(set_mtx_);
@@ -62,7 +62,7 @@ FunctionalT* functional_registry<FunctionalT, MutexT>::find(qname_view_t qnv) co
 }
 
 template <typename FunctionalT, typename MutexT>
-FunctionalT& functional_registry<FunctionalT, MutexT>::resolve(qname_view_t qnv) noexcept
+FunctionalT& functional_registry<FunctionalT, MutexT>::resolve(qname_view_t qnv) noexcept(!sonia_is_debug)
 {
     BOOST_ASSERT(qnv.is_absolute());
     lock_guard guard(set_mtx_);

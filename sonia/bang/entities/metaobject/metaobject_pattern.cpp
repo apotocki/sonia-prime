@@ -23,7 +23,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_pattern
 
         annotated_identifier const* pargname = arg.name();
         parameter_match_result* pmr = pargname ? &pmd->get_match_result(pargname->value) : &pmd->get_match_result(pos_arg_num++);
-        pmr->append_result(false, *res);
+        pmr->append_result(*res);
     }
     return pmd;
 }

@@ -28,6 +28,8 @@ struct ct_expression_visitor
         is_type_expected = is_type_expected_value;
     }
 
+    //result_type operator()(context_value const&) const;
+
     result_type operator()(annotated_bool const&) const;
     result_type operator()(annotated_integer const&) const;
     result_type operator()(annotated_decimal const&) const;

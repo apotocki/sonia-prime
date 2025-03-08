@@ -35,6 +35,7 @@ public:
     [[nodiscard]] result_type operator()(using_decl const&) const;
 
     [[nodiscard]] result_type operator()(struct_decl const&) const;
+    [[nodiscard]] result_type operator()(enum_decl const&) const;
 
     [[nodiscard]] result_type operator()(fn_pure_t const&) const;
 

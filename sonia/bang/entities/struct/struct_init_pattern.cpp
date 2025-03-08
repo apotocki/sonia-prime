@@ -13,6 +13,11 @@
 
 namespace sonia::lang::bang {
 
+std::ostream& struct_init_pattern::print(unit const&, std::ostream& s) const
+{
+    return s << "init(...) -> @structure"sv;
+}
+
 struct_init_pattern::struct_init_pattern(functional const& fnl, variant<field_list_t, statement_span> const& body)
     : basic_fn_pattern{ fnl }
 {
@@ -25,7 +30,7 @@ struct_init_pattern::struct_init_pattern(functional const& fnl, variant<field_li
                     switch (fm)
                     {
                     case sonia::lang::bang::field_modifier_t::value:
-                        return parameter_constraint_modifier_t::value_type;
+                        return parameter_constraint_modifier_t::mutable_value_type;
                     case sonia::lang::bang::field_modifier_t::const_value:
                         return parameter_constraint_modifier_t::const_value_type;
                     default:
@@ -85,25 +90,23 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_init_patter
     return res;
 }
 
-error_storage struct_init_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> struct_init_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     // create tuple instance
     unit& u = ctx.u();
-    size_t argcount = apply_arguments(ctx, md, ctx.expressions());
+    
+    semantic::managed_expression_list el{ u };
+
+    size_t argcount = apply_arguments(ctx, md, el);
 
     if (argcount > 1) {
-        u.push_back_expression(ctx.expressions(), semantic::push_value{ mp::integer{ argcount } });
-        u.push_back_expression(ctx.expressions(), semantic::invoke_function(u.get(builtin_eid::arrayify)));
+        u.push_back_expression(el, semantic::push_value{ mp::integer{ argcount } });
+        u.push_back_expression(el, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
 
     BOOST_ASSERT(md.result.entity_id());
     ctx.context_type = md.result.entity_id();
-    return {};
-}
-
-std::expected<entity_identifier, error_storage> struct_init_pattern::const_apply(fn_compiler_context&, functional_match_descriptor&) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("struct_init_pattern::const_apply");
+    return el;
 }
 
 }

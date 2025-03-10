@@ -200,7 +200,7 @@ void parameter_matcher::update_binding(unit& u, field_descriptor const& type_or_
     if (is_variadic()) {
         // make up an identifier for the pack
         annotated_identifier packargname_id{ u.new_identifier(), argid.location };
-        entity_identifier packargname_eid = u.eregistry_find_or_create(packargname_id.value).id();
+        entity_identifier packargname_eid = u.make_identifier_entity(packargname_id.value).id();
         entity_signature* psig;
 
         auto optpack = binding.lookup(argid.value);
@@ -365,7 +365,7 @@ void varnamed_parameter_matcher::update_binding(unit& u, field_descriptor const&
 
     varnamed_parameter_binding& vb = static_cast<varnamed_parameter_binding&>(binding);
     annotated_identifier argid = vb.argname();
-    entity_identifier argname_eid = u.eregistry_find_or_create(argid.value).id();
+    entity_identifier argname_eid = u.make_identifier_entity(argid.value).id();
     
     auto optval = binding.lookup(name.value);
     if (!optval) {
@@ -387,7 +387,7 @@ void varnamed_parameter_matcher::update_binding(unit& u, field_descriptor const&
     if (is_variadic()) {
         // make up an identifier for the pack
         annotated_identifier packargname_id { u.new_identifier(), name.location };
-        entity_identifier packargname_eid = u.eregistry_find_or_create(packargname_id.value).id();
+        entity_identifier packargname_eid = u.make_identifier_entity(packargname_id.value).id();
         entity_signature* psig;
         
         auto optpack = binding.lookup(argid.value);

@@ -32,6 +32,8 @@
 
 #include "entities/enum/enum_implicit_cast_pattern.hpp"
 
+#include "entities/collections/array_implicit_cast_pattern.hpp"
+
 #include "entities/metaobject/metaobject_pattern.hpp"
 #include "entities/metaobject/typeof_pattern.hpp"
 #include "entities/metaobject/metaobject_head_pattern.hpp"
@@ -339,6 +341,11 @@ std::string unit::print(entity_signature const& sgn) const
 
         ss <<')';
     }
+    if (sgn.result) {
+        ss << "->"sv;
+        if (sgn.result->is_const()) ss << "const "sv;
+        ss << print(sgn.result->entity_id());
+    }
     return ss.str();
 }
 
@@ -414,16 +421,16 @@ struct type_printer_visitor : static_visitor<void>
     //    ss << ')';
     //}
 
-    template <typename FamilyT>
-    inline void operator()(bang_tuple<FamilyT> const& tpl) const
-    {
-        ss << '(';
-        for (auto const& f : tpl.fields) {
-            if (&f != &tpl.fields.front()) ss << ',';
-            apply_visitor(*this, f);
-        }
-        ss << ')';
-    }
+    //template <typename FamilyT>
+    //inline void operator()(bang_tuple<FamilyT> const& tpl) const
+    //{
+    //    ss << '(';
+    //    for (auto const& f : tpl.fields) {
+    //        if (&f != &tpl.fields.front()) ss << ',';
+    //        apply_visitor(*this, f);
+    //    }
+    //    ss << ')';
+    //}
 
     //inline void operator()(bang_bunion_t const& bu) const
     //{
@@ -704,7 +711,7 @@ struct expr_printer_visitor : static_visitor<void>
     {
         ss << '(';
         bool is_first = true;
-        for (auto const& ne: nel) {
+        for (auto const& ne: nel.elements) {
             if (is_first) is_first = false;
             else ss << ", "sv;
             if (auto const* pname = ne.name(); pname) {
@@ -847,6 +854,74 @@ void unit::eregistry_insert(shared_ptr<entity> e)
     eregistry_.insert(std::move(e));
 }
 
+identifier_entity const& unit::make_identifier_entity(identifier value)
+{
+    identifier_entity sample{ value };
+    return static_cast<identifier_entity&>(eregistry_find_or_create(sample, [this, value]() {
+        return make_shared<identifier_entity>(value, get(builtin_eid::identifier));
+    }));
+}
+
+entity const& unit::make_integer_entity(mp::integer_view value)
+{
+    integer_literal_entity smpl{ value };
+    return eregistry_find_or_create(smpl, [this, &value]() {
+        return make_shared<integer_literal_entity>(value, get(builtin_eid::integer));
+    });
+}
+
+entity const& unit::make_vector_type_entity(entity_identifier element_type)
+{
+    entity_signature sig{ get(builtin_qnid::vector) };
+    sig.push_back(get(builtin_id::element), field_descriptor{ element_type });
+    indirect_signatured_entity smpl{ sig };
+    return eregistry_find_or_create(smpl, [this, &sig]() {
+        return make_shared<basic_signatured_entity>(get(builtin_eid::typename_), std::move(sig));
+    });
+}
+
+entity const& unit::make_vector_entity(entity_identifier element_type, span<entity_identifier> const& values)
+{
+    entity_signature sig{ get(builtin_qnid::metaobject) };
+    //sig.push_back(u.get(builtin_id::element), field_descriptor{ element_type, true });
+    for (auto const& v : values) {
+        sig.push_back(field_descriptor{ v, true });
+    }
+    entity_identifier tp = make_vector_type_entity(element_type).id();
+    sig.result = field_descriptor{ tp };
+    indirect_signatured_entity smpl{ sig };
+    return eregistry_find_or_create(smpl, [&sig, element_type, tp]() {
+        return make_shared<basic_signatured_entity>(tp, std::move(sig));
+    });
+}
+
+entity const& unit::make_array_type_entity(entity_identifier element_type, size_t sz)
+{
+    entity_signature sig{ get(builtin_qnid::array) };
+    sig.push_back(get(builtin_id::element), field_descriptor{ element_type });
+    entity_identifier szeid = make_integer_entity((int64_t)sz).id();
+    sig.push_back(get(builtin_id::size), field_descriptor{ szeid, true });
+    indirect_signatured_entity smpl{ sig };
+    return eregistry_find_or_create(smpl, [this, &sig]() {
+        return make_shared<basic_signatured_entity>(get(builtin_eid::typename_), std::move(sig));
+    });
+}
+
+entity const& unit::make_array_entity(entity_identifier element_type, span<entity_identifier> const& values)
+{
+    entity_signature sig{ get(builtin_qnid::metaobject) };
+    //sig.push_back(u.get(builtin_id::element), field_descriptor{ element_type, true });
+    for (auto const& v : values) {
+        sig.push_back(field_descriptor{ v, true });
+    }
+    entity_identifier tp = make_array_type_entity(element_type, values.size()).id();
+    sig.result = field_descriptor{ tp };
+    indirect_signatured_entity smpl{ sig };
+    return eregistry_find_or_create(smpl, [&sig, element_type, tp]() {
+        return make_shared<basic_signatured_entity>(tp, std::move(sig));
+    });
+}
+
 unit::unit()
     : slregistry_{ identifier_builder_ }
     , piregistry_{ identifier_builder_ }
@@ -934,6 +1009,8 @@ unit::unit()
     builtin_ids_[(size_t)builtin_id::type] = make_identifier("__type"sv);
     builtin_ids_[(size_t)builtin_id::to] = make_identifier("to"sv);
     builtin_ids_[(size_t)builtin_id::self] = make_identifier("self"sv);
+    builtin_ids_[(size_t)builtin_id::size] = make_identifier("size"sv);
+    builtin_ids_[(size_t)builtin_id::element] = make_identifier("element"sv);
     builtin_ids_[(size_t)builtin_id::property] = make_identifier("property"sv);
     builtin_ids_[(size_t)builtin_id::object] = make_identifier("object"sv);
     builtin_ids_[(size_t)builtin_id::numargs] = make_identifier("$$"sv);
@@ -942,6 +1019,11 @@ unit::unit()
     //// types
     builtin_qnids_[(size_t)builtin_qnid::any] = make_qname_identifier("any");
     builtin_qnids_[(size_t)builtin_qnid::tuple] = make_qname_identifier("tuple");
+    builtin_qnids_[(size_t)builtin_qnid::vector] = make_qname_identifier("vector");
+    builtin_qnids_[(size_t)builtin_qnid::array] = make_qname_identifier("array");
+
+    //// values
+    
 
     //// operations
     builtin_qnids_[(size_t)builtin_qnid::new_] = make_qname_identifier("new"sv);
@@ -963,11 +1045,11 @@ unit::unit()
     auto typename_qname_identifier = make_qname_identifier("typename");
     auto typename_entity = make_shared<basic_signatured_entity>();
     typename_entity->set_signature(entity_signature{typename_qname_identifier});
+    typename_entity->signature()->result.emplace(get(builtin_eid::typename_));
 
     eregistry_insert(typename_entity);
     builtin_eids_[(size_t)builtin_eid::typename_] = typename_entity->id();
-    typename_entity->set_type(get(builtin_eid::typename_));
-
+    
     // any
     auto any_entity = make_shared<basic_signatured_entity>(get(builtin_eid::typename_), entity_signature{ get(builtin_qnid::any) });
     eregistry_insert(any_entity);
@@ -1023,6 +1105,7 @@ unit::unit()
     functional& implicit_cast_fnl = fregistry().resolve(get(builtin_qnid::implicit_cast));
     implicit_cast_fnl.push(make_shared<struct_implicit_cast_pattern>());
     implicit_cast_fnl.push(make_shared<enum_implicit_cast_pattern>());
+    implicit_cast_fnl.push(make_shared<array_implicit_cast_pattern>());
 
     // make_tuple(...) -> tuple(...)
     functional& make_tuple_fnl = fregistry().resolve(get(builtin_qnid::make_tuple));

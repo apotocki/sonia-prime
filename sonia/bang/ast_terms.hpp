@@ -180,14 +180,21 @@ struct opt_named_term
     }
 };
 
+
+//template <typename T> struct bang_tuple
+//{
+//    lex::resource_location location;
+//    opt_named_term_list<T> fields;
+//    inline bool operator==(bang_tuple const&) const = default;
+//};
+
 template <typename TermT>
 using opt_named_term_list = small_vector<opt_named_term<TermT>, 2>;
 
-
-template <typename T> struct bang_tuple
+template <typename T> struct opt_named_syntax_expression_list
 {
-    opt_named_term_list<T> fields;
-    inline bool operator==(bang_tuple const&) const = default;
+    lex::resource_location location;
+    opt_named_term_list<T> elements;
 };
 
 template <class TupleT, typename T> struct bang_fn_base
@@ -206,7 +213,8 @@ template <class TupleT, typename T> struct bang_fn_base
         if (auto * ptuple = sonia::get<TupleT>(&a); ptuple) {
             arg = std::move(*ptuple);
         } else {
-            arg.fields.emplace_back(std::move(a));
+            arg.location = get_start_location(a);
+            arg.elements.emplace_back(std::move(a));
         }
     }
 
@@ -219,7 +227,7 @@ template <class TupleT, typename T> struct bang_fn_base
     }
 };
 
-template <typename T> using bang_fn_type = bang_fn_base<bang_tuple<T>, T>;
+template <typename T> using bang_fn_type = bang_fn_base<opt_named_syntax_expression_list<T>, T>;
 
 template <typename T> struct bang_array
 {
@@ -234,6 +242,7 @@ template <typename T> struct bang_array
 
 template <typename T> struct bang_vector
 {
+    lex::resource_location location;
     T type;
     inline bool operator==(bang_vector const&) const noexcept = default;
     inline auto operator<=>(bang_vector const& r) const noexcept { return variant_compare_three_way{}(type, r.type); }
@@ -455,7 +464,7 @@ struct chained_expression
 struct context_identifier
 {
     annotated_identifier name;
-    lex::resource_location start;
+    lex::resource_location location;
 };
 
 template <typename ExprT>
@@ -541,9 +550,16 @@ struct new_expression
 //    lex::resource_location location;
 //};
 
-template <typename T> struct opt_named_syntax_expression_list : opt_named_term_list<T>
+
+
+template <typename T>
+using expression_list = small_vector<T, 4>;
+
+template <typename T>
+struct array_expression
 {
     lex::resource_location location;
+    expression_list<T> elements;
 };
 
 template <typename ExprT>
@@ -614,8 +630,9 @@ struct lambda : fn_pure<ExprT>
 using syntax_expression_t = make_recursive_variant<
     placeholder, variable_identifier,
     annotated_nil, annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier, annotated_qname,
+    array_expression<recursive_variant_>,
     bang_fn_type<recursive_variant_>,
-    bang_array<recursive_variant_>, bang_vector<recursive_variant_>, bang_tuple<recursive_variant_>,
+    bang_array<recursive_variant_>, bang_vector<recursive_variant_>,
     bang_union<recursive_variant_>,
     context_value, context_identifier, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
     lambda<recursive_variant_>,
@@ -638,6 +655,7 @@ using fn_pure_t = fn_pure<syntax_expression_t>;
 using lambda_t = lambda<syntax_expression_t>;
 using opt_named_syntax_expression_t = opt_named_term<syntax_expression_t>;
 using opt_named_syntax_expression_list_t = opt_named_syntax_expression_list<syntax_expression_t>;
+using array_expression_t = array_expression<syntax_expression_t>;
 
 enum class field_modifier_t : uint8_t
 {
@@ -656,7 +674,7 @@ using field_list_t = std::vector<field_t>;
 
 using parameter_list_t = parameter_list<syntax_expression_t>;
 
-using expression_list_t = small_vector<syntax_expression_t, 4>;
+using expression_list_t = expression_list<syntax_expression_t>;
 using opt_chain_t = opt_chain<syntax_expression_t>;
 using opt_chain_link_t = opt_chain_link<syntax_expression_t>;
 using chained_expression_t = chained_expression<syntax_expression_t>;
@@ -672,7 +690,7 @@ using function_call_t = function_call<syntax_expression_t>;
 using expression_vector_t = expression_vector<syntax_expression_t>;
 
 using bang_fn_type_t = bang_fn_type<syntax_expression_t>;
-using bang_tuple_t = bang_tuple<syntax_expression_t>;
+//using bang_tuple_t = bang_tuple<syntax_expression_t>;
 using bang_vector_t = bang_vector<syntax_expression_t>;
 using bang_array_t = bang_array<syntax_expression_t>;
 using bang_union_t = bang_union<syntax_expression_t>;

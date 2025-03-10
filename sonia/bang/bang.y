@@ -100,12 +100,14 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 %token COLON                "`:`"
 %token DBLCOLON             "`::`"
-%token <sonia::lang::lex::resource_location> OPEN_PARENTHESIS     "`(`"
+%token <sonia::lang::lex::resource_location> OPEN_PARENTHESIS       "`(`"
 %token CLOSE_PARENTHESIS    "`)`"
-%token <sonia::lang::lex::resource_location> OPEN_BRACE           "`{`"
+%token <sonia::lang::lex::resource_location> OPEN_BRACE             "`{`"
 %token CLOSE_BRACE			"`}`"
-%token <sonia::lang::lex::resource_location> OPEN_SQUARE_BRACKET  "`[`"
+%token <sonia::lang::lex::resource_location> OPEN_SQUARE_BRACKET    "`[`"
 %token CLOSE_SQUARE_BRACKET "`]`"
+%token <sonia::lang::lex::resource_location> OPEN_SQUARE_DBL_BRACKET "`[[`"
+%token CLOSE_SQUARE_DBL_BRACKET "`]]`"
 %token OPEN_BROKET          "`<`"
 %token CLOSE_BROKET         "`>`"
 %token END_STATEMENT		"`;`"
@@ -311,6 +313,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 //%type <named_expression_list_t> opt-named-expr-list-any opt-named-expr-list
 //%type <named_expression_t> opt-named-expr
 //%type <expression_list_t> expression-list-any
+%type <expression_list_t> expression-list
 
 //%type <named_expression_term_t> named-arg
 //%type <named_expression_term_list_t> arg-list arg-list-not-empty
@@ -597,6 +600,19 @@ using-decl:
         }
     ;
 
+////////////////////// LIST (aka vector/list elements)
+/*
+expression-list-any:
+      %empty { $$ = {}; }
+    | expression-list
+    ;
+*/
+expression-list:
+      syntax-expression[value]
+        { $$ = expression_list_t{ std::move($value) }; }
+    | expression-list[list] COMMA syntax-expression[value]
+        { $$ = std::move($list); $$.emplace_back(std::move($value)); }
+    ;
 
 ////////////////////// ARGUMENTS (aka function call arguments)
 argument-list-opt:
@@ -846,9 +862,19 @@ syntax-expression-wo-ii:
             if ($list.size() == 1 && !$list.front().has_name()) { // single unnamed expression => extract
                 $$ = std::move($list.front().value());
             } else {
-                $$ = opt_named_syntax_expression_list_t{ std::move($list), std::move($start) };
+                $$ = opt_named_syntax_expression_list_t{ std::move($start), std::move($list) };
             }
         }
+    | OPEN_SQUARE_BRACKET expression-list[list] CLOSE_SQUARE_BRACKET
+        { 
+            if ($list.size() == 1) {
+                $$ = bang_vector_t{ std::move($OPEN_SQUARE_BRACKET), std::move($list.front()) };
+            } else {
+                $$ = array_expression_t{ std::move($OPEN_SQUARE_BRACKET), std::move($list )};
+            }
+        }
+    | OPEN_SQUARE_DBL_BRACKET expression-list[list] CLOSE_SQUARE_DBL_BRACKET
+        { $$ = array_expression_t{ std::move($OPEN_SQUARE_DBL_BRACKET), std::move($list )}; }
     | POINT identifier
         { $$ = std::move($identifier); IGNORE_TERM($POINT); }
     //| syntax-expression[object] POINT syntax-expression[property]
@@ -1010,10 +1036,10 @@ type-expr:
         { $$ = variable_identifier{ ctx.make_qname(std::move($id)), true }; }
     //| internal-identifier[id] OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
     //    { $$ = std::move($id); IGNORE_TERM($2); IGNORE_TERM($3); }
-    | OPEN_SQUARE_BRACKET type-expr CLOSE_SQUARE_BRACKET
-        { $$ = bang_vector_t{std::move($2)}; IGNORE_TERM($OPEN_SQUARE_BRACKET); }
+    | OPEN_SQUARE_BRACKET type-expr[type] CLOSE_SQUARE_BRACKET
+        { $$ = bang_vector_t{ std::move($OPEN_SQUARE_BRACKET), std::move($type)}; }
     | OPEN_PARENTHESIS[start] argument-list-opt[elements] CLOSE_PARENTHESIS
-        { $$ = opt_named_syntax_expression_list_t{ std::move($elements), std::move($start) }; }
+        { $$ = opt_named_syntax_expression_list_t{ std::move($start), std::move($elements) }; }
         //{ $$ = bang_tuple_t{ std::move($elements) }; IGNORE_TERM($OPEN_PARENTHESIS); }
     | type-expr[type] OPEN_SQUARE_BRACKET INTEGER[size] CLOSE_SQUARE_BRACKET
         { $$ = bang_array_t{std::move($type), (size_t)$size.value}; IGNORE_TERM($OPEN_SQUARE_BRACKET); }
@@ -1026,7 +1052,7 @@ type-expr:
             IGNORE_TERM($BITOR);
         }
     | type-expr ARROW type-expr
-        { $$ = bang_fn_type_t{std::move($1), std::move($3)}; }
+        { $$ = bang_fn_type_t{ std::move($1), std::move($3) }; }
     ;
 
     /*
@@ -1069,19 +1095,6 @@ expression:
     ;
 
     */
-
-    /*
-expression-list-any:
-    %empty
-        { $$ = expression_list_t{}; }
-    | syntax-expression
-        { $$ = expression_list_t{ std::move($1) }; }
-    | expression-list-any COMMA syntax-expression
-        { $$ = std::move($1); $$.emplace_back(std::move($3)); }
-    ;
-    */
-
-
 
 //identifier-chain:
 //      identifier

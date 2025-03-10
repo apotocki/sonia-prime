@@ -60,65 +60,72 @@ inline ct_expression_visitor::result_type ct_expression_visitor::apply_cast(enti
 //
 //}
 
-ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_bool const& bv) const
+ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_bool const& ab) const
 {
-    bool_literal_entity bool_ent{ bv.value };
-    entity_identifier entid = u().eregistry_find_or_create(bool_ent, [this, &bool_ent]() {
-        auto result = make_shared<bool_literal_entity>(std::move(bool_ent));
-        result->set_type(u().get(builtin_eid::boolean));
-        return result;
-    }).id();
-    return apply_cast(entid, bv);
+    return handle(base_expression_visitor::operator()(ab));
+    //bool_literal_entity bool_ent{ bv.value };
+    //entity_identifier entid = u().eregistry_find_or_create(bool_ent, [this, &bool_ent]() {
+    //    auto result = make_shared<bool_literal_entity>(std::move(bool_ent));
+    //    result->set_type(u().get(builtin_eid::boolean));
+    //    return result;
+    //}).id();
+    //return apply_cast(entid, bv);
 }
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_integer const& iv) const
 {
-    integer_literal_entity int_ent{ iv.value };
-    entity_identifier entid = u().eregistry_find_or_create(int_ent, [this, &int_ent]() {
-        auto result = make_shared<integer_literal_entity>(std::move(int_ent));
-        result->set_type(u().get(builtin_eid::integer));
-        return result;
-    }).id();
-    return apply_cast(entid, iv);
+    return handle(base_expression_visitor::operator()(iv));
+    //integer_literal_entity int_ent{ iv.value };
+    //entity_identifier entid = u().eregistry_find_or_create(int_ent, [this, &int_ent]() {
+    //    auto result = make_shared<integer_literal_entity>(std::move(int_ent));
+    //    result->set_type(u().get(builtin_eid::integer));
+    //    return result;
+    //}).id();
+    //return apply_cast(entid, iv);
 }
 
-ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_decimal const& dv) const
+ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_decimal const& ad) const
 {
-    decimal_literal_entity dec_ent{ dv.value };
-    entity_identifier entid = u().eregistry_find_or_create(dec_ent, [this, &dec_ent]() {
-        auto result = make_shared<decimal_literal_entity>(std::move(dec_ent));
-        result->set_type(u().get(builtin_eid::decimal));
-        return result;
-    }).id();
-    return apply_cast(entid, dv);
+    return handle(base_expression_visitor::operator()(ad));
+    //decimal_literal_entity dec_ent{ dv.value };
+    //entity_identifier entid = u().eregistry_find_or_create(dec_ent, [this, &dec_ent]() {
+    //    auto result = make_shared<decimal_literal_entity>(std::move(dec_ent));
+    //    result->set_type(u().get(builtin_eid::decimal));
+    //    return result;
+    //}).id();
+    //return apply_cast(entid, dv);
 }
 
-ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_string const& sv) const
+ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_string const& as) const
 {
-    string_literal_entity str_ent{ sv.value };
-    entity_identifier entid = u().eregistry_find_or_create(str_ent, [this, &str_ent]() {
-        auto result = make_shared<string_literal_entity>(std::move(str_ent));
-        result->set_type(u().get(builtin_eid::string));
-        return result;
-    }).id();
-    return apply_cast(entid, sv);
+    return handle(base_expression_visitor::operator()(as));
+    //string_literal_entity str_ent{ sv.value };
+    //entity_identifier entid = u().eregistry_find_or_create(str_ent, [this, &str_ent]() {
+    //    auto result = make_shared<string_literal_entity>(std::move(str_ent));
+    //    result->set_type(u().get(builtin_eid::string));
+    //    return result;
+    //}).id();
+    //return apply_cast(entid, sv);
 }
 
-ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_identifier const& iv) const
+ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_identifier const& aiv) const
 {
-    identifier_entity id_ent{ iv.value };
-    entity_identifier entid = u().eregistry_find_or_create(id_ent, [this, &id_ent]() {
-        auto result = make_shared<identifier_entity>(std::move(id_ent));
-        result->set_type(u().get(builtin_eid::identifier));
-        return result;
-    }).id();
+    return handle(base_expression_visitor::operator()(aiv));
 
-    return apply_cast(entid, iv);
+    //identifier_entity id_ent{ iv.value };
+    //entity_identifier entid = u().eregistry_find_or_create(id_ent, [this, &id_ent]() {
+    //    auto result = make_shared<identifier_entity>(std::move(id_ent));
+    //    result->set_type(u().get(builtin_eid::identifier));
+    //    return result;
+    //}).id();
+
+    //return apply_cast(entid, iv);
 }
 
-ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_entity_identifier const& ee) const
+ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_entity_identifier const& aei) const
 {
-    return apply_cast(ee.value, ee);
+    return handle(base_expression_visitor::operator()(aei));
+    //return apply_cast(ee.value, ee);
 }
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_qname const& aqn) const
@@ -138,17 +145,23 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_q
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(variable_identifier const& vi) const
 {
-    auto optent = ctx.lookup_entity(vi.name);
-        
-    return apply_visitor(make_functional_visitor<result_type>([this, &vi](auto & eid_or_var) -> result_type
-    {
-        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, local_variable>) {
-            return std::unexpected(make_shared<basic_general_error>(vi.name.location, "can't evaluate the variable as a const expression"sv, vi.name.value));
-        } else {
-            if (!eid_or_var) return std::unexpected(make_error<undeclared_identifier_error>(vi.name));
-            return apply_cast(eid_or_var, vi);
-        }
-    }), optent);
+    return handle(base_expression_visitor::operator()(vi));
+    //auto optent = ctx.lookup_entity(vi.name);
+    //    
+    //return apply_visitor(make_functional_visitor<result_type>([this, &vi](auto & eid_or_var) -> result_type
+    //{
+    //    if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, local_variable>) {
+    //        return std::unexpected(make_shared<basic_general_error>(vi.name.location, "can't evaluate the variable as a const expression"sv, vi.name.value));
+    //    } else {
+    //        if (!eid_or_var) return std::unexpected(make_error<undeclared_identifier_error>(vi.name));
+    //        return apply_cast(eid_or_var, vi);
+    //    }
+    //}), optent);
+}
+
+ct_expression_visitor::result_type ct_expression_visitor::operator()(bang_vector_t const& v) const
+{
+    return handle(base_expression_visitor::operator()(v));
 }
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(function_call_t const& proc) const
@@ -212,6 +225,18 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(opt_named_s
 ct_expression_visitor::result_type ct_expression_visitor::operator()(lambda_t const& l) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::operator()(lambda_t const&)");
+}
+
+ct_expression_visitor::result_type ct_expression_visitor::handle(base_expression_visitor::result_type&& res) const
+{
+    if (!res) return std::unexpected(res.error());
+    return apply_visitor(make_functional_visitor<result_type>([](auto& v) -> result_type {
+        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+            return v;
+        } else {
+            THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::handle");
+        }
+    }), res->first);
 }
 
 }

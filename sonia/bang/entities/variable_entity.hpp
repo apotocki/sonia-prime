@@ -12,13 +12,15 @@ class extern_variable_entity : public entity
 {
 public:
     qname_identifier name;
+    entity_identifier type;
 
-    inline extern_variable_entity(entity_identifier type, qname_identifier nameval) noexcept
+    inline extern_variable_entity(entity_identifier typeval, qname_identifier nameval) noexcept
         : entity{ }
         , name{ std::move(nameval) }
-    {
-        set_type(type);
-    }
+        , type{ std::move(typeval) }
+    {}
+
+    entity_identifier get_type() const noexcept override { return type; }
 
     inline size_t hash() const noexcept override { return hash_value(name); }
     inline bool equal(entity const& rhs) const noexcept

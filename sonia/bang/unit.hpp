@@ -39,6 +39,8 @@ enum class builtin_id : size_t
     type = 0, // type:
     to, // to:
     self, // self:
+    size, // size:
+    element, // element:
     property, // property:
     object, // object:
     numargs, // $$
@@ -49,10 +51,10 @@ enum class builtin_id : size_t
 enum class builtin_qnid : size_t
 {
     fn = 0,
-    ellipsis, tuple, identifier, qname, object, string, decimal, integer, boolean, any,
-    metaobject, typeof,
-    make_tuple, new_, init, eq, ne, plus, negate, implicit_cast, get, set,
-    head, tail, empty,
+    ellipsis, tuple, vector, array, identifier,
+    qname, object, string, decimal, integer, boolean, any,
+    metaobject,
+    typeof, make_tuple, new_, init, eq, ne, plus, negate, implicit_cast, get, set, head, tail, empty,
     eof_builtin_qnids_value
 };
 
@@ -173,16 +175,6 @@ public:
 #endif
     }
 
-    inline identifier_entity const& eregistry_find_or_create(identifier id)
-    {
-        identifier_entity sample{ id };
-        return static_cast<identifier_entity&>(eregistry_find_or_create(sample, [this, id]() {
-            auto result = make_shared<identifier_entity>(id);
-            result->set_type(get(builtin_eid::identifier));
-            return result;
-        }));
-    }
-
     template <typename FtorT>
     inline void eregistry_traverse(FtorT const& ftor) const
     {
@@ -202,6 +194,15 @@ public:
     inline identifier get(builtin_id bi) const noexcept { return builtin_ids_[(size_t)bi]; }
 
     functional& resolve_functional(qname_identifier);
+
+
+    identifier_entity const& make_identifier_entity(identifier value);
+    entity const& make_integer_entity(mp::integer_view value);
+    entity const& make_vector_type_entity(entity_identifier element_type);
+    entity const& make_vector_entity(entity_identifier element_type, span<entity_identifier> const& values);
+    entity const& make_array_type_entity(entity_identifier element_type, size_t sz);
+    entity const& make_array_entity(entity_identifier element_type, span<entity_identifier> const& values);
+
 
     //void push_entity(shared_ptr<entity>);
 

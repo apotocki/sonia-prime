@@ -168,6 +168,8 @@ EXCLPT                  "!"
 QMARK                   "?"
 PLUS                    "+"
 TILDA                   "~"
+OPEN_SQUARE_DBL_BRACKET "[["
+CLOSE_SQUARE_DBL_BRACKET "]]"
 DBLCOLON                "::"
 LOGIC_OR                "||"
 LOGIC_AND               "&&"
@@ -345,34 +347,36 @@ HASHTAG					"#"
 		return (bang_lang::parser::token::FALSE_WORD);
 	}
 	
-	{APOSTROPHE}			{ return (bang_lang::parser::token::APOSTROPHE); }
-	{AT_SYMBOL}				{ return (bang_lang::parser::token::AT_SYMBOL); }
-	{OPEN_BRACE}			{ variant_emplace(location); return (bang_lang::parser::token::OPEN_BRACE); }
-	{CLOSE_BRACE}			{ return (bang_lang::parser::token::CLOSE_BRACE); }
-	{OPEN_PARENTHESIS}		{ variant_emplace(location); return (bang_lang::parser::token::OPEN_PARENTHESIS); }
-	{CLOSE_PARENTHESIS}		{ return (bang_lang::parser::token::CLOSE_PARENTHESIS);	}
-	{END_STATEMENT}			{ return (bang_lang::parser::token::END_STATEMENT); }
-	{COMMA}					{ return (bang_lang::parser::token::COMMA);	}
-	{COLON}                 { return (bang_lang::parser::token::COLON); }
-	{OPEN_SQUARE_BRACKET}	{ variant_emplace(location); return (bang_lang::parser::token::OPEN_SQUARE_BRACKET); }
-	{CLOSE_SQUARE_BRACKET}	{ return (bang_lang::parser::token::CLOSE_SQUARE_BRACKET); }
-	{ASSIGN}                { variant_emplace(location); return (bang_lang::parser::token::ASSIGN); }
-	{POINT}					{ variant_emplace(location); return (bang_lang::parser::token::POINT);	}
-	{UNDERSCORE}			{ variant_emplace(location); return (bang_lang::parser::token::UNDERSCORE); }
-	{BITOR}				    { variant_emplace(location); return (bang_lang::parser::token::BITOR);	}
-	{EXCLPT}                { variant_emplace(location); return (bang_lang::parser::token::EXCLPT); }
-	{QMARK}                 { return (bang_lang::parser::token::QMARK); }
-	{DBLCOLON}              { return (bang_lang::parser::token::DBLCOLON); }
-	{PLUS}					{ variant_emplace(location); return (bang_lang::parser::token::PLUS); }
-	{TILDA}                 { variant_emplace(location); return (bang_lang::parser::token::TILDA); }
-	{LOGIC_OR}              { variant_emplace(location); return (bang_lang::parser::token::LOGIC_OR); }
-    {LOGIC_AND}             { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
-	{ARROW}                 { return (bang_lang::parser::token::ARROW); }
-	{ARROWEXPR}				{ return (bang_lang::parser::token::ARROWEXPR); }
-	{CONCAT}                { variant_emplace(location); return (bang_lang::parser::token::CONCAT); }
-	{EQ}					{ variant_emplace(location); return (bang_lang::parser::token::EQ); }
-	{NE}					{ variant_emplace(location); return (bang_lang::parser::token::NE); }
-	{ELLIPSIS}              { variant_emplace(location); return (bang_lang::parser::token::ELLIPSIS); }
+	{APOSTROPHE}			   { return (bang_lang::parser::token::APOSTROPHE); }
+	{AT_SYMBOL}				   { return (bang_lang::parser::token::AT_SYMBOL); }
+	{OPEN_BRACE}			   { variant_emplace(location); return (bang_lang::parser::token::OPEN_BRACE); }
+	{CLOSE_BRACE}			   { return (bang_lang::parser::token::CLOSE_BRACE); }
+	{OPEN_PARENTHESIS}		   { variant_emplace(location); return (bang_lang::parser::token::OPEN_PARENTHESIS); }
+	{CLOSE_PARENTHESIS}		   { return (bang_lang::parser::token::CLOSE_PARENTHESIS);	}
+	{END_STATEMENT}			   { return (bang_lang::parser::token::END_STATEMENT); }
+	{COMMA}					   { return (bang_lang::parser::token::COMMA);	}
+	{COLON}                    { return (bang_lang::parser::token::COLON); }
+	{OPEN_SQUARE_BRACKET}	   { variant_emplace(location); return (bang_lang::parser::token::OPEN_SQUARE_BRACKET); }
+	{CLOSE_SQUARE_BRACKET}	   { return (bang_lang::parser::token::CLOSE_SQUARE_BRACKET); }
+	{OPEN_SQUARE_DBL_BRACKET}  { variant_emplace(location); return (bang_lang::parser::token::OPEN_SQUARE_DBL_BRACKET); }
+	{CLOSE_SQUARE_DBL_BRACKET} { return (bang_lang::parser::token::CLOSE_SQUARE_DBL_BRACKET); }
+	{ASSIGN}                   { variant_emplace(location); return (bang_lang::parser::token::ASSIGN); }
+	{POINT}					   { variant_emplace(location); return (bang_lang::parser::token::POINT);	}
+	{UNDERSCORE}		       { variant_emplace(location); return (bang_lang::parser::token::UNDERSCORE); }
+	{BITOR}				       { variant_emplace(location); return (bang_lang::parser::token::BITOR);	}
+	{EXCLPT}                   { variant_emplace(location); return (bang_lang::parser::token::EXCLPT); }
+	{QMARK}                    { return (bang_lang::parser::token::QMARK); }
+	{DBLCOLON}                 { return (bang_lang::parser::token::DBLCOLON); }
+	{PLUS}					   { variant_emplace(location); return (bang_lang::parser::token::PLUS); }
+	{TILDA}                    { variant_emplace(location); return (bang_lang::parser::token::TILDA); }
+	{LOGIC_OR}                 { variant_emplace(location); return (bang_lang::parser::token::LOGIC_OR); }
+    {LOGIC_AND}                { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
+	{ARROW}                    { return (bang_lang::parser::token::ARROW); }
+	{ARROWEXPR}				   { return (bang_lang::parser::token::ARROWEXPR); }
+	{CONCAT}                   { variant_emplace(location); return (bang_lang::parser::token::CONCAT); }
+	{EQ}					   { variant_emplace(location); return (bang_lang::parser::token::EQ); }
+	{NE}					   { variant_emplace(location); return (bang_lang::parser::token::NE); }
+	{ELLIPSIS}                 { variant_emplace(location); return (bang_lang::parser::token::ELLIPSIS); }
 
 	{IDENTIFIER} {
 		variant_emplace(annotated_string_view{ text_view, location });

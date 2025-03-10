@@ -25,7 +25,7 @@ public:
         field_descriptor const& head_field = sig.fields().front();
         auto it = std::ranges::find(sig.named_fields_indices(), 0, &std::pair<identifier, uint32_t>::second);
         if (it != sig.named_fields_indices().end()) {
-            result_sig.push_back(field_descriptor{ u.eregistry_find_or_create(it->first).id(), true });
+            result_sig.push_back(field_descriptor{ u.make_identifier_entity(it->first).id(), true });
         }
         result_sig.push_back(head_field);
         location = std::move(loc);

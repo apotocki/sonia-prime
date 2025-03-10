@@ -22,15 +22,20 @@ protected:
 
 public:
     explicit base_expression_visitor(fn_compiler_context& c) noexcept;
-    base_expression_visitor(fn_compiler_context& c, annotated_entity_identifier&& er) noexcept;
+    base_expression_visitor(fn_compiler_context& c, annotated_entity_identifier er) noexcept;
 
     result_type operator()(context_value const&) const;
 
     //result_type operator()(context_identifier const&) const;
-
+    result_type operator()(annotated_bool const&) const;
+    result_type operator()(annotated_integer const&) const;
+    result_type operator()(annotated_decimal const&) const;
     result_type operator()(annotated_string const&) const;
     result_type operator()(annotated_identifier const&) const;
+    result_type operator()(annotated_entity_identifier const&) const;
     result_type operator()(variable_identifier const&) const;
+
+    result_type operator()(bang_vector_t const&) const;
 
     result_type operator()(member_expression_t const&) const;
 
@@ -41,6 +46,8 @@ public:
     result_type operator()(function_call_t const&) const;
 
     result_type operator()(new_expression_t const&) const;
+
+    result_type operator()(array_expression_t const&) const;
 
     template <typename T>
     result_type operator()(T const& v) const

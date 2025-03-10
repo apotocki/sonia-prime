@@ -28,16 +28,11 @@ public:
 
     virtual bool is(fn_compiler_context&, entity_identifier eid) const noexcept { return eid == entity_type_; }
 
-    inline entity_identifier get_type() const noexcept { return entity_type_; }
-
-    inline void set_type(entity_identifier eid) noexcept { entity_type_ = eid; }
-
+    virtual entity_identifier get_type() const noexcept;
+    
     virtual entity_signature const* signature() const noexcept { return nullptr; }
 
-    virtual void visit(entity_visitor const&) const
-    {
-        THROW_NOT_IMPLEMENTED_ERROR("entity::visit");
-    }
+    virtual void visit(entity_visitor const&) const;
 
     virtual size_t hash() const noexcept { return 0; }
     virtual bool equal(entity const&) const noexcept { return true; }
@@ -56,12 +51,21 @@ class value_entity : public entity
 {
 public:
     template <typename ArgT>
+    value_entity(ArgT && v, entity_identifier t)
+        : value_{ std::forward<ArgT>(v) }
+        , type_{ std::move(t) }
+    {}
+
+    template <typename ArgT>
     requires(!is_same_v<value_entity, remove_cvref_t<ArgT>>)
-    explicit value_entity(ArgT && v)
+    explicit value_entity(ArgT&& v)
         : value_{ std::forward<ArgT>(v) }
     {}
 
     void visit(entity_visitor const& v) const override { v(*this); }
+
+    entity_identifier get_type() const noexcept override { return type_; }
+    void set_type(entity_identifier type) noexcept { type_ = type; }
 
     ValueT const& value() const { return value_; }
 
@@ -91,6 +95,7 @@ public:
 
 private:
     ValueT value_;
+    entity_identifier type_;
 };
 
 using string_literal_entity = value_entity<small_string>;
@@ -107,11 +112,14 @@ class function_entity;
 class external_function_entity;
 class type_entity;
 class extern_variable_entity;
+//class vector_type_entity;
+//class array_type_entity;
 
 class entity_visitor
 {
 public:
     virtual ~entity_visitor() = default;
+    virtual void operator()(entity const&) const = 0;
 
     virtual void operator()(string_literal_entity const&) const = 0;
     virtual void operator()(bool_literal_entity const&) const = 0;
@@ -120,6 +128,8 @@ public:
     virtual void operator()(identifier_entity const&) const = 0;
     virtual void operator()(qname_identifier_entity const&) const = 0;
     virtual void operator()(empty_entity const&) const = 0;
+    //virtual void operator()(vector_type_entity const&) const = 0;
+    //virtual void operator()(array_type_entity const&) const = 0;
 
     virtual void operator()(function_entity const&) const = 0;
     virtual void operator()(external_function_entity const&) const = 0;
@@ -131,23 +141,61 @@ public:
 // typed empty_entity: entities with different types are not equal
 class empty_entity : public entity
 {
+    entity_identifier type_;
+
 public:
-    inline explicit empty_entity(entity_identifier type) noexcept { set_type(type); }
+    inline explicit empty_entity(entity_identifier type) noexcept : type_{ type } {}
+
+    entity_identifier get_type() const noexcept override { return type_; }
 
     void visit(entity_visitor const& v) const override { v(*this); }
 
-    bool equal(entity const& rhs) const noexcept override
-    {
-        if (empty_entity const* pr = dynamic_cast<empty_entity const*>(&rhs); pr) {
-            return pr->get_type() == get_type();
-        }
-        return false;
-    }
+    bool equal(entity const& rhs) const noexcept override;
 
-    size_t hash() const noexcept override { return hash_value(get_type()); }
+    size_t hash() const noexcept override;
 
     std::ostream& print_to(std::ostream& os, unit const& u) const override;
 };
+
+
+//class vector_type_entity : public entity
+//{
+//    entity_signature sig_;
+//
+//public:
+//    entity_identifier element_type;
+//
+//    vector_type_entity(unit&, entity_identifier et) noexcept;
+//
+//    void visit(entity_visitor const& v) const override { v(*this); }
+//
+//    entity_signature const* signature() const noexcept override { return &sig_; }
+//
+//    bool equal(entity const& rhs) const noexcept override;
+//
+//    size_t hash() const noexcept override;
+//
+//    std::ostream& print_to(std::ostream& os, unit const& u) const override;
+//};
+//
+//class array_type_entity : public entity
+//{
+//    entity_signature sig_;
+//
+//public:
+//    entity_identifier element_type;
+//    size_t size;
+//
+//    array_type_entity(unit&, entity_identifier et, size_t sz) noexcept;
+//
+//    entity_signature const* signature() const noexcept override { return &sig_; }
+//
+//    bool equal(entity const& rhs) const noexcept override;
+//
+//    size_t hash() const noexcept override;
+//
+//    std::ostream& print_to(std::ostream& os, unit const& u) const override;
+//};
 
 class local_variable
 {

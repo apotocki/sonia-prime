@@ -259,6 +259,7 @@
     <ClInclude Include="..\..\..\sonia\bang\bang.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.tab.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.yy.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\collections\array_implicit_cast_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\const_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\enum\enum_entity.hpp" />
@@ -757,6 +758,7 @@
     <ClCompile Include="..\..\..\sonia\bang\bang_errors.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_unit.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\collections\array_implicit_cast_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\enum\enum_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\enum\enum_implicit_cast_pattern.cpp" />

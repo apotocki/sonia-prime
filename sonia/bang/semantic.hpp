@@ -53,7 +53,7 @@ template <typename T> struct bang_tuple
 };
 #endif
 
-template <typename T> using bang_fn = bang_fn_base<bang_tuple<T>, T>;
+//template <typename T> using bang_fn = bang_fn_base<bang_tuple<T>, T>;
 
 //struct bang_particular_bool_t
 //{

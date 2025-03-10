@@ -230,21 +230,19 @@ struct basic_signatured_entity : signatured_entity
 
     basic_signatured_entity() = default;
 
-    explicit basic_signatured_entity(entity_identifier type)
-    {
-        set_type(type);
-    }
-
-    basic_signatured_entity(entity_identifier type, entity_signature&& sgn)
+    inline explicit basic_signatured_entity(entity_identifier type, entity_signature&& sgn) noexcept
         : sig_{ std::move(sgn) }
-    {
-        set_type(type);
-    }
+    {}
 
     inline void set_signature(entity_signature&& sgn) { sig_ = std::move(sgn); }
 
     entity_signature const* signature() const noexcept override final { return &sig_; }
     entity_signature * signature() noexcept { return &sig_; }
+
+    entity_identifier get_type() const noexcept override
+    {
+        return sig_.result.value_or(field_descriptor{}).entity_id();
+    }
 };
 
 #if 0

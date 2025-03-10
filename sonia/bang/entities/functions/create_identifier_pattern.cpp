@@ -46,7 +46,7 @@ std::expected<entity_identifier, error_storage> create_identifier_pattern::const
     entity_identifier strid = md.get_match_result(0).results.front().first;
     string_literal_entity const& str_ent = static_cast<string_literal_entity const&>(u.eregistry_get(strid));
     identifier id = u.slregistry().resolve(str_ent.value());
-    return ctx.u().eregistry_find_or_create(id).id();
+    return u.make_identifier_entity(id).id();
 }
 
 }

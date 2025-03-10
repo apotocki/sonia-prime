@@ -12,6 +12,19 @@
 
 namespace sonia::lang::bang {
 
+void entity::visit(entity_visitor const& v) const
+{
+    v(*this);
+}
+
+entity_identifier entity::get_type() const noexcept
+{
+    if (auto const* psig = signature(); psig && psig->result) {
+        return psig->result->entity_id();
+    }
+    return {};
+}
+
 std::ostream& entity::print_to(std::ostream& os, unit const& u) const
 {
     return os; // << "@E"sv << id().value;
@@ -23,10 +36,55 @@ std::ostream& signatured_entity::print_to(std::ostream& os, unit const& u) const
     //return entity::print_to(os, u) << "<"sv << u.print(*signature()) << ">"sv;
 }
 
+bool empty_entity::equal(entity const& rhs) const noexcept
+{
+    if (empty_entity const* pr = dynamic_cast<empty_entity const*>(&rhs); pr) {
+        return pr->get_type() == get_type();
+    }
+    return false;
+}
+
+size_t empty_entity::hash() const noexcept
+{
+    size_t seed = __COUNTER__;
+    hash_combine(seed, get_type());
+    return seed;
+}
+
 std::ostream& empty_entity::print_to(std::ostream& os, unit const& u) const
 {
     return u.eregistry_get(get_type()).print_to(os << "empty: "sv, u);
 }
+
+//vector_type_entity::vector_type_entity(unit& u, entity_identifier et) noexcept
+//    : element_type{ et }
+//    , sig_{ u.get(builtin_qnid::vector) }
+//{
+//    set_type(u.get(builtin_eid::typename_));
+//    sig_.push_back(u.get(builtin_id::element), field_descriptor{ et, true });
+//}
+//
+//bool vector_type_entity::equal(entity const& rhs) const noexcept
+//{
+//    if (vector_type_entity const* pr = dynamic_cast<vector_type_entity const*>(&rhs); pr) {
+//        return pr->element_type == element_type;
+//    }
+//    return false;
+//}
+//
+//size_t vector_type_entity::hash() const noexcept
+//{
+//    size_t seed = __COUNTER__;
+//    hash_combine(seed, element_type);
+//    return seed;
+//}
+
+//std::ostream& vector_type_entity::print_to(std::ostream& os, unit const& u) const
+//{
+//    return u.eregistry_get(get_type()).print_to(os << '[', u) << ']';
+//}
+
+
 
 #if 0
 class type_mangler_visitor : static_visitor<qname_identifier>

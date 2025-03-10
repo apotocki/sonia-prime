@@ -132,6 +132,35 @@ public:
         eptr->visit(*this);
     }
 
+    void operator()(entity const& ent) const
+    {
+        entity_signature const* psig = ent.signature();
+        if (psig && psig->name == unit_.get(builtin_qnid::metaobject) && psig->result) {
+            entity const& tpent = unit_.eregistry_get(psig->result->entity_id());
+            entity_signature const* ptpsig = tpent.signature();
+            if (ptpsig) {
+                push_metaobject(*psig, *ptpsig);
+                return;
+            }
+        }
+        fnbuilder_.append_push_pooled_const(smart_blob{});
+    }
+
+    void push_metaobject(entity_signature const& e, entity_signature const& et) const
+    {
+        if (et.name != unit_.get(builtin_qnid::vector) && et.name != unit_.get(builtin_qnid::array)) {
+            fnbuilder_.append_push_pooled_const(smart_blob{});
+            return;
+        }
+        for (auto const& fd : e.fields()) {
+            this->operator()(fd.entity_id());
+        }
+        fnbuilder_.append_push_pooled_const(smart_blob{ ui64_blob_result(e.fields().size()) });
+
+        external_function_entity const& efent = dynamic_cast<external_function_entity const&>(unit_.eregistry_get(unit_.get(builtin_eid::arrayify)));
+        fnbuilder_.append_ecall(efent.extfnid());
+    }
+
     template <typename T>
     void operator()(T const& e) const
     {

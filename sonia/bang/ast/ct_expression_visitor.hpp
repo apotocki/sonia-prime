@@ -45,6 +45,8 @@ struct ct_expression_visitor
 
     result_type operator()(opt_named_syntax_expression_list_t const&) const;
 
+    result_type operator()(bang_vector_t const&) const;
+
     template <typename T>
     result_type operator()(T const& v) const
     {
@@ -52,6 +54,8 @@ struct ct_expression_visitor
     }
 
 private:
+    result_type handle(base_expression_visitor::result_type && res) const;
+
     template <typename ExprT>
     result_type apply_cast(entity_identifier, ExprT const& e) const;
 

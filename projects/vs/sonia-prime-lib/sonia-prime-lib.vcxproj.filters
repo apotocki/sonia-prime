@@ -292,6 +292,9 @@
     <Filter Include="sonia.bang\entities\enum">
       <UniqueIdentifier>{ed5d4027-b37c-44de-86a0-d0c0b86a6639}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.bang\entities\collections">
+      <UniqueIdentifier>{49f3d200-580a-4d68-968e-2fc37a7cb26e}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -2391,6 +2394,9 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\match_utility.ipp">
       <Filter>sonia.bang\entities\functions</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\collections\array_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\collections</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2869,6 +2875,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\enum\enum_implicit_cast_pattern.cpp">
       <Filter>sonia.bang\entities\enum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\collections\array_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\collections</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -36,10 +36,11 @@ std::expected<functional::pattern::application_result_t, error_storage> tuple_ma
 {
     unit& u = ctx.u();
     entity_signature sig = md.build_signature(u, u.get(builtin_qnid::tuple));
+    sig.result.emplace(u.get(builtin_eid::typename_));
     indirect_signatured_entity smpl{ sig };
 
-    entity& e = ctx.u().eregistry_find_or_create(smpl, [this, &u, &sig]() {
-        return make_shared<basic_signatured_entity>(u.get(builtin_eid::typename_), std::move(sig));
+    entity& e = ctx.u().eregistry_find_or_create(smpl, [&sig]() {
+        return make_shared<basic_signatured_entity>(std::move(sig));
     });
     BOOST_ASSERT(e.signature() && e.signature()->name == u.get(builtin_qnid::tuple));
 

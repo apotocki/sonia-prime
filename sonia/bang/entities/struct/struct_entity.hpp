@@ -25,7 +25,6 @@ class struct_entity : public basic_signatured_entity
     variant<field_list_t, statement_span> body_;
 
     mutable entity_identifier underlying_tuple_eid_;
-    //mutable shared_ptr<functional_match_descriptor> pmd_; // pehaps partial initialized make_tuple_match descriptor
     
     enum class build_state : long
     {
@@ -39,9 +38,10 @@ class struct_entity : public basic_signatured_entity
     error_storage build(fn_compiler_context& struct_ctx, statement_span const&) const;
 
 public:
-    explicit struct_entity(qname qn, entity_identifier type, entity_signature && sgn, variant<field_list_t, statement_span> const& body)
-        : basic_signatured_entity{ std::move(type), std::move(sgn) }
-        , name_{ qn }
+    struct_entity(unit&, functional&, variant<field_list_t, statement_span> const&);
+    struct_entity(qname qn, entity_signature&& sgn, variant<field_list_t, statement_span> const& body)
+        : basic_signatured_entity{ std::move(sgn) }
+        , name_{ std::move(qn) }
         , body_{ body }
     {}
 

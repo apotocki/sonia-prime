@@ -42,7 +42,7 @@ std::expected<entity_identifier, error_storage> metaobject_tail_pattern::const_a
     indirect_signatured_entity smpl{ tail_signature };
 
     return u.eregistry_find_or_create(smpl, [&u, &tail_signature]() {
-        return make_shared<basic_signatured_entity>(u.get(builtin_eid::metaobject), std::move(tail_signature));
+        return make_shared<basic_signatured_entity>(std::move(tail_signature));
     }).id();
 }
 

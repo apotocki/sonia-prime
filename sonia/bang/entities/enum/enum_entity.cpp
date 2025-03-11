@@ -6,7 +6,18 @@
 
 #include "enum_entity.hpp"
 
+#include "sonia/bang/unit.hpp"
+#include "sonia/bang/entities/functional.hpp"
+
 namespace sonia::lang::bang {
+
+enum_entity::enum_entity(unit& u, functional& fn, std::vector<identifier> cases)
+    : name_{ fn.name() }
+    , cases_{ std::move(cases) }
+{
+    sig_.name = fn.id();
+    sig_.result.emplace(u.get(builtin_eid::typename_));
+}
 
 optional<size_t> enum_entity::find(identifier val) const
 {

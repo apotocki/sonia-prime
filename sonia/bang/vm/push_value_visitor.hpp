@@ -148,17 +148,19 @@ public:
 
     void push_metaobject(entity_signature const& e, entity_signature const& et) const
     {
-        if (et.name != unit_.get(builtin_qnid::vector) && et.name != unit_.get(builtin_qnid::array)) {
-            fnbuilder_.append_push_pooled_const(smart_blob{});
-            return;
-        }
-        for (auto const& fd : e.fields()) {
-            this->operator()(fd.entity_id());
-        }
-        fnbuilder_.append_push_pooled_const(smart_blob{ ui64_blob_result(e.fields().size()) });
+        if (et.name == unit_.get(builtin_qnid::vector) || et.name == unit_.get(builtin_qnid::array)) {
+            for (auto const& fd : e.fields()) {
+                this->operator()(fd.entity_id());
+            }
+            fnbuilder_.append_push_pooled_const(smart_blob{ ui64_blob_result(e.fields().size()) });
 
-        external_function_entity const& efent = dynamic_cast<external_function_entity const&>(unit_.eregistry_get(unit_.get(builtin_eid::arrayify)));
-        fnbuilder_.append_ecall(efent.extfnid());
+            external_function_entity const& efent = dynamic_cast<external_function_entity const&>(unit_.eregistry_get(unit_.get(builtin_eid::arrayify)));
+            fnbuilder_.append_ecall(efent.extfnid());
+        } else if (et.name == unit_.get(builtin_qnid::union_)) {
+            this->operator()(e.find_field(0)->entity_id());
+        } else {
+            fnbuilder_.append_push_pooled_const(smart_blob{});
+        }
     }
 
     template <typename T>

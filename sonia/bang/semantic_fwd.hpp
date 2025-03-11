@@ -21,12 +21,10 @@ class entity_signature;
 
 class entity : public entity_base_t
 {
-    entity_identifier entity_type_;
-
 public:
     using entity_base_t::entity_base_t;
 
-    virtual bool is(fn_compiler_context&, entity_identifier eid) const noexcept { return eid == entity_type_; }
+    virtual bool is(fn_compiler_context&, entity_identifier eid) const noexcept { return eid == get_type(); }
 
     virtual entity_identifier get_type() const noexcept;
     

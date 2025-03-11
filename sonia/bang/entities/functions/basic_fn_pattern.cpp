@@ -205,7 +205,7 @@ void parameter_matcher::update_binding(unit& u, field_descriptor const& type_or_
 
         auto optpack = binding.lookup(argid.value);
         if (!optpack) {
-            auto pent = make_shared<basic_signatured_entity>(u.get(builtin_eid::metaobject), entity_signature{ u.get(builtin_qnid::metaobject) }); // empty pack
+            auto pent = make_shared<basic_signatured_entity>(entity_signature{ u.get(builtin_qnid::metaobject) }); // empty pack
             psig = pent->signature();
             for (annotated_identifier const& iname : internal_names_) {
                 binding.emplace_back(iname, pent);
@@ -372,7 +372,7 @@ void varnamed_parameter_matcher::update_binding(unit& u, field_descriptor const&
         entity_signature sig{ u.get(builtin_qnid::metaobject) };
         sig.result = field_descriptor{ u.get(builtin_eid::metaobject) };
         sig.push_back(field_descriptor{ argname_eid, true });
-        binding.emplace_back(name, make_shared<basic_signatured_entity>(u.get(builtin_eid::metaobject), std::move(sig)));
+        binding.emplace_back(name, make_shared<basic_signatured_entity>(std::move(sig)));
     } else {
         // push argname_eid to signature only if it is not already there
         shared_ptr<basic_signatured_entity> pentity = dynamic_pointer_cast<basic_signatured_entity>(*get<shared_ptr<entity>>(&*optval));
@@ -392,7 +392,7 @@ void varnamed_parameter_matcher::update_binding(unit& u, field_descriptor const&
         
         auto optpack = binding.lookup(argid.value);
         if (!optpack) {
-            auto pent = make_shared<basic_signatured_entity>(u.get(builtin_eid::metaobject), entity_signature{ u.get(builtin_qnid::metaobject) }); // empty pack
+            auto pent = make_shared<basic_signatured_entity>(entity_signature{ u.get(builtin_qnid::metaobject) }); // empty pack
             psig = pent->signature();
             binding.emplace_back(argid, std::move(pent));
         } else {

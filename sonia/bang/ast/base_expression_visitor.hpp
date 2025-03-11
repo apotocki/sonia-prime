@@ -35,6 +35,8 @@ public:
     result_type operator()(annotated_entity_identifier const&) const;
     result_type operator()(variable_identifier const&) const;
 
+    result_type operator()(array_expression_t const&) const;
+
     result_type operator()(bang_vector_t const&) const;
 
     result_type operator()(member_expression_t const&) const;
@@ -46,8 +48,9 @@ public:
     result_type operator()(function_call_t const&) const;
 
     result_type operator()(new_expression_t const&) const;
+    result_type operator()(binary_expression_t const& be) const;
 
-    result_type operator()(array_expression_t const&) const;
+    
 
     template <typename T>
     result_type operator()(T const& v) const
@@ -60,6 +63,8 @@ protected:
 
     template <std::derived_from<pure_call_t> CallExpressionT>
     result_type operator()(builtin_qnid, CallExpressionT const&) const;
+
+    result_type do_assign(binary_expression_t const&) const;
 
     template <typename ExprT>
     result_type apply_cast(entity_identifier, ExprT const& e) const;

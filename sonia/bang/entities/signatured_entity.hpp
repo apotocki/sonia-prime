@@ -55,6 +55,7 @@ public:
     entity_signature() noexcept = default;
 
     explicit entity_signature(qname_identifier qid) noexcept : name{ qid } {}
+    explicit entity_signature(qname_identifier qid, entity_identifier t) noexcept : name{ qid }, result{ t } {}
 
     // a functional name that produces the signatured entity
     qname_identifier name;
@@ -230,7 +231,7 @@ struct basic_signatured_entity : signatured_entity
 
     basic_signatured_entity() = default;
 
-    inline explicit basic_signatured_entity(entity_identifier type, entity_signature&& sgn) noexcept
+    inline explicit basic_signatured_entity(entity_signature&& sgn) noexcept
         : sig_{ std::move(sgn) }
     {}
 

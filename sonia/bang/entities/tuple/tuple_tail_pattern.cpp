@@ -20,7 +20,7 @@ class tuple_tail_match_descriptor : public functional_match_descriptor
 public:
     inline explicit tuple_tail_match_descriptor(unit& u, entity_signature const& sig, lex::resource_location loc) noexcept
         : functional_match_descriptor{ u }
-        , result_sig{ u.get(builtin_qnid::tuple) }
+        , result_sig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) }
         , result_actual_size{ 0 }
         , is_src_head_const{ sig.fields().front().is_const() }
     {
@@ -167,7 +167,7 @@ std::expected<tuple_tail_pattern::application_result_t, error_storage> tuple_tai
 
     indirect_signatured_entity smpl{ tmd.result_sig };
     entity& tplent = ctx.u().eregistry_find_or_create(smpl, [&u, &tmd]() {
-        return make_shared<basic_signatured_entity>(u.get(builtin_eid::typename_), std::move(tmd.result_sig));
+        return make_shared<basic_signatured_entity>(std::move(tmd.result_sig));
     });
     
     if (tmd.result_actual_size == 0) {
@@ -176,8 +176,8 @@ std::expected<tuple_tail_pattern::application_result_t, error_storage> tuple_tai
             return semantic::managed_expression_list{ u }; // return void
         }
         empty_entity valueref{ tplent.id() };
-        entity& value_ent = ctx.u().eregistry_find_or_create(valueref, [type_eid = tplent.id()]() {
-            return make_shared<empty_entity>(type_eid);
+        entity& value_ent = ctx.u().eregistry_find_or_create(valueref, [&tplent]() {
+            return make_shared<empty_entity>(tplent.id());
         });
         return value_ent.id();
     }

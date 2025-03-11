@@ -15,6 +15,14 @@
 
 namespace sonia::lang::bang {
 
+struct_entity::struct_entity(unit& u, functional& fn, variant<field_list_t, statement_span> const& body)
+    : name_{ fn.name() }
+    , body_{ body }
+{
+    sig_.name = fn.id();
+    sig_.result.emplace(u.get(builtin_eid::typename_));
+}
+
 error_storage struct_entity::build(fn_compiler_context& extctx) const
 {
     compiler_task_tracer::task_guard tg = extctx.try_lock_task(entity_task_id{ *this });
@@ -40,7 +48,7 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
 {
     unit& u = ctx.u();
 
-    entity_signature tuple_signature{ u.get(builtin_qnid::tuple) };
+    entity_signature tuple_signature{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
     for (field_t const& f : fl) {
         auto res = apply_visitor(ct_expression_visitor{ ctx }, f.type);
         if (!res) return std::move(res.error());
@@ -55,7 +63,7 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
     indirect_signatured_entity smplsig{ tuple_signature };
 
     entity const& e = u.eregistry_find_or_create(smplsig, [&u, &tuple_signature]() {
-        return make_shared<basic_signatured_entity>(u.get(builtin_eid::typename_), std::move(tuple_signature));
+        return make_shared<basic_signatured_entity>(std::move(tuple_signature));
     });
 
     underlying_tuple_eid_ = e.id();

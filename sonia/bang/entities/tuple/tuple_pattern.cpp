@@ -53,7 +53,8 @@ std::expected<entity_identifier, error_storage> tuple_pattern::const_apply(fn_co
     entity_identifier typename_eid = u.get(builtin_eid::typename_);
     auto& tmd = static_cast<tuple_match_descriptor&>(md);
     
-    entity_signature result_signature{ u.get(builtin_qnid::tuple) };
+    entity_signature result_signature{ u.get(builtin_qnid::tuple), typename_eid };
+    
     for (auto const& [name, eid] : tmd.fields) {
         entity const& ent = u.eregistry_get(eid);
         if (name) {
@@ -63,8 +64,8 @@ std::expected<entity_identifier, error_storage> tuple_pattern::const_apply(fn_co
         }
     }
     indirect_signatured_entity smpl{ result_signature };
-    entity const& entres = ctx.u().eregistry_find_or_create(smpl, [typename_eid, &result_signature]() {
-        return make_shared<basic_signatured_entity>(typename_eid, std::move(result_signature));
+    entity const& entres = ctx.u().eregistry_find_or_create(smpl, [&result_signature]() {
+        return make_shared<basic_signatured_entity>(std::move(result_signature));
     });
     
     return entres.id();

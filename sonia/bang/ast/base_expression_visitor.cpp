@@ -7,6 +7,8 @@
 
 #include <boost/container/flat_set.hpp>
 
+#include "assign_expression_visitor.hpp"
+
 #include "fn_compiler_context.hpp"
 #include "ct_expression_visitor.hpp"
 
@@ -107,8 +109,10 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(semanti
     return apply_visitor(make_functional_visitor<result_type>([&l](auto& v) -> result_type {
         if constexpr (std::is_same_v<semantic::managed_expression_list, std::decay_t<decltype(v)>>) {
             l.splice_back(v);
-        } // else strange case
-        return std::pair{ std::move(v), true };
+            return std::pair{ std::move(l), true };
+        } else { // else strange case
+            return std::pair{ std::move(v), true };
+        }
     }), *res);
 }
 
@@ -351,6 +355,24 @@ base_expression_visitor::result_type base_expression_visitor::operator()(new_exp
     return apply_cast(std::move(res), ne);
 }
 
+base_expression_visitor::result_type base_expression_visitor::operator()(binary_expression_t const& be) const
+{
+    switch (be.op) {
+    case binary_operator_type::EQ:
+        return this->operator()(builtin_qnid::eq, be);
+    case binary_operator_type::NE:
+        return this->operator()(builtin_qnid::ne, be);
+    case binary_operator_type::PLUS:
+        return this->operator()(builtin_qnid::plus, be);
+    case binary_operator_type::BIT_OR:
+        return this->operator()(builtin_qnid::bit_or, be);
+    case binary_operator_type::ASSIGN:
+        return do_assign(be);
+    }
+    
+    THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor binary_expression_t");
+}
+
 template <std::derived_from<pure_call_t> CallExpressionT>
 base_expression_visitor::result_type base_expression_visitor::operator()(builtin_qnid qnid, CallExpressionT const& call) const
 {
@@ -358,6 +380,20 @@ base_expression_visitor::result_type base_expression_visitor::operator()(builtin
     if (!match) return std::unexpected(std::move(match.error()));
     auto res = match->generic_apply(ctx);
     return apply_cast(std::move(res), call);
+}
+
+base_expression_visitor::result_type base_expression_visitor::do_assign(binary_expression_t const& op) const
+{
+    //THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor binary_operator_type::ASSIGN");
+    //GLOBAL_LOG_INFO() << "left expression: " << ctx.u().print(op.left);
+    //size_t start_result_pos = result.size();
+    assign_expression_visitor lvis{ ctx, op.location(), op[1].value() };
+
+    auto e = apply_visitor(lvis, op[0].value());
+    if (e) return std::unexpected(std::move(e));
+
+    ctx.context_type = ctx.u().get(builtin_eid::void_);
+    return std::pair{ semantic::managed_expression_list{ ctx.u() }, false };
 }
 
 }

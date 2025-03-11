@@ -105,7 +105,7 @@ std::expected<functional::pattern::application_result_t, error_storage> ellipsis
             basic_signatured_entity const* bse = pe;
             // make tuple
             size_t argcount = 0; // runtime arguments
-            entity_signature sig{ u.get(builtin_qnid::tuple) };
+            entity_signature sig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
             for (auto const& field : bse->signature()->fields()) {
                 entity const& metaobject_ent = u.eregistry_get(field.entity_id());
                 identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&metaobject_ent);
@@ -120,8 +120,8 @@ std::expected<functional::pattern::application_result_t, error_storage> ellipsis
             }
             
             indirect_signatured_entity smpl{ sig };
-            entity& tplent = ctx.u().eregistry_find_or_create(smpl, [&u, &sig]() {
-                return make_shared<basic_signatured_entity>(u.get(builtin_eid::typename_), std::move(sig));
+            entity& tplent = ctx.u().eregistry_find_or_create(smpl, [&sig]() {
+                return make_shared<basic_signatured_entity>(std::move(sig));
             });
             if (argcount > 1) {
                 u.push_back_expression(l, semantic::push_value{ mp::integer{ argcount } });

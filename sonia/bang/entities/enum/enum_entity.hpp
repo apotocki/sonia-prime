@@ -9,6 +9,8 @@
 
 namespace sonia::lang::bang {
 
+class functional;
+
 class enum_entity : public basic_signatured_entity
 {
     qname name_;
@@ -16,11 +18,7 @@ class enum_entity : public basic_signatured_entity
     mutable entity_identifier underlying_tuple_eid_;
 
 public:
-    explicit enum_entity(qname qn, entity_identifier type, entity_signature&& sgn, std::vector<identifier> cases)
-        : basic_signatured_entity{ std::move(type), std::move(sgn) }
-        , name_{ qn }
-        , cases_{ std::move(cases) }
-    {}
+    enum_entity(unit& u, functional& fn, std::vector<identifier> cases);
 
     inline qname_view name() const noexcept { return name_; }
 

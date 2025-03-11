@@ -60,6 +60,7 @@ inline ct_expression_visitor::result_type ct_expression_visitor::apply_cast(enti
 //
 //}
 
+#if 0
 ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_bool const& ab) const
 {
     return handle(base_expression_visitor::operator()(ab));
@@ -128,21 +129,6 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_e
     //return apply_cast(ee.value, ee);
 }
 
-ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_qname const& aqn) const
-{
-    auto optqnid = ctx.lookup_qname(aqn);
-    if (optqnid) {
-        qname_identifier_entity qnid_ent{ *optqnid };
-        entity_identifier entid = u().eregistry_find_or_create(qnid_ent, [this, &qnid_ent]() {
-            auto result = make_shared<qname_identifier_entity>(std::move(qnid_ent));
-            result->set_type(u().get(builtin_eid::qname));
-            return result;
-        }).id();
-        return apply_cast(entid, aqn);
-    }
-    return std::unexpected(optqnid.error());
-}
-
 ct_expression_visitor::result_type ct_expression_visitor::operator()(variable_identifier const& vi) const
 {
     return handle(base_expression_visitor::operator()(vi));
@@ -158,10 +144,29 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(variable_id
     //    }
     //}), optent);
 }
-
+ct_expression_visitor::result_type ct_expression_visitor::operator()(lambda_t const& l) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::operator()(lambda_t const&)");
+}
 ct_expression_visitor::result_type ct_expression_visitor::operator()(bang_vector_t const& v) const
 {
     return handle(base_expression_visitor::operator()(v));
+}
+#endif
+
+ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_qname const& aqn) const
+{
+    auto optqnid = ctx.lookup_qname(aqn);
+    if (optqnid) {
+        qname_identifier_entity qnid_ent{ *optqnid };
+        entity_identifier entid = u().eregistry_find_or_create(qnid_ent, [this, &qnid_ent]() {
+            auto result = make_shared<qname_identifier_entity>(std::move(qnid_ent));
+            result->set_type(u().get(builtin_eid::qname));
+            return result;
+        }).id();
+        return apply_cast(entid, aqn);
+    }
+    return std::unexpected(optqnid.error());
 }
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(function_call_t const& proc) const
@@ -222,10 +227,7 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(opt_named_s
     }), res->first);
 }
 
-ct_expression_visitor::result_type ct_expression_visitor::operator()(lambda_t const& l) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::operator()(lambda_t const&)");
-}
+
 
 ct_expression_visitor::result_type ct_expression_visitor::handle(base_expression_visitor::result_type&& res) const
 {

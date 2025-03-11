@@ -271,6 +271,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\signature_matcher.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\value_match_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\value_type_match_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\generic_pattern_base.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_empty_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_head_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.hpp" />
@@ -300,6 +301,8 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_set_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_tail_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\type_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\union\union_bit_or_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\union\union_implicit_cast_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\variable_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors\assign_error.hpp" />
@@ -784,6 +787,7 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\signature_matcher.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\value_match_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\value_type_match_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\generic_pattern_base.ipp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_empty_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_head_pattern.cpp" />
@@ -804,6 +808,8 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_set_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_tail_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\type_entity.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\union\union_bit_or_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\union\union_implicit_cast_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\variable_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\errors\assign_error.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\errors\circular_dependency_error.cpp" />

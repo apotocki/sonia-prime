@@ -125,9 +125,9 @@ error_storage declaration_visitor::operator()(struct_decl const& sd) const
         unit& u = ctx.u();
         if constexpr (std::is_same_v<annotated_qname const&, decltype(v)>) {
             annotated_qname const& qn = v;
-            
+
             functional& fnl = u.fregistry().resolve(ctx.ns() / qn.value);
-            auto sent = make_shared<struct_entity>(qname{ fnl.name() }, u.get(builtin_eid::typename_), entity_signature{ fnl.id() }, sd.body);
+            auto sent = make_shared<struct_entity>(u, fnl, sd.body);
             u.eregistry_insert(sent);
             annotated_entity_identifier aeid{ sent->id(), qn.location };
             fnl.set_default_entity(aeid);
@@ -158,7 +158,7 @@ error_storage declaration_visitor::operator()(enum_decl const& ed) const
 {
     unit& u = ctx.u();
     functional& fnl = u.fregistry().resolve(ctx.ns() / ed.name.value);
-    auto eent = make_shared<enum_entity>(qname{ fnl.name() }, u.get(builtin_eid::typename_), entity_signature{ fnl.id() }, ed.cases);
+    auto eent = make_shared<enum_entity>(u, fnl, ed.cases);
     u.eregistry_insert(eent);
     annotated_entity_identifier aeid{ eent->id(), ed.name.location };
     fnl.set_default_entity(aeid);

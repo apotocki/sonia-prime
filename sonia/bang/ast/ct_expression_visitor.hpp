@@ -28,29 +28,31 @@ struct ct_expression_visitor
         is_type_expected = is_type_expected_value;
     }
 
-    //result_type operator()(context_value const&) const;
-
+#if 0
     result_type operator()(annotated_bool const&) const;
     result_type operator()(annotated_integer const&) const;
     result_type operator()(annotated_decimal const&) const;
     result_type operator()(annotated_string const&) const;
-    result_type operator()(annotated_qname const&) const;
     result_type operator()(annotated_identifier const&) const;
     result_type operator()(annotated_entity_identifier const&) const;
+    result_type operator()(variable_identifier const&) const;
+    result_type operator()(bang_vector_t const&) const;
+    result_type operator()(lambda_t const&) const;
+#endif // 0
+
+    result_type operator()(annotated_qname const&) const;
+        
     result_type operator()(function_call_t const&) const;
     result_type operator()(member_expression_t const&) const;
-
-    result_type operator()(variable_identifier const&) const;
-    result_type operator()(lambda_t const&) const;
+        
+    
 
     result_type operator()(opt_named_syntax_expression_list_t const&) const;
-
-    result_type operator()(bang_vector_t const&) const;
 
     template <typename T>
     result_type operator()(T const& v) const
     {
-        THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor not implemented expression");
+        return handle(base_expression_visitor::operator()(v));
     }
 
 private:

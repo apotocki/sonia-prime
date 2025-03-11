@@ -889,6 +889,8 @@ syntax-expression-wo-ii:
 		{ $$ = unary_expression_t{ unary_operator_type::NEGATE, true, std::move($2), std::move($1) }; }
     | syntax-expression PLUS syntax-expression
         { $$ = binary_expression_t{ binary_operator_type::PLUS, std::move($1), std::move($3), std::move($2) }; }
+    | syntax-expression BITOR syntax-expression
+        { $$ = binary_expression_t{ binary_operator_type::BIT_OR, std::move($1), std::move($3), std::move($2) }; }
 //////////////////////////// 3 priority
 
         
@@ -1030,8 +1032,6 @@ type-expr:
       qname
         { $$ = variable_identifier{ std::move($qname) }; }
     | call-expression
-    //| qname OPEN_PARENTHESIS[start] argument-list-opt[arguments] CLOSE_PARENTHESIS
-    //    { $$ = std::move($1); IGNORE_TERM($start); IGNORE_TERM($arguments); }
     | INTERNAL_IDENTIFIER[id]
         { $$ = variable_identifier{ ctx.make_qname(std::move($id)), true }; }
     //| internal-identifier[id] OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS

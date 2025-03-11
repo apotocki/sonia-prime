@@ -20,10 +20,12 @@ struct_fn_pattern::struct_fn_pattern(functional const& fnl, variant<field_list_t
 
 std::expected<entity_identifier, error_storage> struct_fn_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
-    entity_signature sig = md.build_signature(ctx.u(), fnl_.id());
+    unit& u = ctx.u();
+    entity_signature sig = md.build_signature(u, fnl_.id());
+    sig.result.emplace(u.get(builtin_eid::typename_));
     indirect_signatured_entity smpl{ sig };
 
-    return ctx.u().eregistry_find_or_create(smpl, [this, &ctx, &sig, &md]() {
+    return u.eregistry_find_or_create(smpl, [this, &ctx, &sig, &md]() {
         unit& u = ctx.u();
         qname struct_ns = fn_qname() / u.new_identifier();
         fn_compiler_context struct_ctx{ ctx, struct_ns };
@@ -31,7 +33,7 @@ std::expected<entity_identifier, error_storage> struct_fn_pattern::const_apply(f
         build_scope(struct_ctx, md, bound_arguments);
         BOOST_ASSERT(bound_arguments.empty());
         // u.fregistry().resolve(struct_ns).name() // do we need a functional to store qname?
-        auto res = make_shared<struct_entity>(std::move(struct_ns), u.get(builtin_eid::typename_), std::move(sig), body_);
+        auto res = make_shared<struct_entity>(std::move(struct_ns), std::move(sig), body_);
         res->set_location(location());
         return res;
     }).id();

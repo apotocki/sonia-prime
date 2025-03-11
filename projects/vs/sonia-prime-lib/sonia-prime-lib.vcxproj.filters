@@ -295,6 +295,9 @@
     <Filter Include="sonia.bang\entities\collections">
       <UniqueIdentifier>{49f3d200-580a-4d68-968e-2fc37a7cb26e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.bang\entities\union">
+      <UniqueIdentifier>{c622c0f8-71b5-4bb5-afe0-5b8103c3b2d8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -2397,6 +2400,15 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\collections\array_implicit_cast_pattern.hpp">
       <Filter>sonia.bang\entities\collections</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\union\union_bit_or_pattern.hpp">
+      <Filter>sonia.bang\entities\union</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\generic_pattern_base.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\union\union_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\union</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2878,6 +2890,15 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\collections\array_implicit_cast_pattern.cpp">
       <Filter>sonia.bang\entities\collections</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\union\union_bit_or_pattern.cpp">
+      <Filter>sonia.bang\entities\union</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\generic_pattern_base.ipp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\union\union_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\union</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

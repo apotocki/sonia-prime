@@ -40,6 +40,7 @@ enum class builtin_id : size_t
     to, // to:
     self, // self:
     size, // size:
+    which, // which:
     element, // element:
     property, // property:
     object, // object:
@@ -52,9 +53,9 @@ enum class builtin_qnid : size_t
 {
     fn = 0,
     ellipsis, tuple, vector, array, identifier,
-    qname, object, string, decimal, integer, boolean, any,
+    qname, object, string, decimal, integer, boolean, any, union_,
     metaobject,
-    typeof, make_tuple, new_, init, eq, ne, plus, negate, implicit_cast, get, set, head, tail, empty,
+    typeof, make_tuple, new_, init, eq, ne, plus, bit_or, negate, implicit_cast, get, set, head, tail, empty,
     eof_builtin_qnids_value
 };
 

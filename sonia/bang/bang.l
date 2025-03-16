@@ -118,67 +118,69 @@ DECIMAL                 [0-9]+"."?[0-9]*{EXPONENT}?
 DECIMAL_S               "."[0-9]*{EXPONENT}?
 INTEGER_INDEX			"."([0]|([1-9][0-9]*))
 
-FN						"fn"
-LET						"let"
-VAR						"var"
-ENUM					"enum"
-STRUCT					"struct"
-USING					"using"
-EXTENDS					"extends"
-EXTERN                  "extern"
-INCLUDE					"include"
-INLINE					"inline"
-TYPENAME				"typename"
-NEW						"new"
+FN						 "fn"
+LET						 "let"
+VAR						 "var"
+ENUM					 "enum"
+STRUCT					 "struct"
+USING					 "using"
+EXTENDS					 "extends"
+EXTERN                   "extern"
+INCLUDE					 "include"
+INLINE					 "inline"
+TYPENAME				 "typename"
+NEW						 "new"
 
-CONTINUE                "continue"
-BREAK					"break"
-RETURN                  "return"
+CONTINUE                 "continue"
+BREAK					 "break"
+RETURN                   "return"
 
-WHILE					"while"
-FOR						"for"
-IN						"in"
-IF						"if"
-ELSE					"else"
+WHILE					 "while"
+FOR						 "for"
+IN						 "in"
+IF						 "if"
+ELSE					 "else"
 
-NIL_WORD                "nil"
-TRUE_WORD				"true"
-FALSE_WORD				"false"
+NIL_WORD                 "nil"
+TRUE_WORD				 "true"
+FALSE_WORD				 "false"
 
-WEAK					"weak"
-CONST					"const"
-MUT						"mut"
+WEAK					 "weak"
+CONST					 "const"
+MUT						 "mut"
 
-APOSTROPHE				"`"
-AT_SYMBOL				"@"
-END_STATEMENT			";"
-COMMA					","
-OPEN_BRACE				"{"
-CLOSE_BRACE				"}"
-OPEN_PARENTHESIS		"("
-CLOSE_PARENTHESIS		")"
-COLON                   ":"
-OPEN_SQUARE_BRACKET     "["
-CLOSE_SQUARE_BRACKET    "]"
-ASSIGN                  "="
-POINT                   "."
-UNDERSCORE              "_"
-BITOR                   "|"
-EXCLPT                  "!"
-QMARK                   "?"
-PLUS                    "+"
-TILDA                   "~"
-OPEN_SQUARE_DBL_BRACKET "[["
+APOSTROPHE				 "`"
+AT_SYMBOL				 "@"
+END_STATEMENT			 ";"
+COMMA					 ","
+OPEN_BRACE				 "{"
+CLOSE_BRACE				 "}"
+OPEN_PARENTHESIS		 "("
+CLOSE_PARENTHESIS		 ")"
+COLON                    ":"
+OPEN_SQUARE_BRACKET      "["
+CLOSE_SQUARE_BRACKET     "]"
+ASSIGN                   "="
+POINT                    "."
+UNDERSCORE               "_"
+BITOR                    "|"
+AMPERSAND                "&"
+EXCLPT                   "!"
+QMARK                    "?"
+PLUS                     "+"
+MINUS                    "-"
+TILDA                    "~"
+OPEN_SQUARE_DBL_BRACKET  "[["
 CLOSE_SQUARE_DBL_BRACKET "]]"
-DBLCOLON                "::"
-LOGIC_OR                "||"
-LOGIC_AND               "&&"
-ARROW					"->"
-ARROWEXPR				"=>"
-CONCAT					".."
-EQ                      "=="
-NE                      "!="
-ELLIPSIS				"..."
+DBLCOLON                 "::"
+LOGIC_OR                 "||"
+LOGIC_AND                "&&"
+ARROW                    "->"
+ARROWEXPR                "=>"
+CONCAT                   ".."
+EQ                       "=="
+NE                       "!="
+ELLIPSIS                 "..."
 
 /*
 
@@ -225,15 +227,9 @@ BITORASSIGN             "|="
 BITXORASSIGN            "^="
 
 
-
-
-
-MINUS                   "-"
 ASTERISK                "*"
 SLASH                   "/"
 PERCENT                 "%"
-AMPERSAND               "&"
-
 
 TILDA                   "~"
 EXCL                    "^"
@@ -361,13 +357,15 @@ HASHTAG					"#"
 	{OPEN_SQUARE_DBL_BRACKET}  { variant_emplace(location); return (bang_lang::parser::token::OPEN_SQUARE_DBL_BRACKET); }
 	{CLOSE_SQUARE_DBL_BRACKET} { return (bang_lang::parser::token::CLOSE_SQUARE_DBL_BRACKET); }
 	{ASSIGN}                   { variant_emplace(location); return (bang_lang::parser::token::ASSIGN); }
-	{POINT}					   { variant_emplace(location); return (bang_lang::parser::token::POINT);	}
+	{POINT}					   { variant_emplace(location); return (bang_lang::parser::token::POINT); }
 	{UNDERSCORE}		       { variant_emplace(location); return (bang_lang::parser::token::UNDERSCORE); }
-	{BITOR}				       { variant_emplace(location); return (bang_lang::parser::token::BITOR);	}
+	{BITOR}				       { variant_emplace(location); return (bang_lang::parser::token::BITOR); }
+	{AMPERSAND}                { variant_emplace(location); return (bang_lang::parser::token::AMPERSAND); }
 	{EXCLPT}                   { variant_emplace(location); return (bang_lang::parser::token::EXCLPT); }
 	{QMARK}                    { return (bang_lang::parser::token::QMARK); }
 	{DBLCOLON}                 { return (bang_lang::parser::token::DBLCOLON); }
 	{PLUS}					   { variant_emplace(location); return (bang_lang::parser::token::PLUS); }
+	{MINUS}					   { variant_emplace(location); return (bang_lang::parser::token::MINUS); }
 	{TILDA}                    { variant_emplace(location); return (bang_lang::parser::token::TILDA); }
 	{LOGIC_OR}                 { variant_emplace(location); return (bang_lang::parser::token::LOGIC_OR); }
     {LOGIC_AND}                { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
@@ -558,8 +556,6 @@ DECIMAL_LITERAL			{DECIMAL}"_"
 	// +
 	{PLUS}					{ return (bang_lang::parser::token::PLUS); }
 
-	// -
-	{MINUS}					{ return (bang_lang::parser::token::MINUS);	}
 
 	// *
 	{ASTERISK}				{ return (bang_lang::parser::token::ASTERISK);	}
@@ -570,8 +566,7 @@ DECIMAL_LITERAL			{DECIMAL}"_"
 	// %
     {PERCENT}               { return (bang_lang::parser::token::PERCENT);	}
 
-	// &
-	{AMPERSAND}				{ return (bang_lang::parser::token::AMPERSAND);	}
+
 
 	// |
     {BITOR}				    { return (bang_lang::parser::token::BITOR);	}

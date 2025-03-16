@@ -22,7 +22,9 @@ class functional_registry
 
 public:
     FunctionalT* find(qname_view_t) const noexcept(!sonia_is_debug);
-    FunctionalT& resolve(qname_view_t) noexcept(!sonia_is_debug);
+
+    template <typename FactoryT>
+    FunctionalT& resolve(qname_view_t, FactoryT const&);
     FunctionalT& resolve(identifier_type qid) const;
 
 private:
@@ -62,7 +64,8 @@ FunctionalT* functional_registry<FunctionalT, MutexT>::find(qname_view_t qnv) co
 }
 
 template <typename FunctionalT, typename MutexT>
-FunctionalT& functional_registry<FunctionalT, MutexT>::resolve(qname_view_t qnv) noexcept(!sonia_is_debug)
+template <typename FactoryT>
+FunctionalT& functional_registry<FunctionalT, MutexT>::resolve(qname_view_t qnv, FactoryT const& factory)
 {
     BOOST_ASSERT(qnv.is_absolute());
     lock_guard guard(set_mtx_);
@@ -70,7 +73,7 @@ FunctionalT& functional_registry<FunctionalT, MutexT>::resolve(qname_view_t qnv)
     auto it = plane.find(qnv);
     if (it == plane.end()) {
         size_t r = set_.size();
-        it = plane.insert(it, make_shared<FunctionalT>(identifier_type{r}, qnv));
+        it = plane.insert(it, factory(identifier_type{ r }, qnv));
     }
     return **it;
 }

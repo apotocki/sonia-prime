@@ -10,7 +10,7 @@
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
 #include "sonia/bang/entities/signatured_entity.hpp"
-
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 #include "sonia/bang/entities/generic_pattern_base.ipp"
 
 namespace sonia::lang::bang {

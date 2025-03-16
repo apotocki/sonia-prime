@@ -7,9 +7,14 @@
 
 #include "sonia/span.hpp"
 #include "sonia/small_vector.hpp"
+
 #include "sonia/utility/functional/range_equal.hpp"
 
 #include "agnostic/std/algorithm/lexicographical_compare_three_way.hpp"
+
+#ifdef SONIA_LANG_DEBUG
+#   include "sonia/string.hpp"
+#endif
 
 namespace sonia::lang {
 
@@ -84,7 +89,7 @@ public:
 
     inline IdentifierT local_name() const noexcept { return parts_.back(); }
 
-    void truncate(size_t sz)
+    inline void truncate(size_t sz)
     {
         parts_.resize(sz);
     }
@@ -95,8 +100,8 @@ public:
         return std::ranges::equal(parts().subspan(0, sp.size()), sp);
     }
 
-    auto begin() const { return parts_.begin(); }
-    auto end() const { return parts_.end(); }
+    inline auto begin() const noexcept { return parts_.begin(); }
+    inline auto end() const noexcept { return parts_.end(); }
 
     inline size_t size() const noexcept { return parts_.size(); }
 
@@ -113,6 +118,11 @@ inline size_t hash_value(qname<IdentifierT> const& v) noexcept
 
 class qname_identifier
 {
+#ifdef SONIA_LANG_DEBUG
+public:
+    small_string debug_name;
+private:
+#endif
     uint32_t value_;
     static constexpr uint32_t no_value_ = 0xffffffffu;
 

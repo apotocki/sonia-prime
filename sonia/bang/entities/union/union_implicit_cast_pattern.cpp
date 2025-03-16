@@ -9,6 +9,7 @@
 #include "sonia/bang/ast/base_expression_visitor.hpp"
 
 #include "sonia/bang/entities/signatured_entity.hpp"
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
@@ -38,7 +39,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
     entity const& ent = u.eregistry_get(e.value);
     entity_signature const* pusig = ent.signature();
     if (!pusig || pusig->name != u.get(builtin_qnid::union_)) {
-        return std::unexpected(make_error<type_mismatch_error>(e.location, e.value, "an union"sv));
+        return std::unexpected(make_error<type_mismatch_error>(e.location, e.value, "a union"sv));
     }
 
     shared_ptr<union_cast_match_descriptor> pmd;

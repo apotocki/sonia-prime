@@ -97,7 +97,12 @@ class compiler_task_tracer
     {
         set_hook_type member_hook_;
 
-        automatic_polymorphic<compiler_task_id, 2 * sizeof(void*)> id_;
+#ifdef SONIA_LANG_DEBUG
+        static constexpr size_t task_wrapper_size = 2 * sizeof(void*) + sizeof(small_string);
+#else
+        static constexpr size_t task_wrapper_size = 2 * sizeof(void*);
+#endif
+        automatic_polymorphic<compiler_task_id, task_wrapper_size> id_;
         compiler_worker_id worker_id;
         mutable fibers::mutex mtx_;
         std::atomic_long refs{ 1 };

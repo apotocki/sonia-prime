@@ -18,10 +18,10 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
         return this->operator()(b.arg);
     }
 
-    inline result_type operator()(bang_array_t const& ba) const noexcept
-    {
-        return apply_visitor(*this, ba.type);
-    }
+    //inline result_type operator()(index_expression_t const& ie) const noexcept
+    //{
+    //    return apply_visitor(*this, ie.base);
+    //}
 
     inline result_type operator()(bang_union_t const& bu) const noexcept
     {

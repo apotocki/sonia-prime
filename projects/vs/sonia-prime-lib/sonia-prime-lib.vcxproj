@@ -233,7 +233,6 @@
     <ClInclude Include="..\..\..\sonia\array_view.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\assign_expression_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\base_expression_visitor.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_bool_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_enum_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_float_visitor.hpp" />
@@ -272,6 +271,9 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\value_match_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\value_type_match_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\generic_pattern_base.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\literals\literal_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_bit_and_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_empty_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_head_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.hpp" />
@@ -726,7 +728,6 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\bang\ast\assign_expression_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\base_expression_visitor.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_utility.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -788,7 +789,9 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\value_match_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\value_type_match_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\generic_pattern_base.ipp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_bit_and_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_empty_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_head_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.cpp" />

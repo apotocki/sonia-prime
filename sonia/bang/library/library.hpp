@@ -29,5 +29,6 @@ void bang_operator_plus_decimal(vm::context&);
 
 void bang_str2dec(vm::context&);
 void bang_int2dec(vm::context&);
+void bang_int2flt(vm::context&);
 
 }

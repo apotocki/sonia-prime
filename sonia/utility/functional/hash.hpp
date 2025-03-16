@@ -69,7 +69,7 @@ struct hasher
     template <typename ... Ts, size_t ... Idxs>
     inline size_t do_work(std::index_sequence<Idxs...>, size_t seed, Ts const& ... vs) const noexcept
     {
-        (sonia::hash_combine(seed, hash<variadic::type_at_t<Idxs, Ts...>>{}(variadic::forward_at<Idxs>(vs ...))), ...);
+        (sonia::hash_combine(seed, (variadic::forward_at<Idxs>(vs ...))), ...);
         return seed;
     }
 };

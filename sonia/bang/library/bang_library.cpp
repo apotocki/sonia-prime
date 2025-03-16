@@ -237,6 +237,12 @@ void bang_int2dec(vm::context& ctx)
     ctx.stack_back().replace(std::move(res));
 }
 
+void bang_int2flt(vm::context& ctx)
+{
+    auto ival = ctx.stack_back().as<mp::integer_view>();
+    ctx.stack_back().replace(smart_blob{ f32_blob_result((float)ival) });
+}
+
 void bang_create_extern_object(vm::context& ctx)
 {
     string_view name = ctx.stack_back().as<string_view>();

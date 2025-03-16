@@ -9,6 +9,9 @@
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 #include "sonia/bang/ast/base_expression_visitor.hpp"
+
+#include "sonia/bang/entities/literals/literal_entity.hpp"
+
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 #include "sonia/bang/errors/value_mismatch_error.hpp"
 
@@ -86,12 +89,9 @@ std::expected<functional::pattern::application_result_t, error_storage> enum_imp
     entity const& ent = u.eregistry_get(strid);
     identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&ent);
     BOOST_ASSERT(pie);
-    string_literal_entity sle{ ctx.u().print(pie->value()) };
-    return u.eregistry_find_or_create(sle, [&u, &sle]() {
-        auto result = make_shared<string_literal_entity>(std::move(sle));
-        result->set_type(u.get(builtin_eid::string));
-        return result;
-    }).id();
+    
+    // return typed by enumeration string
+    return u.make_string_entity(u.print(pie->value()), md.result.entity_id()).id();
 }
 
 }

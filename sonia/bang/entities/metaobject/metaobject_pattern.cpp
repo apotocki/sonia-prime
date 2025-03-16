@@ -28,6 +28,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_pattern
     return pmd;
 }
 
+std::expected<functional::pattern::application_result_t, error_storage> metaobject_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+{
+    return metaobject_pattern::const_apply(ctx, md);
+}
+
 std::expected<entity_identifier, error_storage> metaobject_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();

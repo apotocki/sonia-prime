@@ -15,7 +15,7 @@ general_error::string_t assign_error::object(unit const& u) const noexcept
 
 general_error::string_t assign_error::description(unit const& u) const noexcept
 {
-    return "not a lvalue expression"sv;;
+    return "not a lvalue expression"sv;
 }
 
 }

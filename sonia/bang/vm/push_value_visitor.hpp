@@ -222,7 +222,7 @@ public:
 
     void operator()(extern_variable_entity const& ve) const override
     {
-        string_view varname = unit_.as_string(unit_.fregistry().resolve(ve.name).name().back());
+        string_view varname = unit_.as_string(unit_.fregistry_resolve(ve.name).name().back());
         smart_blob strbr{ string_blob_result(varname) };
         strbr.allocate();
         fnbuilder_.append_push_pooled_const(std::move(strbr));

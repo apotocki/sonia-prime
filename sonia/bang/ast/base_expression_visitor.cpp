@@ -12,6 +12,8 @@
 #include "fn_compiler_context.hpp"
 #include "ct_expression_visitor.hpp"
 
+#include "sonia/bang/entities/literals/literal_entity.hpp"
+
 namespace sonia::lang::bang {
 
 base_expression_visitor::base_expression_visitor(fn_compiler_context& c) noexcept
@@ -67,7 +69,8 @@ inline base_expression_visitor::result_type base_expression_visitor::apply_cast(
         }
 
         auto res = match->generic_apply(ctx);
-        if (!res) return std::unexpected(std::move(res.error()));
+        if (!res)
+            return std::unexpected(std::move(res.error()));
         return std::pair{ std::move(*res), true };
     }
 }
@@ -133,13 +136,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(context
 
 base_expression_visitor::result_type base_expression_visitor::operator()(annotated_bool const& bv) const
 {
-    bool_literal_entity bool_ent{ bv.value };
-    entity const& ent = u().eregistry_find_or_create(bool_ent, [this, &bool_ent]() {
-        auto result = make_shared<bool_literal_entity>(std::move(bool_ent));
-        result->set_type(u().get(builtin_eid::boolean));
-        return result;
-    });
-    return apply_cast(ent, bv);
+    return apply_cast(u().make_bool_entity(bv.value), bv);
 }
 
 base_expression_visitor::result_type base_expression_visitor::operator()(annotated_integer const& iv) const
@@ -149,36 +146,17 @@ base_expression_visitor::result_type base_expression_visitor::operator()(annotat
 
 base_expression_visitor::result_type base_expression_visitor::operator()(annotated_decimal const& dv) const
 {
-    decimal_literal_entity dec_ent{ dv.value };
-    entity const& ent = u().eregistry_find_or_create(dec_ent, [this, &dec_ent]() {
-        auto result = make_shared<decimal_literal_entity>(std::move(dec_ent));
-        result->set_type(u().get(builtin_eid::decimal));
-        return result;
-    });
-    return apply_cast(ent, dv);
+    return apply_cast(u().make_decimal_entity(dv.value), dv);
 }
 
 base_expression_visitor::result_type base_expression_visitor::operator()(annotated_string const& sv) const
 {
-    string_literal_entity str_ent{ sv.value };
-    entity const& ent = u().eregistry_find_or_create(str_ent, [this, &str_ent]() {
-        auto result = make_shared<string_literal_entity>(std::move(str_ent));
-        result->set_type(u().get(builtin_eid::string));
-        return result;
-    });
-    return apply_cast(ent, sv);
+    return apply_cast(u().make_string_entity(sv.value), sv);
 }
 
 base_expression_visitor::result_type base_expression_visitor::operator()(annotated_identifier const& iv) const
 {
-    identifier_entity id_ent{ iv.value };
-    entity const& ent = u().eregistry_find_or_create(id_ent, [this, &id_ent]() {
-        auto result = make_shared<identifier_entity>(std::move(id_ent));
-        result->set_type(u().get(builtin_eid::identifier));
-        return result;
-    });
-
-    return apply_cast(ent, iv);
+    return apply_cast(u().make_identifier_entity(iv.value), iv);
 }
 
 base_expression_visitor::result_type base_expression_visitor::operator()(annotated_entity_identifier const& e) const
@@ -355,6 +333,36 @@ base_expression_visitor::result_type base_expression_visitor::operator()(new_exp
     return apply_cast(std::move(res), ne);
 }
 
+base_expression_visitor::result_type base_expression_visitor::operator()(index_expression_t const& ie) const
+{
+    auto res = apply_visitor(base_expression_visitor{ ctx }, ie.base);
+    if (!res) return std::unexpected(res.error());
+    if (entity_identifier const* peid = get<entity_identifier>(&res->first); peid) {
+        entity const& ent = u().eregistry_get(*peid);
+        if (ent.get_type() == u().get(builtin_eid::typename_)) { // this is array type declaration
+            auto szres = apply_visitor(ct_expression_visitor{ ctx, annotated_entity_identifier{ u().get(builtin_eid::integer), get_start_location(ie.index) } }, ie.index);
+            if (!szres) return std::unexpected(szres.error());
+            integer_literal_entity const& index_ent = static_cast<integer_literal_entity const&>(u().eregistry_get(*szres));
+            if (index_ent.value() <= 0) {
+                return std::unexpected(make_error<basic_general_error>(get_start_location(ie.index), "index must be greater than 0"sv));
+            }
+            return apply_cast(u().make_array_type_entity(*peid, (size_t)index_ent.value()).id(), ie);
+        }
+    }
+
+    // else get call
+    pure_call_t get_call{ ie.location };
+    get_call.emplace_back(annotated_identifier{ u().get(builtin_id::self) }, ie.base);
+    get_call.emplace_back(annotated_identifier{ u().get(builtin_id::property) }, ie.index);
+    
+    auto match = ctx.find(builtin_qnid::new_, get_call, expected_result);
+    if (!match) {
+        return std::unexpected(std::move(match.error()));
+    }
+
+    return apply_cast(match->generic_apply(ctx), ie);
+}
+
 base_expression_visitor::result_type base_expression_visitor::operator()(binary_expression_t const& be) const
 {
     switch (be.op) {
@@ -364,8 +372,12 @@ base_expression_visitor::result_type base_expression_visitor::operator()(binary_
         return this->operator()(builtin_qnid::ne, be);
     case binary_operator_type::PLUS:
         return this->operator()(builtin_qnid::plus, be);
+    case binary_operator_type::MINUS:
+        return this->operator()(builtin_qnid::minus, be);
     case binary_operator_type::BIT_OR:
         return this->operator()(builtin_qnid::bit_or, be);
+    case binary_operator_type::BIT_AND:
+        return this->operator()(builtin_qnid::bit_and, be);
     case binary_operator_type::ASSIGN:
         return do_assign(be);
     }

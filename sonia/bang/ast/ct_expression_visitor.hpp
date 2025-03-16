@@ -38,15 +38,14 @@ struct ct_expression_visitor
     result_type operator()(variable_identifier const&) const;
     result_type operator()(bang_vector_t const&) const;
     result_type operator()(lambda_t const&) const;
+    result_type operator()(function_call_t const&) const;
 #endif // 0
 
     result_type operator()(annotated_qname const&) const;
         
-    result_type operator()(function_call_t const&) const;
+    
     result_type operator()(member_expression_t const&) const;
         
-    
-
     result_type operator()(opt_named_syntax_expression_list_t const&) const;
 
     template <typename T>
@@ -56,7 +55,7 @@ struct ct_expression_visitor
     }
 
 private:
-    result_type handle(base_expression_visitor::result_type && res) const;
+    result_type handle(base_expression_visitor::result_type &&) const;
 
     template <typename ExprT>
     result_type apply_cast(entity_identifier, ExprT const& e) const;

@@ -135,8 +135,8 @@ void error_printer_visitor::operator()(ambiguity_error const& err)
             s_ << "\n or \n";
         }
         else { first = false; }
-        s_ << e.location.resource << '(' << e.location.line << ',' << e.location.column << "): "sv;
-        s_ << u_.print(e.sig);
+        u_.print_to(s_, e.location) << ": ";
+        u_.print_to(s_, e.sig);
     }
 }
 

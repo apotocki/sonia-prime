@@ -53,15 +53,15 @@ enum class builtin_qnid : size_t
 {
     fn = 0,
     ellipsis, tuple, vector, array, identifier,
-    qname, object, string, decimal, integer, boolean, any, union_,
+    qname, object, string, f16, f32, f64, decimal, integer, boolean, any, union_,
     metaobject,
-    typeof, make_tuple, new_, init, eq, ne, plus, bit_or, negate, implicit_cast, get, set, head, tail, empty,
+    typeof, make_tuple, new_, init, eq, ne, plus, minus, bit_or, bit_and, negate, implicit_cast, get, set, head, tail, empty,
     eof_builtin_qnids_value
 };
 
 enum class builtin_eid : size_t
 {
-    typename_ = 0, void_, true_, false_, any, identifier, qname, object, string, decimal, integer, boolean, metaobject,
+    typename_ = 0, void_, true_, false_, any, identifier, qname, object, string, f16, f32, f64, decimal, integer, boolean, metaobject,
     arrayify, // builtin ::arrayify(...)->array
     array_tail, // builtin ::array_tail(array)-> array
     array_at, // builtin ::array_at(array, index)-> elementT
@@ -149,14 +149,19 @@ public:
 
     qname_identifier new_qname_identifier();
     qname_identifier make_qname_identifier(string_view);
-    qname_identifier get_function_entity_identifier(string_view signature);
+    //qname_identifier get_function_entity_identifier(string_view signature);
 
     slregistry_t& slregistry() { return slregistry_; }
     //qname_registry_t& qnregistry() { return qname_registry_; }
-    functional_registry_t& fregistry() { return functional_registry_; }
+    //functional_registry_t& fregistry() { return functional_registry_; }
 
     piregistry_t& piregistry() { return piregistry_; }
     
+    ////// functional registry routines
+    functional* fregistry_find(qname_view);
+    functional& fregistry_resolve(qname_view);
+    functional& fregistry_resolve(qname_identifier);
+
     ////// entity registry routines
     void eregistry_insert(shared_ptr<entity>);
     entity const& eregistry_get(entity_identifier) const;
@@ -194,15 +199,16 @@ public:
     inline functional const& fget(builtin_qnid bi) const noexcept { return functional_registry_.resolve(builtin_qnids_[(size_t)bi]); }
     inline identifier get(builtin_id bi) const noexcept { return builtin_ids_[(size_t)bi]; }
 
-    functional& resolve_functional(qname_identifier);
-
-
-    identifier_entity const& make_identifier_entity(identifier value);
-    entity const& make_integer_entity(mp::integer_view value);
-    entity const& make_vector_type_entity(entity_identifier element_type);
-    entity const& make_vector_entity(entity_identifier element_type, span<entity_identifier> const& values);
-    entity const& make_array_type_entity(entity_identifier element_type, size_t sz);
-    entity const& make_array_entity(entity_identifier element_type, span<entity_identifier> const& values);
+    identifier_entity       const& make_identifier_entity(identifier value);
+    qname_identifier_entity const& make_qname_entity(qname_identifier value);
+    bool_literal_entity     const& make_bool_entity(bool value, entity_identifier type = {});
+    integer_literal_entity  const& make_integer_entity(mp::integer_view value, entity_identifier type = {});
+    decimal_literal_entity  const& make_decimal_entity(mp::decimal_view value, entity_identifier type = {});
+    string_literal_entity   const& make_string_entity(string_view value, entity_identifier type = {});
+    basic_signatured_entity const& make_vector_type_entity(entity_identifier element_type);
+    basic_signatured_entity const& make_vector_entity(entity_identifier element_type, span<entity_identifier> const& values);
+    basic_signatured_entity const& make_array_type_entity(entity_identifier element_type, size_t sz);
+    basic_signatured_entity const& make_array_entity(entity_identifier element_type, span<entity_identifier> const& values);
 
 
     //void push_entity(shared_ptr<entity>);
@@ -231,36 +237,42 @@ public:
     
     functional& resolve_functional(qname_view);
 
-    std::string print(identifier const& id) const;
-    std::string print(entity_identifier const& id) const;
-    std::string print(entity const&) const;
-    std::string print(entity_signature const&) const;
+    std::ostream& print_to(std::ostream&, identifier const&) const;
+    std::ostream& print_to(std::ostream&, entity_identifier const&) const;
+    std::ostream& print_to(std::ostream&, entity const&) const;
+    std::ostream& print_to(std::ostream&, entity_signature const&) const;
+    std::ostream& print_to(std::ostream&, qname_view const&) const;
+    std::ostream& print_to(std::ostream& os, qname const& q) const { return print_to(os, (qname_view)q); }
+    std::ostream& print_to(std::ostream&, qname_identifier const&) const;
+    std::ostream& print_to(std::ostream&, small_u32string const&, bool in_quotes = false) const;
+    std::ostream& print_to(std::ostream&, lex::resource_location const&) const;
+    std::ostream& print_to(std::ostream&, syntax_expression_t const&) const;
+    std::ostream& print_to(std::ostream&, semantic::expression const&) const;
+    std::ostream& print_to(std::ostream&, semantic::expression_list_t const&) const;
+    std::ostream& print_to(std::ostream&, error const&) const;
 
-    std::string print(qname_view q) const;
-    std::string print(qname const& q) const
+    template <typename T, typename ... AdditionalArgsT>
+    std::string print(T const& value, AdditionalArgsT && ... args) const
     {
-        return print((qname_view)q);
+        std::ostringstream ss;
+        print_to(ss, value, std::forward<AdditionalArgsT>(args) ...);
+        return ss.str();
     }
-    std::string print(qname_identifier) const;
 
-    std::string print(small_u32string const&, bool in_quotes = false) const;
-
-    std::string print(lex::resource_location const&) const;
-
-    //std::string print(bang_preliminary_type const& tp) const;
-    
-    std::string print(syntax_expression_t const&) const;
-    std::string print(semantic::expression const&) const;
-    std::string print(semantic::expression_list_t const& elist) const;
-
-    std::string print(error const&) const;
+    template <typename T, typename ... AdditionalArgsT>
+    small_string as_string(T const& value, AdditionalArgsT && ... args) const
+    {
+        std::ostringstream ss;
+        print_to(ss, value, std::forward<AdditionalArgsT>(args) ...);
+        return small_string{ ss.str() };
+    }
 
     std::string describe_efn(size_t index) const;
 
-    small_string as_string(identifier const& id) const;
-    small_string as_string(entity_identifier const& id) const;
-    small_string as_string(qname_view name) const;
-    small_string as_string(qname_identifier name) const;
+    //small_string as_string(identifier const& id) const;
+    //small_string as_string(entity_identifier const& id) const;
+    //small_string as_string(qname_view name) const;
+    //small_string as_string(qname_identifier name) const;
 
     //small_u32string as_u32string(identifier const& id) const;
     

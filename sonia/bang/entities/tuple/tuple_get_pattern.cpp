@@ -12,6 +12,7 @@
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 //#include "sonia/bang/entities/functions/match_utility.ipp"
 
 namespace sonia::lang::bang {

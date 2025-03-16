@@ -298,6 +298,9 @@
     <Filter Include="sonia.bang\entities\union">
       <UniqueIdentifier>{c622c0f8-71b5-4bb5-afe0-5b8103c3b2d8}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.bang\entities\literals">
+      <UniqueIdentifier>{d9d88b72-ba21-419d-beea-85c13f0a6a18}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -2139,9 +2142,6 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_float_visitor.hpp">
       <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.hpp">
-      <Filter>sonia.bang\ast\casts</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\errors.hpp">
       <Filter>sonia.bang</Filter>
     </ClInclude>
@@ -2408,6 +2408,15 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\union\union_implicit_cast_pattern.hpp">
       <Filter>sonia.bang\entities\union</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_bit_and_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\literals\literal_entity.hpp">
+      <Filter>sonia.bang\entities\literals</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2705,9 +2714,6 @@
     <ClCompile Include="..\..\..\sonia\bang\bang_errors.cpp">
       <Filter>sonia.bang</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.cpp">
-      <Filter>sonia.bang\ast\casts</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.cpp">
       <Filter>sonia.bang\ast\casts</Filter>
     </ClCompile>
@@ -2899,6 +2905,12 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\union\union_implicit_cast_pattern.cpp">
       <Filter>sonia.bang\entities\union</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_bit_and_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\literals</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -111,13 +111,13 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token OPEN_BROKET          "`<`"
 %token CLOSE_BROKET         "`>`"
 %token END_STATEMENT		"`;`"
-%token <sonia::lang::lex::resource_location> POINT                "`.`"
-%token <sonia::lang::lex::resource_location> PLUS                 "`+`"
-%token MINUS                "`-`"
+%token <sonia::lang::lex::resource_location> POINT      "`.`"
+%token <sonia::lang::lex::resource_location> PLUS       "`+`"
+%token <sonia::lang::lex::resource_location> MINUS      "`-`"
 %token ASTERISK             "`*`"
 %token SLASH                "`/`"
 %token PERCENT              "`%`"
-%token AMPERSAND            "`&`"
+%token <sonia::lang::lex::resource_location> AMPERSAND  "`&`"
 %token <sonia::lang::lex::resource_location> BITOR      "`|`"
 %token <sonia::lang::lex::resource_location> EXCLPT     "`!`" 
 %token TILDA                "`~`"
@@ -166,8 +166,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 // 11 priority
 //%left EXCL
 
-// 10 priority
-//%left AMPERSAND
+
 
 // 9 priority
 //%left EQ NE
@@ -211,6 +210,9 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 // 12 priority
 %left BITOR
+
+// 10 priority
+%left AMPERSAND
 
 // 9 priority
 %left EQ NE
@@ -281,7 +283,6 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 %type <field_list_t> field-list field-list-opt
 %type <field_t> field
-%type <syntax_expression_t> field-type-expr
 %type <sonia::optional<syntax_expression_t>> field-default-value-opt
 
 %type <parameter_list_t>  parameter-list parameter-list-opt // for unification, empty assignment
@@ -296,11 +297,6 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token WEAK "weak modifier"
 %token CONST "const modifier"
 %token MUT "mut modifier"
-
-//%type <bang_preliminary_type> type-expr
-//%type<bang_preliminary_tuple_t> opt-type-list
-
-
 
 // EXPRESSIONS
 %token <annotated_nil> NIL_WORD "nil"
@@ -319,11 +315,6 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 //%type <named_expression_term_list_t> arg-list arg-list-not-empty
 //%type <function_def> function-def
 
-
-
-////%type <type_expression_t> type-expr 
-////%type <type_expression_list_t> opt-type-expr-list type-expr-list-not-empty
-////%type <type_modifier> type-modifier
 
 ////%type <ct_expression_ptr_t> ct_expression ct-function-call
 ////%type <std::vector<ct_expression_ptr_t>> ct_expression_list ct_expression_list_not_empty
@@ -660,9 +651,9 @@ field-default-value-opt:
     ;
 
 field:
-      identifier COLON field-type-expr[type] field-default-value-opt[default]
+      identifier COLON type-expr[type] field-default-value-opt[default]
         { $$ = field_t{ std::move($identifier), field_modifier_t::value, std::move($type), std::move($default) }; }
-    | identifier ARROWEXPR field-type-expr[type] field-default-value-opt[default]
+    | identifier ARROWEXPR type-expr[type] field-default-value-opt[default]
         { $$ = field_t{ std::move($identifier), field_modifier_t::const_value, std::move($type), std::move($default) }; }
     /*
     | identifier COLON parameter-constraint-modifier-opt[mod] field-type-expr[type] ASSIGN syntax-expression[value]
@@ -670,18 +661,6 @@ field:
     */
     ;
 
-
-field-type-expr:
-      qname
-        { $$ = variable_identifier{ std::move($qname) }; }
-    | qname OPEN_PARENTHESIS[start] argument-list-opt[arguments] CLOSE_PARENTHESIS
-        { $$ = function_call_t{ std::move($start), std::move($qname), std::move($arguments) }; }
-    | INTERNAL_IDENTIFIER[id]
-        { $$ = variable_identifier{ ctx.make_qname(std::move($id)), true }; }
-    | field-type-expr[left] BITOR field-type-expr[right]
-        { $$ = binary_expression_t{ binary_operator_type::BIT_OR, std::move($left), std::move($right), std::move($BITOR) }; }
-    ;
-    
 ////////////////////// PARAMETERS (function parameters declaration)
 
 parameter-list-opt:
@@ -875,6 +854,8 @@ syntax-expression-wo-ii:
         }
     | OPEN_SQUARE_DBL_BRACKET expression-list[list] CLOSE_SQUARE_DBL_BRACKET
         { $$ = array_expression_t{ std::move($OPEN_SQUARE_DBL_BRACKET), std::move($list )}; }
+    | syntax-expression[type] OPEN_SQUARE_BRACKET syntax-expression[index] CLOSE_SQUARE_BRACKET
+        { $$ = index_expression_t{ std::move($type), std::move($index), std::move($OPEN_SQUARE_BRACKET) }; }
     | POINT identifier
         { $$ = std::move($identifier); IGNORE_TERM($POINT); }
     //| syntax-expression[object] POINT syntax-expression[property]
@@ -885,21 +866,30 @@ syntax-expression-wo-ii:
          { $$ = member_expression_t{ std::move($object), std::move($property) }; IGNORE_TERM($2); }
     | syntax-expression[object] INTEGER_INDEX[property]
          { $$ = member_expression_t{ std::move($object), annotated_integer{ ctx.make_integer($property.value.substr(1)), $property.location } }; IGNORE_TERM($2); }
+//////////////////////////// 3 priority
     | EXCLPT syntax-expression
 		{ $$ = unary_expression_t{ unary_operator_type::NEGATE, true, std::move($2), std::move($1) }; }
+
+//////////////////////////// 6 priority
     | syntax-expression PLUS syntax-expression
         { $$ = binary_expression_t{ binary_operator_type::PLUS, std::move($1), std::move($3), std::move($2) }; }
-    | syntax-expression BITOR syntax-expression
-        { $$ = binary_expression_t{ binary_operator_type::BIT_OR, std::move($1), std::move($3), std::move($2) }; }
-//////////////////////////// 3 priority
+    | syntax-expression MINUS syntax-expression
+        { $$ = binary_expression_t{ binary_operator_type::MINUS, std::move($1), std::move($3), std::move($2) }; }
 
-        
 //////////////////////////// 9 priority
     | syntax-expression EQ syntax-expression
         { $$ = binary_expression_t{ binary_operator_type::EQ, std::move($1), std::move($3), std::move($2) }; }
     | syntax-expression NE syntax-expression
         { $$ = binary_expression_t{ binary_operator_type::NE, std::move($1), std::move($3), std::move($2) }; }
-    
+
+//////////////////////////// 10 priority
+    | syntax-expression AMPERSAND syntax-expression
+        { $$ = binary_expression_t{ binary_operator_type::BIT_AND, std::move($1), std::move($3), std::move($2) }; }
+
+//////////////////////////// 12 priority
+    | syntax-expression BITOR syntax-expression
+        { $$ = binary_expression_t{ binary_operator_type::BIT_OR, std::move($1), std::move($3), std::move($2) }; }
+
     | apostrophe-expression
     | new-expression
     | compound-expression
@@ -1040,9 +1030,8 @@ type-expr:
         { $$ = bang_vector_t{ std::move($OPEN_SQUARE_BRACKET), std::move($type)}; }
     | OPEN_PARENTHESIS[start] argument-list-opt[elements] CLOSE_PARENTHESIS
         { $$ = opt_named_syntax_expression_list_t{ std::move($start), std::move($elements) }; }
-        //{ $$ = bang_tuple_t{ std::move($elements) }; IGNORE_TERM($OPEN_PARENTHESIS); }
-    | type-expr[type] OPEN_SQUARE_BRACKET INTEGER[size] CLOSE_SQUARE_BRACKET
-        { $$ = bang_array_t{std::move($type), (size_t)$size.value}; IGNORE_TERM($OPEN_SQUARE_BRACKET); }
+    | type-expr[type] OPEN_SQUARE_BRACKET INTEGER CLOSE_SQUARE_BRACKET
+        { $$ = index_expression_t{ std::move($type), std::move($INTEGER) }; IGNORE_TERM($OPEN_SQUARE_BRACKET); }
     | type-expr[ltype] BITOR type-expr[rtype]
         {
             bang_union_t uni{};
@@ -1294,12 +1283,6 @@ expr:
     | expr PERCENT expr
         { $$ = handle_call_op($1, $3, operator_type::MOD); }
 
-    //////////////////////////// 6 priority
-    
-	| expr PLUS expr
-        { $$ = handle_call_op($1, $3, operator_type::PLUS); }
-	| expr MINUS expr
-        { $$ = handle_call_op($1, $3, operator_type::MINUS); }
 
     //////////////////////////// 7 priority
     
@@ -1319,27 +1302,11 @@ expr:
     | expr GE expr
         { $$ = handle_call_op($1, $3, operator_type::GE); }
 
-    //////////////////////////// 9 priority
-
-	| expr EQ expr
-        { $$ = handle_call_op($1, $3, operator_type::EQ); }
-    | expr NE expr
-        { $$ = handle_call_op($1, $3, operator_type::NE); }
-
-    //////////////////////////// 10 priority
-
-	| expr AMPERSAND expr
-        { $$ = handle_call_op($1, $3, operator_type::BITAND); }
-
     //////////////////////////// 11 priority
 
 	| expr EXCL expr
         { $$ = handle_call_op($1, $3, operator_type::BITXOR); }
 
-    //////////////////////////// 12 priority
-
-	| expr BITOR expr
-        { $$ = handle_call_op($1, $3, operator_type::BITOR); }
 
     //////////////////////////// 14 priority
 

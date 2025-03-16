@@ -229,16 +229,16 @@ template <class TupleT, typename T> struct bang_fn_base
 
 template <typename T> using bang_fn_type = bang_fn_base<opt_named_syntax_expression_list<T>, T>;
 
-template <typename T> struct bang_array
-{
-    T type; size_t size;
-    inline bool operator==(bang_array const&) const = default;
-    inline auto operator<=>(bang_array const& r) const
-    {
-        if (auto res = variant_compare_three_way{}(type, r.type); res != std::strong_ordering::equivalent) return res;
-        return size <=> r.size;
-    }
-};
+//template <typename T> struct bang_array
+//{
+//    T type; size_t size;
+//    inline bool operator==(bang_array const&) const = default;
+//    inline auto operator<=>(bang_array const& r) const
+//    {
+//        if (auto res = variant_compare_three_way{}(type, r.type); res != std::strong_ordering::equivalent) return res;
+//        return size <=> r.size;
+//    }
+//};
 
 template <typename T> struct bang_vector
 {
@@ -280,7 +280,7 @@ template <typename T> struct bang_union
 */
 
 #define BANG_UNARY_OPERATOR_ENUM (NEGATE)(ELLIPSIS)
-#define BANG_BINARY_OPERATOR_ENUM (ASSIGN)(LOGIC_AND)(LOGIC_OR)(BIT_OR)(CONCAT)(PLUS)(EQ)(NE)
+#define BANG_BINARY_OPERATOR_ENUM (ASSIGN)(LOGIC_AND)(LOGIC_OR)(BIT_OR)(BIT_AND)(CONCAT)(PLUS)(MINUS)(EQ)(NE)
 enum class unary_operator_type
 {
     BOOST_PP_SEQ_FOR_EACH(BANG_PRINT_SIMPLE_ENUM, _, BANG_UNARY_OPERATOR_ENUM)
@@ -563,6 +563,14 @@ struct array_expression
 };
 
 template <typename ExprT>
+struct index_expression
+{
+    ExprT base;
+    ExprT index;
+    lex::resource_location location;
+};
+
+template <typename ExprT>
 struct parameter_constraint_set
 {
     optional<ExprT> type_expression;
@@ -630,9 +638,9 @@ struct lambda : fn_pure<ExprT>
 using syntax_expression_t = make_recursive_variant<
     placeholder, variable_identifier,
     annotated_nil, annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier, annotated_qname,
-    array_expression<recursive_variant_>,
+    array_expression<recursive_variant_>, index_expression<recursive_variant_>,
     bang_fn_type<recursive_variant_>,
-    bang_array<recursive_variant_>, bang_vector<recursive_variant_>,
+    bang_vector<recursive_variant_>,
     bang_union<recursive_variant_>,
     context_value, context_identifier, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
     lambda<recursive_variant_>,
@@ -656,6 +664,7 @@ using lambda_t = lambda<syntax_expression_t>;
 using opt_named_syntax_expression_t = opt_named_term<syntax_expression_t>;
 using opt_named_syntax_expression_list_t = opt_named_syntax_expression_list<syntax_expression_t>;
 using array_expression_t = array_expression<syntax_expression_t>;
+using index_expression_t = index_expression<syntax_expression_t>;
 
 enum class field_modifier_t : uint8_t
 {
@@ -692,7 +701,6 @@ using expression_vector_t = expression_vector<syntax_expression_t>;
 using bang_fn_type_t = bang_fn_type<syntax_expression_t>;
 //using bang_tuple_t = bang_tuple<syntax_expression_t>;
 using bang_vector_t = bang_vector<syntax_expression_t>;
-using bang_array_t = bang_array<syntax_expression_t>;
 using bang_union_t = bang_union<syntax_expression_t>;
 //template <unary_operator_type Op> using unary_expression_t = unary_expression<Op, syntax_expression_t>;
 

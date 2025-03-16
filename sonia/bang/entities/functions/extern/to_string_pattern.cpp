@@ -7,6 +7,7 @@
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/entities/functions/function_entity.hpp"
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 
 namespace sonia::lang::bang {
 
@@ -17,12 +18,7 @@ std::expected<functional::pattern::application_result_t, error_storage> to_strin
     entity const& ent = u.eregistry_get(strid);
     identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&ent);
     BOOST_ASSERT(pie);
-    string_literal_entity sle{ ctx.u().print(pie->value()) };
-    return u.eregistry_find_or_create(sle, [&u, &sle]() {
-        auto result = make_shared<string_literal_entity>(std::move(sle));
-        result->set_type(u.get(builtin_eid::string));
-        return result;
-    }).id();
+    return u.make_string_entity(u.print(pie->value())).id();
 }
 
 }

@@ -48,9 +48,9 @@ public:
     result_type operator()(function_call_t const&) const;
 
     result_type operator()(new_expression_t const&) const;
-    result_type operator()(binary_expression_t const& be) const;
+    result_type operator()(binary_expression_t const&) const;
 
-    
+    result_type operator()(index_expression_t const&) const;
 
     template <typename T>
     result_type operator()(T const& v) const

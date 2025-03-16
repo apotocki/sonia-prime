@@ -15,6 +15,7 @@
 #include "ast/declaration_visitor.hpp"
 
 #include "entities/functions/function_entity.hpp"
+#include "entities/literals/literal_entity.hpp"
 
 #include "vm/compiler_visitor.hpp"
 
@@ -179,13 +180,9 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
         char * epos = mp::to_string(span{ &argindex, 1 }, argname.data() + 1, reversed);
         if (reversed) std::reverse(argname.data() + 1, epos);
 
-        string_literal_entity smpl{arg};
-        smpl.set_type(unit_.get(builtin_eid::string));
-        entity const& argent = unit_.eregistry_find_or_create(smpl, [&smpl]() {
-            return make_shared<string_literal_entity>(std::move(smpl));
-        });
+        entity const& argent = unit_.make_string_entity(arg);
         identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), epos });
-        functional& arg_fnl = unit_.fregistry().resolve(ctx.ns() / argid);
+        functional& arg_fnl = unit_.fregistry_resolve(ctx.ns() / argid);
         arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id() });
             
         //ctx.new_const_entity(string_view{ argname.data(), epos }, std::move(ent));
@@ -198,7 +195,7 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
         return make_shared<integer_literal_entity>(std::move(smpl));
     });
     identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), 2 });
-    functional& arg_fnl = unit_.fregistry().resolve(ctx.ns() / argid);
+    functional& arg_fnl = unit_.fregistry_resolve(ctx.ns() / argid);
     arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id() });
         
 
@@ -374,7 +371,7 @@ smart_blob bang_impl::call(string_view fnsig, span<const std::pair<string_view, 
     for (blob_result const& arg : args) {
         ctx.stack_push(smart_blob(arg));
     }
-    qname_identifier qid = unit_.get_function_entity_identifier(fnsig);
+    //qname_identifier qid = unit_.get_function_entity_identifier(fnsig);
     //span<qname_identifier> fnsig{};
     //identifier mandled_sig_id = unit_.piregistry().resolve(fnsig);
     //qname fnqn = qname{unit_.slregistry().resolve(name)} + mandled_sig_id;

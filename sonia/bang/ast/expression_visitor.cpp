@@ -13,6 +13,7 @@
 #include "fn_compiler_context.hpp"
 #include "sonia/bang/entities/enum/enum_entity.hpp"
 #include "sonia/bang/entities/functional_entity.hpp"
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 
 #include "ct_expression_visitor.hpp"
 
@@ -728,6 +729,7 @@ expression_visitor::result_type expression_visitor::operator()(new_expression_t 
     return false;
 }
 
+#if 0
 expression_visitor::result_type expression_visitor::operator()(function_call_t const& proc) const
 {
     //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor function_call_t");
@@ -790,6 +792,7 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t c
 
     ////THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::operator()(function_call_t");
 }
+#endif
 
 expression_visitor::result_type expression_visitor::operator()(chained_expression_t&) const
 {
@@ -843,6 +846,21 @@ expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_
         //THROW_NOT_IMPLEMENTED_ERROR();
 
     THROW_NOT_IMPLEMENTED_ERROR();
+}
+
+expression_visitor::result_type expression_visitor::handle(base_expression_visitor::result_type&& res) const
+{
+    if (!res) return std::unexpected(std::move(res.error()));
+    apply_visitor(make_functional_visitor<void>([this](auto && eid_or_el) {
+        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_el)>, entity_identifier>) {
+            ctx.append_expression(semantic::push_value{ eid_or_el });
+            entity const& e = ctx.u().eregistry_get(eid_or_el);
+            ctx.context_type = e.get_type();
+        } else {
+            ctx.expressions().splice_back(eid_or_el);
+        }
+    }), res->first);
+    return res->second;
 }
 
 }

@@ -11,6 +11,8 @@
 #include "sonia/bang/ast/expression_visitor.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
+#include "sonia/bang/entities/literals/literal_entity.hpp"
+
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
 
@@ -22,7 +24,7 @@ value_type_match_visitor::value_type_match_visitor(fn_compiler_context& caller, 
 
 value_type_match_visitor::result_type value_type_match_visitor::operator()(annotated_qname_identifier const& aqi) const
 {
-    functional const& fnl = callee_ctx.u().fregistry().resolve(aqi.value);
+    functional const& fnl = callee_ctx.u().fregistry_resolve(aqi.value);
     entity_identifier eid = fnl.default_entity(callee_ctx);
     if (eid) {
         return match_type(eid, aqi.location);

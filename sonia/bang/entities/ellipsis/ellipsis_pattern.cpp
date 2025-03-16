@@ -6,6 +6,8 @@
 #include "ellipsis_pattern.hpp"
 
 #include "sonia/bang/entities/signatured_entity.hpp"
+#include "sonia/bang/entities/literals/literal_entity.hpp"
+
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 

@@ -65,7 +65,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
                     continue;
                 }
             }
-            return std::unexpected(make_error<basic_general_error>(pargname->location, "Argument type mismatch: a structure was expected."sv, pargname->value));
+            return std::unexpected(make_error<basic_general_error>(pargname->location, "argument type mismatch: a structure was expected."sv, pargname->value));
             //return std::unexpected(make_error<type_mismatch_error>(pargname->location, ctx.context_type, u.get(builtin_qnid::tuple)));
         } else if (pargname->value == propid && !ppname) {
             ct_expression_visitor evis{ ctx };

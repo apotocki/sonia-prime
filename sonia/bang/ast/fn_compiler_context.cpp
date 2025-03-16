@@ -422,13 +422,13 @@ error_storage fn_compiler_context::build_function_descriptor(fn_pure const& pure
 functional const* fn_compiler_context::lookup_functional(qname_view name) const
 {
     if (name.is_absolute()) {
-        return unit_.fregistry().find(name);
+        return unit_.fregistry_find(name);
     }
     qname checkns = ns_;
     size_t sz = checkns.parts().size();
     for (;;) {
         checkns.append(name);
-        functional* f = unit_.fregistry().find(checkns);
+        functional* f = unit_.fregistry_find(checkns);
         if (f || !sz) return f;
         --sz;
         checkns.truncate(sz);
@@ -464,7 +464,7 @@ std::expected<functional::match, error_storage> fn_compiler_context::find(builti
 
 std::expected<functional::match, error_storage> fn_compiler_context::find(qname_identifier qnid, pure_call_t const& call, annotated_entity_identifier const& expected_result)
 {
-    functional const& fn = u().fregistry().resolve(qnid);
+    functional const& fn = u().fregistry_resolve(qnid);
     return fn.find(*this, call, expected_result);
 }
 

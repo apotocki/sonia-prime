@@ -9,14 +9,18 @@
 namespace sonia::lang::bang {
 
 // const array to vector
-// fn implicit_cast(const array(element: _, size: _)) -> vector(element: $et) => implementation defined
-class array_implicit_cast_pattern : public functional::pattern
+// fn implicit_cast(integer) -> float16 => implementation defined
+// fn implicit_cast(integer) -> float => implementation defined
+// fn implicit_cast(integer) -> double => implementation defined
+// fn implicit_cast(integer) -> decimal => implementation defined
+
+class numeric_implicit_cast_pattern : public functional::pattern
 {
 public:
-    array_implicit_cast_pattern() = default;
+    numeric_implicit_cast_pattern() = default;
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
-    std::expected<application_result_t, error_storage> generic_apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<functional::pattern::application_result_t, error_storage> generic_apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override { return s << "implicy_cast(const array())"sv; }
 };

@@ -6,6 +6,7 @@
 #include "ct_expression_visitor.hpp"
 
 #include "fn_compiler_context.hpp"
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 
 namespace sonia::lang::bang {
 
@@ -158,17 +159,13 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_q
 {
     auto optqnid = ctx.lookup_qname(aqn);
     if (optqnid) {
-        qname_identifier_entity qnid_ent{ *optqnid };
-        entity_identifier entid = u().eregistry_find_or_create(qnid_ent, [this, &qnid_ent]() {
-            auto result = make_shared<qname_identifier_entity>(std::move(qnid_ent));
-            result->set_type(u().get(builtin_eid::qname));
-            return result;
-        }).id();
+        entity_identifier entid = u().make_qname_entity(*optqnid).id();
         return apply_cast(entid, aqn);
     }
     return std::unexpected(optqnid.error());
 }
 
+#if 0
 ct_expression_visitor::result_type ct_expression_visitor::operator()(function_call_t const& proc) const
 {
     ct_expression_visitor vis{ ctx, annotated_entity_identifier{ u().get(builtin_eid::qname), proc.location() } };
@@ -181,6 +178,7 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(function_ca
     if (auto res = match->const_apply(ctx); !res) return std::unexpected(std::move(res.error()));
     else return apply_cast(*res, proc);
 }
+#endif
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(member_expression_t const& me) const
 {
@@ -231,7 +229,7 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(opt_named_s
 
 ct_expression_visitor::result_type ct_expression_visitor::handle(base_expression_visitor::result_type&& res) const
 {
-    if (!res) return std::unexpected(res.error());
+    if (!res) return std::unexpected(std::move(res.error()));
     return apply_visitor(make_functional_visitor<result_type>([](auto& v) -> result_type {
         if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
             return v;

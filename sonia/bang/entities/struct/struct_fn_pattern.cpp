@@ -18,6 +18,11 @@ struct_fn_pattern::struct_fn_pattern(functional const& fnl, variant<field_list_t
     , body_{ body }
 {}
 
+std::expected<functional::pattern::application_result_t, error_storage> struct_fn_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+{
+    return struct_fn_pattern::const_apply(ctx, md);
+}
+
 std::expected<entity_identifier, error_storage> struct_fn_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();

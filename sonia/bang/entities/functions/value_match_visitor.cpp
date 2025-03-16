@@ -9,6 +9,8 @@
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
+#include "sonia/bang/entities/literals/literal_entity.hpp"
+
 #include "sonia/bang/errors/value_mismatch_error.hpp"
 
 namespace sonia::lang::bang {
@@ -33,7 +35,7 @@ value_match_visitor::result_type value_match_visitor::operator()(annotated_bool 
 
 value_match_visitor::result_type value_match_visitor::operator()(annotated_qname_identifier const& aqi) const
 {
-    functional const& fnl = callee_ctx.u().fregistry().resolve(aqi.value);
+    functional const& fnl = callee_ctx.u().fregistry_resolve(aqi.value);
     return fnl.default_entity(callee_ctx);
     //if (!opteid) return opteid;
     //if (*opteid) {

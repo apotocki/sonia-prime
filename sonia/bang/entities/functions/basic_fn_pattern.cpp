@@ -19,6 +19,7 @@
 #include "sonia/bang/ast/expression_visitor.hpp"
 
 //#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 #include "sonia/bang/entities/functional_entity.hpp"
 #include "sonia/bang/entities/functions/function_entity.hpp"
 //#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
@@ -369,8 +370,7 @@ void varnamed_parameter_matcher::update_binding(unit& u, field_descriptor const&
     
     auto optval = binding.lookup(name.value);
     if (!optval) {
-        entity_signature sig{ u.get(builtin_qnid::metaobject) };
-        sig.result = field_descriptor{ u.get(builtin_eid::metaobject) };
+        entity_signature sig{ u.get(builtin_qnid::metaobject), u.get(builtin_eid::metaobject) };
         sig.push_back(field_descriptor{ argname_eid, true });
         binding.emplace_back(name, make_shared<basic_signatured_entity>(std::move(sig)));
     } else {
@@ -819,7 +819,7 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
         BOOST_ASSERT(optpackent);
         entity_ptr const* packent = get<entity_ptr>(&*optpackent);
         BOOST_ASSERT(packent && *packent);
-        BOOST_ASSERT((*packent)->get_type() == ctx.u().get(builtin_eid::metaobject));
+        BOOST_ASSERT((*packent)->signature() && (*packent)->signature()->name == u.get(builtin_qnid::metaobject));
         entity_signature const* psig = (*packent)->signature();
         BOOST_ASSERT(psig);
         BOOST_ASSERT(psig->named_fields_indices().empty());
@@ -860,7 +860,7 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
 
         if (eid) {
             qname infn_name = ctx.ns() / name;
-            functional& fnl = ctx.u().fregistry().resolve(infn_name);
+            functional& fnl = ctx.u().fregistry_resolve(infn_name);
             fnl.set_default_entity(annotated_entity_identifier{ eid, loc });
         }
     });
@@ -1192,7 +1192,7 @@ struct result_resolving_visitor : static_visitor<std::expected<entity_identifier
 
     result_type operator()(annotated_qname_identifier const& aqi) const
     {
-        functional const& fnl = ctx.u().fregistry().resolve(aqi.value);
+        functional const& fnl = ctx.u().fregistry_resolve(aqi.value);
         entity_identifier eid = fnl.default_entity(ctx);
         if (eid) return eid;
         return std::unexpected(make_error<basic_general_error>(aqi.location, "not a variable or constant"sv, fnl.name()));

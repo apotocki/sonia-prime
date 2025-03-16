@@ -82,6 +82,7 @@ general_error::string_t cast_error::description(unit const& u) const noexcept
     }
 }
 
+#if 0
 general_error::string_t unknown_case_error::object(unit const& u) const noexcept
 {
     return u.print(ci_.name.value);
@@ -91,6 +92,7 @@ general_error::string_t unknown_case_error::description(unit const& u) const noe
 {
     return ("is not a case of the enumerration %1%"_fmt % u.print(enum_name_)).str();
 }
+#endif
 
 general_error::string_t undeclared_identifier_error::object(unit const& u) const noexcept
 {

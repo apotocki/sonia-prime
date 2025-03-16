@@ -90,7 +90,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_init_patter
     return res;
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> struct_init_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> struct_init_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     // create tuple instance
     unit& u = ctx.u();

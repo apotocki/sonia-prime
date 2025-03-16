@@ -160,7 +160,7 @@ error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_mat
 //    return pmd;
 //}
 
-std::expected<tuple_head_pattern::application_result_t, error_storage> tuple_head_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<tuple_head_pattern::application_result_t, error_storage> tuple_head_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_head_match_descriptor&>(md);
@@ -208,7 +208,7 @@ template generic_pattern_base<tuple_head_pattern>;
 
 //std::expected<entity_identifier, error_storage> tuple_head_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 //{
-//    auto res = generic_apply(ctx, md);
+//    auto res = apply(ctx, md);
 //    if (!res) return std::unexpected(std::move(res.error()));
 //    using result_t = std::expected<entity_identifier, error_storage>;
 //    return apply_visitor(make_functional_visitor<result_t>([&ctx, &md](auto && eid_or_el) -> result_t {

@@ -56,7 +56,7 @@ error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_m
     return {};
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> union_bit_or_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> union_bit_or_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& umd = static_cast<union_match_descriptor&>(md);

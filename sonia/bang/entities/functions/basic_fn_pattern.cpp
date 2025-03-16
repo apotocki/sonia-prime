@@ -1223,11 +1223,6 @@ error_storage generic_fn_pattern::init(fn_compiler_context& ctx, fn_decl_t const
     return runtime_fn_pattern::init(ctx, fnd);
 }
 
-std::expected<entity_identifier, error_storage> generic_fn_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor&) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("generic_fn_pattern::const_apply");
-}
-
 shared_ptr<entity> generic_fn_pattern::build(fn_compiler_context& ctx, functional_match_descriptor& md, entity_signature&& signature) const
 {
     qname_view fnqn = fn_qname();
@@ -1329,7 +1324,7 @@ shared_ptr<entity> generic_fn_pattern::build(fn_compiler_context& ctx, functiona
     return pife;
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> basic_fn_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> basic_fn_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     if (md.result && md.result.is_const()) {

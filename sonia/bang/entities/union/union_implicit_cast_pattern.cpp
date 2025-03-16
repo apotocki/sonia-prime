@@ -88,11 +88,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
     return pmd;
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> union_implicit_cast_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> union_implicit_cast_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& ucmd = static_cast<union_cast_match_descriptor&>(md);
-    auto res = ucmd.submatch.generic_apply(ctx);
+    auto res = ucmd.submatch.apply(ctx);
     if (!res) return std::unexpected(std::move(res.error()));
     return apply_visitor(make_functional_visitor<functional::pattern::application_result_t>([&ctx, &ucmd](auto& v) {
         unit& u = ctx.u();

@@ -68,7 +68,7 @@ inline base_expression_visitor::result_type base_expression_visitor::apply_cast(
             //));
         }
 
-        auto res = match->generic_apply(ctx);
+        auto res = match->apply(ctx);
         if (!res)
             return std::unexpected(std::move(res.error()));
         return std::pair{ std::move(*res), true };
@@ -106,7 +106,7 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(semanti
         //));
     }
 
-    auto res = match->generic_apply(ctx);
+    auto res = match->apply(ctx);
     if (!res) return std::unexpected(std::move(res.error()));
 
     return apply_visitor(make_functional_visitor<result_type>([&l](auto& v) -> result_type {
@@ -162,6 +162,16 @@ base_expression_visitor::result_type base_expression_visitor::operator()(annotat
 base_expression_visitor::result_type base_expression_visitor::operator()(annotated_entity_identifier const& e) const
 {
     return apply_cast(e.value, e);
+}
+
+base_expression_visitor::result_type base_expression_visitor::operator()(annotated_qname const& aqn) const
+{
+    auto optqnid = ctx.lookup_qname(aqn);
+    if (optqnid) {
+        entity const& ent = u().make_qname_entity(*optqnid);
+        return apply_cast(ent, aqn);
+    }
+    return std::unexpected(optqnid.error());
 }
 
 base_expression_visitor::result_type base_expression_visitor::operator()(bang_vector_t const& v) const
@@ -255,7 +265,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(member_
         ));
     }
 
-    auto res = match->generic_apply(ctx);
+    auto res = match->apply(ctx);
     return apply_cast(std::move(res), me);
 }
 
@@ -281,7 +291,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(opt_nam
     auto match = ctx.find(builtin_qnid::make_tuple, tuple_call, expected_result);
     if (!match) return std::unexpected(match.error());
 
-    auto res = match->generic_apply(ctx);
+    auto res = match->apply(ctx);
     return apply_cast(std::move(res), nel);
 }
 
@@ -305,7 +315,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(functio
 
     auto match = ctx.find(qname_ent.value(), proc, expected_result);
     if (!match) return std::unexpected(match.error());
-    auto res = match->generic_apply(ctx);
+    auto res = match->apply(ctx);
     return apply_cast(std::move(res), proc);
 }
 
@@ -329,7 +339,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(new_exp
         ));
     }
 
-    auto res = match->generic_apply(ctx);
+    auto res = match->apply(ctx);
     return apply_cast(std::move(res), ne);
 }
 
@@ -360,7 +370,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(index_e
         return std::unexpected(std::move(match.error()));
     }
 
-    return apply_cast(match->generic_apply(ctx), ie);
+    return apply_cast(match->apply(ctx), ie);
 }
 
 base_expression_visitor::result_type base_expression_visitor::operator()(binary_expression_t const& be) const
@@ -390,7 +400,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(builtin
 {
     auto match = ctx.find(qnid, call, expected_result);
     if (!match) return std::unexpected(std::move(match.error()));
-    auto res = match->generic_apply(ctx);
+    auto res = match->apply(ctx);
     return apply_cast(std::move(res), call);
 }
 
@@ -401,11 +411,13 @@ base_expression_visitor::result_type base_expression_visitor::do_assign(binary_e
     //size_t start_result_pos = result.size();
     assign_expression_visitor lvis{ ctx, op.location(), op[1].value() };
 
-    auto e = apply_visitor(lvis, op[0].value());
-    if (e) return std::unexpected(std::move(e));
+    auto res = apply_visitor(lvis, op[0].value());
+    if (!res) return std::unexpected(std::move(res.error()));
 
-    ctx.context_type = ctx.u().get(builtin_eid::void_);
-    return std::pair{ semantic::managed_expression_list{ ctx.u() }, false };
+    return apply_cast(std::move(res), op);
+
+    //ctx.context_type = ctx.u().get(builtin_eid::void_);
+    //return std::pair{ semantic::managed_expression_list{ ctx.u() }, false };
 }
 
 }

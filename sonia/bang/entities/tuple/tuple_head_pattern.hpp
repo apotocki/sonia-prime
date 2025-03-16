@@ -17,7 +17,7 @@ public:
 
     //std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const;
 
-    std::expected<application_result_t, error_storage> generic_apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<application_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
     //std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const override;
 

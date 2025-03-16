@@ -93,7 +93,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
     return pmd;
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> numeric_implicit_cast_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> numeric_implicit_cast_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     auto& nmd = static_cast<numeric_implicit_cast_match_descriptor&>(md);
     if (nmd.result.is_const()) {
@@ -103,11 +103,11 @@ std::expected<functional::pattern::application_result_t, error_storage> numeric_
             } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
                 return ctx.u().make_decimal_entity(v.value(), type).id();
             } else {
-                THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::generic_apply, null is not expected");
+                THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
             }
         }), nmd.arg);
     }
-    THROW_NOT_IMPLEMENTED_ERROR("numeric_implicit_cast_pattern::generic_apply");
+    THROW_NOT_IMPLEMENTED_ERROR("numeric_implicit_cast_pattern::apply");
 }
 
 }

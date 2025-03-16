@@ -40,48 +40,49 @@ struct expression_visitor
     //{}
 
 #if 0
-    result_type operator()(function_call_t const&) const;
-#endif
-
-    result_type operator()(context_value const&) const;
-    result_type operator()(variable_identifier const&) const;
-
-    result_type operator()(context_identifier const&) const;
-    result_type operator()(not_empty_expression_t&) const;
-    result_type operator()(member_expression_t const&) const;
-
     result_type operator()(annotated_bool const&) const;
     result_type operator()(annotated_integer const&) const;
     result_type operator()(annotated_decimal const&) const;
     result_type operator()(annotated_string const&) const;
     result_type operator()(annotated_identifier const&) const;
 
-    result_type operator()(expression_vector_t &) const;
+    result_type operator()(context_value const&) const;
 
-    result_type operator()(chained_expression_t&) const;
+    result_type operator()(variable_identifier const&) const;
 
-    result_type operator()(lambda_t&) const;
+    result_type operator()(member_expression_t const&) const;
 
     result_type operator()(annotated_entity_identifier const& ee) const;
 
+    result_type operator()(function_call_t const&) const;
     result_type operator()(new_expression_t const& be) const;
-    
     result_type operator()(unary_expression_t const& be) const;
     result_type operator()(binary_expression_t const& be) const;
-    
-    
-    result_type operator()(binary_operator_t<binary_operator_type::LOGIC_AND>, binary_expression_t &) const;
-    result_type operator()(binary_operator_t<binary_operator_type::LOGIC_OR>, binary_expression_t &) const;
 
-    template <binary_operator_type BOpV>
-    result_type operator()(binary_operator_t<BOpV>, binary_expression_t &) const;
+    result_type operator()(opt_named_syntax_expression_list_t const&) const;
+#endif
+
+    
+    
+
+    //result_type operator()(context_identifier const&) const;
+    //result_type operator()(not_empty_expression_t&) const;
+    //result_type operator()(expression_vector_t &) const;
+
+    //result_type operator()(chained_expression_t&) const;
+    //result_type operator()(lambda_t&) const;
+
+    
+    //result_type operator()(binary_operator_t<binary_operator_type::LOGIC_AND>, binary_expression_t &) const;
+    //result_type operator()(binary_operator_t<binary_operator_type::LOGIC_OR>, binary_expression_t &) const;
+
+    //template <binary_operator_type BOpV>
+    //result_type operator()(binary_operator_t<BOpV>, binary_expression_t &) const;
     //result_type operator()(binary_operator_t<binary_operator_type::PLUS>, binary_expression_t&) const;
     //result_type operator()(binary_operator_t<binary_operator_type::CONCAT>, binary_expression_t &) const;
 
-    result_type operator()(opt_named_syntax_expression_list_t const&) const;
-
-    function_entity& handle_lambda(lambda_t&) const;
-    std::expected<function_entity const*, error_storage> handle_property_get(annotated_identifier id) const;
+    //function_entity& handle_lambda(lambda_t&) const;
+    //std::expected<function_entity const*, error_storage> handle_property_get(annotated_identifier id) const;
 
     template <typename T>
     result_type operator()(T const& v) const
@@ -92,13 +93,13 @@ struct expression_visitor
 private:
     result_type handle(base_expression_visitor::result_type&&) const;
 
-    template <typename ExprT>
-    result_type apply_cast(entity_identifier, ExprT const& e) const;
+    //template <typename ExprT>
+    //result_type apply_cast(entity_identifier, ExprT const& e) const;
 
-    template <std::derived_from<pure_call_t> CallExpressionT>
-    result_type operator()(builtin_qnid, CallExpressionT const&) const;
+    //template <std::derived_from<pure_call_t> CallExpressionT>
+    //result_type operator()(builtin_qnid, CallExpressionT const&) const;
 
-    result_type do_assign(binary_expression_t const&) const;
+    //result_type do_assign(binary_expression_t const&) const;
 };
 
 }

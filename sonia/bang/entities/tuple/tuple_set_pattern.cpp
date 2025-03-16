@@ -114,13 +114,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
 #endif
 }
 
-error_storage tuple_set_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> tuple_set_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
 
     // push call expressions in the right order
-    
-    semantic::expression_list_t& exprs = ctx.expressions();
+    semantic::managed_expression_list exprs{ u };
 
     // only one named argument is expected
     md.for_each_named_match([&exprs, &md](identifier name, parameter_match_result const& mr) {
@@ -138,12 +137,7 @@ error_storage tuple_set_pattern::apply(fn_compiler_context& ctx, functional_matc
     }
 
     ctx.context_type = md.result.entity_id();
-    return {};
-}
-
-std::expected<entity_identifier, error_storage> tuple_set_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("tuple_set_pattern::const_apply");
+    return std::move(exprs);
 }
 
 }

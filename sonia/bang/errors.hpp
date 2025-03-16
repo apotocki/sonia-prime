@@ -17,7 +17,7 @@ class undeclared_identifier_error;
 class identifier_redefinition_error;
 
 class cast_error;
-class unknown_case_error;
+//class unknown_case_error;
 class left_not_an_object_error;
 class wrong_lvalue_error;
 
@@ -200,6 +200,7 @@ public:
     lex::resource_location const* ref_location() const noexcept override { return refloc_ ? &refloc_ : nullptr; }
 };
 
+#if 0
 class unknown_case_error : public general_error
 {
 public:
@@ -215,6 +216,7 @@ public:
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override;
 };
+#endif
 
 class left_not_an_object_error : public general_error
 {

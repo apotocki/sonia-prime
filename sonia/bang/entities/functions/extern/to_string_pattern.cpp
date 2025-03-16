@@ -11,7 +11,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional::pattern::application_result_t, error_storage> to_string_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> to_string_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& [strid, _] = md.get_match_result(0).results.front();

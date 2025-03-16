@@ -669,17 +669,17 @@ struct expr_printer_visitor : static_visitor<void>
         ss << ", "sv << u_.print(c.property) << ")"sv;
     }
 
-    void operator()(expression_vector_t const& ev) const
-    {
-        ss << '[';
-        bool first = true;
-        for (auto const& e : ev.elements) {
-            if (!first) ss << ", "sv;
-            else first = false;
-            apply_visitor(*this, e);
-        }
-        ss << ']';
-    }
+    //void operator()(expression_vector_t const& ev) const
+    //{
+    //    ss << '[';
+    //    bool first = true;
+    //    for (auto const& e : ev.elements) {
+    //        if (!first) ss << ", "sv;
+    //        else first = false;
+    //        apply_visitor(*this, e);
+    //    }
+    //    ss << ']';
+    //}
 
     void operator()(function_call_t const& f) const
     {
@@ -713,10 +713,10 @@ struct expr_printer_visitor : static_visitor<void>
         ss << ')';
     }
 
-    void operator()(context_identifier const& f) const
-    {
-        ss << "CONTEXT("sv << u_.print(f.name.value) << ")"sv;
-    }
+    //void operator()(context_identifier const& f) const
+    //{
+    //    ss << "CONTEXT("sv << u_.print(f.name.value) << ")"sv;
+    //}
 
     void operator()(lambda_t const& f) const
     {

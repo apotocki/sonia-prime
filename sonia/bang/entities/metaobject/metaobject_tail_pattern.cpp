@@ -12,7 +12,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<entity_identifier, error_storage> metaobject_tail_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> metaobject_tail_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
 

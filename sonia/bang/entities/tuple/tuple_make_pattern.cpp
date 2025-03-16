@@ -32,7 +32,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern
     return pmd;
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> tuple_make_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> tuple_make_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_signature sig = md.build_signature(u, u.get(builtin_qnid::tuple));

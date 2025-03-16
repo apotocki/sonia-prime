@@ -35,7 +35,7 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
     inline result_type operator()(unary_expression_t const& ue) const noexcept { return ue.start(); }
     inline result_type operator()(binary_expression_t const& be) const noexcept { return be.start(); }
 
-    inline result_type operator()(expression_vector_t const& v) const noexcept { return v.start; }
+    //inline result_type operator()(expression_vector_t const& v) const noexcept { return v.start; }
     inline result_type operator()(function_call_t const& f) const noexcept { return f.start(); }
 
     template <typename T>

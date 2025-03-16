@@ -46,7 +46,7 @@ error_storage metaobject_bit_and_pattern::accept_argument(std::nullptr_t, functi
     return argctx.make_argument_mismatch_error();
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> metaobject_bit_and_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> metaobject_bit_and_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<metaobject_bit_and_match_descriptor&>(md);

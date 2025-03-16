@@ -17,7 +17,7 @@ namespace sonia::lang::bang {
 
 class variable_entity;
 
-struct assign_expression_visitor : static_visitor<error_storage>
+struct assign_expression_visitor : static_visitor<std::expected<functional::pattern::application_result_t, error_storage>>
 {
     fn_compiler_context& ctx_;
     lex::resource_location assign_location_;
@@ -32,7 +32,7 @@ struct assign_expression_visitor : static_visitor<error_storage>
     template <typename T>
     result_type operator()(T const& v) const
     {
-        return make_error<assign_error>(assign_location_, syntax_expression_t{ v });
+        return std::unexpected(make_error<assign_error>(assign_location_, syntax_expression_t{ v }));
         //THROW_NOT_IMPLEMENTED_ERROR("assign_expression_visitor not implemented expression");
     }
 

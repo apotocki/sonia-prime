@@ -47,7 +47,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_pattern::try
     return pmd;
 }
 
-std::expected<entity_identifier, error_storage> tuple_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> tuple_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_identifier typename_eid = u.get(builtin_eid::typename_);
@@ -69,11 +69,6 @@ std::expected<entity_identifier, error_storage> tuple_pattern::const_apply(fn_co
     });
     
     return entres.id();
-}
-
-std::expected<functional::pattern::application_result_t, error_storage> tuple_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
-{
-    return const_apply(ctx, md);
 }
 
 }

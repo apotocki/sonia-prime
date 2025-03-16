@@ -22,7 +22,7 @@
 #include <expected>
 
 namespace sonia::lang::bang {
-
+#if 0
 template <typename ExprT>
 inline expression_visitor::result_type expression_visitor::apply_cast(entity_identifier typeeid, ExprT const& e) const
 {
@@ -270,6 +270,7 @@ expression_visitor::result_type expression_visitor::operator()(annotated_entity_
     ctx.context_type = ent.get_type();
     return {};
 }
+#endif
 
 /*
 void attach_not_true_node(semantic::logic_tree_node_t & parent, shared_ptr<semantic::logic_tree_node_t> child)
@@ -400,6 +401,7 @@ expression_visitor::result_type expression_visitor::operator()(logic_or_expressi
 }
 */
 
+#if 0
 expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::LOGIC_AND>, binary_expression_t& op) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::LOGIC_AND");
@@ -519,9 +521,10 @@ expression_visitor::result_type expression_visitor::operator()(binary_operator_t
     return apply_cast(optres.value()->fn_type.result, op);
 #endif
 }
+#endif
 
-template expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::CONCAT>, binary_expression_t&) const;
-template expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::PLUS>, binary_expression_t&) const;
+//template expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::CONCAT>, binary_expression_t&) const;
+//template expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::PLUS>, binary_expression_t&) const;
 
 //expression_visitor::result_type expression_visitor::operator()(binary_operator_t<binary_operator_type::CONCAT>, binary_expression_t& op) const
 //{
@@ -544,62 +547,63 @@ template expression_visitor::result_type expression_visitor::operator()(binary_o
 //    THROW_NOT_IMPLEMENTED_ERROR();
 //}
 
-expression_visitor::result_type expression_visitor::operator()(context_identifier const& ci) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor context_identifier");
+//expression_visitor::result_type expression_visitor::operator()(context_identifier const& ci) const
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor context_identifier");
+//
+//#if 0
+//    if (!expected_result) {
+//        return make_error<basic_general_error>(ce.name.location, "no context type to resolve the case expression"sv, ce.name.value);
+//    }
+//
+//    return apply_visitor(
+//        expression_cast_to_enum_visitor{ ctx, ce,  [this, &ce] { return error_context{ce, expected_result.location}; } },
+//        expected_result.value
+//    );
+//#endif
+//}
+
+//std::expected<function_entity const*, error_storage> expression_visitor::handle_property_get(annotated_identifier id) const
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::handle_property_get");
+//
+//#if 0
+//    if (auto const* po = sonia::get<bang_object_t>(&ctx.context_type); po) {
+//        if (auto const& pte = dynamic_cast<type_entity const*>(po->value); pte) {
+//            auto rg = pte->find_field_getter(ctx, id);
+//            if (!rg.has_value()) return std::unexpected(std::move(rg.error()));
+//            function_entity const* getter = rg.value();
+//            ctx.append_expression(semantic::invoke_function{ getter->name() });
+//            return getter;
+//        } else { // could be enum
+//            THROW_NOT_IMPLEMENTED_ERROR();
+//        }
+//    }
+//    return std::unexpected(make_error<left_not_an_object_error>(id.location, id.value, ctx.context_type));
+//#endif
+//}
+
+//expression_visitor::result_type expression_visitor::operator()(not_empty_expression_t& me) const
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::not_empty_expression_t");
+//
+//#if 0
+//    auto subvis = expected_result
+//        ? expression_visitor{ ctx, expected_result_t{ expected_result.value || bang_tuple_t{}, expected_result.location } }
+//        : expression_visitor{ ctx, nullptr };
+//
+//    if (auto opterr = apply_visitor(subvis, me.value); opterr) return opterr;
+//    if (auto* uotype = ctx.context_type.as<bang_union_t>(); uotype && uotype->has(bang_tuple_t{})) {
+//        ctx.append_expression(std::move(semantic::not_empty_condition_t{}));
+//        ctx.push_chain(get<semantic::not_empty_condition_t>(ctx.expressions().back()).branch);
+//        ctx.context_type = *uotype - bang_tuple_t{};
+//        return {};
+//    }
+//    return make_error<basic_general_error>(get_start_location(me), "the expression type is not optional"sv, me);
+//#endif
+//}
 
 #if 0
-    if (!expected_result) {
-        return make_error<basic_general_error>(ce.name.location, "no context type to resolve the case expression"sv, ce.name.value);
-    }
-
-    return apply_visitor(
-        expression_cast_to_enum_visitor{ ctx, ce,  [this, &ce] { return error_context{ce, expected_result.location}; } },
-        expected_result.value
-    );
-#endif
-}
-
-std::expected<function_entity const*, error_storage> expression_visitor::handle_property_get(annotated_identifier id) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::handle_property_get");
-
-#if 0
-    if (auto const* po = sonia::get<bang_object_t>(&ctx.context_type); po) {
-        if (auto const& pte = dynamic_cast<type_entity const*>(po->value); pte) {
-            auto rg = pte->find_field_getter(ctx, id);
-            if (!rg.has_value()) return std::unexpected(std::move(rg.error()));
-            function_entity const* getter = rg.value();
-            ctx.append_expression(semantic::invoke_function{ getter->name() });
-            return getter;
-        } else { // could be enum
-            THROW_NOT_IMPLEMENTED_ERROR();
-        }
-    }
-    return std::unexpected(make_error<left_not_an_object_error>(id.location, id.value, ctx.context_type));
-#endif
-}
-
-expression_visitor::result_type expression_visitor::operator()(not_empty_expression_t& me) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor::not_empty_expression_t");
-
-#if 0
-    auto subvis = expected_result
-        ? expression_visitor{ ctx, expected_result_t{ expected_result.value || bang_tuple_t{}, expected_result.location } }
-        : expression_visitor{ ctx, nullptr };
-
-    if (auto opterr = apply_visitor(subvis, me.value); opterr) return opterr;
-    if (auto* uotype = ctx.context_type.as<bang_union_t>(); uotype && uotype->has(bang_tuple_t{})) {
-        ctx.append_expression(std::move(semantic::not_empty_condition_t{}));
-        ctx.push_chain(get<semantic::not_empty_condition_t>(ctx.expressions().back()).branch);
-        ctx.context_type = *uotype - bang_tuple_t{};
-        return {};
-    }
-    return make_error<basic_general_error>(get_start_location(me), "the expression type is not optional"sv, me);
-#endif
-}
-
 expression_visitor::result_type expression_visitor::operator()(member_expression_t const& me) const
 {
     pure_call_t get_call{ me.start() };
@@ -634,7 +638,7 @@ expression_visitor::result_type expression_visitor::operator()(member_expression
 #endif
 }
 
-#if 0
+
 expression_visitor::result_type expression_visitor::operator()(property_expression& pe)  const
 {
     THROW_NOT_IMPLEMENTED_ERROR("expression_visitor property_expression");
@@ -649,51 +653,52 @@ expression_visitor::result_type expression_visitor::operator()(property_expressi
 }
 #endif
 
-expression_visitor::result_type expression_visitor::operator()(expression_vector_t & vec) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor expression_vector_t");
+//expression_visitor::result_type expression_visitor::operator()(expression_vector_t & vec) const
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor expression_vector_t");
+//#if 0
+//    if (expected_result) {
+//        return apply_visitor(vector_expression_visitor{ ctx, vec, expected_result.location }, expected_result.value);
+//    }
+//
+//    // no expected_result case
+//    bang_tuple_t rtype;
+//    rtype.fields.reserve(vec.elements.size());
+//    expression_visitor elemvis{ ctx, nullptr };
+//    for (expression_t& e : vec.elements) {
+//        if (auto opterr = apply_visitor(elemvis, e); opterr) return opterr;
+//        rtype.fields.emplace_back(ctx.context_type);
+//    }
+//    rtype.unpacked = true;
+//    return apply_cast(rtype, vec);
+//#endif
+//}
+
+//function_entity& expression_visitor::handle_lambda(lambda_t& l) const
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor handle_lambda");
+//#if 0
+//    function_signature sig;
+//    sig.setup(ctx, l.parameters);
+//    sig.normilize(ctx);
+//    sig.build_mangled_id(ctx.u());
+//    declaration_visitor dvis{ ctx };
+//    return dvis.append_fnent(l, sig, l.body);
+//#endif
+//}
+
+//expression_visitor::result_type expression_visitor::operator()(lambda_t & l) const
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor lambda_t");
+//
+//#if 0
+//    function_entity& fe = handle_lambda(l);
+//    ctx.context_type = fe.type();
+//    return {};
+//#endif
+//}
+
 #if 0
-    if (expected_result) {
-        return apply_visitor(vector_expression_visitor{ ctx, vec, expected_result.location }, expected_result.value);
-    }
-
-    // no expected_result case
-    bang_tuple_t rtype;
-    rtype.fields.reserve(vec.elements.size());
-    expression_visitor elemvis{ ctx, nullptr };
-    for (expression_t& e : vec.elements) {
-        if (auto opterr = apply_visitor(elemvis, e); opterr) return opterr;
-        rtype.fields.emplace_back(ctx.context_type);
-    }
-    rtype.unpacked = true;
-    return apply_cast(rtype, vec);
-#endif
-}
-
-function_entity& expression_visitor::handle_lambda(lambda_t& l) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor handle_lambda");
-#if 0
-    function_signature sig;
-    sig.setup(ctx, l.parameters);
-    sig.normilize(ctx);
-    sig.build_mangled_id(ctx.u());
-    declaration_visitor dvis{ ctx };
-    return dvis.append_fnent(l, sig, l.body);
-#endif
-}
-
-expression_visitor::result_type expression_visitor::operator()(lambda_t & l) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("expression_visitor lambda_t");
-
-#if 0
-    function_entity& fe = handle_lambda(l);
-    ctx.context_type = fe.type();
-    return {};
-#endif
-}
-
 template <std::derived_from<pure_call_t> CallExpressionT>
 expression_visitor::result_type expression_visitor::operator()(builtin_qnid qnid, CallExpressionT const& call) const
 {
@@ -729,7 +734,7 @@ expression_visitor::result_type expression_visitor::operator()(new_expression_t 
     return false;
 }
 
-#if 0
+
 expression_visitor::result_type expression_visitor::operator()(function_call_t const& proc) const
 {
     //THROW_NOT_IMPLEMENTED_ERROR("expression_visitor function_call_t");
@@ -794,11 +799,12 @@ expression_visitor::result_type expression_visitor::operator()(function_call_t c
 }
 #endif
 
-expression_visitor::result_type expression_visitor::operator()(chained_expression_t&) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR();
-}
+//expression_visitor::result_type expression_visitor::operator()(chained_expression_t&) const
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR();
+//}
 
+#if 0
 expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_expression_list_t const& nel) const
 {
     auto res = base_expression_visitor::operator()(nel);
@@ -847,6 +853,7 @@ expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_
 
     THROW_NOT_IMPLEMENTED_ERROR();
 }
+#endif
 
 expression_visitor::result_type expression_visitor::handle(base_expression_visitor::result_type&& res) const
 {

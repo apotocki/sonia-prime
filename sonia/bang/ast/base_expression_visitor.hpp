@@ -33,6 +33,8 @@ public:
     result_type operator()(annotated_string const&) const;
     result_type operator()(annotated_identifier const&) const;
     result_type operator()(annotated_entity_identifier const&) const;
+    result_type operator()(annotated_qname const&) const;
+
     result_type operator()(variable_identifier const&) const;
 
     result_type operator()(array_expression_t const&) const;

@@ -46,12 +46,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_empty_patter
     return std::unexpected(make_error<type_mismatch_error>(get_start_location(**opt_arg_expr), ctx.context_type, u.get(builtin_qnid::tuple)));
 }
 
-std::expected<tuple_empty_pattern::application_result_t, error_storage> tuple_empty_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
-{
-    return md.result.entity_id();
-}
-
-std::expected<entity_identifier, error_storage> tuple_empty_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<tuple_empty_pattern::application_result_t, error_storage> tuple_empty_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     return md.result.entity_id();
 }

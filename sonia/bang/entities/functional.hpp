@@ -174,14 +174,11 @@ public:
 
     public:
         virtual std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const& expected_result) const = 0; // returns the match weight or an error
-        virtual std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context&, functional_match_descriptor&) const;
-        
-        virtual error_storage apply(fn_compiler_context&, functional_match_descriptor&) const;
 
         using application_result_t = variant<entity_identifier, semantic::managed_expression_list>;
-        virtual std::expected<application_result_t, error_storage> generic_apply(fn_compiler_context&, functional_match_descriptor&) const
+        virtual std::expected<application_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const
         {
-            THROW_NOT_IMPLEMENTED_ERROR("functional::pattern::generic_apply");
+            THROW_NOT_IMPLEMENTED_ERROR("functional::pattern::apply");
         }
 
         inline mp::decimal const& get_weight() const noexcept { return weight_; }
@@ -202,19 +199,9 @@ public:
             BOOST_ASSERT(md_);
         }
         
-        inline std::expected<pattern::application_result_t, error_storage> generic_apply(fn_compiler_context& ctx) const
-        {
-            return ptrn_->generic_apply(ctx, *md_);
-        }
-
-        inline [[nodiscard]] error_storage apply(fn_compiler_context& ctx)
+        inline std::expected<pattern::application_result_t, error_storage> apply(fn_compiler_context& ctx) const
         {
             return ptrn_->apply(ctx, *md_);
-        }
-
-        inline std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx)
-        {
-            return ptrn_->const_apply(ctx, *md_);
         }
 
         inline bool is_constexpr() const noexcept { return md_->is_constexpr(); }

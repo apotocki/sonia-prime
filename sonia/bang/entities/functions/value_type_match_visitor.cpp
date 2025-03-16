@@ -35,7 +35,7 @@ value_type_match_visitor::result_type value_type_match_visitor::operator()(annot
 
 value_type_match_visitor::result_type value_type_match_visitor::match_type(entity_identifier const& eid, lex::resource_location eidloc) const
 {
-    auto res = apply_visitor(base_expression_visitor{ caller_ctx,  { eid, eidloc } }, expr);
+    auto res = apply_visitor(base_expression_visitor{ caller_ctx, { eid, eidloc } }, expr);
     if (!res) return std::unexpected(std::move(res.error()));
     if (entity_identifier const* peid = get<entity_identifier>(&res->first); peid && *peid == caller_ctx.u().get(builtin_eid::void_)) {
         return std::unexpected(make_error<type_mismatch_error>(get_start_location(expr), *peid, "not void"sv, eidloc));
@@ -77,11 +77,14 @@ value_type_match_visitor::result_type value_type_match_visitor::operator()(funct
     if (!qn_ent_id) return std::unexpected(std::move(qn_ent_id.error()));
     qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(u.eregistry_get(*qn_ent_id));
 
-    // check if can evaluate signature_pattern_
+    // check if can evaluate signature_pattern as a const expression
+    
     auto match = callee_ctx.find(qname_ent.value(), fc);
     if (match) {
-        if (auto result = match->const_apply(callee_ctx); result) {
-            return match_type(*result, fc.location());
+        if (auto gresult = match->apply(callee_ctx); gresult) {
+            if (auto result = ct_expression_visitor{ callee_ctx }.handle(std::pair{std::move(*gresult), false}); result) {
+                return match_type(*result, fc.location());
+            }
         }
     }
 

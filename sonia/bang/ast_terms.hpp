@@ -350,12 +350,12 @@ inline auto bang_binary_switcher(BinaryExprT && exp, VisitorT && vis) {
 //template <typename ExprT = recursive_variant_>
 //struct concat_expression : binary_expression<binary_operator_type::CONCAT, ExprT> {};
 
-template <typename ExprT>
-struct expression_vector
-{
-    small_vector<ExprT, 4> elements;
-    lex::resource_location start;
-};
+//template <typename ExprT>
+//struct expression_vector
+//{
+//    small_vector<ExprT, 4> elements;
+//    lex::resource_location start;
+//};
 
 template <typename ExprT>
 struct pure_call
@@ -461,11 +461,11 @@ struct chained_expression
 };
 
 // e.g. backgroundColor: .red
-struct context_identifier
-{
-    annotated_identifier name;
-    lex::resource_location location;
-};
+//struct context_identifier
+//{
+//    annotated_identifier name;
+//    lex::resource_location location;
+//};
 
 template <typename ExprT>
 struct member_expression
@@ -642,12 +642,12 @@ using syntax_expression_t = make_recursive_variant<
     bang_fn_type<recursive_variant_>,
     bang_vector<recursive_variant_>,
     bang_union<recursive_variant_>,
-    context_value, context_identifier, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
+    context_value, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
     lambda<recursive_variant_>,
     unary_expression<recursive_variant_>,
     binary_expression<recursive_variant_>,
     //assign_expression<>, logic_and_expression<>, logic_or_expression<>, concat_expression<>,
-    expression_vector<recursive_variant_>,
+    //expression_vector<recursive_variant_>,
     function_call<recursive_variant_>,
     new_expression<recursive_variant_>,
     annotated_entity_identifier,
@@ -696,7 +696,7 @@ using binary_expression_t = binary_expression<syntax_expression_t>;
 using pure_call_t = pure_call<syntax_expression_t>;
 using new_expression_t = new_expression<syntax_expression_t>;
 using function_call_t = function_call<syntax_expression_t>;
-using expression_vector_t = expression_vector<syntax_expression_t>;
+//using expression_vector_t = expression_vector<syntax_expression_t>;
 
 using bang_fn_type_t = bang_fn_type<syntax_expression_t>;
 //using bang_tuple_t = bang_tuple<syntax_expression_t>;

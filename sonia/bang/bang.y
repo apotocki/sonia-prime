@@ -1059,9 +1059,7 @@ opt-type-list:
 
     /*
 expression:
-      OPEN_SQUARE_BRACKET expression-list-any CLOSE_SQUARE_BRACKET
-        { $$ = expression_vector_t{ {std::move($2)}, std::move($1) }; }
-    | expression QMARK
+      expression QMARK
         { $$ = not_empty_expression_t{ std::move($1) }; }
 
     //| expression QMARK POINT identifier

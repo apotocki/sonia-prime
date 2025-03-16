@@ -142,7 +142,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
     return pmd;
 }
 
-std::expected<tuple_get_pattern::application_result_t, error_storage> tuple_get_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<tuple_get_pattern::application_result_t, error_storage> tuple_get_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_get_match_descriptor&>(md);
@@ -171,20 +171,6 @@ std::expected<tuple_get_pattern::application_result_t, error_storage> tuple_get_
 
     ctx.context_type = md.result.entity_id();
     return std::move(exprs);
-}
-
-std::expected<entity_identifier, error_storage> tuple_get_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
-{
-    auto res = generic_apply(ctx, md);
-    if (!res) return std::unexpected(std::move(res.error()));
-    using result_t = std::expected<entity_identifier, error_storage>;
-    return apply_visitor(make_functional_visitor<result_t>([&ctx, &md](auto && eid_or_el) -> result_t {
-        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_el)>, entity_identifier>) {
-            return eid_or_el;
-        } else {
-            return std::unexpected(make_shared<basic_general_error>(md.location, "can't evaluate as a const expression"sv));
-        }
-    }), *res);
 }
 
 }

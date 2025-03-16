@@ -111,7 +111,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
 #endif
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> struct_new_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> struct_new_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     // create tuple instance
     unit& u = ctx.u();
@@ -119,7 +119,7 @@ std::expected<functional::pattern::application_result_t, error_storage> struct_n
     BOOST_ASSERT(dynamic_cast<new_struct_match_descriptor*>(&md));
     new_struct_match_descriptor& nsmd = static_cast<new_struct_match_descriptor&>(md);
 
-    return nsmd.init_match.generic_apply(ctx);
+    return nsmd.init_match.apply(ctx);
 #if 0
     struct_entity const& se = nsmd.get_struct_entity();
     auto uteid = se.underlying_tuple_eid(ctx);

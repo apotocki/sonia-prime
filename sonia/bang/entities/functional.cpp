@@ -340,44 +340,44 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
     return match{ ptrn, std::move(md) };
 }
 
-error_storage functional::pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
-{
-    auto res = generic_apply(ctx, md);
-    if (!res) return std::move(res.error());
+//error_storage functional::pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+//{
+//    auto res = apply(ctx, md);
+//    if (!res) return std::move(res.error());
+//
+//    return apply_visitor(make_functional_visitor<error_storage>([&ctx, &md](auto && eid_or_el) -> error_storage {
+//        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_el)>, entity_identifier>) {
+//            ctx.append_expression(semantic::push_value{ eid_or_el });
+//            entity const& e = ctx.u().eregistry_get(eid_or_el);
+//            //if (e.get_type() == ctx.u().get(builtin_eid::typename_)) {
+//            //  ctx.context_type = eid_or_el;
+//            //} else {
+//                ctx.context_type = e.get_type();
+//            //}
+//        } else {
+//            ctx.expressions().splice_back(eid_or_el);
+//        }
+//        return error_storage{};
+//    }), *res);
+//}
 
-    return apply_visitor(make_functional_visitor<error_storage>([&ctx, &md](auto && eid_or_el) -> error_storage {
-        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_el)>, entity_identifier>) {
-            ctx.append_expression(semantic::push_value{ eid_or_el });
-            entity const& e = ctx.u().eregistry_get(eid_or_el);
-            //if (e.get_type() == ctx.u().get(builtin_eid::typename_)) {
-            //  ctx.context_type = eid_or_el;
-            //} else {
-                ctx.context_type = e.get_type();
-            //}
-        } else {
-            ctx.expressions().splice_back(eid_or_el);
-        }
-        return error_storage{};
-    }), *res);
-}
-
-std::expected<entity_identifier, error_storage> functional::pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
-{
-    auto res = generic_apply(ctx, md);
-    if (!res) return std::unexpected(res.error());
-    using result_t = std::expected<entity_identifier, error_storage>;
-    return apply_visitor(make_functional_visitor<result_t>([&ctx](auto & v) -> result_t {
-        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-            return v;
-        } else {
-            if (ctx.context_type == ctx.u().get(builtin_eid::void_)) {
-                BOOST_ASSERT(v.empty());
-                return ctx.context_type;
-            }
-            THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::operator()(opt_named_syntax_expression_list_t const&)");
-        }
-    }), *res);
-}
+//std::expected<entity_identifier, error_storage> functional::pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+//{
+//    auto res = apply(ctx, md);
+//    if (!res) return std::unexpected(res.error());
+//    using result_t = std::expected<entity_identifier, error_storage>;
+//    return apply_visitor(make_functional_visitor<result_t>([&ctx](auto & v) -> result_t {
+//        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+//            return v;
+//        } else {
+//            if (ctx.context_type == ctx.u().get(builtin_eid::void_)) {
+//                BOOST_ASSERT(v.empty());
+//                return ctx.context_type;
+//            }
+//            THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::operator()(opt_named_syntax_expression_list_t const&)");
+//        }
+//    }), *res);
+//}
 
 std::expected<syntax_expression_t const*, error_storage> try_match_single_unnamed(fn_compiler_context& ctx, pure_call_t const& call)
 {

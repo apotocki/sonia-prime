@@ -13,7 +13,7 @@ class to_string_pattern : public basic_fn_pattern
 public:
     using basic_fn_pattern::basic_fn_pattern;
 
-    std::expected<application_result_t, error_storage> generic_apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<application_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override { return s << "to_string(const __identifier)->string"; }
 };

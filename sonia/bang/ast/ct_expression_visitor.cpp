@@ -10,51 +10,51 @@
 
 namespace sonia::lang::bang {
 
-template <typename ExprT>
-inline ct_expression_visitor::result_type ct_expression_visitor::apply_cast(entity_identifier eid, ExprT const& e) const
-{
-    /*
-    entity_identifier typeeid = is_type_expected ?
-        expected_result.value :
-        u().eregistry_get(eid).get_type();
-
-    if (typeeid == expected_result.value || ) {
-        return eid;
-    }
-
-    */
-    BOOST_ASSERT(eid);
-    if (!expected_result || u().get(builtin_eid::any) == expected_result.value) return eid;
-    if (!is_type_expected) {
-        if (eid == expected_result.value) return eid;
-        return std::unexpected(make_error<cast_error>(get_start_location(e), expected_result.value, eid, e));
-        //THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::apply_cast const cast check");
-    } else {
-        entity const& ent = u().eregistry_get(eid);
-        entity_identifier typeeid = ent.get_type();
-        if (typeeid == expected_result.value ) {
-            return eid;
-        }
-
-        //GLOBAL_LOG_DEBUG() << ("expected type: %1%, actual type: %2%"_fmt % u().print(expected_result.value) % u().print(typeeid)).str();
-
-        lex::resource_location expr_loc = get_start_location(e);
-        pure_call_t cast_call{ expected_result.location };
-        //cast_call.emplace_back(annotated_identifier{ u().get(builtin_id::to) }, annotated_entity_identifier{ expected_result.value, expected_result.location });
-        cast_call.emplace_back(annotated_entity_identifier{ typeeid, expr_loc });
-
-        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expected_result);
-        if (!match) {
-            //return std::move(ptrn.error());
-            return std::unexpected(append_cause(
-                make_error<cast_error>(expr_loc, expected_result.value, typeeid, e),
-                std::move(match.error())
-            ));
-        }
-    
-        return match->const_apply(ctx);
-    }
-}
+//template <typename ExprT>
+//inline ct_expression_visitor::result_type ct_expression_visitor::apply_cast(entity_identifier eid, ExprT const& e) const
+//{
+//    /*
+//    entity_identifier typeeid = is_type_expected ?
+//        expected_result.value :
+//        u().eregistry_get(eid).get_type();
+//
+//    if (typeeid == expected_result.value || ) {
+//        return eid;
+//    }
+//
+//    */
+//    BOOST_ASSERT(eid);
+//    if (!expected_result || u().get(builtin_eid::any) == expected_result.value) return eid;
+//    if (!is_type_expected) {
+//        if (eid == expected_result.value) return eid;
+//        return std::unexpected(make_error<cast_error>(get_start_location(e), expected_result.value, eid, e));
+//        //THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::apply_cast const cast check");
+//    } else {
+//        entity const& ent = u().eregistry_get(eid);
+//        entity_identifier typeeid = ent.get_type();
+//        if (typeeid == expected_result.value ) {
+//            return eid;
+//        }
+//
+//        //GLOBAL_LOG_DEBUG() << ("expected type: %1%, actual type: %2%"_fmt % u().print(expected_result.value) % u().print(typeeid)).str();
+//
+//        lex::resource_location expr_loc = get_start_location(e);
+//        pure_call_t cast_call{ expected_result.location };
+//        //cast_call.emplace_back(annotated_identifier{ u().get(builtin_id::to) }, annotated_entity_identifier{ expected_result.value, expected_result.location });
+//        cast_call.emplace_back(annotated_entity_identifier{ typeeid, expr_loc });
+//
+//        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expected_result);
+//        if (!match) {
+//            //return std::move(ptrn.error());
+//            return std::unexpected(append_cause(
+//                make_error<cast_error>(expr_loc, expected_result.value, typeeid, e),
+//                std::move(match.error())
+//            ));
+//        }
+//    
+//        return match->const_apply(ctx);
+//    }
+//}
 
 //ct_expression_visitor::result_type ct_expression_visitor::operator()(context_value const& cv) const
 //{
@@ -153,7 +153,6 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(bang_vector
 {
     return handle(base_expression_visitor::operator()(v));
 }
-#endif
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_qname const& aqn) const
 {
@@ -165,7 +164,6 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_q
     return std::unexpected(optqnid.error());
 }
 
-#if 0
 ct_expression_visitor::result_type ct_expression_visitor::operator()(function_call_t const& proc) const
 {
     ct_expression_visitor vis{ ctx, annotated_entity_identifier{ u().get(builtin_eid::qname), proc.location() } };
@@ -178,7 +176,6 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(function_ca
     if (auto res = match->const_apply(ctx); !res) return std::unexpected(std::move(res.error()));
     else return apply_cast(*res, proc);
 }
-#endif
 
 ct_expression_visitor::result_type ct_expression_visitor::operator()(member_expression_t const& me) const
 {
@@ -224,16 +221,19 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(opt_named_s
         }
     }), res->first);
 }
-
-
+#endif
 
 ct_expression_visitor::result_type ct_expression_visitor::handle(base_expression_visitor::result_type&& res) const
 {
     if (!res) return std::unexpected(std::move(res.error()));
-    return apply_visitor(make_functional_visitor<result_type>([](auto& v) -> result_type {
+    return apply_visitor(make_functional_visitor<result_type>([this](auto& v) -> result_type {
         if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
             return v;
         } else {
+            if (ctx.context_type == ctx.u().get(builtin_eid::void_)) {
+                BOOST_ASSERT(v.empty());
+                return ctx.context_type;
+            }
             THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::handle");
         }
     }), res->first);

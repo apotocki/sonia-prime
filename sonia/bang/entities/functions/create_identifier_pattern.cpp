@@ -39,7 +39,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_
     return pmd;
 }
 
-std::expected<entity_identifier, error_storage> create_identifier_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> create_identifier_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_identifier strid = md.get_match_result(0).results.front().first;

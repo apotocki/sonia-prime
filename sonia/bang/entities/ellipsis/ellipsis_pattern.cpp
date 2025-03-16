@@ -87,7 +87,7 @@ std::expected<field_descriptor, error_storage> push_by_name(fn_compiler_context&
     }), optent);
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> ellipsis_pattern::generic_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<functional::pattern::application_result_t, error_storage> ellipsis_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     BOOST_ASSERT(dynamic_cast<ellipsis_match_descriptor*>(&md));
 

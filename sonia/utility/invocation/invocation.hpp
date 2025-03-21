@@ -1235,7 +1235,7 @@ private:
     inline std::array<T, SzV> selector(std::type_identity<BT>, blob_result const& val) const
     {
         using namespace sonia;
-        T const* begin_ptr = val.inplace_size ? reinterpret_cast<T const*>(val.ui8array) : reinterpret_cast<T const*>(val.bp.data);
+        void const* begin_ptr = val.inplace_size ? val.ui8array : val.bp.data;
         size_t sz = val.inplace_size ? (size_t)val.inplace_size : (size_t)val.bp.size;
         if constexpr (is_same_v<T, BT> && (is_integral_v<T> || is_floating_point_v<T>)) {
             BOOST_ASSERT(sz / sizeof(T) >= SzV);

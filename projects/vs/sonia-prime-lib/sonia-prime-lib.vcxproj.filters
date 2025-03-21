@@ -2418,6 +2418,9 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\literals\literal_entity.hpp">
       <Filter>sonia.bang\entities\literals</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\collections\array_elements_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\collections</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2911,6 +2914,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.cpp">
       <Filter>sonia.bang\entities\literals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\collections\array_elements_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\collections</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

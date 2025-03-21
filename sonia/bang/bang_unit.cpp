@@ -39,6 +39,7 @@
 #include "entities/enum/enum_implicit_cast_pattern.hpp"
 
 #include "entities/collections/array_implicit_cast_pattern.hpp"
+#include "entities/collections/array_elements_implicit_cast_pattern.hpp"
 
 #include "entities/metaobject/metaobject_pattern.hpp"
 #include "entities/metaobject/typeof_pattern.hpp"
@@ -975,7 +976,7 @@ basic_signatured_entity const& unit::make_array_entity(entity_identifier element
 {
     entity_identifier tp = make_array_type_entity(element_type, values.size()).id();
     entity_signature sig{ get(builtin_qnid::metaobject), tp };
-    //sig.push_back(u.get(builtin_id::element), field_descriptor{ element_type, true });
+
     for (auto const& v : values) {
         sig.push_back(field_descriptor{ v, true });
     }
@@ -1183,6 +1184,7 @@ unit::unit()
     implicit_cast_fnl.push(make_shared<struct_implicit_cast_pattern>());
     implicit_cast_fnl.push(make_shared<enum_implicit_cast_pattern>());
     implicit_cast_fnl.push(make_shared<array_implicit_cast_pattern>());
+    implicit_cast_fnl.push(make_shared<array_elements_implicit_cast_pattern>());
     implicit_cast_fnl.push(make_shared<union_implicit_cast_pattern>());
     implicit_cast_fnl.push(make_shared<numeric_implicit_cast_pattern>());
 

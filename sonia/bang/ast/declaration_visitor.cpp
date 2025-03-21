@@ -577,7 +577,8 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
     return apply_visitor(make_functional_visitor<error_storage>([this, &ld, vartype](auto & v) {
         if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
             entity const& e = u().eregistry_get(v);
-            BOOST_ASSERT(!vartype || vartype == e.get_type());
+            entity_identifier et = e.get_type();
+            BOOST_ASSERT(!vartype || vartype == et);
             if (dynamic_cast<empty_entity const*>(&e)) {
                 ctx.new_constant(ld.aname, v);
                 return error_storage{};

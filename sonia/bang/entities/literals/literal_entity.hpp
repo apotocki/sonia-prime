@@ -5,6 +5,7 @@
 #pragma once
 
 #include "sonia/bang/semantic_fwd.hpp"
+#include "sonia/bang/unit.hpp"
 
 namespace sonia::lang::bang {
 
@@ -45,12 +46,12 @@ public:
     {
 #ifdef SONIA_LANG_DEBUG
         if constexpr (std::is_same_v<ValueT, identifier> || std::is_same_v<ValueT, qname_identifier>) {
-            return do_print_name(entity::print_to(os, u)) << '(' << value_.debug_name << ')';
+            return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << value_.debug_name << "): "sv, type_);
         } else if constexpr (std::is_same_v<ValueT, bool>) {
-            return do_print_name(entity::print_to(os, u)) << '(' << (value_ ? "true"sv : "false"sv) << ')';
+            return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << (value_ ? "true"sv : "false"sv) << "): "sv, type_);
         }
 #endif
-        return do_print_name(entity::print_to(os, u)) << '(' << value_ << ')';
+        return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << value_ << "): "sv, type_);
     }
 
 private:

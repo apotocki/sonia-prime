@@ -242,7 +242,8 @@ public:
     PolymorphicT const* operator->() const { BOOST_ASSERT(*this); return get_pointer(); }
     PolymorphicT * operator->() { BOOST_ASSERT(*this); return get_pointer(); }
 
-    explicit operator bool() const noexcept { return nullptr != *reinterpret_cast<void* const*>(this->buffer_); }
+    // it's assumed that start of buffer is vtable and it's not null if object is initialized
+    inline explicit operator bool() const noexcept { return nullptr != *reinterpret_cast<void* const*>(this->buffer_); }
 
 private:
     void do_reset() { *reinterpret_cast<void**>(this->buffer_) = nullptr; }

@@ -14,6 +14,8 @@
 
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
+
 namespace sonia::lang::bang {
 
 base_expression_visitor::base_expression_visitor(fn_compiler_context& c) noexcept
@@ -93,7 +95,6 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(semanti
 
     lex::resource_location expr_loc = get_start_location(e);
     pure_call_t cast_call{ expected_result.location };
-    //cast_call.emplace_back(annotated_identifier{ u().get(builtin_id::to) }, annotated_entity_identifier{ expected_result.value, expected_result.location });
     cast_call.emplace_back(context_value{ ctx.context_type, expr_loc });
 
     auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expected_result);
@@ -174,61 +175,183 @@ base_expression_visitor::result_type base_expression_visitor::operator()(annotat
     return std::unexpected(optqnid.error());
 }
 
-base_expression_visitor::result_type base_expression_visitor::operator()(bang_vector_t const& v) const
+base_expression_visitor::result_type base_expression_visitor::operator()(bang_vector_t const& bv) const
 {
-    auto res = apply_visitor(ct_expression_visitor{ ctx }, v.type);
+    // to do: take into account the expected type
+    // v.type can be a type or a value
+    result_type res = apply_visitor(base_expression_visitor{ ctx }, bv.type);
     if (!res) return std::unexpected(res.error());
-    return apply_cast(u().make_vector_type_entity(*res), v);
+    return apply_visitor(make_functional_visitor<result_type>([this, &bv](auto& v) -> result_type {
+        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+            // type or constexpr value?
+            entity const& e = u().eregistry_get(v);
+            if (e.get_type() == u().get(builtin_eid::typename_)) { // type
+                return apply_cast(u().make_vector_type_entity(v), bv);
+            } else {
+                THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor bang_vector_t");
+            }
+        } else {
+            ctx.context_type = u().make_array_type_entity(ctx.context_type, 1).id();
+            return apply_cast(std::move(v), bv);
+        }
+    }), res->first);
 }
+
+#if 0
+struct array_expression_processor : static_visitor<void>
+{
+    optional<semantic::managed_expression_list> optexprs;
+    small_vector<entity_identifier, 16> ct_element_results;
+    small_vector<semantic::expression_span, 16> rt_element_results;
+    boost::container::small_flat_set<entity_identifier, 8> element_types;
+    fn_compiler_context& ctx;
+    base_expression_visitor const& bvis;
+
+    inline explicit array_expression_processor(base_expression_visitor const& bv) : ctx{ bv.ctx }, bvis{ bv } {}
+    inline unit& u() const noexcept { return ctx.u(); }
+
+    base_expression_visitor::result_type process(array_expression_t const& ve)
+    {
+        for (syntax_expression_t const& ee : ve.elements) {
+            auto res = apply_visitor(base_expression_visitor{ ctx }, ee);
+            if (!res) return std::unexpected(res.error());
+            apply_visitor(*this, res->first);
+        }
+
+        entity_identifier elem_type = element_types.size() == 1 ?
+            *element_types.begin() : ctx.u().make_union_type_entity(element_types).id();
+        
+        if (rt_element_results.empty()) {
+            return bvis.apply_cast(u().make_array_entity(elem_type, ct_element_results), ve);
+        }
+        BOOST_ASSERT(optexprs);
+        if (rt_element_results.size() > 1) {
+            u().push_back_expression(*optexprs, semantic::push_value{ mp::integer{ rt_element_results.size() } });
+            u().push_back_expression(*optexprs, semantic::invoke_function(u().get(builtin_eid::arrayify)));
+        }
+        ctx.context_type = u().make_array_type_entity(elem_type, rt_element_results.size()).id();
+        return bvis.apply_cast(std::move(*optexprs), ve);
+    }
+
+    void operator()(entity_identifier const& eid)
+    {
+        element_types.insert(get_entity(u(), eid).get_type());
+        if (rt_element_results.empty()) {
+            ct_element_results.push_back(eid);
+        } else {
+            u().push_back_expression(*optexprs, semantic::push_value{ eid });
+            rt_element_results.emplace_back(&optexprs->back_entry());
+        }
+    }
+
+    void operator()(semantic::managed_expression_list& l)
+    {
+        semantic::expression_span argspan = l;
+        if (!optexprs) {
+            optexprs.emplace(u());
+            for (entity_identifier eid : ct_element_results) {
+                u().push_back_expression(*optexprs, semantic::push_value{ eid });
+                rt_element_results.emplace_back(&optexprs->back_entry());
+            }
+        } else {
+            optexprs->splice_back(l);
+        }
+        rt_element_results.push_back(std::move(argspan));
+        element_types.insert(ctx.context_type);
+    }
+};
+#endif
+
+struct array_expression_processor : static_visitor<void>
+{
+    optional<semantic::managed_expression_list> optexprs;
+    //small_vector<entity_identifier, 16> ct_element_results;
+    //small_vector<semantic::expression_span, 16> rt_element_results;
+    boost::container::small_flat_set<entity_identifier, 8> element_types;
+
+    small_vector<entity_identifier, 16> ct_elements;
+    mp::integer mask{ 0 };
+    size_t not_constant_count{ 0 };
+
+    entity_signature const* expected_result = nullptr;
+    fn_compiler_context& ctx;
+    base_expression_visitor const& bvis;
+
+    inline explicit array_expression_processor(base_expression_visitor const& bv) : ctx{ bv.ctx }, bvis{ bv } {}
+    inline unit& u() const noexcept { return ctx.u(); }
+
+    base_expression_visitor::result_type process(array_expression_t const& ve)
+    {
+        for (syntax_expression_t const& ee : ve.elements) {
+            auto res = apply_visitor(base_expression_visitor{ ctx }, ee);
+            if (!res) return std::unexpected(res.error());
+            apply_visitor(*this, res->first);
+        }
+
+        entity_identifier elem_type = element_types.size() == 1 ?
+            *element_types.begin() : ctx.u().make_union_type_entity(element_types).id();
+
+        if (!optexprs) {
+            if (element_types.size() == 1) { // all elements have the same type => return array
+                return bvis.apply_cast(u().make_array_entity(*element_types.begin(), ct_elements), ve);
+            }
+            // return tuple of constant values
+            entity_signature sig{ u().get(builtin_qnid::tuple), u().get(builtin_eid::metaobject) };
+            for (auto const& eid : ct_elements) {
+                sig.emplace_back(eid, true);
+            }
+            indirect_signatured_entity smpl{ sig };
+            return bvis.apply_cast(u().eregistry_find_or_create(smpl, [&sig]() {
+                return make_shared<basic_signatured_entity>(std::move(sig));
+            }), ve);
+        }
+        if (element_types.size() == 1 && ct_elements.size() == not_constant_count) {
+            // all elements have the same type and not const => return array
+            if (not_constant_count > 1) {
+                u().push_back_expression(*optexprs, semantic::push_value{ mp::integer{ not_constant_count } });
+                u().push_back_expression(*optexprs, semantic::invoke_function(u().get(builtin_eid::arrayify)));
+            }
+            ctx.context_type = u().make_array_type_entity(*element_types.begin(), not_constant_count).id();
+            return bvis.apply_cast(std::move(*optexprs), ve);
+        }
+        // return fuzzy array
+        entity_signature sig{ u().get(builtin_qnid::fuzzy_array), u().get(builtin_eid::typename_) };
+        sig.push_back(u().get(builtin_id::mask), field_descriptor{ u().make_integer_entity(mask).id(), true });
+        for (auto const& eid : ct_elements) {
+            sig.emplace_back(eid, true);
+        }
+        indirect_signatured_entity smpl{ sig };
+        ctx.context_type = u().eregistry_find_or_create(smpl, [&sig]() {
+            return make_shared<basic_signatured_entity>(std::move(sig));
+        }).id();
+        return bvis.apply_cast(std::move(*optexprs), ve);
+    }
+
+    void operator()(entity_identifier const& eid)
+    {
+        ct_elements.push_back(eid);
+        element_types.insert(get_entity(u(), eid).get_type());
+    }
+
+    void operator()(semantic::managed_expression_list& l)
+    {
+        mask |= (mp::integer{1} << ct_elements.size());
+        ct_elements.push_back(ctx.context_type);
+        ++not_constant_count;
+        if (!optexprs) {
+            optexprs.emplace(std::move(l));
+        } else {
+            optexprs->splice_back(l);
+        }
+        element_types.insert(get_entity(u(), ctx.context_type).get_type());
+    }
+};
 
 
 base_expression_visitor::result_type base_expression_visitor::operator()(array_expression_t const& ve) const
 {
-    optional<semantic::managed_expression_list> optexprs;
-    small_vector<entity_identifier, 16> ct_element_results;
-    small_vector<semantic::expression_span, 16> rt_element_results; //to do: gather content types
-
-    for (syntax_expression_t const& ee : ve.elements) {
-        result_type res = apply_visitor(base_expression_visitor{ ctx }, ee);
-        if (!res) return std::unexpected(res.error());
-        apply_visitor(make_functional_visitor<void>([this, &ct_element_results, &rt_element_results, &optexprs](auto & v) {
-            if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-                if (rt_element_results.empty()) {
-                    ct_element_results.push_back(v);
-                } else {
-                    u().push_back_expression(*optexprs, semantic::push_value{ v });
-                    rt_element_results.emplace_back(&optexprs->back_entry());
-                }
-            } else {
-                semantic::expression_span argspan = v;
-                if (!optexprs) {
-                    optexprs.emplace(std::move(v));
-                    if (!ct_element_results.empty()) {
-                        for (entity_identifier eid : ct_element_results) {
-                            u().push_back_expression(*optexprs, semantic::push_value{ eid });
-                            rt_element_results.emplace_back(&optexprs->back_entry());
-                        }
-                    }
-                }
-                rt_element_results.push_back(std::move(argspan));
-                optexprs->splice_back(v);
-            }
-        }), res->first);
-    }
-    if (rt_element_results.empty()) {
-        // gather types
-        boost::container::small_flat_set<entity_identifier, 8> types;
-        for (entity_identifier eid : ct_element_results) {
-            entity_identifier elemtype_eid = u().eregistry_get(eid).get_type();
-            types.insert(elemtype_eid);
-        }
-        if (types.size() > 1) {
-            THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor array_expression_t");
-        }
-        entity const& arr_ent = u().make_array_entity(*types.begin(), ct_element_results);
-        return apply_cast(arr_ent, ve);
-    }
-    THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor array_expression_t");
+    array_expression_processor proc{ *this };
+    return proc.process(ve);
 }
 
 base_expression_visitor::result_type base_expression_visitor::operator()(variable_identifier const& var) const
@@ -277,7 +400,8 @@ base_expression_visitor::result_type base_expression_visitor::operator()(member_
 //    THROW_EOF_ERROR("base_expression_visitor context_identifier");
 //}
 
-base_expression_visitor::result_type base_expression_visitor::operator()(opt_named_syntax_expression_list_t const& nel) const
+#if 0
+base_expression_visitor::result_type base_expression_visitor::operator()(named_syntax_expression_list_t const& nel) const
 {
     // e.g. case: let val = (a, b, c)
     pure_call_t tuple_call{ nel.location };
@@ -294,12 +418,15 @@ base_expression_visitor::result_type base_expression_visitor::operator()(opt_nam
     auto res = match->apply(ctx);
     return apply_cast(std::move(res), nel);
 }
+#endif
 
 base_expression_visitor::result_type base_expression_visitor::operator()(unary_expression_t const& be) const
 {
     switch (be.op) {
     case unary_operator_type::NEGATE:
         return this->operator()(builtin_qnid::negate, be);
+    case unary_operator_type::DEREF:
+        return this->operator()(builtin_qnid::deref, be);
     case unary_operator_type::ELLIPSIS:
         return this->operator()(builtin_qnid::ellipsis, be);
     }
@@ -308,7 +435,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(unary_e
 
 base_expression_visitor::result_type base_expression_visitor::operator()(function_call_t const& proc) const
 {
-    ct_expression_visitor vis{ ctx, annotated_entity_identifier{ u().get(builtin_eid::qname), proc.location() } };
+    ct_expression_visitor vis{ ctx, annotated_entity_identifier{ u().get(builtin_eid::qname), proc.location } };
     auto qn_ent_id = apply_visitor(vis, proc.fn_object);
     if (!qn_ent_id) return std::unexpected(std::move(qn_ent_id.error()));
     qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(u().eregistry_get(*qn_ent_id));
@@ -330,7 +457,6 @@ base_expression_visitor::result_type base_expression_visitor::operator()(new_exp
             new_call.emplace_back(arg.value());
         }
     }
-
     auto match = ctx.find(builtin_qnid::new_, new_call, expected_result);
     if (!match) {
         return std::unexpected(append_cause(
@@ -364,7 +490,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(index_e
     pure_call_t get_call{ ie.location };
     get_call.emplace_back(annotated_identifier{ u().get(builtin_id::self) }, ie.base);
     get_call.emplace_back(annotated_identifier{ u().get(builtin_id::property) }, ie.index);
-    
+
     auto match = ctx.find(builtin_qnid::new_, get_call, expected_result);
     if (!match) {
         return std::unexpected(std::move(match.error()));
@@ -409,9 +535,10 @@ base_expression_visitor::result_type base_expression_visitor::do_assign(binary_e
     //THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor binary_operator_type::ASSIGN");
     //GLOBAL_LOG_INFO() << "left expression: " << ctx.u().print(op.left);
     //size_t start_result_pos = result.size();
-    assign_expression_visitor lvis{ ctx, op.location(), op[1].value() };
+    BOOST_ASSERT(op.args.size() == 2);
+    assign_expression_visitor lvis{ ctx, op.location, op.args[1].value() };
 
-    auto res = apply_visitor(lvis, op[0].value());
+    auto res = apply_visitor(lvis, op.args[0].value());
     if (!res) return std::unexpected(std::move(res.error()));
 
     return apply_cast(std::move(res), op);

@@ -13,18 +13,18 @@
 namespace sonia::lang::bang {
 
 // __id(const string)
-std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
 {
-    if (call.args().empty()) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "an argument is expected"sv));
+    if (call.args.empty()) {
+        return std::unexpected(make_error<basic_general_error>(call.location, "an argument is expected"sv));
     }
-    auto const& opt_named_expr = call.args().front();
+    auto const& opt_named_expr = call.args.front();
     if (annotated_identifier const* optname = opt_named_expr.name(); optname) {
         return std::unexpected(make_error<basic_general_error>(optname->location, "unexpected named argument"sv, optname->value));
     }
 
-    if (call.args().size() != 1) {
-        return std::unexpected(make_error<basic_general_error>(get_start_location(call.args()[1].value()), "unexpected argument"sv));
+    if (call.args.size() != 1) {
+        return std::unexpected(make_error<basic_general_error>(get_start_location(call.args[1].value()), "unexpected argument"sv));
     }
     
     auto const& expr = opt_named_expr.value();

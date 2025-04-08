@@ -802,6 +802,16 @@ public:
     inline basic_integer& operator-= (basic_integer_view<LimbT> r) { *this = *this - r; return *this; }
     inline basic_integer& operator-= (basic_integer const& r) { *this = *this - r; return *this; }
 
+    template <std::integral TermT>
+    inline basic_integer& operator|= (TermT r) { *this = *this | r; return *this; }
+    inline basic_integer& operator|= (basic_integer_view<LimbT> r) { *this = *this | r; return *this; }
+    inline basic_integer& operator|= (basic_integer const& r) { *this = *this | r; return *this; }
+
+    template <std::integral TermT>
+    inline basic_integer& operator&= (TermT r) { *this = *this & r; return *this; }
+    inline basic_integer& operator&= (basic_integer_view<LimbT> r) { *this = *this & r; return *this; }
+    inline basic_integer& operator&= (basic_integer const& r) { *this = *this & r; return *this; }
+
     template <std::integral MultiplierT>
     inline basic_integer& operator*= (MultiplierT r) { *this = *this * r; return *this; }
     inline basic_integer& operator*= (basic_integer_view<LimbT> r) { *this = *this * r; return *this; }
@@ -816,6 +826,9 @@ public:
     inline basic_integer& operator%= (DividerT r) { *this = *this % r; return *this; }
     inline basic_integer& operator%= (basic_integer_view<LimbT> r) { *this = *this % r; return *this; }
     inline basic_integer& operator%= (basic_integer const& r) { *this = *this % r; return *this; }
+
+    template <std::unsigned_integral ShiftOperandT>
+    inline basic_integer& operator<<= (ShiftOperandT r) { *this = *this << r; return *this; }
 
     // return self / divider, r -> self
     basic_integer div_qr(basic_integer_view<LimbT> divider);
@@ -1105,6 +1118,7 @@ inline integer operator""_bi()
 
 }
 
+// #################### operator +
 template <std::unsigned_integral LimbT, size_t LN, typename AllocatorLT>
 inline basic_integer<LimbT, LN, AllocatorLT> operator+ (basic_integer<LimbT, LN, AllocatorLT> const& l, basic_integer_view<LimbT> rv)
 {
@@ -1133,6 +1147,7 @@ inline basic_integer<LimbT, LN, AllocatorLT> operator+ (TermT l, basic_integer<L
     return r + basic_integer<LimbT, 1 + sizeof(TermT) / sizeof(LimbT), AllocatorLT>{ l };
 }
 
+// #################### operator -
 template <std::unsigned_integral LimbT, size_t LN, typename AllocatorLT>
 inline basic_integer<LimbT, LN, AllocatorLT> operator- (basic_integer<LimbT, LN, AllocatorLT> const& l, basic_integer_view<LimbT> rv)
 {
@@ -1161,6 +1176,61 @@ inline basic_integer<LimbT, LN, AllocatorLT> operator- (TermT l, basic_integer<L
     return basic_integer<LimbT, 1 + sizeof(TermT) / sizeof(LimbT), AllocatorLT>{ l } - r;
 }
 
+// #################### operator |
+template <std::unsigned_integral LimbT, size_t LN, typename AllocatorLT>
+inline basic_integer<LimbT, LN, AllocatorLT> operator| (basic_integer<LimbT, LN, AllocatorLT> const& l, basic_integer_view<LimbT> rv)
+{
+    return l.build_new([lv = (basic_integer_view<LimbT>)l, rv](auto& ih) { ih.init(binor(lv, rv, ih.sso_allocator())); });
+}
+
+template <std::unsigned_integral LimbT, size_t LN, size_t RN, typename AllocatorLT, typename AllocatorRT>
+inline basic_integer<LimbT, LN, AllocatorLT> operator| (basic_integer<LimbT, LN, AllocatorLT> const& l, basic_integer<LimbT, RN, AllocatorRT> const& r)
+{
+    return l | (basic_integer_view<LimbT>)r;
+}
+
+template <std::unsigned_integral LimbT, size_t LN, typename AllocatorLT, std::unsigned_integral TermT>
+inline basic_integer<LimbT, LN, AllocatorLT> operator| (basic_integer<LimbT, LN, AllocatorLT> const& l, TermT r)
+{
+    if constexpr (sizeof(TermT) <= sizeof(LimbT)) {
+        return l | basic_integer_view<LimbT>{ r };
+    } else {
+        return l | basic_integer<LimbT, 1 + sizeof(TermT) / sizeof(LimbT), AllocatorLT>{ r };
+    }
+}
+
+template <std::unsigned_integral LimbT, size_t LN, typename AllocatorLT, std::integral TermT>
+inline basic_integer<LimbT, LN, AllocatorLT> operator| (TermT l, basic_integer<LimbT, LN, AllocatorLT> const& r)
+{
+    return basic_integer<LimbT, 1 + sizeof(TermT) / sizeof(LimbT), AllocatorLT>{ l } | r;
+}
+
+// #################### operator &
+template <std::unsigned_integral LimbT, size_t LN, typename AllocatorLT>
+inline basic_integer<LimbT, LN, AllocatorLT> operator& (basic_integer<LimbT, LN, AllocatorLT> const& l, basic_integer_view<LimbT> rv)
+{
+    return l.build_new([lv = (basic_integer_view<LimbT>)l, rv](auto& ih) { ih.init(binand(lv, rv, ih.sso_allocator())); });
+}
+
+template <std::unsigned_integral LimbT, size_t LN, size_t RN, typename AllocatorLT, typename AllocatorRT>
+inline basic_integer<LimbT, LN, AllocatorLT> operator& (basic_integer<LimbT, LN, AllocatorLT> const& l, basic_integer<LimbT, RN, AllocatorRT> const& r)
+{
+    return l & (basic_integer_view<LimbT>)r;
+}
+
+template <std::unsigned_integral LimbT, size_t LN, typename AllocatorLT, std::unsigned_integral TermT>
+inline basic_integer<LimbT, LN, AllocatorLT> operator& (basic_integer<LimbT, LN, AllocatorLT> const& l, TermT r)
+{
+    return r & (TermT)l;
+}
+
+template <std::unsigned_integral LimbT, size_t LN, typename AllocatorLT, std::unsigned_integral TermT>
+inline basic_integer<LimbT, LN, AllocatorLT> operator& (TermT l, basic_integer<LimbT, LN, AllocatorLT> const& r)
+{
+    return l & (TermT)r;
+}
+
+// #################### operator *
 template <std::unsigned_integral LimbT, size_t LN, typename AllocatorLT>
 inline basic_integer<LimbT, LN, AllocatorLT> operator* (basic_integer<LimbT, LN, AllocatorLT> const& l, basic_integer_view<LimbT> rv)
 {
@@ -1249,8 +1319,14 @@ inline basic_integer<LimbT, LN, AllocatorLT> operator% (DividendT l, basic_integ
     return basic_integer<LimbT, 1 + sizeof(DividendT) / sizeof(LimbT), AllocatorLT>{ l } % r;
 }
 
-template <std::unsigned_integral LimbT, size_t LN, typename AllocatorLT>
-inline basic_integer<LimbT, LN, AllocatorLT> pow(basic_integer<LimbT, LN, AllocatorLT> const& l, unsigned int n)
+template <std::unsigned_integral LimbT, size_t LN, std::unsigned_integral NT, typename AllocatorLT>
+inline basic_integer<LimbT, LN, AllocatorLT> operator<< (basic_integer<LimbT, LN, AllocatorLT> const& l, NT n)
+{
+    return l.build_new([lv = (basic_integer_view<LimbT>)l, n](auto& ih) { ih.init(shift_left(lv, n, ih.sso_allocator())); });
+}
+
+template <std::unsigned_integral LimbT, size_t LN, std::unsigned_integral NT, typename AllocatorLT>
+inline basic_integer<LimbT, LN, AllocatorLT> pow(basic_integer<LimbT, LN, AllocatorLT> const& l, NT n)
 {
     return l.build_new([lv = (basic_integer_view<LimbT>)l, n](auto& ih) { ih.init(pow(lv, n, ih.sso_allocator())); });
 }

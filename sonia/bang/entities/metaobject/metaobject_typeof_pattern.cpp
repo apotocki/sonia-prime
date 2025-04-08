@@ -13,7 +13,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
 {
     unit& u = ctx.u();
     identifier objid = u.get(builtin_id::object);
@@ -21,7 +21,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
     named_expression_t const* object_arg = nullptr;
     named_expression_t const* property_arg = nullptr;
 
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         if (!pargname) {
             syntax_expression_t const& e = arg.value();
@@ -37,10 +37,10 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
     }
 
     if (!object_arg) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv, objid));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv, objid));
     }
     if (!property_arg) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv, propid));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv, propid));
     }
 
     ct_expression_visitor eobjvis{ ctx, annotated_entity_identifier{ u.get(builtin_eid::metaobject), object_arg->name()->location } };
@@ -54,7 +54,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
     auto pmd = make_shared<functional_match_descriptor>(u);
     pmd->get_match_result(objid).append_result(*obj);
     pmd->get_match_result(propid).append_result(*prop);
-    pmd->location = call.location();
+    pmd->location = call.location;
     return pmd;
 }
 

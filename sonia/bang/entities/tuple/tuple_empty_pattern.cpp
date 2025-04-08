@@ -15,7 +15,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> tuple_empty_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_empty_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
 {
     unit& u = ctx.u();
     auto opt_arg_expr = try_match_single_unnamed(ctx, call);
@@ -30,7 +30,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_empty_patter
         if (auto psig = tpl_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
             auto pmd = make_shared<functional_match_descriptor>(u);
             pmd->result = field_descriptor{ u.get(tpl_entity.signature()->fields().empty() ? builtin_eid::true_ : builtin_eid::false_), true };
-            pmd->location = call.location();
+            pmd->location = call.location;
             return pmd;
 
             /*

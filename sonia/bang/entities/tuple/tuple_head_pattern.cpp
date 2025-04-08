@@ -13,7 +13,13 @@
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 #include "sonia/bang/entities/generic_pattern_base.ipp"
 
+#include "sonia/bang/auxiliary.hpp"
+
 namespace sonia::lang::bang {
+
+// head( tuple(name0: value0, name1: value1, ...) ) => metaobject(name0, value0)
+// head( tuple(const value0, name1: value1, ...) ) => const value0
+// head( tuple(value0, name1: value1, ...) ) => value0
 
 class tuple_head_match_descriptor : public functional_match_descriptor
 {
@@ -42,7 +48,7 @@ error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_mat
     if (pmd || argctx.pargname) return argctx.make_argument_mismatch_error();
 
     fn_compiler_context& ctx = argctx.ctx;
-    pure_call_t const& call = argctx.call;
+    prepared_call const& call = argctx.call;
     unit& u = ctx.u();
 
     entity_identifier argtype;
@@ -51,7 +57,7 @@ error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_mat
         entity const& arg_entity = u.eregistry_get(v);
         if (auto psig = arg_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
             // argument is typename tuple
-            pmd = make_shared<tuple_head_match_descriptor>(u, *psig, call.location());
+            pmd = make_shared<tuple_head_match_descriptor>(u, *psig, call.location);
             return {};
         } else {
             argtype = arg_entity.get_type();
@@ -60,9 +66,9 @@ error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_mat
         argtype = ctx.context_type;
     }
             
-    entity const& tpl_entity = u.eregistry_get(argtype);
+    entity const& tpl_entity = get_entity(u, argtype);
     if (auto psig = tpl_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
-        pmd = make_shared<tuple_head_match_descriptor>(u, *psig, call.location());
+        pmd = make_shared<tuple_head_match_descriptor>(u, *psig, call.location);
         auto& md = static_cast<tuple_head_match_descriptor&>(*pmd);
 
         field_descriptor const& head_field = psig->fields().front();
@@ -165,7 +171,7 @@ std::expected<tuple_head_pattern::application_result_t, error_storage> tuple_hea
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_head_match_descriptor&>(md);
 
-    if (tmd.result_sig.fields().size() > 1) {
+    if (tmd.result_sig.fields().size() > 1) { // 'named' front field case
         indirect_signatured_entity smpl{ tmd.result_sig };
         entity& tplent = ctx.u().eregistry_find_or_create(smpl, [&u, &tmd]() {
             return make_shared<basic_signatured_entity>(std::move(tmd.result_sig));

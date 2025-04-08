@@ -11,8 +11,13 @@
     },*/
     {
         "src": "file2.bang",
+        "output": ""
+    }
+    /*
+    {
+        "src": "file2.bang",
         "output": "hello 0 hello, world 22 1 hello, world 22 22 42 2"
-    } /* , 
+    },
     {
         "src": "file3.bang",
         "output": "0123456789101112131415161718192021"

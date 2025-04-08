@@ -29,7 +29,7 @@ error_storage metaobject_bit_and_pattern::accept_argument(std::nullptr_t, functi
 {
     if (argctx.pargname) return argctx.make_argument_mismatch_error();
     fn_compiler_context& ctx = argctx.ctx;
-    pure_call_t const& call = argctx.call;
+    prepared_call const& call = argctx.call;
     unit& u = ctx.u();
     entity_identifier argtype;
     

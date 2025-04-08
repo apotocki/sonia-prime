@@ -17,7 +17,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
 {
     unit& u = ctx.u();
     identifier slfid = u.get(builtin_id::self);
@@ -28,7 +28,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
     shared_ptr<tuple_get_match_descriptor> pmd;
     auto estate = ctx.expressions_state();
 
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
         if (!pargname) {
@@ -97,14 +97,14 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
     }
 
     if (!pte) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter: `self`"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter: `self`"sv));
     } else if (!ppname) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter: `property`"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter: `property`"sv));
     }   
     return check_match(std::move(pmd), call, *pte, *ppname);
 }
 
-std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern::check_match(shared_ptr<tuple_get_match_descriptor> pmd, pure_call_t const& call, entity const& te, entity const& pname) const
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern::check_match(shared_ptr<tuple_get_match_descriptor> pmd, prepared_call const& call, entity const& te, entity const& pname) const
 {
     entity_signature const* pes = te.signature();
     BOOST_ASSERT(pes);
@@ -119,7 +119,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
     }
     
     if (!fd) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "no such field"sv, pname.id()));
+        return std::unexpected(make_error<basic_general_error>(call.location, "no such field"sv, pname.id()));
     }
 
     // get non const fields count and index

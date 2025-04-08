@@ -255,6 +255,7 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_vector_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\auxiliary.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.tab.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.yy.hpp" />
@@ -266,6 +267,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\enum\enum_implicit_cast_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\expression_resolver.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\functions\extern\size_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\extern\to_string_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\match_utility.ipp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\signature_matcher.hpp" />
@@ -760,6 +762,7 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\bang.yy.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_ast_terms.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\bang_auxiliary.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_errors.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_unit.cpp" />
@@ -779,6 +782,7 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\expression_resolver.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\external_fn_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\functions\extern\size_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\extern\to_string_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\function_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\parameter_type_expression_visitor.cpp">

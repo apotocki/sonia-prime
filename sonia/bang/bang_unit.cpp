@@ -16,6 +16,8 @@
 #include "entities/functions/function_entity.hpp"
 #include "entities/functions/external_fn_pattern.hpp"
 #include "entities/functions/create_identifier_pattern.hpp"
+
+#include "entities/functions/extern/size_pattern.hpp"
 #include "entities/functions/extern/to_string_pattern.hpp"
 
 #include "entities/literals/literal_entity.hpp"
@@ -49,6 +51,7 @@
 #include "entities/metaobject/metaobject_bit_and_pattern.hpp"
 
 #include "semantic/expression_printer.hpp"
+#include "auxiliary.hpp"
 
 namespace sonia::lang::bang {
 
@@ -399,6 +402,12 @@ struct type_printer_visitor : static_visitor<void>
     std::ostringstream & ss;
     explicit type_printer_visitor(unit const& u, std::ostringstream& s) : u_{u}, ss{s} {}
 
+    template <typename T>
+    inline void operator()(T const& v) const
+    {
+        THROW_NOT_IMPLEMENTED_ERROR("unit::type_printer_visitor operator()");
+    }
+
     inline void operator()(bang_any_t) const { ss << "any"sv; }
     //inline void operator()(bang_bool_t) const { ss << "bool"sv; }
     //inline void operator()(bang_int_t) const { ss << "int"sv; }
@@ -409,12 +418,29 @@ struct type_printer_visitor : static_visitor<void>
     inline void operator()(annotated_identifier const& obj) const { ss << u_.print(obj.value); }
     //inline void operator()(bang_object_t const& obj) const { ss << u_.print(obj.id()); }
         
-    template <typename TupleT, typename FamilyT>
-    inline void operator()(bang_fn_base<TupleT, FamilyT> const& fn) const
+    inline void operator()(bang_fn_type_t const& fn) const
     {
         (*this)(fn.arg);
         ss << "->"sv;
-        apply_visitor(*this, fn.result);
+        if (fn.result) {
+            apply_visitor(*this, *fn.result);
+        } else {
+            ss << "()"sv;
+        }
+    }
+
+    inline void operator()(named_expression_list_t const& nel) const
+    {
+        ss << '(';
+        bool first = true;
+        for (auto const& f : nel) {
+            if (first) first = false; else ss << ',';
+            if (auto* pname = f.name(); pname) {
+                ss << u_.print(pname->value) << ": "sv;
+            }
+            apply_visitor(*this, f.value());
+        }
+        ss << ')';
     }
 
     template <typename FamilyT>
@@ -701,16 +727,14 @@ struct expr_printer_visitor : static_visitor<void>
     void operator()(unary_expression_t const& be) const
     {
         ss << "unary("sv << (int)be.op << ", "sv;
-        apply_visitor(*this, be[0].value());
+        (*this)(be.args);
         ss << ')';
     }
 
     void operator()(binary_expression_t const& be) const
     {
         ss << "binary("sv << (int)be.op << ", "sv;
-        apply_visitor(*this, be[0].value());
-        ss << ", "sv;
-        apply_visitor(*this, be[1].value());
+        (*this)(be.args);
         ss << ')';
     }
 
@@ -733,11 +757,11 @@ struct expr_printer_visitor : static_visitor<void>
         }
     }
 
-    void operator()(opt_named_syntax_expression_list_t const& nel) const
+    void operator()(named_expression_list_t const& nel) const
     {
         ss << '(';
         bool is_first = true;
-        for (auto const& ne: nel.elements) {
+        for (auto const& ne: nel) {
             if (is_first) is_first = false;
             else ss << ", "sv;
             if (auto const* pname = ne.name(); pname) {
@@ -950,7 +974,7 @@ basic_signatured_entity const& unit::make_vector_entity(entity_identifier elemen
     entity_signature sig{ get(builtin_qnid::metaobject) };
     //sig.push_back(u.get(builtin_id::element), field_descriptor{ element_type, true });
     for (auto const& v : values) {
-        sig.push_back(field_descriptor{ v, true });
+        sig.emplace_back(v, true);
     }
     entity_identifier tp = make_vector_type_entity(element_type).id();
     sig.result = field_descriptor{ tp };
@@ -978,13 +1002,33 @@ basic_signatured_entity const& unit::make_array_entity(entity_identifier element
     entity_signature sig{ get(builtin_qnid::metaobject), tp };
 
     for (auto const& v : values) {
-        sig.push_back(field_descriptor{ v, true });
+        sig.emplace_back(v, true);
     }
     
     indirect_signatured_entity smpl{ sig };
     return static_cast<basic_signatured_entity&>(eregistry_find_or_create(smpl, [&sig]() {
         return make_shared<basic_signatured_entity>(std::move(sig));
     }));
+}
+
+entity const& unit::make_union_type_entity(span<entity_identifier> const& types)
+{
+    if (types.empty()) {
+        return get_entity(*this, get(builtin_eid::void_));
+    }
+
+    if (types.size() == 1) {
+        return get_entity(*this, *types.begin());
+    }
+
+    entity_signature usig(get(builtin_qnid::union_), get(builtin_eid::typename_));
+    for (entity_identifier const& eid : types) {
+        usig.push_back(field_descriptor{ eid, true });
+    }
+    indirect_signatured_entity smpl{ usig };
+    return eregistry_find_or_create(smpl, [this, &usig]() {
+        return make_shared<basic_signatured_entity>(std::move(usig));
+    });
 }
 
 unit::unit()
@@ -1079,6 +1123,7 @@ unit::unit()
     builtin_ids_[(size_t)builtin_id::element] = make_identifier("element"sv);
     builtin_ids_[(size_t)builtin_id::property] = make_identifier("property"sv);
     builtin_ids_[(size_t)builtin_id::object] = make_identifier("object"sv);
+    builtin_ids_[(size_t)builtin_id::mask] = make_identifier("mask"sv);
     builtin_ids_[(size_t)builtin_id::numargs] = make_identifier("$$"sv);
     builtin_ids_[(size_t)builtin_id::init] = make_identifier("init"sv);
 
@@ -1088,13 +1133,14 @@ unit::unit()
     builtin_qnids_[(size_t)builtin_qnid::tuple] = make_qname_identifier("tuple");
     builtin_qnids_[(size_t)builtin_qnid::vector] = make_qname_identifier("vector");
     builtin_qnids_[(size_t)builtin_qnid::array] = make_qname_identifier("array");
-
+    builtin_qnids_[(size_t)builtin_qnid::fuzzy_array] = make_qname_identifier("fuzzy_array");
     //// values
     
 
     //// operations
     builtin_qnids_[(size_t)builtin_qnid::new_] = make_qname_identifier("new"sv);
     builtin_qnids_[(size_t)builtin_qnid::init] = make_qname_identifier("init"sv);
+    builtin_qnids_[(size_t)builtin_qnid::size] = make_qname_identifier("size");
     builtin_qnids_[(size_t)builtin_qnid::typeof] = make_qname_identifier("typeof");
     builtin_qnids_[(size_t)builtin_qnid::make_tuple] = make_qname_identifier("make_tuple");
     builtin_qnids_[(size_t)builtin_qnid::implicit_cast] = make_qname_identifier("implicit_cast");
@@ -1211,6 +1257,10 @@ unit::unit()
     functional& set_fnl = fregistry_resolve(get(builtin_qnid::set));
     set_fnl.push(make_shared<tuple_set_pattern>());
 
+    // size(signatured_entity)->integer
+    functional& sz_fnl = fregistry_resolve(get(builtin_qnid::size));
+    sz_fnl.push(make_shared<size_pattern>());
+
     // __id(const string) -> __identifier
     qname_identifier idfn = make_qname_identifier("__id"sv);
     functional& idfnl = fregistry_resolve(idfn);
@@ -1243,11 +1293,13 @@ unit::unit()
     functional& newfnl = fregistry_resolve(get(builtin_qnid::new_));
     newfnl.push(make_shared<struct_new_pattern>());
 
-
+    // operator*(type: typename)
+    builtin_qnids_[(size_t)builtin_qnid::deref] = make_qname_identifier("*"sv);
+    functional& deref_fnl = fregistry_resolve(get(builtin_qnid::deref));
+    deref_fnl.push(make_shared<ellipsis_pattern>());
 
     // operator...(type: typename)
     builtin_qnids_[(size_t)builtin_qnid::ellipsis] = make_qname_identifier("..."sv);
-    
     functional& ellipsis_fnl = fregistry_resolve(get(builtin_qnid::ellipsis));
     ellipsis_fnl.push(make_shared<ellipsis_pattern>());
 
@@ -1265,10 +1317,12 @@ unit::unit()
     builtin_eids_[(size_t)builtin_eid::array_at] = set_builtin_extern("__array_at"sv, &bang_array_at);
     //set_extern<external_fn_pattern>("arrayify(...)->any"sv, &bang_arrayify);
 
-    set_extern<external_fn_pattern>("print(mut any ...)"sv, &bang_print_string);
+    //set_const_extern<to_string_pattern>("size(const metaobjct))->integer"sv);
+
+    set_extern<external_fn_pattern>("__print(_ ..., integer)"sv, &bang_print_string);
     //set_extern("implicit_cast(to: typename string, _)->string"sv, &bang_tostring);
     set_const_extern<to_string_pattern>("to_string(const __identifier)->string"sv);
-    set_extern<external_fn_pattern>("to_string(mut _)->string"sv, &bang_tostring);
+    set_extern<external_fn_pattern>("to_string(_)->string"sv, &bang_tostring);
     //set_extern<external_fn_pattern>("implicit_cast(mut integer)->decimal"sv, &bang_int2dec);
     //set_extern<external_fn_pattern>("implicit_cast(mut integer)->float"sv, &bang_int2flt);
     set_extern<external_fn_pattern>("create_extern_object(mut string)->object"sv, &bang_create_extern_object);

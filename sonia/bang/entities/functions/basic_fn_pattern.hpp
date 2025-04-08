@@ -140,7 +140,7 @@ public:
     named_parameter_matcher const* get_matcher(identifier) const;
     inline bool has_varnamed() const noexcept { return !!varnamed_matcher_; }
 
-    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
+    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const&) const override;
 
     std::expected<application_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
@@ -148,7 +148,11 @@ public:
 
 protected:
     void build_scope(fn_compiler_context&, functional_match_descriptor&, functional_binding_set& bound_arguments /* out */) const;
-    size_t apply_arguments(fn_compiler_context&, functional_match_descriptor&, semantic::expression_list_t& result_expressions) const;
+    std::pair<semantic::managed_expression_list, size_t> apply_arguments(fn_compiler_context&, functional_match_descriptor&) const;
+
+    virtual size_t apply_argument(unit&, semantic::expression_list_t& src_exprs, parameter_match_result& pmr, semantic::expression_list_t& dest_exprs) const;
+    size_t apply_mut_argument(unit&, semantic::expression_list_t&, parameter_match_result&, semantic::expression_list_t&) const;
+    size_t apply_any_argument(unit&, semantic::expression_list_t&, parameter_match_result&, semantic::expression_list_t&) const;
 
     // builds entity that represents the function
     virtual shared_ptr<entity> build(fn_compiler_context&, functional_match_descriptor&, entity_signature&&) const

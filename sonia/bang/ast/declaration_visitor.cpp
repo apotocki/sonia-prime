@@ -572,6 +572,41 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         vartype = *optvartype;
     }
 
+    using rt_expression_t = std::pair<semantic::managed_expression_list, entity_identifier>;
+    using expression_result_t = variant<entity_identifier, rt_expression_t>;
+    small_vector<std::pair<identifier, expression_result_t>, 8> results;
+
+    for (auto const& e : ld.expressions) {
+        auto [pname, expr] = *e;
+        auto res = apply_visitor(base_expression_visitor{ ctx, { vartype, ld.location() } }, expr);
+        if (!res) { return std::move(res.error()); }
+        identifier name = pname ? pname->value : identifier{};
+        apply_visitor(make_functional_visitor<void>([this, name, &results](auto& v) {
+            if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+                results.emplace_back(name, v);
+            } else {
+                results.emplace_back(name, std::pair{ std::move(v), ctx.context_type });
+            }
+        }), res->first);
+    }
+
+    if (results.size() == 1 && !results.front().first) {
+        apply_visitor(make_functional_visitor<void>([this, &ld, &results](auto& v) {
+            if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+                ctx.new_constant(ld.aname, v);
+            } else { // v is rt_expression_t
+                ctx.expressions().splice_back(get<0>(v));
+                local_variable ve = ctx.new_variable(ld.aname, get<1>(v));
+                ve.is_weak = ld.weakness;
+            }
+        }), results.front().second);
+        return {};
+    } else {
+        THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor let_statement");
+    }
+
+#if 0
+
     auto res = apply_visitor(base_expression_visitor{ ctx, { vartype, ld.location() } }, ld.expression.value_or(annotated_nil{ ld.location() }));
     if (!res) { return std::move(res.error()); }
     return apply_visitor(make_functional_visitor<error_storage>([this, &ld, vartype](auto & v) {
@@ -594,7 +629,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         ve.is_weak = ld.weakness;
         return error_storage{};
     }), res->first);
-
+#endif
     //    auto evis = vartype ? expression_visitor{ ctx, { vartype, ld.location() } } : expression_visitor{ ctx };
     //    if (auto res = apply_visitor(evis, *ld.expression); !res) {
     //        /*

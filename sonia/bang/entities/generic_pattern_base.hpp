@@ -14,13 +14,13 @@ class generic_pattern_base : public functional::pattern
 public:
     generic_pattern_base() = default;
 
-    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
+    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const&) const override;
 
 protected:
     struct arg_context_type;
 
     template <typename CookieT>
-    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, CookieT&&) const;
+    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, CookieT&&) const;
 
     DerivedT const& derived() const { return static_cast<DerivedT const&>(*this); }
 };

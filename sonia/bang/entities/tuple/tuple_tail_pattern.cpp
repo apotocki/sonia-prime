@@ -50,11 +50,11 @@ public:
     bool is_src_head_const;
 };
 
-std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
 {
     unit& u = ctx.u();
     shared_ptr<tuple_tail_match_descriptor> pmd;
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
 
@@ -76,7 +76,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern
                     entity const& arg_entity = ctx.u().eregistry_get(v);
                     if (auto psig = arg_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
                         // argument is typename tuple
-                        pmd = make_shared<tuple_tail_match_descriptor>(ctx.u(), *psig, call.location());
+                        pmd = make_shared<tuple_tail_match_descriptor>(ctx.u(), *psig, call.location);
                         return {};
                     } else {
                         argtype = arg_entity.get_type();
@@ -85,9 +85,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern
                 entity const& tpl_entity = ctx.u().eregistry_get(argtype);
                 if (auto psig = tpl_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
                     if (psig->fields().empty()) {
-                        return make_error<basic_general_error>(call.location(), "tuple is empty"sv);
+                        return make_error<basic_general_error>(call.location, "tuple is empty"sv);
                     }
-                    pmd = make_shared<tuple_tail_match_descriptor>(ctx.u(), *tpl_entity.signature(), call.location());
+                    pmd = make_shared<tuple_tail_match_descriptor>(ctx.u(), *tpl_entity.signature(), call.location);
                     if constexpr (std::is_same_v<semantic::managed_expression_list, std::decay_t<decltype(v)>>) {
                         if (pmd->result_actual_size) {
                             pmd->get_match_result(0).append_result(argtype, v.end(), v);
@@ -102,7 +102,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern
         if (err) return std::unexpected(std::move(err));
     }
     if (!pmd) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
     }
     return pmd;
 #if 0

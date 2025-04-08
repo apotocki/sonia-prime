@@ -44,6 +44,7 @@ enum class builtin_id : size_t
     element, // element:
     property, // property:
     object, // object:
+    mask, // mask:
     numargs, // $$
     init, // init
     eof_builtin_id_value
@@ -52,10 +53,10 @@ enum class builtin_id : size_t
 enum class builtin_qnid : size_t
 {
     fn = 0,
-    ellipsis, tuple, vector, array, identifier,
+    deref, ellipsis, tuple, vector, array, fuzzy_array, identifier,
     qname, object, string, f16, f32, f64, decimal, integer, boolean, any, union_,
     metaobject,
-    typeof, make_tuple, new_, init, eq, ne, plus, minus, bit_or, bit_and, negate, implicit_cast, get, set, head, tail, empty,
+    size, typeof, make_tuple, new_, init, eq, ne, plus, minus, bit_or, bit_and, negate, implicit_cast, get, set, head, tail, empty,
     eof_builtin_qnids_value
 };
 
@@ -209,7 +210,7 @@ public:
     basic_signatured_entity const& make_vector_entity(entity_identifier element_type, span<entity_identifier> const& values);
     basic_signatured_entity const& make_array_type_entity(entity_identifier element_type, size_t sz);
     basic_signatured_entity const& make_array_entity(entity_identifier element_type, span<entity_identifier> const& values);
-
+    entity                  const& make_union_type_entity(span<entity_identifier> const& types);
 
     //void push_entity(shared_ptr<entity>);
 

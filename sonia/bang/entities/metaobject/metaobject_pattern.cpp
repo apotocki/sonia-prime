@@ -12,11 +12,11 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> metaobject_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> metaobject_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
 {
     size_t pos_arg_num = 0;
     auto pmd = make_shared<functional_match_descriptor>(ctx.u());
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         ct_expression_visitor evis{ ctx };
         auto res = apply_visitor(evis, arg.value());
         if (!res) return std::unexpected(std::move(res.error()));

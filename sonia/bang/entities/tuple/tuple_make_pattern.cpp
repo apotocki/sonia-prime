@@ -13,13 +13,13 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
 {
     size_t pos_arg_num = 0;
     auto pmd = make_shared<functional_match_descriptor>(ctx.u());
     auto estate = ctx.expressions_state();
     ctx.push_chain(pmd->call_expressions);
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         auto last_expr_it = ctx.expressions().last();
         expression_visitor evis{ ctx };
         auto res = apply_visitor(evis, arg.value());

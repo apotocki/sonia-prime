@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "sonia/bang/entities/functions/external_fn_pattern.hpp"
+#include "sonia/bang/entities/functions/basic_fn_pattern.hpp"
 
 namespace sonia::lang::bang {
 

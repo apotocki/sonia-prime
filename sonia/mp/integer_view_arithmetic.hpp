@@ -401,9 +401,9 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
     return result;
 }
 
-template <std::unsigned_integral LimbT, typename AllocatorT>
+template <std::unsigned_integral LimbT, std::unsigned_integral NT, typename AllocatorT>
 requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_t<AllocatorT>>::value_type>)
-[[nodiscard]] auto shift_left(basic_integer_view<LimbT> l, unsigned int n, AllocatorT&& alloc)
+[[nodiscard]] auto shift_left(basic_integer_view<LimbT> l, NT n, AllocatorT&& alloc)
 {
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
     std::tuple<LimbT*, size_t, size_t, int> result;

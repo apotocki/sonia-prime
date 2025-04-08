@@ -114,7 +114,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token <sonia::lang::lex::resource_location> POINT      "`.`"
 %token <sonia::lang::lex::resource_location> PLUS       "`+`"
 %token <sonia::lang::lex::resource_location> MINUS      "`-`"
-%token ASTERISK             "`*`"
+%token <sonia::lang::lex::resource_location> ASTERISK   "`*`"
 %token SLASH                "`/`"
 %token PERCENT              "`%`"
 %token <sonia::lang::lex::resource_location> AMPERSAND  "`&`"
@@ -179,13 +179,14 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 //%left RIGHTSHIFT LEFTSHIFT
 
 // 5 priority
-//%left ASTERISK SLASH PERCENT
+%left ASTERISK SLASH PERCENT
 
 // 4 priority
 //%left PTAST ARROWAST
 
 // 3 priority
-//%right PREFIXDBLPLUS PREFIXDBLMINUS PREFIXPLUS PREFIXMINUS EXCLPT TILDA CAST DEREF ADDRESS SIZEOF
+%right DEREF
+//%right PREFIXDBLPLUS PREFIXDBLMINUS PREFIXPLUS PREFIXMINUS EXCLPT TILDA CAST !DEREF! ADDRESS SIZEOF
 
 // 2 priority
 //%left DBLPLUS DBLMINUS OPEN_PARENTHESIS CLOSE_PARENTHESIS OPEN_SQUARE_BRACKET CLOSE_SQUARE_BRACKET POINT
@@ -269,8 +270,6 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token STRUCT
 %token EXTENDS
 
-%type <syntax_expression_t> type-expr
-
 %type <struct_decl> struct-decl
 %type <using_decl> using-decl
 
@@ -304,8 +303,10 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %token <annotated_bool> TRUE_WORD "true"
 %token <annotated_bool> FALSE_WORD "false"
 
+%type <syntax_expression_t> type-expr
 %type <syntax_expression_t> syntax-expression syntax-expression-wo-ii concept-expression
 %type <syntax_expression_t> apostrophe-expression new-expression call-expression lambda-expression compound-expression
+%type <named_expression_list_t> pack-expression
 //%type <named_expression_list_t> opt-named-expr-list-any opt-named-expr-list
 //%type <named_expression_t> opt-named-expr
 //%type <expression_list_t> expression-list-any
@@ -388,8 +389,8 @@ statement:
 let-decl:
       let-decl-start-with-opt-type
         { $$ = std::move($1); }
-    | let-decl-start-with-opt-type ASSIGN syntax-expression[value]
-        { $$ = std::move($1); $$.expression = std::move($value); IGNORE_TERM($ASSIGN); }
+    | let-decl-start-with-opt-type ASSIGN pack-expression[value]
+        { $$ = std::move($1); $$.expressions = std::move($value); IGNORE_TERM($ASSIGN); }
     ;
 
 let-decl-start:
@@ -779,7 +780,7 @@ basic-parameter-matched-type:
     | qname
         { $$ = variable_identifier{ std::move($qname) }; }
 
-    | qname OPEN_PARENTHESIS argument-list-opt[arguments] CLOSE_PARENTHESIS
+    | qname OPEN_PARENTHESIS pack-expression[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($OPEN_PARENTHESIS), std::move($qname), std::move($arguments) }; }
     | basic-parameter-matched-type[left] BITOR basic-parameter-matched-type[right]
         { $$ = binary_expression_t{ binary_operator_type::BIT_OR, std::move($left), std::move($right), std::move($BITOR) }; }
@@ -836,12 +837,12 @@ syntax-expression-wo-ii:
         { $$ = variable_identifier{ ctx.make_qname(std::move($RESERVED_IDENTIFIER)), true }; }
     | qname
         { $$ = variable_identifier{ std::move($qname) }; }
-    | OPEN_PARENTHESIS[start] argument-list[list] CLOSE_PARENTHESIS
+    | OPEN_PARENTHESIS[start] pack-expression[list] CLOSE_PARENTHESIS
         {
             if ($list.size() == 1 && !$list.front().has_name()) { // single unnamed expression => extract
                 $$ = std::move($list.front().value());
             } else {
-                $$ = opt_named_syntax_expression_list_t{ std::move($start), std::move($list) };
+                $$ = function_call_t{ std::move($start), annotated_qname{}, std::move($list) };
             }
         }
     | OPEN_SQUARE_BRACKET expression-list[list] CLOSE_SQUARE_BRACKET
@@ -869,6 +870,9 @@ syntax-expression-wo-ii:
 //////////////////////////// 3 priority
     | EXCLPT syntax-expression
 		{ $$ = unary_expression_t{ unary_operator_type::NEGATE, true, std::move($2), std::move($1) }; }
+    | ASTERISK syntax-expression %prec DEREF
+		{ $$ = unary_expression_t{ unary_operator_type::DEREF, true, std::move($2), std::move($1) }; }
+//////////////////////////// 5 priorit
 
 //////////////////////////// 6 priority
     | syntax-expression PLUS syntax-expression
@@ -913,13 +917,13 @@ new-expression:
     ;
 
 call-expression:
-      qname[name] OPEN_PARENTHESIS[start] argument-list-opt[arguments] CLOSE_PARENTHESIS
+      qname[name] OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($start), std::move($name), std::move($arguments) }; }
-    | call-expression[nameExpr] OPEN_PARENTHESIS[start] argument-list-opt[arguments] CLOSE_PARENTHESIS
+    | call-expression[nameExpr] OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($start), std::move($nameExpr), std::move($arguments) }; }
-    | apostrophe-expression[nameExpr] OPEN_PARENTHESIS[start] argument-list-opt[arguments] CLOSE_PARENTHESIS
+    | apostrophe-expression[nameExpr] OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($start), std::move($nameExpr), std::move($arguments) }; }
-    | lambda-expression[lambda] OPEN_PARENTHESIS[start] argument-list-opt[arguments] CLOSE_PARENTHESIS
+    | lambda-expression[lambda] OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($start), std::move($lambda), std::move($arguments) }; }
     ;
 
@@ -930,10 +934,35 @@ lambda-expression:
         { $$ = lambda_t{ $fnkind, std::move($start), std::move($parameters), std::move($body), std::move($type) }; }
     ;
 
+pack-expression:
+      syntax-expression[expr]
+        {
+            named_expression_list_t list{};
+            list.emplace_back(std::move($expr));
+            $$ = std::move(list);
+        }
+    | identifier[id] COLON syntax-expression[expr]
+        {
+            named_expression_list_t list{};
+            list.emplace_back(std::move($id), std::move($expr));
+            $$ = std::move(list);
+        }
+    | pack-expression[list] COMMA syntax-expression[expr]
+        {
+            $list.emplace_back(std::move($expr));
+            $$ = std::move($list);
+        }
+    | pack-expression[list] COMMA identifier[id] COLON syntax-expression[expr]
+        {
+            $list.emplace_back(std::move($id), std::move($expr));
+            $$ = std::move($list);
+        }
+    ;
+
 compound-expression:
-        call-expression
-      | syntax-expression[expr] ELLIPSIS
+        syntax-expression[expr] ELLIPSIS
         { $$ = unary_expression_t{ unary_operator_type::ELLIPSIS, false, std::move($expr), std::move($ELLIPSIS) }; }
+      | call-expression
 
     /*
     | syntax-expression OPEN_BRACE argument-list-opt[arguments] CLOSE_BRACE
@@ -1028,8 +1057,10 @@ type-expr:
     //    { $$ = std::move($id); IGNORE_TERM($2); IGNORE_TERM($3); }
     | OPEN_SQUARE_BRACKET type-expr[type] CLOSE_SQUARE_BRACKET
         { $$ = bang_vector_t{ std::move($OPEN_SQUARE_BRACKET), std::move($type)}; }
-    | OPEN_PARENTHESIS[start] argument-list-opt[elements] CLOSE_PARENTHESIS
-        { $$ = opt_named_syntax_expression_list_t{ std::move($start), std::move($elements) }; }
+    | OPEN_PARENTHESIS[start] CLOSE_PARENTHESIS
+        { $$ = function_call_t{ std::move($start), annotated_qname{} }; }
+    | OPEN_PARENTHESIS[start] pack-expression[elements] CLOSE_PARENTHESIS
+        { $$ = function_call_t{ std::move($start), annotated_qname{}, std::move($elements) }; } 
     | type-expr[type] OPEN_SQUARE_BRACKET INTEGER CLOSE_SQUARE_BRACKET
         { $$ = index_expression_t{ std::move($type), std::move($INTEGER) }; IGNORE_TERM($OPEN_SQUARE_BRACKET); }
     | type-expr[ltype] BITOR type-expr[rtype]
@@ -1040,8 +1071,11 @@ type-expr:
             $$ = std::move(uni);
             IGNORE_TERM($BITOR);
         }
-    | type-expr ARROW type-expr
-        { $$ = bang_fn_type_t{ std::move($1), std::move($3) }; }
+    | type-expr[argexpr] ARROW type-expr[rexpr]
+        { 
+            auto loc = get_start_location($argexpr);
+            $$ = bang_fn_type_t{ named_expression_list_t{ named_expression_t{ std::move($argexpr) } }, std::move($rexpr), std::move(loc) };
+        }
     ;
 
     /*

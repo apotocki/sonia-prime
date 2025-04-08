@@ -30,11 +30,11 @@ public:
     entity_identifier result_type;
 };
 
-std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cast_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& e) const
+std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& e) const
 {
     unit& u = ctx.u();
     if (!e) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "expected a vector result"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "expected a vector result"sv));
     }
     entity const& ent = u.eregistry_get(e.value);
     entity_signature const* pusig = ent.signature();
@@ -44,7 +44,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
 
     shared_ptr<union_cast_match_descriptor> pmd;
 
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
         
@@ -83,7 +83,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
     }
 
     if (!pmd) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter(s)"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter(s)"sv));
     }
     return pmd;
 }

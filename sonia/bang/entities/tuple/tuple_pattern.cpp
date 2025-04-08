@@ -22,13 +22,13 @@ public:
 };
 
 // tuple($args ... : _ ...)
-std::expected<functional_match_descriptor_ptr, error_storage> tuple_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
 {
     unit& u = ctx.u();
     entity_identifier veid = u.get(builtin_eid::void_);
     auto pmd = make_shared<tuple_match_descriptor>(u);
 
-    for (auto const& arg : call.args()) { // { argname, expr }
+    for (auto const& arg : call.args) { // { argname, expr }
         annotated_identifier const* pargname = arg.name();
         auto res = apply_visitor(ct_expression_visitor{ ctx }, arg.value());
         if (!res) {

@@ -30,12 +30,12 @@ public:
 };
 
 // postfix operator ...(__identifier|metaobject(__identifier...))
-std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
 {
     unit& u = ctx.u();
     syntax_expression_t const* object_arg = nullptr;
 
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         if (pargname) {
             return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch, unexpected argument"sv, *pargname));
@@ -48,7 +48,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::
     }
 
     if (!object_arg) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
     }
 
     ct_expression_visitor eobjvis{ ctx };
@@ -67,7 +67,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::
         }
     }
     
-    return std::unexpected(make_error<basic_general_error>(call.location(), "argument mismatch"sv, *object_arg));
+    return std::unexpected(make_error<basic_general_error>(call.location, "argument mismatch"sv, *object_arg));
 }
 
 std::expected<field_descriptor, error_storage> push_by_name(fn_compiler_context& ctx, annotated_qname const& name, semantic::managed_expression_list & result)

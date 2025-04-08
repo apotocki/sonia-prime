@@ -30,7 +30,7 @@ public:
     {}
 };
 
-std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
 {
     unit& u = ctx.u();
 
@@ -39,7 +39,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
     struct_entity const* pse = nullptr;
     lex::resource_location typeloc;
     // looking for '__type' parameter
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         if (pargname && pargname->value == tpid) {
             syntax_expression_t const& arg_expr = arg.value();
@@ -53,11 +53,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
         }
     }
     if (!pse) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv, tpid));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv, tpid));
     }
 
-    pure_call_t init_call{ call.location() };
-    for (auto const& arg : call.args()) {
+    pure_call_t init_call{ call.location };
+    for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         if (pargname && pargname->value == tpid) continue; // skip '__type' parameter
         syntax_expression_t const& arg_expr = arg.value();
@@ -67,12 +67,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
             init_call.emplace_back(arg_expr);
         }
     }
-
     
     auto init_match = ctx.find(builtin_qnid::init, init_call, annotated_entity_identifier{ pse->id(), pse->location() });
     if (!init_match) {
         return std::unexpected(append_cause(
-            make_error<basic_general_error>(call.location(), "no constructuctor found"sv, u.get(builtin_qnid::new_)),
+            make_error<basic_general_error>(call.location, "no constructuctor found"sv, u.get(builtin_qnid::new_)),
             std::move(init_match.error())
         ));
     }

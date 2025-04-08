@@ -63,7 +63,7 @@ parameter_matcher::parameter_matcher(annotated_identifier name, parameter_constr
     if (auto const& optexpr = constraints_.type_expression; optexpr) {
         if (unary_expression_t const* pp = get<unary_expression_t>(&*optexpr); pp && pp->op == unary_operator_type::ELLIPSIS) {
             variadic = true;
-            syntax_expression_t texpr = std::move(pp->args().front().value());
+            syntax_expression_t texpr = std::move(pp->args.front().value());
             constraints_.type_expression = std::move(texpr);
         }
     }
@@ -161,10 +161,10 @@ struct value_type_constraint_visitor : static_visitor<std::expected<entity_ident
         return entity_identifier{};
     }
 
-    result_type operator()(opt_named_syntax_expression_list_t const& nel) const
-    {
-        return ct_expression_visitor{ ctx }(nel);
-    }
+    //result_type operator()(opt_named_syntax_expression_list_t const& nel) const
+    //{
+    //    return ct_expression_visitor{ ctx }(nel);
+    //}
 
     template <typename T>
     result_type operator()(T const& v) const
@@ -567,10 +567,10 @@ named_parameter_matcher const* basic_fn_pattern::get_matcher(identifier name) co
     return nullptr;
 }
 
-std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& expected_result_type) const
+std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& expected_result_type) const
 {
     // quick match check
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         if (annotated_identifier const* argname = arg.name(); argname) {
             if (varnamed_matcher_) continue;
             auto it = named_matchers_.find(argname->value);
@@ -622,7 +622,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
 
     //semantic::expression_list_t::const_iterator prev_argument_expression_it = pmd->call_expressions.end();
 
-    for (auto const& arg : call.args()) { // { argname, expr }
+    for (auto const& arg : call.args) { // { argname, expr }
         annotated_identifier const* pargname = arg.name();
         if (pargname) {
             if (named_parameter_matcher const* nmtch = get_matcher(pargname->value); nmtch) {
@@ -718,14 +718,14 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
                     pmd->weight += get<int>(match);
                     continue;
                 }
-                return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv, pd.ename.value, pd.ename.location));
+                return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv, pd.ename.value, pd.ename.location));
             }
         } else {
             parameter_match_result& pmr = pmd->get_match_result(argpos++);
             if (!pmr) {
                 // to do: check default
                 
-                return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv, pd.inames.front().value, pd.inames.front().location));
+                return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv, pd.inames.front().value, pd.inames.front().location));
             }
         }
     }
@@ -847,12 +847,10 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
                 return e;
             } else if constexpr (std::is_same_v<std::decay_t<decltype(e)>, entity_ptr>) {
                 if (auto eid = e->id(); eid) return eid;
-                if (e->get_type() == u.get(builtin_eid::metaobject)) {
-                    return u.eregistry_find_or_create(*e, [&e]() { return std::move(e); }).id();
-                }
-                entity& ent = *e;
-                // need register
-                THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern::build_scope unknown entity");
+                //if (e->get_type() == u.get(builtin_eid::metaobject)) {
+                //    return u.eregistry_find_or_create(*e, [&e]() { return std::move(e); }).id();
+                //}
+                return u.eregistry_find_or_create(*e, [&e]() { return std::move(e); }).id();
             } else { // else skip variables
                 return entity_identifier{};
             }
@@ -962,30 +960,52 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
 #endif
 }
 
-size_t basic_fn_pattern::apply_arguments(fn_compiler_context& ctx, functional_match_descriptor& md, semantic::expression_list_t & exprs) const
+// return appended argument expressions count
+size_t basic_fn_pattern::apply_mut_argument(unit&, semantic::expression_list_t& src_expr, parameter_match_result& pmr, semantic::expression_list_t& dest_exprs) const
+{
+    size_t non_constexpr_count = 0;
+    for (auto [rt, optrng] : pmr.results) {
+        if (optrng) {
+            ++non_constexpr_count;
+            dest_exprs.splice_back(src_expr, *optrng);
+        }
+    }
+    return non_constexpr_count;
+}
+
+// return appended argument expressions count
+size_t basic_fn_pattern::apply_any_argument(unit& u, semantic::expression_list_t& src_expr, parameter_match_result& pmr, semantic::expression_list_t& dest_exprs) const
+{
+    size_t non_constexpr_count = 0;
+    for (auto [rt, optrng] : pmr.results) {
+        if (optrng) {
+            dest_exprs.splice_back(src_expr, *optrng);
+        } else {
+            u.push_back_expression(dest_exprs, semantic::push_value(rt));
+        }
+        ++non_constexpr_count;;
+    }
+    return non_constexpr_count;
+}
+
+size_t basic_fn_pattern::apply_argument(unit& u, semantic::expression_list_t& src_exprs, parameter_match_result& pmr, semantic::expression_list_t& dest_exprs) const
+{
+    return apply_mut_argument(u, src_exprs, pmr, dest_exprs);
+}
+
+std::pair<semantic::managed_expression_list, size_t>
+basic_fn_pattern::apply_arguments(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-
+    std::pair<semantic::managed_expression_list, size_t> result{ semantic::managed_expression_list{ u }, 0 };
+    
     // push call expressions in the right order
 
-    size_t argcount = 0;
-    auto expression_appender = [&u, &exprs, &argcount](functional_match_descriptor& md, parameter_match_result& pmr) {
-        size_t non_constexpr_count = 0;
-        for (auto [rt, optrng] : pmr.results) {
-            if (optrng) {
-                ++non_constexpr_count;
-                exprs.splice_back(md.call_expressions, *optrng);
-            }
-            argcount += non_constexpr_count;
-        }
-        //if (variadic) {
-        //    u.push_back_expression(exprs, semantic::push_value(mp::integer{ non_constexpr_count }));
-        //}
-    };
-
+    size_t& argcount = result.second;
     size_t argpos = 0;
     for (parameter_descriptor const& pd : parameters_) {
 
+        // skip typename arguments
         if (pd.modifier != parameter_constraint_modifier_t::mutable_value_type && pd.modifier != parameter_constraint_modifier_t::value_type) {
             if (!pd.ename) ++argpos;
             continue;
@@ -994,7 +1014,7 @@ size_t basic_fn_pattern::apply_arguments(fn_compiler_context& ctx, functional_ma
         if (!pd.is_varnamed) {
             parameter_match_result& pmr = pd.ename ?
                 md.get_match_result(pd.ename.value) : md.get_match_result(argpos++);
-            expression_appender(md, pmr);
+            argcount += apply_argument(u, md.call_expressions, pmr, result.first);
             continue;
         }
         
@@ -1011,12 +1031,12 @@ size_t basic_fn_pattern::apply_arguments(fn_compiler_context& ctx, functional_ma
             BOOST_ASSERT(packargid.get_type() == ctx.u().get(builtin_eid::identifier));
             identifier_entity const& packargid_ent = static_cast<identifier_entity const&>(packargid);
             parameter_match_result& pmr = md.get_match_result(packargid_ent.value());
-            expression_appender(md, pmr);
+            argcount += apply_argument(u, md.call_expressions, pmr, result.first);
         }
     }
 
     BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
-    return argcount;
+    return result;
 }
 
 //error_storage runtime_fn_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
@@ -1359,8 +1379,7 @@ std::expected<functional::pattern::application_result_t, error_storage> basic_fn
         return fne.result.entity_id();
     }
 
-    semantic::managed_expression_list exprs{ u };
-    apply_arguments(ctx, md, exprs);
+    semantic::managed_expression_list exprs = apply_arguments(ctx, md).first;
     u.push_back_expression(exprs, semantic::invoke_function(e.id()));
 
     ctx.context_type = fne.result.entity_id();

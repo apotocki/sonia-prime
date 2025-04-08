@@ -12,12 +12,12 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argument_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argument_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
 {
     unit& u = ctx.u();
     syntax_expression_t const* object_arg = nullptr;
 
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         if (pargname) {
             return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch, unexpected argument"sv, *pargname));
@@ -30,7 +30,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argumen
     }
 
     if (!object_arg) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
     }
     
     ct_expression_visitor eobjvis{ ctx, annotated_entity_identifier{ u.get(builtin_eid::metaobject), get_start_location(*object_arg) } };
@@ -39,7 +39,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argumen
 
     auto pmd = make_shared<functional_match_descriptor>(u);
     pmd->get_match_result(0).append_result(*obj);
-    pmd->location = call.location();
+    pmd->location = call.location;
     return pmd;
 }
 

@@ -1,2 +1,5 @@
-print("Hello from Bang!");
+inline fn print(_ ...) {
+    __print($0 ..., size($0));
+}
+__print("Hello from Bang!", 1);
 assert($$ == 0) // no arguments

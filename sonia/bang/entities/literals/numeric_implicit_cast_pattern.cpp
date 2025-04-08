@@ -35,11 +35,11 @@ public:
     variant<std::nullptr_t, integer_literal_entity, decimal_literal_entity> arg;
 };
 
-std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_cast_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& e) const
+std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& e) const
 {
     unit& u = ctx.u();
     if (!e) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "expected a numeric result"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "expected a numeric result"sv));
     }
     entity_identifier teid = e.value;
     int ntype = 0;
@@ -48,12 +48,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
     else if (teid == u.get(builtin_eid::f64)) { ntype = 3; }
     else if (teid == u.get(builtin_eid::decimal)) { ntype = 4; }
     else {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "expected a numeric result"sv, e));
+        return std::unexpected(make_error<basic_general_error>(call.location, "expected a numeric result"sv, e));
     }
 
     functional_match_descriptor_ptr pmd;
 
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
         if (pargname) { // named arguments are not expected
@@ -88,7 +88,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
     }
 
     if (!pmd) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
     }
     return pmd;
 }

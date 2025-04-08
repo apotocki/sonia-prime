@@ -83,29 +83,29 @@ value_type_match_visitor::result_type value_type_match_visitor::operator()(funct
     if (match) {
         if (auto gresult = match->apply(callee_ctx); gresult) {
             if (auto result = ct_expression_visitor{ callee_ctx }.handle(std::pair{std::move(*gresult), false}); result) {
-                return match_type(*result, fc.location());
+                return match_type(*result, fc.location);
             }
         }
     }
 
     // can't evaluate signature_pattern as a function, consider as a pattern
-    return sonia::lang::bang::match_type(caller_ctx, expr, entity_identifier{}, fc.location(), [this, &qname_ent, &fc](entity_identifier matched_type, bool casted) -> error_storage {
+    return sonia::lang::bang::match_type(caller_ctx, expr, entity_identifier{}, fc.location, [this, &qname_ent, &fc](entity_identifier matched_type, bool casted) -> error_storage {
         if (casted) { --weight; }
         entity const& type_ent = caller_ctx.u().eregistry_get(matched_type);
         entity_signature const* psig = type_ent.signature();
         if (!psig) {
-            return make_error<basic_general_error>(fc.location(), "argument mismatch"sv, expr);
+            return make_error<basic_general_error>(fc.location, "argument mismatch"sv, expr);
         }
         if (qname_ent.value() != psig->name) {
-            return make_error<basic_general_error>(fc.location(), "argument mismatch"sv, expr);
+            return make_error<basic_general_error>(fc.location, "argument mismatch"sv, expr);
         }
 
         size_t arg_index = 0;
-        for (auto const& arg : fc.args()) {
+        for (auto const& arg : fc.args) {
             annotated_identifier const* argname = arg.name();
             field_descriptor const* pfd = argname ? psig->find_field(argname->value) : psig->find_field(arg_index++);
             if (!pfd) {
-                return make_error<basic_general_error>(fc.location(), "argument pattern mismatch"sv, expr);
+                return make_error<basic_general_error>(fc.location, "argument pattern mismatch"sv, expr);
             }
             BOOST_ASSERT(pfd->is_const());
             signature_matcher_visitor smvis{ callee_ctx, binding, pfd->entity_id() };

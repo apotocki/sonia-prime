@@ -15,6 +15,8 @@ namespace sonia::lang::bang {
 
 class base_expression_visitor : public static_visitor<std::expected<std::pair<functional::pattern::application_result_t, bool>, error_storage>>
 {
+    friend struct array_expression_processor;
+
 protected:
     fn_compiler_context& ctx;
     annotated_entity_identifier expected_result;
@@ -42,8 +44,6 @@ public:
     result_type operator()(bang_vector_t const&) const;
 
     result_type operator()(member_expression_t const&) const;
-
-    result_type operator()(opt_named_syntax_expression_list_t const& nel) const;
 
     result_type operator()(unary_expression_t const& be) const;
 

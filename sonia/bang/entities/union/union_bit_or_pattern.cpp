@@ -32,7 +32,7 @@ error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_m
     if (argctx.pargname) return argctx.make_argument_mismatch_error();
  
     fn_compiler_context& ctx = argctx.ctx;
-    pure_call_t const& call = argctx.call;
+    prepared_call const& call = argctx.call;
     unit& u = ctx.u();
 
     entity const& arg_entity = u.eregistry_get(v);
@@ -58,22 +58,8 @@ error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_m
 
 std::expected<functional::pattern::application_result_t, error_storage> union_bit_or_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
-    unit& u = ctx.u();
     auto& umd = static_cast<union_match_descriptor&>(md);
-    if (umd.types.size() == 1) {
-        return *umd.types.begin();
-    }
-
-    entity_signature usig(u.get(builtin_qnid::union_), u.get(builtin_eid::typename_));
-    for (entity_identifier const& eid : umd.types) {
-        usig.push_back(field_descriptor{ eid, true });
-    }
-    indirect_signatured_entity smpl{ usig };
-    entity& uent = ctx.u().eregistry_find_or_create(smpl, [&u, &usig]() {
-        return make_shared<basic_signatured_entity>(std::move(usig));
-    });
-
-    return uent.id();
+    return ctx.u().make_union_type_entity(umd.types).id();
 }
 
 template generic_pattern_base<union_bit_or_pattern>;

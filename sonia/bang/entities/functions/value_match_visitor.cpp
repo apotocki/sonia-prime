@@ -73,21 +73,20 @@ value_match_visitor::result_type value_match_visitor::operator()(function_call_t
     entity const& type_ent = u.eregistry_get(*res);
     entity_signature const* psig = type_ent.signature();
     if (!psig) {
-        return std::unexpected(make_error<basic_general_error>(fc.location(), "argument mismatch"sv, cexpr));
+        return std::unexpected(make_error<basic_general_error>(fc.location, "argument mismatch"sv, cexpr));
     }
 
     if (qname_ent.value() != psig->name) {
-        return std::unexpected(make_error<basic_general_error>(fc.location(), "argument mismatch"sv, cexpr));
+        return std::unexpected(make_error<basic_general_error>(fc.location, "argument mismatch"sv, cexpr));
     }
 
     size_t arg_index = 0;
-    for (auto const& arg : fc.args()) {
+    for (auto const& arg : fc.args) {
         annotated_identifier const* argname = arg.name();
         field_descriptor const* pfd = argname ? psig->find_field(argname->value) : psig->find_field(arg_index++);
         if (!pfd) {
-            return std::unexpected(make_error<basic_general_error>(fc.location(), "argument pattern mismatch"sv, cexpr));
+            return std::unexpected(make_error<basic_general_error>(fc.location, "argument pattern mismatch"sv, cexpr));
         }
-        BOOST_ASSERT(pfd->is_const());
         signature_matcher_visitor smvis{ callee_ctx, binding, pfd->entity_id() };
         if (auto err = apply_visitor(smvis, arg.value()); err) return std::unexpected(std::move(err));
     }

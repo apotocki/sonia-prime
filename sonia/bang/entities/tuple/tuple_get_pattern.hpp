@@ -13,7 +13,7 @@ class tuple_get_pattern : public functional::pattern
 public:
     tuple_get_pattern() = default;
 
-    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
+    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const&) const override;
     
     std::expected<application_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
@@ -29,7 +29,7 @@ protected:
         size_t fields_count;
     };
 
-    std::expected<functional_match_descriptor_ptr, error_storage> check_match(shared_ptr<tuple_get_match_descriptor>, pure_call_t const& call, entity const&, entity const&) const;
+    std::expected<functional_match_descriptor_ptr, error_storage> check_match(shared_ptr<tuple_get_match_descriptor>, prepared_call const& call, entity const&, entity const&) const;
 };
 
 }

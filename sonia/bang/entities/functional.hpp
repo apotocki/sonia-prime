@@ -109,6 +109,8 @@ public:
     int weight{ 0 };
 
     inline explicit functional_match_descriptor(unit& u) noexcept : call_expressions{ u } {}
+    inline explicit functional_match_descriptor(unit& u, lex::resource_location loc) noexcept : call_expressions{ u }, location{ std::move(loc) } {}
+    
     virtual ~functional_match_descriptor() = default;
 
     functional_match_descriptor(functional_match_descriptor const&) = delete;
@@ -160,6 +162,12 @@ private:
 
 using functional_match_descriptor_ptr = shared_ptr<functional_match_descriptor>;
 
+struct prepared_call
+{
+    lex::resource_location location;
+    small_vector<named_expression_t, 8> args;
+};
+
 class functional
 {
 public:
@@ -173,7 +181,7 @@ public:
         lex::resource_location location_;
 
     public:
-        virtual std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const& expected_result) const = 0; // returns the match weight or an error
+        virtual std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const& expected_result) const = 0; // returns the match weight or an error
 
         using application_result_t = variant<entity_identifier, semantic::managed_expression_list>;
         virtual std::expected<application_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const
@@ -330,7 +338,7 @@ private:
 
 // utility
 
-std::expected<syntax_expression_t const*, error_storage> try_match_single_unnamed(fn_compiler_context&, pure_call_t const&);
+std::expected<syntax_expression_t const*, error_storage> try_match_single_unnamed(fn_compiler_context&, prepared_call const&);
 
 
 }

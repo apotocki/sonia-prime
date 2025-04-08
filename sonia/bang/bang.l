@@ -169,6 +169,7 @@ EXCLPT                   "!"
 QMARK                    "?"
 PLUS                     "+"
 MINUS                    "-"
+ASTERISK                 "*"
 TILDA                    "~"
 OPEN_SQUARE_DBL_BRACKET  "[["
 CLOSE_SQUARE_DBL_BRACKET "]]"
@@ -227,7 +228,7 @@ BITORASSIGN             "|="
 BITXORASSIGN            "^="
 
 
-ASTERISK                "*"
+
 SLASH                   "/"
 PERCENT                 "%"
 
@@ -366,6 +367,7 @@ HASHTAG					"#"
 	{DBLCOLON}                 { return (bang_lang::parser::token::DBLCOLON); }
 	{PLUS}					   { variant_emplace(location); return (bang_lang::parser::token::PLUS); }
 	{MINUS}					   { variant_emplace(location); return (bang_lang::parser::token::MINUS); }
+	{ASTERISK}				   { variant_emplace(location); return (bang_lang::parser::token::ASTERISK); }
 	{TILDA}                    { variant_emplace(location); return (bang_lang::parser::token::TILDA); }
 	{LOGIC_OR}                 { variant_emplace(location); return (bang_lang::parser::token::LOGIC_OR); }
     {LOGIC_AND}                { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
@@ -556,9 +558,6 @@ DECIMAL_LITERAL			{DECIMAL}"_"
 	// +
 	{PLUS}					{ return (bang_lang::parser::token::PLUS); }
 
-
-	// *
-	{ASTERISK}				{ return (bang_lang::parser::token::ASTERISK);	}
 
 	// /
 	{SLASH}				    { return (bang_lang::parser::token::SLASH);	}

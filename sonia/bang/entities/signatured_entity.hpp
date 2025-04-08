@@ -155,6 +155,12 @@ public:
         fields_.push_back(std::move(fd));
     }
 
+    void emplace_back(entity_identifier eid, bool is_const_val)
+    {
+        positioned_fields_indices_.push_back(static_cast<uint32_t>(fields_.size()));
+        fields_.emplace_back(std::move(eid), is_const_val);
+    }
+
     //void normilize()
     //{
     //    auto names = span{ names_ };

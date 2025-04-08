@@ -296,7 +296,10 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
     for (auto const& p : patterns_) {
         auto cmp = major_weight <=> p->get_weight();
         if (cmp == std::strong_ordering::greater) continue;
-        auto match_descriptor = p->try_match(ctx, call, expected_result);
+
+        THROW_NOT_IMPLEMENTED_ERROR("functional::find: not implemented for this pattern type");
+
+        auto match_descriptor = p->try_match(ctx, prepared_call{}, expected_result);
 
         BOOST_ASSERT(expr_stack_state.check(ctx));
 
@@ -325,7 +328,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
             return std::unexpected(std::move(err.alternatives.front()));
         }
         if (err.alternatives.empty()) {
-            return std::unexpected(make_error<function_call_match_error>(annotated_qname_identifier{ id_, call.location() }, nullptr));
+            return std::unexpected(make_error<function_call_match_error>(annotated_qname_identifier{ id_, call.location }, nullptr));
         }
         return std::unexpected(make_error<alt_error>(std::move(err)));
     }
@@ -334,7 +337,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
         for (alternative_t const& a : alternatives) {
             as.emplace_back(get<0>(a)->location(), get<1>(a)->build_signature(ctx.u(), id_));
         }
-        return std::unexpected(make_error<ambiguity_error>(annotated_qname_identifier{ id_, call.location() }, std::move(as)));
+        return std::unexpected(make_error<ambiguity_error>(annotated_qname_identifier{ id_, call.location }, std::move(as)));
     }
     auto [ptrn, md] = alternatives.front();
     return match{ ptrn, std::move(md) };
@@ -379,12 +382,12 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
 //    }), *res);
 //}
 
-std::expected<syntax_expression_t const*, error_storage> try_match_single_unnamed(fn_compiler_context& ctx, pure_call_t const& call)
+std::expected<syntax_expression_t const*, error_storage> try_match_single_unnamed(fn_compiler_context& ctx, prepared_call const& call)
 {
     unit& u = ctx.u();
     syntax_expression_t const* matched_arg = nullptr;
 
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         if (pargname) {
             return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch, unexpected argument"sv, *pargname));
@@ -397,7 +400,7 @@ std::expected<syntax_expression_t const*, error_storage> try_match_single_unname
     }
 
     if (!matched_arg) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
     }
 
     return matched_arg;

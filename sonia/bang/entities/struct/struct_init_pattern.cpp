@@ -81,7 +81,7 @@ error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_qnam
     return basic_fn_pattern::init(ctx, init_fn);
 }
 
-std::expected<functional_match_descriptor_ptr, error_storage> struct_init_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> struct_init_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
 {
     auto res = basic_fn_pattern::try_match(ctx, call, exp);
     //if (!res) {
@@ -95,9 +95,7 @@ std::expected<functional::pattern::application_result_t, error_storage> struct_i
     // create tuple instance
     unit& u = ctx.u();
     
-    semantic::managed_expression_list el{ u };
-
-    size_t argcount = apply_arguments(ctx, md, el);
+    auto [el, argcount] = apply_arguments(ctx, md);
 
     if (argcount > 1) {
         u.push_back_expression(el, semantic::push_value{ mp::integer{ argcount } });
@@ -106,7 +104,7 @@ std::expected<functional::pattern::application_result_t, error_storage> struct_i
 
     BOOST_ASSERT(md.result.entity_id());
     ctx.context_type = md.result.entity_id();
-    return el;
+    return std::move(el);
 }
 
 }

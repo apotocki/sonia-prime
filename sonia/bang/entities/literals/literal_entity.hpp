@@ -44,35 +44,41 @@ public:
 
     std::ostream& print_to(std::ostream& os, unit const& u) const override
     {
+        u.print_to(os, type_) << '(';
 #ifdef SONIA_LANG_DEBUG
         if constexpr (std::is_same_v<ValueT, identifier> || std::is_same_v<ValueT, qname_identifier>) {
-            return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << value_.debug_name << "): "sv, type_);
+            return os << value_.debug_name << ')';
+            //return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << value_.debug_name << "): "sv, type_);
         } else if constexpr (std::is_same_v<ValueT, bool>) {
-            return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << (value_ ? "true"sv : "false"sv) << "): "sv, type_);
+            return os << (value_ ? "true"sv : "false"sv) << ')';
+            //return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << (value_ ? "true"sv : "false"sv) << "): "sv, type_);
+        } else if constexpr (std::is_same_v<ValueT, small_string>) {
+            return os << '"' << value_ << "\")"sv;
         }
 #endif
-        return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << value_ << "): "sv, type_);
+        return os << value_ << ')';
+        //return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << value_ << "): "sv, type_);
     }
 
 private:
-    inline std::ostream& do_print_name(std::ostream& os) const
-    {
-        if constexpr (std::is_same_v<ValueT, identifier>) {
-            return os << "identifier_entity"sv;
-        } else if constexpr (std::is_same_v<ValueT, qname_identifier>) {
-            return os << "qname_entity"sv;
-        } else if constexpr (std::is_same_v<ValueT, bool>) {
-            return os << "boolean_entity"sv;
-        } else if constexpr (std::is_same_v<ValueT, small_string>) {
-            return os << "string_entity"sv;
-        } else if constexpr (std::is_same_v<ValueT, mp::integer>) {
-            return os << "integer_entity"sv;
-        } else if constexpr (std::is_same_v<ValueT, mp::decimal>) {
-            return os << "decimal_entity"sv;
-        } else {
-            return os << "literal_entity"sv;
-        }
-    }
+    //inline std::ostream& do_print_name(std::ostream& os) const
+    //{
+    //    if constexpr (std::is_same_v<ValueT, identifier>) {
+    //        return os << "identifier_entity"sv;
+    //    } else if constexpr (std::is_same_v<ValueT, qname_identifier>) {
+    //        return os << "qname_entity"sv;
+    //    } else if constexpr (std::is_same_v<ValueT, bool>) {
+    //        return os << "boolean_entity"sv;
+    //    } else if constexpr (std::is_same_v<ValueT, small_string>) {
+    //        return os << "string_entity"sv;
+    //    } else if constexpr (std::is_same_v<ValueT, mp::integer>) {
+    //        return os << "integer_entity"sv;
+    //    } else if constexpr (std::is_same_v<ValueT, mp::decimal>) {
+    //        return os << "decimal_entity"sv;
+    //    } else {
+    //        return os << "literal_entity"sv;
+    //    }
+    //}
 
     ValueT value_;
     entity_identifier type_;

@@ -32,11 +32,11 @@ namespace sonia::lang::bang {
 //    return {};
 //}
 
-std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& e) const
+std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& e) const
 {
     unit& u = ctx.u();
     if (!e) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "expected an enumeration result"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "expected an enumeration result"sv));
     }
     entity const& ent = u.eregistry_get(e.value);
     enum_entity const* penum = dynamic_cast<enum_entity const*>(&ent);
@@ -46,7 +46,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
 
     functional_match_descriptor_ptr pmd;
 
-    for (auto const& arg : call.args()) {
+    for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
         auto res = apply_visitor(ct_expression_visitor{ ctx, annotated_entity_identifier{ u.get(builtin_eid::identifier) } }, argexpr);
@@ -75,7 +75,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
         pmd->get_match_result(0).append_result(*res);
     }
     if (!pmd) {
-        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv));
+        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
     }
     pmd->result = field_descriptor{ e.value };
     return pmd;

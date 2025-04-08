@@ -13,7 +13,7 @@ class struct_get_pattern : public tuple_get_pattern
 public:
     struct_get_pattern() = default;
 
-    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const override;
+    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const&) const override;
     
     //error_storage apply(fn_compiler_context&, functional_match_descriptor&) const override;
     //std::expected<functional::pattern::application_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;

@@ -5,6 +5,7 @@
 #include "sonia/config.hpp"
 #include "tuple_make_pattern.hpp"
 
+#include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 

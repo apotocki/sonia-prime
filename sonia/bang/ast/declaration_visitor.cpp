@@ -5,12 +5,15 @@
 #include "sonia/config.hpp"
 #include "declaration_visitor.hpp"
 
+#include <boost/container/flat_map.hpp>
+
 #include "fn_compiler_context.hpp"
 #include "expression_visitor.hpp"
 #include "ct_expression_visitor.hpp"
 
 //#include "sonia/bang/entities/type_entity.hpp"
 
+#include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/struct/struct_entity.hpp"
 #include "sonia/bang/entities/struct/struct_fn_pattern.hpp"
 #include "sonia/bang/entities/struct/struct_init_pattern.hpp"
@@ -19,6 +22,8 @@
 
 #include "sonia/bang/entities/functional_entity.hpp"
 #include "sonia/bang/entities/functions/basic_fn_pattern.hpp"
+
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 
 #include "sonia/bang/parser.hpp"
 
@@ -218,18 +223,18 @@ error_storage declaration_visitor::operator()(if_decl const& stm) const
     auto res = apply_visitor(vis, stm.condition);
     if (!res) return std::move(res.error());
 
-    return apply_visitor(make_functional_visitor<error_storage>([this, &stm](auto & v) -> error_storage {
-        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) { // "if constexpr" case
-            BOOST_ASSERT(v == u().get(builtin_eid::false_) || v == u().get(builtin_eid::true_));
-            statement_span body = (v == u().get(builtin_eid::true_) ? stm.true_body : stm.false_body);
-            ctx.pushed_unnamed_ns();
-            SCOPE_EXIT([this] { ctx.pop_ns(); });
-            return apply(body);
-        } else {
-            ctx.expressions().splice_back(v);
-            return do_rt_if_decl(stm);
-        }
-    }), res->first);
+    syntax_expression_result_t & er = res->first;
+    if (get<0>(er).empty()) { // constexpr result
+        entity_identifier v = get<1>(er);
+        BOOST_ASSERT(v == u().get(builtin_eid::false_) || v == u().get(builtin_eid::true_));
+        statement_span body = (v == u().get(builtin_eid::true_) ? stm.true_body : stm.false_body);
+        ctx.pushed_unnamed_ns();
+        SCOPE_EXIT([this] { ctx.pop_ns(); });
+        return apply(body);
+    } else {
+        ctx.expressions().splice_back(get<0>(er));
+        return do_rt_if_decl(stm);
+    }
 }
 
 error_storage declaration_visitor::operator()(for_decl const& fd) const
@@ -572,37 +577,79 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         vartype = *optvartype;
     }
 
-    using rt_expression_t = std::pair<semantic::managed_expression_list, entity_identifier>;
-    using expression_result_t = variant<entity_identifier, rt_expression_t>;
-    small_vector<std::pair<identifier, expression_result_t>, 8> results;
+    small_vector<std::pair<identifier, syntax_expression_result_t>, 8> results;
 
+    prepared_call pcall{ ld.location() };
     for (auto const& e : ld.expressions) {
+        pcall.args.emplace_back(e);
+    }
+    if (auto err = pcall.prepare(ctx); err) return std::move(err);
+
+    for (auto const& e : pcall.args) {
         auto [pname, expr] = *e;
         auto res = apply_visitor(base_expression_visitor{ ctx, { vartype, ld.location() } }, expr);
         if (!res) { return std::move(res.error()); }
         identifier name = pname ? pname->value : identifier{};
-        apply_visitor(make_functional_visitor<void>([this, name, &results](auto& v) {
-            if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-                results.emplace_back(name, v);
-            } else {
-                results.emplace_back(name, std::pair{ std::move(v), ctx.context_type });
-            }
-        }), res->first);
+        results.emplace_back(name, std::move(res->first));
     }
 
     if (results.size() == 1 && !results.front().first) {
-        apply_visitor(make_functional_visitor<void>([this, &ld, &results](auto& v) {
-            if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-                ctx.new_constant(ld.aname, v);
-            } else { // v is rt_expression_t
-                ctx.expressions().splice_back(get<0>(v));
-                local_variable ve = ctx.new_variable(ld.aname, get<1>(v));
-                ve.is_weak = ld.weakness;
-            }
-        }), results.front().second);
+        syntax_expression_result_t& er = results.front().second;
+        if (er.first.empty()) {
+            ctx.new_constant(ld.aname, er.second);
+        } else {
+            ctx.expressions().splice_back(er.first);
+            local_variable& ve = ctx.new_variable(ld.aname, er.second);
+            ve.is_weak = ld.weakness;
+        }
         return {};
     } else {
-        THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor let_statement");
+        boost::container::small_flat_multimap<identifier, entity_identifier, 8> field_map;
+        entity_signature sig{ u().get(builtin_qnid::tuple) };
+        for (auto & [id, er] : results) {
+            entity_identifier field_eid;
+            if (er.first.empty()) {
+                field_eid = er.second;
+            } else {
+                ctx.expressions().splice_back(er.first);
+                identifier unnamedid = u().new_identifier();
+                local_variable& ve = ctx.new_variable(annotated_identifier{ unnamedid }, er.second);
+                ve.is_weak = ld.weakness;
+                field_eid = u().make_identifier_entity(unnamedid).id();
+            }
+            if (id) {
+                field_map.emplace(id, field_eid);
+            } else {
+                sig.push_back(field_descriptor{ field_eid, true });
+            }
+        }
+        // for each key in small_flat_multimap
+        for (auto it = field_map.begin(); it != field_map.end();) {
+            identifier name = it->first;
+            auto range = field_map.equal_range(it->first);
+            if (std::next(range.first) == range.second) {
+                sig.push_back(name, field_descriptor{ it->second, true });
+                ++it;
+            } else {
+                BOOST_ASSERT(it == range.first);
+                entity_signature innersig{ u().get(builtin_qnid::tuple) };
+                for (; it != range.second; ++it) {
+                    innersig.push_back(field_descriptor{ it->second, true });
+                }
+                indirect_signatured_entity innersmpl{ innersig };
+                entity_identifier const_inner_eid = u().eregistry_find_or_create(innersmpl, [&innersig]() {
+                    return make_shared<basic_signatured_entity>(std::move(innersig));
+                }).id();
+                sig.push_back(name, field_descriptor{ const_inner_eid, true });
+            }
+        }
+
+        indirect_signatured_entity smpl{ sig };
+        entity_identifier const_eid = u().eregistry_find_or_create(smpl, [&sig]() {
+            return make_shared<basic_signatured_entity>(std::move(sig));
+        }).id();
+        ctx.new_constant(ld.aname, const_eid);
+        return {};
     }
 
 #if 0

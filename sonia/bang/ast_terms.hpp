@@ -23,8 +23,12 @@
 #include "sonia/utility/functional/variant_compare_three_way.hpp"
 #include "sonia/mp/basic_decimal.hpp"
 
+#include "sonia/utility/automatic_polymorphic.hpp"
+
 #include "sonia/bang/utility/linked_list.hpp"
 #include "terms.hpp"
+
+#define SONIA_BANG_AST_INDIRECT_STORE_SIZE (8 * sizeof(void*))
 
 namespace sonia::lang::bang {
 
@@ -510,10 +514,19 @@ struct placeholder
     lex::resource_location location;
 };
 
-struct context_value
+class indirect : public polymorphic_clonable_and_movable
 {
-    entity_identifier type;
+public:
+    virtual ~indirect() = default;
+};
+
+using indirect_value_store_t = automatic_polymorphic<indirect, SONIA_BANG_AST_INDIRECT_STORE_SIZE>;
+
+struct indirect_value
+{
     lex::resource_location location;
+    entity_identifier type;
+    indirect_value_store_t store;
 };
 
 
@@ -663,7 +676,7 @@ using syntax_expression_t = make_recursive_variant<
     bang_fn_type<recursive_variant_>,
     bang_vector<recursive_variant_>,
     bang_union<recursive_variant_>,
-    context_value, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
+    indirect_value, not_empty_expression<recursive_variant_>, member_expression<recursive_variant_>,
     lambda<recursive_variant_>,
     unary_expression<recursive_variant_>,
     binary_expression<recursive_variant_>,

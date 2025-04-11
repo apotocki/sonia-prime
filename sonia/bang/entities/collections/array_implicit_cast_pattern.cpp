@@ -5,10 +5,14 @@
 #include "sonia/config.hpp"
 #include "array_implicit_cast_pattern.hpp"
 
+#include "sonia/bang/entities/prepared_call.hpp"
+
 #include "sonia/bang/auxiliary.hpp"
+
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 #include "sonia/bang/ast/base_expression_visitor.hpp"
+
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
 namespace sonia::lang::bang {

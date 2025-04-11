@@ -283,6 +283,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_tail_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\typeof_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\prepared_call.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\signatured_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functional.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functional_entity.hpp" />
@@ -803,6 +804,7 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_tail_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_typeof_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\prepared_call.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_implicit_cast_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_new_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_entity.cpp" />

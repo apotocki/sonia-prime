@@ -5,6 +5,7 @@
 #include "sonia/config.hpp"
 #include "ellipsis_pattern.hpp"
 
+#include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 

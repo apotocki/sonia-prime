@@ -20,6 +20,7 @@
 namespace sonia::lang::bang {
 
 class fn_compiler_context;
+class prepared_call;
 
 class functional_binding
 {
@@ -162,11 +163,7 @@ private:
 
 using functional_match_descriptor_ptr = shared_ptr<functional_match_descriptor>;
 
-struct prepared_call
-{
-    lex::resource_location location;
-    small_vector<named_expression_t, 8> args;
-};
+
 
 class functional
 {
@@ -183,8 +180,7 @@ public:
     public:
         virtual std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const& expected_result) const = 0; // returns the match weight or an error
 
-        using application_result_t = variant<entity_identifier, semantic::managed_expression_list>;
-        virtual std::expected<application_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const
+        virtual std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const
         {
             THROW_NOT_IMPLEMENTED_ERROR("functional::pattern::apply");
         }
@@ -207,7 +203,7 @@ public:
             BOOST_ASSERT(md_);
         }
         
-        inline std::expected<pattern::application_result_t, error_storage> apply(fn_compiler_context& ctx) const
+        inline std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context& ctx) const
         {
             return ptrn_->apply(ctx, *md_);
         }

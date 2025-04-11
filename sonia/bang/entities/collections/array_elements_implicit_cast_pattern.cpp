@@ -8,7 +8,10 @@
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 #include "sonia/bang/ast/base_expression_visitor.hpp"
+
+#include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
+
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 #include "sonia/bang/errors/value_mismatch_error.hpp"
 

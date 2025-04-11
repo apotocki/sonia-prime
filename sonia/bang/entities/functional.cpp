@@ -8,6 +8,8 @@
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 //#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
 
+#include "sonia/bang/entities/prepared_call.hpp"
+
 #include "sonia/bang/errors/function_call_match_error.hpp"
 #include "sonia/bang/errors/pattern_match_error.hpp"
 #include "sonia/bang/errors/circular_dependency_error.hpp"
@@ -293,13 +295,13 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
 
     expression_stack_checker expr_stack_state{ ctx };
 
+    prepared_call pcall{ call };
+
     for (auto const& p : patterns_) {
         auto cmp = major_weight <=> p->get_weight();
         if (cmp == std::strong_ordering::greater) continue;
 
-        THROW_NOT_IMPLEMENTED_ERROR("functional::find: not implemented for this pattern type");
-
-        auto match_descriptor = p->try_match(ctx, prepared_call{}, expected_result);
+        auto match_descriptor = p->try_match(ctx, pcall, expected_result);
 
         BOOST_ASSERT(expr_stack_state.check(ctx));
 

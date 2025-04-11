@@ -142,7 +142,7 @@ public:
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const&) const override;
 
-    std::expected<application_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override;
 
@@ -159,6 +159,8 @@ protected:
     {
         THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern::build");
     }
+
+    syntax_expression_result_t do_result(unit&, entity_identifier) const;
 
 private:
     uint8_t has_varpack_ : 1;

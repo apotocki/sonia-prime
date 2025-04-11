@@ -9,6 +9,7 @@
 #include "sonia/bang/ast/expression_visitor.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
+#include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/signatured_entity.hpp"
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"

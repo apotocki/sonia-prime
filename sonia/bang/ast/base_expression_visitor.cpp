@@ -41,20 +41,26 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(entity_
     return apply_cast(ent, e);
 }
 
+inline base_expression_visitor::result_type base_expression_visitor::do_result(entity_identifier eid, bool casted) const noexcept
+{
+    return std::pair{ syntax_expression_result_t{ semantic::managed_expression_list{ u() }, eid }, casted };
+}
+
 template <typename ExprT>
 inline base_expression_visitor::result_type base_expression_visitor::apply_cast(entity const& ent, ExprT const& e) const
 {
     BOOST_ASSERT(ent.id());
-    if (!expected_result || u().get(builtin_eid::any) == expected_result.value) return std::pair{ ent.id(), false };
+    if (!expected_result || u().get(builtin_eid::any) == expected_result.value) 
+        return do_result(ent.id(), false);
     if (!is_type_expected) {
-        if (ent.id() == expected_result.value) return std::pair{ ent.id(), false };
+        if (ent.id() == expected_result.value)
+            return do_result(ent.id(), false);
         return std::unexpected(make_error<cast_error>(get_start_location(e), expected_result.value, ent.id(), e));
         //THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::apply_cast const cast check");
     } else {
         entity_identifier typeeid = ent.get_type();
-        if (typeeid == expected_result.value) {
-            return std::pair{ ent.id(), false };
-        }
+        if (typeeid == expected_result.value)
+            return do_result(ent.id(), false);
 
         lex::resource_location expr_loc = get_start_location(e);
         pure_call_t cast_call{ expected_result.location };
@@ -78,12 +84,15 @@ inline base_expression_visitor::result_type base_expression_visitor::apply_cast(
 }
 
 template <typename ExprT>
-base_expression_visitor::result_type base_expression_visitor::apply_cast(semantic::managed_expression_list l, ExprT const& e) const
+base_expression_visitor::result_type base_expression_visitor::apply_cast(syntax_expression_result_t er, ExprT const& e) const
 {
     //THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor::apply_cast(semantic::managed_expression_list, ExprT const&)");
-    BOOST_ASSERT(ctx.context_type);
-    if (!expected_result || ctx.context_type == expected_result.value || expected_result.value == u().get(builtin_eid::any)) {
-        return std::pair{ std::move(l), false };
+    if (!get<0>(er)) {
+        return apply_cast(get<1>(er), e);
+    }
+    
+    if (!expected_result || get<1>(er) == expected_result.value || expected_result.value == u().get(builtin_eid::any)) {
+        return std::pair{ std::move(er), false };
     }
 
     //if (expected_result.value == u().get(builtin_eid::any)) {
@@ -95,7 +104,11 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(semanti
 
     lex::resource_location expr_loc = get_start_location(e);
     pure_call_t cast_call{ expected_result.location };
-    cast_call.emplace_back(context_value{ ctx.context_type, expr_loc });
+    cast_call.emplace_back(indirect_value{
+        .location = expr_loc,
+        .type = get<1>(er),
+        .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(get<0>(er)) }
+    });
 
     auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expected_result);
     if (!match) {
@@ -109,30 +122,27 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(semanti
 
     auto res = match->apply(ctx);
     if (!res) return std::unexpected(std::move(res.error()));
-
-    return apply_visitor(make_functional_visitor<result_type>([&l](auto& v) -> result_type {
-        if constexpr (std::is_same_v<semantic::managed_expression_list, std::decay_t<decltype(v)>>) {
-            l.splice_back(v);
-            return std::pair{ std::move(l), true };
-        } else { // else strange case
-            return std::pair{ std::move(v), true };
-        }
-    }), *res);
+    get<0>(er).splice_back(get<0>(*res));
+    get<1>(er) = get<1>(*res);
+    return std::pair{ std::move(er), true };
 }
 
 template <typename ExprT>
-inline base_expression_visitor::result_type base_expression_visitor::apply_cast(std::expected<functional::pattern::application_result_t, error_storage> r, ExprT const& e) const
+inline base_expression_visitor::result_type base_expression_visitor::apply_cast(std::expected<syntax_expression_result_t, error_storage> r, ExprT const& e) const
 {
     if (!r) return std::unexpected(std::move(r.error()));
-    return apply_visitor(make_functional_visitor<result_type>([this, e](auto& v) -> result_type {
-        return apply_cast(std::move(v), e);
-    }), *r);
+    return apply_cast(std::move(*r), e);
+    //return apply_visitor(make_functional_visitor<result_type>([this, e](auto& v) -> result_type {
+    //    return apply_cast(std::move(v), e);
+    //}), *r);
 }
 
-base_expression_visitor::result_type base_expression_visitor::operator()(context_value const& v) const
+base_expression_visitor::result_type base_expression_visitor::operator()(indirect_value const& v) const
 {
-    ctx.context_type = v.type;
-    return apply_cast(semantic::managed_expression_list{ u() }, v);
+    if (auto const* pel = dynamic_cast<semantic::indirect_expression_list const*>(v.store.get_pointer()); pel) {
+        return apply_cast(syntax_expression_result_t{ std::move(pel->list), v.type }, v);
+    }
+    THROW_INTERNAL_ERROR("base_expression_visitor::operator()(indirect_value const& v) unexpected indorect store type");
 }
 
 base_expression_visitor::result_type base_expression_visitor::operator()(annotated_bool const& bv) const
@@ -181,20 +191,19 @@ base_expression_visitor::result_type base_expression_visitor::operator()(bang_ve
     // v.type can be a type or a value
     result_type res = apply_visitor(base_expression_visitor{ ctx }, bv.type);
     if (!res) return std::unexpected(res.error());
-    return apply_visitor(make_functional_visitor<result_type>([this, &bv](auto& v) -> result_type {
-        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-            // type or constexpr value?
-            entity const& e = u().eregistry_get(v);
-            if (e.get_type() == u().get(builtin_eid::typename_)) { // type
-                return apply_cast(u().make_vector_type_entity(v), bv);
-            } else {
-                THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor bang_vector_t");
-            }
+    syntax_expression_result_t& er = res->first;
+    if (!get<0>(er)) { // constexpr
+        // type or constexpr value?
+        entity const& e = get_entity(u(), get<1>(er));
+        if (e.get_type() == u().get(builtin_eid::typename_)) { // type
+            return apply_cast(u().make_vector_type_entity(get<1>(er)), bv);
         } else {
-            ctx.context_type = u().make_array_type_entity(ctx.context_type, 1).id();
-            return apply_cast(std::move(v), bv);
+            THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor bang_vector_t");
         }
-    }), res->first);
+    } else {
+        get<1>(er) = u().make_array_type_entity(ctx.context_type, 1).id();
+        return apply_cast(std::move(er), bv);
+    }
 }
 
 #if 0
@@ -285,7 +294,21 @@ struct array_expression_processor : static_visitor<void>
         for (syntax_expression_t const& ee : ve.elements) {
             auto res = apply_visitor(base_expression_visitor{ ctx }, ee);
             if (!res) return std::unexpected(res.error());
-            apply_visitor(*this, res->first);
+            syntax_expression_result_t& er = res->first;
+            if (!get<0>(er)) { // constexpr
+                ct_elements.push_back(get<1>(er));
+                element_types.insert(get_entity(u(), get<1>(er)).get_type());
+            } else {
+                mask |= (mp::integer{1} << ct_elements.size());
+                ct_elements.push_back(get<1>(er));
+                ++not_constant_count;
+                if (!optexprs) {
+                    optexprs.emplace(std::move(get<0>(er)));
+                } else {
+                    optexprs->splice_back(get<0>(er));
+                }
+                element_types.insert(get_entity(u(), get<1>(er)).get_type());
+            }
         }
 
         entity_identifier elem_type = element_types.size() == 1 ?
@@ -311,8 +334,8 @@ struct array_expression_processor : static_visitor<void>
                 u().push_back_expression(*optexprs, semantic::push_value{ mp::integer{ not_constant_count } });
                 u().push_back_expression(*optexprs, semantic::invoke_function(u().get(builtin_eid::arrayify)));
             }
-            ctx.context_type = u().make_array_type_entity(*element_types.begin(), not_constant_count).id();
-            return bvis.apply_cast(std::move(*optexprs), ve);
+            entity_identifier rt = u().make_array_type_entity(*element_types.begin(), not_constant_count).id();
+            return bvis.apply_cast(syntax_expression_result_t{ std::move(*optexprs), rt }, ve);
         }
         // return fuzzy array
         entity_signature sig{ u().get(builtin_qnid::fuzzy_array), u().get(builtin_eid::typename_) };
@@ -321,30 +344,30 @@ struct array_expression_processor : static_visitor<void>
             sig.emplace_back(eid, true);
         }
         indirect_signatured_entity smpl{ sig };
-        ctx.context_type = u().eregistry_find_or_create(smpl, [&sig]() {
+        entity_identifier rt = u().eregistry_find_or_create(smpl, [&sig]() {
             return make_shared<basic_signatured_entity>(std::move(sig));
         }).id();
-        return bvis.apply_cast(std::move(*optexprs), ve);
+        return bvis.apply_cast(syntax_expression_result_t{ std::move(*optexprs), rt }, ve);
     }
 
-    void operator()(entity_identifier const& eid)
-    {
-        ct_elements.push_back(eid);
-        element_types.insert(get_entity(u(), eid).get_type());
-    }
+    //void operator()(entity_identifier const& eid)
+    //{
+    //    ct_elements.push_back(eid);
+    //    element_types.insert(get_entity(u(), eid).get_type());
+    //}
 
-    void operator()(semantic::managed_expression_list& l)
-    {
-        mask |= (mp::integer{1} << ct_elements.size());
-        ct_elements.push_back(ctx.context_type);
-        ++not_constant_count;
-        if (!optexprs) {
-            optexprs.emplace(std::move(l));
-        } else {
-            optexprs->splice_back(l);
-        }
-        element_types.insert(get_entity(u(), ctx.context_type).get_type());
-    }
+    //void operator()(semantic::managed_expression_list& l)
+    //{
+    //    mask |= (mp::integer{1} << ct_elements.size());
+    //    ct_elements.push_back(ctx.context_type);
+    //    ++not_constant_count;
+    //    if (!optexprs) {
+    //        optexprs.emplace(std::move(l));
+    //    } else {
+    //        optexprs->splice_back(l);
+    //    }
+    //    element_types.insert(get_entity(u(), ctx.context_type).get_type());
+    //}
 };
 
 
@@ -367,8 +390,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(variabl
         } else { // if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, local_variable>) {
             semantic::managed_expression_list exprs{ u() };
             ctx.u().push_back_expression(exprs, semantic::push_local_variable{ eid_or_var });
-            ctx.context_type = eid_or_var.type;
-            return apply_cast(std::move(exprs), var);
+            return apply_cast(syntax_expression_result_t{ std::move(exprs), eid_or_var.type }, var);
         }
     }), optent);
 }
@@ -388,8 +410,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(member_
         ));
     }
 
-    auto res = match->apply(ctx);
-    return apply_cast(std::move(res), me);
+    return apply_cast(match->apply(ctx), me);
 }
 
 //base_expression_visitor::result_type base_expression_visitor::operator()(context_identifier const& ci) const
@@ -473,8 +494,9 @@ base_expression_visitor::result_type base_expression_visitor::operator()(index_e
 {
     auto res = apply_visitor(base_expression_visitor{ ctx }, ie.base);
     if (!res) return std::unexpected(res.error());
-    if (entity_identifier const* peid = get<entity_identifier>(&res->first); peid) {
-        entity const& ent = u().eregistry_get(*peid);
+    syntax_expression_result_t& er = res->first;
+    if (!get<0>(er)) { // const expression
+        entity const& ent = get_entity(u(), get<1>(er));
         if (ent.get_type() == u().get(builtin_eid::typename_)) { // this is array type declaration
             auto szres = apply_visitor(ct_expression_visitor{ ctx, annotated_entity_identifier{ u().get(builtin_eid::integer), get_start_location(ie.index) } }, ie.index);
             if (!szres) return std::unexpected(szres.error());
@@ -482,7 +504,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(index_e
             if (index_ent.value() <= 0) {
                 return std::unexpected(make_error<basic_general_error>(get_start_location(ie.index), "index must be greater than 0"sv));
             }
-            return apply_cast(u().make_array_type_entity(*peid, (size_t)index_ent.value()).id(), ie);
+            return apply_cast(u().make_array_type_entity(get<1>(er), (size_t)index_ent.value()).id(), ie);
         }
     }
 

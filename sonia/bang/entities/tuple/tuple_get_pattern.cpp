@@ -5,7 +5,9 @@
 #include "sonia/config.hpp"
 #include "tuple_get_pattern.hpp"
 
+#include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/signatured_entity.hpp"
+
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 #include "sonia/bang/ast/expression_visitor.hpp"
@@ -54,12 +56,14 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
                         entity const& arg_entity = ctx.u().eregistry_get(v);
                         if (auto psig = arg_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
                             // argument is typename tuple
+                            pte = &arg_entity;
                             pmd = make_shared<tuple_get_match_descriptor>(ctx.u());
                             auto& mr = pmd->get_match_result(pargname->value);
                             mr.append_result(v);
                             return {};
                         } else {
-                            argtype = arg_entity.get_type();
+                            return make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr);
+                            //argtype = arg_entity.get_type();
                         }
                     }
 

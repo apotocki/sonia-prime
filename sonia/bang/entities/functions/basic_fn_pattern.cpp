@@ -19,6 +19,7 @@
 #include "sonia/bang/ast/expression_visitor.hpp"
 
 //#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
+#include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 #include "sonia/bang/entities/functional_entity.hpp"
 #include "sonia/bang/entities/functions/function_entity.hpp"
@@ -1344,11 +1345,16 @@ shared_ptr<entity> generic_fn_pattern::build(fn_compiler_context& ctx, functiona
     return pife;
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> basic_fn_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+inline syntax_expression_result_t basic_fn_pattern::do_result(unit& u, entity_identifier eid) const
+{
+    return syntax_expression_result_t{ semantic::managed_expression_list{ u }, eid };
+}
+
+std::expected<syntax_expression_result_t, error_storage> basic_fn_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     if (md.result && md.result.is_const()) {
-        return md.result.entity_id();
+        return do_result(u, md.result.entity_id());
     }
     // fnsig -> fn entity
     // if fn entity exists => all nested qnames(functionals) are defined (e.g. argument variables, function body qname)
@@ -1376,14 +1382,13 @@ std::expected<functional::pattern::application_result_t, error_storage> basic_fn
     BOOST_ASSERT(fne.result);
 
     if (fne.result.is_const()) {
-        return fne.result.entity_id();
+        return do_result(u, fne.result.entity_id());
     }
 
     semantic::managed_expression_list exprs = apply_arguments(ctx, md).first;
     u.push_back_expression(exprs, semantic::invoke_function(e.id()));
 
-    ctx.context_type = fne.result.entity_id();
-    return std::move(exprs);
+    return syntax_expression_result_t{ std::move(exprs), fne.result.entity_id() };
 }
 
 }

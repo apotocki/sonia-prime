@@ -6,6 +6,7 @@
 
 #include <bit>
 #include <vector>
+#include <utility>
 
 #include "sonia/variant.hpp"
 #include "sonia/string.hpp"
@@ -522,8 +523,29 @@ struct expression_entry : expression_entry_type { using expression_entry_type::e
 using expression_list_t = linked_list<expression>;
 using managed_expression_list = managed_linked_list<expression, unit>;
 
+class indirect_expression_list : public indirect
+{
+public:
+    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(indirect_expression_list);
+
+    mutable managed_expression_list list;
+
+    explicit indirect_expression_list(managed_expression_list&& l)
+        : list{ std::move(l) }
+    {};
+
+    inline indirect_expression_list(indirect_expression_list const&) {
+        THROW_INTERNAL_ERROR("indirect_expression_list copy constructor");
+    }
+
+    inline indirect_expression_list& operator= (indirect_expression_list const&) {
+        THROW_INTERNAL_ERROR("indirect_expression_list copy assignment");
+    }
+};
+
 }
 
+using syntax_expression_result_t = std::pair<semantic::managed_expression_list, entity_identifier>;
 //using semantic_expression_pair = std::pair<semantic::expression_t, bang_type>;
 
 }

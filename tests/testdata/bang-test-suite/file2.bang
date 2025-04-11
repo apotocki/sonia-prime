@@ -1,6 +1,22 @@
-let xpack = 1, 2, "345", 66; // typeof(xpack) = __identifier[4]
-assert(size(xpack) == 4);
-assert(*xpack.0 == 1);
-assert(*xpack.1 == 2);
-assert(*xpack.3 == "345");
-assert(*xpack.4 == 66);
+let xpack = 1, 2, name: "345", 66, name: "678"; // typeof(xpack) = __identifier[4]
+assert(size(xpack) == 3);
+assert(xpack.0 == 1);
+assert(xpack.1 == 2);
+assert(xpack.2 == 66);
+assert(size(xpack.name) == 2);
+assert(xpack.name.0 == "345");
+assert(xpack.name.1 == "678");
+
+let xpack2 = 3, name: "911", xpack..., name: "901", 4, name2: "asd";
+assert(size(xpack2) == 5);
+assert(xpack2.0 == 3);
+assert(xpack2.1 == 1);
+assert(xpack2.2 == 2);
+assert(xpack2.3 == 66);
+assert(xpack2.4 == 4);
+assert(size(xpack2.name) == 4);
+assert(xpack2.name.0 == "911");
+assert(xpack2.name.1 == "345");
+assert(xpack2.name.2 == "678");
+assert(xpack2.name.3 == "901");
+assert(xpack2.name2 == "asd");

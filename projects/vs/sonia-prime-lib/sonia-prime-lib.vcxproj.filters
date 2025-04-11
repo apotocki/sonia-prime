@@ -2427,6 +2427,9 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\extern\size_pattern.hpp">
       <Filter>sonia.bang\entities\functions\extern</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\prepared_call.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2929,6 +2932,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\extern\size_pattern.cpp">
       <Filter>sonia.bang\entities\functions\extern</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\prepared_call.cpp">
+      <Filter>sonia.bang\entities</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

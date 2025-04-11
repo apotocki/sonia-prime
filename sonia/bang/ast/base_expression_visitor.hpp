@@ -13,7 +13,7 @@
 
 namespace sonia::lang::bang {
 
-class base_expression_visitor : public static_visitor<std::expected<std::pair<functional::pattern::application_result_t, bool>, error_storage>>
+class base_expression_visitor : public static_visitor<std::expected<std::pair<syntax_expression_result_t, bool>, error_storage>>
 {
     friend struct array_expression_processor;
 
@@ -26,7 +26,7 @@ public:
     explicit base_expression_visitor(fn_compiler_context& c) noexcept;
     base_expression_visitor(fn_compiler_context& c, annotated_entity_identifier er) noexcept;
 
-    result_type operator()(context_value const&) const;
+    result_type operator()(indirect_value const&) const;
 
     //result_type operator()(context_identifier const&) const;
     result_type operator()(annotated_bool const&) const;
@@ -75,10 +75,12 @@ protected:
     result_type apply_cast(entity const&, ExprT const& e) const;
 
     template <typename ExprT>
-    result_type apply_cast(semantic::managed_expression_list, ExprT const&) const;
+    result_type apply_cast(syntax_expression_result_t, ExprT const&) const;
 
     template <typename ExprT>
-    result_type apply_cast(std::expected<functional::pattern::application_result_t, error_storage>, ExprT const&) const;
+    inline result_type apply_cast(std::expected<syntax_expression_result_t, error_storage>, ExprT const&) const;
+
+    result_type do_result(entity_identifier, bool casted) const noexcept;
 };
 
 }

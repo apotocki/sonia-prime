@@ -17,7 +17,7 @@ namespace sonia::lang::bang {
 
 class variable_entity;
 
-struct assign_expression_visitor : static_visitor<std::expected<functional::pattern::application_result_t, error_storage>>
+struct assign_expression_visitor : static_visitor<std::expected<syntax_expression_result_t, error_storage>>
 {
     fn_compiler_context& ctx_;
     lex::resource_location assign_location_;

@@ -15,7 +15,7 @@ class size_pattern : public generic_pattern_base<size_pattern>
 public:
     size_pattern() = default;
 
-    std::expected<application_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override { return s << "size(const signature)->integer"; }
 

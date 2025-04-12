@@ -12,7 +12,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional::pattern::application_result_t, error_storage> metaobject_head_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> metaobject_head_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     entity_signature const& objsignature = argument_signature(ctx, md);
     
@@ -20,7 +20,7 @@ std::expected<functional::pattern::application_result_t, error_storage> metaobje
     if (!fd) {
         return std::unexpected(make_error<basic_general_error>(md.location, "metaobject is empty"sv));
     }
-    return fd->entity_id();
+    return make_result(ctx.u(), fd->entity_id());
 }
 
 }

@@ -12,6 +12,8 @@
 
 #include "sonia/bang/entities/generic_pattern_base.ipp"
 
+#include "sonia/bang/auxiliary.hpp"
+
 namespace sonia::lang::bang {
 
 class union_match_descriptor : public functional_match_descriptor
@@ -22,20 +24,15 @@ public:
     boost::container::small_flat_set<entity_identifier, 8> types;
 };
 
-error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr&, arg_context_type& argctx, semantic::managed_expression_list&) const
+error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type& argctx, syntax_expression_result_t& er) const
 {
-    return argctx.make_argument_mismatch_error();
-}
-
-error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type& argctx, entity_identifier& v) const
-{
-    if (argctx.pargname) return argctx.make_argument_mismatch_error();
+    if (argctx.pargname || er.first) return argctx.make_argument_mismatch_error();
  
     fn_compiler_context& ctx = argctx.ctx;
     prepared_call const& call = argctx.call;
     unit& u = ctx.u();
 
-    entity const& arg_entity = u.eregistry_get(v);
+    entity const& arg_entity = get_entity(u, er.second);
     if (arg_entity.get_type() != u.get(builtin_eid::typename_)) {
         return argctx.make_argument_mismatch_error();
     }
@@ -56,10 +53,10 @@ error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_m
     return {};
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> union_bit_or_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> union_bit_or_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     auto& umd = static_cast<union_match_descriptor&>(md);
-    return ctx.u().make_union_type_entity(umd.types).id();
+    return make_result(ctx.u(), ctx.u().make_union_type_entity(umd.types).id());
 }
 
 template generic_pattern_base<union_bit_or_pattern>;

@@ -37,9 +37,6 @@ value_type_match_visitor::result_type value_type_match_visitor::match_type(entit
 {
     auto res = apply_visitor(base_expression_visitor{ caller_ctx, { eid, eidloc } }, expr);
     if (!res) return std::unexpected(std::move(res.error()));
-    if (entity_identifier const* peid = get<entity_identifier>(&res->first); peid && *peid == caller_ctx.u().get(builtin_eid::void_)) {
-        return std::unexpected(make_error<type_mismatch_error>(get_start_location(expr), *peid, "not void"sv, eidloc));
-    }
     if (res->second) { --weight; }
     return std::move(res->first);
 }

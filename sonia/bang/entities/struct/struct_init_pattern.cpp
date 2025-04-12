@@ -90,7 +90,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_init_patter
     return res;
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> struct_init_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> struct_init_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     // create tuple instance
     unit& u = ctx.u();
@@ -103,8 +103,8 @@ std::expected<functional::pattern::application_result_t, error_storage> struct_i
     }
 
     BOOST_ASSERT(md.result.entity_id());
-    ctx.context_type = md.result.entity_id();
-    return std::move(el);
+    
+    return syntax_expression_result_t{ std::move(el), md.result.entity_id() };
 }
 
 }

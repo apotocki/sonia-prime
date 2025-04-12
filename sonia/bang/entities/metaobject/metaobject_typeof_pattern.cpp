@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "typeof_pattern.hpp"
+#include "metaobject_typeof_pattern.hpp"
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
@@ -59,7 +59,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
     return pmd;
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> metaobject_typeof_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> metaobject_typeof_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_identifier mobj = md.get_match_result(u.get(builtin_id::object)).results.front().first;
@@ -76,7 +76,7 @@ std::expected<functional::pattern::application_result_t, error_storage> metaobje
     if (!fd) {
         return std::unexpected(make_error<basic_general_error>(md.location, "undefined property"sv, prop_ent.value()));
     }
-    return fd->entity_id();
+    return make_result(u, fd->entity_id());
 }
 
 }

@@ -13,6 +13,8 @@
 #include <boost/range/adaptor/reversed.hpp>
 
 #include "sonia/utility/scope_exit.hpp"
+
+#include "sonia/bang/auxiliary.hpp"
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/declaration_visitor.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
@@ -237,27 +239,24 @@ variant<int, parameter_matcher::ignore_t, error_storage> parameter_matcher::try_
                 value_type_match_visitor vtcv{ caller_ctx, callee_ctx, e, binding };
                 auto res = apply_visitor(vtcv, *optexpr);
                 if (!res) return std::move(res.error());
-                if (!apply_visitor(make_functional_visitor<bool>([this, &caller_ctx, &mr, &type_or_value](auto& v) -> bool {
-                    if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-                        if (modifier_ != parameter_constraint_modifier_t::mutable_value_type) {
-                            mr.append_result(v);
-                            type_or_value = field_descriptor{ v, true };
-                        } else {
-                            semantic::managed_expression_list l{ caller_ctx.u() };
-                            caller_ctx.u().push_back_expression(l, semantic::push_value(v));
-                            type_or_value = field_descriptor{ caller_ctx.u().eregistry_get(v).get_type(), false };
-                            caller_ctx.context_type = type_or_value.entity_id();
-                            mr.append_result(type_or_value.entity_id(), l.end(), l);
-                            caller_ctx.expressions().splice_back(l);
-                        }
+                auto& [el, reid] = *res;
+                if (!el) {
+                    if (modifier_ != parameter_constraint_modifier_t::mutable_value_type) {
+                        mr.append_result(reid);
+                        type_or_value = field_descriptor{ reid, true };
                     } else {
-                        if (caller_ctx.context_type == caller_ctx.u().get(builtin_eid::void_)) return false;
-                        mr.append_result(caller_ctx.context_type, v.end(), v);
-                        caller_ctx.expressions().splice_back(v);
-                        type_or_value = field_descriptor{ caller_ctx.context_type, false };
+                        semantic::managed_expression_list l{ caller_ctx.u() };
+                        caller_ctx.u().push_back_expression(l, semantic::push_value(reid));
+                        type_or_value = field_descriptor{ get_entity(caller_ctx.u(), reid).get_type(), false };
+                        mr.append_result(type_or_value.entity_id(), l.end(), l);
+                        caller_ctx.expressions().splice_back(l);
                     }
-                    return true;
-                }), *res)) return parameter_matcher::ignore_t{};
+                } else {
+                    if (reid == caller_ctx.u().get(builtin_eid::void_)) return parameter_matcher::ignore_t{};
+                    mr.append_result(caller_ctx.context_type, el.end(), el);
+                    caller_ctx.expressions().splice_back(el);
+                    type_or_value = field_descriptor{ caller_ctx.context_type, false };
+                }
                 weight = vtcv.weight;
             } else {
                 auto last_expr_it = caller_ctx.expressions().last();
@@ -644,16 +643,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         }
 
         if (start_matcher_it == end_matcher_it) {
-            auto res = apply_visitor(base_expression_visitor{ ctx }, arg.value());
-            if (!res) return std::unexpected(result_error(arg));
-            if (!apply_visitor(make_functional_visitor<bool>([&ctx](auto& v) -> bool {
-                if constexpr (std::is_same_v<semantic::managed_expression_list, std::decay_t<decltype(v)>>) {
-                    return ctx.context_type != ctx.u().get(builtin_eid::void_);
-                } else {
-                    return true;
-                }
-            }), res->first)) continue; // ignore void
             return std::unexpected(result_error(arg));
+
+            //auto res = apply_visitor(base_expression_visitor{ ctx }, arg.value());
+            //if (!res) return std::unexpected(result_error(arg));
+            //auto& [el, reid] = res->first;
+            //if (el && reid == ctx.u().get(builtin_eid::void_)) continue; // ignore void
         }
 
         // to do: build name identifiers for position matchers?

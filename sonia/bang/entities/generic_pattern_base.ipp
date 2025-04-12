@@ -48,17 +48,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> generic_pattern_ba
         auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
         if (!res) return std::unexpected(std::move(res.error()));
         arg_context_type argctx{ ctx, call, pargname, argexpr };
-        auto err = apply_visitor(make_functional_visitor<error_storage>([this, &pmd, &argctx, &cookie](auto & v) -> error_storage {
-            if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-                if (v == argctx.u().get(builtin_eid::void_)) {
-                    return make_error<type_mismatch_error>(get_start_location(argctx.argexpr), v, "not void"sv);
-                }
-            } else {
-                if (argctx.ctx.context_type == argctx.u().get(builtin_eid::void_)) return {}; // skip
-            }
-            return derived().accept_argument(std::forward<CookieT>(cookie), pmd, argctx, v);
-        }), res->first);
-        if (err) return std::unexpected(std::move(err));
+        if (auto err = derived().accept_argument(std::forward<CookieT>(cookie), pmd, argctx, res->first); err)
+            return std::unexpected(std::move(err));
     }
     if (!pmd) {
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter(s)"sv));

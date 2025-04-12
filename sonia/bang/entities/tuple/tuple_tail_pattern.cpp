@@ -14,6 +14,8 @@
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
+
 namespace sonia::lang::bang {
 
 class tuple_tail_match_descriptor : public functional_match_descriptor
@@ -61,46 +63,35 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern
 
         auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
         if (!res) return std::unexpected(std::move(res.error()));
-        auto err = apply_visitor(make_functional_visitor<error_storage>([&ctx, &pmd, &argexpr, &call, pargname](auto& v) -> error_storage {
+        auto& [el, reid] = res->first;
+        if (!pmd && !pargname) {
             entity_identifier argtype;
-            if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-                if (v == ctx.u().get(builtin_eid::void_)) {
-                    return make_error<type_mismatch_error>(get_start_location(argexpr), v, "not void"sv);
-                }
-            } else {
-                if (ctx.context_type == ctx.u().get(builtin_eid::void_)) return {}; // skip
-                argtype = ctx.context_type;
-            }
-
-            if (!pmd && !pargname) {
-                if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-                    entity const& arg_entity = ctx.u().eregistry_get(v);
-                    if (auto psig = arg_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
-                        // argument is typename tuple
-                        pmd = make_shared<tuple_tail_match_descriptor>(ctx.u(), *psig, call.location);
-                        return {};
-                    } else {
-                        argtype = arg_entity.get_type();
-                    }
-                }
-                entity const& tpl_entity = ctx.u().eregistry_get(argtype);
-                if (auto psig = tpl_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
-                    if (psig->fields().empty()) {
-                        return make_error<basic_general_error>(call.location, "tuple is empty"sv);
-                    }
-                    pmd = make_shared<tuple_tail_match_descriptor>(ctx.u(), *tpl_entity.signature(), call.location);
-                    if constexpr (std::is_same_v<semantic::managed_expression_list, std::decay_t<decltype(v)>>) {
-                        if (pmd->result_actual_size) {
-                            pmd->get_match_result(0).append_result(argtype, v.end(), v);
-                            pmd->call_expressions.splice_back(v);
-                        }
-                    }
-                    return {};
+            if (!el) {
+                entity const& arg_entity = get_entity(ctx.u(), reid);
+                if (auto psig = arg_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
+                    // argument is typename tuple
+                    pmd = make_shared<tuple_tail_match_descriptor>(ctx.u(), *psig, call.location);
+                    continue;
+                } else {
+                    argtype = arg_entity.get_type();
                 }
             }
-            return make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr);
-        }), res->first);
-        if (err) return std::unexpected(std::move(err));
+            entity const& tpl_entity = get_entity(ctx.u(), argtype);
+            if (auto psig = tpl_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
+                if (psig->fields().empty()) {
+                    return std::unexpected(make_error<basic_general_error>(call.location, "tuple is empty"sv));
+                }
+                pmd = make_shared<tuple_tail_match_descriptor>(ctx.u(), *tpl_entity.signature(), call.location);
+                if (el) {
+                    if (pmd->result_actual_size) {
+                        pmd->get_match_result(0).append_result(argtype, el.end(), el);
+                        pmd->call_expressions.splice_back(el);
+                    }
+                }
+                continue;
+            }
+            return std::unexpected(make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr));
+        }
     }
     if (!pmd) {
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
@@ -161,7 +152,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern
 #endif
 }
 
-std::expected<tuple_tail_pattern::application_result_t, error_storage> tuple_tail_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> tuple_tail_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_tail_match_descriptor&>(md);
@@ -173,18 +164,15 @@ std::expected<tuple_tail_pattern::application_result_t, error_storage> tuple_tai
     
     if (tmd.result_actual_size == 0) {
         if (tplent.id() == u.get(builtin_eid::void_)) {
-            ctx.context_type = tplent.id();
-            return semantic::managed_expression_list{ u }; // return void
+            return syntax_expression_result_t{ semantic::managed_expression_list{ u }, tplent.id() }; // return void
         }
         empty_entity valueref{ tplent.id() };
         entity& value_ent = ctx.u().eregistry_find_or_create(valueref, [&tplent]() {
             return make_shared<empty_entity>(tplent.id());
         });
-        return value_ent.id();
+        return make_result(u, value_ent.id());
     }
     
-    ctx.context_type = tplent.id();
-
     semantic::managed_expression_list exprs{ u };
     tmd.for_each_positional_match([&exprs, &tmd](parameter_match_result const& mr) {
         for (auto const& [eid, optspan] : mr.results) {
@@ -198,7 +186,7 @@ std::expected<tuple_tail_pattern::application_result_t, error_storage> tuple_tai
     if (!tmd.is_src_head_const) {
         u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_tail)));
     }
-    return std::move(exprs);
+    return syntax_expression_result_t{ std::move(exprs), tplent.id() };
 }
 
 }

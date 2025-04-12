@@ -12,7 +12,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional::pattern::application_result_t, error_storage> metaobject_tail_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> metaobject_tail_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
 
@@ -41,9 +41,9 @@ std::expected<functional::pattern::application_result_t, error_storage> metaobje
 
     indirect_signatured_entity smpl{ tail_signature };
 
-    return u.eregistry_find_or_create(smpl, [&u, &tail_signature]() {
+    return make_result(u, u.eregistry_find_or_create(smpl, [&u, &tail_signature]() {
         return make_shared<basic_signatured_entity>(std::move(tail_signature));
-    }).id();
+    }).id());
 }
 
 }

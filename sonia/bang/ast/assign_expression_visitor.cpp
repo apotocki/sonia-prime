@@ -31,30 +31,24 @@ assign_expression_visitor::result_type assign_expression_visitor::operator()(var
         base_expression_visitor rvis{ ctx_, annotated_entity_identifier{ assign_type, assign_location_ } };
         auto res = apply_visitor(rvis, rhs_);
         if (!res) return std::unexpected(std::move(res.error()));
-
-        semantic::managed_expression_list l = apply_visitor(make_functional_visitor<semantic::managed_expression_list>([this](auto& v) -> semantic::managed_expression_list {
-            if constexpr (std::is_same_v<std::decay_t<decltype(v)>, entity_identifier>) {
-                semantic::managed_expression_list l{ u() };
-                u().push_back_expression(l, semantic::push_value{ v });
-                return l;
-            } else {
-                return std::move(v);
-            }
-        }), res->first);
+        auto& [el, reid] = res->first;
+        if (!el) {
+            u().push_back_expression(el, semantic::push_value{ reid });
+        }
 
         if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, local_variable>) {
             if (eid_or_var.is_weak) {
                 THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN weak");
                 //ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });
             }
-            u().push_back_expression(l, semantic::set_local_variable{ eid_or_var.index });
+            u().push_back_expression(el, semantic::set_local_variable{ eid_or_var.index });
             if (eid_or_var.is_weak) {
                 ctx_.append_expression(semantic::truncate_values(1, false));
             }
         } else {
-            u().push_back_expression(l, semantic::set_variable{ peve });
+            u().push_back_expression(el, semantic::set_variable{ peve });
         }
-        return std::move(l);
+        return syntax_expression_result_t{ std::move(el), u().get(builtin_eid::void_) };
     }), e);
     //    if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, local_variable>) {
     //        base_expression_visitor rvis{ ctx_, annotated_entity_identifier{ eid_or_var.type, assign_location_ } };

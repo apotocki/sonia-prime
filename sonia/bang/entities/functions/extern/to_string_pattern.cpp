@@ -11,14 +11,14 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional::pattern::application_result_t, error_storage> to_string_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> to_string_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& [strid, _] = md.get_match_result(0).results.front();
     entity const& ent = u.eregistry_get(strid);
     identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&ent);
     BOOST_ASSERT(pie);
-    return u.make_string_entity(u.print(pie->value())).id();
+    return make_result(u, u.make_string_entity(u.print(pie->value())).id());
 }
 
 }

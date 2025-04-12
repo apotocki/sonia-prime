@@ -17,6 +17,7 @@
 
 #include "ct_expression_visitor.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
 #include "sonia/bang/errors.hpp"
 
 #include <expected>
@@ -858,15 +859,15 @@ expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_
 expression_visitor::result_type expression_visitor::handle(base_expression_visitor::result_type&& res) const
 {
     if (!res) return std::unexpected(std::move(res.error()));
-    apply_visitor(make_functional_visitor<void>([this](auto && eid_or_el) {
-        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_el)>, entity_identifier>) {
-            ctx.append_expression(semantic::push_value{ eid_or_el });
-            entity const& e = ctx.u().eregistry_get(eid_or_el);
-            ctx.context_type = e.get_type();
-        } else {
-            ctx.expressions().splice_back(eid_or_el);
-        }
-    }), res->first);
+    auto& [el, type] = res->first;
+    if (!el) {
+        ctx.append_expression(semantic::push_value{ type });
+        entity const& e = get_entity(ctx.u(), type);
+        ctx.context_type = e.get_type();
+    } else {
+        ctx.expressions().splice_back(el);
+        ctx.context_type = type;
+    }
     return res->second;
 }
 

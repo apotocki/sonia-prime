@@ -40,13 +40,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_
     return pmd;
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> create_identifier_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> create_identifier_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_identifier strid = md.get_match_result(0).results.front().first;
     string_literal_entity const& str_ent = static_cast<string_literal_entity const&>(u.eregistry_get(strid));
     identifier id = u.slregistry().resolve(str_ent.value());
-    return u.make_identifier_entity(id).id();
+    return make_result(u, u.make_identifier_entity(id).id());
 }
 
 }

@@ -49,7 +49,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_pattern::try
     return pmd;
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> tuple_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> tuple_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_identifier typename_eid = u.get(builtin_eid::typename_);
@@ -70,7 +70,7 @@ std::expected<functional::pattern::application_result_t, error_storage> tuple_pa
         return make_shared<basic_signatured_entity>(std::move(result_signature));
     });
     
-    return entres.id();
+    return make_result(u, entres.id());
 }
 
 }

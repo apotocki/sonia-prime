@@ -83,7 +83,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
 }
 
 
-std::expected<functional::pattern::application_result_t, error_storage> enum_implicit_cast_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& [strid, _] = md.get_match_result(0).results.front();
@@ -92,7 +92,7 @@ std::expected<functional::pattern::application_result_t, error_storage> enum_imp
     BOOST_ASSERT(pie);
     
     // return typed by enumeration string
-    return u.make_string_entity(u.print(pie->value()), md.result.entity_id()).id();
+    return make_result(u, u.make_string_entity(u.print(pie->value()), md.result.entity_id()).id());
 }
 
 }

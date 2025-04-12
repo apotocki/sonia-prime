@@ -88,12 +88,12 @@ std::expected<field_descriptor, error_storage> push_by_name(fn_compiler_context&
     }), optent);
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> ellipsis_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     BOOST_ASSERT(dynamic_cast<ellipsis_match_descriptor*>(&md));
 
     ellipsis_match_descriptor& nsmd = static_cast<ellipsis_match_descriptor&>(md);
-    using result_t = std::expected<functional::pattern::application_result_t, error_storage>;
+    using result_t = std::expected<syntax_expression_result_t, error_storage>;
     return apply_visitor(make_functional_visitor<result_t>([&ctx, &nsmd](auto const* pe) -> result_t {
         unit& u = ctx.u();
         
@@ -102,8 +102,8 @@ std::expected<functional::pattern::application_result_t, error_storage> ellipsis
             annotated_qname varname{ qname{ pe->value(), false }, nsmd.location };
             auto res = push_by_name(ctx, varname, l);
             if (!res) return std::unexpected(std::move(res.error()));
-            if (res->is_const()) return res->entity_id(); // constexpr case
-            return std::move(l);
+            if (res->is_const()) return make_result(u, res->entity_id()); // constexpr case
+            return syntax_expression_result_t{ std::move(l), res->entity_id() };
         } else {
             basic_signatured_entity const* bse = pe;
             // make tuple
@@ -132,10 +132,9 @@ std::expected<functional::pattern::application_result_t, error_storage> ellipsis
             }
 
             if (!argcount) { // constexpr case
-                return tplent.id();
+                return make_result(u, tplent.id());
             } else {
-                ctx.context_type = tplent.id();
-                return std::move(l);
+                return syntax_expression_result_t{ std::move(l), tplent.id() };
             }
         }
     }), nsmd.argument());

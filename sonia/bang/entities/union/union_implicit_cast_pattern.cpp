@@ -50,16 +50,17 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
         auto const& argexpr = arg.value();
         
         if (pargname) { // should be void to proceed
-            auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
-            if (!res) return std::unexpected(std::move(res.error()));
-            auto err = apply_visitor(make_functional_visitor<error_storage>([this, &ctx, pargname, &argexpr](auto & v) -> error_storage {
-                if constexpr (std::is_same_v<semantic::managed_expression_list, std::decay_t<decltype(v)>>) {
-                    if (ctx.context_type == ctx.u().get(builtin_eid::void_)) return {}; // skip
-                }
-                return make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr);
-            }), res->first);
-            if (err) return std::unexpected(std::move(err));
-            continue; // skip void argument
+            return std::unexpected(make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr));
+            //auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
+            //if (!res) return std::unexpected(std::move(res.error()));
+            //auto err = apply_visitor(make_functional_visitor<error_storage>([this, &ctx, pargname, &argexpr](auto & v) -> error_storage {
+            //    if constexpr (std::is_same_v<semantic::managed_expression_list, std::decay_t<decltype(v)>>) {
+            //        if (ctx.context_type == ctx.u().get(builtin_eid::void_)) return {}; // skip
+            //    }
+            //    return make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr);
+            //}), res->first);
+            //if (err) return std::unexpected(std::move(err));
+            //continue; // skip void argument
         }
         
         if (pmd) {
@@ -89,30 +90,27 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
     return pmd;
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> union_implicit_cast_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> union_implicit_cast_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& ucmd = static_cast<union_cast_match_descriptor&>(md);
     auto res = ucmd.submatch.apply(ctx);
     if (!res) return std::unexpected(std::move(res.error()));
-    return apply_visitor(make_functional_visitor<functional::pattern::application_result_t>([&ctx, &ucmd](auto& v) {
-        unit& u = ctx.u();
-        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-            entity_signature usig{ u.get(builtin_qnid::metaobject), ucmd.result_type };
-            usig.push_back(u.get(builtin_id::which), field_descriptor{ u.make_integer_entity(ucmd.field_index).id(), true });
-            usig.push_back(field_descriptor{ v, true });
-            indirect_signatured_entity smpl{ usig };
-            return u.eregistry_find_or_create(smpl, [&u, &usig]() {
-                return make_shared<basic_signatured_entity>(std::move(usig));
-            }).id();
-        } else {
-            u.push_back_expression(v, semantic::push_value{ ucmd.field_index }); // runtime which value
-            u.push_back_expression(v, semantic::push_value{ 2ull });
-            u.push_back_expression(v, semantic::invoke_function(u.get(builtin_eid::arrayify)));
-            ctx.context_type = ucmd.result_type;
-            return std::move(v);
-        }
-    }), *res);
+    auto& [el, reid] = *res;
+    if (!el) {
+        entity_signature usig{ u.get(builtin_qnid::metaobject), ucmd.result_type };
+        usig.push_back(u.get(builtin_id::which), field_descriptor{ u.make_integer_entity(ucmd.field_index).id(), true });
+        usig.push_back(field_descriptor{ reid, true });
+        indirect_signatured_entity smpl{ usig };
+        return make_result(u, u.eregistry_find_or_create(smpl, [&u, &usig]() {
+            return make_shared<basic_signatured_entity>(std::move(usig));
+        }).id());
+    } else {
+        u.push_back_expression(el, semantic::push_value{ ucmd.field_index }); // runtime which value
+        u.push_back_expression(el, semantic::push_value{ 2ull });
+        u.push_back_expression(el, semantic::invoke_function(u.get(builtin_eid::arrayify)));
+        return syntax_expression_result_t{ std::move(el), ucmd.result_type };
+    }
 }
 
 }

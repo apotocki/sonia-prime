@@ -548,6 +548,8 @@ public:
 using syntax_expression_result_t = std::pair<semantic::managed_expression_list, entity_identifier>;
 //using semantic_expression_pair = std::pair<semantic::expression_t, bang_type>;
 
+syntax_expression_result_t make_result(unit&, entity_identifier); // auxiliary
+
 }
 
 

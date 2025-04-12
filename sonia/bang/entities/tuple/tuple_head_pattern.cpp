@@ -42,19 +42,19 @@ public:
     entity_signature result_sig;
 };
 
-template <typename ArgApplicationT>
-error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type & argctx, ArgApplicationT & v) const
+error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type & argctx, syntax_expression_result_t& er) const
 {
     if (pmd || argctx.pargname) return argctx.make_argument_mismatch_error();
 
     fn_compiler_context& ctx = argctx.ctx;
     prepared_call const& call = argctx.call;
     unit& u = ctx.u();
+    semantic::managed_expression_list& el = get<0>(er);
 
     entity_identifier argtype;
 
-    if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-        entity const& arg_entity = u.eregistry_get(v);
+    if (!el) {
+        entity const& arg_entity = u.eregistry_get(er.second);
         if (auto psig = arg_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
             // argument is typename tuple
             pmd = make_shared<tuple_head_match_descriptor>(u, *psig, call.location);
@@ -85,11 +85,11 @@ error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_mat
         md.src_size = fields_count;
 
         auto& mr = md.get_match_result(0);
-        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+        if (!el) {
             mr.append_result(argtype);
         } else {
-            mr.append_result(argtype, v.end(), v);
-            md.call_expressions.splice_back(v);
+            mr.append_result(argtype, el.end(), el);
+            md.call_expressions.splice_back(el);
         }
         return {};
     }
@@ -166,11 +166,11 @@ error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_mat
 //    return pmd;
 //}
 
-std::expected<tuple_head_pattern::application_result_t, error_storage> tuple_head_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_head_match_descriptor&>(md);
-
+    entity_identifier rtype;
     if (tmd.result_sig.fields().size() > 1) { // 'named' front field case
         indirect_signatured_entity smpl{ tmd.result_sig };
         entity& tplent = ctx.u().eregistry_find_or_create(smpl, [&u, &tmd]() {
@@ -183,13 +183,13 @@ std::expected<tuple_head_pattern::application_result_t, error_storage> tuple_hea
             entity& value_ent = ctx.u().eregistry_find_or_create(valueref, [&tplent]() {
                 return make_shared<empty_entity>(tplent.id());
             });
-            return value_ent.id();
+            return make_result(u, value_ent.id());
         }
-        ctx.context_type = tplent.id();
+        rtype = tplent.id();
     } else if (tmd.result_sig.fields().front().is_const()) {
-        return tmd.result_sig.fields().front().entity_id();
+        return make_result(u, tmd.result_sig.fields().front().entity_id());
     } else {
-        ctx.context_type = tmd.result_sig.fields().front().entity_id();
+        rtype = tmd.result_sig.fields().front().entity_id();
     }
 
     semantic::managed_expression_list exprs{ u };
@@ -207,7 +207,7 @@ std::expected<tuple_head_pattern::application_result_t, error_storage> tuple_hea
         u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
 
-    return std::move(exprs);
+    return syntax_expression_result_t{ std::move(exprs), rtype };
 }
 
 template generic_pattern_base<tuple_head_pattern>;

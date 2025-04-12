@@ -12,10 +12,10 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional::pattern::application_result_t, error_storage> metaobject_empty_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> metaobject_empty_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     entity_signature const& objsignature = argument_signature(ctx, md);
-    return ctx.u().get(objsignature.fields().empty() ? builtin_eid::true_ : builtin_eid::false_);
+    return make_result(ctx.u(), ctx.u().get(objsignature.fields().empty() ? builtin_eid::true_ : builtin_eid::false_));
 }
 
 }

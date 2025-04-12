@@ -4,10 +4,12 @@
 
 #pragma once
 
-#include "sonia/bang/unit.hpp"
-#include "sonia/bang/ast_terms.hpp"
+#include "sonia/bang/terms.hpp"
 
 namespace sonia::lang::bang {
+
+class unit;
+class entity;
 
 entity const& get_entity(unit&, entity_identifier const&);
 

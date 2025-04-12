@@ -2316,7 +2316,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\signature_matcher.hpp">
       <Filter>sonia.bang\entities\functions</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\typeof_pattern.hpp">
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_typeof_pattern.hpp">
       <Filter>sonia.bang\entities\metaobject</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\errors\type_mismatch_error.hpp">
@@ -2812,9 +2812,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_entity.cpp">
       <Filter>sonia.bang\entities\struct</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\bang_ast_terms.cpp">
-      <Filter>sonia.bang</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_new_pattern.cpp">
       <Filter>sonia.bang\entities\struct</Filter>

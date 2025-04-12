@@ -115,7 +115,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
 #endif
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> tuple_set_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> tuple_set_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
 
@@ -137,8 +137,7 @@ std::expected<functional::pattern::application_result_t, error_storage> tuple_se
         u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
 
-    ctx.context_type = md.result.entity_id();
-    return std::move(exprs);
+    return syntax_expression_result_t{ std::move(exprs), md.result.entity_id() };
 }
 
 }

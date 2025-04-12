@@ -44,7 +44,7 @@
 #include "entities/collections/array_elements_implicit_cast_pattern.hpp"
 
 #include "entities/metaobject/metaobject_pattern.hpp"
-#include "entities/metaobject/typeof_pattern.hpp"
+#include "entities/metaobject/metaobject_typeof_pattern.hpp"
 #include "entities/metaobject/metaobject_head_pattern.hpp"
 #include "entities/metaobject/metaobject_tail_pattern.hpp"
 #include "entities/metaobject/metaobject_empty_pattern.hpp"
@@ -649,9 +649,11 @@ struct expr_printer_visitor : static_visitor<void>
         ss << to_string(d);
     }
 
-    void operator()(context_value const& vi) const
+    void operator()(indirect_value const& vi) const
     {
-
+        ss << "INDIRECT(type: "sv;
+        (*this)(vi.type);
+        ss << ')';
     }
 
     void operator()(variable_identifier const& vi) const
@@ -1128,37 +1130,37 @@ unit::unit()
     builtin_ids_[(size_t)builtin_id::init] = make_identifier("init"sv);
 
     //// types
-    builtin_qnids_[(size_t)builtin_qnid::any] = make_qname_identifier("any");
-    builtin_qnids_[(size_t)builtin_qnid::union_] = make_qname_identifier("union");
-    builtin_qnids_[(size_t)builtin_qnid::tuple] = make_qname_identifier("tuple");
-    builtin_qnids_[(size_t)builtin_qnid::vector] = make_qname_identifier("vector");
-    builtin_qnids_[(size_t)builtin_qnid::array] = make_qname_identifier("array");
-    builtin_qnids_[(size_t)builtin_qnid::fuzzy_array] = make_qname_identifier("fuzzy_array");
+    builtin_qnids_[(size_t)builtin_qnid::any] = make_qname_identifier("any"sv);
+    builtin_qnids_[(size_t)builtin_qnid::union_] = make_qname_identifier("union"sv);
+    builtin_qnids_[(size_t)builtin_qnid::tuple] = make_qname_identifier("tuple"sv);
+    builtin_qnids_[(size_t)builtin_qnid::vector] = make_qname_identifier("vector"sv);
+    builtin_qnids_[(size_t)builtin_qnid::array] = make_qname_identifier("array"sv);
+    builtin_qnids_[(size_t)builtin_qnid::fuzzy_array] = make_qname_identifier("fuzzy_array"sv);
     //// values
     
 
     //// operations
     builtin_qnids_[(size_t)builtin_qnid::new_] = make_qname_identifier("new"sv);
     builtin_qnids_[(size_t)builtin_qnid::init] = make_qname_identifier("init"sv);
-    builtin_qnids_[(size_t)builtin_qnid::size] = make_qname_identifier("size");
-    builtin_qnids_[(size_t)builtin_qnid::typeof] = make_qname_identifier("typeof");
-    builtin_qnids_[(size_t)builtin_qnid::make_tuple] = make_qname_identifier("make_tuple");
-    builtin_qnids_[(size_t)builtin_qnid::implicit_cast] = make_qname_identifier("implicit_cast");
-    builtin_qnids_[(size_t)builtin_qnid::eq] = make_qname_identifier("equal");
-    builtin_qnids_[(size_t)builtin_qnid::ne] = make_qname_identifier("not_equal");
-    builtin_qnids_[(size_t)builtin_qnid::plus] = make_qname_identifier("__plus");
-    builtin_qnids_[(size_t)builtin_qnid::minus] = make_qname_identifier("__minus");
-    builtin_qnids_[(size_t)builtin_qnid::bit_or] = make_qname_identifier("__bit_or");
-    builtin_qnids_[(size_t)builtin_qnid::bit_and] = make_qname_identifier("__bit_and");
-    builtin_qnids_[(size_t)builtin_qnid::negate] = make_qname_identifier("negate");
-    builtin_qnids_[(size_t)builtin_qnid::get] = make_qname_identifier("get");
-    builtin_qnids_[(size_t)builtin_qnid::set] = make_qname_identifier("set");
-    builtin_qnids_[(size_t)builtin_qnid::head] = make_qname_identifier("head");
-    builtin_qnids_[(size_t)builtin_qnid::tail] = make_qname_identifier("tail");
-    builtin_qnids_[(size_t)builtin_qnid::empty] = make_qname_identifier("empty");
+    builtin_qnids_[(size_t)builtin_qnid::size] = make_qname_identifier("size"sv);
+    builtin_qnids_[(size_t)builtin_qnid::typeof] = make_qname_identifier("typeof"sv);
+    builtin_qnids_[(size_t)builtin_qnid::make_tuple] = make_qname_identifier("make_tuple"sv);
+    builtin_qnids_[(size_t)builtin_qnid::implicit_cast] = make_qname_identifier("implicit_cast"sv);
+    builtin_qnids_[(size_t)builtin_qnid::eq] = make_qname_identifier("equal"sv);
+    builtin_qnids_[(size_t)builtin_qnid::ne] = make_qname_identifier("not_equal"sv);
+    builtin_qnids_[(size_t)builtin_qnid::plus] = make_qname_identifier("__plus"sv);
+    builtin_qnids_[(size_t)builtin_qnid::minus] = make_qname_identifier("__minus"sv);
+    builtin_qnids_[(size_t)builtin_qnid::bit_or] = make_qname_identifier("__bit_or"sv);
+    builtin_qnids_[(size_t)builtin_qnid::bit_and] = make_qname_identifier("__bit_and"sv);
+    builtin_qnids_[(size_t)builtin_qnid::negate] = make_qname_identifier("negate"sv);
+    builtin_qnids_[(size_t)builtin_qnid::get] = make_qname_identifier("get"sv);
+    builtin_qnids_[(size_t)builtin_qnid::set] = make_qname_identifier("set"sv);
+    builtin_qnids_[(size_t)builtin_qnid::head] = make_qname_identifier("head"sv);
+    builtin_qnids_[(size_t)builtin_qnid::tail] = make_qname_identifier("tail"sv);
+    builtin_qnids_[(size_t)builtin_qnid::empty] = make_qname_identifier("empty"sv);
 
     // typename
-    auto typename_qname_identifier = make_qname_identifier("typename");
+    auto typename_qname_identifier = make_qname_identifier("typename"sv);
     auto typename_entity = make_shared<basic_signatured_entity>();
     typename_entity->set_signature(entity_signature{typename_qname_identifier});
     
@@ -1172,37 +1174,16 @@ unit::unit()
     functional& any_fnl = fregistry_resolve(get(builtin_qnid::any));
     any_fnl.set_default_entity(annotated_entity_identifier{ any_entity->id() });
 
-    // bool
     setup_type("bool"sv, builtin_qnids_[(size_t)builtin_qnid::boolean], builtin_eids_[(size_t)builtin_eid::boolean]);
-
-    // integer
     setup_type("integer"sv, builtin_qnids_[(size_t)builtin_qnid::integer], builtin_eids_[(size_t)builtin_eid::integer]);
-
-    // decimal
     setup_type("decimal"sv, builtin_qnids_[(size_t)builtin_qnid::decimal], builtin_eids_[(size_t)builtin_eid::decimal]);
-
-    // float16
     setup_type("f16"sv, builtin_qnids_[(size_t)builtin_qnid::f16], builtin_eids_[(size_t)builtin_eid::f16]);
-
-    // float (32)
     setup_type("f32"sv, builtin_qnids_[(size_t)builtin_qnid::f32], builtin_eids_[(size_t)builtin_eid::f32]);
-
-    // double (64
     setup_type("f64"sv, builtin_qnids_[(size_t)builtin_qnid::f64], builtin_eids_[(size_t)builtin_eid::f64]);
-
-    // string
     setup_type("string"sv, builtin_qnids_[(size_t)builtin_qnid::string], builtin_eids_[(size_t)builtin_eid::string]);
-
-    // object
     setup_type("object"sv, builtin_qnids_[(size_t)builtin_qnid::object], builtin_eids_[(size_t)builtin_eid::object]);
-
-    // identifier
     setup_type("__identifier"sv, builtin_qnids_[(size_t)builtin_qnid::identifier], builtin_eids_[(size_t)builtin_eid::identifier]);
-
-    // identifier
     setup_type("__qname"sv, builtin_qnids_[(size_t)builtin_qnid::qname], builtin_eids_[(size_t)builtin_eid::qname]);
-
-    // metaobject
     setup_type("metaobject"sv, builtin_qnids_[(size_t)builtin_qnid::metaobject], builtin_eids_[(size_t)builtin_eid::metaobject]);
 
     // void

@@ -16,15 +16,13 @@ class union_bit_or_pattern : public generic_pattern_base<union_bit_or_pattern>
 public:
     union_bit_or_pattern() = default;
 
-    std::expected<application_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override { return s << "union(...)"sv; }
 
 protected:
 
-    error_storage accept_argument(std::nullptr_t, functional_match_descriptor_ptr&, arg_context_type&, entity_identifier&) const;
-
-    error_storage accept_argument(std::nullptr_t, functional_match_descriptor_ptr&, arg_context_type&, semantic::managed_expression_list&) const;
+    error_storage accept_argument(std::nullptr_t, functional_match_descriptor_ptr&, arg_context_type&, syntax_expression_result_t&) const;
 };
 
 }

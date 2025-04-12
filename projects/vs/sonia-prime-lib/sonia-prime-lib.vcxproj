@@ -282,7 +282,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_tail_pattern.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\typeof_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_typeof_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\prepared_call.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\signatured_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functional.hpp" />
@@ -762,7 +762,6 @@
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4244</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\bang.yy.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\bang_ast_terms.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_auxiliary.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_errors.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp" />

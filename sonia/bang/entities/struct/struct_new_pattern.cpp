@@ -111,7 +111,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
 #endif
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> struct_new_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> struct_new_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     // create tuple instance
     unit& u = ctx.u();

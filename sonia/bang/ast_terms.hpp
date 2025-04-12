@@ -13,7 +13,6 @@
 #include <boost/preprocessor/stringize.hpp>
 #include <boost/preprocessor/cat.hpp>
 
-#include "sonia/string.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/optional.hpp"
 #include "sonia/shared_ptr.hpp"
@@ -21,7 +20,6 @@
 #include "sonia/function.hpp"
 #include "sonia/small_vector.hpp"
 #include "sonia/utility/functional/variant_compare_three_way.hpp"
-#include "sonia/mp/basic_decimal.hpp"
 
 #include "sonia/utility/automatic_polymorphic.hpp"
 
@@ -34,45 +32,8 @@ namespace sonia::lang::bang {
 
 class unit;
 
-template <typename T>
-struct annotated
-{
-    T value;
-    lex::resource_location location;
-
-    inline bool operator==(annotated const& r) const noexcept { return value == r.value; }
-    inline auto operator<=>(annotated const& r) const noexcept { return value <=> r.value; }
-
-    inline explicit operator bool() const noexcept { return (bool)value; }
-};
-
-struct annotated_nil
-{
-    lex::resource_location location;
-};
-
-using annotated_string_view = annotated<string_view>;
-using annotated_identifier = annotated<identifier>;
-using annotated_qname = annotated<qname>;
-using annotated_qname_identifier = annotated<qname_identifier>;
-using annotated_entity_identifier = annotated<entity_identifier>;
-using annotated_bool = annotated<bool>;
-using annotated_integer = annotated<mp::integer>;
-using annotated_decimal = annotated<mp::decimal>;
-using annotated_string = annotated<small_string>;
-
 struct statement_entry;
 using statement_span = linked_list_node_span<statement_entry>;
-
-//using elementary_expression = variant<
-//    null_t, bool, decimal, small_u32string, 
-//struct annotated_number
-//{
-//    uint64_t value;
-//    lex::resource_location location;
-//    inline bool operator==(annotated_number const& r) const { return id == r.id; }
-//};
-
 
 // ======================================================================== preliminary types
 
@@ -738,7 +699,7 @@ using bang_union_t = bang_union<syntax_expression_t>;
 template <typename T> struct is_unary_expression : false_type {};
 template <typename T> requires(std::is_same_v<decltype(T::op), const unary_operator_type>) struct is_unary_expression<T> : true_type {};
 
-lex::resource_location const& get_start_location(syntax_expression_t const&);
+lex::resource_location const& get_start_location(syntax_expression_t const&); // auxiliary
 
 // {particular location or expression, optional reference location}
 struct error_context

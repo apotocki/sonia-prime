@@ -226,17 +226,12 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(opt_named_s
 ct_expression_visitor::result_type ct_expression_visitor::handle(base_expression_visitor::result_type&& res) const
 {
     if (!res) return std::unexpected(std::move(res.error()));
-    return apply_visitor(make_functional_visitor<result_type>([this](auto& v) -> result_type {
-        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-            return v;
-        } else {
-            if (ctx.context_type == ctx.u().get(builtin_eid::void_)) {
-                BOOST_ASSERT(v.empty());
-                return ctx.context_type;
-            }
-            THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::handle");
-        }
-    }), res->first);
+    auto& [el, reid] = res->first;
+    if (!el) {
+        return reid;
+    } else {
+        THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::handle");
+    }
 }
 
 }

@@ -35,9 +35,9 @@ error_storage size_pattern::accept_argument(std::nullptr_t, functional_match_des
     }
 }
 
-std::expected<functional::pattern::application_result_t, error_storage> size_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> size_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
-    return md.result.entity_id();
+    return make_result(ctx.u(), md.result.entity_id());
 }
 
 template generic_pattern_base<size_pattern>;

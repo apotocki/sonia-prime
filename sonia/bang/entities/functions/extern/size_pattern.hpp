@@ -20,8 +20,7 @@ public:
     std::ostream& print(unit const&, std::ostream& s) const override { return s << "size(const signature)->integer"; }
 
 protected:
-    template <typename ArgApplicationT>
-    error_storage accept_argument(std::nullptr_t, functional_match_descriptor_ptr&, arg_context_type&, ArgApplicationT&) const;
+    error_storage accept_argument(std::nullptr_t, functional_match_descriptor_ptr&, arg_context_type&, syntax_expression_result_t&) const;
 };
 
 }

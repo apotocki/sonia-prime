@@ -12,27 +12,26 @@
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
+
 namespace sonia::lang::bang {
 
-template <typename ArgApplicationT>
-error_storage size_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type& argctx, ArgApplicationT& v) const
+error_storage size_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type& argctx, syntax_expression_result_t& v) const
 {
-    if constexpr (!std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+    if (get<0>(v) || pmd || argctx.pargname)
         return argctx.make_argument_mismatch_error();
-    } else {
-        if (pmd || argctx.pargname) return argctx.make_argument_mismatch_error();
-        fn_compiler_context& ctx = argctx.ctx;
-        prepared_call const& call = argctx.call;
-        unit& u = ctx.u();
 
-        signatured_entity const* arg_entity = dynamic_cast<signatured_entity const*>(&u.eregistry_get(v));
-        if (!arg_entity) {
-            return argctx.make_argument_mismatch_error();
-        }
-        pmd = make_shared<functional_match_descriptor>(u, call.location);
-        pmd->result = field_descriptor{ u.make_integer_entity(arg_entity->signature()->positioned_fields_indices().size()).id(), true };
-        return {};
+    fn_compiler_context& ctx = argctx.ctx;
+    prepared_call const& call = argctx.call;
+    unit& u = ctx.u();
+
+    signatured_entity const* arg_entity = dynamic_cast<signatured_entity const*>(&get_entity(u, get<1>(v)));
+    if (!arg_entity) {
+        return argctx.make_argument_mismatch_error();
     }
+    pmd = make_shared<functional_match_descriptor>(u, call.location);
+    pmd->result = field_descriptor{ u.make_integer_entity(arg_entity->signature()->positioned_fields_indices().size()).id(), true };
+    return {};
 }
 
 std::expected<syntax_expression_result_t, error_storage> size_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const

@@ -117,14 +117,14 @@ struct opt_named_term
     using named_pair_t = std::tuple<annotated_identifier, TermT>;
     variant<named_pair_t, TermT, nullptr_t> term;
 
-    inline opt_named_term() noexcept : term{nullptr} {}
+    inline opt_named_term() noexcept : term{ nullptr } {}
 
     template <typename TermArgT>
-    requires(std::is_same_v<TermT, std::decay_t<TermArgT>>)
+    requires(std::is_constructible_v<TermT, std::decay_t<TermArgT>>)
     inline explicit opt_named_term(TermArgT&& t) noexcept : term{ std::forward<TermArgT>(t) } {}
     
     template <typename NameT, typename TermArgT>
-    requires(std::is_same_v<TermT, std::decay_t<TermArgT>>)
+    requires(std::is_constructible_v<TermT, std::decay_t<TermArgT>>)
     inline explicit opt_named_term(NameT&& narg, TermArgT&& t) noexcept
         : term{ named_pair_t{std::forward<NameT>(narg), std::forward<TermArgT>(t)} }
     {}
@@ -142,13 +142,19 @@ struct opt_named_term
         return { nullptr, get<TermT>(term) };
     }
 
+    std::tuple<annotated_identifier const*, TermT &> operator*() noexcept
+    {
+        if (named_pair_t * p = get<named_pair_t>(&term); p) return { &get<0>(*p), get<1>(*p) };
+        return { nullptr, get<TermT>(term) };
+    }
+
     inline TermT const& value() const noexcept
     {
         if (named_pair_t const* p = get<named_pair_t>(&term); p) return get<1>(*p);
         return get<TermT>(term);
     }
 
-    inline TermT & value()  noexcept
+    inline TermT & value() noexcept
     {
         if (named_pair_t * p = get<named_pair_t>(&term); p) return get<1>(*p);
         return get<TermT>(term);

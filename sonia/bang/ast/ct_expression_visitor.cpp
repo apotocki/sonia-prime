@@ -154,16 +154,6 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(bang_vector
     return handle(base_expression_visitor::operator()(v));
 }
 
-ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_qname const& aqn) const
-{
-    auto optqnid = ctx.lookup_qname(aqn);
-    if (optqnid) {
-        entity_identifier entid = u().make_qname_entity(*optqnid).id();
-        return apply_cast(entid, aqn);
-    }
-    return std::unexpected(optqnid.error());
-}
-
 ct_expression_visitor::result_type ct_expression_visitor::operator()(function_call_t const& proc) const
 {
     ct_expression_visitor vis{ ctx, annotated_entity_identifier{ u().get(builtin_eid::qname), proc.location() } };

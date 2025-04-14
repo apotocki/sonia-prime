@@ -51,6 +51,7 @@ using integer_literal_entity = literal_entity<mp::integer>;
 using decimal_literal_entity = literal_entity<mp::decimal>;
 using identifier_entity = literal_entity<identifier>;
 using qname_identifier_entity = literal_entity<qname_identifier>;
+using qname_entity = literal_entity<qname>;
 
 class empty_entity;
 class enum_entity;

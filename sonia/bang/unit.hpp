@@ -201,7 +201,8 @@ public:
     inline identifier get(builtin_id bi) const noexcept { return builtin_ids_[(size_t)bi]; }
 
     identifier_entity       const& make_identifier_entity(identifier value);
-    qname_identifier_entity const& make_qname_entity(qname_identifier value);
+    //qname_identifier_entity const& make_qname_identifier_entity(qname_identifier value);
+    qname_entity            const& make_qname_entity(qname_view value);
     bool_literal_entity     const& make_bool_entity(bool value, entity_identifier type = {});
     integer_literal_entity  const& make_integer_entity(mp::integer_view value, entity_identifier type = {});
     decimal_literal_entity  const& make_decimal_entity(mp::decimal_view value, entity_identifier type = {});

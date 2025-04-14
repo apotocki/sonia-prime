@@ -921,11 +921,19 @@ identifier_entity const& unit::make_identifier_entity(identifier value)
     }));
 }
 
-qname_identifier_entity const& unit::make_qname_entity(qname_identifier value)
+//qname_identifier_entity const& unit::make_qname_identifier_entity(qname_identifier value)
+//{
+//    qname_identifier_entity smpl{ value, get(builtin_eid::qname_identifier) };
+//    return static_cast<qname_identifier_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
+//        return make_shared<qname_identifier_entity>(std::move(smpl));
+//    }));
+//}
+
+qname_entity const& unit::make_qname_entity(qname_view value)
 {
-    qname_identifier_entity smpl{ value, get(builtin_eid::qname) };
-    return static_cast<qname_identifier_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
-        return make_shared<qname_identifier_entity>(std::move(smpl));
+    qname_entity smpl{ value, get(builtin_eid::qname) };
+    return static_cast<qname_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
+        return make_shared<qname_entity>(std::move(smpl));
     }));
 }
 

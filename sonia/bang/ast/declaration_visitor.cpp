@@ -615,7 +615,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
                 identifier unnamedid = u().new_identifier();
                 local_variable& ve = ctx.new_variable(annotated_identifier{ unnamedid }, er.second);
                 ve.is_weak = ld.weakness;
-                field_eid = u().make_identifier_entity(unnamedid).id();
+                field_eid = u().make_qname_entity(qname{ unnamedid, false }).id();
             }
             if (id) {
                 field_map.emplace(id, field_eid);

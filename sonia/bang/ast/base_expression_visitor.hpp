@@ -63,19 +63,28 @@ public:
 protected:
     unit& u() const noexcept;
 
-    template <std::derived_from<pure_call_t> CallExpressionT>
-    result_type operator()(builtin_qnid, CallExpressionT const&) const;
+    template <typename FnIdT, std::derived_from<pure_call_t> ExprT>
+    result_type operator()(FnIdT &&, ExprT const&) const;
 
     result_type do_assign(binary_expression_t const&) const;
 
-    template <typename ExprT>
-    result_type apply_cast(entity_identifier, ExprT const& e) const;
+    result_type apply_cast(entity const&, syntax_expression_t const&) const;
+    result_type apply_cast(syntax_expression_result_t, syntax_expression_t const&) const;
 
     template <typename ExprT>
-    result_type apply_cast(entity const&, ExprT const& e) const;
+    result_type apply_cast(entity_identifier eid, ExprT const& e) const;
+    
+    template <typename ExprT>
+    inline result_type apply_cast(entity const& ent, ExprT const& e) const
+    {
+        return apply_cast(ent, syntax_expression_t{ e });
+    }
 
     template <typename ExprT>
-    result_type apply_cast(syntax_expression_result_t, ExprT const&) const;
+    result_type apply_cast(syntax_expression_result_t er, ExprT const& e) const
+    {
+        return apply_cast(std::move(er), syntax_expression_t{ e });
+    }
 
     template <typename ExprT>
     inline result_type apply_cast(std::expected<syntax_expression_result_t, error_storage>, ExprT const&) const;

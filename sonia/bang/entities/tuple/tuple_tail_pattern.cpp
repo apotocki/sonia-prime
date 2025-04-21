@@ -22,8 +22,7 @@ class tuple_tail_match_descriptor : public functional_match_descriptor
 {
 public:
     inline explicit tuple_tail_match_descriptor(unit& u, entity_signature const& sig, lex::resource_location loc) noexcept
-        : functional_match_descriptor{ u }
-        , result_sig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) }
+        : result_sig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) }
         , result_actual_size{ 0 }
         , is_src_head_const{ sig.fields().front().is_const() }
     {
@@ -63,11 +62,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern
 
         auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
         if (!res) return std::unexpected(std::move(res.error()));
-        auto& [el, reid] = res->first;
+        auto& ser = res->first;
         if (!pmd && !pargname) {
             entity_identifier argtype;
-            if (!el) {
-                entity const& arg_entity = get_entity(ctx.u(), reid);
+            if (ser.is_const_result) {
+                entity const& arg_entity = get_entity(ctx.u(), ser.value());
                 if (auto psig = arg_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
                     // argument is typename tuple
                     pmd = make_shared<tuple_tail_match_descriptor>(ctx.u(), *psig, call.location);
@@ -82,10 +81,10 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern
                     return std::unexpected(make_error<basic_general_error>(call.location, "tuple is empty"sv));
                 }
                 pmd = make_shared<tuple_tail_match_descriptor>(ctx.u(), *tpl_entity.signature(), call.location);
-                if (el) {
+                if (!ser.is_const_result) {
                     if (pmd->result_actual_size) {
-                        pmd->get_match_result(0).append_result(argtype, el.end(), el);
-                        pmd->call_expressions.splice_back(el);
+                        pmd->get_match_result(0).append_result(argtype, ser.expressions);
+                        call.splice_back(ser.expressions);
                     }
                 }
                 continue;
@@ -152,7 +151,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern
 #endif
 }
 
-std::expected<syntax_expression_result_t, error_storage> tuple_tail_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> tuple_tail_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_tail_match_descriptor&>(md);
@@ -174,14 +173,11 @@ std::expected<syntax_expression_result_t, error_storage> tuple_tail_pattern::app
     }
     
     semantic::managed_expression_list exprs{ u };
-    tmd.for_each_positional_match([&exprs, &tmd](parameter_match_result const& mr) {
-        for (auto const& [eid, optspan] : mr.results) {
-            BOOST_ASSERT(optspan);
-            exprs.splice_back(tmd.call_expressions, *optspan);
+    tmd.for_each_positional_match([&exprs, &el](parameter_match_result const& mr) {
+        for (auto const& ser : mr.results) {
+            exprs.splice_back(el, ser.expressions);
         }
     });
-
-    BOOST_ASSERT(!tmd.call_expressions); // all arguments were transfered
 
     if (!tmd.is_src_head_const) {
         u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_tail)));

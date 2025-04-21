@@ -12,6 +12,8 @@
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
+
 namespace sonia::lang::bang {
 
 class ellipsis_match_descriptor : public functional_match_descriptor
@@ -20,12 +22,10 @@ class ellipsis_match_descriptor : public functional_match_descriptor
 
 public:
     template <typename EntityT>
-    inline ellipsis_match_descriptor(unit& u, EntityT const* ent, lex::resource_location const& loc) noexcept
-        : functional_match_descriptor{ u }
+    inline ellipsis_match_descriptor(EntityT const* ent, lex::resource_location const& loc) noexcept
+        : functional_match_descriptor{ loc }
         , arg_{ ent }
-    {
-        location = loc;
-    }
+    {}
 
     auto const& argument() const noexcept { return arg_; }
 };
@@ -55,16 +55,16 @@ std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::
     ct_expression_visitor eobjvis{ ctx };
     auto obj = apply_visitor(eobjvis, *object_arg);
     if (!obj) return std::unexpected(std::move(obj.error()));
-
-    entity const& metaobject_ent = u.eregistry_get(*obj);
+    BOOST_ASSERT(!obj->expressions); // not impelemented const value expressions
+    entity const& metaobject_ent = get_entity(u, obj->value);
     if (identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&metaobject_ent); pie) {
-        return make_shared<ellipsis_match_descriptor>(u, pie, get_start_location(*object_arg));
+        return make_shared<ellipsis_match_descriptor>(pie, get_start_location(*object_arg));
     }
     else if (basic_signatured_entity const* bse = dynamic_cast<basic_signatured_entity const*>(&metaobject_ent); bse) {
         entity_signature const& signature = *bse->signature();
         if (signature.name == u.get(builtin_qnid::metaobject)) {
             // to do: check if the signature is a comopatible to the call metaobject
-            return make_shared<ellipsis_match_descriptor>(u, bse, get_start_location(*object_arg));
+            return make_shared<ellipsis_match_descriptor>(bse, get_start_location(*object_arg));
         }
     }
     
@@ -88,7 +88,7 @@ std::expected<field_descriptor, error_storage> push_by_name(fn_compiler_context&
     }), optent);
 }
 
-std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
 {
     BOOST_ASSERT(dynamic_cast<ellipsis_match_descriptor*>(&md));
 

@@ -50,34 +50,28 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_ca
         auto const& argexpr = arg.value();
         if (pargname) { // named arguments are not expected
             auto res = apply_visitor(ct_expression_visitor{ ctx }, argexpr);
-            if (!res || *res != u.get(builtin_eid::void_)) {
+            if (!res || res->value != u.get(builtin_eid::void_)) {
                 return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch"sv, argexpr));
             }
             continue; // skip void argument
         }
         auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
         if (!res) return std::unexpected(std::move(res.error()));
-        auto& [el, reid] = res->first;
-        if (!el) {
-            if (pmd) {
-                return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
-            }
-            auto err = struct_implicit_cast_check_argument_type(ctx, annotated_entity_identifier{ reid, get_start_location(argexpr) }, e);
-            if (err) return std::unexpected(std::move(err));
+        auto& ser = res->first;
 
-            pmd = make_shared<functional_match_descriptor>(u);
-            pmd->get_match_result(0).append_result(reid);
-        } else {
-            if (pmd) {
-                return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
-            }
-            auto err = struct_implicit_cast_check_argument_type(ctx, annotated_entity_identifier{ reid, get_start_location(argexpr) }, e);
-            if (err) return std::unexpected(std::move(err));
-            
-            pmd = make_shared<functional_match_descriptor>(u);
-            pmd->call_expressions = std::move(el);
-            pmd->get_match_result(0).append_result(reid, pmd->call_expressions.end(), pmd->call_expressions);
+        if (pmd) {
+            return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
         }
+        if (ser.is_const_result) {
+            auto err = struct_implicit_cast_check_argument_type(ctx, annotated_entity_identifier{ ser.value(), get_start_location(argexpr) }, e);
+            if (err) return std::unexpected(std::move(err));
+        } else {
+            auto err = struct_implicit_cast_check_argument_type(ctx, annotated_entity_identifier{ ser.type(), get_start_location(argexpr) }, e);
+            if (err) return std::unexpected(std::move(err));
+        }
+        pmd = make_shared<functional_match_descriptor>();
+        pmd->get_match_result(0).append_result(ser);
+        call.splice_back(ser.expressions);
     }
 
     if (!pmd) {
@@ -88,16 +82,15 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_ca
 }
 
 
-std::expected<syntax_expression_result_t, error_storage> struct_implicit_cast_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> struct_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     semantic::managed_expression_list exprs{ u };
-    md.for_each_positional_match([&u, &exprs, &md](parameter_match_result const& mr) {
-        for (auto const& [eid, optspan] : mr.results) {
-            if (optspan) {
-                exprs.splice_back(md.call_expressions, *optspan);
-            } else {
-                u.push_back_expression(exprs, semantic::push_value{ eid });
+    md.for_each_positional_match([&u, &exprs, &el](parameter_match_result const& mr) {
+        for (auto const& ser : mr.results) {
+            exprs.splice_back(el, ser.expressions);
+            if (ser.is_const_result) {
+                u.push_back_expression(exprs, semantic::push_value{ ser.value() });
             }
         }
     });

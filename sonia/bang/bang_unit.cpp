@@ -14,8 +14,10 @@
 #include "entities/internal_type_entity.hpp"
 #include "entities/ellipsis/ellipsis_pattern.hpp"
 #include "entities/functions/function_entity.hpp"
-#include "entities/functions/external_fn_pattern.hpp"
 #include "entities/functions/create_identifier_pattern.hpp"
+
+#include "functional/external_fn_pattern.hpp"
+#include "functional/general/mut_pattern.hpp"
 
 #include "entities/functions/extern/size_pattern.hpp"
 #include "entities/functions/extern/to_string_pattern.hpp"
@@ -1148,6 +1150,7 @@ unit::unit()
     
 
     //// operations
+    builtin_qnids_[(size_t)builtin_qnid::mut] = make_qname_identifier("mut"sv);
     builtin_qnids_[(size_t)builtin_qnid::new_] = make_qname_identifier("new"sv);
     builtin_qnids_[(size_t)builtin_qnid::init] = make_qname_identifier("init"sv);
     builtin_qnids_[(size_t)builtin_qnid::size] = make_qname_identifier("size"sv);
@@ -1212,6 +1215,9 @@ unit::unit()
     builtin_eids_[(size_t)builtin_eid::false_] = false_entity->id();
 
     /////// built in patterns
+    functional& mut_fnl = fregistry_resolve(get(builtin_qnid::mut));
+    mut_fnl.push(make_shared<mut_pattern>());
+
     functional& tuple_fnl = fregistry_resolve(get(builtin_qnid::tuple));
     tuple_fnl.push(make_shared<tuple_pattern>());
 

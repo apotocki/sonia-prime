@@ -13,6 +13,7 @@
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 #include "sonia/bang/ast/expression_visitor.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
 namespace sonia::lang::bang {
@@ -46,7 +47,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
     struct_entity const* pse = nullptr;
     entity const* ppname = nullptr;
     shared_ptr<tuple_get_match_descriptor> pmd;
-    auto estate = ctx.expressions_state();
+    
     for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         if (!pargname) {
@@ -54,27 +55,26 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
             return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
         }
         if (pargname->value == slfid && !pse) {
-            pmd = make_shared<tuple_get_match_descriptor>(u);
-            ctx.push_chain(pmd->call_expressions);
-            auto last_expr_it = ctx.expressions().last();
-            expression_visitor evis{ ctx };
-            auto res = apply_visitor(evis, arg.value());
+            pmd = make_shared<tuple_get_match_descriptor>();
+
+            //auto last_expr_it = ctx.expressions().last();
+            auto res = apply_visitor(base_expression_visitor{ ctx }, arg.value());
             if (!res) return std::unexpected(std::move(res.error()));
-            if (ctx.context_type) {
-                entity const& some_entity = ctx.u().eregistry_get(ctx.context_type);
-                pse = dynamic_cast<struct_entity const*>(&some_entity);
-                if (pse) {
-                    pmd->get_match_result(pargname->value).append_result(ctx.context_type, last_expr_it, ctx.expressions());
-                    continue;
-                }
+            auto& ser = res->first;
+            entity const& some_entity = get_entity(u, ser.value_or_type);
+            pse = dynamic_cast<struct_entity const*>(&some_entity);
+            if (pse) {
+                pmd->get_match_result(pargname->value).append_result(ser);
+                continue;
             }
+            
             return std::unexpected(make_error<basic_general_error>(pargname->location, "argument type mismatch: a structure was expected."sv, pargname->value));
             //return std::unexpected(make_error<type_mismatch_error>(pargname->location, ctx.context_type, u.get(builtin_qnid::tuple)));
         } else if (pargname->value == propid && !ppname) {
-            ct_expression_visitor evis{ ctx };
-            auto res = apply_visitor(evis, arg.value());
+            auto res = apply_visitor(ct_expression_visitor{ ctx }, arg.value());
             if (!res) return std::unexpected(std::move(res.error()));
-            ppname = &u.eregistry_get(*res);
+            if (res->expressions) THROW_NOT_IMPLEMENTED_ERROR("struct_get_pattern::try_match const value expressions");
+            ppname = &get_entity(u, res->value);
         } else {
             return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch"sv, pargname->value));
         }

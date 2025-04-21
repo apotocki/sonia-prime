@@ -11,6 +11,8 @@
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
+
 namespace sonia::lang::bang {
 
 // __id(const string)
@@ -35,18 +37,27 @@ std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_
     auto res = apply_visitor(evis, expr);
     if (!res) return std::unexpected(std::move(res.error()));
 
-    auto pmd = make_shared<functional_match_descriptor>(ctx.u());
-    pmd->get_match_result(0).append_result(*res);
+    auto pmd = make_shared<functional_match_descriptor>();
+    pmd->get_match_result(0).append_const_result(*res);
+    call.splice_back(res->expressions);
     return pmd;
 }
 
-std::expected<syntax_expression_result_t, error_storage> create_identifier_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> create_identifier_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    entity_identifier strid = md.get_match_result(0).results.front().first;
-    string_literal_entity const& str_ent = static_cast<string_literal_entity const&>(u.eregistry_get(strid));
+    auto& ser = md.get_match_result(0).results.front();
+    entity_identifier strid = ser.value();
+    string_literal_entity const& str_ent = static_cast<string_literal_entity const&>(get_entity(u, ser.value()));
     identifier id = u.slregistry().resolve(str_ent.value());
-    return make_result(u, u.make_identifier_entity(id).id());
+    semantic::managed_expression_list rel{ u };
+    rel.splice_back(el, ser.expressions);
+        
+    return syntax_expression_result_t{
+        .expressions = std::move(rel),
+        .value_or_type = u.make_identifier_entity(id).id(),
+        .is_const_result = true
+    };
 }
 
 }

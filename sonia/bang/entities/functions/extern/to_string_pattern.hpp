@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "sonia/bang/entities/functions/basic_fn_pattern.hpp"
+#include "sonia/bang/functional/basic_fn_pattern.hpp"
 
 namespace sonia::lang::bang {
 
@@ -13,7 +13,7 @@ class to_string_pattern : public basic_fn_pattern
 public:
     using basic_fn_pattern::basic_fn_pattern;
 
-    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override { return s << "to_string(const __identifier)->string"; }
 };

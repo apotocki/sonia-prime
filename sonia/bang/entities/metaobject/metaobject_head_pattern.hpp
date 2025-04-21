@@ -13,7 +13,7 @@ class metaobject_head_pattern : public metaobject_argument_pattern
 public:
     metaobject_head_pattern() = default;
 
-    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override { return s << "head(metaobject)"sv; }
 };

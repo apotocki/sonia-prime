@@ -859,14 +859,14 @@ expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_
 expression_visitor::result_type expression_visitor::handle(base_expression_visitor::result_type&& res) const
 {
     if (!res) return std::unexpected(std::move(res.error()));
-    auto& [el, type] = res->first;
-    if (!el) {
-        ctx.append_expression(semantic::push_value{ type });
-        entity const& e = get_entity(ctx.u(), type);
+    auto& ser = res->first;
+    ctx.expressions().splice_back(ser.expressions);
+    if (ser.is_const_result) {
+        ctx.append_expression(semantic::push_value{ ser.value() });
+        entity const& e = get_entity(ctx.u(), ser.value());
         ctx.context_type = e.get_type();
     } else {
-        ctx.expressions().splice_back(el);
-        ctx.context_type = type;
+        ctx.context_type = ser.type();
     }
     return res->second;
 }

@@ -12,6 +12,8 @@
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
+
 namespace sonia::lang::bang {
 
 std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
@@ -52,25 +54,28 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
     auto prop = apply_visitor(epropvis, property_arg->value());
     if (!prop) return std::unexpected(std::move(prop.error()));
 
-    auto pmd = make_shared<functional_match_descriptor>(u);
-    pmd->get_match_result(objid).append_result(*obj);
-    pmd->get_match_result(propid).append_result(*prop);
+    auto pmd = make_shared<functional_match_descriptor>();
+    pmd->get_match_result(objid).append_const_result(*obj);
+    pmd->get_match_result(propid).append_const_result(*prop);
     pmd->location = call.location;
     return pmd;
 }
 
-std::expected<syntax_expression_result_t, error_storage> metaobject_typeof_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> metaobject_typeof_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    entity_identifier mobj = md.get_match_result(u.get(builtin_id::object)).results.front().first;
-    entity_identifier prop = md.get_match_result(u.get(builtin_id::property)).results.front().first;
 
-    entity const& metaobject_ent = u.eregistry_get(mobj);
+    auto& obj = md.get_match_result(u.get(builtin_id::object)).results.front();
+    auto& prop = md.get_match_result(u.get(builtin_id::property)).results.front();
+    BOOST_ASSERT(!obj.expressions); // not impelemented const value expressions
+    BOOST_ASSERT(!prop.expressions);// not impelemented const value expressions
+    
+    entity const& metaobject_ent = get_entity(u, obj.value());
     entity_signature const* objsignature = metaobject_ent.signature();
     BOOST_ASSERT(objsignature);
     BOOST_ASSERT(objsignature->name == u.get(builtin_qnid::metaobject));
     
-    identifier_entity const& prop_ent = static_cast<identifier_entity const&>(u.eregistry_get(prop));
+    identifier_entity const& prop_ent = static_cast<identifier_entity const&>(get_entity(u, prop.value()));
 
     auto const* fd = objsignature->find_field(prop_ent.value());
     if (!fd) {

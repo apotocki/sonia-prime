@@ -19,9 +19,8 @@ namespace sonia::lang::bang {
 class union_cast_match_descriptor : public functional_match_descriptor
 {
 public:
-    union_cast_match_descriptor(unit& u, functional::match m, size_t i, entity_identifier rt)
-        : functional_match_descriptor{ u }
-        , submatch{ std::move(m) }
+    union_cast_match_descriptor(functional::match m, size_t i, entity_identifier rt)
+        : submatch{ std::move(m) }
         , field_index{ i }
         , result_type{ rt }
     {}
@@ -81,7 +80,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
         if (!rmatch) {
             return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "no cast to union found"sv, argexpr));
         }
-        pmd = make_shared<union_cast_match_descriptor>(u, std::move(rmatch->first), rmatch->second, e.value);
+        pmd = make_shared<union_cast_match_descriptor>(std::move(rmatch->first), rmatch->second, e.value);
     }
 
     if (!pmd) {
@@ -90,26 +89,28 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
     return pmd;
 }
 
-std::expected<syntax_expression_result_t, error_storage> union_implicit_cast_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> union_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& ucmd = static_cast<union_cast_match_descriptor&>(md);
     auto res = ucmd.submatch.apply(ctx);
     if (!res) return std::unexpected(std::move(res.error()));
-    auto& [el, reid] = *res;
-    if (!el) {
+    auto& ser = *res;
+    if (ser.is_const_result) {
         entity_signature usig{ u.get(builtin_qnid::metaobject), ucmd.result_type };
         usig.push_back(u.get(builtin_id::which), field_descriptor{ u.make_integer_entity(ucmd.field_index).id(), true });
-        usig.push_back(field_descriptor{ reid, true });
+        usig.push_back(field_descriptor{ ser.value(), true });
         indirect_signatured_entity smpl{ usig };
         return make_result(u, u.eregistry_find_or_create(smpl, [&u, &usig]() {
             return make_shared<basic_signatured_entity>(std::move(usig));
         }).id());
     } else {
-        u.push_back_expression(el, semantic::push_value{ ucmd.field_index }); // runtime which value
-        u.push_back_expression(el, semantic::push_value{ 2ull });
-        u.push_back_expression(el, semantic::invoke_function(u.get(builtin_eid::arrayify)));
-        return syntax_expression_result_t{ std::move(el), ucmd.result_type };
+        semantic::managed_expression_list rel{ u };
+        rel.splice_back(el, (semantic::expression_span)ser.expressions);
+        u.push_back_expression(rel, semantic::push_value{ ucmd.field_index }); // runtime which value
+        u.push_back_expression(rel, semantic::push_value{ 2ull });
+        u.push_back_expression(rel, semantic::invoke_function(u.get(builtin_eid::arrayify)));
+        return syntax_expression_result_t{ std::move(rel), ucmd.result_type };
     }
 }
 

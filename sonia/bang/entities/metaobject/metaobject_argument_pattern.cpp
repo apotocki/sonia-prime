@@ -11,6 +11,8 @@
 #include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/signatured_entity.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
+
 namespace sonia::lang::bang {
 
 std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argument_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
@@ -38,8 +40,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argumen
     auto obj = apply_visitor(eobjvis, *object_arg);
     if (!obj) return std::unexpected(std::move(obj.error()));
 
-    auto pmd = make_shared<functional_match_descriptor>(u);
-    pmd->get_match_result(0).append_result(*obj);
+    auto pmd = make_shared<functional_match_descriptor>();
+    pmd->get_match_result(0).append_const_result(*obj);
+    call.splice_back(obj->expressions);
     pmd->location = call.location;
     return pmd;
 }
@@ -47,8 +50,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argumen
 entity_signature const& metaobject_argument_pattern::argument_signature(fn_compiler_context& ctx, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto& [mobj, _] = md.get_match_result(0).results.front();
-    entity const& metaobject_ent = u.eregistry_get(mobj);
+    auto& ser = md.get_match_result(0).results.front();
+    entity const& metaobject_ent = get_entity(u, ser.value());
     entity_signature const* objsignature = metaobject_ent.signature();
     BOOST_ASSERT(objsignature);
     BOOST_ASSERT(objsignature->name == u.get(builtin_qnid::metaobject));

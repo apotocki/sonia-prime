@@ -6594,7 +6594,7 @@ YY_RULE_SETUP
 case 39:
 YY_RULE_SETUP
 #line 332 "bang.l"
-{ return (bang_lang::parser::token::MUT); }
+{ variant_emplace(location); return (bang_lang::parser::token::MUT); }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP

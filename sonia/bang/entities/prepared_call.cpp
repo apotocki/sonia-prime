@@ -112,6 +112,16 @@ error_storage append_subarg(fn_compiler_context& ctx, annotated_identifier const
     return {};
 }
 
+void prepared_call::splice_back(semantic::expression_list_t & exprs) const noexcept
+{
+    expressions.splice_back(exprs);
+}
+
+void prepared_call::splice_back(semantic::expression_list_t& exprs, semantic::expression_span span) const noexcept
+{
+    expressions.splice_back(exprs, span);
+}
+
 error_storage prepared_call::prepare(fn_compiler_context& ctx)
 {
     unit& u = ctx.u();
@@ -146,7 +156,7 @@ error_storage prepared_call::prepare(fn_compiler_context& ctx)
             }
         };
 
-        entity const& ellipsis_arg_ent = get_entity(u, *obj);
+        entity const& ellipsis_arg_ent = get_entity(u, obj->value);
         if (qname_entity const* pqne = dynamic_cast<qname_entity const*>(&ellipsis_arg_ent); pqne) {
             auto res = deref(ctx, annotated_qname{ pqne->value(), arg_loc });
             if (!res) return std::move(res.error());
@@ -159,7 +169,7 @@ error_storage prepared_call::prepare(fn_compiler_context& ctx)
                 return std::move(err);
             }
         } else {
-            append_arg(annotated_entity_identifier(*obj, arg_loc));
+            append_arg(annotated_entity_identifier(obj->value, arg_loc));
         }
     }
     if (!rebuilt_args.empty()) {
@@ -213,4 +223,17 @@ error_storage prepared_call::prepare(fn_compiler_context& ctx)
     return {};
 }
 
+prepared_call::session prepared_call::new_session() const
+{
+    return session{ *this };
 }
+
+std::expected<syntax_expression_result_reference_t, error_storage>
+prepared_call::session::use(fn_compiler_context&, size_t arg_index, annotated_entity_identifier const& exp)
+{
+    return std::unexpected(error_storage{});
+}
+
+}
+
+ 

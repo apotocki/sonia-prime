@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "sonia/bang/entities/generic_pattern_base.hpp"
+#include "sonia/bang/functional/generic_pattern_base.hpp"
 
 namespace sonia::lang::bang {
 
@@ -17,7 +17,7 @@ public:
 
     //std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const;
 
-    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
     //std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const override;
 

@@ -13,9 +13,9 @@ namespace sonia::lang::bang {
 
 struct ct_expression_visitor 
     : base_expression_visitor
-    , static_visitor<std::expected<entity_identifier, error_storage>>
+    , static_visitor<std::expected<syntax_expression_const_result_t, error_storage>>
 {
-    using result_type = std::expected<entity_identifier, error_storage>;
+    using result_type = std::expected<syntax_expression_const_result_t, error_storage>;
 
     inline explicit ct_expression_visitor(fn_compiler_context& c) noexcept
         : base_expression_visitor{ c }

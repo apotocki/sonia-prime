@@ -51,30 +51,35 @@ functional_binding::value_type& functional_binding_set::emplace_back(annotated_i
     }
 }
 
-void parameter_match_result::append_result(entity_identifier r, se_iterator before_start_it, semantic::expression_list_t& exprs)
+//void parameter_match_result::append_result(entity_identifier r, se_iterator before_start_it, semantic::expression_list_t& exprs)
+//{
+//    results.emplace_back(r, semantic::expression_span{});
+//    if (exprs) {
+//        auto& el = results.back().second;
+//        if (before_start_it == exprs.end()) {
+//            el = exprs; // semantic::expression_span{ exprs };
+//        } else {
+//            ++before_start_it;
+//            if (before_start_it != exprs.end()) {
+//                //semantic::expression_entry* b = static_cast<semantic::expression_entry*>(&*before_start_it.base());
+//                //semantic::expression_entry* e = static_cast<semantic::expression_entry*>(&exprs.back_entry());
+//                semantic::expression_entry_type* b = &*before_start_it.base();
+//                semantic::expression_entry_type* e = &exprs.back_entry();
+//                el = semantic::expression_span{ b, e };
+//                //el = semantic::expression_span{ &*before_start_it.base(), &exprs.back_entry() };
+//            }
+//        }
+//    }
+//}
+
+void parameter_match_result::append_result(entity_identifier type, semantic::expression_span sp)
 {
-    results.emplace_back(r, semantic::expression_span{});
-    if (exprs) {
-        auto& el = results.back().second;
-        if (before_start_it == exprs.end()) {
-            el = exprs; // semantic::expression_span{ exprs };
-        } else {
-            ++before_start_it;
-            if (before_start_it != exprs.end()) {
-                //semantic::expression_entry* b = static_cast<semantic::expression_entry*>(&*before_start_it.base());
-                //semantic::expression_entry* e = static_cast<semantic::expression_entry*>(&exprs.back_entry());
-                semantic::expression_entry_type* b = &*before_start_it.base();
-                semantic::expression_entry_type* e = &exprs.back_entry();
-                el = semantic::expression_span{ b, e };
-                //el = semantic::expression_span{ &*before_start_it.base(), &exprs.back_entry() };
-            }
-        }
-    }
+    results.emplace_back(std::move(sp), type, false);
 }
 
-void parameter_match_result::append_result(entity_identifier r)
+void parameter_match_result::append_const_result(entity_identifier value, semantic::expression_span sp)
 {
-    results.emplace_back(r, nullopt);
+    results.emplace_back(std::move(sp), value, true);
 }
 
 //void parameter_match_result::set_constexpr(bool ce_val)
@@ -140,16 +145,14 @@ entity_signature functional_match_descriptor::build_signature(unit & u, qname_id
 {
     entity_signature signature{ name };
     for (auto [nm, pmr] : named_matches_) {
-        for (auto const& pair : pmr->results) {
-            bool is_const = !pair.second;
-            signature.push_back(nm, field_descriptor{ pair.first, is_const });
+        for (auto const& ser : pmr->results) {
+            signature.push_back(nm, field_descriptor{ ser.value_or_type, ser.is_const_result });
         }
     }
     //size_t argnum = 0;
     for (auto pmr : positional_matches_) {
-        for (auto const& pair : pmr->results) {
-            bool is_const = !pair.second;
-            signature.push_back(field_descriptor{ pair.first, is_const });
+        for (auto const& ser : pmr->results) {
+            signature.push_back(field_descriptor{ ser.value_or_type, ser.is_const_result });
         }
     }
     if (result.entity_id()) {
@@ -167,7 +170,7 @@ void functional_match_descriptor::reset() noexcept
     named_matches_.clear();
     pmrs_.clear();
     bindings.reset();
-    call_expressions.clear();
+    //call_expressions.clear();
     result = field_descriptor{};
 }
 
@@ -342,7 +345,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
         return std::unexpected(make_error<ambiguity_error>(annotated_qname_identifier{ id_, call.location }, std::move(as)));
     }
     auto [ptrn, md] = alternatives.front();
-    return match{ ptrn, std::move(md) };
+    return match{ ptrn, std::move(pcall.expressions), std::move(md) };
 }
 
 //error_storage functional::pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const

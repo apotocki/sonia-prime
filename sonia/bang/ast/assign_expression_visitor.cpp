@@ -31,9 +31,9 @@ assign_expression_visitor::result_type assign_expression_visitor::operator()(var
         base_expression_visitor rvis{ ctx_, annotated_entity_identifier{ assign_type, assign_location_ } };
         auto res = apply_visitor(rvis, rhs_);
         if (!res) return std::unexpected(std::move(res.error()));
-        auto& [el, reid] = res->first;
-        if (!el) {
-            u().push_back_expression(el, semantic::push_value{ reid });
+        auto& ser = res->first;
+        if (ser.is_const_result) {
+            u().push_back_expression(ser.expressions, semantic::push_value{ ser.value() });
         }
 
         if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, local_variable>) {
@@ -41,14 +41,14 @@ assign_expression_visitor::result_type assign_expression_visitor::operator()(var
                 THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN weak");
                 //ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });
             }
-            u().push_back_expression(el, semantic::set_local_variable{ eid_or_var.index });
+            u().push_back_expression(ser.expressions, semantic::set_local_variable{ eid_or_var.index });
             if (eid_or_var.is_weak) {
                 ctx_.append_expression(semantic::truncate_values(1, false));
             }
         } else {
-            u().push_back_expression(el, semantic::set_variable{ peve });
+            u().push_back_expression(ser.expressions, semantic::set_variable{ peve });
         }
-        return syntax_expression_result_t{ std::move(el), u().get(builtin_eid::void_) };
+        return syntax_expression_result_t{ std::move(ser.expressions), u().get(builtin_eid::void_) };
     }), e);
     //    if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, local_variable>) {
     //        base_expression_visitor rvis{ ctx_, annotated_entity_identifier{ eid_or_var.type, assign_location_ } };

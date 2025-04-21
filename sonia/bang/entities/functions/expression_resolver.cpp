@@ -16,7 +16,10 @@ expression_resolver::expression_resolver(lex::resource_location loc, syntax_expr
 std::expected<entity_identifier, error_storage> expression_resolver::const_resolve(fn_compiler_context& ctx) const
 {
     ct_expression_visitor evis{ ctx };
-    return apply_visitor(evis, expression_);
+    auto res = apply_visitor(evis, expression_);
+    if (!res) return std::unexpected(res.error());
+    if (res->expressions) THROW_NOT_IMPLEMENTED_ERROR("expression_resolver::const_resolve");
+    return res->value;
     //THROW_NOT_IMPLEMENTED_ERROR("expression_resolver::resolve");
 }
 

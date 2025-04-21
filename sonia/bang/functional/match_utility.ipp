@@ -19,14 +19,14 @@ std::expected<syntax_expression_result_t, error_storage> match_type(fn_compiler_
 {
     auto res = apply_visitor(base_expression_visitor{ caller_ctx, { eid, eidloc } }, expr);
     if (!res) return std::unexpected(std::move(res.error()));
-    syntax_expression_result_t& rt = res->first;
-    if (!get<0>(rt)) {
-        entity const& ent = get_entity(caller_ctx.u(), get<1>(rt));
+    syntax_expression_result_t& ser = res->first;
+    if (ser.is_const_result) {
+        entity const& ent = get_entity(caller_ctx.u(), ser.value());
         if (auto err = hf(ent.get_type(), res->second); err) return std::unexpected(std::move(err));
     } else {
-        if (auto err = hf(get<1>(rt), res->second); err) return std::unexpected(std::move(err));
+        if (auto err = hf(ser.type(), res->second); err) return std::unexpected(std::move(err));
     }
-    return std::move(rt);
+    return std::move(ser);
 }
 
 }

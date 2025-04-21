@@ -216,9 +216,9 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(opt_named_s
 ct_expression_visitor::result_type ct_expression_visitor::handle(base_expression_visitor::result_type&& res) const
 {
     if (!res) return std::unexpected(std::move(res.error()));
-    auto& [el, reid] = res->first;
-    if (!el) {
-        return reid;
+    auto& ser = res->first;
+    if (ser.is_const_result) {
+        return syntax_expression_const_result_t{ std::move(ser.expressions), ser.value() };
     } else {
         THROW_NOT_IMPLEMENTED_ERROR("ct_expression_visitor::handle");
     }

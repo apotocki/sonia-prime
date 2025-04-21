@@ -18,14 +18,15 @@
 namespace sonia::lang::bang {
 
 //error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, annotated_entity_identifier const& argtype, annotated_entity_identifier vec_elem_type, parameter_match_result& mr)
-error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, entity_identifier& argeid, lex::resource_location const& argloc, entity_identifier vec_element_type_eid, annotated_entity_identifier const& vec_type, functional_match_descriptor& md)
+error_storage array_implicit_cast_check_const_argument_type(fn_compiler_context& ctx, syntax_expression_result_t& er, lex::resource_location const& argloc, entity_identifier vec_element_type_eid, annotated_entity_identifier const& vec_type, functional_match_descriptor& md)
 {
+    BOOST_ASSERT(!er.expressions); // not implemented
     unit& u = ctx.u();
     parameter_match_result& mr = md.get_match_result(0);
-    entity const& ent = get_entity(u, argeid);
+    entity const& ent = get_entity(u, er.value());
     entity_signature const* psig = ent.signature();
 
-    auto wrong_arg_error = [&argeid, &argloc] { return make_error<type_mismatch_error>(argloc, argeid, "an array"sv); };
+    auto wrong_arg_error = [&er, &argloc] { return make_error<type_mismatch_error>(argloc, er.value(), "an array"sv); };
 
     if (!psig || psig->name != u.get(builtin_qnid::metaobject) || !psig->result) {
         return wrong_arg_error();
@@ -45,18 +46,18 @@ error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, 
         entity_identifier elem_eid = psig->find_field(i)->entity_id();
         auto res = vis(annotated_entity_identifier{ elem_eid, argloc });
         if (!res) return std::move(res.error());
-        auto& [el, reid] = res->first;
-        if (!el) {
+        auto& ser = res->first;
+        if (ser.is_const_result) {
             if (rt_element_results.empty()) {
-                ct_element_results.push_back(reid);
+                ct_element_results.push_back(ser.value());
             } else {
-                u.push_back_expression(*optexprs, semantic::push_value{ reid });
+                u.push_back_expression(*optexprs, semantic::push_value{ ser.value() });
                 rt_element_results.emplace_back(&optexprs->back_entry());
             }
         } else {
-            semantic::expression_span argspan = el;
+            semantic::expression_span argspan = ser.expressions;
             if (!optexprs) {
-                optexprs.emplace(std::move(el));
+                optexprs.emplace(std::move(ser.expressions));
                 if (!ct_element_results.empty()) {
                     for (entity_identifier eid : ct_element_results) {
                         u.push_back_expression(*optexprs, semantic::push_value{ eid });
@@ -64,7 +65,7 @@ error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, 
                     }
                 }
             } else {
-                optexprs->splice_back(el);
+                optexprs->splice_back(ser.expressions);
             }
             rt_element_results.push_back(std::move(argspan));
         }
@@ -72,33 +73,27 @@ error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, 
 
     if (rt_element_results.empty()) {
         entity const& vec_ent = u.make_vector_entity(vec_element_type_eid, ct_element_results);
-        mr.append_result(vec_ent.id());
+        mr.append_const_result(vec_ent.id());
         return {};
     }
 
     THROW_NOT_IMPLEMENTED_ERROR("array_implicit_cast_check_argument_type");
 }
 
-error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, syntax_expression_result_t & er, lex::resource_location const& argloc, entity_identifier vec_element_type_eid, annotated_entity_identifier const& vec_type, functional_match_descriptor& md)
+error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, syntax_expression_result_t & er, lex::resource_location const& argloc, entity_identifier vec_element_type_eid, annotated_entity_identifier const& vec_type, functional_match_descriptor& md, prepared_call const& call)
 {
-    semantic::managed_expression_list& argel = er.first;
-    entity_identifier type = er.second;
-    if (!argel) {
-        return array_implicit_cast_check_argument_type(ctx, type, argloc, vec_element_type_eid, vec_type, md);
-    }
-    
     unit& u = ctx.u();
     
-    entity const& argtype_ent = get_entity(u, type);
+    entity const& argtype_ent = get_entity(u, er.type());
     entity_signature const* ptpsig = argtype_ent.signature();
     if (!ptpsig || ptpsig->name != u.get(builtin_qnid::array)) {
-        return make_error<type_mismatch_error>(argloc, type, "an array"sv);
+        return make_error<type_mismatch_error>(argloc, er.type(), "an array"sv);
     }
     
     parameter_match_result& mr = md.get_match_result(0);
-    md.call_expressions = std::move(argel);
-    mr.append_result(type, md.call_expressions.end(), md.call_expressions);
-
+    semantic::expression_span argspan = er.expressions;
+    
+    
     entity_identifier elem_type_eid = ptpsig->find_field(u.get(builtin_id::element))->entity_id();
     if (elem_type_eid == vec_element_type_eid) return {};
 
@@ -107,16 +102,17 @@ error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, 
     cast_call.emplace_back(indirect_value{
         .location = argloc,
         .type = elem_type_eid,
-        .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(md.call_expressions) }
+        .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(er.expressions) }
     });
 
     auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, annotated_entity_identifier{ vec_element_type_eid });
     if (!match) {
-        return make_error<cast_error>(vec_type.location, type, vec_type.value);
+        return make_error<cast_error>(vec_type.location, er.type(), vec_type.value);
     }
+    mr.append_result(er.type(), argspan);
+    call.splice_back(match->expressions, argspan);
     return {};
 }
-
 
 std::expected<functional_match_descriptor_ptr, error_storage> array_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& e) const
 {
@@ -145,8 +141,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_implicit_cas
         }
         auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
         if (!res) return std::unexpected(std::move(res.error()));
-        pmd = make_shared<functional_match_descriptor>(u);
-        auto err = array_implicit_cast_check_argument_type(ctx, res->first, get_start_location(argexpr), vec_element_type_eid, e, *pmd);
+        pmd = make_shared<functional_match_descriptor>();
+        auto err = (res->first.is_const_result) ?
+            array_implicit_cast_check_const_argument_type(ctx, res->first, get_start_location(argexpr), vec_element_type_eid, e, *pmd) :
+            array_implicit_cast_check_argument_type(ctx, res->first, get_start_location(argexpr), vec_element_type_eid, e, *pmd, call);
+        
         if (err) return std::unexpected(std::move(err));
     }
 
@@ -157,17 +156,23 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_implicit_cas
     return pmd;
 }
 
-std::expected<syntax_expression_result_t, error_storage> array_implicit_cast_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> array_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     semantic::managed_expression_list exprs{ u };
     parameter_match_result const& mr = md.get_match_result(0);
-    auto const& [eid, optspan] = mr.results.front();
-    if (optspan) {
+    auto const& ser = mr.results.front();
+    if (!ser.is_const_result) {
         //THROW_NOT_IMPLEMENTED_ERROR("array_implicit_cast_pattern::apply");
-        return syntax_expression_result_t{ std::move(md.call_expressions), md.result.entity_id() };
+        semantic::managed_expression_list res_el{ u };
+        res_el.splice_back(el, ser.expressions);
+        return syntax_expression_result_t{ std::move(res_el), md.result.entity_id(), false };
     } else {
-        return make_result(u, eid);
+        return syntax_expression_result_t{ 
+            .expressions = semantic::managed_expression_list{ u },
+            .value_or_type = ser.value(),
+            .is_const_result = true
+        };
     }
 }
 

@@ -12,6 +12,7 @@
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
 #include "sonia/bang/errors/value_mismatch_error.hpp"
+#include "sonia/bang/auxiliary.hpp"
 
 namespace sonia::lang::bang {
 
@@ -26,11 +27,11 @@ value_match_visitor::result_type value_match_visitor::operator()(annotated_bool 
 
     ct_expression_visitor sv{ callee_ctx, annotated_entity_identifier{ u.get(builtin_eid::boolean) } };
     auto ent_id = apply_visitor(sv, cexpr);
-    if (!ent_id) return ent_id;
+    if (!ent_id) return std::unexpected(std::move(ent_id.error()));
     entity_identifier expected_ent_id = bv.value ? u.get(builtin_eid::true_) : u.get(builtin_eid::false_);
-    if (*ent_id == expected_ent_id) return ent_id;
+    if (ent_id->value == expected_ent_id) return expected_ent_id;
 
-    return std::unexpected(make_error<value_mismatch_error>(get_start_location(cexpr), *ent_id, expected_ent_id, bv.location));
+    return std::unexpected(make_error<value_mismatch_error>(get_start_location(cexpr), ent_id->value, expected_ent_id, bv.location));
 }
 
 value_match_visitor::result_type value_match_visitor::operator()(annotated_qname_identifier const& aqi) const
@@ -57,7 +58,7 @@ value_match_visitor::result_type value_match_visitor::operator()(function_call_t
     ct_expression_visitor sv{ callee_ctx, annotated_entity_identifier{ u.get(builtin_eid::qname) } };
     auto qn_ent_id = apply_visitor(sv, fc.fn_object);
     if (!qn_ent_id) return std::unexpected(std::move(qn_ent_id.error()));
-    qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(u.eregistry_get(*qn_ent_id));
+    qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(get_entity(u, qn_ent_id->value));
 
     // check if can evaluate signature_pattern_
     auto match = callee_ctx.find(qname_ent.value(), fc);
@@ -70,7 +71,7 @@ value_match_visitor::result_type value_match_visitor::operator()(function_call_t
     auto res = apply_visitor(ct_expression_visitor{ caller_ctx }, cexpr);
     if (!res) return std::unexpected(std::move(res.error()));
 
-    entity const& type_ent = u.eregistry_get(*res);
+    entity const& type_ent = get_entity(u, res->value);
     entity_signature const* psig = type_ent.signature();
     if (!psig) {
         return std::unexpected(make_error<basic_general_error>(fc.location, "argument mismatch"sv, cexpr));
@@ -106,12 +107,14 @@ value_match_visitor::result_type value_match_visitor::operator()(variable_identi
                         auto res = apply_visitor(ct_expression_visitor{ caller_ctx }, cexpr);
                         if (!res) return std::unexpected(std::move(res.error()));
                         identifier varid = *var.name.value.begin();
-                        binding.emplace_back(annotated_identifier{ varid, var.name.location }, *res);
-                        return res;
+                        binding.emplace_back(annotated_identifier{ varid, var.name.location }, res->value);
+                        return res->value;
                     }
                     return std::unexpected(make_error<undeclared_identifier_error>(var.name));
                 }
-                return apply_visitor(ct_expression_visitor{ caller_ctx, annotated_entity_identifier{ eid_or_var }, matching_type }, cexpr);
+                auto res = apply_visitor(ct_expression_visitor{ caller_ctx, annotated_entity_identifier{ eid_or_var }, matching_type }, cexpr);
+                if (!res) return std::unexpected(std::move(res.error()));
+                return res->value;
             }
             else { // entity_ptr, that is variable_entity
                 return std::unexpected(make_error<basic_general_error>(var.name.location, "argument mismatch"sv, var));

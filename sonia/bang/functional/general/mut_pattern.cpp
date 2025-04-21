@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "size_pattern.hpp"
+#include "mut_pattern.hpp"
 
 #include "sonia/bang/functional/generic_pattern_base.ipp"
 
@@ -16,16 +16,16 @@
 
 namespace sonia::lang::bang {
 
-error_storage size_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type& argctx, syntax_expression_result_t& v) const
+error_storage mut_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type& argctx, syntax_expression_result_t& v) const
 {
-    if (!v.is_const_result || pmd || argctx.pargname)
+    if (pmd || argctx.pargname)
         return argctx.make_argument_mismatch_error();
 
     fn_compiler_context& ctx = argctx.ctx;
     prepared_call const& call = argctx.call;
     unit& u = ctx.u();
 
-    signatured_entity const* arg_entity = dynamic_cast<signatured_entity const*>(&get_entity(u, v.value()));
+    signatured_entity const* arg_entity = dynamic_cast<signatured_entity const*>(&get_entity(u, v.value_or_type));
     if (!arg_entity) {
         return argctx.make_argument_mismatch_error();
     }
@@ -34,11 +34,19 @@ error_storage size_pattern::accept_argument(std::nullptr_t, functional_match_des
     return {};
 }
 
-std::expected<syntax_expression_result_t, error_storage> size_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
+std::expected<functional_match_descriptor_ptr, error_storage> mut_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
+{
+    auto call_session = call.new_session();
+    size_t arg_index = 0;
+    call_session.use(ctx, arg_index, exp);
+    return std::unexpected(error_storage{});
+}
+
+std::expected<syntax_expression_result_t, error_storage> mut_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
 {
     return make_result(ctx.u(), md.result.entity_id());
 }
 
-template generic_pattern_base<size_pattern>;
+template generic_pattern_base<mut_pattern>;
 
 }

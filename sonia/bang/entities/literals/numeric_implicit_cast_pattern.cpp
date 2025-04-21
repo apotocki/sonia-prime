@@ -29,9 +29,8 @@ public:
     using functional_match_descriptor::functional_match_descriptor;
 
     template <typename ArgT>
-    numeric_implicit_cast_match_descriptor(unit& u, ArgT && arg)
-        : functional_match_descriptor{ u }
-        , arg{ std::forward<ArgT>(arg) }
+    explicit numeric_implicit_cast_match_descriptor(ArgT && arg)
+        : arg{ std::forward<ArgT>(arg) }
     {}
 
     variant<std::nullptr_t, integer_literal_entity, decimal_literal_entity> arg;
@@ -65,26 +64,26 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
         }
         auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
         if (!res) return std::unexpected(std::move(res.error()));
-        auto& [el, reid] = res->first;
-        if (!el) {
-            entity const& argent = u.eregistry_get(reid);
+        auto& ser = res->first;
+        if (ser.is_const_result) {
+            entity const& argent = u.eregistry_get(ser.value());
             argument_wrapper_visitor vis;
             argent.visit(vis);
             if (vis.value.which() == 0) {
-                return std::unexpected(make_error<value_mismatch_error>(get_start_location(argexpr), reid, "a numeric literal"sv));
+                return std::unexpected(make_error<value_mismatch_error>(get_start_location(argexpr), ser.value(), "a numeric literal"sv));
             }
-            pmd = make_shared<numeric_implicit_cast_match_descriptor>(u, std::move(vis.value));
+            pmd = make_shared<numeric_implicit_cast_match_descriptor>(std::move(vis.value));
             pmd->result = field_descriptor{ e.value, true };
 
             //integer_literal_entity
         } else {
-            if (reid == u.get(builtin_eid::integer)) {
-                pmd = make_shared<numeric_implicit_cast_match_descriptor>(u);
-                pmd->get_match_result(0).append_result(reid, el.end(), el);
-                pmd->call_expressions.splice_back(el);
+            if (ser.type() == u.get(builtin_eid::integer)) {
+                pmd = make_shared<numeric_implicit_cast_match_descriptor>();
+                pmd->get_match_result(0).append_result(ser.type(), ser.expressions);
+                call.splice_back(ser.expressions);
                 pmd->result = field_descriptor{ e.value, false };
             } else {
-                return std::unexpected(make_error<type_mismatch_error>(get_start_location(argexpr), reid, "integer"sv));
+                return std::unexpected(make_error<type_mismatch_error>(get_start_location(argexpr), ser.type(), "integer"sv));
             }
         }
     }
@@ -95,7 +94,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
     return pmd;
 }
 
-std::expected<syntax_expression_result_t, error_storage> numeric_implicit_cast_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> numeric_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
 {
     auto& nmd = static_cast<numeric_implicit_cast_match_descriptor&>(md);
     if (nmd.result.is_const()) {

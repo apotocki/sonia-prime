@@ -17,23 +17,21 @@ namespace sonia::lang::bang {
 std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
 {
     size_t pos_arg_num = 0;
-    auto pmd = make_shared<functional_match_descriptor>(ctx.u());
-    auto estate = ctx.expressions_state();
-    ctx.push_chain(pmd->call_expressions);
+    auto pmd = make_shared<functional_match_descriptor>();
     for (auto const& arg : call.args) {
-        auto last_expr_it = ctx.expressions().last();
-        expression_visitor evis{ ctx };
-        auto res = apply_visitor(evis, arg.value());
+        auto res = apply_visitor(base_expression_visitor{ ctx }, arg.value());
         if (!res) return std::unexpected(std::move(res.error()));
 
         annotated_identifier const* pargname = arg.name();
         parameter_match_result* pmr = pargname ? &pmd->get_match_result(pargname->value) : &pmd->get_match_result(pos_arg_num++);
-        pmr->append_result(ctx.context_type, last_expr_it, ctx.expressions());
+        auto& ser = res->first;
+        pmr->append_result(ser);
+        call.splice_back(ser.expressions);
     }
     return pmd;
 }
 
-std::expected<syntax_expression_result_t, error_storage> tuple_make_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> tuple_make_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_signature sig = md.build_signature(u, u.get(builtin_qnid::tuple));
@@ -50,21 +48,19 @@ std::expected<syntax_expression_result_t, error_storage> tuple_make_pattern::app
     // push call expressions in the right order
     semantic::managed_expression_list exprs{ u };
 
-    md.for_each_named_match([&argcount, &exprs, &md](identifier name, parameter_match_result const& mr) {
-        for (auto const& [_, optspan] : mr.results) {
-            BOOST_ASSERT(optspan);
-            exprs.splice_back(md.call_expressions, *optspan);
+    md.for_each_named_match([&argcount, &exprs, &el](identifier name, parameter_match_result const& mr) {
+        for (auto const& ser : mr.results) {
+            exprs.splice_back(el, ser.expressions);
         }
         ++argcount;
     });
-    md.for_each_positional_match([&argcount, &exprs, &md](parameter_match_result const& mr) {
-        for (auto const& [_, optspan] : mr.results) {
-            BOOST_ASSERT(optspan);
-            exprs.splice_back(md.call_expressions, *optspan);
+    md.for_each_positional_match([&argcount, &exprs, &el](parameter_match_result const& mr) {
+        for (auto const& ser : mr.results) {
+            exprs.splice_back(el, ser.expressions);
         }
         ++argcount;
     });
-    BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
+    
     if (argcount > 1) {
         u.push_back_expression(exprs, semantic::push_value{ mp::integer{ argcount } });
         u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::arrayify)));

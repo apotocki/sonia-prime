@@ -43,15 +43,15 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
             }
             auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
             if (!res) return std::unexpected(std::move(res.error()));
-            auto& [el, argtype] = res->first;
-            entity const& arg_entity = get_entity(ctx.u(), argtype);
-            if (!el) {
+            auto& ser = res->first;
+            entity const& arg_entity = get_entity(ctx.u(), ser.value_or_type);
+            if (ser.is_const_result) {
                 if (auto psig = arg_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
                     // argument is typename tuple
                     pte = &arg_entity;
-                    pmd = make_shared<tuple_get_match_descriptor>(ctx.u());
+                    pmd = make_shared<tuple_get_match_descriptor>();
                     auto& mr = pmd->get_match_result(pargname->value);
-                    mr.append_result(argtype);
+                    mr.append_result(ser);
                     continue;
                 } else {
                     return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
@@ -59,24 +59,23 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
                 }
             }
 
-            if (auto psig = arg_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
-                pte = &arg_entity;
-                pmd = make_shared<tuple_get_match_descriptor>(ctx.u());
-                auto& mr = pmd->get_match_result(pargname->value);
-                if (!el) {
-                    mr.append_result(argtype);
-                } else {
-                    mr.append_result(argtype, el.end(), el);
-                    pmd->call_expressions.splice_back(el);
-                }
-                continue;
+            auto psig = arg_entity.signature();
+            if (!psig || psig->name != ctx.u().get(builtin_qnid::tuple)) {
+                return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch"sv, pargname->value));
             }
-            return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch"sv, pargname->value));
+
+            pte = &arg_entity;
+            pmd = make_shared<tuple_get_match_descriptor>();
+            auto& mr = pmd->get_match_result(pargname->value);
+            mr.append_result(ser);
+            call.splice_back(ser.expressions);
+            
         } else if (pargname->value == propid && !ppname) {
             ct_expression_visitor evis{ ctx };
             auto res = apply_visitor(evis, arg.value());
             if (!res) return std::unexpected(std::move(res.error()));
-            ppname = &get_entity(u, *res);
+            BOOST_ASSERT(!res->expressions); // not impelemented const value expressions
+            ppname = &get_entity(u, res->value);
             /*
             entity const& some_entity = ctx.u().eregistry_get(*res);
             ppname = dynamic_cast<identifier_entity const*>(&some_entity);
@@ -134,7 +133,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
     return pmd;
 }
 
-std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_get_match_descriptor&>(md);
@@ -147,14 +146,11 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
     semantic::managed_expression_list exprs{ u };
 
     // only one named argument is expected
-    tmd.for_each_named_match([&exprs, &tmd](identifier name, parameter_match_result const& mr) {
-        for (auto const& [_, optspan] : mr.results) {
-            BOOST_ASSERT(optspan);
-            exprs.splice_back(tmd.call_expressions, *optspan);
+    tmd.for_each_named_match([&exprs, &el](identifier name, parameter_match_result const& mr) {
+        for (auto const& ser : mr.results) {
+            exprs.splice_back(el, ser.expressions);
         }
     });
-
-    BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
 
     if (tmd.fields_count > 1) {
         u.push_back_expression(exprs, semantic::push_value{ tmd.property_index });

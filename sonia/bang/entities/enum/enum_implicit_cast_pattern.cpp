@@ -16,6 +16,8 @@
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 #include "sonia/bang/errors/value_mismatch_error.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
+
 namespace sonia::lang::bang {
 
 //error_storage enum_implicit_cast_check_argument_type(fn_compiler_context& ctx, annotated_entity_identifier const& argtype, annotated_entity_identifier const& exptype)
@@ -56,24 +58,24 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
                 make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr),
                 std::move(res.error())));
         }
-        if (*res == u.get(builtin_eid::void_)) continue; // skip void argument
+        //if (get<0>(*res) == u.get(builtin_eid::void_)) continue; // skip void argument
 
         if (pmd || pargname) {
             return std::unexpected(make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr));
         }
 
-        entity const& ent = u.eregistry_get(*res);
+        entity const& ent = get_entity(u, res->value);
         identifier_entity const* pident = dynamic_cast<identifier_entity const*>(&ent);
         if (!pident) {
-            return std::unexpected(make_error<value_mismatch_error>(get_start_location(argexpr), *res, "an identifier"sv));
+            return std::unexpected(make_error<value_mismatch_error>(get_start_location(argexpr), res->value, "an identifier"sv));
         }
         // check identifier value
         if (auto optpos = penum->find(pident->value()); !optpos) {
-            return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "not an enumeration identifier"sv, *res));
+            return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "not an enumeration identifier"sv, res->value));
         }
 
-        pmd = make_shared<functional_match_descriptor>(u);
-        pmd->get_match_result(0).append_result(*res);
+        pmd = make_shared<functional_match_descriptor>();
+        pmd->get_match_result(0).append_const_result(*res);
     }
     if (!pmd) {
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
@@ -83,11 +85,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
 }
 
 
-std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto& [strid, _] = md.get_match_result(0).results.front();
-    entity const& ent = u.eregistry_get(strid);
+    auto& ser = md.get_match_result(0).results.front();
+    entity const& ent = get_entity(u, ser.value());
     identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&ent);
     BOOST_ASSERT(pie);
     

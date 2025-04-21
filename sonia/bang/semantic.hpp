@@ -545,8 +545,37 @@ public:
 
 }
 
-using syntax_expression_result_t = std::pair<semantic::managed_expression_list, entity_identifier>;
-//using semantic_expression_pair = std::pair<semantic::expression_t, bang_type>;
+template <typename ExpressionsT>
+struct syntax_expression_result
+{
+    ExpressionsT expressions;
+    entity_identifier value_or_type;
+    bool is_const_result;
+
+    inline entity_identifier type() const
+    {
+        BOOST_ASSERT(!is_const_result);
+        return value_or_type;
+    }
+
+    inline entity_identifier value() const
+    {
+        BOOST_ASSERT(is_const_result);
+        return value_or_type;
+    }
+};
+
+template <typename ExpressionsT>
+struct syntax_expression_const_result
+{
+    ExpressionsT expressions;
+    entity_identifier value;
+};
+
+using syntax_expression_result_t = syntax_expression_result<semantic::managed_expression_list>;
+using syntax_expression_result_reference_t = syntax_expression_result<semantic::expression_span>;
+
+using syntax_expression_const_result_t = syntax_expression_const_result<semantic::managed_expression_list>;
 
 syntax_expression_result_t make_result(unit&, entity_identifier); // auxiliary
 

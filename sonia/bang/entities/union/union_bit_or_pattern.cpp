@@ -10,7 +10,7 @@
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
-#include "sonia/bang/entities/generic_pattern_base.ipp"
+#include "sonia/bang/functional/generic_pattern_base.ipp"
 
 #include "sonia/bang/auxiliary.hpp"
 
@@ -26,18 +26,18 @@ public:
 
 error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type& argctx, syntax_expression_result_t& er) const
 {
-    if (argctx.pargname || er.first) return argctx.make_argument_mismatch_error();
+    if (argctx.pargname || !er.is_const_result) return argctx.make_argument_mismatch_error();
  
     fn_compiler_context& ctx = argctx.ctx;
     prepared_call const& call = argctx.call;
     unit& u = ctx.u();
 
-    entity const& arg_entity = get_entity(u, er.second);
+    entity const& arg_entity = get_entity(u, er.value());
     if (arg_entity.get_type() != u.get(builtin_eid::typename_)) {
         return argctx.make_argument_mismatch_error();
     }
     if (!pmd) {
-        pmd = make_shared<union_match_descriptor>(u);
+        pmd = make_shared<union_match_descriptor>();
     }
     union_match_descriptor& md = static_cast<union_match_descriptor&>(*pmd);
 
@@ -53,7 +53,7 @@ error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_m
     return {};
 }
 
-std::expected<syntax_expression_result_t, error_storage> union_bit_or_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> union_bit_or_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
 {
     auto& umd = static_cast<union_match_descriptor&>(md);
     return make_result(ctx.u(), ctx.u().make_union_type_entity(umd.types).id());

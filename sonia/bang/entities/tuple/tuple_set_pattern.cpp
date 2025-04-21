@@ -11,6 +11,7 @@
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 #include "sonia/bang/ast/expression_visitor.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
 namespace sonia::lang::bang {
@@ -40,7 +41,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
     entity const* ppname = nullptr;
     syntax_expression_t const* pvalue = nullptr;
     shared_ptr<tuple_set_match_descriptor> pmd;
-    auto estate = ctx.expressions_state();
 
     for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
@@ -49,27 +49,30 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
             continue;
         }
         if (pargname->value == slfid && !pte) {
-            pmd = make_shared<tuple_set_match_descriptor>(u);
-            ctx.push_chain(pmd->call_expressions);
-            auto last_expr_it = ctx.expressions().last();
-            expression_visitor evis{ ctx };
-            auto res = apply_visitor(evis, arg.value());
+            pmd = make_shared<tuple_set_match_descriptor>();
+            auto res = apply_visitor(base_expression_visitor{ ctx }, arg.value());
             if (!res) return std::unexpected(std::move(res.error()));
-            if (ctx.context_type) {
-                entity const& some_entity = ctx.u().eregistry_get(ctx.context_type);
-                if (auto psig = some_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
-                    pte = &some_entity;
-                    pmd->get_match_result(pargname->value).append_result(ctx.context_type, last_expr_it, ctx.expressions());
-                    continue;
-                }
+            auto& ser = res->first;
+            if (ser.is_const_result) {
+                return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch, expected a mutable tuple"sv, pargname->value));
             }
-            return std::unexpected(make_error<type_mismatch_error>(pargname->location, ctx.context_type, u.get(builtin_qnid::tuple)));
+
+            entity const& some_entity = get_entity(u, ser.type());
+            auto psig = some_entity.signature();
+            if (!psig || psig->name != u.get(builtin_qnid::tuple)) {
+                return std::unexpected(make_error<type_mismatch_error>(pargname->location, ctx.context_type, u.get(builtin_qnid::tuple)));
+            }
+
+            pte = &some_entity;
+            pmd->get_match_result(pargname->value).append_result(ser);
+            call.splice_back(ser.expressions);
            //return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch, expected a tuple"sv, pargname->value));
         } else if (pargname->value == propid && !ppname) {
             ct_expression_visitor evis{ ctx };
             auto res = apply_visitor(evis, arg.value());
             if (!res) return std::unexpected(std::move(res.error()));
-            ppname = &u.eregistry_get(*res);
+            BOOST_ASSERT(!res->expressions); // not impelemented const value expressions
+            ppname = &get_entity(u, res->value);
             /*
             entity const& some_entity = ctx.u().eregistry_get(*res);
             ppname = dynamic_cast<identifier_entity const*>(&some_entity);
@@ -115,7 +118,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
 #endif
 }
 
-std::expected<syntax_expression_result_t, error_storage> tuple_set_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> tuple_set_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
 
@@ -123,14 +126,11 @@ std::expected<syntax_expression_result_t, error_storage> tuple_set_pattern::appl
     semantic::managed_expression_list exprs{ u };
 
     // only one named argument is expected
-    md.for_each_named_match([&exprs, &md](identifier name, parameter_match_result const& mr) {
-        for (auto& [_, optspan] : mr.results) {
-            BOOST_ASSERT(optspan);
-            exprs.splice_back(md.call_expressions, *optspan);
+    md.for_each_named_match([&exprs, &el](identifier name, parameter_match_result const& mr) {
+        for (auto& ser : mr.results) {
+            exprs.splice_back(el, ser.expressions);
         }
     });
-
-    BOOST_ASSERT(!md.call_expressions); // all arguments were transfered
 
     if (size_t propindex = static_cast<tuple_set_match_descriptor&>(md).property_index(); propindex) {
         u.push_back_expression(exprs, semantic::push_value{ propindex });

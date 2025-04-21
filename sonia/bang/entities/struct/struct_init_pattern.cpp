@@ -90,12 +90,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_init_patter
     return res;
 }
 
-std::expected<syntax_expression_result_t, error_storage> struct_init_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> struct_init_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& exprs, functional_match_descriptor& md) const
 {
     // create tuple instance
     unit& u = ctx.u();
     
-    auto [el, argcount] = apply_arguments(ctx, md);
+    auto [el, argcount] = apply_arguments(ctx, exprs, md);
 
     if (argcount > 1) {
         u.push_back_expression(el, semantic::push_value{ mp::integer{ argcount } });

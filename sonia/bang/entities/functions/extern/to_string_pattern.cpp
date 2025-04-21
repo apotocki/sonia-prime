@@ -9,13 +9,15 @@
 #include "sonia/bang/entities/functions/function_entity.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
+
 namespace sonia::lang::bang {
 
-std::expected<syntax_expression_result_t, error_storage> to_string_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> to_string_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto& [strid, _] = md.get_match_result(0).results.front();
-    entity const& ent = u.eregistry_get(strid);
+    auto& ser = md.get_match_result(0).results.front();
+    entity const& ent = get_entity(u, ser.value_or_type);
     identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&ent);
     BOOST_ASSERT(pie);
     return make_result(u, u.make_string_entity(u.print(pie->value())).id());

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "sonia/bang/entities/generic_pattern_base.hpp"
+#include "sonia/bang/functional/generic_pattern_base.hpp"
 
 namespace sonia::lang::bang {
 
@@ -16,7 +16,7 @@ class union_bit_or_pattern : public generic_pattern_base<union_bit_or_pattern>
 public:
     union_bit_or_pattern() = default;
 
-    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override { return s << "union(...)"sv; }
 

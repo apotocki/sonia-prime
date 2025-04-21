@@ -329,7 +329,7 @@ HASHTAG					"#"
 
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
 	{CONST} { return (bang_lang::parser::token::CONST); }
-	{MUT} { return (bang_lang::parser::token::MUT); }
+	{MUT} { variant_emplace(location); return (bang_lang::parser::token::MUT); }
 
 	{NIL_WORD} {
 		variant_emplace(annotated_nil{location});

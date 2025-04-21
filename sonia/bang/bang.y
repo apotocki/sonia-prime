@@ -295,7 +295,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 %token WEAK "weak modifier"
 %token CONST "const modifier"
-%token MUT "mut modifier"
+%token <sonia::lang::lex::resource_location> MUT "mut modifier"
 
 // EXPRESSIONS
 %token <annotated_nil> NIL_WORD "nil"
@@ -692,7 +692,7 @@ parameter-decl:
     | identifier[id] internal-identifier-opt[intid] COLON CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
         { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
     | identifier[id] internal-identifier-opt[intid] COLON MUT parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; }
+        { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; IGNORE_TERM($MUT); }
     | identifier[id] internal-identifier-opt[intid] ARROWEXPR parameter-value-constraint-set[constraint]
         { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
     
@@ -701,7 +701,7 @@ parameter-decl:
     | INTERNAL_IDENTIFIER[intid] COLON CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
         { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
     | INTERNAL_IDENTIFIER[intid] COLON MUT parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; }
+        { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; IGNORE_TERM($MUT); }
     | INTERNAL_IDENTIFIER[intid] ARROWEXPR parameter-value-constraint-set[constraint]
         { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
     
@@ -710,14 +710,14 @@ parameter-decl:
     | INTERNAL_IDENTIFIER[intid] ELLIPSIS COLON CONST parameter-constraint-set[constraint]
         { $$ = parameter_t{ varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint) }; IGNORE_TERM($ELLIPSIS); }
     | INTERNAL_IDENTIFIER[intid] ELLIPSIS COLON MUT parameter-constraint-set[constraint]
-        { $$ = parameter_t{ varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint) }; IGNORE_TERM($ELLIPSIS); }
+        { $$ = parameter_t{ varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint) }; IGNORE_TERM($ELLIPSIS); IGNORE_TERM($MUT); }
 
     | parameter-constraint-set[constraint] parameter-default-value-opt[default]
         { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::value_type, std::move($constraint), std::move($default) }; }
     | CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
         { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
     | MUT parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; }
+        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; IGNORE_TERM($MUT); }
     | ARROWEXPR parameter-value-constraint-set[constraint]
         { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
     ;
@@ -919,6 +919,11 @@ new-expression:
 call-expression:
       qname[name] OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($start), std::move($name), std::move($arguments) }; }
+    | MUT OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
+        { 
+            auto aid = ctx.make_identifier(annotated_string_view{ "mut"sv, std::move($MUT) });
+            $$ = function_call_t{ std::move($start), annotated_qname{ qname{ aid.value, true }, std::move(aid.location) }, std::move($arguments) };
+        }
     | call-expression[nameExpr] OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($start), std::move($nameExpr), std::move($arguments) }; }
     | apostrophe-expression[nameExpr] OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
@@ -936,11 +941,14 @@ lambda-expression:
 
 pack-expression:
       syntax-expression[expr]
-        {
-            named_expression_list_t list{};
-            list.emplace_back(std::move($expr));
-            $$ = std::move(list);
-        }
+        { $$ = named_expression_list_t{ named_expression_t{ std::move($expr) } }; }
+        /*
+    | MUT syntax-expression[expr]
+    {
+        auto aid = ctx.make_identifier(annotated_string_view{ "mut"sv, std::move($MUT) });
+        $$ = named_expression_list_t{ named_expression_t{ function_call_t{ qname{ aid.value, true }, std::move(aid.location) }, std::move($expr) } };
+    }
+    */
     | identifier[id] COLON syntax-expression[expr]
         {
             named_expression_list_t list{};

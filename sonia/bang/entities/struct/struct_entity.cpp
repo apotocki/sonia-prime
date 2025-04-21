@@ -54,9 +54,9 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
         if (!res) return std::move(res.error());
         bool is_const = f.modifier != field_modifier_t::value;
         if (f.name) {
-            tuple_signature.push_back(f.name.value, field_descriptor{ *res, is_const });
+            tuple_signature.push_back(f.name.value, field_descriptor{ res->value, is_const });
         } else {
-            tuple_signature.push_back(field_descriptor{ *res, is_const });
+            tuple_signature.push_back(field_descriptor{ res->value, is_const });
         }
     }
 

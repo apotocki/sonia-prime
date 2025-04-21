@@ -142,13 +142,13 @@ public:
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const&) const override;
 
-    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override;
 
 protected:
     void build_scope(fn_compiler_context&, functional_match_descriptor&, functional_binding_set& bound_arguments /* out */) const;
-    std::pair<semantic::managed_expression_list, size_t> apply_arguments(fn_compiler_context&, functional_match_descriptor&) const;
+    std::pair<semantic::managed_expression_list, size_t> apply_arguments(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const;
 
     virtual size_t apply_argument(unit&, semantic::expression_list_t& src_exprs, parameter_match_result& pmr, semantic::expression_list_t& dest_exprs) const;
     size_t apply_mut_argument(unit&, semantic::expression_list_t&, parameter_match_result&, semantic::expression_list_t&) const;

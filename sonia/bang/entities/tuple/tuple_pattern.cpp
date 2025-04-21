@@ -28,7 +28,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_pattern::try
 {
     unit& u = ctx.u();
     entity_identifier veid = u.get(builtin_eid::void_);
-    auto pmd = make_shared<tuple_match_descriptor>(u);
+    auto pmd = make_shared<tuple_match_descriptor>();
 
     for (auto const& arg : call.args) { // { argname, expr }
         annotated_identifier const* pargname = arg.name();
@@ -40,16 +40,19 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_pattern::try
             ));
         }
         
-        if (*res == veid) {
+        if (res->value == veid) {
             continue; // ignore argument
         }
-        pmd->fields.emplace_back(pargname ? *pargname : annotated_identifier{}, *res);
+        if (res->expressions) {
+            THROW_NOT_IMPLEMENTED_ERROR("tuple_pattern::try_match: expressions for const value");
+        }
+        pmd->fields.emplace_back(pargname ? *pargname : annotated_identifier{}, res->value);
     }
 
     return pmd;
 }
 
-std::expected<syntax_expression_result_t, error_storage> tuple_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> tuple_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     entity_identifier typename_eid = u.get(builtin_eid::typename_);

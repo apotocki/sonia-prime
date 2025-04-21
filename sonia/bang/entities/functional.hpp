@@ -75,11 +75,24 @@ struct parameter_match_result
     using se_iterator = semantic::expression_list_t::iterator;
     //using se_rng_t = std::pair<se_cont_iterator, se_cont_iterator>;
 
-    small_vector<std::pair<entity_identifier, optional<semantic::expression_span>>, 4> results;
+    small_vector<syntax_expression_result_reference_t, 4> results;
     //uint8_t mod = (uint8_t)modifier::undefined;
 
-    void append_result(entity_identifier, se_iterator before_start_it, semantic::expression_list_t&);
-    void append_result(entity_identifier);
+    //void append_result(entity_identifier, se_iterator before_start_it, semantic::expression_list_t&);
+    template <typename ET>
+    inline void append_result(syntax_expression_result<ET> & er)
+    {
+        results.emplace_back(er.expressions, er.value_or_type, er.is_const_result);
+    }
+
+    template <typename ET>
+    inline void append_const_result(syntax_expression_const_result<ET>& er)
+    {
+        results.emplace_back(er.expressions, er.value, true);
+    }
+
+    void append_result(entity_identifier, semantic::expression_span);
+    void append_const_result(entity_identifier, semantic::expression_span = semantic::expression_span{});
 
     inline explicit operator bool() const noexcept { return !results.empty(); }
 
@@ -104,13 +117,15 @@ class functional_match_descriptor
 
 public:
     functional_binding_set bindings;
-    semantic::managed_expression_list call_expressions;
+    //semantic::managed_expression_list call_expressions;
     lex::resource_location location;
     field_descriptor result;
     int weight{ 0 };
 
-    inline explicit functional_match_descriptor(unit& u) noexcept : call_expressions{ u } {}
-    inline explicit functional_match_descriptor(unit& u, lex::resource_location loc) noexcept : call_expressions{ u }, location{ std::move(loc) } {}
+    inline functional_match_descriptor() = default;
+    inline explicit functional_match_descriptor(lex::resource_location loc) noexcept : location{ std::move(loc) } {}
+    //inline explicit functional_match_descriptor(unit& u) noexcept : call_expressions{ u } {}
+    //inline explicit functional_match_descriptor(unit& u, lex::resource_location loc) noexcept : call_expressions{ u }, location{ std::move(loc) } {}
     
     virtual ~functional_match_descriptor() = default;
 
@@ -155,7 +170,7 @@ public:
     entity_signature build_signature(unit&, qname_identifier);
     void reset() noexcept;
 
-    virtual bool is_constexpr() const noexcept { return call_expressions.empty(); }
+    //virtual bool is_constexpr() const noexcept { return call_expressions.empty(); }
 
 private:
     //static void do_prepare_range(se_cont_iterator& it_before, semantic::managed_expression_list const& exprs, optional<se_rng_t>& rng);
@@ -180,7 +195,7 @@ public:
     public:
         virtual std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const& expected_result) const = 0; // returns the match weight or an error
 
-        virtual std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const
+        virtual std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const
         {
             THROW_NOT_IMPLEMENTED_ERROR("functional::pattern::apply");
         }
@@ -193,22 +208,25 @@ public:
 
     class match
     {
-        pattern const* ptrn_;
-        functional_match_descriptor_ptr md_;
-
     public:
-        inline match(pattern const* p, functional_match_descriptor_ptr md) noexcept
-            : ptrn_{ p }, md_{ std::move(md) } 
+        inline match(pattern const* p, semantic::managed_expression_list&& exprs, functional_match_descriptor_ptr md) noexcept
+            : ptrn_{ p }, expressions{ std::move(exprs) }, md_{ std::move(md) }
         {
             BOOST_ASSERT(md_);
         }
         
-        inline std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context& ctx) const
+        semantic::managed_expression_list expressions;
+
+        inline std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context& ctx)
         {
-            return ptrn_->apply(ctx, *md_);
+            return ptrn_->apply(ctx, expressions, *md_);
         }
 
-        inline bool is_constexpr() const noexcept { return md_->is_constexpr(); }
+        //inline bool is_constexpr() const noexcept { return md_->is_constexpr(); }
+
+    private:
+        pattern const* ptrn_;
+        functional_match_descriptor_ptr md_;
     };
 
     class entity_resolver

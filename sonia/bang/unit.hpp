@@ -53,7 +53,7 @@ enum class builtin_id : size_t
 enum class builtin_qnid : size_t
 {
     fn = 0,
-    deref, ellipsis, tuple, vector, array, fuzzy_array, identifier,
+    mut, deref, ellipsis, tuple, vector, array, fuzzy_array, identifier,
     qname, object, string, f16, f32, f64, decimal, integer, boolean, any, union_,
     metaobject,
     size, typeof, make_tuple, new_, init, eq, ne, plus, minus, bit_or, bit_and, negate, implicit_cast, get, set, head, tail, empty,

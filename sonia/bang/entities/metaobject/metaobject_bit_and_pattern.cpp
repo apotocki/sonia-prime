@@ -8,7 +8,7 @@
 #include <boost/container/flat_map.hpp>
 #include "sonia/small_vector.hpp"
 
-#include "sonia/bang/entities/generic_pattern_base.ipp"
+#include "sonia/bang/functional/generic_pattern_base.ipp"
 
 namespace sonia::lang::bang {
 
@@ -22,18 +22,18 @@ public:
 
 error_storage metaobject_bit_and_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type& argctx, syntax_expression_result_t& er) const
 {
-    if (argctx.pargname || er.first) return argctx.make_argument_mismatch_error();
+    if (argctx.pargname || !er.is_const_result) return argctx.make_argument_mismatch_error();
     fn_compiler_context& ctx = argctx.ctx;
     prepared_call const& call = argctx.call;
     unit& u = ctx.u();
     entity_identifier argtype;
-    entity_identifier eid = er.second;
+    entity_identifier eid = er.value();
 
     entity const& arg_entity = u.eregistry_get(eid);
     if (auto psig = arg_entity.signature(); psig && psig->name == u.get(builtin_qnid::metaobject)) {
         // argument is typename metaobject
         if (!pmd) {
-            pmd = make_shared<metaobject_bit_and_match_descriptor>(u);
+            pmd = make_shared<metaobject_bit_and_match_descriptor>();
         }
         metaobject_bit_and_match_descriptor& md = static_cast<metaobject_bit_and_match_descriptor&>(*pmd);
         md.arguments.push_back(psig);
@@ -42,7 +42,7 @@ error_storage metaobject_bit_and_pattern::accept_argument(std::nullptr_t, functi
     return argctx.make_argument_mismatch_error();
 }
 
-std::expected<syntax_expression_result_t, error_storage> metaobject_bit_and_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> metaobject_bit_and_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<metaobject_bit_and_match_descriptor&>(md);

@@ -20,8 +20,7 @@
 
 #include "sonia/bang/entities/enum/enum_entity.hpp"
 
-#include "sonia/bang/entities/functional_entity.hpp"
-#include "sonia/bang/entities/functions/basic_fn_pattern.hpp"
+#include "sonia/bang/functional/basic_fn_pattern.hpp"
 
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
@@ -74,7 +73,7 @@ error_storage declaration_visitor::operator()(extern_var const& d) const
 
     qname var_qname = ctx.ns() / d.name.value;
     functional& fnl = u().fregistry_resolve(var_qname);
-    auto ve = sonia::make_shared<extern_variable_entity>(std::move(*vartype), fnl.id());
+    auto ve = sonia::make_shared<extern_variable_entity>(vartype->value, fnl.id());
     ve->set_location(d.name.location);
     u().eregistry_insert(ve);
     
@@ -224,15 +223,15 @@ error_storage declaration_visitor::operator()(if_decl const& stm) const
     if (!res) return std::move(res.error());
 
     syntax_expression_result_t & er = res->first;
-    if (get<0>(er).empty()) { // constexpr result
-        entity_identifier v = get<1>(er);
+    if (er.is_const_result) { // constexpr result
+        entity_identifier v = er.value();
         BOOST_ASSERT(v == u().get(builtin_eid::false_) || v == u().get(builtin_eid::true_));
         statement_span body = (v == u().get(builtin_eid::true_) ? stm.true_body : stm.false_body);
         ctx.pushed_unnamed_ns();
         SCOPE_EXIT([this] { ctx.pop_ns(); });
         return apply(body);
     } else {
-        ctx.expressions().splice_back(get<0>(er));
+        ctx.expressions().splice_back(er.expressions);
         return do_rt_if_decl(stm);
     }
 }
@@ -574,12 +573,13 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         if (!optvartype) {
             return std::move(optvartype.error());
         }
-        vartype = *optvartype;
+        BOOST_ASSERT(!optvartype->expressions);
+        vartype = optvartype->value;
     }
 
     small_vector<std::pair<identifier, syntax_expression_result_t>, 8> results;
 
-    prepared_call pcall{ ld.location() };
+    prepared_call pcall{ u(), ld.location() };
     for (auto const& e : ld.expressions) {
         pcall.args.emplace_back(e);
     }
@@ -595,11 +595,11 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
     if (results.size() == 1 && !results.front().first) {
         syntax_expression_result_t& er = results.front().second;
-        if (er.first.empty()) {
-            ctx.new_constant(ld.aname, er.second);
+        if (er.is_const_result) {
+            ctx.new_constant(ld.aname, er.value());
         } else {
-            ctx.expressions().splice_back(er.first);
-            local_variable& ve = ctx.new_variable(ld.aname, er.second);
+            ctx.expressions().splice_back(er.expressions);
+            local_variable& ve = ctx.new_variable(ld.aname, er.type());
             ve.is_weak = ld.weakness;
         }
         return {};
@@ -608,12 +608,12 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         entity_signature sig{ u().get(builtin_qnid::tuple) };
         for (auto & [id, er] : results) {
             entity_identifier field_eid;
-            if (er.first.empty()) {
-                field_eid = er.second;
+            if (er.is_const_result) {
+                field_eid = er.value();
             } else {
-                ctx.expressions().splice_back(er.first);
+                ctx.expressions().splice_back(er.expressions);
                 identifier unnamedid = u().new_identifier();
-                local_variable& ve = ctx.new_variable(annotated_identifier{ unnamedid }, er.second);
+                local_variable& ve = ctx.new_variable(annotated_identifier{ unnamedid }, er.type());
                 ve.is_weak = ld.weakness;
                 field_eid = u().make_qname_entity(qname{ unnamedid, false }).id();
             }

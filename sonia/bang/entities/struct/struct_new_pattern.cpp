@@ -9,6 +9,7 @@
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 #include "sonia/bang/entities/prepared_call.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
 #include "sonia/bang/errors.hpp"
 
 #include "struct_entity.hpp"
@@ -24,9 +25,8 @@ public:
     struct_entity const& se;
     functional::match init_match;
 
-    new_struct_match_descriptor(unit& u, struct_entity const& se, functional::match m)
-        : functional_match_descriptor{ u }
-        , se{ se }
+    new_struct_match_descriptor(struct_entity const& se, functional::match m)
+        : se{ se }
         , init_match{ std::move(m) }
     {}
 };
@@ -46,7 +46,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
             syntax_expression_t const& arg_expr = arg.value();
             auto res = apply_visitor(ct_expression_visitor{ ctx }, arg_expr);
             if (!res) return std::unexpected(std::move(res.error()));
-            entity const& some_entity = u.eregistry_get(*res);
+            if (res->expressions) THROW_NOT_IMPLEMENTED_ERROR("struct_new_pattern::try_match, const value expressions"sv);
+            entity const& some_entity = get_entity(u, res->value);
             pse = dynamic_cast<struct_entity const*>(&some_entity);
             if (!pse) return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch, expected a structure"sv, pargname->value));
             typeloc = get_start_location(arg_expr);
@@ -77,7 +78,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
         ));
     }
 
-    return make_shared<new_struct_match_descriptor>(u, *pse, *init_match);
+    return make_shared<new_struct_match_descriptor>(*pse, std::move(*init_match));
     //ctx.context_type = pse->id(); // for context_value
 
 #if 0
@@ -111,7 +112,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
 #endif
 }
 
-std::expected<syntax_expression_result_t, error_storage> struct_new_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> struct_new_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
 {
     // create tuple instance
     unit& u = ctx.u();

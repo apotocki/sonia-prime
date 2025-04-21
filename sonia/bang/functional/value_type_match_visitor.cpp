@@ -13,6 +13,7 @@
 
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
+#include "sonia/bang/auxiliary.hpp"
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
 
@@ -72,7 +73,7 @@ value_type_match_visitor::result_type value_type_match_visitor::operator()(funct
     ct_expression_visitor sv{ callee_ctx, annotated_entity_identifier{ u.get(builtin_eid::qname) } };
     auto qn_ent_id = apply_visitor(sv, fc.fn_object);
     if (!qn_ent_id) return std::unexpected(std::move(qn_ent_id.error()));
-    qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(u.eregistry_get(*qn_ent_id));
+    qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(get_entity(u, qn_ent_id->value));
 
     // check if can evaluate signature_pattern as a const expression
     
@@ -80,7 +81,7 @@ value_type_match_visitor::result_type value_type_match_visitor::operator()(funct
     if (match) {
         if (auto gresult = match->apply(callee_ctx); gresult) {
             if (auto result = ct_expression_visitor{ callee_ctx }.handle(std::pair{std::move(*gresult), false}); result) {
-                return match_type(*result, fc.location);
+                return match_type(result->value, fc.location);
             }
         }
     }

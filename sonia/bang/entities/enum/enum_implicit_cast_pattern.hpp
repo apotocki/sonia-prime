@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "sonia/bang/entities/functions/basic_fn_pattern.hpp"
+#include "sonia/bang/functional/basic_fn_pattern.hpp"
 
 namespace sonia::lang::bang {
 
@@ -14,7 +14,7 @@ public:
     enum_implicit_cast_pattern() = default;
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const&) const override;
-    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, functional_match_descriptor&) const override;
+    std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
     std::ostream& print(unit const&, std::ostream& s) const override { return s << "implicy_cast(__identifier)->@enumeration"sv; }
 };

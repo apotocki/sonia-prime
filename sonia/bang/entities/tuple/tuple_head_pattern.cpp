@@ -11,7 +11,8 @@
 
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
-#include "sonia/bang/entities/generic_pattern_base.ipp"
+
+#include "sonia/bang/functional/generic_pattern_base.ipp"
 
 #include "sonia/bang/auxiliary.hpp"
 
@@ -25,8 +26,7 @@ class tuple_head_match_descriptor : public functional_match_descriptor
 {
 public:
     inline explicit tuple_head_match_descriptor(unit& u, entity_signature const& sig, lex::resource_location loc) noexcept
-        : functional_match_descriptor{ u }
-        , result_sig{ u.get(builtin_qnid::tuple) }
+        : result_sig{ u.get(builtin_qnid::tuple) }
     {
         field_descriptor const& head_field = sig.fields().front();
         auto it = std::ranges::find(sig.named_fields_indices(), 0, &std::pair<identifier, uint32_t>::second);
@@ -49,12 +49,11 @@ error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_mat
     fn_compiler_context& ctx = argctx.ctx;
     prepared_call const& call = argctx.call;
     unit& u = ctx.u();
-    semantic::managed_expression_list& el = get<0>(er);
-
+    
     entity_identifier argtype;
 
-    if (!el) {
-        entity const& arg_entity = u.eregistry_get(er.second);
+    if (er.is_const_result) {
+        entity const& arg_entity = get_entity(u, er.value());
         if (auto psig = arg_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
             // argument is typename tuple
             pmd = make_shared<tuple_head_match_descriptor>(u, *psig, call.location);
@@ -63,7 +62,7 @@ error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_mat
             argtype = arg_entity.get_type();
         }
     } else {
-        argtype = ctx.context_type;
+        argtype = er.type();
     }
             
     entity const& tpl_entity = get_entity(u, argtype);
@@ -85,12 +84,13 @@ error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_mat
         md.src_size = fields_count;
 
         auto& mr = md.get_match_result(0);
-        if (!el) {
-            mr.append_result(argtype);
+
+        if (er.is_const_result) {
+            mr.append_const_result(argtype, er.expressions);
         } else {
-            mr.append_result(argtype, el.end(), el);
-            md.call_expressions.splice_back(el);
+            mr.append_result(argtype, er.expressions);
         }
+        call.splice_back(er.expressions);
         return {};
     }
     return argctx.make_argument_mismatch_error();
@@ -166,7 +166,7 @@ error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_mat
 //    return pmd;
 //}
 
-std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_head_match_descriptor&>(md);
@@ -193,14 +193,11 @@ std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::app
     }
 
     semantic::managed_expression_list exprs{ u };
-    tmd.for_each_positional_match([&exprs, &tmd](parameter_match_result const& mr) {
-        for (auto const& [_, optspan] : mr.results) {
-            BOOST_ASSERT(optspan);
-            exprs.splice_back(tmd.call_expressions, *optspan);
+    tmd.for_each_positional_match([&exprs, &el](parameter_match_result const& mr) {
+        for (auto const& ser : mr.results) {
+            exprs.splice_back(el, ser.expressions);
         }
     });
-
-    BOOST_ASSERT(!tmd.call_expressions); // all arguments were transfered
 
     if (tmd.src_size > 1) {
         u.push_back_expression(exprs, semantic::push_value{ mp::integer{ 0 } });

@@ -178,10 +178,10 @@ struct value_type_constraint_visitor : static_visitor<std::expected<entity_ident
     }
 };
 
-variant<int, parameter_matcher::ignore_t, parameter_matcher::postpone_t, error_storage> parameter_matcher::try_forward_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const& se, functional_binding_set& b, parameter_match_result& mr) const
+variant<int, parameter_matcher::ignore_t, parameter_matcher::postpone_t, error_storage> parameter_matcher::try_forward_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const& se, functional_binding_set& b, parameter_match_result& mr, semantic::expression_list_t& re) const
 {
     if (variadic) return postpone_t{};
-    return try_match(caller_ctx, callee_ctx, se, b, mr);
+    return try_match(caller_ctx, callee_ctx, se, b, mr, re);
 }
 
 void parameter_matcher::bind_names(span<const annotated_identifier> names, field_descriptor const& type_or_value, functional_binding& binding) const
@@ -227,8 +227,9 @@ void parameter_matcher::update_binding(unit& u, field_descriptor const& type_or_
     }
 }
 
-variant<int, parameter_matcher::ignore_t, error_storage> parameter_matcher::try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const& e, functional_binding& binding, parameter_match_result& mr) const
+variant<int, parameter_matcher::ignore_t, error_storage> parameter_matcher::try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const& e, functional_binding& binding, parameter_match_result& mr, semantic::expression_list_t& re) const
 {
+    unit& u = caller_ctx.u();
     //if (constraint.which()) { // not empty
     int weight;
     switch (modifier_) {
@@ -247,17 +248,17 @@ variant<int, parameter_matcher::ignore_t, error_storage> parameter_matcher::try_
                         mr.append_result(ser);
                         type_or_value = field_descriptor{ ser.value(), true };
                     } else {
-                        semantic::managed_expression_list l{ caller_ctx.u() };
-                        caller_ctx.u().push_back_expression(l, semantic::push_value(ser.value()));
-                        type_or_value = field_descriptor{ get_entity(caller_ctx.u(), ser.value()).get_type(), false };
+                        semantic::managed_expression_list l{ u };
+                        u.push_back_expression(l, semantic::push_value(ser.value()));
+                        type_or_value = field_descriptor{ get_entity(u, ser.value()).get_type(), false };
                         mr.append_result(type_or_value.entity_id(), l);
-                        caller_ctx.expressions().splice_back(l);
+                        re.splice_back(l);
                     }
                 } else {
-                    if (ser.type() == caller_ctx.u().get(builtin_eid::void_)) return parameter_matcher::ignore_t{};
-                    mr.append_result(caller_ctx.context_type, ser.expressions);
-                    caller_ctx.expressions().splice_back(ser.expressions);
-                    type_or_value = field_descriptor{ caller_ctx.context_type, false };
+                    if (ser.type() == u.get(builtin_eid::void_)) return parameter_matcher::ignore_t{};
+                    mr.append_result(ser.type(), ser.expressions);
+                    re.splice_back(ser.expressions);
+                    type_or_value = field_descriptor{ ser.type(), false };
                 }
                 weight = vtcv.weight;
             } else {
@@ -345,10 +346,10 @@ public:
     }
 };
 
-variant<int, parameter_matcher::ignore_t, error_storage> varnamed_parameter_matcher::try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, annotated_identifier argname, syntax_expression_t const& argexpr, functional_binding& binding, parameter_match_result& mr) const
+variant<int, parameter_matcher::ignore_t, error_storage> varnamed_parameter_matcher::try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, annotated_identifier argname, syntax_expression_t const& argexpr, functional_binding& binding, parameter_match_result& mr, semantic::expression_list_t& re) const
 {
     varnamed_parameter_binding vb{ argname, binding };
-    auto r = parameter_matcher::try_match(caller_ctx, callee_ctx, argexpr, vb, mr);
+    auto r = parameter_matcher::try_match(caller_ctx, callee_ctx, argexpr, vb, mr, re);
     using result_t = variant<int, parameter_matcher::ignore_t, error_storage>;
     return apply_visitor(make_functional_visitor<result_t>([&r](auto& v) -> result_t {
         if constexpr (std::is_same_v<int, std::decay_t<decltype(v)>>) {
@@ -596,7 +597,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
     if (varnamed_matcher_) { pmd->weight -= 1; }
     //SCOPE_EXIT([&ctx] { ctx.pop_binding(); }); //no need, temporary context
 
-    //auto estate = ctx.expressions_state();
+    auto estate = ctx.expressions_state();
     
 
     
@@ -627,12 +628,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         annotated_identifier const* pargname = arg.name();
         if (pargname) {
             if (named_parameter_matcher const* nmtch = get_matcher(pargname->value); nmtch) {
-                auto match = nmtch->try_match(ctx, callee_ctx, arg.value(), pmd->bindings, pmd->get_match_result(pargname->value));
+                auto match = nmtch->try_match(ctx, callee_ctx, arg.value(), pmd->bindings, pmd->get_match_result(pargname->value), call.expressions);
                 if (auto* err = get<error_storage>(&match); err) return std::unexpected(std::move(*err));
                 if (get<parameter_matcher::ignore_t>(&match)) continue;
                 pmd->weight += get<int>(match);
             } else if (varnamed_matcher_) {
-                auto match = varnamed_matcher_->try_match(ctx, callee_ctx , *pargname, arg.value(), pmd->bindings, pmd->get_match_result(pargname->value));
+                auto match = varnamed_matcher_->try_match(ctx, callee_ctx , *pargname, arg.value(), pmd->bindings, pmd->get_match_result(pargname->value), call.expressions);
                 if (auto* err = get<error_storage>(&match); err) return std::unexpected(std::move(*err));
                 if (auto const* pignore = get<parameter_matcher::ignore_t>(&match); pignore) continue;
                 pmd->weight += get<int>(match);
@@ -653,7 +654,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         }
 
         // to do: build name identifiers for position matchers?
-        auto exp = (*start_matcher_it)->try_forward_match(ctx, callee_ctx, arg.value(), pmd->bindings, pmd->get_match_result(start_matcher_it - matchers_.begin()));
+        auto exp = (*start_matcher_it)->try_forward_match(ctx, callee_ctx, arg.value(), pmd->bindings, pmd->get_match_result(start_matcher_it - matchers_.begin()), call.expressions);
         if (error_storage* err = get<error_storage>(&exp); err) return std::unexpected(std::move(*err));
         if (get<parameter_matcher::ignore_t>(&exp)) continue;
         if (auto * pmatchweight = get<int>(&exp); pmatchweight) {
@@ -665,7 +666,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
 
         for (auto next_matcher_it = start_matcher_it + 1;;) {
             if (next_matcher_it != end_matcher_it) {
-                exp = (*next_matcher_it)->try_forward_match(ctx, callee_ctx, arg.value(), pmd->bindings, pmd->get_match_result(next_matcher_it - matchers_.begin()));
+                exp = (*next_matcher_it)->try_forward_match(ctx, callee_ctx, arg.value(), pmd->bindings, pmd->get_match_result(next_matcher_it - matchers_.begin()), call.expressions);
                 if (auto* pmatchweight = get<int>(&exp); pmatchweight) {
                     pmd->weight += *pmatchweight;
                     start_matcher_it = next_matcher_it; ++start_matcher_it;
@@ -682,7 +683,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
             variant<int, parameter_matcher::ignore_t, error_storage> res;
             for (;;) {
                 --next_matcher_it;
-                res = (*next_matcher_it)->try_match(ctx, callee_ctx, arg.value(), pmd->bindings, pmd->get_match_result(next_matcher_it - matchers_.begin()));
+                res = (*next_matcher_it)->try_match(ctx, callee_ctx, arg.value(), pmd->bindings, pmd->get_match_result(next_matcher_it - matchers_.begin()), call.expressions);
                 
                 BOOST_ASSERT(!get<parameter_matcher::ignore_t>(&res)); // how can it be?
                     
@@ -710,7 +711,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
                 if (pd.default_value) {
                     named_parameter_matcher const* nmtch = get_matcher(pd.ename.value);
                     BOOST_ASSERT(nmtch);
-                    auto match = nmtch->try_match(callee_ctx, callee_ctx, *pd.default_value, pmd->bindings, pmr);
+                    auto match = nmtch->try_match(callee_ctx, callee_ctx, *pd.default_value, pmd->bindings, pmr, call.expressions);
                     if (error_storage* err = get<error_storage>(&match); err) return std::unexpected(std::move(*err));
                     pmd->weight += get<int>(match);
                     continue;
@@ -975,9 +976,8 @@ size_t basic_fn_pattern::apply_any_argument(unit& u, semantic::expression_list_t
 {
     size_t non_constexpr_count = 0;
     for (auto &ser : pmr.results) {
-        if (!ser.is_const_result) {
-            dest_exprs.splice_back(src_expr, ser.expressions);
-        } else {
+        dest_exprs.splice_back(src_expr, ser.expressions);
+        if (ser.is_const_result) {
             u.push_back_expression(dest_exprs, semantic::push_value(ser.value()));
         }
         ++non_constexpr_count;;
@@ -1366,9 +1366,9 @@ std::expected<syntax_expression_result_t, error_storage> basic_fn_pattern::apply
     
     if (!fne.result) { // we need building to resolve result type
         compiler_task_tracer::task_guard tg = ctx.try_lock_task(entity_task_id{ e });
-        if (!tg) {
-            throw circular_dependency_error({ make_error<basic_general_error>(location_, "resolving function result type"sv, e.id()) });
-        }
+        if (!tg) return std::unexpected(
+            make_error<circular_dependency_error>(make_error<basic_general_error>(location_, "resolving function result type"sv, e.id()))
+        );
         if (!fne.result) {
             fne.build(u);
         }

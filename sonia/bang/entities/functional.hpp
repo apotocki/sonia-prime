@@ -72,7 +72,7 @@ struct parameter_match_result
     //    is_uniadic = 4,
     //    is_variadic = 8,
     //};
-    using se_iterator = semantic::expression_list_t::iterator;
+    //using se_iterator = semantic::expression_list_t::iterator;
     //using se_rng_t = std::pair<se_cont_iterator, se_cont_iterator>;
 
     small_vector<syntax_expression_result_reference_t, 4> results;
@@ -116,6 +116,8 @@ class functional_match_descriptor
     small_vector<parameter_match_result*, 8> positional_matches_;
 
 public:
+    small_vector<semantic::expression_span, 4> void_spans;
+
     functional_binding_set bindings;
     //semantic::managed_expression_list call_expressions;
     lex::resource_location location;

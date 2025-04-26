@@ -16,37 +16,43 @@
 
 namespace sonia::lang::bang {
 
-error_storage mut_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type& argctx, syntax_expression_result_t& v) const
-{
-    if (pmd || argctx.pargname)
-        return argctx.make_argument_mismatch_error();
-
-    fn_compiler_context& ctx = argctx.ctx;
-    prepared_call const& call = argctx.call;
-    unit& u = ctx.u();
-
-    signatured_entity const* arg_entity = dynamic_cast<signatured_entity const*>(&get_entity(u, v.value_or_type));
-    if (!arg_entity) {
-        return argctx.make_argument_mismatch_error();
-    }
-    pmd = make_shared<functional_match_descriptor>(call.location);
-    pmd->result = field_descriptor{ u.make_integer_entity(arg_entity->signature()->positioned_fields_indices().size()).id(), true };
-    return {};
-}
-
 std::expected<functional_match_descriptor_ptr, error_storage> mut_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
 {
-    auto call_session = call.new_session();
-    size_t arg_index = 0;
-    call_session.use(ctx, arg_index, exp);
-    return std::unexpected(error_storage{});
+    auto call_session = call.new_session(ctx);
+    auto arg = call_session.use_next_positioned_argument(exp);
+    if (!arg) return std::unexpected(arg.error());
+    if (auto argterm = call_session.unused_argument(); argterm) {
+        return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
+    }
+    auto pmd = make_shared<functional_match_descriptor>(call.location);
+    pmd->get_match_result(0).append_result(*arg);
+    pmd->void_spans = std::move(call_session.void_spans);
+    return std::move(pmd);
 }
 
-std::expected<syntax_expression_result_t, error_storage> mut_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> mut_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
-    return make_result(ctx.u(), md.result.entity_id());
-}
+    auto & mr = md.get_match_result(0);
+    auto const& ser = mr.results.front();
 
-template generic_pattern_base<mut_pattern>;
+    semantic::managed_expression_list exprs{ ctx.u() };
+    for (semantic::expression_span const& vsp : md.void_spans) {
+        exprs.splice_back(el, vsp);
+    }
+    exprs.splice_back(el, ser.expressions);
+    if (ser.is_const_result) {
+        ctx.u().push_back_expression(exprs, semantic::push_value{ ser.value() });
+        return syntax_expression_result_t{
+            .expressions = std::move(exprs),
+            .value_or_type = get_entity(ctx.u(), ser.value()).get_type(),
+            .is_const_result = false
+        };
+    }
+    return syntax_expression_result_t{ 
+        .expressions = std::move(exprs),
+        .value_or_type = ser.value(),
+        .is_const_result = false
+    };
+}
 
 }

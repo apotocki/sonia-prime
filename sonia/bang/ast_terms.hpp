@@ -129,6 +129,8 @@ struct opt_named_term
         : term{ named_pair_t{std::forward<NameT>(narg), std::forward<TermArgT>(t)} }
     {}
 
+    inline explicit operator bool() const noexcept { return !get<nullptr_t>(&term); }
+
     inline bool has_name() const noexcept { return !!get<named_pair_t>(&term); }
     inline const annotated_identifier * name() const noexcept
     {

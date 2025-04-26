@@ -2442,6 +2442,9 @@
     <ClInclude Include="..\..\..\sonia\bang\functional\generic_pattern_base.ipp">
       <Filter>sonia.bang\functional</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\no_position_argument_error.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2944,6 +2947,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\functional\general\mut_pattern.cpp">
       <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\errors\no_position_argument_error.cpp">
+      <Filter>sonia.bang\errors</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

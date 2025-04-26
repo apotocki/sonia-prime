@@ -308,6 +308,7 @@
     <ClInclude Include="..\..\..\sonia\bang\errors\circular_dependency_error.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors\function_call_match_error.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors\identifier_redefinition_error.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\errors\no_position_argument_error.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors\pattern_match_error.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors\type_mismatch_error.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\errors\utility.hpp" />
@@ -821,6 +822,7 @@
     <ClCompile Include="..\..\..\sonia\bang\errors\circular_dependency_error.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\errors\function_call_match_error.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\errors\identifier_redefinition_error.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\errors\no_position_argument_error.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\errors\pattern_match_error.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\errors\type_mismatch_error.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\errors\value_mismatch_error.cpp" />

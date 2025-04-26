@@ -1,5 +1,6 @@
 let xpack = 1, 2, name: mut("345"), 66, name: "678"; // typeof(xpack) = __identifier[4]
 assert(size(xpack) == 3);
+
 assert(xpack.0 == 1);
 assert(xpack.1 == 2);
 assert(xpack.2 == 66);

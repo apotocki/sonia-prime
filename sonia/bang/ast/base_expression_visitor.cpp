@@ -23,11 +23,11 @@ base_expression_visitor::base_expression_visitor(fn_compiler_context& c) noexcep
 {
 }
 
-base_expression_visitor::base_expression_visitor(fn_compiler_context& c, annotated_entity_identifier er) noexcept
+base_expression_visitor::base_expression_visitor(fn_compiler_context& c, annotated_entity_identifier er, bool is_const_expected) noexcept
     : ctx{ c }
     , expected_result{ std::move(er) }
-{
-}
+    , is_type_expected{ !is_const_expected }
+{}
 
 unit& base_expression_visitor::u() const noexcept
 {

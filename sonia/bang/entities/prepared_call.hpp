@@ -7,6 +7,8 @@
 #include "sonia/bang/semantic.hpp"
 #include "sonia/bang/errors.hpp"
 
+#include <boost/container/flat_map.hpp>
+
 namespace sonia::lang::bang {
 
 class fn_compiler_context;
@@ -18,6 +20,20 @@ public:
     lex::resource_location location;
     small_vector<named_expression_t, 8> args;
     
+    // cache
+    using cache_key_t = std::tuple<entity_identifier, bool>;
+    struct argument_cache
+    {
+        syntax_expression_t expression;
+        boost::container::small_flat_map<cache_key_t, std::expected<syntax_expression_result_reference_t, error_storage>, 8> cache;
+
+        inline explicit argument_cache(syntax_expression_t e) noexcept
+            : expression{ std::move(e) }
+        {}
+    };
+
+    mutable small_vector<std::tuple<identifier, argument_cache>, 8> named_argument_caches_;
+    mutable small_vector<argument_cache, 8> position_argument_caches_;
 
     inline prepared_call(unit& u, lex::resource_location loc) noexcept
         : expressions{ u }
@@ -33,23 +49,36 @@ public:
 
     struct session
     {
-        session() = default;
         session(session const&) = delete;
         session(session&&) = default;
         session& operator=(session const&) = delete;
         session& operator=(session&&) = delete;
         ~session() noexcept = default;
     
+        fn_compiler_context& ctx;
         prepared_call const& call;
+        small_vector<std::tuple<identifier, argument_cache*>, 8> unused_named_arguments_;
+        small_vector<argument_cache*, 8> unused_position_arguments_;
+        small_vector<semantic::expression_span, 4> void_spans; // void argument's expressions
+        size_t unused_positioned_index_ = 0;
+        size_t unused_positioned_skipped_ = 0;
 
-        inline explicit session(prepared_call const& c) noexcept
-            : call{ c }
-        {}
+        session(fn_compiler_context&, prepared_call const&);
 
-        std::expected<syntax_expression_result_reference_t, error_storage> use(fn_compiler_context&, size_t arg_index, annotated_entity_identifier const& exp);
+        std::expected<syntax_expression_result_reference_t, error_storage> use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp = false);
+        
+        named_expression_t unused_argument();
+
+    private:
+        std::expected<syntax_expression_result_reference_t, error_storage>
+        do_resolve(argument_cache& arg_cache, annotated_entity_identifier const& exp, bool const_exp);
     };
 
-    session new_session() const;
+    session new_session(fn_compiler_context&) const;
+
+private:
+    
+
 };
 
 }

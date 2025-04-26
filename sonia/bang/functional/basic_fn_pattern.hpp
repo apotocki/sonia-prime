@@ -45,10 +45,10 @@ public:
     bool is_pattern() const noexcept;
 
     // returns match weight or ignore or error
-    variant<int, ignore_t, error_storage> try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const&, functional_binding&, parameter_match_result&) const; // returns weight delta if matched
+    variant<int, ignore_t, error_storage> try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const&, functional_binding&, parameter_match_result&, semantic::expression_list_t&) const; // returns weight delta if matched
     
     // returns match weight or ignore or postpone or error
-    variant<int, ignore_t, postpone_t, error_storage> try_forward_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const&, functional_binding_set&, parameter_match_result&) const;
+    variant<int, ignore_t, postpone_t, error_storage> try_forward_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, syntax_expression_t const&, functional_binding_set&, parameter_match_result&, semantic::expression_list_t&) const;
 
     std::ostream& print(unit const&, std::ostream&) const;
 
@@ -80,7 +80,7 @@ public:
 
     void update_binding(unit&, field_descriptor const&, functional_binding&) const override;
     
-    variant<int, ignore_t, error_storage> try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, annotated_identifier, syntax_expression_t const&, functional_binding&, parameter_match_result&) const;
+    variant<int, ignore_t, error_storage> try_match(fn_compiler_context& caller_ctx, fn_compiler_context& callee_ctx, annotated_identifier, syntax_expression_t const&, functional_binding&, parameter_match_result&, semantic::expression_list_t&) const;
 };
 
 struct named_parameter_matcher_less

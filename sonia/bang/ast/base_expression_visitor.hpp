@@ -24,7 +24,7 @@ protected:
 
 public:
     explicit base_expression_visitor(fn_compiler_context& c) noexcept;
-    base_expression_visitor(fn_compiler_context& c, annotated_entity_identifier er) noexcept;
+    base_expression_visitor(fn_compiler_context& c, annotated_entity_identifier er, bool is_const_expected = false) noexcept;
 
     result_type operator()(indirect_value const&) const;
 

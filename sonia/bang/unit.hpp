@@ -83,6 +83,7 @@ class unit
     
 
     // pools first
+    object_pool<syntax_expression_list_t::entry_type> syntax_expression_list_entry_pool_;
     object_pool<semantic::expression_list_t::entry_type> semantic_expression_list_entry_pool_;
     object_pool<statement_entry> statements_entry_pool_;
 
@@ -293,6 +294,11 @@ public:
         }
     }
 
+    // syntax
+    syntax_expression_entry& push_back_expression(syntax_expression_list_t&, syntax_expression_t&&);
+    void release(syntax_expression_list_t::entry_type&&);
+
+    // semantic
     void push_back_expression(semantic::expression_list_t&, semantic::expression&&);
     void release(semantic::expression_list_t::entry_type&&);
     void store(semantic::managed_expression_list&&);

@@ -18,8 +18,8 @@
 
 #include "functional/external_fn_pattern.hpp"
 #include "functional/general/mut_pattern.hpp"
+#include "functional/general/deref_pattern.hpp"
 
-#include "entities/functions/extern/size_pattern.hpp"
 #include "entities/functions/extern/to_string_pattern.hpp"
 
 #include "entities/literals/literal_entity.hpp"
@@ -30,6 +30,7 @@
 
 #include "entities/tuple/tuple_pattern.hpp"
 #include "entities/tuple/tuple_make_pattern.hpp"
+#include "entities/tuple/tuple_size_pattern.hpp"
 #include "entities/tuple/tuple_get_pattern.hpp"
 #include "entities/tuple/tuple_set_pattern.hpp"
 #include "entities/tuple/tuple_empty_pattern.hpp"
@@ -410,12 +411,6 @@ struct type_printer_visitor : static_visitor<void>
         THROW_NOT_IMPLEMENTED_ERROR("unit::type_printer_visitor operator()");
     }
 
-    inline void operator()(bang_any_t) const { ss << "any"sv; }
-    //inline void operator()(bang_bool_t) const { ss << "bool"sv; }
-    //inline void operator()(bang_int_t) const { ss << "int"sv; }
-    //inline void operator()(bang_float_t) const { ss << "float"sv; }
-    //inline void operator()(bang_decimal_t) const { ss << "decimal"sv; }
-    //inline void operator()(bang_string_t) const { ss << "string"sv; }
     inline void operator()(annotated_qname const& qn) const { ss << u_.print(qn.value); }
     inline void operator()(annotated_identifier const& obj) const { ss << u_.print(obj.value); }
     //inline void operator()(bang_object_t const& obj) const { ss << u_.print(obj.id()); }
@@ -859,6 +854,13 @@ std::ostream& unit::print_to(std::ostream& os, error const& err) const
 //#endif
 //}
 
+syntax_expression_entry& unit::push_back_expression(syntax_expression_list_t& l, syntax_expression_t && e)
+{
+    syntax_expression_list_t::entry_type* pentry = syntax_expression_list_entry_pool_.new_object(std::move(e));
+    l.push_back(*pentry);
+    return static_cast<syntax_expression_entry&>(*pentry);
+}
+
 void unit::push_back_expression(semantic::expression_list_t& l, semantic::expression&& e)
 {
     semantic::expression_list_t::entry_type * pentry = semantic_expression_list_entry_pool_.new_object(std::move(e));
@@ -868,6 +870,11 @@ void unit::push_back_expression(semantic::expression_list_t& l, semantic::expres
 statement_entry& unit::acquire(statement&& st)
 {
     return *statements_entry_pool_.new_object(std::move(st));
+}
+
+void unit::release(syntax_expression_list_t::entry_type&& e)
+{
+    syntax_expression_list_entry_pool_.delete_object(&e);
 }
 
 void unit::release(semantic::expression_list_t::entry_type&& e)
@@ -1048,6 +1055,7 @@ unit::unit()
     , piregistry_{ identifier_builder_ }
     , fn_identifier_counter_ { (size_t)virtual_stack_machine::builtin_fn::eof_type }
     , bvm_{ std::make_unique<virtual_stack_machine>() }
+    , syntax_expression_list_entry_pool_{ 128, 128 }
     , semantic_expression_list_entry_pool_{ 128, 128 }
     , statements_entry_pool_{ 128, 128 }
     , ast_{ *this }
@@ -1254,7 +1262,7 @@ unit::unit()
 
     // size(signatured_entity)->integer
     functional& sz_fnl = fregistry_resolve(get(builtin_qnid::size));
-    sz_fnl.push(make_shared<size_pattern>());
+    sz_fnl.push(make_shared<tuple_size_pattern>());
 
     // __id(const string) -> __identifier
     qname_identifier idfn = make_qname_identifier("__id"sv);
@@ -1291,7 +1299,7 @@ unit::unit()
     // operator*(type: typename)
     builtin_qnids_[(size_t)builtin_qnid::deref] = make_qname_identifier("*"sv);
     functional& deref_fnl = fregistry_resolve(get(builtin_qnid::deref));
-    deref_fnl.push(make_shared<ellipsis_pattern>());
+    deref_fnl.push(make_shared<deref_pattern>());
 
     // operator...(type: typename)
     builtin_qnids_[(size_t)builtin_qnid::ellipsis] = make_qname_identifier("..."sv);

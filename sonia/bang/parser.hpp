@@ -18,6 +18,7 @@
 namespace sonia::lang::bang {
 
 class unit;
+class syntax_expression_resource;
 
 class parser_context
 {
@@ -39,6 +40,8 @@ public:
     //annotated_qname_identifier make_qname_identifier(annotated_qname) const;
     //annotated_qname_identifier make_qname_identifier(annotated_string_view, bool is_abs) const;
 
+    syntax_expression_entry& push(syntax_expression_t&&);
+
     managed_statement_list new_statement_list() const;
     statement_span push(managed_statement_list&&);
 
@@ -51,7 +54,7 @@ public:
 
     void append_error(std::string errmsg);
 
-    inline shared_ptr<lex::code_resource> get_resource() const noexcept { return resource_; }
+    shared_ptr<lex::code_resource> get_resource() const noexcept;
 
     std::expected<statement_span, std::string> parse(fs::path const& f, fs::path const* base_path = nullptr);
     std::expected<statement_span, std::string> parse_string(string_view);
@@ -61,7 +64,7 @@ private:
 
     unit& unit_;
 
-    shared_ptr<lex::code_resource> resource_;
+    shared_ptr<syntax_expression_resource> resource_;
     
     std::vector<std::string> error_messages_;
     

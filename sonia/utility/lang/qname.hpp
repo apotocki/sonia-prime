@@ -105,6 +105,8 @@ public:
 
     inline size_t size() const noexcept { return parts_.size(); }
 
+    inline explicit operator bool() const noexcept { return !parts_.empty(); }
+
 private:
     small_vector<IdentifierT, 4> parts_;
     bool absolute_;

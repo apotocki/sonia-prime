@@ -100,7 +100,7 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(syntax_
     cast_call.emplace_back(indirect_value{
         .location = expr_loc,
         .type = er.type(),
-        .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(er.expressions) }
+        .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, er.expressions }
     });
 
     auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expected_result);
@@ -132,7 +132,11 @@ inline base_expression_visitor::result_type base_expression_visitor::apply_cast(
 base_expression_visitor::result_type base_expression_visitor::operator()(indirect_value const& v) const
 {
     if (auto const* pel = dynamic_cast<semantic::indirect_expression_list const*>(v.store.get_pointer()); pel) {
-        return apply_cast(syntax_expression_result_t{ std::move(pel->list), v.type }, v);
+        semantic::managed_expression_list el{ ctx.u() };
+        BOOST_ASSERT(pel->plist);
+        el.splice_back(*pel->plist, pel->espan);
+        pel->plist = nullptr;
+        return apply_cast(syntax_expression_result_t{ std::move(el), v.type }, v);
     }
     THROW_INTERNAL_ERROR("base_expression_visitor::operator()(indirect_value const& v) unexpected indorect store type");
 }
@@ -468,6 +472,9 @@ base_expression_visitor::result_type base_expression_visitor::operator()(functio
     if (qname_identifier_entity const* pqnent = dynamic_cast<qname_identifier_entity const*>(&ent); pqnent) {
         return (*this)(pqnent->value(), proc);
     } else if (qname_entity const* pqnent = dynamic_cast<qname_entity const*>(&ent); pqnent) {
+        if (!pqnent->value()) { // make tuple
+            return (*this)(u().get(builtin_qnid::make_tuple), proc);
+        }
         auto optqnid = ctx.lookup_qname(annotated_qname{ pqnent->value(), get_start_location(proc.fn_object) });
         if (!optqnid) {
             return std::unexpected(optqnid.error());

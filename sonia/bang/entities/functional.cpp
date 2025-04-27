@@ -298,7 +298,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
 
     expression_stack_checker expr_stack_state{ ctx };
 
-    prepared_call pcall{ call };
+    prepared_call pcall{ ctx.u(), call };
 
     for (auto const& p : patterns_) {
         auto cmp = major_weight <=> p->get_weight();

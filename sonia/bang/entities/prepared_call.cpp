@@ -18,8 +18,9 @@
 
 namespace sonia::lang::bang {
 
-prepared_call::prepared_call(pure_call_t const& call)
-    : location{ call.location }
+prepared_call::prepared_call(unit& u, pure_call_t const& call)
+    : expressions{ u }
+    , location{ call.location }
     , args{ call.args }
 {
     // initialize caches
@@ -45,13 +46,16 @@ std::expected<syntax_expression_t, error_storage> deref(fn_compiler_context& ctx
             if (!eid_or_var) return std::unexpected(make_error<undeclared_identifier_error>(std::move(aqn)));
             return annotated_entity_identifier{ eid_or_var, aqn.location };
         } else {
+            return variable_identifier{ aqn, false };
+            /*
             semantic::managed_expression_list el{ ctx.u() };
             ctx.u().push_back_expression(el, semantic::push_local_variable{ eid_or_var });
             return indirect_value{
                 .location = aqn.location,
                 .type = eid_or_var.type,
-                .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
+                .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, el } // bug: el will be removed!
             };
+            */
         }
     }), optent);
 }
@@ -281,7 +285,7 @@ prepared_call::session::do_resolve(argument_cache& arg_cache, annotated_entity_i
 }
 
 std::expected<syntax_expression_result_reference_t, error_storage>
-prepared_call::session::use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp)
+prepared_call::session::use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp, syntax_expression_t const** pe)
 {
     for (;;) {
         if (unused_positioned_index_ >= unused_position_arguments_.size()) {
@@ -293,6 +297,9 @@ prepared_call::session::use_next_positioned_argument(annotated_entity_identifier
         auto res = do_resolve(*arg_cache, exp, const_exp);
 
         if (!res || !res->is_const_result || res->value() != ctx.u().get(builtin_eid::void_)) {
+            if (pe) {
+                *pe = &arg_cache->expression;
+            }
             return res;
         }
 

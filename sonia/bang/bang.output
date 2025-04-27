@@ -377,8 +377,8 @@ Terminals, with rules where they appear
     USING (341) 42
     THROW (342)
     SIZEOF (343)
-    DEREF (344)
-    LOWEST (345)
+    LOWEST (344)
+    DEREF (345)
     INCLUDE (346) 12
     INLINE (347) 55
     "`fn`" <sonia::lang::lex::resource_location> (348) 11 54 55
@@ -1642,15 +1642,8 @@ State 64
   175 compound-expression: syntax-expression . "`...`"
 
     INTEGER_INDEX  shift, and go to state 101
-    "`==`"         shift, and go to state 103
-    "`!=`"         shift, and go to state 104
-    "`...`"        shift, and go to state 105
     "`[`"          shift, and go to state 106
     "`.`"          shift, and go to state 107
-    "`+`"          shift, and go to state 108
-    "`-`"          shift, and go to state 109
-    "`&`"          shift, and go to state 110
-    "`|`"          shift, and go to state 111
 
     $default  reduce using rule 148 (syntax-expression-wo-ii)
 

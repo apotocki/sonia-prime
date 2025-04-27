@@ -28,12 +28,22 @@ using YYLTYPE = bang_lang::parser::location_type;
 
 namespace sonia::lang::bang {
 
-class file_resource : public lex::code_resource
+class syntax_expression_resource : public lex::code_resource
+{
+public:
+    managed_syntax_expression_list expressions;
+    inline explicit syntax_expression_resource(unit& u) noexcept : expressions{ u } {}
+};
+
+class file_resource : public syntax_expression_resource
 {
     fs::path path_;
 
 public:
-    explicit file_resource(fs::path p) : path_{ std::move(p) } {}
+    inline file_resource(unit& u, fs::path p) noexcept
+        : syntax_expression_resource{ u }
+        , path_{ std::move(p) }
+    {}
 
     small_string description() const override
     {
@@ -44,12 +54,15 @@ public:
     inline fs::path const& path() const noexcept { return path_; }
 };
 
-class string_resource : public lex::code_resource
+class string_resource : public syntax_expression_resource
 {
     std::string src_;
 
 public:
-    explicit string_resource(string_view s) : src_{ s } {}
+    inline explicit string_resource(unit& u, string_view s)
+        : syntax_expression_resource{ u }
+        , src_{ s }
+    {}
 
     small_string description() const override
     {
@@ -71,6 +84,11 @@ small_u32string utf8_to_utf32(string_view sv)
         result.push_back(c32);
     }
     return small_u32string{ result.data(), result.size() };
+}
+
+shared_ptr<lex::code_resource> parser_context::get_resource() const noexcept
+{
+    return resource_;
 }
 
 identifier parser_context::new_identifier() const
@@ -141,6 +159,11 @@ void parser_context::append_error(std::string errmsg)
     error_messages_.push_back(std::move(errmsg));
 }
 
+syntax_expression_entry& parser_context::push(syntax_expression_t&& e)
+{
+    return unit_.push_back_expression(resource_->expressions, std::move(e));
+}
+
 managed_statement_list parser_context::new_statement_list() const
 {
     return managed_statement_list{ unit_ };
@@ -167,13 +190,13 @@ std::expected<statement_span, std::string> parser_context::parse(fs::path const&
     } catch (std::exception const& e) {
         return std::unexpected(e.what());
     }
-    resource_ = make_shared<file_resource>(f);
+    resource_ = make_shared<file_resource>(unit_, f);
     return parse(string_view { code.data(), code.size() });
 }
 
 std::expected<statement_span, std::string> parser_context::parse_string(string_view code)
 {
-    resource_ = make_shared<string_resource>(code);
+    resource_ = make_shared<string_resource>(unit_, code);
     return parse(code);
 }
 

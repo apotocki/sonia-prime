@@ -16,15 +16,22 @@ namespace sonia::lang::bang {
 
 std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
 {
+    unit& u = ctx.u();
+    entity_identifier veid = u.get(builtin_eid::void_);
     size_t pos_arg_num = 0;
     auto pmd = make_shared<functional_match_descriptor>();
     for (auto const& arg : call.args) {
         auto res = apply_visitor(base_expression_visitor{ ctx }, arg.value());
         if (!res) return std::unexpected(std::move(res.error()));
+        auto& ser = res->first;
+        if (ser.is_const_result && ser.value() == veid) {
+            if (ser.expressions) pmd->void_spans.emplace_back(ser.expressions);
+            continue;
+        }
 
         annotated_identifier const* pargname = arg.name();
         parameter_match_result* pmr = pargname ? &pmd->get_match_result(pargname->value) : &pmd->get_match_result(pos_arg_num++);
-        auto& ser = res->first;
+        
         pmr->append_result(ser);
         call.splice_back(ser.expressions);
     }
@@ -51,14 +58,14 @@ std::expected<syntax_expression_result_t, error_storage> tuple_make_pattern::app
     md.for_each_named_match([&argcount, &exprs, &el](identifier name, parameter_match_result const& mr) {
         for (auto const& ser : mr.results) {
             exprs.splice_back(el, ser.expressions);
+            if (!ser.is_const_result) ++argcount;
         }
-        ++argcount;
     });
     md.for_each_positional_match([&argcount, &exprs, &el](parameter_match_result const& mr) {
         for (auto const& ser : mr.results) {
             exprs.splice_back(el, ser.expressions);
+            if (!ser.is_const_result) ++argcount;
         }
-        ++argcount;
     });
     
     if (argcount > 1) {

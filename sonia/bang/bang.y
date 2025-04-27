@@ -178,15 +178,11 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 // 7 priority
 //%left RIGHTSHIFT LEFTSHIFT
 
-// 5 priority
-%left ASTERISK SLASH PERCENT
-
 // 4 priority
 //%left PTAST ARROWAST
 
 // 3 priority
-%right DEREF
-//%right PREFIXDBLPLUS PREFIXDBLMINUS PREFIXPLUS PREFIXMINUS EXCLPT TILDA CAST !DEREF! ADDRESS SIZEOF
+//%right PREFIXDBLPLUS PREFIXDBLMINUS PREFIXPLUS PREFIXMINUS EXCLPT TILDA CAST ADDRESS SIZEOF
 
 // 2 priority
 //%left DBLPLUS DBLMINUS OPEN_PARENTHESIS CLOSE_PARENTHESIS OPEN_SQUARE_BRACKET CLOSE_SQUARE_BRACKET POINT
@@ -222,8 +218,11 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %left CONCAT
 %left PLUS MINUS
 
+// 5 priority
+%left ASTERISK SLASH PERCENT
+
 // 3 priority
-%right EXCLPT
+%right DEREF EXCLPT
 
 // 2 priority
 %left OPEN_BRACE OPEN_PARENTHESIS OPEN_SQUARE_BRACKET ARROW ARROWEXPR POINT INTEGER_INDEX
@@ -364,7 +363,7 @@ finished-statement-any:
 
 statement:
       EXTERN VAR identifier COLON type-expr[type]
-        { $$ = extern_var{ std::move($identifier), std::move($type) }; }
+        { $$ = extern_var{ std::move($identifier), &ctx.push(std::move($type)) }; }
     | EXTERN FN fn-decl[fn]
         { $$ = std::move($fn); IGNORE_TERM($FN); }
     | INCLUDE STRING
@@ -1300,8 +1299,6 @@ expr:
 		{ $$ = std::move($2); $$.push_back(operator_type::PREFIX_BITINV); }
 	| OPEN_PARENTHESIS expr-with-comma CLOSE_PARENTHESIS expr %prec CAST
         { $$ = handle_call_op($2, $4, operator_type::TYPE_CAST); }
-    | ASTERISK expr %prec DEREF
-		{ $$ = std::move($2); $$.push_back(operator_type::PREFIX_DEREF); }
     | AMPERSAND expr %prec ADDRESS
 		{ $$ = std::move($2); $$.push_back(operator_type::PREFIX_ADDRESS); }
 	| SIZEOF expr

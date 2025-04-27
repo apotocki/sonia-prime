@@ -102,7 +102,7 @@ error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, 
     cast_call.emplace_back(indirect_value{
         .location = argloc,
         .type = elem_type_eid,
-        .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(er.expressions) }
+        .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, er.expressions }
     });
 
     auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, annotated_entity_identifier{ vec_element_type_eid });

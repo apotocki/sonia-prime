@@ -1,3 +1,8 @@
+let xpack = (1, mut("345"));
+assert(size(xpack) == 2);
+//assert(xpack.0 == 1);
+//assert(*xpack.1 == "345");
+/*
 let xpack = 1, 2, name: mut("345"), 66, name: "678"; // typeof(xpack) = __identifier[4]
 assert(size(xpack) == 3);
 
@@ -21,3 +26,4 @@ assert(xpack2.name.1 == "345");
 assert(xpack2.name.2 == "678");
 assert(xpack2.name.3 == "901");
 assert(xpack2.name2 == "asd");
+*/

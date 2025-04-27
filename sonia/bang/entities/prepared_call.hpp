@@ -40,7 +40,7 @@ public:
         , location{ std::move(loc) }
     {}
 
-    explicit prepared_call(pure_call_t const&);
+    prepared_call(unit&, pure_call_t const&);
 
     void splice_back(semantic::expression_list_t&) const noexcept;
     void splice_back(semantic::expression_list_t&, semantic::expression_span) const noexcept;
@@ -65,7 +65,7 @@ public:
 
         session(fn_compiler_context&, prepared_call const&);
 
-        std::expected<syntax_expression_result_reference_t, error_storage> use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp = false);
+        std::expected<syntax_expression_result_reference_t, error_storage> use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp = false, syntax_expression_t const** pe = nullptr);
         
         named_expression_t unused_argument();
 

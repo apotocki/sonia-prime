@@ -66,7 +66,7 @@ error_storage declaration_visitor::operator()(include_decl const& d) const
 
 error_storage declaration_visitor::operator()(extern_var const& d) const
 {
-    auto vartype = apply_visitor(ct_expression_visitor{ ctx }, d.type);
+    auto vartype = apply_visitor(ct_expression_visitor{ ctx }, d.type());
     if (!vartype) {
         return std::move(vartype.error());
     }

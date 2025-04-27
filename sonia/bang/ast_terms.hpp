@@ -35,18 +35,8 @@ class unit;
 struct statement_entry;
 using statement_span = linked_list_node_span<statement_entry>;
 
-// ======================================================================== preliminary types
-
-#define BANG_TRIVIAL_CMP(name) \
-inline bool operator==(name const&) const { return true; } \
-inline auto operator<=>(name const&) const { return std::strong_ordering::equivalent; }
-
-struct bang_any_t { BANG_TRIVIAL_CMP(bang_any_t) };
-//struct bang_bool_t { BANG_TRIVIAL_CMP(bang_bool_t) };
-//struct bang_int_t { BANG_TRIVIAL_CMP(bang_int_t) };
-//struct bang_float_t { BANG_TRIVIAL_CMP(bang_float_t) };
-//struct bang_decimal_t { BANG_TRIVIAL_CMP(bang_decimal_t) };
-//struct bang_string_t { BANG_TRIVIAL_CMP(bang_string_t) };
+struct syntax_expression_entry;
+using syntax_expression_span = linked_list_node_span<syntax_expression_entry>;
 
 enum class parameter_constraint_modifier_t : uint8_t
 {
@@ -666,6 +656,11 @@ using lambda_t = lambda<syntax_expression_t>;
 using array_expression_t = array_expression<syntax_expression_t>;
 using index_expression_t = index_expression<syntax_expression_t>;
 
+using syntax_expression_entry_type = linked_list_node<syntax_expression_t>;
+struct syntax_expression_entry : syntax_expression_entry_type { using syntax_expression_entry_type::syntax_expression_entry_type; };
+using syntax_expression_list_t = linked_list<syntax_expression_t>;
+using managed_syntax_expression_list = managed_linked_list<syntax_expression_t, unit>;
+
 enum class field_modifier_t : uint8_t
 {
     value = 0,
@@ -928,7 +923,12 @@ struct enum_decl
 struct extern_var
 {
     annotated_identifier name;
-    syntax_expression_t type;
+    syntax_expression_entry const* type_;
+
+    inline syntax_expression_t const& type() const noexcept
+    {
+        return type_->value;
+    }
 };
 
 struct include_decl

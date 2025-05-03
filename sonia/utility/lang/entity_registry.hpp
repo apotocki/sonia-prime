@@ -76,7 +76,7 @@ template <typename FactoryT>
 EntityT & entity_registry<EntityT, MutexT>::find_or_create(EntityT const& sample, FactoryT const& factory)
 {
     lock_guard guard(set_mtx_);
-    auto& index = set_.get<1>();
+    auto& index = set_.template get<1>();
     auto it = index.find(sample);
     if (it == index.end()) {
         it = index.insert(it, entity_wrapper{ factory() });

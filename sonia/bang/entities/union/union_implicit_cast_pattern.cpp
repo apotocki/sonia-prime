@@ -108,7 +108,7 @@ std::expected<syntax_expression_result_t, error_storage> union_implicit_cast_pat
         semantic::managed_expression_list rel{ u };
         rel.splice_back(el, (semantic::expression_span)ser.expressions);
         u.push_back_expression(rel, semantic::push_value{ ucmd.field_index }); // runtime which value
-        u.push_back_expression(rel, semantic::push_value{ 2ull });
+        u.push_back_expression(rel, semantic::push_value{ uint64_t{ 2 } });
         u.push_back_expression(rel, semantic::invoke_function(u.get(builtin_eid::arrayify)));
         return syntax_expression_result_t{ std::move(rel), ucmd.result_type };
     }

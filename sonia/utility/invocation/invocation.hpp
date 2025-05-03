@@ -789,6 +789,8 @@ inline auto blob_type_dispatch(blob_result const& b, FT&& ftor)
         return blob_bigint_dispatch(b, std::forward<FT>(ftor));
     case blob_type::decimal:
         return blob_decimal_dispatch(b, std::forward<FT>(ftor));
+    default:
+        break;
     }
     throw std::runtime_error((std::ostringstream() << "unexpected blob type: "sv << std::hex << (int)b.type).str());
 }
@@ -850,8 +852,6 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
     return ftor(std::type_identity<void>{}, b);
 }
 
-
-
 template <typename Elem, typename Traits>
 inline std::basic_ostream<Elem, Traits>& print_type(std::basic_ostream<Elem, Traits>& os, blob_result const& b)
 {
@@ -912,6 +912,11 @@ inline std::basic_ostream<Elem, Traits>& print_type(std::basic_ostream<Elem, Tra
         os << ']';
     }
     return os;
+}
+
+inline size_t hash_value(blob_result const& val) noexcept
+{
+    return blob_type_dispatch(val, []<typename DT>(DT v)->size_t { return sonia::hash<DT>{}(v); });
 }
 
 template <typename T>
@@ -1267,6 +1272,96 @@ inline auto as(blob_result const& val) -> decltype(from_blob<T>{}(std::declval<b
     return from_blob<T>{}(unref(val));
 }
 
+template <typename Elem, typename Traits>
+std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem, Traits>& os, blob_result const& b, bool with_types)
+{
+    using namespace std::string_view_literals;
+
+    if (b.type == blob_type::nil) {
+        return os << "nil"sv;
+    }
+    else if (b.type == blob_type::object) {
+        auto& obj = *data_of<sonia::invocation::object>(b);
+        return os << "object : "sv << typeid(obj).name();
+    }
+    else if (b.type == blob_type::blob_reference) {
+        return os << '&' << *data_of<blob_result>(b);
+    }
+    if (is_array(b) && !contains_string(b)) {
+        os << '[';
+        blob_type_selector(b, [&os](auto ident, blob_result b) {
+            using type = typename decltype(ident)::type;
+            if constexpr (std::is_same_v<type, std::nullptr_t>) { os << "nil"sv; }
+            else if constexpr (std::is_void_v<type>) { os << "unknown"sv; }
+            else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"; }
+            else {
+                using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
+                fstype const* begin_ptr = data_of<fstype>(b);
+                for (auto* p = begin_ptr, *e = begin_ptr + array_size_of<fstype>(b); p != e; ++p) {
+                    os << ((p != begin_ptr) ? "," : "");
+                    os << particular_blob_result((type)*p);
+                }
+            }
+            });
+        return os << ']';
+    }
+    switch (b.type)
+    {
+    case blob_type::nil:
+        return os << "nil"sv;
+    case blob_type::boolean:
+        return os << (b.bp.i8value ? "true"sv : "false"sv);
+    case blob_type::c8:
+        return with_types ? (os << '\'' << (char)b.bp.i8value << '\'') : (os << (char)b.bp.i8value);
+    case blob_type::i8:
+        return os << (int)b.bp.i8value << (with_types ? ":i8"sv : ""sv);
+    case blob_type::ui8:
+        return os << (int)b.bp.ui8value << (with_types ? ":ui8"sv : ""sv);
+    case blob_type::i16:
+        return os << (int)b.bp.i16value << (with_types ? ":i16"sv : ""sv);
+    case blob_type::ui16:
+        return os << (int)b.bp.ui16value << (with_types ? ":ui16"sv : ""sv);
+    case blob_type::i32:
+        return os << b.bp.i32value << (with_types ? ":i32"sv : ""sv);
+    case blob_type::ui32:
+        return os << b.bp.ui32value << (with_types ? ":ui32"sv : ""sv);
+    case blob_type::i64:
+        return os << b.bp.i64value << (with_types ? ":i64"sv : ""sv);
+    case blob_type::ui64:
+        return os << b.bp.ui64value << (with_types ? ":ui64"sv : ""sv);
+    case blob_type::flt16:
+        return os << b.bp.f16value << (with_types ? ":f16"sv : ""sv);
+    case blob_type::flt32:
+        return os << b.bp.f32value << (with_types ? ":f32"sv : ""sv);
+    case blob_type::flt64:
+        return os << b.bp.f64value << (with_types ? ":f64"sv : ""sv);
+    case blob_type::bigint:
+        return os << as<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>(b) << (with_types ? ":bigint"sv : ""sv);
+    case blob_type::decimal:
+        return os << as<sonia::mp::basic_decimal<invocation_bigint_limb_type, 1, 8>>(b) << (with_types ? ":decimal"sv : ""sv);
+    case blob_type::string:
+        if (with_types)
+            return os << '"' << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) } << '"';
+        else return os << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
+    case blob_type::function:
+        return os << "function"sv;
+    case blob_type::object: {
+        auto& obj = *data_of<sonia::invocation::object>(b);
+        return os << "object : "sv << typeid(obj).name();
+    }
+    case blob_type::error:
+        return os << "error: "sv << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
+    default:
+        return os << "unknown"sv;
+    }
+}
+
+template <typename Elem, typename Traits>
+inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& os, blob_result const& b)
+{
+    return print_to_stream(os, b, true);
+}
+
 template <typename T>
 T from_blob_at(size_t index, std::span<const blob_result> vals)
 {
@@ -1307,99 +1402,6 @@ inline bool operator== (blob_result const& lhs, blob_result const& rhs) noexcept
         else if constexpr (std::is_same_v<std::span<const blob_result>, DT>) { return rhs.type == blob_type::tuple && sonia::range_equal{}(v, from_blob<std::span<const blob_result>>{}(rhs)); }
         else { return false; }
     });
-}
-
-inline size_t hash_value(blob_result const& val) noexcept
-{
-    return blob_type_dispatch(val, []<typename DT>(DT v)->size_t { return sonia::hash<DT>{}(v); });
-}
-
-template <typename Elem, typename Traits>
-inline std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem, Traits>& os, blob_result const& b, bool with_types)
-{
-    using namespace std::string_view_literals;
-
-    if (b.type == blob_type::nil) {
-        return os << "nil"sv;
-    } else if (b.type == blob_type::object) {
-        auto &obj = *data_of<sonia::invocation::object>(b);
-        return os << "object : "sv << typeid(obj).name();
-    } else if (b.type == blob_type::blob_reference) {
-        return os << '&' << *data_of<blob_result>(b);
-    }
-    if (is_array(b) && !contains_string(b)) {
-        os << '[';
-        blob_type_selector(b, [&os](auto ident, blob_result b) {
-            using type = typename decltype(ident)::type;
-            if constexpr (std::is_same_v<type, std::nullptr_t>) { os << "nil"sv; }
-            else if constexpr (std::is_void_v<type>) { os << "unknown"sv; }
-            else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"; }
-            else {
-                using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
-                fstype const* begin_ptr = data_of<fstype>(b);
-                for (auto* p = begin_ptr, *e = begin_ptr + array_size_of<fstype>(b); p != e; ++p) {
-                    os << ((p != begin_ptr) ? "," : "");
-                    os << particular_blob_result((type)*p);
-                }
-            }
-        });
-        return os << ']';
-    }
-    switch (b.type)
-    {
-    case blob_type::nil:
-        return os << "nil"sv;
-    case blob_type::boolean:
-        return os << (b.bp.i8value ? "true"sv : "false"sv);
-    case blob_type::c8:
-        return with_types ? (os << '\'' << (char)b.bp.i8value<< '\'') : (os << (char)b.bp.i8value);
-    case blob_type::i8:
-        return os << (int)b.bp.i8value << (with_types ? ":i8"sv : ""sv);
-    case blob_type::ui8:
-        return os << (int)b.bp.ui8value << (with_types ? ":ui8"sv : ""sv);
-    case blob_type::i16:
-        return os << (int)b.bp.i16value << (with_types ? ":i16"sv : ""sv);
-    case blob_type::ui16:
-        return os << (int)b.bp.ui16value << (with_types ? ":ui16"sv : ""sv);
-    case blob_type::i32:
-        return os << b.bp.i32value << (with_types ? ":i32"sv : ""sv);
-    case blob_type::ui32:
-        return os << b.bp.ui32value << (with_types ? ":ui32"sv : ""sv);
-    case blob_type::i64:
-        return os << b.bp.i64value << (with_types ? ":i64"sv : ""sv);
-    case blob_type::ui64:
-        return os << b.bp.ui64value << (with_types ? ":ui64"sv : ""sv);
-    case blob_type::flt16:
-        return os << b.bp.f16value << (with_types ? ":f16"sv : ""sv);
-    case blob_type::flt32:
-        return os << b.bp.f32value << (with_types ? ":f32"sv : ""sv);
-    case blob_type::flt64:
-        return os << b.bp.f64value << (with_types ? ":f64"sv : ""sv);
-    case blob_type::bigint:
-        return os << as<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>(b) << (with_types ? ":bigint"sv : ""sv);
-    case blob_type::decimal:
-        return os << as<sonia::mp::basic_decimal<invocation_bigint_limb_type, 1, 8>>(b) << (with_types ? ":decimal"sv : ""sv);
-    case blob_type::string:
-        if (with_types)
-            return os << '"' << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) } << '"';
-        else return os << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
-    case blob_type::function:
-        return os << "function"sv;
-    case blob_type::object: {
-        auto &obj = *data_of<sonia::invocation::object>(b);
-        return os << "object : "sv << typeid(obj).name();
-    }
-    case blob_type::error:
-        return os << "error: "sv << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) };
-    default:
-        return os << "unknown"sv;
-    }
-}
-
-template <typename Elem, typename Traits>
-inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& os, blob_result const& b)
-{
-    return print_to_stream(os, b, true);
 }
 
 namespace sonia {

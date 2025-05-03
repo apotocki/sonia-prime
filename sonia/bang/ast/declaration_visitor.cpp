@@ -87,7 +87,7 @@ error_storage declaration_visitor::operator()(using_decl const& ud) const
     qname uqn = ctx.ns() / ud.name();
     functional& fnl = u().fregistry_resolve(uqn);
     if (!ud.parameters) {
-        fnl.set_default_entity(make_shared<expression_resolver>(ud.location(), ud.expression));
+        fnl.set_default_entity(sonia::make_shared<expression_resolver>(ud.location(), ud.expression));
     } else {
         auto fnptrn = make_shared<basic_fn_pattern>(fnl);
         error_storage err = fnptrn->init(ctx, *ud.parameters);
@@ -131,13 +131,13 @@ error_storage declaration_visitor::operator()(struct_decl const& sd) const
             annotated_qname const& qn = v;
 
             functional& fnl = u.fregistry_resolve(ctx.ns() / qn.value);
-            auto sent = make_shared<struct_entity>(u, fnl, sd.body);
+            auto sent = sonia::make_shared<struct_entity>(u, fnl, sd.body);
             u.eregistry_insert(sent);
             annotated_entity_identifier aeid{ sent->id, qn.location };
             fnl.set_default_entity(aeid);
 
             functional& init_fnl = u.fregistry_resolve(u.get(builtin_qnid::init));
-            auto initptrn = make_shared<struct_init_pattern>(init_fnl, sd.body);
+            auto initptrn = sonia::make_shared<struct_init_pattern>(init_fnl, sd.body);
             if (error_storage err = initptrn->init(ctx, aeid); err) return err;
             init_fnl.push(std::move(initptrn));
         } else { // if constexpr (std::is_same_v<fn_pure_t const&, decltype(v)>) {
@@ -145,12 +145,12 @@ error_storage declaration_visitor::operator()(struct_decl const& sd) const
             fn_pure_t const& fn = v;
             qname fn_qname = ctx.ns() / fn.name();
             functional& fnl = u.fregistry_resolve(fn_qname);
-            auto ptrn = make_shared<struct_fn_pattern>(fnl, sd.body);
+            auto ptrn = sonia::make_shared<struct_fn_pattern>(fnl, sd.body);
             if (error_storage err = ptrn->init(ctx, fn); err) return err;
             fnl.push(std::move(ptrn));
 
             functional& init_fnl = u.fregistry_resolve(u.get(builtin_qnid::init));
-            auto initptrn = make_shared<struct_init_pattern>(init_fnl, sd.body);
+            auto initptrn = sonia::make_shared<struct_init_pattern>(init_fnl, sd.body);
             if (error_storage err = initptrn->init(ctx, annotated_qname{ fn_qname, fn.location() }, fn.parameters); err) return err;
             init_fnl.push(std::move(initptrn));
         }

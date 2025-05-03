@@ -20,7 +20,7 @@ public:
     //boost::intrusive::list_member_hook<> member_hook_;
     ElementT value;
     template <typename ArgT>
-    requires !std::is_same_v<linked_list_node, std::remove_cvref_t<ArgT>>
+    requires (!std::is_same_v<linked_list_node, std::remove_cvref_t<ArgT>>)
     inline explicit linked_list_node(ArgT&& arg) : value{ std::forward<ArgT>(arg) } {}
 
     linked_list_node(linked_list_node const&) = delete;

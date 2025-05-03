@@ -30,7 +30,7 @@ public:
     //std::expected<entity_identifier, error_storage> apply(fn_compiler_context&, functional::match_descriptor&) const override;
 
 protected:
-    shared_ptr<entity> build(fn_compiler_context&, functional_match_descriptor&, entity_signature&&) const;
+    shared_ptr<entity> build(fn_compiler_context&, functional_match_descriptor&, entity_signature&&) const override;
 };
 
 }

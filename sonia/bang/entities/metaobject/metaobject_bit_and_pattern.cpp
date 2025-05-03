@@ -74,6 +74,6 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_bit_and_patt
     }).id);
 }
 
-template generic_pattern_base<metaobject_bit_and_pattern>;
+template class generic_pattern_base<metaobject_bit_and_pattern>;
 
 }

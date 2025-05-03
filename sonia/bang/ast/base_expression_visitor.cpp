@@ -555,6 +555,8 @@ base_expression_visitor::result_type base_expression_visitor::operator()(binary_
         return this->operator()(builtin_qnid::bit_and, be);
     case binary_operator_type::ASSIGN:
         return do_assign(be);
+    default:
+        break;
     }
     
     THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor binary_expression_t");

@@ -72,7 +72,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
             if (vis.value.which() == 0) {
                 return std::unexpected(make_error<value_mismatch_error>(get_start_location(argexpr), ser.value(), "a numeric literal"sv));
             }
-            pmd = make_shared<numeric_implicit_cast_match_descriptor>(std::move(vis.value));
+            pmd = sonia::make_shared<numeric_implicit_cast_match_descriptor>(std::move(vis.value));
             pmd->result = field_descriptor{ e.value, true };
 
             //integer_literal_entity

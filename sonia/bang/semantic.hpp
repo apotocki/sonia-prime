@@ -12,6 +12,7 @@
 #include "sonia/string.hpp"
 
 #include "sonia/bang/utility/linked_list.hpp"
+#include "sonia/bang/utility/linked_list.ipp"
 
 #include "semantic_fwd.hpp"
 //#include "sonia/bang/entities/variable_entity.hpp"

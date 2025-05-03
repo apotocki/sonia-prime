@@ -59,6 +59,6 @@ std::expected<syntax_expression_result_t, error_storage> union_bit_or_pattern::a
     return make_result(ctx.u(), ctx.u().make_union_type_entity(umd.types).id);
 }
 
-template generic_pattern_base<union_bit_or_pattern>;
+template class generic_pattern_base<union_bit_or_pattern>;
 
 } // namespace sonia::lang::bang

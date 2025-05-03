@@ -283,7 +283,7 @@ struct expression_stack_checker
         return branch_count == ctx.expressions_branch() && brach_size == ctx.expressions().size();
     }
 #else
-    inline expression_stack_checker(fn_compiler_context& ctx) noexcept : ctx{ ctx } {}
+    inline expression_stack_checker(fn_compiler_context&) noexcept {}
     inline bool check(fn_compiler_context&) noexcept { return true; }
 #endif
 };

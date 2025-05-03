@@ -779,7 +779,7 @@ public:
     {
         int64_t eval = exponent_as<int64_t>();
         if (eval >= 0) {
-            if (std::numeric_limits<T>::digits10 >= eval && aholder_.is_fit_significand<T>()) {
+            if (std::numeric_limits<T>::digits10 >= eval && aholder_.template is_fit_significand<T>()) {
                 using UT = std::make_unsigned_t<T>;
 
                 UT value = (UT)aholder_.significand().abs();

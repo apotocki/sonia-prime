@@ -23,7 +23,7 @@ public:
     entity_identifier get_type() const noexcept override { return type; }
 
     inline size_t hash() const noexcept override { return hash_value(name); }
-    inline bool equal(entity const& rhs) const noexcept
+    inline bool equal(entity const& rhs) const noexcept override
     {
         if (extern_variable_entity const* verhs = dynamic_cast<extern_variable_entity const*>(&rhs); verhs) {
             return verhs->name == name;

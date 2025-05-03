@@ -206,7 +206,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::app
     return syntax_expression_result_t{ std::move(exprs), rtype };
 }
 
-template generic_pattern_base<tuple_head_pattern>;
+template class generic_pattern_base<tuple_head_pattern>;
 
 //std::expected<entity_identifier, error_storage> tuple_head_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
 //{

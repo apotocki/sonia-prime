@@ -186,7 +186,7 @@ public:
 private:
     inline void do_copy_init(T* srcb, T* srce, T* dst) noexcept(std::is_nothrow_copy_constructible_v<T>)
     {
-        if constexpr (std::is_trivial()) {
+        if constexpr (std::is_trivial_v<T>) {
             std::copy(srcb, srce, dst);
         } else if constexpr (std::is_nothrow_copy_constructible_v<T>) {
             while (srcb != srce) new(dst++) T(*srcb++);
@@ -211,7 +211,7 @@ private:
     requires(std::is_nothrow_move_constructible_v<ElementT>)
     inline void do_move_init(ElementT* srcb, ElementT* srce, ElementT* dst) noexcept
     {
-        if constexpr (std::is_trivial()) {
+        if constexpr (std::is_trivial_v<T>) {
             std::copy(srcb, srce, dst);
         } else {
             while (srcb != srce) new(dst++) ElementT(std::move(*srcb++));
@@ -222,7 +222,7 @@ private:
     requires(std::is_nothrow_move_constructible_v<ElementT>)
     inline void do_destructible_move_init(ElementT* srcb, ElementT* srce, ElementT* dst) noexcept
     {
-        if constexpr (std::is_trivial()) {
+        if constexpr (std::is_trivial_v<T>) {
             std::copy(srcb, srce, dst);
         } else {
             while (srcb != srce) {

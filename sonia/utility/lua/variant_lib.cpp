@@ -4,7 +4,6 @@
 
 #include "sonia/config.hpp"
 #include "variant_lib.hpp"
-#include "sonia/utility/invocation/invocation.hpp"
 #include "sonia/utility/invocation/value_encoder.hpp"
 #include "sonia/utility/invocation/value_decoder.hpp"
 #include "sonia/utility/scope_exit.hpp"

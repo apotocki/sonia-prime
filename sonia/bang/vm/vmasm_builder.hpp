@@ -54,7 +54,7 @@ public:
         return false;
     }
 
-    size_t hash() const noexcept { return hash_value(id_); }
+    size_t hash() const noexcept override { return hash_value(id_); }
 };
 
 template <typename ContextT>

@@ -170,6 +170,7 @@ public:
             ptracer_ = r.ptracer_;
             ptask_ = r.ptask_;
             r.ptask_ = nullptr;
+            return *this;
         }
 
         inline ~task_guard()

@@ -132,7 +132,7 @@ public:
         eptr->visit(*this);
     }
 
-    void operator()(entity const& ent) const
+    void operator()(entity const& ent) const override
     {
         entity_signature const* psig = ent.signature();
         if (psig && psig->name == unit_.get(builtin_qnid::metaobject) && psig->result) {

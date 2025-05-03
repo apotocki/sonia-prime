@@ -105,6 +105,8 @@ std::ostream& parameter_matcher::print(unit const& u, std::ostream& ss) const
         ss << "mut "; break;
     case parameter_constraint_modifier_t::const_value:
         ss << "=> "; break;
+    case parameter_constraint_modifier_t::value_type:
+        break;
     }
     if (syntax_expression_t const* pte = get_pointer(constraints_.type_expression); pte) {
         ss << u.print(*pte);
@@ -469,7 +471,7 @@ error_storage basic_fn_pattern::init(fn_compiler_context& ctx, parameter_list_t 
             if (reversed) std::reverse(argname.data() + 1, epos);
             identifier nid = ctx.u().slregistry().resolve(string_view{ argname.data(), epos });
             annotated_identifier generated_internal_name{ nid, /* to do: get location of constraint */ };
-            auto m = make_shared<parameter_matcher>(generated_internal_name, param.modifier, param.constraints);
+            auto m = sonia::make_shared<parameter_matcher>(generated_internal_name, param.modifier, param.constraints);
             if (internal_name) { 
                 m->push_internal_name(*internal_name);
                 parameters_.back().inames.emplace_back(*internal_name);
@@ -1108,7 +1110,7 @@ struct arg_resolving_by_value_visitor : static_visitor<std::expected<entity_iden
 
     result_type operator()(annotated_qname_identifier const& aqi) const
     {
-        functional const& fnl = ctx.u().fregistry().resolve(aqi.value);
+        functional const& fnl = ctx.u().fregistry_resolve(aqi.value);
         entity_identifier eid = fnl.default_entity(ctx);
         if (eid) {
             return this->operator()(eid, aqi.location);
@@ -1146,7 +1148,7 @@ struct arg_resolving_by_value_type_visitor : static_visitor<std::expected<entity
 
     result_type operator()(annotated_qname_identifier const& aqi) const
     {
-        functional const& fnl = ctx.u().fregistry().resolve(aqi.value);
+        functional const& fnl = ctx.u().fregistry_resolve(aqi.value);
         entity_identifier eid = fnl.default_entity(ctx);
         if (eid) {
             return this->operator()(eid, aqi.location);

@@ -2106,9 +2106,6 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_type_visitor.hpp">
       <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.hpp">
-      <Filter>sonia.bang\ast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\functional\variant_compare_three_way.hpp">
       <Filter>sonia.utility\functional</Filter>
     </ClInclude>
@@ -2781,9 +2778,6 @@
       <Filter>sonia.bang\entities\ellipsis</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\ast\fn_compiler_context.cpp">
-      <Filter>sonia.bang\ast</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.cpp">
       <Filter>sonia.bang\ast</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\function_entity.cpp">

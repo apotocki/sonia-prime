@@ -254,7 +254,6 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_type_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_vector_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_visitor.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\auxiliary.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\bang.tab.hpp" />
@@ -756,7 +755,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\bang.tab.cpp">
       <DisableSpecificWarnings Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4244</DisableSpecificWarnings>

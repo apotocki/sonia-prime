@@ -407,7 +407,7 @@ void compiler_visitor_base::operator()(semantic::invoke_function const& invf) co
             fnbuilder_.append_popfp();
             //GLOBAL_LOG_INFO() << "leaving inline function: " << unit_.print(invf.fn);
         } else {
-            vmasm::fn_identity fnident{ fe->id() };
+            vmasm::fn_identity fnident{ fe->id };
             fnbuilder_.append_call(fnident);
 
             //bvm().append_push_static_const(i64_blob_result((fe->parameter_count() + 1) * (fe->is_void() ? -1 : 1)));

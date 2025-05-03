@@ -92,7 +92,7 @@ value_match_visitor::result_type value_match_visitor::operator()(function_call_t
         if (auto err = apply_visitor(smvis, arg.value()); err) return std::unexpected(std::move(err));
     }
 
-    return type_ent.id();
+    return type_ent.id;
 }
 
 value_match_visitor::result_type value_match_visitor::operator()(variable_identifier const& var) const

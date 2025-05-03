@@ -16,6 +16,15 @@ void managed_linked_list<ElementT, ManagerT>::emplace_back(T&& e)
 }
 
 template <class ElementT, class ManagerT>
+template <typename NodeT>
+void managed_linked_list<ElementT, ManagerT>::deep_copy(linked_list_node_span<NodeT> l)
+{
+    l.for_each([this](auto& e) {
+        m_->push_back_expression(*this, ElementT{ e });
+    });
+}
+
+template <class ElementT, class ManagerT>
 void managed_linked_list<ElementT, ManagerT>::clear(list_t& l) noexcept
 {
     while (l) {

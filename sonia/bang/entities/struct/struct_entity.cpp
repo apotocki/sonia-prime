@@ -27,7 +27,7 @@ error_storage struct_entity::build(fn_compiler_context& extctx) const
 {
     compiler_task_tracer::task_guard tg = extctx.try_lock_task(entity_task_id{ *this });
     if (!tg) {
-        return make_error<circular_dependency_error>(make_error<basic_general_error>(location(), "build struct"sv, id()));
+        return make_error<circular_dependency_error>(make_error<basic_general_error>(location, "build struct"sv, id));
     }
     if (built_.load() == build_state::underlying_tuple_built) return {}; // double check
 
@@ -54,9 +54,9 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
         if (!res) return std::move(res.error());
         bool is_const = f.modifier != field_modifier_t::value;
         if (f.name) {
-            tuple_signature.push_back(f.name.value, field_descriptor{ res->value, is_const });
+            tuple_signature.emplace_back(f.name.value, res->value, is_const);
         } else {
-            tuple_signature.push_back(field_descriptor{ res->value, is_const });
+            tuple_signature.emplace_back(res->value, is_const);
         }
     }
 
@@ -66,7 +66,7 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
         return make_shared<basic_signatured_entity>(std::move(tuple_signature));
     });
 
-    underlying_tuple_eid_ = e.id();
+    underlying_tuple_eid_ = e.id;
     return {};
 }
 

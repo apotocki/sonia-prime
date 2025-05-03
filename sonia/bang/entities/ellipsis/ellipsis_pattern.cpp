@@ -110,15 +110,15 @@ std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply
             size_t argcount = 0; // runtime arguments
             entity_signature sig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
             for (auto const& field : bse->signature()->fields()) {
-                entity const& metaobject_ent = u.eregistry_get(field.entity_id());
+                entity const& metaobject_ent = get_entity(u, field.entity_id());
                 identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&metaobject_ent);
                 if (!pie) {
-                    return std::unexpected(make_error<basic_general_error>(nsmd.location, "identifier is expected"sv, metaobject_ent.id()));
+                    return std::unexpected(make_error<basic_general_error>(nsmd.location, "identifier is expected"sv, metaobject_ent.id));
                 }
                 annotated_qname varname{ qname{ pie->value(), false }, nsmd.location };
                 auto res = push_by_name(ctx, varname, l);
                 if (!res) return std::unexpected(std::move(res.error()));
-                sig.push_back(pie->value(), *res);
+                sig.emplace_back(pie->value(), *res);
                 if (!res->is_const()) ++argcount;
             }
             
@@ -132,9 +132,9 @@ std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply
             }
 
             if (!argcount) { // constexpr case
-                return make_result(u, tplent.id());
+                return make_result(u, tplent.id);
             } else {
-                return syntax_expression_result_t{ std::move(l), tplent.id() };
+                return syntax_expression_result_t{ std::move(l), tplent.id };
             }
         }
     }), nsmd.argument());

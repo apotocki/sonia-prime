@@ -34,9 +34,9 @@ std::expected<syntax_expression_result_t, error_storage> struct_fn_pattern::appl
         BOOST_ASSERT(bound_arguments.empty());
         // u.fregistry().resolve(struct_ns).name() // do we need a functional to store qname?
         auto res = make_shared<struct_entity>(std::move(struct_ns), std::move(sig), body_);
-        res->set_location(location());
+        res->location = location();
         return res;
-    }).id());
+    }).id);
 }
 
 }

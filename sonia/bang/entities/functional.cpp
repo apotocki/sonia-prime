@@ -125,18 +125,18 @@ parameter_match_result& functional_match_descriptor::get_match_result(identifier
 {
     auto it = named_matches_.find(param_name);
     if (it == named_matches_.end()) {
-        pmrs_.emplace_back();
-        named_matches_.emplace_hint(it, param_name, &pmrs_.back());
-        return pmrs_.back();
+        pmrs_.emplace_back(param_name, nullptr);
+        named_matches_.emplace_hint(it, &pmrs_.back());
+        return get<1>(pmrs_.back());
     }
-    return *it->second;
+    return get<1>(**it);
 }
 
 parameter_match_result& functional_match_descriptor::get_match_result(size_t pos)
 {
     while (positional_matches_.size() <= pos) {
         pmrs_.emplace_back();
-        positional_matches_.push_back(&pmrs_.back());
+        positional_matches_.push_back(&get<1>(pmrs_.back()));
     }
     return *positional_matches_[pos];
 }
@@ -144,15 +144,15 @@ parameter_match_result& functional_match_descriptor::get_match_result(size_t pos
 entity_signature functional_match_descriptor::build_signature(unit & u, qname_identifier name)
 {
     entity_signature signature{ name };
-    for (auto [nm, pmr] : named_matches_) {
-        for (auto const& ser : pmr->results) {
-            signature.push_back(nm, field_descriptor{ ser.value_or_type, ser.is_const_result });
+    for (mr_pair_t const* pnm : named_matches_) {
+        for (auto const& ser : get<1>(*pnm).results) {
+            signature.emplace_back(get<0>(*pnm), ser.value_or_type, ser.is_const_result);
         }
     }
     //size_t argnum = 0;
     for (auto pmr : positional_matches_) {
         for (auto const& ser : pmr->results) {
-            signature.push_back(field_descriptor{ ser.value_or_type, ser.is_const_result });
+            signature.emplace_back(ser.value_or_type, ser.is_const_result);
         }
     }
     if (result.entity_id()) {
@@ -299,6 +299,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
     expression_stack_checker expr_stack_state{ ctx };
 
     prepared_call pcall{ ctx.u(), call };
+    if (auto err = pcall.prepare(ctx); err) return std::unexpected(std::move(err));
 
     for (auto const& p : patterns_) {
         auto cmp = major_weight <=> p->get_weight();

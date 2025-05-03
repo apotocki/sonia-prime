@@ -32,28 +32,12 @@ std::ostream& entity::print_to(std::ostream& os, unit const& u) const
 
 std::ostream& signatured_entity::print_to(std::ostream& os, unit const& u) const
 {
-    return os << u.print(*signature());
-    //return entity::print_to(os, u) << "<"sv << u.print(*signature()) << ">"sv;
-}
-
-bool empty_entity::equal(entity const& rhs) const noexcept
-{
-    if (empty_entity const* pr = dynamic_cast<empty_entity const*>(&rhs); pr) {
-        return pr->get_type() == get_type();
+    entity_signature const& sgn = *signature();
+    if (sgn.result->entity_id() == u.get(builtin_eid::typename_)) {
+        os << "typename "sv;
     }
-    return false;
-}
-
-size_t empty_entity::hash() const noexcept
-{
-    size_t seed = __COUNTER__;
-    hash_combine(seed, get_type());
-    return seed;
-}
-
-std::ostream& empty_entity::print_to(std::ostream& os, unit const& u) const
-{
-    return u.eregistry_get(get_type()).print_to(os << "empty: "sv, u);
+    return os << u.print(sgn);
+    //return entity::print_to(os, u) << "<"sv << u.print(*signature()) << ">"sv;
 }
 
 //vector_type_entity::vector_type_entity(unit& u, entity_identifier et) noexcept

@@ -100,9 +100,9 @@ std::expected<syntax_expression_result_t, error_storage> numeric_implicit_cast_p
     if (nmd.result.is_const()) {
         return make_result(ctx.u(), apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = nmd.result.entity_id()](auto const& v) -> entity_identifier {
             if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
-                return ctx.u().make_integer_entity(v.value(), type).id();
+                return ctx.u().make_integer_entity(v.value(), type).id;
             } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
-                return ctx.u().make_decimal_entity(v.value(), type).id();
+                return ctx.u().make_decimal_entity(v.value(), type).id;
             } else {
                 THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
             }

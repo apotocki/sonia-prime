@@ -24,18 +24,14 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_tail_pattern
 
     entity_signature tail_signature{ objsignature.name };
     tail_signature.result = objsignature.result;
-    auto nids = objsignature.named_fields_indices();
+    //auto nids = objsignature.named_fields_indices();
     auto pids = objsignature.positioned_fields_indices();
     if (!pids.front()) pids = pids.subspan(1);
     for (uint32_t i = 1; i < objsignature.fields().size(); ++i) {
+        tail_signature.push_back(objsignature.fields()[i]);
         bool is_positional = !pids.empty() && pids.front() == i;
         if (is_positional) {
             pids = pids.subspan(1);
-            tail_signature.push_back(objsignature.fields()[i]);
-        } else {
-            auto nit = std::ranges::find(nids, i, &std::pair<identifier, uint32_t>::second);
-            BOOST_ASSERT(nit != nids.end());
-            tail_signature.push_back(nit->first, objsignature.fields()[i]);
         }
     }
 
@@ -43,7 +39,7 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_tail_pattern
 
     return make_result(u, u.eregistry_find_or_create(smpl, [&u, &tail_signature]() {
         return make_shared<basic_signatured_entity>(std::move(tail_signature));
-    }).id());
+    }).id);
 }
 
 }

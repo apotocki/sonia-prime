@@ -120,7 +120,7 @@ public:
     void operator()(entity_identifier const& eid) const
     {
         entity const& e = unit_.eregistry_get(eid);
-        if (e.id() != unit_.get(builtin_eid::void_)) {
+        if (e.id != unit_.get(builtin_eid::void_)) {
             e.visit(*this);
         } else {
             fnbuilder_.append_push_pooled_const(smart_blob{});

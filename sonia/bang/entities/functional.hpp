@@ -5,7 +5,7 @@
 #pragma once
 
 #include <expected>
-#include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
 #include <boost/unordered_set.hpp>
 
 #include "sonia/variant.hpp"
@@ -75,6 +75,9 @@ struct parameter_match_result
     //using se_iterator = semantic::expression_list_t::iterator;
     //using se_rng_t = std::pair<se_cont_iterator, se_cont_iterator>;
 
+    parameter_match_result() = default;
+    inline explicit parameter_match_result(std::nullptr_t) noexcept {}
+
     small_vector<syntax_expression_result_reference_t, 4> results;
     //uint8_t mod = (uint8_t)modifier::undefined;
 
@@ -111,37 +114,54 @@ class functional_match_descriptor
     //small_vector<std::pair<identifier, small_vector<se_rng_t, 8>>, 8> named_arguments; // arg name -> [expressions]
     //small_vector<small_vector<se_rng_t, 8>, 8> unnamed_arguments; // argnum -> [expressions]
     
-    std::list<parameter_match_result> pmrs_;
-    boost::container::small_flat_map<identifier, parameter_match_result*, 8> named_matches_;
+    using mr_pair_t = std::tuple<identifier, parameter_match_result>;
+    //struct mr_pair_comparator
+    //{
+    //    using is_transparent = std::true_type;
+
+    //    inline identifier const& get_key(const mr_pair_t* rhs) const noexcept { return get<0>(*rhs); }
+    //    inline identifier const& get_key(const identifier& rhs) const noexcept { return rhs; }
+
+    //    template <typename LT, typename RT>
+    //    inline bool operator()(LT && lhs, RT&& rhs) const noexcept
+    //    {
+    //        return get_key(std::forward<LT>(lhs)) < get_key(std::forward<RT>(rhs));
+    //    }
+    //};
+
+    std::list<mr_pair_t> pmrs_;
+    // mr_pair_t are compared by comparing first elements of the tuple
+    boost::container::small_flat_set<mr_pair_t*, 8, lang::tuple_1st_element_comparator> named_matches_;
+
+    //boost::container::small_flat_map<identifier, parameter_match_result*, 8> named_matches_;
     small_vector<parameter_match_result*, 8> positional_matches_;
 
 public:
     small_vector<semantic::expression_span, 4> void_spans;
 
     functional_binding_set bindings;
-    //semantic::managed_expression_list call_expressions;
     lex::resource_location location;
     field_descriptor result;
     int weight{ 0 };
 
     inline functional_match_descriptor() = default;
     inline explicit functional_match_descriptor(lex::resource_location loc) noexcept : location{ std::move(loc) } {}
-    //inline explicit functional_match_descriptor(unit& u) noexcept : call_expressions{ u } {}
-    //inline explicit functional_match_descriptor(unit& u, lex::resource_location loc) noexcept : call_expressions{ u }, location{ std::move(loc) } {}
-    
-    virtual ~functional_match_descriptor() = default;
-
+        
     functional_match_descriptor(functional_match_descriptor const&) = delete;
     functional_match_descriptor& operator= (functional_match_descriptor const&) = delete;
+
+    virtual ~functional_match_descriptor() = default;
+
+    inline size_t named_matches_count() const noexcept { return named_matches_.size(); }
 
     template <typename FT>
     inline void for_each_named_match(FT && ft) const
     {
-        for (auto [nm, pmr] : named_matches_) {
+        for (mr_pair_t const* pnm: named_matches_) {
             if constexpr (std::is_invocable_v<FT, identifier, parameter_match_result&>) {
-                std::forward<FT>(ft)(nm, *pmr);
+                std::forward<FT>(ft)(get<0>(*pnm), get<1>(*pnm));
             } else {
-                std::forward<FT>(ft)(*pmr);
+                std::forward<FT>(ft)(get<1>(*pnm));
             }
         }
     }
@@ -162,9 +182,29 @@ public:
     template <typename FT>
     inline void for_each_match(FT&& ft) const
     {
-        for_each_named_match(std::forward<FT>(ft));
-        for_each_positional_match(std::forward<FT>(ft));
+        size_t pos = 0;
+        for (mr_pair_t const& pmr : pmrs_) {
+            if (get<0>(pmr)) {
+                if constexpr (std::is_invocable_v<FT, identifier, parameter_match_result&>) {
+                    std::forward<FT>(ft)(get<0>(pmr), get<1>(pmr));
+                } else {
+                    std::forward<FT>(ft)(get<1>(pmr));
+                }
+            } else {
+                if constexpr (std::is_invocable_v<FT, size_t, parameter_match_result&>) {
+                    std::forward<FT>(ft)(pos++, get<1>(pmr));
+                } else {
+                    std::forward<FT>(ft)(get<1>(pmr));
+                }
+            }
+        }
     }
+    //template <typename FT>
+    //inline void for_each_match(FT&& ft) const
+    //{
+    //    for_each_named_match(std::forward<FT>(ft));
+    //    for_each_positional_match(std::forward<FT>(ft));
+    //}
 
     parameter_match_result& get_match_result(identifier /* external name */);
     parameter_match_result& get_match_result(size_t);

@@ -14,6 +14,7 @@
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 #include "sonia/bang/auxiliary.hpp"
 
 namespace sonia::lang::bang {
@@ -26,19 +27,16 @@ public:
         , result_actual_size{ 0 }
         , is_src_head_const{ sig.fields().front().is_const() }
     {
-        auto nids = sig.named_fields_indices();
+        //auto nids = sig.named_fields_indices();
         auto pids = sig.positioned_fields_indices();
         if (!pids.empty() && !pids.front()) pids = pids.subspan(1);
         for (uint32_t i = 1; i < sig.fields().size(); ++i) {
+            result_sig.push_back(sig.fields()[i]);
             bool is_positional = !pids.empty() && pids.front() == i;
             if (is_positional) {
                 pids = pids.subspan(1);
-                result_sig.push_back(sig.fields()[i]);
-            } else {
-                auto nit = std::ranges::find(nids, i, &std::pair<identifier, uint32_t>::second);
-                BOOST_ASSERT(nit != nids.end());
-                result_sig.push_back(nit->first, sig.fields()[i]);
             }
+            
             if (!result_sig.fields().back().is_const()) {
                 result_actual_size++;
             }
@@ -162,14 +160,14 @@ std::expected<syntax_expression_result_t, error_storage> tuple_tail_pattern::app
     });
     
     if (tmd.result_actual_size == 0) {
-        if (tplent.id() == u.get(builtin_eid::void_)) {
-            return syntax_expression_result_t{ semantic::managed_expression_list{ u }, tplent.id() }; // return void
+        if (tplent.id == u.get(builtin_eid::void_)) {
+            return syntax_expression_result_t{ semantic::managed_expression_list{ u }, tplent.id }; // return void
         }
-        empty_entity valueref{ tplent.id() };
+        empty_entity valueref{ tplent.id };
         entity& value_ent = ctx.u().eregistry_find_or_create(valueref, [&tplent]() {
-            return make_shared<empty_entity>(tplent.id());
+            return make_shared<empty_entity>(tplent.id);
         });
-        return make_result(u, value_ent.id());
+        return make_result(u, value_ent.id);
     }
     
     semantic::managed_expression_list exprs{ u };
@@ -182,7 +180,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_tail_pattern::app
     if (!tmd.is_src_head_const) {
         u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_tail)));
     }
-    return syntax_expression_result_t{ std::move(exprs), tplent.id() };
+    return syntax_expression_result_t{ std::move(exprs), tplent.id };
 }
 
 }

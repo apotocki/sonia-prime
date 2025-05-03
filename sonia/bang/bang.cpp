@@ -183,7 +183,7 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
         entity const& argent = unit_.make_string_entity(arg);
         identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), epos });
         functional& arg_fnl = unit_.fregistry_resolve(ctx.ns() / argid);
-        arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id() });
+        arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id });
             
         //ctx.new_const_entity(string_view{ argname.data(), epos }, std::move(ent));
         ++argindex;
@@ -196,7 +196,7 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
     });
     identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), 2 });
     functional& arg_fnl = unit_.fregistry_resolve(ctx.ns() / argid);
-    arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id() });
+    arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id });
         
 
     if (!default_ctx_) {
@@ -281,7 +281,7 @@ void bang_impl::do_compile(internal_function_entity const& fe)
     
     if (fe.is_inline()) return;
 
-    asm_builder_t::function_descriptor & fd = vmasm_.resolve_function(vmasm::fn_identity<entity_identifier>{ fe.id() });
+    asm_builder_t::function_descriptor & fd = vmasm_.resolve_function(vmasm::fn_identity<entity_identifier>{ fe.id });
     if (fd.address) return; // already compiled
 
     size_t param_count = fe.parameter_count();

@@ -4,8 +4,11 @@
 
 #pragma once
 
+#include "sonia/variant.hpp"
+
+#include "sonia/bang/terms.hpp"
 #include "sonia/utility/lang/entity.hpp"
-#include "ast_terms.hpp"
+//#include "ast_terms.hpp"
 
 namespace sonia::lang::bang {
 
@@ -52,8 +55,8 @@ using decimal_literal_entity = literal_entity<mp::decimal>;
 using identifier_entity = literal_entity<identifier>;
 using qname_identifier_entity = literal_entity<qname_identifier>;
 using qname_entity = literal_entity<qname>;
+using empty_entity = literal_entity<void>;
 
-class empty_entity;
 class enum_entity;
 class functional_entity;
 class function_entity;
@@ -101,24 +104,7 @@ class entity_visitor_adapter : public entity_visitor
     void operator()(functional_entity const&) const override {}
 };
 
-// typed empty_entity: entities with different types are not equal
-class empty_entity : public entity
-{
-    entity_identifier type_;
 
-public:
-    inline explicit empty_entity(entity_identifier type) noexcept : type_{ type } {}
-
-    entity_identifier get_type() const noexcept override { return type_; }
-
-    void visit(entity_visitor const& v) const override { v(*this); }
-
-    bool equal(entity const& rhs) const noexcept override;
-
-    size_t hash() const noexcept override;
-
-    std::ostream& print_to(std::ostream& os, unit const& u) const override;
-};
 
 
 //class vector_type_entity : public entity

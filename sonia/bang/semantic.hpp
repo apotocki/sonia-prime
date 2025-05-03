@@ -528,28 +528,23 @@ class indirect_expression_list : public indirect
 public:
     SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(indirect_expression_list);
 
-    mutable expression_list_t* plist;
-    expression_span espan;
+    mutable managed_expression_list list;
 
-    inline explicit indirect_expression_list(expression_list_t& l) noexcept
-        : plist{ &l }, espan{ l }
-    {};
+    inline explicit indirect_expression_list(managed_expression_list&& l) noexcept
+        : list{ std::move(l) }
+    {}
 
-    inline indirect_expression_list(expression_list_t& l, expression_span sp) noexcept
-        : plist{ &l }, espan{ std::move(sp) }
-    {};
+    inline indirect_expression_list(indirect_expression_list const&) {
+        THROW_INTERNAL_ERROR("indirect_expression_list copy constructor");
+    }
 
-    //inline indirect_expression_list(indirect_expression_list const&) {
-    //    THROW_INTERNAL_ERROR("indirect_expression_list copy constructor");
-    //}
+    inline indirect_expression_list(indirect_expression_list&&) = default;
 
-    //inline indirect_expression_list(indirect_expression_list&&) = default;
+    inline indirect_expression_list& operator= (indirect_expression_list const&) {
+        THROW_INTERNAL_ERROR("indirect_expression_list copy assignment");
+    }
 
-    //inline indirect_expression_list& operator= (indirect_expression_list const&) {
-    //    THROW_INTERNAL_ERROR("indirect_expression_list copy assignment");
-    //}
-
-    //inline indirect_expression_list& operator=(indirect_expression_list&&) = default;
+    inline indirect_expression_list& operator=(indirect_expression_list&&) = default;
 };
 
 }

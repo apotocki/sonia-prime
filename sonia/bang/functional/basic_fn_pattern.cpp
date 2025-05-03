@@ -206,7 +206,7 @@ void parameter_matcher::update_binding(unit& u, field_descriptor const& type_or_
     if (is_variadic()) {
         // make up an identifier for the pack
         annotated_identifier packargname_id{ u.new_identifier(), argid.location };
-        entity_identifier packargname_eid = u.make_identifier_entity(packargname_id.value).id();
+        entity_identifier packargname_eid = u.make_identifier_entity(packargname_id.value).id;
         entity_signature* psig;
 
         auto optpack = binding.lookup(argid.value);
@@ -368,7 +368,7 @@ void varnamed_parameter_matcher::update_binding(unit& u, field_descriptor const&
 
     varnamed_parameter_binding& vb = static_cast<varnamed_parameter_binding&>(binding);
     annotated_identifier argid = vb.argname();
-    entity_identifier argname_eid = u.make_identifier_entity(argid.value).id();
+    entity_identifier argname_eid = u.make_identifier_entity(argid.value).id;
     
     auto optval = binding.lookup(name.value);
     if (!optval) {
@@ -389,7 +389,7 @@ void varnamed_parameter_matcher::update_binding(unit& u, field_descriptor const&
     if (is_variadic()) {
         // make up an identifier for the pack
         annotated_identifier packargname_id { u.new_identifier(), name.location };
-        entity_identifier packargname_eid = u.make_identifier_entity(packargname_id.value).id();
+        entity_identifier packargname_eid = u.make_identifier_entity(packargname_id.value).id;
         entity_signature* psig;
         
         auto optpack = binding.lookup(argid.value);
@@ -844,11 +844,11 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
             if constexpr (std::is_same_v<std::decay_t<decltype(e)>, entity_identifier>) {
                 return e;
             } else if constexpr (std::is_same_v<std::decay_t<decltype(e)>, entity_ptr>) {
-                if (auto eid = e->id(); eid) return eid;
+                if (e->id) return e->id;
                 //if (e->get_type() == u.get(builtin_eid::metaobject)) {
                 //    return u.eregistry_find_or_create(*e, [&e]() { return std::move(e); }).id();
                 //}
-                return u.eregistry_find_or_create(*e, [&e]() { return std::move(e); }).id();
+                return u.eregistry_find_or_create(*e, [&e]() { return std::move(e); }).id;
             } else { // else skip variables
                 return entity_identifier{};
             }
@@ -1367,7 +1367,7 @@ std::expected<syntax_expression_result_t, error_storage> basic_fn_pattern::apply
     if (!fne.result) { // we need building to resolve result type
         compiler_task_tracer::task_guard tg = ctx.try_lock_task(entity_task_id{ e });
         if (!tg) return std::unexpected(
-            make_error<circular_dependency_error>(make_error<basic_general_error>(location_, "resolving function result type"sv, e.id()))
+            make_error<circular_dependency_error>(make_error<basic_general_error>(location_, "resolving function result type"sv, e.id))
         );
         if (!fne.result) {
             fne.build(u);
@@ -1381,7 +1381,7 @@ std::expected<syntax_expression_result_t, error_storage> basic_fn_pattern::apply
     }
 
     semantic::managed_expression_list rexprs = apply_arguments(ctx, exprs, md).first;
-    u.push_back_expression(rexprs, semantic::invoke_function(e.id()));
+    u.push_back_expression(rexprs, semantic::invoke_function(e.id));
 
     return syntax_expression_result_t{ std::move(rexprs), fne.result.entity_id() };
 }

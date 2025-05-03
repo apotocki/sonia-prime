@@ -20,7 +20,7 @@ std::expected<syntax_expression_result_t, error_storage> to_string_pattern::appl
     entity const& ent = get_entity(u, ser.value_or_type);
     identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&ent);
     BOOST_ASSERT(pie);
-    return make_result(u, u.make_string_entity(u.print(pie->value())).id());
+    return make_result(u, u.make_string_entity(u.print(pie->value())).id);
 }
 
 }

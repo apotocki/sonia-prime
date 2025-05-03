@@ -98,12 +98,12 @@ std::expected<syntax_expression_result_t, error_storage> union_implicit_cast_pat
     auto& ser = *res;
     if (ser.is_const_result) {
         entity_signature usig{ u.get(builtin_qnid::metaobject), ucmd.result_type };
-        usig.push_back(u.get(builtin_id::which), field_descriptor{ u.make_integer_entity(ucmd.field_index).id(), true });
-        usig.push_back(field_descriptor{ ser.value(), true });
+        usig.emplace_back(u.get(builtin_id::which), u.make_integer_entity(ucmd.field_index).id, true);
+        usig.emplace_back(ser.value(), true);
         indirect_signatured_entity smpl{ usig };
         return make_result(u, u.eregistry_find_or_create(smpl, [&u, &usig]() {
             return make_shared<basic_signatured_entity>(std::move(usig));
-        }).id());
+        }).id);
     } else {
         semantic::managed_expression_list rel{ u };
         rel.splice_back(el, (semantic::expression_span)ser.expressions);

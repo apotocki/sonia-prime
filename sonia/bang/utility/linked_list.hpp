@@ -159,6 +159,9 @@ public:
     template <typename T>
     void emplace_back(T&& e);
 
+    template <typename NodeT>
+    void deep_copy(linked_list_node_span<NodeT> l);
+
     ~managed_linked_list();
 };
 

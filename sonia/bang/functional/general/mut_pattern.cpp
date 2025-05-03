@@ -19,7 +19,7 @@ namespace sonia::lang::bang {
 std::expected<functional_match_descriptor_ptr, error_storage> mut_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
 {
     auto call_session = call.new_session(ctx);
-    auto arg = call_session.use_next_positioned_argument(exp);
+    auto arg = call_session.use_next_positioned_argument(exp, false);
     if (!arg) return std::unexpected(arg.error());
     if (auto argterm = call_session.unused_argument(); argterm) {
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));

@@ -43,7 +43,7 @@ error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_m
 
     entity_signature const* psig = arg_entity.signature();
     if (!psig || psig->name != u.get(builtin_qnid::union_)) {
-        md.types.insert(arg_entity.id());
+        md.types.insert(arg_entity.id);
         return {};
     }
     // arg_entity is union, copy all its types
@@ -56,7 +56,7 @@ error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_m
 std::expected<syntax_expression_result_t, error_storage> union_bit_or_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
 {
     auto& umd = static_cast<union_match_descriptor&>(md);
-    return make_result(ctx.u(), ctx.u().make_union_type_entity(umd.types).id());
+    return make_result(ctx.u(), ctx.u().make_union_type_entity(umd.types).id);
 }
 
 template generic_pattern_base<union_bit_or_pattern>;

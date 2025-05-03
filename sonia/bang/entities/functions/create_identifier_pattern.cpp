@@ -55,7 +55,7 @@ std::expected<syntax_expression_result_t, error_storage> create_identifier_patte
         
     return syntax_expression_result_t{
         .expressions = std::move(rel),
-        .value_or_type = u.make_identifier_entity(id).id(),
+        .value_or_type = u.make_identifier_entity(id).id,
         .is_const_result = true
     };
 }

@@ -39,7 +39,7 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_pattern::app
 
     return make_result(u, u.eregistry_find_or_create(smpl, [&u, &sig]() {
         return make_shared<basic_signatured_entity>(std::move(sig));
-    }).id());
+    }).id);
 }
 
 }

@@ -261,7 +261,6 @@
     <ClInclude Include="..\..\..\sonia\bang\bang.yy.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\collections\array_elements_implicit_cast_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\collections\array_implicit_cast_pattern.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\entities\const_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\enum\enum_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\enum\enum_implicit_cast_pattern.hpp" />

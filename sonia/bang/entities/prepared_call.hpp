@@ -65,7 +65,8 @@ public:
 
         session(fn_compiler_context&, prepared_call const&);
 
-        std::expected<syntax_expression_result_reference_t, error_storage> use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp = false, syntax_expression_t const** pe = nullptr);
+        std::expected<syntax_expression_result_reference_t, error_storage> use_next_positioned_argument(syntax_expression_t const** pe = nullptr);
+        std::expected<syntax_expression_result_reference_t, error_storage> use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp, syntax_expression_t const** pe = nullptr);
         
         named_expression_t unused_argument();
 

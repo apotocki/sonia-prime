@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "sonia/utility/polymorphic_traits.hpp"
+
 #include "sonia/utility/lang/utility.hpp"
 #include "sonia/utility/lang/qname.hpp"
 
@@ -45,6 +47,20 @@ using annotated_string = annotated<small_string>;
 struct annotated_nil
 {
     lex::resource_location location;
+};
+
+enum class parameter_constraint_modifier_t : uint8_t
+{
+    mutable_value_type = 1,
+    const_value_type = 2,
+    value_type = 3,
+    const_value = 4
+};
+
+class indirect : public polymorphic_clonable_and_movable
+{
+public:
+    virtual ~indirect() = default;
 };
 
 }

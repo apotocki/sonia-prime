@@ -12,7 +12,7 @@ namespace sonia::lang::bang {
 
 size_t function_entity::parameter_count() const noexcept
 {
-    // to do: include captured parameters
+    // to do: include captured parameters 
     size_t cnt = 0;
     for (auto const& f : sig_.fields()) {
         if (!f.is_const()) ++cnt;

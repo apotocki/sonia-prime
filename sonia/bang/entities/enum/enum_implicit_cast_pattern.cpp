@@ -94,7 +94,7 @@ std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_patt
     BOOST_ASSERT(pie);
     
     // return typed by enumeration string
-    return make_result(u, u.make_string_entity(u.print(pie->value()), md.result.entity_id()).id());
+    return make_result(u, u.make_string_entity(u.print(pie->value()), md.result.entity_id()).id);
 }
 
 }

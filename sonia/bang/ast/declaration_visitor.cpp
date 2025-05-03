@@ -74,10 +74,10 @@ error_storage declaration_visitor::operator()(extern_var const& d) const
     qname var_qname = ctx.ns() / d.name.value;
     functional& fnl = u().fregistry_resolve(var_qname);
     auto ve = sonia::make_shared<extern_variable_entity>(vartype->value, fnl.id());
-    ve->set_location(d.name.location);
+    ve->location = d.name.location;
     u().eregistry_insert(ve);
     
-    fnl.set_default_entity(annotated_entity_identifier{ ve->id(), d.name.location });
+    fnl.set_default_entity(annotated_entity_identifier{ ve->id, d.name.location });
     return {};
 }
 
@@ -133,7 +133,7 @@ error_storage declaration_visitor::operator()(struct_decl const& sd) const
             functional& fnl = u.fregistry_resolve(ctx.ns() / qn.value);
             auto sent = make_shared<struct_entity>(u, fnl, sd.body);
             u.eregistry_insert(sent);
-            annotated_entity_identifier aeid{ sent->id(), qn.location };
+            annotated_entity_identifier aeid{ sent->id, qn.location };
             fnl.set_default_entity(aeid);
 
             functional& init_fnl = u.fregistry_resolve(u.get(builtin_qnid::init));
@@ -164,7 +164,7 @@ error_storage declaration_visitor::operator()(enum_decl const& ed) const
     functional& fnl = u.fregistry_resolve(ctx.ns() / ed.name.value);
     auto eent = make_shared<enum_entity>(u, fnl, ed.cases);
     u.eregistry_insert(eent);
-    annotated_entity_identifier aeid{ eent->id(), ed.name.location };
+    annotated_entity_identifier aeid{ eent->id, ed.name.location };
     fnl.set_default_entity(aeid);
     return {};
 }
@@ -603,101 +603,57 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
             ve.is_weak = ld.weakness;
         }
         return {};
-    } else {
-        boost::container::small_flat_multimap<identifier, entity_identifier, 8> field_map;
-        entity_signature sig{ u().get(builtin_qnid::tuple) };
-        for (auto & [id, er] : results) {
-            entity_identifier field_eid;
-            if (er.is_const_result) {
-                field_eid = er.value();
-            } else {
-                ctx.expressions().splice_back(er.expressions);
-                identifier unnamedid = u().new_identifier();
-                local_variable& ve = ctx.new_variable(annotated_identifier{ unnamedid }, er.type());
-                ve.is_weak = ld.weakness;
-                field_eid = u().make_qname_entity(qname{ unnamedid, false }).id();
-            }
-            if (id) {
-                field_map.emplace(id, field_eid);
-            } else {
-                sig.push_back(field_descriptor{ field_eid, true });
-            }
-        }
-        // for each key in small_flat_multimap
-        for (auto it = field_map.begin(); it != field_map.end();) {
-            identifier name = it->first;
-            auto range = field_map.equal_range(it->first);
-            if (std::next(range.first) == range.second) {
-                sig.push_back(name, field_descriptor{ it->second, true });
-                ++it;
-            } else {
-                BOOST_ASSERT(it == range.first);
-                entity_signature innersig{ u().get(builtin_qnid::tuple) };
-                for (; it != range.second; ++it) {
-                    innersig.push_back(field_descriptor{ it->second, true });
-                }
-                indirect_signatured_entity innersmpl{ innersig };
-                entity_identifier const_inner_eid = u().eregistry_find_or_create(innersmpl, [&innersig]() {
-                    return make_shared<basic_signatured_entity>(std::move(innersig));
-                }).id();
-                sig.push_back(name, field_descriptor{ const_inner_eid, true });
-            }
-        }
-
-        indirect_signatured_entity smpl{ sig };
-        entity_identifier const_eid = u().eregistry_find_or_create(smpl, [&sig]() {
-            return make_shared<basic_signatured_entity>(std::move(sig));
-        }).id();
-        ctx.new_constant(ld.aname, const_eid);
-        return {};
     }
 
-#if 0
-
-    auto res = apply_visitor(base_expression_visitor{ ctx, { vartype, ld.location() } }, ld.expression.value_or(annotated_nil{ ld.location() }));
-    if (!res) { return std::move(res.error()); }
-    return apply_visitor(make_functional_visitor<error_storage>([this, &ld, vartype](auto & v) {
-        if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-            entity const& e = u().eregistry_get(v);
-            entity_identifier et = e.get_type();
-            BOOST_ASSERT(!vartype || vartype == et);
-            if (dynamic_cast<empty_entity const*>(&e)) {
-                ctx.new_constant(ld.aname, v);
-                return error_storage{};
-            } else {
-                u().push_back_expression(ctx.expressions(), semantic::push_value{ v });
-                ctx.context_type = e.get_type();
-            }
+    // we will return empty_entity with the tuple type
+    // now build the type
+    boost::container::small_flat_multimap<identifier, entity_identifier, 8> field_map;
+    entity_signature sig{ u().get(builtin_qnid::tuple), u().get(builtin_eid::typename_) };
+    for (auto & [id, er] : results) {
+        entity_identifier field_eid;
+        if (er.is_const_result) {
+            field_eid = er.value();
         } else {
-            BOOST_ASSERT(!vartype || vartype == ctx.context_type);
-            ctx.expressions().splice_back(v);
+            ctx.expressions().splice_back(er.expressions);
+            identifier unnamedid = u().new_identifier();
+            local_variable& ve = ctx.new_variable(annotated_identifier{ unnamedid }, er.type());
+            ve.is_weak = ld.weakness;
+            field_eid = u().make_qname_entity(qname{ unnamedid, false }).id;
         }
-        local_variable ve = ctx.new_variable(ld.aname, ctx.context_type);
-        ve.is_weak = ld.weakness;
-        return error_storage{};
-    }), res->first);
-#endif
-    //    auto evis = vartype ? expression_visitor{ ctx, { vartype, ld.location() } } : expression_visitor{ ctx };
-    //    if (auto res = apply_visitor(evis, *ld.expression); !res) {
-    //        /*
-    //        BOOST_ASSERT(vartype);
-    //        throw exception(ctx.u().print(basic_general_error{ld.location(),
-    //            ("`%1%` initializing: can not convert to `%2%`\n%3%"_fmt % ctx.u().print(ld.name()) % ctx.u().print(*vartype) %
-    //                ctx.u().print(*etype.error())).str()
-    //        }));
-    //        */
-    //        return std::move(res.error());
-    //    }
-    //}
-    //local_variable ve = ctx.new_variable(ld.aname, vartype.self_or(ctx.context_type));
-    //ve.is_weak = ld.weakness;
-    //if (!ld.expression) {
-    //    // to do: check nullability
-    //    ctx.append_expression(semantic::push_value{ null }); // just declaration, initialization just declared variable
-    //} 
-    //// else do not set variable because we have a result of the expression on stack and consider it as a variable initialization
-    //// if (ld.expression) { ctx.append_expression(semantic::set_variable{ &ve }); }
-    //return {};
+        if (id) {
+            field_map.emplace(id, field_eid);
+        } else {
+            sig.push_back(field_descriptor{ field_eid, true });
+        }
+    }
+    // for each key in small_flat_multimap
+    for (auto it = field_map.begin(); it != field_map.end();) {
+        identifier name = it->first;
+        auto range = field_map.equal_range(it->first);
+        if (std::next(range.first) == range.second) {
+            sig.emplace_back(name, it->second, true);
+            ++it;
+        } else {
+            BOOST_ASSERT(it == range.first);
+            entity_signature innersig{ u().get(builtin_qnid::tuple), u().get(builtin_eid::typename_) };
+            for (; it != range.second; ++it) {
+                innersig.emplace_back(it->second, true);
+            }
+            indirect_signatured_entity innersmpl{ innersig };
+            entity const& const_inner_type = u().eregistry_find_or_create(innersmpl, [&innersig]() {
+                return make_shared<basic_signatured_entity>(std::move(innersig));
+            });
+            sig.emplace_back(name, u().make_empty_entity(const_inner_type), true);
+        }
+    }
+
+    indirect_signatured_entity smpl{ sig };
+    entity const& tuple_type = u().eregistry_find_or_create(smpl, [&sig]() {
+        return make_shared<basic_signatured_entity>(std::move(sig));
+    });
+
+    ctx.new_constant(ld.aname, u().make_empty_entity(tuple_type).id);
+    return {};
 }
 
 //void declaration_visitor::operator()(assign_decl_t const& ad) const

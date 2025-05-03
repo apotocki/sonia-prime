@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <tuple>
+#include <type_traits>
+
 #include "sonia/cstdint.hpp"
 #include "sonia/span.hpp"
 #include "sonia/string.hpp"
@@ -116,5 +119,25 @@ inline void undefined_lexem(const char* ltext, size_t sz)
 }
 
 }
+
+struct tuple_1st_element_comparator
+{
+    using is_transparent = std::true_type;
+
+    template <std::integral ValueT, typename TagT, typename ... Ts>
+    inline identifier<ValueT, TagT> const& get_key(std::tuple<identifier<ValueT, TagT>, Ts...> const* rhs) const noexcept { return get<0>(*rhs); }
+
+    template <std::integral ValueT, typename TagT, typename ... Ts>
+    inline identifier<ValueT, TagT> const& get_key(std::tuple<identifier<ValueT, TagT>, Ts...> const& rhs) const noexcept { return get<0>(rhs); }
+
+    template <std::integral ValueT, typename TagT>
+    inline identifier<ValueT, TagT> const& get_key(const identifier<ValueT, TagT>& rhs) const noexcept { return rhs; }
+
+    template <typename LT, typename RT>
+    inline bool operator()(LT&& lhs, RT&& rhs) const noexcept
+    {
+        return get_key(std::forward<LT>(lhs)) < get_key(std::forward<RT>(rhs));
+    }
+};
 
 }

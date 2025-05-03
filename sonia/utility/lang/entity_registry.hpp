@@ -84,7 +84,7 @@ EntityT & entity_registry<EntityT, MutexT>::find_or_create(EntityT const& sample
 #ifdef SONIA_LANG_DEBUG
         eid.debug_name = it->value->debug_name;
 #endif
-        it->value->set_id(eid);
+        it->value->id = eid;
     }
     return *it->value;
 }
@@ -111,7 +111,7 @@ void entity_registry<EntityT, MutexT>::insert(shared_ptr<EntityT> e)
 #ifdef SONIA_LANG_DEBUG
         eid.debug_name = it->value->debug_name;
 #endif
-        it->value->set_id(eid);
+        it->value->id = eid;
         return;
     }
     THROW_INTERNAL_ERROR("an equivalent entity has bean already registered");

@@ -6,6 +6,7 @@
 
 #include <vector>
 
+#include "ast_terms.hpp"
 #include "semantic.hpp"
 #include "sonia/bang/entities/signatured_entity.hpp"
 

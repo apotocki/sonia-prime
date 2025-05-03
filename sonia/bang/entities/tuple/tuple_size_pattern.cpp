@@ -12,6 +12,7 @@
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
+#include "sonia/bang/errors/type_mismatch_error.hpp"
 #include "sonia/bang/auxiliary.hpp"
 
 namespace sonia::lang::bang {
@@ -39,14 +40,19 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_size_pattern
 {
     auto call_session = call.new_session(ctx);
     syntax_expression_t const* parg_expr;
-    auto arg = call_session.use_next_positioned_argument(exp, &parg_expr);
+    auto arg = call_session.use_next_positioned_argument(&parg_expr);
     if (!arg) return std::unexpected(arg.error());
 
-    auto argerror = [parg_expr] {
-        return std::unexpected(make_error<basic_general_error>(get_start_location(*parg_expr), "argument mismatch"sv, *parg_expr));
+    entity_identifier argtype = arg->is_const_result ? get_entity(ctx.u(), arg->value()).get_type() : arg->type();
+
+    auto argerror = [parg_expr, arg] {
+        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*parg_expr), arg->value_or_type, "a tuple"sv));
+        //return std::unexpected(make_error<basic_general_error>(get_start_location(*parg_expr), "argument mismatch"sv, *parg_expr));
     };
 
-    entity const& argent = get_entity(ctx.u(), arg->value_or_type);
+    
+    entity const& argent = get_entity(ctx.u(), argtype);
+    
     entity_signature const* arg_sig = argent.signature();
     if (!arg_sig) return argerror();
     if (arg_sig->name != ctx.u().get(builtin_qnid::tuple)) return argerror();
@@ -56,7 +62,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_size_pattern
     }
 
     auto pmd = make_shared<functional_match_descriptor>(call.location);
-    pmd->result = field_descriptor{ ctx.u().make_integer_entity(arg_sig->positioned_fields_indices().size()).id(), true };
+    pmd->result = field_descriptor{ ctx.u().make_integer_entity(arg_sig->positioned_fields_indices().size()).id, true };
     pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }

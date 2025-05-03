@@ -29,9 +29,8 @@ public:
         : result_sig{ u.get(builtin_qnid::tuple) }
     {
         field_descriptor const& head_field = sig.fields().front();
-        auto it = std::ranges::find(sig.named_fields_indices(), 0, &std::pair<identifier, uint32_t>::second);
-        if (it != sig.named_fields_indices().end()) {
-            result_sig.push_back(field_descriptor{ u.make_identifier_entity(it->first).id(), true });
+        if (head_field.name()) {
+            result_sig.emplace_back(u.make_identifier_entity(head_field.name()).id, true);
         }
         result_sig.push_back(head_field);
         result_sig.result.emplace(u.get(builtin_eid::typename_));
@@ -179,13 +178,13 @@ std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::app
 
         entity_signature const& res_sig = *tplent.signature();
         if (std::ranges::find(res_sig.fields(), false, &field_descriptor::is_const) == res_sig.fields().end()) {
-            empty_entity valueref{ tplent.id() };
+            empty_entity valueref{ tplent.id };
             entity& value_ent = ctx.u().eregistry_find_or_create(valueref, [&tplent]() {
-                return make_shared<empty_entity>(tplent.id());
+                return make_shared<empty_entity>(tplent.id);
             });
-            return make_result(u, value_ent.id());
+            return make_result(u, value_ent.id);
         }
-        rtype = tplent.id();
+        rtype = tplent.id;
     } else if (tmd.result_sig.fields().front().is_const()) {
         return make_result(u, tmd.result_sig.fields().front().entity_id());
     } else {

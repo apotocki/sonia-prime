@@ -38,13 +38,7 @@ using statement_span = linked_list_node_span<statement_entry>;
 struct syntax_expression_entry;
 using syntax_expression_span = linked_list_node_span<syntax_expression_entry>;
 
-enum class parameter_constraint_modifier_t : uint8_t
-{
-    mutable_value_type = 1,
-    const_value_type = 2,
-    value_type = 3,
-    const_value = 4
-};
+
 
 // e.g. fn (externalName: string); fn (externalName $internalName: string);
 struct named_parameter_name
@@ -473,12 +467,6 @@ struct placeholder
     lex::resource_location location;
 };
 
-class indirect : public polymorphic_clonable_and_movable
-{
-public:
-    virtual ~indirect() = default;
-};
-
 using indirect_value_store_t = automatic_polymorphic<indirect, SONIA_BANG_AST_INDIRECT_STORE_SIZE>;
 
 struct indirect_value
@@ -487,8 +475,6 @@ struct indirect_value
     entity_identifier type;
     indirect_value_store_t store;
 };
-
-
 
 //template <typename ExprT>
 //struct assign_decl

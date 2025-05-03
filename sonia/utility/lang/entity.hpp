@@ -19,22 +19,16 @@ public:
     std::string debug_name;
 #endif
     using identifier_type = IdentifierT;
+    using location_type = LocationT;
 
     inline explicit entity(IdentifierT id = {}) noexcept
-        : id_{ std::move(id) }
+        : id{ std::move(id) }
     {}
 
     virtual ~entity() = default;
 
-    inline LocationT const& location() const noexcept { return location_; }
-    inline void set_location(LocationT l) noexcept { location_ = std::move(l); }
-
-    inline IdentifierT id() const noexcept { return id_; }
-    inline void set_id(IdentifierT idval) noexcept { id_ = idval; }
-
-protected:
-    IdentifierT id_;
-    LocationT location_;
+    identifier_type id;
+    LocationT location;
 };
 
 }

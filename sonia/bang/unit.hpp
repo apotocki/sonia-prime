@@ -203,6 +203,8 @@ public:
 
     identifier_entity       const& make_identifier_entity(identifier value);
     //qname_identifier_entity const& make_qname_identifier_entity(qname_identifier value);
+    empty_entity            const& make_empty_entity(entity_identifier);
+    empty_entity            const& make_empty_entity(entity const&);
     qname_entity            const& make_qname_entity(qname_view value);
     bool_literal_entity     const& make_bool_entity(bool value, entity_identifier type = {});
     integer_literal_entity  const& make_integer_entity(mp::integer_view value, entity_identifier type = {});

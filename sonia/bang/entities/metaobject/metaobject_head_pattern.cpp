@@ -16,11 +16,10 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_head_pattern
 {
     entity_signature const& objsignature = argument_signature(ctx, md);
     
-    auto const* fd = objsignature.get_field(0);
-    if (!fd) {
+    if (!objsignature.fields().empty()) {
         return std::unexpected(make_error<basic_general_error>(md.location, "metaobject is empty"sv));
     }
-    return make_result(ctx.u(), fd->entity_id());
+    return make_result(ctx.u(), objsignature.fields().front().entity_id());
 }
 
 }

@@ -44,11 +44,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
             auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
             if (!res) return std::unexpected(std::move(res.error()));
             auto& ser = res->first;
-            entity const& arg_entity = get_entity(ctx.u(), ser.value_or_type);
+            entity const& arg_entity = get_entity(u, ser.value_or_type);
             if (ser.is_const_result) {
-                if (auto psig = arg_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
+                entity const& arg_type_entity = get_entity(u, arg_entity.get_type());
+                if (auto psig = arg_type_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
                     // argument is typename tuple
-                    pte = &arg_entity;
+                    pte = &arg_type_entity;
                     pmd = make_shared<tuple_get_match_descriptor>();
                     auto& mr = pmd->get_match_result(pargname->value);
                     mr.append_result(ser);
@@ -106,11 +107,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
     } else if (integer_literal_entity const* pile = dynamic_cast<integer_literal_entity const*>(&pname); pile) {
         fd = pes->find_field((size_t)pile->value(), &index);
     } else {
-        return std::unexpected(make_error<basic_general_error>(pname.location(), "argument mismatch, expected an identifier or index"sv, pname.id()));
+        return std::unexpected(make_error<basic_general_error>(pname.location, "argument mismatch, expected an identifier or index"sv, pname.id));
     }
     
     if (!fd) {
-        return std::unexpected(make_error<basic_general_error>(call.location, "no such field"sv, pname.id()));
+        return std::unexpected(make_error<basic_general_error>(call.location, "no such field"sv, pname.id));
     }
 
     // get non const fields count and index

@@ -58,13 +58,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
             entity const& type_ent = u.eregistry_get(ent.get_type());
             entity_signature const* ptypesig = type_ent.signature();
             if (!ptypesig || ptypesig->name != u.get(builtin_qnid::array)) {
-                return std::unexpected(make_error<type_mismatch_error>(arg_loc, ent.id(), "an array"sv));
+                return std::unexpected(make_error<type_mismatch_error>(arg_loc, ent.id, "an array"sv));
             }
             field_descriptor const* pargszd = ptypesig->find_field(u.get(builtin_id::size));
             BOOST_ASSERT(pargszd);
             size_t arg_arr_sz = (size_t)static_cast<integer_literal_entity const&>(u.eregistry_get(pargszd->entity_id())).value();
             if (arg_arr_sz != arrsz) {
-                return std::unexpected(make_error<value_mismatch_error>(arg_loc, ent.id(), "an array of the same size"sv));
+                return std::unexpected(make_error<value_mismatch_error>(arg_loc, ent.id, "an array of the same size"sv));
             }
             entity_signature const* pargsig =  ent.signature();
             BOOST_ASSERT(pargsig);
@@ -81,7 +81,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
             }
 
             pmd = make_shared<functional_match_descriptor>();
-            pmd->result = field_descriptor{ u.make_array_entity(arr_element_type_eid, ct_element_results).id(), true };
+            pmd->result = field_descriptor{ u.make_array_entity(arr_element_type_eid, ct_element_results).id, true };
         } else {
             return std::unexpected(make_error<basic_general_error>(arg_loc, "argument mismatch"sv, argexpr));
         }

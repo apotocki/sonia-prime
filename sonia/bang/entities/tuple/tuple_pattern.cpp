@@ -62,18 +62,14 @@ std::expected<syntax_expression_result_t, error_storage> tuple_pattern::apply(fn
     
     for (auto const& [name, eid] : tmd.fields) {
         entity const& ent = u.eregistry_get(eid);
-        if (name) {
-            result_signature.push_back(name.value, field_descriptor{ eid, ent.get_type() != typename_eid });
-        } else {
-            result_signature.push_back(field_descriptor{ eid, ent.get_type() != typename_eid });
-        }
+        result_signature.emplace_back(name.value, eid, ent.get_type() != typename_eid);
     }
     indirect_signatured_entity smpl{ result_signature };
     entity const& entres = ctx.u().eregistry_find_or_create(smpl, [&result_signature]() {
         return make_shared<basic_signatured_entity>(std::move(result_signature));
     });
     
-    return make_result(u, entres.id());
+    return make_result(u, entres.id);
 }
 
 }

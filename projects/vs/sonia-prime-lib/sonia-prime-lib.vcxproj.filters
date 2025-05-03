@@ -2241,9 +2241,6 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\functional.hpp">
       <Filter>sonia.bang\entities</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\const_entity.hpp">
-      <Filter>sonia.bang\entities</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp">
       <Filter>sonia.bang\entities\ellipsis</Filter>
     </ClInclude>

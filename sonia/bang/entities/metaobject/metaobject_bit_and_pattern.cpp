@@ -50,27 +50,28 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_bit_and_patt
     boost::container::small_flat_multimap<identifier, entity_identifier, 16> named_args;
     small_vector<entity_identifier, 16> pos_args;
     for (entity_signature const* sig : tmd.arguments) {
-        for (auto [name, idx] : sig->named_fields_indices()) {
-            named_args.emplace(name, sig->get_field(idx)->entity_id());
-        }
-        for (auto idx : sig->positioned_fields_indices()) {
-            pos_args.push_back(sig->get_field(idx)->entity_id());
+        for (auto const& fd : sig->fields()) {
+            if (fd.name()) {
+                named_args.emplace(fd.name(), fd.entity_id());
+            } else {
+                pos_args.push_back(fd.entity_id());
+            }
         }
     }
 
     entity_signature sig{ u.get(builtin_qnid::metaobject), u.get(builtin_eid::metaobject) };
     for (auto [name, eid] : named_args) {
-        sig.push_back(name, field_descriptor{ eid, true });
+        sig.emplace_back(name, eid, true);
     }
     for (entity_identifier eid : pos_args) {
-        sig.push_back(field_descriptor{ eid, true });
+        sig.emplace_back(eid, true);
     }
 
     indirect_signatured_entity smpl{ sig };
 
     return make_result(u, u.eregistry_find_or_create(smpl, [&u, &sig]() {
         return make_shared<basic_signatured_entity>(std::move(sig));
-    }).id());
+    }).id);
 }
 
 template generic_pattern_base<metaobject_bit_and_pattern>;

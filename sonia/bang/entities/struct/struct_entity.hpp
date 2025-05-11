@@ -34,8 +34,8 @@ class struct_entity : public basic_signatured_entity
 
     mutable std::atomic<build_state> built_{ build_state::not_built };
 
-    error_storage build(fn_compiler_context& struct_ctx, field_list_t const&) const;
-    error_storage build(fn_compiler_context& struct_ctx, statement_span const&) const;
+    error_storage build(fn_compiler_context& struct_ctx, field_list_t const&, semantic::expression_list_t&) const;
+    error_storage build(fn_compiler_context& struct_ctx, statement_span const&, semantic::expression_list_t&) const;
 
 public:
     struct_entity(unit&, functional&, variant<field_list_t, statement_span> const&);
@@ -51,7 +51,7 @@ public:
     std::expected<entity_identifier, error_storage> underlying_tuple_eid(fn_compiler_context&) const;
     //std::expected<functional_match_descriptor const*, error_storage> underlying_tuple_initializer(fn_compiler_context&) const;
 
-    error_storage build(fn_compiler_context& external_ctx) const;
+    error_storage build(fn_compiler_context& external_ctx, semantic::expression_list_t&) const;
     //std::expected<function_entity const*, error_storage> find_field_getter(fn_compiler_context&, annotated_identifier const&) const;
     //std::expected<function_entity const*, error_storage> find_field_setter(fn_compiler_context&, annotated_identifier const&) const;
     //std::expected<function_signature const*, error_storage> find(fn_compiler_context&, pure_call_t&) const override;

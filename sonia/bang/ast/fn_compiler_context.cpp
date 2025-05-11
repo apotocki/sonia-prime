@@ -456,16 +456,16 @@ variant<entity_identifier, local_variable const&> fn_compiler_context::lookup_en
     return entity_identifier{}; // undeclared
 }
 
-std::expected<functional::match, error_storage> fn_compiler_context::find(builtin_qnid qnid, pure_call_t const& call, annotated_entity_identifier const& expected_result)
+std::expected<functional::match, error_storage> fn_compiler_context::find(builtin_qnid qnid, pure_call_t const& call, semantic::expression_list_t& el, annotated_entity_identifier const& expected_result)
 {
     functional const& fn = u().fget(qnid);
-    return fn.find(*this, call, expected_result);
+    return fn.find(*this, call, el, expected_result);
 }
 
-std::expected<functional::match, error_storage> fn_compiler_context::find(qname_identifier qnid, pure_call_t const& call, annotated_entity_identifier const& expected_result)
+std::expected<functional::match, error_storage> fn_compiler_context::find(qname_identifier qnid, pure_call_t const& call, semantic::expression_list_t& el, annotated_entity_identifier const& expected_result)
 {
     functional const& fn = u().fregistry_resolve(qnid);
-    return fn.find(*this, call, expected_result);
+    return fn.find(*this, call, el, expected_result);
 }
 
 local_variable & fn_compiler_context::new_variable(annotated_identifier name, entity_identifier t)

@@ -70,7 +70,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
         cast_call.emplace_back(argexpr);
         optional<std::pair<functional::match, size_t>> rmatch;
         for (auto const& f : pusig->fields()) {
-            auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, annotated_entity_identifier{ f.entity_id(), e.location });
+            auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, call.expressions, annotated_entity_identifier{ f.entity_id(), e.location });
             if (!match) continue; // to do: collect errors?
             if (rmatch) {
                 return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "ambiguous cast to union"sv, argexpr));
@@ -96,21 +96,27 @@ std::expected<syntax_expression_result_t, error_storage> union_implicit_cast_pat
     auto res = ucmd.submatch.apply(ctx);
     if (!res) return std::unexpected(std::move(res.error()));
     auto& ser = *res;
+    semantic::expression_span exprs = el.concat(md.merge_void_spans(el), ser.expressions);
+
     if (ser.is_const_result) {
         entity_signature usig{ u.get(builtin_qnid::metaobject), ucmd.result_type };
         usig.emplace_back(u.get(builtin_id::which), u.make_integer_entity(ucmd.field_index).id, true);
         usig.emplace_back(ser.value(), true);
-        indirect_signatured_entity smpl{ usig };
-        return make_result(u, u.eregistry_find_or_create(smpl, [&u, &usig]() {
-            return make_shared<basic_signatured_entity>(std::move(usig));
-        }).id);
+        
+        return syntax_expression_result_t{
+            .expressions = std::move(exprs),
+            .value_or_type = u.make_basic_signatured_entity(std::move(usig)).id,
+            .is_const_result = true
+        };
     } else {
-        semantic::managed_expression_list rel{ u };
-        rel.splice_back(el, (semantic::expression_span)ser.expressions);
-        u.push_back_expression(rel, semantic::push_value{ ucmd.field_index }); // runtime which value
-        u.push_back_expression(rel, semantic::push_value{ uint64_t{ 2 } });
-        u.push_back_expression(rel, semantic::invoke_function(u.get(builtin_eid::arrayify)));
-        return syntax_expression_result_t{ std::move(rel), ucmd.result_type };
+        u.push_back_expression(el, exprs, semantic::push_value{ ucmd.field_index }); // runtime which value
+        u.push_back_expression(el, exprs, semantic::push_value{ uint64_t{ 2 } });
+        u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::arrayify)));
+        return syntax_expression_result_t{
+            .expressions = std::move(exprs),
+            .value_or_type = ucmd.result_type,
+            .is_const_result = false
+        };
     }
 }
 

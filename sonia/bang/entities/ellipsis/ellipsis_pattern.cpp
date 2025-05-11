@@ -52,7 +52,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
     }
 
-    ct_expression_visitor eobjvis{ ctx };
+    ct_expression_visitor eobjvis{ ctx, call.expressions };
     auto obj = apply_visitor(eobjvis, *object_arg);
     if (!obj) return std::unexpected(std::move(obj.error()));
     BOOST_ASSERT(!obj->expressions); // not impelemented const value expressions
@@ -71,39 +71,41 @@ std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::
     return std::unexpected(make_error<basic_general_error>(call.location, "argument mismatch"sv, *object_arg));
 }
 
-std::expected<field_descriptor, error_storage> push_by_name(fn_compiler_context& ctx, annotated_qname const& name, semantic::managed_expression_list & result)
+std::expected<field_descriptor, error_storage> push_by_name(fn_compiler_context& ctx, semantic::expression_list_t& el, annotated_qname const& name, semantic::expression_span & result)
 {
     auto optent = ctx.lookup_entity(name);
     using result_t = std::expected<field_descriptor, error_storage>;
-    return apply_visitor(make_functional_visitor<result_t>([&ctx, &name, &result](auto& eid_or_var) -> result_t
+    return apply_visitor(make_functional_visitor<result_t>([&ctx, &el, &name, &result](auto& eid_or_var) -> result_t
     {
         if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, entity_identifier>) {
             if (!eid_or_var) return std::unexpected(make_error<undeclared_identifier_error>(std::move(name)));
             return field_descriptor{ eid_or_var, true };
         } else {
-            ctx.u().push_back_expression(result, semantic::push_local_variable{ eid_or_var });
-            ctx.context_type = eid_or_var.type;
+            ctx.u().push_back_expression(el, result, semantic::push_local_variable{ eid_or_var });
             return field_descriptor{ eid_or_var.type, false };
         }
     }), optent);
 }
 
-std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     BOOST_ASSERT(dynamic_cast<ellipsis_match_descriptor*>(&md));
 
     ellipsis_match_descriptor& nsmd = static_cast<ellipsis_match_descriptor&>(md);
     using result_t = std::expected<syntax_expression_result_t, error_storage>;
-    return apply_visitor(make_functional_visitor<result_t>([&ctx, &nsmd](auto const* pe) -> result_t {
+    return apply_visitor(make_functional_visitor<result_t>([&ctx, &nsmd, &el](auto const* pe) -> result_t {
         unit& u = ctx.u();
         
-        semantic::managed_expression_list l{ u };
+        semantic::expression_span l = nsmd.merge_void_spans(el);
         if constexpr (std::is_same_v<decltype(pe), identifier_entity const*>) {
             annotated_qname varname{ qname{ pe->value(), false }, nsmd.location };
-            auto res = push_by_name(ctx, varname, l);
+            auto res = push_by_name(ctx, el, varname, l);
             if (!res) return std::unexpected(std::move(res.error()));
-            if (res->is_const()) return make_result(u, res->entity_id()); // constexpr case
-            return syntax_expression_result_t{ std::move(l), res->entity_id() };
+            return syntax_expression_result_t{
+                .expressions = std::move(l),
+                .value_or_type = res->entity_id(),
+                .is_const_result = res->is_const()
+            };
         } else {
             basic_signatured_entity const* bse = pe;
             // make tuple
@@ -116,26 +118,22 @@ std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply
                     return std::unexpected(make_error<basic_general_error>(nsmd.location, "identifier is expected"sv, metaobject_ent.id));
                 }
                 annotated_qname varname{ qname{ pie->value(), false }, nsmd.location };
-                auto res = push_by_name(ctx, varname, l);
+                auto res = push_by_name(ctx, el, varname, l);
                 if (!res) return std::unexpected(std::move(res.error()));
                 sig.emplace_back(pie->value(), *res);
                 if (!res->is_const()) ++argcount;
             }
             
-            indirect_signatured_entity smpl{ sig };
-            entity& tplent = ctx.u().eregistry_find_or_create(smpl, [&sig]() {
-                return make_shared<basic_signatured_entity>(std::move(sig));
-            });
             if (argcount > 1) {
-                u.push_back_expression(l, semantic::push_value{ mp::integer{ argcount } });
-                u.push_back_expression(l, semantic::invoke_function(u.get(builtin_eid::arrayify)));
+                u.push_back_expression(el, l, semantic::push_value{ mp::integer{ argcount } });
+                u.push_back_expression(el, l, semantic::invoke_function(u.get(builtin_eid::arrayify)));
             }
 
-            if (!argcount) { // constexpr case
-                return make_result(u, tplent.id);
-            } else {
-                return syntax_expression_result_t{ std::move(l), tplent.id };
-            }
+            return syntax_expression_result_t{
+                .expressions = std::move(l),
+                .value_or_type = u.make_basic_signatured_entity(std::move(sig)).id,
+                .is_const_result = !argcount
+            };
         }
     }), nsmd.argument());
 }

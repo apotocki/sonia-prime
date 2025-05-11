@@ -78,20 +78,19 @@ struct parameter_match_result
     parameter_match_result() = default;
     inline explicit parameter_match_result(std::nullptr_t) noexcept {}
 
-    small_vector<syntax_expression_result_reference_t, 4> results;
+    small_vector<syntax_expression_result_t, 4> results;
     //uint8_t mod = (uint8_t)modifier::undefined;
 
     //void append_result(entity_identifier, se_iterator before_start_it, semantic::expression_list_t&);
-    template <typename ET>
-    inline void append_result(syntax_expression_result<ET> & er)
+    inline void append_result(syntax_expression_result_t& er)
     {
-        results.emplace_back(er.expressions, er.value_or_type, er.is_const_result);
+        results.emplace_back(std::move(er));
+        //results.emplace_back(er.expressions, er.value_or_type, er.is_const_result);
     }
 
-    template <typename ET>
-    inline void append_const_result(syntax_expression_const_result<ET>& er)
+    inline void append_result(syntax_expression_const_result& er)
     {
-        results.emplace_back(er.expressions, er.value, true);
+        results.emplace_back(syntax_expression_result_t{ .expressions = std::move(er.expressions), .value_or_type = er.value, .is_const_result = true });
     }
 
     void append_result(entity_identifier, semantic::expression_span);
@@ -137,7 +136,10 @@ class functional_match_descriptor
     small_vector<parameter_match_result*, 8> positional_matches_;
 
 public:
+    // can not not merge spans before match application
     small_vector<semantic::expression_span, 4> void_spans;
+
+    semantic::expression_span merge_void_spans(semantic::expression_list_t&) noexcept;
 
     functional_binding_set bindings;
     lex::resource_location location;
@@ -251,13 +253,13 @@ public:
     class match
     {
     public:
-        inline match(pattern const* p, semantic::managed_expression_list&& exprs, functional_match_descriptor_ptr md) noexcept
-            : ptrn_{ p }, expressions{ std::move(exprs) }, md_{ std::move(md) }
+        inline match(pattern const* p, semantic::expression_list_t& exprs, functional_match_descriptor_ptr md) noexcept
+            : ptrn_{ p }, expressions{ exprs }, md_{ std::move(md) }
         {
             BOOST_ASSERT(md_);
         }
         
-        semantic::managed_expression_list expressions;
+        semantic::expression_list_t& expressions;
 
         inline std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context& ctx)
         {
@@ -302,7 +304,7 @@ public:
     }
 
     // looking by argument expressions (pattern matching)
-    std::expected<match, error_storage> find(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const& expected_result = annotated_entity_identifier{}) const;
+    std::expected<match, error_storage> find(fn_compiler_context&, pure_call_t const&, semantic::expression_list_t&, annotated_entity_identifier const& expected_result = annotated_entity_identifier{}) const;
 
 private:
     qname_identifier id_;

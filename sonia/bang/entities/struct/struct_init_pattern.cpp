@@ -90,21 +90,25 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_init_patter
     return res;
 }
 
-std::expected<syntax_expression_result_t, error_storage> struct_init_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& exprs, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> struct_init_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     // create tuple instance
     unit& u = ctx.u();
     
-    auto [el, argcount] = apply_arguments(ctx, exprs, md);
+    auto [exprs, argcount] = apply_arguments(ctx, md, el);
 
     if (argcount > 1) {
-        u.push_back_expression(el, semantic::push_value{ mp::integer{ argcount } });
-        u.push_back_expression(el, semantic::invoke_function(u.get(builtin_eid::arrayify)));
+        u.push_back_expression(el, exprs, semantic::push_value{ mp::integer{ argcount } });
+        u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
 
     BOOST_ASSERT(md.result.entity_id());
     
-    return syntax_expression_result_t{ std::move(el), md.result.entity_id() };
+    return syntax_expression_result_t{
+        .expressions = std::move(el),
+        .value_or_type = md.result.entity_id(),
+        .is_const_result = false
+    };
 }
 
 }

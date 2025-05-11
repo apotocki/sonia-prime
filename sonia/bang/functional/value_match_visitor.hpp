@@ -15,11 +15,12 @@ struct value_match_visitor : static_visitor<std::expected<entity_identifier, err
 {
     fn_compiler_context& caller_ctx;
     fn_compiler_context& callee_ctx;
+    semantic::expression_list_t& expressions;
     syntax_expression_t const& cexpr;
     functional_binding& binding; // to forward it to signature_matcher_visitor
     bool matching_type;
 
-    value_match_visitor(fn_compiler_context& caller, fn_compiler_context& callee, syntax_expression_t const& ce, functional_binding& b, bool is_type_matching = false);
+    value_match_visitor(fn_compiler_context& caller, fn_compiler_context& callee, semantic::expression_list_t&, syntax_expression_t const& ce, functional_binding& b, bool is_type_matching = false) noexcept;
 
     result_type operator()(annotated_bool const&) const;
 

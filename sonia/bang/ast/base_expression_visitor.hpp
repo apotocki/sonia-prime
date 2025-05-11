@@ -19,12 +19,13 @@ class base_expression_visitor : public static_visitor<std::expected<std::pair<sy
 
 protected:
     fn_compiler_context& ctx;
+    semantic::expression_list_t& expressions;
     annotated_entity_identifier expected_result;
     bool is_type_expected = true; // type or entity
 
 public:
-    explicit base_expression_visitor(fn_compiler_context& c) noexcept;
-    base_expression_visitor(fn_compiler_context& c, annotated_entity_identifier er, bool is_const_expected = false) noexcept;
+    explicit base_expression_visitor(fn_compiler_context&, semantic::expression_list_t&) noexcept;
+    base_expression_visitor(fn_compiler_context&, semantic::expression_list_t&, annotated_entity_identifier er, bool is_const_expected = false) noexcept;
 
     result_type operator()(indirect_value const&) const;
 
@@ -68,16 +69,16 @@ protected:
 
     result_type do_assign(binary_expression_t const&) const;
 
-    result_type apply_cast(entity const&, semantic::managed_expression_list, syntax_expression_t const&) const;
+    result_type apply_cast(entity const&, syntax_expression_result_t, syntax_expression_t const&) const;
     result_type apply_cast(syntax_expression_result_t, syntax_expression_t const&) const;
 
     template <typename ExprT>
-    result_type apply_cast(entity_identifier eid, semantic::managed_expression_list, ExprT const& e) const;
+    result_type apply_cast(entity_identifier eid, ExprT const& e) const;
     
     template <typename ExprT>
     inline result_type apply_cast(entity const& ent, ExprT const& e) const
     {
-        return apply_cast(ent, semantic::managed_expression_list{ u() }, syntax_expression_t{ e });
+        return apply_cast(ent, syntax_expression_result_t{ .value_or_type = ent.id, .is_const_result = true }, syntax_expression_t{ e });
     }
 
     template <typename ExprT>

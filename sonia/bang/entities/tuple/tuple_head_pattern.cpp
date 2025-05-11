@@ -83,13 +83,8 @@ error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_mat
         md.src_size = fields_count;
 
         auto& mr = md.get_match_result(0);
-
-        if (er.is_const_result) {
-            mr.append_const_result(argtype, er.expressions);
-        } else {
-            mr.append_result(argtype, er.expressions);
-        }
-        call.splice_back(er.expressions);
+        er.value_or_type = argtype;
+        mr.append_result(er);
         return {};
     }
     return argctx.make_argument_mismatch_error();
@@ -182,28 +177,40 @@ std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::app
             entity& value_ent = ctx.u().eregistry_find_or_create(valueref, [&tplent]() {
                 return make_shared<empty_entity>(tplent.id);
             });
-            return make_result(u, value_ent.id);
+            return syntax_expression_result_t{
+                .expressions = md.merge_void_spans(el),
+                .value_or_type = value_ent.id,
+                .is_const_result = true
+            };
         }
         rtype = tplent.id;
     } else if (tmd.result_sig.fields().front().is_const()) {
-        return make_result(u, tmd.result_sig.fields().front().entity_id());
+        return syntax_expression_result_t{
+            .expressions = md.merge_void_spans(el),
+            .value_or_type = tmd.result_sig.fields().front().entity_id(),
+            .is_const_result = true
+        };
     } else {
         rtype = tmd.result_sig.fields().front().entity_id();
     }
 
-    semantic::managed_expression_list exprs{ u };
+    semantic::expression_span exprs = md.merge_void_spans(el);
     tmd.for_each_positional_match([&exprs, &el](parameter_match_result const& mr) {
         for (auto const& ser : mr.results) {
-            exprs.splice_back(el, ser.expressions);
+            exprs = el.concat(exprs, ser.expressions);
         }
     });
 
     if (tmd.src_size > 1) {
-        u.push_back_expression(exprs, semantic::push_value{ mp::integer{ 0 } });
-        u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
+        u.push_back_expression(el, exprs, semantic::push_value{ mp::integer{ 0 } });
+        u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
 
-    return syntax_expression_result_t{ std::move(exprs), rtype };
+    return syntax_expression_result_t{ 
+        .expressions = std::move(exprs),
+        .value_or_type = rtype,
+        .is_const_result = false
+    };
 }
 
 template class generic_pattern_base<tuple_head_pattern>;

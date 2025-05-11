@@ -41,7 +41,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
             if (pte) {
                 return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch"sv, pargname->value));
             }
-            auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
+            auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, argexpr);
             if (!res) return std::unexpected(std::move(res.error()));
             auto& ser = res->first;
             entity const& arg_entity = get_entity(u, ser.value_or_type);
@@ -69,10 +69,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
             pmd = make_shared<tuple_get_match_descriptor>();
             auto& mr = pmd->get_match_result(pargname->value);
             mr.append_result(ser);
-            call.splice_back(ser.expressions);
             
         } else if (pargname->value == propid && !ppname) {
-            ct_expression_visitor evis{ ctx };
+            ct_expression_visitor evis{ ctx, call.expressions };
             auto res = apply_visitor(evis, arg.value());
             if (!res) return std::unexpected(std::move(res.error()));
             BOOST_ASSERT(!res->expressions); // not impelemented const value expressions
@@ -140,25 +139,33 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
     auto& tmd = static_cast<tuple_get_match_descriptor&>(md);
 
     if (tmd.result.is_const()) {
-        return make_result(u, tmd.result.entity_id());
+        return syntax_expression_result_t{
+            .expressions = md.merge_void_spans(el),
+            .value_or_type = tmd.result.entity_id(),
+            .is_const_result = true
+        };
     }
 
     // push call expressions in the right order
-    semantic::managed_expression_list exprs{ u };
+    semantic::expression_span exprs = md.merge_void_spans(el);
 
     // only one named argument is expected
     tmd.for_each_named_match([&exprs, &el](identifier name, parameter_match_result const& mr) {
         for (auto const& ser : mr.results) {
-            exprs.splice_back(el, ser.expressions);
+            exprs = el.concat(exprs, ser.expressions);
         }
     });
 
     if (tmd.fields_count > 1) {
-        u.push_back_expression(exprs, semantic::push_value{ tmd.property_index });
-        u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
+        u.push_back_expression(el, exprs, semantic::push_value{ tmd.property_index });
+        u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
 
-    return syntax_expression_result_t{ std::move(exprs), md.result.entity_id() };
+    return syntax_expression_result_t{
+        .expressions = std::move(exprs),
+        .value_or_type = md.result.entity_id(),
+        .is_const_result = false,
+    };
 }
 
 }

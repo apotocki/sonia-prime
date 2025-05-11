@@ -69,13 +69,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_size_pattern
 
 std::expected<syntax_expression_result_t, error_storage> tuple_size_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
-    unit& u = ctx.u();
-    semantic::managed_expression_list exprs{ u };
-    for (semantic::expression_span const& vsp : md.void_spans) {
-        exprs.splice_back(el, vsp);
-    }
     return syntax_expression_result_t{
-        .expressions = std::move(exprs),
+        .expressions = md.merge_void_spans(el),
         .value_or_type = md.result.entity_id(),
         .is_const_result = true
     };

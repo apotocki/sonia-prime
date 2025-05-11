@@ -148,19 +148,17 @@ public:
 
 protected:
     void build_scope(fn_compiler_context&, functional_match_descriptor&, functional_binding_set& bound_arguments /* out */) const;
-    std::pair<semantic::managed_expression_list, size_t> apply_arguments(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const;
+    std::pair<semantic::expression_span, size_t> apply_arguments(fn_compiler_context&, functional_match_descriptor&, semantic::expression_list_t&) const;
 
-    virtual size_t apply_argument(unit&, semantic::expression_list_t& src_exprs, parameter_match_result& pmr, semantic::expression_list_t& dest_exprs) const;
-    size_t apply_mut_argument(unit&, semantic::expression_list_t&, parameter_match_result&, semantic::expression_list_t&) const;
-    size_t apply_any_argument(unit&, semantic::expression_list_t&, parameter_match_result&, semantic::expression_list_t&) const;
+    virtual std::pair<semantic::expression_span, size_t> apply_argument(unit&, parameter_match_result& pmr, semantic::expression_list_t&) const;
+    std::pair<semantic::expression_span, size_t> apply_mut_argument(parameter_match_result&, semantic::expression_list_t&) const;
+    std::pair<semantic::expression_span, size_t> apply_any_argument(unit&, parameter_match_result&, semantic::expression_list_t&) const;
 
     // builds entity that represents the function
     virtual shared_ptr<entity> build(fn_compiler_context&, functional_match_descriptor&, entity_signature&&) const
     {
         THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern::build");
     }
-
-    syntax_expression_result_t do_result(unit&, entity_identifier) const;
 
 private:
     uint8_t has_varpack_ : 1;

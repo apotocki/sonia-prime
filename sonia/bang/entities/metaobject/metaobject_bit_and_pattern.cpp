@@ -42,7 +42,7 @@ error_storage metaobject_bit_and_pattern::accept_argument(std::nullptr_t, functi
     return argctx.make_argument_mismatch_error();
 }
 
-std::expected<syntax_expression_result_t, error_storage> metaobject_bit_and_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> metaobject_bit_and_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<metaobject_bit_and_match_descriptor&>(md);
@@ -67,11 +67,11 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_bit_and_patt
         sig.emplace_back(eid, true);
     }
 
-    indirect_signatured_entity smpl{ sig };
-
-    return make_result(u, u.eregistry_find_or_create(smpl, [&u, &sig]() {
-        return make_shared<basic_signatured_entity>(std::move(sig));
-    }).id);
+    return syntax_expression_result_t{
+        .expressions = md.merge_void_spans(el),
+        .value_or_type = u.make_basic_signatured_entity(std::move(sig)).id,
+        .is_const_result = true
+    };
 }
 
 template class generic_pattern_base<metaobject_bit_and_pattern>;

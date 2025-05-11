@@ -74,12 +74,12 @@ functional_binding::value_type& functional_binding_set::emplace_back(annotated_i
 
 void parameter_match_result::append_result(entity_identifier type, semantic::expression_span sp)
 {
-    results.emplace_back(std::move(sp), type, false);
+    results.emplace_back(syntax_expression_result_t{ .expressions = std::move(sp), .value_or_type = type, .is_const_result = false });
 }
 
 void parameter_match_result::append_const_result(entity_identifier value, semantic::expression_span sp)
 {
-    results.emplace_back(std::move(sp), value, true);
+    results.emplace_back(syntax_expression_result_t{ .expressions = std::move(sp), .value_or_type = value, .is_const_result = true });
 }
 
 //void parameter_match_result::set_constexpr(bool ce_val)
@@ -120,6 +120,17 @@ void parameter_match_result::append_const_result(entity_identifier value, semant
 //    }
 //}
 
+semantic::expression_span functional_match_descriptor::merge_void_spans(semantic::expression_list_t& el) noexcept
+{
+    semantic::expression_span result;
+    auto bit = void_spans.begin(), eit = void_spans.end();
+    if (bit == eit) return result;
+    result = *bit; ++bit;
+    for (; bit != eit; ++bit) {
+        result = el.concat(result, *bit);
+    }
+    return result;
+}
 
 parameter_match_result& functional_match_descriptor::get_match_result(identifier param_name)
 {
@@ -288,7 +299,7 @@ struct expression_stack_checker
 #endif
 };
 
-std::expected<functional::match, error_storage> functional::find(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& expected_result) const
+std::expected<functional::match, error_storage> functional::find(fn_compiler_context& ctx, pure_call_t const& call, semantic::expression_list_t& ael, annotated_entity_identifier const& expected_result) const
 {
     alt_error err;
     mp::decimal major_weight = 0;
@@ -298,7 +309,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
 
     expression_stack_checker expr_stack_state{ ctx };
 
-    prepared_call pcall{ ctx.u(), call };
+    prepared_call pcall{ call, ael };
     if (auto err = pcall.prepare(ctx); err) return std::unexpected(std::move(err));
 
     for (auto const& p : patterns_) {
@@ -346,7 +357,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
         return std::unexpected(make_error<ambiguity_error>(annotated_qname_identifier{ id_, call.location }, std::move(as)));
     }
     auto [ptrn, md] = alternatives.front();
-    return match{ ptrn, std::move(pcall.expressions), std::move(md) };
+    return match{ ptrn, ael, std::move(md) };
 }
 
 //error_storage functional::pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const

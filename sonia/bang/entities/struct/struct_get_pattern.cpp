@@ -58,7 +58,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
             pmd = make_shared<tuple_get_match_descriptor>();
 
             //auto last_expr_it = ctx.expressions().last();
-            auto res = apply_visitor(base_expression_visitor{ ctx }, arg.value());
+            auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, arg.value());
             if (!res) return std::unexpected(std::move(res.error()));
             auto& ser = res->first;
             entity const& some_entity = get_entity(u, ser.value_or_type);
@@ -71,7 +71,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
             return std::unexpected(make_error<basic_general_error>(pargname->location, "argument type mismatch: a structure was expected."sv, pargname->value));
             //return std::unexpected(make_error<type_mismatch_error>(pargname->location, ctx.context_type, u.get(builtin_qnid::tuple)));
         } else if (pargname->value == propid && !ppname) {
-            auto res = apply_visitor(ct_expression_visitor{ ctx }, arg.value());
+            auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions }, arg.value());
             if (!res) return std::unexpected(std::move(res.error()));
             if (res->expressions) THROW_NOT_IMPLEMENTED_ERROR("struct_get_pattern::try_match const value expressions");
             ppname = &get_entity(u, res->value);
@@ -88,7 +88,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
 
     auto uteid = pse->underlying_tuple_eid(ctx);
     if (!uteid) return std::unexpected(std::move(uteid.error()));
-    entity const& utplent = u.eregistry_get(*uteid);
+    entity const& utplent = get_entity(u, *uteid);
     
     return check_match(std::move(pmd), call, utplent, *ppname);
 

@@ -16,7 +16,7 @@ class fn_compiler_context;
 class prepared_call
 {
 public:
-    mutable semantic::managed_expression_list expressions;
+    semantic::expression_list_t& expressions;
     lex::resource_location location;
     small_vector<named_expression_t, 8> args;
     
@@ -25,7 +25,7 @@ public:
     struct argument_cache
     {
         syntax_expression_t expression;
-        boost::container::small_flat_map<cache_key_t, std::expected<syntax_expression_result_reference_t, error_storage>, 8> cache;
+        boost::container::small_flat_map<cache_key_t, std::expected<syntax_expression_result_t, error_storage>, 8> cache;
 
         inline explicit argument_cache(syntax_expression_t e) noexcept
             : expression{ std::move(e) }
@@ -35,15 +35,15 @@ public:
     mutable small_vector<std::tuple<identifier, argument_cache>, 8> named_argument_caches_;
     mutable small_vector<argument_cache, 8> position_argument_caches_;
 
-    inline prepared_call(unit& u, lex::resource_location loc) noexcept
-        : expressions{ u }
+    inline prepared_call(semantic::expression_list_t& ael, lex::resource_location loc) noexcept
+        : expressions{ ael }
         , location{ std::move(loc) }
     {}
 
-    prepared_call(unit&, pure_call_t const&);
+    prepared_call(pure_call_t const&, semantic::expression_list_t&);
 
-    void splice_back(semantic::expression_list_t&) const noexcept;
-    void splice_back(semantic::expression_list_t&, semantic::expression_span) const noexcept;
+    //void splice_back(semantic::expression_list_t&) const noexcept;
+    //void splice_back(semantic::expression_list_t&, semantic::expression_span) const noexcept;
 
     error_storage prepare(fn_compiler_context&);
 
@@ -56,6 +56,7 @@ public:
         ~session() noexcept = default;
     
         fn_compiler_context& ctx;
+        
         prepared_call const& call;
         small_vector<std::tuple<identifier, argument_cache*>, 8> unused_named_arguments_;
         small_vector<argument_cache*, 8> unused_position_arguments_;
@@ -65,13 +66,13 @@ public:
 
         session(fn_compiler_context&, prepared_call const&);
 
-        std::expected<syntax_expression_result_reference_t, error_storage> use_next_positioned_argument(syntax_expression_t const** pe = nullptr);
-        std::expected<syntax_expression_result_reference_t, error_storage> use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp, syntax_expression_t const** pe = nullptr);
+        std::expected<syntax_expression_result_t, error_storage> use_next_positioned_argument(syntax_expression_t const** pe = nullptr);
+        std::expected<syntax_expression_result_t, error_storage> use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp, syntax_expression_t const** pe = nullptr);
         
         named_expression_t unused_argument();
 
     private:
-        std::expected<syntax_expression_result_reference_t, error_storage>
+        std::expected<syntax_expression_result_t, error_storage>
         do_resolve(argument_cache& arg_cache, annotated_entity_identifier const& exp, bool const_exp);
     };
 

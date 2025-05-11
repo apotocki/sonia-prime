@@ -17,18 +17,16 @@ namespace sonia::lang::bang {
 
 // returns true if implicit cast was applied
 struct expression_visitor 
-    : base_expression_visitor
+    : private semantic::managed_expression_list
+    , base_expression_visitor
     , static_visitor<std::expected<bool, error_storage>>
 {
     using result_type = std::expected<bool, error_storage>;
-    // to do: set a flag to notice unneeded result
-    explicit expression_visitor(fn_compiler_context& c)
-        : base_expression_visitor{ c }
-    {}
 
-    expression_visitor(fn_compiler_context& c, annotated_entity_identifier && er)
-        : base_expression_visitor{ c, std::move(er) }
-    {}
+    // to do: set a flag to notice unneeded result
+    explicit expression_visitor(fn_compiler_context& c) noexcept;
+
+    expression_visitor(fn_compiler_context& c, annotated_entity_identifier&& er) noexcept;
 
     //expression_visitor(fn_compiler_context& c, optional<expected_result_t> opter)
     //    : ctx{ c }

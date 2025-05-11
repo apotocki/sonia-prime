@@ -66,10 +66,12 @@ error_storage declaration_visitor::operator()(include_decl const& d) const
 
 error_storage declaration_visitor::operator()(extern_var const& d) const
 {
-    auto vartype = apply_visitor(ct_expression_visitor{ ctx }, d.type());
+    semantic::managed_expression_list el{ u() };
+    auto vartype = apply_visitor(ct_expression_visitor{ ctx, el }, d.type());
     if (!vartype) {
         return std::move(vartype.error());
     }
+    BOOST_ASSERT(!el);
 
     qname var_qname = ctx.ns() / d.name.value;
     functional& fnl = u().fregistry_resolve(var_qname);
@@ -218,7 +220,8 @@ error_storage declaration_visitor::do_rt_if_decl(if_decl const& stm) const
 
 error_storage declaration_visitor::operator()(if_decl const& stm) const
 {
-    base_expression_visitor vis{ ctx, { u().get(builtin_eid::boolean), get_start_location(stm.condition) } };
+    semantic::managed_expression_list el{ u() };
+    base_expression_visitor vis{ ctx, el, { u().get(builtin_eid::boolean), get_start_location(stm.condition) } };
     auto res = apply_visitor(vis, stm.condition);
     if (!res) return std::move(res.error());
 
@@ -231,7 +234,7 @@ error_storage declaration_visitor::operator()(if_decl const& stm) const
         SCOPE_EXIT([this] { ctx.pop_ns(); });
         return apply(body);
     } else {
-        ctx.expressions().splice_back(er.expressions);
+        ctx.expressions().splice_back(el, er.expressions);
         return do_rt_if_decl(stm);
     }
 }
@@ -567,9 +570,11 @@ error_storage declaration_visitor::operator()(fn_decl_t const& fnd) const
 
 error_storage declaration_visitor::operator()(let_statement const& ld) const
 {
+    semantic::managed_expression_list el{ u() };
+
     entity_identifier vartype;
     if (ld.type) {
-        auto optvartype = apply_visitor(ct_expression_visitor{ ctx }, *ld.type);
+        auto optvartype = apply_visitor(ct_expression_visitor{ ctx, el }, *ld.type);
         if (!optvartype) {
             return std::move(optvartype.error());
         }
@@ -579,7 +584,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
     small_vector<std::pair<identifier, syntax_expression_result_t>, 8> results;
 
-    prepared_call pcall{ u(), ld.location() };
+    prepared_call pcall{ el, ld.location() };
     for (auto const& e : ld.expressions) {
         pcall.args.emplace_back(e);
     }
@@ -587,7 +592,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
     for (auto const& e : pcall.args) {
         auto [pname, expr] = *e;
-        auto res = apply_visitor(base_expression_visitor{ ctx, { vartype, ld.location() } }, expr);
+        auto res = apply_visitor(base_expression_visitor{ ctx, el, { vartype, ld.location() } }, expr);
         if (!res) { return std::move(res.error()); }
         identifier name = pname ? pname->value : identifier{};
         results.emplace_back(name, std::move(res->first));
@@ -598,7 +603,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         if (er.is_const_result) {
             ctx.new_constant(ld.aname, er.value());
         } else {
-            ctx.expressions().splice_back(er.expressions);
+            ctx.expressions().splice_back(el, er.expressions);
             local_variable& ve = ctx.new_variable(ld.aname, er.type());
             ve.is_weak = ld.weakness;
         }
@@ -614,7 +619,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         if (er.is_const_result) {
             field_eid = er.value();
         } else {
-            ctx.expressions().splice_back(er.expressions);
+            ctx.expressions().splice_back(el, er.expressions);
             identifier unnamedid = u().new_identifier();
             local_variable& ve = ctx.new_variable(annotated_identifier{ unnamedid }, er.type());
             ve.is_weak = ld.weakness;

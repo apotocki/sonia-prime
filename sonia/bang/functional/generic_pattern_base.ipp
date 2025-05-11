@@ -45,7 +45,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> generic_pattern_ba
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
 
-        auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
+        auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, argexpr);
         if (!res) return std::unexpected(std::move(res.error()));
         arg_context_type argctx{ ctx, call, pargname, argexpr };
         if (auto err = derived().accept_argument(std::forward<CookieT>(cookie), pmd, argctx, res->first); err)

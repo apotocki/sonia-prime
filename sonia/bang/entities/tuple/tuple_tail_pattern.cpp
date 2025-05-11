@@ -58,7 +58,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
 
-        auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
+        auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, argexpr);
         if (!res) return std::unexpected(std::move(res.error()));
         auto& ser = res->first;
         if (!pmd && !pargname) {
@@ -82,7 +82,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_tail_pattern
                 if (!ser.is_const_result) {
                     if (pmd->result_actual_size) {
                         pmd->get_match_result(0).append_result(argtype, ser.expressions);
-                        call.splice_back(ser.expressions);
                     }
                 }
                 continue;
@@ -154,33 +153,35 @@ std::expected<syntax_expression_result_t, error_storage> tuple_tail_pattern::app
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_tail_match_descriptor&>(md);
 
-    indirect_signatured_entity smpl{ tmd.result_sig };
-    entity& tplent = ctx.u().eregistry_find_or_create(smpl, [&u, &tmd]() {
-        return make_shared<basic_signatured_entity>(std::move(tmd.result_sig));
-    });
+    entity const& tplent = u.make_basic_signatured_entity(std::move(tmd.result_sig));
     
     if (tmd.result_actual_size == 0) {
         if (tplent.id == u.get(builtin_eid::void_)) {
-            return syntax_expression_result_t{ semantic::managed_expression_list{ u }, tplent.id }; // return void
+            return syntax_expression_result_t{ .value_or_type = tplent.id, .is_const_result = true }; // return void
         }
-        empty_entity valueref{ tplent.id };
-        entity& value_ent = ctx.u().eregistry_find_or_create(valueref, [&tplent]() {
-            return make_shared<empty_entity>(tplent.id);
-        });
-        return make_result(u, value_ent.id);
+
+        return syntax_expression_result_t{
+            .expressions = md.merge_void_spans(el),
+            .value_or_type = u.make_empty_entity(tplent).id,
+            .is_const_result = true
+        };
     }
     
-    semantic::managed_expression_list exprs{ u };
+    semantic::expression_span exprs = md.merge_void_spans(el);
     tmd.for_each_positional_match([&exprs, &el](parameter_match_result const& mr) {
         for (auto const& ser : mr.results) {
-            exprs.splice_back(el, ser.expressions);
+            exprs = el.concat(exprs, ser.expressions);
         }
     });
 
     if (!tmd.is_src_head_const) {
-        u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_tail)));
+        u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::array_tail)));
     }
-    return syntax_expression_result_t{ std::move(exprs), tplent.id };
+    return syntax_expression_result_t{
+        .expressions = std::move(exprs),
+        .value_or_type = tplent.id,
+        .is_const_result = false
+    };
 }
 
 }

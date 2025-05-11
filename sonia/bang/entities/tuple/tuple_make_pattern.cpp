@@ -23,11 +23,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern
     size_t pos_arg_num = 0;
     auto pmd = make_shared<functional_match_descriptor>();
     for (auto const& arg : call.args) {
-        auto res = apply_visitor(base_expression_visitor{ ctx }, arg.value());
+        auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, arg.value());
         if (!res) return std::unexpected(std::move(res.error()));
         auto& ser = res->first;
         if (ser.is_const_result && ser.value() == veid) {
-            if (ser.expressions) pmd->void_spans.emplace_back(ser.expressions);
+            if (ser.expressions)
+                pmd->void_spans.push_back(ser.expressions);
             continue;
         }
 
@@ -35,7 +36,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern
         parameter_match_result* pmr = pargname ? &pmd->get_match_result(pargname->value) : &pmd->get_match_result(pos_arg_num++);
         
         pmr->append_result(ser);
-        call.splice_back(ser.expressions);
     }
     return pmd;
 }
@@ -65,7 +65,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_make_pattern::app
     size_t mut_argcount = 0; // number of mutable arguments
 
     // prepare subtuples for named elements
-    using named_element_t = std::tuple<identifier, entity_identifier, semantic::managed_expression_list, bool>;
+    using named_element_t = std::tuple<identifier, entity_identifier, semantic::expression_span, bool>;
     boost::container::small_flat_set<named_element_t, 8, named_tuple_comparator> named_elements;
     named_elements.reserve(md.named_matches_count());
 
@@ -76,29 +76,23 @@ std::expected<syntax_expression_result_t, error_storage> tuple_make_pattern::app
         }
 
         entity_signature sub_signature{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
-        semantic::managed_expression_list exprs{ u };
+        semantic::expression_span exprs;
         size_t start_mut_args = mut_argcount;
         for (auto const& ser : mr.results) {
-            exprs.splice_back(el, ser.expressions);
+            exprs = el.concat(exprs, ser.expressions);
             sub_signature.emplace_back(ser.value_or_type, ser.is_const_result);
             if (!ser.is_const_result) {
                 ++mut_argcount;
             }
         }
 
-        indirect_signatured_entity smpl{ sub_signature };
-        entity& e = u.eregistry_find_or_create(smpl, [&sub_signature]() {
-            return make_shared<basic_signatured_entity>(std::move(sub_signature));
-        });
+        entity const& e = u.make_basic_signatured_entity(std::move(sub_signature));
         named_elements.emplace(name, e.id, std::move(exprs), start_mut_args == mut_argcount);
     });
 
 
     // push call expressions in the right order
-    semantic::managed_expression_list exprs{ u };
-    for (semantic::expression_span const& vsp : md.void_spans) {
-        exprs.splice_back(el, vsp);
-    }
+    semantic::expression_span exprs = md.merge_void_spans(el);
 
     entity_signature signature{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
 
@@ -107,41 +101,37 @@ std::expected<syntax_expression_result_t, error_storage> tuple_make_pattern::app
             identifier name = get<identifier>(name_or_pos);
             if (auto it = named_elements.find(name); it != named_elements.end()) {
                 named_element_t& ne = const_cast<named_element_t&>(*it);
-                exprs.splice_back(get<2>(ne));
+                exprs = el.concat(exprs, get<2>(ne));
                 signature.emplace_back(name, get<1>(ne), get<3>(ne));
             } else {
                 BOOST_ASSERT(mr.results.size() == 1);
                 auto const& ser = mr.results.front();
-                exprs.splice_back(el, ser.expressions);
+                exprs = el.concat(exprs, ser.expressions);
                 signature.emplace_back(name, ser.value_or_type, ser.is_const_result);
                 if (!ser.is_const_result) { ++mut_argcount; }
             }
         } else {
             BOOST_ASSERT(mr.results.size() == 1);
             auto const& ser = mr.results.front();
-            exprs.splice_back(el, ser.expressions);
+            exprs = el.concat(exprs, ser.expressions);
             signature.emplace_back(ser.value_or_type, ser.is_const_result);
             if (!ser.is_const_result) { ++mut_argcount; }
         }
     });
 
-    indirect_signatured_entity smpl{ signature };
-
-    entity& tuple_type_ent = ctx.u().eregistry_find_or_create(smpl, [&signature]() {
-        return make_shared<basic_signatured_entity>(std::move(signature));
-    });
+    entity const& tuple_type_ent = u.make_basic_signatured_entity(std::move(signature));
     BOOST_ASSERT(tuple_type_ent.signature() && tuple_type_ent.signature()->name == u.get(builtin_qnid::tuple));
 
     if (mut_argcount > 1) {
-        u.push_back_expression(exprs, semantic::push_value{ mp::integer{ mut_argcount } });
-        u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::arrayify)));
+        u.push_back_expression(el, exprs, semantic::push_value{ mp::integer{ mut_argcount } });
+        u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
 
     if (mut_argcount) {
-        return syntax_expression_result_t{ std::move(exprs), tuple_type_ent.id, false };
+        return syntax_expression_result_t{ .expressions = std::move(exprs), .value_or_type = tuple_type_ent.id, .is_const_result = false };
     }
 
-    return syntax_expression_result_t{ std::move(exprs), u.make_empty_entity(tuple_type_ent).id, true };
+    return syntax_expression_result_t{ .expressions = std::move(exprs), .value_or_type = u.make_empty_entity(tuple_type_ent).id, .is_const_result = true };
 }
 
 }

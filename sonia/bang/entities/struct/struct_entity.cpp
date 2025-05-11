@@ -23,7 +23,7 @@ struct_entity::struct_entity(unit& u, functional& fn, variant<field_list_t, stat
     sig_.result.emplace(u.get(builtin_eid::typename_));
 }
 
-error_storage struct_entity::build(fn_compiler_context& extctx) const
+error_storage struct_entity::build(fn_compiler_context& extctx, semantic::expression_list_t& el) const
 {
     compiler_task_tracer::task_guard tg = extctx.try_lock_task(entity_task_id{ *this });
     if (!tg) {
@@ -35,8 +35,8 @@ error_storage struct_entity::build(fn_compiler_context& extctx) const
 
     // prepare context
     fn_compiler_context ctx{ extctx, name_ };
-    auto err = apply_visitor(make_functional_visitor<error_storage>([&ctx, this](auto const& body) -> error_storage {
-        return build(ctx, body);
+    auto err = apply_visitor(make_functional_visitor<error_storage>([&ctx, &el, this](auto const& body) -> error_storage {
+        return build(ctx, body, el);
     }), body_);
     if (!err) {
         built_.store(build_state::underlying_tuple_built);
@@ -44,13 +44,13 @@ error_storage struct_entity::build(fn_compiler_context& extctx) const
     return err;
 }
 
-error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const& fl) const
+error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const& fl, semantic::expression_list_t& el) const
 {
     unit& u = ctx.u();
 
     entity_signature tuple_signature{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
     for (field_t const& f : fl) {
-        auto res = apply_visitor(ct_expression_visitor{ ctx }, f.type);
+        auto res = apply_visitor(ct_expression_visitor{ ctx, el }, f.type);
         if (!res) return std::move(res.error());
         bool is_const = f.modifier != field_modifier_t::value;
         if (f.name) {
@@ -60,17 +60,12 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
         }
     }
 
-    indirect_signatured_entity smplsig{ tuple_signature };
-
-    entity const& e = u.eregistry_find_or_create(smplsig, [&u, &tuple_signature]() {
-        return make_shared<basic_signatured_entity>(std::move(tuple_signature));
-    });
-
-    underlying_tuple_eid_ = e.id;
+    underlying_tuple_eid_ = u.make_basic_signatured_entity(std::move(tuple_signature)).id;
+    
     return {};
 }
 
-error_storage struct_entity::build(fn_compiler_context& ctx, statement_span const& sts) const
+error_storage struct_entity::build(fn_compiler_context& ctx, statement_span const& sts, semantic::expression_list_t&) const
 {
     declaration_visitor dvis{ ctx };
     if (auto err = dvis.apply(sts); err) return std::move(err);
@@ -141,7 +136,8 @@ error_storage struct_entity::build(fn_compiler_context& ctx, statement_span cons
 std::expected<entity_identifier, error_storage> struct_entity::underlying_tuple_eid(fn_compiler_context& ctx) const
 {
     if (built_.load() == build_state::not_built) {
-        if (auto err = build(ctx); err) return std::unexpected(std::move(err));
+        semantic::managed_expression_list el{ ctx.u() };
+        if (auto err = build(ctx, el); err) return std::unexpected(std::move(err));
     }
     return underlying_tuple_eid_;
 }

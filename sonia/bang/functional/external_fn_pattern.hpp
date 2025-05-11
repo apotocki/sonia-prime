@@ -19,9 +19,9 @@ public:
         , extfnid_{ extfnid }
     {}
 
-    size_t apply_argument(unit& u, semantic::expression_list_t& src_exprs, parameter_match_result& pmr, semantic::expression_list_t& dest_exprs) const override final
+    std::pair<semantic::expression_span, size_t> apply_argument(unit& u, parameter_match_result& pmr, semantic::expression_list_t& el) const override final
     {
-        return apply_any_argument(u, src_exprs, pmr, dest_exprs);
+        return apply_any_argument(u, pmr, el);
     }
 
     //fieldset_t const& get_fieldset() const noexcept override { return fd_; }

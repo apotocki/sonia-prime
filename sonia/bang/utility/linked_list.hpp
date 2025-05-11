@@ -42,6 +42,7 @@ struct linked_list_node_span : std::pair<EntryT*, EntryT*>
 
     auto& front() const noexcept;
     auto& back() const noexcept;
+
     inline bool empty() const noexcept { return pair_t::first == nullptr; }
     inline explicit operator bool() const noexcept { return pair_t::first != nullptr; }
 
@@ -107,6 +108,12 @@ public:
         return {};
     }
 
+    template <std::derived_from<entry_type> EntryT>
+    inline void insert(EntryT& where, entry_type& e) noexcept
+    {
+        list_.insert(++list_t::s_iterator_to(where), e);
+    }
+
     inline void push_back(entry_type& e) noexcept { list_.push_back(e); }
     inline entry_type&& pop_back() noexcept { entry_type& be = list_.back(); list_.pop_back(); return std::move(be); }
 
@@ -129,6 +136,16 @@ public:
     inline void splice_back(linked_list& other) noexcept
     {
         list_.splice(list_.end(), other.list_);
+    }
+
+    template <std::derived_from<entry_type> EntryT>
+    inline linked_list_node_span<EntryT> concat(linked_list_node_span<EntryT> l, linked_list_node_span<EntryT> r)
+    {
+        if (!l) return r;
+        if (!r) return l;
+        // l and r are expected not intersecting
+        list_.splice(++list_t::s_iterator_to(*l.second), list_, list_t::s_iterator_to(*r.first), ++list_t::s_iterator_to(*r.second));
+        return linked_list_node_span<EntryT>{ l.first, r.second };
     }
 
     inline static entry_type* next(entry_type& e) noexcept { return std::addressof(*++list_t::s_iterator_to(e)); }

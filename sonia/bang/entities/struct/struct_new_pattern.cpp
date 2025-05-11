@@ -44,7 +44,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
         annotated_identifier const* pargname = arg.name();
         if (pargname && pargname->value == tpid) {
             syntax_expression_t const& arg_expr = arg.value();
-            auto res = apply_visitor(ct_expression_visitor{ ctx }, arg_expr);
+            auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions }, arg_expr);
             if (!res) return std::unexpected(std::move(res.error()));
             if (res->expressions) THROW_NOT_IMPLEMENTED_ERROR("struct_new_pattern::try_match, const value expressions"sv);
             entity const& some_entity = get_entity(u, res->value);
@@ -70,7 +70,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
         }
     }
     
-    auto init_match = ctx.find(builtin_qnid::init, init_call, annotated_entity_identifier{ pse->id, pse->location });
+    auto init_match = ctx.find(builtin_qnid::init, init_call, call.expressions, annotated_entity_identifier{ pse->id, pse->location });
     if (!init_match) {
         return std::unexpected(append_cause(
             make_error<basic_general_error>(call.location, "no constructuctor found"sv, u.get(builtin_qnid::new_)),

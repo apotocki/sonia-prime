@@ -50,7 +50,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
         }
         if (pargname->value == slfid && !pte) {
             pmd = make_shared<tuple_set_match_descriptor>();
-            auto res = apply_visitor(base_expression_visitor{ ctx }, arg.value());
+            auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, arg.value());
             if (!res) return std::unexpected(std::move(res.error()));
             auto& ser = res->first;
             if (ser.is_const_result) {
@@ -65,10 +65,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
 
             pte = &some_entity;
             pmd->get_match_result(pargname->value).append_result(ser);
-            call.splice_back(ser.expressions);
            //return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch, expected a tuple"sv, pargname->value));
         } else if (pargname->value == propid && !ppname) {
-            ct_expression_visitor evis{ ctx };
+            ct_expression_visitor evis{ ctx, call.expressions };
             auto res = apply_visitor(evis, arg.value());
             if (!res) return std::unexpected(std::move(res.error()));
             BOOST_ASSERT(!res->expressions); // not impelemented const value expressions
@@ -123,21 +122,21 @@ std::expected<syntax_expression_result_t, error_storage> tuple_set_pattern::appl
     unit& u = ctx.u();
 
     // push call expressions in the right order
-    semantic::managed_expression_list exprs{ u };
-
+    //semantic::managed_expression_list exprs{ u };
+    syntax_expression_result_t result{ .value_or_type = md.result.entity_id(), .is_const_result = false };
     // only one named argument is expected
-    md.for_each_named_match([&exprs, &el](identifier name, parameter_match_result const& mr) {
+    md.for_each_named_match([&result, &el](identifier name, parameter_match_result const& mr) {
         for (auto& ser : mr.results) {
-            exprs.splice_back(el, ser.expressions);
+            result.expressions = el.concat(result.expressions, ser.expressions);
         }
     });
 
     if (size_t propindex = static_cast<tuple_set_match_descriptor&>(md).property_index(); propindex) {
-        u.push_back_expression(exprs, semantic::push_value{ propindex });
-        u.push_back_expression(exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
+        u.push_back_expression(el, result.expressions, semantic::push_value{ propindex });
+        u.push_back_expression(el, result.expressions, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
 
-    return syntax_expression_result_t{ std::move(exprs), md.result.entity_id() };
+    return result;
 }
 
 }

@@ -861,6 +861,18 @@ syntax_expression_entry& unit::push_back_expression(syntax_expression_list_t& l,
     return static_cast<syntax_expression_entry&>(*pentry);
 }
 
+void unit::push_back_expression(semantic::expression_list_t& l, semantic::expression_span& sp, semantic::expression&& e)
+{
+    semantic::expression_list_t::entry_type* pentry = semantic_expression_list_entry_pool_.new_object(std::move(e));
+    if (sp) {
+        l.insert(*sp.second, *pentry);
+        sp.second = static_cast<semantic::expression_entry*>(pentry);
+    } else {
+        l.push_back(*pentry);
+        sp = semantic::expression_span{ static_cast<semantic::expression_entry*>(pentry) };
+    }
+}
+
 void unit::push_back_expression(semantic::expression_list_t& l, semantic::expression&& e)
 {
     semantic::expression_list_t::entry_type * pentry = semantic_expression_list_entry_pool_.new_object(std::move(e));
@@ -992,14 +1004,19 @@ string_literal_entity const& unit::make_string_entity(string_view value, entity_
     }));
 }
 
-basic_signatured_entity const& unit::make_vector_type_entity(entity_identifier element_type)
+basic_signatured_entity const& unit::make_basic_signatured_entity(entity_signature&& sig)
 {
-    entity_signature sig{ get(builtin_qnid::vector), get(builtin_eid::typename_) };
-    sig.emplace_back(get(builtin_id::element), element_type, true);
     indirect_signatured_entity smpl{ sig };
     return static_cast<basic_signatured_entity&>(eregistry_find_or_create(smpl, [&sig]() {
         return make_shared<basic_signatured_entity>(std::move(sig));
     }));
+}
+
+basic_signatured_entity const& unit::make_vector_type_entity(entity_identifier element_type)
+{
+    entity_signature sig{ get(builtin_qnid::vector), get(builtin_eid::typename_) };
+    sig.emplace_back(get(builtin_id::element), element_type, true);
+    return make_basic_signatured_entity(std::move(sig));
 }
 
 basic_signatured_entity const& unit::make_vector_entity(entity_identifier element_type, span<entity_identifier> const& values)
@@ -1011,10 +1028,7 @@ basic_signatured_entity const& unit::make_vector_entity(entity_identifier elemen
     }
     entity_identifier tp = make_vector_type_entity(element_type).id;
     sig.result = field_descriptor{ tp };
-    indirect_signatured_entity smpl{ sig };
-    return static_cast<basic_signatured_entity&>(eregistry_find_or_create(smpl, [&sig]() {
-        return make_shared<basic_signatured_entity>(std::move(sig));
-    }));
+    return make_basic_signatured_entity(std::move(sig));
 }
 
 basic_signatured_entity const& unit::make_array_type_entity(entity_identifier element_type, size_t sz)
@@ -1023,10 +1037,7 @@ basic_signatured_entity const& unit::make_array_type_entity(entity_identifier el
     sig.emplace_back(get(builtin_id::element), element_type, true);
     entity_identifier szeid = make_integer_entity((int64_t)sz).id;
     sig.emplace_back(get(builtin_id::size), szeid, true);
-    indirect_signatured_entity smpl{ sig };
-    return static_cast<basic_signatured_entity&>(eregistry_find_or_create(smpl, [&sig]() {
-        return make_shared<basic_signatured_entity>(std::move(sig));
-    }));
+    return make_basic_signatured_entity(std::move(sig));
 }
 
 basic_signatured_entity const& unit::make_array_entity(entity_identifier element_type, span<entity_identifier> const& values)
@@ -1038,10 +1049,7 @@ basic_signatured_entity const& unit::make_array_entity(entity_identifier element
         sig.emplace_back(v, true);
     }
     
-    indirect_signatured_entity smpl{ sig };
-    return static_cast<basic_signatured_entity&>(eregistry_find_or_create(smpl, [&sig]() {
-        return make_shared<basic_signatured_entity>(std::move(sig));
-    }));
+    return make_basic_signatured_entity(std::move(sig));
 }
 
 entity const& unit::make_union_type_entity(span<entity_identifier> const& types)
@@ -1058,10 +1066,8 @@ entity const& unit::make_union_type_entity(span<entity_identifier> const& types)
     for (entity_identifier const& eid : types) {
         usig.push_back(field_descriptor{ eid, true });
     }
-    indirect_signatured_entity smpl{ usig };
-    return eregistry_find_or_create(smpl, [this, &usig]() {
-        return make_shared<basic_signatured_entity>(std::move(usig));
-    });
+
+    return make_basic_signatured_entity(std::move(usig));
 }
 
 unit::unit()

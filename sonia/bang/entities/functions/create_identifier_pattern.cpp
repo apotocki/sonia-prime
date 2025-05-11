@@ -32,14 +32,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_
     
     auto const& expr = opt_named_expr.value();
 
-    ct_expression_visitor evis{ ctx, annotated_entity_identifier{ ctx.u().get(builtin_eid::string), get_start_location(expr) } };
+    ct_expression_visitor evis{ ctx, call.expressions, annotated_entity_identifier{ ctx.u().get(builtin_eid::string), get_start_location(expr) } };
 
     auto res = apply_visitor(evis, expr);
     if (!res) return std::unexpected(std::move(res.error()));
 
     auto pmd = make_shared<functional_match_descriptor>();
-    pmd->get_match_result(0).append_const_result(*res);
-    call.splice_back(res->expressions);
+    pmd->get_match_result(0).append_result(*res);
     return pmd;
 }
 

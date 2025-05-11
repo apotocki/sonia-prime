@@ -62,13 +62,4 @@ lex::resource_location const& get_start_location(syntax_expression_t const& e)
     return apply_visitor(expression_location_visitor{}, e);
 }
 
-syntax_expression_result_t make_result(unit& u, entity_identifier eid)
-{
-    return syntax_expression_result_t{ 
-        .expressions = semantic::managed_expression_list{ u },
-        .value_or_type = eid,
-        .is_const_result = true
-    };
-}
-
 }

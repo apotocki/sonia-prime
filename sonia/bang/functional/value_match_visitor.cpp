@@ -16,16 +16,16 @@
 
 namespace sonia::lang::bang {
 
-value_match_visitor::value_match_visitor(fn_compiler_context& caller, fn_compiler_context& callee, syntax_expression_t const& ce, functional_binding& b, bool is_type_matching)
-    : caller_ctx{ caller }, callee_ctx{ callee }, cexpr{ ce }, binding{ b }, matching_type{ is_type_matching }
-{
-}
+value_match_visitor::value_match_visitor(fn_compiler_context& caller, fn_compiler_context& callee, semantic::expression_list_t& ael, syntax_expression_t const& ce, functional_binding& b, bool is_type_matching) noexcept
+    : caller_ctx{ caller }, callee_ctx{ callee }, expressions{ ael }
+    , cexpr{ ce }, binding{ b }, matching_type{ is_type_matching }
+{}
 
 value_match_visitor::result_type value_match_visitor::operator()(annotated_bool const& bv) const
 {
     unit& u = callee_ctx.u();
 
-    ct_expression_visitor sv{ callee_ctx, annotated_entity_identifier{ u.get(builtin_eid::boolean) } };
+    ct_expression_visitor sv{ callee_ctx, expressions, annotated_entity_identifier{ u.get(builtin_eid::boolean) } };
     auto ent_id = apply_visitor(sv, cexpr);
     if (!ent_id) return std::unexpected(std::move(ent_id.error()));
     entity_identifier expected_ent_id = bv.value ? u.get(builtin_eid::true_) : u.get(builtin_eid::false_);
@@ -55,20 +55,20 @@ value_match_visitor::result_type value_match_visitor::operator()(function_call_t
 {
     unit& u = callee_ctx.u();
 
-    ct_expression_visitor sv{ callee_ctx, annotated_entity_identifier{ u.get(builtin_eid::qname) } };
+    ct_expression_visitor sv{ callee_ctx, expressions, annotated_entity_identifier{ u.get(builtin_eid::qname) } };
     auto qn_ent_id = apply_visitor(sv, fc.fn_object);
     if (!qn_ent_id) return std::unexpected(std::move(qn_ent_id.error()));
     qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(get_entity(u, qn_ent_id->value));
 
     // check if can evaluate signature_pattern_
-    auto match = callee_ctx.find(qname_ent.value(), fc);
+    auto match = callee_ctx.find(qname_ent.value(), fc, expressions);
     if (match) {
         THROW_NOT_IMPLEMENTED_ERROR("type_constraint_match_visitor not implemented expression");
     }
 
     // can't evaluate signature_pattern_ as a function, consider as a pattern
     // evaluate cexpr in caller context
-    auto res = apply_visitor(ct_expression_visitor{ caller_ctx }, cexpr);
+    auto res = apply_visitor(ct_expression_visitor{ caller_ctx, expressions }, cexpr);
     if (!res) return std::unexpected(std::move(res.error()));
 
     entity const& type_ent = get_entity(u, res->value);
@@ -104,7 +104,7 @@ value_match_visitor::result_type value_match_visitor::operator()(variable_identi
             if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, entity_identifier>) {
                 if (!eid_or_var) { // if not defined
                     if (var.implicit) { // var to bind
-                        auto res = apply_visitor(ct_expression_visitor{ caller_ctx }, cexpr);
+                        auto res = apply_visitor(ct_expression_visitor{ caller_ctx, expressions }, cexpr);
                         if (!res) return std::unexpected(std::move(res.error()));
                         identifier varid = *var.name.value.begin();
                         binding.emplace_back(annotated_identifier{ varid, var.name.location }, res->value);
@@ -112,7 +112,7 @@ value_match_visitor::result_type value_match_visitor::operator()(variable_identi
                     }
                     return std::unexpected(make_error<undeclared_identifier_error>(var.name));
                 }
-                auto res = apply_visitor(ct_expression_visitor{ caller_ctx, annotated_entity_identifier{ eid_or_var }, matching_type }, cexpr);
+                auto res = apply_visitor(ct_expression_visitor{ caller_ctx, expressions, annotated_entity_identifier{ eid_or_var }, matching_type }, cexpr);
                 if (!res) return std::unexpected(std::move(res.error()));
                 return res->value;
             }

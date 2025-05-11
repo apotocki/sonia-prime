@@ -45,7 +45,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
         if (pargname) { // named arguments are not expected
             return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch"sv, argexpr));
         }
-        auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
+        auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, argexpr);
         if (!res) return std::unexpected(std::move(res.error()));
         auto arg_loc = get_start_location(argexpr);
         auto& ser = res->first;
@@ -70,7 +70,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
             BOOST_ASSERT(pargsig);
 
             small_vector<entity_identifier, 16> ct_element_results;
-            ct_expression_visitor cast_vis{ ctx, annotated_entity_identifier{ arr_element_type_eid, e.location} };
+            ct_expression_visitor cast_vis{ ctx, call.expressions, annotated_entity_identifier{ arr_element_type_eid, e.location} };
             for (size_t i = 0; i < arrsz; ++i) {
                 field_descriptor const* pargeld = pargsig->find_field(i);
                 BOOST_ASSERT(pargeld);
@@ -94,9 +94,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
 }
 
 
-std::expected<syntax_expression_result_t, error_storage> array_elements_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> array_elements_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
-    return make_result(ctx.u(), md.result.entity_id());
+    return syntax_expression_result_t{
+        .expressions = md.merge_void_spans(el),
+        .value_or_type = md.result.entity_id(),
+        .is_const_result = true
+    };
 }
 
 }

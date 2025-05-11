@@ -32,7 +32,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_pattern::try
 
     for (auto const& arg : call.args) { // { argname, expr }
         annotated_identifier const* pargname = arg.name();
-        auto res = apply_visitor(ct_expression_visitor{ ctx }, arg.value());
+        auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions }, arg.value());
         if (!res) {
             return std::unexpected(append_cause(
                 make_error<basic_general_error>(pargname ? pargname->location : get_start_location(arg.value()), "argument error"sv, arg.value()),
@@ -69,7 +69,10 @@ std::expected<syntax_expression_result_t, error_storage> tuple_pattern::apply(fn
         return make_shared<basic_signatured_entity>(std::move(result_signature));
     });
     
-    return make_result(u, entres.id);
+    return syntax_expression_result_t{
+        .value_or_type = entres.id,
+        .is_const_result = true
+    };
 }
 
 }

@@ -53,10 +53,14 @@ error_storage union_bit_or_pattern::accept_argument(std::nullptr_t, functional_m
     return {};
 }
 
-std::expected<syntax_expression_result_t, error_storage> union_bit_or_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> union_bit_or_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     auto& umd = static_cast<union_match_descriptor&>(md);
-    return make_result(ctx.u(), ctx.u().make_union_type_entity(umd.types).id);
+    return syntax_expression_result_t{
+        .expressions = md.merge_void_spans(el),
+        .value_or_type = ctx.u().make_union_type_entity(umd.types).id,
+        .is_const_result = true
+    };
 }
 
 template class generic_pattern_base<union_bit_or_pattern>;

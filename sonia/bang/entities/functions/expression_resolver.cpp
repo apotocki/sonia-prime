@@ -5,6 +5,7 @@
 #include "sonia/config.hpp"
 #include "expression_resolver.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
+#include "sonia/bang/ast/fn_compiler_context.hpp"
 
 namespace sonia::lang::bang {
 
@@ -15,7 +16,8 @@ expression_resolver::expression_resolver(lex::resource_location loc, syntax_expr
 
 std::expected<entity_identifier, error_storage> expression_resolver::const_resolve(fn_compiler_context& ctx) const
 {
-    ct_expression_visitor evis{ ctx };
+    semantic::managed_expression_list el{ ctx.u() };
+    ct_expression_visitor evis{ ctx, el };
     auto res = apply_visitor(evis, expression_);
     if (!res) return std::unexpected(res.error());
     if (res->expressions) THROW_NOT_IMPLEMENTED_ERROR("expression_resolver::const_resolve");

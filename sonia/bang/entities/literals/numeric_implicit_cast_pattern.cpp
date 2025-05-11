@@ -62,7 +62,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
         } else if (pmd) {
             return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
         }
-        auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
+        auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, argexpr);
         if (!res) return std::unexpected(std::move(res.error()));
         auto& ser = res->first;
         if (ser.is_const_result) {
@@ -79,8 +79,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
         } else {
             if (ser.type() == u.get(builtin_eid::integer)) {
                 pmd = make_shared<numeric_implicit_cast_match_descriptor>();
-                pmd->get_match_result(0).append_result(ser.type(), ser.expressions);
-                call.splice_back(ser.expressions);
+                pmd->get_match_result(0).append_result(ser);
                 pmd->result = field_descriptor{ e.value, false };
             } else {
                 return std::unexpected(make_error<type_mismatch_error>(get_start_location(argexpr), ser.type(), "integer"sv));
@@ -94,11 +93,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
     return pmd;
 }
 
-std::expected<syntax_expression_result_t, error_storage> numeric_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> numeric_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     auto& nmd = static_cast<numeric_implicit_cast_match_descriptor&>(md);
     if (nmd.result.is_const()) {
-        return make_result(ctx.u(), apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = nmd.result.entity_id()](auto const& v) -> entity_identifier {
+        entity_identifier rid = (ctx.u(), apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = nmd.result.entity_id()](auto const& v) -> entity_identifier {
             if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
                 return ctx.u().make_integer_entity(v.value(), type).id;
             } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
@@ -107,6 +106,7 @@ std::expected<syntax_expression_result_t, error_storage> numeric_implicit_cast_p
                 THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
             }
         }), nmd.arg));
+        return syntax_expression_result_t{ .expressions = md.merge_void_spans(el), .value_or_type = rid, .is_const_result = true };
     }
     THROW_NOT_IMPLEMENTED_ERROR("numeric_implicit_cast_pattern::apply");
 }

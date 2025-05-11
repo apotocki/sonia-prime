@@ -18,28 +18,29 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_pattern
     size_t pos_arg_num = 0;
     auto pmd = make_shared<functional_match_descriptor>();
     for (auto const& arg : call.args) {
-        ct_expression_visitor evis{ ctx };
+        ct_expression_visitor evis{ ctx, call.expressions };
         auto res = apply_visitor(evis, arg.value());
         if (!res) return std::unexpected(std::move(res.error()));
 
         annotated_identifier const* pargname = arg.name();
         parameter_match_result* pmr = pargname ? &pmd->get_match_result(pargname->value) : &pmd->get_match_result(pos_arg_num++);
-        pmr->append_const_result(*res);
+        pmr->append_result(*res);
     }
     return pmd;
 }
 
-std::expected<syntax_expression_result_t, error_storage> metaobject_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> metaobject_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     
     entity_signature sig = md.build_signature(u, u.get(builtin_qnid::metaobject));
     sig.result = field_descriptor{ u.get(builtin_eid::metaobject) };
-    indirect_signatured_entity smpl{ sig };
 
-    return make_result(u, u.eregistry_find_or_create(smpl, [&u, &sig]() {
-        return make_shared<basic_signatured_entity>(std::move(sig));
-    }).id);
+    return syntax_expression_result_t{
+        .expressions = md.merge_void_spans(el),
+        .value_or_type = u.make_basic_signatured_entity(std::move(sig)).id,
+        .is_const_result = true
+    };
 }
 
 }

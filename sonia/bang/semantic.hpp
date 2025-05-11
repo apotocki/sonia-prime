@@ -550,10 +550,12 @@ public:
 
 }
 
-template <typename ExpressionsT>
 struct syntax_expression_result
 {
-    ExpressionsT expressions;
+    // {temporary name, temporarytype, expressions}
+    small_vector<std::tuple<identifier, entity_identifier, semantic::expression_span>, 2> temporaries;
+
+    semantic::expression_span expressions;
     entity_identifier value_or_type;
     bool is_const_result;
 
@@ -570,19 +572,17 @@ struct syntax_expression_result
     }
 };
 
-template <typename ExpressionsT>
 struct syntax_expression_const_result
 {
-    ExpressionsT expressions;
+    semantic::expression_span expressions;
     entity_identifier value;
 };
 
-using syntax_expression_result_t = syntax_expression_result<semantic::managed_expression_list>;
-using syntax_expression_result_reference_t = syntax_expression_result<semantic::expression_span>;
+using syntax_expression_result_t = syntax_expression_result;
+//using syntax_expression_result_t = syntax_expression_result<semantic::managed_expression_list>;
+//using syntax_expression_result_reference_t = syntax_expression_result<semantic::expression_span>;
 
-using syntax_expression_const_result_t = syntax_expression_const_result<semantic::managed_expression_list>;
-
-syntax_expression_result_t make_result(unit&, entity_identifier); // auxiliary
+using syntax_expression_const_result_t = syntax_expression_const_result; // syntax_expression_const_result<semantic::managed_expression_list>;
 
 }
 

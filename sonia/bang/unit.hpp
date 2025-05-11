@@ -210,6 +210,7 @@ public:
     integer_literal_entity  const& make_integer_entity(mp::integer_view value, entity_identifier type = {});
     decimal_literal_entity  const& make_decimal_entity(mp::decimal_view value, entity_identifier type = {});
     string_literal_entity   const& make_string_entity(string_view value, entity_identifier type = {});
+    basic_signatured_entity const& make_basic_signatured_entity(entity_signature&&);
     basic_signatured_entity const& make_vector_type_entity(entity_identifier element_type);
     basic_signatured_entity const& make_vector_entity(entity_identifier element_type, span<entity_identifier> const& values);
     basic_signatured_entity const& make_array_type_entity(entity_identifier element_type, size_t sz);
@@ -302,6 +303,7 @@ public:
 
     // semantic
     void push_back_expression(semantic::expression_list_t&, semantic::expression&&);
+    void push_back_expression(semantic::expression_list_t&, semantic::expression_span&, semantic::expression&&);
     void release(semantic::expression_list_t::entry_type&&);
     void store(semantic::managed_expression_list&&);
 

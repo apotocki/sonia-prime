@@ -12,14 +12,18 @@
 
 namespace sonia::lang::bang {
 
-std::expected<syntax_expression_result_t, error_storage> metaobject_head_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> metaobject_head_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     entity_signature const& objsignature = argument_signature(ctx, md);
     
     if (!objsignature.fields().empty()) {
         return std::unexpected(make_error<basic_general_error>(md.location, "metaobject is empty"sv));
     }
-    return make_result(ctx.u(), objsignature.fields().front().entity_id());
+    return syntax_expression_result_t{
+        .expressions = md.merge_void_spans(el),
+        .value_or_type = objsignature.fields().front().entity_id(),
+        .is_const_result = true
+    };
 }
 
 }

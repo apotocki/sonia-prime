@@ -46,22 +46,22 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv, propid));
     }
 
-    ct_expression_visitor eobjvis{ ctx, annotated_entity_identifier{ u.get(builtin_eid::metaobject), object_arg->name()->location } };
+    ct_expression_visitor eobjvis{ ctx, call.expressions, annotated_entity_identifier{ u.get(builtin_eid::metaobject), object_arg->name()->location } };
     auto obj = apply_visitor(eobjvis, object_arg->value());
     if (!obj) return std::unexpected(std::move(obj.error()));
 
-    ct_expression_visitor epropvis{ ctx, annotated_entity_identifier{ u.get(builtin_eid::identifier), property_arg->name()->location } };
+    ct_expression_visitor epropvis{ ctx, call.expressions, annotated_entity_identifier{ u.get(builtin_eid::identifier), property_arg->name()->location } };
     auto prop = apply_visitor(epropvis, property_arg->value());
     if (!prop) return std::unexpected(std::move(prop.error()));
 
     auto pmd = make_shared<functional_match_descriptor>();
-    pmd->get_match_result(objid).append_const_result(*obj);
-    pmd->get_match_result(propid).append_const_result(*prop);
+    pmd->get_match_result(objid).append_result(*obj);
+    pmd->get_match_result(propid).append_result(*prop);
     pmd->location = call.location;
     return pmd;
 }
 
-std::expected<syntax_expression_result_t, error_storage> metaobject_typeof_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> metaobject_typeof_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
 
@@ -81,7 +81,11 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_typeof_patte
     if (!fd) {
         return std::unexpected(make_error<basic_general_error>(md.location, "undefined property"sv, prop_ent.value()));
     }
-    return make_result(u, fd->entity_id());
+    return syntax_expression_result_t{
+        .expressions = md.merge_void_spans(el),
+        .value_or_type = fd->entity_id(),
+        .is_const_result = true
+    };
 }
 
 }

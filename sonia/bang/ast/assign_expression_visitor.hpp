@@ -20,11 +20,13 @@ class variable_entity;
 struct assign_expression_visitor : static_visitor<std::expected<syntax_expression_result_t, error_storage>>
 {
     fn_compiler_context& ctx_;
+    semantic::expression_list_t& expressions;
     lex::resource_location assign_location_;
     syntax_expression_t const& rhs_;
 
-    inline assign_expression_visitor(fn_compiler_context& c, lex::resource_location const& l, syntax_expression_t const& rhs) noexcept
+    inline assign_expression_visitor(fn_compiler_context& c, semantic::expression_list_t& ael, lex::resource_location const& l, syntax_expression_t const& rhs) noexcept
         : ctx_{ c }
+        , expressions{ ael }
         , assign_location_{ l }
         , rhs_{ rhs }
     {}

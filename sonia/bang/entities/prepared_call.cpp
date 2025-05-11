@@ -18,8 +18,8 @@
 
 namespace sonia::lang::bang {
 
-prepared_call::prepared_call(unit& u, pure_call_t const& call)
-    : expressions{ u }
+prepared_call::prepared_call(pure_call_t const& call, semantic::expression_list_t& ael)
+    : expressions{ ael }
     , location{ call.location }
     , args{ call.args }
 {
@@ -148,26 +148,30 @@ error_storage append_subarg(fn_compiler_context& ctx, annotated_identifier const
     */
 }
 
-void prepared_call::splice_back(semantic::expression_list_t & exprs) const noexcept
-{
-    expressions.splice_back(exprs);
-}
-
-void prepared_call::splice_back(semantic::expression_list_t& exprs, semantic::expression_span span) const noexcept
-{
-    expressions.splice_back(exprs, span);
-}
+//void prepared_call::splice_back(semantic::expression_list_t & exprs) const noexcept
+//{
+//    expressions.splice_back(exprs);
+//}
+//
+//void prepared_call::splice_back(semantic::expression_list_t& exprs, semantic::expression_span span) const noexcept
+//{
+//    expressions.splice_back(exprs, span);
+//}
 
 
 template <size_t SzV>
 struct prepare_call_helper
 {
     fn_compiler_context& ctx;
+    semantic::expression_list_t& expressions;
     small_vector<named_expression_t, SzV> rebuilt_args;
     syntax_expression_t const* pellipsis_arg;
     lex::resource_location arg_loc, arg_expr_loc;
 
-    inline explicit prepare_call_helper(fn_compiler_context& ctx) : ctx{ ctx } {}
+    inline prepare_call_helper(fn_compiler_context& ctx, semantic::expression_list_t& el) noexcept
+        : ctx{ ctx }
+        , expressions{ el }
+    {}
 
     void append_arg(annotated_identifier const* groupname, syntax_expression_t&& e)
     {
@@ -184,7 +188,7 @@ struct prepare_call_helper
     error_storage handle_ellipsis_arg(named_expression_t & arg, syntax_expression_t const& ellipsis_arg)
     {
         pellipsis_arg = &ellipsis_arg;
-        auto obj = apply_visitor(base_expression_visitor{ ctx }, ellipsis_arg);
+        auto obj = apply_visitor(base_expression_visitor{ ctx, expressions }, ellipsis_arg);
         if (!obj) return std::move(obj.error());
         auto name_value_tpl = *arg;
         annotated_identifier const* groupname = get<0>(name_value_tpl);
@@ -199,7 +203,7 @@ struct prepare_call_helper
     {
         local_variable* ptuple_object_var = nullptr;
         if (ser.expressions) {
-            ctx.expressions().splice_back(ser.expressions);
+            ctx.expressions().splice_back(expressions, ser.expressions);
             identifier tmp_tuple_varname = ctx.u().new_identifier();
             ptuple_object_var = &ctx.new_variable(annotated_identifier{ tmp_tuple_varname }, ser.type());
         }
@@ -217,7 +221,7 @@ struct prepare_call_helper
                 syntax_expression_t property_value = fd.name() ? syntax_expression_t{ subgropname } : annotated_integer{ mp::integer{ argpos++ } };
                 get_call.emplace_back(annotated_identifier{ ctx.u().get(builtin_id::property) }, property_value);
                 
-                auto match = ctx.find(builtin_qnid::get, get_call);
+                auto match = ctx.find(builtin_qnid::get, get_call, expressions);
                 if (!match) {
                     return append_cause(
                         make_error<basic_general_error>(arg_expr_loc, "internal error: can't get tuple element"sv, property_value),
@@ -315,10 +319,12 @@ struct prepare_call_helper
         if (ser.is_const_result) {
             append_arg(groupname, annotated_entity_identifier{ ser.value(), arg_loc });
         } else {
+            semantic::managed_expression_list el{ ctx.u() };
+            el.splice_back(expressions, ser.expressions);
             append_arg(groupname, indirect_value{
                 .location = arg_loc,
                 .type = ser.type(),
-                .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(ser.expressions) }
+                .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
             });
         }
         return {};
@@ -328,7 +334,7 @@ struct prepare_call_helper
 error_storage prepared_call::prepare(fn_compiler_context& ctx)
 {
     unit& u = ctx.u();
-    prepare_call_helper<8> helper{ ctx };
+    prepare_call_helper<8> helper{ ctx, expressions };
     
     for (auto it = args.begin(), eit = args.end(); it != eit; ++it) {
         auto& arg = *it;
@@ -455,7 +461,8 @@ prepared_call::session prepared_call::new_session(fn_compiler_context& ctxval) c
 }
 
 prepared_call::session::session(fn_compiler_context& ctxval, prepared_call const& c)
-    : ctx{ ctxval }, call{ c }
+    : ctx{ ctxval }
+    , call{ c }
 {
     // initialize unused named argument
     unused_named_arguments_.reserve(call.named_argument_caches_.size());
@@ -470,35 +477,28 @@ prepared_call::session::session(fn_compiler_context& ctxval, prepared_call const
     }
 }
 
-std::expected<syntax_expression_result_reference_t, error_storage>
+std::expected<syntax_expression_result_t, error_storage>
 prepared_call::session::do_resolve(argument_cache& arg_cache, annotated_entity_identifier const& exp, bool const_exp)
 {
     auto cit = arg_cache.cache.find({ exp.value, const_exp });
     if (cit == arg_cache.cache.end()) {
-        auto res = apply_visitor(base_expression_visitor{ ctx, exp, const_exp }, arg_cache.expression);
+        auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions, exp, const_exp }, arg_cache.expression);
         if (!res) {
             arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.value, const_exp }, std::unexpected(res.error()));
             return std::unexpected(std::move(res.error()));
         }
-        syntax_expression_result_t & er = res->first;
-        semantic::expression_span sp = er.expressions;
-        call.splice_back(er.expressions);
-        cit = arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.value, const_exp }, syntax_expression_result_reference_t{
-            .expressions = std::move(sp),
-            .value_or_type = er.value_or_type,
-            .is_const_result = er.is_const_result
-        });
+        cit = arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.value, const_exp }, std::move(res->first));
     }
     return cit->second;
 }
 
-std::expected<syntax_expression_result_reference_t, error_storage>
+std::expected<syntax_expression_result_t, error_storage>
 prepared_call::session::use_next_positioned_argument(syntax_expression_t const** pe)
 {
     return use_next_positioned_argument(annotated_entity_identifier{}, false, pe);
 }
 
-std::expected<syntax_expression_result_reference_t, error_storage>
+std::expected<syntax_expression_result_t, error_storage>
 prepared_call::session::use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp, syntax_expression_t const** pe)
 {
     for (;;) {
@@ -544,5 +544,3 @@ named_expression_t prepared_call::session::unused_argument()
 }
 
 }
-
- 

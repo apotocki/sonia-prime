@@ -49,13 +49,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_ca
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
         if (pargname) { // named arguments are not expected
-            auto res = apply_visitor(ct_expression_visitor{ ctx }, argexpr);
+            auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions }, argexpr);
             if (!res || res->value != u.get(builtin_eid::void_)) {
                 return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch"sv, argexpr));
             }
             continue; // skip void argument
         }
-        auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
+        auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, argexpr);
         if (!res) return std::unexpected(std::move(res.error()));
         auto& ser = res->first;
 
@@ -71,7 +71,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_ca
         }
         pmd = make_shared<functional_match_descriptor>();
         pmd->get_match_result(0).append_result(ser);
-        call.splice_back(ser.expressions);
     }
 
     if (!pmd) {
@@ -85,17 +84,21 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_ca
 std::expected<syntax_expression_result_t, error_storage> struct_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    semantic::managed_expression_list exprs{ u };
+    semantic::expression_span exprs = md.merge_void_spans(el);
     md.for_each_positional_match([&u, &exprs, &el](parameter_match_result const& mr) {
         for (auto const& ser : mr.results) {
-            exprs.splice_back(el, ser.expressions);
+            exprs = el.concat(exprs, ser.expressions);
             if (ser.is_const_result) {
-                u.push_back_expression(exprs, semantic::push_value{ ser.value() });
+                u.push_back_expression(el, exprs, semantic::push_value{ ser.value() });
             }
         }
     });
     
-    return syntax_expression_result_t{ std::move(exprs), md.result.entity_id() };
+    return syntax_expression_result_t{
+        .expressions = std::move(exprs),
+        .value_or_type = md.result.entity_id(),
+        .is_const_result = false
+    };
 }
 
 }

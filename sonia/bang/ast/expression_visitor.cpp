@@ -856,11 +856,21 @@ expression_visitor::result_type expression_visitor::operator()(opt_named_syntax_
 }
 #endif
 
+expression_visitor::expression_visitor(fn_compiler_context& c) noexcept
+    : semantic::managed_expression_list{ c.u() }
+    , base_expression_visitor{ c, *this }
+{}
+
+expression_visitor::expression_visitor(fn_compiler_context& c, annotated_entity_identifier&& er) noexcept
+    : semantic::managed_expression_list{ c.u() }
+    , base_expression_visitor{ c, *this, std::move(er) }
+{}
+
 expression_visitor::result_type expression_visitor::handle(base_expression_visitor::result_type&& res) const
 {
     if (!res) return std::unexpected(std::move(res.error()));
     auto& ser = res->first;
-    ctx.expressions().splice_back(ser.expressions);
+    ctx.expressions().splice_back(static_cast<semantic::expression_list_t&>(const_cast<expression_visitor&>(*this)), ser.expressions);
     if (ser.is_const_result) {
         ctx.append_expression(semantic::push_value{ ser.value() });
         entity const& e = get_entity(ctx.u(), ser.value());

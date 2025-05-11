@@ -52,7 +52,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
     for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
-        auto res = apply_visitor(ct_expression_visitor{ ctx, annotated_entity_identifier{ u.get(builtin_eid::identifier) } }, argexpr);
+        auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions, annotated_entity_identifier{ u.get(builtin_eid::identifier) } }, argexpr);
         if (!res) {
             return std::unexpected(append_cause(
                 make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr),
@@ -75,7 +75,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
         }
 
         pmd = make_shared<functional_match_descriptor>();
-        pmd->get_match_result(0).append_const_result(*res);
+        pmd->get_match_result(0).append_result(*res);
     }
     if (!pmd) {
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
@@ -85,7 +85,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
 }
 
 
-std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t&, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& ser = md.get_match_result(0).results.front();
@@ -94,7 +94,11 @@ std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_patt
     BOOST_ASSERT(pie);
     
     // return typed by enumeration string
-    return make_result(u, u.make_string_entity(u.print(pie->value()), md.result.entity_id()).id);
+    return syntax_expression_result_t{
+        .expressions = md.merge_void_spans(el),
+        .value_or_type = u.make_string_entity(u.print(pie->value()), md.result.entity_id()).id,
+        .is_const_result = true
+    };
 }
 
 }

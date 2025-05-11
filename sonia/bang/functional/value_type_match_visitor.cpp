@@ -19,8 +19,9 @@
 
 namespace sonia::lang::bang {
 
-value_type_match_visitor::value_type_match_visitor(fn_compiler_context& caller, fn_compiler_context& callee, syntax_expression_t const& e, functional_binding& b)
-    : caller_ctx{ caller }, callee_ctx{ callee }, expr{ e }, binding{ b }
+value_type_match_visitor::value_type_match_visitor(fn_compiler_context& caller, fn_compiler_context& callee, semantic::expression_list_t& ael, syntax_expression_t const& e, functional_binding& b) noexcept
+    : caller_ctx{ caller }, callee_ctx{ callee }, expressions{ ael }
+    , expr{ e }, binding{ b }
 {}
 
 value_type_match_visitor::result_type value_type_match_visitor::operator()(annotated_qname_identifier const& aqi) const
@@ -36,7 +37,7 @@ value_type_match_visitor::result_type value_type_match_visitor::operator()(annot
 
 value_type_match_visitor::result_type value_type_match_visitor::match_type(entity_identifier const& eid, lex::resource_location eidloc) const
 {
-    auto res = apply_visitor(base_expression_visitor{ caller_ctx, { eid, eidloc } }, expr);
+    auto res = apply_visitor(base_expression_visitor{ caller_ctx, expressions, { eid, eidloc } }, expr);
     if (!res) return std::unexpected(std::move(res.error()));
     if (res->second) { --weight; }
     return std::move(res->first);
@@ -52,7 +53,7 @@ value_type_match_visitor::result_type value_type_match_visitor::operator()(varia
             if (!eid_or_var) { // if not defined
                 if (!var.implicit) return std::unexpected(make_error<undeclared_identifier_error>(var.name));
                 // bind variable
-                return sonia::lang::bang::match_type(caller_ctx, expr, entity_identifier{}, var.name.location, [this, var](entity_identifier matched_type, bool casted) -> error_storage {
+                return sonia::lang::bang::match_type(caller_ctx, expressions, expr, entity_identifier{}, var.name.location, [this, var](entity_identifier matched_type, bool casted) -> error_storage {
                     if (casted) { --weight; }
                     identifier varid = *var.name.value.begin();
                     binding.emplace_back(annotated_identifier{ varid, var.name.location }, matched_type);
@@ -70,26 +71,26 @@ value_type_match_visitor::result_type value_type_match_visitor::operator()(funct
 {
     unit& u = caller_ctx.u();
 
-    ct_expression_visitor sv{ callee_ctx, annotated_entity_identifier{ u.get(builtin_eid::qname) } };
+    ct_expression_visitor sv{ callee_ctx, expressions, annotated_entity_identifier{ u.get(builtin_eid::qname) } };
     auto qn_ent_id = apply_visitor(sv, fc.fn_object);
     if (!qn_ent_id) return std::unexpected(std::move(qn_ent_id.error()));
     qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(get_entity(u, qn_ent_id->value));
 
     // check if can evaluate signature_pattern as a const expression
     
-    auto match = callee_ctx.find(qname_ent.value(), fc);
+    auto match = callee_ctx.find(qname_ent.value(), fc, expressions);
     if (match) {
         if (auto gresult = match->apply(callee_ctx); gresult) {
-            if (auto result = ct_expression_visitor{ callee_ctx }.handle(std::pair{std::move(*gresult), false}); result) {
+            if (auto result = ct_expression_visitor{ callee_ctx, expressions }.handle(std::pair{std::move(*gresult), false}); result) {
                 return match_type(result->value, fc.location);
             }
         }
     }
 
     // can't evaluate signature_pattern as a function, consider as a pattern
-    return sonia::lang::bang::match_type(caller_ctx, expr, entity_identifier{}, fc.location, [this, &qname_ent, &fc](entity_identifier matched_type, bool casted) -> error_storage {
+    return sonia::lang::bang::match_type(caller_ctx, expressions, expr, entity_identifier{}, fc.location, [this, &qname_ent, &fc](entity_identifier matched_type, bool casted) -> error_storage {
         if (casted) { --weight; }
-        entity const& type_ent = caller_ctx.u().eregistry_get(matched_type);
+        entity const& type_ent = get_entity(caller_ctx.u(), matched_type);
         entity_signature const* psig = type_ent.signature();
         if (!psig) {
             return make_error<basic_general_error>(fc.location, "argument mismatch"sv, expr);

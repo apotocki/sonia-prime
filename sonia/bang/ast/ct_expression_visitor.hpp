@@ -17,12 +17,12 @@ struct ct_expression_visitor
 {
     using result_type = std::expected<syntax_expression_const_result_t, error_storage>;
 
-    inline explicit ct_expression_visitor(fn_compiler_context& c) noexcept
-        : base_expression_visitor{ c }
+    inline explicit ct_expression_visitor(fn_compiler_context& c, semantic::expression_list_t& el) noexcept
+        : base_expression_visitor{ c, el }
     {}
 
-    ct_expression_visitor(fn_compiler_context& c, annotated_entity_identifier&& er, bool is_type_expected_value = true)
-        : base_expression_visitor{ c, std::move(er) }
+    ct_expression_visitor(fn_compiler_context& c, semantic::expression_list_t& el, annotated_entity_identifier&& er, bool is_type_expected_value = true)
+        : base_expression_visitor{ c, el, std::move(er) }
         
     {
         is_type_expected = is_type_expected_value;

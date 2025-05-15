@@ -39,6 +39,7 @@ class functional_binding_set : public functional_binding
     small_vector<value_type, 16> binding_;
     small_vector<identifier, 16> binding_names_;
     small_vector<lex::resource_location, 16> binding_locations_;
+    size_t bound_variables_count_{ 0 };
 
 public:
     inline void reset() noexcept;
@@ -59,6 +60,7 @@ public:
         }
     }
 
+    inline size_t size() const noexcept { return bound_variables_count_; }
     inline bool empty() const noexcept { return binding_.empty(); }
 };
 
@@ -253,18 +255,16 @@ public:
     class match
     {
     public:
-        inline match(pattern const* p, semantic::expression_list_t& exprs, functional_match_descriptor_ptr md) noexcept
-            : ptrn_{ p }, expressions{ exprs }, md_{ std::move(md) }
+        inline match(pattern const* p, semantic::expression_list_t& exprs, syntax_expression_result && pser, functional_match_descriptor_ptr md) noexcept
+            : ptrn_{ p }, expressions{ exprs }, pre_ser{ std::move(pser) }, md_{ std::move(md) }
         {
             BOOST_ASSERT(md_);
         }
         
         semantic::expression_list_t& expressions;
+        syntax_expression_result pre_ser;
 
-        inline std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context& ctx)
-        {
-            return ptrn_->apply(ctx, expressions, *md_);
-        }
+        std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&);
 
         //inline bool is_constexpr() const noexcept { return md_->is_constexpr(); }
 

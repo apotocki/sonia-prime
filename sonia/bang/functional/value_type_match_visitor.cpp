@@ -43,7 +43,7 @@ value_type_match_visitor::result_type value_type_match_visitor::match_type(entit
     return std::move(res->first);
 }
 
-value_type_match_visitor::result_type value_type_match_visitor::operator()(variable_identifier const& var) const
+value_type_match_visitor::result_type value_type_match_visitor::operator()(variable_reference const& var) const
 {
     auto optent = callee_ctx.lookup_entity(var.name);
 
@@ -152,7 +152,7 @@ value_type_match_visitor::result_type value_type_match_visitor::operator()(funct
     //// if no, consider as a pattern:
 
     //// is it really a pattern?
-    //variable_identifier const* pfn_name = get<variable_identifier>(&fc.fn_object);
+    //variable_reference const* pfn_name = get<variable_reference>(&fc.fn_object);
     //if (!pfn_name || pfn_name->implicit)
     //    return std::unexpected(make_error<basic_general_error>(fc.location(), "argument mismatch"sv, expr));
     //functional const* pfn_fl = ctx.lookup_functional(pfn_name->name.value);
@@ -179,7 +179,7 @@ value_type_match_visitor::result_type value_type_match_visitor::operator()(funct
     //        return std::unexpected(make_error<basic_general_error>(fc.location(), "argument pattern mismatch"sv, expr));
     //    }
     //}
-    ////fc.fn_object // variable_identifier
+    ////fc.fn_object // variable_reference
     //THROW_NOT_IMPLEMENTED_ERROR("value_type_match_visitor(function_call_t) not implemented expression");
 }
 

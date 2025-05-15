@@ -111,7 +111,9 @@ struct opt_named_term
     requires(std::is_constructible_v<TermT, std::decay_t<TermArgT>>)
     inline explicit opt_named_term(NameT&& narg, TermArgT&& t) noexcept
         : term{ named_pair_t{std::forward<NameT>(narg), std::forward<TermArgT>(t)} }
-    {}
+    {
+        BOOST_ASSERT(get<0>(get<named_pair_t>(term)));
+    }
 
     inline explicit operator bool() const noexcept { return !get<nullptr_t>(&term); }
 
@@ -456,7 +458,7 @@ struct member_expression
     lex::resource_location const& start() const { return get_start_location(object); }
 };
 
-struct variable_identifier
+struct variable_reference
 {
     annotated_qname name;
     bool implicit; // true for identifiers started with $, e.g.: $0, $$
@@ -615,7 +617,7 @@ struct lambda : fn_pure<ExprT>
 };
 
 using syntax_expression_t = make_recursive_variant<
-    placeholder, variable_identifier,
+    placeholder, variable_reference,
     annotated_nil, annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier, annotated_qname,
     array_expression<recursive_variant_>, index_expression<recursive_variant_>,
     bang_fn_type<recursive_variant_>,

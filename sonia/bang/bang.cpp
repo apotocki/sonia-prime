@@ -14,7 +14,7 @@
 #include "ast/fn_compiler_context.hpp"
 #include "ast/declaration_visitor.hpp"
 
-#include "entities/functions/function_entity.hpp"
+#include "entities/functions/internal_function_entity.hpp"
 #include "entities/literals/literal_entity.hpp"
 
 #include "vm/compiler_visitor.hpp"
@@ -52,7 +52,7 @@ protected:
 
 private:
     lang::bang::unit unit_;
-    optional<fn_compiler_context> default_ctx_;
+    //optional<fn_compiler_context> default_ctx_;
     optional<internal_function_entity> main_function_;
     invocation::invocable* penv_ = nullptr;
     asm_builder_t vmasm_;
@@ -119,7 +119,7 @@ bang_impl::bang_impl()
 
 bang_impl::~bang_impl()
 {
-    default_ctx_ = nullopt;
+    //default_ctx_ = nullopt;
 }
 
 void bang_impl::bootstrap()
@@ -132,7 +132,8 @@ void bang_impl::bootstrap()
     
     fn_compiler_context ctx{ unit_ };
 
-    declaration_visitor dvis{ ctx };
+    internal_function_entity dummy{ qname{}, entity_signature{}, *decls };
+    declaration_visitor dvis{ ctx, dummy };
     if (auto err = dvis.apply(*decls); err) throw exception(unit_.print(*err));
     //for (auto& d : *exp_decls) { apply_visitor(dvis, d); }
     ctx.finish_frame();
@@ -199,9 +200,9 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
     arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id });
         
 
-    if (!default_ctx_) {
-        default_ctx_.emplace(unit_, qname{});
-    }
+    //if (!default_ctx_) {
+    //    default_ctx_.emplace(unit_, qname{});
+    //}
 
     // separate declarations
     // retrieve forward declarations
@@ -215,9 +216,12 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
     //    pte->treat(ctx);
     //}
 
-    declaration_visitor dvis{ ctx };
-    if (auto err = dvis.apply(decls); err) throw exception(unit_.print(*err));
-    ctx.finish_frame();
+    entity_signature main_sig{};
+
+
+    //declaration_visitor dvis{ ctx };
+    //if (auto err = dvis.apply(decls); err) throw exception(unit_.print(*err));
+    //ctx.finish_frame();
 
 
     ////    for (string_view arg : args) {
@@ -245,16 +249,21 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
     });
 
     // main
+    internal_function_entity main_fn_ent{ qname{}, std::move(main_sig), std::move(decls) };
+    main_fn_ent.build(ctx);
+
     // all arguments referenced as constants => no fp prolog/epilog code
     asm_builder_t::function_descriptor& fd = vmasm_.resolve_function(vmasm::fn_identity<identifier>{ main_id });
     asm_builder_t::function_builder fb{ vmasm_, fd }; // = vmasm_.create_function(sonia::vmasm::fn_identity<identifier>{ main_id });
-    vm::compiler_visitor vmcvis{ unit_, fb };
+    vm::compiler_visitor vmcvis{ unit_, fb, main_fn_ent };
     //auto& bvm = unit_.bvm();
     //size_t main_address = bvm.get_ip();
-    for (semantic::expression const& e : ctx.expressions()) {
-        //GLOBAL_LOG_INFO() << "expression:\n"sv << unit_.print(e);
-        apply_visitor(vmcvis, e);
-    }
+    
+    vmcvis(main_fn_ent.body);
+    //for (semantic::expression const& e : main_fn_ent.body) {
+    //    //GLOBAL_LOG_INFO() << "expression:\n"sv << unit_.print(e);
+    //    apply_visitor(vmcvis, e);
+    //}
     if (!vmcvis.local_return_position) { // no explicit return
         fb.append_ret();
     }

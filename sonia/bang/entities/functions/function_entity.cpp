@@ -20,12 +20,7 @@ size_t function_entity::parameter_count() const noexcept
     return cnt;
 }
 
-internal_function_entity::internal_function_entity(unit& u, qname&& name, entity_signature&& sig, statement_span sts)
-    : function_entity{ std::move(name), std::move(sig) }
-    , sts_{ std::move(sts) }
-    , is_inline_{ 0 }
-    , is_built_{ 0 }
-{ }
+
 
 external_function_entity::external_function_entity(unit& u, qname&& name, entity_signature&& sig, size_t fnid)
     : function_entity{ std::move(name), std::move(sig) }, extfnid_{ static_cast<uint32_t>(fnid) }
@@ -95,45 +90,7 @@ external_function_entity::external_function_entity(unit& u, qname&& name, entity
 //    is_void_ = result_type_ == u.get_void_entity_identifier();
 //}
 
-void internal_function_entity::build(unit& u)
-{
-    BOOST_ASSERT(!is_built_);
 
-    fn_compiler_context fnctx{ u, name_ };
-    fnctx.push_binding(bound_arguments);
-
-    if (result.entity_id()) { 
-        fnctx.result = result.entity_id();
-    }
-    
-    declaration_visitor dvis{ fnctx };
-    if (auto err = dvis.apply(sts_); err) throw exception(u.print(*err));
-    //for (infunction_statement const& d : *bd_->body) {
-    //    apply_visitor(dvis, d);
-    //}
-    fnctx.finish_frame(); // unknown result type is resolving here
-
-    if (!result.entity_id()) {
-        result = field_descriptor{ fnctx.compute_result_type() };
-    }
-    //    THROW_NOT_IMPLEMENTED_ERROR("internal_function_entity::build resolving return type");
-
-    BOOST_ASSERT(fnctx.expressions_branch() == 1);
-    body = fnctx.expressions();
-    fnctx.expression_store().splice_back(fnctx.expressions());
-    u.store(std::move(fnctx.expression_store()));
-
-    BOOST_ASSERT(!fnctx.expressions());
-    BOOST_ASSERT(!fnctx.expression_store());
-
-    //GLOBAL_LOG_INFO() << "built inline function begin: " << u.print(*this);
-    //body.for_each([&u](semantic::expression const& e) {
-    //    GLOBAL_LOG_INFO() << u.print(e);
-    //});
-    //GLOBAL_LOG_INFO() << "built inline function end: " << u.print(*this);
-    //sts_.reset();
-    is_built_ = 1;
-}
 
 //void function_entity::build_fn_signature(unit& u, entity_identifier rt)
 //{

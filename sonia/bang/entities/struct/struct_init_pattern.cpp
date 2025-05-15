@@ -62,13 +62,13 @@ error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_qnam
         auto [external_name, internal_name, varname] = apply_visitor(param_name_retriever{}, param.name);
         if (external_name) {
             if (internal_name) {
-                rpattern.emplace_back(*external_name, variable_identifier{ annotated_qname{ qname{ internal_name->value, false }, internal_name->location }, true } );
+                rpattern.emplace_back(*external_name, variable_reference{ annotated_qname{ qname{ internal_name->value, false }, internal_name->location }, true } );
             } else {
                 // to do: prepare and use replacement
-                rpattern.emplace_back(*external_name, variable_identifier{ annotated_qname{ qname{ external_name->value, false }, external_name->location }, true } );
+                rpattern.emplace_back(*external_name, variable_reference{ annotated_qname{ qname{ external_name->value, false }, external_name->location }, true } );
             }
         } else if (internal_name) {
-            rpattern.emplace_back(variable_identifier{ annotated_qname{ qname{ internal_name->value, false }, internal_name->location }, true });
+            rpattern.emplace_back(variable_reference{ annotated_qname{ qname{ internal_name->value, false }, internal_name->location }, true });
         } else {
             rpattern.emplace_back(placeholder{});
         }

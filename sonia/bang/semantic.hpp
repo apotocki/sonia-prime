@@ -429,25 +429,26 @@ struct push_local_variable
 #ifdef SONIA_LANG_DEBUG
     identifier debug_name;
 #endif
-    intptr_t index;
+    variable_identifier varid;
 
     inline explicit push_local_variable(local_variable const& v) noexcept
-        : index{ v.index }
+        : varid{ v.varid }
     {
 #ifdef SONIA_LANG_DEBUG
-        debug_name = v.name.value;
+        debug_name = v.debug_name.value;
 #endif
     }
 };
 
-struct set_local_variable { intptr_t index; };
+struct set_local_variable { variable_identifier varid; };
 struct set_variable { extern_variable_entity const* entity; };
 struct set_by_offset { size_t offset; }; // offset from the stack top
-struct truncate_values {
+struct truncate_values
+{
     uint32_t count : 31;
     uint32_t keep_back : 1;
 
-    truncate_values(size_t cnt, bool keepb) : count {static_cast<uint32_t>(cnt)}, keep_back{ keepb } {}
+    truncate_values(size_t cnt, bool keepb) : count { static_cast<uint32_t>(cnt) }, keep_back{ keepb } {}
 };
 
 struct return_statement {};
@@ -535,13 +536,16 @@ public:
         : list{ std::move(l) }
     {}
 
-    inline indirect_expression_list(indirect_expression_list const&) {
-        THROW_INTERNAL_ERROR("indirect_expression_list copy constructor");
+    inline indirect_expression_list(indirect_expression_list const& rhs)
+        : list{ *rhs.list.manager() }
+    {
+        list.deep_copy((semantic::expression_span)rhs.list);
     }
 
     inline indirect_expression_list(indirect_expression_list&&) = default;
 
-    inline indirect_expression_list& operator= (indirect_expression_list const&) {
+    inline indirect_expression_list& operator= (indirect_expression_list const&)
+    {
         THROW_INTERNAL_ERROR("indirect_expression_list copy assignment");
     }
 
@@ -553,7 +557,7 @@ public:
 struct syntax_expression_result
 {
     // {temporary name, temporarytype, expressions}
-    small_vector<std::tuple<identifier, entity_identifier, semantic::expression_span>, 2> temporaries;
+    small_vector<std::tuple<variable_identifier, entity_identifier, semantic::expression_span>, 2> temporaries;
 
     semantic::expression_span expressions;
     entity_identifier value_or_type;

@@ -19,7 +19,7 @@ struct expression_location_visitor : static_visitor<lex::resource_location const
 {
     expression_location_visitor() = default;
 
-    inline result_type operator()(variable_identifier const& v) const noexcept { return v.name.location; }
+    inline result_type operator()(variable_reference const& v) const noexcept { return v.name.location; }
     
     //inline result_type operator()(bang_fn_type_t const& b) const noexcept
     //{

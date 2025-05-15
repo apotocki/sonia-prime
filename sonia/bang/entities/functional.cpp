@@ -40,6 +40,12 @@ functional_binding::value_type& functional_binding_set::emplace_back(annotated_i
 {
     auto it = std::lower_bound(binding_names_.begin(), binding_names_.end(), id.value);
     if (it == binding_names_.end() || *it != id.value) {
+        if (local_variable* pvar = get<local_variable>(&value); pvar) {
+#ifdef SONIA_LANG_DEBUG
+            pvar->debug_name = id;
+#endif
+            ++bound_variables_count_;
+        }
         it = binding_names_.emplace(it, id.value);
         auto pos = it - binding_names_.begin();
         binding_locations_.emplace(binding_locations_.begin() + pos, id.location);
@@ -134,6 +140,7 @@ semantic::expression_span functional_match_descriptor::merge_void_spans(semantic
 
 parameter_match_result& functional_match_descriptor::get_match_result(identifier param_name)
 {
+    BOOST_ASSERT(param_name);
     auto it = named_matches_.find(param_name);
     if (it == named_matches_.end()) {
         pmrs_.emplace_back(param_name, nullptr);
@@ -309,8 +316,8 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
 
     expression_stack_checker expr_stack_state{ ctx };
 
-    prepared_call pcall{ call, ael };
-    if (auto err = pcall.prepare(ctx); err) return std::unexpected(std::move(err));
+    prepared_call pcall{ ctx, call, ael };
+    if (auto err = pcall.prepare(); err) return std::unexpected(std::move(err));
 
     for (auto const& p : patterns_) {
         auto cmp = major_weight <=> p->get_weight();
@@ -357,7 +364,9 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
         return std::unexpected(make_error<ambiguity_error>(annotated_qname_identifier{ id_, call.location }, std::move(as)));
     }
     auto [ptrn, md] = alternatives.front();
-    return match{ ptrn, ael, std::move(md) };
+    syntax_expression_result pre_ser;
+    pcall.export_temporaries(pre_ser);
+    return match{ ptrn, ael, std::move(pre_ser), std::move(md) };
 }
 
 //error_storage functional::pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
@@ -421,6 +430,18 @@ std::expected<syntax_expression_t const*, error_storage> try_match_single_unname
     }
 
     return matched_arg;
+}
+
+std::expected<syntax_expression_result_t, error_storage>
+functional::match::apply(fn_compiler_context& ctx)
+{
+    auto r = ptrn_->apply(ctx, expressions, *md_);
+    if (r) {
+        if (!pre_ser.temporaries.empty()) {
+            r->temporaries.insert(r->temporaries.begin(), pre_ser.temporaries.begin(), pre_ser.temporaries.end());
+        }
+    }
+    return r;
 }
 
 }

@@ -130,7 +130,7 @@ ct_expression_visitor::result_type ct_expression_visitor::operator()(annotated_e
     //return apply_cast(ee.value, ee);
 }
 
-ct_expression_visitor::result_type ct_expression_visitor::operator()(variable_identifier const& vi) const
+ct_expression_visitor::result_type ct_expression_visitor::operator()(variable_reference const& vi) const
 {
     return handle(base_expression_visitor::operator()(vi));
     //auto optent = ctx.lookup_entity(vi.name);

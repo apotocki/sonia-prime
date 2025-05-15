@@ -41,8 +41,11 @@ inline base_expression_visitor::result_type base_expression_visitor::apply_cast(
     return apply_cast(get_entity(u(), eid), syntax_expression_result_t{ .value_or_type = eid, .is_const_result = true }, e);
 }
 
-inline base_expression_visitor::result_type base_expression_visitor::apply_cast(entity const& ent, syntax_expression_result_t er, syntax_expression_t const& e) const
+base_expression_visitor::result_type base_expression_visitor::apply_cast(entity const& ent, syntax_expression_result_t er, syntax_expression_t const& e) const
 {
+    if (!expected_result || expected_result.value == u().get(builtin_eid::any)) {
+        return std::pair{ std::move(er), false };
+    }
     BOOST_ASSERT(ent.id);
     BOOST_ASSERT(expected_result);
     BOOST_ASSERT(u().get(builtin_eid::any) != expected_result.value);
@@ -84,14 +87,17 @@ inline base_expression_visitor::result_type base_expression_visitor::apply_cast(
 base_expression_visitor::result_type base_expression_visitor::apply_cast(syntax_expression_result_t er, syntax_expression_t const& e) const
 {
     //THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor::apply_cast(semantic::managed_expression_list, ExprT const&)");
-    if (!expected_result || expected_result.value == u().get(builtin_eid::any) || (!er.is_const_result && er.type() == expected_result.value)) {
-        return std::pair{ std::move(er), false };
-    }
+    //if (!expected_result || expected_result.value == u().get(builtin_eid::any) || (!er.is_const_result && er.type() == expected_result.value)) {
+    //    return std::pair{ std::move(er), false };
+    //}
 
     if (er.is_const_result) {
         return apply_cast(get_entity(u(), er.value()), std::move(er), e);
     }
-    
+
+    if (!expected_result || expected_result.value == u().get(builtin_eid::any) || er.type() == expected_result.value) {
+        return std::pair{ std::move(er), false };
+    }
     
 
     //if (expected_result.value == u().get(builtin_eid::any)) {
@@ -396,7 +402,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(array_e
     return proc.process(ve);
 }
 
-base_expression_visitor::result_type base_expression_visitor::operator()(variable_identifier const& var) const
+base_expression_visitor::result_type base_expression_visitor::operator()(variable_reference const& var) const
 {
     auto optent = ctx.lookup_entity(var.name);
     return apply_visitor(make_functional_visitor<result_type>([this, &var](auto eid_or_var) -> result_type
@@ -556,7 +562,7 @@ base_expression_visitor::result_type base_expression_visitor::operator()(index_e
     get_call.emplace_back(annotated_identifier{ u().get(builtin_id::self) }, ie.base);
     get_call.emplace_back(annotated_identifier{ u().get(builtin_id::property) }, ie.index);
 
-    auto match = ctx.find(builtin_qnid::new_, get_call, expressions, expected_result);
+    auto match = ctx.find(builtin_qnid::get, get_call, expressions, expected_result);
     if (!match) {
         return std::unexpected(std::move(match.error()));
     }

@@ -313,6 +313,11 @@ public:
 
     statement_span push_ast(fs::path const&, managed_statement_list&&);
 
+    inline variable_identifier new_variable_identifier() noexcept
+    {
+        return variable_identifier{ variable_identifier_gencount_.fetch_add(1) };
+    }
+
 protected:
     void setup_type(string_view type_name, qname_identifier&, entity_identifier&);
 
@@ -335,7 +340,10 @@ protected:
 
     entity_identifier set_builtin_extern(string_view name, void(*pfn)(vm::context&));
 
+
+
 private:
+    std::atomic<size_t> variable_identifier_gencount_ = 1;
     //identifier fn_result_identifier_; // ->
     std::array<identifier, (size_t)builtin_id::eof_builtin_id_value> builtin_ids_;
     std::array<qname_identifier, (size_t)builtin_qnid::eof_builtin_qnids_value> builtin_qnids_;

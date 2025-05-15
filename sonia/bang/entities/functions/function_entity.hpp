@@ -36,11 +36,6 @@ public:
 
     field_descriptor result;
 
-    virtual void build(unit&)
-    {
-        THROW_NOT_IMPLEMENTED_ERROR("function_entity::build");
-    }
-
 #if 0
 public:
     //function_entity(entity_identifier eid, qname_identifier name, function_signature && sig)
@@ -69,36 +64,7 @@ private:
 #endif
 };
 
-class internal_function_entity : public function_entity
-{
-public:
-    semantic::expression_span body;
-    functional_binding_set bound_arguments;
 
-    internal_function_entity(unit& u, qname&& name, entity_signature&& sig, statement_span bd);
-
-    void visit(entity_visitor const& v) const override { v(*this); }
-
-    bool is_inline() const { return !!is_inline_; }
-    void set_inline(bool val = true) { is_inline_ = val ? 1 : 0; }
-
-    bool is_built() const { return !!is_built_; }
-
-    inline std::ostream& print_to(std::ostream& os, unit const& u) const override
-    {
-        os << "fn "sv;
-        return signatured_entity::print_to(os, u);
-    }
-
-    void build(unit&) override;
-
-private:
-    //qname_view ns_;
-    statement_span sts_;
-    uint64_t is_built_ : 1;
-    uint64_t is_inline_ : 1;
-    //uint64_t is_void_ : 1;
-};
 
 class external_function_entity : public function_entity
 {
@@ -116,8 +82,6 @@ public:
         os << "external fn(id: "sv << extfnid_ << ")"sv;
         return signatured_entity::print_to(os, u);
     }
-
-    void build(unit&) override {}
 };
 
 }

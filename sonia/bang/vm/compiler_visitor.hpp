@@ -50,7 +50,9 @@ public:
 
     void operator()(semantic::push_local_variable const& pv) const
     {
-        fnbuilder_.append_fpush(pv.index);
+        BOOST_ASSERT(fn_context_);
+        intptr_t index = fn_context_->resolve_variable_index(pv.varid);
+        fnbuilder_.append_fpush(index);
     }
 
     void operator()(semantic::push_by_offset const& pv) const
@@ -74,7 +76,9 @@ public:
 
     void operator()(semantic::set_local_variable const& lv) const
     {
-        fnbuilder_.append_fset(lv.index);
+        BOOST_ASSERT(fn_context_);
+        intptr_t index = fn_context_->resolve_variable_index(lv.varid);
+        fnbuilder_.append_fset(index);
     }
 
     void operator()(semantic::set_variable const& pv) const

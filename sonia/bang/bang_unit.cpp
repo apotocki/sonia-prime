@@ -19,6 +19,7 @@
 #include "functional/external_fn_pattern.hpp"
 #include "functional/general/mut_pattern.hpp"
 #include "functional/general/deref_pattern.hpp"
+#include "functional/general/equal_pattern.hpp"
 
 #include "entities/functions/extern/to_string_pattern.hpp"
 
@@ -653,7 +654,7 @@ struct expr_printer_visitor : static_visitor<void>
         ss << ')';
     }
 
-    void operator()(variable_identifier const& vi) const
+    void operator()(variable_reference const& vi) const
     {
         //if (vi.implicit) {
         //    ss << "IMPLICIT"sv;
@@ -1321,6 +1322,10 @@ unit::unit()
     functional& deref_fnl = fregistry_resolve(get(builtin_qnid::deref));
     deref_fnl.push(make_shared<deref_pattern>());
 
+    // equal(_, _)->bool
+    functional& equal_fnl = fregistry_resolve(get(builtin_qnid::eq));
+    equal_fnl.push(make_shared<equal_pattern>());
+
     // operator...(type: typename)
     builtin_qnids_[(size_t)builtin_qnid::ellipsis] = make_qname_identifier("..."sv);
     functional& ellipsis_fnl = fregistry_resolve(get(builtin_qnid::ellipsis));
@@ -1356,7 +1361,7 @@ unit::unit()
     set_extern<external_fn_pattern>("assert(bool)"sv, &bang_assert);
 
     // temporary
-    set_extern<external_fn_pattern>("equal(mut _, mut _)->bool"sv, &bang_any_equal);
+    //set_extern<external_fn_pattern>("equal(mut _, mut _)->bool"sv, &bang_any_equal);
     //set_extern<external_fn_pattern>("negate(mut _)->bool"sv, &bang_negate);
     set_extern<external_fn_pattern>("__plus(mut integer, mut integer)->integer"sv, &bang_operator_plus_integer);
     set_extern<external_fn_pattern>("__plus(mut decimal, mut decimal)->decimal"sv, &bang_operator_plus_decimal);

@@ -9,6 +9,8 @@
 
 #include <boost/container/flat_map.hpp>
 
+#include "functional.hpp"
+
 namespace sonia::lang::bang {
 
 class fn_compiler_context;
@@ -16,10 +18,13 @@ class fn_compiler_context;
 class prepared_call
 {
 public:
+    fn_compiler_context& caller_ctx;
     semantic::expression_list_t& expressions;
     lex::resource_location location;
     small_vector<named_expression_t, 8> args;
-    
+    functional_binding_set bound_temporaries;
+    small_vector<std::tuple<local_variable*, semantic::expression_span>, 4> temporaries;
+
     // cache
     using cache_key_t = std::tuple<entity_identifier, bool>;
     struct argument_cache
@@ -35,17 +40,14 @@ public:
     mutable small_vector<std::tuple<identifier, argument_cache>, 8> named_argument_caches_;
     mutable small_vector<argument_cache, 8> position_argument_caches_;
 
-    inline prepared_call(semantic::expression_list_t& ael, lex::resource_location loc) noexcept
-        : expressions{ ael }
-        , location{ std::move(loc) }
-    {}
+    prepared_call(fn_compiler_context&, semantic::expression_list_t& ael, lex::resource_location loc) noexcept;
+    prepared_call(fn_compiler_context&, pure_call_t const&, semantic::expression_list_t&);
+    prepared_call(prepared_call const&) = delete;
+    ~prepared_call();
 
-    prepared_call(pure_call_t const&, semantic::expression_list_t&);
+    prepared_call& operator=(prepared_call const&) = delete;
 
-    //void splice_back(semantic::expression_list_t&) const noexcept;
-    //void splice_back(semantic::expression_list_t&, semantic::expression_span) const noexcept;
-
-    error_storage prepare(fn_compiler_context&);
+    error_storage prepare();
 
     struct session
     {
@@ -77,6 +79,9 @@ public:
     };
 
     session new_session(fn_compiler_context&) const;
+
+    local_variable& new_temporary(unit&, identifier, entity_identifier type, semantic::expression_span);
+    void export_temporaries(syntax_expression_result&);
 
 private:
     

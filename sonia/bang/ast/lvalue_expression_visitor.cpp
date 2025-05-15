@@ -16,7 +16,7 @@ namespace sonia::lang::bang {
 //    THROW_NOT_IMPLEMENTED_ERROR("lvalue_expression_visitor annotated_qname");
 //}
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(variable_identifier const& v) const
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(variable_reference const& v) const
 {
     ctx.lookup_entity()
     functional const* pfn = ctx.lookup_functional(v.name.value);

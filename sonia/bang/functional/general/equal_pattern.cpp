@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "mut_pattern.hpp"
+#include "equal_pattern.hpp"
 
 #include "sonia/bang/functional/generic_pattern_base.ipp"
 
@@ -16,7 +16,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> mut_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> equal_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
 {
     auto call_session = call.new_session(ctx);
     auto arg = call_session.use_next_positioned_argument(exp, false);
@@ -30,7 +30,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> mut_pattern::try_m
     return std::move(pmd);
 }
 
-std::expected<syntax_expression_result_t, error_storage> mut_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     auto & mr = md.get_match_result(0);
     auto const& ser = mr.results.front();

@@ -266,6 +266,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\expression_resolver.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\extern\to_string_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\functions\internal_function_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\literals\literal_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_bit_and_pattern.hpp" />
@@ -314,6 +315,7 @@
     <ClInclude Include="..\..\..\sonia\bang\functional\basic_fn_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\external_fn_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\general\deref_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\equal_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\general\mut_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\generic_pattern_base.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\generic_pattern_base.ipp" />
@@ -783,6 +785,7 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\expression_resolver.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\extern\to_string_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\function_entity.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\functions\internal_function_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\parameter_type_expression_visitor.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -827,6 +830,7 @@
     <ClCompile Include="..\..\..\sonia\bang\functional\basic_fn_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\external_fn_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\general\deref_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\equal_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\general\mut_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\signature_matcher.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\value_match_visitor.cpp" />

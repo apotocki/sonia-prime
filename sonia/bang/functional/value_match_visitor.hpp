@@ -30,7 +30,7 @@ struct value_match_visitor : static_visitor<std::expected<entity_identifier, err
 
     result_type operator()(function_call_t const&) const;
     
-    result_type operator()(variable_identifier const&) const;
+    result_type operator()(variable_reference const&) const;
     
     template <typename T>
     result_type operator()(T const& v) const

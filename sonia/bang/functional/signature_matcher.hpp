@@ -18,7 +18,7 @@ class signature_matcher_visitor : public static_visitor<error_storage>
 public:
     signature_matcher_visitor(fn_compiler_context&, functional_binding&, entity_identifier);
 
-    result_type operator()(variable_identifier const&) const;
+    result_type operator()(variable_reference const&) const;
     //result_type operator()(function_call_t const& sp) const;
 
     // returns true if implicit cast was applied

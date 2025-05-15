@@ -25,7 +25,7 @@ struct lvalue_expression_visitor : static_visitor<std::expected<entity const*, e
 
     //result_type operator()(annotated_qname const&) const;
 
-    result_type operator()(variable_identifier const&) const;
+    result_type operator()(variable_reference const&) const;
 
     result_type operator()(context_value const&) const;
     result_type operator()(context_identifier const&) const;

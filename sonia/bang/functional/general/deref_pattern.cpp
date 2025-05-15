@@ -55,7 +55,7 @@ std::expected<syntax_expression_result_t, error_storage> deref_pattern::apply(fn
     qname_entity const& argent = static_cast<qname_entity const&>(get_entity(ctx.u(), ser.value()));
 
     auto res = base_expression_visitor{ ctx, el }(
-        variable_identifier{ annotated_qname{ argent.value(), md.location }, false }
+        variable_reference{ annotated_qname{ argent.value(), md.location }, false }
     );
     if (!res) return std::unexpected(res.error());
     auto& er = res->first;

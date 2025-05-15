@@ -9,6 +9,7 @@
 #include <boost/range/adaptor/reversed.hpp>
 
 #include "sonia/bang/entities/functional.hpp"
+#include "sonia/bang/entities/functions/internal_function_entity.hpp"
 
 #include "sonia/bang/errors/identifier_redefinition_error.hpp"
 
@@ -85,7 +86,7 @@ struct parameter_visitor : static_visitor<std::expected<pattern_expression_t, er
         return ee.value;
     }
 
-    result_type operator()(variable_identifier const& var)
+    result_type operator()(variable_reference const& var)
     {
         if (var.implicit || (var.name.value.is_relative() && var.name.value.size() == 1)) {
             // check for function parameter
@@ -228,7 +229,7 @@ void fn_compiler_context::init()
     assert(ns_.is_absolute());
     base_ns_size_ = ns_.parts().size();
     expr_stack_.emplace_back(&root_expressions_);
-    push_binding(locals_); // first look for local variables
+    scoped_locals_.emplace_back(); // initial scope
 }
 
 fn_compiler_context::~fn_compiler_context()
@@ -249,6 +250,13 @@ optional<variant<entity_identifier, local_variable const&>> fn_compiler_context:
             // ?? or return nullopt ??
         }
     }
+    for (functional_binding const& binding : boost::adaptors::reverse(scoped_locals_)) {
+        if (auto optval = binding.lookup(name); optval) {
+            if (entity_identifier const* eid = get<entity_identifier>(optval); eid) return *eid;
+            if (local_variable const* lv = get<local_variable>(optval); lv) return *lv;
+        }
+    }
+
     return nullopt;
 }
 
@@ -257,9 +265,28 @@ compiler_task_tracer::task_guard fn_compiler_context::try_lock_task(compiler_tas
     return unit_.task_tracer().try_lock_task(tid, worker_id_);
 }
 
-void fn_compiler_context::pushed_unnamed_ns()
+void fn_compiler_context::push_scope()
 {
     ns_ = ns_ / unit_.new_identifier();
+    scope_offset_ += scoped_locals_.back().size();
+    scoped_locals_.emplace_back();
+}
+
+void fn_compiler_context::pop_scope()
+{
+    assert(ns_.parts().size() > base_ns_size_);
+    ns_.truncate(ns_.parts().size() - 1);
+    scoped_locals_.pop_back(); // to do: call destructor for local variables
+    if (!scoped_locals_.empty()) {
+        scope_offset_ -= scoped_locals_.back().size();
+    }
+}
+
+void fn_compiler_context::push_scope_variable(annotated_identifier name, local_variable&& lv, internal_function_entity& fnent)
+{
+    int64_t index = scope_offset_ + scoped_locals_.back().size();
+    fnent.push_variable(lv.varid, index);
+    scoped_locals_.back().emplace_back(std::move(name), std::move(lv));
 }
 
 #if 0
@@ -468,24 +495,27 @@ std::expected<functional::match, error_storage> fn_compiler_context::find(qname_
     return fn.find(*this, call, el, expected_result);
 }
 
+/*
 local_variable & fn_compiler_context::new_variable(annotated_identifier name, entity_identifier t)
 {
     lex::resource_location const* ploc;
-    functional_binding::value_type const* pv = locals_.lookup(name.value, &ploc);
+    functional_binding::value_type const* pv = scoped_locals_.back().lookup(name.value, &ploc);
     if (pv) {
         throw identifier_redefinition_error(name, *ploc);
     }
-    return get<local_variable>(locals_.emplace_back(name, local_variable{ .name = std::move(name), .type = std::move(t), .index = allocate_local_variable_index(), .is_weak = false }));
+    return get<local_variable>(scoped_locals_.back().emplace_back(name,
+        local_variable{ .type = std::move(t), .varid = unit_.new_variable_identifier(), .is_weak = false }));
 }
+*/
 
 void fn_compiler_context::new_constant(annotated_identifier name, entity_identifier eid)
 {
     lex::resource_location const* ploc;
-    functional_binding::value_type const* pv = locals_.lookup(name.value, &ploc);
+    functional_binding::value_type const* pv = scoped_locals_.back().lookup(name.value, &ploc);
     if (pv) {
         throw identifier_redefinition_error(name, *ploc);
     }
-    locals_.emplace_back(name, eid);
+    scoped_locals_.back().emplace_back(name, eid);
 }
 
 #if 0

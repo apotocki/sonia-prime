@@ -49,6 +49,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/bang/entities/functions/expression_resolver.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/functions/expression_resolver.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/functions/function_entity.cpp
+    ${BUNDLE_HOME}/sonia/bang/entities/functions/internal_function_entity.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/functions/extern/to_string_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/literals/numeric_implicit_cast_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_argument_pattern.cpp
@@ -81,6 +82,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/bang/functional/value_type_match_visitor.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/general/deref_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/general/mut_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/functional/general/equal_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/semantic/semantic_expression_printer.cpp
 
     ${BUNDLE_HOME}/sonia/bang/errors/assign_error.cpp

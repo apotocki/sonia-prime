@@ -11,7 +11,7 @@ namespace sonia::lang::bang {
 
 inline unit& assign_expression_visitor::u() const noexcept { return ctx_.u(); }
 
-assign_expression_visitor::result_type assign_expression_visitor::operator()(variable_identifier const& v) const
+assign_expression_visitor::result_type assign_expression_visitor::operator()(variable_reference const& v) const
 {
     auto e = ctx_.lookup_entity(v.name);
     return apply_visitor(make_functional_visitor<result_type>([this, &v](auto & eid_or_var) -> result_type
@@ -41,7 +41,7 @@ assign_expression_visitor::result_type assign_expression_visitor::operator()(var
                 THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN weak");
                 //ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });
             }
-            u().push_back_expression(expressions, ser.expressions, semantic::set_local_variable{ eid_or_var.index });
+            u().push_back_expression(expressions, ser.expressions, semantic::set_local_variable{ eid_or_var.varid });
             if (eid_or_var.is_weak) {
                 ctx_.append_expression(semantic::truncate_values(1, false));
             }
@@ -115,7 +115,7 @@ assign_expression_visitor::result_type assign_expression_visitor::operator()(mem
 //    THROW_NOT_IMPLEMENTED_ERROR("lvalue_expression_visitor annotated_qname");
 //}
 
-lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(variable_identifier const& v) const
+lvalue_expression_visitor::result_type lvalue_expression_visitor::operator()(variable_reference const& v) const
 {
     functional const* pfn = ctx.lookup_functional(v.name.value);
     if (pfn && pfn->default_entity()) {

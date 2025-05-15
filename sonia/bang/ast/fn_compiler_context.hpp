@@ -24,6 +24,8 @@
 
 namespace sonia::lang::bang {
 
+class internal_function_entity;
+
 class entity_task_id : public compiler_task_id
 {
     entity const& entity_;
@@ -64,47 +66,16 @@ public:
     size_t hash() const noexcept override { return hash_value(qnmid_); }
 };
 
-/*
-class expression_scope
-{
-public:
-    explicit expression_scope(unit& u) : u_ {u} {}
-
-    uint32_t new_variable(identifier name, bang_generic_type t, bool is_const)
-    {
-        auto it = variables.find(name);
-        if (it != variables.end()) {
-            throw exception("the variable '%1%' is already defined in the scope"_fmt % u_.print(name));
-        }
-        variable_descriptor& var = u_.new_variable();
-        var.name = name;
-        var.is_const = is_const ? 1 : 0;
-        variables.insert(it, std::pair{ name, var.index });
-        return var.index;
-    }
-
-    uint32_t const* resolve_variable(identifier name) const
-    {
-        auto it = variables.find(name);
-        return it != variables.end() ? &it->second : nullptr;
-    }
-
-private:
-    unit& u_;
-    boost::unordered_map<identifier, uint32_t> variables;
-};
-*/
-
 class fn_compiler_context
 {
     unit& unit_;
     fn_compiler_context* parent_;
     qname ns_;
     size_t base_ns_size_;
-    size_t local_variable_count_ = 0;
     compiler_worker_id worker_id_;
     small_vector<functional_binding const*, 4> bindings_;
-    functional_binding_set locals_;
+    std::list<functional_binding_set> scoped_locals_;
+    int64_t scope_offset_ = 0;
 
 public:
     fn_compiler_context(unit& u, qname ns = {});
@@ -125,17 +96,18 @@ public:
         bindings_.push_back(std::addressof(binding));
     }
 
-    inline void pop_binding() { bindings_.pop_back(); }
+    inline void pop_binding(functional_binding const* binding = nullptr)
+    {
+        BOOST_ASSERT(!binding || bindings_.back() == binding);
+        bindings_.pop_back();
+    }
 
     compiler_task_tracer::task_guard try_lock_task(compiler_task_id const&);
 
-    void pushed_unnamed_ns();
-
-    void pop_ns()
-    {
-        assert(ns_.parts().size() > base_ns_size_);
-        ns_.truncate(ns_.parts().size() - 1);
-    }
+    void push_scope();
+    void push_scope_variable(annotated_identifier name, local_variable&&, internal_function_entity&);
+    void pop_scope();
+    inline functional_binding_set const& current_scope_binding() const noexcept { return scoped_locals_.back(); }
 
     inline unit& u() const noexcept { return unit_; }
 
@@ -186,9 +158,9 @@ public:
 #endif
     //semantic::expression_type build_expression(bang_generic_type const& result_type, expression_t const& e);
 
-    size_t local_variable_count() const { return local_variable_count_; }
+    //size_t local_variable_count() const { return local_variable_count_; }
     //span<std::pair<variable_entity*, variable_entity*>> captured_variables() { return captured_variables_; }
-    intptr_t allocate_local_variable_index() { return static_cast<intptr_t>(local_variable_count_++); }
+
     //size_t allocate_captured_variable_index() { return captured_variable_count_++; }
     
     //void new_const_entity(string_view name, shared_ptr<const_entity> ent)
@@ -211,7 +183,7 @@ public:
     //    return new_variable(argid, std::move(t), variable_entity::kind::SCOPE_LOCAL);
     //}
 
-    local_variable& new_variable(annotated_identifier, entity_identifier type);
+    //local_variable& new_variable(annotated_identifier, entity_identifier type);
     void new_constant(annotated_identifier, entity_identifier);
 
 #if 0

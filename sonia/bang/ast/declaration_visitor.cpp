@@ -17,8 +17,8 @@
 #include "sonia/bang/entities/struct/struct_entity.hpp"
 #include "sonia/bang/entities/struct/struct_fn_pattern.hpp"
 #include "sonia/bang/entities/struct/struct_init_pattern.hpp"
-
 #include "sonia/bang/entities/enum/enum_entity.hpp"
+#include "sonia/bang/entities/functions/internal_function_entity.hpp"
 
 #include "sonia/bang/functional/basic_fn_pattern.hpp"
 
@@ -197,8 +197,8 @@ error_storage declaration_visitor::do_rt_if_decl(if_decl const& stm) const
     auto bst = ctx.expressions_branch(); // store branch
 
     if (!stm.true_body.empty()) {
-        ctx.pushed_unnamed_ns();
-        SCOPE_EXIT([this] { ctx.pop_ns(); });
+        ctx.push_scope();
+        SCOPE_EXIT([this] { ctx.pop_scope(); });
         semantic::managed_expression_list true_branch{ u() };
         ctx.push_chain(true_branch);
         if (auto err = apply(stm.true_body); err) return std::move(err);
@@ -207,8 +207,8 @@ error_storage declaration_visitor::do_rt_if_decl(if_decl const& stm) const
     }
 
     if (!stm.false_body.empty()) {
-        ctx.pushed_unnamed_ns();
-        SCOPE_EXIT([this] { ctx.pop_ns(); });
+        ctx.push_scope();
+        SCOPE_EXIT([this] { ctx.pop_scope(); });
         semantic::managed_expression_list false_branch{ u() };
         ctx.push_chain(false_branch);
         if (auto err = apply(stm.false_body); err) return std::move(err);
@@ -230,8 +230,8 @@ error_storage declaration_visitor::operator()(if_decl const& stm) const
         entity_identifier v = er.value();
         BOOST_ASSERT(v == u().get(builtin_eid::false_) || v == u().get(builtin_eid::true_));
         statement_span body = (v == u().get(builtin_eid::true_) ? stm.true_body : stm.false_body);
-        ctx.pushed_unnamed_ns();
-        SCOPE_EXIT([this] { ctx.pop_ns(); });
+        ctx.push_scope();
+        SCOPE_EXIT([this] { ctx.pop_scope(); });
         return apply(body);
     } else {
         ctx.expressions().splice_back(el, er.expressions);
@@ -246,7 +246,7 @@ error_storage declaration_visitor::operator()(for_decl const& fd) const
 
 error_storage declaration_visitor::operator()(while_decl const& wd) const
 {
-    ctx.pushed_unnamed_ns();
+    ctx.push_scope();
     ctx.append_expression(std::move(semantic::loop_scope_t{}));
     if (wd.continue_expression) {
         semantic::loop_scope_t& ls = get<semantic::loop_scope_t>(ctx.expressions().back());
@@ -279,7 +279,7 @@ error_storage declaration_visitor::operator()(while_decl const& wd) const
         auto* pb = get<bool>(&ppv->value);
         if (!pb) THROW_INTERNAL_ERROR("a bool value is expected");
         if (!*pb) { // while(false) => skip the loop
-            ctx.pop_ns(); // restore ns
+            ctx.pop_scope(); // restore ns
             ctx.pop_chain(); // loop_scope_t chain
             ctx.expressions().pop_back(); // semantic::loop_scope_t{}
             return {};
@@ -294,7 +294,7 @@ error_storage declaration_visitor::operator()(while_decl const& wd) const
         
         ctx.append_expression(semantic::loop_continuer{});
         ls.branch = ctx.store_semantic_expressions(std::move(branch));
-        ctx.pop_ns(); // restore ns
+        ctx.pop_scope(); // restore ns
         ctx.pop_chain(); // loop_scope_t chain
         return {};
     }
@@ -327,7 +327,7 @@ error_storage declaration_visitor::operator()(while_decl const& wd) const
 
     ls.branch = ctx.store_semantic_expressions(std::move(branch));
     ctx.pop_chain();
-    ctx.pop_ns();
+    ctx.pop_scope();
 
     return {};
 }
@@ -584,47 +584,90 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
     small_vector<std::pair<identifier, syntax_expression_result_t>, 8> results;
 
-    prepared_call pcall{ el, ld.location() };
+    prepared_call pcall{ ctx, el, ld.location() };
     for (auto const& e : ld.expressions) {
         pcall.args.emplace_back(e);
     }
-    if (auto err = pcall.prepare(ctx); err) return std::move(err);
+    if (auto err = pcall.prepare(); err) return std::move(err);
 
     for (auto const& e : pcall.args) {
         auto [pname, expr] = *e;
         auto res = apply_visitor(base_expression_visitor{ ctx, el, { vartype, ld.location() } }, expr);
         if (!res) { return std::move(res.error()); }
+        syntax_expression_result& ser = res->first;
         identifier name = pname ? pname->value : identifier{};
-        results.emplace_back(name, std::move(res->first));
+        results.emplace_back(name, std::move(ser));
     }
+
+    //ctx.push_scope();
+    //for (auto &[name, ser] : results) {
+    //    for (auto& [varid, t, sp] : ser.temporaries) {
+    //        ctx.expressions().splice_back(el, sp);
+    //        ctx.push_scope_variable(
+    //            annotated_identifier{ u().new_identifier() },
+    //            local_variable{ .type = t, .varid = varid, .is_weak = false },
+    //            fnent);
+    //    }
+    //}
+
+    auto push_temporaries = [&el, this](auto& temporaries) {
+        for (auto& [varid, t, sp] : temporaries) {
+            ctx.expressions().splice_back(el, sp);
+            ctx.push_scope_variable(
+                annotated_identifier{ u().new_identifier() },
+                local_variable{ .type = t, .varid = varid, .is_weak = false },
+                fnent);
+        }
+    };
 
     if (results.size() == 1 && !results.front().first) {
         syntax_expression_result_t& er = results.front().second;
+        ctx.push_scope();
+        push_temporaries(er.temporaries);
+        ctx.expressions().splice_back(el, er.expressions);
+        auto scope_sz = ctx.current_scope_binding().size();
+        ctx.pop_scope();
+
         if (er.is_const_result) {
             ctx.new_constant(ld.aname, er.value());
         } else {
-            ctx.expressions().splice_back(el, er.expressions);
-            local_variable& ve = ctx.new_variable(ld.aname, er.type());
-            ve.is_weak = ld.weakness;
+            ctx.push_scope_variable(
+                ld.aname,
+                local_variable{ .type = er.type(), .varid = u().new_variable_identifier(), .is_weak = ld.weakness },
+                fnent);
+        }
+        if (scope_sz) {
+            u().push_back_expression(ctx.expressions(), semantic::truncate_values(scope_sz, !er.is_const_result));
         }
         return {};
     }
 
+    //small_vector<std::tuple<variable_identifier, entity_identifier, semantic::expression_span>, 2> temporaries;
     // we will return empty_entity with the tuple type
     // now build the type
     boost::container::small_flat_multimap<identifier, entity_identifier, 8> field_map;
     entity_signature sig{ u().get(builtin_qnid::tuple), u().get(builtin_eid::typename_) };
     for (auto & [id, er] : results) {
+        ctx.push_scope();
+        push_temporaries(er.temporaries);
+        ctx.expressions().splice_back(el, er.expressions);
+        auto scope_sz = ctx.current_scope_binding().size();
+        ctx.pop_scope();
         entity_identifier field_eid;
         if (er.is_const_result) {
             field_eid = er.value();
         } else {
-            ctx.expressions().splice_back(el, er.expressions);
             identifier unnamedid = u().new_identifier();
-            local_variable& ve = ctx.new_variable(annotated_identifier{ unnamedid }, er.type());
-            ve.is_weak = ld.weakness;
+            ctx.push_scope_variable(
+                annotated_identifier{ unnamedid },
+                local_variable{ .type = er.type(), .varid = u().new_variable_identifier(), .is_weak = ld.weakness },
+                fnent);
             field_eid = u().make_qname_entity(qname{ unnamedid, false }).id;
         }
+        if (scope_sz) {
+            u().push_back_expression(ctx.expressions(), semantic::truncate_values(scope_sz, !er.is_const_result));
+        }
+            
         if (id) {
             field_map.emplace(id, field_eid);
         } else {
@@ -651,12 +694,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
             sig.emplace_back(name, u().make_empty_entity(const_inner_type), true);
         }
     }
-
-    indirect_signatured_entity smpl{ sig };
-    entity const& tuple_type = u().eregistry_find_or_create(smpl, [&sig]() {
-        return make_shared<basic_signatured_entity>(std::move(sig));
-    });
-
+    entity const& tuple_type = u().make_basic_signatured_entity(std::move(sig));
     ctx.new_constant(ld.aname, u().make_empty_entity(tuple_type).id);
     return {};
 }

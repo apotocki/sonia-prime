@@ -65,7 +65,7 @@ parameter_type_expression_visitor::result_type parameter_type_expression_visitor
     return {};
 }
 
-parameter_type_expression_visitor::result_type parameter_type_expression_visitor::operator()(variable_identifier const& var)
+parameter_type_expression_visitor::result_type parameter_type_expression_visitor::operator()(variable_reference const& var)
 {
     if (var.implicit || (var.name.value.is_relative() && var.name.value.size() == 1)) { // $? or local_name
         // check for function parameter

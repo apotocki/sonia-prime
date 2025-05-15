@@ -20,7 +20,7 @@ signature_matcher_visitor::signature_matcher_visitor(fn_compiler_context & ctx, 
 
 }
 
-signature_matcher_visitor::result_type signature_matcher_visitor::operator()(variable_identifier const& var) const
+signature_matcher_visitor::result_type signature_matcher_visitor::operator()(variable_reference const& var) const
 {
     auto optent = ctx_.lookup_entity(var.name);
     return apply_visitor(make_functional_visitor<error_storage>([this, &var](auto & eid_or_var)

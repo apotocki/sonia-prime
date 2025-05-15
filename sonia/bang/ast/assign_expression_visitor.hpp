@@ -38,7 +38,7 @@ struct assign_expression_visitor : static_visitor<std::expected<syntax_expressio
         //THROW_NOT_IMPLEMENTED_ERROR("assign_expression_visitor not implemented expression");
     }
 
-    result_type operator()(variable_identifier const&) const;
+    result_type operator()(variable_reference const&) const;
 
     result_type operator()(member_expression_t const&) const;
     

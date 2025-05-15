@@ -6,7 +6,6 @@
 
 #include "prepared_call.hpp"
 
-#include "sonia/bang/auxiliary.hpp"
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
@@ -18,8 +17,17 @@
 
 namespace sonia::lang::bang {
 
-prepared_call::prepared_call(pure_call_t const& call, semantic::expression_list_t& ael)
-    : expressions{ ael }
+prepared_call::prepared_call(fn_compiler_context& ctx, semantic::expression_list_t& ael, lex::resource_location loc) noexcept
+    : caller_ctx{ ctx }
+    , expressions{ ael }
+    , location{ std::move(loc) }
+{
+    ctx.push_binding(bound_temporaries);
+}
+
+prepared_call::prepared_call(fn_compiler_context &ctx, pure_call_t const& call, semantic::expression_list_t& ael)
+    : caller_ctx{ ctx }
+    , expressions{ ael }
     , location{ call.location }
     , args{ call.args }
 {
@@ -34,6 +42,28 @@ prepared_call::prepared_call(pure_call_t const& call, semantic::expression_list_
     }
     // sort named arguments
     std::ranges::sort(named_argument_caches_, {}, [](auto const& pair) { return get<0>(pair).value; });
+    ctx.push_binding(bound_temporaries);
+}
+
+prepared_call::~prepared_call()
+{
+    caller_ctx.pop_binding(&bound_temporaries);
+}
+
+local_variable& prepared_call::new_temporary(unit& u, identifier name, entity_identifier type, semantic::expression_span el)
+{
+    local_variable& lv = get<local_variable>(bound_temporaries.emplace_back(
+        annotated_identifier(name),
+        local_variable{ .type = std::move(type), .varid = u.new_variable_identifier(), .is_weak = false }));
+    temporaries.emplace_back(&lv, el);
+    return lv;
+}
+
+void prepared_call::export_temporaries(syntax_expression_result& ser)
+{
+    for(auto& [plv, el] : temporaries) {
+        ser.temporaries.emplace_back(plv->varid, plv->type, el);
+    }
 }
 
 std::expected<syntax_expression_t, error_storage> deref(fn_compiler_context& ctx, annotated_qname const& aqn)
@@ -46,7 +76,7 @@ std::expected<syntax_expression_t, error_storage> deref(fn_compiler_context& ctx
             if (!eid_or_var) return std::unexpected(make_error<undeclared_identifier_error>(std::move(aqn)));
             return annotated_entity_identifier{ eid_or_var, aqn.location };
         } else {
-            return variable_identifier{ aqn, false };
+            return variable_reference{ aqn, false };
             /*
             semantic::managed_expression_list el{ ctx.u() };
             ctx.u().push_back_expression(el, semantic::push_local_variable{ eid_or_var });
@@ -162,15 +192,13 @@ error_storage append_subarg(fn_compiler_context& ctx, annotated_identifier const
 template <size_t SzV>
 struct prepare_call_helper
 {
-    fn_compiler_context& ctx;
-    semantic::expression_list_t& expressions;
+    prepared_call& call;
     small_vector<named_expression_t, SzV> rebuilt_args;
     syntax_expression_t const* pellipsis_arg;
     lex::resource_location arg_loc, arg_expr_loc;
 
-    inline prepare_call_helper(fn_compiler_context& ctx, semantic::expression_list_t& el) noexcept
-        : ctx{ ctx }
-        , expressions{ el }
+    inline explicit prepare_call_helper(prepared_call& c) noexcept
+        : call{ c }
     {}
 
     void append_arg(annotated_identifier const* groupname, syntax_expression_t&& e)
@@ -188,7 +216,7 @@ struct prepare_call_helper
     error_storage handle_ellipsis_arg(named_expression_t & arg, syntax_expression_t const& ellipsis_arg)
     {
         pellipsis_arg = &ellipsis_arg;
-        auto obj = apply_visitor(base_expression_visitor{ ctx, expressions }, ellipsis_arg);
+        auto obj = apply_visitor(base_expression_visitor{ call.caller_ctx, call.expressions }, ellipsis_arg);
         if (!obj) return std::move(obj.error());
         auto name_value_tpl = *arg;
         annotated_identifier const* groupname = get<0>(name_value_tpl);
@@ -201,27 +229,30 @@ struct prepare_call_helper
 
     error_storage append_tuple_elements(annotated_identifier const* groupname, syntax_expression_result_t& ser, entity_signature const& tplsig)
     {
+        fn_compiler_context& ctx = call.caller_ctx;
         local_variable* ptuple_object_var = nullptr;
-        if (ser.expressions) {
-            ctx.expressions().splice_back(expressions, ser.expressions);
-            identifier tmp_tuple_varname = ctx.u().new_identifier();
-            ptuple_object_var = &ctx.new_variable(annotated_identifier{ tmp_tuple_varname }, ser.type());
+        identifier tuple_name;
+        if (!ser.is_const_result) {
+            BOOST_ASSERT(ser.expressions);
+            tuple_name = ctx.u().new_identifier();
+            ptuple_object_var = &call.new_temporary(ctx.u(), tuple_name, ser.type(), ser.expressions);
         }
         size_t argpos = 0;
         for (field_descriptor const& fd : tplsig.fields()) {
             annotated_identifier subgropname{ fd.name() };
-            groupname = groupname ? groupname : &subgropname;
+            annotated_identifier const* fd_groupname = groupname ? groupname : (subgropname ? &subgropname : nullptr);
             if (fd.is_const()) {
-                append_arg(groupname, annotated_entity_identifier{ fd.entity_id(), arg_expr_loc });
+                append_arg(fd_groupname, annotated_entity_identifier{ fd.entity_id(), arg_expr_loc });
+                if (!fd.name()) ++argpos;
             } else {
                 BOOST_ASSERT(ptuple_object_var);
                 pure_call_t get_call{ arg_expr_loc };
                 get_call.emplace_back(annotated_identifier{ ctx.u().get(builtin_id::self), arg_expr_loc },
-                    variable_identifier{ annotated_qname{ qname{ ptuple_object_var->name.value, false } }, false });
+                    variable_reference{ annotated_qname{ qname{ tuple_name, false } }, false });
                 syntax_expression_t property_value = fd.name() ? syntax_expression_t{ subgropname } : annotated_integer{ mp::integer{ argpos++ } };
                 get_call.emplace_back(annotated_identifier{ ctx.u().get(builtin_id::property) }, property_value);
                 
-                auto match = ctx.find(builtin_qnid::get, get_call, expressions);
+                auto match = ctx.find(builtin_qnid::get, get_call, call.expressions);
                 if (!match) {
                     return append_cause(
                         make_error<basic_general_error>(arg_expr_loc, "internal error: can't get tuple element"sv, property_value),
@@ -233,7 +264,7 @@ struct prepare_call_helper
                         make_error<basic_general_error>(arg_expr_loc, "internal error: can't get tuple element"sv, property_value),
                         std::move(res.error()));
                 }
-                add_subarg(groupname, *res);
+                add_subarg(fd_groupname, *res);
             }
         }
 #if 0
@@ -246,7 +277,7 @@ struct prepare_call_helper
                 BOOST_ASSERT(ptuple_object_var);
                 pure_call_t get_call{ arg_expr_loc };
                 get_call.emplace_back(annotated_identifier{ ctx.u().get(builtin_id::self), arg_expr_loc },
-                    variable_identifier{ annotated_qname{ qname{ ptuple_object_var->name.value } }, false });
+                    variable_reference{ annotated_qname{ qname{ ptuple_object_var->name.value } }, false });
                 get_call.emplace_back(annotated_identifier{ ctx.u().get(builtin_id::property) }, subgropname);
                 auto match = ctx.find(builtin_qnid::get, get_call);
                 if (!match) {
@@ -271,7 +302,7 @@ struct prepare_call_helper
                 BOOST_ASSERT(ptuple_object_var);
                 pure_call_t get_call{ arg_expr_loc };
                 get_call.emplace_back(annotated_identifier{ ctx.u().get(builtin_id::self), arg_expr_loc },
-                    variable_identifier{ annotated_qname{ qname{ ptuple_object_var->name.value } }, false });
+                    variable_reference{ annotated_qname{ qname{ ptuple_object_var->name.value } }, false });
                 get_call.emplace_back(annotated_identifier{ ctx.u().get(builtin_id::property) }, annotated_integer{ mp::integer{ argpos } });
                 auto match = ctx.find(builtin_qnid::get, get_call);
                 if (!match) {
@@ -294,9 +325,11 @@ struct prepare_call_helper
 
     error_storage add_subarg(annotated_identifier const* groupname, syntax_expression_result_t& ser)
     {
+        fn_compiler_context& ctx = call.caller_ctx;
+        unit& u = ctx.u();
         entity const* type_ent;
         if (ser.is_const_result) {
-            entity const& arg_ent = get_entity(ctx.u(), ser.value());
+            entity const& arg_ent = get_entity(u, ser.value());
             if (qname_entity const* pqne = dynamic_cast<qname_entity const*>(&arg_ent); pqne) {
                 auto res = deref(ctx, annotated_qname{ pqne->value(), arg_loc });
                 if (!res) return std::move(res.error());
@@ -304,13 +337,13 @@ struct prepare_call_helper
                 BOOST_ASSERT(!ser.expressions);
                 return {};
             }
-            type_ent = &get_entity(ctx.u(), arg_ent.get_type());
+            type_ent = &get_entity(u, arg_ent.get_type());
         } else {
-            type_ent = &get_entity(ctx.u(), ser.type());
+            type_ent = &get_entity(u, ser.type());
         }
 
         entity_signature const* signature = type_ent->signature();
-        if (signature && signature->name == ctx.u().get(builtin_qnid::tuple)) {
+        if (signature && signature->name == u.get(builtin_qnid::tuple)) {
             return append_tuple_elements(groupname, ser, *signature);
         } // else arrays, vectors?
 
@@ -319,8 +352,8 @@ struct prepare_call_helper
         if (ser.is_const_result) {
             append_arg(groupname, annotated_entity_identifier{ ser.value(), arg_loc });
         } else {
-            semantic::managed_expression_list el{ ctx.u() };
-            el.splice_back(expressions, ser.expressions);
+            semantic::managed_expression_list el{ u };
+            el.splice_back(call.expressions, ser.expressions);
             append_arg(groupname, indirect_value{
                 .location = arg_loc,
                 .type = ser.type(),
@@ -331,10 +364,10 @@ struct prepare_call_helper
     }
 };
 
-error_storage prepared_call::prepare(fn_compiler_context& ctx)
+error_storage prepared_call::prepare()
 {
-    unit& u = ctx.u();
-    prepare_call_helper<8> helper{ ctx, expressions };
+    unit& u = caller_ctx.u();
+    prepare_call_helper<8> helper{ *this };
     
     for (auto it = args.begin(), eit = args.end(); it != eit; ++it) {
         auto& arg = *it;

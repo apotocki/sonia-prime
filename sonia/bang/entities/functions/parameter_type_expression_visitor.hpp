@@ -27,7 +27,7 @@ public:
     {}
 
     result_type operator()(annotated_entity_identifier const&);
-    result_type operator()(variable_identifier const&);
+    result_type operator()(variable_reference const&);
     result_type operator()(bang_parameter_pack_t const&);
     
 

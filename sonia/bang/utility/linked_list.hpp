@@ -32,13 +32,22 @@ struct linked_list_node_span : std::pair<EntryT*, EntryT*>
 {
     using pair_t = std::pair<EntryT*, EntryT*>;
     inline linked_list_node_span() noexcept : pair_t{ nullptr, nullptr } {}
-    inline explicit linked_list_node_span(EntryT* b, EntryT* e = nullptr) noexcept : pair_t{ b, e } {}
+    inline explicit linked_list_node_span(EntryT* b) noexcept : pair_t{ b, b } {}
+    inline linked_list_node_span(EntryT* b, EntryT* e) noexcept : pair_t{ b, e } { BOOST_ASSERT(b && e); }
 
     template <typename BaseEntryT>
     requires std::is_base_of_v<BaseEntryT, EntryT>
-    inline explicit linked_list_node_span(BaseEntryT* b, BaseEntryT* e = nullptr) noexcept
-        : pair_t{ static_cast<EntryT*>(b), static_cast<EntryT*>(e) }
+    inline explicit linked_list_node_span(BaseEntryT* b) noexcept
+        : pair_t{ static_cast<EntryT*>(b), static_cast<EntryT*>(b) }
     {}
+
+    template <typename BaseEntryT>
+    requires std::is_base_of_v<BaseEntryT, EntryT>
+    inline linked_list_node_span(BaseEntryT* b, BaseEntryT* e) noexcept
+        : pair_t{ static_cast<EntryT*>(b), static_cast<EntryT*>(e) }
+    {
+        BOOST_ASSERT(b && e);
+    }
 
     auto& front() const noexcept;
     auto& back() const noexcept;
@@ -178,6 +187,8 @@ public:
 
     template <typename NodeT>
     void deep_copy(linked_list_node_span<NodeT> l);
+
+    inline ManagerT* manager() const noexcept { return m_; }
 
     ~managed_linked_list();
 };

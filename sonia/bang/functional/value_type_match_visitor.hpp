@@ -24,7 +24,7 @@ struct value_type_match_visitor : static_visitor<std::expected<syntax_expression
         
     result_type operator()(annotated_qname_identifier const& aqi) const;
     
-    result_type operator()(variable_identifier const& var) const;
+    result_type operator()(variable_reference const& var) const;
 
     result_type operator()(function_call_t const& fc) const;
 

@@ -67,10 +67,9 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
 
 error_storage struct_entity::build(fn_compiler_context& ctx, statement_span const& sts, semantic::expression_list_t&) const
 {
-    declaration_visitor dvis{ ctx };
-    if (auto err = dvis.apply(sts); err) return std::move(err);
-
     THROW_NOT_IMPLEMENTED_ERROR("struct_entity::build(statement_set_t)");
+    //declaration_visitor dvis{ ctx };
+    //if (auto err = dvis.apply(sts); err) return std::move(err);
 }
 
 //error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const& fl) const

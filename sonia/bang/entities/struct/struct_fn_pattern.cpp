@@ -8,7 +8,7 @@
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
-
+#include "sonia/bang/entities/functions/internal_function_entity.hpp"
 #include "sonia/bang/errors/circular_dependency_error.hpp"
 
 namespace sonia::lang::bang {
@@ -28,10 +28,11 @@ std::expected<syntax_expression_result_t, error_storage> struct_fn_pattern::appl
     entity const& struct_end = u.eregistry_find_or_create(smpl, [this, &ctx, &sig, &md]() {
         unit& u = ctx.u();
         qname struct_ns = fn_qname() / u.new_identifier();
-        fn_compiler_context struct_ctx{ ctx, struct_ns };
-        functional_binding_set bound_arguments;
-        build_scope(struct_ctx, md, bound_arguments);
-        BOOST_ASSERT(bound_arguments.empty());
+        //fn_compiler_context struct_ctx{ ctx, struct_ns };
+
+        internal_function_entity fent{ qname{struct_ns}, entity_signature{sig}, statement_span{} };
+        build_scope(u, md, fent);
+        BOOST_ASSERT(fent.bound_arguments.empty());
         // u.fregistry().resolve(struct_ns).name() // do we need a functional to store qname?
         auto res = sonia::make_shared<struct_entity>(std::move(struct_ns), std::move(sig), body_);
         res->location = location();

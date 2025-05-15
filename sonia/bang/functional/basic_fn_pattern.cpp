@@ -24,7 +24,7 @@
 #include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 #include "sonia/bang/entities/functional_entity.hpp"
-#include "sonia/bang/entities/functions/function_entity.hpp"
+#include "sonia/bang/entities/functions/internal_function_entity.hpp"
 //#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
 //#include "sonia/bang/entities/ellipsis/variable_pack_entity.hpp"
 #include "sonia/bang/entities/variable_entity.hpp"
@@ -142,7 +142,7 @@ struct value_type_constraint_visitor : static_visitor<std::expected<entity_ident
         return ctx.u().get(abv.value ? builtin_eid::true_ : builtin_eid::false_);
     }
     
-    result_type operator()(variable_identifier const& var) const
+    result_type operator()(variable_reference const& var) const
     {
         auto res = ct_expression_visitor{ ctx, expressions }(var);
         if (!res) return std::unexpected(res.error());
@@ -152,7 +152,7 @@ struct value_type_constraint_visitor : static_visitor<std::expected<entity_ident
         //    // check for function parameter
         //    identifier varid = *var.name.value.begin();
         //    if (auto opteids = binding.lookup(varid); opteids) {
-        //        THROW_NOT_IMPLEMENTED_ERROR("bind variable_identifier");
+        //        THROW_NOT_IMPLEMENTED_ERROR("bind variable_reference");
         //    }
         //}
 
@@ -197,7 +197,7 @@ void parameter_matcher::bind_names(span<const annotated_identifier> names, field
         }
     } else {
         for (auto const& iname : names) {
-            binding.emplace_back(iname, local_variable{ .name = iname, .type = type_or_value.entity_id(), .is_weak = false });
+            binding.emplace_back(iname, local_variable{ .type = type_or_value.entity_id(), .is_weak = false });
         }
     }
 }
@@ -781,25 +781,19 @@ std::ostream& basic_fn_pattern::print(unit const& u, std::ostream& ss) const
     return ss;
 }
 
-void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_descriptor& md, functional_binding_set & bound_arguments) const
+void basic_fn_pattern::build_scope(unit& u, functional_match_descriptor& md, internal_function_entity& fent) const
 {
-    unit& u = ctx.u();
-    intptr_t argindex = 0;
-
-    auto argument_appender = [&md, &argindex, &bound_arguments](annotated_identifier name) -> bool {
+    auto argument_appender = [&u, &md, &fent](annotated_identifier name) {
         functional_binding::value_type const* bsp = md.bindings.lookup(name.value);
         BOOST_ASSERT(bsp);
         if (local_variable const* plv = get<local_variable>(bsp); plv) {
             local_variable lv = *plv;
-            lv.index = argindex;
-            bound_arguments.emplace_back(name, std::move(lv));
-            return true;
+            fent.push_argument(name, std::move(lv));
         }
-        return false;
     };
 
-    // first process only variables in reverse order
-    for (parameter_descriptor const& pd : boost::adaptors::reverse(parameters_))
+    // first process only variables
+    for (parameter_descriptor const& pd : parameters_)
     {
         BOOST_ASSERT(!pd.ename || pd.inames.size() == 1);
         BOOST_ASSERT(pd.ename || !pd.inames.empty());
@@ -807,13 +801,9 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
         if (pd.modifier != parameter_constraint_modifier_t::value_type && pd.modifier != parameter_constraint_modifier_t::mutable_value_type) continue;
 
         if (!pd.is_varnamed) {
-
-            --argindex;
-            bool argindex_used = false;
             for (annotated_identifier name : pd.inames) {
-                argindex_used |= argument_appender(name);
+                argument_appender(name);
             }
-            if (!argindex_used) ++argindex;
             continue;
         }
 
@@ -827,13 +817,12 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
         BOOST_ASSERT(psig->named_fields_indices().empty());
         for (auto const& f : boost::adaptors::reverse(psig->fields())) {
             entity const& packargid = u.eregistry_get(f.entity_id());
-            BOOST_ASSERT(packargid.get_type() == ctx.u().get(builtin_eid::identifier));
+            BOOST_ASSERT(packargid.get_type() == u.get(builtin_eid::identifier));
             identifier_entity const& packargid_ent = static_cast<identifier_entity const&>(packargid);
             parameter_match_result& pmr = md.get_match_result(packargid_ent.value());
             for (auto const& ser : pmr.results) {
                 if (!ser.is_const_result) {
                     // to do: fix variadic arguments with the same name
-                    --argindex;
                     argument_appender(annotated_identifier{ packargid_ent.value(), pd.inames.front().location });
                 }
             }
@@ -841,9 +830,7 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
     }
 
     // bind consts
-    md.bindings.for_each([&ctx](identifier name, lex::resource_location const& loc, functional_binding::value_type & value) {
-        unit& u = ctx.u();
-
+    md.bindings.for_each([&u, &fent](identifier name, lex::resource_location const& loc, functional_binding::value_type & value) {
         entity_identifier eid = apply_visitor(make_functional_visitor<entity_identifier>([&u](auto const& e) {
             if constexpr (std::is_same_v<std::decay_t<decltype(e)>, entity_identifier>) {
                 return e;
@@ -859,8 +846,8 @@ void basic_fn_pattern::build_scope(fn_compiler_context& ctx, functional_match_de
         }), value);
 
         if (eid) {
-            qname infn_name = ctx.ns() / name;
-            functional& fnl = ctx.u().fregistry_resolve(infn_name);
+            qname infn_name = fent.name() / name;
+            functional& fnl = u.fregistry_resolve(infn_name);
             fnl.set_default_entity(annotated_entity_identifier{ eid, loc });
         }
     });
@@ -1253,15 +1240,12 @@ shared_ptr<entity> generic_fn_pattern::build(fn_compiler_context& ctx, functiona
     qname_view fnqn = fn_qname();
     qname fn_ns = fnqn / ctx.u().new_identifier();
 
-    fn_compiler_context ent_ctx{ ctx, fn_ns };
-
     auto pife = make_shared<internal_function_entity>(
-        ctx.u(),
-        qname{ ent_ctx.ns() },
+        std::move(fn_ns),
         std::move(signature),
         /*std::move(md.bindings),*/ body_);
 
-    build_scope(ent_ctx, md, pife->bound_arguments);
+    build_scope(ctx.u(), md, *pife);
 
 #if 0
     auto append_local_var = [&u](qname_view varname, entity_identifier eid, lex::resource_location loc) {
@@ -1374,7 +1358,8 @@ std::expected<syntax_expression_result_t, error_storage> basic_fn_pattern::apply
             make_error<circular_dependency_error>(make_error<basic_general_error>(location_, "resolving function result type"sv, e.id))
         );
         if (!fne.result) {
-            fne.build(u);
+            BOOST_ASSERT(dynamic_cast<internal_function_entity*>(&e));
+            static_cast<internal_function_entity&>(e).build(u);
         }
     }
     

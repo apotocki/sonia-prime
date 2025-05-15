@@ -14,6 +14,7 @@ namespace sonia::lang::bang {
 
 class basic_fn_pattern;
 class parameter_type_expression_visitor;
+class internal_function_entity;
 
 class parameter_matcher
 {
@@ -35,7 +36,7 @@ public:
     struct postpone_t {};
     struct ignore_t {}; // for the case when argument is void
 
-    explicit parameter_matcher(annotated_identifier name, parameter_constraint_modifier_t, parameter_constraint_set_t) noexcept;
+    explicit parameter_matcher(annotated_identifier, parameter_constraint_modifier_t, parameter_constraint_set_t) noexcept;
     
     inline void push_internal_name(annotated_identifier id) { internal_names_.push_back(std::move(id)); }
 
@@ -147,7 +148,7 @@ public:
     std::ostream& print(unit const&, std::ostream& s) const override;
 
 protected:
-    void build_scope(fn_compiler_context&, functional_match_descriptor&, functional_binding_set& bound_arguments /* out */) const;
+    void build_scope(unit&, functional_match_descriptor&, internal_function_entity& /* out */) const;
     std::pair<semantic::expression_span, size_t> apply_arguments(fn_compiler_context&, functional_match_descriptor&, semantic::expression_list_t&) const;
 
     virtual std::pair<semantic::expression_span, size_t> apply_argument(unit&, parameter_match_result& pmr, semantic::expression_list_t&) const;

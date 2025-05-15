@@ -149,45 +149,48 @@ class entity_visitor_adapter : public entity_visitor
 class local_variable
 {
 public:
-    annotated_identifier name;
+#ifdef SONIA_LANG_DEBUG
+    annotated_identifier debug_name;
+#endif
+    //annotated_identifier name;
     entity_identifier type;
-    intptr_t index;
+    variable_identifier varid;
     bool is_weak = false;
 
     inline friend size_t hash_value(local_variable const& lv) noexcept
     {
-        return hash_value(lv.name.value);
+        return hash_value(lv.varid);
     }
 
     inline friend bool operator==(local_variable const& l, local_variable const& r) noexcept
     {
-        return l.name.value == r.name.value;
+        return l.varid.value == r.varid.value;
     }
 
     inline friend auto operator<=>(local_variable const& l, local_variable const& r) noexcept
     {
-        return l.name.value <=> r.name.value;
+        return l.varid.value <=> r.varid.value;
     }
 };
 
-struct local_variable_compare
-{
-    using is_transparent = void;
-    inline bool operator()(local_variable const& l, local_variable const& r) const noexcept
-    {
-        return l < r;
-    }
-
-    inline bool operator()(identifier const& l, local_variable const& r) const noexcept
-    {
-        return l < r.name.value;
-    }
-
-    inline bool operator()(local_variable const& l, identifier const& r) const noexcept
-    {
-        return l.name.value < r;
-    }
-};
+//struct local_variable_compare
+//{
+//    using is_transparent = void;
+//    inline bool operator()(local_variable const& l, local_variable const& r) const noexcept
+//    {
+//        return l < r;
+//    }
+//
+//    inline bool operator()(identifier const& l, local_variable const& r) const noexcept
+//    {
+//        return l < r.name.value;
+//    }
+//
+//    inline bool operator()(local_variable const& l, identifier const& r) const noexcept
+//    {
+//        return l.name.value < r;
+//    }
+//};
 
 // ======================================================================== values
 struct function_value { qname_identifier mangled_name; };

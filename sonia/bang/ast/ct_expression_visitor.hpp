@@ -35,7 +35,7 @@ struct ct_expression_visitor
     result_type operator()(annotated_string const&) const;
     result_type operator()(annotated_identifier const&) const;
     result_type operator()(annotated_entity_identifier const&) const;
-    result_type operator()(variable_identifier const&) const;
+    result_type operator()(variable_reference const&) const;
     result_type operator()(bang_vector_t const&) const;
     result_type operator()(lambda_t const&) const;
     result_type operator()(function_call_t const&) const;

@@ -68,6 +68,7 @@ public:
 
         session(fn_compiler_context&, prepared_call const&);
 
+        inline bool has_more_positioned_arguments() const noexcept { return unused_positioned_index_ < unused_position_arguments_.size(); }
         std::expected<syntax_expression_result_t, error_storage> use_next_positioned_argument(syntax_expression_t const** pe = nullptr);
         std::expected<syntax_expression_result_t, error_storage> use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp, syntax_expression_t const** pe = nullptr);
         

@@ -17,6 +17,7 @@
 #include "entities/functions/create_identifier_pattern.hpp"
 
 #include "functional/external_fn_pattern.hpp"
+#include "functional/general/assert_pattern.hpp"
 #include "functional/general/mut_pattern.hpp"
 #include "functional/general/deref_pattern.hpp"
 #include "functional/general/equal_pattern.hpp"
@@ -220,16 +221,16 @@ unit::~unit()
     eregistry_.clear();
 }
 
-void unit::setup_type(string_view type_name, qname_identifier& qnid, entity_identifier& eid)
+void unit::setup_type(builtin_qnid bqnid, builtin_eid beid)
 {
-    qnid = make_qname_identifier(type_name);
+    qname_identifier qnid = get(bqnid);
     functional& some_type_fnl = fregistry_resolve(qnid);
     auto some_type_entity = make_shared<basic_signatured_entity>();
     some_type_entity->signature()->name = qnid;
     some_type_entity->signature()->result.emplace(get(builtin_eid::typename_));
     eregistry_insert(some_type_entity);
     some_type_fnl.set_default_entity(annotated_entity_identifier{ some_type_entity->id });
-    eid = some_type_entity->id;
+    builtin_eids_[(size_t)beid] = some_type_entity->id;
 }
 
 void unit::set_efn(size_t idx, qname_identifier fnq)
@@ -733,7 +734,7 @@ struct expr_printer_visitor : static_visitor<void>
 
     void operator()(binary_expression_t const& be) const
     {
-        ss << "binary("sv << (int)be.op << ", "sv;
+        ss << "binary("sv << to_string(be.op) << ", "sv;
         (*this)(be.args);
         ss << ')';
     }
@@ -788,6 +789,15 @@ struct expr_printer_visitor : static_visitor<void>
             apply_visitor(*this, e);
         }
         ss << ']';
+    }
+
+    void operator()(index_expression_t const& ie) const
+    {
+        ss << "INDEX("sv;
+        apply_visitor(*this, ie.base);
+        ss << ", "sv;
+        apply_visitor(*this, ie.index);
+        ss << ')';
     }
 
     template <typename T>
@@ -1156,53 +1166,20 @@ unit::unit()
 #endif
 
     //// ids
-    builtin_ids_[(size_t)builtin_id::type] = make_identifier("__type"sv);
-    builtin_ids_[(size_t)builtin_id::to] = make_identifier("to"sv);
-    builtin_ids_[(size_t)builtin_id::self] = make_identifier("self"sv);
-    builtin_ids_[(size_t)builtin_id::size] = make_identifier("size"sv);
-    builtin_ids_[(size_t)builtin_id::which] = make_identifier("which"sv);
-    builtin_ids_[(size_t)builtin_id::element] = make_identifier("element"sv);
-    builtin_ids_[(size_t)builtin_id::property] = make_identifier("property"sv);
-    builtin_ids_[(size_t)builtin_id::object] = make_identifier("object"sv);
-    builtin_ids_[(size_t)builtin_id::mask] = make_identifier("mask"sv);
-    builtin_ids_[(size_t)builtin_id::numargs] = make_identifier("$$"sv);
-    builtin_ids_[(size_t)builtin_id::init] = make_identifier("init"sv);
+    #define BANG_PRINT_ENUM_ASSIGN(r, data, i, elem) \
+    builtin_ids_[(size_t)builtin_id::BOOST_PP_TUPLE_ELEM(2, 0, elem)] = make_identifier(BOOST_PP_TUPLE_ELEM(2, 1, elem));
+    BOOST_PP_SEQ_FOR_EACH_I(BANG_PRINT_ENUM_ASSIGN, _, BANG_BUILTIN_ID_SEQ)
+    #undef BANG_PRINT_ENUM_ASSIGN
 
-    //// types
-    builtin_qnids_[(size_t)builtin_qnid::any] = make_qname_identifier("any"sv);
-    builtin_qnids_[(size_t)builtin_qnid::union_] = make_qname_identifier("union"sv);
-    builtin_qnids_[(size_t)builtin_qnid::tuple] = make_qname_identifier("tuple"sv);
-    builtin_qnids_[(size_t)builtin_qnid::vector] = make_qname_identifier("vector"sv);
-    builtin_qnids_[(size_t)builtin_qnid::array] = make_qname_identifier("array"sv);
-    builtin_qnids_[(size_t)builtin_qnid::fuzzy_array] = make_qname_identifier("fuzzy_array"sv);
-    //// values
-    
-
-    //// operations
-    builtin_qnids_[(size_t)builtin_qnid::mut] = make_qname_identifier("mut"sv);
-    builtin_qnids_[(size_t)builtin_qnid::new_] = make_qname_identifier("new"sv);
-    builtin_qnids_[(size_t)builtin_qnid::init] = make_qname_identifier("init"sv);
-    builtin_qnids_[(size_t)builtin_qnid::size] = make_qname_identifier("size"sv);
-    builtin_qnids_[(size_t)builtin_qnid::typeof] = make_qname_identifier("typeof"sv);
-    builtin_qnids_[(size_t)builtin_qnid::make_tuple] = make_qname_identifier("make_tuple"sv);
-    builtin_qnids_[(size_t)builtin_qnid::implicit_cast] = make_qname_identifier("implicit_cast"sv);
-    builtin_qnids_[(size_t)builtin_qnid::eq] = make_qname_identifier("equal"sv);
-    builtin_qnids_[(size_t)builtin_qnid::ne] = make_qname_identifier("not_equal"sv);
-    builtin_qnids_[(size_t)builtin_qnid::plus] = make_qname_identifier("__plus"sv);
-    builtin_qnids_[(size_t)builtin_qnid::minus] = make_qname_identifier("__minus"sv);
-    builtin_qnids_[(size_t)builtin_qnid::bit_or] = make_qname_identifier("__bit_or"sv);
-    builtin_qnids_[(size_t)builtin_qnid::bit_and] = make_qname_identifier("__bit_and"sv);
-    builtin_qnids_[(size_t)builtin_qnid::negate] = make_qname_identifier("negate"sv);
-    builtin_qnids_[(size_t)builtin_qnid::get] = make_qname_identifier("get"sv);
-    builtin_qnids_[(size_t)builtin_qnid::set] = make_qname_identifier("set"sv);
-    builtin_qnids_[(size_t)builtin_qnid::head] = make_qname_identifier("head"sv);
-    builtin_qnids_[(size_t)builtin_qnid::tail] = make_qname_identifier("tail"sv);
-    builtin_qnids_[(size_t)builtin_qnid::empty] = make_qname_identifier("empty"sv);
+    //// qnids
+    #define BANG_PRINT_ENUM_ASSIGN(r, data, i, elem) \
+    builtin_qnids_[(size_t)builtin_qnid::BOOST_PP_TUPLE_ELEM(2, 0, elem)] = make_qname_identifier(BOOST_PP_TUPLE_ELEM(2, 1, elem));
+    BOOST_PP_SEQ_FOR_EACH_I(BANG_PRINT_ENUM_ASSIGN, _, BANG_BUILTIN_QNAMES_SEQ)
+    #undef BANG_PRINT_ENUM_ASSIGN
 
     // typename
-    auto typename_qname_identifier = make_qname_identifier("typename"sv);
     auto typename_entity = make_shared<basic_signatured_entity>();
-    typename_entity->set_signature(entity_signature{typename_qname_identifier});
+    typename_entity->set_signature(entity_signature{ get(builtin_qnid::typename_) });
     
     eregistry_insert(typename_entity);
     builtin_eids_[(size_t)builtin_eid::typename_] = typename_entity->id;
@@ -1214,17 +1191,17 @@ unit::unit()
     functional& any_fnl = fregistry_resolve(get(builtin_qnid::any));
     any_fnl.set_default_entity(annotated_entity_identifier{ any_entity->id });
 
-    setup_type("bool"sv, builtin_qnids_[(size_t)builtin_qnid::boolean], builtin_eids_[(size_t)builtin_eid::boolean]);
-    setup_type("integer"sv, builtin_qnids_[(size_t)builtin_qnid::integer], builtin_eids_[(size_t)builtin_eid::integer]);
-    setup_type("decimal"sv, builtin_qnids_[(size_t)builtin_qnid::decimal], builtin_eids_[(size_t)builtin_eid::decimal]);
-    setup_type("f16"sv, builtin_qnids_[(size_t)builtin_qnid::f16], builtin_eids_[(size_t)builtin_eid::f16]);
-    setup_type("f32"sv, builtin_qnids_[(size_t)builtin_qnid::f32], builtin_eids_[(size_t)builtin_eid::f32]);
-    setup_type("f64"sv, builtin_qnids_[(size_t)builtin_qnid::f64], builtin_eids_[(size_t)builtin_eid::f64]);
-    setup_type("string"sv, builtin_qnids_[(size_t)builtin_qnid::string], builtin_eids_[(size_t)builtin_eid::string]);
-    setup_type("object"sv, builtin_qnids_[(size_t)builtin_qnid::object], builtin_eids_[(size_t)builtin_eid::object]);
-    setup_type("__identifier"sv, builtin_qnids_[(size_t)builtin_qnid::identifier], builtin_eids_[(size_t)builtin_eid::identifier]);
-    setup_type("__qname"sv, builtin_qnids_[(size_t)builtin_qnid::qname], builtin_eids_[(size_t)builtin_eid::qname]);
-    setup_type("metaobject"sv, builtin_qnids_[(size_t)builtin_qnid::metaobject], builtin_eids_[(size_t)builtin_eid::metaobject]);
+    setup_type(builtin_qnid::boolean, builtin_eid::boolean);
+    setup_type(builtin_qnid::integer, builtin_eid::integer);
+    setup_type(builtin_qnid::decimal, builtin_eid::decimal);
+    setup_type(builtin_qnid::f16, builtin_eid::f16);
+    setup_type(builtin_qnid::f32, builtin_eid::f32);
+    setup_type(builtin_qnid::f64, builtin_eid::f64);
+    setup_type(builtin_qnid::string, builtin_eid::string);
+    setup_type(builtin_qnid::object, builtin_eid::object);
+    setup_type(builtin_qnid::identifier, builtin_eid::identifier);
+    setup_type(builtin_qnid::qname, builtin_eid::qname);
+    setup_type(builtin_qnid::metaobject, builtin_eid::metaobject);
 
     // void
     auto void_entity = make_shared<basic_signatured_entity>(entity_signature{ get(builtin_qnid::tuple), get(builtin_eid::typename_) });
@@ -1244,8 +1221,25 @@ unit::unit()
     builtin_eids_[(size_t)builtin_eid::false_] = false_entity->id;
 
     /////// built in patterns
+    // mut(_)
     functional& mut_fnl = fregistry_resolve(get(builtin_qnid::mut));
     mut_fnl.push(make_shared<mut_pattern>());
+
+    // operator*(type: typename)
+    functional& deref_fnl = fregistry_resolve(get(builtin_qnid::deref));
+    deref_fnl.push(make_shared<deref_pattern>());
+
+    // operator...(type: typename)
+    functional& ellipsis_fnl = fregistry_resolve(get(builtin_qnid::ellipsis));
+    ellipsis_fnl.push(make_shared<ellipsis_pattern>());
+
+    //assert(...) -> ()
+    functional& assert_fnl = fregistry_resolve(get(builtin_qnid::assert));
+    assert_fnl.push(make_shared<assert_pattern>());
+
+    // equal(_, _) -> bool
+    functional& equal_fnl = fregistry_resolve(get(builtin_qnid::eq));
+    equal_fnl.push(make_shared<equal_pattern>());
 
     functional& tuple_fnl = fregistry_resolve(get(builtin_qnid::tuple));
     tuple_fnl.push(make_shared<tuple_pattern>());
@@ -1286,8 +1280,7 @@ unit::unit()
     sz_fnl.push(make_shared<tuple_size_pattern>());
 
     // __id(const string) -> __identifier
-    qname_identifier idfn = make_qname_identifier("__id"sv);
-    functional& idfnl = fregistry_resolve(idfn);
+    functional& idfnl = fregistry_resolve(get(builtin_qnid::idfn));
     idfnl.push(make_shared<create_identifier_pattern>());
 
     // metaobject(...) -> metaobject
@@ -1317,32 +1310,17 @@ unit::unit()
     functional& newfnl = fregistry_resolve(get(builtin_qnid::new_));
     newfnl.push(make_shared<struct_new_pattern>());
 
-    // operator*(type: typename)
-    builtin_qnids_[(size_t)builtin_qnid::deref] = make_qname_identifier("*"sv);
-    functional& deref_fnl = fregistry_resolve(get(builtin_qnid::deref));
-    deref_fnl.push(make_shared<deref_pattern>());
-
-    // equal(_, _)->bool
-    functional& equal_fnl = fregistry_resolve(get(builtin_qnid::eq));
-    equal_fnl.push(make_shared<equal_pattern>());
-
-    // operator...(type: typename)
-    builtin_qnids_[(size_t)builtin_qnid::ellipsis] = make_qname_identifier("..."sv);
-    functional& ellipsis_fnl = fregistry_resolve(get(builtin_qnid::ellipsis));
-    ellipsis_fnl.push(make_shared<ellipsis_pattern>());
-
-
     //fn_result_identifier_ = make_identifier("->");
 
     //eq_qname_identifier_ = make_qname_identifier("==");
     //functional& eq_fnl = fregistry_resolve(eq_qname_identifier_);
     //eq_fnl.push(make_shared<eq_pattern>());
 
-    builtin_qnids_[(size_t)builtin_qnid::fn] = make_qname_identifier("__fn"sv);
-    
     builtin_eids_[(size_t)builtin_eid::arrayify] = set_builtin_extern("__arrayify"sv, &bang_arrayify);
     builtin_eids_[(size_t)builtin_eid::array_tail] = set_builtin_extern("__array_tail"sv, &bang_array_tail);
     builtin_eids_[(size_t)builtin_eid::array_at] = set_builtin_extern("__array_at"sv, &bang_array_at);
+    builtin_eids_[(size_t)builtin_eid::equal] = set_builtin_extern("__equal"sv, &bang_any_equal);
+    builtin_eids_[(size_t)builtin_eid::assert] = set_builtin_extern("__assert"sv, &bang_assert);
     //set_extern<external_fn_pattern>("arrayify(...)->any"sv, &bang_arrayify);
 
     //set_const_extern<to_string_pattern>("size(const metaobjct))->integer"sv);
@@ -1358,10 +1336,10 @@ unit::unit()
     set_extern<external_fn_pattern>("set(self: mut object, property: mut string, mut _)->object"sv, &bang_set_object_property);
 
     //set_extern("string(any)->string"sv, &bang_tostring);
-    set_extern<external_fn_pattern>("assert(bool)"sv, &bang_assert);
+    //set_extern<external_fn_pattern>("assert(bool)"sv, &bang_assert);
 
     // temporary
-    //set_extern<external_fn_pattern>("equal(mut _, mut _)->bool"sv, &bang_any_equal);
+    
     //set_extern<external_fn_pattern>("negate(mut _)->bool"sv, &bang_negate);
     set_extern<external_fn_pattern>("__plus(mut integer, mut integer)->integer"sv, &bang_operator_plus_integer);
     set_extern<external_fn_pattern>("__plus(mut decimal, mut decimal)->decimal"sv, &bang_operator_plus_decimal);

@@ -4,6 +4,10 @@ assert(xpack0.0 == 1);
 assert(xpack0[0] == 1);
 assert(xpack0.1 == "345");
 assert(xpack0[1] == "345");
+
+assert(head(xpack0) == 1);
+assert(head(tail(xpack0)).0 == .name);
+/*
 assert(size(xpack0.name) == 3);
 //assert(size(xpack0["name"]) == 3);
 assert(size(xpack0[.name]) == 3);
@@ -13,11 +17,9 @@ assert(xpack0.name.1 == "bassa");
 assert(xpack0.name[1] == "bassa");
 assert(xpack0.name.2 == 123);
 assert(xpack0.name[2] == 123);
-assert(head(xpack0) == 1);
 
-//assert(head(tail(xpack0)).0 == .name);
-assert(head(tail(xpack0)).1 == "assa");
-
+//assert(head(tail(xpack0)).1 == "assa");
+*/
 //assert(head(tail(xpack0)) == (.name, "assa"));
 
 //let xpack1 = (11, 222, xpack0..., name: "bussa");

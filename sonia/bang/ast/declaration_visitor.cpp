@@ -173,18 +173,29 @@ error_storage declaration_visitor::operator()(enum_decl const& ed) const
 
 error_storage declaration_visitor::operator()(expression_statement_t const& ed) const
 {
-    auto bst = ctx.expressions_branch(); // store branch
-    entity_identifier void_eid = u().get(builtin_eid::void_);
-    ctx.context_type = void_eid;
-    if (auto res = apply_visitor(expression_visitor{ ctx }, ed.expression); !res) {
-        return std::move(res.error());
+    //auto bst = ctx.expressions_branch(); // store branch
+    semantic::managed_expression_list el{ u() };
+    auto res = apply_visitor(base_expression_visitor{ ctx, el }, ed.expression);
+    if (!res) return std::move(res.error());
+    syntax_expression_result_t & er = res->first;
+    ctx.push_scope();
+    for (auto& [varid, t, sp] : er.temporaries) {
+        ctx.expressions().splice_back(el, sp);
+        ctx.push_scope_variable(
+            annotated_identifier{ u().new_identifier() },
+            local_variable{ .type = t, .varid = varid, .is_weak = false },
+            fnent);
     }
-    if (ctx.context_type != void_eid) {
-        ctx.append_expression(semantic::truncate_values(1, false));
+    ctx.expressions().splice_back(el, er.expressions);
+    size_t scope_sz = ctx.current_scope_binding().size();
+    ctx.pop_scope();
+    if (!er.is_const_result && er.type() != u().get(builtin_eid::void_)) {
+        ++scope_sz;
     }
-    ctx.collapse_chains(bst);
-    
-    //GLOBAL_LOG_INFO() << '\n' << u().print(ctx.expressions());
+    if (scope_sz) {
+        ctx.append_expression(semantic::truncate_values(scope_sz, false));
+    }
+    // ctx.collapse_chains(bst);
     
     return {};
 }

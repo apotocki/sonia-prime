@@ -6,6 +6,9 @@
 
 #include <fstream>
 
+#include <boost/preprocessor/seq/for_each_i.hpp>
+#include <boost/preprocessor/tuple/elem.hpp>
+
 #include "sonia/filesystem.hpp"
 #include "sonia/exceptions.hpp"
 
@@ -34,31 +37,78 @@ namespace vm { class context; }
 
 class external_fn_pattern;
 
+#define BANG_BUILTIN_ID_SEQ                \
+    ((type, "__type"sv))                   \
+    ((to, "to"sv))                         \
+    ((self, "self"sv))                     \
+    ((size, "size"sv))                     \
+    ((which, "which"sv))                   \
+    ((element, "element"sv))               \
+    ((property, "property"sv))             \
+    ((object, "object"sv))                 \
+    ((mask, "mask"sv))                     \
+    ((numargs, "$$"sv))                    \
+    ((init, "init"sv))
+
+#define BANG_BUILTIN_QNAMES_SEQ            \
+    ((fn, "__fn"sv))                       \
+    ((idfn, "__id"sv))                     \
+    ((mut, "mut"sv))                       \
+    ((deref, "*"sv))                       \
+    ((ellipsis, "..."sv))                  \
+    ((assert, "assert"sv))                 \
+    ((typename_, "typename"sv))            \
+    ((tuple, "tuple"sv))                   \
+    ((vector, "vector"sv))                 \
+    ((array, "array"sv))                   \
+    ((fuzzy_array, "fuzzy_array"sv))       \
+    ((identifier, "__identifier"sv))       \
+    ((qname, "__qname"sv))                 \
+    ((object, "object"sv))                 \
+    ((string, "string"sv))                 \
+    ((f16, "f16"sv))                       \
+    ((f32, "f32"sv))                       \
+    ((f64, "f64"sv))                       \
+    ((decimal, "decimal"sv))               \
+    ((integer, "integer"sv))               \
+    ((boolean, "bool"sv))                  \
+    ((any, "any"sv))                       \
+    ((union_, "union"sv))                  \
+    ((metaobject, "metaobject"sv))         \
+    ((size, "size"sv))                     \
+    ((typeof, "typeof"sv))                 \
+    ((make_tuple, "make_tuple"sv))         \
+    ((new_, "new"sv))                      \
+    ((init, "init"sv))                     \
+    ((eq, "equal"sv))                      \
+    ((ne, "not_equal"sv))                  \
+    ((plus, "__plus"))                     \
+    ((minus, "__minus"))                   \
+    ((bit_or, "__bit_or"))                 \
+    ((bit_and, "__bit_and"))               \
+    ((negate, "negate"))                   \
+    ((implicit_cast, "implicit_cast"sv))   \
+    ((get, "get"sv))                       \
+    ((set, "set"sv))                       \
+    ((head, "head"sv))                     \
+    ((tail, "tail"sv))                     \
+    ((empty, "empty"sv))
+
+#define BANG_PRINT_TYPE_ENUM(r, data, i, elem) BOOST_PP_TUPLE_ELEM(2, 0, elem),
+
 enum class builtin_id : size_t
 {
-    type = 0, // type:
-    to, // to:
-    self, // self:
-    size, // size:
-    which, // which:
-    element, // element:
-    property, // property:
-    object, // object:
-    mask, // mask:
-    numargs, // $$
-    init, // init
+    BOOST_PP_SEQ_FOR_EACH_I(BANG_PRINT_TYPE_ENUM, _, BANG_BUILTIN_ID_SEQ)
     eof_builtin_id_value
 };
 
 enum class builtin_qnid : size_t
 {
-    fn = 0,
-    mut, deref, ellipsis, tuple, vector, array, fuzzy_array, identifier,
-    qname, object, string, f16, f32, f64, decimal, integer, boolean, any, union_,
-    metaobject,
-    size, typeof, make_tuple, new_, init, eq, ne, plus, minus, bit_or, bit_and, negate, implicit_cast, get, set, head, tail, empty,
+    BOOST_PP_SEQ_FOR_EACH_I(BANG_PRINT_TYPE_ENUM, _, BANG_BUILTIN_QNAMES_SEQ)
     eof_builtin_qnids_value
 };
+
+#undef BANG_PRINT_TYPE_ENUM
 
 enum class builtin_eid : size_t
 {
@@ -66,6 +116,8 @@ enum class builtin_eid : size_t
     arrayify, // builtin ::arrayify(...)->array
     array_tail, // builtin ::array_tail(array)-> array
     array_at, // builtin ::array_at(array, index)-> elementT
+    equal, // builtin ::equal(a, b)-> boolean
+    assert, // builtin ::assert(condition, message)-> void 
     eof_builtin_eid_value
 };
 
@@ -319,7 +371,7 @@ public:
     }
 
 protected:
-    void setup_type(string_view type_name, qname_identifier&, entity_identifier&);
+    void setup_type(builtin_qnid, builtin_eid);
 
     std::vector<char> read_file(fs::path const& rpath);
 

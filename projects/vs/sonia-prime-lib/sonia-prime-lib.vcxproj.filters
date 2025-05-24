@@ -2448,6 +2448,9 @@
     <ClInclude Include="..\..\..\sonia\bang\functional\general\equal_pattern.hpp">
       <Filter>sonia.bang\functional\general</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\assert_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2958,6 +2961,9 @@
       <Filter>sonia.bang\entities\functions</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\functional\general\equal_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\assert_pattern.cpp">
       <Filter>sonia.bang\functional\general</Filter>
     </ClCompile>
   </ItemGroup>

@@ -66,6 +66,9 @@ class alt_error : public error
 {
 public:
     std::vector<error_storage> alternatives;
+    alt_error() = default;
+    alt_error(alt_error&&) = default;
+    alt_error& operator= (alt_error&&) = default;
     void visit(error_visitor& vis) const override { vis(*this); }
 };
 

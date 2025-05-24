@@ -14,11 +14,11 @@ namespace sonia::lang::bang {
 
 void bang_assert(vm::context& ctx)
 {
-    bool r = ctx.stack_back().as<bool>();
-    ctx.stack_pop();
-    if (!r) {
-        throw exception("bang assertion error");
+    if (!ctx.stack_back(1).as<bool>()) {
+        std::string err = ctx.stack_back().as<std::string>();
+        throw exception(err);
     }
+    ctx.stack_pop(2);
 }
 
 void bang_any_equal(vm::context& ctx)

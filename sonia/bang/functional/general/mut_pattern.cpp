@@ -33,23 +33,16 @@ std::expected<functional_match_descriptor_ptr, error_storage> mut_pattern::try_m
 std::expected<syntax_expression_result_t, error_storage> mut_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     auto & mr = md.get_match_result(0);
-    auto const& ser = mr.results.front();
+    auto & ser = mr.results.front();
 
-    semantic::expression_span exprs = el.concat(md.merge_void_spans(el), ser.expressions);
+    ser.expressions = el.concat(md.merge_void_spans(el), ser.expressions);
     
     if (ser.is_const_result) {
-        ctx.u().push_back_expression(el, exprs, semantic::push_value{ ser.value() });
-        return syntax_expression_result_t{
-            .expressions = std::move(exprs),
-            .value_or_type = get_entity(ctx.u(), ser.value()).get_type(),
-            .is_const_result = false
-        };
+        ctx.u().push_back_expression(el, ser.expressions, semantic::push_value{ ser.value() });
+        ser.value_or_type = get_entity(ctx.u(), ser.value()).get_type();
+        ser.is_const_result = false;
     }
-    return syntax_expression_result_t{ 
-        .expressions = std::move(exprs),
-        .value_or_type = ser.value(),
-        .is_const_result = false
-    };
+    return std::move(ser);
 }
 
 }

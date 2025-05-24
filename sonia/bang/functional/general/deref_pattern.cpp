@@ -44,13 +44,10 @@ std::expected<syntax_expression_result_t, error_storage> deref_pattern::apply(fn
 {
     unit& u = ctx.u();
     auto & mr = md.get_match_result(0);
-    auto const& ser = mr.results.front();
+    auto & ser = mr.results.front();
 
-    semantic::expression_span exprs;
-    for (semantic::expression_span const& vsp : md.void_spans) {
-        exprs = el.concat(exprs, vsp);
-    }
-    exprs = el.concat(exprs, ser.expressions);
+    ser.expressions = el.concat(md.merge_void_spans(el), ser.expressions);
+    
     BOOST_ASSERT(ser.is_const_result);
     qname_entity const& argent = static_cast<qname_entity const&>(get_entity(ctx.u(), ser.value()));
 
@@ -59,7 +56,8 @@ std::expected<syntax_expression_result_t, error_storage> deref_pattern::apply(fn
     );
     if (!res) return std::unexpected(res.error());
     auto& er = res->first;
-    er.expressions = el.concat(exprs, er.expressions);
+    er.expressions = el.concat(ser.expressions, er.expressions);
+    er.temporaries.insert(er.temporaries.begin(), ser.temporaries.begin(), ser.temporaries.end());
     return std::move(er);
 }
 

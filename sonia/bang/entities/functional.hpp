@@ -235,8 +235,10 @@ public:
     class pattern
     {
     protected:
-        mp::decimal weight_{ 1 };
+        mp::decimal weight_;
         lex::resource_location location_;
+
+        inline explicit pattern(mp::decimal w = 1) noexcept : weight_{ w } {}
 
     public:
         virtual std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const& expected_result) const = 0; // returns the match weight or an error

@@ -38,7 +38,7 @@ namespace sonia::lang::bang {
         get(self: as_tuple(self), property : property);
 */
 
-std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
     unit& u = ctx.u();
     identifier slfid = u.get(builtin_id::self);
@@ -55,7 +55,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
             return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
         }
         if (pargname->value == slfid && !pse) {
-            pmd = make_shared<tuple_get_match_descriptor>();
+            THROW_NOT_IMPLEMENTED_ERROR("struct_get_pattern::try_match self argument handling, should be a tuple_get_match_descriptor"sv);
+            //pmd = make_shared<tuple_get_match_descriptor>();
 
             //auto last_expr_it = ctx.expressions().last();
             auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, arg.value());
@@ -90,7 +91,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
     if (!uteid) return std::unexpected(std::move(uteid.error()));
     entity const& utplent = get_entity(u, *uteid);
     
-    return check_match(std::move(pmd), call, utplent, *ppname);
+    THROW_NOT_IMPLEMENTED_ERROR("struct_get_pattern::try_match tuple_get_match_descriptor creation"sv);
+    //return check_match(std::move(pmd), call, utplent, *ppname);
 
     //entity_signature const* ptplsig = utplent.signature();
     //BOOST_ASSERT(ptplsig);

@@ -73,7 +73,7 @@ void bang_arrayify(vm::context& ctx)
         elements.emplace_back(*ctx.stack_back(i));
         blob_result_pin(&elements.back());
     }
-    smart_blob r{ array_blob_result(span{elements.data(), elements.size()}) };
+    smart_blob r{ array_blob_result(span{ elements.data(), elements.size() }) };
     r.allocate();
     elements.clear();
     ctx.stack_pop(argcount + 1);

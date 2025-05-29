@@ -861,7 +861,7 @@ expression_visitor::expression_visitor(fn_compiler_context& c) noexcept
     , base_expression_visitor{ c, *this }
 {}
 
-expression_visitor::expression_visitor(fn_compiler_context& c, annotated_entity_identifier&& er) noexcept
+expression_visitor::expression_visitor(fn_compiler_context& c, expected_result_t&& er) noexcept
     : semantic::managed_expression_list{ c.u() }
     , base_expression_visitor{ c, *this, std::move(er) }
 {}

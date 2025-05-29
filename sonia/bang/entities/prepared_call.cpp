@@ -511,16 +511,16 @@ prepared_call::session::session(fn_compiler_context& ctxval, prepared_call const
 }
 
 std::expected<syntax_expression_result_t, error_storage>
-prepared_call::session::do_resolve(argument_cache& arg_cache, annotated_entity_identifier const& exp, bool const_exp)
+prepared_call::session::do_resolve(argument_cache& arg_cache, expected_result_t const& exp)
 {
-    auto cit = arg_cache.cache.find({ exp.value, const_exp });
+    auto cit = arg_cache.cache.find({ exp.type, exp.is_const_result });
     if (cit == arg_cache.cache.end()) {
-        auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions, exp, const_exp }, arg_cache.expression);
+        auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions, exp }, arg_cache.expression);
         if (!res) {
-            arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.value, const_exp }, std::unexpected(res.error()));
+            arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.type, exp.is_const_result }, std::unexpected(res.error()));
             return std::unexpected(std::move(res.error()));
         }
-        cit = arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.value, const_exp }, std::move(res->first));
+        cit = arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.type, exp.is_const_result }, std::move(res->first));
     }
     return cit->second;
 }
@@ -528,11 +528,11 @@ prepared_call::session::do_resolve(argument_cache& arg_cache, annotated_entity_i
 std::expected<syntax_expression_result_t, error_storage>
 prepared_call::session::use_next_positioned_argument(syntax_expression_t const** pe)
 {
-    return use_next_positioned_argument(annotated_entity_identifier{}, false, pe);
+    return use_next_positioned_argument(expected_result_t{}, pe);
 }
 
 std::expected<syntax_expression_result_t, error_storage>
-prepared_call::session::use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp, syntax_expression_t const** pe)
+prepared_call::session::use_next_positioned_argument(expected_result_t const& exp, syntax_expression_t const** pe)
 {
     for (;;) {
         if (unused_positioned_index_ >= unused_position_arguments_.size()) {
@@ -541,7 +541,7 @@ prepared_call::session::use_next_positioned_argument(annotated_entity_identifier
     
         // find the argument cache
         argument_cache* arg_cache = unused_position_arguments_[unused_positioned_index_++];
-        auto res = do_resolve(*arg_cache, exp, const_exp);
+        auto res = do_resolve(*arg_cache, exp);
 
         if (!res || !res->is_const_result || res->value() != ctx.u().get(builtin_eid::void_)) {
             if (pe) {
@@ -558,13 +558,49 @@ prepared_call::session::use_next_positioned_argument(annotated_entity_identifier
     }
 }
 
+std::expected<syntax_expression_result_t, error_storage>
+prepared_call::session::use_named_argument(identifier name, expected_result_t const& exp, syntax_expression_t const** pe)
+{
+    for (;;) {
+        auto argit = std::lower_bound(unused_named_arguments_.begin(), unused_named_arguments_.end(), name, tuple_1st_element_comparator{});
+        if (argit == unused_named_arguments_.end() || get<0>(*argit) != name) {
+            return std::unexpected(error_storage{});
+        }
+        argument_cache* arg_cache = get<1>(*argit);
+        auto res = do_resolve(*arg_cache, exp);
+        if (res) {
+            unused_named_arguments_.erase(argit); // remove the argument from the unused list
+        }
+        if (!res || !res->is_const_result || res->value() != ctx.u().get(builtin_eid::void_)) {
+            if (pe) {
+                *pe = &arg_cache->expression;
+            }
+            return res;
+        }
+        // if the result is void, continue to the next argument
+        if (res->expressions) {
+            void_spans.emplace_back(res->expressions);
+        }
+    }
+}
+
 named_expression_t prepared_call::session::unused_argument()
 {
-    // to do: deal with named arguments
+    while (!unused_named_arguments_.empty()) {
+        auto& [name, arg_cache] = unused_named_arguments_.back();
+        unused_named_arguments_.pop_back();
+        auto res = do_resolve(*arg_cache, expected_result_t{ ctx.u().get(builtin_eid::void_), true });
+        if (!res) { // not a void argument
+            return named_expression_t{ name, arg_cache->expression };
+        }
+        if (res->expressions) {
+            void_spans.emplace_back(res->expressions);
+        }
+    }
 
     while (unused_positioned_index_ < unused_position_arguments_.size()) {
         argument_cache* arg_cache = unused_position_arguments_[unused_positioned_index_++];
-        auto res = do_resolve(*arg_cache, annotated_entity_identifier{ ctx.u().get(builtin_eid::void_) }, true);
+        auto res = do_resolve(*arg_cache, expected_result_t{ ctx.u().get(builtin_eid::void_), true });
         if (!res) { // not a void argument
             return named_expression_t{ arg_cache->expression };
         }
@@ -573,6 +609,7 @@ named_expression_t prepared_call::session::unused_argument()
         }
         ++unused_positioned_skipped_;
     }
+
     return {};
 }
 

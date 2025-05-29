@@ -13,7 +13,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> metaobject_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> metaobject_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
     size_t pos_arg_num = 0;
     auto pmd = make_shared<functional_match_descriptor>();

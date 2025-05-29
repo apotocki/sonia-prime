@@ -6,6 +6,7 @@
 
 #include "sonia/bang/semantic_fwd.hpp"
 #include "sonia/bang/unit.hpp"
+#include "sonia/bang/auxiliary.hpp"
 
 namespace sonia::lang::bang {
 
@@ -47,46 +48,20 @@ public:
 
     std::ostream& print_to(std::ostream& os, unit const& u) const override
     {
-        //u.print_to(os, type_) << '(';
-#ifdef SONIA_LANG_DEBUG
         if constexpr (std::is_same_v<ValueT, identifier> || std::is_same_v<ValueT, qname_identifier>) {
-            os << value_.debug_name;
-            //return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << value_.debug_name << "): "sv, type_);
+            os << '\'';
+            u.print_to(os, value_);
+            os << '\'';
         } else if constexpr (std::is_same_v<ValueT, bool>) {
             os << (value_ ? "true"sv : "false"sv);
-            //return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << (value_ ? "true"sv : "false"sv) << "): "sv, type_);
         } else if constexpr (std::is_same_v<ValueT, small_string>) {
             os << '"' << value_ << "\""sv;
         } else {
             os << value_;
         }
-#else
-        os << value_;
-#endif
         os << "^^"sv;
         return u.print_to(os, type_);
-        
-        //return u.print_to(do_print_name(entity::print_to(os, u)) << '(' << value_ << "): "sv, type_);
     }
-
-    //inline std::ostream& do_print_name(std::ostream& os) const
-    //{
-    //    if constexpr (std::is_same_v<ValueT, identifier>) {
-    //        return os << "identifier_entity"sv;
-    //    } else if constexpr (std::is_same_v<ValueT, qname_identifier>) {
-    //        return os << "qname_entity"sv;
-    //    } else if constexpr (std::is_same_v<ValueT, bool>) {
-    //        return os << "boolean_entity"sv;
-    //    } else if constexpr (std::is_same_v<ValueT, small_string>) {
-    //        return os << "string_entity"sv;
-    //    } else if constexpr (std::is_same_v<ValueT, mp::integer>) {
-    //        return os << "integer_entity"sv;
-    //    } else if constexpr (std::is_same_v<ValueT, mp::decimal>) {
-    //        return os << "decimal_entity"sv;
-    //    } else {
-    //        return os << "literal_entity"sv;
-    //    }
-    //}
 };
 
 // typed empty_entity: entities with different types are not equal
@@ -117,7 +92,7 @@ public:
     
     std::ostream& print_to(std::ostream& os, unit const& u) const override
     {
-        return u.eregistry_get(type_).print_to(os << "empty: "sv, u);
+        return get_entity(u, type_).print_to(os << "empty: "sv, u);
     }
 };
 

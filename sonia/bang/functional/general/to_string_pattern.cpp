@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "mut_pattern.hpp"
+#include "to_string_pattern.hpp"
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 
@@ -15,7 +15,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> mut_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> to_string_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     auto call_session = call.new_session(ctx);
     auto arg = call_session.use_next_positioned_argument(exp);
@@ -29,19 +29,22 @@ std::expected<functional_match_descriptor_ptr, error_storage> mut_pattern::try_m
     return std::move(pmd);
 }
 
-std::expected<syntax_expression_result_t, error_storage> mut_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> to_string_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
+    unit& u = ctx.u();
     auto & mr = md.get_match_result(0);
-    auto & ser = mr.results.front();
-
-    ser.expressions = el.concat(md.merge_void_spans(el), ser.expressions);
-    
-    if (ser.is_const_result) {
-        ctx.u().push_back_expression(el, ser.expressions, semantic::push_value{ ser.value() });
-        ser.value_or_type = get_entity(ctx.u(), ser.value()).get_type();
-        ser.is_const_result = false;
+    auto & er = mr.results.front();
+    er.expressions = el.concat(md.merge_void_spans(el), er.expressions);
+    if (er.is_const_result) {
+        entity const& ent = get_entity(u, er.value());
+        std::ostringstream oss;
+        ent.print_to(oss, u);
+        er.value_or_type = u.make_string_entity(oss.str()).id;
+    } else {
+        u.push_back_expression(el, er.expressions, semantic::invoke_function(u.get(builtin_eid::to_string)));
+        er.value_or_type = u.get(builtin_eid::to_string);
     }
-    return std::move(ser);
+    return std::move(er);
 }
 
 }

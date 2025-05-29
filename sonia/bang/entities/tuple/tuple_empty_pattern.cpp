@@ -16,7 +16,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> tuple_empty_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_empty_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     unit& u = ctx.u();
     auto opt_arg_expr = try_match_single_unnamed(ctx, call);

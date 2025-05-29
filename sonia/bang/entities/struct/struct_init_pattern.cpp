@@ -81,7 +81,7 @@ error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_qnam
     return basic_fn_pattern::init(ctx, init_fn);
 }
 
-std::expected<functional_match_descriptor_ptr, error_storage> struct_init_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> struct_init_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     auto res = basic_fn_pattern::try_match(ctx, call, exp);
     //if (!res) {

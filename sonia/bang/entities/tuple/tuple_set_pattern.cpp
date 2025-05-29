@@ -31,7 +31,7 @@ public:
     inline fn::set(self: tuple(), property: const __identifier @has_property($T), _) -> typeof(self) => implementation defined
 */
 
-std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
     unit& u = ctx.u();
     identifier slfid = u.get(builtin_id::self);

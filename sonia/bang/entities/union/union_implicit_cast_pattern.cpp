@@ -13,6 +13,7 @@
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
+#include "sonia/bang/auxiliary.hpp"
 
 namespace sonia::lang::bang {
 
@@ -30,16 +31,16 @@ public:
     entity_identifier result_type;
 };
 
-std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& e) const
+std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     unit& u = ctx.u();
-    if (!e) {
+    if (!exp) {
         return std::unexpected(make_error<basic_general_error>(call.location, "expected a vector result"sv));
     }
-    entity const& ent = u.eregistry_get(e.value);
+    entity const& ent = get_entity(u, exp.type);
     entity_signature const* pusig = ent.signature();
     if (!pusig || pusig->name != u.get(builtin_qnid::union_)) {
-        return std::unexpected(make_error<type_mismatch_error>(e.location, e.value, "a union"sv));
+        return std::unexpected(make_error<type_mismatch_error>(exp.location, exp.type, "a union"sv));
     }
 
     shared_ptr<union_cast_match_descriptor> pmd;
@@ -66,11 +67,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
             return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
         }
 
-        pure_call_t cast_call{ e.location };
+        pure_call_t cast_call{ exp.location };
         cast_call.emplace_back(argexpr);
         optional<std::pair<functional::match, size_t>> rmatch;
         for (auto const& f : pusig->fields()) {
-            auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, call.expressions, annotated_entity_identifier{ f.entity_id(), e.location });
+            auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, call.expressions, expected_result_t{ f.entity_id(), false, exp.location });
             if (!match) continue; // to do: collect errors?
             if (rmatch) {
                 return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "ambiguous cast to union"sv, argexpr));
@@ -80,7 +81,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
         if (!rmatch) {
             return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "no cast to union found"sv, argexpr));
         }
-        pmd = make_shared<union_cast_match_descriptor>(std::move(rmatch->first), rmatch->second, e.value);
+        pmd = make_shared<union_cast_match_descriptor>(std::move(rmatch->first), rmatch->second, exp.type);
     }
 
     if (!pmd) {

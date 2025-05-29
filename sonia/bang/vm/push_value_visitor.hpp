@@ -12,6 +12,77 @@
 
 namespace sonia::lang::bang::vm {
 
+#if 0
+class materialize_value_visitor : public static_visitor<void>, public entity_visitor
+{
+    unit& unit_;
+    mutable blob_result result;
+
+public:
+    inline explicit materialize_value_visitor(unit& u) noexcept
+        : unit_{ u }
+    {}
+
+    inline void operator()(null_t const&) const { result = nil_blob_result(); }
+
+    inline void operator()(bool bval) const { result = bool_blob_result(bval); }
+
+    inline void operator()(small_string const& sval) const
+    {
+        smart_blob strbr{ string_blob_result(sval) };
+        strbr.allocate();
+        result = strbr.detach();
+    }
+
+    inline void operator()(uint64_t value) const { result = ui64_blob_result(value); }
+
+    inline void operator()(mp::integer const& ival) const { result = bigint_blob_result(ival); }
+
+    inline void operator()(mp::decimal const& dval) const { result = decimal_blob_result(dval); }
+
+    inline blob_result operator()(entity_identifier const& eid) const
+    {
+        entity const& e = unit_.eregistry_get(eid);
+        if (e.id != unit_.get(builtin_eid::void_)) {
+            e.visit(*this);
+            return result;
+        } else {
+            return nil_blob_result();
+        }
+    }
+
+    void operator()(string_literal_entity const& sle) const override
+    {
+        this->operator()(sle.value());
+    }
+
+    void operator()(bool_literal_entity const& ble) const override
+    {
+        this->operator()(ble.value());
+    }
+
+    void operator()(integer_literal_entity const& ile) const override
+    {
+        this->operator()(ile.value());
+    }
+
+    void operator()(decimal_literal_entity const& dle) const override
+    {
+        this->operator()(dle.value());
+    }
+
+    void operator()(identifier_entity const& ie) const override
+    {
+        this->operator()(ie.value());
+    }
+
+    void operator()(qname_identifier_entity const& ie) const override
+    {
+        this->operator()(ie.value());
+    }
+};
+#endif
+
 class push_value_visitor : public static_visitor<void>, public entity_visitor
 {
     unit& unit_;
@@ -200,8 +271,25 @@ public:
         this->operator()(ie.value());
     }
 
-    void operator()(empty_entity const&) const override
+    void operator()(empty_entity const& ee) const override
     {
+#if 0
+        entity const& type_ent = get_entity(unit_, ee.get_type());
+        if (auto psig = type_ent.signature(); psig && psig->name == unit_.get(builtin_qnid::tuple)) {
+            // materialize tuple
+            small_vector<blob_result, 16> flds;
+            SCOPE_EXCEPTIONAL_EXIT([&flds]() {
+                for (auto& f : flds) blob_result_unpin(&f);
+            });
+            for (auto const& fd : psig->fields()) {
+                BOOST_ASSERT(fd.is_const());
+                flds.emplace_back(materialize_value_visitor{ unit_ }(fd.entity_id()));
+            }
+            smart_blob r{ array_blob_result(span{ flds.data(), flds.size() }) };
+            r.allocate();
+            fnbuilder_.append_push_pooled_const(std::move(r));
+        }
+#endif
         fnbuilder_.append_push_pooled_const(smart_blob{}); // === nil
     }
 

@@ -26,7 +26,7 @@ struct expression_visitor
     // to do: set a flag to notice unneeded result
     explicit expression_visitor(fn_compiler_context& c) noexcept;
 
-    expression_visitor(fn_compiler_context& c, annotated_entity_identifier&& er) noexcept;
+    expression_visitor(fn_compiler_context& c, expected_result_t&& er) noexcept;
 
     //expression_visitor(fn_compiler_context& c, optional<expected_result_t> opter)
     //    : ctx{ c }

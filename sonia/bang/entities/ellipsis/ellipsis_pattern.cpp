@@ -31,7 +31,7 @@ public:
 };
 
 // postfix operator ...(__identifier|metaobject(__identifier...))
-std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
     unit& u = ctx.u();
     syntax_expression_t const* object_arg = nullptr;

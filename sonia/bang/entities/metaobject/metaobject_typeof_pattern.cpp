@@ -16,7 +16,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
     unit& u = ctx.u();
     identifier objid = u.get(builtin_id::object);
@@ -46,11 +46,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv, propid));
     }
 
-    ct_expression_visitor eobjvis{ ctx, call.expressions, annotated_entity_identifier{ u.get(builtin_eid::metaobject), object_arg->name()->location } };
+    ct_expression_visitor eobjvis{ ctx, call.expressions, expected_result_t{ u.get(builtin_eid::metaobject), true, object_arg->name()->location } };
     auto obj = apply_visitor(eobjvis, object_arg->value());
     if (!obj) return std::unexpected(std::move(obj.error()));
 
-    ct_expression_visitor epropvis{ ctx, call.expressions, annotated_entity_identifier{ u.get(builtin_eid::identifier), property_arg->name()->location } };
+    ct_expression_visitor epropvis{ ctx, call.expressions, expected_result_t{ u.get(builtin_eid::identifier), true, property_arg->name()->location } };
     auto prop = apply_visitor(epropvis, property_arg->value());
     if (!prop) return std::unexpected(std::move(prop.error()));
 

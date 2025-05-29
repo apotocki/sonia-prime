@@ -35,16 +35,16 @@ namespace sonia::lang::bang {
 //    return {};
 //}
 
-std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& e) const
+std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     unit& u = ctx.u();
-    if (!e) {
+    if (!exp) {
         return std::unexpected(make_error<basic_general_error>(call.location, "expected an enumeration result"sv));
     }
-    entity const& ent = u.eregistry_get(e.value);
+    entity const& ent = get_entity(u, exp.type);
     enum_entity const* penum = dynamic_cast<enum_entity const*>(&ent);
     if (!penum) {
-        return std::unexpected(make_error<type_mismatch_error>(e.location, e.value, "an enumeration"sv));
+        return std::unexpected(make_error<type_mismatch_error>(exp.location, exp.type, "an enumeration"sv));
     }
 
     functional_match_descriptor_ptr pmd;
@@ -52,7 +52,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
     for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
-        auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions, annotated_entity_identifier{ u.get(builtin_eid::identifier) } }, argexpr);
+        auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions, expected_result_t{ u.get(builtin_eid::identifier), true } }, argexpr);
         if (!res) {
             return std::unexpected(append_cause(
                 make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr),
@@ -80,7 +80,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
     if (!pmd) {
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
     }
-    pmd->result = field_descriptor{ e.value };
+    pmd->result = field_descriptor{ exp.type };
     return pmd;
 }
 

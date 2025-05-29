@@ -14,7 +14,7 @@ public:
     metaobject_empty_pattern() = default;
 
 #ifndef NDEBUG
-    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const override
+    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const override
     {
         return metaobject_argument_pattern::try_match(ctx, call, exp);
     }

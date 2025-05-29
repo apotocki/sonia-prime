@@ -31,7 +31,7 @@ public:
     {}
 };
 
-std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
     unit& u = ctx.u();
 
@@ -70,7 +70,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
         }
     }
     
-    auto init_match = ctx.find(builtin_qnid::init, init_call, call.expressions, annotated_entity_identifier{ pse->id, pse->location });
+    auto init_match = ctx.find(builtin_qnid::init, init_call, call.expressions, expected_result_t{ pse->id, false, pse->location });
     if (!init_match) {
         return std::unexpected(append_cause(
             make_error<basic_general_error>(call.location, "no constructuctor found"sv, u.get(builtin_qnid::new_)),

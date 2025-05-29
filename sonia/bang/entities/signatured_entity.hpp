@@ -78,6 +78,7 @@ public:
     // the result type doesn't take part in signature identification.
     optional<field_descriptor> result;
 
+    inline bool empty() const noexcept { return fields_.empty(); }
     inline span<const field_descriptor> fields() const noexcept { return fields_; }
     inline size_t field_count() const noexcept { return fields_.size(); }
 
@@ -200,7 +201,7 @@ public:
         //return false;
     }
 
-    std::ostream& print_to(std::ostream& os, unit const& u) const override;
+    std::ostream& print_to(std::ostream&, unit const&) const override;
 };
 
 // auxiliary type for entity lookups by a signature

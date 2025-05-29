@@ -15,7 +15,7 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argument_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argument_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
     unit& u = ctx.u();
     syntax_expression_t const* object_arg = nullptr;
@@ -36,7 +36,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argumen
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
     }
     
-    ct_expression_visitor eobjvis{ ctx, call.expressions, annotated_entity_identifier{ u.get(builtin_eid::metaobject), get_start_location(*object_arg) } };
+    ct_expression_visitor eobjvis{ ctx, call.expressions, expected_result_t{ u.get(builtin_eid::metaobject), get_start_location(*object_arg) } };
     auto obj = apply_visitor(eobjvis, *object_arg);
     if (!obj) return std::unexpected(std::move(obj.error()));
 

@@ -4,18 +4,19 @@
 
 #pragma once
 
-#include "sonia/bang/functional/basic_fn_pattern.hpp"
+#include "sonia/bang/entities/functional.hpp"
 
 namespace sonia::lang::bang {
 
-class to_string_pattern : public basic_fn_pattern
+class typeof_pattern : public functional::pattern
 {
 public:
-    using basic_fn_pattern::basic_fn_pattern;
+    typeof_pattern() = default;
 
+    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, expected_result_t const&) const override;
     std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
-    std::ostream& print(unit const&, std::ostream& s) const override { return s << "to_string(const __identifier)->string"; }
+    std::ostream& print(unit const&, std::ostream& s) const override { return s << "typeof(_)->typename"; }
 };
 
 }

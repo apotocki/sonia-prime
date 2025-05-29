@@ -30,7 +30,7 @@ struct generic_pattern_base<DerivedT>::arg_context_type
 };
 
 template <typename DerivedT>
-std::expected<functional_match_descriptor_ptr, error_storage> generic_pattern_base<DerivedT>::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> generic_pattern_base<DerivedT>::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     return try_match(ctx, call, nullptr);
 }

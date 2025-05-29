@@ -285,7 +285,7 @@ variant<int, parameter_matcher::ignore_t, error_storage> parameter_matcher::try_
                 auto res = apply_visitor(vtcv, *optexpr);
                 if (!res) return std::move(res.error()); // perhaps pattern?
 
-                ct_expression_visitor evis{ caller_ctx, re, annotated_entity_identifier{ *res, get_start_location(*optexpr) } };
+                ct_expression_visitor evis{ caller_ctx, re, expected_result_t{ *res, true, get_start_location(*optexpr) } };
                 auto argres = apply_visitor(evis, e);
                 if (!argres) return std::move(argres.error());
                 mr.append_result(*argres);
@@ -573,7 +573,7 @@ named_parameter_matcher const* basic_fn_pattern::get_matcher(identifier name) co
     return nullptr;
 }
 
-std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& expected_result_type) const
+std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     // quick match check
     for (auto const& arg : call.args) {
@@ -606,12 +606,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
 
     
     // deal with result match and only when the result value is not a constant
-    if (expected_result_type && result_constraints && get<1>(*result_constraints) != parameter_constraint_modifier_t::const_value) {
+    if (exp && result_constraints && get<1>(*result_constraints) != parameter_constraint_modifier_t::const_value) {
         if (auto const& optexpr = get<0>(*result_constraints).type_expression; optexpr) {
-            value_match_visitor vtcv{ ctx, callee_ctx, call.expressions, expected_result_type, pmd->bindings };
+            value_match_visitor vtcv{ ctx, callee_ctx, call.expressions, annotated_entity_identifier{ exp.type, exp.location }, pmd->bindings };
             auto res = apply_visitor(vtcv, *optexpr);
             if (!res) return std::unexpected(std::move(res.error()));
-            pmd->result = field_descriptor { expected_result_type.value };
+            pmd->result = field_descriptor { exp.type };
         } else {
             THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern : match not a type result");
         }

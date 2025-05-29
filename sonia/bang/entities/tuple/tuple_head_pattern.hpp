@@ -4,27 +4,20 @@
 
 #pragma once
 
-#include "sonia/bang/functional/generic_pattern_base.hpp"
+#include "sonia/bang/entities/functional.hpp"
+#include "tuple_pattern_base.hpp"
 
 namespace sonia::lang::bang {
 
-class tuple_head_pattern : public generic_pattern_base<tuple_head_pattern>
+class tuple_head_pattern : public tuple_pattern_base
 {
-    friend class generic_pattern_base<tuple_head_pattern>;
-
 public:
     tuple_head_pattern() = default;
 
-    //std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, pure_call_t const&, annotated_entity_identifier const&) const;
-
+    std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, expected_result_t const&) const override;
     std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
-    //std::expected<entity_identifier, error_storage> const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const override;
-
-    std::ostream& print(unit const&, std::ostream& s) const override { return s << "head(tuple)"sv; }
-
-protected:
-    error_storage accept_argument(std::nullptr_t, functional_match_descriptor_ptr&, arg_context_type&, syntax_expression_result_t&) const;
+    std::ostream& print(unit const&, std::ostream& s) const override { return s << "head(@tuple)"sv; }
 };
 
 }

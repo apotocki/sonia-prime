@@ -25,7 +25,7 @@ value_match_visitor::result_type value_match_visitor::operator()(annotated_bool 
 {
     unit& u = callee_ctx.u();
 
-    ct_expression_visitor sv{ callee_ctx, expressions, annotated_entity_identifier{ u.get(builtin_eid::boolean) } };
+    ct_expression_visitor sv{ callee_ctx, expressions, expected_result_t{ u.get(builtin_eid::boolean) } };
     auto ent_id = apply_visitor(sv, cexpr);
     if (!ent_id) return std::unexpected(std::move(ent_id.error()));
     entity_identifier expected_ent_id = bv.value ? u.get(builtin_eid::true_) : u.get(builtin_eid::false_);
@@ -55,7 +55,7 @@ value_match_visitor::result_type value_match_visitor::operator()(function_call_t
 {
     unit& u = callee_ctx.u();
 
-    ct_expression_visitor sv{ callee_ctx, expressions, annotated_entity_identifier{ u.get(builtin_eid::qname) } };
+    ct_expression_visitor sv{ callee_ctx, expressions, expected_result_t{ u.get(builtin_eid::qname), true } };
     auto qn_ent_id = apply_visitor(sv, fc.fn_object);
     if (!qn_ent_id) return std::unexpected(std::move(qn_ent_id.error()));
     qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(get_entity(u, qn_ent_id->value));
@@ -112,7 +112,7 @@ value_match_visitor::result_type value_match_visitor::operator()(variable_refere
                     }
                     return std::unexpected(make_error<undeclared_identifier_error>(var.name));
                 }
-                auto res = apply_visitor(ct_expression_visitor{ caller_ctx, expressions, annotated_entity_identifier{ eid_or_var }, matching_type }, cexpr);
+                auto res = apply_visitor(ct_expression_visitor{ caller_ctx, expressions, expected_result_t{ eid_or_var, true } }, cexpr);
                 if (!res) return std::unexpected(std::move(res.error()));
                 return res->value;
             }

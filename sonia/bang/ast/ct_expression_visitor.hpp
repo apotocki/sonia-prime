@@ -21,12 +21,10 @@ struct ct_expression_visitor
         : base_expression_visitor{ c, el }
     {}
 
-    ct_expression_visitor(fn_compiler_context& c, semantic::expression_list_t& el, annotated_entity_identifier&& er, bool is_type_expected_value = true)
+    ct_expression_visitor(fn_compiler_context& c, semantic::expression_list_t& el, expected_result_t&& er)
         : base_expression_visitor{ c, el, std::move(er) }
         
-    {
-        is_type_expected = is_type_expected_value;
-    }
+    {}
 
 #if 0
     result_type operator()(annotated_bool const&) const;

@@ -92,6 +92,7 @@ class external_fn_pattern;
     ((set, "set"sv))                       \
     ((head, "head"sv))                     \
     ((tail, "tail"sv))                     \
+    ((to_string, "to_string"sv))           \
     ((empty, "empty"sv))
 
 #define BANG_PRINT_TYPE_ENUM(r, data, i, elem) BOOST_PP_TUPLE_ELEM(2, 0, elem),
@@ -118,6 +119,7 @@ enum class builtin_eid : size_t
     array_at, // builtin ::array_at(array, index)-> elementT
     equal, // builtin ::equal(a, b)-> boolean
     assert, // builtin ::assert(condition, message)-> void 
+    to_string, // builtin ::to_string(value)-> string
     eof_builtin_eid_value
 };
 

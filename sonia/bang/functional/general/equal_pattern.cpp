@@ -16,13 +16,16 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> equal_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> equal_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
+    unit& u = ctx.u();
     auto call_session = call.new_session(ctx);
     //syntax_expression_t const* plarg_expr, * prarg_expr;
-    auto larg = call_session.use_next_positioned_argument({}, false /*, &plarg_expr*/);
+    auto larg = call_session.use_next_positioned_argument(expected_result_t{}/*, &plarg_expr*/);
     if (!larg) return std::unexpected(larg.error());
-    auto rarg = call_session.use_next_positioned_argument({}, false /*, &prarg_expr*/);
+    entity_identifier ltype = larg->is_const_result ? get_entity(ctx.u(), larg->value()).get_type() : larg->type();
+
+    auto rarg = call_session.use_next_positioned_argument(expected_result_t{ ltype } /*, &prarg_expr*/);
     if (!rarg) return std::unexpected(rarg.error());
 
     if (auto argterm = call_session.unused_argument(); argterm) {
@@ -62,10 +65,13 @@ std::expected<syntax_expression_result_t, error_storage> equal_pattern::apply(fn
     }
     if (ler.is_const_result) {
         u.push_back_expression(el, exprs, semantic::push_value{ ler.value() });
-        exprs = el.concat(exprs, rer.expressions);
+    } else {
+        exprs = el.concat(exprs, ler.expressions);
+    }
+    if (rer.is_const_result) {
+        u.push_back_expression(el, exprs, semantic::push_value{ rer.value() });
     } else {
         exprs = el.concat(exprs, rer.expressions);
-        u.push_back_expression(el, exprs, semantic::push_value{ rer.value() });
     }
 
     u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::equal)));

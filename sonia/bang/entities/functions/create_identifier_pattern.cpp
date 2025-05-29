@@ -16,7 +16,7 @@
 namespace sonia::lang::bang {
 
 // __id(const string)
-std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
     if (call.args.empty()) {
         return std::unexpected(make_error<basic_general_error>(call.location, "an argument is expected"sv));
@@ -32,7 +32,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_
     
     auto const& expr = opt_named_expr.value();
 
-    ct_expression_visitor evis{ ctx, call.expressions, annotated_entity_identifier{ ctx.u().get(builtin_eid::string), get_start_location(expr) } };
+    ct_expression_visitor evis{ ctx, call.expressions, expected_result_t{ ctx.u().get(builtin_eid::string), get_start_location(expr) } };
 
     auto res = apply_visitor(evis, expr);
     if (!res) return std::unexpected(std::move(res.error()));

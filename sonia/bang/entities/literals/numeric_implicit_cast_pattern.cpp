@@ -36,22 +36,25 @@ public:
     variant<std::nullptr_t, integer_literal_entity, decimal_literal_entity> arg;
 };
 
-std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& e) const
+std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
-    unit& u = ctx.u();
-    if (!e) {
+    if (!exp) {
         return std::unexpected(make_error<basic_general_error>(call.location, "expected a numeric result"sv));
     }
-    entity_identifier teid = e.value;
+
+    unit& u = ctx.u();
+    entity_identifier teid = exp.type;
     int ntype = 0;
+
     if (teid == u.get(builtin_eid::f16)) { ntype = 1; }
     else if (teid == u.get(builtin_eid::f32)) { ntype = 2; }
     else if (teid == u.get(builtin_eid::f64)) { ntype = 3; }
     else if (teid == u.get(builtin_eid::decimal)) { ntype = 4; }
     else {
-        return std::unexpected(make_error<basic_general_error>(call.location, "expected a numeric result"sv, e));
+        return std::unexpected(make_error<basic_general_error>(call.location, "expected a numeric result"sv, exp.type));
     }
 
+    
     functional_match_descriptor_ptr pmd;
 
     for (auto const& arg : call.args) {
@@ -73,14 +76,14 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
                 return std::unexpected(make_error<value_mismatch_error>(get_start_location(argexpr), ser.value(), "a numeric literal"sv));
             }
             pmd = sonia::make_shared<numeric_implicit_cast_match_descriptor>(std::move(vis.value));
-            pmd->result = field_descriptor{ e.value, true };
+            pmd->result = field_descriptor{ exp.type, true };
 
             //integer_literal_entity
         } else {
             if (ser.type() == u.get(builtin_eid::integer)) {
                 pmd = make_shared<numeric_implicit_cast_match_descriptor>();
                 pmd->get_match_result(0).append_result(ser);
-                pmd->result = field_descriptor{ e.value, false };
+                pmd->result = field_descriptor{ exp.type, false };
             } else {
                 return std::unexpected(make_error<type_mismatch_error>(get_start_location(argexpr), ser.type(), "integer"sv));
             }

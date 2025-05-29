@@ -20,12 +20,11 @@ class base_expression_visitor : public static_visitor<std::expected<std::pair<sy
 protected:
     fn_compiler_context& ctx;
     semantic::expression_list_t& expressions;
-    annotated_entity_identifier expected_result;
-    bool is_type_expected = true; // type or entity
+    expected_result_t expected_result;
 
 public:
     explicit base_expression_visitor(fn_compiler_context&, semantic::expression_list_t&) noexcept;
-    base_expression_visitor(fn_compiler_context&, semantic::expression_list_t&, annotated_entity_identifier er, bool is_const_expected = false) noexcept;
+    base_expression_visitor(fn_compiler_context&, semantic::expression_list_t&, expected_result_t er) noexcept;
 
     result_type operator()(indirect_value const&) const;
 

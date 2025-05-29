@@ -70,13 +70,14 @@ public:
 
         inline bool has_more_positioned_arguments() const noexcept { return unused_positioned_index_ < unused_position_arguments_.size(); }
         std::expected<syntax_expression_result_t, error_storage> use_next_positioned_argument(syntax_expression_t const** pe = nullptr);
-        std::expected<syntax_expression_result_t, error_storage> use_next_positioned_argument(annotated_entity_identifier const& exp, bool const_exp, syntax_expression_t const** pe = nullptr);
+        std::expected<syntax_expression_result_t, error_storage> use_next_positioned_argument(expected_result_t const& exp, syntax_expression_t const** pe = nullptr);
+        std::expected<syntax_expression_result_t, error_storage> use_named_argument(identifier name, expected_result_t const& exp, syntax_expression_t const** pe = nullptr);
         
         named_expression_t unused_argument();
 
     private:
         std::expected<syntax_expression_result_t, error_storage>
-        do_resolve(argument_cache& arg_cache, annotated_entity_identifier const& exp, bool const_exp);
+        do_resolve(argument_cache& arg_cache, expected_result_t const& exp);
     };
 
     session new_session(fn_compiler_context&) const;

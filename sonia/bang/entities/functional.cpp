@@ -138,16 +138,23 @@ semantic::expression_span functional_match_descriptor::merge_void_spans(semantic
     return result;
 }
 
+parameter_match_result& functional_match_descriptor::push_match_result(identifier param_name)
+{
+    pmrs_.emplace_back(param_name, nullptr);
+    return get<1>(pmrs_.back());
+}
+
 parameter_match_result& functional_match_descriptor::get_match_result(identifier param_name)
 {
     BOOST_ASSERT(param_name);
-    auto it = named_matches_.find(param_name);
-    if (it == named_matches_.end()) {
-        pmrs_.emplace_back(param_name, nullptr);
-        named_matches_.emplace_hint(it, &pmrs_.back());
-        return get<1>(pmrs_.back());
+    auto nmr_it = std::lower_bound(named_matches_.begin(), named_matches_.end(), param_name, tuple_1st_element_comparator{});
+    if (nmr_it != named_matches_.end() && get<0>(**nmr_it) == param_name) {
+        return get<1>(**nmr_it);
     }
-    return get<1>(**it);
+    pmrs_.emplace_back(param_name, nullptr);
+    mr_pair_t& res = pmrs_.back();
+    named_matches_.emplace(nmr_it, &res);
+    return get<1>(res);
 }
 
 parameter_match_result& functional_match_descriptor::get_match_result(size_t pos)
@@ -306,7 +313,7 @@ struct expression_stack_checker
 #endif
 };
 
-std::expected<functional::match, error_storage> functional::find(fn_compiler_context& ctx, pure_call_t const& call, semantic::expression_list_t& ael, annotated_entity_identifier const& expected_result) const
+std::expected<functional::match, error_storage> functional::find(fn_compiler_context& ctx, pure_call_t const& call, semantic::expression_list_t& ael, expected_result_t const& expected_result) const
 {
     alt_error err;
     mp::decimal major_weight = 0;

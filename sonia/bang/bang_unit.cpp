@@ -21,8 +21,8 @@
 #include "functional/general/mut_pattern.hpp"
 #include "functional/general/deref_pattern.hpp"
 #include "functional/general/equal_pattern.hpp"
-
-#include "entities/functions/extern/to_string_pattern.hpp"
+#include "functional/general/typeof_pattern.hpp"
+#include "functional/general/to_string_pattern.hpp"
 
 #include "entities/literals/literal_entity.hpp"
 #include "entities/literals/numeric_implicit_cast_pattern.hpp"
@@ -302,9 +302,12 @@ OutputIteratorT unit::identifier_printer(identifier const& id, string_view prefi
 template <typename OutputIteratorT, typename UndefinedFT>
 OutputIteratorT unit::name_printer(qname_view const& qn, OutputIteratorT oi, UndefinedFT const& uf) const
 {
-    oi = identifier_printer(qn.front(), qn.is_absolute() ? "::"sv : ""sv, std::move(oi), uf);
-    for (identifier const& id : qn.subspan(1)) {
-        oi = identifier_printer(id, "::"sv, std::move(oi), uf);
+    if (!qn.empty()) {
+        oi = identifier_printer(qn.front(), qn.is_absolute() ? "::"sv : ""sv, std::move(oi), uf);
+    
+        for (identifier const& id : qn.subspan(1)) {
+            oi = identifier_printer(id, "::"sv, std::move(oi), uf);
+        }
     }
     return std::move(oi);
 }
@@ -1233,13 +1236,22 @@ unit::unit()
     functional& ellipsis_fnl = fregistry_resolve(get(builtin_qnid::ellipsis));
     ellipsis_fnl.push(make_shared<ellipsis_pattern>());
 
-    //assert(...) -> ()
+    // assert(...) -> ()
     functional& assert_fnl = fregistry_resolve(get(builtin_qnid::assert));
     assert_fnl.push(make_shared<assert_pattern>());
 
     // equal(_, _) -> bool
     functional& equal_fnl = fregistry_resolve(get(builtin_qnid::eq));
     equal_fnl.push(make_shared<equal_pattern>());
+
+    functional& typeof_fnl = fregistry_resolve(get(builtin_qnid::typeof));
+    typeof_fnl.push(make_shared<typeof_pattern>());
+
+    // typeof(object: const metaobject, property: const __identifier) -> typename
+    typeof_fnl.push(make_shared<metaobject_typeof_pattern>());
+
+    functional& to_string_fnl = fregistry_resolve(get(builtin_qnid::to_string));
+    to_string_fnl.push(make_shared<to_string_pattern>());
 
     functional& tuple_fnl = fregistry_resolve(get(builtin_qnid::tuple));
     tuple_fnl.push(make_shared<tuple_pattern>());
@@ -1270,7 +1282,7 @@ unit::unit()
     // get(self: tuple(), property: __identifier)->T;
     get_fnl.push(make_shared<tuple_get_pattern>());
     // get(self: @structure, property: __identifier)->T;
-    get_fnl.push(make_shared<struct_get_pattern>());
+    //get_fnl.push(make_shared<struct_get_pattern>());
 
     functional& set_fnl = fregistry_resolve(get(builtin_qnid::set));
     set_fnl.push(make_shared<tuple_set_pattern>());
@@ -1287,9 +1299,7 @@ unit::unit()
     functional& metaobject_fnl = fregistry_resolve(get(builtin_qnid::metaobject));
     metaobject_fnl.push(make_shared<metaobject_pattern>());
 
-    // typeof(object: const metaobject, property: const __identifier) -> typename
-    functional& typeof_fnl = fregistry_resolve(get(builtin_qnid::typeof));
-    typeof_fnl.push(make_shared<metaobject_typeof_pattern>());
+
 
     // head(metaobject) -> ???
     functional& head_fnl = fregistry_resolve(get(builtin_qnid::head));
@@ -1321,14 +1331,15 @@ unit::unit()
     builtin_eids_[(size_t)builtin_eid::array_at] = set_builtin_extern("__array_at"sv, &bang_array_at);
     builtin_eids_[(size_t)builtin_eid::equal] = set_builtin_extern("__equal"sv, &bang_any_equal);
     builtin_eids_[(size_t)builtin_eid::assert] = set_builtin_extern("__assert"sv, &bang_assert);
+    builtin_eids_[(size_t)builtin_eid::to_string] = set_builtin_extern("__to_string"sv, &bang_tostring);
     //set_extern<external_fn_pattern>("arrayify(...)->any"sv, &bang_arrayify);
 
     //set_const_extern<to_string_pattern>("size(const metaobjct))->integer"sv);
 
     set_extern<external_fn_pattern>("__print(_ ..., integer)"sv, &bang_print_string);
     //set_extern("implicit_cast(to: typename string, _)->string"sv, &bang_tostring);
-    set_const_extern<to_string_pattern>("to_string(const __identifier)->string"sv);
-    set_extern<external_fn_pattern>("to_string(_)->string"sv, &bang_tostring);
+    //set_const_extern<to_string_pattern>("to_string(const __identifier)->string"sv);
+    //set_extern<external_fn_pattern>("to_string(_)->string"sv, &bang_tostring);
     //set_extern<external_fn_pattern>("implicit_cast(mut integer)->decimal"sv, &bang_int2dec);
     //set_extern<external_fn_pattern>("implicit_cast(mut integer)->float"sv, &bang_int2flt);
     set_extern<external_fn_pattern>("create_extern_object(mut string)->object"sv, &bang_create_extern_object);

@@ -8,16 +8,16 @@
 
 namespace sonia::lang::bang {
 
-// creates instance of tuple
-class tuple_make_pattern : public functional::pattern
+class to_string_pattern : public functional::pattern
 {
 public:
-    tuple_make_pattern() = default;
+    // Zero default weight (default implementation). Any overload must win the match.
+    inline to_string_pattern() noexcept : functional::pattern{ 0 } {}
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, expected_result_t const&) const override;
     std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
-    std::ostream& print(unit const&, std::ostream& s) const override { return s << "make_tuple(...:...)"sv; }
+    std::ostream& print(unit const&, std::ostream& s) const override { return s << "to_string(_)->string"; }
 };
 
 }

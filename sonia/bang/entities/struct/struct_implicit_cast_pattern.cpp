@@ -13,10 +13,11 @@
 #include "sonia/bang/ast/base_expression_visitor.hpp"
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
+#include "sonia/bang/auxiliary.hpp"
 
 namespace sonia::lang::bang {
 
-error_storage struct_implicit_cast_check_argument_type(fn_compiler_context& ctx, annotated_entity_identifier const& argtype, annotated_entity_identifier const& exptype)
+error_storage struct_implicit_cast_check_argument_type(fn_compiler_context& ctx, annotated_entity_identifier const& argtype, expected_result_t const& exptype)
 {
     entity const& ent = ctx.u().eregistry_get(argtype.value);
     struct_entity const* sent = dynamic_cast<struct_entity const*>(&ent);
@@ -25,22 +26,22 @@ error_storage struct_implicit_cast_check_argument_type(fn_compiler_context& ctx,
     }
     auto uteid = sent->underlying_tuple_eid(ctx);
     if (!uteid) return std::move(uteid.error());
-    if (*uteid != exptype.value) {
-        return make_error<type_mismatch_error>(exptype.location, exptype.value, *uteid);
+    if (*uteid != exptype.type) {
+        return make_error<type_mismatch_error>(exptype.location, exptype.type, *uteid);
     }
     return {};
 }
 
-std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& e) const
+std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
-    unit& u = ctx.u();
-    if (!e) {
+    if (!exp) {
         return std::unexpected(make_error<basic_general_error>(call.location, "expected a tuple result"sv));
     }
-    entity const& ent = u.eregistry_get(e.value);
+    unit& u = ctx.u();
+    entity const& ent = get_entity(u, exp.type);
     entity_signature const* psig = ent.signature();
     if (!psig || psig->name != u.get(builtin_qnid::tuple)) {
-        return std::unexpected(make_error<type_mismatch_error>(e.location, e.value, "a tuple"sv));
+        return std::unexpected(make_error<type_mismatch_error>(exp.location, exp.type, "a tuple"sv));
     }
 
     functional_match_descriptor_ptr pmd;
@@ -63,10 +64,10 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_ca
             return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
         }
         if (ser.is_const_result) {
-            auto err = struct_implicit_cast_check_argument_type(ctx, annotated_entity_identifier{ ser.value(), get_start_location(argexpr) }, e);
+            auto err = struct_implicit_cast_check_argument_type(ctx, annotated_entity_identifier{ ser.value(), get_start_location(argexpr) }, exp);
             if (err) return std::unexpected(std::move(err));
         } else {
-            auto err = struct_implicit_cast_check_argument_type(ctx, annotated_entity_identifier{ ser.type(), get_start_location(argexpr) }, e);
+            auto err = struct_implicit_cast_check_argument_type(ctx, annotated_entity_identifier{ ser.type(), get_start_location(argexpr) }, exp);
             if (err) return std::unexpected(std::move(err));
         }
         pmd = make_shared<functional_match_descriptor>();
@@ -76,7 +77,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_ca
     if (!pmd) {
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter $0"sv));
     }
-    pmd->result = field_descriptor{ e.value };
+    pmd->result = field_descriptor{ exp.type };
     return pmd;
 }
 

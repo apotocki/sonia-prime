@@ -10,7 +10,7 @@
 
 namespace sonia::lang::bang {
 
-entity const& get_entity(unit& u, entity_identifier const& eid)
+entity const& get_entity(unit const& u, entity_identifier const& eid)
 {
     return u.eregistry_get(eid);
 }

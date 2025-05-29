@@ -24,7 +24,7 @@ public:
 };
 
 // tuple($args ... : _ ...)
-std::expected<functional_match_descriptor_ptr, error_storage> tuple_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const&) const
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
     unit& u = ctx.u();
     entity_identifier veid = u.get(builtin_eid::void_);

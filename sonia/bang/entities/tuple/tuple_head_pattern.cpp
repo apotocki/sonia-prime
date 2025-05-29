@@ -4,229 +4,78 @@
 
 #include "sonia/config.hpp"
 #include "tuple_head_pattern.hpp"
+#include "tuple_pattern_base.hpp"
+
+#include <algorithm>
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
-#include "sonia/bang/ast/expression_visitor.hpp"
-#include "sonia/bang/ast/ct_expression_visitor.hpp"
 
+#include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
-#include "sonia/bang/functional/generic_pattern_base.ipp"
-
 #include "sonia/bang/auxiliary.hpp"
+
+#include "sonia/bang/errors/type_mismatch_error.hpp"
 
 namespace sonia::lang::bang {
 
-// head( tuple(name0: value0, name1: value1, ...) ) => metaobject(name0, value0)
-// head( tuple(const value0, name1: value1, ...) ) => const value0
-// head( tuple(value0, name1: value1, ...) ) => value0
+// head( make_tuple(name0: value0, ...) ) => make_tuple(name0^^::identifier, value0)
+// head( make_tuple(const value0, ...) ) => const value0
+// head( make_tuple(value0, ...) ) => value0
 
-class tuple_head_match_descriptor : public functional_match_descriptor
+// head( typename tuple(name0: value0, ...) ) => typename tuple(name0^^::identifier, value0)
+// head( typename tuple(const value0, ...) ) => const value0
+// head( typename tuple(type, ...) ) => type
+
+std::expected<functional_match_descriptor_ptr, error_storage> tuple_head_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
-public:
-    inline explicit tuple_head_match_descriptor(unit& u, entity_signature const& sig, lex::resource_location loc) noexcept
-        : result_sig{ u.get(builtin_qnid::tuple) }
-    {
-        field_descriptor const& head_field = sig.fields().front();
-        if (head_field.name()) {
-            result_sig.emplace_back(u.make_identifier_entity(head_field.name()).id, true);
-        }
-        result_sig.push_back(head_field);
-        result_sig.result.emplace(u.get(builtin_eid::typename_));
-        location = std::move(loc);
-    }
-
-    size_t src_size;
-    entity_signature result_sig;
-};
-
-error_storage tuple_head_pattern::accept_argument(std::nullptr_t, functional_match_descriptor_ptr& pmd, arg_context_type & argctx, syntax_expression_result_t& er) const
-{
-    if (pmd || argctx.pargname) return argctx.make_argument_mismatch_error();
-
-    fn_compiler_context& ctx = argctx.ctx;
-    prepared_call const& call = argctx.call;
-    unit& u = ctx.u();
-    
-    entity_identifier argtype;
-
-    if (er.is_const_result) {
-        entity const& arg_entity = get_entity(u, er.value());
-        if (auto psig = arg_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
-            // argument is typename tuple
-            pmd = make_shared<tuple_head_match_descriptor>(u, *psig, call.location);
-            return {};
-        } else {
-            argtype = arg_entity.get_type();
-        }
-    } else {
-        argtype = er.type();
-    }
-            
-    entity const& tpl_entity = get_entity(u, argtype);
-    if (auto psig = tpl_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
-        pmd = make_shared<tuple_head_match_descriptor>(u, *psig, call.location);
-        auto& md = static_cast<tuple_head_match_descriptor&>(*pmd);
-
-        field_descriptor const& head_field = psig->fields().front();
-        if (head_field.is_const()) {
-            return {};
-        }
-
-        // get non const fields count and index
-        size_t fields_count = psig->fields().size();
-        field_descriptor const* b_fd = &head_field, * e_fd = b_fd + fields_count;
-        for (++b_fd; b_fd != e_fd; ++b_fd) { // first is not const, so skip it
-            if (b_fd->is_const()) { --fields_count; }
-        }
-        md.src_size = fields_count;
-
-        auto& mr = md.get_match_result(0);
-        er.value_or_type = argtype;
-        mr.append_result(er);
-        return {};
-    }
-    return argctx.make_argument_mismatch_error();
+    // Use shared base logic
+    return try_match_tuple(ctx, call, exp);
 }
-
-//std::expected<functional_match_descriptor_ptr, error_storage> tuple_head_pattern::try_match(fn_compiler_context& ctx, pure_call_t const& call, annotated_entity_identifier const& exp) const
-//{
-//    unit& u = ctx.u();
-//    shared_ptr<tuple_head_match_descriptor> pmd;
-//    for (auto const& arg : call.args()) {
-//        annotated_identifier const* pargname = arg.name();
-//        auto const& argexpr = arg.value();
-//
-//        auto res = apply_visitor(base_expression_visitor{ ctx }, argexpr);
-//        if (!res) return std::unexpected(std::move(res.error()));
-//        auto err = apply_visitor(make_functional_visitor<error_storage>([&ctx, &pmd, &argexpr, &call, pargname](auto& v) -> error_storage {
-//            entity_identifier argtype;
-//            if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-//                if (v == ctx.u().get(builtin_eid::void_)) {
-//                    return make_error<type_mismatch_error>(get_start_location(argexpr), v, "not void"sv);
-//                }
-//            } else {
-//                if (ctx.context_type == ctx.u().get(builtin_eid::void_)) return {}; // skip
-//                argtype = ctx.context_type;
-//            }
-//
-//            if (!pmd && !pargname) {
-//                if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-//                    entity const& arg_entity = ctx.u().eregistry_get(v);
-//                    if (auto psig = arg_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
-//                        // argument is typename tuple
-//                        pmd = make_shared<tuple_head_match_descriptor>(ctx.u(), *psig, call.location());
-//                        return {};
-//                    } else {
-//                        argtype = arg_entity.get_type();
-//                    }
-//                }
-//            
-//                entity const& tpl_entity = ctx.u().eregistry_get(argtype);
-//                if (auto psig = tpl_entity.signature(); psig && psig->name == ctx.u().get(builtin_qnid::tuple)) {
-//                    pmd = make_shared<tuple_head_match_descriptor>(ctx.u(), *psig, call.location());
-//                    field_descriptor const& head_field = psig->fields().front();
-//                    if (head_field.is_const()) {
-//                        return {};
-//                    }
-//
-//                    // get non const fields count and index
-//                    size_t fields_count = psig->fields().size();
-//                    field_descriptor const* b_fd = &head_field, * e_fd = b_fd + fields_count;
-//                    for (++b_fd; b_fd != e_fd; ++b_fd) { // first is not const, so skip it
-//                        if (b_fd->is_const()) { --fields_count; }
-//                    }
-//                    pmd->src_size = fields_count;
-//
-//                    auto& mr = pmd->get_match_result(0);
-//                    if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-//                        mr.append_result(argtype);
-//                    } else {
-//                        mr.append_result(argtype, v.end(), v);
-//                        pmd->call_expressions.splice_back(v);
-//                    }
-//                    return {};
-//                }
-//            }
-//            return make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr);
-//            
-//        }), res->first);
-//        if (err) return std::unexpected(std::move(err));
-//    }
-//    if (!pmd) {
-//        return std::unexpected(make_error<basic_general_error>(call.location(), "unmatched parameter"sv));
-//    }
-//    return pmd;
-//}
 
 std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto& tmd = static_cast<tuple_head_match_descriptor&>(md);
-    entity_identifier rtype;
-    if (tmd.result_sig.fields().size() > 1) { // 'named' front field case
-        indirect_signatured_entity smpl{ tmd.result_sig };
-        entity& tplent = ctx.u().eregistry_find_or_create(smpl, [&u, &tmd]() {
-            return make_shared<basic_signatured_entity>(std::move(tmd.result_sig));
-        });
+    auto& tmd = static_cast<tuple_pattern_match_descriptor&>(md);
+    auto& mr = md.get_match_result(0);
+    auto& ser = mr.results.front();
 
-        entity_signature const& res_sig = *tplent.signature();
-        if (std::ranges::find(res_sig.fields(), false, &field_descriptor::is_const) == res_sig.fields().end()) {
-            empty_entity valueref{ tplent.id };
-            entity& value_ent = ctx.u().eregistry_find_or_create(valueref, [&tplent]() {
-                return make_shared<empty_entity>(tplent.id);
-            });
-            return syntax_expression_result_t{
-                .expressions = md.merge_void_spans(el),
-                .value_or_type = value_ent.id,
-                .is_const_result = true
-            };
-        }
-        rtype = tplent.id;
-    } else if (tmd.result_sig.fields().front().is_const()) {
+    entity_identifier rtype;
+    field_descriptor const& head_field = tmd.arg_sig.fields().front();
+    if (head_field.name()) {
+        entity_signature rsig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
+        rsig.emplace_back(u.make_identifier_entity(head_field.name()).id, true);
+        rsig.emplace_back(head_field.entity_id(), head_field.is_const());
+        rtype = u.make_basic_signatured_entity(std::move(rsig)).id;
+    } else {
+        rtype = head_field.entity_id();
+    }
+
+    if (tmd.is_argument_typename) {
         return syntax_expression_result_t{
+            .temporaries = std::move(ser.temporaries),
             .expressions = md.merge_void_spans(el),
-            .value_or_type = tmd.result_sig.fields().front().entity_id(),
+            .value_or_type = rtype,
             .is_const_result = true
         };
-    } else {
-        rtype = tmd.result_sig.fields().front().entity_id();
     }
-
-    semantic::expression_span exprs = md.merge_void_spans(el);
-    tmd.for_each_positional_match([&exprs, &el](parameter_match_result const& mr) {
-        for (auto const& ser : mr.results) {
-            exprs = el.concat(exprs, ser.expressions);
-        }
-    });
-
-    if (tmd.src_size > 1) {
-        u.push_back_expression(el, exprs, semantic::push_value{ mp::integer{ 0 } });
-        u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
+    if (ser.is_const_result || head_field.is_const()) {
+        return syntax_expression_result_t{
+            .temporaries = std::move(ser.temporaries),
+            .expressions = md.merge_void_spans(el),
+            .value_or_type = head_field.name() ? u.make_empty_entity(rtype).id : rtype,
+            .is_const_result = true
+        };
     }
-
-    return syntax_expression_result_t{ 
-        .expressions = std::move(exprs),
-        .value_or_type = rtype,
-        .is_const_result = false
-    };
+    ser.expressions = el.concat(md.merge_void_spans(el), ser.expressions);
+    ser.value_or_type = rtype; // single non-const field, so use it as result
+    size_t src_size = std::ranges::count_if(tmd.arg_sig.fields(), [](field_descriptor const& fd) { return !fd.is_const(); });
+    if (src_size > 1) {
+        u.push_back_expression(el, ser.expressions, semantic::push_value{ mp::integer{ 0 } });
+        u.push_back_expression(el, ser.expressions, semantic::invoke_function(u.get(builtin_eid::array_at)));
+    }
+    return std::move(ser);
 }
-
-template class generic_pattern_base<tuple_head_pattern>;
-
-//std::expected<entity_identifier, error_storage> tuple_head_pattern::const_apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
-//{
-//    auto res = apply(ctx, md);
-//    if (!res) return std::unexpected(std::move(res.error()));
-//    using result_t = std::expected<entity_identifier, error_storage>;
-//    return apply_visitor(make_functional_visitor<result_t>([&ctx, &md](auto && eid_or_el) -> result_t {
-//        if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_el)>, entity_identifier>) {
-//            return eid_or_el;
-//        } else {
-//            return std::unexpected(make_shared<basic_general_error>(md.location, "can't evaluate as a const expression"sv));
-//        }
-//    }), *res);
-//}
 
 }

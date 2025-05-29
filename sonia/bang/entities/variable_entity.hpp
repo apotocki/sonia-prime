@@ -33,7 +33,7 @@ public:
 
     void visit(entity_visitor const& v) const override { v(*this); }
 
-    std::ostream& print_to(std::ostream& os, unit const& u) const override;
+    std::ostream& print_to(std::ostream&, unit const&) const override;
 };
 
 /*

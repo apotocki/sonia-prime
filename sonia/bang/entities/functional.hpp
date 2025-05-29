@@ -131,8 +131,9 @@ class functional_match_descriptor
     //};
 
     std::list<mr_pair_t> pmrs_;
+
     // mr_pair_t are compared by comparing first elements of the tuple
-    boost::container::small_flat_set<mr_pair_t*, 8, lang::tuple_1st_element_comparator> named_matches_;
+    small_vector<mr_pair_t*, 8> named_matches_;
 
     //boost::container::small_flat_map<identifier, parameter_match_result*, 8> named_matches_;
     small_vector<parameter_match_result*, 8> positional_matches_;
@@ -203,14 +204,9 @@ public:
             }
         }
     }
-    //template <typename FT>
-    //inline void for_each_match(FT&& ft) const
-    //{
-    //    for_each_named_match(std::forward<FT>(ft));
-    //    for_each_positional_match(std::forward<FT>(ft));
-    //}
 
-    parameter_match_result& get_match_result(identifier /* external name */);
+    parameter_match_result& push_match_result(identifier);
+    parameter_match_result& get_match_result(identifier);
     parameter_match_result& get_match_result(size_t);
 
     entity_signature build_signature(unit&, qname_identifier);
@@ -224,7 +220,22 @@ private:
 
 using functional_match_descriptor_ptr = shared_ptr<functional_match_descriptor>;
 
+struct expected_result_t
+{
+    entity_identifier type;
+    lex::resource_location location;
+    bool is_const_result{ false };
 
+    expected_result_t() = default;
+    expected_result_t(entity_identifier eid, bool is_const = false, lex::resource_location loc = lex::resource_location{}) noexcept
+        : type{ std::move(eid) }, is_const_result{ is_const }, location{ std::move(loc) }
+    {}
+    expected_result_t(entity_identifier eid, lex::resource_location loc) noexcept
+        : expected_result_t{ std::move(eid), false, std::move(loc) }
+    {}
+
+    inline explicit operator bool() const noexcept { return !!type; }
+};
 
 class functional
 {
@@ -241,12 +252,8 @@ public:
         inline explicit pattern(mp::decimal w = 1) noexcept : weight_{ w } {}
 
     public:
-        virtual std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, annotated_entity_identifier const& expected_result) const = 0; // returns the match weight or an error
-
-        virtual std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const
-        {
-            THROW_NOT_IMPLEMENTED_ERROR("functional::pattern::apply");
-        }
+        virtual std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, expected_result_t const&) const = 0;
+        virtual std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const = 0;
 
         inline mp::decimal const& get_weight() const noexcept { return weight_; }
         inline lex::resource_location const& location() const noexcept { return location_; }
@@ -306,7 +313,7 @@ public:
     }
 
     // looking by argument expressions (pattern matching)
-    std::expected<match, error_storage> find(fn_compiler_context&, pure_call_t const&, semantic::expression_list_t&, annotated_entity_identifier const& expected_result = annotated_entity_identifier{}) const;
+    std::expected<match, error_storage> find(fn_compiler_context&, pure_call_t const&, semantic::expression_list_t&, expected_result_t const& expected_result = expected_result_t{}) const;
 
 private:
     qname_identifier id_;

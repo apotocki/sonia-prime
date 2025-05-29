@@ -50,7 +50,6 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/bang/entities/functions/expression_resolver.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/functions/function_entity.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/functions/internal_function_entity.cpp
-    ${BUNDLE_HOME}/sonia/bang/entities/functions/extern/to_string_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/literals/numeric_implicit_cast_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_argument_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_bit_and_pattern.cpp
@@ -65,24 +64,34 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/bang/entities/struct/struct_implicit_cast_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/struct/struct_init_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/struct/struct_new_pattern.cpp
+
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_empty_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_get_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_head_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_make_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_implicit_cast_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_pattern_base.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_set_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_size_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_tail_pattern.cpp
+
     ${BUNDLE_HOME}/sonia/bang/entities/union/union_bit_or_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/union/union_implicit_cast_pattern.cpp
+
     ${BUNDLE_HOME}/sonia/bang/functional/basic_fn_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/external_fn_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/signature_matcher.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/value_match_visitor.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/value_type_match_visitor.cpp
+
+    ${BUNDLE_HOME}/sonia/bang/functional/general/assert_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/general/deref_pattern.cpp
-    ${BUNDLE_HOME}/sonia/bang/functional/general/mut_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/general/equal_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/functional/general/mut_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/functional/general/to_string_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/functional/general/typeof_pattern.cpp
+
     ${BUNDLE_HOME}/sonia/bang/semantic/semantic_expression_printer.cpp
 
     ${BUNDLE_HOME}/sonia/bang/errors/assign_error.cpp

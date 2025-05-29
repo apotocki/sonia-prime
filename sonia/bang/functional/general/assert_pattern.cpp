@@ -24,12 +24,12 @@ public:
     small_vector<error_storage, 4> reserved_errors;
 };
 
-std::expected<functional_match_descriptor_ptr, error_storage> assert_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> assert_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     auto call_session = call.new_session(ctx);
-    annotated_entity_identifier bool_exp{ ctx.u().get(builtin_eid::boolean), call.location };
+    expected_result_t bool_exp{ ctx.u().get(builtin_eid::boolean), call.location };
     syntax_expression_t const* pargexpr;
-    auto firstarg = call_session.use_next_positioned_argument(bool_exp, false, &pargexpr);
+    auto firstarg = call_session.use_next_positioned_argument(bool_exp, &pargexpr);
     if (!firstarg) return std::unexpected(firstarg.error());
     auto pmd = make_shared<assert_match_descriptor>(call.location);
     size_t argnum = 0;
@@ -48,7 +48,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> assert_pattern::tr
     append_arg(ctx.u(), *firstarg);
     
     while (call_session.has_more_positioned_arguments()) {
-        auto nextarg = call_session.use_next_positioned_argument(bool_exp, false, &pargexpr);
+        auto nextarg = call_session.use_next_positioned_argument(bool_exp, &pargexpr);
         if (!nextarg) return std::unexpected(firstarg.error());
         append_arg(ctx.u(), *nextarg);
     }

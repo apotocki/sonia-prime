@@ -28,7 +28,7 @@ assign_expression_visitor::result_type assign_expression_visitor::operator()(var
                 return std::unexpected(make_error<assign_error>(assign_location_, syntax_expression_t{ v }));
             }
         }
-        base_expression_visitor rvis{ ctx_, expressions, annotated_entity_identifier{ assign_type, assign_location_ } };
+        base_expression_visitor rvis{ ctx_, expressions, expected_result_t{ assign_type, assign_location_ } };
         auto res = apply_visitor(rvis, rhs_);
         if (!res) return std::unexpected(std::move(res.error()));
         auto& ser = res->first;

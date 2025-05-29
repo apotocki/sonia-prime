@@ -45,7 +45,7 @@ public:
 
     friend inline size_t hash_value(entity const& e) noexcept { return e.hash(); }
 
-    virtual std::ostream& print_to(std::ostream& os, unit const& u) const;
+    virtual std::ostream& print_to(std::ostream&, unit const&) const;
 };
 
 using entity_ptr = shared_ptr<entity>;

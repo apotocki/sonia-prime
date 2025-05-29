@@ -11,9 +11,9 @@ namespace sonia::lang::bang {
 class unit;
 class entity;
 
-entity const& get_entity(unit&, entity_identifier const&);
+entity const& get_entity(unit const&, entity_identifier const&);
 
-inline entity const& get_entity(unit& u, annotated_entity_identifier const& aeid)
+inline entity const& get_entity(unit const& u, annotated_entity_identifier const& aeid)
 {
     return get_entity(u, aeid.value);
 }

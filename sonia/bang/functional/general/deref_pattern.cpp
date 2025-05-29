@@ -16,11 +16,11 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> deref_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> deref_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     auto call_session = call.new_session(ctx);
     syntax_expression_t const* parg_expr;
-    auto arg = call_session.use_next_positioned_argument(exp, true, &parg_expr);
+    auto arg = call_session.use_next_positioned_argument(exp, &parg_expr);
     if (!arg) return std::unexpected(arg.error());
 
     auto argerror = [parg_expr] {

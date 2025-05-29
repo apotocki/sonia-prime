@@ -41,7 +41,7 @@ error_storage array_implicit_cast_check_const_argument_type(fn_compiler_context&
     small_vector<semantic::expression_span, 16> rt_element_results;
 
     size_t elem_count = psig->positioned_fields_indices().size();
-    base_expression_visitor vis{ ctx, ael, annotated_entity_identifier{ vec_element_type_eid } };
+    base_expression_visitor vis{ ctx, ael, expected_result_t{ vec_element_type_eid } };
     for (size_t i = 0; i < elem_count; ++i) {
         entity_identifier elem_eid = psig->find_field(i)->entity_id();
         auto res = vis(annotated_entity_identifier{ elem_eid, argloc });
@@ -100,7 +100,7 @@ error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, 
         .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
     });
 
-    auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, ael, annotated_entity_identifier{ vec_element_type_eid });
+    auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, ael, expected_result_t{ vec_element_type_eid });
     if (!match) {
         return make_error<cast_error>(vec_type.location, er.type(), vec_type.value);
     }
@@ -108,18 +108,18 @@ error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, 
     return {};
 }
 
-std::expected<functional_match_descriptor_ptr, error_storage> array_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, annotated_entity_identifier const& e) const
+std::expected<functional_match_descriptor_ptr, error_storage> array_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
-    if (!e) {
+    if (!exp) {
         return std::unexpected(make_error<basic_general_error>(call.location, "expected a vector result"sv));
     }
 
     unit& u = ctx.u();
-    entity const& ent = get_entity(u, e);
+    entity const& ent = get_entity(u, exp.type);
     
     entity_signature const* psig = ent.signature();
     if (!psig || psig->name != u.get(builtin_qnid::vector)) {
-        return std::unexpected(make_error<type_mismatch_error>(e.location, e.value, "a vector"sv));
+        return std::unexpected(make_error<type_mismatch_error>(exp.location, exp.type, "a vector"sv));
     }
     entity_identifier vec_element_type_eid = psig->find_field(u.get(builtin_id::element))->entity_id();
 
@@ -137,8 +137,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_implicit_cas
         if (!res) return std::unexpected(std::move(res.error()));
         pmd = make_shared<functional_match_descriptor>();
         auto err = (res->first.is_const_result) ?
-            array_implicit_cast_check_const_argument_type(ctx, call.expressions, res->first, get_start_location(argexpr), vec_element_type_eid, e, *pmd) :
-            array_implicit_cast_check_argument_type(ctx, call.expressions, res->first, get_start_location(argexpr), vec_element_type_eid, e, *pmd, call);
+            array_implicit_cast_check_const_argument_type(ctx, call.expressions, res->first, get_start_location(argexpr), vec_element_type_eid, annotated_entity_identifier{ exp.type, exp.location }, *pmd) :
+            array_implicit_cast_check_argument_type(ctx, call.expressions, res->first, get_start_location(argexpr), vec_element_type_eid, annotated_entity_identifier{ exp.type, exp.location }, *pmd, call);
         
         if (err) return std::unexpected(std::move(err));
     }
@@ -146,7 +146,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_implicit_cas
     if (!pmd) {
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter $0"sv));
     }
-    pmd->result = field_descriptor{ e.value };
+    pmd->result = field_descriptor{ exp.type };
     return pmd;
 }
 

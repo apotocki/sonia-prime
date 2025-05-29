@@ -1,12 +1,47 @@
 let xpack0 = (1, name: "assa", mut("345"), name: "bassa", name: mut(123));
-assert(size(xpack0) == 2);
+assert(size(xpack0) == 5);
+
 assert(xpack0.0 == 1);
 assert(xpack0[0] == 1);
-assert(xpack0.1 == "345");
-assert(xpack0[1] == "345");
-
 assert(head(xpack0) == 1);
+assert(typeof(head(xpack0)) == ::integer);
+
+assert(size(head(tail(xpack0))) == 2);
 assert(head(tail(xpack0)).0 == .name);
+assert(head(tail(xpack0))[0] == .name);
+assert(head(head(tail(xpack0))) == .name);
+assert(head(tail(xpack0)).1 == "assa");
+assert(head(tail(xpack0))[1] == "assa");
+assert(tail(head(tail(xpack0)))[0] == "assa");
+
+assert(xpack0.1.0 == .name);
+assert(xpack0.1.1 == "assa");
+assert(xpack0[1].0 == .name);
+assert(xpack0[1].1 == "assa");
+assert(xpack0[1][0] == .name);
+assert(xpack0[1][1] == "assa");
+
+assert(xpack0.2 == "345");
+assert(xpack0[2] == "345");
+assert(typeof(head(tail(tail(xpack0)))) == string);
+assert(head(tail(tail(xpack0))) == "345");
+
+assert(size(head(tail(tail(tail(xpack0))))) == 2);
+assert(head(tail(tail(tail(xpack0)))).0 == .name);
+assert(head(tail(tail(tail(xpack0)))).1 == "bassa");
+assert(xpack0[3] == (.name, "bassa"));
+
+assert(size(head(tail(tail(tail(tail(xpack0)))))) == 2);
+assert(head(tail(tail(tail(tail(xpack0))))).0 == .name);
+assert(head(tail(tail(tail(tail(xpack0))))).1 == 123);
+assert(xpack0[4] == (.name, mut(123)));
+assert(xpack0[4] == (.name, 123));
+/*
+assert(size(xpack0.name) == 3);
+*/
+//__print(to_string(typeof(head(tail(tail(tail(xpack0)))))), 1);
+//__print(typeof(xpack0), 1);
+//__print(to_string(typeof(tail(head(tail(xpack0))))), 1);
 /*
 assert(size(xpack0.name) == 3);
 //assert(size(xpack0["name"]) == 3);

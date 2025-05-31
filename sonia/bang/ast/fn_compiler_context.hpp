@@ -318,4 +318,16 @@ private:
     semantic::managed_expression_list expression_store_;
 };
 
+class fn_compiler_context_scope
+{
+    fn_compiler_context& ctx_;
+    functional_binding_set bound_temporaries_;
+
+public:
+    explicit fn_compiler_context_scope(fn_compiler_context& ctx);
+    ~fn_compiler_context_scope();
+    
+    local_variable& new_temporary(identifier name, entity_identifier type);
+};
+
 }

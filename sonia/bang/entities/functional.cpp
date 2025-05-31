@@ -366,7 +366,9 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
     if (alternatives.size() > 1) {
         std::vector<ambiguity_error::alternative> as;
         for (alternative_t const& a : alternatives) {
-            as.emplace_back(get<0>(a)->location(), get<1>(a)->build_signature(ctx.u(), id_));
+            std::ostringstream ss;
+            get<0>(a)->print(ctx.u(), ss);
+            as.emplace_back(get<0>(a)->location(), ss.str(), get<1>(a)->build_signature(ctx.u(), id_));
         }
         return std::unexpected(make_error<ambiguity_error>(annotated_qname_identifier{ id_, call.location }, std::move(as)));
     }

@@ -68,11 +68,11 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(entity 
     auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expressions, expected_result);
     if (!match) {
         // ignore casting error details
-        return std::unexpected(make_error<cast_error>(expr_loc /*expected_result.location*/, expected_result.type, typeeid, e));
-        //return std::unexpected(append_cause(
-        //    make_error<cast_error>(expr_loc, expected_result.value, typeeid, e),
-        //    std::move(match.error())
-        //));
+        //return std::unexpected(make_error<cast_error>(expr_loc /*expected_result.location*/, expected_result.type, typeeid, e));
+        return std::unexpected(append_cause(
+            make_error<cast_error>(expr_loc, expected_result.type, typeeid, e),
+            std::move(match.error())
+        ));
     }
 
     auto res = match->apply(ctx);

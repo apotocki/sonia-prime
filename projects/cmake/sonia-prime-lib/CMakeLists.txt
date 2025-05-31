@@ -51,6 +51,8 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/bang/entities/functions/function_entity.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/functions/internal_function_entity.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/literals/numeric_implicit_cast_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/entities/literals/const_literal_implicit_cast_pattern.cpp
+
     ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_argument_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_bit_and_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_empty_pattern.cpp
@@ -75,6 +77,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_set_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_size_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_tail_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_equal_pattern.cpp
 
     ${BUNDLE_HOME}/sonia/bang/entities/union/union_bit_or_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/union/union_implicit_cast_pattern.cpp

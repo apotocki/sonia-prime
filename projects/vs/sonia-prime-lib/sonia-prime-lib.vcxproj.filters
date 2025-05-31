@@ -2457,6 +2457,12 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_implicit_cast_pattern.hpp">
       <Filter>sonia.bang\entities\tuple</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\literals\const_literal_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_equal_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2979,6 +2985,12 @@
       <Filter>sonia.bang\entities\tuple</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\literals\const_literal_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_equal_pattern.cpp">
       <Filter>sonia.bang\entities\tuple</Filter>
     </ClCompile>
   </ItemGroup>

@@ -559,6 +559,7 @@ struct syntax_expression_result
     // {temporary name, temporarytype, expressions}
     small_vector<std::tuple<variable_identifier, entity_identifier, semantic::expression_span>, 2> temporaries;
 
+    semantic::expression_span stored_expressions;
     semantic::expression_span expressions;
     entity_identifier value_or_type;
     bool is_const_result;

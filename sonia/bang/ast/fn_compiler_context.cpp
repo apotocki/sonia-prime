@@ -627,4 +627,26 @@ void fn_compiler_context::append_expression(semantic::expression&& e)
     unit_.push_back_expression(expressions(), std::move(e));
 }
 
+
+fn_compiler_context_scope::fn_compiler_context_scope(fn_compiler_context& ctx)
+    : ctx_{ ctx }
+{
+    ctx_.push_scope();
+    ctx_.push_binding(bound_temporaries_);
+}
+
+fn_compiler_context_scope::~fn_compiler_context_scope()
+{
+    ctx_.pop_binding(&bound_temporaries_);
+    ctx_.pop_scope();
+}
+
+local_variable& fn_compiler_context_scope::new_temporary(identifier name, entity_identifier type)
+{
+    local_variable& lv = get<local_variable>(bound_temporaries_.emplace_back(
+        annotated_identifier(name),
+        local_variable{ .type = std::move(type), .varid = ctx_.u().new_variable_identifier(), .is_weak = false }));
+    return lv;
+}
+
 }

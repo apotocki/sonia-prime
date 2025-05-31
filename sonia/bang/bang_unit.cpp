@@ -26,6 +26,7 @@
 
 #include "entities/literals/literal_entity.hpp"
 #include "entities/literals/numeric_implicit_cast_pattern.hpp"
+#include "entities/literals/const_literal_implicit_cast_pattern.hpp"
 
 #include "entities/union/union_bit_or_pattern.hpp"
 #include "entities/union/union_implicit_cast_pattern.hpp"
@@ -38,6 +39,8 @@
 #include "entities/tuple/tuple_empty_pattern.hpp"
 #include "entities/tuple/tuple_head_pattern.hpp"
 #include "entities/tuple/tuple_tail_pattern.hpp"
+#include "entities/tuple/tuple_implicit_cast_pattern.hpp"
+#include "entities/tuple/tuple_equal_pattern.hpp"
 
 #include "entities/struct/struct_new_pattern.hpp"
 #include "entities/struct/struct_get_pattern.hpp"
@@ -1242,6 +1245,7 @@ unit::unit()
 
     // equal(_, _) -> bool
     functional& equal_fnl = fregistry_resolve(get(builtin_qnid::eq));
+    equal_fnl.push(make_shared<tuple_equal_pattern>());
     equal_fnl.push(make_shared<equal_pattern>());
 
     functional& typeof_fnl = fregistry_resolve(get(builtin_qnid::typeof));
@@ -1263,6 +1267,8 @@ unit::unit()
     implicit_cast_fnl.push(make_shared<array_elements_implicit_cast_pattern>());
     implicit_cast_fnl.push(make_shared<union_implicit_cast_pattern>());
     implicit_cast_fnl.push(make_shared<numeric_implicit_cast_pattern>());
+    implicit_cast_fnl.push(make_shared<tuple_implicit_cast_pattern>());
+    implicit_cast_fnl.push(make_shared<const_literal_implicit_cast_pattern>());
 
     auto union_pattern = make_shared<union_bit_or_pattern>();
     functional& bit_or_fnl = fregistry_resolve(get(builtin_qnid::bit_or));

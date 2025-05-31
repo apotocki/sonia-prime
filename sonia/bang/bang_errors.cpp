@@ -57,6 +57,34 @@ void error_printer_visitor::operator()(general_error const& err)
     );
 }
 
+void error_printer_visitor::operator()(binary_relation_error const& err)
+{
+    if (err.location()) {
+        write(s_, err.location()) << ": "sv;
+    }
+    s_ << '`' <<
+        apply_visitor(string_resolver_visitor{}, err.left_object(u_)) <<
+        "` and `"sv <<
+        apply_visitor(string_resolver_visitor{}, err.right_object(u_)) <<
+        "` : "sv;
+    
+    s_ << apply_visitor(string_resolver_visitor{}, err.description(u_));
+    if (auto* ploc = err.ref_location()) {
+        s_ << ", see declaration at "sv;
+        write(s_, *ploc);
+    }
+}
+
+error::string_t binary_relation_error::left_object(unit const& u) const noexcept
+{
+    return apply_visitor(printer_resolver_visitor{ u }, left_);
+}
+
+error::string_t binary_relation_error::right_object(unit const& u) const noexcept
+{
+    return apply_visitor(printer_resolver_visitor{ u }, right_);
+}
+
 general_error::string_t basic_general_error::object(unit const& u) const noexcept
 { 
     return apply_visitor(printer_resolver_visitor{u}, object_);
@@ -137,8 +165,13 @@ void error_printer_visitor::operator()(ambiguity_error const& err)
             s_ << "\n or \n";
         }
         else { first = false; }
-        u_.print_to(s_, e.location) << ": ";
+        if (e.location) {
+            u_.print_to(s_, e.location) << ": ";
+        }
         u_.print_to(s_, e.sig);
+        if (!e.location) {
+            s_ << ", aka "sv << e.description;
+        }
     }
 }
 

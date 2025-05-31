@@ -1,5 +1,9 @@
-let xpack0 = (1, name: "assa", mut("345"), name: "bassa", name: mut(123));
-assert(size(xpack0) == 5);
+
+let xpack0 = (1, name: "assa", mut("345"), name: "bassa", name: mut(123), mut(22));
+assert((1, name: "assa", "345", name : "bassa", name : 123, 22) == xpack0);
+assert(xpack0 == (1, name: "assa", "345", name: "bassa", name: 123, 22));
+assert(xpack0 == (1, name: "assa", mut("345"), name: "bassa", name: mut(123), 22));
+assert(size(xpack0) == 6);
 
 assert(xpack0.0 == 1);
 assert(xpack0[0] == 1);

@@ -157,6 +157,8 @@ public:
 
     virtual ~functional_match_descriptor() = default;
 
+    inline span<parameter_match_result*> positional_matches() noexcept { return positional_matches_; }
+
     inline size_t named_matches_count() const noexcept { return named_matches_.size(); }
 
     template <typename FT>

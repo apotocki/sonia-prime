@@ -14,21 +14,35 @@
 
 namespace sonia::lang::bang {
 
+class tuple_implicit_cast_match_descriptor : public functional_match_descriptor
+{
+public:
+    inline tuple_implicit_cast_match_descriptor(entity const& src, entity_signature const& dst, lex::resource_location loc) noexcept
+        : functional_match_descriptor{ std::move(loc) }
+        , src_entity_type{ src }
+        , dst_sig{ dst }
+    {}
+
+    entity const& src_entity_type;
+    
+    entity_signature const& dst_sig;
+};
+
 std::expected<functional_match_descriptor_ptr, error_storage>
-tuple_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& dest_type) const
+tuple_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     unit& u = ctx.u();
-    auto call_session = call.new_session(ctx);
-
-    if (!dest_type) {
+    
+    if (!exp) {
         return std::unexpected(make_error<basic_general_error>(call.location, "missing destination type for implicit cast"sv));
     }
-    entity const& dest_type_entity = get_entity(u, dest_type.type);
+    entity const& dest_type_entity = get_entity(u, exp.type);
     auto* dst_sig = dest_type_entity.signature();
     if (!dst_sig || dst_sig->name != u.get(builtin_qnid::tuple)) {
-        return std::unexpected(make_error<type_mismatch_error>(call.location, dest_type.type, "a tuple"sv));
+        return std::unexpected(make_error<type_mismatch_error>(call.location, exp.type, "a tuple"sv));
     }
 
+    auto call_session = call.new_session(ctx);
     // Get (source tuple)
     syntax_expression_t const* pself_expr;
     auto src_arg = call_session.use_next_positioned_argument(&pself_expr);
@@ -41,11 +55,27 @@ tuple_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call c
     }
 
     // Both must be tuple types
-    entity const& src_entity = get_entity(u, src_arg->is_const_result ? src_arg->value() : src_arg->type());
-    auto* src_sig = src_entity.signature();
+    entity_identifier src_type;
+    if (src_arg->is_const_result) {
+        entity const& src_entity = get_entity(u, src_arg->value());
+        src_type = src_entity.get_type();
+    } else {
+        src_type = src_arg->type();
+    }
+
+    if (src_type == exp.type) {
+        // No cast needed, just return the source as is
+        auto pmd = make_shared<functional_match_descriptor>(call.location);
+        pmd->get_match_result(0).append_result(*src_arg);
+        pmd->void_spans = std::move(call_session.void_spans);
+        return pmd;
+    }
+
+    entity const& src_entity_type = get_entity(u, src_type);
+    auto* src_sig = src_entity_type.signature();
 
     if (!src_sig || src_sig->name != u.get(builtin_qnid::tuple)) {
-        return std::unexpected(make_error<type_mismatch_error>(call.location, src_entity.id, "a tuple"sv));
+        return std::unexpected(make_error<type_mismatch_error>(call.location, src_entity_type.id, "a tuple"sv));
     }
 
     // Check field count and names
@@ -60,101 +90,106 @@ tuple_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call c
         }
     }
 
-#if 0
-    // Try implicit cast for each field
-    //local_variable* src_tuple_var = nullptr;
-    //identifier src_tuple_var_name;
-    //if (!src_tuple_var) {
-    //    src_tuple_var_name = u.new_identifier();
-    //    src_tuple_var = &cast_call.new_temporary(u, src_tuple_var_name, src_entity.id, src_arg->expressions);
-    //}
-    for (size_t i = 0; i < src_sig->field_count(); ++i) {
-        auto const& src_field = *src_sig->get_field(i);
-        auto const& dst_field = *dst_sig->get_field(i);
-        if (src_field.entity_id() == dst_field.entity_id() && src_field.is_const() == dst_field.is_const()) {
-            continue; // No cast needed
-        }
-        pure_call_t cast_call{ call.location };
-        if (src_field.is_const()) {
-            cast_call.emplace_back(annotated_entity_identifier{ src_field.entity_id(), call.location });
-        } else {
-            cast_call.emplace_back(indirect_value{
-                .location = call.location,
-                .type = src_field.entity_id(),
-                .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, semantic::managed_expression_list el{ u } }
-            });
-        }
-        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, call.expressions, dst_field.entity_id());
-
-        get(builtin_qnid::implicit_cast); // Ensure implicit_cast is available
-        if (!ctx.can_implicitly_cast(src_field.entity_id(), dst_field.entity_id())) {
-            return std::unexpected(make_error<type_mismatch_error>(call.location, "tuple field type cannot be implicitly cast"));
-        }
-    }
-#endif
-    // All checks passed, create a match descriptor
-    auto pmd = make_shared<functional_match_descriptor>(call.location);
+    auto pmd = make_shared<tuple_implicit_cast_match_descriptor>(src_entity_type, *dst_sig, get_start_location(*pself_expr));
     pmd->get_match_result(0).append_result(*src_arg);
     pmd->void_spans = std::move(call_session.void_spans);
+    pmd->result = field_descriptor{ exp.type, exp.is_const_result };
     return pmd;
 }
 
 std::expected<syntax_expression_result_t, error_storage>
 tuple_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("tuple_implicit_cast_pattern::apply is not implemented yet");
-#if 0
     unit& u = ctx.u();
-    auto& self_er = md.get_match_result(0).results.front();
-    auto& type_er = md.get_match_result(1).results.front();
+    tuple_implicit_cast_match_descriptor& self_md = static_cast<tuple_implicit_cast_match_descriptor&>(md);
+    auto& src_er = md.get_match_result(0).results.front();
 
-    entity const& src_entity = get_entity(u, self_er.is_const_result ? self_er.value() : self_er.type());
-    entity const& type_entity = get_entity(u, type_er.is_const_result ? type_er.value() : type_er.type());
+    entity_signature const& src_sig = *self_md.src_entity_type.signature();
+    fn_compiler_context_scope fn_scope{ ctx };
 
-    auto* src_sig = src_entity.signature();
-    auto* dst_sig = type_entity.signature();
+    semantic::expression_span fn_code = md.merge_void_spans(el);
+    local_variable* src_tuple_var = nullptr;
+    identifier src_tuple_var_name;
+    size_t mut_field_count = 0;
+    for (size_t i = 0; i < src_sig.field_count(); ++i) {
+        auto const& src_field = src_sig.field(i);
+        auto const& dst_field = self_md.dst_sig.field(i);
 
-    std::vector<entity_identifier> casted_fields;
-    std::vector<semantic::expression_span> field_exprs;
-    std::vector<syntax_expression_result_t::temporary_t> temporaries = self_er.temporaries;
-
-    // For each field, apply implicit cast
-    for (size_t i = 0; i < src_sig->size(); ++i) {
-        auto const& src_field = (*src_sig)[i];
-        auto const& dst_field = (*dst_sig)[i];
-
-        // Build a fake call to implicit_cast for this field
-        // (Assume ctx has a helper for this, or use expression_implicit_cast_visitor)
-        expression_implicit_cast_visitor cast_visitor(ctx, dst_field.entity_id());
-        auto cast_result = cast_visitor.visit(src_field.entity_id());
-        if (!cast_result) {
-            return std::unexpected(make_error<type_mismatch_error>(md.location, "cannot implicitly cast tuple field"));
+        if (!dst_field.is_const()) {
+            ++mut_field_count;
         }
-        casted_fields.push_back(dst_field.entity_id());
-        // For simplicity, skip collecting field_exprs here; in a real implementation, collect and merge expressions.
+
+        if (src_field.entity_id() == dst_field.entity_id() && src_field.is_const() == dst_field.is_const() && src_field.is_const()) {
+            continue; // No cast needed, boath are const and same type
+        }
+
+        pure_call_t cast_call{ md.location };
+        if (src_field.is_const()) {
+            cast_call.emplace_back(annotated_entity_identifier{ src_field.entity_id(), md.location });
+        } else {
+            if (!src_tuple_var) {
+                src_tuple_var_name = u.new_identifier();
+                src_tuple_var = &fn_scope.new_temporary(src_tuple_var_name, self_md.src_entity_type.id);
+            }
+
+            pure_call_t get_call{ md.location };
+            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::self), md.location },
+                variable_reference{ annotated_qname{ qname{ src_tuple_var_name, false } }, false });
+            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::property) }, annotated_integer{ mp::integer{ i } });
+            auto match = ctx.find(builtin_qnid::get, get_call, el);
+            if (!match) {
+                return std::unexpected(append_cause(
+                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
+                    std::move(match.error())));
+            }
+            auto res = match->apply(ctx);
+            if (!res) {
+                return std::unexpected(append_cause(
+                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
+                    std::move(res.error())));
+            }
+
+            if (src_field.entity_id() == dst_field.entity_id() && !dst_field.is_const()) {
+                fn_code = el.concat(fn_code, res->expressions);
+                continue; // No cast needed
+            }
+            semantic::managed_expression_list el{ u };
+            el.deep_copy(res->expressions);
+            cast_call.emplace_back(indirect_value{
+                .location = md.location,
+                .type = src_field.entity_id(),
+                .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
+            });
+        }
+        entity_identifier dest_field_type = dst_field.is_const() ? get_entity(u, dst_field.entity_id()).id : dst_field.entity_id();
+        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, el, expected_result_t{ dest_field_type, dst_field.is_const() });
+        if (!match) {
+            return std::unexpected(append_cause(
+                make_error<cast_error>(md.location, dest_field_type, src_field.entity_id()),
+                std::move(match.error())));
+        }
+        auto fld_res = match->apply(ctx);
+        if (!fld_res) {
+            return std::unexpected(append_cause(
+                make_error<basic_general_error>(md.location, "internal error: can't apply implicit cast for tuple field"sv, src_field.entity_id()),
+                std::move(fld_res.error())));
+        }
+        fn_code = el.concat(fn_code, fld_res->expressions);
     }
 
-    // Build the result tuple type
-    entity_signature result_sig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
-    for (size_t i = 0; i < dst_sig->size(); ++i) {
-        auto const& dst_field = (*dst_sig)[i];
-        if (dst_field.name())
-            result_sig.emplace_back(u.make_identifier_entity(dst_field.name()).id, true);
-        result_sig.emplace_back(dst_field.entity_id(), dst_field.is_const());
+    if (mut_field_count > 1) {
+        u.push_back_expression(el, fn_code, semantic::push_value{ mp::integer{ mut_field_count } });
+        u.push_back_expression(el, fn_code, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
-    entity_identifier result_type = u.make_basic_signatured_entity(std::move(result_sig)).id;
+    if (src_tuple_var) {
+        src_er.temporaries.emplace_back(src_tuple_var->varid, src_tuple_var->type, src_er.expressions);
+    }
 
-    // Merge expressions (simplified)
-    semantic::expression_span exprs = md.merge_void_spans(el);
-    exprs = el.concat(exprs, self_er.expressions);
+    src_er.expressions = fn_code;
+    src_er.value_or_type = self_md.result.entity_id();
+    src_er.is_const_result = !mut_field_count;
 
-    return syntax_expression_result_t{
-        .temporaries = std::move(temporaries),
-        .expressions = std::move(exprs),
-        .value_or_type = result_type,
-        .is_const_result = false
-    };
-#endif
+    return std::move(src_er);
 }
 
 } // namespace sonia::lang::bang

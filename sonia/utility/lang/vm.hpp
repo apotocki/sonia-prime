@@ -714,44 +714,32 @@ struct runner
 
     inline size_t operator()(identity_type<op::jt>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
     {
-        size_t result = ctx.is_true(ctx.stack_back()) ? jmp_address : next_address;
-        ctx.stack_pop();
-        return result;
+        return ctx.is_true(ctx.stack_back()) ? jmp_address : next_address;
     }
 
     inline size_t operator()(identity_type<op::jtp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        size_t result = ctx.is_true(ctx.stack_back()) ? (next_address + jmp_offset) : next_address;
-        ctx.stack_pop();
-        return result;
+        return ctx.is_true(ctx.stack_back()) ? (next_address + jmp_offset) : next_address;
     }
 
     inline size_t operator()(identity_type<op::jtn>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        size_t result = ctx.is_true(ctx.stack_back()) ? (next_address - jmp_offset) : next_address;
-        ctx.stack_pop();
-        return result;
+        return ctx.is_true(ctx.stack_back()) ? (next_address - jmp_offset) : next_address;
     }
 
     inline size_t operator()(identity_type<op::jf>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
     {
-        size_t result = ctx.is_true(ctx.stack_back()) ? next_address : jmp_address;
-        ctx.stack_pop();
-        return result;
+        return ctx.is_true(ctx.stack_back()) ? next_address : jmp_address;
     }
 
     inline size_t operator()(identity_type<op::jfp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        size_t result = ctx.is_true(ctx.stack_back()) ? next_address : (next_address + jmp_offset);
-        ctx.stack_pop();
-        return result;
+        return ctx.is_true(ctx.stack_back()) ? next_address : (next_address + jmp_offset);
     }
 
     inline size_t operator()(identity_type<op::jfn>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        size_t result = ctx.is_true(ctx.stack_back()) ? next_address : (next_address - jmp_offset);
-        ctx.stack_pop();
-        return result;
+        return ctx.is_true(ctx.stack_back()) ? next_address : (next_address - jmp_offset);
     }
 
     inline optional<size_t> operator()(identity_type<op::ret>, ContextT& ctx, size_t) const

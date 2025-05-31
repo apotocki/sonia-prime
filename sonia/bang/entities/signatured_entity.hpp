@@ -80,6 +80,7 @@ public:
 
     inline bool empty() const noexcept { return fields_.empty(); }
     inline span<const field_descriptor> fields() const noexcept { return fields_; }
+    inline field_descriptor const& field(size_t index) const noexcept { return fields_[index]; }
     inline size_t field_count() const noexcept { return fields_.size(); }
 
     inline span<const std::pair<identifier, uint32_t>> named_fields_indices() const noexcept { return named_fields_indices_; }

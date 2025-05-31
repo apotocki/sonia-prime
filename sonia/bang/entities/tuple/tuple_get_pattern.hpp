@@ -30,9 +30,6 @@ protected:
         {}
 
         entity_signature const& arg_sig;
-
-        size_t property_index;
-        size_t fields_count;
         bool is_argument_typename;
     };
 };

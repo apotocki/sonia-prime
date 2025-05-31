@@ -266,6 +266,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\expression_resolver.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\internal_function_entity.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\literals\const_literal_implicit_cast_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\literals\literal_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_bit_and_pattern.hpp" />
@@ -290,6 +291,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_get_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_init_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_empty_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_equal_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_get_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_head_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_implicit_cast_pattern.hpp" />
@@ -795,6 +797,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\literals\const_literal_implicit_cast_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_bit_and_pattern.cpp" />
@@ -810,6 +813,7 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_fn_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_get_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_init_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_equal_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_implicit_cast_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_make_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_empty_pattern.cpp" />

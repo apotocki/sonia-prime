@@ -50,66 +50,96 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
     else if (teid == u.get(builtin_eid::f32)) { ntype = 2; }
     else if (teid == u.get(builtin_eid::f64)) { ntype = 3; }
     else if (teid == u.get(builtin_eid::decimal)) { ntype = 4; }
+    else if (teid == u.get(builtin_eid::integer)) { ntype = 5; }
     else {
         return std::unexpected(make_error<basic_general_error>(call.location, "expected a numeric result"sv, exp.type));
     }
 
-    
+    auto call_session = call.new_session(ctx);
+    syntax_expression_t const* pself_expr;
+    auto src_arg = call_session.use_next_positioned_argument(&pself_expr);
+    if (!src_arg) {
+        return std::unexpected(make_error<basic_general_error>(call.location, "missing required argument"sv));
+    }
+    if (auto argterm = call_session.unused_argument(); argterm) {
+        return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
+    }
+
+    // Only allow runtime arguments
+    if (src_arg->is_const_result != exp.is_const_result) {
+        return std::unexpected(make_error<basic_general_error>(get_start_location(*pself_expr), "argument and result must be both const or both non-const"sv));
+    }
+
     functional_match_descriptor_ptr pmd;
-
-    for (auto const& arg : call.args) {
-        annotated_identifier const* pargname = arg.name();
-        auto const& argexpr = arg.value();
-        if (pargname) { // named arguments are not expected
-            return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch"sv, argexpr));
-        } else if (pmd) {
-            return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
+    if (src_arg->is_const_result) {
+        entity const& argent = get_entity(u, src_arg->value());
+        argument_wrapper_visitor vis;
+        argent.visit(vis);
+        if (vis.value.which() == 0) {
+            return std::unexpected(make_error<value_mismatch_error>(get_start_location(*pself_expr), src_arg->value(), "a numeric literal"sv));
         }
-        auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, argexpr);
-        if (!res) return std::unexpected(std::move(res.error()));
-        auto& ser = res->first;
-        if (ser.is_const_result) {
-            entity const& argent = u.eregistry_get(ser.value());
-            argument_wrapper_visitor vis;
-            argent.visit(vis);
-            if (vis.value.which() == 0) {
-                return std::unexpected(make_error<value_mismatch_error>(get_start_location(argexpr), ser.value(), "a numeric literal"sv));
-            }
-            pmd = sonia::make_shared<numeric_implicit_cast_match_descriptor>(std::move(vis.value));
-            pmd->result = field_descriptor{ exp.type, true };
-
-            //integer_literal_entity
+        pmd = sonia::make_shared<numeric_implicit_cast_match_descriptor>(std::move(vis.value));
+    } else {
+        if (src_arg->type() == u.get(builtin_eid::integer)) {
+            pmd = make_shared<numeric_implicit_cast_match_descriptor>();
         } else {
-            if (ser.type() == u.get(builtin_eid::integer)) {
-                pmd = make_shared<numeric_implicit_cast_match_descriptor>();
-                pmd->get_match_result(0).append_result(ser);
-                pmd->result = field_descriptor{ exp.type, false };
-            } else {
-                return std::unexpected(make_error<type_mismatch_error>(get_start_location(argexpr), ser.type(), "integer"sv));
-            }
+            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pself_expr), src_arg->type(), "integer"sv));
         }
     }
-
-    if (!pmd) {
-        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
-    }
-    return pmd;
+    pmd->get_match_result(0).append_result(*src_arg);
+    pmd->void_spans = std::move(call_session.void_spans);
+    pmd->result = field_descriptor{ exp.type, exp.is_const_result };
+    return std::move(pmd);
 }
 
 std::expected<syntax_expression_result_t, error_storage> numeric_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     auto& nmd = static_cast<numeric_implicit_cast_match_descriptor&>(md);
-    if (nmd.result.is_const()) {
-        entity_identifier rid = (ctx.u(), apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = nmd.result.entity_id()](auto const& v) -> entity_identifier {
-            if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
-                return ctx.u().make_integer_entity(v.value(), type).id;
-            } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
-                return ctx.u().make_decimal_entity(v.value(), type).id;
-            } else {
-                THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
-            }
-        }), nmd.arg));
-        return syntax_expression_result_t{ .expressions = md.merge_void_spans(el), .value_or_type = rid, .is_const_result = true };
+    auto& src = md.get_match_result(0).results.front();
+    src.expressions = el.concat(md.merge_void_spans(el), src.expressions);
+    if (nmd.arg.which()) { // not nullptr_t
+        if (nmd.result.is_const()) {
+            entity_identifier rid = apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = nmd.result.entity_id()](auto const& v) -> entity_identifier {
+                if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
+                    return ctx.u().make_integer_entity(v.value(), type).id;
+                } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
+                    return ctx.u().make_decimal_entity(v.value(), type).id;
+                } else {
+                    THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
+                }
+            }), nmd.arg);
+            src.value_or_type = rid;
+            src.is_const_result = true;
+            return syntax_expression_result_t {
+                .temporaries = std::move(src.temporaries),
+                .expressions = md.merge_void_spans(el),
+                .value_or_type = rid,
+                .is_const_result = true
+            };
+        } else {
+            apply_visitor(make_functional_visitor<void>([&ctx, &el, &src](auto const& v) {
+                if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
+                    ctx.u().push_back_expression(el, src.expressions, semantic::push_value{ v.value() });
+                } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
+                    ctx.u().push_back_expression(el, src.expressions, semantic::push_value{ v.value() });
+                } else {
+                    THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
+                }
+            }), nmd.arg);
+            src.value_or_type = nmd.result.entity_id(),
+            src.is_const_result = false;
+        }
+        return std::move(src);
+        //entity_identifier rid = (ctx.u(), apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = nmd.result.entity_id()](auto const& v) -> entity_identifier {
+        //    if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
+        //        return ctx.u().make_integer_entity(v.value(), type).id;
+        //    } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
+        //        return ctx.u().make_decimal_entity(v.value(), type).id;
+        //    } else {
+        //        THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
+        //    }
+        //}), nmd.arg));
+        
     }
     THROW_NOT_IMPLEMENTED_ERROR("numeric_implicit_cast_pattern::apply");
 }

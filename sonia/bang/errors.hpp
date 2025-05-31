@@ -14,6 +14,7 @@ namespace sonia::lang::bang {
 
 class error;
 class general_error;
+class binary_relation_error;
 class undeclared_identifier_error;
 class identifier_redefinition_error;
 
@@ -33,6 +34,7 @@ class error_visitor
 public:
     virtual ~error_visitor() = default;
     virtual void operator()(general_error const&) = 0;
+    virtual void operator()(binary_relation_error const&) = 0;
     virtual void operator()(alt_error const&) = 0;
     virtual void operator()(ambiguity_error const&) = 0;
     virtual void operator()(circular_dependency_error const&) = 0;
@@ -41,6 +43,9 @@ public:
 class error
 {
     shared_ptr<error> cause_;
+
+protected:
+    using string_t = variant<std::string, string_view>;
 
 public:
     virtual ~error() = default;
@@ -78,6 +83,7 @@ public:
     struct alternative
     {
         lex::resource_location location;
+        std::string description;
         entity_signature sig;
     };
 
@@ -99,9 +105,6 @@ private:
 
 class general_error : public error
 {
-protected:
-    using string_t = variant<std::string, string_view>;
-
 public:
     virtual lex::resource_location const& location() const = 0;
     virtual string_t object(unit const&) const = 0;
@@ -138,6 +141,32 @@ public:
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override { return description_; }
     lex::resource_location const* ref_location() const noexcept override { return reflocation_ ? &reflocation_ : nullptr; }
+};
+
+class binary_relation_error : public error
+{
+protected:
+    using object_t = variant<null_t, syntax_expression_t, qname, qname_view, qname_identifier, entity_identifier, identifier>;
+
+    lex::resource_location location_;
+    lex::resource_location reflocation_;
+    object_t left_;
+    object_t right_;
+    string_t description_;
+
+public:
+    binary_relation_error(lex::resource_location loc, string_t descr, object_t left, object_t right, lex::resource_location refloc = {})
+        : location_{ std::move(loc) }, description_{ std::move(descr) }
+        , left_{ std::move(left) }, right_{ std::move(right) }
+        , reflocation_{ std::move(refloc) }
+    {}
+
+    void visit(error_visitor& vis) const override { vis(*this); }
+    lex::resource_location const& location() const noexcept { return location_; }
+    string_t left_object(unit const&) const noexcept;
+    string_t right_object(unit const&) const noexcept;
+    string_t description(unit const&) const noexcept { return description_; }
+    lex::resource_location const* ref_location() const noexcept { return reflocation_ ? &reflocation_ : nullptr; }
 };
 
 class undeclared_identifier_error : public general_error
@@ -267,7 +296,7 @@ public:
     void operator()(alt_error const&) override;
     //void operator()(parameter_not_found_error const&) override;
     void operator()(general_error const&) override;
-
+    void operator()(binary_relation_error const&) override;
     void operator()(ambiguity_error const&) override;
     void operator()(circular_dependency_error const&) override;
 

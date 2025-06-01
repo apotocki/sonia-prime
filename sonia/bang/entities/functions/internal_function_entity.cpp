@@ -86,10 +86,8 @@ void internal_function_entity::build(fn_compiler_context& fnctx)
 
     BOOST_ASSERT(fnctx.expressions_branch() == 1);
     body = fnctx.expressions();
-    fnctx.expression_store().splice_back(fnctx.expressions());
     fnctx.u().store(std::move(fnctx.expression_store()));
 
-    BOOST_ASSERT(!fnctx.expressions());
     BOOST_ASSERT(!fnctx.expression_store());
 
     //GLOBAL_LOG_INFO() << "built inline function begin: " << u.print(*this);

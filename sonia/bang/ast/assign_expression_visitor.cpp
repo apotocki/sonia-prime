@@ -5,7 +5,7 @@
 #include "sonia/config.hpp"
 #include "assign_expression_visitor.hpp"
 #include "fn_compiler_context.hpp"
-#include "expression_visitor.hpp"
+#include "base_expression_visitor.hpp"
 
 namespace sonia::lang::bang {
 

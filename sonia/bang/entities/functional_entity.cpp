@@ -6,7 +6,6 @@
 #include "functional_entity.hpp"
 
 #include "../ast/fn_compiler_context.hpp"
-#include "../ast/expression_visitor.hpp"
 
 namespace sonia::lang::bang {
 

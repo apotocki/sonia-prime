@@ -108,12 +108,22 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
     fn_compiler_context_scope fn_scope{ ctx };
 
     semantic::expression_span void_spans = md.merge_void_spans(el);
-    semantic::expression_span fn_code = void_spans;
+
+    lhs_er.temporaries.insert(lhs_er.temporaries.end(), rhs_er.temporaries.begin(), rhs_er.temporaries.end());
+
+    syntax_expression_result_t result{
+        .temporaries = std::move(lhs_er.temporaries),
+        .stored_expressions = el.concat(lhs_er.stored_expressions, rhs_er.stored_expressions),
+        .expressions = void_spans,
+        .value_or_type = u.get(builtin_eid::boolean),
+        .is_const_result = false
+    };
+    
     local_variable* lhs_tuple_var = nullptr, * rhs_tuple_var = nullptr;
     identifier lhs_tuple_var_name, rhs_tuple_var_name;
 
     // For each field, compare using builtin_qnid::eq
-    semantic::conditional_t * current_branch = nullptr;
+    semantic::expression_span * current_branch_owner_code = nullptr;
     for (size_t i = 0; i < lhs_sig.field_count(); ++i) {
         auto const& lhs_field = lhs_sig.field(i);
         auto const& rhs_field = rhs_sig.field(i);
@@ -153,6 +163,7 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
                     make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
                     std::move(res.error())));
             }
+            result.stored_expressions = el.concat(result.stored_expressions, res->stored_expressions);
             semantic::managed_expression_list el{ u };
             el.deep_copy(res->expressions);
             eq_call.emplace_back(indirect_value{
@@ -186,6 +197,7 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
                     make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
                     std::move(res.error())));
             }
+            result.stored_expressions = el.concat(result.stored_expressions, res->stored_expressions);
             semantic::managed_expression_list el{ u };
             el.deep_copy(res->expressions);
             eq_call.emplace_back(indirect_value{
@@ -222,34 +234,52 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
             }
         }
 
-        if (current_branch) {
-            // If we are in a conditional branch, we need to add the result to the current branch
-            u.push_back_expression(el, current_branch->true_branch, semantic::truncate_values{ 1, false });
-            current_branch->true_branch = el.concat(current_branch->true_branch, eq_res->expressions);
-            u.push_back_expression(el, current_branch->false_branch, semantic::conditional_t{});
+        // to do: treat eq_res temporaries as temporaries of the current branch
+
+        result.stored_expressions = el.concat(result.stored_expressions, eq_res->stored_expressions);
+        if (current_branch_owner_code) {
+            // append conditional branch
+            u.push_back_expression(el, *current_branch_owner_code, semantic::conditional_t{});
+            semantic::conditional_t& cond = get<semantic::conditional_t>(current_branch_owner_code->back());
             
-            semantic::conditional_t& next_cond = get<semantic::conditional_t>(current_branch->true_branch.back());
+            // removing 'true' from previous field equality check
+            u.push_back_expression(el, cond.true_branch, semantic::truncate_values{ 1, false });
+
+            // append the result of current field equality check
+            cond.true_branch = el.concat(cond.true_branch, eq_res->expressions);
+
+            // store brunch expressions as stored expressions if they are not primary branch expressions
+            if (&result.expressions != current_branch_owner_code) {
+                result.stored_expressions = el.concat(result.stored_expressions, *current_branch_owner_code);
+            }
+
+            current_branch_owner_code = &cond.true_branch;
         } else {
             // Otherwise, we need to create a new conditional expression
-            fn_code = el.concat(fn_code, eq_res->expressions);
-            u.push_back_expression(el, fn_code, semantic::conditional_t{});
-            u.push_back_expression(el, current_branch->false_branch, semantic::conditional_t{});
+            result.expressions = el.concat(result.expressions, eq_res->expressions);
+            current_branch_owner_code = &result.expressions;
         }
     }
 
+    if (!current_branch_owner_code) {
+        // If we have no branches, all fields are consts and equal, so we can return true
+        return syntax_expression_result_t{
+            .expressions = void_spans,
+            .value_or_type = u.get(builtin_eid::true_),
+            .is_const_result = true
+        };
+    }
+    if (&result.expressions != current_branch_owner_code) {
+        result.stored_expressions = el.concat(result.stored_expressions, *current_branch_owner_code);
+    }
+
     if (lhs_tuple_var) {
-        lhs_er.temporaries.emplace_back(lhs_tuple_var->varid, lhs_tuple_var->type, lhs_er.expressions);
+        result.temporaries.emplace_back(lhs_tuple_var->varid, lhs_tuple_var->type, lhs_er.expressions);
     }
-    lhs_er.temporaries.insert(lhs_er.temporaries.end(), rhs_er.temporaries.begin(), rhs_er.temporaries.end());
     if (rhs_tuple_var) {
-        lhs_er.temporaries.emplace_back(rhs_tuple_var->varid, rhs_tuple_var->type, rhs_er.expressions);
+        result.temporaries.emplace_back(rhs_tuple_var->varid, rhs_tuple_var->type, rhs_er.expressions);
     }
-    return syntax_expression_result_t {
-        .temporaries = std::move(lhs_er.temporaries),
-        .expressions = fn_code,
-        .value_or_type = u.get(builtin_eid::boolean),
-        .is_const_result = false
-    };
+    return std::move(result);
 }
 
 } // namespace sonia::lang::bang

@@ -952,7 +952,7 @@ struct while_decl
 {
     syntax_expression_t condition;
     statement_span body;
-    optional<syntax_expression_t> continue_expression; // called before condition strating eith second condition check (like c/c++ for expression)
+    optional<syntax_expression_t> continue_expression; // called before condition starting with second condition check (like c/c++ for expression)
 };
 
 struct for_decl

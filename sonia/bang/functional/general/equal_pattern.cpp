@@ -44,44 +44,46 @@ std::expected<syntax_expression_result_t, error_storage> equal_pattern::apply(fn
     auto & ler = md.get_match_result(0).results.front();
     auto & rer = md.get_match_result(1).results.front();
     ler.temporaries.insert(ler.temporaries.end(), rer.temporaries.begin(), rer.temporaries.end());
-    semantic::expression_span exprs = el.concat(md.merge_void_spans(el), ler.expressions);
 
     if (ler.is_const_result && rer.is_const_result) {
-        exprs = el.concat(exprs, rer.expressions);
         if (ler.value() == rer.value()) {
             return syntax_expression_result_t{
                 .temporaries = std::move(ler.temporaries),
-                .expressions = std::move(exprs),
+                .expressions = md.merge_void_spans(el),
                 .value_or_type = u.make_bool_entity(true).id,
                 .is_const_result = true
             };
         }
         return syntax_expression_result_t{
             .temporaries = std::move(ler.temporaries),
-            .expressions = std::move(exprs),
+            .expressions = md.merge_void_spans(el),
             .value_or_type = u.make_bool_entity(false).id,
             .is_const_result = true
         };
     }
-    if (ler.is_const_result) {
-        u.push_back_expression(el, exprs, semantic::push_value{ ler.value() });
-    } else {
-        exprs = el.concat(exprs, ler.expressions);
-    }
-    if (rer.is_const_result) {
-        u.push_back_expression(el, exprs, semantic::push_value{ rer.value() });
-    } else {
-        exprs = el.concat(exprs, rer.expressions);
-    }
 
-    u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::equal)));
-
-    return syntax_expression_result_t{
+    syntax_expression_result_t result{
         .temporaries = std::move(ler.temporaries),
-        .expressions = std::move(exprs),
+        .stored_expressions = el.concat(ler.stored_expressions, rer.stored_expressions),
+        .expressions = md.merge_void_spans(el),
         .value_or_type = u.get(builtin_eid::boolean),
         .is_const_result = false
     };
+    
+    if (ler.is_const_result) {
+        u.push_back_expression(el, result.expressions, semantic::push_value{ ler.value() });
+    } else {
+        result.expressions = el.concat(result.expressions, ler.expressions);
+    }
+    if (rer.is_const_result) {
+        u.push_back_expression(el, result.expressions, semantic::push_value{ rer.value() });
+    } else {
+        result.expressions = el.concat(result.expressions, rer.expressions);
+    }
+
+    u.push_back_expression(el, result.expressions, semantic::invoke_function(u.get(builtin_eid::equal)));
+
+    return std::move(result);
 }
 
 }

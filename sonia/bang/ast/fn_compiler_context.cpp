@@ -228,14 +228,14 @@ void fn_compiler_context::init()
 {
     assert(ns_.is_absolute());
     base_ns_size_ = ns_.parts().size();
-    expr_stack_.emplace_back(&root_expressions_);
+    expr_stack_.emplace_back();
     scoped_locals_.emplace_back(); // initial scope
 }
 
 fn_compiler_context::~fn_compiler_context()
 {
     // move expressions to remove
-    expression_store_.splice_back(root_expressions_);
+    //expression_store_.splice_back(root_expressions_);
 }
 
 optional<variant<entity_identifier, local_variable const&>> fn_compiler_context::get_bound(identifier name) const noexcept
@@ -287,6 +287,18 @@ void fn_compiler_context::push_scope_variable(annotated_identifier name, local_v
     int64_t index = scope_offset_ + scoped_locals_.back().size();
     fnent.push_variable(lv.varid, index);
     scoped_locals_.back().emplace_back(std::move(name), std::move(lv));
+}
+
+void fn_compiler_context::push_chain()
+{
+    expr_stack_.emplace_back();
+}
+
+void fn_compiler_context::pop_chain()
+{
+    semantic::expression_span exprs = stored_expressions();
+    expr_stack_.pop_back();
+    append_stored_expressions(std::move(exprs));
 }
 
 #if 0
@@ -544,7 +556,7 @@ void fn_compiler_context::finish_frame()
             result = accum_result;
         } else { // no explicit return
             result = u().get(builtin_eid::void_);
-            u().push_back_expression(root_expressions_, semantic::return_statement{});
+            u().push_back_expression(expression_store_, expressions(), semantic::return_statement{});
         }
     }
 }
@@ -570,6 +582,7 @@ entity_identifier fn_compiler_context::compute_result_type()
     return accum_result;
 }
 
+#if 0
 fn_compiler_context::expressions_state_type::expressions_state_type(fn_compiler_context& ctx) noexcept
     : pctx_{ &ctx }
     , cursize_{ ctx.expressions().size() }
@@ -614,6 +627,7 @@ void fn_compiler_context::expressions_state_type::restore()
     //pctx_->expressions().resize(cursize_);
     pctx_->context_type = cur_type_;
 }
+#endif
 
 semantic::expression_span fn_compiler_context::store_semantic_expressions(semantic::managed_expression_list&& el)
 {
@@ -624,9 +638,36 @@ semantic::expression_span fn_compiler_context::store_semantic_expressions(semant
 
 void fn_compiler_context::append_expression(semantic::expression&& e)
 {
-    unit_.push_back_expression(expressions(), std::move(e));
+    unit_.push_back_expression(expression_store_, expressions(), std::move(e));
 }
 
+void fn_compiler_context::append_expressions(semantic::expression_span sp)
+{
+    expressions() = expression_store_.concat(expressions(), std::move(sp));
+}
+
+void fn_compiler_context::append_expressions(semantic::expression_list_t& el, semantic::expression_span sp)
+{
+    expression_store().splice_back(el, sp);
+    append_expressions(sp);
+}
+
+void fn_compiler_context::append_stored_expressions(semantic::expression_span sp)
+{
+    stored_expressions() = expression_store_.concat(stored_expressions(), std::move(sp));
+}
+
+void fn_compiler_context::append_stored_expressions(semantic::expression_list_t& el, semantic::expression_span sp)
+{
+    expression_store().splice_back(el, sp);
+    append_stored_expressions(sp);
+}
+
+//void fn_compiler_context::adopt_and_append(semantic::expression_list_t& el, syntax_expression_result_t& er)
+//{
+//    append_stored_expressions(el, er.stored_expressions);
+//    append_expressions(el, er.expressions);
+//}
 
 fn_compiler_context_scope::fn_compiler_context_scope(fn_compiler_context& ctx)
     : ctx_{ ctx }

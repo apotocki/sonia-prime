@@ -84,6 +84,7 @@ std::expected<syntax_expression_result_t, error_storage> assert_pattern::apply(f
         } else if (errs.alternatives.empty()) {
             res.temporaries.insert(res.temporaries.end(), arg_er.temporaries.begin(), arg_er.temporaries.end());
             res.expressions = el.concat(res.expressions, arg_er.expressions);
+            res.stored_expressions = el.concat(res.stored_expressions, arg_er.stored_expressions);
             std::ostringstream msgss;
             u.print_to(msgss, *amd.reserved_errors[arg_i]);
             u.push_back_expression(el, res.expressions, semantic::push_value{ small_string{ msgss.str() } });

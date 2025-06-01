@@ -237,11 +237,18 @@ public:
 
     //inline span<const semantic::expression_type> expressions() const noexcept { return expressions_; }
 
-    semantic::expression_list_t& expressions() { return *expr_stack_.back(); }
-    semantic::expression_list_t& expressions(size_t branch_offset) { return *expr_stack_[expr_stack_.size() - branch_offset - 1]; }
-    size_t expressions_branch() const { return expr_stack_.size(); }
+    inline semantic::expression_span& expressions() noexcept { return get<0>(expr_stack_.back()); }
+    inline semantic::expression_span& stored_expressions() noexcept { return get<1>(expr_stack_.back()); }
+    //semantic::expression_list_t& expressions() { return *expr_stack_.back(); }
+    //semantic::expression_list_t& expressions(size_t branch_offset) { return *expr_stack_[expr_stack_.size() - branch_offset - 1]; }
+    inline size_t expressions_branch() const noexcept { return expr_stack_.size(); }
     void append_expression(semantic::expression&&);
-    
+    void append_expressions(semantic::expression_span);
+    void append_expressions(semantic::expression_list_t&, semantic::expression_span);
+    void append_stored_expressions(semantic::expression_span);
+    void append_stored_expressions(semantic::expression_list_t&, semantic::expression_span);
+    //void adopt_and_append(semantic::expression_list_t&, syntax_expression_result_t&);
+
     semantic::expression_span store_semantic_expressions(semantic::managed_expression_list&&);
     semantic::managed_expression_list& expression_store() { return expression_store_; }
 
@@ -255,20 +262,13 @@ public:
     //    (*expr_stack_[ep.first])[ep.second] = std::move(e);
     //}
 
-    void push_chain(semantic::expression_list_t& chain_vec)
-    {
-        expr_stack_.emplace_back(&chain_vec);
-    }
+    void push_chain();
+    void pop_chain();
 
-    void pop_chain()
-    {
-        expr_stack_.pop_back();
-    }
-
-    void collapse_chains(size_t branch = 1)
-    {
-        expr_stack_.resize(branch);
-    }
+    //void collapse_chains(size_t branch = 1)
+    //{
+    //    expr_stack_.resize(branch);
+    //}
     //semantic::conditional<semantic::expression_type> * current_chain()
     //{
     //    if (expr_stack_.size() <= 1) return nullptr;
@@ -278,6 +278,7 @@ public:
 
     friend class expressions_stack_state;
 
+#if 0
     class expressions_state_type
     {
         fn_compiler_context * pctx_;
@@ -301,6 +302,7 @@ public:
     };
 
     inline expressions_state_type expressions_state() noexcept { return expressions_state_type{*this}; }
+#endif
 
     entity_identifier result;
     entity_identifier accum_result;
@@ -313,8 +315,8 @@ private:
     void init();
 
 private:
-    semantic::expression_list_t root_expressions_;
-    small_vector<semantic::expression_list_t*, 8> expr_stack_;
+    //semantic::expression_list_t root_expressions_;
+    small_vector<std::tuple<semantic::expression_span, semantic::expression_span>, 8> expr_stack_;
     semantic::managed_expression_list expression_store_;
 };
 

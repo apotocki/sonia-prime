@@ -266,7 +266,6 @@ variant<int, parameter_matcher::ignore_t, error_storage> parameter_matcher::try_
                 }
                 weight = vtcv.weight;
             } else {
-                auto last_expr_it = caller_ctx.expressions().last();
                 auto res = apply_visitor(base_expression_visitor{ caller_ctx, re }, e);
                 if (!res) return std::move(res.error());
                 mr.append_result(res->first);
@@ -601,10 +600,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
     if (varnamed_matcher_) { pmd->weight -= 1; }
     //SCOPE_EXIT([&ctx] { ctx.pop_binding(); }); //no need, temporary context
 
-    auto estate = ctx.expressions_state();
-    
-
-    
     // deal with result match and only when the result value is not a constant
     if (exp && result_constraints && get<1>(*result_constraints) != parameter_constraint_modifier_t::const_value) {
         if (auto const& optexpr = get<0>(*result_constraints).type_expression; optexpr) {

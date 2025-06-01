@@ -299,13 +299,15 @@ struct expression_stack_checker
 {
 #ifndef NDEBUG
     size_t branch_count;
-    size_t brach_size;
+    //size_t brach_size;
 
-    inline expression_stack_checker(fn_compiler_context& ctx) noexcept : branch_count{ ctx.expressions_branch() }, brach_size{ ctx.expressions().size() } {}
+    inline expression_stack_checker(fn_compiler_context& ctx) noexcept
+        : branch_count{ ctx.expressions_branch() } //, brach_size{ ctx.expressions().size() }
+    {}
     
     inline bool check(fn_compiler_context& ctx) noexcept
     {
-        return branch_count == ctx.expressions_branch() && brach_size == ctx.expressions().size();
+        return branch_count == ctx.expressions_branch();//&& brach_size == ctx.expressions().size();
     }
 #else
     inline expression_stack_checker(fn_compiler_context&) noexcept {}

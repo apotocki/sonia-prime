@@ -870,7 +870,7 @@ expression_visitor::result_type expression_visitor::handle(base_expression_visit
 {
     if (!res) return std::unexpected(std::move(res.error()));
     auto& ser = res->first;
-    ctx.expressions().splice_back(static_cast<semantic::expression_list_t&>(const_cast<expression_visitor&>(*this)), ser.expressions);
+    ctx.append_expressions(const_cast<expression_visitor&>(*this), ser.expressions);
     if (ser.is_const_result) {
         ctx.append_expression(semantic::push_value{ ser.value() });
         entity const& e = get_entity(ctx.u(), ser.value());

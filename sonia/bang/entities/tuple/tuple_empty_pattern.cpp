@@ -21,7 +21,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_empty_patter
     unit& u = ctx.u();
     auto opt_arg_expr = try_match_single_unnamed(ctx, call);
     if (!opt_arg_expr) return std::unexpected(std::move(opt_arg_expr.error()));
-    auto estate = ctx.expressions_state();
 
     expression_visitor eobjvis{ ctx };
     auto obj = apply_visitor(eobjvis, **opt_arg_expr);

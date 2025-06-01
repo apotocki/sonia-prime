@@ -171,22 +171,19 @@ error_storage declaration_visitor::operator()(enum_decl const& ed) const
     return {};
 }
 
-error_storage declaration_visitor::operator()(expression_statement_t const& ed) const
+void declaration_visitor::append_result(semantic::expression_list_t& el, syntax_expression_result_t& er) const
 {
-    //auto bst = ctx.expressions_branch(); // store branch
-    semantic::managed_expression_list el{ u() };
-    auto res = apply_visitor(base_expression_visitor{ ctx, el }, ed.expression);
-    if (!res) return std::move(res.error());
-    syntax_expression_result_t & er = res->first;
+    ctx.append_stored_expressions(el, er.stored_expressions);
+
     ctx.push_scope();
     for (auto& [varid, t, sp] : er.temporaries) {
-        ctx.expressions().splice_back(el, sp);
+        ctx.append_expressions(sp);
         ctx.push_scope_variable(
             annotated_identifier{ u().new_identifier() },
             local_variable{ .type = t, .varid = varid, .is_weak = false },
             fnent);
     }
-    ctx.expressions().splice_back(el, er.expressions);
+    ctx.append_expressions(el, er.expressions);
     size_t scope_sz = ctx.current_scope_binding().size();
     ctx.pop_scope();
     if (!er.is_const_result && er.type() != u().get(builtin_eid::void_)) {
@@ -195,7 +192,16 @@ error_storage declaration_visitor::operator()(expression_statement_t const& ed) 
     if (scope_sz) {
         ctx.append_expression(semantic::truncate_values(scope_sz, false));
     }
-    // ctx.collapse_chains(bst);
+}
+
+error_storage declaration_visitor::operator()(expression_statement_t const& ed) const
+{
+    //auto bst = ctx.expressions_branch(); // store branch
+    semantic::managed_expression_list el{ u() };
+    auto res = apply_visitor(base_expression_visitor{ ctx, el }, ed.expression);
+    if (!res) return std::move(res.error());
+
+    append_result(el, res->first);
     
     return {};
 }
@@ -205,26 +211,28 @@ error_storage declaration_visitor::do_rt_if_decl(if_decl const& stm) const
     ctx.append_expression(semantic::conditional_t{});
     semantic::conditional_t& cond = get<semantic::conditional_t>(ctx.expressions().back());
 
-    auto bst = ctx.expressions_branch(); // store branch
-
     if (!stm.true_body.empty()) {
         ctx.push_scope();
         SCOPE_EXIT([this] { ctx.pop_scope(); });
-        semantic::managed_expression_list true_branch{ u() };
-        ctx.push_chain(true_branch);
+
+        ctx.push_chain();
+        ctx.append_expression(semantic::truncate_values{ 1, false });
+        
         if (auto err = apply(stm.true_body); err) return std::move(err);
-        cond.true_branch = ctx.store_semantic_expressions(std::move(true_branch));
-        ctx.collapse_chains(bst);
+        cond.true_branch = ctx.expressions();
+        ctx.pop_chain();
     }
 
     if (!stm.false_body.empty()) {
         ctx.push_scope();
         SCOPE_EXIT([this] { ctx.pop_scope(); });
-        semantic::managed_expression_list false_branch{ u() };
-        ctx.push_chain(false_branch);
+        
+        ctx.push_chain();
+        ctx.append_expression(semantic::truncate_values{ 1, false });
+
         if (auto err = apply(stm.false_body); err) return std::move(err);
-        cond.false_branch = ctx.store_semantic_expressions(std::move(false_branch));
-        ctx.collapse_chains(bst);
+        cond.false_branch = ctx.expressions();
+        ctx.pop_chain();
     }
     return {};
 }
@@ -235,8 +243,10 @@ error_storage declaration_visitor::operator()(if_decl const& stm) const
     base_expression_visitor vis{ ctx, el, { u().get(builtin_eid::boolean), get_start_location(stm.condition) } };
     auto res = apply_visitor(vis, stm.condition);
     if (!res) return std::move(res.error());
+    syntax_expression_result_t& er = res->first;
 
-    syntax_expression_result_t & er = res->first;
+    append_result(el, er);
+    
     if (er.is_const_result) { // constexpr result
         entity_identifier v = er.value();
         BOOST_ASSERT(v == u().get(builtin_eid::false_) || v == u().get(builtin_eid::true_));
@@ -245,7 +255,6 @@ error_storage declaration_visitor::operator()(if_decl const& stm) const
         SCOPE_EXIT([this] { ctx.pop_scope(); });
         return apply(body);
     } else {
-        ctx.expressions().splice_back(el, er.expressions);
         return do_rt_if_decl(stm);
     }
 }
@@ -259,33 +268,36 @@ error_storage declaration_visitor::operator()(while_decl const& wd) const
 {
     ctx.push_scope();
     ctx.append_expression(std::move(semantic::loop_scope_t{}));
+    semantic::loop_scope_t& ls = get<semantic::loop_scope_t>(ctx.expressions().back());
+    
+    semantic::managed_expression_list el{ u() };
+
     if (wd.continue_expression) {
-        semantic::loop_scope_t& ls = get<semantic::loop_scope_t>(ctx.expressions().back());
-        semantic::managed_expression_list continue_branch{ u() };
-        ctx.push_chain(continue_branch);
+        auto res = apply_visitor(base_expression_visitor{ ctx, el }, *wd.continue_expression);
+        if (!res) return std::move(res.error());
+        syntax_expression_result_t& er = res->first;
+
+        ctx.push_chain();
+        append_result(el, er);
         
-        expression_visitor vis{ ctx };
-        if (auto res = apply_visitor(vis, *wd.continue_expression); !res) {
-            return std::move(res.error());
-        }
-        if (ctx.context_type != u().get(builtin_eid::void_)) {
+        if (!er.is_const_result && er.value_or_type != u().get(builtin_eid::void_)) {
             ctx.append_expression(semantic::truncate_values(1, false));
-            ctx.context_type = u().get(builtin_eid::void_);
         }
-        ls.continue_branch = ctx.store_semantic_expressions(std::move(continue_branch));
+        ls.continue_branch = ctx.expressions(); // store continue branch
         ctx.pop_chain();
     }
 
-    semantic::loop_scope_t& ls = get<semantic::loop_scope_t>(ctx.expressions().back());
-    semantic::managed_expression_list branch{ u() };
-    ctx.push_chain(branch);
-    //ctx.push_chain(get<semantic::loop_scope_t>(ctx.expressions().back()).branch);
+    ctx.push_chain();
+    
+    base_expression_visitor vis{ ctx, el, { u().get(builtin_eid::boolean), get_start_location(wd.condition) } };
+    auto res = apply_visitor(vis, wd.condition);
+    if (!res) return std::move(res.error());
+    syntax_expression_result_t& er = res->first;
+    
+    append_result(el, er);
 
-    expression_visitor vis{ ctx, { u().get(builtin_eid::boolean), get_start_location(wd.condition) } };
-    if (auto res = apply_visitor(vis, wd.condition); !res) {
-        return std::move(res.error());
-    }
-
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor while_decl condition");
+#if 0
     if (auto const* ppv = get<semantic::push_value>(&ctx.expressions().back())) {
         auto* pb = get<bool>(&ppv->value);
         if (!pb) THROW_INTERNAL_ERROR("a bool value is expected");
@@ -341,6 +353,7 @@ error_storage declaration_visitor::operator()(while_decl const& wd) const
     ctx.pop_scope();
 
     return {};
+#endif
 }
 
 error_storage declaration_visitor::operator()(continue_statement_t const&) const
@@ -623,7 +636,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
     auto push_temporaries = [&el, this](auto& temporaries) {
         for (auto& [varid, t, sp] : temporaries) {
-            ctx.expressions().splice_back(el, sp);
+            ctx.append_expressions(el, sp);
             ctx.push_scope_variable(
                 annotated_identifier{ u().new_identifier() },
                 local_variable{ .type = t, .varid = varid, .is_weak = false },
@@ -635,7 +648,9 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         syntax_expression_result_t& er = results.front().second;
         ctx.push_scope();
         push_temporaries(er.temporaries);
-        ctx.expressions().splice_back(el, er.expressions);
+        ctx.append_expressions(el, er.expressions);
+        ctx.append_stored_expressions(el, er.stored_expressions);
+
         auto scope_sz = ctx.current_scope_binding().size();
         ctx.pop_scope();
 
@@ -648,7 +663,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
                 fnent);
         }
         if (scope_sz) {
-            u().push_back_expression(ctx.expressions(), semantic::truncate_values(scope_sz, !er.is_const_result));
+            ctx.append_expression(semantic::truncate_values(scope_sz, !er.is_const_result));
         }
         return {};
     }
@@ -661,7 +676,8 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
     for (auto & [id, er] : results) {
         ctx.push_scope();
         push_temporaries(er.temporaries);
-        ctx.expressions().splice_back(el, er.expressions);
+        ctx.append_expressions(el, er.expressions);
+        ctx.append_stored_expressions(el, er.stored_expressions);
         auto scope_sz = ctx.current_scope_binding().size();
         ctx.pop_scope();
         entity_identifier field_eid;
@@ -676,7 +692,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
             field_eid = u().make_qname_entity(qname{ unnamedid, false }).id;
         }
         if (scope_sz) {
-            u().push_back_expression(ctx.expressions(), semantic::truncate_values(scope_sz, !er.is_const_result));
+            ctx.append_expression(semantic::truncate_values(scope_sz, !er.is_const_result));
         }
             
         if (id) {
@@ -736,17 +752,21 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
 error_storage declaration_visitor::operator()(return_decl_t const& rd) const
 {
-    ctx.context_type = ctx.u().get(builtin_eid::void_);
-    size_t initial_branch = ctx.expressions_branch();
-    auto evis = ctx.result ? expression_visitor{ ctx, { ctx.result, rd.location } } : expression_visitor{ ctx };
-    if (auto res = apply_visitor(evis, rd.expression); !res) {
-        return std::move(res.error());
-    }
-    ctx.collapse_chains(initial_branch);
-    if (!ctx.result) {
-        ctx.accumulate_result_type(std::move(ctx.context_type));
+    semantic::managed_expression_list el{ u() };
+    auto evis = ctx.result ? base_expression_visitor{ ctx, el, { ctx.result, rd.location } } : base_expression_visitor{ ctx, el };
+    auto res = apply_visitor(evis, rd.expression);
+    if (!res) return std::move(res.error());
+    syntax_expression_result_t& er = res->first;
+
+    append_result(el, er);
+        
+    if (!er.is_const_result) {
+        ctx.accumulate_result_type(er.type());
+    } else {
+        ctx.accumulate_result_type(get_entity(u(), er.value()).get_type());
     }
     ctx.append_expression(semantic::return_statement{});
+    // to do: for the case of union return type, we should add cast to it
     return {};
 }
 

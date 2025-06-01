@@ -7,7 +7,6 @@
 #include "tuple_pattern_base.hpp"
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
-#include "sonia/bang/ast/expression_visitor.hpp"
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
 #include "sonia/bang/entities/prepared_call.hpp"

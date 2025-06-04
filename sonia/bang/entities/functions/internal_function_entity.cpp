@@ -69,21 +69,19 @@ void internal_function_entity::build(fn_compiler_context& fnctx)
     BOOST_ASSERT(!is_built_);
 
     if (result.entity_id()) {
-        fnctx.result = result.entity_id();
+        fnctx.result_value_or_type = result.entity_id();
+        fnctx.is_const_result = result.is_const();
     }
 
     declaration_visitor dvis{ fnctx, *this };
     if (auto err = dvis.apply(sts_); err) throw exception(fnctx.u().print(*err));
-    //for (infunction_statement const& d : *bd_->body) {
-    //    apply_visitor(dvis, d);
-    //}
-    fnctx.finish_frame(); // unknown result type is resolving here
+
+    auto [value_or_type, is_value] = fnctx.finish_frame(); // unknown result type is resolving here
 
     if (!result.entity_id()) {
-        result = field_descriptor{ fnctx.compute_result_type() };
+        result = field_descriptor{ value_or_type, is_value };
     }
-    //    THROW_NOT_IMPLEMENTED_ERROR("internal_function_entity::build resolving return type");
-
+    
     BOOST_ASSERT(fnctx.expressions_branch() == 1);
     body = fnctx.expressions();
     fnctx.u().store(std::move(fnctx.expression_store()));

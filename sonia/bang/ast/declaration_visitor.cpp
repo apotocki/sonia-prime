@@ -85,6 +85,7 @@ error_storage declaration_visitor::operator()(extern_var const& d) const
 
 error_storage declaration_visitor::operator()(using_decl const& ud) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor using_decl");
     // to do: check the allowence of absolute qname
     qname uqn = ctx.ns() / ud.name();
     functional& fnl = u().fregistry_resolve(uqn);
@@ -753,20 +754,18 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 error_storage declaration_visitor::operator()(return_decl_t const& rd) const
 {
     semantic::managed_expression_list el{ u() };
-    auto evis = ctx.result ? base_expression_visitor{ ctx, el, { ctx.result, rd.location } } : base_expression_visitor{ ctx, el };
+    auto evis = ctx.result_value_or_type ? base_expression_visitor{ ctx, el, { ctx.result_value_or_type, ctx.is_const_result, rd.location } } : base_expression_visitor{ ctx, el };
     auto res = apply_visitor(evis, rd.expression);
     if (!res) return std::move(res.error());
     syntax_expression_result_t& er = res->first;
 
+    ctx.push_chain();
     append_result(el, er);
-        
-    if (!er.is_const_result) {
-        ctx.accumulate_result_type(er.type());
-    } else {
-        ctx.accumulate_result_type(get_entity(u(), er.value()).get_type());
-    }
-    ctx.append_expression(semantic::return_statement{});
-    // to do: for the case of union return type, we should add cast to it
+    auto return_expressions = ctx.expressions();
+    ctx.pop_chain();
+
+    ctx.append_return(return_expressions, er.value_or_type, er.is_const_result);
+    
     return {};
 }
 

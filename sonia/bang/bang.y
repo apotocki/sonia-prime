@@ -763,9 +763,9 @@ parameter-matched-type:
     | basic-parameter-matched-type[expr] ELLIPSIS
         { $$ = unary_expression_t{ unary_operator_type::ELLIPSIS, false, std::move($expr), std::move($ELLIPSIS) }; }
     | INTERNAL_IDENTIFIER[id]
-        { $$ = variable_identifier{ ctx.make_qname(std::move($id)), true }; }
+        { $$ = variable_reference{ ctx.make_qname(std::move($id)), true }; }
     | INTERNAL_IDENTIFIER[id] ELLIPSIS
-        { $$ = unary_expression_t{ unary_operator_type::ELLIPSIS, false, variable_identifier{ ctx.make_qname(std::move($id)), true }, std::move($ELLIPSIS) }; }
+        { $$ = unary_expression_t{ unary_operator_type::ELLIPSIS, false, variable_reference{ ctx.make_qname(std::move($id)), true }, std::move($ELLIPSIS) }; }
     ;
 
 
@@ -777,7 +777,7 @@ basic-parameter-matched-type:
         { $$ = std::move($1); }
         */
     | qname
-        { $$ = variable_identifier{ std::move($qname) }; }
+        { $$ = variable_reference{ std::move($qname) }; }
 
     | qname OPEN_PARENTHESIS pack-expression[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($OPEN_PARENTHESIS), std::move($qname), std::move($arguments) }; }
@@ -805,12 +805,12 @@ parameter-constraint-set:
 
 concept-expression:
     AT_SYMBOL qname
-        { $$ = syntax_expression_t{ variable_identifier{std::move($2), false} }; }
+        { $$ = syntax_expression_t{ variable_reference{std::move($2), false} }; }
     ;
 
 syntax-expression:
       INTERNAL_IDENTIFIER[id]
-        { $$ = variable_identifier{ ctx.make_qname(std::move($id)), true }; }
+        { $$ = variable_reference{ ctx.make_qname(std::move($id)), true }; }
     | syntax-expression-wo-ii
     ;
 
@@ -833,9 +833,9 @@ syntax-expression-wo-ii:
     | STRING
         { $$ = ctx.make_string(std::move($STRING)); }
     | RESERVED_IDENTIFIER
-        { $$ = variable_identifier{ ctx.make_qname(std::move($RESERVED_IDENTIFIER)), true }; }
+        { $$ = variable_reference{ ctx.make_qname(std::move($RESERVED_IDENTIFIER)), true }; }
     | qname
-        { $$ = variable_identifier{ std::move($qname) }; }
+        { $$ = variable_reference{ std::move($qname) }; }
     | OPEN_PARENTHESIS[start] pack-expression[list] CLOSE_PARENTHESIS
         {
             if ($list.size() == 1 && !$list.front().has_name()) { // single unnamed expression => extract
@@ -884,7 +884,8 @@ syntax-expression-wo-ii:
         { $$ = binary_expression_t{ binary_operator_type::EQ, std::move($1), std::move($3), std::move($2) }; }
     | syntax-expression NE syntax-expression
         { $$ = binary_expression_t{ binary_operator_type::NE, std::move($1), std::move($3), std::move($2) }; }
-
+    | syntax-expression CONCAT syntax-expression
+        { $$ = binary_expression_t{ binary_operator_type::CONCAT, std::move($1), std::move($3), std::move($2) }; }
 //////////////////////////// 10 priority
     | syntax-expression AMPERSAND syntax-expression
         { $$ = binary_expression_t{ binary_operator_type::BIT_AND, std::move($1), std::move($3), std::move($2) }; }
@@ -906,11 +907,11 @@ apostrophe-expression:
 
 new-expression:
       NEW qname[type]
-        { $$ = new_expression_t{ std::move($NEW), variable_identifier{ std::move($type) } }; }
+        { $$ = new_expression_t{ std::move($NEW), variable_reference{ std::move($type) } }; }
     | NEW apostrophe-expression[typeExpr]
         { $$ = new_expression_t{ std::move($NEW), std::move($typeExpr) }; }
     | NEW qname[type] OPEN_PARENTHESIS argument-list-opt[arguments] CLOSE_PARENTHESIS
-        { $$ = new_expression_t{ std::move($NEW), variable_identifier{ std::move($type) }, std::move($arguments) }; IGNORE_TERM($OPEN_PARENTHESIS); }
+        { $$ = new_expression_t{ std::move($NEW), variable_reference{ std::move($type) }, std::move($arguments) }; IGNORE_TERM($OPEN_PARENTHESIS); }
     | NEW apostrophe-expression[typeExpr] OPEN_PARENTHESIS argument-list-opt[arguments] CLOSE_PARENTHESIS
         { $$ = new_expression_t{ std::move($NEW), std::move($typeExpr), std::move($arguments) }; IGNORE_TERM($OPEN_PARENTHESIS); }
     ;
@@ -1012,7 +1013,7 @@ opt-named-expr:
     /*
 syntax-expression-wii:
       INTERNAL_IDENTIFIER
-        { $$ = variable_identifier{ctx.make_qname_identifier(std::move($1), false), true}; }
+        { $$ = variable_reference{ctx.make_qname_identifier(std::move($1), false), true}; }
     | syntax-expression
     ;
     */
@@ -1056,10 +1057,10 @@ parameter-woa-decl:
 // TYPE EXPRESSIONS
 type-expr:
       qname
-        { $$ = variable_identifier{ std::move($qname) }; }
+        { $$ = variable_reference{ std::move($qname) }; }
     | call-expression
     | INTERNAL_IDENTIFIER[id]
-        { $$ = variable_identifier{ ctx.make_qname(std::move($id)), true }; }
+        { $$ = variable_reference{ ctx.make_qname(std::move($id)), true }; }
     //| internal-identifier[id] OPEN_PARENTHESIS opt-named-expr-list-any CLOSE_PARENTHESIS
     //    { $$ = std::move($id); IGNORE_TERM($2); IGNORE_TERM($3); }
     | OPEN_SQUARE_BRACKET type-expr[type] CLOSE_SQUARE_BRACKET
@@ -1111,8 +1112,7 @@ expression:
         { $$ = binary_expression_t{ binary_operator_type::LOGIC_OR, std::move($1), std::move($3), std::move($2) }; }
     //| expression PLUS expression
     //    { $$ = binary_expression_t{ binary_operator_type::PLUS, std::move($1), std::move($3), std::move($2) }; }
-    | expression CONCAT expression
-        { $$ = binary_expression_t{ binary_operator_type::CONCAT, std::move($1), std::move($3), std::move($2) }; }
+
 
 //////////////////////////// 9 priority
 

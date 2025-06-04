@@ -189,8 +189,28 @@ public:
     template <typename FT>
     inline void for_each_match(FT&& ft) const
     {
+        do_for_each_match(pmrs_, std::forward<FT>(ft));
+    }
+
+    template <typename FT>
+    inline void for_each_match(FT&& ft)
+    {
+        do_for_each_match(pmrs_, std::forward<FT>(ft));
+    }
+
+    parameter_match_result& push_match_result(identifier);
+    parameter_match_result& get_match_result(identifier);
+    parameter_match_result& get_match_result(size_t);
+
+    entity_signature build_signature(unit&, qname_identifier);
+    void reset() noexcept;
+
+private:
+    template <typename PMRST, typename FT>
+    inline static void do_for_each_match(PMRST & pmrs, FT&& ft)
+    {
         size_t pos = 0;
-        for (mr_pair_t const& pmr : pmrs_) {
+        for (auto & pmr : pmrs) {
             if (get<0>(pmr)) {
                 if constexpr (std::is_invocable_v<FT, identifier, parameter_match_result&>) {
                     std::forward<FT>(ft)(get<0>(pmr), get<1>(pmr));
@@ -206,18 +226,6 @@ public:
             }
         }
     }
-
-    parameter_match_result& push_match_result(identifier);
-    parameter_match_result& get_match_result(identifier);
-    parameter_match_result& get_match_result(size_t);
-
-    entity_signature build_signature(unit&, qname_identifier);
-    void reset() noexcept;
-
-    //virtual bool is_constexpr() const noexcept { return call_expressions.empty(); }
-
-private:
-    //static void do_prepare_range(se_cont_iterator& it_before, semantic::managed_expression_list const& exprs, optional<se_rng_t>& rng);
 };
 
 using functional_match_descriptor_ptr = shared_ptr<functional_match_descriptor>;

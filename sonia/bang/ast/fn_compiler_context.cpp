@@ -6,12 +6,14 @@
 #include "fn_compiler_context.hpp"
 
 #include <boost/container/flat_map.hpp>
+#include <boost/container/flat_set.hpp>
 #include <boost/range/adaptor/reversed.hpp>
 
 #include "sonia/bang/entities/functional.hpp"
 #include "sonia/bang/entities/functions/internal_function_entity.hpp"
 
 #include "sonia/bang/errors/identifier_redefinition_error.hpp"
+#include "sonia/bang/auxiliary.hpp"
 
 namespace sonia::lang::bang {
 
@@ -549,30 +551,55 @@ variable_entity& fn_compiler_context::create_captured_variable_chain(variable_en
 }
 #endif
 
-void fn_compiler_context::finish_frame()
+std::pair<entity_identifier, bool> fn_compiler_context::finish_frame()
 {
-    if (!result) {
-        if (accum_result) {
-            result = accum_result;
-        } else { // no explicit return
-            result = u().get(builtin_eid::void_);
-            u().push_back_expression(expression_store_, expressions(), semantic::return_statement{});
+    if (result_value_or_type) {
+        // result type is already set
+        return { result_value_or_type, is_const_result };
+    }
+
+    if (return_statements_.empty()) {
+        // no return statements, so we can use void as result type
+        return { unit_.get(builtin_eid::void_), true };
+    }
+
+    boost::container::small_flat_set<entity_identifier, 4> const_values;
+    boost::container::small_flat_set<entity_identifier, 4> types;
+    for (semantic::return_statement * rts : return_statements_) {
+        if (rts->is_const_result) {
+            const_values.insert(rts->value_or_type);
+            if (!types.empty() || const_values.size() > 1) {
+                types.insert(get_entity(u(), rts->value_or_type).get_type());
+            }
+        } else {
+            types.insert(rts->value_or_type);
         }
     }
-}
-
-void fn_compiler_context::accumulate_result_type(entity_identifier t)
-{
-    if (!accum_result) {
-        accum_result = std::move(t);
-    } else {
-        THROW_NOT_IMPLEMENTED_ERROR("compiler context: accumulate_result_type");
-#if 0
-        accum_result = make_union_type(*accum_result, &t);
-#endif
+    if (types.empty() && const_values.size() == 1) {
+        return { *const_values.begin(), true };
     }
+    THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context: finish_frame with multiple return values not implemented yet");
+    //if (accum_result) {
+    //    result = accum_result;
+    //} else { // no explicit return
+    //    result = u().get(builtin_eid::void_);
+    //    u().push_back_expression(expression_store_, expressions(), semantic::return_statement{});
+    //}
 }
 
+//void fn_compiler_context::accumulate_result_type(entity_identifier t)
+//{
+//    if (!accum_result) {
+//        accum_result = std::move(t);
+//    } else {
+//        THROW_NOT_IMPLEMENTED_ERROR("compiler context: accumulate_result_type");
+//#if 0
+//        accum_result = make_union_type(*accum_result, &t);
+//#endif
+//    }
+//}
+
+#if 0
 entity_identifier fn_compiler_context::compute_result_type()
 {
     if (result) { return result; }
@@ -582,7 +609,6 @@ entity_identifier fn_compiler_context::compute_result_type()
     return accum_result;
 }
 
-#if 0
 fn_compiler_context::expressions_state_type::expressions_state_type(fn_compiler_context& ctx) noexcept
     : pctx_{ &ctx }
     , cursize_{ ctx.expressions().size() }
@@ -661,6 +687,18 @@ void fn_compiler_context::append_stored_expressions(semantic::expression_list_t&
 {
     expression_store().splice_back(el, sp);
     append_stored_expressions(sp);
+}
+
+void fn_compiler_context::append_return(semantic::expression_span return_expressions, entity_identifier value_or_type, bool is_const_result)
+{
+    // return_expressions should contain a cast to return value_or type, if result_value_or_type is defined
+    append_expression(semantic::return_statement{
+        .result = return_expressions,
+        .value_or_type = value_or_type,
+        .is_const_result = is_const_result
+    });
+    semantic::return_statement * pretst = &get<semantic::return_statement>(expressions().back());
+    return_statements_.emplace_back(pretst);
 }
 
 //void fn_compiler_context::adopt_and_append(semantic::expression_list_t& el, syntax_expression_result_t& er)

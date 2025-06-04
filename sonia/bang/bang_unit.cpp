@@ -23,6 +23,7 @@
 #include "functional/general/equal_pattern.hpp"
 #include "functional/general/typeof_pattern.hpp"
 #include "functional/general/to_string_pattern.hpp"
+#include "functional/general/negate_pattern.hpp"
 
 #include "entities/literals/literal_entity.hpp"
 #include "entities/literals/numeric_implicit_cast_pattern.hpp"
@@ -1248,6 +1249,9 @@ unit::unit()
     equal_fnl.push(make_shared<tuple_equal_pattern>());
     equal_fnl.push(make_shared<equal_pattern>());
 
+    functional& negate_fnl = fregistry_resolve(get(builtin_qnid::negate));
+    negate_fnl.push(make_shared<negate_pattern>());
+
     functional& typeof_fnl = fregistry_resolve(get(builtin_qnid::typeof));
     typeof_fnl.push(make_shared<typeof_pattern>());
 
@@ -1338,6 +1342,7 @@ unit::unit()
     builtin_eids_[(size_t)builtin_eid::equal] = set_builtin_extern("__equal"sv, &bang_any_equal);
     builtin_eids_[(size_t)builtin_eid::assert] = set_builtin_extern("__assert"sv, &bang_assert);
     builtin_eids_[(size_t)builtin_eid::to_string] = set_builtin_extern("__to_string"sv, &bang_tostring);
+    builtin_eids_[(size_t)builtin_eid::negate] = set_builtin_extern("__negate"sv, &bang_negate);
     //set_extern<external_fn_pattern>("arrayify(...)->any"sv, &bang_arrayify);
 
     //set_const_extern<to_string_pattern>("size(const metaobjct))->integer"sv);

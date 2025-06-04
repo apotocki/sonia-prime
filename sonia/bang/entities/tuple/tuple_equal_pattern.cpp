@@ -75,18 +75,6 @@ tuple_equal_pattern::try_match(fn_compiler_context& ctx, prepared_call const& ca
         return std::unexpected(make_error<type_mismatch_error>(call.location, rhs_entity_type.id, "a tuple"sv));
     }
 
-    // Check field count and names
-    if (lhs_sig->field_count() != rhs_sig->field_count()) {
-        return std::unexpected(make_error<basic_general_error>(call.location, "tuple field count mismatch"sv));
-    }
-    for (size_t i = 0; i < lhs_sig->field_count(); ++i) {
-        auto const& lhs_field = *lhs_sig->get_field(i);
-        auto const& rhs_field = *rhs_sig->get_field(i);
-        if (lhs_field.name() != rhs_field.name()) {
-            return std::unexpected(make_error<basic_general_error>(call.location, "tuple field name mismatch"sv));
-        }
-    }
-
     auto pmd = make_shared<tuple_equal_match_descriptor>(lhs_entity_type, rhs_entity_type, call.location);
     pmd->get_match_result(0).append_result(*lhs_arg);
     pmd->get_match_result(1).append_result(*rhs_arg);
@@ -105,9 +93,29 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
     entity_signature const& lhs_sig = *eq_md.lhs_entity_type.signature();
     entity_signature const& rhs_sig = *eq_md.rhs_entity_type.signature();
 
-    fn_compiler_context_scope fn_scope{ ctx };
-
     semantic::expression_span void_spans = md.merge_void_spans(el);
+
+    // Check field count and names
+    if (lhs_sig.field_count() != rhs_sig.field_count()) {
+        return syntax_expression_result_t{
+            .expressions = void_spans,
+            .value_or_type = u.get(builtin_eid::false_),
+            .is_const_result = true
+        };
+    }
+    for (size_t i = 0; i < lhs_sig.field_count(); ++i) {
+        auto const& lhs_field = *lhs_sig.get_field(i);
+        auto const& rhs_field = *rhs_sig.get_field(i);
+        if (lhs_field.name() != rhs_field.name()) {
+            return syntax_expression_result_t{
+                .expressions = void_spans,
+                .value_or_type = u.get(builtin_eid::false_),
+                .is_const_result = true
+            };
+        }
+    }
+
+    fn_compiler_context_scope fn_scope{ ctx };
 
     lhs_er.temporaries.insert(lhs_er.temporaries.end(), rhs_er.temporaries.begin(), rhs_er.temporaries.end());
 
@@ -118,119 +126,105 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
         .value_or_type = u.get(builtin_eid::boolean),
         .is_const_result = false
     };
-    
+
     local_variable* lhs_tuple_var = nullptr, * rhs_tuple_var = nullptr;
     identifier lhs_tuple_var_name, rhs_tuple_var_name;
 
-    // For each field, compare using builtin_qnid::eq
-    semantic::expression_span * current_branch_owner_code = nullptr;
-    for (size_t i = 0; i < lhs_sig.field_count(); ++i) {
+    // Helper lambda to append field value (const or non-const) for tuple fields
+    auto append_tuple_field_value = [&](pure_call_t& call, const auto& field, size_t fidx, local_variable*& tuple_var, identifier& tuple_var_name, entity const& tuple_entity_type) -> error_storage {
+        if (field.is_const()) {
+            // Use the const entity directly
+            call.emplace_back(annotated_entity_identifier{ field.entity_id(), md.location });
+        } else {
+            if (!tuple_var) {
+                tuple_var_name = u.new_identifier();
+                tuple_var = &fn_scope.new_temporary(tuple_var_name, tuple_entity_type.id);
+            }
+            pure_call_t get_call{ md.location };
+            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::self), md.location },
+                variable_reference{ annotated_qname{ qname{ tuple_var_name, false } }, false });
+            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::property) }, annotated_integer{ mp::integer{ fidx } });
+            auto match = ctx.find(builtin_qnid::get, get_call, el);
+            if (!match) {
+                return append_cause(
+                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ fidx } }),
+                    std::move(match.error()));
+            }
+            auto res = match->apply(ctx);
+            if (!res) {
+                return append_cause(
+                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ fidx } }),
+                    std::move(res.error()));
+            }
+            result.stored_expressions = el.concat(result.stored_expressions, res->stored_expressions);
+            semantic::managed_expression_list mel{ u };
+            mel.deep_copy(res->expressions);
+            call.emplace_back(indirect_value{
+                .location = md.location,
+                .type = field.entity_id(),
+                .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(mel) }
+            });
+        }
+        return {};
+    };
+
+    semantic::expression_span* current_branch_owner_code = nullptr;
+
+    // Helper lambda to compare a single tuple field and update result accordingly
+    auto compare_tuple_field = [&](size_t i) -> std::expected<bool, error_storage> {
         auto const& lhs_field = lhs_sig.field(i);
         auto const& rhs_field = rhs_sig.field(i);
 
+        // If both fields are the same const entity, skip comparison
         if (lhs_field.entity_id() == rhs_field.entity_id() && lhs_field.is_const() == rhs_field.is_const() && lhs_field.is_const()) {
-            // If both fields are the same const entity, we can skip the comparison
-            continue;
-        }
-
-        if (!rhs_field.is_const() && !rhs_tuple_var) {
-            rhs_tuple_var_name = u.new_identifier();
-            rhs_tuple_var = &fn_scope.new_temporary(rhs_tuple_var_name, eq_md.rhs_entity_type.id);
+            return true;
         }
 
         pure_call_t eq_call{ md.location };
-        if (lhs_field.is_const()) {
-            // If lhs field is const, we can use it directly
-            eq_call.emplace_back(annotated_entity_identifier{ lhs_field.entity_id(), md.location }); // lhs argument location is needed
-        } else {
-            if (!lhs_tuple_var) {
-                lhs_tuple_var_name = u.new_identifier();
-                lhs_tuple_var = &fn_scope.new_temporary(lhs_tuple_var_name, eq_md.lhs_entity_type.id);
-            }
-            pure_call_t get_call{ md.location };
-            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::self), md.location },
-                variable_reference{ annotated_qname{ qname{ lhs_tuple_var_name, false } }, false });
-            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::property) }, annotated_integer{ mp::integer{ i } });
-            auto match = ctx.find(builtin_qnid::get, get_call, el);
-            if (!match) {
-                return std::unexpected(append_cause(
-                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
-                    std::move(match.error())));
-            }
-            auto res = match->apply(ctx);
-            if (!res) {
-                return std::unexpected(append_cause(
-                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
-                    std::move(res.error())));
-            }
-            result.stored_expressions = el.concat(result.stored_expressions, res->stored_expressions);
-            semantic::managed_expression_list el{ u };
-            el.deep_copy(res->expressions);
-            eq_call.emplace_back(indirect_value{
-                .location = md.location,
-                .type = lhs_field.entity_id(),
-                .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
-            });
+
+        // Append lhs field value
+        if (auto lhs_err = append_tuple_field_value(eq_call, lhs_field, i, lhs_tuple_var, lhs_tuple_var_name, eq_md.lhs_entity_type)) {
+            // Add field name and index to error
+            return std::unexpected(append_cause(
+                make_error<basic_general_error>(md.location, ("failed to get lhs tuple field(%1%) value"_fmt % i).str(), lhs_field.name()),
+                std::move(lhs_err)));
         }
 
-        if (rhs_field.is_const()) {
-            // If rhs field is const, we can use it directly
-            eq_call.emplace_back(annotated_entity_identifier{ rhs_field.entity_id(), md.location }); // rhs argument location is needed
-        } else {
-            if (!rhs_tuple_var) {
-                rhs_tuple_var_name = u.new_identifier();
-                rhs_tuple_var = &fn_scope.new_temporary(rhs_tuple_var_name, eq_md.rhs_entity_type.id);
-            }
-            pure_call_t get_call{ md.location };
-            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::self), md.location },
-                variable_reference{ annotated_qname{ qname{ rhs_tuple_var_name, false } }, false });
-            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::property) }, annotated_integer{ mp::integer{ i } });
-            auto match = ctx.find(builtin_qnid::get, get_call, el);
-            if (!match) {
-                return std::unexpected(append_cause(
-                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
-                    std::move(match.error())));
-            }
-            auto res = match->apply(ctx);
-            if (!res) {
-                return std::unexpected(append_cause(
-                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
-                    std::move(res.error())));
-            }
-            result.stored_expressions = el.concat(result.stored_expressions, res->stored_expressions);
-            semantic::managed_expression_list el{ u };
-            el.deep_copy(res->expressions);
-            eq_call.emplace_back(indirect_value{
-                .location = md.location,
-                .type = rhs_field.entity_id(),
-                .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
-            });
+        // Append rhs field value
+        if (auto rhs_err = append_tuple_field_value(eq_call, rhs_field, i, rhs_tuple_var, rhs_tuple_var_name, eq_md.rhs_entity_type)) {
+            // Add field name and index to error
+            return std::unexpected(append_cause(
+                make_error<basic_general_error>(md.location, ("failed to get rhs tuple field(%1%) value"_fmt % i).str(), rhs_field.name()),
+                std::move(rhs_err)));
         }
+
+        // Compare fields using builtin_qnid::eq
         auto match = ctx.find(builtin_qnid::eq, eq_call, el, expected_result_t{ u.get(builtin_eid::boolean), false });
         if (!match) {
             return std::unexpected(append_cause(
-                make_error<binary_relation_error>(md.location, "can't compare tuple fields"sv, lhs_field.entity_id(), rhs_field.entity_id()),
+                make_error<binary_relation_error>(md.location, ("can't compare tuple fields at index %1%"_fmt % i).str(), lhs_field.entity_id(), rhs_field.entity_id()),
                 std::move(match.error())));
         }
         auto eq_res = match->apply(ctx);
         if (!eq_res) {
             return std::unexpected(append_cause(
-                make_error<binary_relation_error>(md.location, "can't compare tuple fields"sv, lhs_field.entity_id(), rhs_field.entity_id()),
+                make_error<binary_relation_error>(md.location, ("can't compare tuple fields at index %1%"_fmt % i).str(), lhs_field.entity_id(), rhs_field.entity_id()),
                 std::move(eq_res.error())));
         }
 
+        // If the result is constant, optimize
         if (eq_res->is_const_result) {
-            // If the result is constant, we can optimize it
             if (eq_res->value() == u.get(builtin_eid::true_)) {
-                continue; // This field is equal, skip it
+                return true; // This field is equal, skip it
             } else {
-                BOOST_ASSERT(eq_res->value() == u.get(builtin_eid::false_));
+                BOOST_ASSERT(eq_res->value() == u.get(builtin_eid::false_)); // NOLINT
                 // If any field is not equal, the whole tuple is not equal
-                return syntax_expression_result_t{
+                result = syntax_expression_result_t{
                     .expressions = void_spans,
                     .value_or_type = u.get(builtin_eid::false_),
                     .is_const_result = true
                 };
+                return false;
             }
         }
 
@@ -241,14 +235,14 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
             // append conditional branch
             u.push_back_expression(el, *current_branch_owner_code, semantic::conditional_t{});
             semantic::conditional_t& cond = get<semantic::conditional_t>(current_branch_owner_code->back());
-            
+
             // removing 'true' from previous field equality check
             u.push_back_expression(el, cond.true_branch, semantic::truncate_values{ 1, false });
 
             // append the result of current field equality check
             cond.true_branch = el.concat(cond.true_branch, eq_res->expressions);
 
-            // store brunch expressions as stored expressions if they are not primary branch expressions
+            // store branch expressions as stored expressions if they are not primary branch expressions
             if (&result.expressions != current_branch_owner_code) {
                 result.stored_expressions = el.concat(result.stored_expressions, *current_branch_owner_code);
             }
@@ -258,6 +252,20 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
             // Otherwise, we need to create a new conditional expression
             result.expressions = el.concat(result.expressions, eq_res->expressions);
             current_branch_owner_code = &result.expressions;
+        }
+        return true;
+    };
+
+    // For each field, compare using builtin_qnid::eq
+    // Returns true only if all fields are equal, otherwise returns false at first mismatch
+    for (size_t i = 0; i < lhs_sig.field_count(); ++i) {
+        auto cmp = compare_tuple_field(i);
+        if (!cmp) {
+            return std::unexpected(std::move(cmp.error()));
+        }
+        if (!cmp.value()) {
+            // Early exit: a field is not equal
+            return std::move(result);
         }
     }
 
@@ -269,6 +277,8 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
             .is_const_result = true
         };
     }
+
+    // Store any remaining branch expressions
     if (&result.expressions != current_branch_owner_code) {
         result.stored_expressions = el.concat(result.stored_expressions, *current_branch_owner_code);
     }

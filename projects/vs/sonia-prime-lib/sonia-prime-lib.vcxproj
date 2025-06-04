@@ -321,6 +321,7 @@
     <ClInclude Include="..\..\..\sonia\bang\functional\general\deref_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\general\equal_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\general\mut_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\negate_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\general\to_string_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\general\typeof_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\generic_pattern_base.hpp" />
@@ -842,6 +843,7 @@
     <ClCompile Include="..\..\..\sonia\bang\functional\general\deref_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\general\equal_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\general\mut_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\negate_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\general\to_string_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\general\typeof_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\signature_matcher.cpp" />

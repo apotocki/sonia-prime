@@ -168,25 +168,25 @@ parameter_match_result& functional_match_descriptor::get_match_result(size_t pos
 
 entity_signature functional_match_descriptor::build_signature(unit & u, qname_identifier name)
 {
-    entity_signature signature{ name };
-    for (mr_pair_t const* pnm : named_matches_) {
-        for (auto const& ser : get<1>(*pnm).results) {
-            signature.emplace_back(get<0>(*pnm), ser.value_or_type, ser.is_const_result);
-        }
-    }
-    //size_t argnum = 0;
-    for (auto pmr : positional_matches_) {
-        for (auto const& ser : pmr->results) {
-            signature.emplace_back(ser.value_or_type, ser.is_const_result);
+    entity_signature sig{ std::move(name) };
+    for (mr_pair_t & pair : pmrs_) {
+        parameter_match_result& pmr = get<1>(pair);
+        //BOOST_ASSERT(pmr.results.size() == 1);
+        //syntax_expression_result_t const& er = pmr.results.front();
+        if (identifier name = get<0>(pair)) {
+            for (auto const& er : pmr.results) {
+                sig.emplace_back(name, er.value_or_type, er.is_const_result);
+            }
+        } else {
+            for (auto const& er : pmr.results) {
+                sig.emplace_back(er.value_or_type, er.is_const_result);
+            }
         }
     }
     if (result.entity_id()) {
-        signature.result = field_descriptor{ result };
+        sig.result = result;
     }
-    return signature;
-    
-    //pmd->signature.set(pargname->value, field_descriptor{ match->first, false });
-    //pmd->signature.set(start_matcher_it - matchers_.begin(), field_descriptor{ pmatch->first, false });
+    return sig;
 }
 
 void functional_match_descriptor::reset() noexcept

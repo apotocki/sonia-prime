@@ -451,8 +451,6 @@ struct truncate_values
     truncate_values(size_t cnt, bool keepb) : count { static_cast<uint32_t>(cnt) }, keep_back{ keepb } {}
 };
 
-struct return_statement {};
-
 struct invoke_function
 {
     //qname_identifier varname;
@@ -477,6 +475,13 @@ struct invoke_function
 
 struct expression_entry;
 using expression_span = linked_list_node_span<expression_entry>;
+
+struct return_statement
+{
+    expression_span result;
+    entity_identifier value_or_type;
+    bool is_const_result;
+};
 
 struct conditional_t
 {

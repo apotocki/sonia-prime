@@ -8,20 +8,21 @@
 
 namespace sonia::lang::bang {
 
-class tuple_equal_pattern : public functional::pattern
+// Pattern for negating a boolean value
+class negate_pattern : public functional::pattern
 {
 public:
-    tuple_equal_pattern() noexcept : functional::pattern{ mp::decimal{ "0.1"sv } } {}
+    negate_pattern() = default;
 
+    // Attempts to match a call with a single boolean argument
     std::expected<functional_match_descriptor_ptr, error_storage>
-    try_match(fn_compiler_context&, prepared_call const&, expected_result_t const&) const override;
+    try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const override;
 
+    // Applies the negation operation to the boolean argument
     std::expected<syntax_expression_result_t, error_storage>
     apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
-    std::ostream& print(unit const&, std::ostream& s) const override {
-        return s << "tuple_equal(@tuple, @tuple)->bool";
-    }
+    std::ostream& print(unit const&, std::ostream& s) const override { return s << "negate(boolean)->boolean"sv; }
 };
 
 } // namespace sonia::lang::bang

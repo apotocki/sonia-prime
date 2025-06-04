@@ -43,40 +43,78 @@ std::expected<syntax_expression_result_t, error_storage> equal_pattern::apply(fn
     unit& u = ctx.u();
     auto & ler = md.get_match_result(0).results.front();
     auto & rer = md.get_match_result(1).results.front();
-    ler.temporaries.insert(ler.temporaries.end(), rer.temporaries.begin(), rer.temporaries.end());
-
-    if (ler.is_const_result && rer.is_const_result) {
-        if (ler.value() == rer.value()) {
-            return syntax_expression_result_t{
-                .temporaries = std::move(ler.temporaries),
-                .expressions = md.merge_void_spans(el),
-                .value_or_type = u.make_bool_entity(true).id,
-                .is_const_result = true
-            };
-        }
-        return syntax_expression_result_t{
-            .temporaries = std::move(ler.temporaries),
-            .expressions = md.merge_void_spans(el),
-            .value_or_type = u.make_bool_entity(false).id,
-            .is_const_result = true
-        };
-    }
 
     syntax_expression_result_t result{
         .temporaries = std::move(ler.temporaries),
         .stored_expressions = el.concat(ler.stored_expressions, rer.stored_expressions),
-        .expressions = md.merge_void_spans(el),
-        .value_or_type = u.get(builtin_eid::boolean),
-        .is_const_result = false
+        .expressions = md.merge_void_spans(el)
     };
-    
+    result.temporaries.insert(result.temporaries.end(), rer.temporaries.begin(), rer.temporaries.end());
+    if (ler.is_const_result && rer.is_const_result) {
+        result.is_const_result = true;
+        result.value_or_type = u.make_bool_entity(ler.value() == rer.value()).id;
+        return result;
+    }
+
+    result.value_or_type = u.get(builtin_eid::boolean);
+    result.is_const_result = false;
+
     if (ler.is_const_result) {
-        u.push_back_expression(el, result.expressions, semantic::push_value{ ler.value() });
+        // Get non-const type for the left argument
+        entity_identifier ltype = get_entity(u, ler.value()).get_type();
+        
+        // Create implicit cast call instead of direct push_value
+        pure_call_t cast_call{ md.location };
+        cast_call.emplace_back(annotated_entity_identifier{ ler.value(), md.location });
+
+        // Try to find an implicit cast from const value to non-const type
+        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, el, expected_result_t{ ltype, false, md.location });
+        if (!match) {
+            return std::unexpected(match.error());
+            // Fallback to direct push_value if implicit_cast is not available
+            ///u.push_back_expression(el, result.expressions, semantic::push_value{ ler.value() });
+        } else {
+            // Apply the implicit cast and use its result
+            auto cast_result = match->apply(ctx);
+            if (!cast_result) {
+                return std::unexpected(cast_result.error());
+                // Fallback to direct push_value on cast error
+                //u.push_back_expression(el, result.expressions, semantic::push_value{ ler.value() });
+            } else {
+                result.expressions = el.concat(result.expressions, cast_result->expressions);
+                result.temporaries.insert(result.temporaries.end(), cast_result->temporaries.begin(), cast_result->temporaries.end());
+            }
+        }
     } else {
         result.expressions = el.concat(result.expressions, ler.expressions);
     }
+    
     if (rer.is_const_result) {
-        u.push_back_expression(el, result.expressions, semantic::push_value{ rer.value() });
+        // Get non-const type for the right argument
+        entity_identifier rtype = get_entity(u, rer.value()).get_type();
+        
+        // Create implicit cast call instead of direct push_value
+        pure_call_t cast_call{ md.location };
+        cast_call.emplace_back(annotated_entity_identifier{ rer.value(), md.location });
+
+        // Try to find an implicit cast from const value to non-const type
+        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, el, expected_result_t{ rtype, false, md.location });
+        if (!match) {
+            // Fallback to direct push_value if implicit_cast is not available
+            return std::unexpected(match.error());
+            //u.push_back_expression(el, result.expressions, semantic::push_value{ rer.value() });
+        } else {
+            // Apply the implicit cast and use its result
+            auto cast_result = match->apply(ctx);
+            if (!cast_result) {
+                return std::unexpected(cast_result.error());
+                // Fallback to direct push_value on cast error
+                //u.push_back_expression(el, result.expressions, semantic::push_value{ rer.value() });
+            } else {
+                result.expressions = el.concat(result.expressions, cast_result->expressions);
+                result.temporaries.insert(result.temporaries.end(), cast_result->temporaries.begin(), cast_result->temporaries.end());
+            }
+        }
     } else {
         result.expressions = el.concat(result.expressions, rer.expressions);
     }

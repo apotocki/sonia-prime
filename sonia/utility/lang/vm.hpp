@@ -566,7 +566,7 @@ struct printer
 
     inline void operator()(identity_type<op::popn>, ContextT& ctx, size_t address, size_t n) const
     {
-        generic_print(address, "popn"sv) << " ["sv << std::dec  << (ctx.stack_size() - n - 1) << " - "sv << (ctx.stack_size() - 1) << "] ("sv;
+        generic_print(address, "popn"sv) << " ["sv << std::dec  << (ctx.stack_size() - n) << " - "sv << (ctx.stack_size() - 1) << "] ("sv;
         auto sp = ctx.stack_span(0, n);
         if (!sp.empty()) {
             ss << sp.front();

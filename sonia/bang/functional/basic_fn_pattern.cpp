@@ -1328,12 +1328,22 @@ shared_ptr<entity> generic_fn_pattern::build(fn_compiler_context& ctx, functiona
     return pife;
 }
 
-std::expected<syntax_expression_result_t, error_storage> basic_fn_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& exprs, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> basic_fn_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    if (md.result && md.result.is_const()) {
-        return syntax_expression_result_t{ .value_or_type = md.result.entity_id(), .is_const_result = true };
-    }
+    syntax_expression_result_t result{ .expressions = md.merge_void_spans(el) };
+    md.for_each_match([&result, &el](parameter_match_result &pmr){
+        for (auto & er : pmr.results) {
+            result.temporaries.insert(result.temporaries.end(), er.temporaries.begin(), er.temporaries.end());
+            result.stored_expressions = el.concat(result.stored_expressions, er.stored_expressions);
+        }
+    });
+    //if (md.result && md.result.is_const()) {
+    //    result.value_or_type = md.result.entity_id();
+    //    result.is_const_result = true;
+    //    return result;
+    //}
+
     // fnsig -> fn entity
     // if fn entity exists => all nested qnames(functionals) are defined (e.g. argument variables, function body qname)
     // => all nested qnames should be defined in the build procedure
@@ -1360,12 +1370,17 @@ std::expected<syntax_expression_result_t, error_storage> basic_fn_pattern::apply
     
     BOOST_ASSERT(fne.result);
 
-    if (fne.result.is_const()) {
-        return syntax_expression_result_t{ .value_or_type = fne.result.entity_id(), .is_const_result = true };
+
+    // doubtful: although the result is const, the function body can have side effects
+    // to do: return const if body is empty
+    if (fne.result.is_const() && fne.result.entity_id() != u.get(builtin_eid::void_)) {
+        result.value_or_type = fne.result.entity_id();
+        result.is_const_result = true;
+        return result;
     }
 
-    auto rpair = apply_arguments(ctx, md, exprs);
-    u.push_back_expression(exprs, get<0>(rpair), semantic::invoke_function(e.id));
+    auto rpair = apply_arguments(ctx, md, el);
+    u.push_back_expression(el, get<0>(rpair), semantic::invoke_function(e.id));
 
     return syntax_expression_result_t{ .expressions = std::move(get<0>(rpair)), .value_or_type = fne.result.entity_id(), .is_const_result = false };
 }

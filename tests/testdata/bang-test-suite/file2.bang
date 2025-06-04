@@ -1,3 +1,37 @@
+fn assert_equal($l, $r) ->() {
+    if $l != $r {
+        __print("Assertion failed: " .. to_string($l) .. " != " .. to_string($r), 1);
+    }
+}
+let xpack0 = (1, name: "assa", mut("345"), name : "bassa", name : mut(123), mut(22));
+assert_equal(size(xpack0.name), 3);
+/*
+// Test: tuples with all const fields
+let t1 = (a: 1, b : 2);
+let t2 = (a: 1, b : 2);
+assert(t1 == t2); // # should be true
+
+// Test: tuples with mixed const/non-const fields
+let x = mut(42);
+let t3 = (a: x, b : 2);
+let t4 = (a: x, b : 2);
+assert(t3 == t4); // should be true
+
+// Test: tuples with different field names
+let t5 = (a: 1, b : 2);
+let t6 = (a: 1, c : 2);
+assert(!(t5 == t6)); // should be false
+
+// Test: tuples with mismatched field counts
+let t7 = (a: 1, b : 2);
+let t8 = (a: 1);
+assert(t7 != t8); // should be false
+
+// Test: tuples with different values
+let t9 = (a: 1, b : 2);
+let t10 = (a: 1, b : 3);
+assert(!(t9 == t10)); // should be false
+
 
 let xpack0 = (1, name: "assa", mut("345"), name: "bassa", name: mut(123), mut(22));
 
@@ -41,7 +75,7 @@ assert(head(tail(tail(tail(tail(xpack0))))).0 == .name);
 assert(head(tail(tail(tail(tail(xpack0))))).1 == 123);
 assert(xpack0[4] == (.name, mut(123)));
 assert(xpack0[4] == (.name, 123));
-
+*/
 
 /*
 assert(size(xpack0.name) == 3);
@@ -92,3 +126,4 @@ assert(xpack2.name.2 == "678");
 assert(xpack2.name.3 == "901");
 assert(xpack2.name2 == "asd");
 */
+

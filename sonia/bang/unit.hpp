@@ -120,6 +120,7 @@ enum class builtin_eid : size_t
     equal, // builtin ::equal(a, b)-> boolean
     assert, // builtin ::assert(condition, message)-> void 
     to_string, // builtin ::to_string(value)-> string
+    negate, // builtin ::negate(value)-> valueT
     eof_builtin_eid_value
 };
 

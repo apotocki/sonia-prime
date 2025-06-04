@@ -216,7 +216,7 @@ public:
     }
     */
 
-    void finish_frame();
+    std::pair<entity_identifier, bool> finish_frame();
 
     //local_variable_entity const& get_variable(size_t index) const
     //{
@@ -251,6 +251,8 @@ public:
 
     semantic::expression_span store_semantic_expressions(semantic::managed_expression_list&&);
     semantic::managed_expression_list& expression_store() { return expression_store_; }
+
+    void append_return(semantic::expression_span return_expressions, entity_identifier value_or_type, bool is_const_result);
 
     //std::pair<size_t, expression_list_t::iterator> current_expressions_pointer() const
     //{
@@ -304,12 +306,15 @@ public:
     inline expressions_state_type expressions_state() noexcept { return expressions_state_type{*this}; }
 #endif
 
-    entity_identifier result;
-    entity_identifier accum_result;
-    entity_identifier context_type;
+    entity_identifier result_value_or_type;
+    bool is_const_result = false; // if true, result_value_or_type is a type, not a value
 
-    void accumulate_result_type(entity_identifier t);
-    entity_identifier compute_result_type();
+    //entity_identifier accum_result;
+    entity_identifier context_type;
+    small_vector<semantic::return_statement*, 4> return_statements_;
+
+    //void accumulate_result_type(entity_identifier t);
+    //entity_identifier compute_result_type();
 
 private:
     void init();

@@ -112,8 +112,12 @@ value_match_visitor::result_type value_match_visitor::operator()(variable_refere
                     }
                     return std::unexpected(make_error<undeclared_identifier_error>(var.name));
                 }
-                auto res = apply_visitor(ct_expression_visitor{ caller_ctx, expressions, expected_result_t{ eid_or_var, true } }, cexpr);
+                
+                auto res = apply_visitor(ct_expression_visitor{ caller_ctx, expressions, expected_result_t{ get_entity(callee_ctx.u(), eid_or_var).get_type(), true } }, cexpr);
                 if (!res) return std::unexpected(std::move(res.error()));
+                if (res->value != eid_or_var) {
+                    return std::unexpected(make_error<value_mismatch_error>(get_start_location(cexpr), res->value, eid_or_var, var.name.location));
+                }
                 return res->value;
             }
             else { // entity_ptr, that is variable_entity

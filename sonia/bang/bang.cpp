@@ -108,8 +108,6 @@ using namespace sonia::lang::bang;
 
 const char bang_bootstrap_code[] = R"#(
 inline fn not_equal(_, _)->bool => !($0 == $1);
-using negate(=>true) => false;
-using negate(=>false) => true;
 //inline fn ::set(self: object, property: const __identifier, any)->object => set(self: self, to_string(property), $0);
 )#";
 

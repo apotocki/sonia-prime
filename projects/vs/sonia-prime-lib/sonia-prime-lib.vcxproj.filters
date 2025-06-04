@@ -2463,6 +2463,9 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_equal_pattern.hpp">
       <Filter>sonia.bang\entities\tuple</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\negate_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2992,6 +2995,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_equal_pattern.cpp">
       <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\negate_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

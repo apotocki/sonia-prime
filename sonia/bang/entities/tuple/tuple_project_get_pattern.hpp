@@ -8,31 +8,34 @@
 
 namespace sonia::lang::bang {
 
-class tuple_get_pattern : public functional::pattern
+class tuple_project_get_pattern : public functional::pattern
 {
 public:
-    tuple_get_pattern() = default;
+    tuple_project_get_pattern() = default;
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, expected_result_t const&) const override;
     
     std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
-    std::ostream& print(unit const&, std::ostream& s) const override { return s << "get(self: @tuple, property: integer|__identifier)"sv; }
+    std::ostream& print(unit const&, std::ostream& s) const override { return s << "get(self: @tuple_project, property: integer)"sv; }
 
 protected:
-    class tuple_get_match_descriptor : public functional_match_descriptor
+    class tuple_project_get_match_descriptor : public functional_match_descriptor
     {
     public:
-        inline tuple_get_match_descriptor(entity const& ent, entity_signature const& sig, bool is_typename, lex::resource_location loc) noexcept
+        inline tuple_project_get_match_descriptor(
+            identifier name,
+            entity const& orig_tpl, entity_signature const& orig_sig,
+            lex::resource_location loc) noexcept
             : functional_match_descriptor{ std::move(loc) }
-            , tpl_entity{ ent }
-            , arg_sig{ sig }
-            , is_argument_typename{ is_typename }
+            , project_name{ name }
+            , orig_tuple_entity{ orig_tpl }
+            , orig_tuple_sig{ orig_sig }
         {}
 
-        entity const& tpl_entity;
-        entity_signature const& arg_sig;
-        bool is_argument_typename;
+        identifier project_name;
+        entity const& orig_tuple_entity;
+        entity_signature const& orig_tuple_sig;
     };
 };
 

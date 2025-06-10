@@ -12,6 +12,7 @@
 #include "fn_compiler_context.hpp"
 #include "ct_expression_visitor.hpp"
 
+#include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
 #include "sonia/bang/auxiliary.hpp"
@@ -584,6 +585,13 @@ base_expression_visitor::result_type base_expression_visitor::operator()(binary_
         return this->operator()(builtin_qnid::bit_or, be);
     case binary_operator_type::BIT_AND:
         return this->operator()(builtin_qnid::bit_and, be);
+    case binary_operator_type::CONCAT:
+        return this->operator()(builtin_qnid::string_concat, be);
+    case binary_operator_type::LOGIC_AND:
+        return this->operator()(builtin_qnid::logic_and, be);
+        //return do_logic_and(be);
+    case binary_operator_type::LOGIC_OR:
+        return do_logic_or(be);
     case binary_operator_type::ASSIGN:
         return do_assign(be);
     default:
@@ -591,6 +599,178 @@ base_expression_visitor::result_type base_expression_visitor::operator()(binary_
     }
     
     THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor binary_expression_t");
+}
+
+base_expression_visitor::result_type base_expression_visitor::do_logic_and(binary_expression_t const& be) const
+{
+#if 0
+    prepared_call pcall{ ctx, be, expressions };
+    if (auto err = pcall.prepare(); err) return std::unexpected(std::move(err));
+
+    expected_result_t bool_exp{ u().get(builtin_eid::boolean), be.location };
+    auto call_session = pcall.new_session(ctx);
+    syntax_expression_t const* parg_expr;
+    auto firstarg = call_session.use_next_positioned_argument(&parg_expr);
+    if (!firstarg) {
+        if (!firstarg.error()) {
+            return std::unexpected(make_error<basic_general_error>(be.location, "missing first argument for logic AND operation"sv));
+        }
+        return std::unexpected(firstarg.error());
+    }
+    fn_compiler_context_scope fn_scope{ ctx };
+    lex::resource_location first_expr_loc = get_start_location(*parg_expr);
+    pure_call_t bool_cast_call{ first_expr_loc };
+    local_variable* first_expr_var = nullptr;
+    identifier first_expr_var_name;
+    if (firstarg->is_const_result) {
+        bool_cast_call.emplace_back(annotated_entity_identifier{ firstarg->value(), first_expr_loc });
+    } else {
+        first_expr_var_name = u().new_identifier();
+        first_expr_var = &fn_scope.new_temporary(first_expr_var_name, firstarg->type());
+        bool_cast_call.emplace_back(variable_reference{ annotated_qname{ qname{ first_expr_var_name, false } }, false });
+    }
+    auto match = ctx.find(builtin_qnid::implicit_cast, bool_cast_call, expressions, expected_result_t{ u().get(builtin_eid::boolean), first_expr_loc });
+    if (!match) {
+        // ignore casting error details
+        return std::unexpected(make_error<cast_error>(first_expr_loc, u().get(builtin_eid::boolean), firstarg->type(), *parg_expr));
+    }
+    auto firstarg_res = match->apply(ctx);
+    if (!firstarg_res) {
+        return std::unexpected(std::move(firstarg_res.error()));
+    }
+
+    if (firstarg_res->is_const_result) {
+        if (firstarg_res->value() == u().get(builtin_eid::false_)) {
+            // if the first argument is false, return it without evaluation of the second argument
+            return apply_cast(std::move(*firstarg), *parg_expr);
+        } else if (firstarg->value() == u().get(builtin_eid::true_)) {
+            // if the first argument is true, we need to evaluate and return the second argument
+            auto secondarg = call_session.use_next_positioned_argument(&parg_expr);
+            if (!secondarg) {
+                if (!secondarg.error()) {
+                    return std::unexpected(make_error<basic_general_error>(be.location, "missing second argument for logic AND operation"sv));
+                }
+                return std::unexpected(secondarg.error());
+            }
+            if (auto argterm = call_session.unused_argument(); argterm) {
+                return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
+            }
+            return apply_cast(std::move(*secondarg), *parg_expr);
+        } else {
+            // unexpected constant value for logic AND operation
+            return std::unexpected(make_error<basic_general_error>(be.location, "internal error: unexpected constant value for logic AND operation"sv, firstarg->value()));
+        }
+    }
+    
+    auto secondarg = call_session.use_next_positioned_argument(&parg_expr);
+    if (!secondarg) {
+        if (!secondarg.error()) {
+            return std::unexpected(make_error<basic_general_error>(be.location, "missing second argument for logic AND operation"sv));
+        }
+        return std::unexpected(secondarg.error());
+    }
+    if (auto argterm = call_session.unused_argument(); argterm) {
+        return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
+    }
+    entity_identifier secondarg_type;
+    if (secondarg->is_const_result) {
+        secondarg_type = get_entity(u(), secondarg->value()).get_type();
+    } else {
+        secondarg_type = secondarg->type();
+    }
+
+    // calculate result type
+    entity_identifier result_type;
+    bool result_is_union;
+    if (firstarg->type() == secondarg_type) {
+        result_type = secondarg_type;
+        result_is_union = false;
+    } else {
+        entity_identifier argtypes[2] = { firstarg->type(), secondarg_type };
+        result_type = u().make_union_type_entity(argtypes).id;
+        result_is_union = true;
+    }
+    
+    BOOST_ASSERT(!firstarg->is_const_result);
+    BOOST_ASSERT(first_expr_var);
+    syntax_expression_result_t& result = *firstarg_res;
+    result.value_or_type = result_type;
+    result.temporaries.emplace_back(first_expr_var->varid, first_expr_var->type, firstarg->expressions);
+    u().push_back_expression(expressions, result.expressions, semantic::conditional_t{});
+    semantic::conditional_t& cond = get<semantic::conditional_t>(result.expressions.back());
+    if (result_is_union) {
+        pure_call_t union_first_arg_cast_call{ first_expr_loc };
+        union_first_arg_cast_call.emplace_back(variable_reference{ annotated_qname{ qname{ first_expr_var_name, false } }, false });
+        auto match = ctx.find(builtin_qnid::implicit_cast, union_first_arg_cast_call, expressions, expected_result_t{ result_type, first_expr_loc });
+        if (!match) {
+            // ignore casting error details
+            return std::unexpected(make_error<cast_error>(first_expr_loc, u().get(builtin_eid::boolean), firstarg->type(), *parg_expr));
+        }
+        auto union_first_arg_cast_res = match->apply(ctx);
+        if (!union_first_arg_cast_res) return std::unexpected(std::move(union_first_arg_cast_res.error()));
+        cond.false_branch = union_first_arg_cast_res->expressions;
+        
+    }
+    u().push_back_expression(expressions, cond.false_branch, semantic::push_local_variable{ *first_expr_var });
+
+    result.temporaries.push_back(first_expr_var ? first_expr_var->id : first_expr_var_name.id);
+    // Create a result structure for the entire logic AND operation
+    syntax_expression_result_t result;
+    
+    
+    // Evaluate the left operand
+    auto left_res = apply_visitor(base_expression_visitor{ ctx, el }, be.args[0].value());
+    if (!left_res) return std::unexpected(left_res.error());
+
+    // cast the left operand's result to boolean
+    pure_call_t cast_call{ get_start_location(be.args[0]expected_result.location };
+    cast_call.emplace_back(annotated_entity_identifier{ ent.id, expr_loc });
+    auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expressions, expected_result);
+
+    expected_result_t{ u().get(builtin_eid::boolean), be.location }
+    // Add the left operand's expressions and temporaries to our result
+    result.expressions = expressions.concat(result.expressions, left_res->first.expressions);
+    result.temporaries.insert(result.temporaries.end(), left_res->first.temporaries.begin(), left_res->first.temporaries.end());
+
+    // Create a conditional for short-circuit evaluation
+    semantic::managed_expression_list cond_exprs{ ctx.u() };
+    semantic::conditional_t cond;
+    
+    // Create the true branch (right operand evaluation)
+    semantic::managed_expression_list true_branch{ ctx.u() };
+    
+    // Evaluate the right operand
+    auto right_res = apply_visitor(base_expression_visitor{ ctx, expressions, expected_result_t{ u().get(builtin_eid::boolean), be.location } }, be.args[1].value());
+    if (!right_res) return std::unexpected(right_res.error());
+    
+    // Add the right operand's expressions to the true branch
+    true_branch.splice_back(expressions, right_res->first.expressions);
+    result.temporaries.insert(result.temporaries.end(), right_res->first.temporaries.begin(), right_res->first.temporaries.end());
+    
+    // Finalize the conditional
+    cond.true_branch = true_branch;
+    cond.true_branch_finished = 1;
+    cond.false_branch_finished = 1;
+    
+    // Add the conditional to our expressions
+    u().push_back_expression(cond_exprs, std::move(cond));
+    semantic::expression_span cond_span = cond_exprs;
+    expressions.splice_back(cond_exprs);
+    
+    // Add the conditional to our result
+    result.expressions = expressions.concat(result.expressions, cond_span);
+    result.value_or_type = u().get(builtin_eid::boolean);
+    result.is_const_result = false;
+    
+    // Apply cast if needed and return the result
+    return apply_cast(std::move(result), be);
+#endif
+    THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor binary_operator_type::LOGIC_AND");
+}
+
+base_expression_visitor::result_type base_expression_visitor::do_logic_or(binary_expression_t const&) const
+{
+    THROW_NOT_IMPLEMENTED_ERROR("base_expression_visitor binary_operator_type::LOGIC_OR");
 }
 
 base_expression_visitor::result_type base_expression_visitor::do_assign(binary_expression_t const& op) const

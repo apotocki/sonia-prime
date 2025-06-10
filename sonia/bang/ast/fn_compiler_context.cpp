@@ -551,22 +551,34 @@ variable_entity& fn_compiler_context::create_captured_variable_chain(variable_en
 }
 #endif
 
-std::pair<entity_identifier, bool> fn_compiler_context::finish_frame()
+std::expected<std::pair<entity_identifier, bool>, error_storage> fn_compiler_context::finish_frame(internal_function_entity const& fent)
 {
-    if (result_value_or_type) {
-        // result type is already set
-        return { result_value_or_type, is_const_result };
+    if (return_statements_.empty()) {
+        if (!result_value_or_type) {
+            result_value_or_type = u().get(builtin_eid::void_);
+            is_const_value_result = true;
+        } else {
+            if (!is_const_value_result) {
+                return std::unexpected(make_error<basic_general_error>(
+                    fent.location, "no return statements, but result type is not const value"sv, fent.id));
+            }
+        }
+        append_return({}, result_value_or_type, true);
+        return std::pair{ result_value_or_type, true };
     }
 
-    if (return_statements_.empty()) {
-        // no return statements, so we can use void as result type
-        return { unit_.get(builtin_eid::void_), true };
+    // to do: append the return statement if needed (if no return expression recursievly in a branch found)
+    
+
+    if (result_value_or_type) {
+        // result type is already set
+        return std::pair{ result_value_or_type, is_const_value_result };
     }
 
     boost::container::small_flat_set<entity_identifier, 4> const_values;
     boost::container::small_flat_set<entity_identifier, 4> types;
     for (semantic::return_statement * rts : return_statements_) {
-        if (rts->is_const_result) {
+        if (rts->is_const_value_result) {
             const_values.insert(rts->value_or_type);
             if (!types.empty() || const_values.size() > 1) {
                 types.insert(get_entity(u(), rts->value_or_type).get_type());
@@ -576,7 +588,10 @@ std::pair<entity_identifier, bool> fn_compiler_context::finish_frame()
         }
     }
     if (types.empty() && const_values.size() == 1) {
-        return { *const_values.begin(), true };
+        return std::pair{ *const_values.begin(), true };
+    }
+    if (types.size() == 1 && const_values.empty()) {
+        return std::pair{ *types.begin(), false };
     }
     THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context: finish_frame with multiple return values not implemented yet");
     //if (accum_result) {
@@ -689,13 +704,13 @@ void fn_compiler_context::append_stored_expressions(semantic::expression_list_t&
     append_stored_expressions(sp);
 }
 
-void fn_compiler_context::append_return(semantic::expression_span return_expressions, entity_identifier value_or_type, bool is_const_result)
+void fn_compiler_context::append_return(semantic::expression_span return_expressions, entity_identifier value_or_type, bool is_const_value_result)
 {
     // return_expressions should contain a cast to return value_or type, if result_value_or_type is defined
     append_expression(semantic::return_statement{
         .result = return_expressions,
         .value_or_type = value_or_type,
-        .is_const_result = is_const_result
+        .is_const_value_result = is_const_value_result
     });
     semantic::return_statement * pretst = &get<semantic::return_statement>(expressions().back());
     return_statements_.emplace_back(pretst);

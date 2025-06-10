@@ -56,9 +56,11 @@ class external_fn_pattern;
     ((mut, "mut"sv))                       \
     ((deref, "*"sv))                       \
     ((ellipsis, "..."sv))                  \
+    ((error, "error"sv))                   \
     ((assert, "assert"sv))                 \
     ((typename_, "typename"sv))            \
     ((tuple, "tuple"sv))                   \
+    ((tuple_project, "tuple_project"sv))   \
     ((vector, "vector"sv))                 \
     ((array, "array"sv))                   \
     ((fuzzy_array, "fuzzy_array"sv))       \
@@ -87,12 +89,16 @@ class external_fn_pattern;
     ((bit_or, "__bit_or"))                 \
     ((bit_and, "__bit_and"))               \
     ((negate, "negate"))                   \
+    ((logic_and, "logic_and"))             \
+    ((logic_or, "logic_or"))               \
     ((implicit_cast, "implicit_cast"sv))   \
     ((get, "get"sv))                       \
     ((set, "set"sv))                       \
     ((head, "head"sv))                     \
     ((tail, "tail"sv))                     \
     ((to_string, "to_string"sv))           \
+    ((string_concat, "concat"sv))          \
+    ((is_const, "is_const"sv))             \
     ((empty, "empty"sv))
 
 #define BANG_PRINT_TYPE_ENUM(r, data, i, elem) BOOST_PP_TUPLE_ELEM(2, 0, elem),
@@ -119,8 +125,10 @@ enum class builtin_eid : size_t
     array_at, // builtin ::array_at(array, index)-> elementT
     equal, // builtin ::equal(a, b)-> boolean
     assert, // builtin ::assert(condition, message)-> void 
+    error, // builtin ::__error(message)-> void
     to_string, // builtin ::to_string(value)-> string
     negate, // builtin ::negate(value)-> valueT
+    concat, // builtin ::concat(string ...)-> string
     eof_builtin_eid_value
 };
 
@@ -303,8 +311,9 @@ public:
     std::ostream& print_to(std::ostream&, entity const&) const;
     std::ostream& print_to(std::ostream&, entity_signature const&) const;
     std::ostream& print_to(std::ostream&, qname_view const&) const;
-    std::ostream& print_to(std::ostream& os, qname const& q) const { return print_to(os, (qname_view)q); }
+    inline std::ostream& print_to(std::ostream& os, qname const& q) const { return print_to(os, (qname_view)q); }
     std::ostream& print_to(std::ostream&, qname_identifier const&) const;
+    std::ostream& print_to(std::ostream&, field_descriptor const&) const;
     std::ostream& print_to(std::ostream&, small_u32string const&, bool in_quotes = false) const;
     std::ostream& print_to(std::ostream&, lex::resource_location const&) const;
     std::ostream& print_to(std::ostream&, syntax_expression_t const&) const;

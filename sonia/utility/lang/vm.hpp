@@ -447,9 +447,14 @@ struct printer
         return nullopt;
     }
 
-    inline size_t operator()(identity_type<op::call>, ContextT&, size_t address, size_t call_address, size_t ret_address) const
+    inline size_t operator()(identity_type<op::call>, ContextT& ctx, size_t address, size_t call_address, size_t ret_address) const
     {
-        generic_print(address, "call"sv) << " 0x" << std::hex << call_address << "\n";
+        generic_print(address, "call"sv) << " 0x" << std::hex << call_address;
+        if constexpr (requires{ ctx.call_describe(call_address); }) {
+            ss << ' ' << ctx.call_describe(call_address) << '\n';
+        } else {
+            ss << '\n';
+        }
         return ret_address;
     }
 

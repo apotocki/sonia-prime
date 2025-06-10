@@ -46,17 +46,17 @@ public:
     void push_variable(variable_identifier varid, intptr_t index);
     //void push_argument(annotated_identifier, local_variable &&);
     //void push_variable(variable_identifier, intptr_t);
-    intptr_t resolve_variable_index(variable_identifier) const;
+    [[nodiscard]] intptr_t resolve_variable_index(variable_identifier) const;
 
     void visit(entity_visitor const& v) const override { v(*this); }
 
     inline void set_arg_count(uint64_t count) noexcept { arg_count_ = count; }
-    inline uint64_t arg_count() const noexcept { return arg_count_; }
+    [[nodiscard]] inline uint64_t arg_count() const noexcept { return arg_count_; }
 
-    bool is_inline() const { return !!is_inline_; }
-    void set_inline(bool val = true) { is_inline_ = val ? 1 : 0; }
+    [[nodiscard]] inline bool is_inline() const noexcept { return !!is_inline_; }
+    inline void set_inline(bool val = true) noexcept { is_inline_ = val ? 1 : 0; }
 
-    bool is_built() const { return !!is_built_; }
+    [[nodiscard]] inline bool is_built() const noexcept { return !!is_built_; }
 
     inline std::ostream& print_to(std::ostream& os, unit const& u) const override
     {
@@ -64,8 +64,8 @@ public:
         return signatured_entity::print_to(os, u);
     }
 
-    void build(unit&);
-    void build(fn_compiler_context&);
+    [[nodiscard]] error_storage build(unit&);
+    [[nodiscard]] error_storage build(fn_compiler_context&);
 
 private:
     var_set_t variables_;

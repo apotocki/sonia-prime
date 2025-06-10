@@ -480,7 +480,7 @@ struct return_statement
 {
     expression_span result;
     entity_identifier value_or_type;
-    bool is_const_result;
+    bool is_const_value_result;
 };
 
 struct conditional_t

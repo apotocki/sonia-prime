@@ -495,7 +495,7 @@ struct expression_decl
 template <typename ExprT>
 struct return_decl
 {
-    ExprT expression;
+    optional<ExprT> expression;
     lex::resource_location location;
 };
 
@@ -554,12 +554,9 @@ struct index_expression
 template <typename ExprT>
 struct parameter_constraint_set
 {
-    optional<ExprT> type_expression;
-    std::vector<ExprT> concepts;
-    std::vector<annotated_identifier> bindings;
+    optional<ExprT> expression;
+    small_vector<ExprT, 1> concepts;
 };
-
-
 
 template <typename ExprT>
 struct parameter
@@ -599,6 +596,8 @@ struct fn_pure
     annotated_qname aname;
     parameter_list<ExprT> parameters;
     optional<ExprT> result;
+    bool is_type_expression_result = true; // true for type expressions, false for value expressions
+    bool is_not_a_pattern_result = false; // true if explicitly defined as not a pattern result
     fn_kind kind = fn_kind::DEFAULT;
 
     inline qname_view name() const noexcept { return aname.value; }
@@ -611,7 +610,10 @@ struct lambda : fn_pure<ExprT>
     statement_span body;
 
     lambda(fn_kind kind, lex::resource_location loc, parameter_list<ExprT>&& params, statement_span&& b, optional<ExprT> rtype = nullopt)
-        : fn_pure<ExprT>{ annotated_qname{ {}, std::move(loc) }, std::move(params), std::move(rtype), kind }
+        : fn_pure<ExprT>{ .aname = annotated_qname{ {}, std::move(loc) },
+                          .parameters = std::move(params),
+                          .result = std::move(rtype),
+                          .kind = kind }
         , body{ std::move(b) }
     {}
 };
@@ -841,7 +843,7 @@ using extension_list_t = std::vector<annotated_qname_identifier>;
 
 struct fn_decl_t : fn_pure_t
 {
-    statement_span body;
+    mutable statement_span body;
 };
 
 struct using_decl

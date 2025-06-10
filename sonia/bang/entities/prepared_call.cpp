@@ -536,7 +536,7 @@ prepared_call::session::use_next_positioned_argument(expected_result_t const& ex
 {
     for (;;) {
         if (unused_positioned_index_ >= unused_position_arguments_.size()) {
-            return std::unexpected(make_error<no_position_argument_error>(call.location, unused_positioned_index_ - unused_positioned_skipped_));
+            return std::unexpected(error_storage{});
         }
     
         // find the argument cache

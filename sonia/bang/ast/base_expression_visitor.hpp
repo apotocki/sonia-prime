@@ -66,6 +66,8 @@ protected:
     template <typename FnIdT, std::derived_from<pure_call_t> ExprT>
     result_type operator()(FnIdT &&, ExprT const&) const;
 
+    result_type do_logic_and(binary_expression_t const&) const;
+    result_type do_logic_or(binary_expression_t const&) const;
     result_type do_assign(binary_expression_t const&) const;
 
     result_type apply_cast(entity const&, syntax_expression_result_t, syntax_expression_t const&) const;

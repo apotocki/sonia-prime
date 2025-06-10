@@ -5,7 +5,7 @@
 #include "sonia/config.hpp"
 #include "bang_vm.hpp"
 
-#include <boost/container/small_vector.hpp>
+#include "sonia/small_vector.hpp"
 
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/mp/integer_view.hpp" 
@@ -145,6 +145,12 @@ std::string vm::context::callp_describe() const
 void vm::context::efn(size_t fn_index)
 {
     std::get<0>(vm_.efns().at(fn_index))(*this);
+}
+
+string_view vm::context::call_describe(size_t address) const
+{
+    // not a good idea, but we want to avoid dynamic_casts
+    return static_cast<virtual_stack_machine const&>(vm_).describe_address(address);
 }
 
 std::string vm::context::ecall_describe(size_t fn_index) const
@@ -442,6 +448,25 @@ virtual_stack_machine::virtual_stack_machine()
     builtins_.resize((    set_efn((size_t)builtin_fn::referify, [](vm::context& ctx) { ctx.referify(); });
 )builtin_fn::eof_builtin_type);
     */
+}
+
+string_view virtual_stack_machine::describe_address(size_t address) const noexcept
+{
+    auto it = call_descriptions_.find(address);
+    if (it != call_descriptions_.end()) {
+        return it->second;
+    }
+    return ""sv;
+    //return (std::ostringstream() << "no description for address at: 0x" << std::hex << address).str();
+}
+
+void virtual_stack_machine::set_address_description(size_t address, std::string description)
+{
+    if (description.empty()) {
+        call_descriptions_.erase(address);
+    } else {
+        call_descriptions_.insert_or_assign(address, std::move(description));
+    }
 }
 
 void virtual_stack_machine::append_ecall(builtin_fn fn)

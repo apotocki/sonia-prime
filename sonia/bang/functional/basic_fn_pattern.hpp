@@ -54,7 +54,7 @@ public:
     std::ostream& print(unit const&, std::ostream&) const;
 
 protected:
-    void bind_names(span<const annotated_identifier> names, field_descriptor const& type_or_value, functional_binding&) const;
+    void bind_names(unit&, span<const annotated_identifier> names, field_descriptor const& type_or_value, functional_binding&) const;
     virtual void update_binding(unit&, field_descriptor const& type_or_value, functional_binding&) const;
 };
 
@@ -120,6 +120,7 @@ protected:
 
     // in the order of declaration (fn_pure)
     small_vector<parameter_descriptor, 8> parameters_;
+    boost::container::small_flat_set<identifier, 8> parameter_names_; // all parameters to bind during the call
 
     optional<varnamed_parameter_matcher> varnamed_matcher_;
     boost::container::small_flat_set<named_parameter_matcher, 8, named_parameter_matcher_less> named_matchers_;
@@ -134,7 +135,8 @@ public:
     inline qname_identifier fn_qname_id() const noexcept { return fnl_.id(); }
     inline qname_view fn_qname() const noexcept { return fnl_.name(); }
 
-    optional<std::pair<parameter_constraint_set_t, parameter_constraint_modifier_t>> result_constraints;
+    annotated_entity_identifier const_result; // defined if is_reesult_const_expression is true
+    parameter_constraint_set_t result_constraints;
 
 
     //optional<size_t> get_local_variable_index(identifier) const;
@@ -163,6 +165,9 @@ protected:
 
 private:
     uint8_t has_varpack_ : 1;
+    uint8_t is_result_pattern : 1; // 1 if the function result is a pattern to match
+    uint8_t is_result_const_expression : 1; // 1 if the function result is a constant expression
+    uint8_t is_type_expression_result : 1; // 1 if the function result is a type expression ( not a const result expression)
 };
 
 class functional_pattern : public basic_fn_pattern

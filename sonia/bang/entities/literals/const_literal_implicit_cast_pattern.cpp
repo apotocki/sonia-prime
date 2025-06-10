@@ -73,12 +73,17 @@ const_literal_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepare
         return std::unexpected(make_error<basic_general_error>(get_start_location(*pself_expr), "argument must be a constant literal"sv));
     }
     entity const& src_arg_entity = get_entity(u, src_arg->value());
-    
-    if (src_arg_entity.get_type() == u.get(builtin_eid::string)) {
-        if (exp.type != u.get(builtin_eid::string)) {
-            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pself_expr), src_arg->value(), exp.type));
-        }
+    if (src_arg_entity.get_type() != exp.type) {
+        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pself_expr), src_arg->value(), exp.type));
     }
+    //// string to string check
+    //if (exp.type == u.get(builtin_eid::string)) {
+    //    if (src_arg_entity.get_type() == u.get(builtin_eid::string)) {
+    //        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pself_expr), src_arg->value(), exp.type));
+    //    }
+    //} else if (src_arg_entity.get_type() == u.get(builtin_eid::string)) {
+    //    return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pself_expr), src_arg->value(), exp.type));
+    //}
 
     const_literal_argument_visitor vis;
     src_arg_entity.visit(vis);

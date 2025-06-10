@@ -62,6 +62,9 @@ using namespace sonia;
 
 void bang_suite_test()
 {
+#ifdef BOOST_WINDOWS
+    system("cls");
+#endif
     //bint a, b;
     //my_plus(a, b);
     mp::integer i0{ 20 };

@@ -12,6 +12,12 @@
 
 namespace sonia::lang::bang {
 
+void bang_error(vm::context& ctx)
+{
+    std::string err = ctx.stack_back().as<std::string>();
+    throw exception(err);
+}
+
 void bang_assert(vm::context& ctx)
 {
     if (!ctx.stack_back(1).as<bool>()) {
@@ -57,6 +63,19 @@ void bang_print_string(vm::context& ctx)
     }
     u.write_cout(res.str());
     ctx.stack_pop(argcount + 1);
+}
+
+void bang_concat(vm::context& ctx)
+{
+    size_t argcount = ctx.stack_back().as<size_t>();
+    std::ostringstream res;
+    for (size_t i = argcount; i > 0; --i) {
+        print_to_stream(res, *ctx.stack_back(i), false);
+    }
+    ctx.stack_pop(argcount + 1);
+    smart_blob r{ string_blob_result(res.str()) };
+    r.allocate();
+    ctx.stack_push(std::move(r));
 }
 
 void bang_arrayify(vm::context& ctx)

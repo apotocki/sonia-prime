@@ -4,7 +4,8 @@
 
 #pragma once
 
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
+//#include <boost/unordered_map.hpp>
 
 #include "sonia/variant.hpp"
 #include "sonia/shared_ptr.hpp"
@@ -106,6 +107,8 @@ public:
     using variable_type = smart_blob;
     bool is_true(variable_type const& v) const noexcept;
     variable_type value_of(size_t val) const { return ui64_blob_result(val); }
+
+    string_view call_describe(size_t /*address*/) const;
 
     size_t callp(size_t ret_address);
     std::string callp_describe() const;
@@ -309,10 +312,14 @@ public:
     using base_t::append_ecall;
     void append_ecall(builtin_fn fn);
 
+    string_view describe_address(size_t address) const noexcept;
+    void set_address_description(size_t address, std::string description);
+
 protected:
 
 private:
-    boost::unordered_map<blob_result, size_t> literals_;
+    std::unordered_map<size_t, std::string> call_descriptions_;
+    std::unordered_map<blob_result, size_t, sonia::hash<blob_result>> literals_;
 };
 
 }

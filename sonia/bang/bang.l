@@ -128,7 +128,6 @@ EXTENDS					 "extends"
 EXTERN                   "extern"
 INCLUDE					 "include"
 INLINE					 "inline"
-TYPENAME				 "typename"
 NEW						 "new"
 
 CONTINUE                 "continue"
@@ -178,13 +177,14 @@ LOGIC_OR                 "||"
 LOGIC_AND                "&&"
 ARROW                    "->"
 ARROWEXPR                "=>"
+FARROW					 "~>"
 CONCAT                   ".."
 EQ                       "=="
 NE                       "!="
 ELLIPSIS                 "..."
 
 /*
-
+TYPENAME				"typename"
 VOID					"void"
 AUTO                    "auto"
 CONST_                  "const"
@@ -205,7 +205,7 @@ ARROWAST                "->*"
 LSHIFTSSIGN             "<<="
 RSHIFTSSIGN             ">>="
 
-FARROW					"~>"
+
 PTAST                   ".*"
 
 DBLPLUS                 "++"
@@ -314,7 +314,6 @@ HASHTAG					"#"
 	{EXTERN} { return (bang_lang::parser::token::EXTERN); }
 	{INCLUDE} { return (bang_lang::parser::token::INCLUDE); }
 	{INLINE} { return (bang_lang::parser::token::INLINE); }
-	{TYPENAME} { return (bang_lang::parser::token::TYPENAME); }
 	{NEW} { variant_emplace(location); return (bang_lang::parser::token::NEW); }
 
 	{WHILE} { return (bang_lang::parser::token::WHILE); }
@@ -325,7 +324,7 @@ HASHTAG					"#"
 
 	{CONTINUE} { variant_emplace(location); return (bang_lang::parser::token::CONTINUE); }
 	{BREAK} { variant_emplace(location); return (bang_lang::parser::token::BREAK); }
-	{RETURN} { return (bang_lang::parser::token::RETURN); }
+	{RETURN} { variant_emplace(location); return (bang_lang::parser::token::RETURN); }
 
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
 	{CONST} { return (bang_lang::parser::token::CONST); }
@@ -373,6 +372,7 @@ HASHTAG					"#"
     {LOGIC_AND}                { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
 	{ARROW}                    { return (bang_lang::parser::token::ARROW); }
 	{ARROWEXPR}				   { return (bang_lang::parser::token::ARROWEXPR); }
+	{FARROW}				   { return (bang_lang::parser::token::FARROW); }
 	{CONCAT}                   { variant_emplace(location); return (bang_lang::parser::token::CONCAT); }
 	{EQ}					   { variant_emplace(location); return (bang_lang::parser::token::EQ); }
 	{NE}					   { variant_emplace(location); return (bang_lang::parser::token::NE); }
@@ -409,6 +409,7 @@ HASHTAG					"#"
 		return (bang_lang::parser::token::DECIMAL);
 	}
 	/*
+	{TYPENAME} { return (bang_lang::parser::token::TYPENAME); }
 	{VOID} { return (bang_lang::parser::token::VOID_); }
 	{AUTO} { return (bang_lang::parser::token::AUTO); }
 	{CONST_} { return (bang_lang::parser::token::CONST_); }
@@ -492,7 +493,7 @@ DECIMAL_LITERAL			{DECIMAL}"_"
 	{ARROWAST}              { return (bang_lang::parser::token::ARROWAST); }
 
 	// ~>
-	{FARROW}                { return (bang_lang::parser::token::FARROW); }
+
 
 	// .*
 	{PTAST}                 { return (bang_lang::parser::token::PTAST); }

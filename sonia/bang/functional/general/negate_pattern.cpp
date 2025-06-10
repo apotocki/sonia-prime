@@ -26,6 +26,9 @@ negate_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, e
     syntax_expression_t const* parg_expr;
     auto arg = call_session.use_next_positioned_argument(bool_exp, &parg_expr);
     if (!arg) {
+        if (!arg.error()) {
+            return std::unexpected(make_error<basic_general_error>(call.location, "expected a boolean argument"sv));
+        }
         return std::unexpected(arg.error());
     }
     

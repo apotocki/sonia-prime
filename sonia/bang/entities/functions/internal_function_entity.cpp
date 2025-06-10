@@ -15,14 +15,23 @@ internal_function_entity::internal_function_entity(qname&& name, entity_signatur
     , sts_{ std::move(sts) }
     , is_inline_{ 0 }
     , is_built_{ 0 }
+    , arg_count_{ 0 }
 {
+    // if the signature has a result, it's the function result.
+    // If the signature has no result, the function result should be set later by analizing the body of the function.
+    if (sig_.result) {
+        result = *sig_.result;
+    }
 }
 
 void internal_function_entity::push_argument(annotated_identifier name, local_variable&& v)
 {
-    push_variable(v.varid, arg_count_);
+    auto it = variables_.find(v.varid);
+    if (it == variables_.end()) {
+        variables_.emplace_hint(it, std::pair{v.varid, arg_count_});
+        ++arg_count_;
+    }
     bound_arguments.emplace_back(std::move(name), std::move(v));
-    ++arg_count_;
 }
 
 void internal_function_entity::push_variable(variable_identifier varid, intptr_t index)
@@ -57,27 +66,29 @@ intptr_t internal_function_entity::resolve_variable_index(variable_identifier va
     //return static_cast<intptr_t>(bound_arguments.size()) - static_cast<intptr_t>(pos) - 1;
 }
 
-void internal_function_entity::build(unit& u)
+error_storage internal_function_entity::build(unit& u)
 {
     fn_compiler_context fnctx{ u, name_ };
     fnctx.push_binding(bound_arguments);
-    build(fnctx);
+    return build(fnctx);
 }
 
-void internal_function_entity::build(fn_compiler_context& fnctx)
+error_storage internal_function_entity::build(fn_compiler_context& fnctx)
 {
     BOOST_ASSERT(!is_built_);
 
     if (result.entity_id()) {
         fnctx.result_value_or_type = result.entity_id();
-        fnctx.is_const_result = result.is_const();
+        fnctx.is_const_value_result = result.is_const();
     }
 
     declaration_visitor dvis{ fnctx, *this };
-    if (auto err = dvis.apply(sts_); err) throw exception(fnctx.u().print(*err));
+    if (auto err = dvis.apply(sts_); err) return err;
 
-    auto [value_or_type, is_value] = fnctx.finish_frame(); // unknown result type is resolving here
-
+    auto fres = fnctx.finish_frame(*this); // unknown result type is resolving here
+    if (!fres) return fres.error();
+        
+    auto [value_or_type, is_value] = fres.value();
     if (!result.entity_id()) {
         result = field_descriptor{ value_or_type, is_value };
     }
@@ -95,6 +106,8 @@ void internal_function_entity::build(fn_compiler_context& fnctx)
     //GLOBAL_LOG_INFO() << "built inline function end: " << u.print(*this);
     //sts_.reset();
     is_built_ = 1;
+
+    return {};
 }
 
 }

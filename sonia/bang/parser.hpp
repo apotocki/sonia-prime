@@ -31,6 +31,7 @@ public:
     annotated_string make_string(annotated_string_view) const;
     mp::integer make_integer(string_view) const;
     mp::decimal make_decimal(string_view) const;
+    annotated_entity_identifier make_void(lex::resource_location) const;
 
     identifier new_identifier() const;
     annotated_identifier make_identifier(annotated_string_view) const;

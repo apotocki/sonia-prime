@@ -64,11 +64,11 @@ std::expected<syntax_expression_result_t, error_storage> equal_pattern::apply(fn
         entity_identifier ltype = get_entity(u, ler.value()).get_type();
         
         // Create implicit cast call instead of direct push_value
-        pure_call_t cast_call{ md.location };
-        cast_call.emplace_back(annotated_entity_identifier{ ler.value(), md.location });
+        pure_call_t cast_call{ md.call_location };
+        cast_call.emplace_back(annotated_entity_identifier{ ler.value(), md.call_location });
 
         // Try to find an implicit cast from const value to non-const type
-        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, el, expected_result_t{ ltype, false, md.location });
+        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, el, expected_result_t{ ltype, false, md.call_location });
         if (!match) {
             return std::unexpected(match.error());
             // Fallback to direct push_value if implicit_cast is not available
@@ -94,11 +94,11 @@ std::expected<syntax_expression_result_t, error_storage> equal_pattern::apply(fn
         entity_identifier rtype = get_entity(u, rer.value()).get_type();
         
         // Create implicit cast call instead of direct push_value
-        pure_call_t cast_call{ md.location };
-        cast_call.emplace_back(annotated_entity_identifier{ rer.value(), md.location });
+        pure_call_t cast_call{ md.call_location };
+        cast_call.emplace_back(annotated_entity_identifier{ rer.value(), md.call_location });
 
         // Try to find an implicit cast from const value to non-const type
-        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, el, expected_result_t{ rtype, false, md.location });
+        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, el, expected_result_t{ rtype, false, md.call_location });
         if (!match) {
             // Fallback to direct push_value if implicit_cast is not available
             return std::unexpected(match.error());

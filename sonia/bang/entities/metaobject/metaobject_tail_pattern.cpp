@@ -19,7 +19,7 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_tail_pattern
     entity_signature const& objsignature = argument_signature(ctx, md);
     
     if (objsignature.fields().empty()) {
-        return std::unexpected(make_error<basic_general_error>(md.location, "metaobject is empty"sv));
+        return std::unexpected(make_error<basic_general_error>(md.call_location, "metaobject is empty"sv));
     }
 
     entity_signature tail_signature{ objsignature.name };

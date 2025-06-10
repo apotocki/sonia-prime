@@ -123,29 +123,29 @@ tuple_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expressio
             continue; // No cast needed, boath are const and same type
         }
 
-        pure_call_t cast_call{ md.location };
+        pure_call_t cast_call{ md.call_location };
         if (src_field.is_const()) {
-            cast_call.emplace_back(annotated_entity_identifier{ src_field.entity_id(), md.location });
+            cast_call.emplace_back(annotated_entity_identifier{ src_field.entity_id(), md.call_location });
         } else {
             if (!src_tuple_var) {
                 src_tuple_var_name = u.new_identifier();
                 src_tuple_var = &fn_scope.new_temporary(src_tuple_var_name, self_md.src_entity_type.id);
             }
 
-            pure_call_t get_call{ md.location };
-            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::self), md.location },
+            pure_call_t get_call{ md.call_location };
+            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::self), md.call_location },
                 variable_reference{ annotated_qname{ qname{ src_tuple_var_name, false } }, false });
             get_call.emplace_back(annotated_identifier{ u.get(builtin_id::property) }, annotated_integer{ mp::integer{ i } });
             auto match = ctx.find(builtin_qnid::get, get_call, el);
             if (!match) {
                 return std::unexpected(append_cause(
-                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
+                    make_error<basic_general_error>(md.call_location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
                     std::move(match.error())));
             }
             auto res = match->apply(ctx);
             if (!res) {
                 return std::unexpected(append_cause(
-                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
+                    make_error<basic_general_error>(md.call_location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ i } }),
                     std::move(res.error())));
             }
 
@@ -156,7 +156,7 @@ tuple_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expressio
             semantic::managed_expression_list el{ u };
             el.deep_copy(res->expressions);
             cast_call.emplace_back(indirect_value{
-                .location = md.location,
+                .location = md.call_location,
                 .type = src_field.entity_id(),
                 .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
             });
@@ -165,13 +165,13 @@ tuple_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expressio
         auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, el, expected_result_t{ dest_field_type, dst_field.is_const() });
         if (!match) {
             return std::unexpected(append_cause(
-                make_error<cast_error>(md.location, dest_field_type, src_field.entity_id()),
+                make_error<cast_error>(md.call_location, dest_field_type, src_field.entity_id()),
                 std::move(match.error())));
         }
         auto fld_res = match->apply(ctx);
         if (!fld_res) {
             return std::unexpected(append_cause(
-                make_error<basic_general_error>(md.location, "internal error: can't apply implicit cast for tuple field"sv, src_field.entity_id()),
+                make_error<basic_general_error>(md.call_location, "internal error: can't apply implicit cast for tuple field"sv, src_field.entity_id()),
                 std::move(fld_res.error())));
         }
         fn_code = el.concat(fn_code, fld_res->expressions);

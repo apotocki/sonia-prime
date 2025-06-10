@@ -134,33 +134,33 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
     auto append_tuple_field_value = [&](pure_call_t& call, const auto& field, size_t fidx, local_variable*& tuple_var, identifier& tuple_var_name, entity const& tuple_entity_type) -> error_storage {
         if (field.is_const()) {
             // Use the const entity directly
-            call.emplace_back(annotated_entity_identifier{ field.entity_id(), md.location });
+            call.emplace_back(annotated_entity_identifier{ field.entity_id(), md.call_location });
         } else {
             if (!tuple_var) {
                 tuple_var_name = u.new_identifier();
                 tuple_var = &fn_scope.new_temporary(tuple_var_name, tuple_entity_type.id);
             }
-            pure_call_t get_call{ md.location };
-            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::self), md.location },
+            pure_call_t get_call{ md.call_location };
+            get_call.emplace_back(annotated_identifier{ u.get(builtin_id::self), md.call_location },
                 variable_reference{ annotated_qname{ qname{ tuple_var_name, false } }, false });
             get_call.emplace_back(annotated_identifier{ u.get(builtin_id::property) }, annotated_integer{ mp::integer{ fidx } });
             auto match = ctx.find(builtin_qnid::get, get_call, el);
             if (!match) {
                 return append_cause(
-                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ fidx } }),
+                    make_error<basic_general_error>(md.call_location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ fidx } }),
                     std::move(match.error()));
             }
             auto res = match->apply(ctx);
             if (!res) {
                 return append_cause(
-                    make_error<basic_general_error>(md.location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ fidx } }),
+                    make_error<basic_general_error>(md.call_location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ fidx } }),
                     std::move(res.error()));
             }
             result.stored_expressions = el.concat(result.stored_expressions, res->stored_expressions);
             semantic::managed_expression_list mel{ u };
             mel.deep_copy(res->expressions);
             call.emplace_back(indirect_value{
-                .location = md.location,
+                .location = md.call_location,
                 .type = field.entity_id(),
                 .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(mel) }
             });
@@ -180,13 +180,13 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
             return true;
         }
 
-        pure_call_t eq_call{ md.location };
+        pure_call_t eq_call{ md.call_location };
 
         // Append lhs field value
         if (auto lhs_err = append_tuple_field_value(eq_call, lhs_field, i, lhs_tuple_var, lhs_tuple_var_name, eq_md.lhs_entity_type)) {
             // Add field name and index to error
             return std::unexpected(append_cause(
-                make_error<basic_general_error>(md.location, ("failed to get lhs tuple field(%1%) value"_fmt % i).str(), lhs_field.name()),
+                make_error<basic_general_error>(md.call_location, ("failed to get lhs tuple field(%1%) value"_fmt % i).str(), lhs_field.name()),
                 std::move(lhs_err)));
         }
 
@@ -194,7 +194,7 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
         if (auto rhs_err = append_tuple_field_value(eq_call, rhs_field, i, rhs_tuple_var, rhs_tuple_var_name, eq_md.rhs_entity_type)) {
             // Add field name and index to error
             return std::unexpected(append_cause(
-                make_error<basic_general_error>(md.location, ("failed to get rhs tuple field(%1%) value"_fmt % i).str(), rhs_field.name()),
+                make_error<basic_general_error>(md.call_location, ("failed to get rhs tuple field(%1%) value"_fmt % i).str(), rhs_field.name()),
                 std::move(rhs_err)));
         }
 
@@ -202,13 +202,13 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
         auto match = ctx.find(builtin_qnid::eq, eq_call, el, expected_result_t{ u.get(builtin_eid::boolean), false });
         if (!match) {
             return std::unexpected(append_cause(
-                make_error<binary_relation_error>(md.location, ("can't compare tuple fields at index %1%"_fmt % i).str(), lhs_field.entity_id(), rhs_field.entity_id()),
+                make_error<binary_relation_error>(md.call_location, ("can't compare tuple fields at index %1%"_fmt % i).str(), lhs_field.entity_id(), rhs_field.entity_id()),
                 std::move(match.error())));
         }
         auto eq_res = match->apply(ctx);
         if (!eq_res) {
             return std::unexpected(append_cause(
-                make_error<binary_relation_error>(md.location, ("can't compare tuple fields at index %1%"_fmt % i).str(), lhs_field.entity_id(), rhs_field.entity_id()),
+                make_error<binary_relation_error>(md.call_location, ("can't compare tuple fields at index %1%"_fmt % i).str(), lhs_field.entity_id(), rhs_field.entity_id()),
                 std::move(eq_res.error())));
         }
 

@@ -1,10 +1,14 @@
-fn assert_equal($l, $r) ->() {
-    if $l != $r {
-        __print("Assertion failed: " .. to_string($l) .. " != " .. to_string($r), 1);
+inline fn assert_equal(_, _ /*, location: #call_location*/) {
+    if $0 != $1 {
+        error("Assertion failed: " ..to_string($0) .. " != " ..to_string($1));
     }
 }
-let xpack0 = (1, name: "assa", mut("345"), name : "bassa", name : mut(123), mut(22));
+let xpack0 = (1, name: "assa", mut("345"), name: "bassa", name: mut(123), mut(22));
+//__print(to_string(mut(size(xpack0.name))), 1);
 assert_equal(size(xpack0.name), 3);
+assert_equal(xpack0.name[0], "assa");
+assert_equal(xpack0.name[1], "bassa");
+assert_equal(xpack0.name[2], 123);
 /*
 // Test: tuples with all const fields
 let t1 = (a: 1, b : 2);

@@ -86,6 +86,11 @@ public:
     inline span<const std::pair<identifier, uint32_t>> named_fields_indices() const noexcept { return named_fields_indices_; }
     inline span<const uint32_t> positioned_fields_indices() const noexcept { return positioned_fields_indices_; }
 
+    inline auto find_fields(identifier field_name) const noexcept
+    {
+        return named_fields_indices_.equal_range(field_name);
+    }
+
     inline field_descriptor const* find_field(identifier field_name, size_t * pindex = nullptr) const noexcept
     {
         if (auto it = named_fields_indices_.find(field_name); it != named_fields_indices_.end()) {

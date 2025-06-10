@@ -107,7 +107,14 @@ namespace sonia::lang::bang::detail {
 using namespace sonia::lang::bang;
 
 const char bang_bootstrap_code[] = R"#(
-inline fn not_equal(_, _)->bool => !($0 == $1);
+inline fn not_equal(_, _) => !($0 == $1);
+inline fn logic_and($FT, $ST) -> union($FT, $ST) {
+    if $0 {
+        return $1;
+    } else {
+        return $0;
+    }
+}
 //inline fn ::set(self: object, property: const __identifier, any)->object => set(self: self, to_string(property), $0);
 )#";
 
@@ -134,7 +141,10 @@ void bang_impl::bootstrap()
     declaration_visitor dvis{ ctx, dummy };
     if (auto err = dvis.apply(*decls); err) throw exception(unit_.print(*err));
     //for (auto& d : *exp_decls) { apply_visitor(dvis, d); }
-    ctx.finish_frame();
+    auto res = ctx.finish_frame(dummy);
+    if (!res) {
+        throw exception(unit_.print(*res.error()));
+    }
 
     bootstrapped_ = true;
 }
@@ -236,7 +246,12 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
 
     // expression tree to vm script
     
-
+    // main
+    internal_function_entity main_fn_ent{ qname{}, std::move(main_sig), std::move(decls) };
+    auto err = main_fn_ent.build(ctx);
+    if (err) {
+        throw exception(unit_.print(*err));
+    }
     // at first compile all functions
     unit_.eregistry_traverse([this](entity& e) {
         //GLOBAL_LOG_INFO() << unit_.print(e);
@@ -246,9 +261,7 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
         return true;
     });
 
-    // main
-    internal_function_entity main_fn_ent{ qname{}, std::move(main_sig), std::move(decls) };
-    main_fn_ent.build(ctx);
+
 
     // all arguments referenced as constants => no fp prolog/epilog code
     asm_builder_t::function_descriptor& fd = vmasm_.resolve_function(vmasm::fn_identity<identifier>{ main_id });
@@ -283,13 +296,20 @@ void bang_impl::do_compile(internal_function_entity const& fe)
     GLOBAL_LOG_INFO() << "compiling function: " << unit_.print(fe.name());
 
     if (!fe.is_built()) {
-        const_cast<internal_function_entity&>(fe).build(unit_);
+        auto err = const_cast<internal_function_entity&>(fe).build(unit_);
+        if (err) {
+            throw exception(unit_.print(*err));
+        }
     }
     
     if (fe.is_inline()) return;
 
     asm_builder_t::function_descriptor & fd = vmasm_.resolve_function(vmasm::fn_identity<entity_identifier>{ fe.id });
-    if (fd.address) return; // already compiled
+    std::string description = unit_.print(fe);
+    if (fd.address) {
+        unit_.bvm().set_address_description(*fd.address, std::move(description));
+        return; // already compiled
+    }
 
     size_t param_count = fe.parameter_count();
     asm_builder_t::function_builder fb{ vmasm_, fd };// = vmasm_.create_function(vmasm::fn_identity<qname_identifier>{ fe.name() });
@@ -307,7 +327,7 @@ void bang_impl::do_compile(internal_function_entity const& fe)
     if (fd.index) {
         unit_.bvm().set_const(*fd.index, smart_blob{ ui64_blob_result(*fd.address) });
     }
-
+    unit_.bvm().set_address_description(*fd.address, std::move(description));
 #if 0
     //size_t param_count = fe.parameter_count(); // including captured_variables
 

@@ -98,7 +98,7 @@ std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply
         
         semantic::expression_span l = nsmd.merge_void_spans(el);
         if constexpr (std::is_same_v<decltype(pe), identifier_entity const*>) {
-            annotated_qname varname{ qname{ pe->value(), false }, nsmd.location };
+            annotated_qname varname{ qname{ pe->value(), false }, nsmd.call_location };
             auto res = push_by_name(ctx, el, varname, l);
             if (!res) return std::unexpected(std::move(res.error()));
             return syntax_expression_result_t{
@@ -115,9 +115,9 @@ std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply
                 entity const& metaobject_ent = get_entity(u, field.entity_id());
                 identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&metaobject_ent);
                 if (!pie) {
-                    return std::unexpected(make_error<basic_general_error>(nsmd.location, "identifier is expected"sv, metaobject_ent.id));
+                    return std::unexpected(make_error<basic_general_error>(nsmd.call_location, "identifier is expected"sv, metaobject_ent.id));
                 }
-                annotated_qname varname{ qname{ pie->value(), false }, nsmd.location };
+                annotated_qname varname{ qname{ pie->value(), false }, nsmd.call_location };
                 auto res = push_by_name(ctx, el, varname, l);
                 if (!res) return std::unexpected(std::move(res.error()));
                 sig.emplace_back(pie->value(), *res);

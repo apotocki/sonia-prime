@@ -21,7 +21,12 @@ tuple_pattern_base::try_match_tuple(fn_compiler_context& ctx, prepared_call cons
     auto call_session = call.new_session(ctx);
     syntax_expression_t const* parg_expr;
     auto arg = call_session.use_next_positioned_argument(exp, &parg_expr);
-    if (!arg) return std::unexpected(arg.error());
+    if (!arg) {
+        if (!arg.error()) {
+            return std::unexpected(make_error<basic_general_error>(call.location, "missing argument"sv));
+        }
+        return std::unexpected(arg.error());
+    }
     if (auto argterm = call_session.unused_argument(); argterm) {
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
     }

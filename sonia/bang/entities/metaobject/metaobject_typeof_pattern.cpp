@@ -54,10 +54,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
     auto prop = apply_visitor(epropvis, property_arg->value());
     if (!prop) return std::unexpected(std::move(prop.error()));
 
-    auto pmd = make_shared<functional_match_descriptor>();
+    auto pmd = make_shared<functional_match_descriptor>(call.location);
     pmd->get_match_result(objid).append_result(*obj);
     pmd->get_match_result(propid).append_result(*prop);
-    pmd->location = call.location;
     return pmd;
 }
 
@@ -79,7 +78,7 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_typeof_patte
 
     auto const* fd = objsignature->find_field(prop_ent.value());
     if (!fd) {
-        return std::unexpected(make_error<basic_general_error>(md.location, "undefined property"sv, prop_ent.value()));
+        return std::unexpected(make_error<basic_general_error>(md.call_location, "undefined property"sv, prop_ent.value()));
     }
     return syntax_expression_result_t{
         .expressions = md.merge_void_spans(el),

@@ -28,9 +28,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_empty_patter
     if (ctx.context_type) {
         entity const& tpl_entity = u.eregistry_get(ctx.context_type);
         if (auto psig = tpl_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
-            auto pmd = make_shared<functional_match_descriptor>();
+            auto pmd = make_shared<functional_match_descriptor>(call.location);
             pmd->result = field_descriptor{ u.get(tpl_entity.signature()->fields().empty() ? builtin_eid::true_ : builtin_eid::false_), true };
-            pmd->location = call.location;
             return pmd;
 
             /*

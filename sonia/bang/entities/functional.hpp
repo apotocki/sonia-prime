@@ -145,12 +145,12 @@ public:
     semantic::expression_span merge_void_spans(semantic::expression_list_t&) noexcept;
 
     functional_binding_set bindings;
-    lex::resource_location location;
+    lex::resource_location call_location;
     field_descriptor result;
     int weight{ 0 };
 
     inline functional_match_descriptor() = default;
-    inline explicit functional_match_descriptor(lex::resource_location loc) noexcept : location{ std::move(loc) } {}
+    inline explicit functional_match_descriptor(lex::resource_location loc) noexcept : call_location{ std::move(loc) } {}
         
     functional_match_descriptor(functional_match_descriptor const&) = delete;
     functional_match_descriptor& operator= (functional_match_descriptor const&) = delete;

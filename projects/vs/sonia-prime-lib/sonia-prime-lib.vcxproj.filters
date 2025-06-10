@@ -304,6 +304,9 @@
     <Filter Include="sonia.bang\functional\general">
       <UniqueIdentifier>{874f0511-4fcb-4c36-b7fe-6ce9d6b1758b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.bang\functional\fn_pattern_matching">
+      <UniqueIdentifier>{c87c8757-953f-4231-919f-ab40409061a4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -2466,6 +2469,24 @@
     <ClInclude Include="..\..\..\sonia\bang\functional\general\negate_pattern.hpp">
       <Filter>sonia.bang\functional\general</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\expression_property_visitor.hpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_project_get_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_project_size_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\literals\string_concat_pattern.hpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\is_const_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\error_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2999,6 +3020,24 @@
     <ClCompile Include="..\..\..\sonia\bang\functional\general\negate_pattern.cpp">
       <Filter>sonia.bang\functional\general</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\expression_property_visitor.cpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_project_get_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_project_size_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\literals\string_concat_pattern.cpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\is_const_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\error_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\sonia.natvis" />
@@ -3015,9 +3054,6 @@
     </None>
     <None Include="..\..\..\sonia\bang\generate_parser.cmd">
       <Filter>sonia.bang</Filter>
-    </None>
-    <None Include="..\..\..\sonia\bang\vm\vmasm_builder.cpp">
-      <Filter>sonia.bang\vm</Filter>
     </None>
   </ItemGroup>
 </Project>

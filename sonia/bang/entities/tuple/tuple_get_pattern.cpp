@@ -62,7 +62,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
             if (psig->empty()) {
                 return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), slf_arg->value(), "a not empty tuple type"sv));
             }
-            pmd = make_shared<tuple_get_match_descriptor>(*psig, true, call.location);
+            pmd = make_shared<tuple_get_match_descriptor>(slf_entity, *psig, true, call.location);
         } else {
             slftype = slf_entity.get_type();
         }
@@ -78,7 +78,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
         if (psig->empty()) {
             return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), slftype, "a not empty tuple"sv));
         }
-        pmd = make_shared<tuple_get_match_descriptor>(*tpl_entity.signature(), false, call.location);
+        pmd = make_shared<tuple_get_match_descriptor>(tpl_entity, *tpl_entity.signature(), false, call.location);
     }
     pmd->get_match_result(0).append_result(*slf_arg);
     pmd->void_spans = std::move(call_session.void_spans);
@@ -97,11 +97,18 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
     slfer.temporaries.insert(slfer.temporaries.end(), proper.temporaries.begin(), proper.temporaries.end());
 
     // Helper to build tuple type (identifier, value)
-    auto make_named_tuple_type = [&](const field_descriptor* field) -> entity_identifier {
+    auto make_named_tuple_type = [&](field_descriptor const& field) -> entity_identifier {
         entity_signature rsig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
-        rsig.emplace_back(u.make_identifier_entity(field->name()).id, true);
-        rsig.emplace_back(field->entity_id(), field->is_const());
+        rsig.emplace_back(u.make_identifier_entity(field.name()).id, true);
+        rsig.emplace_back(field.entity_id(), field.is_const());
         return u.make_basic_signatured_entity(std::move(rsig)).id;
+    };
+
+    auto make_tuple_project_type = [&](identifier id_name) -> entity_identifier {
+        entity_signature project_sig{ u.get(builtin_qnid::tuple_project), u.get(builtin_eid::typename_) };
+        project_sig.emplace_back(u.make_identifier_entity(id_name).id, true);
+        project_sig.emplace_back(tmd.tpl_entity.id, true);
+        return u.make_basic_signatured_entity(std::move(project_sig)).id;
     };
 
     // Case 1: Both self and property are constant
@@ -110,7 +117,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
         if (auto int_lit = dynamic_cast<const integer_literal_entity*>(&property_entity)) {
             size_t idx = static_cast<size_t>(int_lit->value());
             if (auto* field = tmd.arg_sig.get_field(idx)) {
-                entity_identifier result_type = field->name() ? make_named_tuple_type(field) : field->entity_id();
+                entity_identifier result_type = field->name() ? make_named_tuple_type(*field) : field->entity_id();
                 return syntax_expression_result_t{
                     .temporaries = std::move(slfer.temporaries),
                     .expressions = md.merge_void_spans(el),
@@ -118,48 +125,72 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
                     .is_const_result = true
                 };
             } else {
-                return std::unexpected(make_error<basic_general_error>(tmd.location, "tuple index out of range"sv));
+                return std::unexpected(make_error<basic_general_error>(tmd.call_location, "tuple index out of range"sv));
             }
         } else if (auto id_lit = dynamic_cast<const identifier_entity*>(&property_entity)) {
-            size_t idx;
-            if (auto* field = tmd.arg_sig.find_field(id_lit->value(), &idx)) {
-                entity_identifier result_type = make_named_tuple_type(field);
+            auto frng = tmd.arg_sig.find_fields(id_lit->value());
+            if (frng.first == frng.second) {
+                return std::unexpected(make_error<basic_general_error>(tmd.call_location, "no such field in tuple"sv, id_lit->value()));
+            }
+            
+            if (auto second = frng.first; ++second == frng.second) {
+                // Single field case - return the field value directly
+                field_descriptor const& field = tmd.arg_sig.field(frng.first->second);
                 return syntax_expression_result_t{
                     .temporaries = std::move(slfer.temporaries),
                     .expressions = md.merge_void_spans(el),
-                    .value_or_type = result_type,
+                    .value_or_type = field.entity_id(),
                     .is_const_result = true
                 };
             } else {
-                return std::unexpected(make_error<basic_general_error>(tmd.location, "no such field in tuple"sv, id_lit->value()));
+                return syntax_expression_result_t{
+                    .temporaries = std::move(slfer.temporaries),
+                    .expressions = md.merge_void_spans(el),
+                    .value_or_type = make_tuple_project_type(id_lit->value()),
+                    .is_const_result = true
+                };
             }
         } else {
-            return std::unexpected(make_error<type_mismatch_error>(tmd.location, proper.value(), "an integer or identifier"sv));
+            return std::unexpected(make_error<type_mismatch_error>(tmd.call_location, proper.value(), "an integer or identifier"sv));
         }
     }
 
     // Case 2: self is not constant, property is constant
     if (!slfer.is_const_result && proper.is_const_result) {
         entity const& property_entity = get_entity(u, proper.value());
-        size_t idx = static_cast<size_t>(-1);
         entity_identifier result_type;
         const field_descriptor* field = nullptr;
 
         if (auto int_lit = dynamic_cast<const integer_literal_entity*>(&property_entity)) {
-            idx = static_cast<size_t>(int_lit->value());
+            size_t idx = static_cast<size_t>(int_lit->value());
             field = tmd.arg_sig.get_field(idx);
             if (!field) {
-                return std::unexpected(make_error<basic_general_error>(tmd.location, "tuple index out of range"sv));
+                return std::unexpected(make_error<basic_general_error>(tmd.call_location, "tuple index out of range"sv, property_entity.id));
             }
-            result_type = field->name() ? make_named_tuple_type(field) : field->entity_id();
+            result_type = field->name() ? make_named_tuple_type(*field) : field->entity_id();
         } else if (auto id_lit = dynamic_cast<const identifier_entity*>(&property_entity)) {
-            field = tmd.arg_sig.find_field(id_lit->value(), &idx);
-            if (!field) {
-                return std::unexpected(make_error<basic_general_error>(tmd.location, "no such field in tuple"sv, id_lit->value()));
+            // Use find_fields to get all fields with this name
+            auto frng = tmd.arg_sig.find_fields(id_lit->value());
+            if (frng.first == frng.second) {
+                return std::unexpected(make_error<basic_general_error>(tmd.call_location, "no such field in tuple"sv, id_lit->value()));
             }
-            result_type = make_named_tuple_type(field);
+            
+            if (auto second = frng.first; ++second == frng.second) {
+                // Only one field with this name
+                field = &tmd.arg_sig.field(frng.first->second);
+                result_type = field->entity_id();
+            } else {
+                // More than one field with this name: return tuple_project type
+                return syntax_expression_result_t{
+                    .temporaries = std::move(slfer.temporaries),
+                    .stored_expressions = std::move(slfer.stored_expressions),
+                    .expressions = el.concat(md.merge_void_spans(el), slfer.expressions),
+                    .value_or_type = make_tuple_project_type(id_lit->value()),
+                    .is_const_result = false
+                };
+            }
         } else {
-            return std::unexpected(make_error<type_mismatch_error>(tmd.location, proper.value(), "an integer or identifier"sv));
+            return std::unexpected(make_error<type_mismatch_error>(tmd.call_location, proper.value(), "an integer or identifier"sv));
         }
 
         // If the field is const, return as a constant result
@@ -167,36 +198,46 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
             return syntax_expression_result_t{
                 .temporaries = std::move(slfer.temporaries),
                 .expressions = md.merge_void_spans(el),
-                .value_or_type = field->name() ? u.make_empty_entity(result_type).id : result_type,
+                .value_or_type = result_type,
                 .is_const_result = true
             };
         }
 
         // Count non-const fields
-        size_t non_const_count = 0;
-        for (const auto& f : tmd.arg_sig.fields()) {
-            if (!f.is_const()) ++non_const_count;
-        }
+        size_t non_const_count = 0; 
+        // Compute runtime index among non-const fields
+        size_t runtime_index = 0;
 
+        auto sp = tmd.arg_sig.fields();
+        for (auto it = sp.begin(), eit = sp.end(); it != eit; ++it) {
+            const auto& f = *it;
+            if (!f.is_const()) {
+                ++non_const_count;
+                if (field != &f) {
+                    ++runtime_index;
+                } else if (non_const_count > 1) {
+                    break;
+                } else {
+                    for(++it; it != eit; ++it) {
+                        if (!it->is_const()) {
+                            ++non_const_count;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+        
         // Optimization: if only one runtime field, just return 'self' with the requested type
         if (non_const_count == 1) {
             return syntax_expression_result_t{
                 .temporaries = std::move(slfer.temporaries),
+                .stored_expressions = std::move(slfer.stored_expressions),
                 .expressions = el.concat(md.merge_void_spans(el), slfer.expressions),
                 .value_or_type = result_type,
                 .is_const_result = false
             };
-        }
-
-        // Compute runtime index among non-const fields
-        size_t runtime_index = 0;
-        size_t cur = 0;
-        for (const auto& f : tmd.arg_sig.fields()) {
-            if (!f.is_const()) {
-                if (cur == idx) break;
-                ++runtime_index;
-            }
-            ++cur;
         }
 
         semantic::expression_span exprs = md.merge_void_spans(el);
@@ -206,6 +247,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
 
         return syntax_expression_result_t{
             .temporaries = std::move(slfer.temporaries),
+            .stored_expressions = std::move(slfer.stored_expressions),
             .expressions = std::move(exprs),
             .value_or_type = result_type,
             .is_const_result = false

@@ -86,6 +86,7 @@ error_storage declaration_visitor::operator()(extern_var const& d) const
 error_storage declaration_visitor::operator()(using_decl const& ud) const
 {
     THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor using_decl");
+#if 0
     // to do: check the allowence of absolute qname
     qname uqn = ctx.ns() / ud.name();
     functional& fnl = u().fregistry_resolve(uqn);
@@ -95,7 +96,7 @@ error_storage declaration_visitor::operator()(using_decl const& ud) const
         auto fnptrn = make_shared<basic_fn_pattern>(fnl);
         error_storage err = fnptrn->init(ctx, *ud.parameters);
         if (!err) {
-            fnptrn->result_constraints.emplace(parameter_constraint_set_t{ .type_expression = ud.expression }, parameter_constraint_modifier_t::const_value);
+            fnptrn->result_constraints.emplace(parameter_constraint_set_t{ .expression = ud.expression }, parameter_constraint_modifier_t::const_value);
             fnl.push(std::move(fnptrn));
         }
         return err;
@@ -106,6 +107,7 @@ error_storage declaration_visitor::operator()(using_decl const& ud) const
     //u().eregistry_insert(se);
     //fnl.set_default_entity(se->id());
     return {};
+#endif
 }
 
 /*
@@ -753,18 +755,23 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
 error_storage declaration_visitor::operator()(return_decl_t const& rd) const
 {
-    semantic::managed_expression_list el{ u() };
-    auto evis = ctx.result_value_or_type ? base_expression_visitor{ ctx, el, { ctx.result_value_or_type, ctx.is_const_result, rd.location } } : base_expression_visitor{ ctx, el };
-    auto res = apply_visitor(evis, rd.expression);
-    if (!res) return std::move(res.error());
-    syntax_expression_result_t& er = res->first;
+    if (rd.expression) {
+        semantic::managed_expression_list el{ u() };
+        auto evis = ctx.result_value_or_type ?
+            base_expression_visitor{ ctx, el, { ctx.result_value_or_type, ctx.is_const_value_result, rd.location } } :
+            base_expression_visitor{ ctx, el };
+        auto res = apply_visitor(evis, *rd.expression);
+        if (!res) return std::move(res.error());
+        syntax_expression_result_t& er = res->first;
 
-    ctx.push_chain();
-    append_result(el, er);
-    auto return_expressions = ctx.expressions();
-    ctx.pop_chain();
-
-    ctx.append_return(return_expressions, er.value_or_type, er.is_const_result);
+        ctx.push_chain();
+        append_result(el, er);
+        auto return_expressions = ctx.expressions();
+        ctx.pop_chain();
+        ctx.append_return(return_expressions, er.value_or_type, er.is_const_result);
+    } else {
+        ctx.append_return({}, u().get(builtin_eid::void_), true);
+    }
     
     return {};
 }

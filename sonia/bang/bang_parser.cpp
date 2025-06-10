@@ -148,6 +148,12 @@ mp::decimal parser_context::make_decimal(string_view str) const
 {
     return mp::decimal(str);
 }
+
+annotated_entity_identifier parser_context::make_void(lex::resource_location loc) const
+{
+    return annotated_entity_identifier{ unit_.get(builtin_eid::void_), std::move(loc) };
+}
+
 //
 //u32string parser_context::make_string(string_view str)
 //{

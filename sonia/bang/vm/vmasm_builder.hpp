@@ -7,12 +7,13 @@
 #include <boost/intrusive/list.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
+
 #include "sonia/variant.hpp"
-
-#include "sonia/utility/lang/vm.hpp"
-
+#include "sonia/small_vector.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
 #include "sonia/utility/object_pool.hpp"
+
+#include "sonia/utility/lang/vm.hpp"
 
 #define VM_INSTRUCTION_ENTRIED_POOL_SIZE 128
 
@@ -123,7 +124,7 @@ public:
             uint8_t op_applied : 1;
             instruction_entry const* operand;
             
-            boost::container::small_vector<uint8_t, 16> code;
+            small_vector<uint8_t, 16> code;
             
             inline explicit block() noexcept
                 : operation{ op_t::noop }, op_supposed_size{ 0 }, op_applied{ 0 }, operand{ nullptr }
@@ -249,6 +250,8 @@ public:
     inline void free_entry(instruction_entry& e) noexcept { entries_.delete_object(&e); }
 
     inline size_t allocate_constant_index() { return vm_.add_const(smart_blob{}); }
+
+    inline vm_t& get_vm() noexcept { return vm_; }
 
 private:
     vm_t & vm_;
@@ -441,9 +444,8 @@ void builder<ContextT>::function_builder::materialize()
         return;
     }
 
-    boost::container::small_vector<int_least32_t, 16> block_offsets;
+    small_vector<int_least32_t, 16> block_offsets;
     block_offsets.resize(blocks.size(), 0);
-
 
     int_least32_t accum_offset = 0;
     size_t block_index = 0;

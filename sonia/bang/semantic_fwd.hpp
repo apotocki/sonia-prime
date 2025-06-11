@@ -61,7 +61,7 @@ using qname_entity = literal_entity<qname>;
 using empty_entity = literal_entity<void>;
 
 class enum_entity;
-class functional_entity;
+//class functional_entity;
 class function_entity;
 class external_function_entity;
 class type_entity;
@@ -87,7 +87,7 @@ public:
     virtual void operator()(external_function_entity const&) const = 0;
     virtual void operator()(extern_variable_entity const&) const = 0;
 
-    virtual void operator()(functional_entity const&) const = 0;
+    //virtual void operator()(functional_entity const&) const = 0;
 };
 
 class entity_visitor_adapter : public entity_visitor
@@ -104,7 +104,7 @@ class entity_visitor_adapter : public entity_visitor
     void operator()(function_entity const&) const override {}
     void operator()(external_function_entity const&) const override {}
     void operator()(extern_variable_entity const&) const override {}
-    void operator()(functional_entity const&) const override {}
+    //void operator()(functional_entity const&) const override {}
 };
 
 

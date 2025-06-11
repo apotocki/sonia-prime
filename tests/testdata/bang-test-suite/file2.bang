@@ -1,48 +1,54 @@
-inline fn assert_equal(_, _ /*, location: #call_location*/) {
-    if $0 != $1 {
-        error("Assertion failed: " ..to_string($0) .. " != " ..to_string($1));
-    }
-}
-let xpack0 = (1, name: "assa", mut("345"), name: "bassa", name: mut(123), mut(22));
-//__print(to_string(mut(size(xpack0.name))), 1);
-assert_equal(size(xpack0.name), 3);
-assert_equal(xpack0.name[0], "assa");
-assert_equal(xpack0.name[1], "bassa");
-assert_equal(xpack0.name[2], 123);
 /*
 // Test: tuples with all const fields
 let t1 = (a: 1, b : 2);
 let t2 = (a: 1, b : 2);
-assert(t1 == t2); // # should be true
+assert_equal(t1, t2); // # should be true
 
 // Test: tuples with mixed const/non-const fields
 let x = mut(42);
-let t3 = (a: x, b : 2);
-let t4 = (a: x, b : 2);
-assert(t3 == t4); // should be true
+let t3 = (a: x, b: 2, c: mut(3), d: 4);
+let t4 = (a: x, b: 2, c: 3, d: mut(4));
+assert(t3 == t4);
+assert(!(t3 != t4));
+assert(!!(t3 == t4));
+assert_equal(t3, t4); // should be true
 
 // Test: tuples with different field names
 let t5 = (a: 1, b : 2);
 let t6 = (a: 1, c : 2);
 assert(!(t5 == t6)); // should be false
+assert(t5 != t6); // should be false
+assert_not_equal(t5, t6);
 
 // Test: tuples with mismatched field counts
 let t7 = (a: 1, b : 2);
 let t8 = (a: 1);
 assert(t7 != t8); // should be false
+assert(!(t7 == t8)); // should be false
+assert_not_equal(t7, t8);
 
 // Test: tuples with different values
 let t9 = (a: 1, b : 2);
 let t10 = (a: 1, b : 3);
-assert(!(t9 == t10)); // should be false
+assert_not_equal(t9, t10); // should be false
 
+let x2 = mut(22);
+let t11 = (a: x, b : 2, c: mut(3));
+let t12 = (a: x2, b : 2, c : mut(3));
+assert_not_equal(t11, t12);
+*/
 
-let xpack0 = (1, name: "assa", mut("345"), name: "bassa", name: mut(123), mut(22));
-
-assert((1, name: "assa", "345", name: "bassa", name : 123, 22) == xpack0);
-assert(xpack0 == (1, name: "assa", "345", name: "bassa", name: 123, 22));
-assert(xpack0 == (1, name: "assa", mut("345"), name: "bassa", name: mut(123), 22));
+let xpack0 = (1, name: "assa", mut("345"), name : "bassa", name : mut(123), mut(22));
 assert(size(xpack0) == 6);
+assert((1, name: "assa", "345", name : "bassa", name : 123, 22) == xpack0);
+assert(xpack0 == (1, name: "assa", "345", name : "bassa", name : 123, 22));
+assert(xpack0 == (1, name: "assa", mut("345"), name : "bassa", name : mut(123), 22));
+
+//__print(to_string(mut(size(xpack0.name))), 1);
+assert_equal(size(xpack0.name), 3);
+assert_equal(xpack0.name[0], "assa");
+assert_equal(xpack0.name[1], "bassa");
+assert_equal(xpack0.name[2], 123);
 
 assert(xpack0.0 == 1);
 assert(xpack0[0] == 1);
@@ -52,6 +58,8 @@ assert(typeof(head(xpack0)) == ::integer);
 assert(size(head(tail(xpack0))) == 2);
 assert(head(tail(xpack0)).0 == .name);
 assert(head(tail(xpack0))[0] == .name);
+
+/*
 assert(head(head(tail(xpack0))) == .name);
 assert(head(tail(xpack0)).1 == "assa");
 assert(head(tail(xpack0))[1] == "assa");

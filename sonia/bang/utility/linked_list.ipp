@@ -52,7 +52,8 @@ inline auto& linked_list_node_span<EntryT>::back() const noexcept { return pair_
 template <class EntryT>
 template <typename FtorT> void linked_list_node_span<EntryT>::for_each(FtorT&& ftor) const
 {
-    for (EntryT* e = pair_t::first;;)
+    EntryT* e = pair_t::first;
+    if (e) for (;;)
     {
         ftor(e->value);
         if (e == pair_t::second) break;

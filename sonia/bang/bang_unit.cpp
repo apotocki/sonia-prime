@@ -1174,13 +1174,8 @@ unit::unit()
     //integer_entity_ = ie.get();
     //eregistry_insert(std::move(ie));
 #if 0
-    auto de = make_shared<internal_type_entity>(make_qname_identifier("decimal"));
-    decimal_entity_ = de.get();
-    eregistry_insert(std::move(de));
-
     // internal functions
     builtins_.resize((size_t)builtin_fn::eof_builtin_type);
-
 
     auto parrayify = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::arrayify);
     eregistry_insert(parrayify);

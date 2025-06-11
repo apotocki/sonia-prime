@@ -132,7 +132,8 @@ std::string vm::context::callp_describe() const
     smart_blob const& p = stack_back();
     if (is_basic_integral(p->type)) {
         size_t address = p.as<size_t>();
-        return ("0x%1$x"_fmt % address).str();
+        string_view address_descr = describe_address(address);
+        return ("0x%1$x %2%"_fmt % address % address_descr).str();
     }
     decltype(auto) ftor = p.as<invocation::functor_object>();
     int64_t sigdescr = stack_back(1).as<int64_t>();
@@ -147,7 +148,7 @@ void vm::context::efn(size_t fn_index)
     std::get<0>(vm_.efns().at(fn_index))(*this);
 }
 
-string_view vm::context::call_describe(size_t address) const
+string_view vm::context::describe_address(size_t address) const
 {
     // not a good idea, but we want to avoid dynamic_casts
     return static_cast<virtual_stack_machine const&>(vm_).describe_address(address);

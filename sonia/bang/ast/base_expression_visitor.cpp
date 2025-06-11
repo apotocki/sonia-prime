@@ -413,11 +413,9 @@ base_expression_visitor::result_type base_expression_visitor::operator()(variabl
             }
             return std::unexpected(make_error<undeclared_identifier_error>(var.name));
         } else { // if constexpr (std::is_same_v<std::decay_t<decltype(eid_or_var)>, local_variable>) {
-            semantic::managed_expression_list exprs{ u() };
-            ctx.u().push_back_expression(exprs, semantic::push_local_variable{ eid_or_var });
-            semantic::expression_span exprs_span = exprs;
-            expressions.splice_back(exprs);
-            return apply_cast(syntax_expression_result_t{ .expressions = std::move(exprs_span), .value_or_type =  eid_or_var.type, .is_const_result = false }, var);
+            semantic::expression_span exprs_span;
+            u().push_back_expression(expressions, exprs_span, semantic::push_local_variable{ eid_or_var });
+            return apply_cast(syntax_expression_result_t{ .expressions = std::move(exprs_span), .value_or_type = eid_or_var.type, .is_const_result = false }, var);
         }
     }), optent);
 }

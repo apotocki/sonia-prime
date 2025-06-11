@@ -174,16 +174,16 @@ error_storage declaration_visitor::operator()(enum_decl const& ed) const
     return {};
 }
 
-void declaration_visitor::append_result(semantic::expression_list_t& el, syntax_expression_result_t& er) const
+size_t declaration_visitor::append_result(semantic::expression_list_t& el, syntax_expression_result_t& er) const
 {
     ctx.append_stored_expressions(el, er.stored_expressions);
 
     ctx.push_scope();
-    for (auto& [varid, t, sp] : er.temporaries) {
-        ctx.append_expressions(sp);
+    for (auto& [varname, var, sp] : er.temporaries) {
+        ctx.append_expressions(el, sp);
         ctx.push_scope_variable(
-            annotated_identifier{ u().new_identifier() },
-            local_variable{ .type = t, .varid = varid, .is_weak = false },
+            annotated_identifier{ varname },
+            var, //local_variable{ .type = t, .varid = varid, .is_weak = false },
             fnent);
     }
     ctx.append_expressions(el, er.expressions);
@@ -192,9 +192,7 @@ void declaration_visitor::append_result(semantic::expression_list_t& el, syntax_
     if (!er.is_const_result && er.type() != u().get(builtin_eid::void_)) {
         ++scope_sz;
     }
-    if (scope_sz) {
-        ctx.append_expression(semantic::truncate_values(scope_sz, false));
-    }
+    return scope_sz;
 }
 
 error_storage declaration_visitor::operator()(expression_statement_t const& ed) const
@@ -204,7 +202,10 @@ error_storage declaration_visitor::operator()(expression_statement_t const& ed) 
     auto res = apply_visitor(base_expression_visitor{ ctx, el }, ed.expression);
     if (!res) return std::move(res.error());
 
-    append_result(el, res->first);
+    size_t scope_sz = append_result(el, res->first);
+    if (scope_sz) {
+        ctx.append_expression(semantic::truncate_values(scope_sz, false));
+    }
     
     return {};
 }
@@ -248,9 +249,17 @@ error_storage declaration_visitor::operator()(if_decl const& stm) const
     if (!res) return std::move(res.error());
     syntax_expression_result_t& er = res->first;
 
-    append_result(el, er);
+    //GLOBAL_LOG_INFO() << "-----------------";
+    //er.expressions.for_each([this](semantic::expression const& e) {
+    //    GLOBAL_LOG_INFO() << u().print(e);
+    //});
+    //GLOBAL_LOG_INFO() << "-----------------";
+    size_t scope_sz = append_result(el, er);
     
     if (er.is_const_result) { // constexpr result
+        if (scope_sz) {
+            ctx.append_expression(semantic::truncate_values(scope_sz, false));
+        }
         entity_identifier v = er.value();
         BOOST_ASSERT(v == u().get(builtin_eid::false_) || v == u().get(builtin_eid::true_));
         statement_span body = (v == u().get(builtin_eid::true_) ? stm.true_body : stm.false_body);
@@ -258,6 +267,9 @@ error_storage declaration_visitor::operator()(if_decl const& stm) const
         SCOPE_EXIT([this] { ctx.pop_scope(); });
         return apply(body);
     } else {
+        if (scope_sz > 1) {
+            ctx.append_expression(semantic::truncate_values(scope_sz - 1, true));
+        }
         return do_rt_if_decl(stm);
     }
 }
@@ -281,7 +293,7 @@ error_storage declaration_visitor::operator()(while_decl const& wd) const
         syntax_expression_result_t& er = res->first;
 
         ctx.push_chain();
-        append_result(el, er);
+        size_t scope_sz = append_result(el, er);
         
         if (!er.is_const_result && er.value_or_type != u().get(builtin_eid::void_)) {
             ctx.append_expression(semantic::truncate_values(1, false));
@@ -297,7 +309,7 @@ error_storage declaration_visitor::operator()(while_decl const& wd) const
     if (!res) return std::move(res.error());
     syntax_expression_result_t& er = res->first;
     
-    append_result(el, er);
+    size_t scope_sz = append_result(el, er);
 
     THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor while_decl condition");
 #if 0
@@ -638,11 +650,11 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
     //}
 
     auto push_temporaries = [&el, this](auto& temporaries) {
-        for (auto& [varid, t, sp] : temporaries) {
+        for (auto& [varname, var, sp] : temporaries) {
             ctx.append_expressions(el, sp);
             ctx.push_scope_variable(
-                annotated_identifier{ u().new_identifier() },
-                local_variable{ .type = t, .varid = varid, .is_weak = false },
+                annotated_identifier{ varname },
+                var, //local_variable{ .type = t, .varid = varid, .is_weak = false },
                 fnent);
         }
     };
@@ -765,12 +777,12 @@ error_storage declaration_visitor::operator()(return_decl_t const& rd) const
         syntax_expression_result_t& er = res->first;
 
         ctx.push_chain();
-        append_result(el, er);
+        size_t scope_sz = append_result(el, er);
         auto return_expressions = ctx.expressions();
         ctx.pop_chain();
-        ctx.append_return(return_expressions, er.value_or_type, er.is_const_result);
+        ctx.append_return(return_expressions, scope_sz, er.value_or_type, er.is_const_result);
     } else {
-        ctx.append_return({}, u().get(builtin_eid::void_), true);
+        ctx.append_return({}, 0, u().get(builtin_eid::void_), true);
     }
     
     return {};

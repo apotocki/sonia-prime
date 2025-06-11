@@ -479,6 +479,7 @@ using expression_span = linked_list_node_span<expression_entry>;
 struct return_statement
 {
     expression_span result;
+    size_t scope_size; // Numebr of elements on stack after evaluation of result expressions
     entity_identifier value_or_type;
     bool is_const_value_result;
 };
@@ -562,7 +563,7 @@ public:
 struct syntax_expression_result
 {
     // {temporary name, temporarytype, expressions}
-    small_vector<std::tuple<variable_identifier, entity_identifier, semantic::expression_span>, 2> temporaries;
+    small_vector<std::tuple<identifier, local_variable, semantic::expression_span>, 2> temporaries;
 
     semantic::expression_span stored_expressions;
     semantic::expression_span expressions;

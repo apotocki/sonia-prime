@@ -55,14 +55,14 @@ local_variable& prepared_call::new_temporary(unit& u, identifier name, entity_id
     local_variable& lv = get<local_variable>(bound_temporaries.emplace_back(
         annotated_identifier(name),
         local_variable{ .type = std::move(type), .varid = u.new_variable_identifier(), .is_weak = false }));
-    temporaries.emplace_back(&lv, el);
+    temporaries.emplace_back(name, &lv, el);
     return lv;
 }
 
 void prepared_call::export_temporaries(syntax_expression_result& ser)
 {
-    for(auto& [plv, el] : temporaries) {
-        ser.temporaries.emplace_back(plv->varid, plv->type, el);
+    for(auto& [name, plv, el] : temporaries) {
+        ser.temporaries.emplace_back(name, std::move(*plv), el);
     }
 }
 

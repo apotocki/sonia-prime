@@ -181,6 +181,9 @@ public:
         fnbuilder_.append_noop();
         auto branch_pt = fnbuilder_.current_entry();
         if (!c.false_branch) {
+            //c.true_branch.for_each([this](semantic::expression const& e) {
+            //    GLOBAL_LOG_INFO() << "true branch: " << unit_.print(e);
+            //});
             c.true_branch.for_each([this](semantic::expression const& e) {
                 apply(e);
             });
@@ -232,6 +235,7 @@ public:
 
     void apply(semantic::expression const& e) const override
     {
+        //GLOBAL_LOG_INFO() << "--- " << unit_.print(e);
         apply_visitor(derived(), e);
     }
 
@@ -248,8 +252,13 @@ public:
     
     using generic_base_t::operator();
 
-    inline void operator()(semantic::return_statement const&) const
+    inline void operator()(semantic::return_statement const& rst) const
     {
+        rst.result.for_each([this](semantic::expression const& e) {
+            //GLOBAL_LOG_INFO() << unit_.print(e);
+            apply_visitor(*this, e);
+        });
+        // todo: trancate temporaries
         fnbuilder_.append_noop();
         rpositions_.push_back(fnbuilder_.current_entry());
     }
@@ -296,8 +305,12 @@ public:
 
     using generic_base_t::operator();
 
-    inline void operator()(semantic::return_statement const&) const
+    inline void operator()(semantic::return_statement const& rst) const
     {
+        rst.result.for_each([this](semantic::expression const& e) {
+            //GLOBAL_LOG_INFO() << unit_.print(e);
+            apply_visitor(*this, e);
+        });
         if (local_return_position) {
             fnbuilder_.append_jmp(*local_return_position);
             return;

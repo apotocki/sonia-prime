@@ -23,7 +23,7 @@ public:
     lex::resource_location location;
     small_vector<named_expression_t, 8> args;
     functional_binding_set bound_temporaries;
-    small_vector<std::tuple<local_variable*, semantic::expression_span>, 4> temporaries;
+    small_vector<std::tuple<identifier, local_variable*, semantic::expression_span>, 4> temporaries;
 
     // cache
     using cache_key_t = std::tuple<entity_identifier, bool>;

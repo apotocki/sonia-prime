@@ -108,7 +108,7 @@ public:
     bool is_true(variable_type const& v) const noexcept;
     variable_type value_of(size_t val) const { return ui64_blob_result(val); }
 
-    string_view call_describe(size_t /*address*/) const;
+    string_view describe_address(size_t /*address*/) const;
 
     size_t callp(size_t ret_address);
     std::string callp_describe() const;

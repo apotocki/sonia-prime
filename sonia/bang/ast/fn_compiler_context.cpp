@@ -284,7 +284,7 @@ void fn_compiler_context::pop_scope()
     }
 }
 
-void fn_compiler_context::push_scope_variable(annotated_identifier name, local_variable&& lv, internal_function_entity& fnent)
+void fn_compiler_context::push_scope_variable(annotated_identifier name, local_variable lv, internal_function_entity& fnent)
 {
     int64_t index = scope_offset_ + scoped_locals_.back().size();
     fnent.push_variable(lv.varid, index);
@@ -300,7 +300,7 @@ void fn_compiler_context::pop_chain()
 {
     semantic::expression_span exprs = stored_expressions();
     expr_stack_.pop_back();
-    append_stored_expressions(std::move(exprs));
+    stored_expressions() = expression_store_.concat(stored_expressions(), std::move(exprs));
 }
 
 #if 0
@@ -563,7 +563,7 @@ std::expected<std::pair<entity_identifier, bool>, error_storage> fn_compiler_con
                     fent.location, "no return statements, but result type is not const value"sv, fent.id));
             }
         }
-        append_return({}, result_value_or_type, true);
+        append_return({}, 0, result_value_or_type, true);
         return std::pair{ result_value_or_type, true };
     }
 
@@ -682,33 +682,27 @@ void fn_compiler_context::append_expression(semantic::expression&& e)
     unit_.push_back_expression(expression_store_, expressions(), std::move(e));
 }
 
-void fn_compiler_context::append_expressions(semantic::expression_span sp)
-{
-    expressions() = expression_store_.concat(expressions(), std::move(sp));
-}
-
 void fn_compiler_context::append_expressions(semantic::expression_list_t& el, semantic::expression_span sp)
 {
     expression_store().splice_back(el, sp);
-    append_expressions(sp);
-}
-
-void fn_compiler_context::append_stored_expressions(semantic::expression_span sp)
-{
-    stored_expressions() = expression_store_.concat(stored_expressions(), std::move(sp));
+    expressions() = expression_store_.concat(expressions(), std::move(sp));
 }
 
 void fn_compiler_context::append_stored_expressions(semantic::expression_list_t& el, semantic::expression_span sp)
 {
     expression_store().splice_back(el, sp);
-    append_stored_expressions(sp);
+    stored_expressions() = expression_store_.concat(stored_expressions(), std::move(sp));
 }
 
-void fn_compiler_context::append_return(semantic::expression_span return_expressions, entity_identifier value_or_type, bool is_const_value_result)
+void fn_compiler_context::append_return(semantic::expression_span return_expressions, size_t scope_sz, entity_identifier value_or_type, bool is_const_value_result)
 {
+    //return_expressions.for_each([this](semantic::expression const& e) {
+    //    GLOBAL_LOG_INFO() << u().print(e);
+    //});
     // return_expressions should contain a cast to return value_or type, if result_value_or_type is defined
     append_expression(semantic::return_statement{
         .result = return_expressions,
+        .scope_size = scope_sz,
         .value_or_type = value_or_type,
         .is_const_value_result = is_const_value_result
     });

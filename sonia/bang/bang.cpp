@@ -115,6 +115,16 @@ inline fn logic_and($FT, $ST) -> union($FT, $ST) {
         return $0;
     }
 }
+inline fn assert_equal(_, _ /*, location: #call_location*/) {
+    if $0 != $1 {
+        error("Assertion failed: " ..to_string($0) .. " != " ..to_string($1));
+    }
+}
+inline fn assert_not_equal(_, _ /*, location: #call_location*/) {
+    if $0 == $1{
+        error("Assertion failed: " ..to_string($0) .. " == " ..to_string($1));
+    }
+}
 //inline fn ::set(self: object, property: const __identifier, any)->object => set(self: self, to_string(property), $0);
 )#";
 

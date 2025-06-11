@@ -293,10 +293,10 @@ public:
         fnbuilder_.append_push_pooled_const(smart_blob{}); // === nil
     }
 
-    void operator()(functional_entity const&) const override
-    {
-        THROW_NOT_IMPLEMENTED_ERROR();
-    }
+    //void operator()(functional_entity const&) const override
+    //{
+    //    THROW_NOT_IMPLEMENTED_ERROR();
+    //}
 
     void operator()(external_function_entity const&) const override
     {

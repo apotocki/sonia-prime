@@ -450,8 +450,8 @@ struct printer
     inline size_t operator()(identity_type<op::call>, ContextT& ctx, size_t address, size_t call_address, size_t ret_address) const
     {
         generic_print(address, "call"sv) << " 0x" << std::hex << call_address;
-        if constexpr (requires{ ctx.call_describe(call_address); }) {
-            ss << ' ' << ctx.call_describe(call_address) << '\n';
+        if constexpr (requires{ ctx.describe_address(call_address); }) {
+            ss << ' ' << ctx.describe_address(call_address) << '\n';
         } else {
             ss << '\n';
         }

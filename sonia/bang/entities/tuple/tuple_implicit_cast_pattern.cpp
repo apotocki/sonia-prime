@@ -182,7 +182,7 @@ tuple_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expressio
         u.push_back_expression(el, fn_code, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
     if (src_tuple_var) {
-        src_er.temporaries.emplace_back(src_tuple_var->varid, src_tuple_var->type, src_er.expressions);
+        src_er.temporaries.emplace_back(src_tuple_var_name, std::move(*src_tuple_var), src_er.expressions);
     }
 
     src_er.expressions = fn_code;

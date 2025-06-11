@@ -105,7 +105,7 @@ public:
     compiler_task_tracer::task_guard try_lock_task(compiler_task_id const&);
 
     void push_scope();
-    void push_scope_variable(annotated_identifier name, local_variable&&, internal_function_entity&);
+    void push_scope_variable(annotated_identifier name, local_variable, internal_function_entity&);
     void pop_scope();
     inline functional_binding_set const& current_scope_binding() const noexcept { return scoped_locals_.back(); }
 
@@ -243,16 +243,14 @@ public:
     //semantic::expression_list_t& expressions(size_t branch_offset) { return *expr_stack_[expr_stack_.size() - branch_offset - 1]; }
     inline size_t expressions_branch() const noexcept { return expr_stack_.size(); }
     void append_expression(semantic::expression&&);
-    void append_expressions(semantic::expression_span);
     void append_expressions(semantic::expression_list_t&, semantic::expression_span);
-    void append_stored_expressions(semantic::expression_span);
     void append_stored_expressions(semantic::expression_list_t&, semantic::expression_span);
     //void adopt_and_append(semantic::expression_list_t&, syntax_expression_result_t&);
 
     semantic::expression_span store_semantic_expressions(semantic::managed_expression_list&&);
     semantic::managed_expression_list& expression_store() { return expression_store_; }
 
-    void append_return(semantic::expression_span return_expressions, entity_identifier value_or_type, bool is_const_value_result);
+    void append_return(semantic::expression_span return_expressions, size_t scope_sz, entity_identifier value_or_type, bool is_const_value_result);
 
     //std::pair<size_t, expression_list_t::iterator> current_expressions_pointer() const
     //{

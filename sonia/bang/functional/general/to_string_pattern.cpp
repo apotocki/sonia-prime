@@ -10,7 +10,7 @@
 #include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/signatured_entity.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
-
+#include "sonia/bang/entities/functions/function_entity.hpp"
 #include "sonia/bang/auxiliary.hpp"
 
 namespace sonia::lang::bang {
@@ -34,6 +34,80 @@ std::expected<functional_match_descriptor_ptr, error_storage> to_string_pattern:
     return std::move(pmd);
 }
 
+class to_string_visitor : public entity_visitor
+{
+    unit& u_;
+    std::ostream& oss_;
+
+public:
+    inline explicit to_string_visitor(unit& u, std::ostream& os) noexcept 
+        : u_{ u }
+        , oss_{ os }
+    {}
+
+    void operator()(const entity& ent) const override
+    {
+        ent.print_to(oss_, u_);
+    }
+    
+    // Specialized handlers for literal entities
+    void operator()(const string_literal_entity& ent) const override
+    {
+        oss_ << ent.value();
+    }
+    
+    void operator()(const bool_literal_entity& ent) const override
+    {
+        oss_ << (ent.value() ? "true" : "false");
+    }
+    
+    void operator()(const integer_literal_entity& ent) const override
+    {
+        oss_ << ent.value();
+    }
+    
+    void operator()(const decimal_literal_entity& ent) const override
+    {
+        oss_ << ent.value();
+    }
+    
+    void operator()(const identifier_entity& ent) const override
+    {
+        u_.print_to(oss_, ent.value());
+    }
+    
+    void operator()(const qname_identifier_entity& ent) const override
+    {
+        u_.print_to(oss_, ent.value());
+    }
+    
+    void operator()(const empty_entity&) const override
+    {
+        oss_ << "empty";
+    }
+    
+    // Other entity types
+    void operator()(const function_entity& ent) const override
+    {
+        ent.print_to(oss_, u_);
+    }
+    
+    void operator()(const external_function_entity& ent) const override
+    {
+        ent.print_to(oss_, u_);
+    }
+    
+    void operator()(const extern_variable_entity& ent) const override
+    {
+        ent.print_to(oss_, u_);
+    }
+    
+    //void operator()(const functional_entity& ent) const override
+    //{
+    //    ent.print_to(oss_, u_);
+    //}
+};
+
 std::expected<syntax_expression_result_t, error_storage> to_string_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
@@ -43,11 +117,11 @@ std::expected<syntax_expression_result_t, error_storage> to_string_pattern::appl
     if (er.is_const_result) {
         entity const& ent = get_entity(u, er.value());
         std::ostringstream oss;
-        ent.print_to(oss, u);
+        ent.visit(to_string_visitor(u, oss));
         er.value_or_type = u.make_string_entity(oss.str()).id;
     } else {
         u.push_back_expression(el, er.expressions, semantic::invoke_function(u.get(builtin_eid::to_string)));
-        er.value_or_type = u.get(builtin_eid::to_string);
+        er.value_or_type = u.get(builtin_eid::string);
     }
     return std::move(er);
 }

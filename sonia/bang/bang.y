@@ -368,7 +368,8 @@ statement:
     | fn-start-decl[fnkind] fn-name[name] OPEN_PARENTHESIS parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROWEXPR syntax-expression[value]
         { 
             auto sts = ctx.new_statement_list();
-            sts.emplace_back(return_decl_t{ std::move($value) });
+            auto loc = get_start_location($value);
+            sts.emplace_back(return_decl_t{ std::move($value), std::move(loc) });
             $$ = fn_decl_t{ fn_pure_t{ .aname = std::move($name), .parameters = std::move($parameters), .kind = $fnkind }, ctx.push(std::move(sts)) };
             IGNORE_TERM($OPEN_PARENTHESIS);
             //     $$ = fn_decl_t{ fn_pure_t{ .aname = std::move($name), .parameters = std::move($parameters), .result = std::move($value), .is_type_expression_result = false, .kind = $fnkind } }; IGNORE_TERM($OPEN_PARENTHESIS); }

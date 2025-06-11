@@ -404,26 +404,15 @@ protected:
 
     entity_identifier set_builtin_extern(string_view name, void(*pfn)(vm::context&));
 
-
-
 private:
     std::atomic<size_t> variable_identifier_gencount_ = 1;
-    //identifier fn_result_identifier_; // ->
+
     std::array<identifier, (size_t)builtin_id::eof_builtin_id_value> builtin_ids_;
     std::array<qname_identifier, (size_t)builtin_qnid::eof_builtin_qnids_value> builtin_qnids_;
     std::array<entity_identifier, (size_t)builtin_eid::eof_builtin_eid_value> builtin_eids_;
 
-    //entity_identifier arrayify_entity_identifier_; // builtin ::arrayify(...)->array
-    //entity_identifier array_at_entity_identifier_; // builtin ::array_at(array, index)-> elementT
-
-    // entities registry:
-    //qname -> entity
-
     std::unique_ptr<virtual_stack_machine> bvm_;
     std::vector<fs::path> additional_paths_;
-
-    //functional_entity* integer_entity_;
-    functional_entity* decimal_entity_;
 
     function<void(string_view)> cout_writer_;
 };

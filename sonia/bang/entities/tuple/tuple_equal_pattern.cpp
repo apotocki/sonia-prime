@@ -284,10 +284,10 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
     }
 
     if (lhs_tuple_var) {
-        result.temporaries.emplace_back(lhs_tuple_var->varid, lhs_tuple_var->type, lhs_er.expressions);
+        result.temporaries.emplace_back(lhs_tuple_var_name, std::move(*lhs_tuple_var), lhs_er.expressions);
     }
     if (rhs_tuple_var) {
-        result.temporaries.emplace_back(rhs_tuple_var->varid, rhs_tuple_var->type, rhs_er.expressions);
+        result.temporaries.emplace_back(rhs_tuple_var_name, std::move(*rhs_tuple_var), rhs_er.expressions);
     }
     return std::move(result);
 }

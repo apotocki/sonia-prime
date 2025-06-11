@@ -57,7 +57,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_get_
     entity const& tpl_prj_entity = get_entity(u, slftype);
     auto psig = tpl_prj_entity.signature();
     if (!psig || psig->name != u.get(builtin_qnid::tuple_project)) {
-        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), slf_arg->value(), "a tuple_project"sv));
+        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), slftype, "a tuple_project"sv));
     }
         
     // Extract project name and original tuple from signature

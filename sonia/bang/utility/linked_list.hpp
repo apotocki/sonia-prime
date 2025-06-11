@@ -10,6 +10,8 @@
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
+#include "sonia/exceptions.hpp"
+
 namespace sonia::lang::bang {
 
 template <class ElementT>
@@ -118,9 +120,22 @@ public:
     }
 
     template <std::derived_from<entry_type> EntryT>
-    inline void insert(EntryT& where, entry_type& e) noexcept
+#if 1
+    inline void insert(EntryT& where, entry_type& e)
+    {
+        // check for validity of 'where' entry
+        for (auto bit = list_.begin(); bit != list_.end(); ++bit) {
+            if (&*bit == &where) {
+                list_.insert(++bit, e);
+                return;
+            }
+        }
+        THROW_INTERNAL_ERROR("wrong where");
+#else
+    inline void insert(EntryT & where, entry_type & e) noexcept
     {
         list_.insert(++list_t::s_iterator_to(where), e);
+#endif
     }
 
     inline void push_back(entry_type& e) noexcept { list_.push_back(e); }

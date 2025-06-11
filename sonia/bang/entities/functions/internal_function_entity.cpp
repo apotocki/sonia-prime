@@ -82,6 +82,7 @@ error_storage internal_function_entity::build(fn_compiler_context& fnctx)
         fnctx.is_const_value_result = result.is_const();
     }
 
+    //GLOBAL_LOG_INFO() << fnctx.u().print(sts_);
     declaration_visitor dvis{ fnctx, *this };
     if (auto err = dvis.apply(sts_); err) return err;
 

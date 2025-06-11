@@ -367,23 +367,141 @@ struct prepare_call_helper
 error_storage prepared_call::prepare()
 {
     unit& u = caller_ctx.u();
-    prepare_call_helper<8> helper{ *this };
-    
+    //prepare_call_helper<8> helper{ *this };
+    small_vector<named_expression_t, 8> rebuilt_args;
+
+    auto append_arg = [&rebuilt_args](annotated_identifier const* groupname, syntax_expression_t&& e) {
+        if (groupname) {
+            rebuilt_args.emplace_back(*groupname, std::move(e));
+        } else {
+            rebuilt_args.emplace_back(std::move(e));
+        }
+    };
+
     for (auto it = args.begin(), eit = args.end(); it != eit; ++it) {
         auto& arg = *it;
         auto name_value_tpl = *arg;
         syntax_expression_t& argvalue = get<1>(name_value_tpl);
         
-        auto const* pue = get<unary_expression_t>(&argvalue);
+        auto * pue = get<unary_expression_t>(&argvalue);
         if (!pue || pue->op != unary_operator_type::ELLIPSIS) {
-            if (helper.rebuilt_args.empty()) continue;
-            helper.rebuilt_args.emplace_back(std::move(arg));
+            if (rebuilt_args.empty()) continue;
+            rebuilt_args.emplace_back(std::move(arg));
             continue;
         }
-        if (helper.rebuilt_args.empty()) {
-            std::move(args.begin(), it, std::back_inserter(helper.rebuilt_args));
+        if (rebuilt_args.empty()) {
+            std::move(args.begin(), it, std::back_inserter(rebuilt_args));
         }
-        helper.handle_ellipsis_arg(arg, pue->args.front().value());
+        syntax_expression_t & ellipsis_arg = pue->args.front().value();
+        auto obj = apply_visitor(base_expression_visitor{ caller_ctx, expressions }, ellipsis_arg);
+        if (!obj) return std::move(obj.error());
+        
+        annotated_identifier const* groupname = get<0>(name_value_tpl);
+        lex::resource_location arg_expr_loc = get_start_location(ellipsis_arg);
+        lex::resource_location arg_loc = groupname ? groupname->location : arg_expr_loc;
+        
+        auto& ser = obj->first;
+        entity_identifier type_eid;
+        if (ser.is_const_result) {
+            entity const& arg_ent = get_entity(u, ser.value());
+            if (qname_entity const* pqne = dynamic_cast<qname_entity const*>(&arg_ent); pqne) {
+                auto res = deref(caller_ctx, annotated_qname{ pqne->value(), arg_loc });
+                if (!res) return std::move(res.error());
+                append_arg(groupname, std::move(*res));
+                continue;
+            }
+            type_eid = arg_ent.get_type();
+        } else {
+            type_eid = ser.type();
+        }
+
+        entity const& type_ent = get_entity(u, type_eid);
+        entity_signature const* signature = type_ent.signature();
+        if (!signature || signature->name != u.get(builtin_qnid::tuple)) {
+            if (ser.is_const_result) {
+                append_arg(groupname, annotated_entity_identifier{ ser.value(), arg_loc });
+            } else {
+                append_arg(groupname, std::move(ellipsis_arg));
+                /*
+                semantic::managed_expression_list el{ u };
+                el.splice_back(call.expressions, ser.expressions);
+                append_arg(groupname, indirect_value{
+                    .location = arg_loc,
+                    .type = ser.type(),
+                    .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
+                });
+                */
+            }
+            continue;
+        }
+
+        // tuple signature, append its elements
+        local_variable* ptuple_object_var = nullptr;
+        identifier tuple_name;
+        if (!ser.is_const_result) {
+            BOOST_ASSERT(ser.expressions);
+            tuple_name = u.new_identifier();
+            ptuple_object_var = &new_temporary(u, tuple_name, ser.type(), ser.expressions);
+        }
+        size_t argpos = 0;
+        for (field_descriptor const& fd : signature->fields()) {
+            annotated_identifier subgropname{ fd.name() };
+            annotated_identifier const* fd_groupname = groupname ? groupname : (subgropname ? &subgropname : nullptr);
+            if (fd.is_const()) {
+                append_arg(fd_groupname, annotated_entity_identifier{ fd.entity_id(), arg_expr_loc });
+            } else {
+                BOOST_ASSERT(ptuple_object_var);
+                pure_call_t get_call{ arg_expr_loc };
+                get_call.emplace_back(annotated_identifier{ u.get(builtin_id::self), arg_expr_loc },
+                    variable_reference{ annotated_qname{ qname{ tuple_name, false } }, false });
+                get_call.emplace_back(annotated_identifier{ u.get(builtin_id::property) }, annotated_integer{ mp::integer{ argpos } });
+                
+                auto match = caller_ctx.find(builtin_qnid::get, get_call, expressions);
+                if (!match) {
+                    return append_cause(
+                        make_error<basic_general_error>(arg_expr_loc, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ argpos - 1 } }),
+                        std::move(match.error()));
+                }
+                auto res = match->apply(caller_ctx);
+                if (!res) {
+                    return append_cause(
+                        make_error<basic_general_error>(arg_expr_loc, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ argpos - 1 } }),
+                        std::move(res.error()));
+                }
+
+                //add_subarg(fd_groupname, *res);
+                syntax_expression_result_t& elem_ser = *res;
+                BOOST_ASSERT(!elem_ser.is_const_result);
+                //if (elem_ser.is_const_result) {
+                //    append_arg(fd_groupname, annotated_entity_identifier{ elem_ser.value(), arg_expr_loc });
+                //} else {
+
+                // if element is named, extract it's value type
+                entity_identifier elem_type_eid = elem_ser.type();
+                if (subgropname) {
+                    entity const& elem_type_ent = get_entity(u, elem_ser.type());
+                    entity_signature const* elem_signature = elem_type_ent.signature();
+                    BOOST_ASSERT(elem_signature && elem_signature->name == u.get(builtin_qnid::tuple) && elem_signature->field_count() == 2);
+                    BOOST_ASSERT(!elem_signature->fields()[1].is_const());
+                    elem_type_eid = elem_signature->fields()[1].entity_id();
+                } 
+                semantic::managed_expression_list el{ u };
+                el.splice_back(expressions, elem_ser.expressions);
+                append_arg(fd_groupname, indirect_value{
+                    .location = arg_expr_loc,
+                    .type = elem_type_eid,
+                    .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
+                });
+            }
+            ++argpos;
+        }
+    }
+
+    if (!rebuilt_args.empty()) {
+        args = std::move(rebuilt_args);
+    }
+
+    //helper.handle_ellipsis_arg(arg, pue->args.front().value());
 #if 0
         named_expression_t const& ellipsis_arg = pue->args.front();
 
@@ -435,11 +553,9 @@ error_storage prepared_call::prepare()
             }
         }
 #endif
-    }
 
-    if (!helper.rebuilt_args.empty()) {
-        args = std::move(helper.rebuilt_args);
-    }
+
+
 
     //        entity_signature const& signature = *bse->signature();
     //        if (signature.name != u.get(builtin_qnid::tuple)) return wrong_arg_error();

@@ -631,33 +631,130 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
     for (auto const& e : pcall.args) {
         auto [pname, expr] = *e;
-        auto res = apply_visitor(base_expression_visitor{ ctx, el, { vartype, ld.location() } }, expr);
+        auto res = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{ vartype, ld.location() } }, expr);
         if (!res) { return std::move(res.error()); }
         syntax_expression_result& ser = res->first;
+        if (ser.is_const_result && ser.value() == u().get(builtin_eid::void_)) continue; // ignore void results
         identifier name = pname ? pname->value : identifier{};
         results.emplace_back(name, std::move(ser));
     }
-
-    //ctx.push_scope();
-    //for (auto &[name, ser] : results) {
-    //    for (auto& [varid, t, sp] : ser.temporaries) {
-    //        ctx.expressions().splice_back(el, sp);
-    //        ctx.push_scope_variable(
-    //            annotated_identifier{ u().new_identifier() },
-    //            local_variable{ .type = t, .varid = varid, .is_weak = false },
-    //            fnent);
-    //    }
-    //}
 
     auto push_temporaries = [&el, this](auto& temporaries) {
         for (auto& [varname, var, sp] : temporaries) {
             ctx.append_expressions(el, sp);
             ctx.push_scope_variable(
                 annotated_identifier{ varname },
-                var, //local_variable{ .type = t, .varid = varid, .is_weak = false },
+                var,
                 fnent);
         }
     };
+
+    if (results.size() == 1) {
+        auto& [id, er] = results.front();
+        basic_signatured_entity const* pelemsig = nullptr;
+        if (id) {
+            entity_signature element_sig{ u().get(builtin_qnid::tuple), u().get(builtin_eid::typename_) };
+            element_sig.emplace_back(id, er.value_or_type, er.is_const_result);
+            pelemsig = &u().make_basic_signatured_entity(std::move(element_sig));
+        }
+        if (er.is_const_result) {
+            ctx.new_constant(ld.aname, pelemsig ? pelemsig->id : er.value());
+        } else {
+            ctx.push_scope();
+            push_temporaries(er.temporaries);
+            ctx.append_expressions(el, er.expressions);
+            ctx.append_stored_expressions(el, er.stored_expressions);
+            size_t scope_sz = ctx.current_scope_binding().size();
+            ctx.pop_scope();
+            ctx.push_scope_variable(
+                ld.aname,
+                local_variable{ .type = pelemsig ? pelemsig->id : er.type(), .varid = u().new_variable_identifier(), .is_weak = ld.weakness },
+                fnent);
+            if (scope_sz) {
+                ctx.append_expression(semantic::truncate_values(scope_sz, !er.is_const_result));
+            }
+        }
+        return {};
+    }
+
+    entity_signature result_sig{ u().get(builtin_qnid::tuple), u().get(builtin_eid::typename_) };
+
+    for (auto& [id, er] : results) {
+        if (er.is_const_result) {
+            result_sig.emplace_back(id, er.value(), true);
+        } else {
+            ctx.push_scope();
+            push_temporaries(er.temporaries);
+            ctx.append_expressions(el, er.expressions);
+            ctx.append_stored_expressions(el, er.stored_expressions);
+            size_t scope_sz = ctx.current_scope_binding().size();
+            ctx.pop_scope();
+            identifier unnamedid = u().new_identifier();
+            ctx.push_scope_variable(
+                annotated_identifier{ unnamedid },
+                local_variable{ .type = er.type(), .varid = u().new_variable_identifier(), .is_weak = ld.weakness },
+                fnent);
+            if (scope_sz) {
+                ctx.append_expression(semantic::truncate_values(scope_sz, !er.is_const_result));
+            }
+            result_sig.emplace_back(id, u().make_qname_entity(qname{ unnamedid, false }).id, true);
+        }
+    }
+    entity const& result_tuple_type = u().make_basic_signatured_entity(std::move(result_sig));
+    ctx.new_constant(ld.aname, u().make_empty_entity(result_tuple_type.id).id);
+    return {};
+#if 0
+
+    if (results.size() == 1) {
+        auto& [id, er] = results.front();
+        
+
+        size_t scope_sz;
+        if (!er.is_const_result) {
+            ctx.push_scope();
+            push_temporaries(er.temporaries);
+            ctx.append_expressions(el, er.expressions);
+            ctx.append_stored_expressions(el, er.stored_expressions);
+            scope_sz = ctx.current_scope_binding().size();
+            ctx.pop_scope();
+        }
+
+        if (vartype) {
+            pure_call_t cast_call{ ld.location() };
+            if (er.is_const_result) {
+                cast_call.emplace_back(annotated_entity_identifier{ er.value(), ld.location() });
+            } else {
+                semantic::managed_expression_list mel{ u };
+                mel.deep_copy(er.expressions);
+                cast_call.emplace_back(indirect_value{
+                    .location = ld.location(),
+                    .type = er.type(),
+                    .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(mel) }
+                });
+            }
+            auto match = ctx.find(builtin_qnid::eq, cast_call, el, expected_result_t{ vartype, er.is_const_result });
+            if (!match) return std::move(match.error());
+            auto res = match->apply(ctx);
+            if (!res) return std::move(res.error());
+            syntax_expression_result_t& fer = *res;
+            if (fer.is_const_result) {
+                ctx.new_constant(ld.aname, fer.value());
+            } else {
+                ctx.push_scope_variable(
+                    ld.aname,
+                    local_variable{ .type = vartype, .varid = u().new_variable_identifier(), .is_weak = ld.weakness },
+                    fnent);
+            }
+        } else if (er.is_const_result) {
+            ctx.new_constant(ld.aname, er.value());
+        } else {
+            ctx.push_scope_variable(
+                ld.aname,
+                local_variable{ .type = er.type(), .varid = u().new_variable_identifier(), .is_weak = ld.weakness },
+                fnent);
+        }
+    }
+
 
     if (results.size() == 1 && !results.front().first) {
         syntax_expression_result_t& er = results.front().second;
@@ -739,6 +836,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
     entity const& tuple_type = u().make_basic_signatured_entity(std::move(sig));
     ctx.new_constant(ld.aname, u().make_empty_entity(tuple_type).id);
     return {};
+#endif
 }
 
 //void declaration_visitor::operator()(assign_decl_t const& ad) const

@@ -121,7 +121,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
                 return syntax_expression_result_t{
                     .temporaries = std::move(slfer.temporaries),
                     .expressions = md.merge_void_spans(el),
-                    .value_or_type = result_type,
+                    .value_or_type = field->name() ? u.make_empty_entity(result_type).id : result_type,
                     .is_const_result = true
                 };
             } else {
@@ -146,7 +146,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
                 return syntax_expression_result_t{
                     .temporaries = std::move(slfer.temporaries),
                     .expressions = md.merge_void_spans(el),
-                    .value_or_type = make_tuple_project_type(id_lit->value()),
+                    .value_or_type = u.make_empty_entity(make_tuple_project_type(id_lit->value())).id,
                     .is_const_result = true
                 };
             }
@@ -198,7 +198,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
             return syntax_expression_result_t{
                 .temporaries = std::move(slfer.temporaries),
                 .expressions = md.merge_void_spans(el),
-                .value_or_type = result_type,
+                .value_or_type = field->name() ? u.make_empty_entity(result_type).id : result_type,
                 .is_const_result = true
             };
         }

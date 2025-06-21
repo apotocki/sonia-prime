@@ -14,7 +14,7 @@ class struct_init_pattern : public basic_fn_pattern
     //variant<field_list_t, statement_span> body_;
 
 public:
-    struct_init_pattern(functional const&, variant<field_list_t, statement_span> const&);
+    explicit struct_init_pattern(variant<field_list_t, statement_span> const&);
     error_storage init(fn_compiler_context& ctx, annotated_entity_identifier result); // result is a defined entity
     error_storage init(fn_compiler_context& ctx, annotated_qname fname, parameter_list_t const& fparameters); // result is a functional name with parameters
 

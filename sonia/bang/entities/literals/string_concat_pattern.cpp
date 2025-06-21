@@ -18,18 +18,6 @@
 
 namespace sonia::lang::bang {
 
-//class string_concat_match_descriptor : public functional_match_descriptor
-//{
-//public:
-//    using functional_match_descriptor::functional_match_descriptor;
-//    
-//    // Track if any of the arguments are non-const, requiring runtime concatenation
-//    bool has_runtime_args = false;
-//    
-//    // For compile-time concatenation of const strings
-//    small_string concat_result;
-//};
-
 std::expected<functional_match_descriptor_ptr, error_storage>
 string_concat_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
@@ -41,7 +29,7 @@ string_concat_pattern::try_match(fn_compiler_context& ctx, prepared_call const& 
     }
     
     auto call_session = call.new_session(ctx);
-    auto pmd = sonia::make_shared<functional_match_descriptor>(call.location);
+    auto pmd = sonia::make_shared<functional_match_descriptor>(call);
     
     // Process all string arguments
     expected_result_t string_exp{ u.get(builtin_eid::string), call.location };
@@ -53,7 +41,7 @@ string_concat_pattern::try_match(fn_compiler_context& ctx, prepared_call const& 
             break; // No more arguments
         }
         // Add arg to match results for later use in apply
-        pmd->get_match_result(arg_idx).append_result(*arg);
+        pmd->emplace_back(arg_idx, arg->first);
     }
 
     pmd->void_spans = std::move(call_session.void_spans);
@@ -69,12 +57,8 @@ string_concat_pattern::apply(fn_compiler_context& ctx, semantic::expression_list
     syntax_expression_result_t result{ .expressions = md.merge_void_spans(el) };
     size_t concat_runtime_arg_count = 0;
     std::ostringstream concat_stream;
-    md.for_each_positional_match([&u, &el, &concat_runtime_arg_count, &concat_stream, &result](parameter_match_result& pmr) {
+    for (auto& [idx, er] : md.matches) {
         // Check if the argument is a const string literal
-        auto er = pmr.results.front();
-        result.temporaries.insert(result.temporaries.end(), er.temporaries.begin(), er.temporaries.end());
-        result.stored_expressions = el.concat(result.stored_expressions, er.stored_expressions);
-
         if (er.is_const_result) {
             string_literal_entity const* psle = dynamic_cast<string_literal_entity const*>(&get_entity(u, er.value()));
             BOOST_ASSERT(psle);
@@ -91,7 +75,8 @@ string_concat_pattern::apply(fn_compiler_context& ctx, semantic::expression_list
             result.expressions = el.concat(result.expressions, er.expressions);
             ++concat_runtime_arg_count;
         }
-    });
+    }
+
     auto prev_str = concat_stream.str();
     if (concat_runtime_arg_count) {
         if (!prev_str.empty()) {

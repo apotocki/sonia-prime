@@ -27,6 +27,7 @@ public:
         : unit_{ u }
         , statements_{ u }
     {}
+    ~parser_context();
 
     annotated_string make_string(annotated_string_view) const;
     mp::integer make_integer(string_view) const;

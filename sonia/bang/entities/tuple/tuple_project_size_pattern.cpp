@@ -36,17 +36,18 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_size
 
     entity_identifier slftype;
     
-    if (arg->is_const_result) {
-        entity const& slf_entity = get_entity(u, arg->value());
+    syntax_expression_result_t& arg_er = arg->first;
+    if (arg_er.is_const_result) {
+        entity const& slf_entity = get_entity(u, arg_er.value());
         slftype = slf_entity.get_type();
     } else {
-        slftype = arg->type();
+        slftype = arg_er.type();
     }
 
     entity const& tpl_prj_entity = get_entity(u, slftype);
     auto psig = tpl_prj_entity.signature();
     if (!psig || psig->name != u.get(builtin_qnid::tuple_project)) {
-        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*parg_expr), arg->value_or_type, "a tuple_project"sv));
+        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*parg_expr), arg_er.value_or_type, "a tuple_project"sv));
     }
         
     // Extract project name and original tuple from signature
@@ -75,9 +76,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_size
     auto frng = orig_sig->find_fields(project_name);
     project_size = std::distance(frng.first, frng.second);
         
-    functional_match_descriptor_ptr pmd = make_shared<functional_match_descriptor>(call.location);
-    pmd->result = field_descriptor{ ctx.u().make_integer_entity(project_size).id, true };
-    pmd->get_match_result(0).append_result(*arg);
+    functional_match_descriptor_ptr pmd = make_shared<functional_match_descriptor>(call);
+    pmd->signature.result.emplace(ctx.u().make_integer_entity(project_size).id, true);
+    pmd->emplace_back(0, arg_er);
     pmd->void_spans = std::move(call_session.void_spans);
     
     return pmd;
@@ -85,12 +86,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_size
 
 std::expected<syntax_expression_result_t, error_storage> tuple_project_size_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
-    syntax_expression_result_t & arg = md.get_match_result(0).results.front();
+    syntax_expression_result_t & arg = get<1>(md.matches.front());
 
     return syntax_expression_result_t{
         .temporaries = std::move(arg.temporaries),
         .expressions = md.merge_void_spans(el),
-        .value_or_type = md.result.entity_id(),
+        .value_or_type = md.signature.result->entity_id(),
         .is_const_result = true
     };
 }

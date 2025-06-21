@@ -40,7 +40,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_argumen
     auto obj = apply_visitor(eobjvis, *object_arg);
     if (!obj) return std::unexpected(std::move(obj.error()));
 
-    auto pmd = make_shared<functional_match_descriptor>(call.location);
+    auto pmd = make_shared<functional_match_descriptor>(call);
     pmd->get_match_result(0).append_result(*obj);
     return pmd;
 }

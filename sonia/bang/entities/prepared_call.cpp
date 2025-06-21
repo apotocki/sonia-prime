@@ -17,16 +17,18 @@
 
 namespace sonia::lang::bang {
 
-prepared_call::prepared_call(fn_compiler_context& ctx, semantic::expression_list_t& ael, lex::resource_location loc) noexcept
+prepared_call::prepared_call(fn_compiler_context& ctx, functional const* pf, semantic::expression_list_t& ael, lex::resource_location loc) noexcept
     : caller_ctx{ ctx }
+    , pfnl{ pf }
     , expressions{ ael }
     , location{ std::move(loc) }
 {
     ctx.push_binding(bound_temporaries);
 }
 
-prepared_call::prepared_call(fn_compiler_context &ctx, pure_call_t const& call, semantic::expression_list_t& ael)
+prepared_call::prepared_call(fn_compiler_context &ctx, functional const* pf, pure_call_t const& call, semantic::expression_list_t& ael)
     : caller_ctx{ ctx }
+    , pfnl{ pf }
     , expressions{ ael }
     , location{ call.location }
     , args{ call.args }
@@ -48,6 +50,16 @@ prepared_call::prepared_call(fn_compiler_context &ctx, pure_call_t const& call, 
 prepared_call::~prepared_call()
 {
     caller_ctx.pop_binding(&bound_temporaries);
+}
+
+qname_view prepared_call::functional_name() const noexcept
+{
+    return pfnl ? pfnl->name() : qname_view{};
+}
+
+qname_identifier prepared_call::functional_id() const noexcept
+{
+    return pfnl ? pfnl->id() : qname_identifier{};
 }
 
 local_variable& prepared_call::new_temporary(unit& u, identifier name, entity_identifier type, semantic::expression_span el)
@@ -626,28 +638,24 @@ prepared_call::session::session(fn_compiler_context& ctxval, prepared_call const
     }
 }
 
-std::expected<syntax_expression_result_t, error_storage>
+std::expected<std::pair<syntax_expression_result_t, bool>, error_storage>
 prepared_call::session::do_resolve(argument_cache& arg_cache, expected_result_t const& exp)
 {
     auto cit = arg_cache.cache.find({ exp.type, exp.is_const_result });
     if (cit == arg_cache.cache.end()) {
         auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions, exp }, arg_cache.expression);
-        if (!res) {
-            arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.type, exp.is_const_result }, std::unexpected(res.error()));
-            return std::unexpected(std::move(res.error()));
-        }
-        cit = arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.type, exp.is_const_result }, std::move(res->first));
+        cit = arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.type, exp.is_const_result }, std::move(res));
     }
     return cit->second;
 }
 
-std::expected<syntax_expression_result_t, error_storage>
+std::expected<std::pair<syntax_expression_result_t, bool>, error_storage>
 prepared_call::session::use_next_positioned_argument(syntax_expression_t const** pe)
 {
     return use_next_positioned_argument(expected_result_t{}, pe);
 }
 
-std::expected<syntax_expression_result_t, error_storage>
+std::expected<std::pair<syntax_expression_result_t, bool>, error_storage>
 prepared_call::session::use_next_positioned_argument(expected_result_t const& exp, syntax_expression_t const** pe)
 {
     for (;;) {
@@ -658,8 +666,8 @@ prepared_call::session::use_next_positioned_argument(expected_result_t const& ex
         // find the argument cache
         argument_cache* arg_cache = unused_position_arguments_[unused_positioned_index_++];
         auto res = do_resolve(*arg_cache, exp);
-
-        if (!res || !res->is_const_result || res->value() != ctx.u().get(builtin_eid::void_)) {
+        
+        if (!res || !res->first.is_const_result || res->first.value() != ctx.u().get(builtin_eid::void_)) {
             if (pe) {
                 *pe = &arg_cache->expression;
             }
@@ -667,14 +675,14 @@ prepared_call::session::use_next_positioned_argument(expected_result_t const& ex
         }
 
         // if the result is void, continue to the next argument
-        if (res->expressions) {
-            void_spans.emplace_back(res->expressions);
+        if (res->first.expressions) {
+            void_spans.emplace_back(res->first.expressions);
         }
         ++unused_positioned_skipped_;
     }
 }
 
-std::expected<syntax_expression_result_t, error_storage>
+std::expected<std::pair<syntax_expression_result_t, bool>, error_storage>
 prepared_call::session::use_named_argument(identifier name, expected_result_t const& exp, syntax_expression_t const** pe)
 {
     for (;;) {
@@ -687,15 +695,15 @@ prepared_call::session::use_named_argument(identifier name, expected_result_t co
         if (res) {
             unused_named_arguments_.erase(argit); // remove the argument from the unused list
         }
-        if (!res || !res->is_const_result || res->value() != ctx.u().get(builtin_eid::void_)) {
+        if (!res || !res->first.is_const_result || res->first.value() != ctx.u().get(builtin_eid::void_)) {
             if (pe) {
                 *pe = &arg_cache->expression;
             }
             return res;
         }
         // if the result is void, continue to the next argument
-        if (res->expressions) {
-            void_spans.emplace_back(res->expressions);
+        if (res->first.expressions) {
+            void_spans.emplace_back(res->first.expressions);
         }
     }
 }
@@ -709,8 +717,8 @@ named_expression_t prepared_call::session::unused_argument()
         if (!res) { // not a void argument
             return named_expression_t{ name, arg_cache->expression };
         }
-        if (res->expressions) {
-            void_spans.emplace_back(res->expressions);
+        if (res->first.expressions) {
+            void_spans.emplace_back(res->first.expressions);
         }
     }
 
@@ -720,8 +728,8 @@ named_expression_t prepared_call::session::unused_argument()
         if (!res) { // not a void argument
             return named_expression_t{ arg_cache->expression };
         }
-        if (res->expressions) {
-            void_spans.emplace_back(res->expressions);
+        if (res->first.expressions) {
+            void_spans.emplace_back(res->first.expressions);
         }
         ++unused_positioned_skipped_;
     }

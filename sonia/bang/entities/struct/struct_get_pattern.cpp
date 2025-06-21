@@ -40,6 +40,8 @@ namespace sonia::lang::bang {
 
 std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("struct_get_pattern::try_match tuple_get_match_descriptor creation"sv);
+#if 0
     unit& u = ctx.u();
     identifier slfid = u.get(builtin_id::self);
     identifier propid = u.get(builtin_id::property);
@@ -91,7 +93,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
     if (!uteid) return std::unexpected(std::move(uteid.error()));
     entity const& utplent = get_entity(u, *uteid);
     
-    THROW_NOT_IMPLEMENTED_ERROR("struct_get_pattern::try_match tuple_get_match_descriptor creation"sv);
+    
     //return check_match(std::move(pmd), call, utplent, *ppname);
 
     //entity_signature const* ptplsig = utplent.signature();
@@ -117,6 +119,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
 
     //pmd->result = *fd;
     //return pmd;
+#endif
 }
 
 //error_storage struct_get_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const

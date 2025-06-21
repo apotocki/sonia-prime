@@ -39,10 +39,10 @@ negate_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, e
     }
     
     // Create match descriptor
-    auto pmd = make_shared<functional_match_descriptor>(call.location);
-    pmd->get_match_result(0).append_result(*arg);
+    auto pmd = make_shared<functional_match_descriptor>(call);
+    pmd->emplace_back(0, arg->first);
     pmd->void_spans = std::move(call_session.void_spans);
-    pmd->result = field_descriptor{ u.get(builtin_eid::boolean), arg->is_const_result };
+    pmd->signature.result.emplace(u.get(builtin_eid::boolean), arg->first.is_const_result);
     
     return pmd;
 }
@@ -51,7 +51,7 @@ std::expected<syntax_expression_result_t, error_storage>
 negate_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto& arg_er = md.get_match_result(0).results.front();
+    auto& [_, arg_er] = md.matches.front();
     
     syntax_expression_result_t result{
         .temporaries = std::move(arg_er.temporaries),

@@ -33,8 +33,9 @@ public:
     using functional_match_descriptor::functional_match_descriptor;
 
     template <typename ArgT>
-    explicit const_literal_implicit_cast_match_descriptor(ArgT && arg)
-        : arg{ std::forward<ArgT>(arg) }
+    const_literal_implicit_cast_match_descriptor(prepared_call const& call, ArgT && arg)
+        : functional_match_descriptor{ call }
+        , arg{ std::forward<ArgT>(arg) }
     {}
 
     variant<std::nullptr_t, integer_literal_entity, decimal_literal_entity, string_literal_entity> arg;
@@ -69,12 +70,13 @@ const_literal_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepare
     }
 
     // Only allow constant arguments
-    if (!src_arg->is_const_result) {
+    syntax_expression_result_t & src_arg_er = src_arg->first;
+    if (!src_arg_er.is_const_result) {
         return std::unexpected(make_error<basic_general_error>(get_start_location(*pself_expr), "argument must be a constant literal"sv));
     }
-    entity const& src_arg_entity = get_entity(u, src_arg->value());
+    entity const& src_arg_entity = get_entity(u, src_arg_er.value());
     if (src_arg_entity.get_type() != exp.type) {
-        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pself_expr), src_arg->value(), exp.type));
+        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pself_expr), src_arg_er.value(), exp.type));
     }
     //// string to string check
     //if (exp.type == u.get(builtin_eid::string)) {
@@ -88,12 +90,12 @@ const_literal_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepare
     const_literal_argument_visitor vis;
     src_arg_entity.visit(vis);
     if (vis.value.which() == 0) {
-        return std::unexpected(make_error<value_mismatch_error>(get_start_location(*pself_expr), src_arg->value(), "a literal"sv));
+        return std::unexpected(make_error<value_mismatch_error>(get_start_location(*pself_expr), src_arg_er.value(), "a literal"sv));
     }
     
-    auto pmd = sonia::make_shared<const_literal_implicit_cast_match_descriptor>(std::move(vis.value));
-    pmd->result = field_descriptor{ exp.type, false };
-    pmd->get_match_result(0).append_result(*src_arg);
+    auto pmd = sonia::make_shared<const_literal_implicit_cast_match_descriptor>(call, std::move(vis.value));
+    pmd->signature.result.emplace(exp.type, false);
+    pmd->emplace_back(0, src_arg_er);
     pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
@@ -102,10 +104,10 @@ std::expected<syntax_expression_result_t, error_storage>
 const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     auto& nmd = static_cast<const_literal_implicit_cast_match_descriptor&>(md);
-    auto& src = md.get_match_result(0).results.front();
+    auto& [_, src] = md.matches.front();
     src.expressions = el.concat(md.merge_void_spans(el), src.expressions);
     BOOST_ASSERT(nmd.arg.which());
-    src.value_or_type = nmd.result.entity_id();
+    src.value_or_type = nmd.signature.result->entity_id();
     src.is_const_result = false;
     apply_visitor(make_functional_visitor<void>([&u = ctx.u(), &ctx, &el, &src](auto const& v) {
         if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {

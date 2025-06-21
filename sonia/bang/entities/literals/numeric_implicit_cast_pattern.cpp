@@ -65,41 +65,42 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
     }
 
+    syntax_expression_result_t& src_arg_er = src_arg->first;
     // Only allow runtime arguments
-    if (src_arg->is_const_result != exp.is_const_result) {
+    if (src_arg_er.is_const_result != exp.is_const_result) {
         return std::unexpected(make_error<basic_general_error>(get_start_location(*pself_expr), "argument and result must be both const or both non-const"sv));
     }
 
     functional_match_descriptor_ptr pmd;
-    if (src_arg->is_const_result) {
-        entity const& argent = get_entity(u, src_arg->value());
+    if (src_arg_er.is_const_result) {
+        entity const& argent = get_entity(u, src_arg_er.value());
         argument_wrapper_visitor vis;
         argent.visit(vis);
         if (vis.value.which() == 0) {
-            return std::unexpected(make_error<value_mismatch_error>(get_start_location(*pself_expr), src_arg->value(), "a numeric literal"sv));
+            return std::unexpected(make_error<value_mismatch_error>(get_start_location(*pself_expr), src_arg_er.value(), "a numeric literal"sv));
         }
         pmd = sonia::make_shared<numeric_implicit_cast_match_descriptor>(std::move(vis.value));
     } else {
-        if (src_arg->type() == u.get(builtin_eid::integer)) {
+        if (src_arg_er.type() == u.get(builtin_eid::integer)) {
             pmd = make_shared<numeric_implicit_cast_match_descriptor>();
         } else {
-            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pself_expr), src_arg->type(), "integer"sv));
+            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pself_expr), src_arg_er.type(), "integer"sv));
         }
     }
-    pmd->get_match_result(0).append_result(*src_arg);
+    pmd->emplace_back(0, src_arg_er);
     pmd->void_spans = std::move(call_session.void_spans);
-    pmd->result = field_descriptor{ exp.type, exp.is_const_result };
+    pmd->signature.result.emplace(exp.type, exp.is_const_result);
     return std::move(pmd);
 }
 
 std::expected<syntax_expression_result_t, error_storage> numeric_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     auto& nmd = static_cast<numeric_implicit_cast_match_descriptor&>(md);
-    auto& src = md.get_match_result(0).results.front();
+    auto& [_, src] = md.matches.front();
     src.expressions = el.concat(md.merge_void_spans(el), src.expressions);
     if (nmd.arg.which()) { // not nullptr_t
-        if (nmd.result.is_const()) {
-            entity_identifier rid = apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = nmd.result.entity_id()](auto const& v) -> entity_identifier {
+        if (auto& result = *nmd.signature.result; result.is_const()) {
+            entity_identifier rid = apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = result.entity_id()](auto const& v) -> entity_identifier {
                 if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
                     return ctx.u().make_integer_entity(v.value(), type).id;
                 } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
@@ -126,7 +127,7 @@ std::expected<syntax_expression_result_t, error_storage> numeric_implicit_cast_p
                     THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
                 }
             }), nmd.arg);
-            src.value_or_type = nmd.result.entity_id(),
+            src.value_or_type = result.entity_id(),
             src.is_const_result = false;
         }
         return std::move(src);

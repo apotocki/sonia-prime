@@ -115,7 +115,7 @@ public:
 class basic_general_error : public general_error
 {
 protected:
-    using object_t = variant<null_t, syntax_expression_t, qname, qname_view, qname_identifier, entity_identifier, identifier>;
+    using object_t = variant<nullptr_t, syntax_expression_t, qname, qname_view, qname_identifier, entity_identifier, identifier>;
 
     lex::resource_location location_;
     lex::resource_location reflocation_;
@@ -123,7 +123,7 @@ protected:
     object_t object_;
 
 public:
-    basic_general_error(lex::resource_location loc, string_t descr, object_t obj = null_t{}, lex::resource_location refloc = {})
+    basic_general_error(lex::resource_location loc, string_t descr, object_t obj = nullptr, lex::resource_location refloc = {})
         : location_{ std::move(loc) }, description_{ descr }, object_{ std::move(obj) }, reflocation_{ std::move(refloc) }
     {}
 
@@ -146,7 +146,7 @@ public:
 class binary_relation_error : public error
 {
 protected:
-    using object_t = variant<null_t, syntax_expression_t, qname, qname_view, qname_identifier, entity_identifier, identifier>;
+    using object_t = variant<nullptr_t, syntax_expression_t, qname, qname_view, qname_identifier, entity_identifier, identifier>;
 
     lex::resource_location location_;
     lex::resource_location reflocation_;

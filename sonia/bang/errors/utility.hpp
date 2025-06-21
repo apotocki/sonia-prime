@@ -13,7 +13,8 @@ struct printer_resolver_visitor : static_visitor<std::string>
     unit const& u_;
     explicit printer_resolver_visitor(unit const& u) : u_{ u } {}
 
-    inline result_type operator()(null_t const&) const { return {}; }
+    inline result_type operator()(nullptr_t const&) const { return {}; }
+    //inline result_type operator()(null_t const&) const { return {}; }
 
     template <typename T>
     inline result_type operator()(T const& val) const

@@ -34,6 +34,9 @@ struct annotated
     inline auto operator<=>(annotated const& r) const noexcept { return value <=> r.value; }
 
     inline explicit operator bool() const noexcept { return (bool)value; }
+
+    inline annotated const& self_or(annotated const& def) const noexcept { return value ? *this : def; }
+    inline T const& value_or(T const& def) const noexcept { return value ? value : def; }
 };
 
 using annotated_string_view = annotated<string_view>;

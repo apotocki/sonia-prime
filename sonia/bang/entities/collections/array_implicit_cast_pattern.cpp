@@ -22,7 +22,7 @@ error_storage array_implicit_cast_check_const_argument_type(fn_compiler_context&
 {
     BOOST_ASSERT(!er.expressions); // not implemented
     unit& u = ctx.u();
-    parameter_match_result& mr = md.get_match_result(0);
+    
     entity const& ent = get_entity(u, er.value());
     entity_signature const* psig = ent.signature();
 
@@ -68,7 +68,7 @@ error_storage array_implicit_cast_check_const_argument_type(fn_compiler_context&
 
     if (rt_element_results.empty()) {
         entity const& vec_ent = u.make_vector_entity(vec_element_type_eid, ct_element_results);
-        mr.append_const_result(vec_ent.id);
+        md.emplace_back(0, syntax_expression_result_t{ .value_or_type = vec_ent.id, .is_const_result = true });
         return {};
     }
 
@@ -84,8 +84,6 @@ error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, 
     if (!ptpsig || ptpsig->name != u.get(builtin_qnid::array)) {
         return make_error<type_mismatch_error>(argloc, er.type(), "an array"sv);
     }
-    
-    parameter_match_result& mr = md.get_match_result(0);
     
     entity_identifier elem_type_eid = ptpsig->find_field(u.get(builtin_id::element))->entity_id();
     if (elem_type_eid == vec_element_type_eid) return {};
@@ -104,7 +102,7 @@ error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, 
     if (!match) {
         return make_error<cast_error>(vec_type.location, er.type(), vec_type.value);
     }
-    mr.append_result(er);
+    md.emplace_back(0, er);
     return {};
 }
 
@@ -146,14 +144,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_implicit_cas
     if (!pmd) {
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter $0"sv));
     }
-    pmd->result = field_descriptor{ exp.type };
+    pmd->signature.result.emplace(exp.type);
     return pmd;
 }
 
 std::expected<syntax_expression_result_t, error_storage> array_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
-    parameter_match_result const& mr = md.get_match_result(0);
-    return std::move(mr.results.front());
+    return std::move(get<1>(md.matches.front()));
 }
 
 }

@@ -30,7 +30,7 @@ tuple_pattern_base::try_match_tuple(fn_compiler_context& ctx, prepared_call cons
     if (auto argterm = call_session.unused_argument(); argterm) {
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
     }
-    syntax_expression_result_t& er = *arg;
+    syntax_expression_result_t& er = arg->first;
     entity_identifier argtype;
     shared_ptr<tuple_pattern_match_descriptor> pmd;
     if (er.is_const_result) {
@@ -40,7 +40,7 @@ tuple_pattern_base::try_match_tuple(fn_compiler_context& ctx, prepared_call cons
             if (psig->empty()) {
                 return std::unexpected(make_error<type_mismatch_error>(get_start_location(*parg_expr), er.value(), "a not empty tuple type"sv));
             }
-            pmd = make_shared<tuple_pattern_match_descriptor>(*psig, true, call.location);
+            pmd = make_shared<tuple_pattern_match_descriptor>(call, *psig, true);
         } else {
             argtype = arg_entity.get_type();
         }
@@ -57,9 +57,9 @@ tuple_pattern_base::try_match_tuple(fn_compiler_context& ctx, prepared_call cons
         if (psig->empty()) {
             return std::unexpected(make_error<type_mismatch_error>(get_start_location(*parg_expr), argtype, "a not empty tuple"sv));
         }
-        pmd = make_shared<tuple_pattern_match_descriptor>(*tpl_entity.signature(), false, call.location);
+        pmd = make_shared<tuple_pattern_match_descriptor>(call , *tpl_entity.signature(), false);
     }
-    pmd->get_match_result(0).append_result(er);
+    pmd->emplace_back(0, er);
     pmd->void_spans = std::move(call_session.void_spans);
     return pmd;
 }

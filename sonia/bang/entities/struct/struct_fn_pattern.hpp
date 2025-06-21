@@ -4,16 +4,16 @@
 
 #pragma once
 
-#include "sonia/bang/functional/basic_fn_pattern.hpp"
+#include "sonia/bang/functional/internal_fn_pattern.hpp"
 
 namespace sonia::lang::bang {
 
-class struct_fn_pattern : public basic_fn_pattern
+class struct_fn_pattern : public internal_fn_pattern
 {
     variant<field_list_t, statement_span> body_;
 
 public:
-    struct_fn_pattern(functional const&, variant<field_list_t, statement_span> const&);
+    explicit struct_fn_pattern(variant<field_list_t, statement_span> const&);
 
     std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 };

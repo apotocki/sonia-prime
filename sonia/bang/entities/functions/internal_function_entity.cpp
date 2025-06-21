@@ -24,14 +24,13 @@ internal_function_entity::internal_function_entity(qname&& name, entity_signatur
     }
 }
 
-void internal_function_entity::push_argument(annotated_identifier name, local_variable&& v)
+void internal_function_entity::push_argument(variable_identifier varid)
 {
-    auto it = variables_.find(v.varid);
+    auto it = variables_.find(varid);
     if (it == variables_.end()) {
-        variables_.emplace_hint(it, std::pair{v.varid, arg_count_});
+        variables_.emplace_hint(it, std::pair{ varid, arg_count_});
         ++arg_count_;
     }
-    bound_arguments.emplace_back(std::move(name), std::move(v));
 }
 
 void internal_function_entity::push_variable(variable_identifier varid, intptr_t index)
@@ -69,7 +68,7 @@ intptr_t internal_function_entity::resolve_variable_index(variable_identifier va
 error_storage internal_function_entity::build(unit& u)
 {
     fn_compiler_context fnctx{ u, name_ };
-    fnctx.push_binding(bound_arguments);
+    fnctx.push_binding(bindings);
     return build(fnctx);
 }
 
@@ -109,6 +108,13 @@ error_storage internal_function_entity::build(fn_compiler_context& fnctx)
     is_built_ = 1;
 
     return {};
+}
+
+bool internal_function_entity::is_const_eval(unit& u) const noexcept
+{
+    if (!result.is_const()) return false;
+    // to do: traverse expressions
+    return result.entity_id() != u.get(builtin_eid::void_);
 }
 
 }

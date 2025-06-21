@@ -10,25 +10,21 @@
 
 namespace sonia::lang::bang {
 
-#if 0
-std::expected<entity_identifier, error_storage> external_fn_pattern::apply(fn_compiler_context& ctx, functional::match_descriptor&) const
-{
-    THROW_NOT_IMPLEMENTED_ERROR("external_fn_pattern::apply");
-#if 0
-    ctx.append_expression(semantic::invoke_function{ extfnid_ });
-    ctx.pop_chain(); // function call chain
-    pattern_expression_t const* r = fd_.result_type();
-    BOOST_ASSERT(r);
-
-    return fd_.result_type();
-#endif
-}
-#endif
-
-shared_ptr<entity> external_fn_pattern::build(fn_compiler_context& ctx, functional_match_descriptor&, entity_signature&& signature) const
+std::expected<syntax_expression_result_t, error_storage> external_fn_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    return make_shared<external_function_entity>(u, fn_qname() / u.new_identifier(), std::move(signature), extfnid_);
+    auto [result, _] = apply_arguments(ctx, el, md);
+
+    u.push_back_expression(el, result.expressions, semantic::invoke_function(ent_->id));
+
+    return result;
 }
+
+//shared_ptr<entity> external_fn_pattern::build(fn_compiler_context& ctx, functional_match_descriptor&, entity_signature&& signature) const
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("external_fn_pattern::build");
+//    //unit& u = ctx.u();
+//    //return make_shared<external_function_entity>(u, fnl_.name() / u.new_identifier(), std::move(signature), extfnid_);
+//}
 
 }

@@ -19,8 +19,8 @@ namespace sonia::lang::bang {
 class tuple_equal_match_descriptor : public functional_match_descriptor
 {
 public:
-    tuple_equal_match_descriptor(entity const& lhs, entity const& rhs, lex::resource_location loc) noexcept
-        : functional_match_descriptor{ std::move(loc) }
+    tuple_equal_match_descriptor(prepared_call const& call, entity const& lhs, entity const& rhs) noexcept
+        : functional_match_descriptor{ call }
         , lhs_entity_type{ lhs }
         , rhs_entity_type{ rhs }
     {}
@@ -54,13 +54,16 @@ tuple_equal_pattern::try_match(fn_compiler_context& ctx, prepared_call const& ca
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
     }
 
+    syntax_expression_result_t & lhs_arg_er = lhs_arg->first;
+    syntax_expression_result_t & rhs_arg_er = rhs_arg->first;
+
     // Both must be tuple types
-    entity_identifier lhs_type = lhs_arg->is_const_result
-        ? get_entity(u, lhs_arg->value()).get_type()
-        : lhs_arg->type();
-    entity_identifier rhs_type = rhs_arg->is_const_result
-        ? get_entity(u, rhs_arg->value()).get_type()
-        : rhs_arg->type();
+    entity_identifier lhs_type = lhs_arg_er.is_const_result
+        ? get_entity(u, lhs_arg_er.value()).get_type()
+        : lhs_arg_er.type();
+    entity_identifier rhs_type = rhs_arg_er.is_const_result
+        ? get_entity(u, rhs_arg_er.value()).get_type()
+        : rhs_arg_er.type();
 
     entity const& lhs_entity_type = get_entity(u, lhs_type);
     entity const& rhs_entity_type = get_entity(u, rhs_type);
@@ -75,9 +78,9 @@ tuple_equal_pattern::try_match(fn_compiler_context& ctx, prepared_call const& ca
         return std::unexpected(make_error<type_mismatch_error>(call.location, rhs_entity_type.id, "a tuple"sv));
     }
 
-    auto pmd = make_shared<tuple_equal_match_descriptor>(lhs_entity_type, rhs_entity_type, call.location);
-    pmd->get_match_result(0).append_result(*lhs_arg);
-    pmd->get_match_result(1).append_result(*rhs_arg);
+    auto pmd = make_shared<tuple_equal_match_descriptor>(call, lhs_entity_type, rhs_entity_type);
+    pmd->emplace_back(0, lhs_arg_er);
+    pmd->emplace_back(1, rhs_arg_er);
     pmd->void_spans = std::move(call_session.void_spans);
     return pmd;
 }
@@ -87,8 +90,8 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
 {
     unit& u = ctx.u();
     tuple_equal_match_descriptor& eq_md = static_cast<tuple_equal_match_descriptor&>(md);
-    auto& lhs_er = md.get_match_result(0).results.front();
-    auto& rhs_er = md.get_match_result(1).results.front();
+    auto& lhs_er = get<1>(md.matches[0]);
+    auto& rhs_er = get<1>(md.matches[1]);
 
     entity_signature const& lhs_sig = *eq_md.lhs_entity_type.signature();
     entity_signature const& rhs_sig = *eq_md.rhs_entity_type.signature();

@@ -54,23 +54,47 @@ namespace {
 
 using namespace sonia;
 
-//struct dec{};
-//
-//dec my_plus(dec a, dec b) { throw; }
-//
-//struct bint{};
+#if 0
+struct pause_alloc_hook {
+    _CRT_ALLOC_HOOK newhook_;
+    pause_alloc_hook() : newhook_(_CrtSetAllocHook(0)) {}
+
+    ~pause_alloc_hook() {
+        _CrtSetAllocHook(newhook_);
+    }
+};
+
+int counter = 0;
+int AllocHook(int allocType, void* userData, size_t size, int
+    blockType, long requestNumber, const unsigned char* filename, int
+    lineNumber)
+{
+    if (size == 80) {
+        pause_alloc_hook guard_;
+        std::cout << size << ", req# " << requestNumber << ", c: " << counter << "\n";
+        if (counter == 317) {
+            int k = 0;
+        }
+        ++counter;
+    }
+
+    //if (!size) return TRUE;
+    //pause_alloc_hook guard_;
+    //std::cout << size << "\n";
+
+    return TRUE;
+}
+
+#endif
 
 void bang_suite_test()
 {
 #ifdef BOOST_WINDOWS
     system("cls");
 #endif
-    //bint a, b;
-    //my_plus(a, b);
-    mp::integer i0{ 20 };
-    auto br0 = bigint_blob_result(i0);
-    auto br1 = bigint_blob_result(i0);
-    BOOST_ASSERT(br0 == br1);
+
+    //_CrtSetAllocHook(AllocHook);
+    //_CrtSetBreakAlloc(10282);
 
     fs::remove_all(TEST_FOLDER);
     scoped_services ss{ "base-path=" TEST_FOLDER "/" };

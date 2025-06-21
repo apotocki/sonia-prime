@@ -46,12 +46,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_get_
 
     shared_ptr<tuple_project_get_match_descriptor> pmd;
     entity_identifier slftype;
-    
-    if (slf_arg->is_const_result) {
-        entity const& slf_entity = get_entity(u, slf_arg->value());
+    syntax_expression_result_t& slf_arg_er = slf_arg->first;
+    if (slf_arg_er.is_const_result) {
+        entity const& slf_entity = get_entity(u, slf_arg_er.value());
         slftype = slf_entity.get_type();
     } else {
-        slftype = slf_arg->type();
+        slftype = slf_arg_er.type();
     }
 
     entity const& tpl_prj_entity = get_entity(u, slftype);
@@ -81,11 +81,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_get_
         return std::unexpected(make_error<basic_general_error>(get_start_location(*pslf_arg_expr), "invalid tuple_project origin tuple"sv, orig_tuple.id));
     }
         
-    pmd = make_shared<tuple_project_get_match_descriptor>(project_name, orig_tuple, *orig_sig, call.location);
+    pmd = make_shared<tuple_project_get_match_descriptor>(call, project_name, orig_tuple, *orig_sig);
 
-    pmd->get_match_result(0).append_result(*slf_arg);
+    pmd->emplace_back(0, slf_arg_er);
     pmd->void_spans = std::move(call_session.void_spans);
-    pmd->get_match_result(1).append_result(*property_arg);
+    pmd->emplace_back(1, property_arg->first);
     
     return pmd;
 }
@@ -94,8 +94,8 @@ std::expected<syntax_expression_result_t, error_storage> tuple_project_get_patte
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_project_get_match_descriptor&>(md);
-    auto& slfer = md.get_match_result(0).results.front();
-    auto& proper = md.get_match_result(1).results.front();
+    auto& slfer = get<1>(md.matches[0]);
+    auto& proper = get<1>(md.matches[1]);
 
     slfer.temporaries.insert(slfer.temporaries.end(), proper.temporaries.begin(), proper.temporaries.end());
 

@@ -19,26 +19,27 @@ namespace sonia::lang::bang {
 std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
     unit& u = ctx.u();
-    entity_identifier veid = u.get(builtin_eid::void_);
-    size_t pos_arg_num = 0;
-    auto pmd = make_shared<functional_match_descriptor>();
+
+    size_t arg_num = 0;
+    auto pmd = make_shared<functional_match_descriptor>(call);
     for (auto const& arg : call.args) {
         auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, arg.value());
         if (!res) return std::unexpected(std::move(res.error()));
+
+        annotated_identifier const* pargname = arg.name();
         auto& ser = res->first;
-        if (ser.is_const_result && ser.value() == veid) {
-            if (ser.expressions)
-                pmd->void_spans.push_back(ser.expressions);
-            continue;
+        if (pargname) {
+            pmd->signature.emplace_back(pargname->value, ser.value_or_type, ser.is_const_result);
+        } else {
+            pmd->signature.emplace_back(ser.value_or_type, ser.is_const_result);
         }
 
-        parameter_match_result* pmr;
-        if (annotated_identifier const* pargname = arg.name(); pargname) {
-            pmr = &pmd->push_match_result(pargname->value);
+        if (ser.is_const_result) {
+            if (ser.expressions) pmd->void_spans.push_back(ser.expressions);
         } else {
-            pmr = &pmd->get_match_result(pos_arg_num++);
+            pmd->emplace_back(arg_num, ser);
         }
-        pmr->append_result(ser);
+        ++arg_num;
     }
     return pmd;
 }
@@ -47,32 +48,24 @@ std::expected<syntax_expression_result_t, error_storage> tuple_make_pattern::app
 {
     unit& u = ctx.u();
     
-    size_t mut_argcount = 0; // number of mutable arguments
-
-    entity_signature signature{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
-
-    syntax_expression_result_t result{ .expressions = md.merge_void_spans(el) };
+    entity_signature signature = md.signature;
+    signature.name = u.get(builtin_qnid::tuple);
+    signature.result.emplace(u.get(builtin_eid::typename_));
     
-    md.for_each_match([&signature, &result, &el, &mut_argcount](variant<identifier, size_t> name_or_pos, parameter_match_result const& mr) {
-        BOOST_ASSERT(mr.results.size() == 1);
-        syntax_expression_result_t er = mr.results.front();
-        result.temporaries.insert(result.temporaries.end(), er.temporaries.begin(), er.temporaries.end());
-        result.expressions = el.concat(result.expressions, er.expressions);
-        if (!er.is_const_result) ++mut_argcount;
-        if (name_or_pos.which() == 0) { // named element
-            identifier name = get<identifier>(name_or_pos);
-            signature.emplace_back(name, er.value_or_type, er.is_const_result);
-        } else {
-            signature.emplace_back(er.value_or_type, er.is_const_result);
-        }
-    });
+    syntax_expression_result_t result{ .expressions = md.merge_void_spans(el) };
+    for (auto& [_, mr] : md.matches) {
+        result.temporaries.insert(result.temporaries.end(), mr.temporaries.begin(), mr.temporaries.end());
+        result.stored_expressions = el.concat(result.stored_expressions, mr.stored_expressions);
+        result.expressions = el.concat(result.expressions, mr.expressions);
+    }
+
     entity const& tuple_type_ent = u.make_basic_signatured_entity(std::move(signature));
     BOOST_ASSERT(tuple_type_ent.signature() && tuple_type_ent.signature()->name == u.get(builtin_qnid::tuple));
-    if (mut_argcount > 1) {
-        u.push_back_expression(el, result.expressions, semantic::push_value{ mp::integer{ mut_argcount } });
+    if (md.matches.size() > 1) {
+        u.push_back_expression(el, result.expressions, semantic::push_value{ mp::integer{ md.matches.size() } });
         u.push_back_expression(el, result.expressions, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
-    if (mut_argcount) {
+    if (md.matches.size()) {
         result.value_or_type = tuple_type_ent.id;
         result.is_const_result = false;
     } else {

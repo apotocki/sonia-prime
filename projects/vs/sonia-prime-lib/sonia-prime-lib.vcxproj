@@ -263,7 +263,6 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\enum\enum_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\enum\enum_implicit_cast_pattern.hpp" />
-    <ClInclude Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\expression_resolver.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\functions\internal_function_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\literals\const_literal_implicit_cast_pattern.hpp" />
@@ -321,6 +320,7 @@
     <ClInclude Include="..\..\..\sonia\bang\functional\basic_fn_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\external_fn_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\general\assert_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\create_identifier_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\general\deref_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\general\equal_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\general\error_pattern.hpp" />
@@ -331,8 +331,11 @@
     <ClInclude Include="..\..\..\sonia\bang\functional\general\typeof_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\generic_pattern_base.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\generic_pattern_base.ipp" />
+    <ClInclude Include="..\..\..\sonia\bang\functional\internal_fn_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\match_utility.ipp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\expression_property_visitor.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\functional\parameter_matcher.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\functional\pattern_matcher.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\signature_matcher.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\value_match_visitor.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\functional\value_type_match_visitor.hpp" />
@@ -794,7 +797,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\expression_resolver.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\function_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\functions\internal_function_entity.cpp" />
@@ -807,13 +809,48 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\literals\const_literal_implicit_cast_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\literals\string_concat_pattern.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_bit_and_pattern.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_empty_pattern.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_head_pattern.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_tail_pattern.cpp" />
-    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_typeof_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_bit_and_pattern.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_empty_pattern.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_head_pattern.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_tail_pattern.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_typeof_pattern.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\prepared_call.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_implicit_cast_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_new_pattern.cpp" />
@@ -849,6 +886,7 @@
     <ClCompile Include="..\..\..\sonia\bang\functional\basic_fn_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\external_fn_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\general\assert_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\create_identifier_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\general\deref_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\general\equal_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\general\error_pattern.cpp" />
@@ -858,6 +896,9 @@
     <ClCompile Include="..\..\..\sonia\bang\functional\general\to_string_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\general\typeof_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\expression_property_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\functional\internal_fn_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\functional\parameter_matcher.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\functional\pattern_matcher.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\signature_matcher.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\value_match_visitor.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\functional\value_type_match_visitor.cpp" />

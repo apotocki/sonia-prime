@@ -6595,7 +6595,7 @@ YY_RULE_SETUP
 case 66:
 YY_RULE_SETUP
 #line 370 "bang.l"
-{ variant_emplace(location); return (bang_lang::parser::token::TILDA); }
+{ return (bang_lang::parser::token::TILDA); }
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
@@ -6655,7 +6655,7 @@ YY_RULE_SETUP
 #line 385 "bang.l"
 {
 		variant_emplace(annotated_string_view{ text_view, location });
-		return (bang_lang::parser::token::INTERNAL_IDENTIFIER);
+		return (bang_lang::parser::token::CONTEXT_IDENTIFIER);
 	}
 	YY_BREAK
 case 78:

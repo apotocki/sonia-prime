@@ -31,11 +31,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> assert_pattern::tr
     syntax_expression_t const* pargexpr;
     auto firstarg = call_session.use_next_positioned_argument(bool_exp, &pargexpr);
     if (!firstarg) return std::unexpected(firstarg.error());
-    auto pmd = make_shared<assert_match_descriptor>(call.location);
+    auto pmd = make_shared<assert_match_descriptor>(call);
     size_t argnum = 0;
 
     auto append_arg = [&pmd, &argnum, pargexpr](unit& u, syntax_expression_result_t& res) {
-        pmd->get_match_result(argnum++).append_result(res);
+        pmd->emplace_back(argnum++, res);
         if (res.is_const_result && res.value() == u.get(builtin_eid::true_)) {
             pmd->reserved_errors.emplace_back(); // just dummy, no error doesn't need details
         } else {
@@ -45,12 +45,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> assert_pattern::tr
             );
         }
     };
-    append_arg(ctx.u(), *firstarg);
+    append_arg(ctx.u(), firstarg->first);
     
     while (call_session.has_more_positioned_arguments()) {
         auto nextarg = call_session.use_next_positioned_argument(bool_exp, &pargexpr);
-        if (!nextarg) return std::unexpected(firstarg.error());
-        append_arg(ctx.u(), *nextarg);
+        if (!nextarg) return std::unexpected(nextarg.error());
+        append_arg(ctx.u(), nextarg->first);
     }
     
     if (auto argterm = call_session.unused_argument(); argterm) {
@@ -73,9 +73,8 @@ std::expected<syntax_expression_result_t, error_storage> assert_pattern::apply(f
     };
     
     for (size_t arg_i = 0; arg_i < amd.reserved_errors.size(); ++arg_i) {
-        parameter_match_result& mr = amd.get_match_result(arg_i);
-        auto arg_er = mr.results.front();
-        BOOST_ASSERT(mr.results.size() == 1);
+        auto& [_, arg_er] = amd.matches[arg_i];
+
         if (arg_er.is_const_result) {
             if (arg_er.value() == u.get(builtin_eid::false_)) {
                 // assert failed, we have error already

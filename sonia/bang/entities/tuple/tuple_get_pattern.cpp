@@ -56,18 +56,19 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
 
     shared_ptr<tuple_get_match_descriptor> pmd;
     entity_identifier slftype;
-    if (slf_arg->is_const_result) {
-        entity const& slf_entity = get_entity(u, slf_arg->value());
+    syntax_expression_result_t& slf_arg_er = slf_arg->first;
+    if (slf_arg_er.is_const_result) {
+        entity const& slf_entity = get_entity(u, slf_arg_er.value());
         if (auto psig = slf_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
             if (psig->empty()) {
-                return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), slf_arg->value(), "a not empty tuple type"sv));
+                return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), slf_arg_er.value(), "a not empty tuple type"sv));
             }
-            pmd = make_shared<tuple_get_match_descriptor>(slf_entity, *psig, true, call.location);
+            pmd = make_shared<tuple_get_match_descriptor>(call, slf_entity, *psig, true);
         } else {
             slftype = slf_entity.get_type();
         }
     } else {
-        slftype = slf_arg->type();
+        slftype = slf_arg_er.type();
     }
     if (!pmd) {
         entity const& tpl_entity = get_entity(u, slftype);
@@ -78,12 +79,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
         if (psig->empty()) {
             return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), slftype, "a not empty tuple"sv));
         }
-        pmd = make_shared<tuple_get_match_descriptor>(tpl_entity, *tpl_entity.signature(), false, call.location);
+        pmd = make_shared<tuple_get_match_descriptor>(call, tpl_entity, *tpl_entity.signature(), false);
     }
-    pmd->get_match_result(0).append_result(*slf_arg);
+    pmd->emplace_back(0, slf_arg_er);
+    pmd->emplace_back(1, property_arg->first);
     pmd->void_spans = std::move(call_session.void_spans);
 
-    pmd->get_match_result(1).append_result(*property_arg);
     return pmd;
 }
 
@@ -91,8 +92,8 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_get_match_descriptor&>(md);
-    auto& slfer = md.get_match_result(0).results.front();
-    auto& proper = md.get_match_result(1).results.front();
+    auto& slfer = get<1>(md.matches[0]);
+    auto& proper = get<1>(md.matches[1]);
 
     slfer.temporaries.insert(slfer.temporaries.end(), proper.temporaries.begin(), proper.temporaries.end());
 

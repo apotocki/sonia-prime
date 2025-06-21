@@ -62,4 +62,29 @@ lex::resource_location const& get_start_location(syntax_expression_t const& e)
     return apply_visitor(expression_location_visitor{}, e);
 }
 
+lex::resource_location get_start_location(pattern_t const& ptrn)
+{
+    return apply_visitor(make_functional_visitor<lex::resource_location>([](auto const& d) {
+        if constexpr (std::is_same_v<placeholder, std::decay_t<decltype(d)>>) {
+            return d.location;
+        } else if constexpr (std::is_same_v<context_identifier, std::decay_t<decltype(d)>>) {
+            return d.name.location;
+        } else if constexpr (std::is_same_v<pattern_t::signature_descriptor, std::decay_t<decltype(d)>>) {
+            return apply_visitor(make_functional_visitor<lex::resource_location>([](auto const& f) {
+                if constexpr (std::is_same_v<syntax_expression_t, std::decay_t<decltype(f)>>) {
+                    return get_start_location(f);
+                } else if constexpr (std::is_same_v<annotated_qname, std::decay_t<decltype(f)>>) {
+                    return f.location;
+                } else if constexpr (std::is_same_v<placeholder, std::decay_t<decltype(f)>>) {
+                    return f.location;
+                }else { // context_identifier
+                    return f.name.location;
+                }
+            }), d.name);
+        } else { // syntax_expression_t
+            return get_start_location(d);
+        }
+    }), ptrn.descriptor);
+}
+
 }

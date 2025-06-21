@@ -38,8 +38,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::app
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_pattern_match_descriptor&>(md);
-    auto& mr = md.get_match_result(0);
-    auto& ser = mr.results.front();
+    auto& [_, ser] = md.matches.front();
 
     entity_identifier rtype;
     field_descriptor const& head_field = tmd.arg_sig.fields().front();

@@ -317,6 +317,8 @@ public:
     std::ostream& print_to(std::ostream&, small_u32string const&, bool in_quotes = false) const;
     std::ostream& print_to(std::ostream&, lex::resource_location const&) const;
     std::ostream& print_to(std::ostream&, syntax_expression_t const&) const;
+    std::ostream& print_to(std::ostream&, pattern_t::signature_descriptor const&) const;
+    std::ostream& print_to(std::ostream&, pattern_t const&) const;
     std::ostream& print_to(std::ostream&, semantic::expression const&) const;
     std::ostream& print_to(std::ostream&, semantic::expression_list_t const&) const;
     std::ostream& print_to(std::ostream&, error const&) const;

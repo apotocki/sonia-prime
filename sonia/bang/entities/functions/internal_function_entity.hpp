@@ -38,11 +38,11 @@ class internal_function_entity : public function_entity
 
 public:
     semantic::expression_span body;
-    functional_binding_set bound_arguments;
+    functional_binding_set bindings;
 
     internal_function_entity(qname&& name, entity_signature&& sig, statement_span bd);
 
-    void push_argument(annotated_identifier, local_variable&&);
+    void push_argument(variable_identifier);
     void push_variable(variable_identifier varid, intptr_t index);
     //void push_argument(annotated_identifier, local_variable &&);
     //void push_variable(variable_identifier, intptr_t);
@@ -66,6 +66,8 @@ public:
 
     [[nodiscard]] error_storage build(unit&);
     [[nodiscard]] error_storage build(fn_compiler_context&);
+
+    bool is_const_eval(unit&) const noexcept;
 
 private:
     var_set_t variables_;

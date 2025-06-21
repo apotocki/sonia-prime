@@ -74,13 +74,17 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
             return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "not an enumeration identifier"sv, res->value));
         }
 
-        pmd = make_shared<functional_match_descriptor>();
-        pmd->get_match_result(0).append_result(*res);
+        pmd = make_shared<functional_match_descriptor>(call);
+        pmd->emplace_back(0, syntax_expression_result_t{
+            .expressions = res->expressions,
+            .value_or_type = res->value,
+            .is_const_result = true
+        });
     }
     if (!pmd) {
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
     }
-    pmd->result = field_descriptor{ exp.type };
+    pmd->signature.result.emplace(exp.type);
     return pmd;
 }
 
@@ -88,7 +92,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
 std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto& ser = md.get_match_result(0).results.front();
+    auto& [_, ser] = md.matches.front();
     entity const& ent = get_entity(u, ser.value());
     identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&ent);
     BOOST_ASSERT(pie);
@@ -96,7 +100,7 @@ std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_patt
     // return typed by enumeration string
     return syntax_expression_result_t{
         .expressions = md.merge_void_spans(el),
-        .value_or_type = u.make_string_entity(u.print(pie->value()), md.result.entity_id()).id,
+        .value_or_type = u.make_string_entity(u.print(pie->value()), md.signature.result->entity_id()).id,
         .is_const_result = true
     };
 }

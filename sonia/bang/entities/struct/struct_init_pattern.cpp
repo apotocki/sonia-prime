@@ -18,9 +18,9 @@ std::ostream& struct_init_pattern::print(unit const&, std::ostream& s) const
     return s << "init(...) -> @structure"sv;
 }
 
-struct_init_pattern::struct_init_pattern(functional const& fnl, variant<field_list_t, statement_span> const& body)
-    : basic_fn_pattern{ fnl }
+struct_init_pattern::struct_init_pattern(variant<field_list_t, statement_span> const& body)
 {
+#if 0
     apply_visitor(make_functional_visitor<void>([this](auto const& body) {
         if constexpr (std::is_same_v<std::decay_t<decltype(body)>, field_list_t>) {
             field_list_t const& fl = body;
@@ -45,18 +45,24 @@ struct_init_pattern::struct_init_pattern(functional const& fnl, variant<field_li
             THROW_NOT_IMPLEMENTED_ERROR("struct_init_pattern::struct_init_pattern(statement_span)");
         }
     }), body);
+#endif
+    THROW_NOT_IMPLEMENTED_ERROR("struct_init_pattern::struct_init_pattern(variant<field_list_t, statement_span>)");
 }
 
 error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_entity_identifier result)
 {
+#if 0
     fn_pure_t init_fn{ annotated_qname{ {}, result.location } };
     init_fn.parameters = std::move(body_parameters_);
     init_fn.result = result;
     return basic_fn_pattern::init(ctx, init_fn);
+#endif
+    THROW_NOT_IMPLEMENTED_ERROR("struct_init_pattern::init(fn_compiler_context&, annotated_entity_identifier)");
 }
 
 error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_qname name, parameter_list_t const& fparameters)
 {
+#if 0
     function_call_t rpattern{ lex::resource_location{ name.location }, syntax_expression_t{ name } };
     for (parameter_t const& param : fparameters) {
         auto [external_name, internal_name, varname] = apply_visitor(param_name_retriever{}, param.name);
@@ -79,6 +85,8 @@ error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_qnam
     init_fn.result = std::move(rpattern);
     
     return basic_fn_pattern::init(ctx, init_fn);
+#endif
+    THROW_NOT_IMPLEMENTED_ERROR("struct_init_pattern::init(fn_compiler_context&, annotated_qname, parameter_list_t const&)");
 }
 
 std::expected<functional_match_descriptor_ptr, error_storage> struct_init_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
@@ -95,6 +103,7 @@ std::expected<syntax_expression_result_t, error_storage> struct_init_pattern::ap
     // create tuple instance
     unit& u = ctx.u();
     
+#if 0
     auto [exprs, argcount] = apply_arguments(ctx, md, el);
 
     if (argcount > 1) {
@@ -109,6 +118,8 @@ std::expected<syntax_expression_result_t, error_storage> struct_init_pattern::ap
         .value_or_type = md.result.entity_id(),
         .is_const_result = false
     };
+#endif
+    THROW_NOT_IMPLEMENTED_ERROR("struct_init_pattern::apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&)");
 }
 
 }

@@ -36,8 +36,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> error_pattern::try
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
     }
     
-    auto pmd = make_shared<functional_match_descriptor>(call.location);
-    pmd->get_match_result(0).append_result(*arg);
+    auto pmd = make_shared<functional_match_descriptor>(call);
+    pmd->emplace_back(0, arg->first);
     pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
@@ -45,8 +45,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> error_pattern::try
 std::expected<syntax_expression_result_t, error_storage> error_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto& mr = md.get_match_result(0);
-    auto& er = mr.results.front();
+    auto& [_, er] = md.matches.front();
     
     syntax_expression_result_t result{
         .temporaries = std::move(er.temporaries),

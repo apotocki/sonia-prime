@@ -16,12 +16,11 @@ protected:
     class tuple_pattern_match_descriptor : public functional_match_descriptor
     {
     public:
-        inline tuple_pattern_match_descriptor(entity_signature const& sig, bool is_typename, lex::resource_location loc) noexcept
-            : functional_match_descriptor{ std::move(loc) }
+        inline tuple_pattern_match_descriptor(prepared_call const& call, entity_signature const& sig, bool is_typename) noexcept
+            : functional_match_descriptor{ call }
             , arg_sig{ sig }
             , is_argument_typename{ is_typename }
-        {
-        }
+        {}
 
         entity_signature const& arg_sig;
         bool is_argument_typename;

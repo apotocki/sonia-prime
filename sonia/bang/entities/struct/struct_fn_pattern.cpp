@@ -13,28 +13,27 @@
 
 namespace sonia::lang::bang {
 
-struct_fn_pattern::struct_fn_pattern(functional const& fnl, variant<field_list_t, statement_span> const& body)
-    : basic_fn_pattern{ fnl }
-    , body_{ body }
+struct_fn_pattern::struct_fn_pattern(variant<field_list_t, statement_span> const& body)
+    : body_{ body }
 {}
 
 std::expected<syntax_expression_result_t, error_storage> struct_fn_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    entity_signature sig = md.build_signature(u, fnl_.id());
-    sig.result.emplace(u.get(builtin_eid::typename_));
-    indirect_signatured_entity smpl{ sig };
+    md.signature.result.emplace(u.get(builtin_eid::typename_));
+    indirect_signatured_entity smpl{ md.signature };
 
-    entity const& struct_end = u.eregistry_find_or_create(smpl, [this, &ctx, &sig, &md]() {
+    entity const& struct_end = u.eregistry_find_or_create(smpl, [this, &ctx, &md]() {
         unit& u = ctx.u();
-        qname struct_ns = fn_qname() / u.new_identifier();
+        functional& fnl = u.fregistry_resolve(md.signature.name);
+        qname struct_ns = fnl.name() / u.new_identifier();
         //fn_compiler_context struct_ctx{ ctx, struct_ns };
 
-        internal_function_entity fent{ qname{struct_ns}, entity_signature{sig}, statement_span{} };
+        internal_function_entity fent{ qname{ struct_ns }, entity_signature{ md.signature }, statement_span{} };
         build_scope(u, md, fent);
-        BOOST_ASSERT(fent.bound_arguments.empty());
+        BOOST_ASSERT(fent.bindings.empty());
         // u.fregistry().resolve(struct_ns).name() // do we need a functional to store qname?
-        auto res = sonia::make_shared<struct_entity>(std::move(struct_ns), std::move(sig), body_);
+        auto res = sonia::make_shared<struct_entity>(std::move(struct_ns), std::move(md.signature), body_);
         res->location = location();
         return res;
     });

@@ -108,7 +108,7 @@ ASCALPHA				[a-zA-Z]
 ASCALPHANUM				[a-zA-Z0-9]
 DIGIT					[0-9]
 IDENTIFIER				[a-zA-Z_]+[a-zA-Z_0-9]*
-INTERNAL_IDENTIFIER		${IDENTIFIER}
+CONTEXT_IDENTIFIER		${IDENTIFIER}
 RESERVED_IDENTIFIER		$([$0]|([1-9][0-9]*))
 
 INTEGER                 [0-9]+
@@ -367,7 +367,7 @@ HASHTAG					"#"
 	{PLUS}					   { variant_emplace(location); return (bang_lang::parser::token::PLUS); }
 	{MINUS}					   { variant_emplace(location); return (bang_lang::parser::token::MINUS); }
 	{ASTERISK}				   { variant_emplace(location); return (bang_lang::parser::token::ASTERISK); }
-	{TILDA}                    { variant_emplace(location); return (bang_lang::parser::token::TILDA); }
+	{TILDA}                    { return (bang_lang::parser::token::TILDA); }
 	{LOGIC_OR}                 { variant_emplace(location); return (bang_lang::parser::token::LOGIC_OR); }
     {LOGIC_AND}                { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
 	{ARROW}                    { return (bang_lang::parser::token::ARROW); }
@@ -382,9 +382,9 @@ HASHTAG					"#"
 		variant_emplace(annotated_string_view{ text_view, location });
 		return (bang_lang::parser::token::IDENTIFIER);
 	}
-	{INTERNAL_IDENTIFIER} {
+	{CONTEXT_IDENTIFIER} {
 		variant_emplace(annotated_string_view{ text_view, location });
-		return (bang_lang::parser::token::INTERNAL_IDENTIFIER);
+		return (bang_lang::parser::token::CONTEXT_IDENTIFIER);
 	}
 
 	{RESERVED_IDENTIFIER}  {

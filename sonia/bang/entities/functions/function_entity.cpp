@@ -22,13 +22,13 @@ size_t function_entity::parameter_count() const noexcept
 
 
 
-external_function_entity::external_function_entity(unit& u, qname&& name, entity_signature&& sig, size_t fnid)
-    : function_entity{ std::move(name), std::move(sig) }, extfnid_{ static_cast<uint32_t>(fnid) }
-{
-    BOOST_ASSERT(sig.result);
-    BOOST_ASSERT(sig.result->entity_id());
-    result = *sig.result;
-}
+//external_function_entity::external_function_entity(unit& u, qname&& name, entity_signature&& sig, size_t fnid)
+//    : entity{ std::move(name), std::move(sig) }, extfnid_{ static_cast<uint32_t>(fnid) }
+//{
+//    //BOOST_ASSERT(sig.result);
+//    //BOOST_ASSERT(sig.result->entity_id());
+//    //result = *sig.result;
+//}
 
 //size_t function_entity::hash() const noexcept
 //{

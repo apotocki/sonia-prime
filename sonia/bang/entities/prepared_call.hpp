@@ -19,6 +19,7 @@ class prepared_call
 {
 public:
     fn_compiler_context& caller_ctx;
+    functional const* pfnl;
     semantic::expression_list_t& expressions;
     lex::resource_location location;
     small_vector<named_expression_t, 8> args;
@@ -30,7 +31,7 @@ public:
     struct argument_cache
     {
         syntax_expression_t expression;
-        boost::container::small_flat_map<cache_key_t, std::expected<syntax_expression_result_t, error_storage>, 8> cache;
+        boost::container::small_flat_map<cache_key_t, std::expected<std::pair<syntax_expression_result_t, bool>, error_storage>, 8> cache;
 
         inline explicit argument_cache(syntax_expression_t e) noexcept
             : expression{ std::move(e) }
@@ -40,8 +41,8 @@ public:
     mutable small_vector<std::tuple<identifier, argument_cache>, 8> named_argument_caches_;
     mutable small_vector<argument_cache, 8> position_argument_caches_;
 
-    prepared_call(fn_compiler_context&, semantic::expression_list_t& ael, lex::resource_location loc) noexcept;
-    prepared_call(fn_compiler_context&, pure_call_t const&, semantic::expression_list_t&);
+    prepared_call(fn_compiler_context&, functional const*, semantic::expression_list_t& ael, lex::resource_location loc) noexcept;
+    prepared_call(fn_compiler_context&, functional const*, pure_call_t const&, semantic::expression_list_t&);
     prepared_call(prepared_call const&) = delete;
     ~prepared_call();
 
@@ -69,14 +70,14 @@ public:
         session(fn_compiler_context&, prepared_call const&);
 
         inline bool has_more_positioned_arguments() const noexcept { return unused_positioned_index_ < unused_position_arguments_.size(); }
-        std::expected<syntax_expression_result_t, error_storage> use_next_positioned_argument(syntax_expression_t const** pe = nullptr);
-        std::expected<syntax_expression_result_t, error_storage> use_next_positioned_argument(expected_result_t const& exp, syntax_expression_t const** pe = nullptr);
-        std::expected<syntax_expression_result_t, error_storage> use_named_argument(identifier name, expected_result_t const& exp, syntax_expression_t const** pe = nullptr);
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_positioned_argument(syntax_expression_t const** pe = nullptr);
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_positioned_argument(expected_result_t const& exp, syntax_expression_t const** pe = nullptr);
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_named_argument(identifier name, expected_result_t const& exp, syntax_expression_t const** pe = nullptr);
         
         named_expression_t unused_argument();
 
     private:
-        std::expected<syntax_expression_result_t, error_storage>
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage>
         do_resolve(argument_cache& arg_cache, expected_result_t const& exp);
     };
 
@@ -85,9 +86,8 @@ public:
     local_variable& new_temporary(unit&, identifier, entity_identifier type, semantic::expression_span);
     void export_temporaries(syntax_expression_result&);
 
-private:
-    
-
+    qname_view functional_name() const noexcept;
+    qname_identifier functional_id() const noexcept;
 };
 
 }

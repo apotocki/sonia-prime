@@ -78,15 +78,15 @@ functional_binding::value_type& functional_binding_set::emplace_back(annotated_i
 //    }
 //}
 
-void parameter_match_result::append_result(entity_identifier type, semantic::expression_span sp)
-{
-    results.emplace_back(syntax_expression_result_t{ .expressions = std::move(sp), .value_or_type = type, .is_const_result = false });
-}
-
-void parameter_match_result::append_const_result(entity_identifier value, semantic::expression_span sp)
-{
-    results.emplace_back(syntax_expression_result_t{ .expressions = std::move(sp), .value_or_type = value, .is_const_result = true });
-}
+//void parameter_match_result::append_result(entity_identifier type, semantic::expression_span sp)
+//{
+//    results.emplace_back(syntax_expression_result_t{ .expressions = std::move(sp), .value_or_type = type, .is_const_result = false });
+//}
+//
+//void parameter_match_result::append_const_result(entity_identifier value, semantic::expression_span sp)
+//{
+//    results.emplace_back(syntax_expression_result_t{ .expressions = std::move(sp), .value_or_type = value, .is_const_result = true });
+//}
 
 //void parameter_match_result::set_constexpr(bool ce_val)
 //{
@@ -126,6 +126,11 @@ void parameter_match_result::append_const_result(entity_identifier value, semant
 //    }
 //}
 
+functional_match_descriptor::functional_match_descriptor(prepared_call const& pcall) noexcept
+    : signature{ pcall.functional_id() }
+    , call_location{ pcall.location }
+{}
+
 semantic::expression_span functional_match_descriptor::merge_void_spans(semantic::expression_list_t& el) noexcept
 {
     semantic::expression_span result;
@@ -138,6 +143,7 @@ semantic::expression_span functional_match_descriptor::merge_void_spans(semantic
     return result;
 }
 
+#if 0
 parameter_match_result& functional_match_descriptor::push_match_result(identifier param_name)
 {
     pmrs_.emplace_back(param_name, nullptr);
@@ -165,6 +171,7 @@ parameter_match_result& functional_match_descriptor::get_match_result(size_t pos
     }
     return *positional_matches_[pos];
 }
+
 
 entity_signature functional_match_descriptor::build_signature(unit & u, qname_identifier name)
 {
@@ -196,8 +203,9 @@ void functional_match_descriptor::reset() noexcept
     pmrs_.clear();
     bindings.reset();
     //call_expressions.clear();
-    result = field_descriptor{};
+    signature.result.reset();
 }
+#endif
 
 //void functional_match_descriptor::push_named_argument_expressions(identifier argid, se_cont_iterator& it_before, semantic::managed_expression_list const& exprs)
 //{
@@ -325,7 +333,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
 
     expression_stack_checker expr_stack_state{ ctx };
 
-    prepared_call pcall{ ctx, call, ael };
+    prepared_call pcall{ ctx, this, call, ael };
     if (auto err = pcall.prepare(); err) return std::unexpected(std::move(err));
 
     for (auto const& p : patterns_) {
@@ -370,7 +378,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
         for (alternative_t const& a : alternatives) {
             std::ostringstream ss;
             get<0>(a)->print(ctx.u(), ss);
-            as.emplace_back(get<0>(a)->location(), ss.str(), get<1>(a)->build_signature(ctx.u(), id_));
+            as.emplace_back(get<0>(a)->location(), ss.str(), get<1>(a)->signature);
         }
         return std::unexpected(make_error<ambiguity_error>(annotated_qname_identifier{ id_, call.location }, std::move(as)));
     }

@@ -81,7 +81,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
             }
 
             pmd = make_shared<functional_match_descriptor>();
-            pmd->result = field_descriptor{ u.make_array_entity(arr_element_type_eid, ct_element_results).id, true };
+            pmd->signature.result.emplace(u.make_array_entity(arr_element_type_eid, ct_element_results).id, true);
         } else {
             return std::unexpected(make_error<basic_general_error>(arg_loc, "argument mismatch"sv, argexpr));
         }
@@ -98,7 +98,7 @@ std::expected<syntax_expression_result_t, error_storage> array_elements_implicit
 {
     return syntax_expression_result_t{
         .expressions = md.merge_void_spans(el),
-        .value_or_type = md.result.entity_id(),
+        .value_or_type = md.signature.result->entity_id(),
         .is_const_result = true
     };
 }

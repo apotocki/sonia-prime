@@ -26,16 +26,16 @@ std::expected<functional_match_descriptor_ptr, error_storage> deref_pattern::try
     auto argerror = [parg_expr] {
         return std::unexpected(make_error<basic_general_error>(get_start_location(*parg_expr), "argument mismatch"sv, *parg_expr));
     };
-
-    if (!arg->is_const_result) return argerror();
-    entity const& argent = get_entity(ctx.u(), arg->value());
+    syntax_expression_result_t& arg_er = arg->first;
+    if (!arg_er.is_const_result) return argerror();
+    entity const& argent = get_entity(ctx.u(), arg_er.value());
     if (argent.get_type() != ctx.u().get(builtin_eid::qname)) return argerror();
 
     if (auto argterm = call_session.unused_argument(); argterm) {
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
     }
-    auto pmd = make_shared<functional_match_descriptor>(call.location);
-    pmd->get_match_result(0).append_result(*arg);
+    auto pmd = make_shared<functional_match_descriptor>(call);
+    pmd->emplace_back(0, arg_er);
     pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
@@ -43,8 +43,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> deref_pattern::try
 std::expected<syntax_expression_result_t, error_storage> deref_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto & mr = md.get_match_result(0);
-    auto & ser = mr.results.front();
+    auto & [_, ser] = md.matches.front();
 
     ser.expressions = el.concat(md.merge_void_spans(el), ser.expressions);
     

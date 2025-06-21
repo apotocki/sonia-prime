@@ -23,7 +23,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> equal_pattern::try
     //syntax_expression_t const* plarg_expr, * prarg_expr;
     auto larg = call_session.use_next_positioned_argument(expected_result_t{}/*, &plarg_expr*/);
     if (!larg) return std::unexpected(larg.error());
-    entity_identifier ltype = larg->is_const_result ? get_entity(ctx.u(), larg->value()).get_type() : larg->type();
+    syntax_expression_result_t& larg_er = larg->first;
+    entity_identifier ltype = larg_er.is_const_result ? get_entity(ctx.u(), larg_er.value()).get_type() : larg_er.type();
 
     auto rarg = call_session.use_next_positioned_argument(expected_result_t{ ltype } /*, &prarg_expr*/);
     if (!rarg) return std::unexpected(rarg.error());
@@ -31,9 +32,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> equal_pattern::try
     if (auto argterm = call_session.unused_argument(); argterm) {
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
     }
-    auto pmd = make_shared<functional_match_descriptor>(call.location);
-    pmd->get_match_result(0).append_result(*larg);
-    pmd->get_match_result(1).append_result(*rarg);
+    auto pmd = make_shared<functional_match_descriptor>(call);
+    pmd->emplace_back(0, larg_er);
+    pmd->emplace_back(1, rarg->first);
     pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
@@ -41,8 +42,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> equal_pattern::try
 std::expected<syntax_expression_result_t, error_storage> equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto & ler = md.get_match_result(0).results.front();
-    auto & rer = md.get_match_result(1).results.front();
+    auto & ler = get<1>(md.matches.front());
+    auto & rer = get<1>(md.matches.back());
 
     syntax_expression_result_t result{
         .temporaries = std::move(ler.temporaries),

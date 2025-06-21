@@ -57,7 +57,6 @@ public:
 class string_resource : public syntax_expression_resource
 {
     std::string src_;
-
 public:
     inline explicit string_resource(unit& u, string_view s)
         : syntax_expression_resource{ u }
@@ -214,15 +213,13 @@ std::expected<statement_span, std::string> parser_context::parse(string_view cod
     bang_langlex_init_extra(sc_data.get(), &scanner);
     SCOPE_EXIT([scanner]() { bang_langlex_destroy(scanner); });
 
-    std::vector<char> buffer;
-    YY_BUFFER_STATE st;
-
-    buffer.resize(code.size() + 2);
-    std::copy(code.begin(), code.end(), buffer.begin());
+    size_t buffsz = code.size() + 2; // +2 for null terminators
+    std::unique_ptr<char[]> buffer(new char[buffsz]);
+    std::copy(code.begin(), code.end(), buffer.get());
     buffer[code.size()] = 0;
     buffer[code.size() + 1] = 0;
 
-    st = bang_lang_scan_buffer(&buffer[0], buffer.size(), scanner);
+    YY_BUFFER_STATE st = bang_lang_scan_buffer(&buffer[0], buffsz, scanner);
     SCOPE_EXIT([st, scanner]() { bang_lang_delete_buffer(st, scanner); });
 
     bang_langset_lineno(1, scanner);
@@ -251,6 +248,11 @@ std::expected<statement_span, std::string> parser_context::parse(string_view cod
         return std::unexpected(ss.str());
     }
     return root_statements_;
+}
+
+parser_context::~parser_context()
+{
+    //statements_.clear();
 }
 
 }

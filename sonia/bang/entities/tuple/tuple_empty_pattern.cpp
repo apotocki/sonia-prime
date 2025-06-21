@@ -28,8 +28,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_empty_patter
     if (ctx.context_type) {
         entity const& tpl_entity = u.eregistry_get(ctx.context_type);
         if (auto psig = tpl_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
-            auto pmd = make_shared<functional_match_descriptor>(call.location);
-            pmd->result = field_descriptor{ u.get(tpl_entity.signature()->fields().empty() ? builtin_eid::true_ : builtin_eid::false_), true };
+            auto pmd = make_shared<functional_match_descriptor>(call);
+            pmd->signature.result.emplace(u.get(tpl_entity.signature()->fields().empty() ? builtin_eid::true_ : builtin_eid::false_), true);
             return pmd;
 
             /*
@@ -49,7 +49,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_empty_pattern::ap
 {
     return syntax_expression_result_t{
         .expressions = md.merge_void_spans(el),
-        .value_or_type = md.result.entity_id(),
+        .value_or_type = md.signature.result->entity_id(),
         .is_const_result = true
     };
 }

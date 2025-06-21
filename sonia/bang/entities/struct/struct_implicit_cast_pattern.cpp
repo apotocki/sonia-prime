@@ -70,14 +70,14 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_ca
             auto err = struct_implicit_cast_check_argument_type(ctx, annotated_entity_identifier{ ser.type(), get_start_location(argexpr) }, exp);
             if (err) return std::unexpected(std::move(err));
         }
-        pmd = make_shared<functional_match_descriptor>();
-        pmd->get_match_result(0).append_result(ser);
+        pmd = make_shared<functional_match_descriptor>(call);
+        pmd->emplace_back(0, ser);
     }
 
     if (!pmd) {
         return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter $0"sv));
     }
-    pmd->result = field_descriptor{ exp.type };
+    pmd->signature.result.emplace(exp.type);
     return pmd;
 }
 
@@ -85,21 +85,21 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_ca
 std::expected<syntax_expression_result_t, error_storage> struct_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    semantic::expression_span exprs = md.merge_void_spans(el);
-    md.for_each_positional_match([&u, &exprs, &el](parameter_match_result const& mr) {
-        for (auto const& ser : mr.results) {
-            exprs = el.concat(exprs, ser.expressions);
-            if (ser.is_const_result) {
-                u.push_back_expression(el, exprs, semantic::push_value{ ser.value() });
-            }
-        }
-    });
-    
-    return syntax_expression_result_t{
-        .expressions = std::move(exprs),
-        .value_or_type = md.result.entity_id(),
+    syntax_expression_result_t result{
+        .expressions = md.merge_void_spans(el),
+        .value_or_type = md.signature.result->entity_id(),
         .is_const_result = false
     };
+    for (auto& [_, mr] : md.matches) {
+        result.temporaries.insert(result.temporaries.end(), mr.temporaries.begin(), mr.temporaries.end());
+        result.stored_expressions = el.concat(result.stored_expressions, mr.stored_expressions);
+        result.expressions = el.concat(result.expressions, mr.expressions);
+        if (mr.is_const_result) {
+            u.push_back_expression(el, result.expressions, semantic::push_value{ mr.value() });
+        }
+    }
+
+    return result;
 }
 
 }

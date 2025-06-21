@@ -33,6 +33,8 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_pattern::app
 {
     unit& u = ctx.u();
     
+    THROW_NOT_IMPLEMENTED_ERROR("metaobject_pattern::apply is not implemented yet");
+#if 0
     entity_signature sig = md.build_signature(u, u.get(builtin_qnid::metaobject));
     sig.result = field_descriptor{ u.get(builtin_eid::metaobject) };
 
@@ -41,6 +43,7 @@ std::expected<syntax_expression_result_t, error_storage> metaobject_pattern::app
         .value_or_type = u.make_basic_signatured_entity(std::move(sig)).id,
         .is_const_result = true
     };
+#endif
 }
 
 }

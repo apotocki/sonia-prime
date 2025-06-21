@@ -38,13 +38,17 @@ using statement_span = linked_list_node_span<statement_entry>;
 struct syntax_expression_entry;
 using syntax_expression_span = linked_list_node_span<syntax_expression_entry>;
 
-
-
 // e.g. fn (externalName: string); fn (externalName $internalName: string);
 struct named_parameter_name
 {
     annotated_identifier external_name; // can not be empty
     annotated_identifier internal_name; // can be empty
+};
+
+// e.g. $varName, $0, $$
+struct context_identifier
+{
+    annotated_identifier name; // can not be empty
 };
 
 // e.g. fn ($internalName: string); fn (string);
@@ -53,31 +57,20 @@ struct unnamed_parameter_name
     annotated_identifier internal_name; // can be empty
 };
 
-// e.g. fn ($varName ... : string);
-struct varnamed_parameter_name
-{
-    annotated_identifier varname; // can not be empty
-};
+using parameter_name = variant<named_parameter_name, unnamed_parameter_name>;
 
-using parameter_name = variant<named_parameter_name, unnamed_parameter_name, varnamed_parameter_name>;
-
-struct param_name_retriever : static_visitor<std::tuple<annotated_identifier const*, annotated_identifier const*, bool>>
+struct param_name_retriever : static_visitor<std::tuple<annotated_identifier const*, annotated_identifier const*>>
 {
     param_name_retriever() = default;
 
     inline result_type operator()(named_parameter_name const& np) const
     {
-        return { &np.external_name, np.internal_name ? &np.internal_name : nullptr, false };
+        return { &np.external_name, np.internal_name ? &np.internal_name : nullptr };
     }
 
     inline result_type operator()(unnamed_parameter_name const& np) const
     {
-        return { nullptr, np.internal_name ? &np.internal_name : nullptr, false };
-    }
-
-    inline result_type operator()(varnamed_parameter_name const& np) const
-    {
-        return { nullptr, &np.varname, true };
+        return { nullptr, np.internal_name ? &np.internal_name : nullptr };
     }
 };
 
@@ -551,19 +544,51 @@ struct index_expression
     lex::resource_location location;
 };
 
+//template <typename ExprT>
+//struct parameter_constraint_set
+//{
+//    optional<ExprT> expression;
+//    small_vector<ExprT, 1> concepts;
+//};
+
 template <typename ExprT>
-struct parameter_constraint_set
+struct pattern
 {
-    optional<ExprT> expression;
-    small_vector<ExprT, 1> concepts;
+    struct field
+    {
+        variant<nullptr_t, placeholder, annotated_identifier, context_identifier, ExprT> name;
+        pattern<ExprT> value;
+    };
+
+    using pattern_list_t = std::vector<field>;
+
+    using concept_expression_list_t = small_vector<ExprT, 2>;
+    
+    struct signature_descriptor
+    {
+        variant<placeholder, annotated_qname, ExprT> name;
+        pattern_list_t fields;
+    };
+
+    variant<placeholder, context_identifier, signature_descriptor, ExprT> descriptor;
+    concept_expression_list_t concepts;
+    bool ellipsis = false; // true if pattern is ellipsis, e.g. `...`
+};
+
+template <typename ExprT>
+struct constraint_expression
+{
+    ExprT expression;
+    bool ellipsis = false;
 };
 
 template <typename ExprT>
 struct parameter
 {
     parameter_name name;
-    parameter_constraint_modifier_t modifier;
-    parameter_constraint_set<ExprT> constraints;
+    //parameter_constraint_modifier_t modifier;
+    //parameter_constraint_set<ExprT> constraints;
+    variant<constraint_expression<ExprT>, pattern<ExprT>> constraint;
 
     optional<ExprT> value; // default value
     //parameter() = default;
@@ -595,9 +620,10 @@ struct fn_pure
 {
     annotated_qname aname;
     parameter_list<ExprT> parameters;
-    optional<ExprT> result;
-    bool is_type_expression_result = true; // true for type expressions, false for value expressions
-    bool is_not_a_pattern_result = false; // true if explicitly defined as not a pattern result
+    variant<nullptr_t, ExprT, pattern<ExprT>> result; // udefined or type expression or pattern
+
+    //bool is_type_expression_result = true; // true for type expressions, false for value expressions
+    //bool is_not_a_pattern_result = false; // true if explicitly defined as not a pattern result
     fn_kind kind = fn_kind::DEFAULT;
 
     inline qname_view name() const noexcept { return aname.value; }
@@ -609,17 +635,25 @@ struct lambda : fn_pure<ExprT>
 {
     statement_span body;
 
-    lambda(fn_kind kind, lex::resource_location loc, parameter_list<ExprT>&& params, statement_span&& b, optional<ExprT> rtype = nullopt)
+    lambda(fn_kind kind, lex::resource_location loc, parameter_list<ExprT>&& params, statement_span&& b, ExprT rtype)
         : fn_pure<ExprT>{ .aname = annotated_qname{ {}, std::move(loc) },
                           .parameters = std::move(params),
                           .result = std::move(rtype),
                           .kind = kind }
         , body{ std::move(b) }
     {}
+
+    lambda(fn_kind kind, lex::resource_location loc, parameter_list<ExprT>&& params, statement_span&& b)
+        : fn_pure<ExprT>{ .aname = annotated_qname{ {}, std::move(loc) },
+                          .parameters = std::move(params),
+                          .result = nullptr,
+                          .kind = kind }
+        , body{ std::move(b) }
+    {}
 };
 
 using syntax_expression_t = make_recursive_variant<
-    placeholder, variable_reference,
+    variable_reference,
     annotated_nil, annotated_bool, annotated_integer, annotated_decimal, annotated_string, annotated_identifier, annotated_qname,
     array_expression<recursive_variant_>, index_expression<recursive_variant_>,
     bang_fn_type<recursive_variant_>,
@@ -639,7 +673,7 @@ using syntax_expression_t = make_recursive_variant<
     //, ctprocedure
 >::type;
 
-using parameter_constraint_set_t = parameter_constraint_set<syntax_expression_t>;
+//using parameter_constraint_set_t = parameter_constraint_set<syntax_expression_t>;
 using parameter_t = parameter<syntax_expression_t>;
 using fn_pure_t = fn_pure<syntax_expression_t>;
 using lambda_t = lambda<syntax_expression_t>;
@@ -717,6 +751,18 @@ struct error_context
         return nullopt;
     }
 };
+
+
+using constraint_expression_t = constraint_expression<syntax_expression_t>;
+
+//using plain_pattern_t = variant<annotated_qname, context_identifier, syntax_expression_t>;
+
+
+using pattern_t = pattern<syntax_expression_t>;
+using pattern_list_t = pattern_t::pattern_list_t;
+using concept_expression_list_t = pattern_t::concept_expression_list_t;
+
+lex::resource_location get_start_location(pattern_t const&);
 
 using context_locator_t = function<error_context()>;
 /*

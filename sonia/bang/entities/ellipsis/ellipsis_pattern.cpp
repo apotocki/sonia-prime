@@ -22,8 +22,8 @@ class ellipsis_match_descriptor : public functional_match_descriptor
 
 public:
     template <typename EntityT>
-    inline ellipsis_match_descriptor(EntityT const* ent, lex::resource_location const& loc) noexcept
-        : functional_match_descriptor{ loc }
+    inline ellipsis_match_descriptor(qname_identifier fname, EntityT const* ent, lex::resource_location const& loc) noexcept
+        : functional_match_descriptor{ std::move(fname), loc }
         , arg_{ ent }
     {}
 
@@ -58,13 +58,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> ellipsis_pattern::
     BOOST_ASSERT(!obj->expressions); // not impelemented const value expressions
     entity const& metaobject_ent = get_entity(u, obj->value);
     if (identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&metaobject_ent); pie) {
-        return make_shared<ellipsis_match_descriptor>(pie, get_start_location(*object_arg));
+        return make_shared<ellipsis_match_descriptor>(call.functional_id(), pie, get_start_location(*object_arg));
     }
     else if (basic_signatured_entity const* bse = dynamic_cast<basic_signatured_entity const*>(&metaobject_ent); bse) {
         entity_signature const& signature = *bse->signature();
         if (signature.name == u.get(builtin_qnid::metaobject)) {
             // to do: check if the signature is a comopatible to the call metaobject
-            return make_shared<ellipsis_match_descriptor>(bse, get_start_location(*object_arg));
+            return make_shared<ellipsis_match_descriptor>(call.functional_id(), bse, get_start_location(*object_arg));
         }
     }
     

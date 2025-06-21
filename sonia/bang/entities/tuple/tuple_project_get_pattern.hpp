@@ -24,10 +24,10 @@ protected:
     {
     public:
         inline tuple_project_get_match_descriptor(
+            prepared_call const& call,
             identifier name,
-            entity const& orig_tpl, entity_signature const& orig_sig,
-            lex::resource_location loc) noexcept
-            : functional_match_descriptor{ std::move(loc) }
+            entity const& orig_tpl, entity_signature const& orig_sig) noexcept
+            : functional_match_descriptor{ call }
             , project_name{ name }
             , orig_tuple_entity{ orig_tpl }
             , orig_tuple_sig{ orig_sig }

@@ -54,7 +54,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> metaobject_typeof_
     auto prop = apply_visitor(epropvis, property_arg->value());
     if (!prop) return std::unexpected(std::move(prop.error()));
 
-    auto pmd = make_shared<functional_match_descriptor>(call.location);
+    auto pmd = make_shared<functional_match_descriptor>(call);
     pmd->get_match_result(objid).append_result(*obj);
     pmd->get_match_result(propid).append_result(*prop);
     return pmd;

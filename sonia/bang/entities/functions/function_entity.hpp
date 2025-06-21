@@ -65,22 +65,37 @@ private:
 };
 
 
-
-class external_function_entity : public function_entity
+// it'snot a signatured entity becase an external function can have different signatures,
+// depending on the values of arguments
+class external_function_entity : public entity
 {
     uint32_t extfnid_;
 
 public:
-    external_function_entity(unit& u, qname&& name, entity_signature&& sig, size_t fnid);
+    inline explicit external_function_entity(size_t fnid)
+        : extfnid_{ static_cast<uint32_t>(fnid) }
+    {}
 
     inline size_t extfnid() const noexcept { return extfnid_; }
 
     void visit(entity_visitor const& v) const override { v(*this); }
 
+    inline size_t hash() const noexcept override final
+    {
+        return sonia::hasher{}(extfnid_);
+    }
+
+    inline bool equal(entity const& rhs) const noexcept
+    {
+        if (auto const* pent = dynamic_cast<external_function_entity const*>(&rhs)) {
+            return pent->extfnid_ == extfnid_;
+        }
+        return false;
+    }
+
     inline std::ostream& print_to(std::ostream& os, unit const& u) const override
     {
-        os << "external fn(id: "sv << extfnid_ << ")"sv;
-        return signatured_entity::print_to(os, u);
+        return os << "external fn(id: "sv << extfnid_ << ")"sv;
     }
 };
 

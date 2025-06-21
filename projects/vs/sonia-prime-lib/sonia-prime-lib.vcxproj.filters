@@ -2268,9 +2268,6 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\ct_expression_visitor.hpp">
       <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.hpp">
-      <Filter>sonia.bang\entities\functions</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\errors\function_call_match_error.hpp">
       <Filter>sonia.bang\errors</Filter>
     </ClInclude>
@@ -2485,6 +2482,18 @@
       <Filter>sonia.bang\functional\general</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\functional\general\error_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\parameter_matcher.hpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\pattern_matcher.hpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\internal_fn_pattern.hpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\create_identifier_pattern.hpp">
       <Filter>sonia.bang\functional\general</Filter>
     </ClInclude>
   </ItemGroup>
@@ -2840,9 +2849,6 @@
     <ClCompile Include="..\..\..\sonia\bang\ast\ct_expression_visitor.cpp">
       <Filter>sonia.bang\ast</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\entities\functions\create_identifier_pattern.cpp">
-      <Filter>sonia.bang\entities\functions</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\errors\function_call_match_error.cpp">
       <Filter>sonia.bang\errors</Filter>
     </ClCompile>
@@ -3036,6 +3042,18 @@
       <Filter>sonia.bang\functional\general</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\functional\general\error_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\parameter_matcher.cpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\pattern_matcher.cpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\internal_fn_pattern.cpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\create_identifier_pattern.cpp">
       <Filter>sonia.bang\functional\general</Filter>
     </ClCompile>
   </ItemGroup>

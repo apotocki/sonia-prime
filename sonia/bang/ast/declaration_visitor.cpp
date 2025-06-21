@@ -21,6 +21,7 @@
 #include "sonia/bang/entities/functions/internal_function_entity.hpp"
 
 #include "sonia/bang/functional/basic_fn_pattern.hpp"
+#include "sonia/bang/functional/internal_fn_pattern.hpp"
 
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
@@ -142,7 +143,7 @@ error_storage declaration_visitor::operator()(struct_decl const& sd) const
             fnl.set_default_entity(aeid);
 
             functional& init_fnl = u.fregistry_resolve(u.get(builtin_qnid::init));
-            auto initptrn = sonia::make_shared<struct_init_pattern>(init_fnl, sd.body);
+            auto initptrn = sonia::make_shared<struct_init_pattern>(sd.body);
             if (error_storage err = initptrn->init(ctx, aeid); err) return err;
             init_fnl.push(std::move(initptrn));
         } else { // if constexpr (std::is_same_v<fn_pure_t const&, decltype(v)>) {
@@ -150,12 +151,12 @@ error_storage declaration_visitor::operator()(struct_decl const& sd) const
             fn_pure_t const& fn = v;
             qname fn_qname = ctx.ns() / fn.name();
             functional& fnl = u.fregistry_resolve(fn_qname);
-            auto ptrn = sonia::make_shared<struct_fn_pattern>(fnl, sd.body);
+            auto ptrn = sonia::make_shared<struct_fn_pattern>(sd.body);
             if (error_storage err = ptrn->init(ctx, fn); err) return err;
             fnl.push(std::move(ptrn));
 
             functional& init_fnl = u.fregistry_resolve(u.get(builtin_qnid::init));
-            auto initptrn = sonia::make_shared<struct_init_pattern>(init_fnl, sd.body);
+            auto initptrn = sonia::make_shared<struct_init_pattern>(sd.body);
             if (error_storage err = initptrn->init(ctx, annotated_qname{ fn_qname, fn.location() }, fn.parameters); err) return err;
             init_fnl.push(std::move(initptrn));
         }
@@ -544,7 +545,7 @@ error_storage declaration_visitor::operator()(fn_decl_t const& fnd) const
     qname fn_qname = ctx.ns() / fnd.name();
     functional& fnl = ctx.u().resolve_functional(fn_qname);
 
-    auto fnptrn = make_shared<generic_fn_pattern>(fnl);
+    auto fnptrn = make_shared<internal_fn_pattern>();
     error_storage err = fnptrn->init(ctx, fnd);
     if (!err) fnl.push(std::move(fnptrn));
     return err;
@@ -623,7 +624,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
     small_vector<std::pair<identifier, syntax_expression_result_t>, 8> results;
 
-    prepared_call pcall{ ctx, el, ld.location() };
+    prepared_call pcall{ ctx, nullptr, el, ld.location() };
     for (auto const& e : ld.expressions) {
         pcall.args.emplace_back(e);
     }

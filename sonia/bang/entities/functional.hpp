@@ -64,21 +64,11 @@ public:
     inline bool empty() const noexcept { return binding_.empty(); }
 };
 
+#if 0
 struct parameter_match_result
 {
-    //enum class modifier : uint8_t
-    //{
-    //    undefined = 0,
-    //    is_expr = 1,
-    //    is_constexpr = 2,
-    //    is_uniadic = 4,
-    //    is_variadic = 8,
-    //};
-    //using se_iterator = semantic::expression_list_t::iterator;
-    //using se_rng_t = std::pair<se_cont_iterator, se_cont_iterator>;
-
     parameter_match_result() = default;
-    inline explicit parameter_match_result(std::nullptr_t) noexcept {}
+    //inline explicit parameter_match_result(std::nullptr_t) noexcept {}
 
     small_vector<syntax_expression_result_t, 4> results;
     //uint8_t mod = (uint8_t)modifier::undefined;
@@ -139,6 +129,7 @@ class functional_match_descriptor
     small_vector<parameter_match_result*, 8> positional_matches_;
 
 public:
+    entity_signature signature;
     // can not not merge spans before match application
     small_vector<semantic::expression_span, 4> void_spans;
 
@@ -146,12 +137,15 @@ public:
 
     functional_binding_set bindings;
     lex::resource_location call_location;
-    field_descriptor result;
     int weight{ 0 };
 
     inline functional_match_descriptor() = default;
-    inline explicit functional_match_descriptor(lex::resource_location loc) noexcept : call_location{ std::move(loc) } {}
-        
+    inline functional_match_descriptor(qname_identifier fname, lex::resource_location loc) noexcept
+        : signature{ std::move(fname) }
+        , call_location{ std::move(loc) }
+    {}
+    explicit functional_match_descriptor(prepared_call const& pcall) noexcept;
+
     functional_match_descriptor(functional_match_descriptor const&) = delete;
     functional_match_descriptor& operator= (functional_match_descriptor const&) = delete;
 
@@ -202,7 +196,7 @@ public:
     parameter_match_result& get_match_result(identifier);
     parameter_match_result& get_match_result(size_t);
 
-    entity_signature build_signature(unit&, qname_identifier);
+    //entity_signature build_signature(unit&, qname_identifier);
     void reset() noexcept;
 
 private:
@@ -226,6 +220,41 @@ private:
             }
         }
     }
+};
+#endif
+
+class functional_match_descriptor
+{
+    // { implementation defined index(e.g. function parameter index), argument expression result }
+    using mr_pair_t = std::tuple<intptr_t, syntax_expression_result_t>;
+
+public:
+    small_vector<mr_pair_t, 8> matches;
+    
+    // can not not merge spans before match application
+    small_vector<semantic::expression_span, 4> void_spans;
+
+    entity_signature signature;
+    functional_binding_set bindings;
+    lex::resource_location call_location;
+    int weight{ 0 };
+
+    inline functional_match_descriptor() = default;
+    inline functional_match_descriptor(qname_identifier fname, lex::resource_location loc) noexcept
+        : signature{ std::move(fname) }
+        , call_location{ std::move(loc) }
+    {}
+
+    explicit functional_match_descriptor(prepared_call const& pcall) noexcept;
+
+    virtual ~functional_match_descriptor() = default;
+
+    void emplace_back(intptr_t idx, syntax_expression_result_t result)
+    {
+        matches.emplace_back(idx, std::move(result));
+    }
+
+    semantic::expression_span merge_void_spans(semantic::expression_list_t&) noexcept;
 };
 
 using functional_match_descriptor_ptr = shared_ptr<functional_match_descriptor>;

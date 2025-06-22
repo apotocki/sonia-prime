@@ -81,9 +81,9 @@ public:
         u_.print_to(oss_, ent.value());
     }
     
-    void operator()(const empty_entity&) const override
+    void operator()(const empty_entity& e) const override
     {
-        oss_ << "empty";
+        e.print_to(oss_, u_);
     }
     
     // Other entity types

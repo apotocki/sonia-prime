@@ -67,7 +67,7 @@ intptr_t internal_function_entity::resolve_variable_index(variable_identifier va
 
 error_storage internal_function_entity::build(unit& u)
 {
-    fn_compiler_context fnctx{ u, name_ };
+    fn_compiler_context fnctx{ u, *this };
     fnctx.push_binding(bindings);
     return build(fnctx);
 }
@@ -82,7 +82,7 @@ error_storage internal_function_entity::build(fn_compiler_context& fnctx)
     }
 
     //GLOBAL_LOG_INFO() << fnctx.u().print(sts_);
-    declaration_visitor dvis{ fnctx, *this };
+    declaration_visitor dvis{ fnctx };
     if (auto err = dvis.apply(sts_); err) return err;
 
     auto fres = fnctx.finish_frame(*this); // unknown result type is resolving here

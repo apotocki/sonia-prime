@@ -23,7 +23,7 @@ public:
 
     void visit(error_visitor& vis) const override { vis(*this); }
 
-    lex::resource_location const& location() const noexcept override { return location_; }
+    location_t location() const noexcept override { return location_; }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override { return "identifier redefinition"sv; }
     lex::resource_location const* ref_location() const noexcept override { return &reflocation_; }

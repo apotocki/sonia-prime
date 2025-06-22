@@ -2,7 +2,7 @@
 let t1 = (a: 1, b : 2);
 let t2 = (a: 1, b : 2);
 assert_equal(t1, t2); // # should be true
-
+assert_not_equal(t1, t2);
 // Test: tuples with mixed const/non-const fields
 let x = mut(42);
 let t3 = (a: x, b: 2, c: mut(3), d: 4);

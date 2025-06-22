@@ -110,6 +110,7 @@ DIGIT					[0-9]
 IDENTIFIER				[a-zA-Z_]+[a-zA-Z_0-9]*
 CONTEXT_IDENTIFIER		${IDENTIFIER}
 RESERVED_IDENTIFIER		$([$0]|([1-9][0-9]*))
+CT_IDENTIFIER			#{IDENTIFIER}
 
 INTEGER                 [0-9]+
 EXPONENT                [eE][+-]?[0-9]+
@@ -386,10 +387,13 @@ HASHTAG					"#"
 		variant_emplace(annotated_string_view{ text_view, location });
 		return (bang_lang::parser::token::CONTEXT_IDENTIFIER);
 	}
-
 	{RESERVED_IDENTIFIER}  {
 		variant_emplace(annotated_string_view{ text_view, location });
 		return (bang_lang::parser::token::RESERVED_IDENTIFIER);
+	}
+	{CT_IDENTIFIER} {
+		variant_emplace(annotated_string_view{ text_view, location });
+		return (bang_lang::parser::token::CT_IDENTIFIER);
 	}
 
 	{INTEGER} {

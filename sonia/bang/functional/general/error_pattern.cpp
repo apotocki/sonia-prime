@@ -17,10 +17,11 @@ namespace sonia::lang::bang {
 
 std::expected<functional_match_descriptor_ptr, error_storage> error_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
+    unit& u = ctx.u();
     auto call_session = call.new_session(ctx);
     
     // Accept a single unnamed string argument
-    expected_result_t string_exp{ ctx.u().get(builtin_eid::string), call.location };
+    expected_result_t string_exp{ u.get(builtin_eid::string), call.location };
     syntax_expression_t const* pargexpr;
     auto arg = call_session.use_next_positioned_argument(string_exp, &pargexpr);
     
@@ -31,6 +32,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> error_pattern::try
         return std::unexpected(arg.error());
     }
 
+    auto locarg = call_session.use_named_argument(u.get(builtin_id::location), string_exp, &pargexpr);
+    if (!locarg) {
+        if (locarg.error()) {
+            return std::unexpected(locarg.error());
+        }
+    }
     // Verify no more arguments
     if (auto argterm = call_session.unused_argument(); argterm) {
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
@@ -38,6 +45,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> error_pattern::try
     
     auto pmd = make_shared<functional_match_descriptor>(call);
     pmd->emplace_back(0, arg->first);
+    if (locarg) {
+        pmd->emplace_back(1, locarg->first);
+    }
     pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
@@ -45,26 +55,53 @@ std::expected<functional_match_descriptor_ptr, error_storage> error_pattern::try
 std::expected<syntax_expression_result_t, error_storage> error_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto& [_, er] = md.matches.front();
+    auto& msg_er = get<1>(md.matches.front());
     
     syntax_expression_result_t result{
-        .temporaries = std::move(er.temporaries),
-        .stored_expressions = std::move(er.stored_expressions),
+        .temporaries = std::move(msg_er.temporaries),
+        .stored_expressions = std::move(msg_er.stored_expressions),
         .expressions = md.merge_void_spans(el)
     };
     
-    if (er.is_const_result) {
+    string_literal_entity const* pmsg_ent = nullptr;
+    string_literal_entity const* ploc_ent = nullptr;
+
+    if (md.matches.size() > 1) {
+        auto& loc_er = get<1>(md.matches.back());
+        result.expressions = el.concat(result.expressions, loc_er.expressions);
+        if (loc_er.is_const_result) {
+            entity const& loc_ent = get_entity(u, loc_er.value());
+            BOOST_ASSERT(loc_ent.get_type() == u.get(builtin_eid::string));
+            ploc_ent = &static_cast<string_literal_entity const&>(loc_ent);
+        }
+    }
+
+    if (msg_er.is_const_result) {
         // Argument is a compile-time constant, return an error immediately
-        entity const& ent = get_entity(u, er.value());
+        entity const& ent = get_entity(u, msg_er.value());
         BOOST_ASSERT(ent.get_type() == u.get(builtin_eid::string));
-        
-        string_literal_entity const& str_ent = static_cast<string_literal_entity const&>(ent);
-        
+        pmsg_ent = &static_cast<string_literal_entity const&>(ent);
+    }
+
+
+    if (pmsg_ent && (md.matches.size() == 1 || ploc_ent)) {
+        error::location_t call_location{ ploc_ent ? error::location_t{ ploc_ent->value() } : md.call_location };
         // Create error with the string content as description
-        return std::unexpected(make_error<basic_general_error>(md.call_location, str_ent.value()));
+        return std::unexpected(make_error<basic_general_error>(
+            ploc_ent ? error::location_t{ ploc_ent->value() } : md.call_location,
+            pmsg_ent->value()));
     } else {
         // Argument is a runtime value, produce a call to builtin_eid::error
-        result.expressions = el.concat(result.expressions, er.expressions);
+        if (ploc_ent) {
+            u.push_back_expression(el, result.expressions, semantic::push_value{ ploc_ent->value() });
+        } else if (md.matches.size() == 1) {
+            auto locstr = small_string{ u.print(md.call_location) };
+            u.push_back_expression(el, result.expressions, semantic::push_value{ std::move(locstr) });
+        } // else the location argument is already on stack
+        result.expressions = el.concat(result.expressions, msg_er.expressions);
+        if (pmsg_ent) {
+            u.push_back_expression(el, result.expressions, semantic::push_value{ pmsg_ent->value() });
+        } // else the message argument is already on stack
         u.push_back_expression(el, result.expressions, semantic::invoke_function(u.get(builtin_eid::error)));
         result.value_or_type = u.get(builtin_eid::void_);
         result.is_const_result = false;

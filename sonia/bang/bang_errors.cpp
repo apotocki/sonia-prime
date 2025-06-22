@@ -14,12 +14,19 @@ void error::rethrow(unit& u) const
     throw exception{ u.print(*this) };
 }
 
-std::string error_printer_visitor::print_general(lex::resource_location const& loc, string_view errstr, string_view object, lex::resource_location const* optseeloc)
+std::string error_printer_visitor::print_general(error::location_t const& loc, string_view errstr, string_view object, lex::resource_location const* optseeloc)
 {
     std::ostringstream errss;
-    if (loc) {
-        write(errss, loc) << ": "sv;
-    }
+    apply_visitor(make_functional_visitor<void>([&errss](auto const& l) {
+        if constexpr (std::is_same_v<lex::resource_location, std::decay_t<decltype(l)>>) {
+            if (l) {
+                write(errss, l) << ": "sv;
+            }
+        } else {
+            errss << l << ": "sv;
+        }
+    }), loc);
+
     if (!object.empty()) {
         errss << '`' << object << "`: "sv;
     }

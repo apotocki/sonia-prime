@@ -15,6 +15,7 @@
 #include "entities/internal_type_entity.hpp"
 #include "entities/ellipsis/ellipsis_pattern.hpp"
 #include "entities/functions/function_entity.hpp"
+#include "entities/functions/internal_function_entity.hpp"
 
 #include "functional/external_fn_pattern.hpp"
 #include "functional/general/error_pattern.hpp"
@@ -182,7 +183,8 @@ template <std::derived_from<external_fn_pattern> PT>
 void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
 {
     auto [pf, fndecl] = parse_extern_fn(signature);
-    fn_compiler_context ctx{ *this, qname{} };
+    internal_function_entity default_fentity{ qname{}, entity_signature{}, {} };
+    fn_compiler_context ctx{ *this, default_fentity };
     auto ptrn = make_shared<PT>(fn_identifier_counter_);
     if (auto err = ptrn->init(ctx, fndecl); err) {
         throw exception(print(*err));
@@ -200,7 +202,8 @@ entity_identifier unit::set_builtin_extern(string_view signature, void(*pfn)(vm:
 {
     auto [pf, fndecl] = parse_extern_fn(signature);
     auto ptrn = make_shared<external_fn_pattern>(fn_identifier_counter_);
-    fn_compiler_context ctx{ *this, qname{} };
+    internal_function_entity default_fentity{ qname{}, entity_signature{}, {} };
+    fn_compiler_context ctx{ *this, default_fentity };
     if (auto err = ptrn->init(ctx, fndecl); err) {
         throw exception(print(*err));
     }

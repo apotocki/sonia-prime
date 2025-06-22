@@ -17,12 +17,11 @@ class internal_function_entity;
 class declaration_visitor : public static_visitor<error_storage>
 {
     fn_compiler_context& ctx;
-    internal_function_entity& fnent;
     mutable small_vector<statement_span, 4> decl_stack_;
 
 public:
-    inline explicit declaration_visitor(fn_compiler_context& c, internal_function_entity& fne) noexcept
-        : ctx{ c }, fnent{ fne }
+    inline explicit declaration_visitor(fn_compiler_context& c) noexcept
+        : ctx{ c }
     {}
 
     [[nodiscard]] error_storage apply(statement_span) const;

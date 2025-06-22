@@ -38,6 +38,8 @@ namespace vm { class context; }
 class external_fn_pattern;
 
 #define BANG_BUILTIN_ID_SEQ                \
+    ((location, "location"sv))             \
+    ((call_location, "__call_location"sv)) \
     ((type, "__type"sv))                   \
     ((to, "to"sv))                         \
     ((self, "self"sv))                     \

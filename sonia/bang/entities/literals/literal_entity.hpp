@@ -92,7 +92,7 @@ public:
     
     std::ostream& print_to(std::ostream& os, unit const& u) const override
     {
-        return get_entity(u, type_).print_to(os << "empty: "sv, u);
+        return get_entity(u, type_).print_to(os << "unit^^"sv, u);
     }
 };
 

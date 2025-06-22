@@ -23,7 +23,7 @@ prepared_call::prepared_call(fn_compiler_context& ctx, functional const* pf, sem
     , expressions{ ael }
     , location{ std::move(loc) }
 {
-    ctx.push_binding(bound_temporaries);
+    init_bindings();
 }
 
 prepared_call::prepared_call(fn_compiler_context &ctx, functional const* pf, pure_call_t const& call, semantic::expression_list_t& ael)
@@ -44,7 +44,13 @@ prepared_call::prepared_call(fn_compiler_context &ctx, functional const* pf, pur
     }
     // sort named arguments
     std::ranges::sort(named_argument_caches_, {}, [](auto const& pair) { return get<0>(pair).value; });
-    ctx.push_binding(bound_temporaries);
+    
+    init_bindings();
+}
+
+void prepared_call::init_bindings()
+{
+    caller_ctx.push_binding(bound_temporaries);
 }
 
 prepared_call::~prepared_call()

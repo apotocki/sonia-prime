@@ -13,6 +13,7 @@
 #include "sonia/bang/ast/ct_expression_visitor.hpp"
 
 #include "sonia/bang/entities/prepared_call.hpp"
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 
 #include "sonia/bang/errors/value_mismatch_error.hpp"
 #include "sonia/bang/auxiliary.hpp"
@@ -108,9 +109,17 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         }
     }
 
+    unit& u = caller_ctx.u();
+
     // prepare binding
+    functional_binding_set ct_call_binding; // binding for builtin call constants, e.g. #call_location
+    ct_call_binding.emplace_back(
+        annotated_identifier{ u.get(builtin_id::call_location) },
+        u.make_string_entity(u.print(call.location)).id
+    );
     fn_compiler_context callee_ctx{ caller_ctx, call.functional_name() };
     auto pmd = make_shared<functional_match_descriptor>(call);
+    callee_ctx.push_binding(ct_call_binding);
     callee_ctx.push_binding(pmd->bindings);
     //SCOPE_EXIT([&ctx] { ctx.pop_binding(); }); // no need, temporary context
     
@@ -130,7 +139,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
     }
     
 
-    unit& u = caller_ctx.u();
+
     auto call_session = call.new_session(caller_ctx);
 
     auto param_it = parameters_.begin(), param_end = parameters_.end();
@@ -204,7 +213,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
                 }
             }
             // if no errors here, then matched
-            THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern : expression");
         } else {
             entity_identifier type_to_match;
             if (arg_er.is_const_result) {

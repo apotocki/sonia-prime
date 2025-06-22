@@ -88,6 +88,9 @@ public:
 
     qname_view functional_name() const noexcept;
     qname_identifier functional_id() const noexcept;
+
+private:
+    void init_bindings();
 };
 
 }

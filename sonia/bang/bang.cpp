@@ -115,14 +115,14 @@ inline fn logic_and($FT, $ST) -> union($FT, $ST) {
         return $0;
     }
 }
-inline fn assert_equal(_, _ /*, location: #call_location*/) {
+inline fn assert_equal(_, _, location:~string = __call_location) {
     if $0 != $1 {
-        error("Assertion failed: " ..to_string($0) .. " != " ..to_string($1));
+        error(location: location, "Assertion failed: " ..to_string($0) .. " != " ..to_string($1));
     }
 }
-inline fn assert_not_equal(_, _ /*, location: #call_location*/) {
-    if $0 == $1{
-        error("Assertion failed: " ..to_string($0) .. " == " ..to_string($1));
+inline fn assert_not_equal(_, _, location:~string = __call_location) {
+    if $0 == $1 {
+        error(location: location, "Assertion failed: " ..to_string($0) .. " == " ..to_string($1));
     }
 }
 //inline fn ::set(self: object, property: const __identifier, any)->object => set(self: self, to_string(property), $0);
@@ -145,10 +145,10 @@ void bang_impl::bootstrap()
     if (!decls.has_value()) throw exception(decls.error());
     unit_.push_ast({}, std::move(parser.statements()));
     
-    fn_compiler_context ctx{ unit_ };
-
     internal_function_entity dummy{ qname{}, entity_signature{}, *decls };
-    declaration_visitor dvis{ ctx, dummy };
+    fn_compiler_context ctx{ unit_, dummy };
+
+    declaration_visitor dvis{ ctx };
     if (auto err = dvis.apply(*decls); err) throw exception(unit_.print(*err));
     //for (auto& d : *exp_decls) { apply_visitor(dvis, d); }
     auto res = ctx.finish_frame(dummy);
@@ -190,8 +190,10 @@ void bang_impl::load(string_view code, span<string_view> args)
 void bang_impl::compile(statement_span decls, span<string_view> args)
 {
     identifier main_id = unit_.new_identifier();
+    entity_signature main_sig{};
+    internal_function_entity main_fn_ent{ qname{}, std::move(main_sig), std::move(decls) };
     //fn_compiler_context ctx{ unit_, qname{ main_id } };
-    fn_compiler_context ctx{ unit_ };
+    fn_compiler_context ctx{ unit_, main_fn_ent };
     size_t argindex = 0;
     std::array<char, 16> argname = { '$' };
     for (string_view arg : args) {
@@ -234,7 +236,7 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
     //    pte->treat(ctx);
     //}
 
-    entity_signature main_sig{};
+    
 
 
     //declaration_visitor dvis{ ctx };
@@ -257,7 +259,7 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
     // expression tree to vm script
     
     // main
-    internal_function_entity main_fn_ent{ qname{}, std::move(main_sig), std::move(decls) };
+    
     auto err = main_fn_ent.build(ctx);
     if (err) {
         throw exception(unit_.print(*err));

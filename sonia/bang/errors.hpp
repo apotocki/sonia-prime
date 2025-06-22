@@ -44,10 +44,10 @@ class error
 {
     shared_ptr<error> cause_;
 
-protected:
-    using string_t = variant<std::string, string_view>;
-
 public:
+    using string_t = variant<std::string, string_view>;
+    using location_t = variant<lex::resource_location, std::string, string_view>;
+
     virtual ~error() = default;
     virtual void visit(error_visitor&) const = 0;
 
@@ -106,7 +106,7 @@ private:
 class general_error : public error
 {
 public:
-    virtual lex::resource_location const& location() const = 0;
+    virtual location_t location() const = 0;
     virtual string_t object(unit const&) const = 0;
     virtual string_t description(unit const&) const = 0;
     virtual lex::resource_location const* ref_location() const noexcept { return nullptr; }
@@ -117,13 +117,13 @@ class basic_general_error : public general_error
 protected:
     using object_t = variant<nullptr_t, syntax_expression_t, qname, qname_view, qname_identifier, entity_identifier, identifier>;
 
-    lex::resource_location location_;
+    location_t location_;
     lex::resource_location reflocation_;
     string_t description_;
     object_t object_;
 
 public:
-    basic_general_error(lex::resource_location loc, string_t descr, object_t obj = nullptr, lex::resource_location refloc = {})
+    basic_general_error(location_t loc, string_t descr, object_t obj = nullptr, lex::resource_location refloc = {})
         : location_{ std::move(loc) }, description_{ descr }, object_{ std::move(obj) }, reflocation_{ std::move(refloc) }
     {}
 
@@ -137,7 +137,7 @@ public:
 
     void visit(error_visitor& vis) const override { vis(*this); }
 
-    lex::resource_location const& location() const noexcept override { return location_; }
+    location_t location() const noexcept override { return location_; }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override { return description_; }
     lex::resource_location const* ref_location() const noexcept override { return reflocation_ ? &reflocation_ : nullptr; }
@@ -184,7 +184,7 @@ public:
 
     void visit(error_visitor& vis) const override { vis(*this); }
 
-    lex::resource_location const& location() const noexcept override { return idname_.location; }
+    location_t location() const noexcept override { return idname_.location; }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override { return "undeclared identifier"sv; }
 };
@@ -203,7 +203,7 @@ public:
     //    : param{ qname{std::move(p.value)}, std::move(p.location) }, entity_name{ qn }
     //{}
     void visit(error_visitor& vis) const override { vis(*this); }
-    lex::resource_location const& location() const noexcept override { return param.location; }
+    location_t location() const noexcept override { return param.location; }
     string_t object(unit const&) const noexcept override { return ""sv; }
     string_t description(unit const&) const noexcept override;
 };
@@ -227,7 +227,7 @@ public:
 
     void visit(error_visitor& vis) const override { vis(*this); }
 
-    lex::resource_location const& location() const noexcept override { return location_; }
+    location_t location() const noexcept override { return location_; }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override;
     lex::resource_location const* ref_location() const noexcept override { return refloc_ ? &refloc_ : nullptr; }
@@ -264,7 +264,7 @@ public:
 
     void visit(error_visitor& vis) const override { vis(*this); }
 
-    lex::resource_location const& location() const noexcept override { return location_; }
+    location_t location() const noexcept override { return location_; }
     string_t object(unit const&) const noexcept override { return ""sv; }
     string_t description(unit const&) const noexcept override;
 };
@@ -280,7 +280,7 @@ public:
 
     void visit(error_visitor& vis) const override { vis(*this); }
 
-    lex::resource_location const& location() const noexcept override { return get_start_location(expr_); }
+    location_t location() const noexcept override { return get_start_location(expr_); }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override { return "is not rvalue"sv; }
 };
@@ -301,7 +301,7 @@ public:
     void operator()(circular_dependency_error const&) override;
 
 private:
-    static std::string print_general(lex::resource_location const& loc, string_view err, string_view object, lex::resource_location const* optseeloc = nullptr);
+    static std::string print_general(error::location_t const& loc, string_view err, string_view object, lex::resource_location const* optseeloc = nullptr);
 };
 
 }

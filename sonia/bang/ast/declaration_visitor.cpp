@@ -184,8 +184,7 @@ size_t declaration_visitor::append_result(semantic::expression_list_t& el, synta
         ctx.append_expressions(el, sp);
         ctx.push_scope_variable(
             annotated_identifier{ varname },
-            var, //local_variable{ .type = t, .varid = varid, .is_weak = false },
-            fnent);
+            var); //local_variable{ .type = t, .varid = varid, .is_weak = false },
     }
     ctx.append_expressions(el, er.expressions);
     size_t scope_sz = ctx.current_scope_binding().size();
@@ -645,8 +644,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
             ctx.append_expressions(el, sp);
             ctx.push_scope_variable(
                 annotated_identifier{ varname },
-                var,
-                fnent);
+                var);
         }
     };
 
@@ -669,8 +667,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
             ctx.pop_scope();
             ctx.push_scope_variable(
                 ld.aname,
-                local_variable{ .type = pelemsig ? pelemsig->id : er.type(), .varid = u().new_variable_identifier(), .is_weak = ld.weakness },
-                fnent);
+                local_variable{ .type = pelemsig ? pelemsig->id : er.type(), .varid = u().new_variable_identifier(), .is_weak = ld.weakness });
             if (scope_sz) {
                 ctx.append_expression(semantic::truncate_values(scope_sz, !er.is_const_result));
             }
@@ -693,8 +690,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
             identifier unnamedid = u().new_identifier();
             ctx.push_scope_variable(
                 annotated_identifier{ unnamedid },
-                local_variable{ .type = er.type(), .varid = u().new_variable_identifier(), .is_weak = ld.weakness },
-                fnent);
+                local_variable{ .type = er.type(), .varid = u().new_variable_identifier(), .is_weak = ld.weakness });
             if (scope_sz) {
                 ctx.append_expression(semantic::truncate_values(scope_sz, !er.is_const_result));
             }

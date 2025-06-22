@@ -15,7 +15,8 @@ namespace sonia::lang::bang {
 void bang_error(vm::context& ctx)
 {
     std::string err = ctx.stack_back().as<std::string>();
-    throw exception(err);
+    std::string loc = ctx.stack_back(1).as<std::string>();
+    throw exception((std::ostringstream{} << loc << ": "sv << err).str());
 }
 
 void bang_assert(vm::context& ctx)

@@ -11,17 +11,17 @@ namespace sonia::lang::bang {
 
 class assign_error : public general_error
 {
-    lex::resource_location location_;
+    location_t location_;
     syntax_expression_t lhs_;
 
 public:
-    assign_error(lex::resource_location loc, syntax_expression_t const& expr)
-        : location_{ loc }
+    assign_error(location_t loc, syntax_expression_t const& expr)
+        : location_{ std::move(loc) }
         , lhs_{ expr }
     {}
 
     void visit(error_visitor& vis) const override { vis(*this); }
-    lex::resource_location const& location() const noexcept override { return location_; }
+    location_t location() const noexcept override { return location_; }
     string_t object(unit const&) const noexcept override;
     string_t description(unit const&) const noexcept override;
 };

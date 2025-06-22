@@ -208,10 +208,11 @@ struct parameter_visitor : static_visitor<std::expected<pattern_expression_t, er
 //    return 0;
 //}
 
-fn_compiler_context::fn_compiler_context(unit& u, qname ns)
+fn_compiler_context::fn_compiler_context(unit& u, internal_function_entity& fent)
     : unit_{ u }
+    , fent_{ fent }
     , parent_{ nullptr }
-    , ns_{ std::move(ns) }
+    , ns_{ fent.name() }
     , expression_store_{ u }
 {
     init();
@@ -219,6 +220,7 @@ fn_compiler_context::fn_compiler_context(unit& u, qname ns)
 
 fn_compiler_context::fn_compiler_context(fn_compiler_context& parent, qname_view nested)
     : unit_{ parent.unit_ }
+    , fent_{ parent.fent_ }
     , ns_{ parent.ns() / nested }
     , parent_{ nested.has_prefix(parent.ns()) ? &parent : nullptr }
     , expression_store_{ parent.unit_ }
@@ -284,10 +286,10 @@ void fn_compiler_context::pop_scope()
     }
 }
 
-void fn_compiler_context::push_scope_variable(annotated_identifier name, local_variable lv, internal_function_entity& fnent)
+void fn_compiler_context::push_scope_variable(annotated_identifier name, local_variable lv)
 {
     int64_t index = scope_offset_ + scoped_locals_.back().size();
-    fnent.push_variable(lv.varid, index);
+    fent_.push_variable(lv.varid, index);
     scoped_locals_.back().emplace_back(std::move(name), std::move(lv));
 }
 

@@ -69,6 +69,7 @@ public:
 class fn_compiler_context
 {
     unit& unit_;
+    internal_function_entity& fent_;
     fn_compiler_context* parent_;
     qname ns_;
     size_t base_ns_size_;
@@ -78,7 +79,7 @@ class fn_compiler_context
     int64_t scope_offset_ = 0;
 
 public:
-    fn_compiler_context(unit& u, qname ns = {});
+    fn_compiler_context(unit& u, internal_function_entity&);
 
     fn_compiler_context(fn_compiler_context& parent, qname_view nested);
 
@@ -105,7 +106,7 @@ public:
     compiler_task_tracer::task_guard try_lock_task(compiler_task_id const&);
 
     void push_scope();
-    void push_scope_variable(annotated_identifier name, local_variable, internal_function_entity&);
+    void push_scope_variable(annotated_identifier name, local_variable);
     void pop_scope();
     inline functional_binding_set const& current_scope_binding() const noexcept { return scoped_locals_.back(); }
 

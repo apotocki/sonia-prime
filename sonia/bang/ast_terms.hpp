@@ -454,7 +454,7 @@ struct member_expression
 struct variable_reference
 {
     annotated_qname name;
-    bool implicit; // true for identifiers started with $, e.g.: $0, $$
+    bool implicit; // true for identifiers started with $ or #, e.g.: $0, $$, #call_location
 };
 
 struct placeholder

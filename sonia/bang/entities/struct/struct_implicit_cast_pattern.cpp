@@ -34,7 +34,7 @@ error_storage struct_implicit_cast_check_argument_type(fn_compiler_context& ctx,
 
 std::expected<functional_match_descriptor_ptr, error_storage> struct_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
-    if (!exp) {
+    if (!exp.type) {
         return std::unexpected(make_error<basic_general_error>(call.location, "expected a tuple result"sv));
     }
     unit& u = ctx.u();

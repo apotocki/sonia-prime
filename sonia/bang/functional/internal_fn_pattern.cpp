@@ -9,8 +9,9 @@
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/entities/functions/internal_function_entity.hpp"
-
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 #include "sonia/bang/errors/circular_dependency_error.hpp"
+#include "sonia/bang/auxiliary.hpp"
 
 namespace sonia::lang::bang {
 
@@ -45,16 +46,54 @@ shared_ptr<entity> internal_fn_pattern::build(fn_compiler_context& ctx, function
 void internal_fn_pattern::build_scope(unit& u, functional_match_descriptor& md, internal_function_entity& fent) const
 {
     // bind variables (rt arguments)
-    for (auto& [argindex, mr] : md.matches) {
-        parameter_descriptor const& pd = parameters_[argindex];
+    for (parameter_descriptor const& pd : parameters_) {
         functional_binding::value_type const* bsp = md.bindings.lookup(pd.inames.front().value);
         BOOST_ASSERT(bsp);
-        if (local_variable const* plv = get<local_variable>(bsp); plv) {
-            fent.push_argument(plv->varid);
-        } else {
-            THROW_INTERNAL_ERROR("internal_fn_pattern::build_scope: expected local_variable in functional_binding::value_type");
+        bool ellipsis = (apply_visitor(make_functional_visitor<parameter_constraint_modifier_t>([](auto const& v) {
+            return v.modifier;
+        }), pd.constraint) & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis;
+
+        if (!ellipsis) {
+            if (local_variable const* plv = get<local_variable>(bsp); plv) {
+                fent.push_argument(plv->varid);
+            } // else arg is constant
+            continue;
+        }
+
+        entity_identifier const* peid = get<entity_identifier>(bsp);
+        if (!peid) {
+            THROW_INTERNAL_ERROR("internal_fn_pattern::build_scope: expected entity_identifier in functional_binding::value_type for ellipsis");
+        }
+
+        entity const& ellipsis_unit = get_entity(u, *peid);
+        entity const& ellipsis_unit_type = get_entity(u, ellipsis_unit.get_type());
+        entity_signature const* pellipsis_sig = ellipsis_unit_type.signature();
+        BOOST_ASSERT(pellipsis_sig && pellipsis_sig->name == u.get(builtin_qnid::tuple));
+        for (field_descriptor const& fd : pellipsis_sig->fields()) {
+            BOOST_ASSERT(fd.is_const());
+            entity const& fd_ent = get_entity(u, fd.entity_id());
+            if (qname_entity const* pqent = dynamic_cast<qname_entity const*>(&fd_ent); pqent) {
+                qname const& qn = pqent->value();
+                BOOST_ASSERT(qn.size() == 1);
+                identifier varname = qn.parts().front();
+                functional_binding::value_type const* bvar = md.bindings.lookup(varname);
+                BOOST_ASSERT(bvar);
+                local_variable const* plv = get<local_variable>(bvar);
+                BOOST_ASSERT(plv);
+                fent.push_argument(plv->varid);
+            }
         }
     }
+    //for (auto& [argindex, mr] : md.matches) {
+    //    parameter_descriptor const& pd = parameters_[argindex];
+    //    functional_binding::value_type const* bsp = md.bindings.lookup(pd.inames.front().value);
+    //    BOOST_ASSERT(bsp);
+    //    if (local_variable const* plv = get<local_variable>(bsp); plv) {
+    //        fent.push_argument(plv->varid);
+    //    } else {
+    //        THROW_INTERNAL_ERROR("internal_fn_pattern::build_scope: expected local_variable in functional_binding::value_type");
+    //    }
+    //}
     
     // ? bind constants ?
 #if 0

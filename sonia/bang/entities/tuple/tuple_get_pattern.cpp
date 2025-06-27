@@ -22,8 +22,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
 {
     unit& u = ctx.u();
     auto call_session = call.new_session(ctx);
-    syntax_expression_t const* pslf_arg_expr;
-    auto slf_arg = call_session.use_named_argument(u.get(builtin_id::self), expected_result_t{}, &pslf_arg_expr);
+    std::pair<syntax_expression_t const*, size_t> slf_arg_expr;
+    auto slf_arg = call_session.use_named_argument(u.get(builtin_id::self), expected_result_t{}, &slf_arg_expr);
     if (!slf_arg) {
         if (!slf_arg.error()) {
             return std::unexpected(make_error<basic_general_error>(call.location, "missing required argument: `self`"sv));
@@ -31,12 +31,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
         return std::unexpected(std::move(slf_arg.error()));
     }
 
-    syntax_expression_t const* pprop_arg_expr;
+    std::pair<syntax_expression_t const*, size_t> prop_arg;
     alt_error prop_errors;
-    auto property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::integer) }, &pprop_arg_expr);
+    auto property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::integer) }, &prop_arg);
     if (!property_arg && property_arg.error()) {
         prop_errors.alternatives.emplace_back(std::move(property_arg.error()));
-        property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::identifier) }, &pprop_arg_expr);
+        call_session.reuse_argument(get<1>(prop_arg));
+        property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::identifier) }, &prop_arg);
     }
     if (!property_arg) {
         if (!property_arg.error()) {
@@ -61,7 +62,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
         entity const& slf_entity = get_entity(u, slf_arg_er.value());
         if (auto psig = slf_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
             if (psig->empty()) {
-                return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), slf_arg_er.value(), "a not empty tuple type"sv));
+                return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slf_arg_er.value(), "a not empty tuple type"sv));
             }
             pmd = make_shared<tuple_get_match_descriptor>(call, slf_entity, *psig, true);
         } else {
@@ -74,10 +75,10 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
         entity const& tpl_entity = get_entity(u, slftype);
         entity_signature const* psig = tpl_entity.signature();
         if (!psig || psig->name != u.get(builtin_qnid::tuple)) {
-            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), slftype, "a tuple"sv));
+            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slftype, "a tuple"sv));
         }
         if (psig->empty()) {
-            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), slftype, "a not empty tuple"sv));
+            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slftype, "a not empty tuple"sv));
         }
         pmd = make_shared<tuple_get_match_descriptor>(call, tpl_entity, *tpl_entity.signature(), false);
     }

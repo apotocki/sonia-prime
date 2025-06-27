@@ -37,15 +37,15 @@ tuple_equal_pattern::try_match(fn_compiler_context& ctx, prepared_call const& ca
     auto call_session = call.new_session(ctx);
 
     // Get lhs tuple
-    syntax_expression_t const* plhs_expr;
-    auto lhs_arg = call_session.use_next_positioned_argument(&plhs_expr);
+    std::pair<syntax_expression_t const*, size_t> lhs_expr;
+    auto lhs_arg = call_session.use_next_positioned_argument(&lhs_expr);
     if (!lhs_arg) {
         return std::unexpected(make_error<basic_general_error>(call.location, "missing first tuple argument"sv));
     }
 
     // Get rhs tuple
-    syntax_expression_t const* prhs_expr;
-    auto rhs_arg = call_session.use_next_positioned_argument(&prhs_expr);
+    std::pair<syntax_expression_t const*, size_t> rhs_expr;
+    auto rhs_arg = call_session.use_next_positioned_argument(&rhs_expr);
     if (!rhs_arg) {
         return std::unexpected(make_error<basic_general_error>(call.location, "missing second tuple argument"sv));
     }
@@ -202,7 +202,7 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
         }
 
         // Compare fields using builtin_qnid::eq
-        auto match = ctx.find(builtin_qnid::eq, eq_call, el, expected_result_t{ u.get(builtin_eid::boolean), false });
+        auto match = ctx.find(builtin_qnid::eq, eq_call, el, expected_result_t{ .type = u.get(builtin_eid::boolean), .modifier = parameter_constraint_modifier_t::const_or_runtime_type });
         if (!match) {
             return std::unexpected(append_cause(
                 make_error<binary_relation_error>(md.call_location, ("can't compare tuple fields at index %1%"_fmt % i).str(), lhs_field.entity_id(), rhs_field.entity_id()),

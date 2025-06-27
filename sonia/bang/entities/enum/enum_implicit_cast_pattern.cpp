@@ -37,10 +37,10 @@ namespace sonia::lang::bang {
 
 std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
-    unit& u = ctx.u();
-    if (!exp) {
+    if (!exp.type) {
         return std::unexpected(make_error<basic_general_error>(call.location, "expected an enumeration result"sv));
     }
+    unit& u = ctx.u();
     entity const& ent = get_entity(u, exp.type);
     enum_entity const* penum = dynamic_cast<enum_entity const*>(&ent);
     if (!penum) {
@@ -52,7 +52,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
     for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
-        auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions, expected_result_t{ u.get(builtin_eid::identifier), true } }, argexpr);
+        auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions, expected_result_t{ .type = u.get(builtin_eid::identifier), .modifier = parameter_constraint_modifier_t::const_type } }, argexpr);
         if (!res) {
             return std::unexpected(append_cause(
                 make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr),

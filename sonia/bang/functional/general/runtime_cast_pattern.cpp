@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "mut_pattern.hpp"
+#include "runtime_cast_pattern.hpp"
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 
@@ -15,10 +15,10 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> mut_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
+std::expected<functional_match_descriptor_ptr, error_storage> runtime_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     auto call_session = call.new_session(ctx);
-    auto arg = call_session.use_next_positioned_argument(exp);
+    auto arg = call_session.use_next_positioned_argument(expected_result_t{ .type = exp.type, .location = call.location, .modifier = parameter_constraint_modifier_t::runtime_type });
     if (!arg) return std::unexpected(arg.error());
     if (auto argterm = call_session.unused_argument(); argterm) {
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
@@ -29,17 +29,17 @@ std::expected<functional_match_descriptor_ptr, error_storage> mut_pattern::try_m
     return std::move(pmd);
 }
 
-std::expected<syntax_expression_result_t, error_storage> mut_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
+std::expected<syntax_expression_result_t, error_storage> runtime_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     auto & [_, ser] = md.matches.front();
 
     ser.expressions = el.concat(md.merge_void_spans(el), ser.expressions);
-    
-    if (ser.is_const_result) {
-        ctx.u().push_back_expression(el, ser.expressions, semantic::push_value{ ser.value() });
-        ser.value_or_type = get_entity(ctx.u(), ser.value()).get_type();
-        ser.is_const_result = false;
-    }
+    BOOST_ASSERT(!ser.is_const_result);
+    //if (ser.is_const_result) {
+    //    ctx.u().push_back_expression(el, ser.expressions, semantic::push_value{ ser.value() });
+    //    ser.value_or_type = get_entity(ctx.u(), ser.value()).get_type();
+    //    ser.is_const_result = false;
+    //}
     return std::move(ser);
 }
 

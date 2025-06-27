@@ -7,14 +7,14 @@
 #include "sonia/small_vector.hpp"
 #include "sonia/bang/entities/functional.hpp"
 
-#include "parameter_matcher.hpp"
-
 namespace sonia::lang::bang {
 
 class internal_function_entity;
 
 class basic_fn_pattern : public functional::pattern
 {
+    friend class parameter_matcher;
+
 protected:
     struct parameter_descriptor
     {
@@ -25,20 +25,15 @@ protected:
     };
 
     // in the order of declaration (fn_pure)
-    small_vector<parameter_descriptor, 8> parameters_;
-
-    boost::container::small_flat_set<named_parameter_matcher, 8, named_parameter_matcher_less> named_matchers_;
-    small_vector<parameter_matcher, 8> matchers_;
+    using parameters_t = small_vector<parameter_descriptor, 8>;
+    parameters_t parameters_;
 
     variant<nullptr_t, syntax_expression_t, pattern_t> result_;
 
 public:
     basic_fn_pattern() = default;
 
-    //error_storage init(fn_compiler_context&, parameter_list_t const&);
-    
     error_storage init(fn_compiler_context&, fn_pure_t const&);
-
 
     std::expected<functional_match_descriptor_ptr, error_storage> try_match(fn_compiler_context&, prepared_call const&, expected_result_t const&) const override;
 

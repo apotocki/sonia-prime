@@ -19,6 +19,7 @@
 #include "sonia/bang/auxiliary.hpp"
 
 #include "pattern_matcher.hpp"
+#include "parameter_matcher.hpp"
 
 namespace sonia::lang::bang {
 
@@ -104,7 +105,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
 {
     // quick mismatch check
     if (pattern_t const* rpattern = get<pattern_t>(&result_)) {
-        if (!exp) {
+        if (!exp.type) {
             return std::unexpected(make_error<basic_general_error>(call.location, "Cannot match pattern without expected result"sv, nullptr, get_start_location(*rpattern)));
         }
     }
@@ -137,11 +138,16 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         }
         call_sig.result.emplace( exp.type, false );
     }
-    
 
+    //auto call_session = call.new_session(caller_ctx);
 
-    auto call_session = call.new_session(caller_ctx);
-
+    parameter_matcher pmatcher{ caller_ctx, call, parameters_ };
+    pmatcher.pmd = pmd;
+    auto err = pmatcher.match(callee_ctx);
+    if (err) {
+        return std::unexpected(std::move(err));
+    }
+#if 0
     auto param_it = parameters_.begin(), param_end = parameters_.end();
     for (; param_it != param_end; ++param_it) {
         parameter_descriptor const& pd = *param_it;
@@ -170,7 +176,19 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
                 argexp.is_const_result = true;
             }
             ellipsis = pconstraint->ellipsis;
-        } // else it's a pattern, so we won't use a type constraint directly
+        } else { // else it's a pattern, so we won't use a type constraint directly
+            pattern_t const& pattern = get<pattern_t>(pd.constraint);
+            ellipsis = pattern.ellipsis;
+        }
+
+        if (ellipsis) {
+            if (pd.ename) {
+                //handle_named_ellipsis(callee_ctx, call, pd.ename.value, pmd->bindings);
+                THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern : ellipsis with named parameter");    
+            } else {
+                //handle_positioned_ellipsis(callee_ctx, call, pmd->bindings);
+            }
+        }
         auto res = [&call_session, &pd](expected_result_t& argexp, syntax_expression_t const** parg) {
             if (pd.ename) {
                 return call_session.use_named_argument(pd.ename.value, argexp, parg);
@@ -230,7 +248,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
                     std::move(err)
                 ));
             }
-            ellipsis = pattern.ellipsis;
         }
         pmd->weight -= res->second;
         
@@ -268,9 +285,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         return std::unexpected(make_error<basic_general_error>(argterm.location(),
             "argument mismatch"sv, std::move(argterm.value())));
     }
-
+#endif
     if (syntax_expression_t const* rexpr = get<syntax_expression_t>(&result_)) {
-        auto res = apply_visitor(base_expression_visitor{ callee_ctx, call.expressions, expected_result_t{ entity_identifier{}, true } }, *rexpr);
+        auto res = apply_visitor(base_expression_visitor{ callee_ctx, call.expressions, expected_result_t{ .modifier = parameter_constraint_modifier_t::const_type } }, *rexpr);
         if (!res) {
             return std::unexpected(append_cause(
                 make_error<basic_general_error>(call.location, "Cannot evaluate result expression"sv, nullptr, get_start_location(*rexpr)),
@@ -281,7 +298,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
         call_sig.result.emplace(res_er.value(), true);
     }
 
-    pmd->void_spans = std::move(call_session.void_spans);
     return pmd;
 }
 
@@ -314,7 +330,7 @@ std::ostream& basic_fn_pattern::print(unit const& u, std::ostream& ss) const
                 u.print_to(ss, m);
             } else if constexpr (std::is_same_v<constraint_expression_t, std::decay_t<decltype(m)>>) {
                 u.print_to(ss << "~ "sv, m.expression);
-                if (m.ellipsis) {
+                if ((m.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis) {
                     ss << "..."sv;
                 }
             } else {

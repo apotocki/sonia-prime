@@ -146,8 +146,8 @@ TRUE_WORD				 "true"
 FALSE_WORD				 "false"
 
 WEAK					 "weak"
-CONST					 "const"
-MUT						 "mut"
+CONSTEXPR				 "constexpr"
+RUNTIME					 "runtime"
 
 APOSTROPHE				 "`"
 AT_SYMBOL				 "@"
@@ -328,8 +328,8 @@ HASHTAG					"#"
 	{RETURN} { variant_emplace(location); return (bang_lang::parser::token::RETURN); }
 
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
-	{CONST} { return (bang_lang::parser::token::CONST); }
-	{MUT} { variant_emplace(location); return (bang_lang::parser::token::MUT); }
+	{CONSTEXPR} { return (bang_lang::parser::token::CONSTEXPR); }
+	{RUNTIME} { return (bang_lang::parser::token::RUNTIME); }
 
 	{NIL_WORD} {
 		variant_emplace(annotated_nil{location});

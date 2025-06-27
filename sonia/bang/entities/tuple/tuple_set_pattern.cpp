@@ -35,9 +35,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
     unit& u = ctx.u();
     
     auto call_session = call.new_session(ctx);
-    syntax_expression_t const* pslf_arg_expr;
+    std::pair<syntax_expression_t const*, size_t> slf_arg_expr;
 
-    auto slf_arg = call_session.use_named_argument(u.get(builtin_id::self), expected_result_t{}, &pslf_arg_expr);
+    auto slf_arg = call_session.use_named_argument(u.get(builtin_id::self), expected_result_t{}, &slf_arg_expr);
     if (!slf_arg) {
         if (!slf_arg.error()) {
             return std::unexpected(make_error<basic_general_error>(call.location, "missing `self` argument"sv));
@@ -45,12 +45,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
         return std::unexpected(std::move(slf_arg.error()));
     }
 
-    syntax_expression_t const* pprop_arg_expr;
+    std::pair<syntax_expression_t const*, size_t> prop_arg_expr;
     alt_error prop_errors;
-    auto property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::integer) }, &pprop_arg_expr);
+    auto property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::integer) }, &prop_arg_expr);
     if (!property_arg && property_arg.error()) {
         prop_errors.alternatives.emplace_back(std::move(property_arg.error()));
-        property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::identifier) }, &pprop_arg_expr);
+        call_session.reuse_argument(get<1>(prop_arg_expr));
+        property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::identifier) }, &prop_arg_expr);
     }
     if (!property_arg) {
         if (!property_arg.error()) {
@@ -64,8 +65,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
         }
     }
 
-    syntax_expression_t const* pprop_val_arg_expr;
-    auto valarg = call_session.use_next_positioned_argument(&pprop_val_arg_expr);
+    std::pair<syntax_expression_t const*, size_t> prop_val_arg_expr;
+    auto valarg = call_session.use_next_positioned_argument(&prop_val_arg_expr);
     if (!valarg) {
         if (!valarg.error()) {
             return std::unexpected(make_error<basic_general_error>(call.location, "missing required value argument"sv));
@@ -80,13 +81,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
     shared_ptr<tuple_set_match_descriptor> pmd = make_shared<tuple_set_match_descriptor>(call);
     auto& ser = slf_arg->first;
     if (ser.is_const_result) {
-        return std::unexpected(make_error<basic_general_error>(get_start_location(*pslf_arg_expr), "argument mismatch, expected a mutable tuple"sv, ser.value()));
+        return std::unexpected(make_error<basic_general_error>(get_start_location(*get<0>(slf_arg_expr)), "argument mismatch, expected a mutable tuple"sv, ser.value()));
     }
 
     entity const& some_entity = get_entity(u, ser.type());
     auto psig = some_entity.signature();
     if (!psig || psig->name != u.get(builtin_qnid::tuple)) {
-        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), ctx.context_type, u.get(builtin_qnid::tuple)));
+        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), ctx.context_type, u.get(builtin_qnid::tuple)));
     }
 
     pmd->emplace_back(0, ser);

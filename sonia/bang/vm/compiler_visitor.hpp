@@ -321,7 +321,7 @@ public:
             if (fn_context_->result.entity_id() != unit_.get(builtin_eid::void_)) {
                 fnbuilder_.append_fset(-static_cast<intptr_t>(param_count));
                 fnbuilder_.append_truncatefp(-static_cast<intptr_t>(param_count) + 1);
-            } else {
+            } else if (param_count) {
                 fnbuilder_.append_truncatefp(-static_cast<intptr_t>(param_count));
             }
             //if (param_count) {

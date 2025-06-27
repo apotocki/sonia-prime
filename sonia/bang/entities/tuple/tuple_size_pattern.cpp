@@ -21,8 +21,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_size_pattern
 {
     unit& u = ctx.u();
     auto call_session = call.new_session(ctx);
-    syntax_expression_t const* parg_expr;
-    auto arg = call_session.use_next_positioned_argument(&parg_expr);
+    std::pair<syntax_expression_t const*, size_t> arg_expr;
+    auto arg = call_session.use_next_positioned_argument(&arg_expr);
     if (!arg) return std::unexpected(arg.error());
     if (auto argterm = call_session.unused_argument(); argterm) {
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
@@ -47,7 +47,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_size_pattern
         entity const& tpl_entity = get_entity(u, argtype);
         entity_signature const* psig = tpl_entity.signature();
         if (!psig || psig->name != u.get(builtin_qnid::tuple)) {
-            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*parg_expr), argtype, "a tuple"sv));
+            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(arg_expr)), argtype, "a tuple"sv));
         }
         pmd = make_shared<functional_match_descriptor>(call);
         pmd->signature.result.emplace(ctx.u().make_integer_entity(psig->fields().size()).id, true);

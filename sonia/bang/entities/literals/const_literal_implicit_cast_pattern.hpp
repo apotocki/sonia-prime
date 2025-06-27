@@ -20,7 +20,7 @@ public:
     std::expected<syntax_expression_result_t, error_storage>
     apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const override;
 
-    std::ostream& print(unit const&, std::ostream& s) const override { return s << "implicy_cast(const @literal)->@literal"sv; }
+    std::ostream& print(unit const&, std::ostream& s) const override { return s << "implicy_cast(constexpr @literal)->@literal"sv; }
 };
 
 } // namespace sonia::lang::bang

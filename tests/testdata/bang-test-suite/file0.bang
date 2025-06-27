@@ -1,5 +1,5 @@
-inline fn print(_ ...) {
-    __print($0 ..., size($0));
-}
-__print("Hello from Bang!", 1);
+//__print(mut("Hello from Bang!"), mut(1));
+//print(mut("Hello from Bang!"));
+//print(runtime_cast("Hello"), runtime_cast(" from "), runtime_cast("Bang!"));
+print("Hello", " from ", "Bang!");
 assert($$ == 0) // no arguments

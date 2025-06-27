@@ -20,7 +20,7 @@
 #include "functional/external_fn_pattern.hpp"
 #include "functional/general/error_pattern.hpp"
 #include "functional/general/assert_pattern.hpp"
-#include "functional/general/mut_pattern.hpp"
+#include "functional/general/runtime_cast_pattern.hpp"
 #include "functional/general/deref_pattern.hpp"
 #include "functional/general/equal_pattern.hpp"
 #include "functional/general/typeof_pattern.hpp"
@@ -167,41 +167,42 @@ std::pair<functional*, fn_pure_t> unit::parse_extern_fn(string_view signature)
     return { &resolve_functional(qname{ fndecl.name() }), std::move(fndecl) };
 }
 
-template <std::derived_from<functional::pattern> PT>
-void unit::set_const_extern(string_view signature)
-{
-    auto [pf, fndecl] = parse_extern_fn(signature);
-    fn_compiler_context ctx{ *this, qname{} };
-    auto ptrn = make_shared<PT>(*pf);
-    if (auto err = ptrn->init(ctx, fndecl); err) {
-        throw exception(print(*err));
-    }
-    pf->push(ptrn);
-}
+//template <std::derived_from<functional::pattern> PT>
+//void unit::set_const_extern(string_view signature)
+//{
+//    auto [pf, fndecl] = parse_extern_fn(signature);
+//    fn_compiler_context ctx{ *this, qname{} };
+//    auto ptrn = make_shared<PT>(*pf);
+//    if (auto err = ptrn->init(ctx, fndecl); err) {
+//        throw exception(print(*err));
+//    }
+//    pf->push(ptrn);
+//}
+
+//template <std::derived_from<external_fn_pattern> PT>
+//void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
+//{
+//    auto [pf, fndecl] = parse_extern_fn(signature);
+//    internal_function_entity default_fentity{ qname{}, entity_signature{}, {} };
+//    fn_compiler_context ctx{ *this, default_fentity };
+//    auto ptrn = make_shared<PT>(fn_identifier_counter_);
+//    if (auto err = ptrn->init(ctx, fndecl); err) {
+//        throw exception(print(*err));
+//    }
+//    pf->push(ptrn);
+//
+//    // to do: mangled name
+//    std::ostringstream ss;
+//    print_to(ss, pf->name());
+//    ptrn->print(*this, ss);
+//    bvm_->set_efn(fn_identifier_counter_++, pfn, small_string{ ss.str() });
+//}
 
 template <std::derived_from<external_fn_pattern> PT>
-void unit::set_extern(string_view signature, void(*pfn)(vm::context&))
-{
-    auto [pf, fndecl] = parse_extern_fn(signature);
-    internal_function_entity default_fentity{ qname{}, entity_signature{}, {} };
-    fn_compiler_context ctx{ *this, default_fentity };
-    auto ptrn = make_shared<PT>(fn_identifier_counter_);
-    if (auto err = ptrn->init(ctx, fndecl); err) {
-        throw exception(print(*err));
-    }
-    pf->push(ptrn);
-
-    // to do: mangled name
-    std::ostringstream ss;
-    print_to(ss, pf->name());
-    ptrn->print(*this, ss);
-    bvm_->set_efn(fn_identifier_counter_++, pfn, small_string{ ss.str() });
-}
-
 entity_identifier unit::set_builtin_extern(string_view signature, void(*pfn)(vm::context&))
 {
     auto [pf, fndecl] = parse_extern_fn(signature);
-    auto ptrn = make_shared<external_fn_pattern>(fn_identifier_counter_);
+    auto ptrn = make_shared<PT>(fn_identifier_counter_);
     internal_function_entity default_fentity{ qname{}, entity_signature{}, {} };
     fn_compiler_context ctx{ *this, default_fentity };
     if (auto err = ptrn->init(ctx, fndecl); err) {
@@ -503,7 +504,7 @@ std::ostream& unit::print_to(std::ostream& os, pattern_t const& ptrn) const
             print_to(os << "={"sv, d) << '}';
         }
     }), ptrn.descriptor);
-    if (ptrn.ellipsis) {
+    if ((ptrn.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis) {
         os << "... "sv;
     }
     if (!ptrn.concepts.empty()) {
@@ -1360,8 +1361,8 @@ unit::unit()
 
     /////// built in patterns
     // mut(_)
-    functional& mut_fnl = fregistry_resolve(get(builtin_qnid::mut));
-    mut_fnl.push(make_shared<mut_pattern>());
+    functional& runtime_cast_fnl = fregistry_resolve(get(builtin_qnid::runtime_cast));
+    runtime_cast_fnl.push(make_shared<runtime_cast_pattern>());
 
     // operator*(type: typename)
     functional& deref_fnl = fregistry_resolve(get(builtin_qnid::deref));
@@ -1481,7 +1482,7 @@ unit::unit()
     //functional& eq_fnl = fregistry_resolve(eq_qname_identifier_);
     //eq_fnl.push(make_shared<eq_pattern>());
 
-    builtin_eids_[(size_t)builtin_eid::arrayify] = set_builtin_extern("__arrayify(...)~>tuple($0...)"sv, &bang_arrayify);
+    builtin_eids_[(size_t)builtin_eid::arrayify] = set_builtin_extern("__arrayify(..., ~integer)~>tuple($0...)"sv, &bang_arrayify);
     builtin_eids_[(size_t)builtin_eid::array_tail] = set_builtin_extern("__array_tail(tuple(_, $t: ...))~>tuple($t...)"sv, &bang_array_tail);
     builtin_eids_[(size_t)builtin_eid::array_at] = set_builtin_extern("__array_at()->any"sv, &bang_array_at);
     builtin_eids_[(size_t)builtin_eid::equal] = set_builtin_extern("__equal(any, any)->bool"sv, &bang_any_equal);
@@ -1493,18 +1494,18 @@ unit::unit()
     //set_const_extern<to_string_pattern>("size(const metaobjct))->integer"sv);
 
     //set_extern<external_fn_pattern>("__error(mut string)"sv, &bang_error);
-    set_extern<external_fn_pattern>("__print(..., integer)"sv, &bang_print_string);
+    set_builtin_extern("__print(~runtime any ..., ~runtime integer)"sv, &bang_print_string);
 
     //set_extern("implicit_cast(to: typename string, _)->string"sv, &bang_tostring);
     //set_const_extern<to_string_pattern>("to_string(const __identifier)->string"sv);
     //set_extern<external_fn_pattern>("to_string(_)->string"sv, &bang_tostring);
     //set_extern<external_fn_pattern>("implicit_cast(mut integer)->decimal"sv, &bang_int2dec);
     //set_extern<external_fn_pattern>("implicit_cast(mut integer)->float"sv, &bang_int2flt);
-    set_extern<external_fn_pattern>("create_extern_object(string @ismut)~>object"sv, &bang_create_extern_object);
+    set_builtin_extern("create_extern_object(string @ismut)~>object"sv, &bang_create_extern_object);
 
     //set_extern<external_fn_pattern>("set(self: object, property: const __identifier, any)"sv, &bang_set_object_property);
 
-    set_extern<external_fn_pattern>("set(self:~ object, property:~ string, ~any)~>object"sv, &bang_set_object_property);
+    set_builtin_extern("set(self:~ object, property:~constexpr string, ~any)~>object"sv, &bang_set_object_property);
 
     //set_extern("string(any)->string"sv, &bang_tostring);
     //set_extern<external_fn_pattern>("assert(bool)"sv, &bang_assert);
@@ -1512,8 +1513,8 @@ unit::unit()
     // temporary
     
     //set_extern<external_fn_pattern>("negate(mut _)->bool"sv, &bang_negate);
-    set_extern<external_fn_pattern>("__plus(integer, integer)->integer"sv, &bang_operator_plus_integer);
-    set_extern<external_fn_pattern>("__plus(decimal, decimal)->decimal"sv, &bang_operator_plus_decimal);
+    set_builtin_extern("__plus(integer, integer)->integer"sv, &bang_operator_plus_integer);
+    set_builtin_extern("__plus(decimal, decimal)->decimal"sv, &bang_operator_plus_decimal);
 
 }
 

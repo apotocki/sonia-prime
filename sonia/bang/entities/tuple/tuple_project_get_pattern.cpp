@@ -21,8 +21,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_get_
 {
     unit& u = ctx.u();
     auto call_session = call.new_session(ctx);
-    syntax_expression_t const* pslf_arg_expr;
-    auto slf_arg = call_session.use_named_argument(u.get(builtin_id::self), expected_result_t{}, &pslf_arg_expr);
+    
+    std::pair<syntax_expression_t const*, size_t> slf_arg_expr;
+    auto slf_arg = call_session.use_named_argument(u.get(builtin_id::self), expected_result_t{}, &slf_arg_expr);
     if (!slf_arg) {
         if (!slf_arg.error()) {
             return std::unexpected(make_error<basic_general_error>(call.location, "missing required argument: `self`"sv));
@@ -30,9 +31,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_get_
         return std::unexpected(std::move(slf_arg.error()));
     }
 
-    syntax_expression_t const* pprop_arg_expr;
+    //std::pair<syntax_expression_t const*, size_t> prop_arg_expr;
     // Note: We only accept integer for property in tuple_project_get
-    auto property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::integer) }, &pprop_arg_expr);
+    auto property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::integer) });// , & prop_arg_expr);
     if (!property_arg) {
         if (!property_arg.error()) {
             return std::unexpected(make_error<basic_general_error>(call.location, "missing required argument: `property`"sv));
@@ -57,12 +58,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_get_
     entity const& tpl_prj_entity = get_entity(u, slftype);
     auto psig = tpl_prj_entity.signature();
     if (!psig || psig->name != u.get(builtin_qnid::tuple_project)) {
-        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*pslf_arg_expr), slftype, "a tuple_project"sv));
+        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slftype, "a tuple_project"sv));
     }
         
     // Extract project name and original tuple from signature
     if (psig->field_count() != 2 || !psig->result || psig->result->entity_id() != u.get(builtin_eid::typename_) ) { // tuple_project, (id, orig_tuple)
-        return std::unexpected(make_error<basic_general_error>(get_start_location(*pslf_arg_expr), "invalid tuple_project signature"sv, tpl_prj_entity.id));
+        return std::unexpected(make_error<basic_general_error>(get_start_location(*get<0>(slf_arg_expr)), "invalid tuple_project signature"sv, tpl_prj_entity.id));
     }
         
     // Get project name from signature (first field)
@@ -71,14 +72,14 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_get_
     if (identifier_entity const* pident = dynamic_cast<const identifier_entity*>(&name_entity)) {
         project_name = pident->value();
     } else {
-        return std::unexpected(make_error<basic_general_error>(get_start_location(*pslf_arg_expr), "invalid tuple_project name"sv, name_entity.id));
+        return std::unexpected(make_error<basic_general_error>(get_start_location(*get<0>(slf_arg_expr)), "invalid tuple_project name"sv, name_entity.id));
     }
         
     // Get original tuple entity (third field)
     entity const& orig_tuple = get_entity(u, psig->field(1).entity_id());
     auto orig_sig = orig_tuple.signature();
     if (!orig_sig || orig_sig->name != u.get(builtin_qnid::tuple)) {
-        return std::unexpected(make_error<basic_general_error>(get_start_location(*pslf_arg_expr), "invalid tuple_project origin tuple"sv, orig_tuple.id));
+        return std::unexpected(make_error<basic_general_error>(get_start_location(*get<0>(slf_arg_expr)), "invalid tuple_project origin tuple"sv, orig_tuple.id));
     }
         
     pmd = make_shared<tuple_project_get_match_descriptor>(call, project_name, orig_tuple, *orig_sig);

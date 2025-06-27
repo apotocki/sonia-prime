@@ -56,11 +56,23 @@ struct annotated_nil
 
 enum class parameter_constraint_modifier_t : uint8_t
 {
-    mutable_value_type = 1,
-    const_value_type = 2,
-    value_type = 3,
-    const_value = 4
+    none = 0,
+    runtime_type = 1,
+    const_type = 2,
+    const_or_runtime_type = 3,
+    ellipsis = 4,
+    value_type = 8
 };
+
+inline parameter_constraint_modifier_t operator|(parameter_constraint_modifier_t lhs, parameter_constraint_modifier_t rhs) noexcept
+{
+    return static_cast<parameter_constraint_modifier_t>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
+
+inline parameter_constraint_modifier_t operator&(parameter_constraint_modifier_t lhs, parameter_constraint_modifier_t rhs) noexcept
+{
+    return static_cast<parameter_constraint_modifier_t>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
+}
 
 class indirect : public polymorphic_clonable_and_movable
 {

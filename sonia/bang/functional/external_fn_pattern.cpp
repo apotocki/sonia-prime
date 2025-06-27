@@ -16,7 +16,9 @@ std::expected<syntax_expression_result_t, error_storage> external_fn_pattern::ap
     auto [result, _] = apply_arguments(ctx, el, md);
 
     u.push_back_expression(el, result.expressions, semantic::invoke_function(ent_->id));
-
+    BOOST_ASSERT(md.signature.result);
+    result.value_or_type = md.signature.result->entity_id();
+    result.is_const_result = md.signature.result->is_const();
     return result;
 }
 

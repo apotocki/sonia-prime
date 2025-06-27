@@ -19,12 +19,12 @@ namespace sonia::lang::bang {
 std::expected<functional_match_descriptor_ptr, error_storage> deref_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     auto call_session = call.new_session(ctx);
-    syntax_expression_t const* parg_expr;
-    auto arg = call_session.use_next_positioned_argument(exp, &parg_expr);
+    std::pair<syntax_expression_t const*, size_t> arg_expr;
+    auto arg = call_session.use_next_positioned_argument(exp, &arg_expr);
     if (!arg) return std::unexpected(arg.error());
 
-    auto argerror = [parg_expr] {
-        return std::unexpected(make_error<basic_general_error>(get_start_location(*parg_expr), "argument mismatch"sv, *parg_expr));
+    auto argerror = [&arg_expr] {
+        return std::unexpected(make_error<basic_general_error>(get_start_location(*get<0>(arg_expr)), "argument mismatch"sv, *get<0>(arg_expr)));
     };
     syntax_expression_result_t& arg_er = arg->first;
     if (!arg_er.is_const_result) return argerror();

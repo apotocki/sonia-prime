@@ -6,7 +6,6 @@
 #include "array_elements_implicit_cast_pattern.hpp"
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
-#include "sonia/bang/ast/ct_expression_visitor.hpp"
 #include "sonia/bang/ast/base_expression_visitor.hpp"
 
 #include "sonia/bang/entities/prepared_call.hpp"
@@ -19,16 +18,16 @@
 
 namespace sonia::lang::bang {
 
-std::expected<functional_match_descriptor_ptr, error_storage> array_elements_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& e) const
+std::expected<functional_match_descriptor_ptr, error_storage> array_elements_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
-    unit& u = ctx.u();
-    if (!e) {
+    if (!exp.type) {
         return std::unexpected(make_error<basic_general_error>(call.location, "expected an array result"sv));
     }
-    entity const& ent = u.eregistry_get(e.type);
+    unit& u = ctx.u();
+    entity const& ent = u.eregistry_get(exp.type);
     entity_signature const* psig = ent.signature();
     if (!psig || psig->name != u.get(builtin_qnid::array)) {
-        return std::unexpected(make_error<type_mismatch_error>(e.location, e.type, "an array"sv));
+        return std::unexpected(make_error<type_mismatch_error>(exp.location, exp.type, "an array"sv));
     }
     field_descriptor const* peld = psig->find_field(u.get(builtin_id::element));
     field_descriptor const* pszd = psig->find_field(u.get(builtin_id::size));
@@ -70,14 +69,14 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
             BOOST_ASSERT(pargsig);
 
             small_vector<entity_identifier, 16> ct_element_results;
-            ct_expression_visitor cast_vis{ ctx, call.expressions, expected_result_t{ arr_element_type_eid, e.location} };
+            base_expression_visitor cast_vis{ ctx, call.expressions, expected_result_t{ .type = arr_element_type_eid, .location = exp.location, .modifier = parameter_constraint_modifier_t::const_type } };
             for (size_t i = 0; i < arrsz; ++i) {
                 field_descriptor const* pargeld = pargsig->find_field(i);
                 BOOST_ASSERT(pargeld);
                 auto res = cast_vis(annotated_entity_identifier{ pargeld->entity_id(), arg_loc });
                 if (!res) return std::unexpected(std::move(res.error()));
-                if (res->expressions) THROW_NOT_IMPLEMENTED_ERROR("array_elements_implicit_cast_pattern::try_match");
-                ct_element_results.push_back(res->value);
+                if (res->first.expressions) THROW_NOT_IMPLEMENTED_ERROR("array_elements_implicit_cast_pattern::try_match");
+                ct_element_results.push_back(res->first.value());
             }
 
             pmd = make_shared<functional_match_descriptor>();

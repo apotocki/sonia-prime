@@ -864,10 +864,11 @@ error_storage declaration_visitor::operator()(return_decl_t const& rd) const
 {
     if (rd.expression) {
         semantic::managed_expression_list el{ u() };
-        auto evis = ctx.result_value_or_type ?
-            base_expression_visitor{ ctx, el, { ctx.result_value_or_type, ctx.is_const_value_result, rd.location } } :
-            base_expression_visitor{ ctx, el };
-        auto res = apply_visitor(evis, *rd.expression);
+        expected_result_t exp = ctx.result_value_or_type ?
+            expected_result_t{ .type = ctx.result_value_or_type, .location = rd.location, .modifier = ctx.is_const_value_result ? parameter_constraint_modifier_t::const_type : parameter_constraint_modifier_t::const_or_runtime_type } :
+            expected_result_t{};
+        
+        auto res = apply_visitor(base_expression_visitor{ ctx, el, exp }, *rd.expression);
         if (!res) return std::move(res.error());
         syntax_expression_result_t& er = res->first;
 

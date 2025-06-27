@@ -290,8 +290,8 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %type <sonia::optional<syntax_expression_t>> parameter-default-value-opt
 
 %token WEAK "weak modifier"
-%token CONST "const modifier"
-%token <sonia::lang::lex::resource_location> MUT "mut modifier"
+%token CONSTEXPR "constexpr modifier"
+%token RUNTIME "runctime modifier"
 
 // EXPRESSIONS
 %token <annotated_nil> NIL_WORD "nil"
@@ -314,6 +314,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 
 // PATTERNS
+%type <parameter_constraint_modifier_t> constraint-expression-mod
 %type <constraint_expression_t> constraint-expression
 %type <pattern_t> pattern
 %type <pattern_t::field> pattern-field
@@ -703,11 +704,17 @@ parameter-decl:
         { $$ = parameter_t{ .name = unnamed_parameter_name{ }, .constraint = std::move($match), .value = std::move($default) }; }
     ;
 
+constraint-expression-mod:
+      TILDA { $$ = parameter_constraint_modifier_t::const_or_runtime_type; }
+    | TILDA CONSTEXPR { $$ = parameter_constraint_modifier_t::const_type; }
+    | TILDA RUNTIME { $$ = parameter_constraint_modifier_t::runtime_type; }
+    ;
+
 constraint-expression:
-      TILDA type-expr[match]
-        { $$ = constraint_expression_t{ .expression = std::move($match) }; }
-    | TILDA type-expr[match] ELLIPSIS
-        { $$ = constraint_expression_t{ .expression = std::move($match), .ellipsis = true }; IGNORE_TERM($ELLIPSIS); }
+      constraint-expression-mod[mod] type-expr[match]
+        { $$ = constraint_expression_t{ .expression = std::move($match), .modifier = $mod }; }
+    | constraint-expression-mod[mod] type-expr[match] ELLIPSIS
+        { $$ = constraint_expression_t{ .expression = std::move($match), .modifier = $mod | parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
     ;
 
 /*
@@ -819,16 +826,6 @@ parameter-constraint-set:
 */
 
 /////////////////////////// PATTERNS
-/*
-plain-pattern:
-      qname
-        { $$ = std::move($qname); }
-    | internal-identifier[id]
-        { $$ = context_identifier{ std::move($id) }; }
-    | RESERVED_IDENTIFIER[id]
-        { $$ = context_identifier{ ctx.make_identifier(std::move($id)) }; }
-    ;
-*/
 subpatterns-opt:
       %empty
       { $$ = pattern_list_t{}; }
@@ -864,25 +861,25 @@ pattern:
       qname subpatterns-opt[subpatterns] concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = pattern_t::signature_descriptor{ .name = std::move($qname), .fields = std::move($subpatterns) }, .concepts = std::move($cpts) }; }
     | qname subpatterns-opt[subpatterns] ELLIPSIS concept-expression-list-opt[cpts]
-        { $$ = pattern_t{ .descriptor = pattern_t::signature_descriptor{ .name = std::move($qname), .fields = std::move($subpatterns) }, .concepts = std::move($cpts), .ellipsis = true }; IGNORE_TERM($ELLIPSIS); }
+        { $$ = pattern_t{ .descriptor = pattern_t::signature_descriptor{ .name = std::move($qname), .fields = std::move($subpatterns) }, .concepts = std::move($cpts), .modifier = parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
     | internal-identifier[id] concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = context_identifier{ std::move($id) }, .concepts = std::move($cpts) }; }
     | internal-identifier[id] ELLIPSIS concept-expression-list-opt[cpts]
-        { $$ = pattern_t{ .descriptor = context_identifier{ std::move($id) }, .concepts = std::move($cpts), .ellipsis = true }; IGNORE_TERM($ELLIPSIS); }
+        { $$ = pattern_t{ .descriptor = context_identifier{ std::move($id) }, .concepts = std::move($cpts), .modifier = parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
     | UNDERSCORE subpatterns concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = pattern_t::signature_descriptor{ .name = placeholder{ std::move($UNDERSCORE) }, .fields = std::move($subpatterns) }, .concepts = std::move($cpts) }; }
     | OPEN_PARENTHESIS[start] syntax-expression[expr] CLOSE_PARENTHESIS concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = std::move($expr), .concepts = std::move($cpts) }; IGNORE_TERM($start); }
     | OPEN_PARENTHESIS[start] syntax-expression[expr] CLOSE_PARENTHESIS ELLIPSIS concept-expression-list-opt[cpts]
-        { $$ = pattern_t{ .descriptor = std::move($expr), .concepts = std::move($cpts), .ellipsis = true }; IGNORE_TERM($start); IGNORE_TERM($ELLIPSIS); }
+        { $$ = pattern_t{ .descriptor = std::move($expr), .concepts = std::move($cpts), .modifier = parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($start); IGNORE_TERM($ELLIPSIS); }
     | UNDERSCORE concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = placeholder{ std::move($UNDERSCORE) }, .concepts = std::move($cpts) }; }
     | concept-expression-list[cpts]
         { $$ = pattern_t{ .descriptor = placeholder{}, .concepts = std::move($cpts) }; }
     | UNDERSCORE ELLIPSIS concept-expression-list-opt[cpts]
-        { $$ = pattern_t{ .descriptor = placeholder{ std::move($UNDERSCORE) }, .concepts = std::move($cpts), .ellipsis = true }; IGNORE_TERM($ELLIPSIS); }
+        { $$ = pattern_t{ .descriptor = placeholder{ std::move($UNDERSCORE) }, .concepts = std::move($cpts), .modifier = parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
     | ELLIPSIS concept-expression-list-opt[cpts]
-        { $$ = pattern_t{ .descriptor = placeholder{}, .concepts = std::move($cpts), .ellipsis = true }; IGNORE_TERM($ELLIPSIS); }
+        { $$ = pattern_t{ .descriptor = placeholder{}, .concepts = std::move($cpts), .modifier = parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
     ;
 
 concept-expression:
@@ -1026,11 +1023,12 @@ new-expression:
 call-expression:
       qname[name] OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($start), std::move($name), std::move($arguments) }; }
+/*
     | MUT OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
         { 
             auto aid = ctx.make_identifier(annotated_string_view{ "mut"sv, std::move($MUT) });
             $$ = function_call_t{ std::move($start), annotated_qname{ qname{ aid.value, true }, std::move(aid.location) }, std::move($arguments) };
-        }
+        }*/
     | call-expression[nameExpr] OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($start), std::move($nameExpr), std::move($arguments) }; }
     | apostrophe-expression[nameExpr] OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS

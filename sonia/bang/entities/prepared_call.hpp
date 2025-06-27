@@ -27,7 +27,7 @@ public:
     small_vector<std::tuple<identifier, local_variable*, semantic::expression_span>, 4> temporaries;
 
     // cache
-    using cache_key_t = std::tuple<entity_identifier, bool>;
+    using cache_key_t = std::tuple<entity_identifier, parameter_constraint_modifier_t>;
     struct argument_cache
     {
         syntax_expression_t expression;
@@ -38,8 +38,11 @@ public:
         {}
     };
 
-    mutable small_vector<std::tuple<identifier, argument_cache>, 8> named_argument_caches_;
-    mutable small_vector<argument_cache, 8> position_argument_caches_;
+    mutable small_vector<std::tuple<identifier, argument_cache>, 8> argument_caches_;
+    uint64_t named_map_, positioned_map_; // bitmasks of named and positional arguments
+
+    //mutable small_vector<std::tuple<identifier, argument_cache>, 8> named_argument_caches_;
+    //mutable small_vector<argument_cache, 8> position_argument_caches_;
 
     prepared_call(fn_compiler_context&, functional const*, semantic::expression_list_t& ael, lex::resource_location loc) noexcept;
     prepared_call(fn_compiler_context&, functional const*, pure_call_t const&, semantic::expression_list_t&);
@@ -61,20 +64,25 @@ public:
         fn_compiler_context& ctx;
         
         prepared_call const& call;
-        small_vector<std::tuple<identifier, argument_cache*>, 8> unused_named_arguments_;
-        small_vector<argument_cache*, 8> unused_position_arguments_;
+        uint64_t named_usage_map_, positioned_usage_map_; // bitmasks of unused named and positional arguments
+        //small_vector<std::tuple<identifier, argument_cache*>, 8> unused_named_arguments_;
+        //small_vector<argument_cache*, 8> unused_position_arguments_;
         small_vector<semantic::expression_span, 4> void_spans; // void argument's expressions
-        size_t unused_positioned_index_ = 0;
-        size_t unused_positioned_skipped_ = 0;
+        //size_t unused_positioned_index_ = 0;
+        //size_t unused_positioned_skipped_ = 0;
 
         session(fn_compiler_context&, prepared_call const&);
 
-        inline bool has_more_positioned_arguments() const noexcept { return unused_positioned_index_ < unused_position_arguments_.size(); }
-        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_positioned_argument(syntax_expression_t const** pe = nullptr);
-        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_positioned_argument(expected_result_t const& exp, syntax_expression_t const** pe = nullptr);
-        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_named_argument(identifier name, expected_result_t const& exp, syntax_expression_t const** pe = nullptr);
-        
+        bool has_more_positioned_arguments() const noexcept;
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_positioned_argument(std::pair<syntax_expression_t const*, size_t>* = nullptr);
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_positioned_argument(expected_result_t const& exp, std::pair<syntax_expression_t const*, size_t>* = nullptr);
+
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_named_argument(identifier name, expected_result_t const& exp, std::pair<syntax_expression_t const*, size_t>* = nullptr);
+
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_argument(expected_result_t const& exp, std::tuple<identifier, syntax_expression_t const*, size_t>* pe);
         named_expression_t unused_argument();
+
+        void reuse_argument(size_t argindex);
 
     private:
         std::expected<std::pair<syntax_expression_result_t, bool>, error_storage>

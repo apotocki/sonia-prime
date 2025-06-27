@@ -55,7 +55,6 @@ class external_fn_pattern;
 #define BANG_BUILTIN_QNAMES_SEQ            \
     ((fn, "__fn"sv))                       \
     ((idfn, "__id"sv))                     \
-    ((mut, "mut"sv))                       \
     ((deref, "*"sv))                       \
     ((ellipsis, "..."sv))                  \
     ((error, "error"sv))                   \
@@ -94,6 +93,7 @@ class external_fn_pattern;
     ((logic_and, "logic_and"))             \
     ((logic_or, "logic_or"))               \
     ((implicit_cast, "implicit_cast"sv))   \
+    ((runtime_cast, "runtime_cast"sv))     \
     ((get, "get"sv))                       \
     ((set, "set"sv))                       \
     ((head, "head"sv))                     \
@@ -400,12 +400,13 @@ protected:
 
     std::pair<functional*, fn_pure_t> parse_extern_fn(string_view signature);
 
-    template <std::derived_from<external_fn_pattern> PT>
-    void set_extern(string_view sign, void(*pfn)(vm::context&));
+    //template <std::derived_from<external_fn_pattern> PT>
+    //void set_extern(string_view sign, void(*pfn)(vm::context&));
 
-    template <std::derived_from<functional::pattern> PT>
-    void set_const_extern(string_view sig);
+    //template <std::derived_from<functional::pattern> PT>
+    //void set_const_extern(string_view sig);
 
+    template <std::derived_from<external_fn_pattern> PT = external_fn_pattern>
     entity_identifier set_builtin_extern(string_view name, void(*pfn)(vm::context&));
 
 private:

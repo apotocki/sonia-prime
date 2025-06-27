@@ -2418,7 +2418,7 @@
     <ClInclude Include="..\..\..\sonia\bang\functional\match_utility.ipp">
       <Filter>sonia.bang\functional</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\functional\general\mut_pattern.hpp">
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\runtime_cast_pattern.hpp">
       <Filter>sonia.bang\functional\general</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\functional\generic_pattern_base.hpp">
@@ -2984,7 +2984,7 @@
     <ClCompile Include="..\..\..\sonia\bang\functional\value_type_match_visitor.cpp">
       <Filter>sonia.bang\functional</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\functional\general\mut_pattern.cpp">
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\runtime_cast_pattern.cpp">
       <Filter>sonia.bang\functional\general</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\errors\no_position_argument_error.cpp">

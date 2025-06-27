@@ -261,19 +261,46 @@ using functional_match_descriptor_ptr = shared_ptr<functional_match_descriptor>;
 
 struct expected_result_t
 {
+    using pcm = parameter_constraint_modifier_t;
+
     entity_identifier type;
     lex::resource_location location;
-    bool is_const_result{ false };
+    parameter_constraint_modifier_t modifier = pcm::const_or_runtime_type;
 
-    expected_result_t() = default;
-    expected_result_t(entity_identifier eid, bool is_const = false, lex::resource_location loc = lex::resource_location{}) noexcept
-        : type{ std::move(eid) }, is_const_result{ is_const }, location{ std::move(loc) }
-    {}
-    expected_result_t(entity_identifier eid, lex::resource_location loc) noexcept
-        : expected_result_t{ std::move(eid), false, std::move(loc) }
-    {}
+    inline explicit operator bool() const noexcept
+    {
+        return !!type || !can_be_constexpr_or_runtime_type();
+    }
 
-    inline explicit operator bool() const noexcept { return !!type; }
+    inline bool is_modifier_compatible(syntax_expression_result_t const& er) const noexcept
+    {
+        return er.is_const_result ? can_be_constexpr() : can_be_runtime_type();
+    }
+
+    inline bool can_be_constexpr_or_runtime_type() const noexcept
+    {
+        return (modifier & pcm::const_or_runtime_type) == pcm::const_or_runtime_type;
+    }
+
+    inline bool can_be_constexpr() const noexcept
+    {
+        return (modifier & pcm::const_type) != pcm::none;
+    }
+
+    inline bool can_be_only_constexpr() const noexcept
+    {
+        return can_be_constexpr() && !can_be_runtime_type();
+    }
+
+    inline bool can_be_runtime_type() const noexcept
+    {
+        return (modifier & pcm::runtime_type) != pcm::none;
+    }
+
+    inline bool can_be_only_runtime_type() const noexcept
+    {
+        return can_be_runtime_type() && !can_be_constexpr();
+    }
 };
 
 class functional

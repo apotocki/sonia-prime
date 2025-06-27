@@ -23,8 +23,8 @@ negate_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, e
     
     // Expect a boolean argument
     expected_result_t bool_exp{ u.get(builtin_eid::boolean), call.location };
-    syntax_expression_t const* parg_expr;
-    auto arg = call_session.use_next_positioned_argument(bool_exp, &parg_expr);
+    std::pair<syntax_expression_t const*, size_t> arg_expr;
+    auto arg = call_session.use_next_positioned_argument(bool_exp, &arg_expr);
     if (!arg) {
         if (!arg.error()) {
             return std::unexpected(make_error<basic_general_error>(call.location, "expected a boolean argument"sv));

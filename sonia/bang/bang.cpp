@@ -108,22 +108,25 @@ using namespace sonia::lang::bang;
 
 const char bang_bootstrap_code[] = R"#(
 inline fn not_equal(_, _) => !($0 == $1);
-inline fn logic_and($FT, $ST) -> union($FT, $ST) {
+inline fn logic_and($FT, $ST) ~> union($FT, $ST) {
     if $0 {
         return $1;
     } else {
         return $0;
     }
 }
-inline fn assert_equal(_, _, location:~string = __call_location) {
+inline fn assert_equal(_, _, location:~ string = __call_location) {
     if $0 != $1 {
         error(location: location, "Assertion failed: " ..to_string($0) .. " != " ..to_string($1));
     }
 }
-inline fn assert_not_equal(_, _, location:~string = __call_location) {
+inline fn assert_not_equal(_, _, location:~ string = __call_location) {
     if $0 == $1 {
         error(location: location, "Assertion failed: " ..to_string($0) .. " == " ..to_string($1));
     }
+}
+inline fn print(~string ...) ~> () {
+    __print($0 ..., size($0));
 }
 //inline fn ::set(self: object, property: const __identifier, any)->object => set(self: self, to_string(property), $0);
 )#";

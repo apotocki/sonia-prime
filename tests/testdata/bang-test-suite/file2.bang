@@ -2,11 +2,12 @@
 let t1 = (a: 1, b : 2);
 let t2 = (a: 1, b : 2);
 assert_equal(t1, t2); // # should be true
-assert_not_equal(t1, t2);
+
 // Test: tuples with mixed const/non-const fields
-let x = mut(42);
-let t3 = (a: x, b: 2, c: mut(3), d: 4);
-let t4 = (a: x, b: 2, c: 3, d: mut(4));
+let x = runtime_cast(42);
+let t3 = (a: x, b: 2, c: runtime_cast(3), d: 4);
+let t4 = (a: x, b: 2, c: 3, d: runtime_cast(4));
+
 assert(t3 == t4);
 assert(!(t3 != t4));
 assert(!!(t3 == t4));
@@ -31,17 +32,17 @@ let t9 = (a: 1, b : 2);
 let t10 = (a: 1, b : 3);
 assert_not_equal(t9, t10); // should be false
 
-let x2 = mut(22);
-let t11 = (a: x, b : 2, c: mut(3));
-let t12 = (a: x2, b : 2, c : mut(3));
+let x2 = runtime_cast(22);
+let t11 = (a: x, b : 2, c: runtime_cast(3));
+let t12 = (a: x2, b : 2, c : runtime_cast(3));
 assert_not_equal(t11, t12);
 
-let xpack0 = (1, name: "assa", mut("345"), name: "bassa", name: mut(123), mut(22));
+let xpack0 = (1, name: "assa", runtime_cast("345"), name: "bassa", name: runtime_cast(123), runtime_cast(22));
 
 assert(size(xpack0) == 6);
 assert((1, name: "assa", "345", name : "bassa", name : 123, 22) == xpack0);
 assert(xpack0 == (1, name: "assa", "345", name : "bassa", name : 123, 22));
-assert(xpack0 == (1, name: "assa", mut("345"), name : "bassa", name : mut(123), 22));
+assert(xpack0 == (1, name: "assa", runtime_cast("345"), name : "bassa", name : runtime_cast(123), 22));
 
 assert(xpack0.0 == 1);
 assert(xpack0[0] == 1);
@@ -79,7 +80,7 @@ assert(xpack0[3] == (.name, "bassa"));
 assert(size(head(tail(tail(tail(tail(xpack0)))))) == 2);
 assert(head(tail(tail(tail(tail(xpack0))))).0 == .name);
 assert(head(tail(tail(tail(tail(xpack0))))).1 == 123);
-assert(xpack0[4] == (.name, mut(123)));
+assert(xpack0[4] == (.name, runtime_cast(123)));
 assert(xpack0[4] == (.name, 123));
 
 assert_equal(size(xpack0.name), 3);
@@ -113,7 +114,7 @@ assert_equal(xpack1.name.2, 123);
 assert_equal(xpack1.name.3, "bussa");
 
 // here xpack is const and it's type is tuple with only const fields (values and qnames)
-let xpack = 1, mut(2), name: mut("345"), 66, name: "678";
+let xpack = 1, runtime_cast(2), name: runtime_cast("345"), 66, name: "678";
 
 assert_equal(size(xpack), 5);
 assert(xpack.0 == 1); // value is const, no need to dereference

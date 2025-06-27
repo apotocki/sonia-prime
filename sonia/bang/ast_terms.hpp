@@ -572,14 +572,14 @@ struct pattern
 
     variant<placeholder, context_identifier, signature_descriptor, ExprT> descriptor;
     concept_expression_list_t concepts;
-    bool ellipsis = false; // true if pattern is ellipsis, e.g. `...`
+    parameter_constraint_modifier_t modifier = parameter_constraint_modifier_t::const_or_runtime_type;
 };
 
 template <typename ExprT>
 struct constraint_expression
 {
     ExprT expression;
-    bool ellipsis = false;
+    parameter_constraint_modifier_t modifier = parameter_constraint_modifier_t::const_or_runtime_type;
 };
 
 template <typename ExprT>

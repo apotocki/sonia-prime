@@ -20,8 +20,9 @@ protected:
     {
         annotated_identifier ename;
         small_vector<annotated_identifier, 2> inames;
-        variant<constraint_expression_t, pattern_t> constraint;
+        variant<syntax_expression_t, pattern_t> constraint;
         optional<syntax_expression_t> default_value;
+        parameter_constraint_modifier_t modifier;
     };
 
     // in the order of declaration (fn_pure)

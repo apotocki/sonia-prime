@@ -93,6 +93,7 @@ error_storage prepared_call::prepare()
 {
     unit& u = caller_ctx.u();
     small_vector<named_expression_t, 8> rebuilt_args;
+    bool use_rebuilt_args = false;
 
     auto append_arg = [&rebuilt_args](annotated_identifier const* groupname, syntax_expression_t&& e) {
         if (groupname) {
@@ -109,12 +110,13 @@ error_storage prepared_call::prepare()
         
         auto * pue = get<unary_expression_t>(&argvalue);
         if (!pue || pue->op != unary_operator_type::ELLIPSIS) {
-            if (rebuilt_args.empty()) continue;
+            if (!use_rebuilt_args) continue;
             rebuilt_args.emplace_back(std::move(arg));
             continue;
         }
-        if (rebuilt_args.empty()) {
+        if (!use_rebuilt_args) {
             std::move(args.begin(), it, std::back_inserter(rebuilt_args));
+            use_rebuilt_args = true;
         }
         syntax_expression_t & ellipsis_arg = pue->args.front().value();
         auto obj = apply_visitor(base_expression_visitor{ caller_ctx, expressions }, ellipsis_arg);
@@ -219,7 +221,7 @@ error_storage prepared_call::prepare()
         }
     }
 
-    if (!rebuilt_args.empty()) {
+    if (use_rebuilt_args) {
         args = std::move(rebuilt_args);
     }
 

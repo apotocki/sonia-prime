@@ -1,3 +1,17 @@
+// This file contains tests for tuple equality and related operations in Bang language.
+
+// Test: empty tuple
+assert_equal(size(), 0);
+assert_equal(size(()), 0);
+assert_equal(size((())), 0);
+assert_equal(size(((()))), 0);
+
+// Test: single element tuple
+assert_equal(size((:42)), 1);
+
+// Test: two elements tuple
+assert_equal(size((1, 2)), 2);
+
 // Test: tuples with all const fields
 let t1 = (a: 1, b : 2);
 let t2 = (a: 1, b : 2);

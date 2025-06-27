@@ -45,16 +45,16 @@ error_storage pattern_matcher::do_match_context_identifier(context_identifier ci
                 }
                 return do_match_concepts(pattern.concepts, type);
             } else if constexpr (std::is_same_v<shared_ptr<entity>, std::decay_t<decltype(v)>>) {
-                BOOST_ASSERT((pattern.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis);
+                //BOOST_ASSERT((pattern.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis);
                 THROW_NOT_IMPLEMENTED_ERROR("do_match_context_identifier for shared_ptr<entity> is not implemented yet");
             } else {
                 return make_error<basic_general_error>(get_start_location(pattern), "Internal error: Context identifier is bound to an unexpected type"sv);
             }
         }), *optbound);
     }
-    if ((pattern.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis) {
-        THROW_NOT_IMPLEMENTED_ERROR("do_match_context_identifier for ellipsis is not implemented yet");
-    }
+    //if ((pattern.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis) {
+    //    THROW_NOT_IMPLEMENTED_ERROR("do_match_context_identifier for ellipsis is not implemented yet");
+    //}
     binding_.emplace_back(cid.name, type.value);
     return do_match_concepts(pattern.concepts, type); // Context identifier matches the type
 }

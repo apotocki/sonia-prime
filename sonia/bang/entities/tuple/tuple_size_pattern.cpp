@@ -23,51 +23,61 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_size_pattern
     auto call_session = call.new_session(ctx);
     std::pair<syntax_expression_t const*, size_t> arg_expr;
     auto arg = call_session.use_next_positioned_argument(&arg_expr);
-    if (!arg) return std::unexpected(arg.error());
+    if (!arg && arg.error()) return std::unexpected(arg.error());
     if (auto argterm = call_session.unused_argument(); argterm) {
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
     }
-    syntax_expression_result_t& er = arg->first;
+
     entity_identifier argtype;
     shared_ptr<functional_match_descriptor> pmd;
-    if (er.is_const_result) {
-        entity const& arg_entity = get_entity(u, er.value());
-        if (auto psig = arg_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
-            // argument is typename tuple
+    if (arg) {
+        syntax_expression_result_t& er = arg->first;
+        if (er.is_const_result) {
+            entity const& arg_entity = get_entity(u, er.value());
+            if (auto psig = arg_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
+                // argument is typename tuple
+                pmd = make_shared<functional_match_descriptor>(call);
+                pmd->signature.result.emplace(ctx.u().make_integer_entity(psig->fields().size()).id, true);
+            } else {
+                argtype = arg_entity.get_type();
+            }
+        } else {
+            argtype = er.type();
+        }
+
+        if (!pmd) {
+            entity const& tpl_entity = get_entity(u, argtype);
+            entity_signature const* psig = tpl_entity.signature();
+            if (!psig || psig->name != u.get(builtin_qnid::tuple)) {
+                return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(arg_expr)), argtype, "a tuple"sv));
+            }
             pmd = make_shared<functional_match_descriptor>(call);
             pmd->signature.result.emplace(ctx.u().make_integer_entity(psig->fields().size()).id, true);
-        } else {
-            argtype = arg_entity.get_type();
         }
-    } else {
-        argtype = er.type();
-    }
-
-    if (!pmd) {
-        entity const& tpl_entity = get_entity(u, argtype);
-        entity_signature const* psig = tpl_entity.signature();
-        if (!psig || psig->name != u.get(builtin_qnid::tuple)) {
-            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(arg_expr)), argtype, "a tuple"sv));
-        }
+        pmd->emplace_back(0, er);
+    } else { // void argument case, returns 0;
         pmd = make_shared<functional_match_descriptor>(call);
-        pmd->signature.result.emplace(ctx.u().make_integer_entity(psig->fields().size()).id, true);
+        pmd->signature.result.emplace(ctx.u().make_integer_entity(0).id, true);
     }
-    pmd->emplace_back(0, er);
     pmd->void_spans = std::move(call_session.void_spans);
     return pmd;
 }
 
 std::expected<syntax_expression_result_t, error_storage> tuple_size_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
-    syntax_expression_result_t & arg = get<1>(md.matches.front());
-
-    return syntax_expression_result_t{
-        .temporaries = std::move(arg.temporaries),
-        .stored_expressions = std::move(arg.stored_expressions),
+    syntax_expression_result_t result {
         .expressions = md.merge_void_spans(el),
         .value_or_type = md.signature.result->entity_id(),
         .is_const_result = true
     };
+
+    if (!md.matches.empty()) {
+        syntax_expression_result_t & arg = get<1>(md.matches.front());
+        result.temporaries = std::move(arg.temporaries);
+        result.stored_expressions = std::move(arg.stored_expressions);
+    }
+
+    return result;
 }
 
 }

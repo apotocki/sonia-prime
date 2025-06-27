@@ -49,10 +49,8 @@ void internal_fn_pattern::build_scope(unit& u, functional_match_descriptor& md, 
     for (parameter_descriptor const& pd : parameters_) {
         functional_binding::value_type const* bsp = md.bindings.lookup(pd.inames.front().value);
         BOOST_ASSERT(bsp);
-        bool ellipsis = (apply_visitor(make_functional_visitor<parameter_constraint_modifier_t>([](auto const& v) {
-            return v.modifier;
-        }), pd.constraint) & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis;
-
+        bool ellipsis = (pd.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis;
+        
         if (!ellipsis) {
             if (local_variable const* plv = get<local_variable>(bsp); plv) {
                 fent.push_argument(plv->varid);

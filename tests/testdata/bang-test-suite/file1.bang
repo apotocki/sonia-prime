@@ -1,3 +1,4 @@
+// main arguments
 print($0, " ", $1, " ", $2);
 assert($$ != 4);
-assert(3 == $$);
+assert_equal(3, $$);

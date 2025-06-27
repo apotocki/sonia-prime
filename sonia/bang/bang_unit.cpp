@@ -487,6 +487,7 @@ std::ostream& unit::print_to(std::ostream& os, pattern_t::signature_descriptor c
             }), f.name);
 
             print_to(os, f.value);
+            if (f.ellipsis) { os << "... "sv; }
         }
         os << ')';
     }
@@ -504,9 +505,7 @@ std::ostream& unit::print_to(std::ostream& os, pattern_t const& ptrn) const
             print_to(os << "={"sv, d) << '}';
         }
     }), ptrn.descriptor);
-    if ((ptrn.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis) {
-        os << "... "sv;
-    }
+
     if (!ptrn.concepts.empty()) {
         bool first = true;
         for (auto const& c : ptrn.concepts) {

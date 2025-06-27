@@ -502,8 +502,6 @@ struct continue_statement_t
     lex::resource_location location;
 };
 
-
-
 template <typename ExprT>
 struct not_empty_expression
 {
@@ -517,14 +515,6 @@ struct new_expression
     ExprT name;
     opt_named_term_list<ExprT> arguments;
 };
-
-//struct entity_expression
-//{
-//    entity_identifier id;
-//    lex::resource_location location;
-//};
-
-
 
 template <typename T>
 using expression_list = small_vector<T, 4>;
@@ -544,13 +534,6 @@ struct index_expression
     lex::resource_location location;
 };
 
-//template <typename ExprT>
-//struct parameter_constraint_set
-//{
-//    optional<ExprT> expression;
-//    small_vector<ExprT, 1> concepts;
-//};
-
 template <typename ExprT>
 struct pattern
 {
@@ -558,6 +541,7 @@ struct pattern
     {
         variant<nullptr_t, placeholder, annotated_identifier, context_identifier, ExprT> name;
         pattern<ExprT> value;
+        bool ellipsis = false;
     };
 
     using pattern_list_t = std::vector<field>;
@@ -572,39 +556,18 @@ struct pattern
 
     variant<placeholder, context_identifier, signature_descriptor, ExprT> descriptor;
     concept_expression_list_t concepts;
-    parameter_constraint_modifier_t modifier = parameter_constraint_modifier_t::const_or_runtime_type;
-};
-
-template <typename ExprT>
-struct constraint_expression
-{
-    ExprT expression;
-    parameter_constraint_modifier_t modifier = parameter_constraint_modifier_t::const_or_runtime_type;
 };
 
 template <typename ExprT>
 struct parameter
 {
     parameter_name name;
-    //parameter_constraint_modifier_t modifier;
-    //parameter_constraint_set<ExprT> constraints;
-    variant<constraint_expression<ExprT>, pattern<ExprT>> constraint;
+
+    variant<ExprT, pattern<ExprT>> constraint;
 
     optional<ExprT> value; // default value
-    //parameter() = default;
-
-    //explicit inline parameter(parameter_constraint_set_t cs)
-    //    : modifier{ cs.modifier }
-    //    , constraints{ std::move(cs.constraints) }
-    //{}
-
-    //inline parameter(parameter_name n, parameter_constraint_set_t cs)
-    //    : name{ std::move(n) }
-    //    , modifier{ cs.modifier }
-    //    , constraints{ std::move(cs.constraints) }
-    //{}
-
-    //inline bool operator==(parameter const&) const = default;
+    
+    parameter_constraint_modifier_t modifier = parameter_constraint_modifier_t::const_or_runtime_type;
 };
 
 template <typename ExprT> using parameter_list = std::vector<parameter<ExprT>>;
@@ -751,11 +714,6 @@ struct error_context
         return nullopt;
     }
 };
-
-
-using constraint_expression_t = constraint_expression<syntax_expression_t>;
-
-//using plain_pattern_t = variant<annotated_qname, context_identifier, syntax_expression_t>;
 
 
 using pattern_t = pattern<syntax_expression_t>;

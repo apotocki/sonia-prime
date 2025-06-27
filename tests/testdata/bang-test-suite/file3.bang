@@ -17,10 +17,10 @@ foo_xn(arg1: "world", arg0 : " hello,", 22, 42);
 extern fn set_external_property(object, string, _);
 extern fn get_external_property(object, string)->any;
 
-struct View = > (cookie: object, proto : metaobject(disabled : bool));
+struct View => (cookie: object, proto : metaobject(disabled : bool));
 
 fn get(self:View, property : __id("object")) -> object {}
-fn set(self:View, property : const __identifier, $value : View::proto.`$property`)) {
+fn set(self:View, property : constexpr __identifier, $value : View::proto.`$property`)) {
     set_external_property(self.object, $ID, $value);
 }
 

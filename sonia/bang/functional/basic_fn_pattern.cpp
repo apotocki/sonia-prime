@@ -59,7 +59,8 @@ error_storage basic_fn_pattern::init(fn_compiler_context& ctx, fn_pure_t const& 
             external_name ? *external_name : annotated_identifier{},
             std::initializer_list<annotated_identifier>{},
             param.constraint,
-            param.value);
+            param.value,
+            param.modifier);
 
         parameter_descriptor& pd = parameters_.back();
         pd.constraint = param.constraint;
@@ -72,11 +73,7 @@ error_storage basic_fn_pattern::init(fn_compiler_context& ctx, fn_pure_t const& 
             
             if (!internal_name || internal_name->value != nid) {
                 auto loc = apply_visitor(make_functional_visitor<lex::resource_location>([](auto const& f) {
-                    if constexpr (std::is_same_v<pattern_t, std::decay_t<decltype(f)>>) {
-                        return get_start_location(f);
-                    } else { // pair<syntax_expression_t, bool>
-                        return get_start_location(f.expression);
-                    }
+                    return get_start_location(f);
                 }), param.constraint);
                 if (auto err = insert_param_name(parameter_names_, annotated_identifier{ nid, loc }); err) return err;
                 pd.inames.emplace_back(annotated_identifier{ nid, loc });
@@ -328,15 +325,13 @@ std::ostream& basic_fn_pattern::print(unit const& u, std::ostream& ss) const
         apply_visitor(make_functional_visitor<void>([&u, &ss](auto const& m) {
             if constexpr (std::is_same_v<pattern_t, std::decay_t<decltype(m)>>) {
                 u.print_to(ss, m);
-            } else if constexpr (std::is_same_v<constraint_expression_t, std::decay_t<decltype(m)>>) {
-                u.print_to(ss << "~ "sv, m.expression);
-                if ((m.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis) {
-                    ss << "..."sv;
-                }
-            } else {
-                THROW_INTERNAL_ERROR("basic_fn_pattern::print: unknown parameter matcher type"sv);
+            } else if constexpr (std::is_same_v<syntax_expression_t, std::decay_t<decltype(m)>>) {
+                u.print_to(ss << "~ "sv, m);
             }
         }), pd.constraint);
+        if ((pd.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis) {
+            ss << "... "sv;
+        }
     }
     
     if (0 == result_.which()) {

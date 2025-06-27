@@ -302,7 +302,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %type <syntax_expression_t> type-expr
 %type <syntax_expression_t> syntax-expression syntax-expression-wo-ii concept-expression
 %type <syntax_expression_t> apostrophe-expression new-expression call-expression lambda-expression compound-expression
-%type <named_expression_list_t> pack-expression
+%type <named_expression_list_t> pack-expression pack-expression-opt
 //%type <named_expression_list_t> opt-named-expr-list-any opt-named-expr-list
 //%type <named_expression_t> opt-named-expr
 //%type <expression_list_t> expression-list-any
@@ -314,8 +314,9 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 
 // PATTERNS
-%type <parameter_constraint_modifier_t> constraint-expression-mod
-%type <constraint_expression_t> constraint-expression
+%type <parameter_constraint_modifier_t> constraint-expression-mod 
+%type <std::pair<syntax_expression_t, parameter_constraint_modifier_t>> constraint-expression
+%type <std::pair<pattern_t, parameter_constraint_modifier_t>> pattern-mod pattern-sfx
 %type <pattern_t> pattern
 %type <pattern_t::field> pattern-field
 %type <pattern_list_t> subpatterns-opt subpatterns pattern-list
@@ -690,18 +691,18 @@ parameter-default-value-opt:
     ;
 
 parameter-decl:
-      identifier[id] internal-identifier-opt[intid] COLON pattern parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid) }, .constraint = std::move($pattern), .value = std::move($default) }; }
-    | internal-identifier[intid] COLON pattern parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid) }, .constraint = std::move($pattern), .value = std::move($default) }; }
-    | pattern parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = unnamed_parameter_name{}, .constraint = std::move($pattern), .value = std::move($default) }; }
-    | identifier[id] internal-identifier-opt[intid] COLON constraint-expression[match] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid) }, .constraint = std::move($match), .value = std::move($default) }; }
-    | internal-identifier[intid] COLON constraint-expression[match] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid) }, .constraint = std::move($match), .value = std::move($default) }; }
-    | constraint-expression[match] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = unnamed_parameter_name{ }, .constraint = std::move($match), .value = std::move($default) }; }
+      identifier[id] internal-identifier-opt[intid] COLON pattern-mod[pm] parameter-default-value-opt[default]
+        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid) }, .constraint = std::move(get<0>($pm)), .value = std::move($default), .modifier = get<1>($pm) }; }
+    | internal-identifier[intid] COLON pattern-mod[pm] parameter-default-value-opt[default]
+        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid) }, .constraint = std::move(get<0>($pm)), .value = std::move($default), .modifier =  get<1>($pm) }; }
+    | pattern-mod[pm] parameter-default-value-opt[default]
+        { $$ = parameter_t{ .name = unnamed_parameter_name{}, .constraint = std::move(get<0>($pm)), .value = std::move($default), .modifier =  get<1>($pm) }; }
+    | identifier[id] internal-identifier-opt[intid] COLON constraint-expression[ce] parameter-default-value-opt[default]
+        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid) }, .constraint = std::move(get<0>($ce)), .value = std::move($default), .modifier = get<1>($ce) }; }
+    | internal-identifier[intid] COLON constraint-expression[ce] parameter-default-value-opt[default]
+        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid) }, .constraint = std::move(get<0>($ce)), .value = std::move($default), .modifier = get<1>($ce) }; }
+    | constraint-expression[ce] parameter-default-value-opt[default]
+        { $$ = parameter_t{ .name = unnamed_parameter_name{ }, .constraint = std::move(get<0>($ce)), .value = std::move($default), .modifier = get<1>($ce) }; }
     ;
 
 constraint-expression-mod:
@@ -712,118 +713,10 @@ constraint-expression-mod:
 
 constraint-expression:
       constraint-expression-mod[mod] type-expr[match]
-        { $$ = constraint_expression_t{ .expression = std::move($match), .modifier = $mod }; }
+        { $$ = std::pair{ std::move($match), $mod }; }
     | constraint-expression-mod[mod] type-expr[match] ELLIPSIS
-        { $$ = constraint_expression_t{ .expression = std::move($match), .modifier = $mod | parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
+        { $$ = std::pair{ std::move($match), $mod | parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
     ;
-
-/*
-parameter-decl:
-      identifier[id] internal-identifier-opt[intid] COLON parameter-default-value-opt[default]
-        { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::value_type, parameter_constraint_set_t{ .expression = placeholder{} }, std::move($default) }; }
-    | identifier[id] internal-identifier-opt[intid] COLON parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::value_type, std::move($constraint), std::move($default) }; }
-    | identifier[id] internal-identifier-opt[intid] COLON CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
-    | identifier[id] internal-identifier-opt[intid] COLON MUT parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; IGNORE_TERM($MUT); }
-    | identifier[id] internal-identifier-opt[intid] ARROWEXPR parameter-value-constraint-set[constraint]
-        { $$ = parameter_t{ named_parameter_name{ std::move($id), std::move($intid) }, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
-    
-    | CONTEXT_IDENTIFIER[intid] COLON parameter-default-value-opt[default]
-        { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::value_type, parameter_constraint_set_t{ .expression = placeholder{} }, std::move($default) }; }
-    | CONTEXT_IDENTIFIER[intid] COLON parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::value_type, std::move($constraint), std::move($default) }; }
-    | CONTEXT_IDENTIFIER[intid] COLON CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
-    | CONTEXT_IDENTIFIER[intid] COLON MUT parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; IGNORE_TERM($MUT); }
-    | CONTEXT_IDENTIFIER[intid] ARROWEXPR parameter-value-constraint-set[constraint]
-        { $$ = parameter_t{ unnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
-    
-    | CONTEXT_IDENTIFIER[intid] ELLIPSIS COLON parameter-constraint-set[constraint]
-        { $$ = parameter_t{ varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::value_type, std::move($constraint) }; IGNORE_TERM($ELLIPSIS); }
-    | CONTEXT_IDENTIFIER[intid] ELLIPSIS COLON CONST parameter-constraint-set[constraint]
-        { $$ = parameter_t{ varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::const_value_type, std::move($constraint) }; IGNORE_TERM($ELLIPSIS); }
-    | CONTEXT_IDENTIFIER[intid] ELLIPSIS COLON MUT parameter-constraint-set[constraint]
-        { $$ = parameter_t{ varnamed_parameter_name{ ctx.make_identifier(std::move($intid)) }, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint) }; IGNORE_TERM($ELLIPSIS); IGNORE_TERM($MUT); }
-
-    | parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::value_type, std::move($constraint), std::move($default) }; }
-    | CONST parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::const_value_type, std::move($constraint), std::move($default) }; }
-    | MUT parameter-constraint-set[constraint] parameter-default-value-opt[default]
-        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::mutable_value_type, std::move($constraint), std::move($default) }; IGNORE_TERM($MUT); }
-    | ARROWEXPR parameter-value-constraint-set[constraint]
-        { $$ = parameter_t{ unnamed_parameter_name{}, parameter_constraint_modifier_t::const_value, std::move($constraint) }; }
-    ;
-
-parameter-constraint-set:
-      parameter-matched-type[match]
-        { $$ = parameter_constraint_set_t{ .expression = std::move($match) }; }
-    | concept-expression[concept]
-        { $$ = parameter_constraint_set_t{ .concepts = { std::move($concept) } }; }
-    | parameter-constraint-set concept-expression[concept]
-        { $$ = std::move($1); $$.concepts.emplace_back(std::move($concept)); }
-    ;
-
-parameter-value-constraint-set:
-      parameter-matched-value[match]
-        { $$ = parameter_constraint_set_t{ .expression = std::move($match) }; }
-    | concept-expression[concept]
-        { $$ = parameter_constraint_set_t{ .concepts = { std::move($concept) } }; }
-    | parameter-value-constraint-set concept-expression[concept]
-        { $$ = std::move($1); $$.concepts.emplace_back(std::move($concept)); }
-    ;
-
-parameter-matched-value:
-      syntax-expression
-    ;
-
-parameter-matched-type:
-      basic-parameter-matched-type
-    | ELLIPSIS
-        { $$ = unary_expression_t{ unary_operator_type::ELLIPSIS, false, placeholder{ $ELLIPSIS }, $ELLIPSIS }; }
-    | basic-parameter-matched-type[expr] ELLIPSIS
-        { $$ = unary_expression_t{ unary_operator_type::ELLIPSIS, false, std::move($expr), std::move($ELLIPSIS) }; }
-    | CONTEXT_IDENTIFIER[id]
-        { $$ = variable_reference{ ctx.make_qname(std::move($id)), true }; }
-    | CONTEXT_IDENTIFIER[id] ELLIPSIS
-        { $$ = unary_expression_t{ unary_operator_type::ELLIPSIS, false, variable_reference{ ctx.make_qname(std::move($id)), true }, std::move($ELLIPSIS) }; }
-    ;
-
-
-basic-parameter-matched-type:
-      UNDERSCORE
-        { $$ = placeholder{ std::move($UNDERSCORE) }; }
-
-//    | type-expr
-//        { $$ = std::move($1); }
-//        
-    | qname
-        { $$ = variable_reference{ std::move($qname) }; }
-
-    | qname OPEN_PARENTHESIS pack-expression[arguments] CLOSE_PARENTHESIS
-        { $$ = function_call_t{ std::move($OPEN_PARENTHESIS), std::move($qname), std::move($arguments) }; }
-    | basic-parameter-matched-type[left] BITOR basic-parameter-matched-type[right]
-        { $$ = binary_expression_t{ binary_operator_type::BIT_OR, std::move($left), std::move($right), std::move($BITOR) }; }
-    ;
-*/    
-/*
-// one optional syntax-expression, and arbitrary count of concept-expression or internal idetifiers
-parameter-constraint-set:
-      syntax-expression-wo-ii
-        { $$ = parameter_constraint_set_t{ std::move($1), {}, {} }; }
-    | internal-identifier[id]
-        { $$ = parameter_constraint_set_t{ nullopt, {}, { std::move($id) } }; }
-    | concept-expression
-        { $$ = parameter_constraint_set_t{ nullopt, {std::move($1)}, {} }; }
-    | parameter-constraint-set internal-identifier[id]
-        { $$ = std::move($1); $$.bindings.emplace_back(std::move($id)); }
-    | parameter-constraint-set concept-expression
-        { $$ = std::move($1); $$.concepts.emplace_back(std::move($2)); }
-    ;
-*/
 
 /////////////////////////// PATTERNS
 subpatterns-opt:
@@ -845,41 +738,43 @@ pattern-list:
     ;
 
 pattern-field:
-      pattern
-        { $$ = pattern_t::field{ .name = nullptr, .value = std::move($pattern) }; }
-    | UNDERSCORE COLON pattern
-        { $$ = pattern_t::field{ .name = placeholder{ std::move($UNDERSCORE) }, .value = std::move($pattern) }; }
-    | identifier[id] COLON pattern
-        { $$ = pattern_t::field{ .name = std::move($id), .value = std::move($pattern) }; }
-    | internal-identifier[id] COLON pattern
-        { $$ = pattern_t::field{ .name = std::move($id), .value = std::move($pattern) }; }
-    | OPEN_PARENTHESIS[start] syntax-expression[nameexpr] CLOSE_PARENTHESIS COLON pattern
-        { $$ = pattern_t::field{ .name = std::move($nameexpr), .value = std::move($pattern) }; IGNORE_TERM($start); }
+      pattern-sfx[ps]
+        { $$ = pattern_t::field{ .name = nullptr, .value = std::move(get<0>($ps)), .ellipsis = get<1>($ps) == parameter_constraint_modifier_t::ellipsis }; }
+    | UNDERSCORE COLON pattern-sfx[ps]
+        { $$ = pattern_t::field{ .name = placeholder{ std::move($UNDERSCORE) }, .value = std::move(get<0>($ps)), .ellipsis = get<1>($ps) == parameter_constraint_modifier_t::ellipsis }; }
+    | identifier[id] COLON pattern-sfx[ps]
+        { $$ = pattern_t::field{ .name = std::move($id), .value = std::move(get<0>($ps)), .ellipsis = get<1>($ps) == parameter_constraint_modifier_t::ellipsis }; }
+    | internal-identifier[id] COLON pattern-sfx[ps]
+        { $$ = pattern_t::field{ .name = std::move($id), .value = std::move(get<0>($ps)), .ellipsis = get<1>($ps) == parameter_constraint_modifier_t::ellipsis }; }
+    | OPEN_PARENTHESIS[start] syntax-expression[nameexpr] CLOSE_PARENTHESIS COLON pattern-sfx[ps]
+        { $$ = pattern_t::field{ .name = std::move($nameexpr), .value = std::move(get<0>($ps)), .ellipsis = get<1>($ps) == parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($start); }
+    ;
+
+pattern-mod:
+      pattern-sfx[ps]                   { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::const_or_runtime_type }; }
+    | CONSTEXPR pattern-sfx[ps]         { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::const_type }; }
+    | RUNTIME pattern-sfx[ps]           { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::runtime_type }; }
+    ;
+
+pattern-sfx:
+      pattern { $$ = std::pair{ std::move($pattern), parameter_constraint_modifier_t::none }; }
+    | pattern ELLIPSIS { $$ = std::pair{ std::move($pattern), parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
+    | ELLIPSIS { $$ = std::pair{ pattern_t{ .descriptor = placeholder{} }, parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
     ;
 
 pattern:
       qname subpatterns-opt[subpatterns] concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = pattern_t::signature_descriptor{ .name = std::move($qname), .fields = std::move($subpatterns) }, .concepts = std::move($cpts) }; }
-    | qname subpatterns-opt[subpatterns] ELLIPSIS concept-expression-list-opt[cpts]
-        { $$ = pattern_t{ .descriptor = pattern_t::signature_descriptor{ .name = std::move($qname), .fields = std::move($subpatterns) }, .concepts = std::move($cpts), .modifier = parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
     | internal-identifier[id] concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = context_identifier{ std::move($id) }, .concepts = std::move($cpts) }; }
-    | internal-identifier[id] ELLIPSIS concept-expression-list-opt[cpts]
-        { $$ = pattern_t{ .descriptor = context_identifier{ std::move($id) }, .concepts = std::move($cpts), .modifier = parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
     | UNDERSCORE subpatterns concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = pattern_t::signature_descriptor{ .name = placeholder{ std::move($UNDERSCORE) }, .fields = std::move($subpatterns) }, .concepts = std::move($cpts) }; }
     | OPEN_PARENTHESIS[start] syntax-expression[expr] CLOSE_PARENTHESIS concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = std::move($expr), .concepts = std::move($cpts) }; IGNORE_TERM($start); }
-    | OPEN_PARENTHESIS[start] syntax-expression[expr] CLOSE_PARENTHESIS ELLIPSIS concept-expression-list-opt[cpts]
-        { $$ = pattern_t{ .descriptor = std::move($expr), .concepts = std::move($cpts), .modifier = parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($start); IGNORE_TERM($ELLIPSIS); }
     | UNDERSCORE concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = placeholder{ std::move($UNDERSCORE) }, .concepts = std::move($cpts) }; }
     | concept-expression-list[cpts]
         { $$ = pattern_t{ .descriptor = placeholder{}, .concepts = std::move($cpts) }; }
-    | UNDERSCORE ELLIPSIS concept-expression-list-opt[cpts]
-        { $$ = pattern_t{ .descriptor = placeholder{ std::move($UNDERSCORE) }, .concepts = std::move($cpts), .modifier = parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
-    | ELLIPSIS concept-expression-list-opt[cpts]
-        { $$ = pattern_t{ .descriptor = placeholder{}, .concepts = std::move($cpts), .modifier = parameter_constraint_modifier_t::ellipsis }; IGNORE_TERM($ELLIPSIS); }
     ;
 
 concept-expression:
@@ -933,6 +828,10 @@ syntax-expression-wo-ii:
         { $$ = variable_reference{ ctx.make_qname(std::move($RESERVED_IDENTIFIER)), true }; }
     | qname
         { $$ = variable_reference{ std::move($qname) }; }
+    | OPEN_PARENTHESIS[start] CLOSE_PARENTHESIS
+        { $$ = ctx.make_void(std::move($start)); }
+    | OPEN_PARENTHESIS[start] COLON syntax-expression[expr] CLOSE_PARENTHESIS
+        { $$ = function_call_t{ std::move($start), annotated_qname{}, named_expression_list_t{ named_expression_t{ std::move($expr) } } }; }
     | OPEN_PARENTHESIS[start] pack-expression[list] CLOSE_PARENTHESIS
         {
             if ($list.size() == 1 && !$list.front().has_name()) { // single unnamed expression => extract
@@ -1021,7 +920,7 @@ new-expression:
     ;
 
 call-expression:
-      qname[name] OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
+      qname[name] OPEN_PARENTHESIS[start] pack-expression-opt[arguments] CLOSE_PARENTHESIS
         { $$ = function_call_t{ std::move($start), std::move($name), std::move($arguments) }; }
 /*
     | MUT OPEN_PARENTHESIS[start] pack-expression[arguments] CLOSE_PARENTHESIS
@@ -1042,6 +941,13 @@ lambda-expression:
         { $$ = lambda_t{ $fnkind, std::move($start), std::move($parameters), std::move($body) }; }
     | fn-start-decl[fnkind] OPEN_PARENTHESIS[start] parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROW type-expr[type] braced-statements[body]
         { $$ = lambda_t{ $fnkind, std::move($start), std::move($parameters), std::move($body), std::move($type) }; }
+    ;
+
+pack-expression-opt:
+      %empty
+        { $$ = named_expression_list_t{}; }
+    | pack-expression[list]
+        { $$ = std::move($list); }
     ;
 
 pack-expression:
@@ -1113,51 +1019,6 @@ opt-named-expr:
     ;
 */
 
-
-
-    /*
-syntax-expression-wii:
-      CONTEXT_IDENTIFIER
-        { $$ = variable_reference{ctx.make_qname_identifier(std::move($1), false), true}; }
-    | syntax-expression
-    ;
-    */
-/*
-parameter-constraint-decl:
-      CONST type-expr ELLIPSIS
-        { $$ = parameter_type_t{bang_parameter_pack_t{std::move($2)}, true}; IGNORE_TERM($3); }
-    | CONST type-expr
-        { $$ = parameter_type_t{std::move($2), true}; }
-    | type-expr ELLIPSIS
-        { $$ = parameter_type_t{bang_parameter_pack_t{std::move($1)}, false}; IGNORE_TERM($2); }
-    | type-expr
-        { $$ = parameter_type_t{std::move($1), false}; }
-    ;
-*/
-
-
-
-
-/*
-parameter-woa-list-opt:
-       %empty { $$ = {}; }
-    |  parameter-woa-list
-    ;
-
-parameter-woa-list:
-      parameter-woa-decl
-        { $$ = parameter_woa_list_t{std::move($1)}; }
-    | parameter-woa-list COMMA parameter-woa-decl
-        { $$ = std::move($1); $$.emplace_back(std::move($3)); }
-    ;
-
-parameter-woa-decl:
-      parameter-decl
-        { $$ = parameter_woa_t { std::move($1) }; }
-    | parameter-decl ASSIGN syntax-expression
-        { $$ = parameter_woa_t{ std::move($1), std::move($3) }; IGNORE_TERM($2); }
-    ;
-*/
 
 // TYPE EXPRESSIONS
 type-expr:
@@ -1340,11 +1201,6 @@ nsname:
 
 
 */
-
-
-
-
-
 
 //////////////
 /*

@@ -80,7 +80,25 @@ error_storage pattern_matcher::do_match(pattern_t::signature_descriptor const& s
         return make_error<basic_general_error>(type.location, "Cannot match entity without signature"sv, type.value, get_start_location(pattern));
     }
 
-    THROW_NOT_IMPLEMENTED_ERROR("do_match for signature_descriptor is not implemented yet");
+    auto err = apply_visitor(make_functional_visitor<error_storage>([this, &type, psig](auto const& n) -> error_storage {
+        if constexpr (std::is_same_v<annotated_qname, std::decay_t<decltype(n)>>) {
+            functional const* fn = ctx_.lookup_functional(n.value);
+            if (!fn || fn->id() != psig->name) {
+                return make_error<basic_general_error>(n.location,
+                    "Signature name mismatch"sv, n.value, type.location);
+            }
+            return {};
+        } else {
+            THROW_NOT_IMPLEMENTED_ERROR("do_match for signature_descriptor is not implemented yet");
+        }
+    }), sd.name);
+    if (err) return err;
+
+    if (!sd.fields.empty()) {
+        THROW_NOT_IMPLEMENTED_ERROR("do_match for signature_descriptor with fields is not implemented yet");
+    }
+    return do_match_concepts(pattern.concepts, type); // Context identifier matches the type
+
 #if 0
     // For signature_descriptor we need to match the name and fields
             

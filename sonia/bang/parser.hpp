@@ -54,6 +54,8 @@ public:
     inline managed_statement_list const& statements() const noexcept { return statements_; }
     inline managed_statement_list& statements() noexcept { return statements_; }
 
+    void append_error(lex::resource_location const& loc_begin, lex::resource_location const& loc_end, std::string errmsg);
+    void append_error(lex::resource_location const& loc, std::string errmsg);
     void append_error(std::string errmsg);
 
     shared_ptr<lex::code_resource> get_resource() const noexcept;

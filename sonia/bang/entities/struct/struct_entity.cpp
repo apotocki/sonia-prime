@@ -6,8 +6,7 @@
 #include "struct_entity.hpp"
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
-#include "sonia/bang/ast/ct_expression_visitor.hpp"
-#include "sonia/bang/ast/expression_visitor.hpp"
+#include "sonia/bang/ast/base_expression_visitor.hpp"
 
 #include "sonia/bang/ast/declaration_visitor.hpp"
 
@@ -50,13 +49,13 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
 
     entity_signature tuple_signature{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
     for (field_t const& f : fl) {
-        auto res = apply_visitor(ct_expression_visitor{ ctx, el }, f.type);
+        auto res = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{ .modifier = parameter_constraint_modifier_t::const_type } }, f.type_or_value);
         if (!res) return std::move(res.error());
-        bool is_const = f.modifier != field_modifier_t::value;
+        bool is_const = (f.modifier & parameter_constraint_modifier_t::const_type) == parameter_constraint_modifier_t::const_type;
         if (f.name) {
-            tuple_signature.emplace_back(f.name.value, res->value, is_const);
+            tuple_signature.emplace_back(f.name.value, res->first.value(), is_const);
         } else {
-            tuple_signature.emplace_back(res->value, is_const);
+            tuple_signature.emplace_back(res->first.value(), is_const);
         }
     }
 

@@ -4,9 +4,8 @@
 #pragma once
 
 #include <utility>
-
+#include <unordered_set>
 #include <boost/pool/pool.hpp>
-#include <boost/unordered_set.hpp>
 
 #include "sonia/concurrency.hpp"
 #include "sonia/exceptions.hpp"
@@ -75,7 +74,7 @@ public:
     }
 
 private:
-    boost::unordered_set<T*> used_;
+    std::unordered_set<T*> used_;
 
     void * do_malloc()
     {

@@ -22,7 +22,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_get_
     unit& u = ctx.u();
     auto call_session = call.new_session(ctx);
     
-    std::pair<syntax_expression_t const*, size_t> slf_arg_expr;
+    prepared_call::argument_descriptor_t slf_arg_expr;
     auto slf_arg = call_session.use_named_argument(u.get(builtin_id::self), expected_result_t{}, &slf_arg_expr);
     if (!slf_arg) {
         if (!slf_arg.error()) {

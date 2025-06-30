@@ -1,18 +1,18 @@
-[ /*
+[ 
 
     {
         "src": "file0.bang",
         "output": "Hello from Bang!(0)Hello from Bang!(1)Hello from Bang!(2)Hello from Bang!(3)Hello from Bang!(4)"
-    } ,
+    }/* ,
     {
         "src": "file1.bang",
         "arguments": [ "Hello", "from", "Bang!" ],
         "output": "Hello from Bang!"
-    },*/
+    },
     {
         "src": "file2.bang",
         "output": ""
-    } /*
+    } *//*
    
     {
         "src": "file2.bang",

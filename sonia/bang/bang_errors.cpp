@@ -19,12 +19,9 @@ std::string error_printer_visitor::print_general(error::location_t const& loc, s
     std::ostringstream errss;
     apply_visitor(make_functional_visitor<void>([&errss](auto const& l) {
         if constexpr (std::is_same_v<lex::resource_location, std::decay_t<decltype(l)>>) {
-            if (l) {
-                write(errss, l) << ": "sv;
-            }
-        } else {
-            errss << l << ": "sv;
+            if (!l) return;
         }
+        errss << l;
     }), loc);
 
     if (!object.empty()) {
@@ -32,26 +29,10 @@ std::string error_printer_visitor::print_general(error::location_t const& loc, s
     }
     errss << errstr;
     if (optseeloc) {
-        errss << ", see declaration at "sv;
-        write(errss, *optseeloc);
+        errss << ", see declaration at \n"sv << *optseeloc;
     }
 
     return errss.str();
-    //if (object.empty() && !optseeloc) {
-    //    return ("%1%(%2%,%3%): %4%"_fmt % loc.resource % loc.line % loc.column % errstr).str();
-    //} else if (object.empty() && optseeloc) {
-    //    return ("%1%(%2%,%3%): %4%, see declaration at %5%(%6%,%7%)"_fmt 
-    //        % loc.resource % loc.line % loc.column % errstr
-    //        % optseeloc->resource % optseeloc->line % optseeloc->column
-    //    ).str();
-    //} else if (!object.empty() && !optseeloc) {
-    //    return ("%1%(%2%,%3%): `%4%`: %5%"_fmt % loc.resource % loc.line % loc.column % object % errstr).str();
-    //} else {
-    //    return ("%1%(%2%,%3%): `%4%`: %5%, see declaration at %6%(%7%,%8%)"_fmt
-    //        % loc.resource % loc.line % loc.column % object % errstr
-    //        % optseeloc->resource % optseeloc->line % optseeloc->column
-    //    ).str();
-    //}
 }
 
 void error_printer_visitor::operator()(general_error const& err)
@@ -67,7 +48,7 @@ void error_printer_visitor::operator()(general_error const& err)
 void error_printer_visitor::operator()(binary_relation_error const& err)
 {
     if (err.location()) {
-        write(s_, err.location()) << ": "sv;
+        s_ << err.location() << ": "sv;
     }
     s_ << '`' <<
         apply_visitor(string_resolver_visitor{}, err.left_object(u_)) <<
@@ -78,7 +59,7 @@ void error_printer_visitor::operator()(binary_relation_error const& err)
     s_ << apply_visitor(string_resolver_visitor{}, err.description(u_));
     if (auto* ploc = err.ref_location()) {
         s_ << ", see declaration at "sv;
-        write(s_, *ploc);
+        s_ << *ploc;
     }
 }
 

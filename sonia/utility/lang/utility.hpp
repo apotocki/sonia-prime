@@ -75,13 +75,18 @@ class code_resource
 {
 public:
     virtual ~code_resource() = default;
-    virtual small_string description() const = 0;
+    virtual std::ostream& print_description(std::ostream&) const = 0;
+
+    virtual std::ostream& print_to(std::ostream& s, int line, int column) const
+    {
+        return print_description(s) << '(' << line << ',' << column << ')';
+    }
 };
 
 template <typename T, typename Traits>
 inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& os, code_resource const& res)
 {
-    return os << res.description();
+    return res.print_description(os);
 }
 
 template <typename T, typename Traits>
@@ -99,6 +104,12 @@ struct resource_location
 
     explicit operator bool() const noexcept { return !!resource; }
 };
+
+template <typename T, typename Traits>
+inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& os, resource_location const& res)
+{
+    return res.resource->print_to(os, res.line, res.column);
+}
 
 struct resource_span
 {

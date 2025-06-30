@@ -3,8 +3,9 @@
 // Test: empty tuple
 assert_equal(size(), 0);
 assert_equal(size(()), 0);
-assert_equal(size((())), 0);
-assert_equal(size(((()))), 0);
+assert_equal(size((())), 0);   // parenthesised empty tuple
+assert_equal(size(((()))), 0); // double parenthesised empty tuple
+assert_equal(size((:())), 1);  // tuple with a single element which is an empty tuple
 
 // Test: single element tuple
 assert_equal(size((:42)), 1);

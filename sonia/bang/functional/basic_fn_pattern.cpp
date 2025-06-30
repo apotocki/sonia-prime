@@ -59,7 +59,7 @@ error_storage basic_fn_pattern::init(fn_compiler_context& ctx, fn_pure_t const& 
             external_name ? *external_name : annotated_identifier{},
             std::initializer_list<annotated_identifier>{},
             param.constraint,
-            param.value,
+            param.default_value,
             param.modifier);
 
         parameter_descriptor& pd = parameters_.back();

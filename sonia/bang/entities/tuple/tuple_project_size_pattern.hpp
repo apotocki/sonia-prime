@@ -17,7 +17,7 @@ public:
     
     std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
-    std::ostream& print(unit const&, std::ostream& s) const override { return s << "size(self: @tuple_project)->const integer"sv; }
+    std::ostream& print(unit const&, std::ostream& s) const override { return s << "size(tuple_project(...))~>constexpr integer"sv; }
 };
 
 }

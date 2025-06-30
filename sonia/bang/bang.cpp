@@ -115,12 +115,12 @@ inline fn logic_and($FT, $ST) ~> union($FT, $ST) {
         return $0;
     }
 }
-inline fn assert_equal(_, _, location:~ string = __call_location) {
+inline fn assert_equal(_, _, location:~ string = __call_location) ~> () {
     if $0 != $1 {
         error(location: location, "Assertion failed: " ..to_string($0) .. " != " ..to_string($1));
     }
 }
-inline fn assert_not_equal(_, _, location:~ string = __call_location) {
+inline fn assert_not_equal(_, _, location:~ string = __call_location) ~> () {
     if $0 == $1 {
         error(location: location, "Assertion failed: " ..to_string($0) .. " == " ..to_string($1));
     }

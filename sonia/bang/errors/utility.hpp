@@ -31,9 +31,4 @@ struct string_resolver_visitor : static_visitor<string_view>
     inline result_type operator()(string_view str) const { return str; }
 };
 
-inline std::ostream& write(std::ostream& s, lex::resource_location const& loc)
-{
-    return s << loc.resource << '(' << loc.line << ',' << loc.column << ')';
-}
-
 }

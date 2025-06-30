@@ -59,9 +59,10 @@ enum class parameter_constraint_modifier_t : uint8_t
     none = 0,
     runtime_type = 1,
     const_type = 2,
-    const_or_runtime_type = 3,
-    ellipsis = 4,
-    value_type = 8
+    typename_type = 4,
+    const_or_runtime_type = 7,
+    ellipsis = 8
+    //, value_type = 16
 };
 
 inline parameter_constraint_modifier_t operator|(parameter_constraint_modifier_t lhs, parameter_constraint_modifier_t rhs) noexcept

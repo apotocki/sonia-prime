@@ -565,7 +565,7 @@ struct parameter
 
     variant<ExprT, pattern<ExprT>> constraint;
 
-    optional<ExprT> value; // default value
+    optional<ExprT> default_value;
     
     parameter_constraint_modifier_t modifier = parameter_constraint_modifier_t::const_or_runtime_type;
 };
@@ -648,17 +648,11 @@ struct syntax_expression_entry : syntax_expression_entry_type { using syntax_exp
 using syntax_expression_list_t = linked_list<syntax_expression_t>;
 using managed_syntax_expression_list = managed_linked_list<syntax_expression_t, unit>;
 
-enum class field_modifier_t : uint8_t
-{
-    value = 0,
-    const_value = 1
-};
-
 struct field_t
 {
     annotated_identifier name;
-    field_modifier_t modifier;
-    syntax_expression_t type;
+    parameter_constraint_modifier_t modifier;
+    syntax_expression_t type_or_value;
     optional<syntax_expression_t> value;
 };
 using field_list_t = std::vector<field_t>;
@@ -850,14 +844,14 @@ struct fn_decl_t : fn_pure_t
     mutable statement_span body;
 };
 
-struct using_decl
+struct using_decl : fn_decl_t
 {
-    annotated_qname aname;
-    optional<parameter_list_t> parameters;
-    syntax_expression_t expression;
+    //annotated_qname aname;
+    //optional<parameter_list_t> parameters;
+    //syntax_expression_t expression;
 
-    qname_view name() const { return aname.value; }
-    lex::resource_location const& location() const { return aname.location; }
+    //qname_view name() const { return aname.value; }
+    //lex::resource_location const& location() const { return aname.location; }
 };
 
 struct struct_decl
@@ -917,12 +911,7 @@ struct enum_decl
 struct extern_var
 {
     annotated_identifier name;
-    syntax_expression_entry const* type_;
-
-    inline syntax_expression_t const& type() const noexcept
-    {
-        return type_->value;
-    }
+    syntax_expression_t type;
 };
 
 struct include_decl

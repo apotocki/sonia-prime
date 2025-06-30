@@ -43,14 +43,13 @@ int bang_langlex(YYSTYPE * yylval_param, YYLTYPE * yylloc_param, parser_context 
 
 void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 {
-    ctx.append_error(("%1%(%2%,%3%-%4%,%5%): error: %6%"_fmt
-		% ctx.get_resource()
-		% loc.begin.line % loc.begin.column % loc.end.line % loc.end.column % msg).str());
+    ctx.append_error(
+        lang::lex::resource_location{ loc.begin.line, loc.begin.column, ctx.get_resource() },
+        lang::lex::resource_location{ loc.end.line, loc.end.column, ctx.get_resource() },
+        msg);
 }
 
 #define IGNORE_TERM(...)
-
-
 
 %}
 
@@ -290,6 +289,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 %type <sonia::optional<syntax_expression_t>> parameter-default-value-opt
 
 %token WEAK "weak modifier"
+%token TYPENAME "typename modifier"
 %token CONSTEXPR "constexpr modifier"
 %token RUNTIME "runctime modifier"
 
@@ -314,7 +314,7 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 
 
 // PATTERNS
-%type <parameter_constraint_modifier_t> constraint-expression-mod 
+%type <parameter_constraint_modifier_t> constraint-expression-mod
 %type <std::pair<syntax_expression_t, parameter_constraint_modifier_t>> constraint-expression
 %type <std::pair<pattern_t, parameter_constraint_modifier_t>> pattern-mod pattern-sfx
 %type <pattern_t> pattern
@@ -366,7 +366,7 @@ finished-statement-any:
 
 statement:
       EXTERN VAR identifier COLON type-expr[type]
-        { $$ = extern_var{ std::move($identifier), &ctx.push(std::move($type)) }; }
+        { $$ = extern_var{ std::move($identifier), std::move($type) }; }
     | EXTERN FN fn-decl[fn]
         { $$ = std::move($fn); IGNORE_TERM($FN); }
     | INCLUDE STRING
@@ -588,11 +588,18 @@ type-extension-list:
 using-decl:
       qname ARROWEXPR syntax-expression[expr]
         { 
-            $$ = using_decl{ std::move($qname), nullopt, std::move($expr) };
+            auto sts = ctx.new_statement_list();
+            auto loc = get_start_location($expr);
+            sts.emplace_back(return_decl_t{ .expression = std::move($expr), .location = std::move(loc) });
+            $$ = using_decl{ fn_decl_t{ fn_pure_t{ .aname = std::move($qname), .result = nullptr }, ctx.push(std::move(sts)) } };
         }
     | qname OPEN_PARENTHESIS[beginParams] parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROWEXPR syntax-expression[expr]
         {
-            $$ = using_decl{ std::move($qname), std::move($parameters), std::move($expr) }; IGNORE_TERM($beginParams);
+            auto sts = ctx.new_statement_list();
+            auto loc = get_start_location($expr);
+            sts.emplace_back(return_decl_t{ std::move($expr), std::move(loc) });
+            $$ = using_decl{ fn_decl_t{ fn_pure_t{ .aname = std::move($qname), .parameters = std::move($parameters), .result = nullptr }, ctx.push(std::move(sts)) } };
+            IGNORE_TERM($beginParams);
         }
     ;
 
@@ -657,13 +664,9 @@ field-default-value-opt:
 
 field:
       identifier COLON type-expr[type] field-default-value-opt[default]
-        { $$ = field_t{ std::move($identifier), field_modifier_t::value, std::move($type), std::move($default) }; }
-    | identifier ARROWEXPR type-expr[type] field-default-value-opt[default]
-        { $$ = field_t{ std::move($identifier), field_modifier_t::const_value, std::move($type), std::move($default) }; }
-    /*
-    | identifier COLON parameter-constraint-modifier-opt[mod] field-type-expr[type] ASSIGN syntax-expression[value]
-        { $$ = field_t{ std::move($identifier), std::move($mod), std::move($type), std::move($value) }; IGNORE_TERM($ASSIGN); }
-    */
+        { $$ = field_t{ std::move($identifier), parameter_constraint_modifier_t::runtime_type, std::move($type), std::move($default) }; }
+    | identifier ARROWEXPR syntax-expression[value]
+        { $$ = field_t{ std::move($identifier), parameter_constraint_modifier_t::const_type, std::move($value) }; }
     ;
 
 ////////////////////// PARAMETERS (function parameters declaration)
@@ -692,17 +695,17 @@ parameter-default-value-opt:
 
 parameter-decl:
       identifier[id] internal-identifier-opt[intid] COLON pattern-mod[pm] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid) }, .constraint = std::move(get<0>($pm)), .value = std::move($default), .modifier = get<1>($pm) }; }
+        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid) }, .constraint = std::move(get<0>($pm)), .default_value = std::move($default), .modifier = get<1>($pm) }; }
     | internal-identifier[intid] COLON pattern-mod[pm] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid) }, .constraint = std::move(get<0>($pm)), .value = std::move($default), .modifier =  get<1>($pm) }; }
+        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid) }, .constraint = std::move(get<0>($pm)), .default_value = std::move($default), .modifier =  get<1>($pm) }; }
     | pattern-mod[pm] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = unnamed_parameter_name{}, .constraint = std::move(get<0>($pm)), .value = std::move($default), .modifier =  get<1>($pm) }; }
+        { $$ = parameter_t{ .name = unnamed_parameter_name{}, .constraint = std::move(get<0>($pm)), .default_value = std::move($default), .modifier =  get<1>($pm) }; }
     | identifier[id] internal-identifier-opt[intid] COLON constraint-expression[ce] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid) }, .constraint = std::move(get<0>($ce)), .value = std::move($default), .modifier = get<1>($ce) }; }
+        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid) }, .constraint = std::move(get<0>($ce)), .default_value = std::move($default), .modifier = get<1>($ce) }; }
     | internal-identifier[intid] COLON constraint-expression[ce] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid) }, .constraint = std::move(get<0>($ce)), .value = std::move($default), .modifier = get<1>($ce) }; }
+        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid) }, .constraint = std::move(get<0>($ce)), .default_value = std::move($default), .modifier = get<1>($ce) }; }
     | constraint-expression[ce] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = unnamed_parameter_name{ }, .constraint = std::move(get<0>($ce)), .value = std::move($default), .modifier = get<1>($ce) }; }
+        { $$ = parameter_t{ .name = unnamed_parameter_name{ }, .constraint = std::move(get<0>($ce)), .default_value = std::move($default), .modifier = get<1>($ce) }; }
     ;
 
 constraint-expression-mod:
@@ -721,7 +724,7 @@ constraint-expression:
 /////////////////////////// PATTERNS
 subpatterns-opt:
       %empty
-      { $$ = pattern_list_t{}; }
+        { $$ = pattern_list_t{}; }
     | subpatterns
     ;
 
@@ -754,6 +757,7 @@ pattern-mod:
       pattern-sfx[ps]                   { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::const_or_runtime_type }; }
     | CONSTEXPR pattern-sfx[ps]         { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::const_type }; }
     | RUNTIME pattern-sfx[ps]           { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::runtime_type }; }
+    | TYPENAME pattern-sfx[ps]          { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::typename_type }; }
     ;
 
 pattern-sfx:

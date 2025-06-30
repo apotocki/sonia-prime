@@ -19,28 +19,30 @@ namespace sonia::lang::bang {
 std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
 {
     unit& u = ctx.u();
+    auto call_session = call.new_session(ctx);
 
-    size_t arg_num = 0;
     auto pmd = make_shared<functional_match_descriptor>(call);
-    for (auto const& arg : call.args) {
-        auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, arg.value());
-        if (!res) return std::unexpected(std::move(res.error()));
 
-        annotated_identifier const* pargname = arg.name();
+    for (size_t arg_num = 0;; ++arg_num) {
+        prepared_call::next_argument_descriptor_t argdescr;
+        auto res = call_session.use_next_argument(expected_result_t{}, &argdescr);
+        if (!res) {
+            if (res.error()) return std::unexpected(std::move(res.error()));
+            break;
+        }
         auto& ser = res->first;
-        if (pargname) {
-            pmd->signature.emplace_back(pargname->value, ser.value_or_type, ser.is_const_result);
+        if (get<0>(argdescr)) {
+            pmd->signature.emplace_back(get<0>(argdescr), ser.value_or_type, ser.is_const_result);
         } else {
             pmd->signature.emplace_back(ser.value_or_type, ser.is_const_result);
         }
-
         if (ser.is_const_result) {
             if (ser.expressions) pmd->void_spans.push_back(ser.expressions);
         } else {
             pmd->emplace_back(arg_num, ser);
         }
-        ++arg_num;
     }
+    pmd->void_spans = std::move(call_session.void_spans);
     return pmd;
 }
 

@@ -30,9 +30,80 @@ namespace sonia::lang::bang {
 
 class syntax_expression_resource : public lex::code_resource
 {
+protected:
+    mutable std::string src_;
+    mutable std::vector<string_view> lines;
+
+    virtual void prepare_lines() const
+    {
+        if (!lines.empty()) return;
+        // Split source into lines
+        size_t start = 0;
+        for (size_t i = 0; i <= src_.size(); ++i) {
+            if (i == src_.size() || src_[i] == '\n') {
+                // Handle both \n and \r\n line endings
+                size_t end = i;
+                if (end > start && src_[end - 1] == '\r') {
+                    --end;
+                }
+                lines.emplace_back(src_.data() + start, end - start);
+                start = i + 1;
+            }
+        }
+    }
+
 public:
     managed_syntax_expression_list expressions;
-    inline explicit syntax_expression_resource(unit& u) noexcept : expressions{ u } {}
+
+    inline explicit syntax_expression_resource(unit& u, std::string src = {}) noexcept
+        : expressions{ u }
+        , src_ { std::move(src) }
+    {}
+
+    std::ostream& print_to(std::ostream& s, int line, int column) const override
+    {
+        prepare_lines();
+        
+        // Adjust for 1-based line numbering
+        const int target_line = line - 1;
+        const int target_column = column - 1;
+
+        // Determine range of lines to show (2-3 lines before + target line)
+        const int context_lines = 3;
+        const int start_line = (std::max)(0, target_line - context_lines);
+        const int end_line = (std::min)(static_cast<int>(lines.size()) - 1, target_line);
+
+        // Print description and location
+        print_description(s) << " at " << line << ':' << column << '\n';
+
+        // Calculate the width needed for line numbers
+        const size_t max_line_num = (std::max)(end_line + 1, 1);
+        const size_t line_num_width = std::to_string(max_line_num).length();
+
+        // Print context lines and target line
+        for (int i = start_line; i <= end_line; ++i) {
+            // Print line number with padding
+            s << std::setw(line_num_width) << std::right << (i + 1) << " | ";
+            
+            if (i < static_cast<int>(lines.size())) {
+                s << lines[i];
+            }
+            s << '\n';
+            
+            // Print caret pointer for the target line
+            if (i == target_line) {
+                // Print spaces for line number and separator
+                s << std::string(line_num_width, ' ') << " | ";
+                
+                // Print spaces up to the target column, then caret
+                const int safe_column = (std::max)(0, (std::min)(target_column, static_cast<int>(lines[i].size())));
+                s << std::string(safe_column, ' ') << "^----- ";
+                //s << '\n';
+            }
+        }
+
+        return s;
+    }
 };
 
 class file_resource : public syntax_expression_resource
@@ -45,29 +116,40 @@ public:
         , path_{ std::move(p) }
     {}
 
-    small_string description() const override
+    std::ostream& print_description(std::ostream& s) const override
     {
         auto u8str = path_.generic_u8string();
-        return small_string{ reinterpret_cast<char const*>(u8str.data()), u8str.size() };
+        return s << string_view{ reinterpret_cast<char const*>(u8str.data()), u8str.size() };
     }
 
     inline fs::path const& path() const noexcept { return path_; }
+
+    void prepare_lines() const override
+    {
+        if (src_.empty()) {
+            // Read file content if not already done
+            try {
+                std::ifstream file{ path_.string().c_str(), std::ios::binary };
+                std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>{}, std::back_inserter(src_));
+            } catch (std::exception const& e) {
+                src_ = ("<failed to read file '%1%': %2%?"_fmt % path_ % e.what()).str();
+                return;
+            }
+        }
+        syntax_expression_resource::prepare_lines();
+    }
 };
 
 class string_resource : public syntax_expression_resource
 {
-    std::string src_;
 public:
     inline explicit string_resource(unit& u, string_view s)
-        : syntax_expression_resource{ u }
-        , src_{ s }
+        : syntax_expression_resource{ u, std::string(s) }
     {}
 
-    small_string description() const override
+    std::ostream& print_description(std::ostream& s) const override
     {
-        std::ostringstream result;
-        result << '`' << src_ << '`';
-        return small_string{ result.str() };
+        return s << "<internal resource>"sv;
     }
 };
 
@@ -158,6 +240,24 @@ annotated_entity_identifier parser_context::make_void(lex::resource_location loc
 //{
 //    return utf8_to_utf32(str);
 //}
+
+void parser_context::append_error(lex::resource_location const& loc_begin, std::string errmsg)
+{
+    std::ostringstream errss;
+    errss << loc_begin << errmsg;
+    error_messages_.push_back(std::move(errss.str()));
+}
+
+void parser_context::append_error(lex::resource_location const& loc_begin, lex::resource_location const& loc_end, std::string errmsg)
+{
+    std::ostringstream errss;
+    errss << loc_begin << errmsg;
+    error_messages_.push_back(std::move(errss.str()));
+
+    //append_error(("%1%(%2%,%3%-%4%,%5%): error: %6%"_fmt
+    //	% loc_begin.get_resource()
+    //	% loc_begin.line % loc_begin.column % loc_end.line % loc_end.column % msg).str());
+}
 
 void parser_context::append_error(std::string errmsg)
 {

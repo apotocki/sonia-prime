@@ -8,10 +8,7 @@
 #include <boost/container/flat_map.hpp>
 
 #include "fn_compiler_context.hpp"
-#include "expression_visitor.hpp"
-#include "ct_expression_visitor.hpp"
-
-//#include "sonia/bang/entities/type_entity.hpp"
+#include "base_expression_visitor.hpp"
 
 #include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/struct/struct_entity.hpp"
@@ -68,7 +65,7 @@ error_storage declaration_visitor::operator()(include_decl const& d) const
 error_storage declaration_visitor::operator()(extern_var const& d) const
 {
     semantic::managed_expression_list el{ u() };
-    auto vartype = apply_visitor(ct_expression_visitor{ ctx, el }, d.type());
+    auto vartype = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{ .modifier = parameter_constraint_modifier_t::const_type } }, d.type);
     if (!vartype) {
         return std::move(vartype.error());
     }
@@ -76,39 +73,32 @@ error_storage declaration_visitor::operator()(extern_var const& d) const
 
     qname var_qname = ctx.ns() / d.name.value;
     functional& fnl = u().fregistry_resolve(var_qname);
-    auto ve = sonia::make_shared<extern_variable_entity>(vartype->value, fnl.id());
+    auto ve = sonia::make_shared<extern_variable_entity>(vartype->first.value(), fnl.id());
     ve->location = d.name.location;
     u().eregistry_insert(ve);
     
     fnl.set_default_entity(annotated_entity_identifier{ ve->id, d.name.location });
+
     return {};
 }
 
 error_storage declaration_visitor::operator()(using_decl const& ud) const
 {
-    THROW_NOT_IMPLEMENTED_ERROR("declaration_visitor using_decl");
-#if 0
     // to do: check the allowence of absolute qname
     qname uqn = ctx.ns() / ud.name();
-    functional& fnl = u().fregistry_resolve(uqn);
-    if (!ud.parameters) {
-        fnl.set_default_entity(sonia::make_shared<expression_resolver>(ud.location(), ud.expression));
+    functional& fnl = u().resolve_functional(uqn);
+    if (ud.parameters.empty()) {
+        fnl.set_default_entity(sonia::make_shared<expression_resolver>(ud.location(), *get<return_decl_t>(ud.body.front()).expression));
     } else {
-        auto fnptrn = make_shared<basic_fn_pattern>(fnl);
-        error_storage err = fnptrn->init(ctx, *ud.parameters);
+        auto fnptrn = make_shared<internal_fn_pattern>();
+        error_storage err = fnptrn->init(ctx, static_cast<fn_decl_t const&>(ud));
         if (!err) {
-            fnptrn->result_constraints.emplace(parameter_constraint_set_t{ .expression = ud.expression }, parameter_constraint_modifier_t::const_value);
+            //fnptrn->result_constraints.emplace(parameter_constraint_set_t{ .expression = ud.expression }, parameter_constraint_modifier_t::const_value);
             fnl.push(std::move(fnptrn));
         }
         return err;
     }
-    //entity_signature esig{ fnl.id() };
-    //auto se = sonia::make_shared<type_entity>(u().get_typename_entity_identifier(), std::move(esig));
-    //se->set_location(ud.location());
-    //u().eregistry_insert(se);
-    //fnl.set_default_entity(se->id());
     return {};
-#endif
 }
 
 /*
@@ -542,7 +532,7 @@ function_entity & declaration_visitor::append_fnent(fn_pure& fnd, function_signa
 error_storage declaration_visitor::operator()(fn_decl_t const& fnd) const
 {
     qname fn_qname = ctx.ns() / fnd.name();
-    functional& fnl = ctx.u().resolve_functional(fn_qname);
+    functional& fnl = u().resolve_functional(fn_qname);
 
     auto fnptrn = make_shared<internal_fn_pattern>();
     error_storage err = fnptrn->init(ctx, fnd);
@@ -613,12 +603,12 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
     entity_identifier vartype;
     if (ld.type) {
-        auto optvartype = apply_visitor(ct_expression_visitor{ ctx, el }, *ld.type);
+        auto optvartype = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{.modifier = parameter_constraint_modifier_t::const_type } }, *ld.type);
         if (!optvartype) {
             return std::move(optvartype.error());
         }
-        BOOST_ASSERT(!optvartype->expressions);
-        vartype = optvartype->value;
+        BOOST_ASSERT(!optvartype->first.expressions);
+        vartype = optvartype->first.value();
     }
 
     small_vector<std::pair<identifier, syntax_expression_result_t>, 8> results;
@@ -634,7 +624,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         auto res = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{ vartype, ld.location() } }, expr);
         if (!res) { return std::move(res.error()); }
         syntax_expression_result& ser = res->first;
-        if (ser.is_const_result && ser.value() == u().get(builtin_eid::void_)) continue; // ignore void results
+        //if (ser.is_const_result && ser.value() == u().get(builtin_eid::void_)) continue; // ignore void results
         identifier name = pname ? pname->value : identifier{};
         results.emplace_back(name, std::move(ser));
     }

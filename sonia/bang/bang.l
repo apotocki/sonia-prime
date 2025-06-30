@@ -146,6 +146,8 @@ TRUE_WORD				 "true"
 FALSE_WORD				 "false"
 
 WEAK					 "weak"
+
+TYPENAME				 "typename"
 CONSTEXPR				 "constexpr"
 RUNTIME					 "runtime"
 
@@ -185,7 +187,6 @@ NE                       "!="
 ELLIPSIS                 "..."
 
 /*
-TYPENAME				"typename"
 VOID					"void"
 AUTO                    "auto"
 CONST_                  "const"
@@ -328,6 +329,8 @@ HASHTAG					"#"
 	{RETURN} { variant_emplace(location); return (bang_lang::parser::token::RETURN); }
 
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
+
+	{TYPENAME} { return (bang_lang::parser::token::TYPENAME); }
 	{CONSTEXPR} { return (bang_lang::parser::token::CONSTEXPR); }
 	{RUNTIME} { return (bang_lang::parser::token::RUNTIME); }
 
@@ -413,7 +416,7 @@ HASHTAG					"#"
 		return (bang_lang::parser::token::DECIMAL);
 	}
 	/*
-	{TYPENAME} { return (bang_lang::parser::token::TYPENAME); }
+	
 	{VOID} { return (bang_lang::parser::token::VOID_); }
 	{AUTO} { return (bang_lang::parser::token::AUTO); }
 	{CONST_} { return (bang_lang::parser::token::CONST_); }

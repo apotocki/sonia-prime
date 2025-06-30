@@ -53,6 +53,9 @@ public:
 
     error_storage prepare();
 
+    using argument_descriptor_t = std::pair<syntax_expression_t const*, size_t>;
+    using next_argument_descriptor_t = std::tuple<identifier, syntax_expression_t const*, size_t>;
+
     struct session
     {
         session(session const&) = delete;
@@ -74,12 +77,12 @@ public:
         session(fn_compiler_context&, prepared_call const&);
 
         bool has_more_positioned_arguments() const noexcept;
-        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_positioned_argument(std::pair<syntax_expression_t const*, size_t>* = nullptr);
-        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_positioned_argument(expected_result_t const& exp, std::pair<syntax_expression_t const*, size_t>* = nullptr);
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_positioned_argument(argument_descriptor_t* = nullptr);
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_positioned_argument(expected_result_t const& exp, argument_descriptor_t* = nullptr);
 
-        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_named_argument(identifier name, expected_result_t const& exp, std::pair<syntax_expression_t const*, size_t>* = nullptr);
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_named_argument(identifier name, expected_result_t const& exp, argument_descriptor_t* = nullptr);
 
-        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_argument(expected_result_t const& exp, std::tuple<identifier, syntax_expression_t const*, size_t>* pe);
+        std::expected<std::pair<syntax_expression_result_t, bool>, error_storage> use_next_argument(expected_result_t const& exp, next_argument_descriptor_t* pe);
         named_expression_t unused_argument();
 
         void reuse_argument(size_t argindex);

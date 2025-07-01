@@ -69,7 +69,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
             BOOST_ASSERT(pargsig);
 
             small_vector<entity_identifier, 16> ct_element_results;
-            base_expression_visitor cast_vis{ ctx, call.expressions, expected_result_t{ .type = arr_element_type_eid, .location = exp.location, .modifier = parameter_constraint_modifier_t::const_type } };
+            base_expression_visitor cast_vis{ ctx, call.expressions, expected_result_t{ .type = arr_element_type_eid, .location = exp.location, .modifier = value_modifier_t::constexpr_value } };
             for (size_t i = 0; i < arrsz; ++i) {
                 field_descriptor const* pargeld = pargsig->find_field(i);
                 BOOST_ASSERT(pargeld);

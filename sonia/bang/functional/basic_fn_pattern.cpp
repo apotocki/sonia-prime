@@ -284,7 +284,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
     }
 #endif
     if (syntax_expression_t const* rexpr = get<syntax_expression_t>(&result_)) {
-        auto res = apply_visitor(base_expression_visitor{ callee_ctx, call.expressions, expected_result_t{ .modifier = parameter_constraint_modifier_t::const_type } }, *rexpr);
+        auto res = apply_visitor(base_expression_visitor{ callee_ctx, call.expressions, expected_result_t{ .modifier = value_modifier_t::constexpr_value } }, *rexpr);
         if (!res) {
             return std::unexpected(append_cause(
                 make_error<basic_general_error>(call.location, "Cannot evaluate result expression"sv, nullptr, get_start_location(*rexpr)),

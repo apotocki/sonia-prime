@@ -27,7 +27,7 @@ public:
     small_vector<std::tuple<identifier, local_variable*, semantic::expression_span>, 4> temporaries;
 
     // cache
-    using cache_key_t = std::tuple<entity_identifier, parameter_constraint_modifier_t>;
+    using cache_key_t = std::tuple<entity_identifier, value_modifier_t>;
     struct argument_cache
     {
         syntax_expression_t expression;

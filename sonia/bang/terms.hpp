@@ -54,12 +54,56 @@ struct annotated_nil
     lex::resource_location location;
 };
 
+enum class value_modifier_t : uint8_t
+{
+    none = 0,
+    runtime_value = 1,
+    constexpr_value = 6,
+    constexpr_or_runtime_value = 7
+};
+
+inline value_modifier_t operator|(value_modifier_t lhs, value_modifier_t rhs) noexcept
+{
+    return static_cast<value_modifier_t>(static_cast<uint8_t>(lhs) | static_cast<uint8_t>(rhs));
+}
+
+inline value_modifier_t operator&(value_modifier_t lhs, value_modifier_t rhs) noexcept
+{
+    return static_cast<value_modifier_t>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
+}
+
+inline bool can_be_constexpr(value_modifier_t m) noexcept
+{
+    return (m & value_modifier_t::constexpr_value) != value_modifier_t::none;
+}
+
+inline bool can_be_runtime(value_modifier_t m) noexcept
+{
+    return (m & value_modifier_t::runtime_value) == value_modifier_t::runtime_value;
+}
+
+inline bool can_be_only_constexpr(value_modifier_t m) noexcept
+{
+    return can_be_constexpr(m) && !can_be_runtime(m);
+}
+
+inline bool can_be_only_runtime(value_modifier_t m) noexcept
+{
+    return can_be_runtime(m) && !can_be_constexpr(m);
+}
+
+inline bool can_be_constexpr_and_runtime(value_modifier_t m) noexcept
+{
+    return can_be_constexpr(m) && can_be_runtime(m);
+}
+
 enum class parameter_constraint_modifier_t : uint8_t
 {
     none = 0,
     runtime_type = 1,
-    const_type = 2,
+    constexpr_value_type = 2,
     typename_type = 4,
+    any_constexpr_type = 6,
     const_or_runtime_type = 7,
     ellipsis = 8
     //, value_type = 16
@@ -73,6 +117,38 @@ inline parameter_constraint_modifier_t operator|(parameter_constraint_modifier_t
 inline parameter_constraint_modifier_t operator&(parameter_constraint_modifier_t lhs, parameter_constraint_modifier_t rhs) noexcept
 {
     return static_cast<parameter_constraint_modifier_t>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
+}
+
+inline bool can_be_constexpr(parameter_constraint_modifier_t m) noexcept
+{
+    return (m & parameter_constraint_modifier_t::any_constexpr_type) != parameter_constraint_modifier_t::none;
+}
+
+inline bool can_be_runtime(parameter_constraint_modifier_t m) noexcept
+{
+    return (m & parameter_constraint_modifier_t::runtime_type) == parameter_constraint_modifier_t::runtime_type;
+}
+
+inline bool can_be_only_constexpr(parameter_constraint_modifier_t m) noexcept
+{
+    return can_be_constexpr(m) && !can_be_runtime(m);
+}
+
+inline bool can_be_only_runtime(parameter_constraint_modifier_t m) noexcept
+{
+    return can_be_runtime(m) && !can_be_constexpr(m);
+}
+
+inline bool can_be_constexpr_and_runtime(parameter_constraint_modifier_t m) noexcept
+{
+    return can_be_constexpr(m) && can_be_runtime(m);
+}
+
+inline value_modifier_t to_value_modifier(parameter_constraint_modifier_t m) noexcept
+{
+    return can_be_runtime(m) ? 
+        (can_be_constexpr(m) ? value_modifier_t::constexpr_or_runtime_value : value_modifier_t::runtime_value) :
+        (can_be_constexpr(m) ? value_modifier_t::constexpr_value : value_modifier_t::none);
 }
 
 class indirect : public polymorphic_clonable_and_movable

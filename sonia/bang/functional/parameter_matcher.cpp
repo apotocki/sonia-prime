@@ -38,7 +38,7 @@ error_storage parameter_matcher::match(fn_compiler_context& callee_ctx)
         basic_fn_pattern::parameter_descriptor const& pd = *param_it;
         annotated_identifier const& param_name = pd.ename.self_or(pd.inames.front());
         entity_identifier pconstraint_value_eid;
-        expected_result_t argexp{ .modifier = pd.modifier & parameter_constraint_modifier_t::const_or_runtime_type };
+        expected_result_t argexp{ .modifier = to_value_modifier(pd.modifier) };
 
         error_storage err = apply_visitor(make_functional_visitor<error_storage>([&](auto const& v) {
             if constexpr (std::is_same_v<pattern_t, std::decay_t<decltype(v)>>) {
@@ -101,7 +101,7 @@ error_storage parameter_matcher::match(fn_compiler_context& callee_ctx)
         syntax_expression_result_t& arg_er = res->first;
         err = apply_visitor(make_functional_visitor<error_storage>([&](auto const& constraint) -> error_storage {
             if constexpr (std::is_same_v<syntax_expression_t, std::decay_t<decltype(constraint)>>) {
-                if (argexp.can_be_only_constexpr()) {
+                if (can_be_only_constexpr(argexp.modifier)) {
                     // check exact value match
                     if (arg_er.value() != pconstraint_value_eid) {
                         return append_cause(
@@ -113,8 +113,12 @@ error_storage parameter_matcher::match(fn_compiler_context& callee_ctx)
             } else if constexpr (std::is_same_v<pattern_t, std::decay_t<decltype(constraint)>>) {
                 entity_identifier type_to_match;
                 if (arg_er.is_const_result) {
-                    entity const& arg_res_entity = get_entity(u, arg_er.value());
-                    type_to_match = arg_res_entity.get_type();
+                    if ((pd.modifier & parameter_constraint_modifier_t::typename_type) == parameter_constraint_modifier_t::none) {
+                        entity const& arg_res_entity = get_entity(u, arg_er.value());
+                        type_to_match = arg_res_entity.get_type();
+                    } else { // typename as constexpr value matching
+                        type_to_match = arg_er.value();
+                    }
                 } else {
                     type_to_match = arg_er.type();
                 }
@@ -171,14 +175,14 @@ std::expected<expected_result_t, error_storage>
 parameter_matcher::resolve_expression_expected_result(fn_compiler_context& callee_ctx, annotated_identifier const& pn, parameter_constraint_modifier_t param_mod, syntax_expression_t const& constraint, entity_identifier& pconstraint_value_eid)
 {
     unit& u = callee_ctx.u();
-    auto cnt_res = apply_visitor(base_expression_visitor{ callee_ctx, call.expressions, expected_result_t{ .modifier = parameter_constraint_modifier_t::const_type } }, constraint);
+    auto cnt_res = apply_visitor(base_expression_visitor{ callee_ctx, call.expressions, expected_result_t{ .modifier = value_modifier_t::constexpr_value } }, constraint);
     if (!cnt_res) {
         return std::unexpected(append_cause(
             make_error<basic_general_error>(call.location, "Cannot evaluate constraint for parameter"sv, pn.value, pn.location),
             std::move(cnt_res.error())
         ));
     }
-    expected_result_t expr_exp{ .location = get_start_location(constraint), .modifier = param_mod & parameter_constraint_modifier_t::const_or_runtime_type };
+    expected_result_t expr_exp{ .location = get_start_location(constraint), .modifier = to_value_modifier(param_mod) };
     syntax_expression_result_t& cnt_res_er = cnt_res->first;
     entity const& cnt_res_ent = get_entity(u, cnt_res_er.value());
     
@@ -187,7 +191,7 @@ parameter_matcher::resolve_expression_expected_result(fn_compiler_context& calle
     } else {
         pconstraint_value_eid = cnt_res_er.value();
         expr_exp.type = cnt_res_ent.get_type();
-        if (expr_exp.can_be_only_runtime_type()) {
+        if (can_be_only_runtime(expr_exp.modifier)) {
             return std::unexpected(make_error<basic_general_error>(
                 pn.location, "Constraint value is a compile-time constant, but the modifier requires runtime type"sv, nullptr, get_start_location(constraint)));
         }

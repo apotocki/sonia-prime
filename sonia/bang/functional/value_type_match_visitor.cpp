@@ -71,7 +71,7 @@ value_type_match_visitor::result_type value_type_match_visitor::operator()(funct
 {
     unit& u = caller_ctx.u();
 
-    ct_expression_visitor sv{ callee_ctx, expressions, expected_result_t{ .type = u.get(builtin_eid::qname), .modifier = parameter_constraint_modifier_t::const_type } };
+    ct_expression_visitor sv{ callee_ctx, expressions, expected_result_t{ .type = u.get(builtin_eid::qname), .modifier = value_modifier_t::constexpr_value } };
     auto qn_ent_id = apply_visitor(sv, fc.fn_object);
     if (!qn_ent_id) return std::unexpected(std::move(qn_ent_id.error()));
     qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(get_entity(u, qn_ent_id->value));

@@ -55,7 +55,7 @@ value_match_visitor::result_type value_match_visitor::operator()(function_call_t
 {
     unit& u = callee_ctx.u();
 
-    ct_expression_visitor sv{ callee_ctx, expressions, expected_result_t{ .type = u.get(builtin_eid::qname), .modifier = parameter_constraint_modifier_t::const_type } };
+    ct_expression_visitor sv{ callee_ctx, expressions, expected_result_t{ .type = u.get(builtin_eid::qname), .modifier = value_modifier_t::constexpr_value } };
     auto qn_ent_id = apply_visitor(sv, fc.fn_object);
     if (!qn_ent_id) return std::unexpected(std::move(qn_ent_id.error()));
     qname_identifier_entity qname_ent = static_cast<qname_identifier_entity const&>(get_entity(u, qn_ent_id->value));
@@ -113,7 +113,7 @@ value_match_visitor::result_type value_match_visitor::operator()(variable_refere
                     return std::unexpected(make_error<undeclared_identifier_error>(var.name));
                 }
                 
-                auto res = apply_visitor(base_expression_visitor{ caller_ctx, expressions, expected_result_t{ .type = get_entity(callee_ctx.u(), eid_or_var).get_type(), .modifier = parameter_constraint_modifier_t::const_type } }, cexpr);
+                auto res = apply_visitor(base_expression_visitor{ caller_ctx, expressions, expected_result_t{ .type = get_entity(callee_ctx.u(), eid_or_var).get_type(), .modifier = value_modifier_t::constexpr_value } }, cexpr);
                 if (!res) return std::unexpected(std::move(res.error()));
                 if (res->first.value() != eid_or_var) {
                     return std::unexpected(make_error<value_mismatch_error>(get_start_location(cexpr), res->first.value(), eid_or_var, var.name.location));

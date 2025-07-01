@@ -1,4 +1,20 @@
 // main arguments
+inline fn __bit_and(typename tuple($l: ...), typename tuple($r: ...)) => tuple($l ..., $r ...);
+using t0 => tuple(name0: bool, integer);
+using t1 => tuple(123, name1: f16, name0: "asd");
+using tt => t0 & t1;
+
+assert_equal(size(tt), 5);
+assert_equal(tt.0, tuple(.name0, bool));
+assert_equal(tt.1, integer);
+assert_equal(tt.2, 123);
+assert_equal(tt.3, tuple(.name1, f16));
+assert_equal(tt.4, tuple(.name0, "asd"));
+assert_equal(tt.name0, tuple(bool, "asd"));
+
+let t0val : t0 = (name0: runtime_cast(true), runtime_cast(42));
+//print(to_string(tt.name0));
+
 print($0, " ", $1, " ", $2);
 assert($$ != 4);
 assert_equal(3, $$);

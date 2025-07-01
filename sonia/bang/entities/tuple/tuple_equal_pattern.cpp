@@ -202,7 +202,7 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
         }
 
         // Compare fields using builtin_qnid::eq
-        auto match = ctx.find(builtin_qnid::eq, eq_call, el, expected_result_t{ .type = u.get(builtin_eid::boolean), .modifier = parameter_constraint_modifier_t::const_or_runtime_type });
+        auto match = ctx.find(builtin_qnid::eq, eq_call, el, expected_result_t{ .type = u.get(builtin_eid::boolean) });
         if (!match) {
             return std::unexpected(append_cause(
                 make_error<binary_relation_error>(md.call_location, ("can't compare tuple fields at index %1%"_fmt % i).str(), lhs_field.entity_id(), rhs_field.entity_id()),

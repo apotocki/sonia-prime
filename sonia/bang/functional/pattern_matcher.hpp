@@ -15,12 +15,16 @@ class functional_binding_set;
 class pattern_matcher
 {
     fn_compiler_context& ctx_;
-    functional_binding_set& binding_;
+    functional_binding_set& bindings_;
     semantic::expression_list_t& expressions_;
 
+    using fields_t = pattern_t::pattern_list_t;
+
+    mutable fields_t::const_iterator fld_bit, fld_it, fld_end;
+
 public:
-    inline pattern_matcher(fn_compiler_context& ctx, functional_binding_set& binding, semantic::expression_list_t& expressions)
-        : ctx_{ ctx }, binding_{ binding }, expressions_{ expressions }
+    inline pattern_matcher(fn_compiler_context& ctx, functional_binding_set& bindings, semantic::expression_list_t& expressions)
+        : ctx_{ ctx }, bindings_{ bindings }, expressions_{ expressions }
     {}
 
     error_storage match(pattern_t const&, annotated_entity_identifier const& type) const;
@@ -30,6 +34,9 @@ private:
 
     error_storage do_match_context_identifier(context_identifier, pattern_t const& pattern, annotated_entity_identifier const&) const;
     error_storage do_match_concepts(span<const syntax_expression_t>, annotated_entity_identifier const&) const;
+
+    error_storage do_match_positioned_ellipsis_field(annotated_identifier boundid, span<const field_descriptor>& smplfields) const;
+    //void finalize_ellipsis(identifier boundid, span<field_descriptor>) const;
 
     //error_storage match_signature_name(
     //    variant<placeholder, annotated_qname, context_identifier, syntax_expression_t> const& name,

@@ -71,7 +71,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_new_pattern
     }
     
     auto init_match = ctx.find(builtin_qnid::init, init_call, call.expressions, expected_result_t{
-        .type = pse->id, .location = pse->location, .modifier = parameter_constraint_modifier_t::runtime_type });
+        .type = pse->id, .location = pse->location, .modifier = value_modifier_t::runtime_value });
     if (!init_match) {
         return std::unexpected(append_cause(
             make_error<basic_general_error>(call.location, "no constructuctor found"sv, u.get(builtin_qnid::new_)),

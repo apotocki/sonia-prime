@@ -71,7 +71,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> union_implicit_cas
         cast_call.emplace_back(argexpr);
         optional<std::pair<functional::match, size_t>> rmatch;
         for (auto const& f : pusig->fields()) {
-            auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, call.expressions, expected_result_t{ .type = f.entity_id(), .location = exp.location, .modifier = parameter_constraint_modifier_t::const_or_runtime_type });
+            auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, call.expressions, expected_result_t{ .type = f.entity_id(), .location = exp.location });
             if (!match) continue; // to do: collect errors?
             if (rmatch) {
                 return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "ambiguous cast to union"sv, argexpr));

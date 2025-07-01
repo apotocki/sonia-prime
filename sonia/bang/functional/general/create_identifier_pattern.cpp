@@ -21,7 +21,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_
     unit& u = ctx.u();
     auto call_session = call.new_session(ctx);
     std::pair<syntax_expression_t const*, size_t> arg_expr;
-    auto arg = call_session.use_next_positioned_argument(expected_result_t{ .type = ctx.u().get(builtin_eid::string), .modifier = parameter_constraint_modifier_t::const_type }, &arg_expr);
+    auto arg = call_session.use_next_positioned_argument(expected_result_t{ .type = ctx.u().get(builtin_eid::string), .modifier = value_modifier_t::constexpr_value }, &arg_expr);
     if (!arg) {
         if (!arg.error()) {
             return std::unexpected(make_error<basic_general_error>(call.location, "missing argument"sv));

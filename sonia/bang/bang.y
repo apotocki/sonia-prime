@@ -246,7 +246,8 @@ void bang_lang::parser::error(const location_type& loc, const std::string& msg)
 //%type <identifier_chain_t> identifier-chain
 
 // QNAME
-%type <sonia::lang::bang::annotated_identifier> identifier internal-identifier internal-identifier-opt
+%type <sonia::lang::bang::context_identifier> internal-identifier internal-identifier-opt
+%type <sonia::lang::bang::annotated_identifier> identifier
 //%type <sonia::lang::bang::annotated_identifier> any_identifier
 %type <sonia::lang::bang::annotated_qname> qname
 
@@ -492,7 +493,7 @@ identifier:
 
 internal-identifier:
     CONTEXT_IDENTIFIER
-        { $$ = ctx.make_identifier($CONTEXT_IDENTIFIER); }
+        { $$ = context_identifier { ctx.make_identifier($CONTEXT_IDENTIFIER) }; }
     ;
 
 /*
@@ -666,7 +667,7 @@ field:
       identifier COLON type-expr[type] field-default-value-opt[default]
         { $$ = field_t{ std::move($identifier), parameter_constraint_modifier_t::runtime_type, std::move($type), std::move($default) }; }
     | identifier ARROWEXPR syntax-expression[value]
-        { $$ = field_t{ std::move($identifier), parameter_constraint_modifier_t::const_type, std::move($value) }; }
+        { $$ = field_t{ std::move($identifier), parameter_constraint_modifier_t::any_constexpr_type, std::move($value) }; }
     ;
 
 ////////////////////// PARAMETERS (function parameters declaration)
@@ -684,8 +685,8 @@ parameter-list:
     ;
 
 internal-identifier-opt:
-      %empty { $$ = annotated_identifier{}; }
-    | internal-identifier[intid] { $$ = $intid; }
+      %empty { $$ = context_identifier{}; }
+    | internal-identifier[intid] { $$ = std::move($intid); }
     ;
 
 parameter-default-value-opt:
@@ -695,22 +696,22 @@ parameter-default-value-opt:
 
 parameter-decl:
       identifier[id] internal-identifier-opt[intid] COLON pattern-mod[pm] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid) }, .constraint = std::move(get<0>($pm)), .default_value = std::move($default), .modifier = get<1>($pm) }; }
+        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid.name) }, .constraint = std::move(get<0>($pm)), .default_value = std::move($default), .modifier = get<1>($pm) }; }
     | internal-identifier[intid] COLON pattern-mod[pm] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid) }, .constraint = std::move(get<0>($pm)), .default_value = std::move($default), .modifier =  get<1>($pm) }; }
+        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid.name) }, .constraint = std::move(get<0>($pm)), .default_value = std::move($default), .modifier =  get<1>($pm) }; }
     | pattern-mod[pm] parameter-default-value-opt[default]
         { $$ = parameter_t{ .name = unnamed_parameter_name{}, .constraint = std::move(get<0>($pm)), .default_value = std::move($default), .modifier =  get<1>($pm) }; }
     | identifier[id] internal-identifier-opt[intid] COLON constraint-expression[ce] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid) }, .constraint = std::move(get<0>($ce)), .default_value = std::move($default), .modifier = get<1>($ce) }; }
+        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid.name) }, .constraint = std::move(get<0>($ce)), .default_value = std::move($default), .modifier = get<1>($ce) }; }
     | internal-identifier[intid] COLON constraint-expression[ce] parameter-default-value-opt[default]
-        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid) }, .constraint = std::move(get<0>($ce)), .default_value = std::move($default), .modifier = get<1>($ce) }; }
+        { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid.name) }, .constraint = std::move(get<0>($ce)), .default_value = std::move($default), .modifier = get<1>($ce) }; }
     | constraint-expression[ce] parameter-default-value-opt[default]
         { $$ = parameter_t{ .name = unnamed_parameter_name{ }, .constraint = std::move(get<0>($ce)), .default_value = std::move($default), .modifier = get<1>($ce) }; }
     ;
 
 constraint-expression-mod:
       TILDA { $$ = parameter_constraint_modifier_t::const_or_runtime_type; }
-    | TILDA CONSTEXPR { $$ = parameter_constraint_modifier_t::const_type; }
+    | TILDA CONSTEXPR { $$ = parameter_constraint_modifier_t::any_constexpr_type; }
     | TILDA RUNTIME { $$ = parameter_constraint_modifier_t::runtime_type; }
     ;
 
@@ -755,7 +756,7 @@ pattern-field:
 
 pattern-mod:
       pattern-sfx[ps]                   { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::const_or_runtime_type }; }
-    | CONSTEXPR pattern-sfx[ps]         { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::const_type }; }
+    | CONSTEXPR pattern-sfx[ps]         { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::constexpr_value_type }; }
     | RUNTIME pattern-sfx[ps]           { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::runtime_type }; }
     | TYPENAME pattern-sfx[ps]          { $$ = std::pair{ std::move(get<0>($ps)), get<1>($ps) | parameter_constraint_modifier_t::typename_type }; }
     ;

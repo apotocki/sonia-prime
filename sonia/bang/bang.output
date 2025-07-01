@@ -462,7 +462,7 @@ Nonterminals, with rules where they appear
     identifier <sonia::lang::bang::annotated_identifier> (120)
         on left: 50
         on right: 10 18 19 52 53 54 67 80 81 88 89 98 101 116 156 157 189 191
-    internal-identifier <sonia::lang::bang::annotated_identifier> (121)
+    internal-identifier <sonia::lang::bang::context_identifier> (121)
         on left: 51
         on right: 95 99 102 117 127
     qname <sonia::lang::bang::annotated_qname> (122)
@@ -528,7 +528,7 @@ Nonterminals, with rules where they appear
     parameter-list <parameter_list_t> (142)
         on left: 92 93
         on right: 91 93
-    internal-identifier-opt <sonia::lang::bang::annotated_identifier> (143)
+    internal-identifier-opt <sonia::lang::bang::context_identifier> (143)
         on left: 94 95
         on right: 98 101
     parameter-default-value-opt <sonia::optional<syntax_expression_t>> (144)

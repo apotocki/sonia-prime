@@ -65,7 +65,7 @@ error_storage declaration_visitor::operator()(include_decl const& d) const
 error_storage declaration_visitor::operator()(extern_var const& d) const
 {
     semantic::managed_expression_list el{ u() };
-    auto vartype = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{ .modifier = parameter_constraint_modifier_t::const_type } }, d.type);
+    auto vartype = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{ .modifier = value_modifier_t::constexpr_value } }, d.type);
     if (!vartype) {
         return std::move(vartype.error());
     }
@@ -603,7 +603,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
     entity_identifier vartype;
     if (ld.type) {
-        auto optvartype = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{.modifier = parameter_constraint_modifier_t::const_type } }, *ld.type);
+        auto optvartype = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{.modifier = value_modifier_t::constexpr_value } }, *ld.type);
         if (!optvartype) {
             return std::move(optvartype.error());
         }
@@ -855,7 +855,7 @@ error_storage declaration_visitor::operator()(return_decl_t const& rd) const
     if (rd.expression) {
         semantic::managed_expression_list el{ u() };
         expected_result_t exp = ctx.result_value_or_type ?
-            expected_result_t{ .type = ctx.result_value_or_type, .location = rd.location, .modifier = ctx.is_const_value_result ? parameter_constraint_modifier_t::const_type : parameter_constraint_modifier_t::const_or_runtime_type } :
+            expected_result_t{ .type = ctx.result_value_or_type, .location = rd.location, .modifier = ctx.is_const_value_result ? value_modifier_t::constexpr_value : value_modifier_t::constexpr_or_runtime_value } :
             expected_result_t{};
         
         auto res = apply_visitor(base_expression_visitor{ ctx, el, exp }, *rd.expression);

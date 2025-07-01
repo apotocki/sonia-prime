@@ -261,45 +261,18 @@ using functional_match_descriptor_ptr = shared_ptr<functional_match_descriptor>;
 
 struct expected_result_t
 {
-    using pcm = parameter_constraint_modifier_t;
-
     entity_identifier type;
     lex::resource_location location;
-    parameter_constraint_modifier_t modifier = pcm::const_or_runtime_type;
-
+    value_modifier_t modifier = value_modifier_t::constexpr_or_runtime_value;
+    
     inline explicit operator bool() const noexcept
     {
-        return !!type || !can_be_constexpr_or_runtime_type();
+        return !!type || !can_be_constexpr_and_runtime(modifier);
     }
 
     inline bool is_modifier_compatible(syntax_expression_result_t const& er) const noexcept
     {
-        return er.is_const_result ? can_be_constexpr() : can_be_runtime_type();
-    }
-
-    inline bool can_be_constexpr_or_runtime_type() const noexcept
-    {
-        return (modifier & pcm::const_or_runtime_type) == pcm::const_or_runtime_type;
-    }
-
-    inline bool can_be_constexpr() const noexcept
-    {
-        return (modifier & pcm::const_type) != pcm::none;
-    }
-
-    inline bool can_be_only_constexpr() const noexcept
-    {
-        return can_be_constexpr() && !can_be_runtime_type();
-    }
-
-    inline bool can_be_runtime_type() const noexcept
-    {
-        return (modifier & pcm::runtime_type) != pcm::none;
-    }
-
-    inline bool can_be_only_runtime_type() const noexcept
-    {
-        return can_be_runtime_type() && !can_be_constexpr();
+        return er.is_const_result ? can_be_constexpr(modifier) : can_be_runtime(modifier);
     }
 };
 

@@ -49,9 +49,9 @@ error_storage struct_entity::build(fn_compiler_context& ctx, field_list_t const&
 
     entity_signature tuple_signature{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
     for (field_t const& f : fl) {
-        auto res = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{ .modifier = parameter_constraint_modifier_t::const_type } }, f.type_or_value);
+        auto res = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{ .modifier = value_modifier_t::constexpr_value } }, f.type_or_value);
         if (!res) return std::move(res.error());
-        bool is_const = (f.modifier & parameter_constraint_modifier_t::const_type) == parameter_constraint_modifier_t::const_type;
+        bool is_const = can_be_constexpr(f.modifier);
         if (f.name) {
             tuple_signature.emplace_back(f.name.value, res->first.value(), is_const);
         } else {

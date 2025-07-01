@@ -44,7 +44,7 @@ public:
 std::expected<functional_match_descriptor_ptr, error_storage>
 const_literal_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
-    if (exp.can_be_only_constexpr()) {
+    if (can_be_only_constexpr(exp.modifier)) {
         return std::unexpected(make_error<basic_general_error>(call.location, "expected a runtime literal result"sv));
     }
     

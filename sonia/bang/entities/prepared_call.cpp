@@ -287,17 +287,20 @@ prepared_call::session::session(fn_compiler_context& ctxval, prepared_call const
 std::expected<std::pair<syntax_expression_result_t, bool>, error_storage>
 prepared_call::session::do_resolve(argument_cache& arg_cache, expected_result_t const& exp)
 {
-    auto cit = arg_cache.cache.find({ exp.type, exp.modifier & parameter_constraint_modifier_t::const_or_runtime_type });
+    auto cit = arg_cache.cache.find({ exp.type, exp.modifier });
     if (cit == arg_cache.cache.end()) {
         auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions, exp }, arg_cache.expression);
-        cit = arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.type, exp.modifier & parameter_constraint_modifier_t::const_or_runtime_type }, res);
-        if (exp.can_be_only_constexpr() || exp.can_be_only_runtime_type()) {
-            arg_cache.cache.emplace(cache_key_t{ exp.type, parameter_constraint_modifier_t::const_or_runtime_type }, res);
-        } else if (exp.can_be_constexpr() && res->first.is_const_result) {
-            // if the expression is const result, we can cache it with const_or_runtime_type modifier
-            arg_cache.cache.emplace(cache_key_t{ exp.type, parameter_constraint_modifier_t::const_type }, res);
-        } else if (exp.can_be_runtime_type() && !res->first.is_const_result) {
-            arg_cache.cache.emplace(cache_key_t{ exp.type, parameter_constraint_modifier_t::runtime_type }, res);
+        cit = arg_cache.cache.emplace_hint(cit, cache_key_t{ exp.type, exp.modifier }, res);
+        if (res && can_be_constexpr_and_runtime(exp.modifier)) {
+            if (res->first.is_const_result) {
+                // if the expression is const result, we can cache it with const_or_runtime_type modifier
+                arg_cache.cache.emplace(cache_key_t{ exp.type, value_modifier_t::constexpr_value }, res);
+            } else {
+                // if the expression is runtime type, we can cache it with runtime_type modifier
+                arg_cache.cache.emplace(cache_key_t{ exp.type, value_modifier_t::runtime_value }, res);
+            }
+        } else if (res && can_be_only_constexpr(exp.modifier)) {
+            arg_cache.cache.emplace(cache_key_t{ exp.type, value_modifier_t::constexpr_or_runtime_value }, res);
         }
     }
     return cit->second;

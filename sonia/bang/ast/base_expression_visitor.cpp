@@ -44,7 +44,7 @@ inline base_expression_visitor::result_type base_expression_visitor::apply_cast(
 base_expression_visitor::result_type base_expression_visitor::apply_cast(entity const& ent, syntax_expression_result_t er, syntax_expression_t const& e) const
 {
     BOOST_ASSERT(er.is_const_result);
-    bool is_modifier_compatible = expected_result.can_be_constexpr();
+    bool is_modifier_compatible = can_be_constexpr(expected_result.modifier);
     if (is_modifier_compatible && (!expected_result.type || expected_result.type == u().get(builtin_eid::any) || ent.get_type() == expected_result.type)) {
         return std::pair{ std::move(er), false };
     }
@@ -468,7 +468,7 @@ inline base_expression_visitor::result_type base_expression_visitor::operator()(
 
 base_expression_visitor::result_type base_expression_visitor::operator()(function_call_t const& proc) const
 {
-    base_expression_visitor vis{ ctx, expressions, expected_result_t{ .type = u().get(builtin_eid::qname), .location = proc.location, .modifier = parameter_constraint_modifier_t::const_type } };
+    base_expression_visitor vis{ ctx, expressions, expected_result_t{ .type = u().get(builtin_eid::qname), .location = proc.location, .modifier = value_modifier_t::constexpr_value } };
     auto fn_ent_id = apply_visitor(vis, proc.fn_object);
     if (!fn_ent_id) return std::unexpected(std::move(fn_ent_id.error()));
     BOOST_ASSERT(!fn_ent_id->first.expressions);

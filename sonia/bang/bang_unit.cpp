@@ -41,6 +41,7 @@
 #include "entities/tuple/tuple_make_pattern.hpp"
 #include "entities/tuple/tuple_size_pattern.hpp"
 #include "entities/tuple/tuple_get_pattern.hpp"
+#include "entities/tuple/tuple_typename_get_pattern.hpp"
 #include "entities/tuple/tuple_set_pattern.hpp"
 #include "entities/tuple/tuple_empty_pattern.hpp"
 #include "entities/tuple/tuple_head_pattern.hpp"
@@ -548,7 +549,8 @@ std::ostream& unit::print_to(std::ostream& os, small_u32string const& str, bool 
 
 std::ostream& unit::print_to(std::ostream& os, lex::resource_location const& loc) const
 {
-    return os << loc.resource << '(' << loc.line << ',' << loc.column << ')';
+    return loc.resource->print_to(os, loc.line, loc.column);
+    //return os << loc.resource << '(' << loc.line << ',' << loc.column << ')';
     //return os << ("%1%(%2%,%3%)"_fmt % loc.resource % loc.line % loc.column).str();
 }
 
@@ -1424,6 +1426,8 @@ unit::unit()
     make_tuple_fnl.push(make_shared<tuple_make_pattern>());
     
     functional& get_fnl = fregistry_resolve(get(builtin_qnid::get));
+    // get(self: const @tuple, property: __identifier)->T; (typename case)
+    get_fnl.push(make_shared<tuple_typename_get_pattern>());
     // get(self: tuple(), property: __identifier)->T;
     get_fnl.push(make_shared<tuple_get_pattern>());
     get_fnl.push(make_shared<tuple_project_get_pattern>());

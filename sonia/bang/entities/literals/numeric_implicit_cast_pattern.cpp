@@ -95,7 +95,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
     }
     pmd->emplace_back(0, src_arg_er);
     pmd->void_spans = std::move(call_session.void_spans);
-    pmd->signature.result.emplace(exp.type, exp.can_be_only_constexpr());
+    pmd->signature.result.emplace(exp.type, can_be_only_constexpr(exp.modifier));
     return std::move(pmd);
 }
 

@@ -52,7 +52,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
     for (auto const& arg : call.args) {
         annotated_identifier const* pargname = arg.name();
         auto const& argexpr = arg.value();
-        auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions, expected_result_t{ .type = u.get(builtin_eid::identifier), .modifier = parameter_constraint_modifier_t::const_type } }, argexpr);
+        auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions, expected_result_t{ .type = u.get(builtin_eid::identifier), .modifier = value_modifier_t::constexpr_value } }, argexpr);
         if (!res) {
             return std::unexpected(append_cause(
                 make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr),

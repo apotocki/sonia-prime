@@ -303,6 +303,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_set_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_size_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_tail_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_typename_get_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\type_entity.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\union\union_bit_or_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\union\union_implicit_cast_pattern.hpp" />
@@ -871,6 +872,7 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_set_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_size_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_tail_pattern.cpp" />
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_typename_get_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\type_entity.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\union\union_bit_or_pattern.cpp" />
     <ClCompile Include="..\..\..\sonia\bang\entities\union\union_implicit_cast_pattern.cpp" />

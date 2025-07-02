@@ -6,6 +6,7 @@
 
 #include <fstream>
 
+#include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 
@@ -73,6 +74,14 @@ class external_fn_pattern;
     ((f32, "f32"sv))                       \
     ((f64, "f64"sv))                       \
     ((decimal, "decimal"sv))               \
+    ((i8, "i8"sv))                         \
+    ((u8, "u8"sv))                         \
+    ((i16, "i16"sv))                       \
+    ((u16, "u16"sv))                       \
+    ((i32,  "i32"sv))                      \
+    ((u32, "u32"sv))                       \
+    ((i64,  "i64"sv))                      \
+    ((u64, "u64"sv))                       \
     ((integer, "integer"sv))               \
     ((boolean, "bool"sv))                  \
     ((any, "any"sv))                       \
@@ -119,9 +128,33 @@ enum class builtin_qnid : size_t
 
 #undef BANG_PRINT_TYPE_ENUM
 
-enum class builtin_eid : size_t
+// for these types we have builtin_eid == entity_identifier.value
+#define BANG_BUILTIN_TYPES_SEQ \
+    (boolean)                  \
+    (integer)                  \
+    (decimal)                  \
+    (string)                   \
+    (any)                      \
+    (i8)                       \
+    (u8)                       \
+    (i16)                      \
+    (u16)                      \
+    (i32)                      \
+    (u32)                      \
+    (i64)                      \
+    (u64)                      \
+    (f16)                      \
+    (f32)                      \
+    (f64)                      
+
+#define BANG_PRINT_BUILTINTYPE_ENUM(r, data, elem) elem,
+
+enum class builtin_eid : entity_identifier::value_type
 {
-    typename_ = 0, void_, true_, false_, any, identifier, qname, object, string, f16, f32, f64, decimal, integer, boolean, metaobject,
+    typename_ = 1,
+    BOOST_PP_SEQ_FOR_EACH(BANG_PRINT_BUILTINTYPE_ENUM, _, BANG_BUILTIN_TYPES_SEQ)
+    void_, object,
+    true_, false_,  identifier, qname, 
     arrayify, // builtin ::arrayify(...)->array
     array_tail, // builtin ::array_tail(array)-> array
     array_at, // builtin ::array_at(array, index)-> elementT
@@ -133,6 +166,8 @@ enum class builtin_eid : size_t
     concat, // builtin ::concat(string ...)-> string
     eof_builtin_eid_value
 };
+
+#undef BANG_PRINT_BUILTINTYPE_ENUM
 
 class unit
 {
@@ -271,10 +306,10 @@ public:
     empty_entity            const& make_empty_entity(entity_identifier);
     empty_entity            const& make_empty_entity(entity const&);
     qname_entity            const& make_qname_entity(qname_view value);
-    bool_literal_entity     const& make_bool_entity(bool value, entity_identifier type = {});
+    generic_literal_entity  const& make_bool_entity(bool value, entity_identifier type = {});
     integer_literal_entity  const& make_integer_entity(mp::integer_view value, entity_identifier type = {});
     decimal_literal_entity  const& make_decimal_entity(mp::decimal_view value, entity_identifier type = {});
-    string_literal_entity   const& make_string_entity(string_view value, entity_identifier type = {});
+    generic_literal_entity  const& make_string_entity(string_view value, entity_identifier type = {});
     basic_signatured_entity const& make_basic_signatured_entity(entity_signature&&);
     basic_signatured_entity const& make_vector_type_entity(entity_identifier element_type);
     basic_signatured_entity const& make_vector_entity(entity_identifier element_type, span<entity_identifier> const& values);

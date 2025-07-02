@@ -8,7 +8,10 @@
 
 namespace sonia::lang::bang {
 
-// Handles implicit cast of compile-time literals (string, integer, decimal) to runtime values.
+// Handles implicit cast of compile-time literals (bool, string, integer, decimal) to runtime values.
+// Supports conversion between all numeric literal types: i8, u8, i16, u16, i32, u32, i64, u64, f16, f32, f64.
+// Conversions are checked for precision loss at the apply stage.
+// Float values can be converted to integers only if they don't have a fractional part.
 class const_literal_implicit_cast_pattern : public functional::pattern
 {
 public:
@@ -20,7 +23,7 @@ public:
     std::expected<syntax_expression_result_t, error_storage>
     apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const override;
 
-    std::ostream& print(unit const&, std::ostream& s) const override { return s << "implicy_cast(constexpr @literal)->@literal"sv; }
+    std::ostream& print(unit const&, std::ostream& s) const override { return s << "implicy_cast(constexpr bool|integer|decimal|string)->numeric_type"sv; }
 };
 
 } // namespace sonia::lang::bang

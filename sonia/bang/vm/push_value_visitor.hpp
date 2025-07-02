@@ -93,46 +93,6 @@ public:
         : unit_{ u }, fnbuilder_{ b }
     {}
 
-    inline void operator()(null_t const&) const
-    {
-        fnbuilder_.append_push_pooled_const(smart_blob{});
-    }
-
-    void operator()(bool bval) const
-    {
-        fnbuilder_.append_push_pooled_const(smart_blob{ bool_blob_result(bval) });
-    }
-
-    void operator()(small_string const& sval) const
-    {
-        smart_blob strbr{ string_blob_result(sval) };
-        strbr.allocate();
-        fnbuilder_.append_push_pooled_const(std::move(strbr));
-    }
-
-    void operator()(uint64_t value) const
-    {
-        fnbuilder_.append_push_pooled_const(smart_blob{ ui64_blob_result(value) });
-    }
-
-    void operator()(mp::integer const& ival) const
-    {
-        fnbuilder_.append_push_pooled_const(smart_blob{ bigint_blob_result(ival) });
-
-        //if (ival.is_fit<int64_t>()) {
-        //    fnbuilder_.append_push_pooled_const(smart_blob{ i64_blob_result((int64_t)ival) });
-        //} else if (ival.is_fit<uint64_t>()) {
-        //    fnbuilder_.append_push_pooled_const(smart_blob{ ui64_blob_result((uint64_t)ival) });
-        //} else {
-        //    fnbuilder_.append_push_pooled_const(smart_blob{ bigint_blob_result(ival) });
-        //}
-    }
-
-    void operator()(mp::decimal const& dval) const
-    {
-        fnbuilder_.append_push_pooled_const(smart_blob{ decimal_blob_result(dval) });
-    }
-
 #if 0
     void operator()(lang::bang::function_value const& dval) const
     {
@@ -240,25 +200,28 @@ public:
         THROW_NOT_IMPLEMENTED_ERROR();
     }
 
-
-    void operator()(string_literal_entity const& sle) const override
+    void operator()(smart_blob const& bl) const
     {
-        this->operator()(sle.value());
+        fnbuilder_.append_push_pooled_const(smart_blob{ bl });
     }
 
-    void operator()(bool_literal_entity const& ble) const override
+    void operator()(generic_literal_entity const& sle) const override
     {
-        this->operator()(ble.value());
+        fnbuilder_.append_push_pooled_const(smart_blob{ sle.value() });
     }
 
     void operator()(integer_literal_entity const& ile) const override
     {
-        this->operator()(ile.value());
+        smart_blob bl{ bigint_blob_result(ile.value()) };
+        bl.allocate();
+        fnbuilder_.append_push_pooled_const(std::move(bl));
     }
 
     void operator()(decimal_literal_entity const& dle) const override
     {
-        this->operator()(dle.value());
+        smart_blob bl{ decimal_blob_result(dle.value()) };
+        bl.allocate();
+        fnbuilder_.append_push_pooled_const(std::move(bl));
     }
 
     void operator()(identifier_entity const& ie) const override

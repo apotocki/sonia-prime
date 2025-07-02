@@ -55,7 +55,12 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(entity 
     pure_call_t cast_call{ expected_result.location };
     cast_call.emplace_back(annotated_entity_identifier{ ent.id, expr_loc });
 
-    auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expressions, expected_result);
+    auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expressions, expected_result_t {
+        .type = expected_result.type ? expected_result.type : ent.get_type(),
+        .location = expected_result.location,
+        .modifier = expected_result.modifier
+    });
+
     if (!match) {
         // ignore casting error details
         //return std::unexpected(make_error<cast_error>(expr_loc /*expected_result.location*/, expected_result.type, typeeid, e));
@@ -333,7 +338,7 @@ struct array_expression_processor : static_visitor<void>
             if (not_constant_count > 1) {
                 semantic::managed_expression_list tmpel{ ctx.u() };
                 tmpel.splice_back(bvis.expressions, aeres.expressions);
-                u().push_back_expression(tmpel, semantic::push_value{ mp::integer{ not_constant_count } });
+                u().push_back_expression(tmpel, semantic::push_value{ smart_blob{ ui64_blob_result(not_constant_count) } });
                 u().push_back_expression(tmpel, semantic::invoke_function(u().get(builtin_eid::arrayify)));
                 aeres.expressions = tmpel;
                 bvis.expressions.splice_back(tmpel);

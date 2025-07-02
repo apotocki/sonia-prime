@@ -49,7 +49,7 @@ assert_not_equal(t9, t10); // should be false
 
 let x2 = runtime_cast(22);
 let t11 = (a: x, b : 2, c: runtime_cast(3));
-let t12 = (a: x2, b : 2, c : runtime_cast(3));
+let t12 = (a: x2, b : 2, c: runtime_cast(3));
 assert_not_equal(t11, t12);
 
 let xpack0 = (1, name: "assa", runtime_cast("345"), name: "bassa", name: runtime_cast(123), runtime_cast(22));

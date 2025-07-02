@@ -69,14 +69,14 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
         slftype = slf_arg_er.type();
     }
     
-    entity const& tpl_entity = get_entity(u, slftype);
-    entity_signature const* psig = tpl_entity.signature();
-    if (!psig || psig->name != u.get(builtin_qnid::tuple)) {
-        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slftype, "a tuple"sv));
-    }
-    if (psig->empty()) {
-        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slftype, "a not empty tuple"sv));
-    }
+        entity const& tpl_entity = get_entity(u, slftype);
+        entity_signature const* psig = tpl_entity.signature();
+        if (!psig || psig->name != u.get(builtin_qnid::tuple)) {
+            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slftype, "a tuple"sv));
+        }
+        if (psig->empty()) {
+            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slftype, "a not empty tuple"sv));
+        }
     pmd = make_shared<tuple_get_match_descriptor>(call, tpl_entity, *tpl_entity.signature());
     
     pmd->emplace_back(0, slf_arg_er);
@@ -121,8 +121,8 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
         if (auto int_lit = dynamic_cast<const integer_literal_entity*>(&property_entity)) {
             size_t idx = static_cast<size_t>(int_lit->value());
             if (auto* field = tmd.arg_sig.get_field(idx)) {
-                entity_identifier result_type = field->name() ? make_named_tuple_type(*field) : field->entity_id();
-                result.value_or_type = field->name() ? u.make_empty_entity(result_type).id : result_type;
+                    entity_identifier result_type = field->name() ? make_named_tuple_type(*field) : field->entity_id();
+                    result.value_or_type = field->name() ? u.make_empty_entity(result_type).id : result_type;
             } else {
                 return std::unexpected(make_error<basic_general_error>(tmd.call_location, "tuple index out of range"sv));
             }
@@ -232,7 +232,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
 
         semantic::expression_span exprs = md.merge_void_spans(el);
         exprs = el.concat(exprs, slfer.expressions);
-        u.push_back_expression(el, exprs, semantic::push_value{ runtime_index });
+        u.push_back_expression(el, exprs, semantic::push_value{ smart_blob{ ui64_blob_result(runtime_index) } });
         u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
 
         return syntax_expression_result_t{
@@ -246,44 +246,44 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
 
     // Case 3: self is constant, property is not constant
     if (slfer.is_const_result && !proper.is_const_result) {
-    // The tuple structure is known, but the property is dynamic.
-    // We need to produce a union of all possible result types.
-    std::vector<entity_identifier> possible_types;
+        // The tuple structure is known, but the property is dynamic.
+        // We need to produce a union of all possible result types.
+        std::vector<entity_identifier> possible_types;
         bool any_named = false;
-    for (const auto& field : tmd.arg_sig.fields()) {
-        if (field.name()) {
+        for (const auto& field : tmd.arg_sig.fields()) {
+            if (field.name()) {
                 any_named = true;
-            // (identifier, value) tuple type
-            entity_signature rsig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
-            rsig.emplace_back(u.make_identifier_entity(field.name()).id, true);
-            rsig.emplace_back(field.entity_id(), field.is_const());
-            possible_types.push_back(u.make_basic_signatured_entity(std::move(rsig)).id);
-        } else {
-            possible_types.push_back(field.entity_id());
+                // (identifier, value) tuple type
+                entity_signature rsig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
+                rsig.emplace_back(u.make_identifier_entity(field.name()).id, true);
+                rsig.emplace_back(field.entity_id(), field.is_const());
+                possible_types.push_back(u.make_basic_signatured_entity(std::move(rsig)).id);
+            } else {
+                possible_types.push_back(field.entity_id());
+            }
         }
-    }
 
-    // For simplicity, use the first type if only one, or create a union otherwise
-    entity_identifier result_type;
-    if (possible_types.size() == 1) {
-        result_type = possible_types.front();
-    } else {
-        result_type = u.make_union_type_entity(possible_types).id;
-    }
+        // For simplicity, use the first type if only one, or create a union otherwise
+        entity_identifier result_type;
+        if (possible_types.size() == 1) {
+            result_type = possible_types.front();
+        } else {
+            result_type = u.make_union_type_entity(possible_types).id;
+        }
 
-    // Merge expressions
-    semantic::expression_span exprs = el.concat(md.merge_void_spans(el), slfer.expressions);
-    exprs = el.concat(exprs, proper.expressions);
+        // Merge expressions
+        semantic::expression_span exprs = el.concat(md.merge_void_spans(el), slfer.expressions);
+        exprs = el.concat(exprs, proper.expressions);
 
-    // TODO: Insert runtime selection logic here if needed
+        // TODO: Insert runtime selection logic here if needed
         THROW_NOT_IMPLEMENTED_ERROR("Tuple get pattern with const `self` and non-const `property` is not implemented yet."sv);
-    return syntax_expression_result_t{
-        .temporaries = std::move(slfer.temporaries),
-        .expressions = std::move(exprs),
-        .value_or_type = result_type,
-        .is_const_result = false
-    };
-}
+        return syntax_expression_result_t{
+            .temporaries = std::move(slfer.temporaries),
+            .expressions = std::move(exprs),
+            .value_or_type = result_type,
+            .is_const_result = false
+        };
+    }
 
     THROW_NOT_IMPLEMENTED_ERROR("Tuple get pattern with non-const `self` and non-const `property` is not implemented yet."sv);
 }

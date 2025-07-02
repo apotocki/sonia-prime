@@ -63,8 +63,8 @@ std::expected<syntax_expression_result_t, error_storage> error_pattern::apply(fn
         .expressions = md.merge_void_spans(el)
     };
     
-    string_literal_entity const* pmsg_ent = nullptr;
-    string_literal_entity const* ploc_ent = nullptr;
+    generic_literal_entity const* pmsg_ent = nullptr;
+    generic_literal_entity const* ploc_ent = nullptr;
 
     if (md.matches.size() > 1) {
         auto& loc_er = get<1>(md.matches.back());
@@ -72,7 +72,7 @@ std::expected<syntax_expression_result_t, error_storage> error_pattern::apply(fn
         if (loc_er.is_const_result) {
             entity const& loc_ent = get_entity(u, loc_er.value());
             BOOST_ASSERT(loc_ent.get_type() == u.get(builtin_eid::string));
-            ploc_ent = &static_cast<string_literal_entity const&>(loc_ent);
+            ploc_ent = &static_cast<generic_literal_entity const&>(loc_ent);
         }
     }
 
@@ -80,27 +80,27 @@ std::expected<syntax_expression_result_t, error_storage> error_pattern::apply(fn
         // Argument is a compile-time constant, return an error immediately
         entity const& ent = get_entity(u, msg_er.value());
         BOOST_ASSERT(ent.get_type() == u.get(builtin_eid::string));
-        pmsg_ent = &static_cast<string_literal_entity const&>(ent);
+        pmsg_ent = &static_cast<generic_literal_entity const&>(ent);
     }
 
 
     if (pmsg_ent && (md.matches.size() == 1 || ploc_ent)) {
-        error::location_t call_location{ ploc_ent ? error::location_t{ ploc_ent->value() } : md.call_location };
         // Create error with the string content as description
         return std::unexpected(make_error<basic_general_error>(
-            ploc_ent ? error::location_t{ ploc_ent->value() } : md.call_location,
-            pmsg_ent->value()));
+            ploc_ent ? error::location_t{ ploc_ent->value().as<string_view>() } : md.call_location,
+            pmsg_ent->value().as<string_view>()));
     } else {
         // Argument is a runtime value, produce a call to builtin_eid::error
         if (ploc_ent) {
-            u.push_back_expression(el, result.expressions, semantic::push_value{ ploc_ent->value() });
+            //u.push_back_expression(el, result.expressions, semantic::push_value{ smart_blob{ ploc_ent->value() } });
+            u.push_back_expression(el, result.expressions, semantic::push_value{ ploc_ent->id });
         } else if (md.matches.size() == 1) {
-            auto locstr = small_string{ u.print(md.call_location) };
+            smart_blob locstr{ string_blob_result(u.print(md.call_location)) }; // will allocate
             u.push_back_expression(el, result.expressions, semantic::push_value{ std::move(locstr) });
         } // else the location argument is already on stack
         result.expressions = el.concat(result.expressions, msg_er.expressions);
         if (pmsg_ent) {
-            u.push_back_expression(el, result.expressions, semantic::push_value{ pmsg_ent->value() });
+            u.push_back_expression(el, result.expressions, semantic::push_value{ pmsg_ent->id });
         } // else the message argument is already on stack
         u.push_back_expression(el, result.expressions, semantic::invoke_function(u.get(builtin_eid::error)));
         result.value_or_type = u.get(builtin_eid::void_);

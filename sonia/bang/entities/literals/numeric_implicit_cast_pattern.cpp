@@ -126,9 +126,9 @@ std::expected<syntax_expression_result_t, error_storage> numeric_implicit_cast_p
         } else {
             apply_visitor(make_functional_visitor<void>([&ctx, &el, &src](auto const& v) {
                 if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
-                    ctx.u().push_back_expression(el, src.expressions, semantic::push_value{ v.value() });
+                    ctx.u().push_back_expression(el, src.expressions, semantic::push_value{ smart_blob{ bigint_blob_result(v.value()) } });
                 } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
-                    ctx.u().push_back_expression(el, src.expressions, semantic::push_value{ v.value() });
+                    ctx.u().push_back_expression(el, src.expressions, semantic::push_value{ smart_blob{ decimal_blob_result(v.value()) } });
                 } else {
                     THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
                 }

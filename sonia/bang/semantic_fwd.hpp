@@ -8,6 +8,7 @@
 
 #include "sonia/bang/terms.hpp"
 #include "sonia/utility/lang/entity.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 //#include "ast_terms.hpp"
 
 namespace sonia::lang::bang {
@@ -51,8 +52,7 @@ public:
 using entity_ptr = shared_ptr<entity>;
 template <typename ValueT> class literal_entity;
 
-using string_literal_entity = literal_entity<small_string>;
-using bool_literal_entity = literal_entity<bool>;
+using generic_literal_entity = literal_entity<smart_blob>;
 using integer_literal_entity = literal_entity<mp::integer>;
 using decimal_literal_entity = literal_entity<mp::decimal>;
 using identifier_entity = literal_entity<identifier>;
@@ -75,8 +75,7 @@ public:
     virtual ~entity_visitor() = default;
     virtual void operator()(entity const&) const = 0;
 
-    virtual void operator()(string_literal_entity const&) const = 0;
-    virtual void operator()(bool_literal_entity const&) const = 0;
+    virtual void operator()(generic_literal_entity const&) const = 0;
     virtual void operator()(integer_literal_entity const&) const = 0;
     virtual void operator()(decimal_literal_entity const&) const = 0;
     virtual void operator()(identifier_entity const&) const = 0;
@@ -93,8 +92,7 @@ public:
 class entity_visitor_adapter : public entity_visitor
 {
     void operator()(entity const&) const override {}
-    void operator()(string_literal_entity const&) const override {}
-    void operator()(bool_literal_entity const&) const override {}
+    void operator()(generic_literal_entity const&) const override {}
     void operator()(integer_literal_entity const&) const override {}
     void operator()(decimal_literal_entity const&) const override {}
     void operator()(identifier_entity const&) const override {}
@@ -198,10 +196,8 @@ public:
 // ======================================================================== values
 struct function_value { qname_identifier mangled_name; };
 using value_t = make_recursive_variant<
-    null_t, bool, uint64_t, mp::integer, mp::decimal, small_string, identifier,// shared_ptr<beng_object>,
-    entity_identifier, function_value,
-    std::vector<recursive_variant_>
+    smart_blob, identifier, entity_identifier//, shared_ptr<beng_object>,
+    //, std::vector<recursive_variant_>
 >::type; // to do: tuples
 
 }
-

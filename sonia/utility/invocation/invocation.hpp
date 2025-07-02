@@ -1392,11 +1392,11 @@ inline bool operator== (blob_result const& lhs, blob_result const& rhs) noexcept
     return blob_type_dispatch(lhs, [rhs = unref(rhs)]<typename DT>(DT v)->bool {
         if constexpr (std::is_same_v<nullptr_t, DT>) { return is_nil(rhs); }
         else if constexpr (std::is_same_v<bool, DT>) { return rhs.type == blob_type::boolean && v == !!rhs.bp.i8value; }
-        else if constexpr (is_integral_not_bool_v<DT>) { return is_integral(rhs.type) && from_blob<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>{}(rhs) == v; }
-        else if constexpr (std::is_floating_point_v<DT>) { return is_floating_point(rhs.type) && (double_t)v == from_blob<double_t>{}(rhs); } // to do: improve
-        else if constexpr (std::is_same_v<sonia::float16, DT>) { return is_floating_point(rhs.type) && (float)v == from_blob<float>{}(rhs); } // to do: improve
-        else if constexpr (sonia::mp::is_basic_integer_view_v<DT>) { return is_integral(rhs.type) && from_blob<sonia::mp::basic_integer_view<typename DT::limb_type>>{}(rhs) == v; }
-        else if constexpr (sonia::mp::is_basic_decimal_view_v<DT>) { return is_floating_point(rhs.type) && from_blob<sonia::mp::basic_decimal_view<typename DT::limb_type>>{}(rhs) == v; }
+        else if constexpr (is_integral_not_bool_v<DT>) { return ::is_integral(rhs.type) && from_blob<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>{}(rhs) == v; }
+        else if constexpr (std::is_floating_point_v<DT>) { return ::is_floating_point(rhs.type) && (double_t)v == from_blob<double_t>{}(rhs); } // to do: improve
+        else if constexpr (std::is_same_v<sonia::float16, DT>) { return ::is_floating_point(rhs.type) && (float)v == from_blob<float>{}(rhs); } // to do: improve
+        else if constexpr (sonia::mp::is_basic_integer_view_v<DT>) { return ::is_integral(rhs.type) && from_blob<sonia::mp::basic_integer_view<typename DT::limb_type>>{}(rhs) == v; }
+        else if constexpr (sonia::mp::is_basic_decimal_view_v<DT>) { return ::is_floating_point(rhs.type) && from_blob<sonia::mp::basic_decimal_view<typename DT::limb_type>>{}(rhs) == v; }
         else if constexpr (std::is_same_v<std::string_view, DT>) { return rhs.type == blob_type::string && v == from_blob<std::string_view>{}(rhs); }
         else if constexpr (std::is_same_v<sonia::invocation::error, DT>) { return rhs.type == blob_type::error && v.what == from_blob<std::string_view>{}(rhs); }
         else if constexpr (std::is_same_v<std::span<const blob_result>, DT>) { return rhs.type == blob_type::tuple && sonia::range_equal{}(v, from_blob<std::span<const blob_result>>{}(rhs)); }

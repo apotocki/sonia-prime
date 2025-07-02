@@ -71,7 +71,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::app
     ser.value_or_type = rtype; // single non-const field, so use it as result
     size_t src_size = std::ranges::count_if(tmd.arg_sig.fields(), [](field_descriptor const& fd) { return !fd.is_const(); });
     if (src_size > 1) {
-        u.push_back_expression(el, ser.expressions, semantic::push_value{ mp::integer{ 0 } });
+        u.push_back_expression(el, ser.expressions, semantic::push_value{ smart_blob{ ui64_blob_result(0) } });
         u.push_back_expression(el, ser.expressions, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
     return std::move(ser);

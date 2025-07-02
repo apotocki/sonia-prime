@@ -178,7 +178,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_project_get_patte
 
         semantic::expression_span exprs = md.merge_void_spans(el);
         exprs = el.concat(exprs, slfer.expressions);
-        u.push_back_expression(el, exprs, semantic::push_value{ runtime_index });
+        u.push_back_expression(el, exprs, semantic::push_value{ smart_blob{ ui64_blob_result(runtime_index) } });
         u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
 
         return syntax_expression_result_t{

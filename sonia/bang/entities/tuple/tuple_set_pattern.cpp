@@ -133,7 +133,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_set_pattern::appl
     result.expressions = el.concat(result.expressions, get<1>(md.matches.front()).expressions);
 
     if (size_t propindex = static_cast<tuple_set_match_descriptor&>(md).property_index(); propindex) {
-        u.push_back_expression(el, result.expressions, semantic::push_value{ propindex });
+        u.push_back_expression(el, result.expressions, semantic::push_value{ smart_blob{ ui64_blob_result(propindex) } });
         u.push_back_expression(el, result.expressions, semantic::invoke_function(u.get(builtin_eid::array_at)));
     }
 

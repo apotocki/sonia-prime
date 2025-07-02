@@ -64,7 +64,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_make_pattern::app
     entity const& tuple_type_ent = u.make_basic_signatured_entity(std::move(signature));
     BOOST_ASSERT(tuple_type_ent.signature() && tuple_type_ent.signature()->name == u.get(builtin_qnid::tuple));
     if (md.matches.size() > 1) {
-        u.push_back_expression(el, result.expressions, semantic::push_value{ mp::integer{ md.matches.size() } });
+        u.push_back_expression(el, result.expressions, semantic::push_value{ smart_blob{ ui64_blob_result(md.matches.size()) } });
         u.push_back_expression(el, result.expressions, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
     if (md.matches.size()) {

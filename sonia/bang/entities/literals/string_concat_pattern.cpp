@@ -60,15 +60,16 @@ string_concat_pattern::apply(fn_compiler_context& ctx, semantic::expression_list
     for (auto& [idx, er] : md.matches) {
         // Check if the argument is a const string literal
         if (er.is_const_result) {
-            string_literal_entity const* psle = dynamic_cast<string_literal_entity const*>(&get_entity(u, er.value()));
+            generic_literal_entity const* psle = dynamic_cast<generic_literal_entity const*>(&get_entity(u, er.value()));
             BOOST_ASSERT(psle);
-            concat_stream << psle->value();
+            concat_stream << psle->value().as<string_view>();
         } else {
             // if concat_stream is not empty, convert to runtime string
             auto prev_str = concat_stream.str();
             if (!prev_str.empty()) {
+                smart_blob strval{ string_blob_result(std::move(prev_str)) }; // will allocate
                 u.push_back_expression(el, result.expressions,
-                    semantic::push_value{ small_string{ prev_str } });
+                    semantic::push_value{ std::move(strval) });
                 ++concat_runtime_arg_count;
                 concat_stream.str(""); // Clear the stream
             }
@@ -80,14 +81,15 @@ string_concat_pattern::apply(fn_compiler_context& ctx, semantic::expression_list
     auto prev_str = concat_stream.str();
     if (concat_runtime_arg_count) {
         if (!prev_str.empty()) {
-            u.push_back_expression(el, result.expressions, semantic::push_value{ small_string{ prev_str } });
+            smart_blob strval{ string_blob_result(std::move(prev_str)) }; // will allocate
+            u.push_back_expression(el, result.expressions, semantic::push_value{ std::move(strval) });
             ++concat_runtime_arg_count;
         }
         result.value_or_type = u.get(builtin_eid::string);
         result.is_const_result = false;
         if (concat_runtime_arg_count > 1) {
             // If we have multiple runtime arguments, we need to use the concat builtin
-            u.push_back_expression(el, result.expressions, semantic::push_value{ mp::integer{ concat_runtime_arg_count } });
+            u.push_back_expression(el, result.expressions, semantic::push_value{ smart_blob{ ui64_blob_result(concat_runtime_arg_count) } });
             u.push_back_expression(el, result.expressions, semantic::invoke_function(u.get(builtin_eid::concat)));
         } // else only one runtime argument, just return it as is
     } else {

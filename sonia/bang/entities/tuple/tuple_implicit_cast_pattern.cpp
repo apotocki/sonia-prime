@@ -188,7 +188,7 @@ tuple_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expressio
     }
 
     if (mut_field_count > 1) {
-        u.push_back_expression(el, fn_code, semantic::push_value{ mp::integer{ mut_field_count } });
+        u.push_back_expression(el, fn_code, semantic::push_value{ smart_blob{ ui64_blob_result(mut_field_count) } });
         u.push_back_expression(el, fn_code, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
     if (src_tuple_var) {

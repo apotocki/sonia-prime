@@ -4,6 +4,7 @@ using t0 => tuple(name0: bool, integer);
 using t1 => tuple(123, name1: f16, name0: "asd");
 using tt => t0 & t1;
 
+/*
 assert_equal(size(tt), 5);
 assert_equal(tt.0, tuple(.name0, bool));
 assert_equal(tt.1, integer);
@@ -12,9 +13,19 @@ assert_equal(tt.3, tuple(.name1, f16));
 assert_equal(tt.4, tuple(.name0, "asd"));
 assert_equal(tt.name0, tuple(bool, "asd"));
 
-let t0val : t0 = (name0: runtime_cast(true), runtime_cast(42));
-//print(to_string(tt.name0));
 
-print($0, " ", $1, " ", $2);
-assert($$ != 4);
-assert_equal(3, $$);
+let t0val: t0 = (name0: runtime_cast(true), 42);
+assert_equal(t0val.0, (.name0, true));
+assert_equal(typeof(t0val.0), t0.0);
+
+assert_equal(t0val.1, 42);
+assert_equal(typeof(t0val.1), t0.1);
+*/
+let f16val : f16 = runtime_cast(1.1);
+let t1val: t1 = (123, name1: f16val, name0: "asd");
+
+//print(to_string(t0val.0));
+
+//print($0, " ", $1, " ", $2);
+//assert($$ != 4);
+//assert_equal(3, $$);

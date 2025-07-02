@@ -125,7 +125,7 @@ std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply
             }
             
             if (argcount > 1) {
-                u.push_back_expression(el, l, semantic::push_value{ mp::integer{ argcount } });
+                u.push_back_expression(el, l, semantic::push_value{ smart_blob{ ui64_blob_result(argcount) } });
                 u.push_back_expression(el, l, semantic::invoke_function(u.get(builtin_eid::arrayify)));
             }
 

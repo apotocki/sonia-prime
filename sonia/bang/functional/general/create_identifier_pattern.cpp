@@ -42,8 +42,8 @@ std::expected<syntax_expression_result_t, error_storage> create_identifier_patte
     unit& u = ctx.u();
     auto& [_, ser] = md.matches.front();
     entity_identifier strid = ser.value();
-    string_literal_entity const& str_ent = static_cast<string_literal_entity const&>(get_entity(u, ser.value()));
-    identifier id = u.slregistry().resolve(str_ent.value());
+    generic_literal_entity const& str_ent = static_cast<generic_literal_entity const&>(get_entity(u, ser.value()));
+    identifier id = u.slregistry().resolve(str_ent.value().as<string_view>());
     semantic::managed_expression_list rel{ u };
     rel.splice_back(el, ser.expressions);
         

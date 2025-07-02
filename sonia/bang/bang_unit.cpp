@@ -303,9 +303,7 @@ void unit::setup_type(builtin_qnid bqnid, builtin_eid beid)
 {
     qname_identifier qnid = get(bqnid);
     functional& some_type_fnl = fregistry_resolve(qnid);
-    auto some_type_entity = make_shared<basic_signatured_entity>();
-    some_type_entity->signature()->name = qnid;
-    some_type_entity->signature()->result.emplace(get(builtin_eid::typename_));
+    auto some_type_entity = make_shared<basic_signatured_entity>(entity_signature{ qnid, get(builtin_eid::typename_) });
     eregistry_insert(some_type_entity);
     some_type_fnl.set_default_entity(annotated_entity_identifier{ some_type_entity->id });
     builtin_eids_[(size_t)beid] = some_type_entity->id;
@@ -1135,11 +1133,11 @@ qname_entity const& unit::make_qname_entity(qname_view value)
     }));
 }
 
-bool_literal_entity const& unit::make_bool_entity(bool value, entity_identifier type)
+generic_literal_entity const& unit::make_bool_entity(bool value, entity_identifier type)
 {
-    bool_literal_entity smpl{ value, type ? type : get(builtin_eid::boolean) };
-    return static_cast<bool_literal_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
-        return make_shared<bool_literal_entity>(std::move(smpl));
+    generic_literal_entity smpl{ smart_blob{ bool_blob_result(value) }, type ? type : get(builtin_eid::boolean) };
+    return static_cast<generic_literal_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
+        return make_shared<generic_literal_entity>(std::move(smpl));
     }));
 }
 
@@ -1159,11 +1157,11 @@ decimal_literal_entity const& unit::make_decimal_entity(mp::decimal_view value, 
     }));
 }
 
-string_literal_entity const& unit::make_string_entity(string_view value, entity_identifier type)
+generic_literal_entity const& unit::make_string_entity(string_view value, entity_identifier type)
 {
-    string_literal_entity smpl{ value, type ? type : get(builtin_eid::string) };
-    return static_cast<string_literal_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
-        return make_shared<string_literal_entity>(std::move(smpl));
+    generic_literal_entity smpl{ smart_blob { string_blob_result(value) }, type ? type : get(builtin_eid::string) };
+    return static_cast<generic_literal_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
+        return make_shared<generic_literal_entity>(generic_literal_entity{ smart_blob{ smpl.value() }.allocate(), smpl.get_type() });
     }));
 }
 
@@ -1244,27 +1242,31 @@ unit::unit()
     , ast_{ *this }
     , expressions_ { *this }
 {
-    //set_extern("string(const __id)"sv, &bang_print_string);
+    //// ids
+#define BANG_PRINT_ENUM_ASSIGN(r, data, i, elem) \
+    builtin_ids_[(size_t)builtin_id::BOOST_PP_TUPLE_ELEM(2, 0, elem)] = make_identifier(BOOST_PP_TUPLE_ELEM(2, 1, elem));
+    BOOST_PP_SEQ_FOR_EACH_I(BANG_PRINT_ENUM_ASSIGN, _, BANG_BUILTIN_ID_SEQ)
+#undef BANG_PRINT_ENUM_ASSIGN
 
-    //qname_identifier string_lid = make_qname_identifier("string");
-    //functional& string_fnl = fregistry_resolve(string_lid);
-    //functional::pattern p()
-    //string_fnl.push();
+    //// qnids
+#define BANG_PRINT_ENUM_ASSIGN(r, data, i, elem) \
+    builtin_qnids_[(size_t)builtin_qnid::BOOST_PP_TUPLE_ELEM(2, 0, elem)] = make_qname_identifier(BOOST_PP_TUPLE_ELEM(2, 1, elem));
+    BOOST_PP_SEQ_FOR_EACH_I(BANG_PRINT_ENUM_ASSIGN, _, BANG_BUILTIN_QNAMES_SEQ)
+#undef BANG_PRINT_ENUM_ASSIGN
 
-    //identifier id_lid = slregistry().resolve("__id");
+    //// typename entity definition
+    entity_signature typename_sig{ get(builtin_qnid::typename_) };
+    basic_signatured_entity const& typename_entity = make_basic_signatured_entity(std::move(typename_sig));
+    builtin_eids_[(size_t)builtin_eid::typename_] = typename_entity.id;
 
-    // internal types
-    //auto ie = make_shared<internal_type_entity>(make_qname_identifier("integer"));
-    //integer_entity_ = ie.get();
-    //eregistry_insert(std::move(ie));
+    //// builtin types definitions
+#define BANG_PRINT_ENUM_ASSIGN(r, data, elem) \
+    setup_type(builtin_qnid::elem, builtin_eid::elem); \
+    BOOST_ASSERT(get(builtin_eid::elem).value == static_cast<entity_identifier::value_type>(builtin_eid::elem));
+    BOOST_PP_SEQ_FOR_EACH(BANG_PRINT_ENUM_ASSIGN, _, BANG_BUILTIN_TYPES_SEQ)
+#undef BANG_PRINT_ENUM_ASSIGN
+
 #if 0
-    // internal functions
-    builtins_.resize((size_t)builtin_fn::eof_builtin_type);
-
-    auto parrayify = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::arrayify);
-    eregistry_insert(parrayify);
-    set_efn(builtin_fn::arrayify, parrayify->name());
-
     auto punpack = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::unpack);
     eregistry_insert(punpack);
     set_efn(builtin_fn::unpack, punpack->name());
@@ -1277,14 +1279,6 @@ unit::unit()
     eregistry_insert(pweak_lock);
     set_efn(builtin_fn::weak_lock, pweak_lock->name());
 
-    auto pce = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::extern_object_create);
-    eregistry_insert(pce);
-    set_efn(builtin_fn::extern_object_create, pce->name());
-
-    auto peosp = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::extern_object_set_property);
-    eregistry_insert(peosp);
-    set_efn(builtin_fn::extern_object_set_property, peosp->name());
-
     auto peogp = make_shared<external_function_entity>(new_qname_identifier(), (size_t)virtual_stack_machine::builtin_fn::extern_object_get_property);
     eregistry_insert(peogp);
     set_efn(builtin_fn::extern_object_get_property, peogp->name());
@@ -1293,42 +1287,10 @@ unit::unit()
     eregistry_insert(pefc);
     set_efn(builtin_fn::extern_function_call, pefc->name());
 
-    auto ptostring = make_shared<external_function_entity>(new_qname_identifier(), fn_identifier_counter_);
-    eregistry_insert(ptostring);
-    strings_.emplace_back("tostring");
-    set_efn(builtin_fn::tostring, ptostring->name());
-    bvm_->set_efn(fn_identifier_counter_++, &bang_tostring, strings_.back());
-
-    auto pnegate = make_shared<external_function_entity>(new_qname_identifier(), fn_identifier_counter_);
-    eregistry_insert(pnegate);
-    strings_.emplace_back("!");
-    set_efn(builtin_fn::negate, pnegate->name());
-    bvm_->set_efn(fn_identifier_counter_++, &bang_negate, strings_.back());
-
-    //string(const __identifier)
-    set_extern("print(string)"sv, &bang_print_string);
-    set_extern("concat(string,string)->string"sv, &bang_concat_string);
     set_extern("operator_plus(decimal,decimal)->decimal"sv, &bang_operator_plus_decimal);
     set_extern("decimal(text: string)->decimal|()"sv, &bang_to_decimal);
 #endif
-
-    //// ids
-    #define BANG_PRINT_ENUM_ASSIGN(r, data, i, elem) \
-    builtin_ids_[(size_t)builtin_id::BOOST_PP_TUPLE_ELEM(2, 0, elem)] = make_identifier(BOOST_PP_TUPLE_ELEM(2, 1, elem));
-    BOOST_PP_SEQ_FOR_EACH_I(BANG_PRINT_ENUM_ASSIGN, _, BANG_BUILTIN_ID_SEQ)
-#undef BANG_PRINT_ENUM_ASSIGN
-
-        //// qnids
-#define BANG_PRINT_ENUM_ASSIGN(r, data, i, elem) \
-    builtin_qnids_[(size_t)builtin_qnid::BOOST_PP_TUPLE_ELEM(2, 0, elem)] = make_qname_identifier(BOOST_PP_TUPLE_ELEM(2, 1, elem));
-        BOOST_PP_SEQ_FOR_EACH_I(BANG_PRINT_ENUM_ASSIGN, _, BANG_BUILTIN_QNAMES_SEQ)
-#undef BANG_PRINT_ENUM_ASSIGN
-
-    // typename
-    entity_signature typename_sig{ get(builtin_qnid::typename_) };
-    basic_signatured_entity const& typename_entity = make_basic_signatured_entity(std::move(typename_sig));
-    builtin_eids_[(size_t)builtin_eid::typename_] = typename_entity.id;
-    
+        
     // void
     entity_signature empty_tuple_sig{ get(builtin_qnid::tuple), get(builtin_eid::typename_) };
     basic_signatured_entity const& empty_tuple_ent = make_basic_signatured_entity(std::move(empty_tuple_sig));
@@ -1336,32 +1298,16 @@ unit::unit()
     builtin_eids_[(size_t)builtin_eid::void_] = void_entity.id;
 
     // boolean, true, false
-    setup_type(builtin_qnid::boolean, builtin_eid::boolean);
     builtin_eids_[(size_t)builtin_eid::true_] = make_bool_entity(true).id;
     builtin_eids_[(size_t)builtin_eid::false_] = make_bool_entity(false).id;
-
-    // basic literal types
-    setup_type(builtin_qnid::integer, builtin_eid::integer);
-    setup_type(builtin_qnid::decimal, builtin_eid::decimal);
-    setup_type(builtin_qnid::f16, builtin_eid::f16);
-    setup_type(builtin_qnid::f32, builtin_eid::f32);
-    setup_type(builtin_qnid::f64, builtin_eid::f64);
-    setup_type(builtin_qnid::string, builtin_eid::string);
+        
     setup_type(builtin_qnid::object, builtin_eid::object);
     setup_type(builtin_qnid::identifier, builtin_eid::identifier);
     setup_type(builtin_qnid::qname, builtin_eid::qname);
-    setup_type(builtin_qnid::metaobject, builtin_eid::metaobject);
-
-    // any
-    auto any_entity = make_shared<basic_signatured_entity>(entity_signature{ get(builtin_qnid::any), get(builtin_eid::typename_) });
-    eregistry_insert(any_entity);
-    builtin_eids_[(size_t)builtin_eid::any] = any_entity->id;
-    functional& any_fnl = fregistry_resolve(get(builtin_qnid::any));
-    any_fnl.set_default_entity(annotated_entity_identifier{ any_entity->id });
-
+    //setup_type(builtin_qnid::metaobject, builtin_eid::metaobject);
 
     /////// built in patterns
-    // mut(_)
+    // runtime_cast(_)
     functional& runtime_cast_fnl = fregistry_resolve(get(builtin_qnid::runtime_cast));
     runtime_cast_fnl.push(make_shared<runtime_cast_pattern>());
 
@@ -1497,14 +1443,14 @@ unit::unit()
     //set_const_extern<to_string_pattern>("size(const metaobjct))->integer"sv);
 
     //set_extern<external_fn_pattern>("__error(mut string)"sv, &bang_error);
-    set_builtin_extern("__print(~runtime any ..., ~runtime integer)"sv, &bang_print_string);
+    set_builtin_extern("__print(runtime ..., ~runtime integer)"sv, &bang_print_string);
 
     //set_extern("implicit_cast(to: typename string, _)->string"sv, &bang_tostring);
     //set_const_extern<to_string_pattern>("to_string(const __identifier)->string"sv);
     //set_extern<external_fn_pattern>("to_string(_)->string"sv, &bang_tostring);
     //set_extern<external_fn_pattern>("implicit_cast(mut integer)->decimal"sv, &bang_int2dec);
     //set_extern<external_fn_pattern>("implicit_cast(mut integer)->float"sv, &bang_int2flt);
-    set_builtin_extern("create_extern_object(string @ismut)~>object"sv, &bang_create_extern_object);
+    set_builtin_extern("create_extern_object(runtime string)~>object"sv, &bang_create_extern_object);
 
     //set_extern<external_fn_pattern>("set(self: object, property: const __identifier, any)"sv, &bang_set_object_property);
 

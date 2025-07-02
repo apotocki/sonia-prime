@@ -32,11 +32,11 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_typename_get
 
     std::pair<syntax_expression_t const*, size_t> prop_arg;
     alt_error prop_errors;
-    auto property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::integer) }, &prop_arg);
+    auto property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ .type = u.get(builtin_eid::integer), .modifier = value_modifier_t::constexpr_value }, &prop_arg);
     if (!property_arg && property_arg.error()) {
         prop_errors.alternatives.emplace_back(std::move(property_arg.error()));
         call_session.reuse_argument(get<1>(prop_arg));
-        property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ u.get(builtin_eid::identifier) }, &prop_arg);
+        property_arg = call_session.use_named_argument(u.get(builtin_id::property), expected_result_t{ .type = u.get(builtin_eid::identifier), .modifier = value_modifier_t::constexpr_value }, &prop_arg);
     }
     if (!property_arg) {
         if (!property_arg.error()) {
@@ -108,50 +108,47 @@ std::expected<syntax_expression_result_t, error_storage> tuple_typename_get_patt
     //};
 
     // Case 1: property is constant
-    if (proper.is_const_result) {
-        entity const& property_entity = get_entity(u, proper.value());
-        if (auto int_lit = dynamic_cast<const integer_literal_entity*>(&property_entity)) {
-            size_t idx = static_cast<size_t>(int_lit->value());
-            if (auto* field = tmd.arg_sig.get_field(idx)) {
-                if (field->name()) {
-                    entity_signature rsig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
-                    rsig.emplace_back(u.make_identifier_entity(field->name()).id, true);
-                    rsig.emplace_back(field->entity_id(), field->is_const());
-                    result.value_or_type = u.make_basic_signatured_entity(std::move(rsig)).id;
-                } else {
-                    result.value_or_type = field->entity_id();
-                }
+    BOOST_ASSERT(proper.is_const_result);
+    entity const& property_entity = get_entity(u, proper.value());
+    if (auto int_lit = dynamic_cast<const integer_literal_entity*>(&property_entity)) {
+        size_t idx = static_cast<size_t>(int_lit->value());
+        if (auto* field = tmd.arg_sig.get_field(idx)) {
+            if (field->name()) {
+                entity_signature rsig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
+                rsig.emplace_back(u.make_identifier_entity(field->name()).id, true);
+                rsig.emplace_back(field->entity_id(), field->is_const());
+                result.value_or_type = u.make_basic_signatured_entity(std::move(rsig)).id;
             } else {
-                return std::unexpected(make_error<basic_general_error>(tmd.call_location, "tuple index out of range"sv, property_entity.id));
-            }
-        } else if (auto id_lit = dynamic_cast<const identifier_entity*>(&property_entity)) {
-            auto frng = tmd.arg_sig.find_fields(id_lit->value());
-            if (frng.first == frng.second) {
-                return std::unexpected(make_error<basic_general_error>(tmd.call_location, "no such field in tuple"sv, id_lit->value()));
-            }
-        
-            if (auto second = frng.first; ++second == frng.second) {
-                // Single field case - return the field type directly
-                field_descriptor const& field = tmd.arg_sig.field(frng.first->second);
-                result.value_or_type = field.entity_id();
-            } else {
-                // Multiple fields with the same name: create a tuple type with unnamed elements
-                // containing all matching field types in the same order as in the original tuple
-                entity_signature result_sig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
-
-                for (auto it = frng.first; it != frng.second; ++it) {
-                    field_descriptor const& field = tmd.arg_sig.field(it->second);
-                    // Add field without name (unnamed element) but preserve constness
-                    result_sig.emplace_back(field.entity_id(), field.is_const());
-                }
-
-                result.value_or_type = u.make_basic_signatured_entity(std::move(result_sig)).id;
+                result.value_or_type = field->entity_id();
             }
         } else {
-            return std::unexpected(make_error<type_mismatch_error>(tmd.call_location, proper.value(), "an integer or identifier"sv));
+            return std::unexpected(make_error<basic_general_error>(tmd.call_location, "tuple index out of range"sv, property_entity.id));
+        }
+    } else if (auto id_lit = dynamic_cast<const identifier_entity*>(&property_entity)) {
+        auto frng = tmd.arg_sig.find_fields(id_lit->value());
+        if (frng.first == frng.second) {
+            return std::unexpected(make_error<basic_general_error>(tmd.call_location, "no such field in tuple"sv, id_lit->value()));
+        }
+        
+        if (auto second = frng.first; ++second == frng.second) {
+            // Single field case - return the field type directly
+            field_descriptor const& field = tmd.arg_sig.field(frng.first->second);
+            result.value_or_type = field.entity_id();
+        } else {
+            // Multiple fields with the same name: create a tuple type with unnamed elements
+            // containing all matching field types in the same order as in the original tuple
+            entity_signature result_sig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
+
+            for (auto it = frng.first; it != frng.second; ++it) {
+                field_descriptor const& field = tmd.arg_sig.field(it->second);
+                // Add field without name (unnamed element) but preserve constness
+                result_sig.emplace_back(field.entity_id(), field.is_const());
+            }
+
+            result.value_or_type = u.make_basic_signatured_entity(std::move(result_sig)).id;
         }
     } else {
-        THROW_NOT_IMPLEMENTED_ERROR("tuple_typename_get_pattern : non-constant property is not implemented yet");
+        return std::unexpected(make_error<type_mismatch_error>(tmd.call_location, proper.value(), "an integer or identifier"sv));
     }
     
     return result;

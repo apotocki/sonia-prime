@@ -296,6 +296,49 @@ bool to_utf32(InputIteratorT & it, InputIteratorT const& eit, char32_t& result)
     return true;
 }
 
+template <typename InputIteratorT, typename OutputIteratorT>
+void normilize_json_string_aux(InputIteratorT& it, InputIteratorT const& eit, OutputIteratorT& oit)
+{
+    ++it;
+    if (it == eit) throw exception("unexpected end of string");
+    char c = *it;
+    ++it;
+    switch (c) {
+    case '"':  *oit = '"'; break;
+    case '\'':  *oit = '\''; break;
+    case '\\': *oit = '\\'; break;
+    case '/': *oit = '/'; break;
+    case 'b':  *oit = '\b'; break;
+    case 'f':  *oit = '\f'; break;
+    case 'n':  *oit = '\n'; break;
+    case 'r':  *oit = '\r'; break;
+    case 't':  *oit = '\t'; break;
+    case 'u': {
+        uint32_t utf32char;
+        if (!hexinteger(it, eit, 4, 4, utf32char)) throw exception("found wrong \\uXXXX character");
+        to_utf8(utf32char, oit);
+        break;
+    }
+    default:
+        throw exception("unexpected string character");
+    }
+    ++oit;
+}
+
+template <typename InputIteratorT, typename OutputIteratorT>
+void normilize_json_string(InputIteratorT it, InputIteratorT const& eit, OutputIteratorT oit)
+{
+    while (it != eit) {
+        char c = *it;
+        if (c != '\\') {
+            *oit = c;
+            ++it; ++oit;
+        } else {
+            normilize_json_string_aux(it, eit, oit);
+        }
+    }
+}
+
 template <
     template <class> class LexerT,
     template <class, class> class ParserT,

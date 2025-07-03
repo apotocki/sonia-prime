@@ -256,6 +256,57 @@
     <Filter Include="sonia.bang\ast\type_visitors">
       <UniqueIdentifier>{22978f14-bf65-4551-adeb-cb54c7f4415f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="sonia.sys\android">
+      <UniqueIdentifier>{cf19571f-9da9-4c17-8290-cd6ee7c4671c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.java">
+      <UniqueIdentifier>{5bcdd7a2-dae6-4cf0-9139-f3e0c2533a1c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities\ellipsis">
+      <UniqueIdentifier>{c7793df5-9618-486e-8a33-49b10971c99a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities\functions">
+      <UniqueIdentifier>{8614d0a0-74fa-441c-8923-33d6f9047e45}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\semantic">
+      <UniqueIdentifier>{36002c3c-a2c5-46bc-89ee-6bd2432dc2e0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities\tuple">
+      <UniqueIdentifier>{e82fcb8b-15f5-40a1-b5b6-5f0b408d0b49}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\errors">
+      <UniqueIdentifier>{5a3910f0-4852-4e94-8a38-3f7c63d36ac8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities\struct">
+      <UniqueIdentifier>{808cb3e6-afa1-4a67-8a01-d6e12de319d5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities\metaobject">
+      <UniqueIdentifier>{5e3689bc-9f0b-4b94-91d9-61e1088bd751}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\utility">
+      <UniqueIdentifier>{6eb522b8-21df-4b83-b9fb-46c592be6d9b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities\enum">
+      <UniqueIdentifier>{ed5d4027-b37c-44de-86a0-d0c0b86a6639}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities\collections">
+      <UniqueIdentifier>{49f3d200-580a-4d68-968e-2fc37a7cb26e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities\union">
+      <UniqueIdentifier>{c622c0f8-71b5-4bb5-afe0-5b8103c3b2d8}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities\literals">
+      <UniqueIdentifier>{d9d88b72-ba21-419d-beea-85c13f0a6a18}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\functional">
+      <UniqueIdentifier>{62b4dd72-e71b-4e49-84ec-697095d676d3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\functional\general">
+      <UniqueIdentifier>{874f0511-4fcb-4c36-b7fe-6ce9d6b1758b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\functional\fn_pattern_matching">
+      <UniqueIdentifier>{c87c8757-953f-4231-919f-ab40409061a4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\sonia\shared_ptr.hpp">
@@ -2001,9 +2052,6 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_visitor.hpp">
       <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\enum_entity.hpp">
-      <Filter>sonia.bang\entities</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\functional_entity.hpp">
       <Filter>sonia.bang\entities</Filter>
     </ClInclude>
@@ -2058,12 +2106,6 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\expression_type_visitor.hpp">
       <Filter>sonia.bang\ast</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\ast\preliminary_type_visitor.hpp">
-      <Filter>sonia.bang\ast</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.hpp">
-      <Filter>sonia.bang\ast</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\functional\variant_compare_three_way.hpp">
       <Filter>sonia.utility\functional</Filter>
     </ClInclude>
@@ -2094,16 +2136,13 @@
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_enum_visitor.hpp">
       <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor.hpp">
+    <ClInclude Include="..\..\..\sonia\bang\ast\lvalue_expression_visitor_obs.hpp">
       <Filter>sonia.bang\ast</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\semantic_fwd.hpp">
       <Filter>sonia.bang</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_float_visitor.hpp">
-      <Filter>sonia.bang\ast\casts</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.hpp">
       <Filter>sonia.bang\ast\casts</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\errors.hpp">
@@ -2171,6 +2210,294 @@
     </ClInclude>
     <ClInclude Include="..\..\..\agnostic\std\algorithm\three_way_comp_ref_type.hpp">
       <Filter>agnostic\std\algorithm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\sys\android\streambuf.hpp">
+      <Filter>sonia.sys\android</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\java\jnifwd.hpp">
+      <Filter>sonia.java</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\java\jni_env.hpp">
+      <Filter>sonia.java</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\java\jni_ref.hpp">
+      <Filter>sonia.java</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\jni_decoder.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\jni_encoder.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\java\jni_vm.hpp">
+      <Filter>sonia.java</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functional_registry.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functional.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.hpp">
+      <Filter>sonia.bang\entities\ellipsis</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\signatured_entity.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functions\function_entity.hpp">
+      <Filter>sonia.bang\entities\functions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\semantic\expression_printer.hpp">
+      <Filter>sonia.bang\semantic</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\vm\vmasm_builder.hpp">
+      <Filter>sonia.bang\vm</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\small_array.hpp">
+      <Filter>sonia.utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functions\parameter_type_expression_visitor.hpp">
+      <Filter>sonia.bang\entities\functions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\lang\compiler.hpp">
+      <Filter>sonia.utility\lang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\ct_expression_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\function_call_match_error.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\pattern_match_error.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\assign_expression_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\assign_error.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_entity.hpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_new_pattern.hpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_make_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\circular_dependency_error.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functions\expression_resolver.hpp">
+      <Filter>sonia.bang\entities\functions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_fn_pattern.hpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_typeof_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\type_mismatch_error.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_get_pattern.hpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\identifier_redefinition_error.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\utility.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\concurrency\call_once.hpp">
+      <Filter>sonia.utility\concurrency</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\functional_declaration_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\utility\linked_list.hpp">
+      <Filter>sonia.bang\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\utility\linked_list.ipp">
+      <Filter>sonia.bang\utility</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_init_pattern.hpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_head_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_tail_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_empty_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\ast\base_expression_visitor.hpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_empty_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_head_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_get_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_tail_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\value_mismatch_error.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_set_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\enum\enum_entity.hpp">
+      <Filter>sonia.bang\entities\enum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\enum\enum_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\enum</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\collections\array_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\collections</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\union\union_bit_or_pattern.hpp">
+      <Filter>sonia.bang\entities\union</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\union\union_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\union</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\metaobject\metaobject_bit_and_pattern.hpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\literals\literal_entity.hpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\collections\array_elements_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\collections</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\auxiliary.hpp">
+      <Filter>sonia.bang</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\prepared_call.hpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\basic_fn_pattern.hpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\external_fn_pattern.hpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\value_match_visitor.hpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\signature_matcher.hpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\value_type_match_visitor.hpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\match_utility.ipp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\runtime_cast_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\generic_pattern_base.hpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\generic_pattern_base.ipp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\no_position_argument_error.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\deref_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_size_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\functions\internal_function_entity.hpp">
+      <Filter>sonia.bang\entities\functions</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\equal_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\assert_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\typeof_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\to_string_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_pattern_base.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\literals\const_literal_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_equal_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\negate_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\expression_property_visitor.hpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_project_get_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_project_size_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\literals\string_concat_pattern.hpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\is_const_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\error_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\parameter_matcher.hpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\pattern_matcher.hpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\internal_fn_pattern.hpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\functional\general\create_identifier_pattern.hpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_typename_get_pattern.hpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2435,7 +2762,7 @@
     <ClCompile Include="..\..\..\sonia\bang\bang_unit.cpp">
       <Filter>sonia.bang</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\parser.cpp">
+    <ClCompile Include="..\..\..\sonia\bang\bang_parser.cpp">
       <Filter>sonia.bang</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\bang.cpp">
@@ -2456,12 +2783,6 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\type_entity.cpp">
       <Filter>sonia.bang\entities</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\entities\enum_entity.cpp">
-      <Filter>sonia.bang\entities</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\ast\forward_declaration_visitor.cpp">
-      <Filter>sonia.bang\ast</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\bang_semantic.cpp">
       <Filter>sonia.bang</Filter>
     </ClCompile>
@@ -2473,9 +2794,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\bang_errors.cpp">
       <Filter>sonia.bang</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_array_visitor.cpp">
-      <Filter>sonia.bang\ast\casts</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\ast\casts\expression_cast_to_vector_visitor.cpp">
       <Filter>sonia.bang\ast\casts</Filter>
@@ -2497,6 +2815,252 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\invocation\invocable.cpp">
       <Filter>sonia.utility\invocation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_decoder.cpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_encoder.cpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\java\jni_vm.cpp">
+      <Filter>sonia.java</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\java\jni_env.cpp">
+      <Filter>sonia.java</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\functional.cpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\ellipsis\ellipsis_pattern.cpp">
+      <Filter>sonia.bang\entities\ellipsis</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\fn_compiler_context.cpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\functions\function_entity.cpp">
+      <Filter>sonia.bang\entities\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\semantic\semantic_expression_printer.cpp">
+      <Filter>sonia.bang\semantic</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\functions\parameter_type_expression_visitor.cpp">
+      <Filter>sonia.bang\entities\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\ct_expression_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\errors\function_call_match_error.cpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\errors\pattern_match_error.cpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\errors\assign_error.cpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\assign_expression_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_entity.cpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_new_pattern.cpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_make_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_get_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\errors\circular_dependency_error.cpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\functions\expression_resolver.cpp">
+      <Filter>sonia.bang\entities\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_fn_pattern.cpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_typeof_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\errors\type_mismatch_error.cpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_get_pattern.cpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\errors\identifier_redefinition_error.cpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_set_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\variable_entity.cpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\functional_declaration_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_init_pattern.cpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_head_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_tail_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_argument_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_empty_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\ast\base_expression_visitor.cpp">
+      <Filter>sonia.bang\ast</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_empty_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_head_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_tail_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\errors\value_mismatch_error.cpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\struct\struct_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\struct</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\enum\enum_entity.cpp">
+      <Filter>sonia.bang\entities\enum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\enum\enum_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\enum</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\collections\array_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\collections</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\union\union_bit_or_pattern.cpp">
+      <Filter>sonia.bang\entities\union</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\union\union_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\union</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\metaobject\metaobject_bit_and_pattern.cpp">
+      <Filter>sonia.bang\entities\metaobject</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\collections\array_elements_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\collections</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\bang_auxiliary.cpp">
+      <Filter>sonia.bang</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\prepared_call.cpp">
+      <Filter>sonia.bang\entities</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\basic_fn_pattern.cpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\external_fn_pattern.cpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\value_match_visitor.cpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\signature_matcher.cpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\value_type_match_visitor.cpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\runtime_cast_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\errors\no_position_argument_error.cpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\deref_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_size_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\functions\internal_function_entity.cpp">
+      <Filter>sonia.bang\entities\functions</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\equal_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\assert_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\typeof_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\to_string_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_pattern_base.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\literals\const_literal_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_equal_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\negate_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\expression_property_visitor.cpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_project_get_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_project_size_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\literals\string_concat_pattern.cpp">
+      <Filter>sonia.bang\entities\literals</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\is_const_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\error_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\parameter_matcher.cpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\pattern_matcher.cpp">
+      <Filter>sonia.bang\functional\fn_pattern_matching</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\internal_fn_pattern.cpp">
+      <Filter>sonia.bang\functional</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\functional\general\create_identifier_pattern.cpp">
+      <Filter>sonia.bang\functional\general</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_typename_get_pattern.cpp">
+      <Filter>sonia.bang\entities\tuple</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

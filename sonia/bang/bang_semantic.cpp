@@ -8,30 +8,92 @@
 #include <algorithm>
 
 #include "ast/fn_compiler_context.hpp"
-#include "ast/preliminary_type_visitor.hpp"
+#include "sonia/bang/unit.hpp"
 
 namespace sonia::lang::bang {
 
+void entity::visit(entity_visitor const& v) const
+{
+    v(*this);
+}
+
+entity_identifier entity::get_type() const noexcept
+{
+    if (auto const* psig = signature(); psig && psig->result) {
+        return psig->result->entity_id();
+    }
+    return {};
+}
+
+std::ostream& entity::print_to(std::ostream& os, unit const& u) const
+{
+    return os; // << "@E"sv << id().value;
+}
+
+std::ostream& signatured_entity::print_to(std::ostream& os, unit const& u) const
+{
+    entity_signature const& sgn = *signature();
+    if (sgn.result->entity_id() == u.get(builtin_eid::typename_)) {
+        os << "typename "sv;
+    }
+    return os << u.print(sgn);
+    //return entity::print_to(os, u) << "<"sv << u.print(*signature()) << ">"sv;
+}
+
+//vector_type_entity::vector_type_entity(unit& u, entity_identifier et) noexcept
+//    : element_type{ et }
+//    , sig_{ u.get(builtin_qnid::vector) }
+//{
+//    set_type(u.get(builtin_eid::typename_));
+//    sig_.push_back(u.get(builtin_id::element), field_descriptor{ et, true });
+//}
+//
+//bool vector_type_entity::equal(entity const& rhs) const noexcept
+//{
+//    if (vector_type_entity const* pr = dynamic_cast<vector_type_entity const*>(&rhs); pr) {
+//        return pr->element_type == element_type;
+//    }
+//    return false;
+//}
+//
+//size_t vector_type_entity::hash() const noexcept
+//{
+//    size_t seed = __COUNTER__;
+//    hash_combine(seed, element_type);
+//    return seed;
+//}
+
+//std::ostream& vector_type_entity::print_to(std::ostream& os, unit const& u) const
+//{
+//    return u.eregistry_get(get_type()).print_to(os << '[', u) << ']';
+//}
+
+
+
+#if 0
 class type_mangler_visitor : static_visitor<qname_identifier>
 {
     unit & u_;
 
-    inline qname_identifier qnid(identifier id) const { return u_.qnregistry().resolve(qname{ id }); }
+    inline qname_identifier qnid(identifier id) const { return u_.fregistry().resolve(qname{ id }).id(); }
     inline qname_identifier qnid(string_view sv) const { return qnid(u_.slregistry().resolve(sv)); }
 
 public:
     explicit type_mangler_visitor(unit& u) : u_{ u } {}
 
-    inline result_type operator()(bang_any_t) const { return qnid("any"sv); }
-    inline result_type operator()(bang_bool_t) const { return qnid("bool"sv); }
-    inline result_type operator()(bang_int_t) const { return qnid("int"sv); }
-    inline result_type operator()(bang_float_t) const { return qnid("float"sv); }
-    inline result_type operator()(bang_decimal_t) const { return qnid("decimal"sv); }
-    inline result_type operator()(bang_string_t) const { return qnid("string"sv); }
+    //inline result_type operator()(bang_any_t) const { return qnid("any"sv); }
+    //inline result_type operator()(bang_bool_t) const { return qnid("bool"sv); }
+    //inline result_type operator()(bang_int_t) const { return qnid("int"sv); }
+    //inline result_type operator()(bang_float_t) const { return qnid("float"sv); }
+    //inline result_type operator()(bang_decimal_t) const { return qnid("decimal"sv); }
+    //inline result_type operator()(bang_string_t) const { return qnid("string"sv); }
         
-    inline result_type operator()(bang_object_t const& obj) const { return obj.name(); }
+    inline result_type operator()(bang_object_t const& obj) const { 
+        THROW_NOT_IMPLEMENTED_ERROR("type_mangler_visitor bang_object_t");
+        //return obj.name();
+    }
 
-    inline result_type operator()(bang_fn_t const& fn) const
+    inline result_type operator()(bang_fn_type_t const& fn) const
     {
         THROW_NOT_IMPLEMENTED_ERROR();
         /*
@@ -84,20 +146,23 @@ public:
         */
     }
 };
+#endif
 
+#if 0
 void function_signature::setup(fn_compiler_context& ctx, parameter_woa_list_t & params)
 {
     preliminary_type_visitor tqvis{ ctx };
     for (auto & parampair : params) {
-        bang_type paramtype = apply_visitor(tqvis, parampair.type);
-        if (!parampair.name) {
+        bang_type paramtype = apply_visitor(tqvis, parampair.type.value);
+        if (!parampair.name.external_name) {
             position_parameters().emplace_back(paramtype);
         } else {
             //GLOBAL_LOG_INFO() << "APPEND param: " << ctx.u().print(parampair.name->id);
-            named_parameters().emplace_back(*parampair.name, paramtype);
+            named_parameters().emplace_back(*parampair.name.external_name, paramtype);
         }
     }
 }
+
 
 void function_signature::normilize(fn_compiler_context& ctx)
 {
@@ -124,7 +189,7 @@ void function_signature::normilize(fn_compiler_context& ctx)
         it = dupit;
     }
     
-    // now remove identical oarameters
+    // now remove identical parameters
     auto it = std::unique(named_parameters().begin(), named_parameters().end(), [](auto const& l, auto const& r) {
         return std::get<0>(l) == std::get<0>(r);
     });
@@ -135,6 +200,11 @@ void function_signature::normilize(fn_compiler_context& ctx)
         return std::get<0>(l) < std::get<0>(r);
     });
 }
+
+//void function_signature::build_symbol(unit& u, symbol& s)
+//{
+//    THROW_NOT_IMPLEMENTED_ERROR("function_signature::build_symbol");
+//}
 
 void function_signature::build_mangled_id(unit& u)
 {
@@ -151,6 +221,7 @@ void function_signature::build_mangled_id(unit& u)
     }
     mangled_id = u.piregistry().resolve(ps);
 }
+
 
 bang_type make_union_type(bang_type arg0, bang_type const* parg1)
 {
@@ -199,11 +270,11 @@ struct union_type_remove_visitor : static_visitor<bool>
     explicit union_type_remove_visitor(bang_union_t& r) : res{ r } {}
     using basic_type = bang_union_t::basic_type;
 
-    bool operator()(bang_bool_t const&) const { res.basic_members &= ~(uint16_t)basic_type::bool_e; return true; }
-    bool operator()(bang_int_t const&) const { res.basic_members &= ~(uint16_t)basic_type::int_e; return true; }
-    bool operator()(bang_float_t const&) const { res.basic_members &= ~(uint16_t)basic_type::float_e; return true; }
-    bool operator()(bang_decimal_t const&) const { res.basic_members &= ~(uint16_t)basic_type::decimal_e; return true; }
-    bool operator()(bang_string_t const&) const { res.basic_members &= ~(uint16_t)basic_type::string_e; return true; }
+    //bool operator()(bang_bool_t const&) const { res.basic_members &= ~(uint16_t)basic_type::bool_e; return true; }
+    //bool operator()(bang_int_t const&) const { res.basic_members &= ~(uint16_t)basic_type::int_e; return true; }
+    //bool operator()(bang_float_t const&) const { res.basic_members &= ~(uint16_t)basic_type::float_e; return true; }
+    //bool operator()(bang_decimal_t const&) const { res.basic_members &= ~(uint16_t)basic_type::decimal_e; return true; }
+    //bool operator()(bang_string_t const&) const { res.basic_members &= ~(uint16_t)basic_type::string_e; return true; }
     bool operator()(bang_tuple_t const& t) const
     {
         if (!t.empty()) return false;
@@ -230,5 +301,5 @@ bang_type operator- (bang_union_t const& l, bang_type const& r)
         return result;
     }
 }
-
+#endif
 }

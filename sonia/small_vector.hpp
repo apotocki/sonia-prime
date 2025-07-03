@@ -4,27 +4,10 @@
 
 #pragma once
 
-#include "sonia/span.hpp"
 #include <boost/container/small_vector.hpp>
 
 namespace sonia {
 
 using boost::container::small_vector;
-
-}
-
-namespace boost::container {
-
-template <typename T, size_t SzV, typename OptionsT>
-inline sonia::span<T> to_span(boost::container::small_vector<T, SzV, OptionsT> & vec)
-{
-    return { vec.data(), vec.size() };
-}
-
-template <typename T, size_t SzV, typename OptionsT>
-inline sonia::span<const T> to_span(boost::container::small_vector<T, SzV, OptionsT> const& vec)
-{
-    return { vec.data(), vec.size() };
-}
 
 }

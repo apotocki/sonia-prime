@@ -20,54 +20,74 @@ class NOVTABLE polymorphic_clonable
 {
 public:
     virtual ~polymorphic_clonable() = default;
-    [[noreturn]] virtual polymorphic_clonable* clone(void* address, size_t sz) const { THROW_NOT_SUPPORTED_ERROR("copy"); }
+    [[noreturn]] virtual void* clone(void* address, size_t sz) const { THROW_NOT_SUPPORTED_ERROR("copy"); }
 };
 
 class NOVTABLE polymorphic_movable
 {
 public:
     virtual ~polymorphic_movable() = default;
-    [[noreturn]] virtual polymorphic_movable* move(void* address, size_t sz) { THROW_NOT_SUPPORTED_ERROR("move"); }
+    [[noreturn]] virtual void* move(void* address, size_t sz) { THROW_NOT_SUPPORTED_ERROR("move"); }
 };
 
-template <typename T> struct is_polymorphic_clonable : public is_base_of<polymorphic_clonable, T> {};
-template <typename T> struct is_polymorphic_movable : public is_base_of<polymorphic_movable, T> {};
+class NOVTABLE polymorphic_clonable_and_movable
+{
+public:
+    virtual ~polymorphic_clonable_and_movable() = default;
+    [[noreturn]] virtual void* clone(void* address, size_t sz) const { THROW_NOT_SUPPORTED_ERROR("copy"); }
+    [[noreturn]] virtual void* move(void* address, size_t sz) { THROW_NOT_SUPPORTED_ERROR("move"); }
+};
+
+template <typename T>
+concept clonable = requires(T a)
+{
+    { a.clone(nullptr, 0) } -> std::convertible_to<void*>;
+};
+
+template <typename T>
+concept movable = requires(T a)
+{
+    { a.move(nullptr, 0) } -> std::convertible_to<void*>;
+};
+
+// Note: There is no standard way to test whether a function is declared virtual or not.
+template <typename T> struct is_polymorphic_clonable : public false_type {};
+template <clonable T> struct is_polymorphic_clonable<T> : public std::is_polymorphic<T> {};
+
+template <typename T> struct is_polymorphic_movable : public false_type {};
+template <movable T> struct is_polymorphic_movable<T> : public std::is_polymorphic<T> {};
 
 template <typename T> constexpr bool is_polymorphic_clonable_v = is_polymorphic_clonable<T>::value;
 template <typename T> constexpr bool is_polymorphic_movable_v = is_polymorphic_movable<T>::value;
 
 #define SONIA_POLYMORPHIC_MOVABLE_IMPL(clsnm)                                               \
-polymorphic_movable* move(void* address, size_t sz) override                                \
+void* move(void* address, size_t sz) override                                               \
 {                                                                                           \
     BOOST_ASSERT_MSG (sizeof(clsnm) <= sz,                                                  \
         ("%1% <= %2%"_fmt % sizeof(clsnm) % sz).str().c_str());                             \
-    new (address) clsnm{std::move(*this)};                                                  \
-    return reinterpret_cast<clsnm*>(address);                                               \
+    return new (address) clsnm{std::move(*this)};                                           \
 }
 
 #define SONIA_POLYMORPHIC_CLONABLE_IMPL(clsnm)                                              \
-polymorphic_clonable* clone(void* address, size_t sz) const override                        \
+void* clone(void* address, size_t sz) const override                                        \
 {                                                                                           \
     BOOST_ASSERT_MSG (sizeof(clsnm) <= sz,                                                  \
         ("%1% <= %2%"_fmt % sizeof(clsnm) % sz).str().c_str());                             \
-    new (address) clsnm{*this};                                                             \
-    return reinterpret_cast<clsnm*>(address);                                               \
+    return new (address) clsnm{*this};                                                      \
 }
 
 #define SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(clsnm)                                      \
-polymorphic_movable* move(void* address, size_t sz) override                                \
+void* move(void* address, size_t sz) override                                               \
 {                                                                                           \
     BOOST_ASSERT_MSG (sizeof(clsnm) <= sz,                                                  \
         ("%1% <= %2%"_fmt % sizeof(clsnm) % sz).str().c_str());                             \
-    new (address) clsnm{std::move(*this)};                                                  \
-    return reinterpret_cast<clsnm*>(address);                                               \
+    return new (address) clsnm{std::move(*this)};                                           \
 }                                                                                           \
-polymorphic_clonable* clone(void* address, size_t sz) const override                        \
+void* clone(void* address, size_t sz) const override                                        \
 {                                                                                           \
     BOOST_ASSERT_MSG (sizeof(clsnm) <= sz,                                                  \
         ("%1% <= %2%"_fmt % sizeof(clsnm) % sz).str().c_str());                             \
-    new (address) clsnm{*this};                                                             \
-    return reinterpret_cast<clsnm*>(address);                                               \
+    return new (address) clsnm{*this};                                                      \
 }
 
 }

@@ -5,7 +5,7 @@
 #include "sonia/config.hpp"
 #include "bang_vm.hpp"
 
-#include <boost/container/small_vector.hpp>
+#include "sonia/small_vector.hpp"
 
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/mp/integer_view.hpp" 
@@ -20,19 +20,19 @@ class function_invoker : public invocation::functor_object
     uint64_t param_cnt_ : 16;
     uint64_t is_void_ : 1;
     uint64_t is_static_variable_index_ : 1;
-    vm::context::vm_t & vm_;
+    unit & unit_;
     invocation::invocable* penv_;
     smart_blob capture_;
     small_string name_; // for describing purposes only, it's @XXX for lambdas
 
 public:
     explicit function_invoker(size_t address, bool is_vidx, size_t paramcnt, bool is_void, smart_blob capture,
-        vm::context::vm_t& v, invocation::invocable* pev, small_string name)
+        unit& u, invocation::invocable* pev, small_string name)
             : address_{ address }
             , param_cnt_{ paramcnt }, is_void_ { is_void }
             , is_static_variable_index_{ is_vidx ? 1u : 0 }
             , capture_{ std::move(capture) }
-            , vm_(v), penv_{ pev }, name_ { std::move(name) }
+            , unit_{u}, penv_{ pev }, name_ { std::move(name) }
     {}
 
     string_view name() const { return name_; }
@@ -40,7 +40,7 @@ public:
     size_t address(vm::context const& ctx) const
     {
         if (is_static_variable_index_) {
-            return ctx.static_at(address_).as<size_t>();
+            return ctx.const_at(address_).as<size_t>();
         } else {
             return address_;
         }
@@ -69,12 +69,12 @@ public:
         if (args.size() != param_cnt_) {
             throw exception("fn invocation error: wrong number of arguments: %1%, expected: %2%"_fmt % args.size() % (uint64_t)param_cnt_);
         }
-        vm::context ctx(vm_, penv_);
+        vm::context ctx(unit_, penv_);
         for (blob_result const& arg: args) {
             ctx.stack_push(arg);
         }
         size_t procaddress = call(ctx);
-        vm_.run(ctx, procaddress);
+        unit_.bvm().run(ctx, procaddress);
         if (is_void_) {
             return nil_blob_result();
         } else {
@@ -83,16 +83,21 @@ public:
     }
 };
 
+vm::context::context(unit& u, invocation::invocable* penv)
+    : unit_{ u }, vm_{ u.bvm() }, penv_{ penv }
+{}
+
 bool vm::context::is_true(variable_type const& v) const noexcept
 {
-    blob_result const* br = &v.get();
-    while (br->type == blob_type::blob_reference) {
-        br = data_of<blob_result>(*br);
-    }
-    if (br->type == blob_type::boolean) {
-        return !!br->bp.ui8value;
-    }
-    return true;
+    return v.as<bool>();
+    //blob_result const* br = &v.get();
+    //while (br->type == blob_type::blob_reference) {
+    //    br = data_of<blob_result>(*br);
+    //}
+    //if (br->type == blob_type::boolean) {
+    //    return !!br->bp.ui8value;
+    //}
+    //return true;
 }
 
 size_t vm::context::callp(size_t ret_address)
@@ -127,7 +132,8 @@ std::string vm::context::callp_describe() const
     smart_blob const& p = stack_back();
     if (is_basic_integral(p->type)) {
         size_t address = p.as<size_t>();
-        return ("0x%1$x"_fmt % address).str();
+        string_view address_descr = describe_address(address);
+        return ("0x%1$x %2%"_fmt % address % address_descr).str();
     }
     decltype(auto) ftor = p.as<invocation::functor_object>();
     int64_t sigdescr = stack_back(1).as<int64_t>();
@@ -142,19 +148,25 @@ void vm::context::efn(size_t fn_index)
     std::get<0>(vm_.efns().at(fn_index))(*this);
 }
 
+string_view vm::context::describe_address(size_t address) const
+{
+    // not a good idea, but we want to avoid dynamic_casts
+    return static_cast<virtual_stack_machine const&>(vm_).describe_address(address);
+}
+
 std::string vm::context::ecall_describe(size_t fn_index) const
 {
     using builtin_fn = virtual_stack_machine::builtin_fn;
     switch ((builtin_fn)fn_index) {
     case builtin_fn::is_nil: return "is_nil";
-    case builtin_fn::arrayify: return "arrayify";
+    //case builtin_fn::arrayify: return "arrayify";
     case builtin_fn::unpack: return "unpack";
     case builtin_fn::referify: return "referify";
     case builtin_fn::weak_create: return "weak_create";
     case builtin_fn::weak_lock: return "weak_lock";
     case builtin_fn::function_constructor: return "function_constructor";
-    case builtin_fn::extern_object_create: return "extern_object_create";
-    case builtin_fn::extern_object_set_property: return "extern_object_set_property";
+    //case builtin_fn::extern_object_create: return "extern_object_create";
+    //case builtin_fn::extern_object_set_property: return "extern_object_set_property";
     case builtin_fn::extern_object_get_property: return "extern_object_get_property";
     case builtin_fn::extern_variable_get: return "extern_variable_get";
     case builtin_fn::extern_variable_set: return "extern_variable_set";
@@ -173,7 +185,7 @@ std::string vm::context::ecall_describe(size_t fn_index) const
 
 small_string vm::context::generate_object_id() const
 {
-    using buff_t = boost::container::small_vector<char, 16>;
+    using buff_t = small_vector<char, 16>;
     buff_t tailored_name = { '_', 'i', 'd' };
     bool reversed;
     mp::to_string(std::span{ &id_counter_, 1 }, std::back_inserter(tailored_name), reversed);
@@ -184,7 +196,7 @@ small_string vm::context::generate_object_id() const
 
 small_string vm::context::camel2kebab(string_view cc)
 {
-    boost::container::small_vector<char, 64> buff;
+    small_vector<char, 64> buff;
     bool first = true;
     for (char c : cc) {
         if (std::isupper(c)) {
@@ -290,19 +302,19 @@ void vm::context::construct_extern_object()
 #endif
 
 // type -> obj
-void vm::context::extern_object_create()
-{
-    string_view name = stack_back().as<string_view>();
-    if (name.starts_with("::"sv)) {
-        name = name.substr(2);
-        name = name.substr(2);
-    }
-    smart_blob resobj = penv_->invoke("create"sv, { string_blob_result(camel2kebab(name)) });
-    if (resobj->type == blob_type::error) {
-        throw exception(resobj.as<std::string>());
-    }
-    stack_back().replace(std::move(resobj));
-}
+//void vm::context::extern_object_create()
+//{
+//    string_view name = stack_back().as<string_view>();
+//    if (name.starts_with("::"sv)) {
+//        name = name.substr(2);
+//        name = name.substr(2);
+//    }
+//    smart_blob resobj = penv_->invoke("create"sv, { string_blob_result(camel2kebab(name)) });
+//    if (resobj->type == blob_type::error) {
+//        throw exception(resobj.as<std::string>());
+//    }
+//    stack_back().replace(std::move(resobj));
+//}
 
 // (obj, propName)->value
 void vm::context::extern_object_get_property()
@@ -316,14 +328,14 @@ void vm::context::extern_object_get_property()
 }
 
 // (obj, value, propName)->(obj, value)
-void vm::context::extern_object_set_property()
-{
-    using namespace sonia::invocation;
-    shared_ptr<invocable> obj = stack_back(2).as<wrapper_object<shared_ptr<invocable>>>().value;
-    string_view prop_name = stack_back().as<string_view>();
-    obj->set_property(camel2kebab(prop_name), *stack_back(1));
-    stack_pop();
-}
+//void vm::context::extern_object_set_property()
+//{
+//    using namespace sonia::invocation;
+//    shared_ptr<invocable> obj = stack_back(2).as<wrapper_object<shared_ptr<invocable>>>().value;
+//    string_view prop_name = stack_back().as<string_view>();
+//    obj->set_property(camel2kebab(prop_name), *stack_back(1));
+//    stack_pop();
+//}
 
 void vm::context::construct_function()
 {
@@ -334,7 +346,7 @@ void vm::context::construct_function()
     size_t address = stack_back(4).as<size_t>();
     size_t paramcount = std::abs(sigdescr) - 1;
     bool is_void = sigdescr < 0;
-    smart_blob res{ object_blob_result<function_invoker>(address, is_vidx, paramcount, is_void, std::move(capture), vm_, penv_, std::move(name)) };
+    smart_blob res{ object_blob_result<function_invoker>(address, is_vidx, paramcount, is_void, std::move(capture), unit_, penv_, std::move(name)) };
     stack_pop(5);
     stack_push(std::move(res));
 }
@@ -343,29 +355,6 @@ void vm::context::is_nil()
 {
     auto const& val = stack_back();
     stack_push(bool_blob_result(val.is_nil() || ::is_nil(unref(*val))));
-}
-
-void vm::context::arrayify()
-{
-    boost::container::small_vector<blob_result, 4> elements;
-
-    size_t argcount = stack_back().as<size_t>();
-    elements.reserve(argcount);
-
-    SCOPE_EXCEPTIONAL_EXIT([&elements]() {
-        for (auto& e : elements) blob_result_unpin(&e);
-    });
-
-    for (size_t i = argcount; i > 0; --i) {
-        elements.emplace_back(*stack_back(i));
-        blob_result_pin(&elements.back());
-    }
-    smart_blob r{ array_blob_result(span{elements.data(), elements.size()}) };
-    r.allocate();
-    //GLOBAL_LOG_INFO() << "arrayify address: " << std::hex << r->bp.data;
-
-    stack_pop(argcount + 1);
-    stack_push(std::move(r));
 }
 
 void vm::context::unpack()
@@ -444,14 +433,14 @@ void vm::context::call_function_object()
 virtual_stack_machine::virtual_stack_machine()
 {
     set_efn((size_t)builtin_fn::is_nil, [](vm::context& ctx) { ctx.is_nil(); });
-    set_efn((size_t)builtin_fn::arrayify, [](vm::context& ctx) { ctx.arrayify(); });
+    //set_efn((size_t)builtin_fn::arrayify, [](vm::context& ctx) { ctx.arrayify(); });
     set_efn((size_t)builtin_fn::unpack, [](vm::context& ctx) { ctx.unpack(); });
     set_efn((size_t)builtin_fn::referify, [](vm::context& ctx) { ctx.referify(); });
     set_efn((size_t)builtin_fn::weak_create, [](vm::context& ctx) { ctx.weak_create(); });
     set_efn((size_t)builtin_fn::weak_lock, [](vm::context& ctx) { ctx.weak_lock(); });
     set_efn((size_t)builtin_fn::function_constructor, [](vm::context& ctx) { ctx.construct_function(); });
-    set_efn((size_t)builtin_fn::extern_object_create, [](vm::context& ctx) { ctx.extern_object_create(); });
-    set_efn((size_t)builtin_fn::extern_object_set_property, [](vm::context& ctx) { ctx.extern_object_set_property(); });
+    //set_efn((size_t)builtin_fn::extern_object_create, [](vm::context& ctx) { ctx.extern_object_create(); });
+    //set_efn((size_t)builtin_fn::extern_object_set_property, [](vm::context& ctx) { ctx.extern_object_set_property(); });
     set_efn((size_t)builtin_fn::extern_object_get_property, [](vm::context& ctx) { ctx.extern_object_get_property(); });
     set_efn((size_t)builtin_fn::extern_function_call, [](vm::context& ctx) { ctx.extern_function_call(); });
     set_efn((size_t)builtin_fn::extern_variable_get, [](vm::context& ctx) { ctx.extern_variable_get(); });
@@ -462,28 +451,56 @@ virtual_stack_machine::virtual_stack_machine()
     */
 }
 
+string_view virtual_stack_machine::describe_address(size_t address) const noexcept
+{
+    auto it = call_descriptions_.find(address);
+    if (it != call_descriptions_.end()) {
+        return it->second;
+    }
+    return ""sv;
+    //return (std::ostringstream() << "no description for address at: 0x" << std::hex << address).str();
+}
+
+void virtual_stack_machine::set_address_description(size_t address, std::string description)
+{
+    if (description.empty()) {
+        call_descriptions_.erase(address);
+    } else {
+        call_descriptions_.insert_or_assign(address, std::move(description));
+    }
+}
+
 void virtual_stack_machine::append_ecall(builtin_fn fn)
 {
     base_t::append_ecall((size_t)fn);
 }
 
-size_t virtual_stack_machine::append_static_const(smart_blob&& value)
+size_t virtual_stack_machine::add_pooled_const(smart_blob&& value)
 {
     auto it = literals_.find(*value);
     if (it == literals_.end()) {
-        size_t index = base_t::append_static(std::move(value));
-        it = literals_.insert(it, std::pair{ *base_t::statics()[index], index });
-        GLOBAL_LOG_DEBUG() << "placing new const value: " << base_t::statics()[index] << ", at index: " << index;
+        size_t index = base_t::add_const(std::move(value));
+        it = literals_.insert(it, std::pair{ *base_t::consts()[index], index });
+        GLOBAL_LOG_DEBUG() << "placing new const value: " << base_t::consts()[index] << ", at index: " << index;
     } else {
         GLOBAL_LOG_DEBUG() << "found existing value: " << value << ", at index: " << it->second;
     }
     return it->second;
 }
 
-void virtual_stack_machine::append_push_static_const(smart_blob&& value)
+void virtual_stack_machine::set_const(size_t index, smart_blob&& value)
 {
-    size_t pos = append_static_const(std::move(value));
-    append_pushs(pos);
+    auto it = literals_.find(*value);
+    if (it == literals_.end()) {
+        literals_.insert(it, std::pair{ *value, index });
+    }
+    base_t::set_const(index, std::move(value));
+}
+
+void virtual_stack_machine::append_push_pooled_const(smart_blob&& value)
+{
+    size_t pos = add_pooled_const(std::move(value));
+    append_pushc(pos);
 }
 
 }

@@ -11,6 +11,6 @@
 
 namespace sonia::lang::bang {
 
-optional<error_storage> cast_elements(fn_compiler_context& ctx, span<const bang_type> from, bang_type to, function<error_context(size_t)> const& cl);
+//optional<error_storage> cast_elements(fn_compiler_context& ctx, span<const bang_type> from, bang_type to, function<error_context(size_t)> const& cl);
 
 }

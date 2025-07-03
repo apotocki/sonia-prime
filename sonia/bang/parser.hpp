@@ -10,6 +10,7 @@
 #include "sonia/variant.hpp"
 #include "sonia/type_traits.hpp"
 #include "sonia/filesystem.hpp"
+#include "sonia/small_vector.hpp"
 
 #include "ast_terms.hpp"
 #include "sonia/logger/logger.hpp"
@@ -17,59 +18,62 @@
 namespace sonia::lang::bang {
 
 class unit;
+class syntax_expression_resource;
 
 class parser_context
 {
 public:
-    explicit parser_context(unit& u)
+    inline explicit parser_context(unit& u) noexcept
         : unit_{ u }
-    {
-        ns_stack_.push_back({});
-    }
+        , statements_{ u }
+    {}
+    ~parser_context();
 
-    qname const& ns() const { return ns_stack_.back(); }
+    annotated_string make_string(annotated_string_view) const;
+    mp::integer make_integer(string_view) const;
+    mp::decimal make_decimal(string_view) const;
+    annotated_entity_identifier make_void(lex::resource_location) const;
 
-    void push_ns(qname);
-    void pop_ns();
-    //qname const& ns() const { return ns_stack_.back(); }
+    identifier new_identifier() const;
+    annotated_identifier make_identifier(annotated_string_view) const;
+    
+    annotated_qname make_qname(annotated_string_view) const;
 
-    identifier new_identifier();
-    annotated_identifier make_identifier(annotated_string_view);
-    annotated_string make_string(annotated_string_view);
-    mp::integer make_integer(string_view);
-    mp::decimal make_decimal(string_view);
-    annotated_qname_identifier make_qname_identifier(annotated_qname);
-    annotated_qname_identifier make_qname_identifier(annotated_string_view, bool is_abs);
+    //annotated_qname_identifier make_qname_identifier(annotated_qname) const;
+    //annotated_qname_identifier make_qname_identifier(annotated_string_view, bool is_abs) const;
+
+    syntax_expression_entry& push(syntax_expression_t&&);
+
+    managed_statement_list new_statement_list() const;
+    statement_span push(managed_statement_list&&);
 
     //identifier make_required_identifier(string_view);
     //small_u32string make_string(string_view);
 
-    void set_declarations(declaration_set_t);
+    void set_root_statements(managed_statement_list&&);
+    inline managed_statement_list const& statements() const noexcept { return statements_; }
+    inline managed_statement_list& statements() noexcept { return statements_; }
 
+    void append_error(lex::resource_location const& loc_begin, lex::resource_location const& loc_end, std::string errmsg);
+    void append_error(lex::resource_location const& loc, std::string errmsg);
     void append_error(std::string errmsg);
 
-    small_string get_resource() const
-    {
-        if (resource_stack_.empty()) return small_string{"<code>"sv};
-        auto u8str = resource_stack_.back().generic_u8string();
-        return small_string{ reinterpret_cast<char const*>(u8str.data()), u8str.size() };
-    }
+    shared_ptr<lex::code_resource> get_resource() const noexcept;
 
-    void pop_resource() { resource_stack_.pop_back(); }
-
-    std::expected<declaration_set_t, std::string> parse(fs::path const& f);
-    std::expected<declaration_set_t, std::string> parse(string_view code);
+    std::expected<statement_span, std::string> parse(fs::path const& f, fs::path const* base_path = nullptr);
+    std::expected<statement_span, std::string> parse_string(string_view);
 
 private:
+    std::expected<statement_span, std::string> parse(string_view code);
+
     unit& unit_;
 
-    boost::container::small_vector<fs::path, 8> resource_stack_;
+    shared_ptr<syntax_expression_resource> resource_;
     
-    boost::container::small_vector<qname, 8> ns_stack_;
-
     std::vector<std::string> error_messages_;
     
-    declaration_set_t declarations_;
+    statement_span root_statements_;
+    managed_statement_list statements_;
 };
 
 }

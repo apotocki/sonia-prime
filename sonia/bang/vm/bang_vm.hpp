@@ -4,16 +4,23 @@
 
 #pragma once
 
+#include <unordered_map>
+//#include <boost/unordered_map.hpp>
+
 #include "sonia/variant.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/utility/invocation/invocation.hpp"
 #include "sonia/utility/invocation/invocable.hpp"
 #include "sonia/utility/lang/vm.hpp"
-#include <boost/unordered_map.hpp>
-//#include "../extern.hpp"
-#include "../terms.hpp"
+
+#include "sonia/bang/terms.hpp"
+#include "sonia/bang/unit.hpp"
+#include "sonia/bang/vm/vmasm_builder.hpp"
 
 namespace sonia::lang::bang::vm {
+
+static_assert(sizeof(vmasm::fn_identity<identifier>) <= SONIA_VM_FN_IDENTITY_STORE_SIZE);
+static_assert(sizeof(vmasm::fn_identity<qname_identifier>) <= SONIA_VM_FN_IDENTITY_STORE_SIZE);
 
 /*
 class variable
@@ -101,6 +108,8 @@ public:
     bool is_true(variable_type const& v) const noexcept;
     variable_type value_of(size_t val) const { return ui64_blob_result(val); }
 
+    string_view describe_address(size_t /*address*/) const;
+
     size_t callp(size_t ret_address);
     std::string callp_describe() const;
 
@@ -109,14 +118,16 @@ public:
 
     using vm_t = sonia::vm::virtual_stack_machine<context>;
 
-    explicit context(vm_t& vm, invocation::invocable* penv = nullptr) : vm_{vm}, penv_{penv} {}
+    explicit context(unit& u, invocation::invocable* penv = nullptr);
     
     context(context const&) = delete;
     context& operator=(context const&) = delete;
 
+    unit& get_unit() const { return unit_; }
+
     // builtins
     void is_nil();
-    void arrayify();
+    //void arrayify();
     void unpack();
     void referify();
     void weak_create();
@@ -124,8 +135,8 @@ public:
     void extern_variable_get();
     void extern_variable_set();
     //void construct_extern_object();
-    void extern_object_create();
-    void extern_object_set_property();
+    //void extern_object_create();
+    //void extern_object_set_property();
     void extern_object_get_property();
     void extern_function_call();
     void construct_function();
@@ -134,16 +145,16 @@ public:
 
     static small_string camel2kebab(string_view cc);
 
-    inline size_t statics_size() const noexcept { return vm_.statics().size(); }
+    inline size_t consts_size() const noexcept { return vm_.consts().size(); }
     inline size_t stack_size() const noexcept { return vm_.stack().size(); }
 
-    variable_type const& static_at(size_t i) const
+    variable_type const& const_at(size_t i) const
     {
-        size_t ssz = statics_size();
+        size_t ssz = consts_size();
         if (ssz <= i) [[unlikely]] {
             THROW_INTERNAL_ERROR("wrong static var index");
         }
-        return vm_.statics()[i];
+        return vm_.consts()[i];
     }
 
     variable_type const& stack_at(size_t i) const
@@ -254,8 +265,17 @@ public:
 
     small_string generate_object_id() const;
 
+    inline invocation::invocable& env() const
+    {
+        if (!penv_) {
+            throw exception("The environment object is not defined.");
+        }
+        return *penv_;
+    }
+
 private:
     mutable size_t id_counter_{ 0 };
+    unit& unit_;
     vm_t& vm_;
     invocation::invocable* penv_;
 };
@@ -264,6 +284,8 @@ private:
 
 namespace sonia::lang::bang {
 
+using asm_builder_t = sonia::vmasm::builder<vm::context>;
+
 class virtual_stack_machine : public sonia::vm::virtual_stack_machine<vm::context>
 {
     using base_t = sonia::vm::virtual_stack_machine<vm::context>;
@@ -271,16 +293,17 @@ class virtual_stack_machine : public sonia::vm::virtual_stack_machine<vm::contex
 public:
     virtual_stack_machine();
 
-    size_t append_static_const(smart_blob&& value);
-    void append_push_static_const(smart_blob&& value);
+    size_t add_pooled_const(smart_blob&& value);
+    void set_const(size_t index, smart_blob&& value);
+    void append_push_pooled_const(smart_blob&& value);
 
     enum class builtin_fn
     {
         is_nil = 0,
-        arrayify, unpack,
+        /*arrayify,*/ unpack,
         referify, weak_create, weak_lock,
         function_constructor,
-        extern_object_create, extern_object_set_property, extern_object_get_property,
+        /*extern_object_create, extern_object_set_property,*/ extern_object_get_property,
         extern_variable_get, extern_variable_set,
         extern_function_call,
         eof_type
@@ -289,10 +312,14 @@ public:
     using base_t::append_ecall;
     void append_ecall(builtin_fn fn);
 
+    string_view describe_address(size_t address) const noexcept;
+    void set_address_description(size_t address, std::string description);
+
 protected:
 
 private:
-    boost::unordered_map<blob_result, size_t> literals_;
+    std::unordered_map<size_t, std::string> call_descriptions_;
+    std::unordered_map<blob_result, size_t, sonia::hash<blob_result>> literals_;
 };
 
 }

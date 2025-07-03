@@ -7,6 +7,7 @@
 #include "sonia/filesystem.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/span.hpp"
+#include "sonia/function.hpp"
 #include "sonia/utility/invocation/invocable.hpp"
 
 //#include "extern.hpp"
@@ -21,15 +22,15 @@ public:
     language();
     virtual ~language();
 
-    void build(fs::path const&);
-    void build(string_view code);
+    void set_cout_writer(function<void(string_view)>);
+    void set_environment(invocation::invocable*);
+    void load(fs::path const& srcfile, span<string_view> args = {});
+    void load(string_view code, span<string_view> args = {});
 
-    void run(invocation::invocable*, span<string_view> args = {});
-    smart_blob call(string_view name, invocation::invocable*, span<const blob_result> args = {});
+    smart_blob call(string_view name, span<const std::pair<string_view, const blob_result>> namedargs = {}, span<const blob_result> args = {});
 
 private:
     shared_ptr<detail::bang_impl> impl_;
-    
 };
 
 }

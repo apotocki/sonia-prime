@@ -97,6 +97,8 @@ struct expression_cast_to_enum_visitor : static_visitor<error_storage>
 
     inline result_type operator()(bang_object_t const& obj) const
     {
+        THROW_NOT_IMPLEMENTED_ERROR("expression_cast_to_enum_visitor bang_object_t");
+#if 0
         shared_ptr<entity> e = ctx.resolve_entity(obj.name());
         if (!e) [[unlikely]] {
             return make_error<basic_general_error>(ce.name.location, "unresolved context object"sv, obj.name());
@@ -112,6 +114,7 @@ struct expression_cast_to_enum_visitor : static_visitor<error_storage>
         ctx.append_expression(semantic::push_value{ enumcase->value });
         ctx.context_type = obj;
         return {};
+#endif
     }
 
     //inline result_type operator()(bang_vector_t const& v) const

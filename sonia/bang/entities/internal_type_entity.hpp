@@ -17,10 +17,13 @@
 //#include "sonia/utility/functional/hash/span.hpp"
 namespace sonia::lang::bang {
 
+#if 0
 class internal_type_entity : public functional_entity
 {
 public:
-    explicit internal_type_entity(qname_identifier name) : functional_entity{ std::move(name) } {}
+    explicit internal_type_entity(entity_identifier eid, qname_identifier name)
+        : functional_entity{ std::move(eid), std::move(name) }
+    {}
 
     //std::expected<function_entity const*, error_storage> find_field_getter(fn_compiler_context&, annotated_identifier const&) const;
     //std::expected<function_entity const*, error_storage> find_field_setter(fn_compiler_context&, annotated_identifier const&) const;
@@ -88,5 +91,6 @@ private:
 //public:
 //
 //};
+#endif
 
 }

@@ -31,29 +31,42 @@ class qname_registry
     >;
 
 public:
+    qname_identifier find(qname_view_t qnv)
+    {
+        BOOST_ASSERT(qnv.is_absolute());
+        lock_guard guard(set_mtx_);
+        auto& plane = set_.template get<1>();
+        auto it = plane.find(qnv, hasher{}, range_equal{});
+        if (it != plane.end()) {
+            return qname_identifier{ (size_t)(boost::multi_index::project<0>(set_, it) - set_.begin()) };
+        }
+        return {};
+    }
+
     qname_identifier resolve(qname_view_t qnv)
     {
+        BOOST_ASSERT(qnv.is_absolute());
         lock_guard guard(set_mtx_);
         auto & plane = set_.template get<1>();
         auto it = plane.find(qnv, hasher{}, range_equal{});
         if (it == plane.end()) {
             size_t r = set_.size();
             plane.insert(it, id_vec_t{ qnv.begin(), qnv.end()});
-            return qname_identifier{ r, qnv.is_absolute() };
+            return qname_identifier{ r };
         }
-        return qname_identifier{ (size_t)(boost::multi_index::project<0>(set_, it) - set_.begin()), qnv.is_absolute() };
+        return qname_identifier{ (size_t)(boost::multi_index::project<0>(set_, it) - set_.begin()) };
     }
 
     qname_view_t resolve(qname_identifier qid) const
     {
         lock_guard guard(set_mtx_);
         auto sp = span<const QnameIdentifierT>{ set_.template get<0>().at(qid.raw()) };
-        return qname_view{ sp, qid.is_absolute() };
+        return qname_view{ sp };
     }
 
     qname_identifier concat(qname_identifier qid, QnameIdentifierT part_id)
     {
-        qname rqn = resolve(qid) + part_id;
+        qname rqn = resolve(qid) / part_id;
         return resolve(rqn);
     }
 

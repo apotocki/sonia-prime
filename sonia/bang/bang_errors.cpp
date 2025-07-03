@@ -4,50 +4,36 @@
 
 #include "sonia/config.hpp"
 #include "errors.hpp"
-#include "unit.hpp"
+
+#include "errors/utility.hpp"
 
 namespace sonia::lang::bang {
 
-std::string error_printer_visitor::print_general(lex::resource_location const& loc, string_view errstr, string_view object, lex::resource_location const* optseeloc)
+void error::rethrow(unit& u) const
 {
-    if (object.empty() && !optseeloc) {
-        return ("%1%(%2%,%3%): %4%"_fmt % loc.resource % loc.line % loc.column % errstr).str();
-    } else if (object.empty() && optseeloc) {
-        return ("%1%(%2%,%3%): %4%, see declaration at %5%(%6%,%7%)"_fmt 
-            % loc.resource % loc.line % loc.column % errstr
-            % optseeloc->resource % optseeloc->line % optseeloc->column
-        ).str();
-    } else if (!object.empty() && !optseeloc) {
-        return ("%1%(%2%,%3%): `%4%`: %5%"_fmt % loc.resource % loc.line % loc.column % object % errstr).str();
-    } else {
-        return ("%1%(%2%,%3%): `%4%`: %5%, see declaration at %6%(%7%,%8%)"_fmt
-            % loc.resource % loc.line % loc.column % object % errstr
-            % optseeloc->resource % optseeloc->line % optseeloc->column
-        ).str();
-    }
+    throw exception{ u.print(*this) };
 }
 
-struct printer_resolver_visitor : static_visitor<std::string>
+std::string error_printer_visitor::print_general(error::location_t const& loc, string_view errstr, string_view object, lex::resource_location const* optseeloc)
 {
-    unit const& u_;
-    explicit printer_resolver_visitor(unit const& u) : u_{ u } {}
+    std::ostringstream errss;
+    apply_visitor(make_functional_visitor<void>([&errss](auto const& l) {
+        if constexpr (std::is_same_v<lex::resource_location, std::decay_t<decltype(l)>>) {
+            if (!l) return;
+        }
+        errss << l;
+    }), loc);
 
-    inline result_type operator()(null_t const&) const { return {}; }
-
-    template <typename T>
-    inline result_type operator()(T const& val) const
-    {
-        return u_.print(val);
+    if (!object.empty()) {
+        errss << '`' << object << "`: "sv;
     }
-};
+    errss << errstr;
+    if (optseeloc) {
+        errss << ", see declaration at \n"sv << *optseeloc;
+    }
 
-struct string_resolver_visitor : static_visitor<string_view>
-{
-    string_resolver_visitor() = default;
-
-    inline result_type operator()(std::string const& str) const { return str; }
-    inline result_type operator()(string_view str) const { return str; }
-};
+    return errss.str();
+}
 
 void error_printer_visitor::operator()(general_error const& err)
 {
@@ -55,8 +41,36 @@ void error_printer_visitor::operator()(general_error const& err)
         err.location(),
         apply_visitor(string_resolver_visitor{}, err.description(u_)),
         apply_visitor(string_resolver_visitor{}, err.object(u_)),
-        err.see_location()
+        err.ref_location()
     );
+}
+
+void error_printer_visitor::operator()(binary_relation_error const& err)
+{
+    if (err.location()) {
+        s_ << err.location() << ": "sv;
+    }
+    s_ << '`' <<
+        apply_visitor(string_resolver_visitor{}, err.left_object(u_)) <<
+        "` and `"sv <<
+        apply_visitor(string_resolver_visitor{}, err.right_object(u_)) <<
+        "` : "sv;
+    
+    s_ << apply_visitor(string_resolver_visitor{}, err.description(u_));
+    if (auto* ploc = err.ref_location()) {
+        s_ << ", see declaration at "sv;
+        s_ << *ploc;
+    }
+}
+
+error::string_t binary_relation_error::left_object(unit const& u) const noexcept
+{
+    return apply_visitor(printer_resolver_visitor{ u }, left_);
+}
+
+error::string_t binary_relation_error::right_object(unit const& u) const noexcept
+{
+    return apply_visitor(printer_resolver_visitor{ u }, right_);
 }
 
 general_error::string_t basic_general_error::object(unit const& u) const noexcept
@@ -74,7 +88,7 @@ general_error::string_t cast_error::description(unit const& u) const noexcept
 {
     if (from_) {
         return ("cannot convert from `%1%` to `%2%`"_fmt 
-            % u.print(*from_)
+            % u.print(from_)
             % u.print(to_)
         ).str();
     } else {
@@ -84,24 +98,21 @@ general_error::string_t cast_error::description(unit const& u) const noexcept
     }
 }
 
+#if 0
 general_error::string_t unknown_case_error::object(unit const& u) const noexcept
 {
-    return u.print(ce_.name.value);
+    return u.print(ci_.name.value);
 }
 
 general_error::string_t unknown_case_error::description(unit const& u) const noexcept
 {
     return ("is not a case of the enumerration %1%"_fmt % u.print(enum_name_)).str();
 }
+#endif
 
 general_error::string_t undeclared_identifier_error::object(unit const& u) const noexcept
 {
     return u.print(idname_.value);
-}
-
-general_error::string_t identifier_redefinition_error::object(unit const& u) const noexcept
-{
-    return apply_visitor(printer_resolver_visitor{ u }, name_);
 }
 
 general_error::string_t left_not_an_object_error::description(unit const& u) const noexcept
@@ -120,32 +131,43 @@ void error_printer_visitor::operator()(alt_error const& err)
     bool first = true;
     for (auto const &e : err.alternatives) {
         if (!first) {
-            s_ << "\n or \n";
+            s_ << "\n and \n";
         } else { first = false; }
         e->visit(*this);
     }
 }
 
-general_error::string_t parameter_not_found_error::description(unit const& u) const noexcept
-{
-    return ("parameter `%1%` of `%2%` is not found"_fmt %
-        u.print(param.value) % u.print(entity_name)).str();
-}
-
-general_error::string_t function_call_match_error::object(unit const& u) const noexcept
+std::string ambiguity_error::object(unit const& u) const noexcept
 {
     return u.print(functional_.value);
 }
 
-general_error::string_t function_call_match_error::description(unit const& u) const noexcept
+
+void error_printer_visitor::operator()(ambiguity_error const& err)
 {
-    std::ostringstream ss;
-    ss << "can't match the function signature: "sv;
-    ss << u.print(signature_.fn_type);
-    if (reason_) {
-        ss << ", caused by: \n" << u.print(*reason_);
+    s_ << print_general(err.location(), "ambiguity call error"sv, err.object(u_));
+    s_ << "\ncould be:\n";
+    bool first = true;
+    for (auto const& e : err.alternatives()) {
+        if (!first) {
+            s_ << "\n or \n";
+        }
+        else { first = false; }
+        if (e.location) {
+            u_.print_to(s_, e.location) << ": ";
+        }
+        u_.print_to(s_, e.sig);
+        if (!e.location) {
+            s_ << ", aka "sv << e.description;
+        }
     }
-    return ss.str();
+}
+
+
+general_error::string_t parameter_not_found_error::description(unit const& u) const noexcept
+{
+    return ("parameter `%1%` of `%2%` is not found"_fmt %
+        u.print(param.value) % u.print(entity_name)).str();
 }
 
 //void error_printer_visitor::operator()(parameter_not_found_error const& err)

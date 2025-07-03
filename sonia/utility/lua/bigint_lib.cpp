@@ -44,14 +44,17 @@ int bigint_index(lua_State* L)
     return 1;
 }
 
-int push_bigint(lua_State* L, mp::basic_integer_view<const limb_type> value)
+int push_bigint(lua_State* L, mp::basic_integer_view<limb_type> value)
 {
-    auto limbs = (span<const limb_type>)value;
-    size_t datasz = limbs.size() * sizeof(limb_type);
-    bigint_header* br = (bigint_header*)lua_newuserdata(L, sizeof(bigint_header) + datasz);
-    br->size = limbs.size();
+    auto [h, ls] = value.limbs();
+    size_t limbs_cnt = (ls.size() + (h ? 1 : 0));
+    bigint_header* br = (bigint_header*)lua_newuserdata(L, sizeof(bigint_header) + limbs_cnt * sizeof(limb_type));
+    br->size = limbs_cnt;
     br->sign = value.is_negative() ? 1 : 0;
-    memcpy(br + 1, limbs.data(), datasz);
+    memcpy(br + 1, ls.data(), ls.size() * sizeof(limb_type));
+    if (h) {
+        reinterpret_cast<limb_type*>(br + 1)[ls.size()] = h;
+    }
 
     luaL_getmetatable(L, BIGINT_METATABLE_NAME);
     lua_setmetatable(L, -2);
@@ -119,7 +122,7 @@ int bigint_create(lua_State* L)
             size_t strsz;
             char const* strval = lua_tolstring(L, 1, &strsz);
             string_view str{ strval, strsz };
-            auto opt_limbs = mp::to_limbs<limb_type>(str, 0, limbs_allocator);
+            auto opt_limbs = mp::to_limbs<limb_type>(str, limbs_allocator);
             if (!opt_limbs.has_value()) {
                 std::rethrow_exception(opt_limbs.error());
             } else if (!str.empty()) {
@@ -145,7 +148,7 @@ int bigint_create(lua_State* L)
 
 mp::basic_integer_view<limb_type> restore_bigint(bigint_header * bh)
 {
-    return mp::basic_integer_view<limb_type>{ std::span{ reinterpret_cast<limb_type*>(bh + 1), bh->size }, bh->sign ? -1: 1 };
+    return mp::basic_integer_view<limb_type>{ std::span{ reinterpret_cast<limb_type*>(bh + 1), static_cast<size_t>(bh->size) }, bh->sign ? -1: 1 };
     //ival.backend().resize(bh->size, bh->size);
     //memcpy(ival.backend().limbs(), bh + 1, bh->size * sizeof(limb_type));
     //if (bh->sign != ival.backend().sign()) ival.backend().negate();
@@ -155,14 +158,15 @@ int bigint_tostring(lua_State* L)
 {
     bigint_header* bh = luaL_test_bigint_lib(L, 1);
     luaL_argcheck(L, !!bh, 1, "`bigint' is expected");
-    auto ival = restore_bigint(bh);
-    
+
+    std::span limbs{ reinterpret_cast<limb_type*>(bh + 1), static_cast<size_t>(bh->size) };
+
     std::vector<char> s;
-    if (ival.is_negative()) s.push_back('-');
+    if (bh->sign) s.push_back('-');
     bool reversed;
-    mp::to_string((std::span<const limb_type>)ival, std::back_inserter(s), reversed);
+    mp::to_string(limbs, std::back_inserter(s), reversed);
     if (reversed) {
-        std::reverse(s.begin() + ival.is_negative(), s.end());
+        std::reverse(s.begin() + bh->sign, s.end());
     }
     lua_pushlstring(L, s.data(), s.size());
     return 1;
@@ -210,11 +214,14 @@ int bigint_fancy_string(lua_State* L)
     if (radix == 16) {
         ss << "0x"sv;
     }
-    bool reversed;
-    mp::to_string((std::span<const limb_type>)ival, std::back_inserter(val), reversed, (int)radix, sonia::mp::detail::default_alphabet_big);
-    if (reversed) {
-        std::reverse(val.begin(), val.end());
-    }
+    
+    ival.with_limbs([&val, radix](std::span<const limb_type> sp, int) {
+        bool reversed;
+        mp::to_string(sp, std::back_inserter(val), reversed, (int)radix, sonia::mp::detail::default_alphabet_big);
+        if (reversed) {
+            std::reverse(val.begin(), val.end());
+        }
+    });
 
     // formatting
     if (!groupSz) {

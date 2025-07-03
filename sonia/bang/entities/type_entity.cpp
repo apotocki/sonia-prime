@@ -7,12 +7,14 @@
 
 #include "../ast/fn_compiler_context.hpp"
 #include "../ast/expression_visitor.hpp"
-#include "../ast/preliminary_type_visitor.hpp"
 
 namespace sonia::lang::bang {
 
-void type_entity::treat(fn_compiler_context& ctx)
+#if 0
+void type_entity2::treat(fn_compiler_context& ctx)
 {
+    THROW_NOT_IMPLEMENTED_ERROR("ype_entity::treat");
+#if 0
     if (handled_) return;
     if (handling_) {
         throw exception(ctx.u().print(basic_general_error{location(), "recursive dependency"sv, name()}));
@@ -50,20 +52,26 @@ void type_entity::treat(fn_compiler_context& ctx)
 
     handling_ = false;
     handled_ = true;
+#endif
 }
 
-bool type_entity::try_cast(fn_compiler_context& ctx, bang_type const& rtype) const
+bool type_entity2::try_cast(fn_compiler_context& ctx, bang_type const& rtype) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("type_entity::try_cast");
+#if 0
     bang_object_t const* pot = get<bang_object_t>(&rtype);
     if (pot && (pot->value == this || bases.end() != std::find(bases.begin(), bases.end(), pot->value))) {
         ctx.context_type = rtype;
         return true;
     }
     return false;
+#endif
 }
 
-std::expected<function_signature const*, error_storage> type_entity::find(fn_compiler_context& ctx, pure_call_t& call) const
+std::expected<function_signature const*, error_storage> type_entity2::find(fn_compiler_context& ctx, pure_call_t& call) const
 {
+    THROW_NOT_IMPLEMENTED_ERROR("type_entity find");
+#if 0
     if (!call.positioned_args.empty()) {
         THROW_NOT_IMPLEMENTED_ERROR();
     }
@@ -154,11 +162,14 @@ std::expected<function_signature const*, error_storage> type_entity::find(fn_com
     args_exprs.emplace_back(std::move(inv_fn));
     result.emplace_back(std::move(args_exprs), bang_object_t{ name() });
     */
+#endif
 }
 
-std::expected<function_entity const*, error_storage> type_entity::find_field_getter(fn_compiler_context& ctx, annotated_identifier const& f) const
+std::expected<function_entity const*, error_storage> type_entity2::find_field_getter(fn_compiler_context& ctx, annotated_identifier const& f) const
 {
-    qname fnname = ctx.u().qnregistry().resolve(name_) + f.value + ctx.u().slregistry().resolve("g"sv);
+    THROW_NOT_IMPLEMENTED_ERROR("type_entity find_field_getter");
+#if 0
+    qname fnname = ctx.u().qnregistry().resolve(name_) / f.value / ctx.u().slregistry().resolve("g"sv);
     qname_identifier fnnameid = ctx.u().qnregistry().resolve(fnname);
     if (auto pfn = dynamic_pointer_cast<function_entity>(ctx.u().eregistry().find(fnnameid)); pfn) {
         return pfn.get();
@@ -181,13 +192,16 @@ std::expected<function_entity const*, error_storage> type_entity::find_field_get
     fnent->set_inline();
     fnent->body.emplace_back(semantic::push_value{ ctx.u().as_string(f.value) });
     fnent->body.emplace_back(ctx.u().get_builtin_function(unit::builtin_fn::extern_object_get_property));
-    ctx.u().eregistry().insert(fnent);
+    ctx.u().eregistry_insert(fnent);
     return fnent.get();
+#endif
 }
 
-std::expected<function_entity const*, error_storage> type_entity::find_field_setter(fn_compiler_context& ctx, annotated_identifier const& f) const
+std::expected<function_entity const*, error_storage> type_entity2::find_field_setter(fn_compiler_context& ctx, annotated_identifier const& f) const
 {
-    qname fnname = ctx.u().qnregistry().resolve(name_) + f.value + ctx.u().slregistry().resolve("s"sv);
+    THROW_NOT_IMPLEMENTED_ERROR("type_entity find_field_setter");
+#if 0
+    qname fnname = ctx.u().qnregistry().resolve(name_) / f.value / ctx.u().slregistry().resolve("s"sv);
     qname_identifier fnnameid = ctx.u().qnregistry().resolve(fnname);
     if (auto pfn = dynamic_pointer_cast<function_entity>(ctx.u().eregistry().find(fnnameid)); pfn) {
         return pfn.get();
@@ -212,8 +226,9 @@ std::expected<function_entity const*, error_storage> type_entity::find_field_set
     fnent->body.emplace_back(semantic::push_value{ ctx.u().as_string(f.value) });
     fnent->body.emplace_back(ctx.u().get_builtin_function(unit::builtin_fn::extern_object_set_property));
     fnent->body.emplace_back(semantic::truncate_values(1, true)); // remove object reference, preserve value
-    ctx.u().eregistry().insert(fnent);
+    ctx.u().eregistry_insert(fnent);
     return fnent.get();
+#endif
 }
-
+#endif
 }

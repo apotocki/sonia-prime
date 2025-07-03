@@ -4,7 +4,6 @@
 
 #include "sonia/config.hpp"
 #include "variant_lib.hpp"
-#include "sonia/utility/invocation/invocation.hpp"
 #include "sonia/utility/invocation/value_encoder.hpp"
 #include "sonia/utility/invocation/value_decoder.hpp"
 #include "sonia/utility/scope_exit.hpp"
@@ -575,7 +574,7 @@ blob_result to_blob(lua_State* L, int index)
                 return *br;
             } else if (bigint_header * bh = luaL_test_bigint_lib(L, index); bh) {
                 blob_result result = make_blob_result(blob_type::bigint, bh + 1, static_cast<uint32_t>(bh->size * sizeof(limbs_per_lua_integer)));
-                result.reserved = static_cast<uint8_t>(bh->sign);
+                result.reserved0 = static_cast<uint8_t>(bh->sign);
                 //blob_result_allocate(&result);
                 return result;
             }

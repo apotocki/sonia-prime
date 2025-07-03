@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <ostream>
 
+#include "sonia/utility/functional/hash.hpp"
+
 namespace sonia {
 
 struct float16
@@ -25,6 +27,11 @@ template <typename E, typename T>
 inline std::basic_ostream<E, T>& operator<<(std::basic_ostream<E, T>& os, float16 const& v)
 {
     return os << (float)v;
+}
+
+inline size_t hash_value(float16 v) noexcept
+{
+    return hasher{}(v.data);
 }
 
 inline float16::float16(float f32val) noexcept

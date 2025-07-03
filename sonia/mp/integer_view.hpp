@@ -46,14 +46,14 @@ struct integer_view_ctl<StorageT>
         : size{ 0 }, skip_bits{ 0 }, inplace_bit{ 0 }, sign_bit{ 0 }
     {}
 
-    inline integer_view_ctl(size_t sz, int sign, size_t sb = 0)
+    inline integer_view_ctl(size_t sz, int sign, size_t sb = 0) noexcept
         : size{static_cast<StorageT>(sz)}
         , skip_bits{ static_cast<StorageT>(sb) }
         , inplace_bit{ 0 }
         , sign_bit{ sign < 0 ? 1u : 0 }
     {
         assert(!((sz >> 56) & 0xff));
-        assert(sb < 128);
+        assert(sb < 64);
     }
 
     inline int sign() const noexcept { return sign_bit ? -1 : 1; }
@@ -86,7 +86,7 @@ struct integer_view_ctl<StorageT>
         , sign_bit{ sign < 0 ? 1u : 0 }
     {
         assert(!((sz >> 24) & 0xff));
-        assert(sb < 128);
+        assert(sb < 64);
     }
 
     inline int sign() const noexcept { return sign_bit ? -1 : 1; }
@@ -110,8 +110,8 @@ class basic_integer_view
 
     using const_limb_t = std::add_const_t<LimbT>;
     using ctl_type = detail::integer_view_ctl<uintptr_t>; // to ensure the same size as a pointer size
-
-    static constexpr size_t inplace_max_size = sizeof(const_limb_t*) / sizeof(LimbT);
+    static_assert(sizeof(LimbT) <= 8); // because we reserve only 6 bits for 'skip_bits' in ctl_type
+    static constexpr size_t inplace_max_size = (std::max)(sizeof(LimbT), sizeof(const_limb_t*)) / sizeof(LimbT);
 
     union {
         const_limb_t* limbs_;
@@ -130,18 +130,20 @@ class basic_integer_view
     }
 
 public:
-    basic_integer_view() noexcept
+    using limb_type = LimbT;
+
+    inline basic_integer_view() noexcept
         : limbs_{nullptr}
     {}
 
     template <std::integral T>
-    requires (sizeof(T) <= inplace_max_size * sizeof(const_limb_t*))
-    basic_integer_view(T value) noexcept
+    requires (sizeof(T) <= inplace_max_size * sizeof(LimbT))
+    basic_integer_view(T value, int optsignmodifier = 1) noexcept
     {
         auto [sz, sign] = to_limbs(value, std::span<LimbT, inplace_max_size>{ inplace_value_ });
         ctl_.size = sz;
         ctl_.inplace_bit = 1;
-        ctl_.sign_bit = sign < 0 ? 1 : 0;
+        ctl_.sign_bit = (sign * optsignmodifier) < 0 ? 1 : 0;
     }
 
     explicit basic_integer_view(std::span<const LimbT> limbs, int sign = 1, size_t skip_bits = 0) noexcept
@@ -188,15 +190,19 @@ public:
     inline bool is_negative() const noexcept { return ctl_.sign() < 0; }
     inline bool is_inplace() const noexcept { return ctl_.inplace_bit; }
 
-    inline std::span<const_limb_t> limbs() const noexcept
+    inline std::pair<LimbT, std::span<const LimbT>> limbs() const noexcept
     {
-        return is_inplace()
-            ? std::span<const_limb_t>{ inplace_value_, size() }
-            : std::span<const_limb_t>{ limbs_, size() };
+        if (is_inplace()) {
+            return { 0, std::span{inplace_value_, size()} };
+        } else {
+            if (!ctl_.skip_bits) {
+                return { 0, std::span{limbs_, size() } };
+            }
+            if (!size()) [[unlikely]] return { 0, {} };
+            return { limbs_[size() - 1] & last_limb_mask(), std::span{limbs_, size() - 1 } };
+        }
     }
 
-    inline operator std::span<const_limb_t>() const noexcept { return limbs(); }
-    
     inline size_t most_significant_skipping_bits() const noexcept { return ctl_.skip_bits; }
 
     inline LimbT last_limb_mask() const noexcept
@@ -233,8 +239,9 @@ public:
     template <typename FunctorT, typename AllocatorT = std::allocator<LimbT>>
     inline decltype(auto) with_limbs(FunctorT const& ftor, AllocatorT && alloc = AllocatorT{}) const
     {
+        std::span<const_limb_t> limbs{ data(), size() };
         if (!ctl_.skip_bits) {
-            return ftor(limbs(), sgn());
+            return ftor(limbs, sgn());
         } else if (size() << basic_integer_view_auto_buffer_size) {
             LimbT buff[basic_integer_view_auto_buffer_size];
             std::copy(limbs_, limbs_ + size(), buff);
@@ -287,7 +294,7 @@ public:
                 result |= static_cast<u_t>(at(i)) << (i * std::numeric_limits<LimbT>::digits);
             }
         }
-        // for signed types in case of overflow the behaviour is similar to c cast's one
+        // for signed types in case of overflow the behaviour is similar to C cast's one
         if (is_negative()) {
            result = ~result + 1;
         }
@@ -463,6 +470,31 @@ public:
 template <std::unsigned_integral LimbT>
 basic_integer_view(std::span<LimbT>, int sign) -> basic_integer_view<LimbT>;
 
+using integer_view = basic_integer_view<uint64_t>;
+
+template <typename T> struct is_basic_integer_view : std::false_type {};
+template <typename LimbT> struct is_basic_integer_view<basic_integer_view<LimbT>> : std::true_type {};
+template <typename T> constexpr bool is_basic_integer_view_v = is_basic_integer_view<T>::value;
+
+template <std::unsigned_integral LimbT, typename VectorT>
+void to_vector(basic_integer_view<LimbT> const& iv, int base, bool showbase, VectorT& result)
+{
+    bool reversed;
+    if (iv.is_negative()) result.push_back('-');
+    if (showbase) {
+        switch (base) {
+            case 8: result.push_back('0'); break;
+            case 16: result.push_back('0'); result.push_back('x'); break;
+        }
+    }
+    size_t pos = result.size();
+    iv.with_limbs([&result, &reversed](std::span<const LimbT> sp, int) { to_string(sp, std::back_inserter(result), reversed); });
+    
+    if (reversed) {
+        std::reverse(result.begin() + pos, result.end());
+    }
+}
+
 template <typename Elem, typename Traits, std::unsigned_integral LimbT>
 std::basic_ostream<Elem, Traits>& operator <<(std::basic_ostream<Elem, Traits>& os, basic_integer_view<LimbT> iv)
 {
@@ -494,6 +526,36 @@ std::basic_ostream<Elem, Traits>& operator <<(std::basic_ostream<Elem, Traits>& 
         std::copy(result.begin(), result.end(), std::ostreambuf_iterator(os));
     }
     return os;
+}
+
+
+template <std::unsigned_integral LimbT>
+inline size_t hash_value(basic_integer_view<LimbT> const& v) noexcept
+{
+    size_t seed = 0;
+
+    size_t vsz = v.size();
+    if (!vsz) return seed;
+
+    LimbT const* b = v.data();
+    LimbT const* e = b + vsz - 1;
+    
+    LimbT l = *e & v.last_limb_mask();
+    if (l) [[likely]] {
+        sonia::hash_combine(seed, l);
+    } else {
+        for (;;) {
+            if (b == e) return seed; // holds 0
+            --e;
+            if (*e) { ++e; break; }
+        }
+    }
+
+    for (; b != e; ++b) {
+        sonia::hash_combine(seed, *b);
+    }
+    sonia::hash_combine(seed, v.sgn());
+    return seed;
 }
 
 }

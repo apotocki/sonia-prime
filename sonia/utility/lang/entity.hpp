@@ -4,28 +4,31 @@
 
 #pragma once
 
-#include "qname.hpp"
+#include <utility>
+#ifdef SONIA_LANG_DEBUG
+#   include <string>
+#endif
 
 namespace sonia::lang {
 
-template <typename QnameIdentifierT, typename LocationT>
+template <typename IdentifierT, typename LocationT>
 class entity
 {
 public:
-    using identifier_type = QnameIdentifierT;
+#ifdef SONIA_LANG_DEBUG
+    std::string debug_name;
+#endif
+    using identifier_type = IdentifierT;
+    using location_type = LocationT;
 
-    explicit entity(QnameIdentifierT name) : name_{ std::move(name) } {}
+    inline explicit entity(IdentifierT id = {}) noexcept
+        : id{ std::move(id) }
+    {}
 
     virtual ~entity() = default;
 
-    inline void set_location(LocationT l) { location_ = std::move(l); }
-
-    QnameIdentifierT name() const { return name_; }
-    LocationT const& location() const { return location_; }
-
-protected:
-    QnameIdentifierT name_;
-    LocationT location_;
+    identifier_type id;
+    LocationT location;
 };
 
 }

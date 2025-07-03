@@ -78,7 +78,7 @@ struct expression_cast_to_float_visitor : static_visitor<error_storage>
         return apply_visitor(vis, type2cast);
     }
     */
-
+#if 0
     inline result_type operator()(bang_float_t const&) const
     {
         ctx.context_type = bang_float_t{};
@@ -90,11 +90,13 @@ struct expression_cast_to_float_visitor : static_visitor<error_storage>
         ctx.context_type = bang_float_t{};
         return {};
     }
+#endif
 
     template <typename T>
     result_type operator()(T const& v) const
     {
-        return make_error<cast_error>(cl_(), bang_float_t{}, v);
+        THROW_NOT_IMPLEMENTED_ERROR();
+        //return make_error<cast_error>(cl_(), bang_float_t{}, v);
     }
 };
 

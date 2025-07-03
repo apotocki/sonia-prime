@@ -208,46 +208,33 @@ public:
             impl_{ impl } {
         }
 
-        bool operator==( id const& other) const noexcept {
-            return impl_ == other.impl_;
+        friend inline bool operator== (id const& l, id const& r) noexcept
+        {
+            return l.impl_ == r.impl_;
         }
 
-        bool operator!=( id const& other) const noexcept {
-            return impl_ != other.impl_;
+        friend inline auto operator<=>(id const& l, id const& r) noexcept
+        {
+            return l.impl_ <=> r.impl_;
         }
 
-        bool operator<( id const& other) const noexcept {
-            return impl_ < other.impl_;
-        }
-
-        bool operator>( id const& other) const noexcept {
-            return other.impl_ < impl_;
-        }
-
-        bool operator<=( id const& other) const noexcept {
-            return ! ( * this > other);
-        }
-
-        bool operator>=( id const& other) const noexcept {
-            return ! ( * this < other);
+        friend inline size_t hash_value(id const& v) noexcept
+        {
+            return reinterpret_cast<size_t>(v.impl_);
         }
 
         template< typename charT, class traitsT >
         friend std::basic_ostream< charT, traitsT > &
         operator<<( std::basic_ostream< charT, traitsT > & os, id const& other) {
-            if ( nullptr != other.impl_) {
+            if (other.impl_) {
                 return os << other.impl_;
             }
             return os << "{not-valid}";
         }
 
-        explicit operator bool() const noexcept {
-            return nullptr != impl_;
-        }
+        inline explicit operator bool() const noexcept { return !!impl_; }
 
-        bool operator!() const noexcept {
-            return nullptr == impl_;
-        }
+        inline bool operator!() const noexcept { return !impl_; }
     };
 
     static context * active() noexcept;

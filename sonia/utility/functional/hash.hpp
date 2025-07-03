@@ -7,21 +7,21 @@
 #include <typeindex>
 #include "sonia/type_traits.hpp"
 #include "sonia/utility/variadic.hpp"
-#include "sonia/utility/functional/has.hpp"
 
 namespace sonia {
 
 template <typename T> struct hash
 {
-    size_t operator()(T const& v) const
+    inline size_t operator()(T const& v) const noexcept
     {
         return hash_value(v);
     }
 };
 
 template <std::integral T> struct hash<T> : std::hash<T> {};
-
+template <std::floating_point T> struct hash<T> : std::hash<T> {};
 template <> struct hash<std::type_index> : std::hash<std::type_index> {};
+template <> struct hash<nullptr_t> { inline size_t operator()(nullptr_t) const noexcept { return 0; } };
 
 template <class T>
 inline void hash_combine(std::size_t& seed, const T& v) noexcept
@@ -32,7 +32,7 @@ inline void hash_combine(std::size_t& seed, const T& v) noexcept
 
 inline constexpr size_t hash_init_value()
 {
-    if constexpr (sizeof(size_t) == 4)
+    if constexpr (sizeof(size_t) <= 4)
     {
         return 2166136261U;
     } else {
@@ -42,7 +42,7 @@ inline constexpr size_t hash_init_value()
 
 inline constexpr size_t hash_prime_value()
 {
-    if constexpr (sizeof(size_t) == 4)
+    if constexpr (sizeof(size_t) <= 4)
     {
         return 16777619U;
     } else {
@@ -53,23 +53,23 @@ inline constexpr size_t hash_prime_value()
 struct hasher
 {
     template <typename T>
-    size_t operator()(T const& arg) const
+    inline size_t operator()(T const& arg) const noexcept
     {
         return hash<T>{}(arg);
     }
 
     template <typename ... Ts>
     requires(sizeof...(Ts) > 1)
-    size_t operator()(Ts const& ... vs) const
+    inline size_t operator()(Ts const& ... vs) const noexcept
     {
-        size_t seed = hash_init_value();
+        constexpr size_t seed = hash_init_value();
         return do_work(std::make_index_sequence<sizeof ...(Ts)>(), seed, vs ...);
     }
 
     template <typename ... Ts, size_t ... Idxs>
-    size_t do_work(std::index_sequence<Idxs...>, size_t seed, Ts const& ... vs) const
+    inline size_t do_work(std::index_sequence<Idxs...>, size_t seed, Ts const& ... vs) const noexcept
     {
-        (sonia::hash_combine(seed, hash<variadic::type_at_t<Idxs, Ts...>>{}(variadic::forward_at<Idxs>(vs ...))), ...);
+        (sonia::hash_combine(seed, (variadic::forward_at<Idxs>(vs ...))), ...);
         return seed;
     }
 };

@@ -108,62 +108,88 @@ ASCALPHA				[a-zA-Z]
 ASCALPHANUM				[a-zA-Z0-9]
 DIGIT					[0-9]
 IDENTIFIER				[a-zA-Z_]+[a-zA-Z_0-9]*
-ARGIDENTIFIER			$[a-zA-Z_0-9]+
+CONTEXT_IDENTIFIER		${IDENTIFIER}
+RESERVED_IDENTIFIER		$([$0]|([1-9][0-9]*))
+CT_IDENTIFIER			#{IDENTIFIER}
 
 INTEGER                 [0-9]+
 EXPONENT                [eE][+-]?[0-9]+
-DECIMAL                 ([0-9]+"."?|[0-9]*"."[0-9]+){EXPONENT}?
+/*DECIMAL                 ([0-9]+"."?|[0-9]*"."[0-9]+){EXPONENT}?*/
+DECIMAL                 [0-9]+"."?[0-9]*{EXPONENT}?
+DECIMAL_S               "."[0-9]*{EXPONENT}?
+INTEGER_INDEX			"."([0]|([1-9][0-9]*))
 
-FN						"fn"
-LET						"let"
-VAR						"var"
-ENUM					"enum"
-TYPE					"type"
-EXTENDS					"extends"
-EXTERN                  "extern"
-RETURN                  "return"
-INCLUDE					"include"
+FN						 "fn"
+LET						 "let"
+VAR						 "var"
+ENUM					 "enum"
+STRUCT					 "struct"
+USING					 "using"
+EXTENDS					 "extends"
+EXTERN                   "extern"
+INCLUDE					 "include"
+INLINE					 "inline"
+NEW						 "new"
 
-BOOL					"bool"
-INT						"int"
-FLOAT					"float"
-STRING_WORD				"string"
-/* DECIMAL_WORD			"decimal" */
+CONTINUE                 "continue"
+BREAK					 "break"
+RETURN                   "return"
 
-TRUE					"true"
-FALSE					"false"
+WHILE					 "while"
+FOR						 "for"
+IN						 "in"
+IF						 "if"
+ELSE					 "else"
 
-WEAK					"weak"
+NIL_WORD                 "nil"
+TRUE_WORD				 "true"
+FALSE_WORD				 "false"
 
-END_STATEMENT			";"
-COMMA					","
-OPEN_BRACE				"{"
-CLOSE_BRACE				"}"
-OPEN_PARENTHESIS		"("
-CLOSE_PARENTHESIS		")"
-COLON                   ":"
-OPEN_SQUARE_BRACKET     "["
-CLOSE_SQUARE_BRACKET    "]"
-ASSIGN                  "="
-POINT                   "."
-UNDERSCORE              "_"
-BITOR                   "|"
-EXCLPT                  "!"
-QMARK                   "?"
-PLUS                    "+"
-DBLCOLON                "::"
-LOGIC_OR                "||"
-LOGIC_AND               "&&"
-ARROW					"->"
-CONCAT					".."
+WEAK					 "weak"
+
+TYPENAME				 "typename"
+CONSTEXPR				 "constexpr"
+RUNTIME					 "runtime"
+
+APOSTROPHE				 "`"
+AT_SYMBOL				 "@"
+END_STATEMENT			 ";"
+COMMA					 ","
+OPEN_BRACE				 "{"
+CLOSE_BRACE				 "}"
+OPEN_PARENTHESIS		 "("
+CLOSE_PARENTHESIS		 ")"
+COLON                    ":"
+OPEN_SQUARE_BRACKET      "["
+CLOSE_SQUARE_BRACKET     "]"
+ASSIGN                   "="
+POINT                    "."
+UNDERSCORE               "_"
+BITOR                    "|"
+AMPERSAND                "&"
+EXCLPT                   "!"
+QMARK                    "?"
+PLUS                     "+"
+MINUS                    "-"
+ASTERISK                 "*"
+TILDA                    "~"
+OPEN_SQUARE_DBL_BRACKET  "[["
+CLOSE_SQUARE_DBL_BRACKET "]]"
+DBLCOLON                 "::"
+LOGIC_OR                 "||"
+LOGIC_AND                "&&"
+ARROW                    "->"
+ARROWEXPR                "=>"
+FARROW					 "~>"
+CONCAT                   ".."
+EQ                       "=="
+NE                       "!="
+ELLIPSIS                 "..."
 
 /*
-NEW						"new"
-FOR						"for"
 VOID					"void"
 AUTO                    "auto"
 CONST_                  "const"
-USING                   "using"
 THROW                   "throw"
 DELETE_                 "delete"
 SIZEOF                  "sizeof"
@@ -181,7 +207,7 @@ ARROWAST                "->*"
 LSHIFTSSIGN             "<<="
 RSHIFTSSIGN             ">>="
 
-FARROW					"~>"
+
 PTAST                   ".*"
 
 DBLPLUS                 "++"
@@ -190,8 +216,8 @@ LEFTSHIFT               "<<"
 RIGHTSHIFT              ">>"
 LE                      "<="
 GE                      ">="
-EQ                      "=="
-NE                      "!="
+
+
 
 
 ADDASSIGN               "+="
@@ -205,14 +231,8 @@ BITXORASSIGN            "^="
 
 
 
-
-
-MINUS                   "-"
-ASTERISK                "*"
 SLASH                   "/"
 PERCENT                 "%"
-AMPERSAND               "&"
-
 
 TILDA                   "~"
 EXCL                    "^"
@@ -290,68 +310,117 @@ HASHTAG					"#"
 	{LET} { return (bang_lang::parser::token::LET); }
 	{VAR} { return (bang_lang::parser::token::VAR); }
 	{ENUM} { return (bang_lang::parser::token::ENUM); }
-	{TYPE} { return (bang_lang::parser::token::TYPE); }
+	{STRUCT} { return (bang_lang::parser::token::STRUCT); }
+	{USING} { return (bang_lang::parser::token::USING); }
 	{EXTENDS} { return (bang_lang::parser::token::EXTENDS); }
 	{EXTERN} { return (bang_lang::parser::token::EXTERN); }
-	{RETURN} { return (bang_lang::parser::token::RETURN); }
 	{INCLUDE} { return (bang_lang::parser::token::INCLUDE); }
+	{INLINE} { return (bang_lang::parser::token::INLINE); }
+	{NEW} { variant_emplace(location); return (bang_lang::parser::token::NEW); }
 
-	{BOOL} { return (bang_lang::parser::token::BOOL); }
-	{INT} { return (bang_lang::parser::token::INT); }
-	{FLOAT} { return (bang_lang::parser::token::FLOAT); }
-	{STRING_WORD} { return (bang_lang::parser::token::STRING_WORD); }
-	/* {DECIMAL_WORD} { return (bang_lang::parser::token::DECIMAL_WORD); } */
+	{WHILE} { return (bang_lang::parser::token::WHILE); }
+	{FOR} { return (bang_lang::parser::token::FOR); }
+	{IN} { return (bang_lang::parser::token::IN); }
+	{IF} { return (bang_lang::parser::token::IF); }
+	{ELSE} { return (bang_lang::parser::token::ELSE); }
+
+	{CONTINUE} { variant_emplace(location); return (bang_lang::parser::token::CONTINUE); }
+	{BREAK} { variant_emplace(location); return (bang_lang::parser::token::BREAK); }
+	{RETURN} { variant_emplace(location); return (bang_lang::parser::token::RETURN); }
 
 	{WEAK} { return (bang_lang::parser::token::WEAK); }
 
-	{TRUE} { variant_emplace(location); return (bang_lang::parser::token::TRUE); }
-	{FALSE} { variant_emplace(location); return (bang_lang::parser::token::FALSE); }
+	{TYPENAME} { return (bang_lang::parser::token::TYPENAME); }
+	{CONSTEXPR} { return (bang_lang::parser::token::CONSTEXPR); }
+	{RUNTIME} { return (bang_lang::parser::token::RUNTIME); }
+
+	{NIL_WORD} {
+		variant_emplace(annotated_nil{location});
+		return (bang_lang::parser::token::NIL_WORD);
+	}
+	{TRUE_WORD} {
+		variant_emplace(annotated_bool{true, location});
+		return (bang_lang::parser::token::TRUE_WORD);
+	}
+	{FALSE_WORD} {
+		variant_emplace(annotated_bool{false, location});
+		return (bang_lang::parser::token::FALSE_WORD);
+	}
 	
-	{OPEN_BRACE}			{ variant_emplace(location); return (bang_lang::parser::token::OPEN_BRACE); }
-	{CLOSE_BRACE}			{ return (bang_lang::parser::token::CLOSE_BRACE); }
-	{OPEN_PARENTHESIS}		{ variant_emplace(location); return (bang_lang::parser::token::OPEN_PARENTHESIS); }
-	{CLOSE_PARENTHESIS}		{ return (bang_lang::parser::token::CLOSE_PARENTHESIS);	}
-	{END_STATEMENT}			{ return (bang_lang::parser::token::END_STATEMENT); }
-	{COMMA}					{ return (bang_lang::parser::token::COMMA);	}
-	{COLON}                 { return (bang_lang::parser::token::COLON); }
-	{OPEN_SQUARE_BRACKET}	{ variant_emplace(location); return (bang_lang::parser::token::OPEN_SQUARE_BRACKET); }
-	{CLOSE_SQUARE_BRACKET}	{ return (bang_lang::parser::token::CLOSE_SQUARE_BRACKET); }
-	{ASSIGN}                { variant_emplace(location); return (bang_lang::parser::token::ASSIGN); }
-	{POINT}					{ variant_emplace(location); return (bang_lang::parser::token::POINT);	}
-	{UNDERSCORE}			{ return (bang_lang::parser::token::UNDERSCORE); }
-	{BITOR}				    { return (bang_lang::parser::token::BITOR);	}
-	{EXCLPT}                { variant_emplace(location); return (bang_lang::parser::token::EXCLPT); }
-	{QMARK}                 { return (bang_lang::parser::token::QMARK); }
-	{DBLCOLON}              { return (bang_lang::parser::token::DBLCOLON); }
-	{PLUS}					{ variant_emplace(location); return (bang_lang::parser::token::PLUS); }
-	{LOGIC_OR}              { variant_emplace(location); return (bang_lang::parser::token::LOGIC_OR); }
-    {LOGIC_AND}             { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
-	{ARROW}                 { return (bang_lang::parser::token::ARROW); }
-	{CONCAT}                { variant_emplace(location); return (bang_lang::parser::token::CONCAT); }
+	{APOSTROPHE}			   { return (bang_lang::parser::token::APOSTROPHE); }
+	{AT_SYMBOL}				   { return (bang_lang::parser::token::AT_SYMBOL); }
+	{OPEN_BRACE}			   { variant_emplace(location); return (bang_lang::parser::token::OPEN_BRACE); }
+	{CLOSE_BRACE}			   { return (bang_lang::parser::token::CLOSE_BRACE); }
+	{OPEN_PARENTHESIS}		   { variant_emplace(location); return (bang_lang::parser::token::OPEN_PARENTHESIS); }
+	{CLOSE_PARENTHESIS}		   { return (bang_lang::parser::token::CLOSE_PARENTHESIS);	}
+	{END_STATEMENT}			   { return (bang_lang::parser::token::END_STATEMENT); }
+	{COMMA}					   { return (bang_lang::parser::token::COMMA);	}
+	{COLON}                    { return (bang_lang::parser::token::COLON); }
+	{OPEN_SQUARE_BRACKET}	   { variant_emplace(location); return (bang_lang::parser::token::OPEN_SQUARE_BRACKET); }
+	{CLOSE_SQUARE_BRACKET}	   { return (bang_lang::parser::token::CLOSE_SQUARE_BRACKET); }
+	{OPEN_SQUARE_DBL_BRACKET}  { variant_emplace(location); return (bang_lang::parser::token::OPEN_SQUARE_DBL_BRACKET); }
+	{CLOSE_SQUARE_DBL_BRACKET} { return (bang_lang::parser::token::CLOSE_SQUARE_DBL_BRACKET); }
+	{ASSIGN}                   { variant_emplace(location); return (bang_lang::parser::token::ASSIGN); }
+	{POINT}					   { variant_emplace(location); return (bang_lang::parser::token::POINT); }
+	{UNDERSCORE}		       { variant_emplace(location); return (bang_lang::parser::token::UNDERSCORE); }
+	{BITOR}				       { variant_emplace(location); return (bang_lang::parser::token::BITOR); }
+	{AMPERSAND}                { variant_emplace(location); return (bang_lang::parser::token::AMPERSAND); }
+	{EXCLPT}                   { variant_emplace(location); return (bang_lang::parser::token::EXCLPT); }
+	{QMARK}                    { return (bang_lang::parser::token::QMARK); }
+	{DBLCOLON}                 { return (bang_lang::parser::token::DBLCOLON); }
+	{PLUS}					   { variant_emplace(location); return (bang_lang::parser::token::PLUS); }
+	{MINUS}					   { variant_emplace(location); return (bang_lang::parser::token::MINUS); }
+	{ASTERISK}				   { variant_emplace(location); return (bang_lang::parser::token::ASTERISK); }
+	{TILDA}                    { return (bang_lang::parser::token::TILDA); }
+	{LOGIC_OR}                 { variant_emplace(location); return (bang_lang::parser::token::LOGIC_OR); }
+    {LOGIC_AND}                { variant_emplace(location); return (bang_lang::parser::token::LOGIC_AND); }
+	{ARROW}                    { return (bang_lang::parser::token::ARROW); }
+	{ARROWEXPR}				   { return (bang_lang::parser::token::ARROWEXPR); }
+	{FARROW}				   { return (bang_lang::parser::token::FARROW); }
+	{CONCAT}                   { variant_emplace(location); return (bang_lang::parser::token::CONCAT); }
+	{EQ}					   { variant_emplace(location); return (bang_lang::parser::token::EQ); }
+	{NE}					   { variant_emplace(location); return (bang_lang::parser::token::NE); }
+	{ELLIPSIS}                 { variant_emplace(location); return (bang_lang::parser::token::ELLIPSIS); }
 
 	{IDENTIFIER} {
-		variant_emplace(annotated_string_view{text_view, location});
+		variant_emplace(annotated_string_view{ text_view, location });
 		return (bang_lang::parser::token::IDENTIFIER);
 	}
-	{ARGIDENTIFIER} {
-		variant_emplace(annotated_string_view{text_view, location});
-		return (bang_lang::parser::token::ARGIDENTIFIER);
+	{CONTEXT_IDENTIFIER} {
+		variant_emplace(annotated_string_view{ text_view, location });
+		return (bang_lang::parser::token::CONTEXT_IDENTIFIER);
 	}
+	{RESERVED_IDENTIFIER}  {
+		variant_emplace(annotated_string_view{ text_view, location });
+		return (bang_lang::parser::token::RESERVED_IDENTIFIER);
+	}
+	{CT_IDENTIFIER} {
+		variant_emplace(annotated_string_view{ text_view, location });
+		return (bang_lang::parser::token::CT_IDENTIFIER);
+	}
+
 	{INTEGER} {
-		variant_emplace(annotated_integer{ctx.make_integer(text_view), location});
+		variant_emplace(annotated_integer{ ctx.make_integer(text_view), location });
 		return (bang_lang::parser::token::INTEGER);
 	}
+	{INTEGER_INDEX} {
+		variant_emplace(annotated_string_view{ text_view, location });
+		return (bang_lang::parser::token::INTEGER_INDEX);
+	}
 	{DECIMAL} {
+		variant_emplace(annotated_decimal{ ctx.make_decimal(text_view), location });
+		return (bang_lang::parser::token::DECIMAL);
+	}
+	{DECIMAL_S} {
 		variant_emplace(annotated_decimal{ctx.make_decimal(text_view), location});
 		return (bang_lang::parser::token::DECIMAL);
 	}
 	/*
-	{FOR} { return (bang_lang::parser::token::FOR); }
+	
 	{VOID} { return (bang_lang::parser::token::VOID_); }
 	{AUTO} { return (bang_lang::parser::token::AUTO); }
 	{CONST_} { return (bang_lang::parser::token::CONST_); }
 	{DELETE_} { return (bang_lang::parser::token::DELETE_); }
-	{USING} { return (bang_lang::parser::token::USING); }
 	{SIZEOF} { return (bang_lang::parser::token::SIZEOF); }
     
 	
@@ -431,7 +500,7 @@ DECIMAL_LITERAL			{DECIMAL}"_"
 	{ARROWAST}              { return (bang_lang::parser::token::ARROWAST); }
 
 	// ~>
-	{FARROW}                { return (bang_lang::parser::token::FARROW); }
+
 
 	// .*
 	{PTAST}                 { return (bang_lang::parser::token::PTAST); }
@@ -497,11 +566,6 @@ DECIMAL_LITERAL			{DECIMAL}"_"
 	// +
 	{PLUS}					{ return (bang_lang::parser::token::PLUS); }
 
-	// -
-	{MINUS}					{ return (bang_lang::parser::token::MINUS);	}
-
-	// *
-	{ASTERISK}				{ return (bang_lang::parser::token::ASTERISK);	}
 
 	// /
 	{SLASH}				    { return (bang_lang::parser::token::SLASH);	}
@@ -509,8 +573,7 @@ DECIMAL_LITERAL			{DECIMAL}"_"
 	// %
     {PERCENT}               { return (bang_lang::parser::token::PERCENT);	}
 
-	// &
-	{AMPERSAND}				{ return (bang_lang::parser::token::AMPERSAND);	}
+
 
 	// |
     {BITOR}				    { return (bang_lang::parser::token::BITOR);	}

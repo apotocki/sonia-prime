@@ -6,14 +6,21 @@
 
 #include <bit>
 #include <vector>
+#include <utility>
+
 #include "sonia/variant.hpp"
 #include "sonia/string.hpp"
 
+#include "sonia/bang/utility/linked_list.hpp"
+#include "sonia/bang/utility/linked_list.ipp"
+
 #include "semantic_fwd.hpp"
+//#include "sonia/bang/entities/variable_entity.hpp"
 
 namespace sonia::lang::bang {
 
 // ======================================================================== types
+#if 0
 struct bang_object_t
 {
     entity const* value;
@@ -21,7 +28,7 @@ struct bang_object_t
     inline bool operator==(bang_object_t const& rhs) const { return value == rhs.value; };
     auto operator<=>(bang_object_t const& rhs) const;
 
-    qname_identifier name() const;
+    entity_identifier id() const;
 };
 
 template <typename T> struct bang_tuple
@@ -46,8 +53,9 @@ template <typename T> struct bang_tuple
 
     inline bool empty() const noexcept { return fields.empty() && named_fields.empty(); }
 };
+#endif
 
-template <typename T> using bang_fn = bang_fn_base<bang_tuple<T>, T>;
+//template <typename T> using bang_fn = bang_fn_base<bang_tuple<T>, T>;
 
 //struct bang_particular_bool_t
 //{
@@ -71,6 +79,7 @@ template <typename T> struct bang_bunion
     */
 };
 
+#if 0
 template <typename T> struct bang_union
 {
     boost::container::small_vector<T, 8> other_members;
@@ -120,24 +129,24 @@ template <typename T> struct bang_union
                     case basic_type::nil_e:
                         store_ = bang_tuple<T>{};
                         return;
-                    case basic_type::bool_e:
-                        store_ = bang_bool_t{};
-                        return;
-                    case basic_type::int_e:
-                        store_ = bang_int_t{};
-                        return;
-                    case basic_type::float_e:
-                        store_ = bang_float_t{};
-                        return;
-                    case basic_type::decimal_e:
-                        store_ = bang_decimal_t{};
-                        return;
-                    case basic_type::string_e:
-                        store_ = bang_string_t{};
-                        return;
-                    case basic_type::any_e:
-                        store_ = bang_any_t{};
-                        return;
+                    //case basic_type::bool_e:
+                    //    store_ = bang_bool_t{};
+                    //    return;
+                    //case basic_type::int_e:
+                    //    store_ = bang_int_t{};
+                    //    return;
+                    //case basic_type::float_e:
+                    //    store_ = bang_float_t{};
+                    //    return;
+                    //case basic_type::decimal_e:
+                    //    store_ = bang_decimal_t{};
+                    //    return;
+                    //case basic_type::string_e:
+                    //    store_ = bang_string_t{};
+                    //    return;
+                    //case basic_type::any_e:
+                    //    store_ = bang_any_t{};
+                    //    return;
                     default:
                         THROW_INTERNAL_ERROR("unknown union member type");
                     }
@@ -188,12 +197,12 @@ template <typename T> struct bang_union
         bang_union & un_;
         explicit appender_visitor(bang_union & u) : un_{u} {}
 
-        inline void operator()(bang_bool_t) const { un_.basic_members |= (uint8_t)basic_type::bool_e; }
-        inline void operator()(bang_int_t) const { un_.basic_members |= (uint8_t)basic_type::int_e; }
-        inline void operator()(bang_float_t) const { un_.basic_members |= (uint8_t)basic_type::float_e; }
-        inline void operator()(bang_decimal_t) const { un_.basic_members |= (uint8_t)basic_type::decimal_e; }
-        inline void operator()(bang_string_t) const { un_.basic_members |= (uint8_t)basic_type::string_e; }
-        inline void operator()(bang_any_t) const { un_.basic_members |= (uint8_t)basic_type::any_e; }
+        //inline void operator()(bang_bool_t) const { un_.basic_members |= (uint8_t)basic_type::bool_e; }
+        //inline void operator()(bang_int_t) const { un_.basic_members |= (uint8_t)basic_type::int_e; }
+        //inline void operator()(bang_float_t) const { un_.basic_members |= (uint8_t)basic_type::float_e; }
+        //inline void operator()(bang_decimal_t) const { un_.basic_members |= (uint8_t)basic_type::decimal_e; }
+        //inline void operator()(bang_string_t) const { un_.basic_members |= (uint8_t)basic_type::string_e; }
+        //inline void operator()(bang_any_t) const { un_.basic_members |= (uint8_t)basic_type::any_e; }
 
         inline void operator()(bang_union u) const
         {
@@ -234,11 +243,11 @@ template <typename T> struct bang_union
         appender_visitor{ *this }(std::forward<ArgT>(m));
     }
 
-    inline bool has(bang_bool_t const&) const { return !!(basic_members & (uint16_t)basic_type::bool_e); }
-    inline bool has(bang_int_t const&) const { return !!(basic_members & (uint16_t)basic_type::int_e); }
-    inline bool has(bang_float_t const&) const { return !!(basic_members & (uint16_t)basic_type::float_e); }
-    inline bool has(bang_decimal_t const&) const { return !!(basic_members & (uint16_t)basic_type::decimal_e); }
-    inline bool has(bang_string_t const&) const { return !!(basic_members & (uint16_t)basic_type::string_e); }
+    //inline bool has(bang_bool_t const&) const { return !!(basic_members & (uint16_t)basic_type::bool_e); }
+    //inline bool has(bang_int_t const&) const { return !!(basic_members & (uint16_t)basic_type::int_e); }
+    //inline bool has(bang_float_t const&) const { return !!(basic_members & (uint16_t)basic_type::float_e); }
+    //inline bool has(bang_decimal_t const&) const { return !!(basic_members & (uint16_t)basic_type::decimal_e); }
+    //inline bool has(bang_string_t const&) const { return !!(basic_members & (uint16_t)basic_type::string_e); }
     inline bool has(bang_tuple<T> const& t) const
     {
         if (t.empty()) return !!(basic_members & (uint16_t)basic_type::nil_e);
@@ -252,6 +261,7 @@ template <typename T> struct bang_union
         return it != other_members.end() && *it == t;
     }
 };
+#endif
 
 //using bang_type_variant = make_recursive_variant<
 //    bang_any_t, bang_bool_t, bang_int_t, bang_float_t, bang_decimal_t, bang_string_t, bang_object_t,
@@ -263,9 +273,11 @@ template <typename T> struct bang_union
 //    bang_bunion<recursive_variant_>
 //>::type;
 
+
+#if 0
 struct bang_type;
 using bang_type_variant = variant<
-    bang_any_t, bang_bool_t, bang_int_t, bang_float_t, bang_decimal_t, bang_string_t, bang_object_t,
+    bang_any_t, bang_object_t,
     recursive_wrapper<bang_fn<bang_type>>,
     recursive_wrapper<bang_vector<bang_type>>,
     recursive_wrapper<bang_array<bang_type>>,
@@ -298,18 +310,81 @@ struct bang_type : bang_type_variant
     T const* as() const { return get<T>(static_cast<bang_type_variant const*>(this)); }
 };
 
-using bang_vector_t = bang_vector<bang_type>;
-using bang_array_t = bang_array<bang_type>;
-using bang_tuple_t = bang_tuple<bang_type>;
-using bang_union_t = bang_union<bang_type>;
-using bang_bunion_t = bang_bunion<bang_type>;
+//using bang_vector_t = bang_vector<bang_type>;
+//using bang_array_t = bang_array<bang_type>;
+//using bang_tuple_t = bang_tuple<bang_type>;
+//using bang_union_t = bang_union<bang_type>;
+//using bang_bunion_t = bang_bunion<bang_type>;
 using bang_fn_t = bang_fn<bang_type>;
 
 bang_type make_union_type(bang_type, bang_type const*);
 bang_type operator|| (bang_type const& l, bang_type const& r);
 bang_type operator- (bang_union_t const& l, bang_type const& r);
+#endif
 // ======================================================================== function
 
+//class symbol
+//{
+//public:
+//    explicit symbol(qname_identifier id) : id_{ id } {}
+//
+//private:
+//    qname_identifier id_;
+//    boost::container::small_vector<entity_identifier, 4> entities_;
+//    boost::container::small_vector<identifier, 4> names_;
+//
+//    // entities_.size() >= names_.size();
+//};
+
+template <typename ConstraintT>
+class fieldset
+{
+public:
+    // to do: optimize
+    struct named_field
+    {
+        annotated_identifier ename;
+        optional<annotated_identifier> iname;
+        ConstraintT constraint;
+        parameter_constraint_modifier_t constraint_type;
+    };
+
+    struct positioned_field
+    {
+        optional<annotated_identifier> iname;
+        ConstraintT constraint;
+        parameter_constraint_modifier_t constraint_type;
+    };
+
+    fieldset() = default;
+
+    template <typename ArgT>
+    void set_nfields(ArgT&& arg) { nfields_ = std::forward<ArgT>(arg); }
+
+    template <typename ArgT>
+    void set_pfields(ArgT&& arg) { pfields_ = std::forward<ArgT>(arg); }
+
+    span<const named_field> named_fields() const { return nfields_; }
+    span<const positioned_field> positioned_fields() const { return pfields_; }
+
+    named_field const* find_named_field(identifier name) const
+    {
+        auto it = std::lower_bound(nfields_.begin(), nfields_.end(), name,
+            [](named_field const& l, identifier r) { return l.ename.value < r; });
+        if (it != nfields_.end() && it->ename.value == name) return &*it;
+        return nullptr;
+    }
+
+protected:
+    std::vector<named_field> nfields_;
+    std::vector<positioned_field> pfields_;
+};
+
+
+
+
+
+#if 0
 struct function_signature
 {
     bang_fn_t fn_type;
@@ -328,6 +403,7 @@ struct function_signature
 
     void setup(fn_compiler_context&, parameter_woa_list_t&);
     void normilize(fn_compiler_context&);
+    //void build_symbol(unit&, symbol&);
     void build_mangled_id(unit&);
 
     //bang_type to_function_type() const { return bang_fn_t{}}
@@ -341,27 +417,44 @@ struct function_signature
     //        [](auto const& tpl) { return std::tuple{ std::get<0>(tpl).id, std::get<1>(tpl) }; });
     //}
 };
-
+#endif
 
 
 namespace semantic {
+
 struct push_by_offset { size_t offset; }; // offset from the stack top
-struct push_variable { variable_entity const* entity; };
 struct push_value { value_t value; };
-struct set_variable { variable_entity const* entity; };
+struct push_local_variable
+{
+#ifdef SONIA_LANG_DEBUG
+    identifier debug_name;
+#endif
+    variable_identifier varid;
+
+    inline explicit push_local_variable(local_variable const& v) noexcept
+        : varid{ v.varid }
+    {
+#ifdef SONIA_LANG_DEBUG
+        debug_name = v.debug_name.value;
+#endif
+    }
+};
+
+struct set_local_variable { variable_identifier varid; };
+struct set_variable { extern_variable_entity const* entity; };
 struct set_by_offset { size_t offset; }; // offset from the stack top
-struct truncate_values {
+struct truncate_values
+{
     uint32_t count : 31;
     uint32_t keep_back : 1;
 
-    truncate_values(size_t cnt, bool keepb) : count {static_cast<uint32_t>(cnt)}, keep_back{ keepb } {}
+    truncate_values(size_t cnt, bool keepb) : count { static_cast<uint32_t>(cnt) }, keep_back{ keepb } {}
 };
-
-struct return_statement {};
 
 struct invoke_function
 {
-    qname_identifier varname;
+    //qname_identifier varname;
+    entity_identifier fn;
 };
 
 //enum class condition_type : uint8_t
@@ -370,19 +463,6 @@ struct invoke_function
 //    optionality
 //};
 
-template <typename SemanticExpressionT>
-struct conditional
-{
-    //condition_type type;
-    std::vector<SemanticExpressionT> true_branch;
-    std::vector<SemanticExpressionT> false_branch;
-};
-
-template <typename SemanticExpressionT>
-struct not_empty_condition
-{
-    std::vector<SemanticExpressionT> branch;
-};
 
 //template <typename SemanticExpressionT>
 //struct logic_tree_node
@@ -393,63 +473,143 @@ struct not_empty_condition
 //    shared_ptr<logic_tree_node> false_branch;
 //};
 
-// make_recursive_variant<
-using expression_type = make_recursive_variant<
-    empty_t, // no op
-    push_variable, push_value, push_by_offset, truncate_values,
-    set_variable, set_by_offset, invoke_function, return_statement,
-    std::vector<recursive_variant_>,
-    conditional<recursive_variant_>,
-    not_empty_condition<recursive_variant_>
-    //logic_tree_node<recursive_variant_>
->::type;
+struct expression_entry;
+using expression_span = linked_list_node_span<expression_entry>;
 
-using conditional_t = conditional<expression_type>;
-using not_empty_condition_t = not_empty_condition<expression_type>;
-//using logic_tree_node_t = logic_tree_node<expression_type>;
+struct return_statement
+{
+    expression_span result;
+    size_t scope_size; // Numebr of elements on stack after evaluation of result expressions
+    entity_identifier value_or_type;
+    bool is_const_value_result;
+};
+
+struct conditional_t
+{
+    //condition_type type;
+    expression_span true_branch;
+    expression_span false_branch;
+    uint8_t true_branch_finished : 1;
+    uint8_t false_branch_finished : 1;
+
+    conditional_t() : true_branch_finished{ 0 }, false_branch_finished{ 0 } {}
+};
+
+struct not_empty_condition_t
+{
+    expression_span branch;
+};
+
+struct loop_scope_t
+{
+    expression_span branch;
+    expression_span continue_branch;
+};
+
+struct loop_continuer {};
+struct loop_breaker {};
+
+using expression = variant<
+    empty_t, // no op
+    push_value, push_local_variable, push_by_offset, truncate_values,
+    set_local_variable, set_variable, set_by_offset, invoke_function, return_statement, loop_breaker, loop_continuer,
+    expression_span,
+    conditional_t,
+    not_empty_condition_t,
+    loop_scope_t
+    //logic_tree_node<recursive_variant_>
+>;
+
+using expression_entry_type = linked_list_node<expression>;
+struct expression_entry : expression_entry_type { using expression_entry_type::expression_entry_type; };
+
+//using conditional_t = conditional<expression>;
+//using not_empty_condition_t = not_empty_condition<expression>;
+//using loop_scope_t = loop_scope<expression>;
+//using logic_tree_node_t = logic_tree_node<expression_t>;
+
+using expression_list_t = linked_list<expression>;
+using managed_expression_list = managed_linked_list<expression, unit>;
+
+class indirect_expression_list : public indirect
+{
+public:
+    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(indirect_expression_list);
+
+    mutable managed_expression_list list;
+
+    inline explicit indirect_expression_list(managed_expression_list&& l) noexcept
+        : list{ std::move(l) }
+    {}
+
+    inline indirect_expression_list(indirect_expression_list const& rhs)
+        : list{ *rhs.list.manager() }
+    {
+        list.deep_copy((semantic::expression_span)rhs.list);
+    }
+
+    inline indirect_expression_list(indirect_expression_list&&) = default;
+
+    inline indirect_expression_list& operator= (indirect_expression_list const&)
+    {
+        THROW_INTERNAL_ERROR("indirect_expression_list copy assignment");
+    }
+
+    inline indirect_expression_list& operator=(indirect_expression_list&&) = default;
+};
 
 }
 
-using semantic_expression_pair = std::pair<semantic::expression_type, bang_type>;
-
-
-
-class function_scope_type
+struct syntax_expression_result
 {
+    // {temporary name, temporarytype, expressions}
+    small_vector<std::tuple<identifier, local_variable, semantic::expression_span>, 2> temporaries;
 
+    semantic::expression_span stored_expressions;
+    semantic::expression_span expressions;
+    entity_identifier value_or_type;
+    bool is_const_result;
+
+    inline entity_identifier type() const
+    {
+        BOOST_ASSERT(!is_const_result);
+        return value_or_type;
+    }
+
+    inline entity_identifier value() const
+    {
+        BOOST_ASSERT(is_const_result);
+        return value_or_type;
+    }
 };
 
-/*
-class function_t
+struct syntax_expression_const_result
 {
-public:
-    virtual ~function_t() = default;
+    semantic::expression_span expressions;
+    entity_identifier value;
 };
 
-class implemented_function : public function_t
-{
-public:
-    qname name;
-    std::vector<semantic::expression_type> body;
-    bool is_inline = false;
-};
-*/
+using syntax_expression_result_t = syntax_expression_result;
+//using syntax_expression_result_t = syntax_expression_result<semantic::managed_expression_list>;
+//using syntax_expression_result_reference_t = syntax_expression_result<semantic::expression_span>;
+
+using syntax_expression_const_result_t = syntax_expression_const_result; // syntax_expression_const_result<semantic::managed_expression_list>;
 
 }
 
 
 ///#include "entities/type_entity.hpp"
 
-namespace sonia::lang::bang {
-
-inline qname_identifier bang_object_t::name() const
-{
-    return value->name();
-}
-
-inline auto bang_object_t::operator<=>(bang_object_t const& rhs) const
-{
-    return value->name() <=> rhs.value->name();
-};
-
-}
+//namespace sonia::lang::bang {
+//
+//inline entity_identifier bang_object_t::id() const
+//{
+//    return value->id();
+//}
+//
+//inline auto bang_object_t::operator<=>(bang_object_t const& rhs) const
+//{
+//    return value->id() <=> rhs.value->id();
+//};
+//
+//}

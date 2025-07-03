@@ -5,16 +5,48 @@
 #include "sonia/config.hpp"
 #include "library.hpp"
 #include "sonia/logger/logger.hpp"
+#include "sonia/mp/basic_integer.hpp"
 #include "sonia/mp/basic_decimal.hpp"
 
 #include <sstream>
 
 namespace sonia::lang::bang {
 
+void bang_error(vm::context& ctx)
+{
+    std::string err = ctx.stack_back().as<std::string>();
+    std::string loc = ctx.stack_back(1).as<std::string>();
+    throw exception((std::ostringstream{} << loc << ": "sv << err).str());
+}
+
+void bang_assert(vm::context& ctx)
+{
+    if (!ctx.stack_back(1).as<bool>()) {
+        std::string err = ctx.stack_back().as<std::string>();
+        throw exception(err);
+    }
+    ctx.stack_pop(2);
+}
+
+void bang_any_equal(vm::context& ctx)
+{
+    bool result = ctx.stack_back() == ctx.stack_back(1);
+    ctx.stack_pop();
+    ctx.stack_back().replace(smart_blob{ bool_blob_result(result) });
+}
+
+void bang_decimal_equal(vm::context& ctx)
+{
+    mp::decimal r = ctx.stack_back().as<mp::decimal>();
+    mp::decimal l = ctx.stack_back(1).as<mp::decimal>();
+    ctx.stack_pop();
+    ctx.stack_back().replace(smart_blob{ bool_blob_result(l == r) });
+}
+
 void bang_tostring(vm::context & ctx)
 {
     std::ostringstream res;
-    res << ctx.stack_back();
+    print_to_stream(res, *ctx.stack_back(), false);
     ctx.stack_pop(1);
     smart_blob r{ string_blob_result(res.str()) };
     r.allocate();
@@ -23,9 +55,121 @@ void bang_tostring(vm::context & ctx)
 
 void bang_print_string(vm::context& ctx)
 {
-    string_view str = ctx.stack_back().as<string_view>();
-    GLOBAL_LOG_INFO() << str;
+    size_t argcount = ctx.stack_back().as<size_t>();
+    unit & u = ctx.get_unit();
+    std::ostringstream res;
+    for (size_t i = argcount; i > 0; --i) {
+        print_to_stream(res, *ctx.stack_back(i), false);
+        //u.write_cout(ctx.stack_back(i).as<string_view>());
+    }
+    u.write_cout(res.str());
+    ctx.stack_pop(argcount + 1);
+}
+
+void bang_concat(vm::context& ctx)
+{
+    size_t argcount = ctx.stack_back().as<size_t>();
+    std::ostringstream res;
+    for (size_t i = argcount; i > 0; --i) {
+        print_to_stream(res, *ctx.stack_back(i), false);
+    }
+    ctx.stack_pop(argcount + 1);
+    smart_blob r{ string_blob_result(res.str()) };
+    r.allocate();
+    ctx.stack_push(std::move(r));
+}
+
+void bang_arrayify(vm::context& ctx)
+{
+    small_vector<blob_result, 4> elements;
+    size_t argcount = ctx.stack_back().as<size_t>();
+    elements.reserve(argcount);
+
+    SCOPE_EXCEPTIONAL_EXIT([&elements]() {
+        for (auto& e : elements) blob_result_unpin(&e);
+    });
+
+    for (size_t i = argcount; i > 0; --i) {
+        elements.emplace_back(*ctx.stack_back(i));
+        blob_result_pin(&elements.back());
+    }
+    smart_blob r{ array_blob_result(span{ elements.data(), elements.size() }) };
+    r.allocate();
+    elements.clear();
+    ctx.stack_pop(argcount + 1);
+    ctx.stack_push(std::move(r));
+}
+
+void bang_array_at(vm::context& ctx)
+{
+    auto idx = ctx.stack_back().as<size_t>();
+    auto arr = ctx.stack_back(1).as<blob_result>();
+    if (!is_array(arr)) {
+        throw exception("expected array, got %1%"_fmt % arr);
+    }
+    smart_blob result;
+    blob_type_selector(arr, [idx, &result](auto ident, blob_result b) {
+        using type = typename decltype(ident)::type;
+        if constexpr (std::is_same_v<type, std::nullptr_t>) { }
+        else if constexpr (std::is_void_v<type>) { }
+        //else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"; }
+        else {
+            using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
+            size_t sz = array_size_of<fstype>(b);
+            if (idx >= sz) {
+                throw exception("index out of range");
+            }
+            fstype const& e = data_of<fstype>(b)[idx];
+            blob_result res = particular_blob_result(e);
+            result = res;
+        }
+    });
+
     ctx.stack_pop();
+    ctx.stack_back().replace(smart_blob{ result });
+}
+
+void bang_array_tail(vm::context& ctx)
+{
+    auto arr = ctx.stack_back().as<blob_result>();
+    if (!is_array(arr)) {
+        throw exception("expected array, got %1%"_fmt % arr);
+    }
+
+    blob_type_selector(arr, [&ctx](auto ident, blob_result b) {
+        using type = typename decltype(ident)::type;
+        if constexpr (std::is_same_v<type, std::nullptr_t>) { }
+        else if constexpr (std::is_void_v<type>) { }
+        else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { 
+            THROW_NOT_IMPLEMENTED_ERROR("bigint tail");
+        } else if constexpr (std::is_same_v<type, sonia::basic_string_view<char>>) {
+            THROW_NOT_IMPLEMENTED_ERROR("string tail");
+        } else {
+            using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
+            size_t argcount = array_size_of<fstype>(b);
+
+            if (argcount == 2) {
+                smart_blob result = particular_blob_result(data_of<fstype>(b)[1]);
+                blob_result_pin(&*result);
+                ctx.stack_back().replace(std::move(result));
+                return;
+            }
+            small_vector<fstype, 4> elements;
+            elements.reserve(argcount - 1);
+
+            for (size_t i = 1; i < argcount; ++i) {
+                elements.push_back(data_of<fstype>(b)[i]);
+                if constexpr (std::is_same_v<fstype, blob_result>) {
+                    blob_result_pin(&elements.back());
+                }
+            }
+
+            smart_blob r{ array_blob_result(span{elements.data(), elements.size()}) };
+            r.allocate();
+            elements.clear();
+            ctx.stack_back().replace(std::move(r));
+        }
+    });
 }
 
 void bang_negate(vm::context& ctx)
@@ -66,6 +210,18 @@ void bang_concat_string(vm::context& ctx)
     ctx.stack_back().replace( smart_blob{ std::move(res) } );
 }
 
+void bang_operator_plus_integer(vm::context& ctx)
+{
+    auto l = ctx.stack_back(1).as<mp::integer>();
+    auto r = ctx.stack_back().as<mp::integer_view>();
+    auto sum = l + r;
+    smart_blob res{ bigint_blob_result(sum) };
+    res.allocate();
+
+    ctx.stack_pop();
+    ctx.stack_back().replace(std::move(res));
+}
+
 void bang_operator_plus_decimal(vm::context& ctx)
 {
     auto l = ctx.stack_back(1).as<mp::decimal>();
@@ -78,11 +234,11 @@ void bang_operator_plus_decimal(vm::context& ctx)
     ctx.stack_back().replace(std::move(res));
 }
 
-void bang_to_decimal(vm::context& ctx)
+void bang_str2dec(vm::context& ctx)
 {
     auto str = ctx.stack_back().as<string_view>();
     try {
-        mp::decimal d(str);
+        mp::decimal d{ str };
         smart_blob res{ decimal_blob_result(d) };
         res.allocate();
         ctx.stack_back().replace(std::move(res));
@@ -90,6 +246,46 @@ void bang_to_decimal(vm::context& ctx)
         ctx.stack_back().replace(error_blob_result(e.what())); // nil_blob_result()
         ctx.stack_back().allocate();
     }
+}
+
+void bang_int2dec(vm::context& ctx)
+{
+    auto ival = ctx.stack_back().as<mp::integer_view>();
+    mp::decimal dval{ ival };
+    smart_blob res{ decimal_blob_result(dval) };
+    res.allocate();
+    ctx.stack_back().replace(std::move(res));
+}
+
+void bang_int2flt(vm::context& ctx)
+{
+    auto ival = ctx.stack_back().as<mp::integer_view>();
+    ctx.stack_back().replace(smart_blob{ f32_blob_result((float)ival) });
+}
+
+void bang_create_extern_object(vm::context& ctx)
+{
+    string_view name = ctx.stack_back().as<string_view>();
+    if (name.starts_with("::"sv)) {
+        name = name.substr(2);
+        name = name.substr(2);
+    }
+
+    smart_blob resobj = ctx.env().invoke("create"sv, { string_blob_result(ctx.camel2kebab(name)) });
+    if (resobj->type == blob_type::error) {
+        throw exception(resobj.as<std::string>());
+    }
+    ctx.stack_back().replace(std::move(resobj));
+}
+
+// (obj, propName, value)->obj
+void bang_set_object_property(vm::context& ctx)
+{
+    using namespace sonia::invocation;
+    shared_ptr<invocable> obj = ctx.stack_back(2).as<wrapper_object<shared_ptr<invocable>>>().value;
+    string_view prop_name = ctx.stack_back(1).as<string_view>();
+    obj->set_property(ctx.camel2kebab(prop_name), *ctx.stack_back());
+    ctx.stack_pop(2);
 }
 
 }

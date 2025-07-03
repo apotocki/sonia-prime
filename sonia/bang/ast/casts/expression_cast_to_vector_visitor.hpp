@@ -81,7 +81,7 @@ struct expression_cast_to_vector_visitor : static_visitor<error_storage>
         return apply_visitor(vis, type2cast);
     }
     */
-
+#if 0
     inline result_type operator()(bang_vector_t const& v) const
     {
         if (target.type == v.type) {
@@ -93,11 +93,13 @@ struct expression_cast_to_vector_visitor : static_visitor<error_storage>
 
     result_type operator()(bang_tuple_t const& v) const;
 
+#endif
+
     template <typename T>
     result_type operator()(T const& v) const
     {
-        return make_error<cast_error>(cl_(), target, v);
-        //THROW_NOT_IMPLEMENTED_ERROR();
+        //return make_error<cast_error>(cl_(), target, v);
+        THROW_NOT_IMPLEMENTED_ERROR();
     }
 };
 

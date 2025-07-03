@@ -1,0 +1,70 @@
+fn foo_xn(arg0: string) {
+    print(arg0, ' ', $$);
+}
+
+fn foo_xn(arg0: string, arg1 : string, integer) {
+    print(arg0, ' ', arg1, ' ', $0, ' ', $$);
+}
+
+fn foo_xn(arg0: string, arg1 : string, $iparam : integer, integer) {
+    print(arg0, ' ', arg1, ' ', $iparam, ' ', $0, ' ', $1, ' ', $$);
+}
+
+foo_xn(arg0: "hello");
+foo_xn(arg1: "world", arg0 : " hello,", 22);
+foo_xn(arg1: "world", arg0 : " hello,", 22, 42);
+
+extern fn set_external_property(object, string, _);
+extern fn get_external_property(object, string)->any;
+
+struct View => (cookie: object, proto : metaobject(disabled : bool));
+
+fn get(self:View, property : __id("object")) -> object {}
+fn set(self:View, property : constexpr __identifier, $value : View::proto.`$property`)) {
+    set_external_property(self.object, $ID, $value);
+}
+
+struct view {
+    let cookie : object;
+    let proto = const metaobject(disabled: bool);
+    fn get(property: const __identifier, $value : proto.`$property`)) {
+        return object.$ID
+    }
+
+let n = 0;
+while true; n = n + 1 {
+    print(n);
+    if n != 5 { continue }
+    n = n + 1;
+    break
+}
+while n != 11 {
+    print(n);
+    n = n + 1
+}
+while n != 13; n = n + 1 {
+    print(n);
+}
+while false { n = n + 1; break }
+while true {
+    print(n);
+    n = n + 1;
+    if n == 16 { break }
+}
+while true {
+    print(n);
+    n = n + 1;
+    if n != 18 { continue }
+    break
+}
+while true {
+    if n != 22 {
+        print(n);
+        n = n + 1;
+        continue
+    } else {
+        break
+    }
+}
+assert(n == 22)
+

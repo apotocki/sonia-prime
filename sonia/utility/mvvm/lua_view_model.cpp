@@ -6,12 +6,16 @@
 #include "lua_view_model.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
+#include "sonia/filesystem.hpp"
+#include <fstream>
+
 namespace sonia {
 
 void lua_view_model::do_registration(registrar_type& mr)
 {
     mr.register_method<&lua_view_model::load_lua>("load_lua"sv);
     mr.register_method<&lua_view_model::load_lua>("load_code"sv);
+    mr.register_method<&lua_view_model::load_file>("load_file"sv);
 
     using eval_lua_t = smart_blob(lua_view_model::*)(string_view);
     mr.register_method<(eval_lua_t)&lua_view_model::eval_lua>("eval_lua"sv);
@@ -59,6 +63,8 @@ public:
     bool newindex(string_view key, blob_result&& value) override
     {
         SCOPE_EXIT([&value](){ blob_result_unpin(&value); });
+        return ctx_.view_model::try_set_property(key, value);
+        /*
         if (!ctx_.view_model::try_set_property(key, value)) {
             blob_result args[] = { string_blob_result(key), value };
             smart_blob result = ctx_.do_call_method("setProperty", std::span{args});
@@ -66,6 +72,7 @@ public:
             return result.as<bool>();
         }
         return true;
+        */
     }
 
     blob_result invoke(string_view name, std::span<const blob_result> args) override
@@ -82,13 +89,18 @@ public:
 bool lua_view_model::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept
 {
     if (view_model::try_invoke(methodname, args, result)) return true;
-    //GLOBAL_LOG_INFO() << "invoking lua: " << methodname;
-    vm_lua_resolver rslv{ *this };
-    result = as_cstring<32>(methodname, [args, &rslv, this](cstring_view methodname_cstr) {
-        return lua::language::eval_inplace(methodname_cstr, args, &rslv);
-    });
-    //GLOBAL_LOG_INFO() << "lua result: " << *result;
-    return true;
+    try {
+        //GLOBAL_LOG_INFO() << "invoking lua: " << methodname;
+        vm_lua_resolver rslv{ *this };
+        result = as_cstring<32>(methodname, [args, &rslv, this](cstring_view methodname_cstr) {
+            return lua::language::eval_inplace(methodname_cstr, args, &rslv);
+        });
+        //GLOBAL_LOG_INFO() << "lua result: " << *result;
+        return true;
+    } catch (...) {
+        GLOBAL_LOG_WARN() << boost::current_exception_diagnostic_information();
+        return false;
+    }
 }
 
 /*
@@ -149,6 +161,16 @@ void lua_view_model::set_property(string_view propname, blob_result const& val)
     }
 }
 */
+
+void lua_view_model::load_file(string_view pathstr)
+{
+    auto path = std::string{pathstr};
+    std::string code;
+    code.reserve(fs::file_size(path));
+    std::ifstream file{ path.c_str(), std::ios::binary };
+    std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>{}, std::back_inserter(code));
+    load_lua(std::move(code));
+}
 
 void lua_view_model::load_lua(std::string code)
 {

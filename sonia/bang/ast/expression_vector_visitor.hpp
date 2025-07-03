@@ -25,7 +25,7 @@ struct expression_vector_visitor_obs : static_visitor<optional<bang_type>>
         , vec{ v }
         , loc_{ loc }
     {}
-
+#if 0
     result_type operator()(bang_vector_t const& v) const
     {
         auto estate = ctx.expressions_state();
@@ -63,7 +63,7 @@ struct expression_vector_visitor_obs : static_visitor<optional<bang_type>>
     inline result_type operator()(bang_decimal_t const& v) const { return nullopt; }
     inline result_type operator()(bang_string_t const& v) const { return nullopt; }
     inline result_type operator()(bang_object_t const& v) const { return nullopt; }
-
+#endif
     template <typename T>
     result_type operator()(T const& v) const
     {

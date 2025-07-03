@@ -1,0 +1,165 @@
+// This file contains tests for tuple equality and related operations in Bang language.
+
+// Test: empty tuple
+assert_equal(size(), 0);
+assert_equal(size(()), 0);
+assert_equal(size((())), 0);   // parenthesised empty tuple
+assert_equal(size(((()))), 0); // double parenthesised empty tuple
+assert_equal(size((:())), 1);  // tuple with a single element which is an empty tuple
+
+// Test: single element tuple
+assert_equal(size((:42)), 1);
+
+// Test: two elements tuple
+assert_equal(size((1, 2)), 2);
+
+// Test: tuples with all const fields
+let t1 = (a: 1, b : 2);
+let t2 = (a: 1, b : 2);
+assert_equal(t1, t2); // # should be true
+
+// Test: tuples with mixed const/non-const fields
+let x = runtime_cast(42);
+let t3 = (a: x, b: 2, c: runtime_cast(3), d: 4);
+let t4 = (a: x, b: 2, c: 3, d: runtime_cast(4));
+
+assert(t3 == t4);
+assert(!(t3 != t4));
+assert(!!(t3 == t4));
+assert_equal(t3, t4); // should be true
+
+// Test: tuples with different field names
+let t5 = (a: 1, b : 2);
+let t6 = (a: 1, c : 2);
+assert(!(t5 == t6)); // should be false
+assert(t5 != t6); // should be false
+assert_not_equal(t5, t6);
+
+// Test: tuples with mismatched field counts
+let t7 = (a: 1, b : 2);
+let t8 = (a: 1);
+assert(t7 != t8); // should be false
+assert(!(t7 == t8)); // should be false
+assert_not_equal(t7, t8);
+
+// Test: tuples with different values
+let t9 = (a: 1, b : 2);
+let t10 = (a: 1, b : 3);
+assert_not_equal(t9, t10); // should be false
+
+let x2 = runtime_cast(22);
+let t11 = (a: x, b : 2, c: runtime_cast(3));
+let t12 = (a: x2, b : 2, c: runtime_cast(3));
+assert_not_equal(t11, t12);
+
+let xpack0 = (1, name: "assa", runtime_cast("345"), name: "bassa", name: runtime_cast(123), runtime_cast(22));
+
+assert(size(xpack0) == 6);
+assert((1, name: "assa", "345", name : "bassa", name : 123, 22) == xpack0);
+assert(xpack0 == (1, name: "assa", "345", name : "bassa", name : 123, 22));
+assert(xpack0 == (1, name: "assa", runtime_cast("345"), name : "bassa", name : runtime_cast(123), 22));
+
+assert(xpack0.0 == 1);
+assert(xpack0[0] == 1);
+assert(head(xpack0) == 1);
+assert(typeof(head(xpack0)) == ::integer);
+
+assert(size(head(tail(xpack0))) == 2);
+assert(head(tail(xpack0)).0 == .name);
+assert(head(tail(xpack0))[0] == .name);
+assert(head(tail(xpack0)) == (.name, "assa"));
+
+assert(head(head(tail(xpack0))) == .name);
+assert_equal(head(tail(xpack0)).1, "assa");
+assert(head(tail(xpack0))[1] == "assa");
+assert(tail(head(tail(xpack0)))[0] == "assa");
+
+assert(xpack0.1.0 == .name);
+assert(xpack0.1.1 == "assa");
+assert(xpack0.1 == (.name, "assa"));
+assert(xpack0[1].0 == .name);
+assert(xpack0[1].1 == "assa");
+assert_equal(xpack0[1][0], .name);
+assert(xpack0[1][1] == "assa");
+
+assert(xpack0.2 == "345");
+assert(xpack0[2] == "345");
+assert(typeof(head(tail(tail(xpack0)))) == string);
+assert(head(tail(tail(xpack0))) == "345");
+
+assert(size(head(tail(tail(tail(xpack0))))) == 2);
+assert(head(tail(tail(tail(xpack0)))).0 == .name);
+assert(head(tail(tail(tail(xpack0)))).1 == "bassa");
+assert(xpack0[3] == (.name, "bassa"));
+
+assert(size(head(tail(tail(tail(tail(xpack0)))))) == 2);
+assert(head(tail(tail(tail(tail(xpack0))))).0 == .name);
+assert(head(tail(tail(tail(tail(xpack0))))).1 == 123);
+assert(xpack0[4] == (.name, runtime_cast(123)));
+assert(xpack0[4] == (.name, 123));
+
+assert_equal(size(xpack0.name), 3);
+assert_equal(size(xpack0[.name]), 3);
+assert_equal(size(xpack0[__id("name")]), 3);
+
+assert_equal(xpack0.name.0, "assa");
+assert_equal(xpack0.name[0], "assa");
+assert_equal(xpack0.name.1, "bassa");
+assert_equal(xpack0.name[1], "bassa");
+assert_equal(xpack0.name.2, 123);
+assert_equal(xpack0.name[2], 123);
+
+
+let xpack1 = (11, 222, xpack0..., name: "bussa");
+assert_equal(size(xpack1), 9);
+assert_equal(xpack1.0, 11);
+assert_equal(xpack1.1, 222);
+assert_equal(xpack1.2, 1);
+assert_equal(xpack1.3, (.name, "assa"));
+assert_equal(xpack1.4, "345");
+assert_equal(xpack1.5, (.name, "bassa"));
+assert_equal(xpack1.6, (.name, 123));
+assert_equal(xpack1.7, 22);
+assert_equal(xpack1.8, (.name, "bussa"));
+
+assert_equal(size(xpack1.name), 4);
+assert_equal(xpack1.name.0, "assa");
+assert_equal(xpack1.name.1, "bassa");
+assert_equal(xpack1.name.2, 123);
+assert_equal(xpack1.name.3, "bussa");
+
+// here xpack is const and it's type is tuple with only const fields (values and qnames)
+let xpack = 1, runtime_cast(2), name: runtime_cast("345"), 66, name: "678";
+
+assert_equal(size(xpack), 5);
+assert(xpack.0 == 1); // value is const, no need to dereference
+assert(*xpack.1 == 2); // value is mutable, need dereference
+assert(*xpack.2.1 == "345"); // value is mutable, need dereference
+assert(xpack.3 == 66); // value is const, no need to dereference
+assert_equal(xpack.4, (.name, "678")); // value is const, no need to dereference
+
+assert_equal(size(xpack.name), 2);
+assert_equal(*xpack.name.0, "345"); // value is mutable, need to dereference
+assert_equal(xpack.name.1, "678"); // value is const, no need to dereference
+
+let xpack2 = 3, name: "911", xpack..., name: "901", 4, name2: "asd";
+assert_equal(size(xpack2), 10);
+assert_equal(xpack2.0, 3); // value is const, no need to dereference
+assert_equal(xpack2.1, (.name, "911")); // value is const, no need to dereference
+assert_equal(xpack2.2, 1); // value is const, no need to dereference (from xpack.0)
+assert_equal(*xpack2.3, 2); // value is mutable, need dereference (from xpack.1)
+assert_equal(*xpack2.4.1, "345"); // value is mutable, need dereference (from xpack.2)
+assert_equal(xpack2.5, 66); // value is const, no need to dereference (from xpack.3)
+assert_equal(xpack2.6, (.name, "678")); // value is const, no need to dereference (from xpack.4)
+assert_equal(xpack2.7, (.name, "901")); // value is const, no need to dereference
+assert_equal(xpack2.8, 4); // value is const, no need to dereference
+assert_equal(xpack2.9, (.name2, "asd")); // value is const, no need to dereference
+
+assert_equal(size(xpack2.name), 4);
+assert_equal(xpack2.name.0, "911"); // value is const, no need to dereference
+assert_equal(*xpack2.name.1, "345"); // value is mutable, need dereference
+assert_equal(xpack2.name.2, "678"); // value is const, no need to dereference
+assert_equal(xpack2.name.3, "901"); // value is const, no need to dereference
+
+//let intvar : f16 = 100;
+//assert_equal(typeof(intvar), f16); // should be true

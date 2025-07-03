@@ -16,7 +16,7 @@
 
 namespace sonia::mp {
 
-// limbs are desructed during the string conversion
+// limbs are destructed during the string conversion
 template <std::unsigned_integral LimbT, typename OutputIteratorT>
 requires(!std::is_const_v<LimbT>)
 OutputIteratorT bc_get_str(std::span<LimbT> limbs, int base, std::string_view alphabet, OutputIteratorT oi)
@@ -30,8 +30,7 @@ OutputIteratorT bc_get_str(std::span<LimbT> limbs, int base, std::string_view al
     constexpr uint32_t limb_bit_count = std::numeric_limits<LimbT>::digits;
     using limb_traits_t = uint_t<limb_bit_count>;
     
-    static_assert(sizeof(LimbT) <= 8);
-    char tempbuff[64]; // not more than 64 chars per limb
+    char tempbuff[std::numeric_limits<LimbT>::digits]; // not more than the number of bits in the LimbT type (worst case when base = 2)
 
     if (base == 10) { // questionable choice
         while (limbs.size() > 1) {
@@ -108,7 +107,7 @@ OutputIteratorT bc_get_str(std::span<LimbT> limbs, int base, std::string_view al
             for (;;) {
                 auto [d, f] = umul1<LimbT>(frac, base);
                 frac = f;
-                *s = alphabet[static_cast<uint8_t>(d)];
+                *s = alphabet[d & 0xff];
                 if (s == tempbuff) break;
                 --s;
             }
@@ -120,7 +119,7 @@ OutputIteratorT bc_get_str(std::span<LimbT> limbs, int base, std::string_view al
     {
         auto [q, r] = div1<LimbT>(ul, base);
         ul = q;
-        *oi = alphabet[static_cast<uint8_t>(r)];
+        *oi = alphabet[r & 0xff];
     }
     
     return std::move(oi);
@@ -132,7 +131,7 @@ OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& rev
     using namespace std::string_view_literals;
     using limb_type = std::remove_cv_t<LimbT>;
 
-    if (base < 2 || base > (alphabet.empty() ? 62 : alphabet.size())) {
+    if (base < 2 || base > (alphabet.empty() ? detail::default_alphabet_big.size() : alphabet.size())) {
         throw std::invalid_argument("wrong base");
     }
     if (limbs.empty() || (limbs.size() == 1 && !limbs.front())) {
@@ -143,7 +142,7 @@ OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& rev
     }
 
     if (alphabet.empty()) {
-        alphabet = base <= 36 ? detail::default_alphabet : detail::default_alphabet_big;
+        alphabet = base <= detail::default_alphabet.size() ? detail::default_alphabet : detail::default_alphabet_big;
     }
 
     if (!(base & (base - 1))) {
@@ -185,13 +184,36 @@ OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& rev
         }
     }
 
-    //if (un < 35)
-    reversed = true;
-    if constexpr (std::is_const_v<LimbT>) {
-        std::vector<limb_type> mls( limbs.begin(), limbs.end() );
-        return bc_get_str(std::span{mls}, base, alphabet, std::move(out));
+    if (limbs.size() < 35) {
+        reversed = true;
+        if constexpr (std::is_const_v<LimbT>) {
+            std::vector<limb_type> mls( limbs.begin(), limbs.end() );
+            return bc_get_str(std::span{mls}, base, alphabet, std::move(out));
+        } else {
+            return bc_get_str(limbs, base, alphabet, std::move(out));
+        }
     } else {
-        return bc_get_str(limbs, base, alphabet, std::move(out));
+        using namespace sonia::arithmetic;
+        namespace mpa = sonia::mp::arithmetic;
+
+        constexpr uint32_t limb_bit_count = std::numeric_limits<limb_type>::digits;
+
+        size_t chars_per_limb = size_t(std::floor(double(limb_bit_count) / std::log2(base)));
+
+
+        std::vector<limb_type> powtab;
+        powtab.reserve(2 + limbs.size());
+
+        limb_type logb2 = static_cast<limb_type>(std::floor(std::logl(2) / std::logl(base) * std::powl(2, limb_bit_count)));
+        size_t ndig = umul1<limb_type>(logb2, static_cast<limb_type>(limb_bit_count * limbs.size())).first;
+        size_t xn = 1 + ndig / chars_per_limb;
+
+        if constexpr (std::is_const_v<LimbT>) {
+            std::vector<limb_type> mls(limbs.begin(), limbs.end());
+            return bc_get_str(std::span{ mls }, base, alphabet, std::move(out));
+        } else {
+            return bc_get_str(limbs, base, alphabet, std::move(out));
+        }
     }
 
     /*
@@ -220,5 +242,6 @@ OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& rev
     return std::move(out);
     */
 }
+
 
 }

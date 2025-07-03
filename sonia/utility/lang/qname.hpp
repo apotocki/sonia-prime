@@ -4,12 +4,17 @@
 
 #pragma once
 #include <algorithm>
-#include <boost/container/small_vector.hpp>
 
 #include "sonia/span.hpp"
+#include "sonia/small_vector.hpp"
+
 #include "sonia/utility/functional/range_equal.hpp"
 
 #include "agnostic/std/algorithm/lexicographical_compare_three_way.hpp"
+
+#ifdef SONIA_LANG_DEBUG
+#   include "sonia/string.hpp"
+#endif
 
 namespace sonia::lang {
 
@@ -61,7 +66,7 @@ public:
     inline bool is_relative() const noexcept { return !absolute_; }
     inline bool is_absolute() const noexcept { return absolute_; }
 
-    qname& operator+= (qname const& r)
+    qname& operator/= (qname const& r)
     {
         if (r.is_absolute()) {
             parts_.clear();
@@ -71,72 +76,90 @@ public:
         return *this;
     }
 
-    qname& operator+= (IdentifierT r)
+    qname& operator/= (IdentifierT r)
     {
         parts_.emplace_back(r);
         return *this;
     }
 
-    span<const IdentifierT> parts() const
+    inline span<const IdentifierT> parts() const noexcept
     {
         return span<const IdentifierT>{parts_.data(), parts_.size()};
     }
 
-    IdentifierT local_name() const { return parts_.back(); }
+    inline IdentifierT local_name() const noexcept { return parts_.back(); }
 
-    void truncate(size_t sz)
+    inline void truncate(size_t sz)
     {
         parts_.resize(sz);
     }
 
-    bool has_prefix(span<const IdentifierT> sp) const
+    bool has_prefix(span<const IdentifierT> sp) const noexcept
     {
         if (parts_.size() < sp.size()) return false;
         return std::ranges::equal(parts().subspan(0, sp.size()), sp);
     }
 
-    auto begin() const { return parts_.begin(); }
-    auto end() const { return parts_.end(); }
+    inline auto begin() const noexcept { return parts_.begin(); }
+    inline auto end() const noexcept { return parts_.end(); }
+
+    inline size_t size() const noexcept { return parts_.size(); }
+
+    inline explicit operator bool() const noexcept { return !parts_.empty(); }
 
 private:
-    boost::container::small_vector<IdentifierT, 4> parts_;
+    small_vector<IdentifierT, 4> parts_;
     bool absolute_;
 };
 
 template <typename IdentifierT>
-inline size_t hash_value(qname<IdentifierT> const& v)
+inline size_t hash_value(qname<IdentifierT> const& v) noexcept
 {
     return hasher{}(v.parts(), v.is_absolute());
 }
 
 class qname_identifier
 {
-    uint32_t value_ : 31;
-    uint32_t absolute_ : 1;
+#ifdef SONIA_LANG_DEBUG
+public:
+    small_string debug_name;
+private:
+#endif
+    uint32_t value_;
+    static constexpr uint32_t no_value_ = 0xffffffffu;
 
 public:
-    qname_identifier() : value_{0x7fffffffu}, absolute_{1u} {}
+    inline qname_identifier() noexcept : value_{ no_value_ } {}
 
-    qname_identifier(size_t idvalue, bool is_absolute) : value_{ static_cast<uint32_t>(idvalue) }, absolute_{ is_absolute ? 1u : 0 } {}
+    template <std::unsigned_integral T>
+    inline explicit qname_identifier(T idvalue) noexcept
+        : value_{ static_cast<uint32_t>(idvalue) }
+    {}
 
-    friend inline bool operator== (qname_identifier const& l, qname_identifier const& r)
+    inline explicit operator bool() const noexcept { return value_ != no_value_; }
+
+    friend inline bool operator== (qname_identifier const& l, qname_identifier const& r) noexcept
     {
         return l.value_ == r.value_;
     }
 
-    friend inline auto operator<=>(qname_identifier const& l, qname_identifier const& r)
+    friend inline auto operator<=>(qname_identifier const& l, qname_identifier const& r) noexcept
     {
         return uint32_t(l.value_) <=> uint32_t(r.value_);
     }
 
-    inline bool is_relative() const noexcept { return !absolute_; }
-    inline bool is_absolute() const noexcept { return !!absolute_; }
-    uint32_t raw() const { return value_; }
+    inline uint32_t raw() const noexcept { return value_; }
 };
 
-inline size_t hash_value(qname_identifier const& v)
+inline size_t hash_value(qname_identifier const& v) noexcept
 {
     return hasher{}(v.raw());
+}
+
+template <typename T, typename Traits>
+inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& os, qname_identifier idval)
+{
+    return os << idval.raw();
 }
 
 template <typename IdentifierT>
@@ -167,12 +190,12 @@ public:
     inline bool is_relative() const noexcept { return !absolute_; }
     inline bool is_absolute() const noexcept { return absolute_; }
 
-    friend bool operator== (qname_view const& l, qname_view const& r)
+    inline friend bool operator== (qname_view const& l, qname_view const& r) noexcept
     {
         return l.is_absolute() == r.is_absolute() && range_equal()(l, r);
     }
 
-    friend auto operator<=>(qname_view const& l, qname_view const& r)
+    inline friend auto operator<=>(qname_view const& l, qname_view const& r) noexcept
     {
         assert(l.is_absolute() == r.is_absolute());
         return std::lexicographical_compare_three_way(
@@ -180,51 +203,65 @@ public:
             r.begin(), r.end());
     }
 
-    bool has_prefix(span<const IdentifierT> sp) const
+    inline bool has_prefix(span<const IdentifierT> sp) const noexcept
     {
         if (base_t::size() < sp.size()) return false;
         return std::ranges::equal(base_t::subspan(0, sp.size()), sp);
+    }
+
+    inline explicit operator qname<IdentifierT>() const { return qname<IdentifierT>{*this, is_absolute()}; }
+
+    inline friend size_t hash_value(qname_view const& v) noexcept
+    {
+        return hasher{}(static_cast<span<const IdentifierT> const&>(v), v.is_absolute());
     }
 
 private:
     bool absolute_;
 };
 
+
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, IdentifierT leaf)
+inline qname<IdentifierT> operator/ (qname<IdentifierT> const& base, IdentifierT leaf)
 {
     qname<IdentifierT> result{ base };
     result.append(leaf);
-    return std::move(result);
+    return result;
 }
 
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, qname_view<IdentifierT> leaf)
+inline qname<IdentifierT> operator/ (qname<IdentifierT> const& base, qname_view<IdentifierT> leaf)
 {
     if (leaf.is_absolute()) {
         return { leaf, true };
     }
     qname<IdentifierT> result{ base };
     result.append(leaf);
-    return std::move(result);
+    return result;
 }
 
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname<IdentifierT> const& base, qname<IdentifierT> const& leaf)
+inline qname<IdentifierT> operator/ (qname<IdentifierT> const& base, qname<IdentifierT> const& leaf)
 {
-    return base + (qname_view<IdentifierT>)leaf;
+    return base / (qname_view<IdentifierT>)leaf;
 }
 
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname_view<IdentifierT> base, IdentifierT leaf)
+inline qname<IdentifierT> operator/ (qname_view<IdentifierT> base, IdentifierT leaf)
 {
-    return qname<IdentifierT>{ base, base.is_absolute() } + leaf;
+    return qname<IdentifierT>{ base, base.is_absolute() } / leaf;
 }
 
 template <typename IdentifierT>
-inline qname<IdentifierT> operator+ (qname_view<IdentifierT> base, qname_view<IdentifierT> leaf)
+inline qname<IdentifierT> operator/ (qname_view<IdentifierT> base, qname_view<IdentifierT> leaf)
 {
-    return qname<IdentifierT>{ base, base.is_absolute() } + leaf;
+    return qname<IdentifierT>{ base, base.is_absolute() } / leaf;
+}
+
+template <typename IdentifierT>
+inline qname<IdentifierT> operator/ (qname_view<IdentifierT> base, qname<IdentifierT> const& leaf)
+{
+    return base / (qname_view<IdentifierT>)leaf;
 }
 
 }

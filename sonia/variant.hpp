@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <type_traits>
+
 #include <boost/variant.hpp>
 #include <boost/variant/multivisitors.hpp>
 
@@ -18,6 +20,25 @@ using boost::apply_visitor;
 using boost::get;
 using boost::make_recursive_variant;
 using boost::recursive_wrapper;
+
+template <typename RT, typename FT>
+class functional_visitor : public static_visitor<RT>
+{
+    FT fnl_;
+
+public:
+    template <typename F>
+    explicit functional_visitor(F && arg) : fnl_{ std::forward<F>(arg) } {}
+
+    template <typename T>
+    inline RT operator()(T&& arg) const { return fnl_(std::forward<T>(arg)); }
+};
+
+template <typename RT, typename FAT>
+functional_visitor<RT, std::remove_cvref_t<FAT>> make_functional_visitor(FAT&& arg)
+{
+    return functional_visitor<RT, std::remove_cvref_t<FAT>>{ std::forward<FAT>(arg) };
+}
 
 }
 

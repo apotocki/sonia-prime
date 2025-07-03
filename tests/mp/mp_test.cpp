@@ -5,13 +5,22 @@
 #define TEST_FOLDER "mp_test"
 
 #include "sonia/config.hpp"
-#undef BOOST_ENABLE_ASSERT_HANDLER
+//#undef BOOST_ENABLE_ASSERT_HANDLER
+#define SONIA_ARITHMETIC_USE_INVINT_DIV
 #include "applied/sonia_test.hpp"
+
+#include <fstream>
+#include <iostream>
+
+#include "sonia/filesystem.hpp"
 
 #include "sonia/utility/scope_exit.hpp"
 #include "sonia/mp/integer_view.hpp"
 #include "sonia/mp/integer_view_arithmetic.hpp"
 #include "sonia/mp/limbs_from_string.hpp"
+
+#pragma warning(disable : 4244 4146)
+#include "gmp.h"
 
 template <typename LimbT>
 void limbs_encode_decode_test(int base, int digit_count)
@@ -27,7 +36,7 @@ void limbs_encode_decode_test(int base, int digit_count)
         std::string_view numstrv = numstr;
         auto optres = sonia::mp::to_limbs<LimbT>(numstrv, base, std::allocator<LimbT>{});
         auto [limbs, size, allocsize, sign] = *optres;
-        defer{ std::allocator<LimbT>{}.deallocate(limbs, allocsize); };
+        defer{ if (limbs) std::allocator<LimbT>{}.deallocate(limbs, allocsize); };
         //*
         bool reversed = false;
         std::span sp0{ limbs, size };
@@ -45,9 +54,46 @@ void limbs_encode_decode_test(int base, int digit_count)
     }
 }
 
+template <std::unsigned_integral T>
+void test_sqrt()
+{
+    namespace sa = sonia::arithmetic;
+    for (T v = 0; v < (std::numeric_limits<T>::max)(); ++v)
+    {
+        //std::cout << "sqrt(" << (int)v << ") = " << (int)sa::sqrt<T>(v) << "\n";
+        T v1 = v + 1;
+        T s = sa::sqrt<T>(v1);
+        if ( !(v & 0xffffff)) {
+            std::cout << "sqrt(" << (unsigned int)v1 << ") = " << (int)sa::sqrt<T>(v1) << "\n";
+        }
+        bool flag = s * s <= v1 && ((uint64_t)(s + 1)) * ((uint64_t)(s + 1)) > v1;
+        BOOST_CHECK(flag);
+        if (!flag) {
+            std::cout << "wrong sqrt(" << std::hex << (unsigned int)v1 << ") = " << (unsigned int)sa::sqrt<T>(v1) << "\n";
+            break;
+        }
+    }
+}
+
 void mp_enc_dec_test()
 {
-    /*
+    namespace ct = sonia::mpct;
+
+    std::cout << "uint8_t...\n";
+    test_sqrt<uint8_t>();
+    std::cout << "uint16_t...\n";
+    test_sqrt<uint16_t>();
+    std::cout << "uint32_t...\n";
+    test_sqrt<uint32_t>();
+
+    constexpr uint64_t m = 0x12341234ull * 0x12341234ull;
+    constexpr uint64_t r = sonia::arithmetic::sqrt<uint64_t>(m);
+    static_assert(r == 0x12341234ull);
+
+#if 0
+    limbs_encode_decode_test<uint64_t>(10, 1024);
+
+    //*
     limbs_encode_decode_test<uint64_t>(8, 1024);
     limbs_encode_decode_test<uint32_t>(8, 1024);
     limbs_encode_decode_test<uint16_t>(8, 1024);
@@ -64,7 +110,7 @@ void mp_enc_dec_test()
     limbs_encode_decode_test<uint8_t>(32, 1024);
     //*/
 
-    /*
+    //*
     limbs_encode_decode_test<uint8_t>(10, 1024);
     limbs_encode_decode_test<uint16_t>(10, 1024);
     limbs_encode_decode_test<uint32_t>(10, 1024);
@@ -78,7 +124,9 @@ void mp_enc_dec_test()
         limbs_encode_decode_test<uint16_t>(base, dcount);
         limbs_encode_decode_test<uint8_t>(base, dcount);
     }
+
     //limbs_encode_decode_test<uint64_t>(10, 1024);
+#endif
 }
 
 void mp_ct_test()
@@ -348,12 +396,206 @@ void mp_integer_test2()
     BOOST_CHECK_EQUAL((int)val1, 1);
 }
 
+std::string tohex(double a, double r, double g, double b)
+{
+    uint32_t val = ((((uint32_t)(a * 255)) * 256 + ((uint32_t)(r * 255))) * 256 + ((uint32_t)(g * 255))) * 256 + ((uint32_t)(b * 255));
+    std::ostringstream ss;
+    ss << std::hex << std::uppercase << "#" << val;
+    return ss.str();
+}
+
+using namespace sonia;
+
+void div_gmp_test()
+{
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path suitedir{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "mp" };
+    fs::path filepath = suitedir / "test_div_data.txt";
+
+    std::ifstream file;
+    file.exceptions(std::ifstream::badbit);
+    file.open(filepath.string().c_str());
+
+    using data_tpl_t = std::tuple<mpz_t, mpz_t, mpz_t, mpz_t>;
+    std::vector<data_tpl_t> data_set;
+
+    for (;;)
+    {
+        std::string s_str, d_str, q_str, r_str, emt_str;
+        if (!std::getline(file, s_str) || s_str.empty()) break;
+        std::getline(file, d_str);
+        std::getline(file, q_str);
+        std::getline(file, r_str);
+        std::getline(file, emt_str);
+        BOOST_REQUIRE(emt_str.empty());
+
+        data_set.emplace_back();
+        data_tpl_t& tpl = data_set.back();
+        
+        mpz_init_set_str(get<0>(tpl), s_str.c_str(), 10);
+        mpz_init_set_str(get<1>(tpl), d_str.c_str(), 10);
+        mpz_init_set_str(get<2>(tpl), q_str.c_str(), 10);
+        mpz_init_set_str(get<3>(tpl), r_str.c_str(), 10);
+    }
+    std::cout << "loaded #" << data_set.size() << "\n";
+    for (int test_cnt = 0; test_cnt < 32; ++test_cnt)
+    {
+        //std::vector<data_tpl_t> data_set_copy = data_set;
+        auto start = std::chrono::steady_clock::now();
+        for (auto& tpl : data_set)
+        {
+            mpz_t& s = get<0>(tpl);
+            mpz_t& d = get<1>(tpl);
+            mpz_t& q = get<2>(tpl);
+            mpz_t& r = get<3>(tpl);
+
+            //BOOST_CHECK_EQUAL(q * d + r - s, 0);
+            mpz_t q_calc, r_calc;
+            mpz_init(q_calc);
+            mpz_init(r_calc);
+            mpz_fdiv_qr(q_calc, r_calc, s, d);
+            
+            //size_t sz = q_calc->_mp_size;
+            //mp_limb_t* pl = q_calc->_mp_d;
+            //mp_limb_t* pr = q->_mp_d;
+            //for (size_t i = 0; i < sz; ++i) {
+            //    if (pl[i] != pr[i]) {
+            //        int v = mpz_cmp(q_calc, q);
+            //    }
+            //}
+
+            //int v = mpz_cmp(q_calc, q);
+            //int v1 = mpz_cmp(q, q_calc);
+            BOOST_CHECK(mpz_cmp(q_calc, q) == 0);
+            BOOST_CHECK(mpz_cmp(r_calc, r) == 0);
+            mpz_clear(q_calc);
+            mpz_clear(r_calc);
+        }
+        auto finish = std::chrono::steady_clock::now();
+        std::cout << "done in: " << (finish - start) << "\n";
+    }
+    for (auto& tpl : data_set)
+    {
+        mpz_clear(get<0>(tpl));
+        mpz_clear(get<1>(tpl));
+        mpz_clear(get<2>(tpl));
+        mpz_clear(get<3>(tpl));
+    }
+}
+
+void div_test()
+{
+    char const* path = std::getenv("TESTS_HOME");
+    fs::path suitedir{ (path ? fs::path(path) / "testdata" : fs::path("testdata")) / "mp" };
+    fs::path filepath = suitedir / "test_div_data.txt";
+
+    std::ifstream file;
+    file.exceptions(std::ifstream::badbit);
+    file.open(filepath.string().c_str());
+    
+    using data_tpl_t = std::tuple<mp::integer, mp::integer, mp::integer, mp::integer>;
+    std::vector<data_tpl_t> data_set;
+    for (;;)
+    {
+        std::string s_str, d_str, q_str, r_str, emt_str;
+        if (!std::getline(file, s_str) || s_str.empty()) break;
+        std::getline(file, d_str);
+        std::getline(file, q_str);
+        std::getline(file, r_str);
+        std::getline(file, emt_str);
+        BOOST_REQUIRE(emt_str.empty());
+
+        mp::integer s{ s_str, 10 };
+        mp::integer d{ d_str, 10 };
+        mp::integer q{ q_str, 10 };
+        mp::integer r{ r_str, 10 };
+        
+#if 0
+    //    if (data_set.size() == 0xb4) {
+            auto c1 = q.limbs();
+            auto r1 = r.limbs();
+            
+            auto q_calc = s.div_qr(d);
+            auto c0 = q_calc.limbs();
+            auto r0 = s.limbs();
+            
+            //for(size_t i = 0; i < c0.second.size(); ++i) {
+            //    if (c0.second[i] != c1.second[i]) {
+            //        size_t p = i;
+            //    }
+            //}
+            BOOST_CHECK_EQUAL(q_calc, q);
+            BOOST_CHECK_EQUAL(s, r);
+    //    }
+#endif
+        data_set.emplace_back(std::move(s), std::move(d), std::move(q), std::move(r));
+        //std::cout << "tested #" << data_set.size() << "\n";
+        //data_set.emplace_back(s, d, q, r);
+    }
+    std::cout << "loaded #" << data_set.size() << "\n";
+    
+    for (int test_cnt = 0; test_cnt < 32; ++test_cnt)
+    {
+        std::vector<data_tpl_t> data_set_copy = data_set;
+        auto start = std::chrono::steady_clock::now();
+        for (auto & tpl : data_set_copy)
+        {
+            mp::integer& s = get<0>(tpl);
+            mp::integer& d = get<1>(tpl);
+            mp::integer& q = get<2>(tpl);
+            mp::integer& r = get<3>(tpl);
+        
+            //BOOST_CHECK_EQUAL(q * d + r - s, 0);
+            auto q_calc = s.div_qr(d);
+
+            BOOST_CHECK_EQUAL(q_calc, q);
+            BOOST_CHECK_EQUAL(s, r);
+        }
+        auto finish = std::chrono::steady_clock::now();
+        std::cout << "done in: " << (finish - start) << "\n";
+    }
+        // q * d = s - r
+
+        //if (cnt >= 180) {
+            //auto s_calc = q * d + r - s;
+            //auto c1 = q.limbs();
+            //auto d1 = d.limbs();
+            //BOOST_CHECK_EQUAL(q * d + r - s, 0);
+            //auto q_calc = s.div_qr(d);
+            //auto c0 = q_calc.limbs();
+            //auto r0 = s.limbs();
+            //auto r1 = r.limbs();
+
+            //BOOST_CHECK_EQUAL(q_calc, q);
+            //BOOST_CHECK_EQUAL(s, r);
+        //}
+        //auto s_calc = q * d + r;
+        //BOOST_CHECK_EQUAL(s_calc, mp::integer{ 0 });
+        //BOOST_CHECK_EQUAL(s_calc, s);
+
+        //std::istringstream iss(line);
+        //int a, b;
+        //if (!(iss >> a >> b)) { break; } // error
+
+        // process pair (a,b)
+
+        //std::cout << "done #" << cnt++ << "\n";
+
+    //auto finish = std::chrono::steady_clock::now();
+    //std::cout << "done in: " << (finish - start) << "\n";
+    //std::copy(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>(), std::back_inserter(suite_text));
+}
+
 void mp_test_registrar()
 {
+    //std::cout << tohex(1.0, 0.957, 0.961, 0.961) << "\n";
+    //std::cout << tohex(1.0, 0.247, 0.247, 0.275) << "\n";
+    //register_test(BOOST_TEST_CASE(&div_gmp_test));
+    register_test(BOOST_TEST_CASE(&div_test));
     //register_test(BOOST_TEST_CASE(&mp_enc_dec_test));
-    register_test(BOOST_TEST_CASE_SILENT(&mp_ct_test));
-    register_test(BOOST_TEST_CASE(&mp_integer_test));
-    register_test(BOOST_TEST_CASE(&mp_integer_test2));
+    //register_test(BOOST_TEST_CASE_SILENT(&mp_ct_test));
+    //register_test(BOOST_TEST_CASE(&mp_integer_test));
+    //register_test(BOOST_TEST_CASE(&mp_integer_test2));
 }
 
 #ifdef AUTO_TEST_REGISTRATION

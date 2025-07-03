@@ -23,7 +23,13 @@ template <class T> constexpr bool is_optional_v = is_optional<T>::value;
 
 namespace std {
 
-template <typename T> T const * get_pointer(optional<T> const& opt) { return opt ? std::addressof(*opt) : nullptr; }
-template <typename T> T * get_pointer(optional<T> & opt) { return opt ? std::addressof(*opt) : nullptr; }
+template <typename T> inline T const * get_pointer(optional<T> const& opt) noexcept { return opt ? std::addressof(*opt) : nullptr; }
+template <typename T> inline T * get_pointer(optional<T> & opt) noexcept { return opt ? std::addressof(*opt) : nullptr; }
+
+template <typename T> inline size_t hash_value(optional<T> const& opt) noexcept
+{
+    if (opt) return hash_value(*opt);
+    return 0;
+}
 
 }

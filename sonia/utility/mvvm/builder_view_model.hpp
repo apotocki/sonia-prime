@@ -26,7 +26,7 @@ public:
         virtual shared_ptr<invocation::invocable> create(string_view type) = 0;
     };
 
-    explicit builder_view_model(factory& f) : factory_{ f } {}
+    inline explicit builder_view_model(factory& f) noexcept : factory_{ f } {}
 
     shared_ptr<invocation::invocable> create(string_view type);
 

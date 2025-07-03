@@ -4,47 +4,84 @@
 
 #pragma once
 
-#include <vector>
-#include <boost/unordered_set.hpp>
-
-#include "sonia/shared_ptr.hpp"
-
-#include "sonia/bang/semantic.hpp"
-
-#include <ranges>
+#include "sonia/bang/semantic_fwd.hpp"
 
 namespace sonia::lang::bang {
 
+class extern_variable_entity : public entity
+{
+public:
+    qname_identifier name;
+    entity_identifier type;
+
+    inline extern_variable_entity(entity_identifier typeval, qname_identifier nameval) noexcept
+        : entity{ }
+        , name{ std::move(nameval) }
+        , type{ std::move(typeval) }
+    {}
+
+    entity_identifier get_type() const noexcept override { return type; }
+
+    inline size_t hash() const noexcept override { return hash_value(name); }
+    inline bool equal(entity const& rhs) const noexcept override
+    {
+        if (extern_variable_entity const* verhs = dynamic_cast<extern_variable_entity const*>(&rhs); verhs) {
+            return verhs->name == name;
+        }
+        return false;
+    }
+
+    void visit(entity_visitor const& v) const override { v(*this); }
+
+    std::ostream& print_to(std::ostream&, unit const&) const override;
+};
+
+/*
 class variable_entity : public entity
 {
 public:
     enum class kind
     {
-        EXTERN, STATIC, LOCAL, SCOPE_LOCAL
+        STATIC, LOCAL, SCOPE_LOCAL
     };
 
-    explicit variable_entity(qname_identifier name, bang_type t, kind k)
-        : entity{ std::move(name) }
-        , type_{ std::move(t) }
+    inline variable_entity(entity_identifier type, qname_identifier nameval, kind k) noexcept
+        : entity{ }
+        , name{ std::move(nameval) }
         , kind_{ k }
-    {}
+    {
+        set_type(type);
+    }
 
-    inline bang_type const& type() const noexcept { return type_; }
+    qname_identifier name;
+
     inline kind const& varkind() const noexcept { return kind_; }
-    inline bool is_weak() const { return is_weak_; }
+    inline bool is_weak() const noexcept { return is_weak_; }
 
     inline intptr_t index() const noexcept { return index_; }
-    void set_index(intptr_t val) { index_ = val; }
+    inline void set_index(intptr_t val) noexcept { index_ = val; }
 
-    inline void set_weak(bool val = true) { is_weak_ = val; }
+    inline void set_weak(bool val = true) noexcept { is_weak_ = val; }
+
+    inline size_t hash() const noexcept override { return hash_value(name); }
+    inline bool equal(entity const& rhs) const noexcept
+    { 
+        if (variable_entity const* verhs = dynamic_cast<variable_entity const*>(&rhs); verhs) {
+            return verhs->name == name;
+        }
+        return false;
+    }
+
+    void visit(entity_visitor const& v) const override { v(*this); }
+
+    std::ostream& print_to(std::ostream& os, unit const& u) const override;
 
 private:
-    bang_type type_;
     kind kind_;
     intptr_t index_;
     bool is_weak_ = false;
 };
-
+*/
 /*
 class local_variable_entity : public variable_entity
 {

@@ -1,0 +1,61 @@
+fn foo($args ...: _){ }
+fn foo($args: $T){ }
+fn foo($args: $T ...){ } // $T is a pack type
+
+struct my_tuple_type($T: typename _ ...) => ($T ...);
+
+fn foo_tuple($tpl: `my_tuple_type(int, float, $Ts ...)`, $args: $Ts ...) -> `my_tuple_type($Ts ...)` {
+    return tail(tail($tpl)) - new(my_tuple($Ts ...), $args ...);
+}
+
+fn decay(type: typename) -> (qname, tuple) { /* unspecified */ }
+tuple ~ [(identifier, entity)], [entity]
+
+e.g.:
+decay(22) -> (S, [], [21])
+
+fn minus_one(const {S($value)}) { return $value; }
+
+foo_tuple(my_tuple(22i, 0.1f, 'a', 'b', 'c'), 'b', 'c', 'd')
+
+fn my_tuple($arg0: $T0 @integer, $arg1: $T1 @integer) -> my_tuple_type($T0, $T1) {
+    return construct(my_tuple_type, )
+}
+
+fn construct(my_tuple_type($typeargs: ...), $args: $typeargs ...) -> my_tuple_type($typeargs: ...) { /* unspecified */ }
+
+fn my_tuple($arg0: $T0 @integer, )
+fn foo($args: my_tuple{$T1, $T2} ...)-> { }
+my_tuple_type(int, float)
+my_tuple(10, 0.1)
+/*
+/*
+prototype Object -> ( id: string )
+prototype View -> ( disabled: bool ) & Object
+
+extern struct MyView -> View;
+
+extern struct View extends ... -> (
+    disabled: bool
+    /*, enabled: bool, hidden: bool, empty: bool, backgroundColor: Color,
+    padding: float[4] | float
+    */
+) & Object;
+
+(field0: string) & (field1: bool) === (field0: string, field1: bool)
+(field0: string) & (field0: bool) === (field0: (string, bool))
+*/
+
+//let my_tuple = (true);
+let my_tuple = (disable: true, name: "my name");
+//let my_tuple : (disable: bool, name: string) = (disable: true, name: "my name");
+assert(my_tuple.disabled);
+assert(my_tuple.name == "my name");
+/*
+let view = View();
+view.disabled = true;
+assert(view.disabled);
+view.disabled = false;
+assert(!view.disabled);
+*/
+*/

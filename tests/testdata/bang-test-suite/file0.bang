@@ -1,0 +1,8 @@
+// base printing
+__print("Hello from Bang!(0)", 1);
+__print("Hello from Bang", runtime_cast("!(1)"), runtime_cast(2));
+print("Hello from Bang!(2)");
+print(runtime_cast("Hello"), runtime_cast(" from "), "Bang!(3)");
+print("Hello", " from ", "Bang!(4)");
+print(); // do nothing
+assert($$ == 0) // no arguments

@@ -16,8 +16,31 @@
 #include <cfloat>
 //#include <boost/container/small_vector.hpp>
 
+#include <boost/url.hpp>
+
+void url_test()
+{
+    using boost::url;
+    boost::system::result<url> ru = boost::urls::parse_uri_reference( "https://www.example.com/path/to/file.txt" );
+    if ( ru )
+    {
+        url u = *ru;
+        u.set_params( { {"key", "value"}, {"key2", "value2"} } );
+        auto params = u.params();
+        assert(params.size() == 2);
+        assert(u.encoded_path() == "/path/to/file.txt");
+    }
+    else
+    {
+        boost::system::error_code e = ru.error();
+        std::cout << e.message() << std::endl;
+    }
+}
+
 void basic_decimal_test0()
 {
+    url_test();
+
     using dec_t = sonia::mp::basic_decimal<uint64_t, 1, 8>;
     using mdec_t = sonia::mp::basic_decimal<uint8_t, 1, 2>;
 

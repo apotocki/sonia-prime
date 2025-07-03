@@ -82,6 +82,6 @@ add_library(${BUNDLE_NAME} STATIC ${BUNDLE_SOURCES})
 sonia_link_library(${BUNDLE_NAME} sonia-prime)
 sonia_link_library(${BUNDLE_NAME} sonia-prime-lib)
 
-target_link_libraries(${BUNDLE_NAME} ${BOOST_TEST_LIB})
+target_link_libraries(${BUNDLE_NAME} ${BOOST_URL} ${BOOST_TEST_LIB})
 
 set_target_properties(${BUNDLE_NAME} PROPERTIES FOLDER "libs")

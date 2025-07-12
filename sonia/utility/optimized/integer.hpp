@@ -14,7 +14,7 @@
 #include "sonia/type_traits.hpp"
 #include "sonia/utility/functional/is_negative.hpp"
 #include "sonia/utility/functional/abs.hpp"
-#include "sonia/utility/number/integer.hpp"
+#include "sonia/mp/integer_view.hpp"
 
 #include "holder.hpp"
 

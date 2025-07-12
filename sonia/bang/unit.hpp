@@ -310,6 +310,7 @@ public:
     integer_literal_entity  const& make_integer_entity(mp::integer_view value, entity_identifier type = {});
     decimal_literal_entity  const& make_decimal_entity(mp::decimal_view value, entity_identifier type = {});
     generic_literal_entity  const& make_string_entity(string_view value, entity_identifier type = {});
+    generic_literal_entity  const& make_generic_entity(smart_blob value, entity_identifier type);
     basic_signatured_entity const& make_basic_signatured_entity(entity_signature&&);
     basic_signatured_entity const& make_vector_type_entity(entity_identifier element_type);
     basic_signatured_entity const& make_vector_entity(entity_identifier element_type, span<entity_identifier> const& values);

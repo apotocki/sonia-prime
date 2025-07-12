@@ -46,21 +46,21 @@ public:
     using functional_match_descriptor::functional_match_descriptor;
 
     template <typename ArgT>
-    const_literal_implicit_cast_match_descriptor(prepared_call const& call, ArgT && arg)
+    const_literal_implicit_cast_match_descriptor(prepared_call const& call, ArgT && arg, bool is_constexpr_result)
         : functional_match_descriptor{ call }
         , arg{ std::forward<ArgT>(arg) }
+        , is_constexpr_result{ is_constexpr_result }
     {}
 
     variant<std::nullptr_t, integer_literal_entity, decimal_literal_entity, generic_literal_entity> arg;
+    bool is_constexpr_result;
 };
 
 std::expected<functional_match_descriptor_ptr, error_storage>
 const_literal_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
-    if (can_be_only_constexpr(exp.modifier)) {
-        return std::unexpected(make_error<basic_general_error>(call.location, "expected a runtime literal result"sv));
-    }
-    
+    // Now supports both runtime and constexpr results - no rejection based on modifier
+
     unit& u = ctx.u();
 
     if (exp.type && exp.type != u.get(builtin_eid::any) &&
@@ -114,7 +114,7 @@ const_literal_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepare
         return std::unexpected(make_error<value_mismatch_error>(get_start_location(*get<0>(self_expr)), src_arg_er.value(), "a literal"sv));
     }
     
-    auto pmd = sonia::make_shared<const_literal_implicit_cast_match_descriptor>(call, std::move(vis.value));
+    auto pmd = sonia::make_shared<const_literal_implicit_cast_match_descriptor>(call, std::move(vis.value), can_be_constexpr(exp.modifier));
     pmd->signature.result.emplace(exp.type ? exp.type : src_arg_entity.get_type(), false);
     pmd->emplace_back(0, src_arg_er);
     pmd->void_spans = std::move(call_session.void_spans);
@@ -136,96 +136,177 @@ const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::e
         if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
             auto const& source_val = v.value();
             
-            // Handle conversions to different numeric types using switch-case
+            // Handle conversions to different numeric types
             switch (static_cast<builtin_eid>(target_type.value)) {
             case builtin_eid::any:
             case builtin_eid::integer: {
-                smart_blob result{ bigint_blob_result(source_val) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    // Create constexpr integer literal entity
+                    auto const& result_entity = u.make_integer_entity(source_val, target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    // Create runtime blob result
+                    smart_blob result{ bigint_blob_result(source_val) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::i8: {
-                if (!source_val.is_fit<int8_t>()) {
+                if (!source_val.template is_fit<int8_t>()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "integer value cannot be converted to i8 without loss of precision"sv));
                 }
-                smart_blob result{ i8_blob_result(static_cast<int8_t>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    // Create constexpr generic literal entity with i8 value
+                    smart_blob blob{ i8_blob_result(static_cast<int8_t>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ i8_blob_result(static_cast<int8_t>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::u8: {
-                if (!source_val.is_fit<uint8_t>() || source_val.sgn() < 0) {
+                if (!source_val.template is_fit<uint8_t>() || source_val.sgn() < 0) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "integer value cannot be converted to u8 without loss of precision"sv));
                 }
-                smart_blob result{ ui8_blob_result(static_cast<uint8_t>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ ui8_blob_result(static_cast<uint8_t>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ ui8_blob_result(static_cast<uint8_t>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::i16: {
-                if (!source_val.is_fit<int16_t>()) {
+                if (!source_val.template is_fit<int16_t>()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "integer value cannot be converted to i16 without loss of precision"sv));
                 }
-                smart_blob result{ i16_blob_result(static_cast<int16_t>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ i16_blob_result(static_cast<int16_t>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ i16_blob_result(static_cast<int16_t>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::u16: {
-                if (!source_val.is_fit<uint16_t>() || source_val.sgn() < 0) {
+                if (!source_val.template is_fit<uint16_t>() || source_val.sgn() < 0) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "integer value cannot be converted to u16 without loss of precision"sv));
                 }
-                smart_blob result{ ui16_blob_result(static_cast<uint16_t>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ ui16_blob_result(static_cast<uint16_t>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ ui16_blob_result(static_cast<uint16_t>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::i32: {
-                if (!source_val.is_fit<int32_t>()) {
+                if (!source_val.template is_fit<int32_t>()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "integer value cannot be converted to i32 without loss of precision"sv));
                 }
-                smart_blob result{ i32_blob_result(static_cast<int32_t>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ i32_blob_result(static_cast<int32_t>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ i32_blob_result(static_cast<int32_t>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::u32: {
-                if (!source_val.is_fit<uint32_t>() || source_val.sgn() < 0) {
+                if (!source_val.template is_fit<uint32_t>() || source_val.sgn() < 0) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "integer value cannot be converted to u32 without loss of precision"sv));
                 }
-                smart_blob result{ ui32_blob_result(static_cast<uint32_t>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ ui32_blob_result(static_cast<uint32_t>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ ui32_blob_result(static_cast<uint32_t>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::i64: {
-                if (!source_val.is_fit<int64_t>()) {
+                if (!source_val.template is_fit<int64_t>()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "integer value cannot be converted to i64 without loss of precision"sv));
                 }
-                smart_blob result{ i64_blob_result(static_cast<int64_t>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ i64_blob_result(static_cast<int64_t>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ i64_blob_result(static_cast<int64_t>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::u64: {
-                if (!source_val.is_fit<uint64_t>() || source_val.sgn() < 0) {
+                if (!source_val.template is_fit<uint64_t>() || source_val.sgn() < 0) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "integer value cannot be converted to u64 without loss of precision"sv));
                 }
-                smart_blob result{ ui64_blob_result(static_cast<uint64_t>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ ui64_blob_result(static_cast<uint64_t>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ ui64_blob_result(static_cast<uint64_t>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::f16: {
-                smart_blob result{ f16_blob_result(sonia::float16{static_cast<float>(source_val)}) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ f16_blob_result(sonia::float16{static_cast<float>(source_val)}) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ f16_blob_result(sonia::float16{static_cast<float>(source_val)}) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::f32: {
-                smart_blob result{ f32_blob_result(static_cast<float>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ f32_blob_result(static_cast<float>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ f32_blob_result(static_cast<float>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::f64: {
-                smart_blob result{ f64_blob_result(static_cast<double_t>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ f64_blob_result(static_cast<double>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ f64_blob_result(static_cast<double>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::decimal: {
-                smart_blob result{ decimal_blob_result(mp::decimal_view{source_val, 0}) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    // Create constexpr decimal literal entity
+                    mp::decimal_view decimal_val{source_val, 0};
+                    auto const& result_entity = u.make_decimal_entity(decimal_val, target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ decimal_blob_result(mp::decimal_view{source_val, 0}) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             default:
@@ -234,12 +315,19 @@ const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::e
         } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
             auto const& source_val = v.value();
             
-            // Handle conversions from decimal to various types using switch-case
+            // Handle conversions from decimal to various types
             switch (static_cast<builtin_eid>(target_type.value)) {
             case builtin_eid::any:
             case builtin_eid::decimal: {
-                smart_blob result{ decimal_blob_result(source_val) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                //mp::decimal_view decimal_result{ source_val, 0 };
+                if (nmd.is_constexpr_result) {
+                    // Create constexpr decimal literal entity
+                    auto const& result_entity = u.make_decimal_entity(source_val, target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ decimal_blob_result(source_val) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::i8: {
@@ -248,11 +336,17 @@ const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::e
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value has fractional part and cannot be converted to i8"sv));
                 }
                 auto const& integral_val = source_val.significand();
-                if (!integral_val.is_fit<int8_t>()) {
+                if (!integral_val.template is_fit<int8_t>()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value cannot be converted to i8 without loss of precision"sv));
                 }
-                smart_blob result{ i8_blob_result(static_cast<int8_t>(integral_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ i8_blob_result(static_cast<int8_t>(integral_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ i8_blob_result(static_cast<int8_t>(integral_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::u8: {
@@ -260,11 +354,17 @@ const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::e
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value has fractional part and cannot be converted to u8"sv));
                 }
                 auto const& integral_val = source_val.significand();
-                if (!integral_val.is_fit<uint8_t>() || source_val.is_negative()) {
+                if (!integral_val.template is_fit<uint8_t>() || source_val.is_negative()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value cannot be converted to u8 without loss of precision"sv));
                 }
-                smart_blob result{ ui8_blob_result(static_cast<uint8_t>(integral_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ ui8_blob_result(static_cast<uint8_t>(integral_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ ui8_blob_result(static_cast<uint8_t>(integral_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::i16: {
@@ -272,11 +372,17 @@ const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::e
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value has fractional part and cannot be converted to i16"sv));
                 }
                 auto const& integral_val = source_val.significand();
-                if (!integral_val.is_fit<int16_t>()) {
+                if (!integral_val.template is_fit<int16_t>()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value cannot be converted to i16 without loss of precision"sv));
                 }
-                smart_blob result{ i16_blob_result(static_cast<int16_t>(integral_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ i16_blob_result(static_cast<int16_t>(integral_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ i16_blob_result(static_cast<int16_t>(integral_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::u16: {
@@ -284,11 +390,17 @@ const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::e
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value has fractional part and cannot be converted to u16"sv));
                 }
                 auto const& integral_val = source_val.significand();
-                if (!integral_val.is_fit<uint16_t>() || source_val.is_negative()) {
+                if (!integral_val.template is_fit<uint16_t>() || source_val.is_negative()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value cannot be converted to u16 without loss of precision"sv));
                 }
-                smart_blob result{ ui16_blob_result(static_cast<uint16_t>(integral_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ ui16_blob_result(static_cast<uint16_t>(integral_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ ui16_blob_result(static_cast<uint16_t>(integral_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::i32: {
@@ -296,11 +408,17 @@ const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::e
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value has fractional part and cannot be converted to i32"sv));
                 }
                 auto const& integral_val = source_val.significand();
-                if (!integral_val.is_fit<int32_t>()) {
+                if (!integral_val.template is_fit<int32_t>()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value cannot be converted to i32 without loss of precision"sv));
                 }
-                smart_blob result{ i32_blob_result(static_cast<int32_t>(integral_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ i32_blob_result(static_cast<int32_t>(integral_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ i32_blob_result(static_cast<int32_t>(integral_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::u32: {
@@ -308,11 +426,17 @@ const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::e
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value has fractional part and cannot be converted to u32"sv));
                 }
                 auto const& integral_val = source_val.significand();
-                if (!integral_val.is_fit<uint32_t>() || source_val.is_negative()) {
+                if (!integral_val.template is_fit<uint32_t>() || source_val.is_negative()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value cannot be converted to u32 without loss of precision"sv));
                 }
-                smart_blob result{ ui32_blob_result(static_cast<uint32_t>(integral_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ ui32_blob_result(static_cast<uint32_t>(integral_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ ui32_blob_result(static_cast<uint32_t>(integral_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::i64: {
@@ -320,11 +444,17 @@ const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::e
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value has fractional part and cannot be converted to i64"sv));
                 }
                 auto const& integral_val = source_val.significand();
-                if (!integral_val.is_fit<int64_t>()) {
+                if (!integral_val.template is_fit<int64_t>()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value cannot be converted to i64 without loss of precision"sv));
                 }
-                smart_blob result{ i64_blob_result(static_cast<int64_t>(integral_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ i64_blob_result(static_cast<int64_t>(integral_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ i64_blob_result(static_cast<int64_t>(integral_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::u64: {
@@ -332,38 +462,66 @@ const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::e
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value has fractional part and cannot be converted to u64"sv));
                 }
                 auto const& integral_val = source_val.significand();
-                if (!integral_val.is_fit<uint64_t>() || source_val.is_negative()) {
+                if (!integral_val.template is_fit<uint64_t>() || source_val.is_negative()) {
                     return std::unexpected(make_error<basic_general_error>(md.call_location, "decimal value cannot be converted to u64 without loss of precision"sv));
                 }
-                smart_blob result{ ui64_blob_result(static_cast<uint64_t>(integral_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ ui64_blob_result(static_cast<uint64_t>(integral_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ ui64_blob_result(static_cast<uint64_t>(integral_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::f16: {
-                smart_blob result{ f16_blob_result(sonia::float16{static_cast<float>(source_val)}) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ f16_blob_result(sonia::float16{static_cast<float>(source_val)}) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ f16_blob_result(sonia::float16{static_cast<float>(source_val)}) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::f32: {
-                smart_blob result{ f32_blob_result(static_cast<float>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ f32_blob_result(static_cast<float>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ f32_blob_result(static_cast<float>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
             case builtin_eid::f64: {
-                smart_blob result{ f64_blob_result(static_cast<double>(source_val)) };
-                u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                if (nmd.is_constexpr_result) {
+                    smart_blob blob{ f64_blob_result(static_cast<double>(source_val)) };
+                    auto const& result_entity = u.make_generic_entity(std::move(blob), target_type);
+                    src.value_or_type = result_entity.id;
+                } else {
+                    smart_blob result{ f64_blob_result(static_cast<double>(source_val)) };
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ std::move(result) });
+                }
                 break;
             }
+
             default:
                 return std::unexpected(make_error<type_mismatch_error>(md.call_location, target_type, "a numeric type"sv));
             }
         } else if constexpr (std::is_same_v<generic_literal_entity, std::decay_t<decltype(v)>>) {
             switch (static_cast<builtin_eid>(v.get_type().value)) {
             case builtin_eid::boolean:
-                u.push_back_expression(el, src.expressions, semantic::push_value{ smart_blob(v.value()) });
-                break;
             case builtin_eid::string:
-                u.push_back_expression(el, src.expressions, semantic::push_value{ smart_blob(v.value()) });
+                if (nmd.is_constexpr_result) {
+                    // For boolean and string, just return the existing entity since no conversion is needed
+                    src.value_or_type = v.id;
+                } else {
+                    u.push_back_expression(el, src.expressions, semantic::push_value{ smart_blob(v.value()) });
+                }
                 break;
             default:
                 return std::unexpected(make_error<type_mismatch_error>(md.call_location, target_type, "a literal type"sv));
@@ -372,8 +530,10 @@ const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::e
             return std::unexpected(make_error<basic_general_error>(md.call_location, "const_literal_implicit_cast_pattern::apply, null is not expected"sv));
         }
         
-        src.is_const_result = false;
-        src.value_or_type = target_type;
+        src.is_const_result = nmd.is_constexpr_result;
+        if (!nmd.is_constexpr_result) {
+            src.value_or_type = target_type;
+        }
         return std::move(src);
     }), nmd.arg);
 }

@@ -4,7 +4,7 @@ using t0 => tuple(name0: bool, integer);
 using t1 => tuple(123, name1: f16, name0: "asd");
 using tt => t0 & t1;
 
-/*
+
 assert_equal(size(tt), 5);
 assert_equal(tt.0, tuple(.name0, bool));
 assert_equal(tt.1, integer);
@@ -20,7 +20,7 @@ assert_equal(typeof(t0val.0), t0.0);
 
 assert_equal(t0val.1, 42);
 assert_equal(typeof(t0val.1), t0.1);
-*/
+
 let f16val : f16 = runtime_cast(1.1);
 let t1val: t1 = (123, name1: f16val, name0: "asd");
 

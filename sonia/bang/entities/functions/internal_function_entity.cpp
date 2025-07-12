@@ -28,7 +28,7 @@ void internal_function_entity::push_argument(variable_identifier varid)
 {
     auto it = variables_.find(varid);
     if (it == variables_.end()) {
-        variables_.emplace_hint(it, std::pair{ varid, arg_count_});
+        variables_.emplace_hint(it, std::pair{ varid, (uint64_t)arg_count_});
         ++arg_count_;
     }
 }

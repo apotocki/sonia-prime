@@ -65,7 +65,7 @@ template <> struct uint_t<64>
     */
 };
 
-#if defined(__SIZEOF_INT128__) && !defined(__CUDACC__) && !defined(_MSC_VER) && !defined(__ANDROID__)
+#if defined(__SIZEOF_INT128__) && !defined(__CUDACC__) && !defined(_MSC_VER) && !defined(__ANDROID__) && !defined(__clang__)
 #  define PLATFORM_HAS_INT128
 template <> struct uint_t<128>
 {

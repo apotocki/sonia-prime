@@ -40,7 +40,7 @@ public:
 
     // Entities are considered equal if their IDs are equal (when IDs are defined).
     // A concrete entity should override this method to implement equality when IDs are not defined.
-    virtual bool equal(entity const& rhs) const noexcept = 0 { BOOST_ASSERT(id && rhs.id); return id == rhs.id; }
+    virtual bool equal(entity const& rhs) const noexcept { BOOST_ASSERT(id && rhs.id); return id == rhs.id; }
 
     friend inline bool operator==(entity const& l, entity const& r) noexcept { return l.equal(r); }
 

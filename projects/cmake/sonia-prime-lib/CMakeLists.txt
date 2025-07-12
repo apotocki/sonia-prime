@@ -45,7 +45,7 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/bang/entities/ellipsis/ellipsis_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/enum/enum_entity.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/enum/enum_implicit_cast_pattern.cpp
-    ${BUNDLE_HOME}/sonia/bang/entities/functions/create_identifier_pattern.cpp
+
     ${BUNDLE_HOME}/sonia/bang/entities/functions/expression_resolver.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/functions/function_entity.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/functions/internal_function_entity.cpp
@@ -53,13 +53,13 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/bang/entities/literals/const_literal_implicit_cast_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/literals/string_concat_pattern.cpp
 
-    ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_argument_pattern.cpp
-    ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_bit_and_pattern.cpp
-    ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_empty_pattern.cpp
-    ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_head_pattern.cpp
-    ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_pattern.cpp
-    ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_tail_pattern.cpp
-    ${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_typeof_pattern.cpp
+    #${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_argument_pattern.cpp
+    #${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_bit_and_pattern.cpp
+    #${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_empty_pattern.cpp
+    #${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_head_pattern.cpp
+    #${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_pattern.cpp
+    #${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_tail_pattern.cpp
+    #${BUNDLE_HOME}/sonia/bang/entities/metaobject/metaobject_typeof_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/struct/struct_entity.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/struct/struct_fn_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/struct/struct_get_pattern.cpp
@@ -80,24 +80,31 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_equal_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_project_get_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_project_size_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/entities/tuple/tuple_typename_get_pattern.cpp
 
     ${BUNDLE_HOME}/sonia/bang/entities/union/union_bit_or_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/entities/union/union_implicit_cast_pattern.cpp
 
     ${BUNDLE_HOME}/sonia/bang/functional/basic_fn_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/functional/internal_fn_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/external_fn_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/signature_matcher.cpp
+    ${BUNDLE_HOME}/sonia/bang/functional/pattern_matcher.cpp
+    ${BUNDLE_HOME}/sonia/bang/functional/parameter_matcher.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/value_match_visitor.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/value_type_match_visitor.cpp
 
     ${BUNDLE_HOME}/sonia/bang/functional/general/assert_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/functional/general/create_identifier_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/general/deref_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/general/equal_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/functional/general/error_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/general/is_const_pattern.cpp
-    ${BUNDLE_HOME}/sonia/bang/functional/general/mut_pattern.cpp
+    ${BUNDLE_HOME}/sonia/bang/functional/general/runtime_cast_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/general/to_string_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/general/typeof_pattern.cpp
     ${BUNDLE_HOME}/sonia/bang/functional/general/negate_pattern.cpp
+
 
     ${BUNDLE_HOME}/sonia/bang/semantic/semantic_expression_printer.cpp
 

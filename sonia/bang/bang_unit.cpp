@@ -160,7 +160,7 @@ std::pair<functional*, fn_pure_t> unit::parse_extern_fn(string_view signature)
 
     fn_pure_t fndecl = sonia::get<fn_pure_t>(decls->front());
 
-    // If the result is not defined, we cannot resolve it (e.g., from the function body) — assume it is void.
+    // If the result is not defined, we cannot resolve it (e.g., from the function body) ï¿½ assume it is void.
     if (!fndecl.result.which()) {
         fndecl.result = annotated_entity_identifier{ this->get(builtin_eid::void_), fndecl.location() };
     }
@@ -481,7 +481,7 @@ std::ostream& unit::print_to(std::ostream& os, pattern_t::signature_descriptor c
                 } else if constexpr (std::is_same_v<syntax_expression_t, std::decay_t<decltype(p)>>) {
                     print_to(os << '{', p) << "}: "sv;
                 } else { // nullptr_t
-                    BOOST_ASSERT(!p);
+                    BOOST_ASSERT(p == nullptr);
                 }
             }), f.name);
 
@@ -1160,6 +1160,14 @@ decimal_literal_entity const& unit::make_decimal_entity(mp::decimal_view value, 
 generic_literal_entity const& unit::make_string_entity(string_view value, entity_identifier type)
 {
     generic_literal_entity smpl{ smart_blob { string_blob_result(value) }, type ? type : get(builtin_eid::string) };
+    return static_cast<generic_literal_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
+        return make_shared<generic_literal_entity>(generic_literal_entity{ smart_blob{ smpl.value() }.allocate(), smpl.get_type() });
+    }));
+}
+
+generic_literal_entity const& unit::make_generic_entity(smart_blob value, entity_identifier type)
+{
+    generic_literal_entity smpl{ std::move(value), type };
     return static_cast<generic_literal_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
         return make_shared<generic_literal_entity>(generic_literal_entity{ smart_blob{ smpl.value() }.allocate(), smpl.get_type() });
     }));

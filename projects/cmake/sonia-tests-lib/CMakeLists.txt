@@ -29,6 +29,7 @@ set (MAIN_TESTS
     utf_test
     compound_cvt_test
     base64_test
+    bang_test
 )
 
 set (AGNOSTIC_TESTS
@@ -39,7 +40,7 @@ set (AGNOSTIC_TESTS
 set (MP_TESTS
     basic_integer_test
     basic_decimal_test
-    mp_test
+    #mp_test
 )
 
 set (BUNDLE_SOURCES

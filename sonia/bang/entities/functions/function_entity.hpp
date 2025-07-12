@@ -85,7 +85,7 @@ public:
         return sonia::hasher{}(extfnid_);
     }
 
-    inline bool equal(entity const& rhs) const noexcept
+    inline bool equal(entity const& rhs) const noexcept override
     {
         if (auto const* pent = dynamic_cast<external_function_entity const*>(&rhs)) {
             return pent->extfnid_ == extfnid_;

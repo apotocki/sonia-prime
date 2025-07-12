@@ -18,6 +18,7 @@
 #include <sstream>
 
 #include <boost/unordered_map.hpp>
+#include <boost/unordered_set.hpp>
 #include <boost/intrusive/list.hpp>
 
 #include "sonia/exceptions.hpp"

@@ -106,8 +106,8 @@ std::expected<syntax_expression_result_t, error_storage> tuple_project_get_patte
         // retrieve index from the property argument
         entity const& proper_entity = get_entity(u, proper.value());
         intptr_t index;
-        if (auto int_lit = dynamic_cast<const integer_literal_entity*>(&proper_entity)) {
-            index = static_cast<intptr_t>(int_lit->value());
+        if (auto int_lit = dynamic_cast<const generic_literal_entity*>(&proper_entity)) {
+            index = int_lit->value().as<intptr_t>();
         } else {
             return std::unexpected(make_error<type_mismatch_error>(tmd.call_location, proper.value(), "an integer"sv));
         }

@@ -529,11 +529,11 @@ base_expression_visitor::result_type base_expression_visitor::operator()(index_e
             auto szres = apply_visitor(ct_expression_visitor{ ctx, expressions, expected_result_t{ u().get(builtin_eid::integer), get_start_location(ie.index) } }, ie.index);
             if (!szres) return std::unexpected(szres.error());
             BOOST_ASSERT(!szres->expressions); // not impelemented const value expressions
-            integer_literal_entity const& index_ent = static_cast<integer_literal_entity const&>(get_entity(u(), szres->value));
-            if (index_ent.value() <= 0) {
+            intptr_t index_ent_value = static_cast<generic_literal_entity const&>(get_entity(u(), szres->value)).value().as<intptr_t>();
+            if (index_ent_value <= 0) {
                 return std::unexpected(make_error<basic_general_error>(get_start_location(ie.index), "index must be greater than 0"sv));
             }
-            entity const& type_ent = u().make_array_type_entity(er.value(), (size_t)index_ent.value());
+            entity const& type_ent = u().make_array_type_entity(er.value(), (size_t)index_ent_value);
             er.value_or_type = type_ent.id;
             return apply_cast(type_ent, std::move(er), ie);
         }

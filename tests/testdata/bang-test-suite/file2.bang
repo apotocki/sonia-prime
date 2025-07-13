@@ -161,5 +161,6 @@ assert_equal(*xpack2.name.1, "345"); // value is mutable, need dereference
 assert_equal(xpack2.name.2, "678"); // value is const, no need to dereference
 assert_equal(xpack2.name.3, "901"); // value is const, no need to dereference
 
-let intvar : f16 = 100;
-//assert_equal(typeof(intvar), f16); // should be true
+let fltvar : f16 = 100;
+assert_equal(typeof(fltvar), f16); // should be true
+assert_equal(fltvar, 100);

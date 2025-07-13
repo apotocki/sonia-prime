@@ -118,8 +118,8 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
     if (slfer.is_const_result && proper.is_const_result) {
         result.is_const_result = true;
         entity const& property_entity = get_entity(u, proper.value());
-        if (auto int_lit = dynamic_cast<const integer_literal_entity*>(&property_entity)) {
-            size_t idx = static_cast<size_t>(int_lit->value());
+        if (auto int_lit = dynamic_cast<const generic_literal_entity*>(&property_entity)) {
+            size_t idx = int_lit->value().as<size_t>();
             if (auto* field = tmd.arg_sig.get_field(idx)) {
                     entity_identifier result_type = field->name() ? make_named_tuple_type(*field) : field->entity_id();
                     result.value_or_type = field->name() ? u.make_empty_entity(result_type).id : result_type;
@@ -151,8 +151,8 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
         entity_identifier result_type;
         const field_descriptor* field = nullptr;
 
-        if (auto int_lit = dynamic_cast<const integer_literal_entity*>(&property_entity)) {
-            size_t idx = static_cast<size_t>(int_lit->value());
+        if (auto int_lit = dynamic_cast<const generic_literal_entity*>(&property_entity)) {
+            size_t idx = int_lit->value().as<size_t>();
             field = tmd.arg_sig.get_field(idx);
             if (!field) {
                 return std::unexpected(make_error<basic_general_error>(tmd.call_location, "tuple index out of range"sv, property_entity.id));

@@ -213,11 +213,7 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
         ++argindex;
     }
     argname[1] = '$';
-    integer_literal_entity smpl{ argindex };
-    smpl.set_type(unit_.get(builtin_eid::integer));
-    entity const& argent = unit_.eregistry_find_or_create(smpl, [&smpl]() {
-        return make_shared<integer_literal_entity>(std::move(smpl));
-    });
+    entity const& argent = unit_.make_integer_entity(argindex);
     identifier argid = unit_.slregistry().resolve(string_view{ argname.data(), 2 });
     functional& arg_fnl = unit_.fregistry_resolve(ctx.ns() / argid);
     arg_fnl.set_default_entity(annotated_entity_identifier{ argent.id });

@@ -1008,14 +1008,17 @@ struct from_blob<T>
     inline T operator()(blob_result const& val) const
     {
         using namespace sonia;
-
+        
         return blob_type_dispatch(val, [&val]<typename DT>(DT ival) ->T {
             if constexpr (is_integral_not_bool_v<DT> || std::is_floating_point_v<DT> ||
                 mp::is_basic_integer_view_v<DT> || mp::is_basic_decimal_view_v<DT>)
             {
                 return (T)ival;
+            } else if constexpr (std::is_same_v<DT, sonia::float16>) {
+                return (T)(float)ival;
+            } else {
+                THROW_INTERNAL_ERROR("can't convert blob %1% to %2%"_fmt % val % typeid(T).name());
             }
-            THROW_INTERNAL_ERROR("can't convert blob %1% to %2%"_fmt % val % typeid(T).name());
         });
     }
 };

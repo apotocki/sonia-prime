@@ -15,25 +15,16 @@
 
 namespace sonia::lang::bang {
 
-struct argument_wrapper_visitor : entity_visitor_adapter
-{
-    mutable variant<std::nullptr_t, integer_literal_entity, decimal_literal_entity> value;
-
-    void operator()(integer_literal_entity const& e) const override { value = e; }
-    void operator()(decimal_literal_entity const& e) const override { value = e; }
-};
-
 class numeric_implicit_cast_match_descriptor : public functional_match_descriptor
 {
 public:
     using functional_match_descriptor::functional_match_descriptor;
 
-    template <typename ArgT>
-    explicit numeric_implicit_cast_match_descriptor(ArgT && arg)
-        : arg{ std::forward<ArgT>(arg) }
+    inline explicit numeric_implicit_cast_match_descriptor(generic_literal_entity const& arg) noexcept
+        : arg{ &arg }
     {}
 
-    variant<std::nullptr_t, integer_literal_entity, decimal_literal_entity> arg;
+    generic_literal_entity const* arg = nullptr;
 };
 
 std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
@@ -74,15 +65,32 @@ std::expected<functional_match_descriptor_ptr, error_storage> numeric_implicit_c
     functional_match_descriptor_ptr pmd;
     if (src_arg_er.is_const_result) {
         entity const& argent = get_entity(u, src_arg_er.value());
-        argument_wrapper_visitor vis;
-        argent.visit(vis);
-        if (vis.value.which() == 0) {
+        entity_identifier argtype = argent.get_type();
+        if (argtype && argtype != u.get(builtin_eid::any) &&
+            argtype != u.get(builtin_eid::integer) && argtype != ctx.u().get(builtin_eid::decimal) &&
+            argtype != u.get(builtin_eid::string) &&
+            argtype != u.get(builtin_eid::f16) &&
+            argtype != u.get(builtin_eid::f32) &&
+            argtype != u.get(builtin_eid::f64) &&
+            argtype != u.get(builtin_eid::boolean) &&
+            argtype != u.get(builtin_eid::i8) &&
+            argtype != u.get(builtin_eid::u8) &&
+            argtype != u.get(builtin_eid::i16) &&
+            argtype != u.get(builtin_eid::u16) &&
+            argtype != u.get(builtin_eid::i32) &&
+            argtype != u.get(builtin_eid::u32) &&
+            argtype != u.get(builtin_eid::i64) &&
+            argtype != u.get(builtin_eid::u64))
+        {
             return std::unexpected(make_error<value_mismatch_error>(get_start_location(*get<0>(self_expr)), src_arg_er.value(), "a numeric literal"sv));
         }
+
         if (argent.get_type() == teid) {
             return std::unexpected(make_error<basic_general_error>(get_start_location(*get<0>(self_expr)), "argument and result types must be different"sv, teid));
         }
-        pmd = sonia::make_shared<numeric_implicit_cast_match_descriptor>(std::move(vis.value));
+        generic_literal_entity const& src_arg_literal = dynamic_cast<generic_literal_entity const&>(argent);
+        pmd = sonia::make_shared<numeric_implicit_cast_match_descriptor>(src_arg_literal);
+        --pmd->weight; // lower weight for implicit casts
     } else {
         if (src_arg_er.type() == teid) {
             return std::unexpected(make_error<basic_general_error>(get_start_location(*get<0>(self_expr)), "argument and result types must be different"sv, teid));
@@ -104,51 +112,51 @@ std::expected<syntax_expression_result_t, error_storage> numeric_implicit_cast_p
     auto& nmd = static_cast<numeric_implicit_cast_match_descriptor&>(md);
     auto& [_, src] = md.matches.front();
     src.expressions = el.concat(md.merge_void_spans(el), src.expressions);
-    if (nmd.arg.which()) { // not nullptr_t
-        if (auto& result = *nmd.signature.result; result.is_const()) {
-            entity_identifier rid = apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = result.entity_id()](auto const& v) -> entity_identifier {
-                if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
-                    return ctx.u().make_integer_entity(v.value(), type).id;
-                } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
-                    return ctx.u().make_decimal_entity(v.value(), type).id;
-                } else {
-                    THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
-                }
-            }), nmd.arg);
-            src.value_or_type = rid;
-            src.is_const_result = true;
-            return syntax_expression_result_t {
-                .temporaries = std::move(src.temporaries),
-                .expressions = md.merge_void_spans(el),
-                .value_or_type = rid,
-                .is_const_result = true
-            };
-        } else {
-            apply_visitor(make_functional_visitor<void>([&ctx, &el, &src](auto const& v) {
-                if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
-                    ctx.u().push_back_expression(el, src.expressions, semantic::push_value{ smart_blob{ bigint_blob_result(v.value()) } });
-                } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
-                    ctx.u().push_back_expression(el, src.expressions, semantic::push_value{ smart_blob{ decimal_blob_result(v.value()) } });
-                } else {
-                    THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
-                }
-            }), nmd.arg);
-            src.value_or_type = result.entity_id(),
-            src.is_const_result = false;
-        }
-        return std::move(src);
-        //entity_identifier rid = (ctx.u(), apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = nmd.result.entity_id()](auto const& v) -> entity_identifier {
-        //    if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
-        //        return ctx.u().make_integer_entity(v.value(), type).id;
-        //    } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
-        //        return ctx.u().make_decimal_entity(v.value(), type).id;
-        //    } else {
-        //        THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
-        //    }
-        //}), nmd.arg));
-        
+    
+    THROW_NOT_IMPLEMENTED_ERROR("numeric_implicit_cast_pattern::apply, not implemented for non-constexpr result"sv);
+    /*
+    if (auto& result = *nmd.signature.result; result.is_const()) {
+        entity_identifier rid = apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = result.entity_id()](auto const& v) -> entity_identifier {
+            if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
+                return ctx.u().make_integer_entity(v.value(), type).id;
+            } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
+                return ctx.u().make_decimal_entity(v.value(), type).id;
+            } else {
+                THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
+            }
+        }), nmd.arg);
+        src.value_or_type = rid;
+        src.is_const_result = true;
+        return syntax_expression_result_t {
+            .temporaries = std::move(src.temporaries),
+            .expressions = md.merge_void_spans(el),
+            .value_or_type = rid,
+            .is_const_result = true
+        };
+    } else {
+        apply_visitor(make_functional_visitor<void>([&ctx, &el, &src](auto const& v) {
+            if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
+                ctx.u().push_back_expression(el, src.expressions, semantic::push_value{ smart_blob{ bigint_blob_result(v.value()) } });
+            } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
+                ctx.u().push_back_expression(el, src.expressions, semantic::push_value{ smart_blob{ decimal_blob_result(v.value()) } });
+            } else {
+                THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
+            }
+        }), nmd.arg);
+        src.value_or_type = result.entity_id(),
+        src.is_const_result = false;
     }
-    THROW_NOT_IMPLEMENTED_ERROR("numeric_implicit_cast_pattern::apply");
+    return std::move(src);
+    //entity_identifier rid = (ctx.u(), apply_visitor(make_functional_visitor<entity_identifier>([&ctx, type = nmd.result.entity_id()](auto const& v) -> entity_identifier {
+    //    if constexpr (std::is_same_v<integer_literal_entity, std::decay_t<decltype(v)>>) {
+    //        return ctx.u().make_integer_entity(v.value(), type).id;
+    //    } else if constexpr (std::is_same_v<decimal_literal_entity, std::decay_t<decltype(v)>>) {
+    //        return ctx.u().make_decimal_entity(v.value(), type).id;
+    //    } else {
+    //        THROW_INTERNAL_ERROR("numeric_implicit_cast_pattern::apply, null is not expected");
+    //    }
+    //}), nmd.arg));
+    */
 }
 
 }

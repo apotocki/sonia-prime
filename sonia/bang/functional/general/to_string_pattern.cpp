@@ -66,19 +66,43 @@ public:
         case builtin_eid::string:
             oss_ << ent.value().as<string_view>();
             return;
+        case builtin_eid::i8:
+            oss_ << static_cast<int>(ent.value().as<int8_t>());
+            return;
+        case builtin_eid::u8:
+            oss_ << static_cast<unsigned int>(ent.value().as<uint8_t>());
+            return;
+        case builtin_eid::i16:
+            oss_ << ent.value().as<int16_t>();
+            return;
+        case builtin_eid::u16:
+            oss_ << ent.value().as<uint16_t>();
+            return;
+        case builtin_eid::i32:
+            oss_ << ent.value().as<int32_t>();
+            return;
+        case builtin_eid::u32:
+            oss_ << ent.value().as<uint32_t>();
+            return;
+        case builtin_eid::i64:
+            oss_ << ent.value().as<int64_t>();
+            return;
+        case builtin_eid::u64:
+            oss_ << ent.value().as<uint64_t>();
+            return;
+        case builtin_eid::f16:
+            oss_ << ent.value().as<float16>();
+            return;
+        case builtin_eid::f32:
+            oss_ << ent.value().as<float>();
+            return;
+        case builtin_eid::f64:
+            oss_ << ent.value().as<double>();
+            return;
+
         default:
             THROW_INTERNAL_ERROR("to_string_visitor: Unsupported generic literal type for to_string");
         }
-     }
-    
-    void operator()(const integer_literal_entity& ent) const override
-    {
-        oss_ << ent.value();
-    }
-    
-    void operator()(const decimal_literal_entity& ent) const override
-    {
-        oss_ << ent.value();
     }
     
     void operator()(const identifier_entity& ent) const override

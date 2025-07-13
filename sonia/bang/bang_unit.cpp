@@ -1141,36 +1141,27 @@ generic_literal_entity const& unit::make_bool_entity(bool value, entity_identifi
     }));
 }
 
-integer_literal_entity const& unit::make_integer_entity(mp::integer_view value, entity_identifier type)
-{
-    integer_literal_entity smpl{ value, type ? type : get(builtin_eid::integer) };
-    return static_cast<integer_literal_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
-        return make_shared<integer_literal_entity>(std::move(smpl));
-    }));
-}
-
-decimal_literal_entity const& unit::make_decimal_entity(mp::decimal_view value, entity_identifier type)
-{
-    decimal_literal_entity smpl{ value, type ? type : get(builtin_eid::decimal) };
-    return static_cast<decimal_literal_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
-        return make_shared<decimal_literal_entity>(std::move(smpl));
-    }));
-}
-
-generic_literal_entity const& unit::make_string_entity(string_view value, entity_identifier type)
-{
-    generic_literal_entity smpl{ smart_blob { string_blob_result(value) }, type ? type : get(builtin_eid::string) };
-    return static_cast<generic_literal_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
-        return make_shared<generic_literal_entity>(generic_literal_entity{ smart_blob{ smpl.value() }.allocate(), smpl.get_type() });
-    }));
-}
-
 generic_literal_entity const& unit::make_generic_entity(smart_blob value, entity_identifier type)
 {
     generic_literal_entity smpl{ std::move(value), type };
     return static_cast<generic_literal_entity&>(eregistry_find_or_create(smpl, [&smpl]() {
         return make_shared<generic_literal_entity>(generic_literal_entity{ smart_blob{ smpl.value() }.allocate(), smpl.get_type() });
     }));
+}
+
+generic_literal_entity const& unit::make_integer_entity(mp::integer_view value, entity_identifier type)
+{
+    return make_generic_entity(smart_blob{ bigint_blob_result(value) }, type ? type : get(builtin_eid::integer));
+}
+
+generic_literal_entity const& unit::make_decimal_entity(mp::decimal_view value, entity_identifier type)
+{
+    return make_generic_entity(smart_blob{ decimal_blob_result(value) }, type ? type : get(builtin_eid::decimal));
+}
+
+generic_literal_entity const& unit::make_string_entity(string_view value, entity_identifier type)
+{
+    return make_generic_entity(smart_blob{ string_blob_result(value) }, type ? type : get(builtin_eid::string));
 }
 
 basic_signatured_entity const& unit::make_basic_signatured_entity(entity_signature&& sig)

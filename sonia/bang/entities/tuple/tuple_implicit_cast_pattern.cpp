@@ -159,7 +159,7 @@ tuple_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expressio
                     std::move(res.error())));
             }
 
-            if (src_field.entity_id() == dst_field.entity_id() && !dst_field.is_const()) {
+            if (src_field.entity_id() == dst_field.entity_id() && !dst_field.is_const() && !res->is_const_result) {
                 fn_code = el.concat(fn_code, res->expressions);
                 continue; // No cast needed
             }
@@ -172,7 +172,7 @@ tuple_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expressio
             });
         }
         entity_identifier dest_field_type = dst_field.is_const() ? get_entity(u, dst_field.entity_id()).id : dst_field.entity_id();
-        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, el, expected_result_t{ .type = dest_field_type, .modifier  = dst_field.is_const() ? value_modifier_t::constexpr_value : value_modifier_t::constexpr_or_runtime_value });
+        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, el, expected_result_t{ .type = dest_field_type, .modifier  = dst_field.is_const() ? value_modifier_t::constexpr_value : value_modifier_t::runtime_value });
         if (!match) {
             return std::unexpected(append_cause(
                 make_error<cast_error>(md.call_location, dest_field_type, src_field.entity_id()),

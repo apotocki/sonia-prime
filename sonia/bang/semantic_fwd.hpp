@@ -53,8 +53,6 @@ using entity_ptr = shared_ptr<entity>;
 template <typename ValueT> class literal_entity;
 
 using generic_literal_entity = literal_entity<smart_blob>;
-using integer_literal_entity = literal_entity<mp::integer>;
-using decimal_literal_entity = literal_entity<mp::decimal>;
 using identifier_entity = literal_entity<identifier>;
 using qname_identifier_entity = literal_entity<qname_identifier>;
 using qname_entity = literal_entity<qname>;
@@ -76,8 +74,6 @@ public:
     virtual void operator()(entity const&) const = 0;
 
     virtual void operator()(generic_literal_entity const&) const = 0;
-    virtual void operator()(integer_literal_entity const&) const = 0;
-    virtual void operator()(decimal_literal_entity const&) const = 0;
     virtual void operator()(identifier_entity const&) const = 0;
     virtual void operator()(qname_identifier_entity const&) const = 0;
     virtual void operator()(empty_entity const&) const = 0;
@@ -93,8 +89,6 @@ class entity_visitor_adapter : public entity_visitor
 {
     void operator()(entity const&) const override {}
     void operator()(generic_literal_entity const&) const override {}
-    void operator()(integer_literal_entity const&) const override {}
-    void operator()(decimal_literal_entity const&) const override {}
     void operator()(identifier_entity const&) const override {}
     void operator()(qname_identifier_entity const&) const override {}
     void operator()(empty_entity const&) const override {}

@@ -210,20 +210,6 @@ public:
         fnbuilder_.append_push_pooled_const(smart_blob{ sle.value() });
     }
 
-    void operator()(integer_literal_entity const& ile) const override
-    {
-        smart_blob bl{ bigint_blob_result(ile.value()) };
-        bl.allocate();
-        fnbuilder_.append_push_pooled_const(std::move(bl));
-    }
-
-    void operator()(decimal_literal_entity const& dle) const override
-    {
-        smart_blob bl{ decimal_blob_result(dle.value()) };
-        bl.allocate();
-        fnbuilder_.append_push_pooled_const(std::move(bl));
-    }
-
     void operator()(identifier_entity const& ie) const override
     {
         this->operator()(ie.value());

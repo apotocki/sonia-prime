@@ -110,8 +110,8 @@ std::expected<syntax_expression_result_t, error_storage> tuple_typename_get_patt
     // Case 1: property is constant
     BOOST_ASSERT(proper.is_const_result);
     entity const& property_entity = get_entity(u, proper.value());
-    if (auto int_lit = dynamic_cast<const integer_literal_entity*>(&property_entity)) {
-        size_t idx = static_cast<size_t>(int_lit->value());
+    if (auto int_lit = dynamic_cast<const generic_literal_entity*>(&property_entity)) {
+        size_t idx = int_lit->value().as<size_t>();
         if (auto* field = tmd.arg_sig.get_field(idx)) {
             if (field->name()) {
                 entity_signature rsig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };

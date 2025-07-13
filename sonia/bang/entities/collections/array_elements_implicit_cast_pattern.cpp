@@ -34,7 +34,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
     BOOST_ASSERT(peld);
     BOOST_ASSERT(pszd);
     entity_identifier arr_element_type_eid = peld->entity_id();
-    size_t arrsz = (size_t)static_cast<integer_literal_entity const&>(u.eregistry_get(pszd->entity_id())).value();
+    size_t arrsz = static_cast<generic_literal_entity const&>(get_entity(u, pszd->entity_id())).value().as<size_t>();
 
     functional_match_descriptor_ptr pmd;
 
@@ -61,7 +61,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
             }
             field_descriptor const* pargszd = ptypesig->find_field(u.get(builtin_id::size));
             BOOST_ASSERT(pargszd);
-            size_t arg_arr_sz = (size_t)static_cast<integer_literal_entity const&>(u.eregistry_get(pargszd->entity_id())).value();
+            size_t arg_arr_sz = static_cast<generic_literal_entity const&>(get_entity(u, pargszd->entity_id())).value().as<size_t>();
             if (arg_arr_sz != arrsz) {
                 return std::unexpected(make_error<value_mismatch_error>(arg_loc, ent.id, "an array of the same size"sv));
             }

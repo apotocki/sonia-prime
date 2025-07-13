@@ -1,9 +1,10 @@
 // main arguments
+
 inline fn __bit_and(typename tuple($l: ...), typename tuple($r: ...)) => tuple($l ..., $r ...);
 using t0 => tuple(name0: bool, integer);
+
 using t1 => tuple(123, name1: f16, name0: "asd");
 using tt => t0 & t1;
-
 
 assert_equal(size(tt), 5);
 assert_equal(tt.0, tuple(.name0, bool));

@@ -6,14 +6,12 @@
 #include "struct_get_pattern.hpp"
 #include "struct_entity.hpp"
 
-#include "sonia/bang/entities/prepared_call.hpp"
+#include "sonia/bang/entities/tuple/generic_get_pattern_matcher.ipp"
+
 #include "sonia/bang/entities/signatured_entity.hpp"
 
-#include "sonia/bang/ast/fn_compiler_context.hpp"
-#include "sonia/bang/ast/ct_expression_visitor.hpp"
-#include "sonia/bang/ast/expression_visitor.hpp"
+//#include "sonia/bang/ast/base_expression_visitor.hpp"
 
-#include "sonia/bang/auxiliary.hpp"
 #include "sonia/bang/errors/type_mismatch_error.hpp"
 
 namespace sonia::lang::bang {
@@ -38,62 +36,50 @@ namespace sonia::lang::bang {
         get(self: as_tuple(self), property : property);
 */
 
-std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const&) const
+class struct_get_match_descriptor : public functional_match_descriptor
 {
-    THROW_NOT_IMPLEMENTED_ERROR("struct_get_pattern::try_match tuple_get_match_descriptor creation"sv);
-#if 0
-    unit& u = ctx.u();
-    identifier slfid = u.get(builtin_id::self);
-    identifier propid = u.get(builtin_id::property);
-    
+public:
+    inline struct_get_match_descriptor(prepared_call const& call, entity const& ent) noexcept
+        : functional_match_descriptor{ call }
+        , tpl_entity{ ent }
+    { }
+
+    entity const& tpl_entity;
+};
+
+struct stucture_get_pattern_matcher : public generic_get_pattern_matcher<stucture_get_pattern_matcher>
+{
+    using generic_get_pattern_matcher<stucture_get_pattern_matcher>::generic_get_pattern_matcher;
     struct_entity const* pse = nullptr;
-    entity const* ppname = nullptr;
-    shared_ptr<tuple_get_match_descriptor> pmd;
-    
-    for (auto const& arg : call.args) {
-        annotated_identifier const* pargname = arg.name();
-        if (!pargname) {
-            auto const& argexpr = arg.value();
-            return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "argument mismatch"sv, argexpr));
-        }
-        if (pargname->value == slfid && !pse) {
-            THROW_NOT_IMPLEMENTED_ERROR("struct_get_pattern::try_match self argument handling, should be a tuple_get_match_descriptor"sv);
-            //pmd = make_shared<tuple_get_match_descriptor>();
 
-            //auto last_expr_it = ctx.expressions().last();
-            auto res = apply_visitor(base_expression_visitor{ ctx, call.expressions }, arg.value());
-            if (!res) return std::unexpected(std::move(res.error()));
-            auto& ser = res->first;
-            entity const& some_entity = get_entity(u, ser.value_or_type);
-            pse = dynamic_cast<struct_entity const*>(&some_entity);
-            if (pse) {
-                pmd->get_match_result(pargname->value).append_result(ser);
-                continue;
-            }
-            
-            return std::unexpected(make_error<basic_general_error>(pargname->location, "argument type mismatch: a structure was expected."sv, pargname->value));
-            //return std::unexpected(make_error<type_mismatch_error>(pargname->location, ctx.context_type, u.get(builtin_qnid::tuple)));
-        } else if (pargname->value == propid && !ppname) {
-            auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions }, arg.value());
-            if (!res) return std::unexpected(std::move(res.error()));
-            if (res->expressions) THROW_NOT_IMPLEMENTED_ERROR("struct_get_pattern::try_match const value expressions");
-            ppname = &get_entity(u, res->value);
-        } else {
-            return std::unexpected(make_error<basic_general_error>(pargname->location, "argument mismatch"sv, pargname->value));
+    inline error_storage check_type_compatibility()
+    {
+        entity const& some_entity = get_entity(ctx.u(), slftype);
+        pse = dynamic_cast<struct_entity const*>(&some_entity);
+        if (!pse) {
+            return make_error<basic_general_error>(get_start_location(*get<0>(slf_arg_descr)), "argument type mismatch: a structure was expected."sv, slftype);
         }
+        return {};
     }
 
-    if (!pse) {
-        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter: `self`"sv));
-    } else if (!ppname) {
-        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter: `property`"sv));
+    std::expected<functional_match_descriptor_ptr, error_storage> create_match_descriptor()
+    {
+        unit& u = ctx.u();
+        auto uteid = pse->underlying_tuple_eid(ctx);
+        if (!uteid) return std::unexpected(append_cause(
+            make_error<basic_general_error>(call.location, "cannot get underlying tuple entity for structure"sv, pse->id),
+            std::move(uteid.error())
+        ));
+        return make_shared<struct_get_match_descriptor>(call, get_entity(u, *uteid));
     }
+};
 
-    auto uteid = pse->underlying_tuple_eid(ctx);
-    if (!uteid) return std::unexpected(std::move(uteid.error()));
-    entity const& utplent = get_entity(u, *uteid);
-    
-    
+std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
+{
+    stucture_get_pattern_matcher matcher{ ctx, call, exp };
+    return matcher.try_match();
+        
+#if 0
     //return check_match(std::move(pmd), call, utplent, *ppname);
 
     //entity_signature const* ptplsig = utplent.signature();
@@ -120,6 +106,79 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
     //pmd->result = *fd;
     //return pmd;
 #endif
+}
+
+std::expected<syntax_expression_result_t, error_storage> struct_get_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
+{
+    unit& u = ctx.u();
+    auto& tmd = static_cast<struct_get_match_descriptor&>(md);
+    auto& slfer = get<1>(md.matches[0]);
+    auto& proper = get<1>(md.matches[1]);
+
+    local_variable* tuple_var = nullptr, *property_var = nullptr;
+    identifier tuple_var_name, property_var_name;
+    fn_compiler_context_scope fn_scope{ ctx };
+
+    pure_call_t get_call{ md.call_location };
+    if (slfer.is_const_result) {
+        // if self is a constant, then we can use it directly
+        get_call.emplace_back(
+            annotated_identifier{ u.get(builtin_id::self), md.call_location },
+            annotated_entity_identifier{ slfer.value(), md.call_location });
+    } else {
+        tuple_var_name = u.new_identifier();
+        tuple_var = &fn_scope.new_temporary(tuple_var_name, tmd.tpl_entity.id); // here we substitute the tuple entity id instead of the original struct type id
+        get_call.emplace_back(
+            annotated_identifier{ u.get(builtin_id::self), md.call_location },
+            variable_reference{ annotated_qname{ qname{ tuple_var_name, false } }, false });
+    }
+    if (proper.is_const_result) {
+        // if property is a constant, then we can use it directly
+        get_call.emplace_back(
+            annotated_identifier{ u.get(builtin_id::property) },
+            annotated_entity_identifier{ proper.value(), md.call_location });
+    } else {
+        property_var_name = u.new_identifier();
+        property_var = &fn_scope.new_temporary(property_var_name, proper.type());
+        get_call.emplace_back(
+            annotated_identifier{ u.get(builtin_id::property), md.call_location },
+            variable_reference{ annotated_qname{ qname{ property_var_name, false } }, false });
+    }
+
+    auto match = ctx.find(builtin_qnid::get, get_call, el);
+    if (!match) {
+        return std::unexpected(append_cause(
+            make_error<basic_general_error>(md.call_location, "cannot find get function for underlying structure tuple"sv, tmd.tpl_entity.id),
+            std::move(match.error())
+        ));
+    }
+    auto res = match->apply(ctx);
+    if (!res) {
+        return std::unexpected(std::move(res.error()));
+    }
+
+    syntax_expression_result_t result{
+        .temporaries = std::move(slfer.temporaries),
+        .stored_expressions = el.concat(slfer.stored_expressions, proper.stored_expressions),
+        .expressions = el.concat(md.merge_void_spans(el), res->expressions),
+        .value_or_type = res->value_or_type,
+        .is_const_result = res->is_const_result
+    };
+    if (!proper.temporaries.empty()) {
+        result.temporaries.insert(
+            result.temporaries.end(),
+            std::make_move_iterator(proper.temporaries.begin()),
+            std::make_move_iterator(proper.temporaries.end()));
+    }
+
+    if (tuple_var) {
+        result.temporaries.emplace_back(tuple_var_name, std::move(*tuple_var), slfer.expressions);
+    }
+    if (property_var) {
+        result.temporaries.emplace_back(property_var_name, std::move(*property_var), proper.expressions);
+    }
+
+    return result;
 }
 
 //error_storage struct_get_pattern::apply(fn_compiler_context& ctx, functional_match_descriptor& md) const
@@ -149,4 +208,4 @@ std::expected<functional_match_descriptor_ptr, error_storage> struct_get_pattern
 //    return {};
 //}
 
-}
+} // namespace sonia::lang::bang

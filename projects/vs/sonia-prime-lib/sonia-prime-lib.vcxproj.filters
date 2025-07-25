@@ -2499,6 +2499,9 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_typename_get_pattern.hpp">
       <Filter>sonia.bang\entities\tuple</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\generic_get_pattern_matcher.ipp">
+      <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

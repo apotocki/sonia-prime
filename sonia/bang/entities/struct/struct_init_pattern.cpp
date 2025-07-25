@@ -7,9 +7,9 @@
 #include "struct_entity.hpp"
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
-#include "sonia/bang/ast/ct_expression_visitor.hpp"
 
-#include "sonia/bang/errors/circular_dependency_error.hpp"
+#include "sonia/bang/entities/literals/literal_entity.hpp"
+//#include "sonia/bang/errors/circular_dependency_error.hpp"
 
 namespace sonia::lang::bang {
 
@@ -36,13 +36,10 @@ struct_init_pattern::struct_init_pattern(variant<field_list_t, statement_span> c
 
 error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_entity_identifier result)
 {
-#if 0
-    fn_pure_t init_fn{ annotated_qname{ {}, result.location } };
+    fn_pure_t init_fn{ .location = result.location };
     init_fn.parameters = std::move(body_parameters_);
     init_fn.result = result;
     return basic_fn_pattern::init(ctx, init_fn);
-#endif
-    THROW_NOT_IMPLEMENTED_ERROR("struct_init_pattern::init(fn_compiler_context&, annotated_entity_identifier)");
 }
 
 error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_qname name, parameter_list_t const& fparameters)
@@ -52,20 +49,20 @@ error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_qnam
         auto [external_name, internal_name] = apply_visitor(param_name_retriever{}, param.name);
         if (external_name) {
             if (internal_name) {
-                sigdesc.fields.emplace_back(*external_name, pattern_t{ .descriptor = variable_reference{ annotated_qname{ qname{ internal_name->value, false }, internal_name->location }, true } } );
+                sigdesc.fields.emplace_back(*external_name, pattern_t{ .descriptor = context_identifier{ annotated_identifier{ internal_name->value, internal_name->location } } });
             } else {
                 // to do: prepare and use replacement
-                sigdesc.fields.emplace_back(*external_name, pattern_t{ .descriptor = variable_reference{ annotated_qname{ qname{ external_name->value, false }, external_name->location }, true } } );
+                sigdesc.fields.emplace_back(*external_name, pattern_t{ .descriptor = context_identifier{ annotated_identifier{ external_name->value, external_name->location } } });
             }
         } else if (internal_name) {
-            BOOST_ASSERT(internal_name);
-            sigdesc.fields.emplace_back(nullptr, pattern_t{ .descriptor = variable_reference{ annotated_qname{ qname{ internal_name->value, false }, internal_name->location }, true } });
+            BOOST_ASSERT(*internal_name);
+            sigdesc.fields.emplace_back(nullptr, pattern_t{ .descriptor = context_identifier{ annotated_identifier{ internal_name->value, internal_name->location } } });
         } else {
             sigdesc.fields.emplace_back(nullptr, pattern_t{ .descriptor = placeholder{} });
         }
     }
 
-    fn_pure_t init_fn{ annotated_qname{ {}, name.location } };
+    fn_pure_t init_fn{ .location = name.location };
     init_fn.parameters = std::move(body_parameters_);
     init_fn.result = pattern_t{ .descriptor = std::move(sigdesc) };
     
@@ -85,24 +82,16 @@ std::expected<syntax_expression_result_t, error_storage> struct_init_pattern::ap
 {
     // create tuple instance
     unit& u = ctx.u();
-    
-#if 0
-    auto [exprs, argcount] = apply_arguments(ctx, md, el);
+    auto [r, argcount] = apply_arguments(ctx, el, md);
 
     if (argcount > 1) {
-        u.push_back_expression(el, exprs, semantic::push_value{ mp::integer{ argcount } });
-        u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::arrayify)));
+        u.push_back_expression(el, r.expressions, semantic::push_value{ smart_blob{ ui64_blob_result(argcount) } });
+        u.push_back_expression(el, r.expressions, semantic::invoke_function(u.get(builtin_eid::arrayify)));
     }
 
-    BOOST_ASSERT(md.result.entity_id());
-    
-    return syntax_expression_result_t{
-        .expressions = std::move(el),
-        .value_or_type = md.result.entity_id(),
-        .is_const_result = false
-    };
-#endif
-    THROW_NOT_IMPLEMENTED_ERROR("struct_init_pattern::apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&)");
+    BOOST_ASSERT(md.signature.result && md.signature.result->entity_id());
+    r.value_or_type = r.is_const_result ? u.make_empty_entity(md.signature.result->entity_id()).id : md.signature.result->entity_id();
+    return r;
 }
 
 }

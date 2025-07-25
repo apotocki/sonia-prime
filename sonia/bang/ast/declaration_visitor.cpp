@@ -88,7 +88,7 @@ error_storage declaration_visitor::operator()(using_decl const& ud) const
     qname uqn = ctx.ns() / ud.name();
     functional& fnl = u().resolve_functional(uqn);
     if (ud.parameters.empty()) {
-        fnl.set_default_entity(sonia::make_shared<expression_resolver>(ud.location(), *get<return_decl_t>(ud.body.front()).expression));
+        fnl.set_default_entity(sonia::make_shared<expression_resolver>(ud.location, *get<return_decl_t>(ud.body.front()).expression));
     } else {
         auto fnptrn = make_shared<internal_fn_pattern>();
         error_storage err = fnptrn->init(ctx, static_cast<fn_decl_t const&>(ud));
@@ -121,37 +121,68 @@ using parameter_name = variant<named_parameter_name, unnamed_parameter_name, var
 */
 error_storage declaration_visitor::operator()(struct_decl const& sd) const
 {
-    return apply_visitor(make_functional_visitor<error_storage>([this, &sd](auto const& v) {
-        unit& u = ctx.u();
-        if constexpr (std::is_same_v<annotated_qname const&, decltype(v)>) {
-            annotated_qname const& qn = v;
+    unit& u = ctx.u();
+    annotated_qname fn_qname = { ctx.ns() / sd.name.value, sd.name.location };
+    // to do: check the allowence of absolute qname
+    auto initptrn = sonia::make_shared<struct_init_pattern>(sd.body);
 
-            functional& fnl = u.fregistry_resolve(ctx.ns() / qn.value);
-            auto sent = sonia::make_shared<struct_entity>(u, fnl, sd.body);
-            u.eregistry_insert(sent);
-            annotated_entity_identifier aeid{ sent->id, qn.location };
-            fnl.set_default_entity(aeid);
+    functional& fnl = u.fregistry_resolve(fn_qname.value);
+    if (sd.parameters.empty()) {
+        // case: struct STRUCT_NAME => ( fields )
+        auto sent = sonia::make_shared<struct_entity>(u, fnl, sd.body);
+        u.eregistry_insert(sent);
+        annotated_entity_identifier aeid{ sent->id, sd.name.location };
+        fnl.set_default_entity(aeid);
 
-            functional& init_fnl = u.fregistry_resolve(u.get(builtin_qnid::init));
-            auto initptrn = sonia::make_shared<struct_init_pattern>(sd.body);
-            if (error_storage err = initptrn->init(ctx, aeid); err) return err;
-            init_fnl.push(std::move(initptrn));
-        } else { // if constexpr (std::is_same_v<fn_pure_t const&, decltype(v)>) {
-            // to do: check the allowence of absolute qname
-            fn_pure_t const& fn = v;
-            qname fn_qname = ctx.ns() / fn.name();
-            functional& fnl = u.fregistry_resolve(fn_qname);
-            auto ptrn = sonia::make_shared<struct_fn_pattern>(sd.body);
-            if (error_storage err = ptrn->init(ctx, fn); err) return err;
-            fnl.push(std::move(ptrn));
+        if (error_storage err = initptrn->init(ctx, aeid); err) return err;
+    } else {
+        // case: struct STRUCT_NAME(parameters) => ( fields )
+        auto ptrn = sonia::make_shared<struct_fn_pattern>(sd.body);
+        if (error_storage err = ptrn->init(ctx, fn_qname, sd.parameters); err) return err;
+        fnl.push(std::move(ptrn));
 
-            functional& init_fnl = u.fregistry_resolve(u.get(builtin_qnid::init));
-            auto initptrn = sonia::make_shared<struct_init_pattern>(sd.body);
-            if (error_storage err = initptrn->init(ctx, annotated_qname{ fn_qname, fn.location() }, fn.parameters); err) return err;
-            init_fnl.push(std::move(initptrn));
-        }
-        return error_storage{};
-    }), sd.decl);
+        if (error_storage err = initptrn->init(ctx, fn_qname, sd.parameters); err) return err;
+    }
+
+    functional& init_fnl = u.fregistry_resolve(u.get(builtin_qnid::init));
+    init_fnl.push(std::move(initptrn));
+    return {};
+
+    //return apply_visitor(make_functional_visitor<error_storage>([this, &sd](auto const& v) {
+    //    unit& u = ctx.u();
+    //    if constexpr (std::is_same_v<annotated_qname const&, decltype(v)>) {
+    //        // case: struct STRUCT_NAME => ( fields )
+    //        annotated_qname const& qn = v;
+
+    //        functional& fnl = u.fregistry_resolve(ctx.ns() / qn.value);
+    //        auto sent = sonia::make_shared<struct_entity>(u, fnl, sd.body);
+    //        u.eregistry_insert(sent);
+    //        annotated_entity_identifier aeid{ sent->id, qn.location };
+    //        fnl.set_default_entity(aeid);
+
+    //        functional& init_fnl = u.fregistry_resolve(u.get(builtin_qnid::init));
+    //        auto initptrn = sonia::make_shared<struct_init_pattern>(sd.body);
+    //        if (error_storage err = initptrn->init(ctx, aeid); err) return err;
+    //        init_fnl.push(std::move(initptrn));
+    //    } else { // if constexpr (std::is_same_v<fn_pure_t const&, decltype(v)>) {
+    //        // case: struct STRUCT_NAME(parameters) => ( fields )
+    //        
+    //        // to do: check the allowence of absolute qname
+    //        fn_pure_t const& fn = v;
+    //        qname fn_qname = ctx.ns() / fn.name();
+    //        functional& fnl = u.fregistry_resolve(fn_qname);
+    //        auto ptrn = sonia::make_shared<struct_fn_pattern>(sd.body);
+    //        if (error_storage err = ptrn->init(ctx, fn); err) return err;
+    //        fnl.push(std::move(ptrn));
+
+    //        functional& init_fnl = u.fregistry_resolve(u.get(builtin_qnid::init));
+    //        auto initptrn = sonia::make_shared<struct_init_pattern>(sd.body);
+    //        if (error_storage err = initptrn->init(ctx, fn_qname, fn); err) return err;
+    //        //if (error_storage err = initptrn->init(ctx, annotated_qname{ fn_qname, fn.location() }, fn.parameters); err) return err;
+    //        init_fnl.push(std::move(initptrn));
+    //    }
+    //    return error_storage{};
+    //}), sd.decl);
 }
 
 error_storage declaration_visitor::operator()(enum_decl const& ed) const

@@ -10,6 +10,11 @@
 
 namespace sonia::lang::bang {
 
+std::expected<functional_match_descriptor_ptr, error_storage> external_fn_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
+{
+    return basic_fn_pattern::try_match(ctx, call, exp);
+}
+
 std::expected<syntax_expression_result_t, error_storage> external_fn_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();

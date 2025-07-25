@@ -29,7 +29,8 @@ std::string error_printer_visitor::print_general(error::location_t const& loc, s
     }
     errss << errstr;
     if (optseeloc) {
-        errss << ", see declaration at \n"sv << *optseeloc;
+        errss << ": see "sv;
+        optseeloc->print_to(errss, lex::resource_print_mode_t::just_pointer);
     }
 
     return errss.str();

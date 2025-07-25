@@ -60,7 +60,7 @@ public:
         , src_ { std::move(src) }
     {}
 
-    std::ostream& print_to(std::ostream& s, int line, int column) const override
+    std::ostream& print_to(std::ostream& s, int line, int column, lex::resource_print_mode_t mode) const override
     {
         prepare_lines();
         
@@ -97,7 +97,11 @@ public:
                 
                 // Print spaces up to the target column, then caret
                 const int safe_column = (std::max)(0, (std::min)(target_column, static_cast<int>(lines[i].size())));
-                s << std::string(safe_column, ' ') << "^----- ";
+                if (mode == lex::resource_print_mode_t::just_pointer) {
+                    s << std::string(safe_column, ' ') << '^';
+                } else {
+                    s << std::string(safe_column, ' ') << "^----- ";
+                }
                 //s << '\n';
             }
         }

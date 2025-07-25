@@ -30,7 +30,7 @@ namespace sonia::lang::bang {
 
 error_storage basic_fn_pattern::init(fn_compiler_context& ctx, fn_pure_t const& fnd)
 {
-    location_ = fnd.location();
+    location_ = fnd.location;
     result_ = fnd.result;
 
     parameters_.reserve(fnd.parameters.size());
@@ -138,8 +138,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
 
     //auto call_session = call.new_session(caller_ctx);
 
-    parameter_matcher pmatcher{ caller_ctx, call, parameters_ };
-    pmatcher.pmd = pmd;
+    parameter_matcher pmatcher{ caller_ctx, call, parameters_, *pmd };
     auto err = pmatcher.match(callee_ctx);
     if (err) {
         return std::unexpected(std::move(err));
@@ -292,7 +291,8 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
             ));
         }
         syntax_expression_result_t& res_er = res->first;
-        call_sig.result.emplace(res_er.value(), true);
+        entity const& res_ent = get_entity(u, res_er.value());
+        call_sig.result.emplace(res_er.value(), res_ent.get_type() != u.get(builtin_eid::typename_));
     }
 
     return pmd;
@@ -300,13 +300,16 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
 
 std::pair<syntax_expression_result_t, size_t> basic_fn_pattern::apply_arguments(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
+    size_t count = 0;
     syntax_expression_result_t result{ .expressions = md.merge_void_spans(el) };
     for (auto& [_, mr] : md.matches) {
         result.temporaries.insert(result.temporaries.end(), mr.temporaries.begin(), mr.temporaries.end());
         result.stored_expressions = el.concat(result.stored_expressions, mr.stored_expressions);
         result.expressions = el.concat(result.expressions, mr.expressions);
+        if (!mr.is_const_result) ++count;
     }
-    return { result, md.matches.size() };
+    result.is_const_result = !count;
+    return { result, count };
 }
 
 std::ostream& basic_fn_pattern::print(unit const& u, std::ostream& ss) const

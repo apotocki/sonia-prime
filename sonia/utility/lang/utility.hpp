@@ -71,13 +71,19 @@ inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits> &
 
 namespace lex {
 
+enum class resource_print_mode_t : uint8_t
+{
+    default_mode = 0,
+    just_pointer = 1
+};
+
 class code_resource
 {
 public:
     virtual ~code_resource() = default;
     virtual std::ostream& print_description(std::ostream&) const = 0;
 
-    virtual std::ostream& print_to(std::ostream& s, int line, int column) const
+    virtual std::ostream& print_to(std::ostream& s, int line, int column, resource_print_mode_t mode = resource_print_mode_t::default_mode) const
     {
         return print_description(s) << '(' << line << ',' << column << ')';
     }
@@ -102,13 +108,21 @@ struct resource_location
     int column;
     shared_ptr<code_resource> resource;
 
+    inline std::ostream& print_to(std::ostream& s, resource_print_mode_t mode = resource_print_mode_t::default_mode) const
+    {
+        if (resource) {
+            return resource->print_to(s, line, column, mode);
+        }
+        return s << "<undefined resource>(" << line << ',' << column << ')';
+    }
+
     explicit operator bool() const noexcept { return !!resource; }
 };
 
 template <typename T, typename Traits>
 inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& os, resource_location const& res)
 {
-    return res.resource->print_to(os, res.line, res.column);
+    return res.print_to(os);
 }
 
 struct resource_span

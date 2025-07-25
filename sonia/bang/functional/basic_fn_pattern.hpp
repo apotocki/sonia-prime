@@ -29,7 +29,7 @@ protected:
     using parameters_t = small_vector<parameter_descriptor, 8>;
     parameters_t parameters_;
 
-    variant<nullptr_t, syntax_expression_t, pattern_t> result_;
+    variant<nullptr_t, syntax_expression_t, pattern_t> result_; // auto or type/value expression or pattern
 
 public:
     basic_fn_pattern() = default;

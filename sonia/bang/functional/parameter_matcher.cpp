@@ -21,10 +21,12 @@ namespace sonia::lang::bang {
 parameter_matcher::parameter_matcher(
     fn_compiler_context& caller_ctx,
     prepared_call const& c,
-    basic_fn_pattern::parameters_t const& ps)
+    basic_fn_pattern::parameters_t const& ps,
+    functional_match_descriptor &mdval)
         : param_bit{ ps.begin() }, param_it{ ps.begin() }, param_end{ ps.end() }
         , call{ c }
         , call_session{ c.new_session(caller_ctx) }
+        , md{ mdval }
 {
 
 }
@@ -40,43 +42,54 @@ error_storage parameter_matcher::match(fn_compiler_context& callee_ctx)
         entity_identifier pconstraint_value_eid;
         expected_result_t argexp{ .modifier = to_value_modifier(pd.modifier) };
 
-        error_storage err = apply_visitor(make_functional_visitor<error_storage>([&](auto const& v) {
-            if constexpr (std::is_same_v<pattern_t, std::decay_t<decltype(v)>>) {
-                return error_storage{};
-            } else if constexpr (std::is_same_v<syntax_expression_t, std::decay_t<decltype(v)>>) {
-                auto argexp_res = resolve_expression_expected_result(callee_ctx, param_name, pd.modifier, v, pconstraint_value_eid);
-                if (!argexp_res) return std::move(argexp_res.error());
-                argexp = std::move(*argexp_res);
-                return error_storage{};
-            } else {
-                return make_error<basic_general_error>(v.location, "Unsupported parameter constraint type"sv);
-            }
-        }), pd.constraint);
-        if (err) return err;
+        // resolve the parameter constraint value if it is specified
+        if (syntax_expression_t const* param_expr = get<syntax_expression_t>(&pd.constraint)) {
+            auto argexp_res = resolve_expression_expected_result(callee_ctx, param_name, pd.modifier, *param_expr, pconstraint_value_eid);
+            if (!argexp_res) return std::move(argexp_res.error());
+            argexp = std::move(*argexp_res);
+        }
+        //error_storage err = apply_visitor(make_functional_visitor<error_storage>([&](auto const& v) {
+        //    if constexpr (std::is_same_v<pattern_t, std::decay_t<decltype(v)>>) {
+        //        return error_storage{};
+        //    } else if constexpr (std::is_same_v<syntax_expression_t, std::decay_t<decltype(v)>>) {
+        //        auto argexp_res = resolve_expression_expected_result(callee_ctx, param_name, pd.modifier, v, pconstraint_value_eid);
+        //        if (!argexp_res) return std::move(argexp_res.error());
+        //        argexp = std::move(*argexp_res);
+        //        return error_storage{};
+        //    } else {
+        //        return make_error<basic_general_error>(v.location, "Unsupported parameter constraint type"sv);
+        //    }
+        //}), pd.constraint);
+        //if (err) return err;
 
-        if ((pd.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis) {
+        if (has(pd.modifier, parameter_constraint_modifier_t::ellipsis)) {
             if (pd.ename) {
-                //handle_named_ellipsis(callee_ctx, call, pd.ename.value, pmd->bindings);
+                //handle_named_ellipsis(callee_ctx, call, pd.ename.value, md.bindings);
                 THROW_NOT_IMPLEMENTED_ERROR("parameter_matcher : ellipsis with named parameter");
             } else {
                 if (pconstraint_value_eid) {
                     return make_error<basic_general_error>(
                         call.location, "Ellipsis with constraint value is not supported"sv, param_name.value, param_name.location);
                 }
-                err = handle_positioned_ellipsis(callee_ctx, argexp);// callee_ctx, call, pmd->bindings);
+                error_storage err = handle_positioned_ellipsis(callee_ctx, argexp);// callee_ctx, call, md.bindings);
                 if (err) return err;
+                md.weight -= 1;
             }
             continue;
         }
 
         std::pair<syntax_expression_t const*, size_t> arg_expr_idx;
-        auto res = [this, &pd, &arg_expr_idx](expected_result_t& argexp) {
-            if (pd.ename) {
-                return call_session.use_named_argument(pd.ename.value, argexp, &arg_expr_idx);
-            } else {
-                return call_session.use_next_positioned_argument(argexp, &arg_expr_idx);
-            }
-        }(argexp);
+        auto res = pd.ename ?
+            call_session.use_named_argument(pd.ename.value, argexp, &arg_expr_idx) :
+            call_session.use_next_positioned_argument(argexp, &arg_expr_idx);
+
+        //auto res = [this, &pd, &arg_expr_idx](expected_result_t& argexp) {
+        //    if (pd.ename) {
+        //        return call_session.use_named_argument(pd.ename.value, argexp, &arg_expr_idx);
+        //    } else {
+        //        return call_session.use_next_positioned_argument(argexp, &arg_expr_idx);
+        //    }
+        //}(argexp);
 
         if (!res) {
             if (res.error()) {
@@ -99,7 +112,7 @@ error_storage parameter_matcher::match(fn_compiler_context& callee_ctx)
         }
 
         syntax_expression_result_t& arg_er = res->first;
-        err = apply_visitor(make_functional_visitor<error_storage>([&](auto const& constraint) -> error_storage {
+        error_storage err = apply_visitor(make_functional_visitor<error_storage>([&](auto const& constraint) -> error_storage {
             if constexpr (std::is_same_v<syntax_expression_t, std::decay_t<decltype(constraint)>>) {
                 if (can_be_only_constexpr(argexp.modifier)) {
                     // check exact value match
@@ -113,16 +126,16 @@ error_storage parameter_matcher::match(fn_compiler_context& callee_ctx)
             } else if constexpr (std::is_same_v<pattern_t, std::decay_t<decltype(constraint)>>) {
                 entity_identifier type_to_match;
                 if (arg_er.is_const_result) {
-                    if ((pd.modifier & parameter_constraint_modifier_t::typename_type) == parameter_constraint_modifier_t::none) {
+                    if (has(pd.modifier, parameter_constraint_modifier_t::typename_type)) { // typename as constexpr value matching
+                        type_to_match = arg_er.value();
+                    } else {
                         entity const& arg_res_entity = get_entity(u, arg_er.value());
                         type_to_match = arg_res_entity.get_type();
-                    } else { // typename as constexpr value matching
-                        type_to_match = arg_er.value();
                     }
                 } else {
                     type_to_match = arg_er.type();
                 }
-                auto err = pattern_matcher{ callee_ctx, pmd->bindings, call.expressions }
+                auto err = pattern_matcher{ callee_ctx, md.bindings, call.expressions }
                     .match(constraint, annotated_entity_identifier{ type_to_match, get_start_location(*get<0>(arg_expr_idx)) });
                 if (err) {
                     return append_cause(
@@ -137,37 +150,41 @@ error_storage parameter_matcher::match(fn_compiler_context& callee_ctx)
         }), pd.constraint);
         if (err) return err;
         
-        pmd->weight -= res->second;
+        md.weight -= res->second;
 
         if (pd.ename) {
-            pmd->signature.emplace_back(pd.ename.value, arg_er.value_or_type, arg_er.is_const_result);
+            md.signature.emplace_back(pd.ename.value, arg_er.value_or_type, arg_er.is_const_result);
         } else {
-            pmd->signature.emplace_back(arg_er.value_or_type, arg_er.is_const_result);
+            md.signature.emplace_back(arg_er.value_or_type, arg_er.is_const_result);
         }
         if (arg_er.is_const_result) {
             for (auto const& iname : pd.inames) {
-                pmd->bindings.emplace_back(
+                md.bindings.emplace_back(
                     annotated_identifier{ iname.value, iname.location }, arg_er.value()
                 );
             }
-            if (arg_er.expressions) pmd->void_spans.emplace_back(arg_er.expressions);
         } else {
             local_variable var{ .type = arg_er.type(), .varid = u.new_variable_identifier(), .is_weak = false };
             for (auto const& iname : pd.inames) {
-                pmd->bindings.emplace_back(
+                md.bindings.emplace_back(
                     annotated_identifier{ iname.value, iname.location }, var
                 );
             }
-            pmd->emplace_back(param_it - param_bit, arg_er);
         }
+        md.emplace_back(param_it - param_bit, arg_er);
     }
 
     // Check if there are any unused arguments
     if (auto argterm = call_session.unused_argument(); argterm) {
-        return make_error<basic_general_error>(argterm.location(),
-            "argument mismatch"sv, std::move(argterm.value()));
+        if (annotated_identifier const* name = argterm.name()) {
+            return make_error<basic_general_error>(argterm.location(),
+                "argument mismatch"sv, *name);
+        } else {
+            return make_error<basic_general_error>(argterm.location(),
+                "argument mismatch"sv, std::move(argterm.value()));
+        }
     }
-    pmd->void_spans = std::move(call_session.void_spans);
+    md.void_spans = std::move(call_session.void_spans);
     return {};
 }
 
@@ -286,7 +303,7 @@ error_storage parameter_matcher::handle_positioned_ellipsis(fn_compiler_context&
                 type_to_match = arg_er.type();
             }
             // if pattern, match it (including concepts)
-            auto err = pattern_matcher{ callee_ctx, pmd->bindings, call.expressions }
+            auto err = pattern_matcher{ callee_ctx, md.bindings, call.expressions }
                 .match(*ppattern, annotated_entity_identifier{ type_to_match, get_start_location(*get<1>(arg_expr)) });
             // if error and ellipsis_group_index != 0, reuse argument for previous parameter
             if (err) {
@@ -305,7 +322,7 @@ error_storage parameter_matcher::handle_positioned_ellipsis(fn_compiler_context&
 
         if (!ellipsis_group_index) {
             accumulated_results.emplace_back(pd.ename ? pd.ename : annotated_identifier{ .location = param_name.location }, std::move(res->first));
-            pmd->weight -= res->second;
+            md.weight -= res->second;
             ellipsis_group_index = param_exps.size() - 1;
         } else { // matched by next to ellipsis parameter
             // finalize ellipsis
@@ -342,21 +359,21 @@ void parameter_matcher::finalize_ellipsis(unit& u, span<std::pair<annotated_iden
             }
 
             local_variable var{ .type = er.type(), .varid = u.new_variable_identifier(), .is_weak = false };
-            pmd->bindings.emplace_back( annotated_identifier{ unnamedid, name.location }, var );
-            pmd->emplace_back(param_it - param_bit, er);
+            md.bindings.emplace_back( annotated_identifier{ unnamedid, name.location }, var );
+            md.emplace_back(param_it - param_bit, er);
         }
     }
     basic_signatured_entity const& ellipsis_type = u.make_basic_signatured_entity(std::move(ellipsis_type_sig));
     entity_identifier ellipsis_type_unit_eid = u.make_empty_entity(ellipsis_type).id;
     if (!ellipsis_span.empty()) {
         if (epd.ename) {
-            pmd->signature.emplace_back(epd.ename.value, ellipsis_type_unit_eid, true);
+            md.signature.emplace_back(epd.ename.value, ellipsis_type_unit_eid, true);
         } else {
-            pmd->signature.emplace_back(ellipsis_type_unit_eid, true);
+            md.signature.emplace_back(ellipsis_type_unit_eid, true);
         }
     }
     for (auto const& iname : epd.inames) {
-        pmd->bindings.emplace_back(
+        md.bindings.emplace_back(
             annotated_identifier{ iname.value, iname.location }, ellipsis_type_unit_eid
         );
     }

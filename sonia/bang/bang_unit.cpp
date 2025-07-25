@@ -162,7 +162,7 @@ std::pair<functional*, fn_pure_t> unit::parse_extern_fn(string_view signature)
 
     // If the result is not defined, we cannot resolve it (e.g., from the function body) � assume it is void.
     if (!fndecl.result.which()) {
-        fndecl.result = annotated_entity_identifier{ this->get(builtin_eid::void_), fndecl.location() };
+        fndecl.result = annotated_entity_identifier{ this->get(builtin_eid::void_), fndecl.location };
     }
 
     return { &resolve_functional(qname{ fndecl.name() }), std::move(fndecl) };
@@ -547,7 +547,7 @@ std::ostream& unit::print_to(std::ostream& os, small_u32string const& str, bool 
 
 std::ostream& unit::print_to(std::ostream& os, lex::resource_location const& loc) const
 {
-    return loc.resource->print_to(os, loc.line, loc.column);
+    return loc.print_to(os);
     //return os << loc.resource << '(' << loc.line << ',' << loc.column << ')';
     //return os << ("%1%(%2%,%3%)"_fmt % loc.resource % loc.line % loc.column).str();
 }
@@ -1371,13 +1371,10 @@ unit::unit()
     make_tuple_fnl.push(make_shared<tuple_make_pattern>());
     
     functional& get_fnl = fregistry_resolve(get(builtin_qnid::get));
-    // get(self: const @tuple, property: __identifier)->T; (typename case)
     get_fnl.push(make_shared<tuple_typename_get_pattern>());
-    // get(self: tuple(), property: __identifier)->T;
     get_fnl.push(make_shared<tuple_get_pattern>());
     get_fnl.push(make_shared<tuple_project_get_pattern>());
-    // get(self: @structure, property: __identifier)->T;
-    //get_fnl.push(make_shared<struct_get_pattern>());
+    get_fnl.push(make_shared<struct_get_pattern>());
 
     functional& set_fnl = fregistry_resolve(get(builtin_qnid::set));
     set_fnl.push(make_shared<tuple_set_pattern>());

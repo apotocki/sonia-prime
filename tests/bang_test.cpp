@@ -89,6 +89,7 @@ int AllocHook(int allocType, void* userData, size_t size, int
 
 void bang_suite_test()
 {
+
 #ifdef BOOST_WINDOWS
     system("cls");
 #endif
@@ -183,7 +184,7 @@ void bang_suite_test()
     //    }
     //    // std::cout << p.path().filename() << "\n";
     //    });
-
+    } 
 }
 
 void bang_test_registrar()

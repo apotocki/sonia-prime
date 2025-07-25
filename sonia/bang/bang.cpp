@@ -128,6 +128,7 @@ inline fn assert_not_equal(_, _, location:~ string = __call_location) ~> () {
 inline fn print(~string ...) ~> () {
     __print($0 ..., size($0));
 }
+inline fn __bit_and(typename tuple($l: ...), typename tuple($r: ...)) => tuple($l ..., $r ...);
 //inline fn ::set(self: object, property: const __identifier, any)->object => set(self: self, to_string(property), $0);
 )#";
 

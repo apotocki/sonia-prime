@@ -17,6 +17,16 @@ struct_fn_pattern::struct_fn_pattern(variant<field_list_t, statement_span> const
     : body_{ body }
 {}
 
+error_storage struct_fn_pattern::init(fn_compiler_context& ctx, annotated_qname const& name, parameter_list_t const& pl)
+{
+    fn_pure_t fn{ .nameval = (qname_view)name.value,
+                  .location = name.location,
+                  .parameters = pl,
+                  .result = nullptr,
+                  .kind = fn_kind::DEFAULT };
+    return basic_fn_pattern::init(ctx, fn);
+}
+
 std::expected<syntax_expression_result_t, error_storage> struct_fn_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
@@ -31,7 +41,6 @@ std::expected<syntax_expression_result_t, error_storage> struct_fn_pattern::appl
 
         internal_function_entity fent{ qname{ struct_ns }, entity_signature{ md.signature }, statement_span{} };
         build_scope(u, md, fent);
-        BOOST_ASSERT(fent.bindings.empty());
         // u.fregistry().resolve(struct_ns).name() // do we need a functional to store qname?
         auto res = sonia::make_shared<struct_entity>(std::move(struct_ns), std::move(md.signature), body_);
         res->location = location();

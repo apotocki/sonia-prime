@@ -581,16 +581,21 @@ enum class fn_kind : int8_t
 template <typename ExprT>
 struct fn_pure
 {
-    annotated_qname aname;
+    variant<qname, qname_view> nameval;
+    lex::resource_location location;
     parameter_list<ExprT> parameters;
-    variant<nullptr_t, ExprT, pattern<ExprT>> result; // udefined or type expression or pattern
+    variant<nullptr_t, ExprT, pattern<ExprT>> result; // undefined or type expression or pattern
 
     //bool is_type_expression_result = true; // true for type expressions, false for value expressions
     //bool is_not_a_pattern_result = false; // true if explicitly defined as not a pattern result
     fn_kind kind = fn_kind::DEFAULT;
 
-    inline qname_view name() const noexcept { return aname.value; }
-    inline lex::resource_location const& location() const noexcept { return aname.location; }
+    inline qname_view name() const noexcept
+    {
+        return apply_visitor(make_functional_visitor<qname_view>(
+            [](auto const& q)->qname_view { return q; })
+            , nameval);
+    }
 };
 
 template <typename ExprT>
@@ -599,7 +604,7 @@ struct lambda : fn_pure<ExprT>
     statement_span body;
 
     lambda(fn_kind kind, lex::resource_location loc, parameter_list<ExprT>&& params, statement_span&& b, ExprT rtype)
-        : fn_pure<ExprT>{ .aname = annotated_qname{ {}, std::move(loc) },
+        : fn_pure<ExprT>{ .location = std::move(loc),
                           .parameters = std::move(params),
                           .result = std::move(rtype),
                           .kind = kind }
@@ -607,7 +612,7 @@ struct lambda : fn_pure<ExprT>
     {}
 
     lambda(fn_kind kind, lex::resource_location loc, parameter_list<ExprT>&& params, statement_span&& b)
-        : fn_pure<ExprT>{ .aname = annotated_qname{ {}, std::move(loc) },
+        : fn_pure<ExprT>{ .location = std::move(loc),
                           .parameters = std::move(params),
                           .result = nullptr,
                           .kind = kind }
@@ -856,38 +861,36 @@ struct using_decl : fn_decl_t
 
 struct struct_decl
 {
-    variant<annotated_qname, fn_pure_t> decl;
+    annotated_qname name;
+    parameter_list_t parameters;
     variant<field_list_t, statement_span> body;
 
-    inline bool is_function() const noexcept
-    {
-        return get<fn_pure_t>(&decl) != nullptr;
-    }
+    //inline bool is_function() const noexcept
+    //{
+    //    return !parameters.empty();
+    //}
 
-    fn_pure_t const* as_fn() const noexcept
-    {
-        return get<fn_pure_t>(&decl);
-    }
+    //fn_pure_t const* as_fn() const noexcept
+    //{
+    //    return get<fn_pure_t>(&decl);
+    //}
 
-    annotated_qname const* as_name() const noexcept
-    {
-        return get<annotated_qname>(&decl);
-    }
+    //annotated_qname const* as_name() const noexcept
+    //{
+    //    return get<annotated_qname>(&decl);
+    //}
 
-    inline qname_view name() const noexcept
-    {
-        if (auto const* pfn = get<fn_pure_t>(&decl); pfn) {
-            return pfn->name();
-        }
-        return get<annotated_qname>(decl).value;
-    }
+    //inline qname_view name() const noexcept
+    //{
+    //    if (auto const* pfn = get<fn_pure_t>(&decl); pfn) {
+    //        return pfn->name();
+    //    }
+    //    return get<annotated_qname>(decl).value;
+    //}
 
-    lex::resource_location const& location() const noexcept
+    inline lex::resource_location const& location() const noexcept
     {
-        if (auto const* pfn = get<fn_pure_t>(&decl); pfn) {
-            return pfn->location();
-        }
-        return get<annotated_qname>(decl).location;
+        return name.location;
     }
 };
 

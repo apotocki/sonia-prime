@@ -377,9 +377,9 @@ statement:
             auto sts = ctx.new_statement_list();
             auto loc = get_start_location($value);
             sts.emplace_back(return_decl_t{ std::move($value), std::move(loc) });
-            $$ = fn_decl_t{ fn_pure_t{ .aname = std::move($name), .parameters = std::move($parameters), .result = nullptr, .kind = $fnkind }, ctx.push(std::move(sts)) };
+            $$ = fn_decl_t{ fn_pure_t{ .nameval = std::move($name.value), .location = std::move($name.location), .parameters = std::move($parameters), .result = nullptr, .kind = $fnkind }, ctx.push(std::move(sts)) };
             IGNORE_TERM($OPEN_PARENTHESIS);
-            //     $$ = fn_decl_t{ fn_pure_t{ .aname = std::move($name), .parameters = std::move($parameters), .result = std::move($value), .is_type_expression_result = false, .kind = $fnkind } }; IGNORE_TERM($OPEN_PARENTHESIS); }
+            //     $$ = fn_decl_t{ fn_pure_t{ .nameval = std::move($name.value), .location = std::move($name.location), .parameters = std::move($parameters), .result = std::move($value), .is_type_expression_result = false, .kind = $fnkind } }; IGNORE_TERM($OPEN_PARENTHESIS); }
         }
     | generic-statement
         { $$ = apply_visitor(statement_adopt_visitor<statement>{}, $1); }
@@ -445,9 +445,9 @@ finished-statement:
     | fn-start-decl[fnkind] fn-decl[fn] braced-statements[body]
         { $fn.kind = $fnkind; $$ = fn_decl_t{ std::move($fn), ctx.push(std::move($body)) }; }
     | STRUCT qname braced-statements[body]
-        { $$ = struct_decl{ std::move($qname), ctx.push(std::move($body)) }; }
+        { $$ = struct_decl{ .name = std::move($qname), .body = ctx.push(std::move($body)) }; }
     | STRUCT qname OPEN_PARENTHESIS[beginParams] parameter-list-opt[parameters] CLOSE_PARENTHESIS braced-statements[body]
-        { $$ = struct_decl{ fn_pure_t{ std::move($qname), std::move($parameters) }, ctx.push(std::move($body)) }; IGNORE_TERM($beginParams); }
+        { $$ = struct_decl{ .name = std::move($qname), .parameters = std::move($parameters), .body = ctx.push(std::move($body)) }; IGNORE_TERM($beginParams); }
     | ENUM enum-decl[enum]
         { $$ = std::move($enum); }
     ;
@@ -530,11 +530,11 @@ fn-name:
 
 fn-decl:
       fn-name[name] OPEN_PARENTHESIS parameter-list-opt[parameters] CLOSE_PARENTHESIS
-        { $$ = fn_pure_t{ .aname = std::move($name), .parameters = std::move($parameters) }; IGNORE_TERM($OPEN_PARENTHESIS); }
+        { $$ = fn_pure_t{ .nameval = std::move($name.value), .location = std::move($name.location), .parameters = std::move($parameters) }; IGNORE_TERM($OPEN_PARENTHESIS); }
     | fn-name[name] OPEN_PARENTHESIS parameter-list-opt[parameters] CLOSE_PARENTHESIS FARROW type-expr[type]
-        { $$ = fn_pure_t{ .aname = std::move($name), .parameters = std::move($parameters), .result = std::move($type) }; IGNORE_TERM($OPEN_PARENTHESIS); }
+        { $$ = fn_pure_t{ .nameval = std::move($name.value), .location = std::move($name.location), .parameters = std::move($parameters), .result = std::move($type) }; IGNORE_TERM($OPEN_PARENTHESIS); }
     | fn-name[name] OPEN_PARENTHESIS parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROW pattern[type]
-        { $$ = fn_pure_t{ .aname = std::move($name), .parameters = std::move($parameters), .result = std::move($type) }; IGNORE_TERM($OPEN_PARENTHESIS); }
+        { $$ = fn_pure_t{ .nameval = std::move($name.value), .location = std::move($name.location), .parameters = std::move($parameters), .result = std::move($type) }; IGNORE_TERM($OPEN_PARENTHESIS); }
     ;
 
 ///////////////////////////////////////////////// ENUMERATIONS
@@ -563,9 +563,9 @@ case-decl:
 
 struct-decl:
       qname ARROWEXPR OPEN_PARENTHESIS[begin] field-list-opt[fields] CLOSE_PARENTHESIS
-        { $$ = struct_decl{ std::move($qname), std::move($fields) }; IGNORE_TERM($begin); }
+        { $$ = struct_decl{ .name = std::move($qname), .body = std::move($fields) }; IGNORE_TERM($begin); }
     | qname OPEN_PARENTHESIS[beginParams] parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROWEXPR OPEN_PARENTHESIS[begin] field-list-opt[fields] CLOSE_PARENTHESIS
-        { $$ = struct_decl{ fn_pure_t{ std::move($qname), std::move($parameters) }, std::move($fields) }; IGNORE_TERM($beginParams); IGNORE_TERM($begin); }
+        { $$ = struct_decl{ .name = std::move($qname), .parameters = std::move($parameters), .body = std::move($fields) }; IGNORE_TERM($beginParams); IGNORE_TERM($begin); }
     ;
 
 /*
@@ -592,14 +592,14 @@ using-decl:
             auto sts = ctx.new_statement_list();
             auto loc = get_start_location($expr);
             sts.emplace_back(return_decl_t{ .expression = std::move($expr), .location = std::move(loc) });
-            $$ = using_decl{ fn_decl_t{ fn_pure_t{ .aname = std::move($qname), .result = nullptr }, ctx.push(std::move(sts)) } };
+            $$ = using_decl{ fn_decl_t{ fn_pure_t{ .nameval = std::move($qname.value), .location = std::move($qname.location), .result = nullptr }, ctx.push(std::move(sts)) } };
         }
     | qname OPEN_PARENTHESIS[beginParams] parameter-list-opt[parameters] CLOSE_PARENTHESIS ARROWEXPR syntax-expression[expr]
         {
             auto sts = ctx.new_statement_list();
             auto loc = get_start_location($expr);
             sts.emplace_back(return_decl_t{ std::move($expr), std::move(loc) });
-            $$ = using_decl{ fn_decl_t{ fn_pure_t{ .aname = std::move($qname), .parameters = std::move($parameters), .result = nullptr }, ctx.push(std::move(sts)) } };
+            $$ = using_decl{ fn_decl_t{ fn_pure_t{ .nameval = std::move($qname.value), .location = std::move($qname.location), .parameters = std::move($parameters), .result = nullptr }, ctx.push(std::move(sts)) } };
             IGNORE_TERM($beginParams);
         }
     ;

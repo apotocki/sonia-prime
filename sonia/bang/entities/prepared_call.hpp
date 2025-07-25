@@ -38,7 +38,7 @@ public:
         {}
     };
 
-    mutable small_vector<std::tuple<identifier, argument_cache>, 8> argument_caches_;
+    mutable small_vector<std::tuple<identifier, lex::resource_location, argument_cache>, 8> argument_caches_;
     uint64_t named_map_, positioned_map_; // bitmasks of named and positional arguments
 
     //mutable small_vector<std::tuple<identifier, argument_cache>, 8> named_argument_caches_;

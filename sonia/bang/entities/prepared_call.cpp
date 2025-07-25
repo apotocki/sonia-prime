@@ -238,7 +238,12 @@ error_storage prepared_call::prepare()
     uint64_t argbit = 1;
     for (auto const& arg : args) {
         auto [name, expr] = *arg;
-        argument_caches_.emplace_back(name ? name->value : identifier{}, expr);
+        if (name) {
+            argument_caches_.emplace_back(name->value, name->location, expr);
+        } else {
+            argument_caches_.emplace_back(identifier{}, get_start_location(expr), expr);
+        }
+
         if (name) {
             named_map_ |= argbit;
         } else {
@@ -338,7 +343,7 @@ prepared_call::session::use_next_positioned_argument(expected_result_t const& ex
         positioned_usage_map_ -= pow2_argindex; // remove the argument from the usage map
 
         // find the argument cache
-        auto& [name, arg_cache] = call.argument_caches_[argindex];
+        auto& [name, loc, arg_cache] = call.argument_caches_[argindex];
         BOOST_ASSERT(!name);
 
         auto res = do_resolve(arg_cache, exp);
@@ -377,7 +382,7 @@ prepared_call::session::use_named_argument(identifier name, expected_result_t co
         tmp_map -= pow2_argindex; // remove the argument from the usage map
 
         // find the argument cache
-        auto& [argname, arg_cache] = call.argument_caches_[argindex];
+        auto& [argname, loc, arg_cache] = call.argument_caches_[argindex];
         BOOST_ASSERT(argname);
 
         if (name != argname) continue; // not the argument we are looking for
@@ -419,7 +424,7 @@ prepared_call::session::use_next_argument(expected_result_t const& exp, std::tup
         positioned_usage_map_ &= ~pow2_argindex; // remove the argument from the positioned usage map
 
         // find the argument cache
-        auto& [argname, arg_cache] = call.argument_caches_[argindex];
+        auto& [argname, loc, arg_cache] = call.argument_caches_[argindex];
 
         auto res = do_resolve(arg_cache, exp);
 #ifdef BANG_SKIP_VOID_ARGUMENTS
@@ -454,9 +459,9 @@ named_expression_t prepared_call::session::unused_argument()
         uint64_t pow2_argindex = tmp_map - ((tmp_map - 1) & tmp_map);
         uint8_t argindex = sonia::sal::log2(pow2_argindex);
 
-        auto& [argname, arg_cache] = call.argument_caches_[argindex];
+        auto& [argname, loc, arg_cache] = call.argument_caches_[argindex];
 #ifdef BANG_SKIP_VOID_ARGUMENTS
-        return argname ? named_expression_t{ argname, arg_cache.expression } : named_expression_t{ arg_cache.expression };
+        return argname ? named_expression_t{ annotated_identifier{ argname, loc }, arg_cache.expression } : named_expression_t{ arg_cache.expression };
 #else
         auto res = do_resolve(arg_cache, expected_result_t{ .type = ctx.u().get(builtin_eid::void_), .modifier = parameter_constraint_modifier_t::const_type });
         if (!res) { // not a void argument

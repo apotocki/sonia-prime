@@ -290,6 +290,7 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_fn_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_get_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\struct\struct_init_pattern.hpp" />
+    <ClInclude Include="..\..\..\sonia\bang\entities\tuple\generic_get_pattern_matcher.ipp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_empty_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_equal_pattern.hpp" />
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\tuple_get_pattern.hpp" />

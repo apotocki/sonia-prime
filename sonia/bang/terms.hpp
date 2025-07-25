@@ -119,6 +119,11 @@ inline parameter_constraint_modifier_t operator&(parameter_constraint_modifier_t
     return static_cast<parameter_constraint_modifier_t>(static_cast<uint8_t>(lhs) & static_cast<uint8_t>(rhs));
 }
 
+inline bool has(parameter_constraint_modifier_t tested, parameter_constraint_modifier_t feature) noexcept
+{
+    return (tested & feature) == feature;
+}
+
 inline bool can_be_constexpr(parameter_constraint_modifier_t m) noexcept
 {
     return (m & parameter_constraint_modifier_t::any_constexpr_type) != parameter_constraint_modifier_t::none;

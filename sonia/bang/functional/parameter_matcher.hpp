@@ -20,13 +20,11 @@ class parameter_matcher
     parameter_iteator param_bit, param_it, param_end;
     prepared_call const& call;
     prepared_call::session call_session;
-    
+    functional_match_descriptor& md;
 
 public:
-    parameter_matcher(fn_compiler_context& caller_ctx, prepared_call const&, basic_fn_pattern::parameters_t const&);
+    parameter_matcher(fn_compiler_context& caller_ctx, prepared_call const&, basic_fn_pattern::parameters_t const&, functional_match_descriptor&);
     error_storage match(fn_compiler_context& callee_ctx);
-
-    shared_ptr<functional_match_descriptor> pmd;
 
 protected:
     std::expected<expected_result_t, error_storage> resolve_expression_expected_result(fn_compiler_context& callee_ctx, annotated_identifier const&, parameter_constraint_modifier_t, syntax_expression_t const&, entity_identifier& pconstraint_value_eid);

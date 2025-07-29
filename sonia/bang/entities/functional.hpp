@@ -314,8 +314,6 @@ public:
 
         std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&);
 
-        //inline bool is_constexpr() const noexcept { return md_->is_constexpr(); }
-
     private:
         pattern const* ptrn_;
         functional_match_descriptor_ptr md_;

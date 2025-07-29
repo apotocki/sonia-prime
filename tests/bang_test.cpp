@@ -184,7 +184,7 @@ void bang_suite_test()
     //    }
     //    // std::cout << p.path().filename() << "\n";
     //    });
-    } 
+    //} 
 }
 
 void bang_test_registrar()

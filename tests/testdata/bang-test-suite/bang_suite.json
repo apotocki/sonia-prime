@@ -11,6 +11,10 @@
     {
         "src": "file2.bang",
         "output": ""
+    },
+    {
+        "src": "file6.bang",
+        "output": "test function called"
     }/*
     
     {

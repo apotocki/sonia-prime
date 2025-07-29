@@ -366,7 +366,7 @@ HASHTAG					"#"
 	{BITOR}				       { variant_emplace(location); return (bang_lang::parser::token::BITOR); }
 	{AMPERSAND}                { variant_emplace(location); return (bang_lang::parser::token::AMPERSAND); }
 	{EXCLPT}                   { variant_emplace(location); return (bang_lang::parser::token::EXCLPT); }
-	{QMARK}                    { return (bang_lang::parser::token::QMARK); }
+	{QMARK}                    { variant_emplace(location); return (bang_lang::parser::token::QMARK); }
 	{DBLCOLON}                 { return (bang_lang::parser::token::DBLCOLON); }
 	{PLUS}					   { variant_emplace(location); return (bang_lang::parser::token::PLUS); }
 	{MINUS}					   { variant_emplace(location); return (bang_lang::parser::token::MINUS); }

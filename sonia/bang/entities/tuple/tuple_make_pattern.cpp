@@ -32,7 +32,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern
         }
         auto& ser = res->first;
         if (get<0>(argdescr)) {
-            pmd->signature.emplace_back(get<0>(argdescr), ser.value_or_type, ser.is_const_result);
+            pmd->signature.emplace_back(get<0>(argdescr).value, ser.value_or_type, ser.is_const_result);
         } else {
             pmd->signature.emplace_back(ser.value_or_type, ser.is_const_result);
         }

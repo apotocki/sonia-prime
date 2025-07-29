@@ -128,8 +128,16 @@ inline fn assert_not_equal(_, _, location:~ string = __call_location) ~> () {
 inline fn print(~string ...) ~> () {
     __print($0 ..., size($0));
 }
-inline fn __bit_and(typename tuple($l: ...), typename tuple($r: ...)) => tuple($l ..., $r ...);
-//inline fn ::set(self: object, property: const __identifier, any)->object => set(self: self, to_string(property), $0);
+
+inline fn __bit_and(:typename tuple($l...), :typename tuple($r...)) => tuple($l..., $r...);
+
+inline fn foldl($f, $z) => $z;
+inline fn foldl($f, $z, $elements ...) => foldl($f, $f($z, head($elements)), tail($elements)...);
+
+inline fn foldr($f, $z) => $z;
+inline fn foldr($f, $z, $elements ...) => $f(head($elements), foldr($f, $z, tail($elements)...));
+
+inline fn ::set(self: runtime object, property: constexpr __identifier, : ~runtime any) => set(self: self, property: to_string(property), $0);
 )#";
 
 bang_impl::bang_impl()
@@ -264,16 +272,25 @@ void bang_impl::compile(statement_span decls, span<string_view> args)
     if (err) {
         throw exception(unit_.print(*err));
     }
-    // at first compile all functions
-    unit_.eregistry_traverse([this](entity& e) {
+
+    // at first built all functions, then compile them
+    std::vector<internal_function_entity*> fns;
+    unit_.eregistry_traverse([this, &fns](entity& e) {
         //GLOBAL_LOG_INFO() << unit_.print(e);
-        if (auto fe = dynamic_cast<internal_function_entity*>(&e); fe) {
-            do_compile(*fe);
+        if (auto* fe = dynamic_cast<internal_function_entity*>(&e); fe) {
+            if (!fe->is_built()) {
+                if (auto err = fe->build(unit_)) {
+                    throw exception("function '%1%' build error: %2%"_fmt % unit_.print(fe->id) % unit_.print(*err));
+                }
+            }
+            fns.push_back(fe);
         }
         return true;
     });
-
-
+    for (internal_function_entity* fe : fns) {
+        //GLOBAL_LOG_INFO() << unit_.print(*fe);
+        do_compile(*fe);
+    }
 
     // all arguments referenced as constants => no fp prolog/epilog code
     asm_builder_t::function_descriptor& fd = vmasm_.resolve_function(vmasm::fn_identity<identifier>{ main_id });

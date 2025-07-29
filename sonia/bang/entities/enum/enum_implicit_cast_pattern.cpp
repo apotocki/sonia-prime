@@ -20,71 +20,46 @@
 
 namespace sonia::lang::bang {
 
-//error_storage enum_implicit_cast_check_argument_type(fn_compiler_context& ctx, annotated_entity_identifier const& argtype, annotated_entity_identifier const& exptype)
-//{
-//    entity const& ent = ctx.u().eregistry_get(argtype.value);
-//    struct_entity const* sent = dynamic_cast<struct_entity const*>(&ent);
-//    if (!sent) {
-//        return make_error<type_mismatch_error>(argtype.location, argtype.value, "a structure"sv);
-//    }
-//    auto uteid = sent->underlying_tuple_eid(ctx);
-//    if (!uteid) return std::move(uteid.error());
-//    if (*uteid != exptype.value) {
-//        return make_error<type_mismatch_error>(exptype.location, exptype.value, *uteid);
-//    }
-//    return {};
-//}
-
 std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     if (!exp.type) {
         return std::unexpected(make_error<basic_general_error>(call.location, "expected an enumeration result"sv));
     }
     unit& u = ctx.u();
-    entity const& ent = get_entity(u, exp.type);
-    enum_entity const* penum = dynamic_cast<enum_entity const*>(&ent);
+    entity const& enum_ent = get_entity(u, exp.type);
+    enum_entity const* penum = dynamic_cast<enum_entity const*>(&enum_ent);
     if (!penum) {
         return std::unexpected(make_error<type_mismatch_error>(exp.location, exp.type, "an enumeration"sv));
     }
 
-    functional_match_descriptor_ptr pmd;
-
-    for (auto const& arg : call.args) {
-        annotated_identifier const* pargname = arg.name();
-        auto const& argexpr = arg.value();
-        auto res = apply_visitor(ct_expression_visitor{ ctx, call.expressions, expected_result_t{ .type = u.get(builtin_eid::identifier), .modifier = value_modifier_t::constexpr_value } }, argexpr);
-        if (!res) {
-            return std::unexpected(append_cause(
-                make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr),
-                std::move(res.error())));
+    auto call_session = call.new_session(ctx);
+    prepared_call::argument_descriptor_t arg_expr;
+    auto arg = call_session.use_next_positioned_argument(expected_result_t{ .type = u.get(builtin_eid::identifier), .modifier = value_modifier_t::constexpr_value }, &arg_expr);
+    if (!arg) {
+        if (!arg.error()) {
+            return std::unexpected(make_error<basic_general_error>(call.location, "missing required argument"sv));
         }
-        //if (get<0>(*res) == u.get(builtin_eid::void_)) continue; // skip void argument
-
-        if (pmd || pargname) {
-            return std::unexpected(make_error<basic_general_error>(pargname ? pargname->location : get_start_location(argexpr), "argument mismatch"sv, argexpr));
-        }
-
-        entity const& ent = get_entity(u, res->value);
-        identifier_entity const* pident = dynamic_cast<identifier_entity const*>(&ent);
-        if (!pident) {
-            return std::unexpected(make_error<value_mismatch_error>(get_start_location(argexpr), res->value, "an identifier"sv));
-        }
-        // check identifier value
-        if (auto optpos = penum->find(pident->value()); !optpos) {
-            return std::unexpected(make_error<basic_general_error>(get_start_location(argexpr), "not an enumeration identifier"sv, res->value));
-        }
-
-        pmd = make_shared<functional_match_descriptor>(call);
-        pmd->emplace_back(0, syntax_expression_result_t{
-            .expressions = res->expressions,
-            .value_or_type = res->value,
-            .is_const_result = true
-        });
+        return std::unexpected(std::move(arg.error()));
     }
-    if (!pmd) {
-        return std::unexpected(make_error<basic_general_error>(call.location, "unmatched parameter"sv));
+    if (auto argterm = call_session.unused_argument(); argterm) {
+        return std::unexpected(make_error<basic_general_error>(argterm.location(), "argument mismatch"sv, std::move(argterm.value())));
     }
-    pmd->signature.result.emplace(exp.type);
+
+    syntax_expression_result_t& arg_er = arg->first;
+    entity const& ent = get_entity(u, arg_er.value());
+    identifier_entity const* pident = dynamic_cast<identifier_entity const*>(&ent);
+    BOOST_ASSERT(pident);
+    
+    // check identifier value
+    if (auto optpos = penum->find(pident->value()); !optpos) {
+        return std::unexpected(make_error<basic_general_error>(get_start_location(*get<0>(arg_expr)), "not an enumeration identifier"sv, pident->id));
+    }
+
+    functional_match_descriptor_ptr pmd = make_shared<functional_match_descriptor>(call);
+    pmd->emplace_back(0, arg_er);
+    pmd->void_spans = std::move(call_session.void_spans);
+    bool is_runtime = can_be_only_runtime(exp.modifier);
+    pmd->signature.result.emplace(is_runtime ? exp.type : u.make_string_entity(u.print(pident->value()), exp.type).id, !can_be_only_runtime(exp.modifier));
     return pmd;
 }
 
@@ -92,17 +67,22 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
 std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto& [_, ser] = md.matches.front();
-    entity const& ent = get_entity(u, ser.value());
-    identifier_entity const* pie = dynamic_cast<identifier_entity const*>(&ent);
-    BOOST_ASSERT(pie);
-    
-    // return typed by enumeration string
-    return syntax_expression_result_t{
-        .expressions = md.merge_void_spans(el),
-        .value_or_type = u.make_string_entity(u.print(pie->value()), md.signature.result->entity_id()).id,
-        .is_const_result = true
+    syntax_expression_result_t& ser = get<1>(md.matches.front());
+
+    auto const& rfd = *md.signature.result;
+    syntax_expression_result_t result{
+        .temporaries = std::move(ser.temporaries),
+        .expressions = el.concat(md.merge_void_spans(el), ser.expressions),
+        .value_or_type = rfd.entity_id(),
+        .is_const_result = rfd.is_const()
     };
+    if (!result.is_const_result) {
+        entity const& ent = get_entity(u, ser.value());
+        identifier_entity const* pident = dynamic_cast<identifier_entity const*>(&ent);
+        BOOST_ASSERT(pident);
+        u.push_back_expression(el, result.expressions, semantic::push_value{ smart_blob{ string_blob_result(u.print(pident->value())) } });
+    }
+    return result;
 }
 
 }

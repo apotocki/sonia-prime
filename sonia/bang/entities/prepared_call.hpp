@@ -54,7 +54,7 @@ public:
     error_storage prepare();
 
     using argument_descriptor_t = std::pair<syntax_expression_t const*, size_t>;
-    using next_argument_descriptor_t = std::tuple<identifier, syntax_expression_t const*, size_t>;
+    using next_argument_descriptor_t = std::tuple<annotated_identifier, syntax_expression_t const*, size_t>;
 
     struct session
     {

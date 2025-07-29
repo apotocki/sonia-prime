@@ -48,7 +48,7 @@ public:
 
     std::ostream& print_to(std::ostream& os, unit const& u) const override
     {
-        if constexpr (std::is_same_v<ValueT, identifier> || std::is_same_v<ValueT, qname_identifier>) {
+        if constexpr (std::is_same_v<ValueT, identifier> || std::is_same_v<ValueT, qname_identifier> || std::is_same_v<ValueT, qname>) {
             os << '\'';
             u.print_to(os, value_);
             os << '\'';

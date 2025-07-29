@@ -6,9 +6,9 @@
 #include "functional.hpp"
 
 #include "sonia/bang/ast/fn_compiler_context.hpp"
-//#include "sonia/bang/entities/ellipsis/pack_entity.hpp"
 
 #include "sonia/bang/entities/prepared_call.hpp"
+#include "sonia/bang/entities/literals/literal_entity.hpp"
 
 #include "sonia/bang/errors/function_call_match_error.hpp"
 #include "sonia/bang/errors/pattern_match_error.hpp"
@@ -257,7 +257,13 @@ entity_identifier functional::default_entity(fn_compiler_context& ctx) const
     shared_ptr<entity_resolver> resolver;
     {
         lock_guard lock{ default_entity_mtx_ };
-        if (auto* p = get<annotated_entity_identifier>(&default_entity_); p) return p->value; // if not defined, return empty entity_identifier here
+        if (auto* p = get<annotated_entity_identifier>(&default_entity_); p) {
+            if (!p->value) {
+                // if default entity is not defined, return qname entity of this functional
+                return ctx.u().make_qname_entity(name()).id;
+            }
+            return p->value;
+        }
         resolver = get<shared_ptr<entity_resolver>>(default_entity_);
     }
     

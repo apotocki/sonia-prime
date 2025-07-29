@@ -1352,7 +1352,7 @@ unit::unit()
     implicit_cast_fnl.push(make_shared<array_implicit_cast_pattern>());
     implicit_cast_fnl.push(make_shared<array_elements_implicit_cast_pattern>());
     implicit_cast_fnl.push(make_shared<union_implicit_cast_pattern>());
-    implicit_cast_fnl.push(make_shared<numeric_implicit_cast_pattern>());
+    //implicit_cast_fnl.push(make_shared<numeric_implicit_cast_pattern>());
     implicit_cast_fnl.push(make_shared<tuple_implicit_cast_pattern>());
     implicit_cast_fnl.push(make_shared<const_literal_implicit_cast_pattern>());
 
@@ -1427,30 +1427,30 @@ unit::unit()
     //functional& eq_fnl = fregistry_resolve(eq_qname_identifier_);
     //eq_fnl.push(make_shared<eq_pattern>());
 
-    builtin_eids_[(size_t)builtin_eid::arrayify] = set_builtin_extern("__arrayify(..., ~integer)~>tuple($0...)"sv, &bang_arrayify);
-    builtin_eids_[(size_t)builtin_eid::array_tail] = set_builtin_extern("__array_tail(tuple(_, $t: ...))~>tuple($t...)"sv, &bang_array_tail);
+    builtin_eids_[(size_t)builtin_eid::arrayify] = set_builtin_extern("__arrayify(..., ~ runtime integer)~>tuple($0...)"sv, &bang_arrayify);
+    builtin_eids_[(size_t)builtin_eid::array_tail] = set_builtin_extern("__array_tail(:runtime tuple(_, $t...))~>tuple($t...)"sv, &bang_array_tail);
     builtin_eids_[(size_t)builtin_eid::array_at] = set_builtin_extern("__array_at()->any"sv, &bang_array_at);
-    builtin_eids_[(size_t)builtin_eid::equal] = set_builtin_extern("__equal(any, any)->bool"sv, &bang_any_equal);
-    builtin_eids_[(size_t)builtin_eid::assert] = set_builtin_extern("__assert(any)"sv, &bang_assert);
-    builtin_eids_[(size_t)builtin_eid::to_string] = set_builtin_extern("__to_string(any)->string"sv, &bang_tostring);
-    builtin_eids_[(size_t)builtin_eid::negate] = set_builtin_extern("__negate(any)->bool"sv, &bang_negate);
-    builtin_eids_[(size_t)builtin_eid::concat] = set_builtin_extern("__concat(any)->string"sv, &bang_concat);
-    builtin_eids_[(size_t)builtin_eid::error] = set_builtin_extern("__error(string)"sv, &bang_error);
+    builtin_eids_[(size_t)builtin_eid::equal] = set_builtin_extern("__equal(:runtime any, :runtime any)->bool"sv, &bang_any_equal);
+    builtin_eids_[(size_t)builtin_eid::assert] = set_builtin_extern("__assert(:runtime any)"sv, &bang_assert);
+    builtin_eids_[(size_t)builtin_eid::to_string] = set_builtin_extern("__to_string(:runtime any)->string"sv, &bang_tostring);
+    builtin_eids_[(size_t)builtin_eid::negate] = set_builtin_extern("__negate(:runtime any)->bool"sv, &bang_negate);
+    builtin_eids_[(size_t)builtin_eid::concat] = set_builtin_extern("__concat(:runtime any)->string"sv, &bang_concat);
+    builtin_eids_[(size_t)builtin_eid::error] = set_builtin_extern("__error(:runtime string)"sv, &bang_error);
     //set_const_extern<to_string_pattern>("size(const metaobjct))->integer"sv);
 
     //set_extern<external_fn_pattern>("__error(mut string)"sv, &bang_error);
-    set_builtin_extern("__print(runtime ..., ~runtime integer)"sv, &bang_print_string);
+    set_builtin_extern("__print(:runtime ..., ~runtime integer)"sv, &bang_print_string);
 
     //set_extern("implicit_cast(to: typename string, _)->string"sv, &bang_tostring);
     //set_const_extern<to_string_pattern>("to_string(const __identifier)->string"sv);
     //set_extern<external_fn_pattern>("to_string(_)->string"sv, &bang_tostring);
     //set_extern<external_fn_pattern>("implicit_cast(mut integer)->decimal"sv, &bang_int2dec);
     //set_extern<external_fn_pattern>("implicit_cast(mut integer)->float"sv, &bang_int2flt);
-    set_builtin_extern("create_extern_object(runtime string)~>object"sv, &bang_create_extern_object);
+    set_builtin_extern("create_extern_object(:runtime string)~>object"sv, &bang_create_extern_object);
 
     //set_extern<external_fn_pattern>("set(self: object, property: const __identifier, any)"sv, &bang_set_object_property);
 
-    set_builtin_extern("set(self:~ object, property:~constexpr string, ~any)~>object"sv, &bang_set_object_property);
+    set_builtin_extern("set(self:~ object, property:~ runtime string, ~ runtime any)~>object"sv, &bang_set_object_property);
 
     //set_extern("string(any)->string"sv, &bang_tostring);
     //set_extern<external_fn_pattern>("assert(bool)"sv, &bang_assert);
@@ -1458,8 +1458,8 @@ unit::unit()
     // temporary
     
     //set_extern<external_fn_pattern>("negate(mut _)->bool"sv, &bang_negate);
-    set_builtin_extern("__plus(integer, integer)->integer"sv, &bang_operator_plus_integer);
-    set_builtin_extern("__plus(decimal, decimal)->decimal"sv, &bang_operator_plus_decimal);
+    set_builtin_extern("__plus(:integer, :integer)->integer"sv, &bang_operator_plus_integer);
+    set_builtin_extern("__plus(:decimal, :decimal)->decimal"sv, &bang_operator_plus_decimal);
 
 }
 

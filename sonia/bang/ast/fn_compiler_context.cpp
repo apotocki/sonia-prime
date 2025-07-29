@@ -495,7 +495,8 @@ variant<entity_identifier, local_variable const&> fn_compiler_context::lookup_en
     }
 
     functional const* pfn = lookup_functional(name.value);
-    if (pfn) return pfn->default_entity(*this);
+    if (pfn) 
+        return pfn->default_entity(*this);
     return entity_identifier{}; // undeclared
 }
 

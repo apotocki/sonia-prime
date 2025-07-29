@@ -414,7 +414,7 @@ prepared_call::session::use_named_argument(identifier name, expected_result_t co
 }
 
 std::expected<std::pair<syntax_expression_result_t, bool>, error_storage>
-prepared_call::session::use_next_argument(expected_result_t const& exp, std::tuple<identifier, syntax_expression_t const*, size_t>* pe)
+prepared_call::session::use_next_argument(expected_result_t const& exp, next_argument_descriptor_t* pe)
 {
     for (auto tmp_map = named_usage_map_ | positioned_usage_map_; tmp_map;) {
         uint64_t pow2_argindex = tmp_map - ((tmp_map - 1) & tmp_map);
@@ -429,7 +429,7 @@ prepared_call::session::use_next_argument(expected_result_t const& exp, std::tup
         auto res = do_resolve(arg_cache, exp);
 #ifdef BANG_SKIP_VOID_ARGUMENTS
         if (pe) {
-            *pe = { argname, &arg_cache.expression, argindex };
+            *pe = { annotated_identifier{ .value = argname, .location = loc }, &arg_cache.expression, argindex };
         }
         return res;
 #else

@@ -539,7 +539,10 @@ struct pattern
 {
     struct field
     {
+        // unnamed, any name, particular name, bind name to identifier, name is the result of an expression
         variant<nullptr_t, placeholder, annotated_identifier, context_identifier, ExprT> name;
+        // used for binding the value to a variable
+        annotated_identifier bound_variable;
         pattern<ExprT> value;
         bool ellipsis = false;
     };
@@ -554,7 +557,7 @@ struct pattern
         pattern_list_t fields;
     };
 
-    variant<placeholder, context_identifier, signature_descriptor, ExprT> descriptor;
+    variant<placeholder, signature_descriptor, ExprT> descriptor;
     concept_expression_list_t concepts;
 };
 

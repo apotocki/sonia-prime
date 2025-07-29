@@ -19,47 +19,48 @@ error_storage pattern_matcher::match(pattern_t const& pattern, annotated_entity_
     return apply_visitor(make_functional_visitor<error_storage>([this, &pattern, &type](auto const& d) {
         if constexpr (std::is_same_v<placeholder, std::decay_t<decltype(d)>>) {
             return do_match_concepts(pattern.concepts, type); // Placeholder matches any entity, no binding needed
-        } else if constexpr (std::is_same_v<context_identifier, std::decay_t<decltype(d)>>) {
-            return do_match_context_identifier(d, pattern, type);
+        //} else if constexpr (std::is_same_v<context_identifier, std::decay_t<decltype(d)>>) {
+        //    return do_match_context_identifier(d, pattern, type);
         } else if constexpr (std::is_same_v<syntax_expression_t, std::decay_t<decltype(d)>>) {
             auto expr_res = apply_visitor(ct_expression_visitor{ ctx_, expressions_ }, d);
             if (!expr_res) { return std::move(expr_res.error()); }
             if (type.value == expr_res->value) { return do_match_concepts(pattern.concepts, type); } // Expression matches the type
             return make_error<type_mismatch_error>(type.location, type.value, expr_res->value, get_start_location(d));
-        } else  if constexpr (std::is_same_v<pattern_t::signature_descriptor, std::decay_t<decltype(d)>>) {
+        } else { //if constexpr (std::is_same_v<pattern_t::signature_descriptor, std::decay_t<decltype(d)>>) {
+            static_assert(std::is_same_v<pattern_t::signature_descriptor, std::decay_t<decltype(d)>>);
             return do_match(d, pattern, type);
-        } else {
+        //} else {
             // Should not happen, all cases should be handled above
-            return make_error<basic_general_error>(get_start_location(pattern), "Internal error: Unknown pattern descriptor type"sv, type.value, type.location);
+        //    return make_error<basic_general_error>(get_start_location(pattern), "Internal error: Unknown pattern descriptor type"sv, type.value, type.location);
         }
     }), pattern.descriptor);
 }
 
-error_storage pattern_matcher::do_match_context_identifier(context_identifier cid, pattern_t const& pattern, annotated_entity_identifier const& type) const
-{
-    lex::resource_location const* loc;
-    auto optbound = bindings_.lookup(cid.name.value, &loc);
-    if (optbound) {
-        return apply_visitor(make_functional_visitor<error_storage>([this, &cid, &pattern, &type, loc](auto const& v) -> error_storage {
-            if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
-                if (v != type.value) {
-                    return make_error<type_mismatch_error>(cid.name.location, type.value, v, *loc);
-                }
-                return do_match_concepts(pattern.concepts, type);
-            } else if constexpr (std::is_same_v<shared_ptr<entity>, std::decay_t<decltype(v)>>) {
-                //BOOST_ASSERT((pattern.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis);
-                THROW_NOT_IMPLEMENTED_ERROR("do_match_context_identifier for shared_ptr<entity> is not implemented yet");
-            } else {
-                return make_error<basic_general_error>(get_start_location(pattern), "Internal error: Context identifier is bound to an unexpected type"sv);
-            }
-        }), *optbound);
-    }
-    //if ((pattern.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis) {
-    //    THROW_NOT_IMPLEMENTED_ERROR("do_match_context_identifier for ellipsis is not implemented yet");
-    //}
-    bindings_.emplace_back(cid.name, type.value);
-    return do_match_concepts(pattern.concepts, type); // Context identifier matches the type
-}
+//error_storage pattern_matcher::do_match_context_identifier(context_identifier cid, pattern_t const& pattern, annotated_entity_identifier const& type) const
+//{
+//    lex::resource_location const* loc;
+//    auto optbound = bindings_.lookup(cid.name.value, &loc);
+//    if (optbound) {
+//        return apply_visitor(make_functional_visitor<error_storage>([this, &cid, &pattern, &type, loc](auto const& v) -> error_storage {
+//            if constexpr (std::is_same_v<entity_identifier, std::decay_t<decltype(v)>>) {
+//                if (v != type.value) {
+//                    return make_error<type_mismatch_error>(cid.name.location, type.value, v, *loc);
+//                }
+//                return do_match_concepts(pattern.concepts, type);
+//            } else if constexpr (std::is_same_v<shared_ptr<entity>, std::decay_t<decltype(v)>>) {
+//                //BOOST_ASSERT((pattern.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis);
+//                THROW_NOT_IMPLEMENTED_ERROR("do_match_context_identifier for shared_ptr<entity> is not implemented yet");
+//            } else {
+//                return make_error<basic_general_error>(get_start_location(pattern), "Internal error: Context identifier is bound to an unexpected type"sv);
+//            }
+//        }), *optbound);
+//    }
+//    //if ((pattern.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis) {
+//    //    THROW_NOT_IMPLEMENTED_ERROR("do_match_context_identifier for ellipsis is not implemented yet");
+//    //}
+//    bindings_.emplace_back(cid.name, type.value);
+//    return do_match_concepts(pattern.concepts, type); // Context identifier matches the type
+//}
 
 error_storage pattern_matcher::do_match_concepts(span<const syntax_expression_t> concepts, annotated_entity_identifier const& type) const
 {
@@ -99,18 +100,20 @@ error_storage pattern_matcher::do_match(pattern_t::signature_descriptor const& s
 
     for (fld_it = fld_bit; fld_it != fld_end; ++fld_it) {
         pattern_t::field const& field = *fld_it;
+        if (field.bound_variable) {
+            lex::resource_location const* pl;
+            auto const* pval = bindings_.lookup(field.bound_variable.value, &pl);
+            if (pval) {
+                return make_error<basic_general_error>(field.bound_variable.location,
+                    "identifier is already bound"sv, field.bound_variable, *pl);
+            }
+        }
         if (field.ellipsis) {
             err = apply_visitor(make_functional_visitor<error_storage>([this, psig, &smplfields, &type](auto const& field_name) -> error_storage {
                 if constexpr (std::is_same_v<nullptr_t, std::decay_t<decltype(field_name)>>) {
-                    return do_match_positioned_ellipsis_field({}, smplfields);
-                } else if constexpr (std::is_same_v<context_identifier, std::decay_t<decltype(field_name)>>) {
-                    lex::resource_location const* pl;
-                    auto const* pval = bindings_.lookup(field_name.name.value, &pl);
-                    if (pval) {
-                        return make_error<basic_general_error>(field_name.name.location,
-                            "identifier is already bound"sv, field_name.name, *pl);
-                    }
-                    return do_match_positioned_ellipsis_field(field_name.name, smplfields);
+                    return do_match_positioned_ellipsis_field(fld_it->bound_variable, smplfields);
+                //} else if constexpr (std::is_same_v<context_identifier, std::decay_t<decltype(field_name)>>) {
+                //    return do_match_positioned_ellipsis_field(field_name.name, smplfields);
                     //const field_descriptor* pfd = psig->find_field(field_name.name.value);
                     //return {}; // Field matches
                 } else {
@@ -133,6 +136,9 @@ error_storage pattern_matcher::do_match(pattern_t::signature_descriptor const& s
                     THROW_NOT_IMPLEMENTED_ERROR("do_match for signature_descriptor with non-ellipsis field is not implemented yet");
                 }
             }), field.name);
+            if (!err && field.bound_variable) {
+                bindings_.emplace_back(field.bound_variable, smplfields.front().entity_id());
+            }
             smplfields = smplfields.subspan(1); // Move to the next field
         }
         if (err) return err;

@@ -269,12 +269,13 @@ error_storage declaration_visitor::operator()(if_decl const& stm) const
     auto res = apply_visitor(vis, stm.condition);
     if (!res) return std::move(res.error());
     syntax_expression_result_t& er = res->first;
-
+    
     //GLOBAL_LOG_INFO() << "-----------------";
     //er.expressions.for_each([this](semantic::expression const& e) {
     //    GLOBAL_LOG_INFO() << u().print(e);
     //});
     //GLOBAL_LOG_INFO() << "-----------------";
+
     size_t scope_sz = append_result(el, er);
     
     if (er.is_const_result) { // constexpr result

@@ -32,7 +32,7 @@ public:
 private:
     error_storage do_match(pattern_t::signature_descriptor const&, pattern_t const& pattern, annotated_entity_identifier const&) const;
 
-    error_storage do_match_context_identifier(context_identifier, pattern_t const& pattern, annotated_entity_identifier const&) const;
+    //error_storage do_match_context_identifier(context_identifier, pattern_t const& pattern, annotated_entity_identifier const&) const;
     error_storage do_match_concepts(span<const syntax_expression_t>, annotated_entity_identifier const&) const;
 
     error_storage do_match_positioned_ellipsis_field(annotated_identifier boundid, span<const field_descriptor>& smplfields) const;

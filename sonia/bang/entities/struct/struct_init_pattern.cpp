@@ -49,16 +49,16 @@ error_storage struct_init_pattern::init(fn_compiler_context& ctx, annotated_qnam
         auto [external_name, internal_name] = apply_visitor(param_name_retriever{}, param.name);
         if (external_name) {
             if (internal_name) {
-                sigdesc.fields.emplace_back(*external_name, pattern_t{ .descriptor = context_identifier{ annotated_identifier{ internal_name->value, internal_name->location } } });
+                sigdesc.fields.emplace_back(*external_name, annotated_identifier{ internal_name->value, internal_name->location }, pattern_t{ .descriptor = placeholder{} });
             } else {
                 // to do: prepare and use replacement
-                sigdesc.fields.emplace_back(*external_name, pattern_t{ .descriptor = context_identifier{ annotated_identifier{ external_name->value, external_name->location } } });
+                sigdesc.fields.emplace_back(*external_name, annotated_identifier{ external_name->value, external_name->location }, pattern_t{ .descriptor = placeholder{} });
             }
         } else if (internal_name) {
             BOOST_ASSERT(*internal_name);
-            sigdesc.fields.emplace_back(nullptr, pattern_t{ .descriptor = context_identifier{ annotated_identifier{ internal_name->value, internal_name->location } } });
+            sigdesc.fields.emplace_back(nullptr, annotated_identifier{ internal_name->value, internal_name->location }, pattern_t{ .descriptor = placeholder{} });
         } else {
-            sigdesc.fields.emplace_back(nullptr, pattern_t{ .descriptor = placeholder{} });
+            sigdesc.fields.emplace_back(nullptr, annotated_identifier{}, pattern_t{ .descriptor = placeholder{} });
         }
     }
 

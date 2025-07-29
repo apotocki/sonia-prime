@@ -17,7 +17,7 @@ public:
 
     std::expected<syntax_expression_result_t, error_storage> apply(fn_compiler_context&, semantic::expression_list_t&, functional_match_descriptor&) const override;
 
-    std::ostream& print(unit const&, std::ostream& s) const override { return s << "empty(tuple)"sv; }
+    std::ostream& print(unit const&, std::ostream& s) const override { return s << "empty(:tuple(...))~>constexpr bool"sv; }
 };
 
 }

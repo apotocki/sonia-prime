@@ -6945,7 +6945,7 @@ YY_RULE_SETUP
 case 62:
 YY_RULE_SETUP
 #line 369 "bang.l"
-{ return (bang_lang::parser::token::QMARK); }
+{ variant_emplace(location); return (bang_lang::parser::token::QMARK); }
 	YY_BREAK
 case 63:
 YY_RULE_SETUP

@@ -5,11 +5,9 @@
 #include "sonia/config.hpp"
 #include "tuple_size_pattern.hpp"
 
-#include "sonia/bang/functional/generic_pattern_base.ipp"
-
 #include "sonia/bang/ast/fn_compiler_context.hpp"
 
-#include "sonia/bang/entities/signatured_entity.hpp"
+#include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
@@ -37,7 +35,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_size_pattern
             if (auto psig = arg_entity.signature(); psig && psig->name == u.get(builtin_qnid::tuple)) {
                 // argument is typename tuple
                 pmd = make_shared<functional_match_descriptor>(call);
-                pmd->signature.result.emplace(ctx.u().make_integer_entity(psig->fields().size()).id, true);
+                pmd->signature.result.emplace(u.make_integer_entity(psig->fields().size()).id, true);
             } else {
                 argtype = arg_entity.get_type();
             }
@@ -52,12 +50,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_size_pattern
                 return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(arg_descr)), er.value_or_type, "a tuple"sv));
             }
             pmd = make_shared<functional_match_descriptor>(call);
-            pmd->signature.result.emplace(ctx.u().make_integer_entity(psig->fields().size()).id, true);
+            pmd->signature.result.emplace(u.make_integer_entity(psig->fields().size()).id, true);
         }
         pmd->emplace_back(0, er);
     } else { // void argument case, returns 0;
         pmd = make_shared<functional_match_descriptor>(call);
-        pmd->signature.result.emplace(ctx.u().make_integer_entity(0).id, true);
+        pmd->signature.result.emplace(u.make_integer_entity(0).id, true);
     }
     pmd->void_spans = std::move(call_session.void_spans);
     return pmd;

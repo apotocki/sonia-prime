@@ -61,7 +61,7 @@ const_literal_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepare
     }
     
     auto call_session = call.new_session(ctx);
-    std::pair<syntax_expression_t const*, size_t> self_expr;
+    prepared_call::argument_descriptor_t self_expr;
     auto src_arg = call_session.use_next_positioned_argument(&self_expr);
     if (!src_arg) {
         return std::unexpected(make_error<basic_general_error>(call.location, "missing required argument"sv));

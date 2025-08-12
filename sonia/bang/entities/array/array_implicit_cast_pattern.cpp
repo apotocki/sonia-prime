@@ -14,6 +14,7 @@
 #include "sonia/bang/ast/base_expression_visitor.hpp"
 
 #include "sonia/bang/errors/type_mismatch_error.hpp"
+#include "sonia/bang/errors/cast_error.hpp"
 
 namespace sonia::lang::bang {
 
@@ -85,18 +86,14 @@ error_storage array_implicit_cast_check_argument_type(fn_compiler_context& ctx, 
         return make_error<type_mismatch_error>(argloc, er.type(), "an array"sv);
     }
     
-    entity_identifier elem_type_eid = ptpsig->find_field(u.get(builtin_id::element))->entity_id();
+    entity_identifier elem_type_eid = ptpsig->find_field(u.get(builtin_id::of))->entity_id();
     if (elem_type_eid == vec_element_type_eid) return {};
 
     // check if element cast exists
-    semantic::managed_expression_list el{ ctx.u() };
-    el.splice_back(ael, er.expressions);
     pure_call_t cast_call{ vec_type.location };
-    cast_call.emplace_back(indirect_value{
-        .location = argloc,
-        .type = elem_type_eid,
-        .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
-    });
+    syntax_expression_result_t arger = er;
+    arger.value_or_type = elem_type_eid;
+    cast_call.emplace_back(make_indirect_value(u, ael, std::move(arger), argloc));
 
     auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, ael, expected_result_t{ vec_element_type_eid });
     if (!match) {
@@ -119,7 +116,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_implicit_cas
     if (!psig || psig->name != u.get(builtin_qnid::vector)) {
         return std::unexpected(make_error<type_mismatch_error>(exp.location, exp.type, "a vector"sv));
     }
-    entity_identifier vec_element_type_eid = psig->find_field(u.get(builtin_id::element))->entity_id();
+    entity_identifier vec_element_type_eid = psig->find_field(u.get(builtin_id::of))->entity_id();
 
     functional_match_descriptor_ptr pmd;
 

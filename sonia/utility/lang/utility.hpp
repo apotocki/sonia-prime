@@ -83,9 +83,9 @@ public:
     virtual ~code_resource() = default;
     virtual std::ostream& print_description(std::ostream&) const = 0;
 
-    virtual std::ostream& print_to(std::ostream& s, int line, int column, resource_print_mode_t mode = resource_print_mode_t::default_mode) const
+    virtual std::ostream& print_to(std::ostream& s, string_view indent, int line, int column, resource_print_mode_t mode = resource_print_mode_t::default_mode) const
     {
-        return print_description(s) << '(' << line << ',' << column << ')';
+        return print_description(s << indent) << '(' << line << ',' << column << ')';
     }
 };
 
@@ -108,16 +108,21 @@ struct resource_location
     int column;
     shared_ptr<code_resource> resource;
 
-    inline std::ostream& print_to(std::ostream& s, resource_print_mode_t mode = resource_print_mode_t::default_mode) const
+    inline std::ostream& print_to(std::ostream& s, string_view indent = {}, resource_print_mode_t mode = resource_print_mode_t::default_mode) const
     {
         if (resource) {
-            return resource->print_to(s, line, column, mode);
+            return resource->print_to(s, indent, line, column, mode);
         }
-        return s << "<undefined resource>(" << line << ',' << column << ')';
+        return s << indent << "<undefined resource>("sv << line << ',' << column << ')';
     }
 
     explicit operator bool() const noexcept { return !!resource; }
 };
+
+inline resource_location const& operator |(resource_location const& l, resource_location const& r) noexcept
+{
+    return l.resource ? l : r;
+}
 
 template <typename T, typename Traits>
 inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& os, resource_location const& res)

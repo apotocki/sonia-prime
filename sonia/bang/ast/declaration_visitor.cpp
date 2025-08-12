@@ -198,7 +198,7 @@ error_storage declaration_visitor::operator()(enum_decl const& ed) const
 
 size_t declaration_visitor::append_result(semantic::expression_list_t& el, syntax_expression_result_t& er) const
 {
-    ctx.append_stored_expressions(el, er.stored_expressions);
+    ctx.append_stored_expressions(el, er.branches_expressions);
 
     ctx.push_scope();
     for (auto& [varname, var, sp] : er.temporaries) {
@@ -222,6 +222,12 @@ error_storage declaration_visitor::operator()(expression_statement_t const& ed) 
     semantic::managed_expression_list el{ u() };
     auto res = apply_visitor(base_expression_visitor{ ctx, el }, ed.expression);
     if (!res) return std::move(res.error());
+
+    //semantic::expression_span ess = res->first.expressions;
+    //while (ess) {
+    //    GLOBAL_LOG_INFO() << u().print(ess.front());
+    //    ess.pop_front();
+    //}
 
     size_t scope_sz = append_result(el, res->first);
     if (scope_sz) {
@@ -635,7 +641,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
     entity_identifier vartype;
     if (ld.type) {
-        auto optvartype = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{.modifier = value_modifier_t::constexpr_value } }, *ld.type);
+        auto optvartype = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{ .modifier = value_modifier_t::constexpr_value } }, *ld.type);
         if (!optvartype) {
             return std::move(optvartype.error());
         }
@@ -653,7 +659,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
 
     for (auto const& e : pcall.args) {
         auto [pname, expr] = *e;
-        auto res = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{ vartype, ld.location() } }, expr);
+        auto res = apply_visitor(base_expression_visitor{ ctx, el, expected_result_t{ .type = vartype, .location = ld.location() } }, expr);
         if (!res) { return std::move(res.error()); }
         syntax_expression_result& ser = res->first;
         //if (ser.is_const_result && ser.value() == u().get(builtin_eid::void_)) continue; // ignore void results
@@ -684,7 +690,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
             ctx.push_scope();
             push_temporaries(er.temporaries);
             ctx.append_expressions(el, er.expressions);
-            ctx.append_stored_expressions(el, er.stored_expressions);
+            ctx.append_stored_expressions(el, er.branches_expressions);
             size_t scope_sz = ctx.current_scope_binding().size();
             ctx.pop_scope();
             ctx.push_scope_variable(
@@ -706,7 +712,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
             ctx.push_scope();
             push_temporaries(er.temporaries);
             ctx.append_expressions(el, er.expressions);
-            ctx.append_stored_expressions(el, er.stored_expressions);
+            ctx.append_stored_expressions(el, er.branches_expressions);
             size_t scope_sz = ctx.current_scope_binding().size();
             ctx.pop_scope();
             identifier unnamedid = u().new_identifier();
@@ -733,7 +739,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
             ctx.push_scope();
             push_temporaries(er.temporaries);
             ctx.append_expressions(el, er.expressions);
-            ctx.append_stored_expressions(el, er.stored_expressions);
+            ctx.append_stored_expressions(el, er.branches_expressions);
             scope_sz = ctx.current_scope_binding().size();
             ctx.pop_scope();
         }
@@ -780,7 +786,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         ctx.push_scope();
         push_temporaries(er.temporaries);
         ctx.append_expressions(el, er.expressions);
-        ctx.append_stored_expressions(el, er.stored_expressions);
+        ctx.append_stored_expressions(el, er.branches_expressions);
 
         auto scope_sz = ctx.current_scope_binding().size();
         ctx.pop_scope();
@@ -808,7 +814,7 @@ error_storage declaration_visitor::operator()(let_statement const& ld) const
         ctx.push_scope();
         push_temporaries(er.temporaries);
         ctx.append_expressions(el, er.expressions);
-        ctx.append_stored_expressions(el, er.stored_expressions);
+        ctx.append_stored_expressions(el, er.branches_expressions);
         auto scope_sz = ctx.current_scope_binding().size();
         ctx.pop_scope();
         entity_identifier field_eid;

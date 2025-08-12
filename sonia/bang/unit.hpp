@@ -46,7 +46,7 @@ class external_fn_pattern;
     ((self, "self"sv))                     \
     ((size, "size"sv))                     \
     ((which, "which"sv))                   \
-    ((element, "element"sv))               \
+    ((of, "of"sv))                         \
     ((property, "property"sv))             \
     ((object, "object"sv))                 \
     ((mask, "mask"sv))                     \
@@ -65,7 +65,7 @@ class external_fn_pattern;
     ((tuple_project, "tuple_project"sv))   \
     ((vector, "vector"sv))                 \
     ((array, "array"sv))                   \
-    ((fuzzy_array, "fuzzy_array"sv))       \
+    ((data, "data"sv))         \
     ((identifier, "__identifier"sv))       \
     ((qname, "__qname"sv))                 \
     ((object, "object"sv))                 \
@@ -90,6 +90,8 @@ class external_fn_pattern;
     ((size, "size"sv))                     \
     ((typeof, "typeof"sv))                 \
     ((make_tuple, "make_tuple"sv))         \
+    ((make_vector, "make_vector"sv))       \
+    ((make_array, "make_array"sv))         \
     ((new_, "new"sv))                      \
     ((init, "init"sv))                     \
     ((eq, "equal"sv))                      \
@@ -306,6 +308,7 @@ public:
     empty_entity            const& make_empty_entity(entity_identifier);
     empty_entity            const& make_empty_entity(entity const&);
     qname_entity            const& make_qname_entity(qname_view value);
+    generic_literal_entity  const& make_nil_entity(entity_identifier type);
     generic_literal_entity  const& make_bool_entity(bool value, entity_identifier type = {});
     generic_literal_entity  const& make_integer_entity(mp::integer_view value, entity_identifier type = {});
     generic_literal_entity  const& make_decimal_entity(mp::decimal_view value, entity_identifier type = {});
@@ -353,7 +356,7 @@ public:
     std::ostream& print_to(std::ostream&, qname_identifier const&) const;
     std::ostream& print_to(std::ostream&, field_descriptor const&) const;
     std::ostream& print_to(std::ostream&, small_u32string const&, bool in_quotes = false) const;
-    std::ostream& print_to(std::ostream&, lex::resource_location const&) const;
+    std::ostream& print_to(std::ostream&, lex::resource_location const&, string_view indent = {}) const;
     std::ostream& print_to(std::ostream&, syntax_expression_t const&) const;
     std::ostream& print_to(std::ostream&, pattern_t::signature_descriptor const&) const;
     std::ostream& print_to(std::ostream&, pattern_t const&) const;

@@ -17,8 +17,6 @@
 
 #include "sonia/bang/errors/no_position_argument_error.hpp"
 
-#define BANG_SKIP_VOID_ARGUMENTS
-
 namespace sonia::lang::bang {
 
 prepared_call::prepared_call(fn_compiler_context& ctx, functional const* pf, semantic::expression_list_t& ael, lex::resource_location loc) noexcept
@@ -69,8 +67,9 @@ local_variable& prepared_call::new_temporary(unit& u, identifier name, entity_id
     return lv;
 }
 
-void prepared_call::export_temporaries(syntax_expression_result& ser)
+void prepared_call::export_auxiliaries(syntax_expression_result& ser)
 {
+    ser.expressions = arguments_auxiliary_expressions;
     for(auto& [name, plv, el] : temporaries) {
         ser.temporaries.emplace_back(name, std::move(*plv), el);
     }
@@ -160,7 +159,12 @@ error_storage prepared_call::prepare()
         if (!ser.is_const_result) {
             BOOST_ASSERT(ser.expressions);
             tuple_name = u.new_identifier();
-            ptuple_object_var = &new_temporary(u, tuple_name, ser.type(), ser.expressions);
+            semantic::expression_span reserve_expression;
+            u.push_back_expression(expressions, reserve_expression, semantic::push_value{ smart_blob{} });
+            ptuple_object_var = &new_temporary(u, tuple_name, ser.type(), reserve_expression);
+            arguments_auxiliary_expressions = expressions.concat(arguments_auxiliary_expressions, ser.expressions);
+            u.push_back_expression(expressions, arguments_auxiliary_expressions, semantic::set_local_variable{ *ptuple_object_var });
+            u.push_back_expression(expressions, arguments_auxiliary_expressions, semantic::truncate_values{ 1, false });
         }
         size_t argpos = 0;
         for (field_descriptor const& fd : signature->fields()) {
@@ -203,21 +207,15 @@ error_storage prepared_call::prepare()
                 //} else {
 
                 // if element is named, extract it's value type
-                entity_identifier elem_type_eid = elem_ser.type();
                 if (subgropname) {
                     entity const& elem_type_ent = get_entity(u, elem_ser.type());
                     entity_signature const* elem_signature = elem_type_ent.signature();
                     BOOST_ASSERT(elem_signature && elem_signature->name == u.get(builtin_qnid::tuple) && elem_signature->field_count() == 2);
                     BOOST_ASSERT(!elem_signature->fields()[1].is_const());
-                    elem_type_eid = elem_signature->fields()[1].entity_id();
-                } 
-                semantic::managed_expression_list el{ u };
-                el.splice_back(expressions, elem_ser.expressions);
-                append_arg(fd_groupname, indirect_value{
-                    .location = arg_expr_loc,
-                    .type = elem_type_eid,
-                    .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
-                });
+                    entity_identifier elem_type_eid = elem_signature->fields()[1].entity_id();
+                    elem_ser.value_or_type = elem_type_eid;
+                }
+                append_arg(fd_groupname, make_indirect_value(u, expressions, std::move(elem_ser), arg_expr_loc));
             }
             ++argpos;
         }
@@ -275,18 +273,6 @@ prepared_call::session::session(fn_compiler_context& ctxval, prepared_call const
 {
     named_usage_map_ = call.named_map_;
     positioned_usage_map_ = call.positioned_map_;
-    
-    //// initialize unused named argument
-    //unused_named_arguments_.reserve(call.named_argument_caches_.size());
-    //for (auto& [name, cache] : call.named_argument_caches_) {
-    //    unused_named_arguments_.emplace_back(name, &cache);
-    //}
-
-    //// initialize unused position arguments
-    //unused_position_arguments_.reserve(call.position_argument_caches_.size());
-    //for (size_t i = 0; i < call.position_argument_caches_.size(); ++i) {
-    //    unused_position_arguments_.emplace_back(&call.position_argument_caches_[i]);
-    //}
 }
 
 std::expected<std::pair<syntax_expression_result_t, bool>, error_storage>
@@ -348,24 +334,10 @@ prepared_call::session::use_next_positioned_argument(expected_result_t const& ex
 
         auto res = do_resolve(arg_cache, exp);
 
-#ifdef BANG_SKIP_VOID_ARGUMENTS
         if (pe) {
             *pe = { &arg_cache.expression, argindex };
         }
         return res;
-#else
-        if (!res || !res->first.is_const_result || res->first.value() != ctx.u().get(builtin_eid::void_)) {
-            if (pe) {
-                *pe = { &arg_cache.expression, argindex };
-            }
-            return res;
-        }
-
-        // if the result is void, continue to the next argument
-        if (res->first.expressions) {
-            void_spans.emplace_back(res->first.expressions);
-        }
-#endif
     }
 
     // no more positioned unused arguments
@@ -388,26 +360,11 @@ prepared_call::session::use_named_argument(identifier name, expected_result_t co
         if (name != argname) continue; // not the argument we are looking for
         
         auto res = do_resolve(arg_cache, exp);
-#ifdef BANG_SKIP_VOID_ARGUMENTS
         if (pe) {
             *pe = { &arg_cache.expression, argindex };
         }
         named_usage_map_ -= pow2_argindex;
         return res;
-#else
-        if (!res || !res->first.is_const_result || res->first.value() != ctx.u().get(builtin_eid::void_)) {
-            if (pe) {
-                *pe = { &arg_cache.expression, argindex };
-            }
-            named_usage_map_ -= pow2_argindex;
-            return res;
-        }
-
-        // if the result is void, continue to the next argument
-        if (res->first.expressions) {
-            void_spans.emplace_back(res->first.expressions);
-        }
-#endif
     }
     // no more named unused arguments
     return std::unexpected(error_storage{});
@@ -427,26 +384,10 @@ prepared_call::session::use_next_argument(expected_result_t const& exp, next_arg
         auto& [argname, loc, arg_cache] = call.argument_caches_[argindex];
 
         auto res = do_resolve(arg_cache, exp);
-#ifdef BANG_SKIP_VOID_ARGUMENTS
         if (pe) {
             *pe = { annotated_identifier{ .value = argname, .location = loc }, &arg_cache.expression, argindex };
         }
         return res;
-#else
-        if (!res || !res->first.is_const_result || res->first.value() != ctx.u().get(builtin_eid::void_)) {
-            if (pe) {
-                *pe = { argname, &arg_cache.expression, argindex };
-            }
-            return res;
-        }
-
-        // if the result is void, continue to the next argument
-        if (res->first.expressions) {
-            void_spans.emplace_back(res->first.expressions);
-        }
-
-        tmp_map -= pow2_argindex;
-#endif
     }
 
     // no more named unused arguments
@@ -460,20 +401,7 @@ named_expression_t prepared_call::session::unused_argument()
         uint8_t argindex = sonia::sal::log2(pow2_argindex);
 
         auto& [argname, loc, arg_cache] = call.argument_caches_[argindex];
-#ifdef BANG_SKIP_VOID_ARGUMENTS
         return argname ? named_expression_t{ annotated_identifier{ argname, loc }, arg_cache.expression } : named_expression_t{ arg_cache.expression };
-#else
-        auto res = do_resolve(arg_cache, expected_result_t{ .type = ctx.u().get(builtin_eid::void_), .modifier = parameter_constraint_modifier_t::const_type });
-        if (!res) { // not a void argument
-            return argname ? named_expression_t{ argname, arg_cache.expression } : named_expression_t{ arg_cache.expression };
-        }
-        if (res->first.expressions) {
-            void_spans.emplace_back(res->first.expressions);
-        }
-        tmp_map -= pow2_argindex; // remove the argument from the usage map
-        named_usage_map_ &= ~pow2_argindex; // remove the argument from the named usage map
-        positioned_usage_map_ &= ~pow2_argindex; // remove the argument from the positioned usage map
-#endif
     }
 
     return {};

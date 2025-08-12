@@ -17,11 +17,23 @@ void managed_linked_list<ElementT, ManagerT>::emplace_back(T&& e)
 
 template <class ElementT, class ManagerT>
 template <typename NodeT>
-void managed_linked_list<ElementT, ManagerT>::deep_copy(linked_list_node_span<NodeT> l)
+linked_list_node_span<NodeT> managed_linked_list<ElementT, ManagerT>::deep_copy(linked_list_node_span<NodeT> l)
 {
+    if (l.empty()) {
+        return linked_list_node_span<NodeT>{};
+    }
+    
+    m_->push_back_expression(*this, ElementT{ l.front() });
+    typename list_t::entry_type* first_entry = &this->back_entry();
+    if (l.first == l.second) {
+        return linked_list_node_span<NodeT>{ static_cast<NodeT*>(first_entry), static_cast<NodeT*>(first_entry) };
+    }
+    l.first = static_cast<NodeT*>(linked_list<typename NodeT::value_type>::next(*l.first));
     l.for_each([this](auto& e) {
         m_->push_back_expression(*this, ElementT{ e });
     });
+    typename list_t::entry_type* last_entry = &this->back_entry();
+    return linked_list_node_span<NodeT>{ static_cast<NodeT*>(first_entry), static_cast<NodeT*>(last_entry) };
 }
 
 template <class ElementT, class ManagerT>

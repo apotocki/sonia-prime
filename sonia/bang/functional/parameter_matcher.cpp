@@ -73,7 +73,7 @@ error_storage parameter_matcher::match(fn_compiler_context& callee_ctx)
         if (!res) {
             if (res.error()) {
                 return append_cause(
-                    make_error<basic_general_error>(param_name.location, "cannot match argument"sv, param_name.value),
+                    make_error<basic_general_error>(param_name.location, "cannot match argument"sv, param_name.value, get_start_location(*get<0>(arg_expr_idx))),
                     std::move(res.error())
                 );
             }
@@ -164,7 +164,7 @@ error_storage parameter_matcher::match(fn_compiler_context& callee_ctx)
                 "argument mismatch"sv, std::move(argterm.value()));
         }
     }
-    md.void_spans = std::move(call_session.void_spans);
+
     return {};
 }
 

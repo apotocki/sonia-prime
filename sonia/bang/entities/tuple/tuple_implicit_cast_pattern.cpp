@@ -5,11 +5,15 @@
 #include "sonia/config.hpp"
 #include "tuple_implicit_cast_pattern.hpp"
 
+#include "sonia/bang/ast/fn_compiler_context.hpp"
+
 #include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/signatured_entity.hpp"
-#include "sonia/bang/ast/fn_compiler_context.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
+
 #include "sonia/bang/errors/type_mismatch_error.hpp"
+#include "sonia/bang/errors/cast_error.hpp"
+
 #include "sonia/bang/auxiliary.hpp"
 
 namespace sonia::lang::bang {
@@ -73,7 +77,6 @@ tuple_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call c
         // No cast needed, just return the source as is
         auto pmd = make_shared<tuple_implicit_cast_match_descriptor>(call);
         pmd->emplace_back(0, src_arg_er);
-        pmd->void_spans = std::move(call_session.void_spans);
         return pmd;
     }
 
@@ -98,7 +101,6 @@ tuple_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepared_call c
 
     auto pmd = make_shared<tuple_implicit_cast_match_descriptor>(call, src_entity_type, *dst_sig); // ?location = get_start_location(*pself_expr))
     pmd->emplace_back(0, src_arg_er);
-    pmd->void_spans = std::move(call_session.void_spans);
     pmd->signature.result.emplace(exp.type, can_be_only_constexpr(exp.modifier));
     return pmd;
 }
@@ -108,16 +110,15 @@ tuple_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expressio
 {
     unit& u = ctx.u();
     tuple_implicit_cast_match_descriptor& self_md = static_cast<tuple_implicit_cast_match_descriptor&>(md);
-    auto& [_, src_er] = md.matches.front();
+    auto& [_, src_er, loc] = md.matches.front();
 
     if (!self_md.src_entity_type) {
-        src_er.expressions = el.concat(md.merge_void_spans(el), src_er.expressions);
         return std::move(src_er);
     }
     entity_signature const& src_sig = *self_md.src_entity_type->signature();
     fn_compiler_context_scope fn_scope{ ctx };
 
-    semantic::expression_span fn_code = md.merge_void_spans(el);
+    semantic::expression_span fn_code;
     local_variable* src_tuple_var = nullptr;
     identifier src_tuple_var_name;
     size_t mut_field_count = 0;
@@ -163,13 +164,7 @@ tuple_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expressio
                 fn_code = el.concat(fn_code, res->expressions);
                 continue; // No cast needed
             }
-            semantic::managed_expression_list el{ u };
-            el.deep_copy(res->expressions);
-            cast_call.emplace_back(indirect_value{
-                .location = md.call_location,
-                .type = src_field.entity_id(),
-                .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
-            });
+            cast_call.emplace_back(make_indirect_value(u, el, std::move(*res), md.call_location));
         }
         entity_identifier dest_field_type = dst_field.is_const() ? get_entity(u, dst_field.entity_id()).id : dst_field.entity_id();
         auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, el, expected_result_t{ .type = dest_field_type, .modifier  = dst_field.is_const() ? value_modifier_t::constexpr_value : value_modifier_t::runtime_value });

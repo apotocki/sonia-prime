@@ -60,7 +60,6 @@ tuple_pattern_base::try_match_tuple(fn_compiler_context& ctx, prepared_call cons
         pmd = make_shared<tuple_pattern_match_descriptor>(call , *tpl_entity.signature(), false);
     }
     pmd->emplace_back(0, er);
-    pmd->void_spans = std::move(call_session.void_spans);
     return pmd;
 }
 

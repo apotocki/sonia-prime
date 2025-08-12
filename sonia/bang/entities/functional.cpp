@@ -131,10 +131,11 @@ functional_match_descriptor::functional_match_descriptor(prepared_call const& pc
     , call_location{ pcall.location }
 {}
 
+#if 0
 semantic::expression_span functional_match_descriptor::merge_void_spans(semantic::expression_list_t& el) noexcept
 {
     semantic::expression_span result;
-    auto bit = void_spans.begin(), eit = void_spans.end();
+    auto bit = arguments_auxiliary_expressions.begin(), eit = arguments_auxiliary_expressions.end();
     if (bit == eit) return result;
     result = *bit; ++bit;
     for (; bit != eit; ++bit) {
@@ -143,7 +144,7 @@ semantic::expression_span functional_match_descriptor::merge_void_spans(semantic
     return result;
 }
 
-#if 0
+
 parameter_match_result& functional_match_descriptor::push_match_result(identifier param_name)
 {
     pmrs_.emplace_back(param_name, nullptr);
@@ -390,7 +391,7 @@ std::expected<functional::match, error_storage> functional::find(fn_compiler_con
     }
     auto [ptrn, md] = alternatives.front();
     syntax_expression_result pre_ser;
-    pcall.export_temporaries(pre_ser);
+    pcall.export_auxiliaries(pre_ser);
     return match{ ptrn, ael, std::move(pre_ser), std::move(md) };
 }
 
@@ -464,6 +465,9 @@ functional::match::apply(fn_compiler_context& ctx)
     if (r) {
         if (!pre_ser.temporaries.empty()) {
             r->temporaries.insert(r->temporaries.begin(), pre_ser.temporaries.begin(), pre_ser.temporaries.end());
+        }
+        if (!r->is_const_result && pre_ser.expressions) {
+            r->expressions = expressions.concat(pre_ser.expressions, r->expressions);
         }
     }
     return r;

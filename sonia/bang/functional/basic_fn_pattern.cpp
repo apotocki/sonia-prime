@@ -71,19 +71,17 @@ error_storage basic_fn_pattern::init(fn_compiler_context& ctx, fn_pure_t const& 
             if (reversed) std::reverse(argname.data() + 1, epos);
             identifier nid = ctx.u().slregistry().resolve(string_view{ argname.data(), epos });
             
+            if (internal_name) {
+                if (auto err = insert_param_name(parameter_names_, *internal_name); err) return err;
+                pd.inames.emplace_back(*internal_name);
+            }
+
             if (!internal_name || internal_name->value != nid) {
                 auto loc = apply_visitor(make_functional_visitor<lex::resource_location>([](auto const& f) {
                     return get_start_location(f);
                 }), param.constraint);
                 if (auto err = insert_param_name(parameter_names_, annotated_identifier{ nid, loc }); err) return err;
                 pd.inames.emplace_back(annotated_identifier{ nid, loc });
-            }
-            
-            //matchers_.emplace_back(generated_internal_name);
-            if (internal_name) {
-                if (auto err = insert_param_name(parameter_names_, *internal_name); err) return err;
-                //matchers_.back().push_internal_name(*internal_name);
-                pd.inames.emplace_back(*internal_name);
             }
             
             ++argindex;
@@ -260,7 +258,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
                         annotated_identifier{ iname.value, iname.location }, arg_er.value()
                     );
                 }
-                if (arg_er.expressions) pmd->void_spans.emplace_back(arg_er.expressions);
+                if (arg_er.expressions) pmd->arguments_auxiliary_expressions.emplace_back(arg_er.expressions);
             } else {
                 local_variable var{ .type = arg_er.type(), .varid = u.new_variable_identifier(), .is_weak = false };
                 for (auto const& iname : pd.inames) {
@@ -301,11 +299,9 @@ std::expected<functional_match_descriptor_ptr, error_storage> basic_fn_pattern::
 std::pair<syntax_expression_result_t, size_t> basic_fn_pattern::apply_arguments(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     size_t count = 0;
-    syntax_expression_result_t result{ .expressions = md.merge_void_spans(el) };
-    for (auto& [_, mr] : md.matches) {
-        result.temporaries.insert(result.temporaries.end(), mr.temporaries.begin(), mr.temporaries.end());
-        result.stored_expressions = el.concat(result.stored_expressions, mr.stored_expressions);
-        result.expressions = el.concat(result.expressions, mr.expressions);
+    syntax_expression_result_t result{ };
+    for (auto& [_, mr, loc] : md.matches) {
+        append_semantic_result(el, result, mr);
         if (!mr.is_const_result) ++count;
     }
     result.is_const_result = !count;
@@ -314,7 +310,6 @@ std::pair<syntax_expression_result_t, size_t> basic_fn_pattern::apply_arguments(
 
 std::ostream& basic_fn_pattern::print(unit const& u, std::ostream& ss) const
 {
-    //THROW_NOT_IMPLEMENTED_ERROR("basic_fn_pattern::print is not implemented yet");
     size_t posargnum = 0;
     bool first = true;
     ss << '(';
@@ -322,14 +317,24 @@ std::ostream& basic_fn_pattern::print(unit const& u, std::ostream& ss) const
         if (first) first = false;
         else ss << ", "sv;
 
+        bool first_id = true;
         if (pd.ename) {
-            u.print_to(ss, pd.ename.value) << ": "sv;
+            u.print_to(ss, pd.ename.value);
+            first_id = false;
         }
+        for (auto const& iname : pd.inames) {
+            if (!pd.ename || iname != pd.ename) {
+                if (!first_id) ss << ' ';
+                u.print_to(ss, iname.value);
+                first_id = false;
+            }
+        }
+        
         apply_visitor(make_functional_visitor<void>([&u, &ss](auto const& m) {
             if constexpr (std::is_same_v<pattern_t, std::decay_t<decltype(m)>>) {
-                u.print_to(ss, m);
+                u.print_to(ss << ": "sv, m);
             } else if constexpr (std::is_same_v<syntax_expression_t, std::decay_t<decltype(m)>>) {
-                u.print_to(ss << "~ "sv, m);
+                u.print_to(ss << " ~ "sv, m);
             }
         }), pd.constraint);
         if ((pd.modifier & parameter_constraint_modifier_t::ellipsis) == parameter_constraint_modifier_t::ellipsis) {

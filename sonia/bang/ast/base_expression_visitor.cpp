@@ -15,6 +15,8 @@
 #include "sonia/bang/entities/prepared_call.hpp"
 #include "sonia/bang/entities/literals/literal_entity.hpp"
 
+#include "sonia/bang/errors/cast_error.hpp"
+
 #include "sonia/bang/auxiliary.hpp"
 
 namespace sonia::lang::bang {
@@ -51,9 +53,10 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(entity 
     BOOST_ASSERT(ent.id);
     BOOST_ASSERT(expected_result);
 
-    lex::resource_location expr_loc = get_start_location(e);
+    lex::resource_location expr_location = get_start_location(e);
+    
     pure_call_t cast_call{ expected_result.location };
-    cast_call.emplace_back(annotated_entity_identifier{ ent.id, expr_loc });
+    cast_call.emplace_back(annotated_entity_identifier{ ent.id, expr_location });
 
     auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expressions, expected_result_t {
         .type = expected_result.type ? expected_result.type : ent.get_type(),
@@ -63,9 +66,9 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(entity 
 
     if (!match) {
         // ignore casting error details
-        //return std::unexpected(make_error<cast_error>(expr_loc /*expected_result.location*/, expected_result.type, typeeid, e));
+        //return std::unexpected(make_error<cast_error>(expected_result.location, expected_result.type, typeeid, e));
         return std::unexpected(append_cause(
-            make_error<cast_error>(expr_loc, expected_result.type, ent.get_type(), e),
+            make_error<cast_error>(expected_result.location | expr_location, ent.get_type(), expected_result.type), //, e),
             std::move(match.error())
         ));
     }
@@ -91,24 +94,19 @@ base_expression_visitor::result_type base_expression_visitor::apply_cast(syntax_
     
     //GLOBAL_LOG_DEBUG() << ("expected type: %1%, actual type: %2%"_fmt % u().print(expected_result.value) % u().print(typeeid)).str();
 
-    lex::resource_location expr_loc = get_start_location(e);
+    lex::resource_location expr_location = get_start_location(e);
+
     pure_call_t cast_call{ expected_result.location };
-    semantic::managed_expression_list el{ ctx.u() };
-    el.deep_copy(er.expressions);
-    cast_call.emplace_back(indirect_value{
-        .location = expr_loc,
-        .type = er.type(),
-        .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(el) }
-    });
+    cast_call.emplace_back(make_indirect_value(u(), expressions, std::move(er), expr_location));
 
     auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expressions, expected_result);
     if (!match) {
         // ignore casting error details
-        return std::unexpected(make_error<cast_error>(expr_loc /*expected_result.location*/, expected_result.type, er.type(), e));
-        //return std::unexpected(append_cause(
-        //    make_error<cast_error>(expr_loc /*expected_result.location*/, expected_result.value, typeeid, e),
-        //    std::move(match.error())
-        //));
+        //return std::unexpected(make_error<cast_error>(expected_result.location, er.type(), expected_result.type)); // , e));
+        return std::unexpected(append_cause(
+            make_error<cast_error>(expected_result.location | expr_location, er.type(), expected_result.type), // , e)),
+            std::move(match.error())
+        ));
     }
 
     auto res = match->apply(ctx);
@@ -129,14 +127,15 @@ inline base_expression_visitor::result_type base_expression_visitor::apply_cast(
 
 base_expression_visitor::result_type base_expression_visitor::operator()(indirect_value const& v) const
 {
-    if (auto const* pel = dynamic_cast<semantic::indirect_expression_list const*>(v.store.get_pointer()); pel) {
-        semantic::managed_expression_list el{ ctx.u() };
-        el.deep_copy((semantic::expression_span)pel->list);
-        semantic::expression_span elsp = el;
-        expressions.splice_back(el);
-        return apply_cast(syntax_expression_result_t{ .expressions = std::move(elsp), .value_or_type = v.type, .is_const_result = false }, v);
-    }
-    THROW_INTERNAL_ERROR("base_expression_visitor::operator()(indirect_value const& v) unexpected indorect store type");
+    return apply_cast(retrieve_indirect_value(u(), expressions, v), v);
+}
+
+base_expression_visitor::result_type base_expression_visitor::operator()(annotated_nil const&) const
+{
+    return std::pair{
+        syntax_expression_result_t{ .value_or_type = u().make_nil_entity(expected_result.type).id, .is_const_result = true },
+        false
+    };
 }
 
 base_expression_visitor::result_type base_expression_visitor::operator()(annotated_bool const& bv) const
@@ -268,17 +267,13 @@ struct array_expression_processor : static_visitor<void>
 };
 #endif
 
+#if 0
 struct array_expression_processor : static_visitor<void>
 {
     syntax_expression_result_t aeres;
     //small_vector<entity_identifier, 16> ct_element_results;
     //small_vector<semantic::expression_span, 16> rt_element_results;
-    boost::container::small_flat_set<entity_identifier, 8> element_types;
-
-    small_vector<entity_identifier, 16> ct_elements;
-    mp::integer mask{ 0 };
-    size_t not_constant_count{ 0 };
-
+    
     entity_signature const* expected_result = nullptr;
     fn_compiler_context& ctx;
     base_expression_visitor const& bvis;
@@ -292,21 +287,101 @@ struct array_expression_processor : static_visitor<void>
 
     base_expression_visitor::result_type process(array_expression_t const& ve)
     {
+        small_vector<std::pair<syntax_expression_result_t, lex::resource_location>, 16> elements;
+        boost::container::small_flat_set<entity_identifier, 8> element_types;
+        small_vector<entity_identifier, 16> stable_element_types_set;
+        expected_result_t exp_element_res{ .modifier = value_modifier_t::constexpr_or_runtime_value };
+        mp::integer rt_elem_mask{ 0 };
+
+        elements.reserve(ve.elements.size());
         for (syntax_expression_t const& ee : ve.elements) {
-            auto res = apply_visitor(base_expression_visitor{ ctx, bvis.expressions }, ee);
+            auto res = apply_visitor(base_expression_visitor{ ctx, bvis.expressions, exp_element_res }, ee);
             if (!res) return std::unexpected(res.error());
             syntax_expression_result_t& er = res->first;
+            elements.emplace_back(std::move(er), get_start_location(ee));
             if (er.is_const_result) { // constexpr
-                ct_elements.push_back(er.value());
-                element_types.insert(get_entity(u(), er.value()).get_type());
+                entity_identifier typeeid = get_entity(u(), er.value()).get_type();
+                if (element_types.insert(typeeid).second) {
+                    stable_element_types_set.push_back(typeeid);
+                }
             } else {
+                rt_elem_mask |= (mp::integer{ 1 } << elements.size());
+                if (element_types.insert(er.type()).second) {
+                    stable_element_types_set.push_back(er.type());
+                }
+            }
+        }
+
+        entity_identifier elem_type = u().make_union_type_entity(stable_element_types_set).id;
+        entity_identifier arr_type = u().make_array_type_entity(elem_type, elements.size()).id;
+
+        if (!rt_elem_mask) {
+            // all elements have the same type and are constexpr
+            // make array of constexpr values
+            entity_signature array_elements{ u().get(builtin_qnid::array_data), arr_type };
+            for (auto& [er, _] : elements) {
+                array_elements.emplace_back(er.value(), true);
+                append_semantic_result(bvis.expressions, aeres, er);
+            }
+            aeres.value_or_type = u().make_basic_signatured_entity(std::move(array_elements)).id;
+            aeres.is_const_result = true;
+            return bvis.apply_cast(std::move(aeres), ve);
+        }
+        // otherwise, we return runtime array
+        exp_element_res.type = elem_type;
+        exp_element_res.modifier = value_modifier_t::runtime_value;
+        aeres.value_or_type = arr_type;
+        aeres.is_const_result = false;
+        for (auto& [er, loc] : elements) {
+            pure_call_t cast_call{ loc };
+            if (er.is_const_result) {
+                append_semantic_result(bvis.expressions, aeres, er);
+                cast_call.emplace_back(annotated_entity_identifier{ er.value(), loc });
+            } else {
+                cast_call.emplace_back(make_indirect_value(u(), bvis.expressions, std::move(er), loc));
+            }
+
+            auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, bvis.expressions, exp_element_res);
+            if (!match) {
+                return std::unexpected(std::move(match.error()));
+            }
+            auto res = match->apply(ctx);
+            if (!res) {
+                return std::unexpected(std::move(res.error()));
+            }
+            append_semantic_result(bvis.expressions, aeres, *res);
+        }
+        if (elements.size() > 1) {
+            u().push_back_expression(bvis.expressions, semantic::push_value{ smart_blob{ ui64_blob_result(elements.size()) } });
+            u().push_back_expression(bvis.expressions, semantic::invoke_function(u().get(builtin_eid::arrayify)));
+        }
+        return bvis.apply_cast(std::move(aeres), ve);
+        
+#if 0
+                if (exp_element_res.modifier == value_modifier_t::constexpr_or_runtime_value) {
+                    // if we have at least one non-constexpr value, then we should return runtime value
+                    exp_element_res.modifier = value_modifier_t::runtime_value;
+                    // and we need to convert previous constexpr elements to runtime values
+                    for (auto& aeid : ct_elements) {
+                        pure_call_t cast_call{ aeid.location };
+                        cast_call.emplace_back(aeid);
+                        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, bvis.expressions, exp_element_res);
+                        if (!match) {
+                            return std::unexpected(std::move(match.error()));
+                        }
+                        auto res = match->apply(ctx);
+                        if (!res) {
+                            return std::unexpected(std::move(res.error()));
+                        }
+                        append_semantic_result(bvis.expressions, aeres, *res);
+                    }
+                }
                 mask |= (mp::integer{1} << ct_elements.size());
                 ct_elements.push_back(er.type());
                 ++not_constant_count;
-                element_types.insert(get_entity(u(), er.type()).get_type());
+                element_types.insert(er.type());
             }
-            aeres.expressions = bvis.expressions.concat(aeres.expressions, er.expressions);
-            aeres.temporaries.insert(aeres.temporaries.end(), er.temporaries.begin(), er.temporaries.end());
+            append_semantic_result(bvis.expressions, aeres, er);
         }
 
         entity_identifier elem_type = element_types.size() == 1 ?
@@ -356,6 +431,7 @@ struct array_expression_processor : static_visitor<void>
         aeres.value_or_type = u().eregistry_find_or_create(smpl, [&sig]() {
             return make_shared<basic_signatured_entity>(std::move(sig));
         }).id;
+#endif
         return bvis.apply_cast(std::move(aeres), ve);
     }
 
@@ -378,12 +454,96 @@ struct array_expression_processor : static_visitor<void>
     //    element_types.insert(get_entity(u(), ctx.context_type).get_type());
     //}
 };
-
+#endif
 
 base_expression_visitor::result_type base_expression_visitor::operator()(array_expression_t const& ve) const
 {
-    array_expression_processor proc{ *this };
-    return proc.process(ve);
+    pure_call_t make_array_call{ ve.location };
+    for (syntax_expression_t const& ee : ve.elements) {
+        make_array_call.emplace_back(ee);
+    }
+    auto match = ctx.find(builtin_qnid::make_array, make_array_call, expressions, this->expected_result);
+    if (!match) {
+        return std::unexpected(std::move(match.error()));
+    }
+    return apply_cast(match->apply(ctx), ve);
+#if 0
+    small_vector<std::pair<syntax_expression_result_t, lex::resource_location>, 16> elements;
+    boost::container::small_flat_set<entity_identifier, 8> element_types;
+    small_vector<entity_identifier, 16> stable_element_types_set;
+    expected_result_t exp_element_res{ .modifier = value_modifier_t::constexpr_or_runtime_value };
+    mp::integer rt_elem_mask{ 0 };
+
+    elements.reserve(ve.elements.size());
+    for (syntax_expression_t const& ee : ve.elements) {
+        auto res = apply_visitor(base_expression_visitor{ ctx, expressions, exp_element_res }, ee);
+        if (!res) return std::unexpected(res.error());
+        syntax_expression_result_t& er = res->first;
+        elements.emplace_back(std::move(er), get_start_location(ee));
+        if (er.is_const_result) { // constexpr
+            entity_identifier typeeid = get_entity(u(), er.value()).get_type();
+            if (element_types.insert(typeeid).second) {
+                stable_element_types_set.push_back(typeeid);
+            }
+        } else {
+            rt_elem_mask |= (mp::integer{ 1 } << elements.size());
+            if (element_types.insert(er.type()).second) {
+                stable_element_types_set.push_back(er.type());
+            }
+        }
+    }
+
+    entity_identifier elem_type = u().make_union_type_entity(stable_element_types_set).id;
+    entity_identifier arr_type = u().make_array_type_entity(elem_type, elements.size()).id;
+
+    syntax_expression_result_t aeres;
+
+    if (!rt_elem_mask) {
+        // all elements have the same type and are constexpr
+        // make array of constexpr values
+        entity_signature array_elements{ u().get(builtin_qnid::data), arr_type };
+        for (auto& [er, _] : elements) {
+            array_elements.emplace_back(er.value(), true);
+            append_semantic_result(expressions, aeres, er);
+        }
+        aeres.value_or_type = u().make_basic_signatured_entity(std::move(array_elements)).id;
+        aeres.is_const_result = true;
+        return apply_cast(std::move(aeres), ve);
+    }
+    // otherwise, we return runtime array
+    exp_element_res.type = elem_type;
+    exp_element_res.modifier = value_modifier_t::runtime_value;
+
+    aeres.value_or_type = arr_type;
+    aeres.is_const_result = false;
+    for (auto& [er, loc] : elements) {
+        pure_call_t cast_call{ loc };
+        if (er.is_const_result) {
+            append_semantic_result(expressions, aeres, er);
+            cast_call.emplace_back(annotated_entity_identifier{ er.value(), loc });
+        } else {
+            cast_call.emplace_back(make_indirect_value(u(), expressions, std::move(er), loc));
+        }
+
+        auto match = ctx.find(builtin_qnid::implicit_cast, cast_call, expressions, exp_element_res);
+        if (!match) {
+            return std::unexpected(std::move(match.error()));
+        }
+        auto res = match->apply(ctx);
+        if (!res) {
+            return std::unexpected(std::move(res.error()));
+        }
+        append_semantic_result(expressions, aeres, *res);
+    }
+    if (elements.size() > 1) {
+        u().push_back_expression(expressions, semantic::push_value{ smart_blob{ ui64_blob_result(elements.size()) } });
+        u().push_back_expression(expressions, semantic::invoke_function(u().get(builtin_eid::arrayify)));
+    }
+    return apply_cast(std::move(aeres), ve);
+
+    //array_expression_processor proc{ *this };
+    //return proc.process(ve);
+#endif
 }
 
 base_expression_visitor::result_type base_expression_visitor::operator()(variable_reference const& var) const

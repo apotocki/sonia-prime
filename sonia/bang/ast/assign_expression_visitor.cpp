@@ -41,7 +41,7 @@ assign_expression_visitor::result_type assign_expression_visitor::operator()(var
                 THROW_NOT_IMPLEMENTED_ERROR("expression_visitor binary_operator_type::ASSIGN weak");
                 //ctx.append_expression(semantic::invoke_function{ ctx.u().get_builtin_function(unit::builtin_fn::weak_create) });
             }
-            u().push_back_expression(expressions, ser.expressions, semantic::set_local_variable{ eid_or_var.varid });
+            u().push_back_expression(expressions, ser.expressions, semantic::set_local_variable{ eid_or_var });
             if (eid_or_var.is_weak) {
                 ctx_.append_expression(semantic::truncate_values(1, false));
             }

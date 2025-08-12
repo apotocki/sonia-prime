@@ -96,7 +96,7 @@ std::expected<syntax_expression_result_t, error_storage> ellipsis_pattern::apply
     return apply_visitor(make_functional_visitor<result_t>([&ctx, &nsmd, &el](auto const* pe) -> result_t {
         unit& u = ctx.u();
         
-        semantic::expression_span l = nsmd.merge_void_spans(el);
+        semantic::expression_span l;
         if constexpr (std::is_same_v<decltype(pe), identifier_entity const*>) {
             annotated_qname varname{ qname{ pe->value(), false }, nsmd.call_location };
             auto res = push_by_name(ctx, el, varname, l);

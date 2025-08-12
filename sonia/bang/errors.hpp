@@ -207,7 +207,7 @@ public:
     string_t object(unit const&) const noexcept override { return ""sv; }
     string_t description(unit const&) const noexcept override;
 };
-
+#if 0
 class cast_error : public general_error
 {
 public:
@@ -233,7 +233,7 @@ public:
     lex::resource_location const* ref_location() const noexcept override { return refloc_ ? &refloc_ : nullptr; }
 };
 
-#if 0
+
 class unknown_case_error : public general_error
 {
 public:
@@ -289,9 +289,12 @@ class error_printer_visitor : public error_visitor
 {
     unit const& u_;
     std::ostream & s_;
+    mutable std::string indent_str_;
+    int indent_ = 0;
+    static constexpr int indent_size_ = 4;
 
 public:
-    error_printer_visitor(unit const& u, std::ostream& s) : u_{u}, s_{s} {}
+    inline error_printer_visitor(unit const& u, std::ostream& s) noexcept : u_{u}, s_{s} {}
 
     void operator()(alt_error const&) override;
     //void operator()(parameter_not_found_error const&) override;
@@ -300,8 +303,20 @@ public:
     void operator()(ambiguity_error const&) override;
     void operator()(circular_dependency_error const&) override;
 
+    inline void inc_indent() noexcept { ++indent_; }
+    inline void dec_indent() noexcept { --indent_; }
+    inline string_view indent() const noexcept
+    {
+        if (indent_ * indent_size_ > indent_str_.size()) {
+            indent_str_.resize(indent_ * indent_size_, ' ');
+        }
+        return indent_ ? 
+            string_view{ indent_str_.data(), static_cast<size_t>(indent_ * indent_size_) } :
+            string_view{};
+    }
+
 private:
-    static std::string print_general(error::location_t const& loc, string_view err, string_view object, lex::resource_location const* optseeloc = nullptr);
+    std::ostream& print_general(error::location_t const& loc, string_view err, string_view object, lex::resource_location const* optseeloc = nullptr);
 };
 
 }

@@ -412,25 +412,27 @@ void compiler_visitor_base::operator()(semantic::invoke_function const& invf) co
 {
     entity const& e = unit_.eregistry_get(invf.fn);
     if (auto fe = dynamic_cast<internal_function_entity const*>(&e); fe) {
-        if (fe->is_inline()) {
-            // to do: circular dependency check?
-            //GLOBAL_LOG_INFO() << "entering inline function: " << unit_.print(invf.fn);
-            BOOST_ASSERT(fe->is_built());
-            inline_compiler_visitor ivis{ unit_, fnbuilder_, *fe };
-            fnbuilder_.append_pushfp();
-            fe->body.for_each([this, &ivis](semantic::expression const& e) {
-                //GLOBAL_LOG_INFO() << unit_.print(e);
-                apply_visitor(ivis, e);
-            });
-            ivis.finalize();
-            fnbuilder_.append_popfp();
-            //GLOBAL_LOG_INFO() << "leaving inline function: " << unit_.print(invf.fn);
-        } else {
-            vmasm::fn_identity fnident{ fe->id };
-            fnbuilder_.append_call(fnident);
+        if (!fe->is_empty()) {
+            if (fe->is_inline()) {
+                // to do: circular dependency check?
+                //GLOBAL_LOG_INFO() << "entering inline function: " << unit_.print(invf.fn);
+                BOOST_ASSERT(fe->is_built());
+                inline_compiler_visitor ivis{ unit_, fnbuilder_, *fe };
+                fnbuilder_.append_pushfp();
+                fe->body.for_each([this, &ivis](semantic::expression const& e) {
+                    //GLOBAL_LOG_INFO() << unit_.print(e);
+                    apply_visitor(ivis, e);
+                });
+                ivis.finalize();
+                fnbuilder_.append_popfp();
+                //GLOBAL_LOG_INFO() << "leaving inline function: " << unit_.print(invf.fn);
+            } else {
+                vmasm::fn_identity fnident{ fe->id };
+                fnbuilder_.append_call(fnident);
 
-            //bvm().append_push_static_const(i64_blob_result((fe->parameter_count() + 1) * (fe->is_void() ? -1 : 1)));
-        }
+                //bvm().append_push_static_const(i64_blob_result((fe->parameter_count() + 1) * (fe->is_void() ? -1 : 1)));
+            }
+        } // else just noop, empty function
     } else if (auto efe = dynamic_cast<external_function_entity const*>(&e); efe) {
         fnbuilder_.append_ecall(efe->extfnid());
     } else {

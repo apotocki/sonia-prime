@@ -40,7 +40,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> create_identifier_
 std::expected<syntax_expression_result_t, error_storage> create_identifier_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto& [_, ser] = md.matches.front();
+    auto& [_, ser, loc] = md.matches.front();
     entity_identifier strid = ser.value();
     generic_literal_entity const& str_ent = static_cast<generic_literal_entity const&>(get_entity(u, ser.value()));
     identifier id = u.slregistry().resolve(str_ent.value().as<string_view>());

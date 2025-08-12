@@ -216,8 +216,8 @@ public:
         return *variables_.back();
     }
     */
-
-    std::expected<std::pair<entity_identifier, bool>, error_storage> finish_frame(internal_function_entity const&);
+    // result value or type, is value, is empty function
+    std::expected<std::tuple<entity_identifier, bool, bool>, error_storage> finish_frame(internal_function_entity const&);
 
     //local_variable_entity const& get_variable(size_t index) const
     //{
@@ -239,7 +239,7 @@ public:
     //inline span<const semantic::expression_type> expressions() const noexcept { return expressions_; }
 
     inline semantic::expression_span& expressions() noexcept { return get<0>(expr_stack_.back()); }
-    inline semantic::expression_span& stored_expressions() noexcept { return get<1>(expr_stack_.back()); }
+    inline semantic::expression_span& branches_expressions() noexcept { return get<1>(expr_stack_.back()); }
     //semantic::expression_list_t& expressions() { return *expr_stack_.back(); }
     //semantic::expression_list_t& expressions(size_t branch_offset) { return *expr_stack_[expr_stack_.size() - branch_offset - 1]; }
     inline size_t expressions_branch() const noexcept { return expr_stack_.size(); }

@@ -159,8 +159,8 @@ std::expected<syntax_expression_result_t, error_storage> struct_get_pattern::app
 
     syntax_expression_result_t result{
         .temporaries = std::move(slfer.temporaries),
-        .stored_expressions = el.concat(slfer.stored_expressions, proper.stored_expressions),
-        .expressions = el.concat(md.merge_void_spans(el), res->expressions),
+        .branches_expressions = el.concat(slfer.branches_expressions, proper.branches_expressions),
+        .expressions = res->expressions,
         .value_or_type = res->value_or_type,
         .is_const_result = res->is_const_result
     };

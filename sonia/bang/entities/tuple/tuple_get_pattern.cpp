@@ -69,20 +69,19 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_get_pattern:
         slftype = slf_arg_er.type();
     }
     
-        entity const& tpl_entity = get_entity(u, slftype);
-        entity_signature const* psig = tpl_entity.signature();
-        if (!psig || psig->name != u.get(builtin_qnid::tuple)) {
-            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slftype, "a tuple"sv));
-        }
-        if (psig->empty()) {
-            return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slftype, "a not empty tuple"sv));
-        }
+    entity const& tpl_entity = get_entity(u, slftype);
+    entity_signature const* psig = tpl_entity.signature();
+    if (!psig || psig->name != u.get(builtin_qnid::tuple)) {
+        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slftype, "a tuple"sv));
+    }
+    if (psig->empty()) {
+        return std::unexpected(make_error<type_mismatch_error>(get_start_location(*get<0>(slf_arg_expr)), slftype, "a not empty tuple"sv));
+    }
     pmd = make_shared<tuple_get_match_descriptor>(call, tpl_entity, *tpl_entity.signature());
     
     pmd->emplace_back(0, slf_arg_er);
     pmd->emplace_back(1, property_arg->first);
-    pmd->void_spans = std::move(call_session.void_spans);
-
+    
     return pmd;
 }
 
@@ -92,12 +91,6 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
     auto& tmd = static_cast<tuple_get_match_descriptor&>(md);
     auto& slfer = get<1>(md.matches[0]);
     auto& proper = get<1>(md.matches[1]);
-
-    slfer.temporaries.insert(slfer.temporaries.end(), proper.temporaries.begin(), proper.temporaries.end());
-    syntax_expression_result_t result{
-        .temporaries = std::move(slfer.temporaries),
-        .expressions = md.merge_void_spans(el)
-    };
 
     // Helper to build tuple type (identifier, value)
     auto make_named_tuple_type = [&](field_descriptor const& field) -> entity_identifier {
@@ -116,13 +109,13 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
 
     // Case 1: Both self and property are constant
     if (slfer.is_const_result && proper.is_const_result) {
-        result.is_const_result = true;
+        // we will return slfer as a result, but with modified expressions and type
         entity const& property_entity = get_entity(u, proper.value());
         if (auto int_lit = dynamic_cast<const generic_literal_entity*>(&property_entity)) {
             size_t idx = int_lit->value().as<size_t>();
             if (auto* field = tmd.arg_sig.get_field(idx)) {
                     entity_identifier result_type = field->name() ? make_named_tuple_type(*field) : field->entity_id();
-                    result.value_or_type = field->name() ? u.make_empty_entity(result_type).id : result_type;
+                    slfer.value_or_type = field->name() ? u.make_empty_entity(result_type).id : result_type;
             } else {
                 return std::unexpected(make_error<basic_general_error>(tmd.call_location, "tuple index out of range"sv));
             }
@@ -135,14 +128,14 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
             if (auto second = frng.first; ++second == frng.second) {
                 // Single field case - return the field value directly
                 field_descriptor const& field = tmd.arg_sig.field(frng.first->second);
-                result.value_or_type = field.entity_id();
+                slfer.value_or_type = field.entity_id();
             } else {
-                result.value_or_type = u.make_empty_entity(make_tuple_project_type(id_lit->value())).id;
+                slfer.value_or_type = u.make_empty_entity(make_tuple_project_type(id_lit->value())).id;
             }
         } else {
             return std::unexpected(make_error<type_mismatch_error>(tmd.call_location, proper.value(), "an integer or identifier"sv));
         }
-        return result;
+        return std::move(slfer);
     }
 
     // Case 2: self is not constant, property is constant
@@ -170,14 +163,11 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
                 field = &tmd.arg_sig.field(frng.first->second);
                 result_type = field->entity_id();
             } else {
+                // to do: the case when frng fields are all constexpr
                 // More than one field with this name: return tuple_project type
-                return syntax_expression_result_t{
-                    .temporaries = std::move(slfer.temporaries),
-                    .stored_expressions = std::move(slfer.stored_expressions),
-                    .expressions = el.concat(md.merge_void_spans(el), slfer.expressions),
-                    .value_or_type = make_tuple_project_type(id_lit->value()),
-                    .is_const_result = false
-                };
+                slfer.value_or_type = make_tuple_project_type(id_lit->value());
+                slfer.is_const_result = false;
+                return std::move(slfer);
             }
         } else {
             return std::unexpected(make_error<type_mismatch_error>(tmd.call_location, proper.value(), "an integer or identifier"sv));
@@ -186,12 +176,13 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
         // If the field is const, return as a constant result
         if (field->is_const()) {
             return syntax_expression_result_t{
-                .temporaries = std::move(slfer.temporaries),
-                .expressions = md.merge_void_spans(el),
                 .value_or_type = field->name() ? u.make_empty_entity(result_type).id : result_type,
                 .is_const_result = true
             };
         }
+
+        // we will return slfer as a result, but with modified type
+        slfer.value_or_type = result_type;
 
         // Count non-const fields
         size_t non_const_count = 0; 
@@ -218,30 +209,14 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
                 }
             }
         }
-        
+
         // Optimization: if only one runtime field, just return 'self' with the requested type
-        if (non_const_count == 1) {
-            return syntax_expression_result_t{
-                .temporaries = std::move(slfer.temporaries),
-                .stored_expressions = std::move(slfer.stored_expressions),
-                .expressions = el.concat(md.merge_void_spans(el), slfer.expressions),
-                .value_or_type = result_type,
-                .is_const_result = false
-            };
+        if (non_const_count > 1) {
+            u.push_back_expression(el, slfer.expressions, semantic::push_value{ smart_blob{ ui64_blob_result(runtime_index) } });
+            u.push_back_expression(el, slfer.expressions, semantic::invoke_function(u.get(builtin_eid::array_at)));
         }
-
-        semantic::expression_span exprs = md.merge_void_spans(el);
-        exprs = el.concat(exprs, slfer.expressions);
-        u.push_back_expression(el, exprs, semantic::push_value{ smart_blob{ ui64_blob_result(runtime_index) } });
-        u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
-
-        return syntax_expression_result_t{
-            .temporaries = std::move(slfer.temporaries),
-            .stored_expressions = std::move(slfer.stored_expressions),
-            .expressions = std::move(exprs),
-            .value_or_type = result_type,
-            .is_const_result = false
-        };
+        
+        return std::move(slfer);
     }
 
     // Case 3: self is constant, property is not constant
@@ -272,8 +247,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_get_pattern::appl
         }
 
         // Merge expressions
-        semantic::expression_span exprs = el.concat(md.merge_void_spans(el), slfer.expressions);
-        exprs = el.concat(exprs, proper.expressions);
+        semantic::expression_span exprs = el.concat(slfer.expressions, proper.expressions);
 
         // TODO: Insert runtime selection logic here if needed
         THROW_NOT_IMPLEMENTED_ERROR("Tuple get pattern with const `self` and non-const `property` is not implemented yet."sv);

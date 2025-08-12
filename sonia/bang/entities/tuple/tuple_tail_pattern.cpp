@@ -44,9 +44,8 @@ std::expected<syntax_expression_result_t, error_storage> tuple_tail_pattern::app
         }
     }
     entity const& result_tuple = u.make_basic_signatured_entity(std::move(result_sig));
-    auto & [_, ser] = tmd.matches.front();
-    ser.expressions = el.concat(md.merge_void_spans(el), ser.expressions);
-
+    auto & [_, ser, loc] = tmd.matches.front();
+    
     if (tmd.is_argument_typename) {
         // return typename tuple
         ser.value_or_type = result_tuple.id;

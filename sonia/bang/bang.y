@@ -391,14 +391,14 @@ let-decl:
       let-decl-start-with-opt-type
         { $$ = std::move($1); }
     | let-decl-start-with-opt-type ASSIGN pack-expression[value]
-        { $$ = std::move($1); $$.expressions = std::move($value); IGNORE_TERM($ASSIGN); }
+        { $$ = std::move($1); $$.expressions = std::move($value); $$.assign_location = std::move($ASSIGN); }
     ;
 
 let-decl-start:
       identifier
-        { $$ = let_statement{ std::move($identifier), {}, {}, false }; }
+        { $$ = let_statement{ .aname = std::move($identifier), .weakness = false }; }
     | WEAK identifier
-        { $$ = let_statement{ std::move($identifier), {}, {}, true }; }
+        { $$ = let_statement{ .aname = std::move($identifier), .weakness = true }; }
     ;
 
 let-decl-start-with-opt-type :
@@ -702,6 +702,8 @@ parameter-decl:
     | COLON pattern-mod[pm] parameter-default-value-opt[default]
         { $$ = parameter_t{ .name = unnamed_parameter_name{ }, .constraint = std::move(get<0>($pm)), .default_value = std::move($default), .modifier = get<1>($pm) }; }
     
+    | identifier[id] internal-identifier[intid] parameter-default-value-opt[default]
+        { $$ = parameter_t{ .name = named_parameter_name{ std::move($id), std::move($intid.name) }, .constraint = pattern_t{ .descriptor = placeholder{ std::move($intid.name.location) }}, .default_value = std::move($default), .modifier =  parameter_constraint_modifier_t::const_or_runtime_type }; }
     | internal-identifier[intid] parameter-default-value-opt[default]
         { $$ = parameter_t{ .name = unnamed_parameter_name{ std::move($intid.name) }, .constraint = pattern_t{ .descriptor = placeholder{ std::move($intid.name.location) }}, .default_value = std::move($default), .modifier =  parameter_constraint_modifier_t::const_or_runtime_type }; }
     | UNDERSCORE parameter-default-value-opt[default]
@@ -773,7 +775,6 @@ pattern-field:
       // named field
       identifier[id] pattern-field-sfx[f]
         { $$ = std::move($f); $$.name = std::move($id); }
-
       // named placeholder field
     | QMARK internal-identifier[nid] pattern-field-sfx[f]
         { $$ = std::move($f); $$.name = std::move($nid); IGNORE_TERM($QMARK); }
@@ -789,10 +790,10 @@ pattern-field:
     */
         // unnamed field
     | pattern-field-sfx[f]
-        { $$ = std::move($f); }
+        { $$ = std::move($f); $$.name = placeholder{ }; }
         // field with name placeholder, matches any name and unnamed
     | UNDERSCORE pattern-field-sfx[f]
-        { $$ = std::move($f);  $$.name = placeholder{ std::move($UNDERSCORE) }; }
+        { $$ = std::move($f); $$.name = placeholder{ std::move($UNDERSCORE) }; }
     ;
 
 pattern-mod:
@@ -813,13 +814,15 @@ pattern:
         { $$ = pattern_t{ .descriptor = pattern_t::signature_descriptor{ .name = std::move($qname) } }; }
     | qname subpatterns concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = pattern_t::signature_descriptor{ .name = std::move($qname), .fields = std::move($subpatterns) }, .concepts = std::move($cpts) }; }
+    | internal-identifier[iid] concept-expression-list-opt[cpts]
+        { $$ = pattern_t{ .descriptor = std::move($iid), .concepts = std::move($cpts) }; }
     | UNDERSCORE concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = placeholder{ std::move($UNDERSCORE) }, .concepts = std::move($cpts) }; }
     | UNDERSCORE subpatterns concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = pattern_t::signature_descriptor{ .name = placeholder{ std::move($UNDERSCORE) }, .fields = std::move($subpatterns) }, .concepts = std::move($cpts) }; }
-    | OPEN_PARENTHESIS[start] syntax-expression[expr] CLOSE_PARENTHESIS concept-expression-list-opt[cpts]
+    | OPEN_BRACE[start] syntax-expression[expr] CLOSE_BRACE concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = std::move($expr), .concepts = std::move($cpts) }; IGNORE_TERM($start); }
-    | OPEN_PARENTHESIS[start] syntax-expression[expr] CLOSE_PARENTHESIS subpatterns concept-expression-list-opt[cpts]
+    | OPEN_BRACE[start] syntax-expression[expr] CLOSE_BRACE subpatterns concept-expression-list-opt[cpts]
         { $$ = pattern_t{ .descriptor = pattern_t::signature_descriptor{ .name = std::move($expr), .fields = std::move($subpatterns) }, .concepts = std::move($cpts) }; IGNORE_TERM($start); }
     | concept-expression-list[cpts]
         { $$ = pattern_t{ .descriptor = placeholder{}, .concepts = std::move($cpts) }; }

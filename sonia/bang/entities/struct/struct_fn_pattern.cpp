@@ -48,7 +48,6 @@ std::expected<syntax_expression_result_t, error_storage> struct_fn_pattern::appl
     });
 
     return syntax_expression_result_t{
-        .expressions = md.merge_void_spans(el),
         .value_or_type = struct_end.id,
         .is_const_result = true
     };

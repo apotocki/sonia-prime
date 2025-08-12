@@ -58,6 +58,8 @@ public:
 
     [[nodiscard]] inline bool is_built() const noexcept { return !!is_built_; }
 
+    [[nodiscard]] inline bool is_empty() const noexcept { return !!is_empty_; }
+
     inline std::ostream& print_to(std::ostream& os, unit const& u) const override
     {
         os << "fn "sv;
@@ -76,6 +78,7 @@ private:
     uint64_t arg_count_ : 16;
     uint64_t is_built_ : 1;
     uint64_t is_inline_ : 1;
+    uint64_t is_empty_ : 1;
     //uint64_t is_void_ : 1;
 };
 

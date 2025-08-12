@@ -131,7 +131,7 @@ class functional_match_descriptor
 public:
     entity_signature signature;
     // can not not merge spans before match application
-    small_vector<semantic::expression_span, 4> void_spans;
+    small_vector<semantic::expression_span, 4> arguments_auxiliary_expressions;
 
     semantic::expression_span merge_void_spans(semantic::expression_list_t&) noexcept;
 
@@ -226,13 +226,13 @@ private:
 class functional_match_descriptor
 {
     // { implementation defined index(e.g. function parameter index), argument expression result }
-    using mr_pair_t = std::tuple<intptr_t, syntax_expression_result_t>;
+    using mr_t = std::tuple<intptr_t, syntax_expression_result_t, lex::resource_location>;
 
 public:
-    small_vector<mr_pair_t, 8> matches;
+    small_vector<mr_t, 8> matches;
     
     // can not not merge spans before match application
-    small_vector<semantic::expression_span, 4> void_spans;
+    small_vector<semantic::expression_span, 4> arguments_auxiliary_expressions_spans;
 
     entity_signature signature;
     functional_binding_set bindings;
@@ -249,12 +249,12 @@ public:
 
     virtual ~functional_match_descriptor() = default;
 
-    void emplace_back(intptr_t idx, syntax_expression_result_t result)
+    void emplace_back(intptr_t idx, syntax_expression_result_t result, lex::resource_location loc = {})
     {
-        matches.emplace_back(idx, std::move(result));
+        matches.emplace_back(idx, std::move(result), std::move(loc));
     }
 
-    semantic::expression_span merge_void_spans(semantic::expression_list_t&) noexcept;
+    //semantic::expression_span merge_void_spans(semantic::expression_list_t&) noexcept;
 };
 
 using functional_match_descriptor_ptr = shared_ptr<functional_match_descriptor>;

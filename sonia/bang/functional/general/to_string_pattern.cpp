@@ -30,7 +30,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> to_string_pattern:
     }
     auto pmd = make_shared<functional_match_descriptor>(call);
     pmd->emplace_back(0, arg->first);
-    pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
 
@@ -145,9 +144,8 @@ public:
 std::expected<syntax_expression_result_t, error_storage> to_string_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
-    auto & [_, er] = md.matches.front();
+    auto & [_, er, loc] = md.matches.front();
     
-    er.expressions = el.concat(md.merge_void_spans(el), er.expressions);
     if (er.is_const_result) {
         entity const& ent = get_entity(u, er.value());
         std::ostringstream oss;

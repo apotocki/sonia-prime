@@ -25,7 +25,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> typeof_pattern::tr
     }
     auto pmd = make_shared<functional_match_descriptor>(call);
     pmd->emplace_back(0, arg->first);
-    pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
 
@@ -34,7 +33,6 @@ std::expected<syntax_expression_result_t, error_storage> typeof_pattern::apply(f
     auto & er = get<1>(md.matches.front());
 
     return syntax_expression_result_t {
-        .expressions = md.merge_void_spans(el),
         .value_or_type = er.is_const_result ? get_entity(ctx.u(), er.value()).get_type() : er.type(),
         .is_const_result = true
     };

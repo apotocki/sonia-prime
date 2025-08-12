@@ -36,13 +36,10 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_make_pattern
         } else {
             pmd->signature.emplace_back(ser.value_or_type, ser.is_const_result);
         }
-        if (ser.is_const_result) {
-            if (ser.expressions) pmd->void_spans.push_back(ser.expressions);
-        } else {
+        if (!ser.is_const_result) {
             pmd->emplace_back(arg_num, ser);
         }
     }
-    pmd->void_spans = std::move(call_session.void_spans);
     return pmd;
 }
 
@@ -54,11 +51,9 @@ std::expected<syntax_expression_result_t, error_storage> tuple_make_pattern::app
     signature.name = u.get(builtin_qnid::tuple);
     signature.result.emplace(u.get(builtin_eid::typename_));
     
-    syntax_expression_result_t result{ .expressions = md.merge_void_spans(el) };
-    for (auto& [_, mr] : md.matches) {
-        result.temporaries.insert(result.temporaries.end(), mr.temporaries.begin(), mr.temporaries.end());
-        result.stored_expressions = el.concat(result.stored_expressions, mr.stored_expressions);
-        result.expressions = el.concat(result.expressions, mr.expressions);
+    syntax_expression_result_t result{ };
+    for (auto& [_, mr, loc] : md.matches) {
+        append_semantic_result(el, result, mr);
     }
 
     entity const& tuple_type_ent = u.make_basic_signatured_entity(std::move(signature));

@@ -37,14 +37,14 @@ tuple_equal_pattern::try_match(fn_compiler_context& ctx, prepared_call const& ca
     auto call_session = call.new_session(ctx);
 
     // Get lhs tuple
-    std::pair<syntax_expression_t const*, size_t> lhs_expr;
+    prepared_call::argument_descriptor_t lhs_expr;
     auto lhs_arg = call_session.use_next_positioned_argument(&lhs_expr);
     if (!lhs_arg) {
         return std::unexpected(make_error<basic_general_error>(call.location, "missing first tuple argument"sv));
     }
 
     // Get rhs tuple
-    std::pair<syntax_expression_t const*, size_t> rhs_expr;
+    prepared_call::argument_descriptor_t rhs_expr;
     auto rhs_arg = call_session.use_next_positioned_argument(&rhs_expr);
     if (!rhs_arg) {
         return std::unexpected(make_error<basic_general_error>(call.location, "missing second tuple argument"sv));
@@ -81,7 +81,6 @@ tuple_equal_pattern::try_match(fn_compiler_context& ctx, prepared_call const& ca
     auto pmd = make_shared<tuple_equal_match_descriptor>(call, lhs_entity_type, rhs_entity_type);
     pmd->emplace_back(0, lhs_arg_er);
     pmd->emplace_back(1, rhs_arg_er);
-    pmd->void_spans = std::move(call_session.void_spans);
     return pmd;
 }
 
@@ -96,12 +95,9 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
     entity_signature const& lhs_sig = *eq_md.lhs_entity_type.signature();
     entity_signature const& rhs_sig = *eq_md.rhs_entity_type.signature();
 
-    semantic::expression_span void_spans = md.merge_void_spans(el);
-
     // Check field count and names
     if (lhs_sig.field_count() != rhs_sig.field_count()) {
         return syntax_expression_result_t{
-            .expressions = void_spans,
             .value_or_type = u.get(builtin_eid::false_),
             .is_const_result = true
         };
@@ -111,24 +107,24 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
         auto const& rhs_field = *rhs_sig.get_field(i);
         if (lhs_field.name() != rhs_field.name()) {
             return syntax_expression_result_t{
-                .expressions = void_spans,
                 .value_or_type = u.get(builtin_eid::false_),
                 .is_const_result = true
             };
         }
     }
 
+    syntax_expression_result_t result{ };
+
     fn_compiler_context_scope fn_scope{ ctx };
 
-    lhs_er.temporaries.insert(lhs_er.temporaries.end(), rhs_er.temporaries.begin(), rhs_er.temporaries.end());
+    //lhs_er.temporaries.insert(lhs_er.temporaries.end(), rhs_er.temporaries.begin(), rhs_er.temporaries.end());
 
-    syntax_expression_result_t result{
-        .temporaries = std::move(lhs_er.temporaries),
-        .stored_expressions = el.concat(lhs_er.stored_expressions, rhs_er.stored_expressions),
-        .expressions = void_spans,
-        .value_or_type = u.get(builtin_eid::boolean),
-        .is_const_result = false
-    };
+    //syntax_expression_result_t result{
+    //    .temporaries = std::move(lhs_er.temporaries),
+    //    .branches_expressions = el.concat(lhs_er.branches_expressions, rhs_er.branches_expressions),
+    //    .value_or_type = u.get(builtin_eid::boolean),
+    //    .is_const_result = false
+    //};
 
     local_variable* lhs_tuple_var = nullptr, * rhs_tuple_var = nullptr;
     identifier lhs_tuple_var_name, rhs_tuple_var_name;
@@ -137,7 +133,15 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
     auto append_tuple_field_value = [&](pure_call_t& call, const auto& field, size_t fidx, local_variable*& tuple_var, identifier& tuple_var_name, entity const& tuple_entity_type) -> error_storage {
         if (field.is_const()) {
             // Use the const entity directly
-            call.emplace_back(annotated_entity_identifier{ field.entity_id(), md.call_location });
+            if (field.name()) { // get constexpr tuple field implementation
+                entity_signature rsig{ u.get(builtin_qnid::tuple), u.get(builtin_eid::typename_) };
+                rsig.emplace_back(u.make_identifier_entity(field.name()).id, true);
+                rsig.emplace_back(field.entity_id(), true);
+                entity_identifier ftype = u.make_basic_signatured_entity(std::move(rsig)).id;
+                call.emplace_back(annotated_entity_identifier{ u.make_empty_entity(ftype).id, md.call_location });
+            } else {
+                call.emplace_back(annotated_entity_identifier{ field.entity_id(), md.call_location });
+            }
         } else {
             if (!tuple_var) {
                 tuple_var_name = u.new_identifier();
@@ -159,14 +163,8 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
                     make_error<basic_general_error>(md.call_location, "internal error: can't get tuple element"sv, annotated_integer{ mp::integer{ fidx } }),
                     std::move(res.error()));
             }
-            result.stored_expressions = el.concat(result.stored_expressions, res->stored_expressions);
-            semantic::managed_expression_list mel{ u };
-            mel.deep_copy(res->expressions);
-            call.emplace_back(indirect_value{
-                .location = md.call_location,
-                .type = field.entity_id(),
-                .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_list>, std::move(mel) }
-            });
+            //result.branches_expressions = el.concat(result.branches_expressions, res->branches_expressions);
+            call.emplace_back(make_indirect_value(u, el, std::move(*res), md.call_location));
         }
         return {};
     };
@@ -179,7 +177,7 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
         auto const& rhs_field = rhs_sig.field(i);
 
         // If both fields are the same const entity, skip comparison
-        if (lhs_field.entity_id() == rhs_field.entity_id() && lhs_field.is_const() == rhs_field.is_const() && lhs_field.is_const()) {
+        if (lhs_field.entity_id() == rhs_field.entity_id() && lhs_field.is_const() && rhs_field.is_const()) {
             return true;
         }
 
@@ -220,20 +218,15 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
             if (eq_res->value() == u.get(builtin_eid::true_)) {
                 return true; // This field is equal, skip it
             } else {
-                BOOST_ASSERT(eq_res->value() == u.get(builtin_eid::false_)); // NOLINT
+                BOOST_ASSERT(eq_res->value() == u.get(builtin_eid::false_));
                 // If any field is not equal, the whole tuple is not equal
-                result = syntax_expression_result_t{
-                    .expressions = void_spans,
-                    .value_or_type = u.get(builtin_eid::false_),
-                    .is_const_result = true
-                };
                 return false;
             }
         }
 
         // to do: treat eq_res temporaries as temporaries of the current branch
-
-        result.stored_expressions = el.concat(result.stored_expressions, eq_res->stored_expressions);
+        result.temporaries.insert(result.temporaries.begin(), eq_res->temporaries.begin(), eq_res->temporaries.end());
+        result.branches_expressions = el.concat(result.branches_expressions, eq_res->branches_expressions);
         if (current_branch_owner_code) {
             // append conditional branch
             u.push_back_expression(el, *current_branch_owner_code, semantic::conditional_t{});
@@ -247,7 +240,7 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
 
             // store branch expressions as stored expressions if they are not primary branch expressions
             if (&result.expressions != current_branch_owner_code) {
-                result.stored_expressions = el.concat(result.stored_expressions, *current_branch_owner_code);
+                result.branches_expressions = el.concat(result.branches_expressions, *current_branch_owner_code);
             }
 
             current_branch_owner_code = &cond.true_branch;
@@ -268,30 +261,50 @@ tuple_equal_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t
         }
         if (!cmp.value()) {
             // Early exit: a field is not equal
+            result.value_or_type = u.get(builtin_eid::false_);
+            result.is_const_result = true;
             return std::move(result);
         }
     }
 
     if (!current_branch_owner_code) {
         // If we have no branches, all fields are consts and equal, so we can return true
-        return syntax_expression_result_t{
-            .expressions = void_spans,
-            .value_or_type = u.get(builtin_eid::true_),
-            .is_const_result = true
-        };
+        result.value_or_type = u.get(builtin_eid::true_);
+        result.is_const_result = true;
+        return std::move(result);
     }
 
     // Store any remaining branch expressions
     if (&result.expressions != current_branch_owner_code) {
-        result.stored_expressions = el.concat(result.stored_expressions, *current_branch_owner_code);
+        result.branches_expressions = el.concat(result.branches_expressions, *current_branch_owner_code);
+    }
+
+    if (rhs_tuple_var) {
+        result.temporaries.insert(result.temporaries.end(), rhs_er.temporaries.begin(), rhs_er.temporaries.end());
+        semantic::expression_span reserve_expression;
+        u.push_back_expression(el, reserve_expression, semantic::push_value{ smart_blob{} });
+        result.temporaries.emplace_back(rhs_tuple_var_name, std::move(*rhs_tuple_var), reserve_expression);
+
+        // Store the rhs tuple variable as a temp local variable
+        u.push_back_expression(el, rhs_er.expressions, semantic::set_local_variable{ *rhs_tuple_var });
+        u.push_back_expression(el, rhs_er.expressions, semantic::truncate_values{ 1, false });
+        result.expressions = el.concat(rhs_er.expressions, result.expressions);
     }
 
     if (lhs_tuple_var) {
-        result.temporaries.emplace_back(lhs_tuple_var_name, std::move(*lhs_tuple_var), lhs_er.expressions);
+        result.temporaries.insert(result.temporaries.end(), lhs_er.temporaries.begin(), lhs_er.temporaries.end());
+        semantic::expression_span reserve_expression;
+        u.push_back_expression(el, reserve_expression, semantic::push_value{ smart_blob{} });
+        result.temporaries.emplace_back(lhs_tuple_var_name, std::move(*lhs_tuple_var), reserve_expression);
+
+        // Store the lhs tuple variable as a temp local variable
+        u.push_back_expression(el, lhs_er.expressions, semantic::set_local_variable{ *lhs_tuple_var });
+        u.push_back_expression(el, lhs_er.expressions, semantic::truncate_values{ 1, false });
+        result.expressions = el.concat(lhs_er.expressions, result.expressions);
     }
-    if (rhs_tuple_var) {
-        result.temporaries.emplace_back(rhs_tuple_var_name, std::move(*rhs_tuple_var), rhs_er.expressions);
-    }
+
+    result.value_or_type = u.get(builtin_eid::boolean);
+    result.is_const_result = false;
     return std::move(result);
 }
 

@@ -57,7 +57,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> enum_implicit_cast
 
     functional_match_descriptor_ptr pmd = make_shared<functional_match_descriptor>(call);
     pmd->emplace_back(0, arg_er);
-    pmd->void_spans = std::move(call_session.void_spans);
     bool is_runtime = can_be_only_runtime(exp.modifier);
     pmd->signature.result.emplace(is_runtime ? exp.type : u.make_string_entity(u.print(pident->value()), exp.type).id, !can_be_only_runtime(exp.modifier));
     return pmd;
@@ -71,8 +70,6 @@ std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_patt
 
     auto const& rfd = *md.signature.result;
     syntax_expression_result_t result{
-        .temporaries = std::move(ser.temporaries),
-        .expressions = el.concat(md.merge_void_spans(el), ser.expressions),
         .value_or_type = rfd.entity_id(),
         .is_const_result = rfd.is_const()
     };
@@ -80,6 +77,8 @@ std::expected<syntax_expression_result_t, error_storage> enum_implicit_cast_patt
         entity const& ent = get_entity(u, ser.value());
         identifier_entity const* pident = dynamic_cast<identifier_entity const*>(&ent);
         BOOST_ASSERT(pident);
+        result.temporaries = std::move(ser.temporaries);
+        result.expressions = ser.expressions;
         u.push_back_expression(el, result.expressions, semantic::push_value{ smart_blob{ string_blob_result(u.print(pident->value())) } });
     }
     return result;

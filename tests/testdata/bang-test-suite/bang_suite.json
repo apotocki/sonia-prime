@@ -1,4 +1,10 @@
-[/**/
+[
+    /*
+    {
+        "src": "tuples_test2.bang",
+        "output": ""
+    }*/
+    /**/
     {
         "src": "file0.bang",
         "output": "Hello from Bang!(0)Hello from Bang!(1)Hello from Bang!(2)Hello from Bang!(3)Hello from Bang!(4)"
@@ -9,13 +15,13 @@
         "output": ""
     },
     {
-        "src": "file2.bang",
+        "src": "tuples_test2.bang",
         "output": ""
     },
     {
         "src": "file6.bang",
         "output": "test function called"
-    }/*
+    } /*
     
     {
         "src": "file2.bang",

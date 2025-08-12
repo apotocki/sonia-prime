@@ -73,6 +73,17 @@ void expression_printer_visitor::operator()(push_local_variable const& lv) const
 #endif
 }
 
+void expression_printer_visitor::operator()(set_local_variable const& lv) const
+{
+    do_indent();
+    ss << "set VAR("sv << lv.varid.value;
+#ifdef SONIA_LANG_DEBUG
+    ss << ") "sv << u_.print(lv.debug_name) << '\n';
+#else
+    ss << ")\n"sv;
+#endif
+}
+
 void expression_printer_visitor::operator()(invoke_function const& f) const
 {
     do_indent();

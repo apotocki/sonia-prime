@@ -29,7 +29,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
     if (!psig || psig->name != u.get(builtin_qnid::array)) {
         return std::unexpected(make_error<type_mismatch_error>(exp.location, exp.type, "an array"sv));
     }
-    field_descriptor const* peld = psig->find_field(u.get(builtin_id::element));
+    field_descriptor const* peld = psig->find_field(u.get(builtin_id::of));
     field_descriptor const* pszd = psig->find_field(u.get(builtin_id::size));
     BOOST_ASSERT(peld);
     BOOST_ASSERT(pszd);
@@ -96,7 +96,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> array_elements_imp
 std::expected<syntax_expression_result_t, error_storage> array_elements_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     return syntax_expression_result_t{
-        .expressions = md.merge_void_spans(el),
         .value_or_type = md.signature.result->entity_id(),
         .is_const_result = true
     };

@@ -29,6 +29,7 @@ public:
     result_type operator()(indirect_value const&) const;
 
     //result_type operator()(context_identifier const&) const;
+    result_type operator()(annotated_nil const&) const;
     result_type operator()(annotated_bool const&) const;
     result_type operator()(annotated_integer const&) const;
     result_type operator()(annotated_decimal const&) const;

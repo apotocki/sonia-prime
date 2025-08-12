@@ -40,6 +40,117 @@ std::ostream& signatured_entity::print_to(std::ostream& os, unit const& u) const
     //return entity::print_to(os, u) << "<"sv << u.print(*signature()) << ">"sv;
 }
 
+void append_semantic_result(semantic::expression_list_t& el, syntax_expression_result_t& dest, syntax_expression_result_t& src)
+{
+    if (!src.is_const_result) {
+        dest.branches_expressions = el.concat(dest.branches_expressions, src.branches_expressions);
+        dest.expressions = el.concat(dest.expressions, src.expressions);
+        dest.temporaries.insert(dest.temporaries.end(), src.temporaries.begin(), src.temporaries.end());
+    }
+}
+
+namespace semantic {
+
+class managed_expression_result
+{
+public:
+    mutable managed_expression_list store_el;
+    small_vector<std::tuple<identifier, local_variable, semantic::expression_span>, 2> temporaries;
+    semantic::expression_span branches_expressions;
+    semantic::expression_span expressions;
+
+    managed_expression_result(unit& u, expression_list_t& el, syntax_expression_result_t&& res) noexcept
+        : store_el{ u }
+        , branches_expressions{ std::move(res.branches_expressions) }
+        , expressions{ std::move(res.expressions) }
+    {
+        store_el.splice_back(el, res.branches_expressions);
+
+        temporaries.reserve(res.temporaries.size());
+        for (auto const& tmp : res.temporaries) {
+            temporaries.emplace_back(tmp);
+            store_el.splice_back(el, get<2>(tmp));
+        }
+
+        store_el.splice_back(el, res.expressions);
+    }
+
+    managed_expression_result(managed_expression_result const& rhs)
+        : store_el{ *rhs.store_el.manager() }
+        , branches_expressions{ store_el.deep_copy(rhs.branches_expressions) }
+        , expressions{ store_el.deep_copy(rhs.expressions) }
+    {
+        temporaries.reserve(rhs.temporaries.size());
+        for (auto const& tmp : rhs.temporaries) {
+            temporaries.emplace_back(std::tuple{ get<0>(tmp), get<1>(tmp), store_el.deep_copy(get<2>(tmp)) });
+        }
+    }
+};
+
+class indirect_expression_result : public indirect
+{
+    std::unique_ptr<managed_expression_result> impl;
+
+public:
+    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(indirect_expression_result);
+
+    inline indirect_expression_result(unit& u, expression_list_t& el, syntax_expression_result_t&& res)
+        : impl{ std::make_unique<managed_expression_result>(u, el, std::move(res)) }
+    {}
+
+    inline indirect_expression_result(indirect_expression_result const& rhs)
+        : impl{ std::make_unique<managed_expression_result>(*rhs.impl) }
+    {}
+
+    inline indirect_expression_result(indirect_expression_result&&) = default;
+
+    inline indirect_expression_result& operator= (indirect_expression_result const&)
+    {
+        THROW_INTERNAL_ERROR("indirect_expression_list copy assignment");
+    }
+
+    inline indirect_expression_result& operator=(indirect_expression_result&&) = default;
+
+    inline managed_expression_result const& operator*() const noexcept { return *impl; }
+};
+
+}
+
+indirect_value make_indirect_value(unit& u, semantic::expression_list_t & el, syntax_expression_result_t && res, lex::resource_location loc)
+{
+    return indirect_value{
+        .location = std::move(loc),
+        .type = res.type(),
+        .store = indirect_value_store_t{ in_place_type<semantic::indirect_expression_result>, u, el, std::move(res) }
+    };
+}
+
+syntax_expression_result_t retrieve_indirect_value(unit&u, semantic::expression_list_t& el, indirect_value const& iv)
+{
+    auto const* pel = dynamic_cast<semantic::indirect_expression_result const*>(iv.store.get_pointer());
+    if (!pel) {
+        THROW_INTERNAL_ERROR("retrieve_indirect_value : indirect_value unexpected store type");
+    }
+
+    syntax_expression_result_t result{
+        .value_or_type = iv.type,
+        .is_const_result = false
+    };
+    semantic::managed_expression_list tmp_el{ u };
+    semantic::managed_expression_result const& mer = **pel;
+    result.branches_expressions = tmp_el.deep_copy(mer.branches_expressions);
+    el.splice_back(tmp_el, result.branches_expressions);
+    result.temporaries.reserve(mer.temporaries.size());
+    for (auto const& tmp : mer.temporaries) {
+        result.temporaries.emplace_back(std::tuple{ get<0>(tmp), get<1>(tmp), tmp_el.deep_copy(get<2>(tmp)) });
+        el.splice_back(tmp_el, get<2>(result.temporaries.back()));
+    }
+    result.expressions = tmp_el.deep_copy(mer.expressions);
+    el.splice_back(tmp_el, result.expressions);
+    BOOST_ASSERT(tmp_el.empty());
+    return result;
+}
+
 //vector_type_entity::vector_type_entity(unit& u, entity_identifier et) noexcept
 //    : element_type{ et }
 //    , sig_{ u.get(builtin_qnid::vector) }

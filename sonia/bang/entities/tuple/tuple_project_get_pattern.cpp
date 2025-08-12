@@ -85,7 +85,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_get_
     pmd = make_shared<tuple_project_get_match_descriptor>(call, project_name, orig_tuple, *orig_sig);
 
     pmd->emplace_back(0, slf_arg_er);
-    pmd->void_spans = std::move(call_session.void_spans);
     pmd->emplace_back(1, property_arg->first);
     
     return pmd;
@@ -131,7 +130,6 @@ std::expected<syntax_expression_result_t, error_storage> tuple_project_get_patte
         if (pfield->is_const()) {
             return syntax_expression_result_t{
                 .temporaries = std::move(slfer.temporaries),
-                .expressions = md.merge_void_spans(el),
                 .value_or_type = pfield->entity_id(),
                 .is_const_result = true
             };
@@ -169,21 +167,20 @@ std::expected<syntax_expression_result_t, error_storage> tuple_project_get_patte
         if (non_const_count == 1) {
             return syntax_expression_result_t{
                 .temporaries = std::move(slfer.temporaries),
-                .stored_expressions = std::move(slfer.stored_expressions),
-                .expressions = el.concat(md.merge_void_spans(el), slfer.expressions),
+                .branches_expressions = std::move(slfer.branches_expressions),
+                .expressions = slfer.expressions,
                 .value_or_type = pfield->entity_id(),
                 .is_const_result = false
             };
         }
 
-        semantic::expression_span exprs = md.merge_void_spans(el);
-        exprs = el.concat(exprs, slfer.expressions);
+        semantic::expression_span exprs = slfer.expressions;
         u.push_back_expression(el, exprs, semantic::push_value{ smart_blob{ ui64_blob_result(runtime_index) } });
         u.push_back_expression(el, exprs, semantic::invoke_function(u.get(builtin_eid::array_at)));
 
         return syntax_expression_result_t{
             .temporaries = std::move(slfer.temporaries),
-            .stored_expressions = std::move(slfer.stored_expressions),
+            .branches_expressions = std::move(slfer.branches_expressions),
             .expressions = std::move(exprs),
             .value_or_type = pfield->entity_id(),
             .is_const_result = false

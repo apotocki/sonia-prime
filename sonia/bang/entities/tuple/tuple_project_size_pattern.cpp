@@ -79,8 +79,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_project_size
     functional_match_descriptor_ptr pmd = make_shared<functional_match_descriptor>(call);
     pmd->signature.result.emplace(ctx.u().make_integer_entity(project_size).id, true);
     pmd->emplace_back(0, arg_er);
-    pmd->void_spans = std::move(call_session.void_spans);
-    
     return pmd;
 }
 
@@ -90,7 +88,6 @@ std::expected<syntax_expression_result_t, error_storage> tuple_project_size_patt
 
     return syntax_expression_result_t{
         .temporaries = std::move(arg.temporaries),
-        .expressions = md.merge_void_spans(el),
         .value_or_type = md.signature.result->entity_id(),
         .is_const_result = true
     };

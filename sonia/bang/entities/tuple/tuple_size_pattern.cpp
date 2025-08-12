@@ -57,14 +57,12 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_size_pattern
         pmd = make_shared<functional_match_descriptor>(call);
         pmd->signature.result.emplace(u.make_integer_entity(0).id, true);
     }
-    pmd->void_spans = std::move(call_session.void_spans);
     return pmd;
 }
 
 std::expected<syntax_expression_result_t, error_storage> tuple_size_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     syntax_expression_result_t result {
-        .expressions = md.merge_void_spans(el),
         .value_or_type = md.signature.result->entity_id(),
         .is_const_result = true
     };
@@ -72,7 +70,7 @@ std::expected<syntax_expression_result_t, error_storage> tuple_size_pattern::app
     if (!md.matches.empty()) {
         syntax_expression_result_t & arg = get<1>(md.matches.front());
         result.temporaries = std::move(arg.temporaries);
-        result.stored_expressions = std::move(arg.stored_expressions);
+        result.branches_expressions = std::move(arg.branches_expressions);
     }
 
     return result;

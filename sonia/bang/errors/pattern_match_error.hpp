@@ -12,13 +12,12 @@ namespace sonia::lang::bang {
 class pattern_match_error : public general_error
 {
     functional::pattern const& pattern_;
-    error_storage reason_;
 
 public:
     pattern_match_error(functional::pattern const& pattern, error_storage reason)
         : pattern_{ pattern }
-        , reason_{ reason }
     {
+        set_cause(reason);
     }
 
     void visit(error_visitor& vis) const override { vis(*this); }

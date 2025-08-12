@@ -91,7 +91,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> generic_get_patter
         functional_match_descriptor& md = **optpmd;
         md.emplace_back(0, slf_arg_er);
         md.emplace_back(1, property_arg->first);
-        md.void_spans = std::move(call_session.void_spans);
     }
     return std::move(optpmd);
 }

@@ -31,14 +31,14 @@ namespace sonia::lang::bang {
 std::expected<functional_match_descriptor_ptr, error_storage> tuple_head_pattern::try_match(fn_compiler_context& ctx, prepared_call const& call, expected_result_t const& exp) const
 {
     // Use shared base logic
-    return try_match_tuple(ctx, call, exp);
+    return try_match_tuple(ctx, call, {});
 }
 
 std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     unit& u = ctx.u();
     auto& tmd = static_cast<tuple_pattern_match_descriptor&>(md);
-    auto& [_, ser] = md.matches.front();
+    auto& [_, ser, loc] = md.matches.front();
 
     entity_identifier rtype;
     field_descriptor const& head_field = tmd.arg_sig.fields().front();
@@ -53,21 +53,17 @@ std::expected<syntax_expression_result_t, error_storage> tuple_head_pattern::app
 
     if (tmd.is_argument_typename) {
         return syntax_expression_result_t{
-            .temporaries = std::move(ser.temporaries),
-            .expressions = md.merge_void_spans(el),
             .value_or_type = rtype,
             .is_const_result = true
         };
     }
     if (ser.is_const_result || head_field.is_const()) {
         return syntax_expression_result_t{
-            .temporaries = std::move(ser.temporaries),
-            .expressions = md.merge_void_spans(el),
             .value_or_type = head_field.name() ? u.make_empty_entity(rtype).id : rtype,
             .is_const_result = true
         };
     }
-    ser.expressions = el.concat(md.merge_void_spans(el), ser.expressions);
+    
     ser.value_or_type = rtype; // single non-const field, so use it as result
     size_t src_size = std::ranges::count_if(tmd.arg_sig.fields(), [](field_descriptor const& fd) { return !fd.is_const(); });
     if (src_size > 1) {

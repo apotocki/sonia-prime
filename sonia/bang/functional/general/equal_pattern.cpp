@@ -35,7 +35,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> equal_pattern::try
     auto pmd = make_shared<functional_match_descriptor>(call);
     pmd->emplace_back(0, larg_er);
     pmd->emplace_back(1, rarg->first);
-    pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
 
@@ -45,20 +44,17 @@ std::expected<syntax_expression_result_t, error_storage> equal_pattern::apply(fn
     auto & ler = get<1>(md.matches.front());
     auto & rer = get<1>(md.matches.back());
 
-    syntax_expression_result_t result{
-        .temporaries = std::move(ler.temporaries),
-        .stored_expressions = el.concat(ler.stored_expressions, rer.stored_expressions),
-        .expressions = md.merge_void_spans(el)
-    };
-    result.temporaries.insert(result.temporaries.end(), rer.temporaries.begin(), rer.temporaries.end());
     if (ler.is_const_result && rer.is_const_result) {
-        result.is_const_result = true;
-        result.value_or_type = u.make_bool_entity(ler.value() == rer.value()).id;
-        return result;
+        return syntax_expression_result_t{
+            .value_or_type = u.make_bool_entity(ler.value() == rer.value()).id,
+            .is_const_result = true
+        };
     }
 
-    result.value_or_type = u.get(builtin_eid::boolean);
-    result.is_const_result = false;
+    syntax_expression_result_t result{
+        .value_or_type = u.get(builtin_eid::boolean),
+        .is_const_result = false
+    };
 
     if (ler.is_const_result) {
         // Get non-const type for the left argument
@@ -87,6 +83,8 @@ std::expected<syntax_expression_result_t, error_storage> equal_pattern::apply(fn
             }
         }
     } else {
+        result.temporaries = ler.temporaries;
+        result.branches_expressions = ler.branches_expressions;
         result.expressions = el.concat(result.expressions, ler.expressions);
     }
     
@@ -117,6 +115,8 @@ std::expected<syntax_expression_result_t, error_storage> equal_pattern::apply(fn
             }
         }
     } else {
+        result.temporaries.insert(result.temporaries.end(), rer.temporaries.begin(), rer.temporaries.end());
+        result.branches_expressions = el.concat(result.branches_expressions, rer.branches_expressions);
         result.expressions = el.concat(result.expressions, rer.expressions);
     }
 

@@ -102,9 +102,9 @@ enum class parameter_constraint_modifier_t : uint8_t
     none = 0,
     runtime_type = 1,
     constexpr_value_type = 2,
+    const_or_runtime_type = 3,
     typename_type = 4,
     any_constexpr_type = 6,
-    const_or_runtime_type = 7,
     ellipsis = 8
     //, value_type = 16
 };

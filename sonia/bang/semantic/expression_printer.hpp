@@ -64,6 +64,7 @@ public:
     void operator()(expression_list_t const&) const;
     void operator()(push_value const&) const;
     void operator()(push_local_variable const&) const;
+    void operator()(set_local_variable const&) const;
     void operator()(invoke_function const&) const;
     void operator()(return_statement const&) const;
     void operator()(truncate_values const&) const;

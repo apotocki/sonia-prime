@@ -129,6 +129,9 @@ inline fn print(~string ...) ~> () {
     __print($0 ..., size($0));
 }
 
+inline fn empty(: array(of, size $size)) => $size == 0;
+inline fn size(: array(of, size $size)) => $size;
+
 inline fn __bit_and(:typename tuple($l...), :typename tuple($r...)) => tuple($l..., $r...);
 
 inline fn foldl($f, $z) => $z;

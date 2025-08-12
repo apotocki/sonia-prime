@@ -44,8 +44,6 @@ string_concat_pattern::try_match(fn_compiler_context& ctx, prepared_call const& 
         pmd->emplace_back(arg_idx, arg->first);
     }
 
-    pmd->void_spans = std::move(call_session.void_spans);
-
     return pmd;
 }
 
@@ -54,10 +52,10 @@ string_concat_pattern::apply(fn_compiler_context& ctx, semantic::expression_list
 {
     unit& u = ctx.u();
     
-    syntax_expression_result_t result{ .expressions = md.merge_void_spans(el) };
+    syntax_expression_result_t result{ };
     size_t concat_runtime_arg_count = 0;
     std::ostringstream concat_stream;
-    for (auto& [idx, er] : md.matches) {
+    for (auto& [idx, er, loc] : md.matches) {
         // Check if the argument is a const string literal
         if (er.is_const_result) {
             generic_literal_entity const* psle = dynamic_cast<generic_literal_entity const*>(&get_entity(u, er.value()));

@@ -300,9 +300,9 @@ void fn_compiler_context::push_chain()
 
 void fn_compiler_context::pop_chain()
 {
-    semantic::expression_span exprs = stored_expressions();
+    semantic::expression_span exprs = branches_expressions();
     expr_stack_.pop_back();
-    stored_expressions() = expression_store_.concat(stored_expressions(), std::move(exprs));
+    branches_expressions() = expression_store_.concat(branches_expressions(), std::move(exprs));
 }
 
 #if 0
@@ -554,8 +554,10 @@ variable_entity& fn_compiler_context::create_captured_variable_chain(variable_en
 }
 #endif
 
-std::expected<std::pair<entity_identifier, bool>, error_storage> fn_compiler_context::finish_frame(internal_function_entity const& fent)
+std::expected<std::tuple<entity_identifier, bool, bool>, error_storage> fn_compiler_context::finish_frame(internal_function_entity const& fent)
 {
+    bool is_empty_function = !expressions();
+
     if (return_statements_.empty()) {
         if (!result_value_or_type) {
             result_value_or_type = u().get(builtin_eid::void_);
@@ -566,8 +568,9 @@ std::expected<std::pair<entity_identifier, bool>, error_storage> fn_compiler_con
                     fent.location, "no return statements, but result type is not const value"sv, fent.id));
             }
         }
+        
         append_return({}, 0, result_value_or_type, true);
-        return std::pair{ result_value_or_type, true };
+        return std::tuple{ result_value_or_type, true, is_empty_function };
     }
 
     // to do: append the return statement if needed (if no return expression recursievly in a branch found)
@@ -575,7 +578,7 @@ std::expected<std::pair<entity_identifier, bool>, error_storage> fn_compiler_con
 
     if (result_value_or_type) {
         // result type is already set
-        return std::pair{ result_value_or_type, is_const_value_result };
+        return std::tuple{ result_value_or_type, is_const_value_result, is_empty_function };
     }
 
     boost::container::small_flat_set<entity_identifier, 4> const_values;
@@ -591,10 +594,10 @@ std::expected<std::pair<entity_identifier, bool>, error_storage> fn_compiler_con
         }
     }
     if (types.empty() && const_values.size() == 1) {
-        return std::pair{ *const_values.begin(), true };
+        return std::tuple{ *const_values.begin(), true, is_empty_function };
     }
     if (types.size() == 1 && const_values.empty()) {
-        return std::pair{ *types.begin(), false };
+        return std::tuple{ *types.begin(), false, is_empty_function };
     }
     THROW_NOT_IMPLEMENTED_ERROR("fn_compiler_context: finish_frame with multiple return values not implemented yet");
     //if (accum_result) {
@@ -694,7 +697,7 @@ void fn_compiler_context::append_expressions(semantic::expression_list_t& el, se
 void fn_compiler_context::append_stored_expressions(semantic::expression_list_t& el, semantic::expression_span sp)
 {
     expression_store().splice_back(el, sp);
-    stored_expressions() = expression_store_.concat(stored_expressions(), std::move(sp));
+    branches_expressions() = expression_store_.concat(branches_expressions(), std::move(sp));
 }
 
 void fn_compiler_context::append_return(semantic::expression_span return_expressions, size_t scope_sz, entity_identifier value_or_type, bool is_const_value_result)
@@ -715,7 +718,7 @@ void fn_compiler_context::append_return(semantic::expression_span return_express
 
 //void fn_compiler_context::adopt_and_append(semantic::expression_list_t& el, syntax_expression_result_t& er)
 //{
-//    append_stored_expressions(el, er.stored_expressions);
+//    append_stored_expressions(el, er.branches_expressions);
 //    append_expressions(el, er.expressions);
 //}
 

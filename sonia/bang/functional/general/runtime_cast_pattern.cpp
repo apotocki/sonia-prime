@@ -24,15 +24,13 @@ std::expected<functional_match_descriptor_ptr, error_storage> runtime_cast_patte
     }
     auto pmd = make_shared<functional_match_descriptor>(call);
     pmd->emplace_back(0, arg->first);
-    pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
 
 std::expected<syntax_expression_result_t, error_storage> runtime_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
-    auto & [_, ser] = md.matches.front();
+    auto & [_, ser, loc] = md.matches.front();
 
-    ser.expressions = el.concat(md.merge_void_spans(el), ser.expressions);
     BOOST_ASSERT(!ser.is_const_result);
     //if (ser.is_const_result) {
     //    ctx.u().push_back_expression(el, ser.expressions, semantic::push_value{ ser.value() });

@@ -15,6 +15,7 @@
 #include "sonia/bang/utility/linked_list.ipp"
 
 #include "semantic_fwd.hpp"
+#include "ast_terms.hpp"
 //#include "sonia/bang/entities/variable_entity.hpp"
 
 namespace sonia::lang::bang {
@@ -440,7 +441,22 @@ struct push_local_variable
     }
 };
 
-struct set_local_variable { variable_identifier varid; };
+struct set_local_variable
+{
+#ifdef SONIA_LANG_DEBUG
+    identifier debug_name;
+#endif
+    variable_identifier varid;
+
+    inline explicit set_local_variable(local_variable const& v) noexcept
+        : varid{ v.varid }
+    {
+#ifdef SONIA_LANG_DEBUG
+        debug_name = v.debug_name.value;
+#endif
+    }
+};
+
 struct set_variable { extern_variable_entity const* entity; };
 struct set_by_offset { size_t offset; }; // offset from the stack top
 struct truncate_values
@@ -531,44 +547,22 @@ struct expression_entry : expression_entry_type { using expression_entry_type::e
 using expression_list_t = linked_list<expression>;
 using managed_expression_list = managed_linked_list<expression, unit>;
 
-class indirect_expression_list : public indirect
-{
-public:
-    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(indirect_expression_list);
-
-    mutable managed_expression_list list;
-
-    inline explicit indirect_expression_list(managed_expression_list&& l) noexcept
-        : list{ std::move(l) }
-    {}
-
-    inline indirect_expression_list(indirect_expression_list const& rhs)
-        : list{ *rhs.list.manager() }
-    {
-        list.deep_copy((semantic::expression_span)rhs.list);
-    }
-
-    inline indirect_expression_list(indirect_expression_list&&) = default;
-
-    inline indirect_expression_list& operator= (indirect_expression_list const&)
-    {
-        THROW_INTERNAL_ERROR("indirect_expression_list copy assignment");
-    }
-
-    inline indirect_expression_list& operator=(indirect_expression_list&&) = default;
-};
-
 }
 
 struct syntax_expression_result
 {
-    // {temporary name, temporarytype, expressions}
+    // {temporary name, temporary type, initilizing expressions}
     small_vector<std::tuple<identifier, local_variable, semantic::expression_span>, 2> temporaries;
 
-    semantic::expression_span stored_expressions;
+    // because expressions with branches like if, for, while, etc. don't own their expressions, we need to store them separately
+    semantic::expression_span branches_expressions;
+
     semantic::expression_span expressions;
+
     entity_identifier value_or_type;
     bool is_const_result;
+
+    // if is_const_result is true, value_or_type is a value entity identifier and we ignore temporaries, expressions, and branches_expressions
 
     inline entity_identifier type() const
     {
@@ -594,6 +588,12 @@ using syntax_expression_result_t = syntax_expression_result;
 //using syntax_expression_result_reference_t = syntax_expression_result<semantic::expression_span>;
 
 using syntax_expression_const_result_t = syntax_expression_const_result; // syntax_expression_const_result<semantic::managed_expression_list>;
+
+void append_semantic_result(semantic::expression_list_t & el, syntax_expression_result_t& dest, syntax_expression_result_t& src);
+
+
+indirect_value make_indirect_value(unit&, semantic::expression_list_t&, syntax_expression_result_t && res, lex::resource_location loc);
+syntax_expression_result_t retrieve_indirect_value(unit&, semantic::expression_list_t&, indirect_value const&);
 
 }
 

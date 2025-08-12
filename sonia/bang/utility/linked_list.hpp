@@ -201,7 +201,7 @@ public:
     void emplace_back(T&& e);
 
     template <typename NodeT>
-    void deep_copy(linked_list_node_span<NodeT> l);
+    linked_list_node_span<NodeT> deep_copy(linked_list_node_span<NodeT> l);
 
     inline ManagerT* manager() const noexcept { return m_; }
 

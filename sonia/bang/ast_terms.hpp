@@ -557,7 +557,7 @@ struct pattern
         pattern_list_t fields;
     };
 
-    variant<placeholder, signature_descriptor, ExprT> descriptor;
+    variant<placeholder, context_identifier, signature_descriptor, ExprT> descriptor;
     concept_expression_list_t concepts;
 };
 
@@ -930,10 +930,11 @@ struct let_statement
     annotated_identifier aname;
     named_expression_list_t expressions;
     optional<syntax_expression_t> type;
+    lex::resource_location assign_location; // location of '=' operator
     bool weakness;
 
     identifier const& name() const { return aname.value; }
-    lex::resource_location const& location() const { return aname.location; }
+    lex::resource_location const& location() const { return assign_location; }
 };
 
 using return_decl_t = return_decl<syntax_expression_t>;

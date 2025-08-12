@@ -57,7 +57,6 @@ std::expected<syntax_expression_result_t, error_storage> union_bit_or_pattern::a
 {
     auto& umd = static_cast<union_match_descriptor&>(md);
     return syntax_expression_result_t{
-        .expressions = md.merge_void_spans(el),
         .value_or_type = ctx.u().make_union_type_entity(umd.types).id,
         .is_const_result = true
     };

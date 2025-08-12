@@ -1,0 +1,20 @@
+//let t3 = (c: 3, d: 4);
+//let t4 = (c: runtime_cast(3), d: 4);
+//assert(t3 == t4);
+
+//let xpack0 = (c: runtime_cast(3));
+//let t3 = (xpack0..., 4);
+//assert_equal(t3.0, (.c, 3));
+
+
+let xpack0 = (1, name: "assa", runtime_cast("345"), name : "bassa", name : runtime_cast(123), runtime_cast(22));
+
+let xpack1 = (11, 222, xpack0..., name: "bussa");
+
+
+assert_equal(xpack1.8, (.name, "bussa"));
+
+// here xpack is const and it's type is tuple with only const fields (values and qnames)
+let xpack = 1, runtime_cast(2), name: runtime_cast("345"), 66, name : "678";
+
+assert(*xpack.1 == 2); // value is mutable, need dereference

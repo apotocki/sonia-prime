@@ -73,8 +73,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_typename_get
     auto pmd = make_shared<tuple_typename_get_match_descriptor>(call, slf_entity, *psig);
     pmd->emplace_back(0, slf_arg_er);
     pmd->emplace_back(1, property_arg->first);
-    pmd->void_spans = std::move(call_session.void_spans);
-
+    
     return pmd;
 }
 
@@ -88,7 +87,6 @@ std::expected<syntax_expression_result_t, error_storage> tuple_typename_get_patt
     slfer.temporaries.insert(slfer.temporaries.end(), proper.temporaries.begin(), proper.temporaries.end());
     syntax_expression_result_t result{
         .temporaries = std::move(slfer.temporaries),
-        .expressions = md.merge_void_spans(el),
         .is_const_result = true
     };
 

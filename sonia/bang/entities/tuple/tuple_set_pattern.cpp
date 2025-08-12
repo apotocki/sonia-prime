@@ -93,8 +93,7 @@ std::expected<functional_match_descriptor_ptr, error_storage> tuple_set_pattern:
     pmd->emplace_back(0, ser);
     pmd->emplace_back(1, property_arg->first);
     pmd->emplace_back(2, valarg->first);
-    pmd->void_spans = std::move(call_session.void_spans);
-
+    
     THROW_NOT_IMPLEMENTED_ERROR("tuple_set_pattern::try_match");
 #if 0
     entity_signature const* pes = pte->signature();

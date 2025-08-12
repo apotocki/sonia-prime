@@ -17,17 +17,7 @@ general_error::string_t pattern_match_error::object(unit const& u) const noexcep
 
 general_error::string_t pattern_match_error::description(unit const& u) const noexcept
 {
-    std::ostringstream ss;
-    //if (signature_) {
-    //    ss << "can't match the function signature: "sv;
-    //    ss << u.print(signature_->fn_type);
-    //} else {
-    ss << "can't match the call";
-    //}
-    if (reason_) {
-        ss << ", caused by: \n" << u.print(*reason_);
-    }
-    return ss.str();
+    return "can't match the call"sv;
 }
 
 }

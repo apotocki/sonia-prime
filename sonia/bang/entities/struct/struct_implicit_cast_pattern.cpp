@@ -86,13 +86,12 @@ std::expected<syntax_expression_result_t, error_storage> struct_implicit_cast_pa
 {
     unit& u = ctx.u();
     syntax_expression_result_t result{
-        .expressions = md.merge_void_spans(el),
         .value_or_type = md.signature.result->entity_id(),
         .is_const_result = false
     };
-    for (auto& [_, mr] : md.matches) {
+    for (auto& [_, mr, loc] : md.matches) {
         result.temporaries.insert(result.temporaries.end(), mr.temporaries.begin(), mr.temporaries.end());
-        result.stored_expressions = el.concat(result.stored_expressions, mr.stored_expressions);
+        result.branches_expressions = el.concat(result.branches_expressions, mr.branches_expressions);
         result.expressions = el.concat(result.expressions, mr.expressions);
         if (mr.is_const_result) {
             u.push_back_expression(el, result.expressions, semantic::push_value{ mr.value() });

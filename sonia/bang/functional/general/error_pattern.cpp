@@ -48,7 +48,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> error_pattern::try
     if (locarg) {
         pmd->emplace_back(1, locarg->first);
     }
-    pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
 
@@ -59,8 +58,7 @@ std::expected<syntax_expression_result_t, error_storage> error_pattern::apply(fn
     
     syntax_expression_result_t result{
         .temporaries = std::move(msg_er.temporaries),
-        .stored_expressions = std::move(msg_er.stored_expressions),
-        .expressions = md.merge_void_spans(el)
+        .branches_expressions = std::move(msg_er.branches_expressions)
     };
     
     generic_literal_entity const* pmsg_ent = nullptr;

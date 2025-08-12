@@ -88,7 +88,7 @@ error_storage internal_function_entity::build(fn_compiler_context& fnctx)
     auto fres = fnctx.finish_frame(*this); // unknown result type is resolving here
     if (!fres) return fres.error();
         
-    auto [value_or_type, is_value] = fres.value();
+    auto [value_or_type, is_value, is_empty] = fres.value();
     if (!result.entity_id()) {
         result = field_descriptor{ value_or_type, is_value };
     }
@@ -106,7 +106,8 @@ error_storage internal_function_entity::build(fn_compiler_context& fnctx)
     //GLOBAL_LOG_INFO() << "built inline function end: " << u.print(*this);
     //sts_.reset();
     is_built_ = 1;
-
+    is_empty_ = result.is_const() && is_empty;
+    //is_empty_ = 0;
     return {};
 }
 

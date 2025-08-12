@@ -57,7 +57,6 @@ std::expected<functional_match_descriptor_ptr, error_storage> assert_pattern::tr
         return std::unexpected(make_error<basic_general_error>(argterm.location(), "Argument mismatch!"sv, std::move(argterm.value())));
     }
     
-    pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
 
@@ -67,13 +66,12 @@ std::expected<syntax_expression_result_t, error_storage> assert_pattern::apply(f
     assert_match_descriptor& amd = static_cast<assert_match_descriptor&>(md);
     alt_error errs;
     syntax_expression_result_t res{
-        .expressions = md.merge_void_spans(el),
         .value_or_type = u.get(builtin_eid::void_),
         .is_const_result = true
     };
     
     for (size_t arg_i = 0; arg_i < amd.reserved_errors.size(); ++arg_i) {
-        auto& [_, arg_er] = amd.matches[arg_i];
+        auto& [_, arg_er, loc] = amd.matches[arg_i];
 
         if (arg_er.is_const_result) {
             if (arg_er.value() == u.get(builtin_eid::false_)) {
@@ -83,7 +81,7 @@ std::expected<syntax_expression_result_t, error_storage> assert_pattern::apply(f
         } else if (errs.alternatives.empty()) {
             res.temporaries.insert(res.temporaries.end(), arg_er.temporaries.begin(), arg_er.temporaries.end());
             res.expressions = el.concat(res.expressions, arg_er.expressions);
-            res.stored_expressions = el.concat(res.stored_expressions, arg_er.stored_expressions);
+            res.branches_expressions = el.concat(res.branches_expressions, arg_er.branches_expressions);
             std::ostringstream msgss;
             u.print_to(msgss, *amd.reserved_errors[arg_i]);
             u.push_back_expression(el, res.expressions, semantic::push_value{ smart_blob{ string_blob_result(msgss.str()) } });

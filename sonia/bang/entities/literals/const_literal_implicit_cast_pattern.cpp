@@ -111,7 +111,6 @@ const_literal_implicit_cast_pattern::try_match(fn_compiler_context& ctx, prepare
     auto pmd = sonia::make_shared<const_literal_implicit_cast_match_descriptor>(call, src_arg_literal, can_be_constexpr(exp.modifier));
     pmd->signature.result.emplace(exp.type ? exp.type : src_arg_entity.get_type(), false);
     pmd->emplace_back(0, src_arg_er);
-    pmd->void_spans = std::move(call_session.void_spans);
     return std::move(pmd);
 }
 
@@ -119,8 +118,7 @@ std::expected<syntax_expression_result_t, error_storage>
 const_literal_implicit_cast_pattern::apply(fn_compiler_context& ctx, semantic::expression_list_t& el, functional_match_descriptor& md) const
 {
     auto& nmd = static_cast<const_literal_implicit_cast_match_descriptor&>(md);
-    auto& [_, src] = md.matches.front();
-    src.expressions = el.concat(md.merge_void_spans(el), src.expressions);
+    auto& [_, src, loc] = md.matches.front();
     
     unit& u = ctx.u();
     entity_identifier target_type = nmd.signature.result->entity_id();

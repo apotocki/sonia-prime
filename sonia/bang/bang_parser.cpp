@@ -60,7 +60,7 @@ public:
         , src_ { std::move(src) }
     {}
 
-    std::ostream& print_to(std::ostream& s, int line, int column, lex::resource_print_mode_t mode) const override
+    std::ostream& print_to(std::ostream& s, string_view indent, int line, int column, lex::resource_print_mode_t mode) const override
     {
         prepare_lines();
         
@@ -74,7 +74,7 @@ public:
         const int end_line = (std::min)(static_cast<int>(lines.size()) - 1, target_line);
 
         // Print description and location
-        print_description(s) << " at " << line << ':' << column << '\n';
+        print_description(s << indent) << " at " << line << ':' << column << '\n';
 
         // Calculate the width needed for line numbers
         const size_t max_line_num = (std::max)(end_line + 1, 1);
@@ -83,7 +83,7 @@ public:
         // Print context lines and target line
         for (int i = start_line; i <= end_line; ++i) {
             // Print line number with padding
-            s << std::setw(line_num_width) << std::right << (i + 1) << " | ";
+            s << indent << std::setw(line_num_width) << std::right << (i + 1) << " | ";
             
             if (i < static_cast<int>(lines.size())) {
                 s << lines[i];
@@ -93,7 +93,7 @@ public:
             // Print caret pointer for the target line
             if (i == target_line) {
                 // Print spaces for line number and separator
-                s << std::string(line_num_width, ' ') << " | ";
+                s << indent << std::string(line_num_width, ' ') << " | ";
                 
                 // Print spaces up to the target column, then caret
                 const int safe_column = (std::max)(0, (std::min)(target_column, static_cast<int>(lines[i].size())));

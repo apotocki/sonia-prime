@@ -289,9 +289,6 @@
     <Filter Include="sonia.bang\entities\enum">
       <UniqueIdentifier>{ed5d4027-b37c-44de-86a0-d0c0b86a6639}</UniqueIdentifier>
     </Filter>
-    <Filter Include="sonia.bang\entities\collections">
-      <UniqueIdentifier>{49f3d200-580a-4d68-968e-2fc37a7cb26e}</UniqueIdentifier>
-    </Filter>
     <Filter Include="sonia.bang\entities\union">
       <UniqueIdentifier>{c622c0f8-71b5-4bb5-afe0-5b8103c3b2d8}</UniqueIdentifier>
     </Filter>
@@ -306,6 +303,12 @@
     </Filter>
     <Filter Include="sonia.bang\functional\fn_pattern_matching">
       <UniqueIdentifier>{c87c8757-953f-4231-919f-ab40409061a4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities\array">
+      <UniqueIdentifier>{0ad52a57-1b54-4d31-a4c4-d0bd4274d422}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.bang\entities\vector">
+      <UniqueIdentifier>{d5d3e705-a955-4751-b080-5bd8ee6453b0}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -2373,9 +2376,6 @@
     <ClInclude Include="..\..\..\sonia\bang\entities\enum\enum_implicit_cast_pattern.hpp">
       <Filter>sonia.bang\entities\enum</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\collections\array_implicit_cast_pattern.hpp">
-      <Filter>sonia.bang\entities\collections</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\union\union_bit_or_pattern.hpp">
       <Filter>sonia.bang\entities\union</Filter>
     </ClInclude>
@@ -2390,9 +2390,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\literals\literal_entity.hpp">
       <Filter>sonia.bang\entities\literals</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\bang\entities\collections\array_elements_implicit_cast_pattern.hpp">
-      <Filter>sonia.bang\entities\collections</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\auxiliary.hpp">
       <Filter>sonia.bang</Filter>
@@ -2501,6 +2498,30 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\bang\entities\tuple\generic_get_pattern_matcher.ipp">
       <Filter>sonia.bang\entities\tuple</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\cast_error.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\errors\signature_name_mismatch_error.hpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\array\array_elements_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\array</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\array\array_implicit_cast_pattern.hpp">
+      <Filter>sonia.bang\entities\array</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\array\array_make_pattern.hpp">
+      <Filter>sonia.bang\entities\array</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\array\array_head_pattern.hpp">
+      <Filter>sonia.bang\entities\array</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\vector\vector_make_pattern.hpp">
+      <Filter>sonia.bang\entities\vector</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\bang\entities\array\array_tail_pattern.hpp">
+      <Filter>sonia.bang\entities\array</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -2951,9 +2972,6 @@
     <ClCompile Include="..\..\..\sonia\bang\entities\enum\enum_implicit_cast_pattern.cpp">
       <Filter>sonia.bang\entities\enum</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\entities\collections\array_implicit_cast_pattern.cpp">
-      <Filter>sonia.bang\entities\collections</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\union\union_bit_or_pattern.cpp">
       <Filter>sonia.bang\entities\union</Filter>
     </ClCompile>
@@ -2965,9 +2983,6 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\literals\numeric_implicit_cast_pattern.cpp">
       <Filter>sonia.bang\entities\literals</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\sonia\bang\entities\collections\array_elements_implicit_cast_pattern.cpp">
-      <Filter>sonia.bang\entities\collections</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\bang_auxiliary.cpp">
       <Filter>sonia.bang</Filter>
@@ -3064,6 +3079,30 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\bang\entities\tuple\tuple_typename_get_pattern.cpp">
       <Filter>sonia.bang\entities\tuple</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\errors\cast_error.cpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\errors\signature_name_mismatch_error.cpp">
+      <Filter>sonia.bang\errors</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\array\array_elements_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\array</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\array\array_implicit_cast_pattern.cpp">
+      <Filter>sonia.bang\entities\array</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\array\array_make_pattern.cpp">
+      <Filter>sonia.bang\entities\array</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\array\array_head_pattern.cpp">
+      <Filter>sonia.bang\entities\array</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\vector\vector_make_pattern.cpp">
+      <Filter>sonia.bang\entities\vector</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\bang\entities\array\array_tail_pattern.cpp">
+      <Filter>sonia.bang\entities\array</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

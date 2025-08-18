@@ -6,7 +6,7 @@
 
 #include <iosfwd>
 
-#include <boost/multiprecision/cpp_int.hpp>
+//#include <boost/multiprecision/cpp_int.hpp>
 #include <boost/lexical_cast.hpp>
 #include "sonia/string.hpp"
 #include "sonia/exceptions.hpp"

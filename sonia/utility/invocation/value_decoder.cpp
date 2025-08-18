@@ -5,11 +5,9 @@
 #include "sonia/config.hpp"
 #include "value_decoder.hpp"
 
-#include "boost/conversion/detail/utility/data_ops.hpp"
+#include "dataforge/detail/utility/data_ops.hpp"
 
 namespace sonia::invocation {
-
-namespace cvt = boost::conversion;
 
 blob_result value_decoder::decode(span<const uint8_t> sp, string_view type, string_view endianness) const
 {
@@ -25,9 +23,9 @@ static T decode_integral(const uint8_t* data, string_view es)
     T buff;
     return *[es, &buff](const uint8_t* data) {
         if (es == "le"sv) {
-            return cvt::le_to_T<8, sizeof(T)* CHAR_BIT, T>(&buff, data, sizeof(T));
+            return dataforge::le_to_T<8, sizeof(T)* CHAR_BIT, T>(&buff, data, sizeof(T));
         } else if (es == "be"sv) {
-            return cvt::be_to_T<8, sizeof(T)* CHAR_BIT, T>(&buff, data, sizeof(T));
+            return dataforge::be_to_T<8, sizeof(T)* CHAR_BIT, T>(&buff, data, sizeof(T));
         } else {
             throw exception("unknown endianness: %1%"_fmt % es);
         }

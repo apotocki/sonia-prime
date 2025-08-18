@@ -7,7 +7,6 @@
 
 #include <sstream>
 #include <algorithm>
-#include <boost/unordered_map.hpp>
 #include <boost/range/combine.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 

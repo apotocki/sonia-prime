@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "invocable.hpp"
+#include "invocable_registry.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
 namespace sonia::invocation {

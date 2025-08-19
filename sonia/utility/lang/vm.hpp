@@ -423,11 +423,11 @@ struct printer
     using op = vm_t::op;
 
     std::ostream& ss;
-    explicit printer(std::ostream & s) : ss{s} {}
+    inline explicit printer(std::ostream & s) noexcept : ss{ s } {}
 
     std::ostream& generic_print(size_t address, string_view cmd) const
     {
-        return ss << "0x" << std::hex << std::setfill('0') << std::setw(4) << address << " " << cmd;
+        return ss << "0x"sv << std::hex << std::setfill('0') << std::setw(4) << address << ' ' << cmd;
     }
 
     inline void operator()(identity_type<op::noop>, ContextT&, size_t address) const
@@ -858,10 +858,12 @@ struct runner
 template <typename FirstRunnerT, typename SecondRunnerT>
 struct sequence_runner
 {
-    FirstRunnerT const& first;
-    SecondRunnerT const& second;
+    FirstRunnerT first;
+    SecondRunnerT second;
 
-    sequence_runner(FirstRunnerT const& f, SecondRunnerT const& s) : first{f}, second{s} {}
+    sequence_runner(FirstRunnerT const& f, SecondRunnerT const& s)
+        : first{ f }, second{ s }
+    {}
 
     template <typename ... ArgsT>
     inline auto operator()(ArgsT&& ... args) const
@@ -1136,7 +1138,7 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
 template <typename ContextT>
 void virtual_stack_machine<ContextT>::run(ContextT& ctx, size_t address)
 {
-    sequence_runner<printer<ContextT>, runner<ContextT>> rn{ printer<ContextT>{std::cout}, {}};
+    sequence_runner<printer<ContextT>, runner<ContextT>> rn{ printer<ContextT>{ std::cout }, {}};
     //printer<ContextT> rn{ std::cout };
     //runner<ContextT> rn;
     traverse(ctx, address, rn);

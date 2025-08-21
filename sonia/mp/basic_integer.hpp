@@ -249,7 +249,7 @@ struct integer_holder : AllocatorT
                 return;
             } else { // need allocate
                 limbsdata = allocate(sz + limbs_data_sizeof_in_limbs);
-                std::copy(limbs, limbs + sz, limbsdata + limbs_data_sizeof_in_limbs);
+                std::memcpy(limbsdata + limbs_data_sizeof_in_limbs, limbs, sz * sizeof(LimbT));
             }
         } else { // libsdata is already allocated, but not initialized
             limbsdata = limbs - limbs_data_sizeof_in_limbs;
@@ -604,7 +604,7 @@ struct integer_holder : AllocatorT
 template <std::unsigned_integral LimbT, size_t N, typename AllocatorT>
 std::exception_ptr from_integer_string(integer_holder<LimbT, N, AllocatorT>& dh, std::string_view & str, int base = 0)
 {
-    using storage_type = integer_holder<LimbT, N, AllocatorT>;
+    //using storage_type = integer_holder<LimbT, N, AllocatorT>;
     std::string_view orig_str = str;
 
     auto opt_tpl = base ? 
@@ -663,7 +663,7 @@ public:
     {}
 
     template <std::unsigned_integral ForeignLimbT>
-    explicit basic_integer(basic_integer_view<ForeignLimbT> const& rhs, AllocatorT const& alloc = AllocatorT{})
+    explicit basic_integer(basic_integer_view<ForeignLimbT> const& /*rhs*/, AllocatorT const& alloc = AllocatorT{})
         : aholder_{ alloc }
     {
         THROW_NOT_IMPLEMENTED_ERROR("basic_integer with foreign LimbT"sv);

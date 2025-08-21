@@ -83,7 +83,7 @@ public:
     virtual ~code_resource() = default;
     virtual std::ostream& print_description(std::ostream&) const = 0;
 
-    virtual std::ostream& print_to(std::ostream& s, string_view indent, int line, int column, resource_print_mode_t mode = resource_print_mode_t::default_mode) const
+    virtual std::ostream& print_to(std::ostream& s, string_view indent, int line, int column, resource_print_mode_t /*mode*/ = resource_print_mode_t::default_mode) const
     {
         return print_description(s << indent) << '(' << line << ',' << column << ')';
     }

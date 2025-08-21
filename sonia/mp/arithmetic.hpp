@@ -65,15 +65,16 @@ template <> struct uint_t<64>
     */
 };
 
+#if 0
 #if defined(__SIZEOF_INT128__) && !defined(__CUDACC__) && !defined(_MSC_VER) && !defined(__ANDROID__) && !defined(__clang__)
 #  define PLATFORM_HAS_INT128
 template <> struct uint_t<128>
 {
-    using least = uint_least128_t;
-    using fast = uint_fast128_t;
+    using least = __uint128_t;
+    using fast = __uint128_t;
 };
 #endif
-
+#endif
 }
 
 namespace sonia::arithmetic {
@@ -100,7 +101,7 @@ inline constexpr unsigned int generic_count_leading_zeros(T x) noexcept
 	    for (shift = std::numeric_limits<T>::digits - 8; shift > 0; shift -= 8)
 	        if (((x >> shift) & 0xff) != 0)
 	            break;
-	        ++shift;
+	    ++shift;
     }
     return (unsigned int)(std::numeric_limits<T>::digits + 1 - shift - clz_tab[x >> shift]);
 }

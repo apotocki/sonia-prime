@@ -453,7 +453,7 @@ struct decimal_holder : AllocatorT
                 exponent.copy_to(limbsdata + data_sizeof_in_limbs + sz);
             }
 
-            new (limbsdata) DataT{ .allocated_size = static_cast<uint32_t>(asz), .sign = (s.sgn() < 0) ? 1u : 0, .size = static_cast<uint32_t>(sz) };
+            new (limbsdata) DataT{ .allocated_size = static_cast<uint32_t>(asz), .sign = (s.sgn() < 0) ? 1u : 0, .allocated_exponent = 0, .size = static_cast<uint32_t>(sz), .exponent = {} };
             if constexpr (ExponentBitCount >= 0) {
                 if (exp_alloc_sz) {
                     reinterpret_cast<DataT*>(limbsdata)->allocated_exponent = 1;
@@ -524,7 +524,7 @@ struct decimal_holder : AllocatorT
             limbsdata = limbs - data_sizeof_in_limbs;
             exp_alloc_sz = 0;
         }
-        new (limbsdata) DataT{ .allocated_size = static_cast<uint32_t>(asz), .sign = (sign < 0) ? 1u : 0, .size = static_cast<uint32_t>(sz) };
+        new (limbsdata) DataT{ .allocated_size = static_cast<uint32_t>(asz), .sign = (sign < 0) ? 1u : 0, .allocated_exponent = 0, .size = static_cast<uint32_t>(sz), .exponent = {} };
         if constexpr (ExponentBitCount >= 0) {
             if (exp_alloc_sz) {
                 reinterpret_cast<DataT*>(limbsdata)->allocated_exponent = 1;
@@ -623,7 +623,7 @@ struct decimal_holder : AllocatorT
 template <std::unsigned_integral LimbT, size_t N, intptr_t EBC, typename DataT, typename AllocatorT>
 std::exception_ptr from_integer_string(decimal_holder<LimbT, N, EBC, DataT, AllocatorT>& dh, std::string_view & str, int base = 0) noexcept
 {
-    using storage_type = decimal_holder<LimbT, N, EBC, DataT, AllocatorT>;
+    //using storage_type = decimal_holder<LimbT, N, EBC, DataT, AllocatorT>;
     std::string_view orig_str = str;
 
     auto opt_tpl = to_limbs<LimbT>(str, base, dh.sso_allocator());
@@ -648,7 +648,7 @@ std::exception_ptr from_integer_string(decimal_holder<LimbT, N, EBC, DataT, Allo
 template <std::unsigned_integral LimbT, size_t N, intptr_t EBC, typename DataT, typename AllocatorT>
 std::exception_ptr from_decimal_string(decimal_holder<LimbT, N, EBC, DataT, AllocatorT>& dh, std::string_view & str) noexcept
 {
-    using storage_type = decimal_holder<LimbT, N, EBC, DataT, AllocatorT>;
+    //using storage_type = decimal_holder<LimbT, N, EBC, DataT, AllocatorT>;
     std::string_view orig_str = str;
     int64_t exp;
     auto alloc = dh.sso_allocator();

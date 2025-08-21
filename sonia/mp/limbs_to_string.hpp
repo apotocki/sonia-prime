@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "ct.hpp"
+#include "config/cmath.hpp"
 
 namespace sonia::mp {
 
@@ -28,7 +29,7 @@ OutputIteratorT bc_get_str(std::span<LimbT> limbs, int base, std::string_view al
     assert(!limbs.empty());
     assert(alphabet.size() >= base);
     constexpr uint32_t limb_bit_count = std::numeric_limits<LimbT>::digits;
-    using limb_traits_t = uint_t<limb_bit_count>;
+    //using limb_traits_t = uint_t<limb_bit_count>;
     
     char tempbuff[std::numeric_limits<LimbT>::digits]; // not more than the number of bits in the LimbT type (worst case when base = 2)
 
@@ -126,7 +127,7 @@ OutputIteratorT bc_get_str(std::span<LimbT> limbs, int base, std::string_view al
 }
 
 template <std::unsigned_integral LimbT, typename OutputIteratorT>
-OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& reversed, int base = 10, std::string_view alphabet = {})
+OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& reversed, unsigned int base = 10, std::string_view alphabet = {})
 {
     using namespace std::string_view_literals;
     using limb_type = std::remove_cv_t<LimbT>;
@@ -196,17 +197,16 @@ OutputIteratorT to_string(std::span<LimbT> limbs, OutputIteratorT out, bool& rev
         using namespace sonia::arithmetic;
         namespace mpa = sonia::mp::arithmetic;
 
-        constexpr uint32_t limb_bit_count = std::numeric_limits<limb_type>::digits;
+        //constexpr uint32_t limb_bit_count = std::numeric_limits<limb_type>::digits;
 
-        size_t chars_per_limb = size_t(std::floor(double(limb_bit_count) / std::log2(base)));
-
+        //size_t chars_per_limb = size_t(std::floor(double(limb_bit_count) / std::log2(base)));
 
         std::vector<limb_type> powtab;
         powtab.reserve(2 + limbs.size());
 
-        limb_type logb2 = static_cast<limb_type>(std::floor(std::logl(2) / std::logl(base) * std::powl(2, limb_bit_count)));
-        size_t ndig = umul1<limb_type>(logb2, static_cast<limb_type>(limb_bit_count * limbs.size())).first;
-        size_t xn = 1 + ndig / chars_per_limb;
+        //limb_type logb2 = static_cast<limb_type>(std::floor(std::logl(2) / std::logl(base) * std::powl(2, limb_bit_count)));
+        //size_t ndig = umul1<limb_type>(logb2, static_cast<limb_type>(limb_bit_count * limbs.size())).first;
+        //size_t xn = 1 + ndig / chars_per_limb;
 
         if constexpr (std::is_const_v<LimbT>) {
             std::vector<limb_type> mls(limbs.begin(), limbs.end());

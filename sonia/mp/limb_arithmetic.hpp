@@ -854,8 +854,8 @@ std::pair<LimbT, LimbT> udiv_bc(LimbT* puhh, LimbT* puh, std::span<LimbT>& ul, L
 template <std::unsigned_integral LimbT, typename QOutputIteratorT, typename AllocatorT>
 std::pair<LimbT, LimbT> udiv_svoboda(LimbT* puhh, LimbT* puh, std::span<LimbT>& ul, LimbT dh, std::span<const LimbT> dl, QOutputIteratorT qit, AllocatorT& alloc)
 {
-    using allocator_type = std::remove_cvref_t<AllocatorT>;
-    using alloc_traits_t = std::allocator_traits<allocator_type>;
+    //using allocator_type = std::remove_cvref_t<AllocatorT>;
+    //using alloc_traits_t = std::allocator_traits<allocator_type>;
 
     *qit-- = do_udiv_unorm(puhh, puh, ul, dh, dl);
 
@@ -1006,8 +1006,8 @@ inline void udiv_dv(LimbT* puhh, LimbT* puh, std::span<LimbT>& ul, std::span<Lim
 template <std::unsigned_integral LimbT, typename QOutputIteratorT, typename AllocatorT>
 LimbT udiv(LimbT uh, std::span<LimbT>& ul, LimbT dh, std::span<const LimbT> dl, QOutputIteratorT qit, AllocatorT && alloc)
 {
-    using allocator_type = std::remove_cvref_t<AllocatorT>;
-    using alloc_traits_t = std::allocator_traits<allocator_type>;
+    //using allocator_type = std::remove_cvref_t<AllocatorT>;
+    //using alloc_traits_t = std::allocator_traits<allocator_type>;
 
     LimbT* puh;
     if (!uh) {

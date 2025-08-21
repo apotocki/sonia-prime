@@ -191,7 +191,7 @@ protected:
 template <typename ElementT, size_t ByteSzV, typename RefCountT>
 class optimized_array : protected optimized_holder<ByteSzV, 0, RefCountT>
 {
-    SONIA_DECLARE_SERIALIZATION_FRIENDLY;
+    SONIA_DECLARE_SERIALIZATION_FRIENDLY
 
 protected:
     using holder_t = typename optimized_array::optimized_holder_t;
@@ -385,7 +385,7 @@ public:
 template <typename ElementT, size_t ByteSzV, typename RefCountT>
 class shared_optimized_array : public optimized_array<ElementT, ByteSzV, RefCountT>
 {
-    SONIA_DECLARE_SERIALIZATION_FRIENDLY;
+    SONIA_DECLARE_SERIALIZATION_FRIENDLY
 
     using base_t = optimized_array<ElementT, ByteSzV, RefCountT>;
     using holder_t = typename base_t::holder_t;

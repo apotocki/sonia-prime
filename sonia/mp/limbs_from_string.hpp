@@ -256,8 +256,8 @@ to_limbs(std::basic_string_view<CharT>& str, unsigned int base, AllocatorT&& all
     detail::base_prefix_skipper(str, base);
     return to_limbs<LimbT>(str, base, sign, std::forward<AllocatorT>(alloc),
         base <= 36 ?
-            [](CharT c, int base) { return c < sizeof(detail::default_alphabet_map) ? detail::default_alphabet_map[c] : base; } :
-            [](CharT c, int base) { return c < sizeof(detail::default_alphabet_big_map) ? detail::default_alphabet_big_map[c] : base; });
+            [](CharT c, int base) { return size_t(c) < sizeof(detail::default_alphabet_map) ? detail::default_alphabet_map[size_t(c)] : base; } :
+            [](CharT c, int base) { return size_t(c) < sizeof(detail::default_alphabet_big_map) ? detail::default_alphabet_big_map[size_t(c)] : base; });
 }
 
 
@@ -270,7 +270,7 @@ to_limbs(std::basic_string_view<CharT>& str, AllocatorT&& alloc) noexcept
     auto base = detail::base_guesser(str);
     return to_limbs<LimbT>(str, base, sign, std::forward<AllocatorT>(alloc),
         [](CharT c, unsigned int base) {
-            return c < sizeof(detail::default_alphabet_map) ? detail::default_alphabet_map[c] : base; 
+            return size_t(c) < sizeof(detail::default_alphabet_map) ? detail::default_alphabet_map[size_t(c)] : base;
         });
 }
 

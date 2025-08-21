@@ -20,22 +20,22 @@ class NOVTABLE polymorphic_clonable
 {
 public:
     virtual ~polymorphic_clonable() = default;
-    [[noreturn]] virtual void* clone(void* address, size_t sz) const { THROW_NOT_SUPPORTED_ERROR("copy"); }
+    [[noreturn]] virtual void* clone(void* /*address*/, size_t /*sz*/) const { THROW_NOT_SUPPORTED_ERROR("copy"); }
 };
 
 class NOVTABLE polymorphic_movable
 {
 public:
     virtual ~polymorphic_movable() = default;
-    [[noreturn]] virtual void* move(void* address, size_t sz) { THROW_NOT_SUPPORTED_ERROR("move"); }
+    [[noreturn]] virtual void* move(void* /*address*/, size_t /*sz*/) { THROW_NOT_SUPPORTED_ERROR("move"); }
 };
 
 class NOVTABLE polymorphic_clonable_and_movable
 {
 public:
     virtual ~polymorphic_clonable_and_movable() = default;
-    [[noreturn]] virtual void* clone(void* address, size_t sz) const { THROW_NOT_SUPPORTED_ERROR("copy"); }
-    [[noreturn]] virtual void* move(void* address, size_t sz) { THROW_NOT_SUPPORTED_ERROR("move"); }
+    [[noreturn]] virtual void* clone(void* /*address*/, size_t /*sz*/) const { THROW_NOT_SUPPORTED_ERROR("copy"); }
+    [[noreturn]] virtual void* move(void* /*address*/, size_t /*sz*/) { THROW_NOT_SUPPORTED_ERROR("move"); }
 };
 
 template <typename T>

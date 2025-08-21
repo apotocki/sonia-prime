@@ -21,8 +21,9 @@ public:
     using identifier_type = IdentifierT;
     using location_type = LocationT;
 
-    inline explicit entity(IdentifierT id = {}) noexcept
+    inline explicit entity(IdentifierT id = {}, LocationT l = {}) noexcept
         : id{ std::move(id) }
+        , location{ std::move(l) }
     {}
 
     virtual ~entity() = default;

@@ -122,7 +122,7 @@ template <typename T> constexpr bool is_integral_not_bool_v = std::is_integral_v
 struct alignas(8) blob_result
 {
     union {
-        struct {
+        struct  {
             union {
                 void const* data;
                 uint64_t ui64value;
@@ -141,9 +141,9 @@ struct alignas(8) blob_result
             union {
                 uint16_t reserved;
                 struct {
-                    uint8_t reserved0;
-                    uint8_t reserved1;
-                };
+                    uint8_t n0;
+                    uint8_t n1;
+                } reserved8;
             };
         } bp; // base_plane
         uint8_t ui8array[14];
@@ -304,8 +304,8 @@ template <std::unsigned_integral LimbT>
 auto make_basic_integer_view(blob_result const& val)
 {
     // val.reserved0 - sign
-    // val.bp.reserved0 - sskip bits
-    return sonia::mp::basic_integer_view<LimbT>{ std::span{ data_of<const LimbT>(val), array_size_of<LimbT>(val) }, val.reserved0 ? -1 : 1, val.bp.reserved0 };
+    // val.bp.reserved8.n0 - skip bits
+    return sonia::mp::basic_integer_view<LimbT>{ std::span{ data_of<const LimbT>(val), array_size_of<LimbT>(val) }, val.reserved0 ? -1 : 1, val.bp.reserved8.n0 };
 }
 
 #include "sonia/type_traits.hpp"
@@ -536,8 +536,8 @@ inline blob_result bigint_blob_result(sonia::mp::basic_integer_view<LimbT> bival
     } else {
         result.bp.data = bival.data();
         result.bp.size = static_cast<uint32_t>(bival.size() * sizeof(LimbT));
-        result.bp.reserved0 = static_cast<uint8_t>(bival.most_significant_skipping_bits());
-        result.bp.reserved1 = static_cast<uint8_t>(sizeof(LimbT));
+        result.bp.reserved8.n0 = static_cast<uint8_t>(bival.most_significant_skipping_bits());
+        result.bp.reserved8.n1 = static_cast<uint8_t>(sizeof(LimbT));
         result.bp_reserved_used = 1;
         result.inplace_size = 0;
     }
@@ -704,8 +704,8 @@ inline auto blob_bigint_dispatch(blob_result const& val, FT&& ftor)
     if (val.inplace_size) {
         return ftor(basic_integer_view<invocation_bigint_limb_type>{ val.bp.ui64value, val.reserved0 ? -1 : 1 });
     } else {
-        int sign = val.reserved0 ? -1 : 1;
-        switch(val.bp.reserved1) {
+        //int sign = val.reserved0 ? -1 : 1;
+        switch(val.bp.reserved8.n1) {
         case 8:
             return ftor(make_basic_integer_view<uint8_t>(val));
         case 16:
@@ -715,7 +715,7 @@ inline auto blob_bigint_dispatch(blob_result const& val, FT&& ftor)
         case 64:
             return ftor(make_basic_integer_view<uint64_t>(val));
         default:
-            throw std::runtime_error((std::ostringstream() << "unsupported limb bit size: "sv << val.bp.reserved1).str());
+            throw std::runtime_error((std::ostringstream() << "unsupported limb bit size: "sv << val.bp.reserved8.n1).str());
         }
     }
 }

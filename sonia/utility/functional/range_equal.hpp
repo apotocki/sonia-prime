@@ -40,7 +40,7 @@ struct range_equal
     constexpr bool operator()(T const* lb, T const* le, T const* rb, T const* re) const
     {
         const size_t sz = le - lb;
-        if (sz != (re - rb)) return false;
+        if (sz != size_t(re - rb)) return false;
         if (lb == rb) return true;
         if constexpr (is_integral_v<T>) {
             return !std::memcmp(lb, rb, sz * sizeof(T));

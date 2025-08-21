@@ -30,7 +30,7 @@ std::expected<std::tuple<LimbT*, size_t, size_t, int>, std::exception_ptr> to_si
     using namespace sonia::arithmetic;
     using alloc_traits_t = std::allocator_traits<std::remove_cvref_t<AllocatorT>>;
 
-    constexpr size_t limb_bit_count = std::numeric_limits<LimbT>::digits;
+    //constexpr size_t limb_bit_count = std::numeric_limits<LimbT>::digits;
     constexpr size_t digits_per_limb = std::numeric_limits<LimbT>::digits10;
     constexpr LimbT big_base = ipow<LimbT>(10u, digits_per_limb);
 

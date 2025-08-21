@@ -673,7 +673,7 @@ struct printer
         generic_print(address, "pushfp"sv) << ", fp: "sv << std::dec << static_cast<uint32_t>(ctx.stack_size()) << "\n";
     }
 
-    inline void operator()(identity_type<op::popfp>, ContextT& ctx, size_t address) const
+    inline void operator()(identity_type<op::popfp>, ContextT& /*ctx*/, size_t address) const
     {
         generic_print(address, "popfp"sv) << "\n";
     }
@@ -713,36 +713,36 @@ struct runner
     
     inline void operator()(identity_type<op::noop>, ContextT &, size_t) const {}
 
-    inline size_t operator()(identity_type<op::jmp>, ContextT&, size_t address, size_t jmp_address, size_t) const { return jmp_address; }
-    inline size_t operator()(identity_type<op::jmpp>, ContextT&, size_t address, size_t jmp_offset, size_t next) const { return next + jmp_offset; }
-    inline size_t operator()(identity_type<op::jmpn>, ContextT&, size_t address, size_t jmp_offset, size_t next) const { return next - jmp_offset; }
+    inline size_t operator()(identity_type<op::jmp>, ContextT&, size_t /*address*/, size_t jmp_address, size_t) const { return jmp_address; }
+    inline size_t operator()(identity_type<op::jmpp>, ContextT&, size_t /*address*/, size_t jmp_offset, size_t next) const { return next + jmp_offset; }
+    inline size_t operator()(identity_type<op::jmpn>, ContextT&, size_t /*address*/, size_t jmp_offset, size_t next) const { return next - jmp_offset; }
 
-    inline size_t operator()(identity_type<op::jt>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
+    inline size_t operator()(identity_type<op::jt>, ContextT& ctx, size_t /*address*/, size_t jmp_address, size_t next_address) const
     {
         return ctx.is_true(ctx.stack_back()) ? jmp_address : next_address;
     }
 
-    inline size_t operator()(identity_type<op::jtp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jtp>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
     {
         return ctx.is_true(ctx.stack_back()) ? (next_address + jmp_offset) : next_address;
     }
 
-    inline size_t operator()(identity_type<op::jtn>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jtn>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
     {
         return ctx.is_true(ctx.stack_back()) ? (next_address - jmp_offset) : next_address;
     }
 
-    inline size_t operator()(identity_type<op::jf>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const
+    inline size_t operator()(identity_type<op::jf>, ContextT& ctx, size_t /*address*/, size_t jmp_address, size_t next_address) const
     {
         return ctx.is_true(ctx.stack_back()) ? next_address : jmp_address;
     }
 
-    inline size_t operator()(identity_type<op::jfp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jfp>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
     {
         return ctx.is_true(ctx.stack_back()) ? next_address : (next_address + jmp_offset);
     }
 
-    inline size_t operator()(identity_type<op::jfn>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jfn>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
     {
         return ctx.is_true(ctx.stack_back()) ? next_address : (next_address - jmp_offset);
     }
@@ -752,13 +752,13 @@ struct runner
         return ctx.call_stack_pop();
     }
 
-    inline size_t operator()(identity_type<op::call>, ContextT& ctx, size_t address, size_t call_address, size_t ret_address) const
+    inline size_t operator()(identity_type<op::call>, ContextT& ctx, size_t /*address*/, size_t call_address, size_t ret_address) const
     {
         ctx.call_stack_push(ret_address);
         return call_address;
     }
 
-    inline void operator()(identity_type<op::ecall>, ContextT& ctx, size_t address, size_t fn_index) const { ctx.efn(fn_index); }
+    inline void operator()(identity_type<op::ecall>, ContextT& ctx, size_t /*address*/, size_t fn_index) const { ctx.efn(fn_index); }
 
     //inline void operator()(identity_type<op::ecall1>, ContextT& ctx, size_t address, size_t arg_index, size_t fn_index, ext1_function_t fn) const { fn(ctx, ctx.stack_at(arg_index)); }
     //
@@ -766,85 +766,85 @@ struct runner
     //
     //inline void operator()(identity_type<op::fnecall1>, ContextT& ctx, size_t address, size_t arg_offset, size_t fn_index, ext1_function_t fn) const { fn(ctx, ctx.stack_at(ctx.frame_stack_back() - arg_offset)); }
     
-    inline void operator()(identity_type<op::pop>, ContextT& ctx, size_t address) const { ctx.stack_pop(); }
+    inline void operator()(identity_type<op::pop>, ContextT& ctx, size_t /*address*/) const { ctx.stack_pop(); }
 
-    inline void operator()(identity_type<op::popn>, ContextT& ctx, size_t address, size_t n) const { ctx.stack_pop(n); }
+    inline void operator()(identity_type<op::popn>, ContextT& ctx, size_t /*address*/, size_t n) const { ctx.stack_pop(n); }
     
-    inline void operator()(identity_type<op::collapse>, ContextT& ctx, size_t address, size_t n) const { ctx.stack_collapse(n); }
+    inline void operator()(identity_type<op::collapse>, ContextT& ctx, size_t /*address*/, size_t n) const { ctx.stack_collapse(n); }
 
-    inline void operator()(identity_type<op::push>, ContextT& ctx, size_t address, size_t index) const
+    inline void operator()(identity_type<op::push>, ContextT& ctx, size_t /*address*/, size_t index) const
     {
         var_t val = ctx.stack_at(index);
         ctx.stack_push(std::move(val));
     }
 
-    inline void operator()(identity_type<op::pushc>, ContextT& ctx, size_t address, size_t index) const
+    inline void operator()(identity_type<op::pushc>, ContextT& ctx, size_t /*address*/, size_t index) const
     {
         var_t val = ctx.const_at(index);
         ctx.stack_push(std::move(val));
     }
 
-    inline void operator()(identity_type<op::pushr>, ContextT& ctx, size_t address, size_t offset) const
+    inline void operator()(identity_type<op::pushr>, ContextT& ctx, size_t /*address*/, size_t offset) const
     {
         var_t val = ctx.stack_back(offset);
         ctx.stack_push(std::move(val));
     }
 
-    inline void operator()(identity_type<op::fppush>, ContextT& ctx, size_t address, size_t offset) const
+    inline void operator()(identity_type<op::fppush>, ContextT& ctx, size_t /*address*/, size_t offset) const
     {
         var_t val = ctx.stack_at(ctx.frame_stack_back() + offset);
         ctx.stack_push(std::move(val));
     }
 
-    inline void operator()(identity_type<op::fnpush>, ContextT& ctx, size_t address, size_t offset) const
+    inline void operator()(identity_type<op::fnpush>, ContextT& ctx, size_t /*address*/, size_t offset) const
     {
         var_t val = ctx.stack_at(ctx.frame_stack_back() - offset);
         ctx.stack_push(std::move(val));
     }
 
-    inline void operator()(identity_type<op::pushi>, ContextT& ctx, size_t address, size_t index) const
+    inline void operator()(identity_type<op::pushi>, ContextT& ctx, size_t /*address*/, size_t index) const
     {
         ctx.stack_push(ctx.value_of(index));
     }
 
-    inline void operator()(identity_type<op::fppushi>, ContextT& ctx, size_t address, size_t offset) const
+    inline void operator()(identity_type<op::fppushi>, ContextT& ctx, size_t /*address*/, size_t offset) const
     {
         ctx.stack_push(ctx.value_of(ctx.frame_stack_back() + offset));
     }
 
-    inline void operator()(identity_type<op::fnpushi>, ContextT& ctx, size_t address, size_t offset) const
+    inline void operator()(identity_type<op::fnpushi>, ContextT& ctx, size_t /*address*/, size_t offset) const
     {
         ctx.stack_push(ctx.value_of(ctx.frame_stack_back() - offset));
     }
 
-    inline void operator()(identity_type<op::set>, ContextT& ctx, size_t address, size_t index) const
+    inline void operator()(identity_type<op::set>, ContextT& ctx, size_t /*address*/, size_t index) const
     {
         ctx.stack_at(index) = ctx.stack_back();
     }
 
-    inline void operator()(identity_type<op::setr>, ContextT& ctx, size_t address, size_t offset) const
+    inline void operator()(identity_type<op::setr>, ContextT& ctx, size_t /*address*/, size_t offset) const
     {
         ctx.stack_back(offset) = ctx.stack_back();
     }
 
-    inline void operator()(identity_type<op::fpset>, ContextT& ctx, size_t address, size_t offset) const
+    inline void operator()(identity_type<op::fpset>, ContextT& ctx, size_t /*address*/, size_t offset) const
     {
         ctx.stack_at(ctx.frame_stack_back() + offset) = ctx.stack_back();
     }
 
-    inline void operator()(identity_type<op::fnset>, ContextT& ctx, size_t address, size_t offset) const
+    inline void operator()(identity_type<op::fnset>, ContextT& ctx, size_t /*address*/, size_t offset) const
     {
         ctx.stack_at(ctx.frame_stack_back() - offset) = ctx.stack_back();
     }
 
-    inline void operator()(identity_type<op::pushfp>, ContextT& ctx, size_t address) const { ctx.frame_stack_push(); }
-    inline void operator()(identity_type<op::popfp>, ContextT& ctx, size_t address) const { ctx.frame_stack_pop(); }
+    inline void operator()(identity_type<op::pushfp>, ContextT& ctx, size_t /*address*/) const { ctx.frame_stack_push(); }
+    inline void operator()(identity_type<op::popfp>, ContextT& ctx, size_t /*address*/) const { ctx.frame_stack_pop(); }
     
-    inline void operator()(identity_type<op::truncatefpp>, ContextT& ctx, size_t address, size_t cnt) const
+    inline void operator()(identity_type<op::truncatefpp>, ContextT& ctx, size_t /*address*/, size_t cnt) const
     {
         ctx.stack_truncate(ctx.frame_stack_back() + cnt);
     }
-    inline void operator()(identity_type<op::truncatefpn>, ContextT& ctx, size_t address, size_t cnt) const
+    inline void operator()(identity_type<op::truncatefpn>, ContextT& ctx, size_t /*address*/, size_t cnt) const
     {
         ctx.stack_truncate(ctx.frame_stack_back() - cnt);
     }
@@ -880,7 +880,7 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
     while (address < code_.size()) {
         uint8_t op_byte = code_[address];
         if (op_byte >= 128) {
-            auto cmdoffset = op_byte - 128;
+            auto cmdoffset = op_byte - 128u;
             if (cmdoffset >= efns_.size()) [[unlikely]] {
                 throw internal_error("wrong command");
             }
@@ -968,6 +968,7 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
         case op::ecall:
             {
                 size_t start_address = address++;
+                (void)start_address; // unused
                 size_t fn_index = read_uint(address);
                 ftor(identity<op::ecall>, ctx, address, fn_index);
                 continue;

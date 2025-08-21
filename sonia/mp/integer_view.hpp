@@ -215,7 +215,7 @@ public:
     inline LimbT at(size_t index) const noexcept
     {
         if (index >= size()) [[unlikely]] return LimbT{ 0 };
-        else if (is_inplace()) { return inplace_value_[index]; }
+        else if (is_inplace()) { return *(inplace_value_ + index); }
         else if (ctl_.skip_bits && index + 1 == size()) {
             return limbs_[index] & last_limb_mask();
         }

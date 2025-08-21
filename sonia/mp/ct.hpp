@@ -22,10 +22,10 @@ namespace sonia::mpct
 template <std::unsigned_integral T, T... args> struct limbs
 {
     using type = limbs;
-    static T data[sizeof...(args)];
+    static T data[sizeof...(args) ? sizeof...(args) : 1];
 };
 
-template <std::unsigned_integral T, T... args> T limbs<T, args...>::data[sizeof...(args)] = { args ... };
+template <std::unsigned_integral T, T... args> T limbs<T, args...>::data[sizeof...(args) ? sizeof...(args) : 1] = { args ... };
 
 template <typename LimbsT> struct size_method : size_method<typename LimbsT::type> {};
 template <typename LimbsT> constexpr size_t size = size_method<LimbsT>::value;
@@ -524,9 +524,9 @@ struct div_method<limbs<T, largs...>, limbs<T, rargs...>>
 };
 
 // ////////////////////////////////// POW
-template <typename LimbsT, auto a> struct pow_method: pow_method<typename LimbsT::type, a> {};
+template <typename LimbsT, unsigned int a> struct pow_method: pow_method<typename LimbsT::type, a> {};
 
-template <typename LimbsT, auto a> using pow = typename pow_method<LimbsT, a>::type;
+template <typename LimbsT, unsigned int a> using pow = typename pow_method<LimbsT, a>::type;
 
 template <typename T, T... args>
 struct pow_method<limbs<T, args...>, 0> { using type = limbs<T, 1>; };
@@ -534,7 +534,7 @@ struct pow_method<limbs<T, args...>, 0> { using type = limbs<T, 1>; };
 template <typename T, T... args>
 struct pow_method<limbs<T, args...>, 1> { using type = limbs<T, args...>; };
 
-template <typename T, T... args, auto a>
+template <typename T, T... args, unsigned int a>
 struct pow_method<limbs<T, args...>, a> : mul_method<pow<limbs<T, args...>, a / 2>, pow<limbs<T, args...>, (a + 1) / 2>> {};
 
 namespace literals {

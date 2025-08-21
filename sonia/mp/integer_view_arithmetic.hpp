@@ -103,6 +103,7 @@ requires(std::is_same_v<LimbT, typename std::allocator_traits<std::remove_cvref_
         get<1>(result) = get<2>(result) = margsz;
         LimbT* res = get<0>(result);
         LimbT c = arithmetic::usub_unchecked(lb, le, last_l, rb, re, last_r, res);
+        (void)c; // to avoid unused variable warning
         assert(!c);
         for (; !*res; --res) { // need not to check res >= get<0>(result)
             --get<1>(result);

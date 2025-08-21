@@ -14,7 +14,7 @@
 #include "sonia/type_traits.hpp"
 
 #include "sonia/utility/optimized/holder.hpp"
-#include "sonia/mp/basic_decimal.hpp"
+#include "numetron/basic_decimal.hpp"
 
 #define SONIA_JSON_VALUE_SZ sizeof(intptr_t) // at least pointer size
 
@@ -120,7 +120,7 @@ class json_value : json_detail::holder_t
 
     explicit json_value(bool);
     explicit json_value(int);
-    explicit json_value(mp::decimal_view);
+    explicit json_value(numetron::decimal_view);
     explicit json_value(string_view);
     explicit json_value(cstring_view);
     explicit json_value(span<json_value>);
@@ -148,7 +148,7 @@ class json_value : json_detail::holder_t
     bool get_bool() const;
     int get_int() const;
     int64_t get_int64() const;
-    mp::decimal_view get_number() const;
+    numetron::decimal_view get_number() const;
     std::string_view get_string() const;
     std::u8string_view get_u8string() const;
     span<const json_value> get_array() const;

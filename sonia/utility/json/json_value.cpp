@@ -166,7 +166,7 @@ int64_t json_value::get_int64() const
     throw exception("json_value (%1%) is not a number"_fmt % to_string(*this));
 }
 
-mp::decimal_view json_value::get_number() const
+numetron::decimal_view json_value::get_number() const
 {
     if (json_value_type::number == type()) {
         using number_t = optimized_decimal_impl<holder_t>;
@@ -299,11 +299,11 @@ json_value::json_value(bool val)
 json_value::json_value(int val)
 {
     using number_t = optimized_decimal_impl<holder_t>;
-    number_t::set(this, mp::decimal{val});
+    number_t::set(this, numetron::decimal{val});
     set_service_cookie((size_t)json_value_type::number);
 }
 
-json_value::json_value(mp::decimal_view val)
+json_value::json_value(numetron::decimal_view val)
 {
     using number_t = optimized_decimal_impl<holder_t>;
     number_t::set(this, std::move(val));

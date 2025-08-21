@@ -39,7 +39,7 @@ public:
     {
         tempstr_.clear();
         std::copy(b, e, std::back_inserter(tempstr_));
-        stack_.push_back(json_value(mp::decimal{string_view(tempstr_.data(), tempstr_.size())}));
+        stack_.push_back(json_value(numetron::decimal{string_view(tempstr_.data(), tempstr_.size())}));
     }
 
     template <typename IteratorT>

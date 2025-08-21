@@ -16,9 +16,9 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/utility/number/float16.hpp"
 #include "sonia/utility/functional/hash.hpp"
-#include "sonia/mp/integer_view.hpp"
-#include "sonia/mp/basic_integer.hpp"
-#include "sonia/mp/basic_decimal.hpp"
+#include "numetron/integer_view.hpp"
+#include "numetron/basic_integer.hpp"
+#include "numetron/basic_decimal.hpp"
 #include "sonia/prime_config.hpp"
 
 namespace sonia::invocation {
@@ -305,7 +305,7 @@ auto make_basic_integer_view(blob_result const& val)
 {
     // val.reserved0 - sign
     // val.bp.reserved8.n0 - skip bits
-    return sonia::mp::basic_integer_view<LimbT>{ std::span{ data_of<const LimbT>(val), array_size_of<LimbT>(val) }, val.reserved0 ? -1 : 1, val.bp.reserved8.n0 };
+    return numetron::basic_integer_view<LimbT>{ std::span{ data_of<const LimbT>(val), array_size_of<LimbT>(val) }, val.reserved0 ? -1 : 1, val.bp.reserved8.n0 };
 }
 
 #include "sonia/type_traits.hpp"
@@ -522,7 +522,7 @@ inline blob_result error_blob_result(ArgT && arg)
 }
 
 template <std::unsigned_integral LimbT>
-inline blob_result bigint_blob_result(sonia::mp::basic_integer_view<LimbT> bival) noexcept
+inline blob_result bigint_blob_result(numetron::basic_integer_view<LimbT> bival) noexcept
 {
     using namespace sonia;
     blob_result result;
@@ -545,12 +545,12 @@ inline blob_result bigint_blob_result(sonia::mp::basic_integer_view<LimbT> bival
 }
 
 template <std::unsigned_integral LimbT, size_t N, typename AllocatorT>
-inline blob_result bigint_blob_result(sonia::mp::basic_integer<LimbT, N, AllocatorT> const& bival) noexcept
+inline blob_result bigint_blob_result(numetron::basic_integer<LimbT, N, AllocatorT> const& bival) noexcept
 {
-    return bigint_blob_result((sonia::mp::basic_integer_view<LimbT>)bival);
+    return bigint_blob_result((numetron::basic_integer_view<LimbT>)bival);
 }
 
-//inline blob_result decimal_blob_result(sonia::mp::basic_integer_view<invocation_bigint_limb_type> mval, int16_t eval)
+//inline blob_result decimal_blob_result(numetron::basic_integer_view<invocation_bigint_limb_type> mval, int16_t eval)
 //{
 //    using namespace sonia;
 //    auto sp = (std::span<const invocation_bigint_limb_type>)mval;
@@ -561,14 +561,13 @@ inline blob_result bigint_blob_result(sonia::mp::basic_integer<LimbT, N, Allocat
 //}
 
 template <std::unsigned_integral LimbT>
-inline blob_result decimal_blob_result(sonia::mp::basic_decimal_view<LimbT> const& dv)
+inline blob_result decimal_blob_result(numetron::basic_decimal_view<LimbT> const& dv)
 {
-    using namespace sonia;
     blob_result result;
     result.type = blob_type::decimal;
     result.reserved0 = dv.sgn() < 0 ? 1 : 0;
     if (dv.exponent().template is_fit<int16_t>()) {
-        mp::basic_integer_view<LimbT> sval = dv.significand().abs();
+        numetron::basic_integer_view<LimbT> sval = dv.significand().abs();
         if (sval.template is_fit<uint64_t>()) {
             int64_t eval = (int16_t)dv.exponent();
             result.bp.reserved = static_cast<uint16_t>(eval);
@@ -583,9 +582,9 @@ inline blob_result decimal_blob_result(sonia::mp::basic_decimal_view<LimbT> cons
 }
 
 template <std::unsigned_integral LimbT, size_t N, size_t E, typename AllocatorT>
-inline blob_result decimal_blob_result(sonia::mp::basic_decimal<LimbT, N, E, AllocatorT> const& dv)
+inline blob_result decimal_blob_result(numetron::basic_decimal<LimbT, N, E, AllocatorT> const& dv)
 {
-    return decimal_blob_result((sonia::mp::basic_decimal_view<LimbT>)dv);
+    return decimal_blob_result((numetron::basic_decimal_view<LimbT>)dv);
 }
 
 template <typename T>
@@ -679,7 +678,7 @@ inline blob_result particular_blob_result(ArgT && value)
     else if constexpr (std::is_same_v<T, uint64_t> || (std::is_integral_v<T> && !std::is_signed_v<T> && sizeof(T) == 8)) return ui64_blob_result(value);
     else if constexpr (std::is_same_v<T, int64_t> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == 8)) return i64_blob_result(value);
     else if constexpr (std::is_same_v<T, sonia::float16>) return f16_blob_result(value);
-    else if constexpr (sonia::is_template_instance_v<sonia::mp::basic_integer_view, T>) return bigint_blob_result(value);
+    else if constexpr (sonia::is_template_instance_v<numetron::basic_integer_view, T>) return bigint_blob_result(value);
     else if constexpr (std::is_same_v<T, float_t>) return f32_blob_result(value);
     else if constexpr (std::is_same_v<T, double_t>) return f64_blob_result(value);
     else if constexpr (sonia::is_string_v<T>) return string_blob_result(std::forward<ArgT>(value));
@@ -700,7 +699,7 @@ template <typename FT>
 inline auto blob_bigint_dispatch(blob_result const& val, FT&& ftor)
 {
     using namespace std::string_view_literals;
-    using sonia::mp::basic_integer_view;
+    using numetron::basic_integer_view;
     if (val.inplace_size) {
         return ftor(basic_integer_view<invocation_bigint_limb_type>{ val.bp.ui64value, val.reserved0 ? -1 : 1 });
     } else {
@@ -724,8 +723,8 @@ template <typename FT>
 inline auto blob_decimal_dispatch(blob_result const& val, FT&& ftor)
 {
     using namespace std::string_view_literals;
-    using sonia::mp::basic_integer_view;
-    using sonia::mp::basic_decimal_view;
+    using numetron::basic_integer_view;
+    using numetron::basic_decimal_view;
     if (val.inplace_size) {
         return ftor(basic_decimal_view<invocation_bigint_limb_type>{
               basic_integer_view<invocation_bigint_limb_type>{ val.bp.ui64value, val.reserved0 ? -1 : 1 }
@@ -808,7 +807,7 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
     case blob_type::tuple:
         return ftor(std::type_identity<blob_result>{}, b);
     case blob_type::bigint:
-        return ftor(std::type_identity<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>{}, b);
+        return ftor(std::type_identity<numetron::basic_integer_view<invocation_bigint_limb_type>>{}, b);
     case blob_type::string:
     case blob_type::error:
         return ftor(std::type_identity<std::string_view>{}, b);
@@ -993,7 +992,7 @@ struct from_blob<T>
 
         return blob_type_dispatch(val, [&val]<typename DT>(DT ival)->T {
             if constexpr (is_integral_not_bool_v<DT>) { return (T)ival; } // to do: checked cast?
-            else if constexpr (mp::is_basic_integer_view_v<DT>) {
+            else if constexpr (numetron::is_basic_integer_view_v<DT>) {
                 if (ival.template is_fit<T>()) return (T)ival;
             }
 
@@ -1011,7 +1010,7 @@ struct from_blob<T>
         
         return blob_type_dispatch(val, [&val]<typename DT>(DT ival) ->T {
             if constexpr (is_integral_not_bool_v<DT> || std::is_floating_point_v<DT> ||
-                mp::is_basic_integer_view_v<DT> || mp::is_basic_decimal_view_v<DT>)
+                numetron::is_basic_integer_view_v<DT> || numetron::is_basic_decimal_view_v<DT>)
             {
                 return (T)ival;
             } else if constexpr (std::is_same_v<DT, sonia::float16>) {
@@ -1024,14 +1023,14 @@ struct from_blob<T>
 };
 
 template <std::unsigned_integral LimbT, size_t N, typename AllocatorT>
-struct from_blob<sonia::mp::basic_integer<LimbT, N, AllocatorT>>
+struct from_blob<numetron::basic_integer<LimbT, N, AllocatorT>>
 {
-    using bigint_t = sonia::mp::basic_integer<LimbT, N, AllocatorT>;
+    using bigint_t = numetron::basic_integer<LimbT, N, AllocatorT>;
     inline bigint_t operator()(blob_result const& val, AllocatorT const& alloc = AllocatorT{}) const
     {
         using namespace sonia;
         return blob_type_dispatch(val, [&val, &alloc]<typename DT>(DT ival)->bigint_t {
-            if constexpr (is_integral_not_bool_v<DT> || mp::is_basic_integer_view_v<DT>) {
+            if constexpr (is_integral_not_bool_v<DT> || numetron::is_basic_integer_view_v<DT>) {
                 return bigint_t{ ival, alloc };
             }
             THROW_INTERNAL_ERROR("can't convert blob %1% to basic_integer<%2%>"_fmt % val % typeid(LimbT).name());
@@ -1040,9 +1039,9 @@ struct from_blob<sonia::mp::basic_integer<LimbT, N, AllocatorT>>
 };
 
 template <std::unsigned_integral LimbT>
-struct from_blob<sonia::mp::basic_integer_view<LimbT>>
+struct from_blob<numetron::basic_integer_view<LimbT>>
 {
-    using bigint_view_t = sonia::mp::basic_integer_view<LimbT>;
+    using bigint_view_t = numetron::basic_integer_view<LimbT>;
     inline bigint_view_t operator()(blob_result const& val) const
     {
         using namespace sonia;
@@ -1058,11 +1057,11 @@ struct from_blob<sonia::mp::basic_integer_view<LimbT>>
 };
 
 template <std::unsigned_integral LimbT, size_t N, size_t E, typename AllocatorT>
-struct from_blob<sonia::mp::basic_decimal<LimbT, N, E, AllocatorT>>
+struct from_blob<numetron::basic_decimal<LimbT, N, E, AllocatorT>>
 {
-    using decimal_t = sonia::mp::basic_decimal<LimbT, N, E, AllocatorT>;
-    using decimal_view_t = sonia::mp::basic_decimal_view<LimbT>;
-    using bigint_view_t = sonia::mp::basic_integer_view<LimbT>;
+    using decimal_t = numetron::basic_decimal<LimbT, N, E, AllocatorT>;
+    using decimal_view_t = numetron::basic_decimal_view<LimbT>;
+    using bigint_view_t = numetron::basic_integer_view<LimbT>;
     inline decimal_t operator()(blob_result const& val, AllocatorT const& alloc = AllocatorT{}) const
     {
         using namespace sonia;
@@ -1071,13 +1070,13 @@ struct from_blob<sonia::mp::basic_decimal<LimbT, N, E, AllocatorT>>
                 return decimal_t{ dval, alloc };
             }
             else if constexpr (std::is_same_v<bigint_view_t, DT>) {
-                return decimal_t{ sonia::mp::basic_integer_view<LimbT>{dval}, sonia::mp::basic_integer_view<LimbT>{}, alloc };
-            } else if constexpr (mp::is_basic_integer_view_v<DT>) {
-                return decimal_t{ sonia::mp::basic_integer<LimbT, 1, AllocatorT>{dval, alloc}, sonia::mp::basic_integer_view<LimbT>{}, alloc };
+                return decimal_t{ numetron::basic_integer_view<LimbT>{dval}, numetron::basic_integer_view<LimbT>{}, alloc };
+            } else if constexpr (numetron::is_basic_integer_view_v<DT>) {
+                return decimal_t{ numetron::basic_integer<LimbT, 1, AllocatorT>{dval, alloc}, numetron::basic_integer_view<LimbT>{}, alloc };
             } else if constexpr (std::is_same_v<decimal_view_t, DT>) {
                 return decimal_t{ dval, alloc };
-            } else if constexpr (mp::is_basic_decimal_view_v<DT>) {
-                return decimal_t{ sonia::mp::basic_integer<LimbT, 1, AllocatorT>{dval.significand(), alloc}, sonia::mp::basic_integer<LimbT, 1, AllocatorT>{dval.exponent(), alloc}, alloc };
+            } else if constexpr (numetron::is_basic_decimal_view_v<DT>) {
+                return decimal_t{ numetron::basic_integer<LimbT, 1, AllocatorT>{dval.significand(), alloc}, numetron::basic_integer<LimbT, 1, AllocatorT>{dval.exponent(), alloc}, alloc };
             }
             THROW_INTERNAL_ERROR("can't convert blob %1% to basic_decimal<%2%>"_fmt % val % typeid(LimbT).name());
         });
@@ -1085,10 +1084,10 @@ struct from_blob<sonia::mp::basic_decimal<LimbT, N, E, AllocatorT>>
 };
 
 template <std::unsigned_integral LimbT>
-struct from_blob<sonia::mp::basic_decimal_view<LimbT>>
+struct from_blob<numetron::basic_decimal_view<LimbT>>
 {
-    using decimal_view_t = sonia::mp::basic_decimal_view<LimbT>;
-    using bigint_view_t = sonia::mp::basic_integer_view<LimbT>;
+    using decimal_view_t = numetron::basic_decimal_view<LimbT>;
+    using bigint_view_t = numetron::basic_integer_view<LimbT>;
     inline decimal_view_t operator()(blob_result const& val) const
     {
         using namespace sonia;
@@ -1096,7 +1095,7 @@ struct from_blob<sonia::mp::basic_decimal_view<LimbT>>
             if constexpr (is_integral_not_bool_v<DT>) {
                 return decimal_view_t{ dval };
             } else if constexpr (std::is_same_v<bigint_view_t, DT>) {
-                return decimal_view_t{ sonia::mp::basic_integer_view<LimbT>{dval}, sonia::mp::basic_integer_view<LimbT>{} };
+                return decimal_view_t{ numetron::basic_integer_view<LimbT>{dval}, numetron::basic_integer_view<LimbT>{} };
             } else if constexpr (std::is_same_v<decimal_view_t, DT>) {
                 return dval;
             }
@@ -1296,7 +1295,7 @@ std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem, Trait
             using type = typename decltype(ident)::type;
             if constexpr (std::is_same_v<type, std::nullptr_t>) { os << "nil"sv; }
             else if constexpr (std::is_void_v<type>) { os << "unknown"sv; }
-            else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"; }
+            else if constexpr (std::is_same_v<type, numetron::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);
@@ -1339,9 +1338,9 @@ std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem, Trait
     case blob_type::flt64:
         return os << b.bp.f64value << (with_types ? ":f64"sv : ""sv);
     case blob_type::bigint:
-        return os << as<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>(b) << (with_types ? ":bigint"sv : ""sv);
+        return os << as<numetron::basic_integer_view<invocation_bigint_limb_type>>(b) << (with_types ? ":bigint"sv : ""sv);
     case blob_type::decimal:
-        return os << as<sonia::mp::basic_decimal<invocation_bigint_limb_type, 1, 8>>(b) << (with_types ? ":decimal"sv : ""sv);
+        return os << as<numetron::basic_decimal<invocation_bigint_limb_type, 1, 8>>(b) << (with_types ? ":decimal"sv : ""sv);
     case blob_type::string:
         if (with_types)
             return os << '"' << sonia::string_view{ data_of<char>(b), array_size_of<char>(b) } << '"';
@@ -1395,11 +1394,11 @@ inline bool operator== (blob_result const& lhs, blob_result const& rhs) noexcept
     return blob_type_dispatch(lhs, [rhs = unref(rhs)]<typename DT>(DT v)->bool {
         if constexpr (std::is_same_v<nullptr_t, DT>) { return is_nil(rhs); }
         else if constexpr (std::is_same_v<bool, DT>) { return rhs.type == blob_type::boolean && v == !!rhs.bp.i8value; }
-        else if constexpr (is_integral_not_bool_v<DT>) { return ::is_integral(rhs.type) && from_blob<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>{}(rhs) == v; }
+        else if constexpr (is_integral_not_bool_v<DT>) { return ::is_integral(rhs.type) && from_blob<numetron::basic_integer_view<invocation_bigint_limb_type>>{}(rhs) == v; }
         else if constexpr (std::is_floating_point_v<DT>) { return ::is_floating_point(rhs.type) && (double_t)v == from_blob<double_t>{}(rhs); } // to do: improve
         else if constexpr (std::is_same_v<sonia::float16, DT>) { return ::is_floating_point(rhs.type) && (float)v == from_blob<float>{}(rhs); } // to do: improve
-        else if constexpr (sonia::mp::is_basic_integer_view_v<DT>) { return ::is_integral(rhs.type) && from_blob<sonia::mp::basic_integer_view<typename DT::limb_type>>{}(rhs) == v; }
-        else if constexpr (sonia::mp::is_basic_decimal_view_v<DT>) { return ::is_floating_point(rhs.type) && from_blob<sonia::mp::basic_decimal_view<typename DT::limb_type>>{}(rhs) == v; }
+        else if constexpr (numetron::is_basic_integer_view_v<DT>) { return ::is_integral(rhs.type) && from_blob<numetron::basic_integer_view<typename DT::limb_type>>{}(rhs) == v; }
+        else if constexpr (numetron::is_basic_decimal_view_v<DT>) { return ::is_floating_point(rhs.type) && from_blob<numetron::basic_decimal_view<typename DT::limb_type>>{}(rhs) == v; }
         else if constexpr (std::is_same_v<std::string_view, DT>) { return rhs.type == blob_type::string && v == from_blob<std::string_view>{}(rhs); }
         else if constexpr (std::is_same_v<sonia::invocation::error, DT>) { return rhs.type == blob_type::error && v.what == from_blob<std::string_view>{}(rhs); }
         else if constexpr (std::is_same_v<std::span<const blob_result>, DT>) { return rhs.type == blob_type::tuple && sonia::range_equal{}(v, from_blob<std::span<const blob_result>>{}(rhs)); }

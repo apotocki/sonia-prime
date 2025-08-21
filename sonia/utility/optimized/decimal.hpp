@@ -6,17 +6,17 @@
 
 #include <concepts>
 
-#include "sonia/mp/basic_decimal.hpp"
-#include "sonia/mp/decimal_view.hpp"
+#include "numetron/basic_decimal.hpp"
+#include "numetron/decimal_view.hpp"
 #include "holder.hpp"
 
-namespace sonia::mp::detail {
+namespace sonia::detail {
 
 template <std::unsigned_integral LimbT, typename RefCountT, class AllocatorT = std::allocator<LimbT>>
 class optimized_decimal
     : public optimized_base<RefCountT>
     , AllocatorT
-    , mp::detail::decimal_data
+    , numetron::detail::decimal_data
 {
     using alloc_traits_t = std::allocator_traits<AllocatorT>;
 
@@ -32,21 +32,21 @@ class optimized_decimal
     {}
 
 public:
-    mp::basic_decimal_view<uint64_t> value() const noexcept
+    numetron::basic_decimal_view<uint64_t> value() const noexcept
     {
         LimbT const* limbs = reinterpret_cast<LimbT const*>(this) + self_size_in_limbs();
 
-        basic_integer_view<LimbT> sig{std::span{ limbs, this->size }, this->sign ? -1 : 1 };
+        numetron::basic_integer_view<LimbT> sig{std::span{ limbs, this->size }, this->sign ? -1 : 1 };
         auto exp = !this->allocated_exponent
-            ? basic_integer_view<LimbT>{ this->exponent }
-            : basic_integer_view<LimbT>{
+            ? numetron::basic_integer_view<LimbT>{ this->exponent }
+            : numetron::basic_integer_view<LimbT>{
                 std::span{ limbs + this->size, static_cast<size_t>(std::abs(this->exponent)) },
                 this->exponent > 0 ? 1 : -1
               };
-        return mp::basic_decimal_view<uint64_t>{std::move(sig), std::move(exp)};
+        return numetron::basic_decimal_view<uint64_t>{std::move(sig), std::move(exp)};
     }
 
-    static optimized_decimal* create(mp::basic_decimal_view<LimbT> const& dv, AllocatorT && alloc = AllocatorT{})
+    static optimized_decimal* create(numetron::basic_decimal_view<LimbT> const& dv, AllocatorT && alloc = AllocatorT{})
     {
         uint32_t limb_sz_to_allocate = static_cast<uint32_t>(dv.significand().size());
         bool inplace_exp = dv.exponent().template is_fit<int64_t>();
@@ -68,12 +68,12 @@ public:
             self->exponent = dv.exponent().size();
             std::copy(dv.exponent().data(), dv.exponent().data() + 1, limbs + self->size);
             if (dv.exponent().most_significant_skipping_bits()) {
-                *(limbs + limb_sz_to_allocate - 1) &= dv.exponent().last_limb_mask();
+                *(limbs + limb_sz_to_allocate - 1) &= dv.exponent().last_significand_limb_mask();
             }
         }
         std::copy(dv.significand().data(), dv.significand().data() + 1, limbs);
         if (dv.significand().most_significant_skipping_bits()) {
-            *(limbs + self->size - 1) &= dv.significand().last_limb_mask();
+            *(limbs + self->size - 1) &= dv.significand().last_significand_limb_mask();
         }
         return self;
     }
@@ -93,7 +93,7 @@ public:
         alloc_traits_t::deallocate(alloc, limbs, self_size_in_limbs() + sz);
     }
 
-    optimized_decimal& operator=(mp::basic_decimal_view<LimbT>)
+    optimized_decimal& operator=(numetron::basic_decimal_view<LimbT>)
     {
         THROW_NOT_IMPLEMENTED_ERROR();
     }
@@ -122,8 +122,8 @@ struct optimized_decimal_impl
 {
     using uint_t = typename HolderT::uint_t;
     using int_t = typename boost::int_t<HolderT::value_bits>::fast;
-    using limb_t = typename mp::decimal_view::limb_type;
-    using optimized_decimal = sonia::mp::detail::optimized_decimal<limb_t, RefCountT>;
+    using limb_t = typename numetron::decimal_view::limb_type;
+    using optimized_decimal = sonia::detail::optimized_decimal<limb_t, RefCountT>;
 
     static const size_t mnts_bits = 4 + 3 * HolderT::value_bits / 4;
     static const size_t exp_bits = HolderT::value_bits - mnts_bits;
@@ -139,7 +139,7 @@ struct optimized_decimal_impl
     static const int_t exp_min = -exp_max - 1;
 
     
-    static void init(HolderT * self, mp::decimal_view dv)
+    static void init(HolderT * self, numetron::decimal_view dv)
     {
         self->init_not_ptr();
         set(self, dv);
@@ -152,7 +152,7 @@ struct optimized_decimal_impl
             return (T)ptr(self)->value();
         } else {
             uint_t rval = self->get_uint();
-            mp::basic_decimal_view<uint64_t> d(
+            numetron::basic_decimal_view<uint64_t> d(
                 unsigned_to_signed<int_t>(rval & mnts_mask, mnts_sign_mask),
                 unsigned_to_signed<int_t>(rval >> mnts_bits, exp_sign_mask)
             );
@@ -160,20 +160,20 @@ struct optimized_decimal_impl
         }
     }
 
-    static mp::basic_decimal_view<uint64_t> get(HolderT const* self)
+    static numetron::basic_decimal_view<uint64_t> get(HolderT const* self)
     {
         if (self->is_ptr()) {
             return ptr(self)->value();
         } else {
             uint_t rval = self->get_uint();
-            return mp::basic_decimal_view<uint64_t>(
+            return numetron::basic_decimal_view<uint64_t>(
                 unsigned_to_signed<int_t>(rval & mnts_mask, mnts_sign_mask),
                 (int32_t)unsigned_to_signed<int_t>(rval >> mnts_bits, exp_sign_mask)
             );
         }
     }
 
-    static void set(HolderT * self, mp::decimal_view val)
+    static void set(HolderT * self, numetron::decimal_view val)
     {
         if (self->is_ptr()) {
             *ptr(self) = val;

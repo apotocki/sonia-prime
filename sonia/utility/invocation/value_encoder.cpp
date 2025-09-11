@@ -68,7 +68,7 @@ value_encoder::value_encoder()
     };
 
     value_handlers_["f16"] = [](blob_result const& br, string_view es, function<void(span<const uint8_t>)> const& writer) {
-        write_integral(float16(as<float_t>(br)).data, es, writer);
+        write_integral(numetron::float16{ as<float_t>(br) }.to_bits(), es, writer);
     };
     value_handlers_["f32"] = [](blob_result const& br, string_view es, function<void(span<const uint8_t>)> const& writer) {
         write_integral(std::bit_cast<uint32_t>(as<float_t>(br)), es, writer);

@@ -78,7 +78,7 @@ value_decoder::value_decoder()
     value_handlers_["f16"] = [](span<const uint8_t> sp, string_view es) -> blob_result {
         if (sp.size() < 2) return nil_blob_result();
         uint16_t ui16val = decode_integral<uint16_t>(sp.data(), es);
-        return f16_blob_result(float16{ui16val});
+        return f16_blob_result(numetron::float16::from_bits(ui16val));
     };
     value_handlers_["f32"] = [](span<const uint8_t> sp, string_view es) -> blob_result {
         if (sp.size() < 4) return nil_blob_result();

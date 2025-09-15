@@ -13,7 +13,7 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
-#include "sonia/utility/invocation/invocable.hpp"
+#include "sonia/utility/invocation/invocable_registry.hpp"
 #include "sonia/services/scheduler/scheduler.hpp"
 
 namespace sonia {

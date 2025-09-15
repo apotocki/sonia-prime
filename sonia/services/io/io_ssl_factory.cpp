@@ -456,7 +456,7 @@ void ssl_factory::free_handle(identity<tcp_server_socket_service_type>, tcp_hand
     acceptor_pool_.delete_object(ci);
 }
 
-expected<size_t, std::exception_ptr> ssl_factory::tcp_socket_read_some(tcp_handle_type h, void * buff, size_t sz) noexcept
+std::expected<size_t, std::exception_ptr> ssl_factory::tcp_socket_read_some(tcp_handle_type h, void * buff, size_t sz) noexcept
 {
     try {
         auto * ci = static_cast<ssl_descriptor*>(h);
@@ -466,11 +466,11 @@ expected<size_t, std::exception_ptr> ssl_factory::tcp_socket_read_some(tcp_handl
         }
         return ci->perform(&ssl_descriptor::do_read, array_view(reinterpret_cast<char*>(buff), sz));
     } catch (...) {
-        return make_unexpected(std::current_exception());
+        return std::unexpected(std::current_exception());
     }
 }
 
-expected<size_t, std::exception_ptr> ssl_factory::tcp_socket_write_some(tcp_handle_type h, void const* buff, size_t sz) noexcept
+std::expected<size_t, std::exception_ptr> ssl_factory::tcp_socket_write_some(tcp_handle_type h, void const* buff, size_t sz) noexcept
 {
     try {
         auto * ci = static_cast<ssl_descriptor*>(h);
@@ -480,7 +480,7 @@ expected<size_t, std::exception_ptr> ssl_factory::tcp_socket_write_some(tcp_hand
         }
         return ci->perform(&ssl_descriptor::do_write, array_view(reinterpret_cast<char*>(const_cast<void*>(buff)), sz));
     } catch (...) {
-        return make_unexpected(std::current_exception());
+        return std::unexpected(std::current_exception());
     }
 }
 

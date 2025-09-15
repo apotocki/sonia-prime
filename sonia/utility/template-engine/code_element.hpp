@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "sonia/utility/invocation/invocable.hpp"
+#include "sonia/utility/invocation/invocable_registry.hpp"
 #include "compound.hpp"
 
 namespace sonia::templates {

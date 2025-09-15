@@ -11,7 +11,7 @@ extern "C" {
 
 }
 
-#include "sonia/mp/integer_view.hpp"
+#include <numetron/integer_view.hpp>
 
 namespace sonia::lua {
 
@@ -31,7 +31,7 @@ constexpr size_t limbs_per_lua_integer = sizeof(lua_Integer) / sizeof(limb_type)
 //using integer_type = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<65, 0>>;
 
 int push_bigint(lua_State*, uint64_t value);
-int push_bigint(lua_State*, mp::basic_integer_view<limb_type> value);
-mp::basic_integer_view<limb_type> restore_bigint(bigint_header * bh);
+int push_bigint(lua_State*, numetron::basic_integer_view<limb_type> value);
+numetron::basic_integer_view<limb_type> restore_bigint(bigint_header * bh);
 
 }

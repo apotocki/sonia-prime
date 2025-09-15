@@ -4,11 +4,12 @@
 
 #include "sonia/config.hpp"
 #include "bigint_lib.hpp"
-#include "sonia/mp/integer_view_arithmetic.hpp"
+#include <numetron/integer_view_arithmetic.hpp>
 
 #include <sstream>
 
 #include "sonia/string.hpp"
+#include "sonia/exceptions.hpp"
 
 extern "C" {
 
@@ -44,7 +45,7 @@ int bigint_index(lua_State* L)
     return 1;
 }
 
-int push_bigint(lua_State* L, mp::basic_integer_view<limb_type> value)
+int push_bigint(lua_State* L, numetron::basic_integer_view<limb_type> value)
 {
     auto [h, ls] = value.limbs();
     size_t limbs_cnt = (ls.size() + (h ? 1 : 0));
@@ -93,14 +94,14 @@ struct lua_limbs_allocator
 int push_bigint(lua_State* L, uint64_t value)
 {
     limb_type buf[sizeof(uint64_t) / sizeof(limb_type)];
-    auto [sz, sign] = mp::to_limbs<limb_type>(value, std::span{buf});
-    return push_bigint(L, mp::basic_integer_view{ std::span{buf, sz}, sign });
+    auto [sz, sign] = numetron::to_limbs<limb_type>(value, std::span{buf});
+    return push_bigint(L, numetron::basic_integer_view{ std::span{buf, sz}, sign });
 }
 
 //int push_bigint(lua_State* L, lua_Integer value)
 //{
 //    lua_limbs_allocator<limb_type> limbs_allocator{ L };
-//    auto [limbs, sz, allsz, sign] = mp::to_limbs<limb_type>(value, limbs_allocator);
+//    auto [limbs, sz, allsz, sign] = numetron::to_limbs<limb_type>(value, limbs_allocator);
 //    limbs_allocator.br->sign = sign;
 //    limbs_allocator.br->size = sz;
 //
@@ -116,13 +117,13 @@ int bigint_create(lua_State* L)
         if (lua_isinteger(L, 1)) {
             lua_Integer value = lua_tointeger(L, 1);
             limb_type buf[sizeof(uint64_t) / sizeof(limb_type)];
-            auto [sz, sign] = mp::to_limbs<limb_type>(value, std::span{ buf });
-            return push_bigint(L, mp::basic_integer_view{ std::span{buf, sz}, sign });
+            auto [sz, sign] = numetron::to_limbs<limb_type>(value, std::span{ buf });
+            return push_bigint(L, numetron::basic_integer_view{ std::span{buf, sz}, sign });
         } else if (lua_isstring(L, 1)) {
             size_t strsz;
             char const* strval = lua_tolstring(L, 1, &strsz);
             string_view str{ strval, strsz };
-            auto opt_limbs = mp::to_limbs<limb_type>(str, limbs_allocator);
+            auto opt_limbs = numetron::to_limbs<limb_type>(str, limbs_allocator);
             if (!opt_limbs.has_value()) {
                 std::rethrow_exception(opt_limbs.error());
             } else if (!str.empty()) {
@@ -146,9 +147,9 @@ int bigint_create(lua_State* L)
     }
 }
 
-mp::basic_integer_view<limb_type> restore_bigint(bigint_header * bh)
+numetron::basic_integer_view<limb_type> restore_bigint(bigint_header * bh)
 {
-    return mp::basic_integer_view<limb_type>{ std::span{ reinterpret_cast<limb_type*>(bh + 1), static_cast<size_t>(bh->size) }, bh->sign ? -1: 1 };
+    return numetron::basic_integer_view<limb_type>{ std::span{ reinterpret_cast<limb_type*>(bh + 1), static_cast<size_t>(bh->size) }, bh->sign ? -1: 1 };
     //ival.backend().resize(bh->size, bh->size);
     //memcpy(ival.backend().limbs(), bh + 1, bh->size * sizeof(limb_type));
     //if (bh->sign != ival.backend().sign()) ival.backend().negate();
@@ -164,7 +165,7 @@ int bigint_tostring(lua_State* L)
     std::vector<char> s;
     if (bh->sign) s.push_back('-');
     bool reversed;
-    mp::to_string(limbs, std::back_inserter(s), reversed);
+    numetron::to_string(limbs, std::back_inserter(s), reversed);
     if (reversed) {
         std::reverse(s.begin() + bh->sign, s.end());
     }
@@ -194,11 +195,11 @@ int bigint_fancy_string(lua_State* L)
     std::string val;
 
     limb_type buf[sizeof(lua_Integer) / sizeof(limb_type)];
-    mp::basic_integer_view<limb_type> ival;
+    numetron::basic_integer_view<limb_type> ival;
 
     if (lua_isinteger(L, 1)) {
-        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 1), std::span{buf});
-        ival = mp::basic_integer_view<limb_type>{std::span{buf, sz}, sign};
+        auto [sz, sign] = numetron::to_limbs(lua_tointeger(L, 1), std::span{buf});
+        ival = numetron::basic_integer_view<limb_type>{std::span{buf, sz}, sign};
     } else if (lua_isnumber(L, 1)) {
         return luaL_error(L, "bigint.to_fancy_string: not implemented for numbers, type: %d;", lua_type(L, 1));
     } else if (bigint_header* bh = luaL_test_bigint_lib(L, 1); bh) {
@@ -217,7 +218,7 @@ int bigint_fancy_string(lua_State* L)
     
     ival.with_limbs([&val, radix](std::span<const limb_type> sp, int) {
         bool reversed;
-        mp::to_string(sp, std::back_inserter(val), reversed, (int)radix, sonia::mp::detail::default_alphabet_big);
+        numetron::to_string(sp, std::back_inserter(val), reversed, (int)radix, numetron::detail::default_alphabet_big);
         if (reversed) {
             std::reverse(val.begin(), val.end());
         }
@@ -251,17 +252,17 @@ int bigint_to_integer(lua_State* L)
     return 1;
 }
 
-std::pair<mp::basic_integer_view<limb_type>, mp::basic_integer_view<limb_type>> bigint_binary_operator(lua_State* L, span<limb_type> lsp, span<limb_type> rsp)
+std::pair<numetron::basic_integer_view<limb_type>, numetron::basic_integer_view<limb_type>> bigint_binary_operator(lua_State* L, span<limb_type> lsp, span<limb_type> rsp)
 {
-    mp::basic_integer_view<limb_type> l_val;
-    mp::basic_integer_view<limb_type> r_val;
+    numetron::basic_integer_view<limb_type> l_val;
+    numetron::basic_integer_view<limb_type> r_val;
 
     bigint_header* blh = luaL_test_bigint_lib(L, 1);
     if (blh) {
         l_val = restore_bigint(blh);
     } else if (lua_isinteger(L, 1)) {
-        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 1), lsp);
-        l_val = mp::basic_integer_view<limb_type>{ lsp.subspan(0, sz), sign };
+        auto [sz, sign] = numetron::to_limbs(lua_tointeger(L, 1), lsp);
+        l_val = numetron::basic_integer_view<limb_type>{ lsp.subspan(0, sz), sign };
     } else {
         luaL_argerror(L, 1, "`bigint' or integer expected");
     }
@@ -270,8 +271,8 @@ std::pair<mp::basic_integer_view<limb_type>, mp::basic_integer_view<limb_type>> 
     if (brh) {
         r_val = restore_bigint(brh);
     } else if (lua_isinteger(L, 2)) {
-        auto [sz, sign] = mp::to_limbs(lua_tointeger(L, 2), rsp);
-        r_val = mp::basic_integer_view<limb_type>{ rsp.subspan(0, sz), sign };
+        auto [sz, sign] = numetron::to_limbs(lua_tointeger(L, 2), rsp);
+        r_val = numetron::basic_integer_view<limb_type>{ rsp.subspan(0, sz), sign };
     } else {
         luaL_argerror(L, 2, "`bigint' or integer expected");
     }
@@ -330,7 +331,7 @@ int bigint_add(lua_State* L)
     auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::add(l_val, r_val, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::limb_arithmetic::add(l_val.decompose(), r_val.decompose(), limbs_allocator);
     auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
     bh->size = sz;
     bh->sign = sign < 0 ? 1 : 0;
@@ -347,7 +348,7 @@ int bigint_sub(lua_State* L)
     auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::sub(l_val, r_val, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::limb_arithmetic::add(l_val.decompose(), (-r_val).decompose(), limbs_allocator);
     auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
     bh->size = sz;
     bh->sign = sign < 0 ? 1 : 0;
@@ -364,7 +365,7 @@ int bigint_mul(lua_State* L)
     auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::mul(l_val, r_val, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::limb_arithmetic::mul(l_val.decompose(), r_val.decompose(), limbs_allocator);
     auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
     bh->size = sz;
     bh->sign = sign < 0 ? 1 : 0;
@@ -381,7 +382,7 @@ int bigint_div(lua_State* L)
     auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::div(l_val, r_val, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::div(l_val, r_val, limbs_allocator);
     auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
     bh->size = sz;
     bh->sign = sign < 0 ? 1 : 0;
@@ -398,7 +399,7 @@ int bigint_mod(lua_State* L)
     auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::mod(l_val, r_val, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::mod(l_val, r_val, limbs_allocator);
     auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1 ;
     bh->size = sz;
     bh->sign = sign < 0 ? 1 : 0;
@@ -418,7 +419,7 @@ int bigint_pow(lua_State* L)
         r_val <= (std::numeric_limits<unsigned int>::max)(), 2, "out of bounds");
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::pow(l_val, (unsigned int)r_val, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::pow(l_val, (unsigned int)r_val, limbs_allocator);
     auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
     bh->size = sz;
     bh->sign = sign < 0 ? 1 : 0;
@@ -435,7 +436,7 @@ int bigint_band(lua_State* L)
     auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::binand(l_val, r_val, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::binand(l_val, r_val, limbs_allocator);
     if (!limbs) {
         return push_bigint(L, 0);
     }
@@ -455,7 +456,7 @@ int bigint_bor(lua_State* L)
     auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::binor(l_val, r_val, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::binor(l_val, r_val, limbs_allocator);
     if (!limbs) {
         return push_bigint(L, 0);
     }
@@ -475,7 +476,7 @@ int bigint_bxor(lua_State* L)
     auto [l_val, r_val] = bigint_binary_operator(L, llimbs, rlimbs);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::binxor(l_val, r_val, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::binxor(l_val, r_val, limbs_allocator);
     if (!limbs) {
         return push_bigint(L, 0);
     }
@@ -494,7 +495,7 @@ int bigint_unary_not(lua_State* L)
     auto val = restore_bigint(bharg);
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::binnot(val, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::binnot(val, limbs_allocator);
     auto* bh = reinterpret_cast<bigint_header*>(limbs) - 1;
     bh->size = sz;
     bh->sign = sign < 0 ? 1 : 0;
@@ -514,7 +515,7 @@ int bigint_shl(lua_State* L)
         r_val <= (std::numeric_limits<unsigned int>::max)(), 2, "out of bounds");
 
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::shift_left(l_val, (unsigned int)r_val, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::shift_left(l_val, (unsigned int)r_val, limbs_allocator);
     if (!limbs) {
         return push_bigint(L, 0);
     }
@@ -540,7 +541,7 @@ int bigint_shr(lua_State* L)
         (unsigned int)r_val : (std::numeric_limits<unsigned int>::max)();
     
     lua_limbs_allocator<limb_type> limbs_allocator{ L };
-    auto [limbs, sz, rsz, sign] = mp::shift_right(l_val, shift, limbs_allocator);
+    auto [limbs, sz, rsz, sign] = numetron::shift_right(l_val, shift, limbs_allocator);
     if (!limbs) {
         return push_bigint(L, 0);
     }

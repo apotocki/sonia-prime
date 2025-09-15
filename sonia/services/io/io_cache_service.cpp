@@ -150,13 +150,13 @@ io::tcp_socket io_cache_service::connection_cache::create_connected_tcp_socket(c
     }
 }
 
-expected<size_t, std::exception_ptr> io_cache_service::connection_cache::tcp_socket_read_some(tcp_handle_type h, void * buff, size_t sz) noexcept
+std::expected<size_t, std::exception_ptr> io_cache_service::connection_cache::tcp_socket_read_some(tcp_handle_type h, void * buff, size_t sz) noexcept
 {
     auto * ci = static_cast<cache_item*>(h);
     return ci->sock.read_some(buff, sz);
 }
 
-expected<size_t, std::exception_ptr> io_cache_service::connection_cache::tcp_socket_write_some(tcp_handle_type h, void const* buff, size_t sz) noexcept
+std::expected<size_t, std::exception_ptr> io_cache_service::connection_cache::tcp_socket_write_some(tcp_handle_type h, void const* buff, size_t sz) noexcept
 {
     auto * ci = static_cast<cache_item*>(h);
     return ci->sock.write_some(buff, sz);

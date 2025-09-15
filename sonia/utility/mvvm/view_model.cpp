@@ -234,7 +234,7 @@ smart_blob view_model::call_method(std::string_view name, blob_result args) cons
         boost::container::small_vector<blob_result, 16> bargs;
         blob_type_selector(args, [&bargs](auto ident, blob_result const& b) {
             using type = typename decltype(ident)::type;
-            if constexpr (std::is_void_v<type> || std::is_same_v<mp::basic_integer_view<invocation_bigint_limb_type>, type>) { bargs.push_back(nil_blob_result()); }
+            if constexpr (std::is_void_v<type> || std::is_same_v<numetron::basic_integer_view<invocation_bigint_limb_type>, type>) { bargs.push_back(nil_blob_result()); }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);

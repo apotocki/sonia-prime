@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <expected>
 #include "sonia/span.hpp"
 #include "sonia/array_view.hpp"
 #include "sonia/shared_ptr.hpp"
@@ -51,8 +52,8 @@ protected:
 public:
     virtual ~tcp_socket_service() = default;
 
-    virtual expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept = 0;
-    virtual expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept = 0;
+    virtual std::expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept = 0;
+    virtual std::expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept = 0;
     virtual void shutdown_handle(identity<tcp_socket_service>, tcp_handle_type, shutdown_opt) noexcept = 0;
     virtual void close_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
     virtual void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept = 0;
@@ -97,38 +98,38 @@ public:
     using service_type = tcp_socket_service<TraitsT>;
 
     template <typename T>
-    expected<size_t, std::exception_ptr> read_some(array_view<T> buff) noexcept
+    std::expected<size_t, std::exception_ptr> read_some(array_view<T> buff) noexcept
     {
         return impl().tcp_socket_read_some(handle(), buff.begin(), buff.size() * sizeof(T));
     }
 
     template <typename T, size_t EV>
-    expected<size_t, std::exception_ptr> read_some(std::span<T, EV> buff) noexcept
+    std::expected<size_t, std::exception_ptr> read_some(std::span<T, EV> buff) noexcept
     {
         return impl().tcp_socket_read_some(handle(), buff.data(), buff.size() * sizeof(T));
     }
 
     template <typename T>
-    expected<size_t, std::exception_ptr> read_some(T * buff, size_t sz) noexcept
+    std::expected<size_t, std::exception_ptr> read_some(T * buff, size_t sz) noexcept
     {
         constexpr size_t elem_sz = is_void_v<T> ? 1 : size_of_v<T>;
         return impl().tcp_socket_read_some(handle(), buff, sz * elem_sz);
     }
 
     template <typename T>
-    expected<size_t, std::exception_ptr> write_some(array_view<T> buff) noexcept
+    std::expected<size_t, std::exception_ptr> write_some(array_view<T> buff) noexcept
     {
         return impl().tcp_socket_write_some(handle(), buff.begin(), buff.size() * sizeof(T));
     }
 
     template <typename T, size_t EV>
-    expected<size_t, std::exception_ptr> write_some(std::span<T, EV> buff) noexcept
+    std::expected<size_t, std::exception_ptr> write_some(std::span<T, EV> buff) noexcept
     {
         return impl().tcp_socket_write_some(handle(), buff.data(), buff.size() * sizeof(T));
     }
 
     template <typename T>
-    expected<size_t, std::exception_ptr> write_some(const T * buff, size_t sz) noexcept
+    std::expected<size_t, std::exception_ptr> write_some(const T * buff, size_t sz) noexcept
     {
         constexpr size_t elem_sz = is_void_v<T> ? 1 : size_of_v<T>;
         return impl().tcp_socket_write_some(handle(), buff, sz * elem_sz);

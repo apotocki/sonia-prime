@@ -3,6 +3,8 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 #pragma once
 
+#include <expected>
+
 #include <boost/function_types/function_type.hpp>
 #include <boost/function_types/parameter_types.hpp>
 #include <boost/function_types/result_type.hpp>
@@ -162,7 +164,7 @@ struct binding_tag_facade
     }
 
     template <typename TupleT, typename ... ArgsT>
-    inline static expected<result_type, std::string> apply_placeholders_ext(TupleT&& tpl, ArgsT&& ... args)
+    inline static std::expected<result_type, std::string> apply_placeholders_ext(TupleT&& tpl, ArgsT&& ... args)
     {
         try {
             if constexpr (!is_void_v<result_type>) {
@@ -172,7 +174,7 @@ struct binding_tag_facade
                 return {};
             }
         } catch (std::exception const& e) {
-            return make_unexpected(e.what());
+            return std::unexpected(e.what());
         }
     }
 

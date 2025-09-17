@@ -10,9 +10,9 @@
 #include <boost/random/uniform_int_distribution.hpp>
 
 #include "agnostic/std/concepts/integral.hpp"
-#include <boost/conversion/hashes/md5.hpp>
-#include <boost/conversion/base_xx/base16.hpp>
-#include <boost/conversion/push_iterator.hpp>
+#include <dataforge/hashes/md5.hpp>
+#include <dataforge/base_xx/base16.hpp>
+#include <dataforge/quark_push_iterator.hpp>
 
 #include "sonia/utility/functional/hash.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
@@ -60,13 +60,14 @@ class base16_value_reference : public value_reference<T>
 {
     using ref_t = uint8_t(T::*)[N];
     ref_t ref_;
+
 public:
     explicit base16_value_reference(ref_t val) : ref_{val} {}
     void set(T& obj, std::string_view val) const override final
     {
         if (val.size() != 2 * N) return;
-        using namespace boost::conversion;
-        (cvt_push_iterator{ base16l | int8, static_cast<uint8_t*>(obj.*ref_) } << val).finish();
+        using namespace dataforge;
+        (quark_push_iterator{ base16l | int8, static_cast<uint8_t*>(obj.*ref_) } << val).finish();
     }
 
     SONIA_POLYMORPHIC_MOVABLE_IMPL(base16_value_reference)
@@ -261,15 +262,15 @@ void http_digest_authentication_application::handle(http::request & req, http::r
             ha1 = std::move(*opt_digest);
         }
 
-        using namespace boost::conversion;
+        using namespace dataforge;
 
         std::array<uint8_t, 32> ha2str;
-        auto ha2_it = cvt_push_iterator{ int8 | md5 | base16l, ha2str.begin() };
+        auto ha2_it = quark_push_iterator{ int8 | md5 | base16l, ha2str.begin() };
         ha2_it << to_string(req.method) << ':' << dig.uri;
         ha2_it.finish();
 
         std::array<uint8_t, 16> response;
-        auto resp_it = cvt_push_iterator{ int8 | md5, response.begin() };
+        auto resp_it = quark_push_iterator{ int8 | md5, response.begin() };
         resp_it << ha1 << ':' << dig.nonce << ':';
         if (dig.qop == "auth" || dig.qop == "auth-int") {
             resp_it << dig.nc << ':' << dig.cnonce << ':' << dig.qop << ':';
@@ -371,10 +372,10 @@ bool http_digest_authentication_application::remove_nonce(std::string_view nval)
 
 std::string http_digest_authentication_application::get_digest_for(std::string_view user, std::string_view password) const
 {
-    using namespace boost::conversion;
+    using namespace dataforge;
     std::string result;
     result.reserve(32);
-    auto cvt_it = cvt_push_iterator{ int8 | md5 | base16l, std::back_inserter(result) };
+    auto cvt_it = quark_push_iterator{ int8 | md5 | base16l, std::back_inserter(result) };
     (cvt_it << user << ':' << cfg_.digest_realm << ':' << password).finish();
     return result;
 }

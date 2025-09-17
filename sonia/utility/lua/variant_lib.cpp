@@ -136,13 +136,13 @@ int variant_f16(lua_State* L)
         if (pend != strval + strsz) {
             return luaL_error(L, "float parse error");
         }
-        return push_variant(L, f16_blob_result(sonia::float16{(float)dval}));
+        return push_variant(L, f16_blob_result(numetron::float16{dval}));
     } else if (lua_isinteger(L, 1)) {
         lua_Integer ival = lua_tointeger(L, 1);
-        return push_variant(L, f16_blob_result(sonia::float16{(float)ival}));
+        return push_variant(L, f16_blob_result(numetron::float16{ival}));
     } else if (lua_isnumber(L, 1)) {
         lua_Number fval = lua_tonumber(L, 1);
-        return push_variant(L, f16_blob_result(sonia::float16{(float)fval}));
+        return push_variant(L, f16_blob_result(numetron::float16{fval}));
     } else if (lua_isnil(L, 1)) {
         lua_pushnil(L);
         return 1;
@@ -190,7 +190,7 @@ void push_from_blob(lua_State* L, blob_result const& b)
     case blob_type::string:
         lua_pushlstring(L, data_of<char>(b), array_size_of<char>(b)); break;
     case blob_type::bigint:
-        push_bigint(L, as<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>(b)); break;
+        push_bigint(L, as<numetron::basic_integer_view<invocation_bigint_limb_type>>(b)); break;
     case blob_type::error:
         throw exception(std::string(data_of<char>(b), array_size_of<char>(b)));
     default:
@@ -232,7 +232,7 @@ int variant_index(lua_State* L)
     blob_type_selector(*br, [L, c_index = index - 1](auto ident, blob_result b) {
         using type = typename decltype(ident)::type;
         if constexpr (std::is_void_v<type>) { lua_pushnil(L); return; }
-        else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { lua_pushnil(L); return; }
+        else if constexpr (std::is_same_v<type, numetron::basic_integer_view<invocation_bigint_limb_type>>) { lua_pushnil(L); return; }
         else {
             using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
 
@@ -250,7 +250,7 @@ int variant_index(lua_State* L)
                 } else if constexpr (is_floating_point_v<fstype>) {
                     fstype const* pval = begin_ptr + c_index;
                     lua_pushnumber(L, (lua_Number)*pval);
-                } else if constexpr (is_same_v<fstype, float16>) {
+                } else if constexpr (is_same_v<fstype, numetron::float16>) {
                     fstype const* pval = begin_ptr + c_index;
                     lua_pushnumber(L, (lua_Number)(float)*pval);
                 } else {
@@ -321,7 +321,7 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
         blob_type_selector(b, [&os, &printer](auto ident, blob_result b) {
             using type = typename decltype(ident)::type;
             if constexpr (std::is_void_v<type>) { os << "unknown"; }
-            else if constexpr (std::is_same_v<type, sonia::mp::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"; }
+            else if constexpr (std::is_same_v<type, numetron::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);
@@ -364,7 +364,7 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
     case blob_type::string:
         return printer(os, b.type, sonia::string_view{ data_of<char>(b), array_size_of<char>(b) });
     case blob_type::bigint:
-        return printer(os, b.type, as<sonia::mp::basic_integer_view<invocation_bigint_limb_type>>(b));
+        return printer(os, b.type, as<numetron::basic_integer_view<invocation_bigint_limb_type>>(b));
     case blob_type::function:
         return os << "function";
     case blob_type::object:

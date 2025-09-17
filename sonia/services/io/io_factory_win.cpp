@@ -136,7 +136,7 @@ struct sync_callback
         }
     }
 
-    expected<size_t, std::exception_ptr> wait() noexcept
+    std::expected<size_t, std::exception_ptr> wait() noexcept
     {
         this->unlock();
         std::unique_lock oplck(opmtx_);
@@ -145,7 +145,7 @@ struct sync_callback
             //GLOBAL_LOG_TRACE() << "after resume: " << this;
         }
         if (*code) {
-            return make_unexpected(std::make_exception_ptr(exception(code->message())));
+            return std::unexpected(std::make_exception_ptr(exception(code->message())));
         }
         return handlsz;
     }
@@ -213,8 +213,8 @@ struct win_impl
     void free_handle(identity<tcp_server_socket_service_type>, tcp_handle_type) noexcept override final;
 
     // tcp socket service
-    expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept override final;
-    expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept override final;
+    std::expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept override final;
+    std::expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept override final;
     void shutdown_handle(identity<tcp_socket_service_type>, tcp_handle_type, shutdown_opt) noexcept override final;
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
@@ -224,9 +224,9 @@ struct win_impl
     // udp socket service
     void udp_socket_bind(udp_handle_type, cstring_view address, uint16_t port) override final;
     size_t udp_socket_waiting_count(udp_handle_type) override final;
-    expected<size_t, std::exception_ptr> udp_socket_read_some(udp_handle_type, void * buff, size_t sz, sonia::sal::socket_address* addr) override final;
-    expected<size_t, std::exception_ptr> udp_socket_write_some(udp_handle_type, sonia::sal::socket_address const&, void const* buff, size_t sz) override final;
-    expected<size_t, std::exception_ptr> udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz) override final;
+    std::expected<size_t, std::exception_ptr> udp_socket_read_some(udp_handle_type, void * buff, size_t sz, sonia::sal::socket_address* addr) override final;
+    std::expected<size_t, std::exception_ptr> udp_socket_write_some(udp_handle_type, sonia::sal::socket_address const&, void const* buff, size_t sz) override final;
+    std::expected<size_t, std::exception_ptr> udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz) override final;
     void close_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override final;
     void release_handle(identity<udp_socket_service_type>, tcp_handle_type) noexcept override final;
     void free_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override final;
@@ -462,29 +462,29 @@ size_t win_impl::udp_socket_waiting_count(tcp_handle_type handle)
     return wh->waiting_cnt.load();
 }
 
-expected<size_t, std::exception_ptr> win_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz) noexcept
+std::expected<size_t, std::exception_ptr> win_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz) noexcept
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
     try {
         sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
         std::error_code err = winapi::async_recv(wh->socket(), buff, sz, &scb.overlapped);
-        if (err) return make_unexpected(std::make_exception_ptr(exception(err.message())));
+        if (err) return std::unexpected(std::make_exception_ptr(exception(err.message())));
         return scb.wait(); // noexcept
     } catch (...) {
-        return make_unexpected(std::current_exception());
+        return std::unexpected(std::current_exception());
     }
 }
 
-expected<size_t, std::exception_ptr> win_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz) noexcept
+std::expected<size_t, std::exception_ptr> win_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz) noexcept
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
     try {
         sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
         std::error_code err = winapi::async_send(wh->socket(), buff, sz, &scb.overlapped);
-        if (err) return make_unexpected(std::make_exception_ptr(exception(err.message())));
+        if (err) return std::unexpected(std::make_exception_ptr(exception(err.message())));
         return scb.wait(); // noexcept
     } catch (...) {
-        return make_unexpected(std::current_exception());
+        return std::unexpected(std::current_exception());
     }
 }
 
@@ -554,7 +554,7 @@ void win_impl::udp_socket_bind(udp_handle_type handle, cstring_view address, uin
     }
 }
 
-expected<size_t, std::exception_ptr> win_impl::udp_socket_read_some(udp_handle_type handle, void * buff, size_t sz, sonia::sal::socket_address* addr)
+std::expected<size_t, std::exception_ptr> win_impl::udp_socket_read_some(udp_handle_type handle, void * buff, size_t sz, sonia::sal::socket_address* addr)
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
     sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
@@ -567,7 +567,7 @@ expected<size_t, std::exception_ptr> win_impl::udp_socket_read_some(udp_handle_t
     return scb.wait();
 }
 
-expected<size_t, std::exception_ptr> win_impl::udp_socket_write_some(udp_handle_type handle, sonia::sal::socket_address const& address, void const* buff, size_t sz)
+std::expected<size_t, std::exception_ptr> win_impl::udp_socket_write_some(udp_handle_type handle, sonia::sal::socket_address const& address, void const* buff, size_t sz)
 {
     auto * wh = static_cast<win_shared_handle*>(handle);
     sync_callback<WSAOVERLAPPED> scb{shared_from_this(), wh->mtx};
@@ -576,9 +576,9 @@ expected<size_t, std::exception_ptr> win_impl::udp_socket_write_some(udp_handle_
     return scb.wait();
 }
 
-expected<size_t, std::exception_ptr> win_impl::udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz)
+std::expected<size_t, std::exception_ptr> win_impl::udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz)
 {
-    expected<size_t, std::exception_ptr> wrsz;
+    std::expected<size_t, std::exception_ptr> wrsz;
     auto params = std::tie(handle, wrsz, buff, sz);
     if (!winapi::parse_address(0, SOCK_DGRAM, IPPROTO_UDP, std::string_view{address.data(), address.size()}, port, [this, &params](ADDRINFOW * r)->bool {
         auto&[handle, wrsz, buff, sz] = params;

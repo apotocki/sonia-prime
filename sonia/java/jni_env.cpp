@@ -102,9 +102,9 @@ SONIA_JNI_INLINE jni_env::utf_chars jni_env::get_string_utf_chars(jstring s) con
 
 SONIA_JNI_INLINE unique_jni_ref<jstring> jni_env::new_string(string_view str) const
 {
-    namespace cvt = boost::conversion;
+    using namespace dataforge;
     boost::container::small_vector<jchar, 64> buff;
-    (cvt::cvt_push_iterator{ cvt::utf8 | cvt::utf16, std::back_inserter(buff) } << str).flush();
+    (quark_push_iterator{ utf8 | utf16, std::back_inserter(buff) } << str).flush();
     unique_jni_ref<jstring> result{env_, env_->NewString(buff.data(), (jsize)buff.size())};
     jni_env::check_exception();
     return result;

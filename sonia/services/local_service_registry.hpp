@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "service.hpp"
+#include "sonia/services/service.hpp"
 #include "sonia/utility/basic_local_registry.hpp"
 
 namespace sonia {

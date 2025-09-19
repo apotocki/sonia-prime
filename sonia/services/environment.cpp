@@ -33,8 +33,8 @@
 #include "sonia/utility/parsers/json/lexertl_lexer.hpp"
 
 #include "sonia/utility/file_persister.hpp"
-#include "local_service_registry.hpp"
-#include "local_type_registry.hpp"
+#include "sonia/services/local_service_registry.hpp"
+#include "sonia/services/local_type_registry.hpp"
 
 #ifdef __linux__
 #   include "sonia/sys/linux/signals.hpp"

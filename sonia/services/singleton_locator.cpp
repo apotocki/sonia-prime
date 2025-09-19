@@ -3,7 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #include "sonia/config.hpp"
-#include "singleton_locator.hpp"
+#include "sonia/services/singleton_locator.hpp"
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/scope_exit.hpp"
 

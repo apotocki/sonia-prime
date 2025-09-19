@@ -18,9 +18,9 @@
 #include "sonia/concurrency.hpp"
 #include "sonia/filesystem.hpp"
 
-#include "host_impl.hpp"
-#include "service_factory.hpp"
-#include "durable_type_registry.hpp"
+#include "sonia/services/host_impl.hpp"
+#include "sonia/services/service_factory.hpp"
+#include "sonia/services/durable_type_registry.hpp"
 #include "sonia/utility/parameters/parameters.hpp"
 
 #include "sonia/services/builder.hpp"

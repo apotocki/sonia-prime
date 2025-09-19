@@ -7,7 +7,7 @@
 #include "sonia/services.hpp"
 #include "sonia/utility/scope_exit.hpp"
 
-#include "service_locator.hpp"
+#include "sonia/services/service_locator.hpp"
 
 namespace sonia {
 

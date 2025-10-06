@@ -73,9 +73,10 @@ public:
         fppush = 35, fnpush = 36, // push on stack stack[fp +- uint]
         pushi = 37, fppushi = 38, fnpushi = 39, // push index on stack // positive/negative index
         pushc = 40, // push const on stack: consts_[uint] -> on stack
-        set = 41, // set stack[uint] = stack_top_value
-        setr = 42, // set stack[stack_back_pos() - uint] = stack_top_value // r aka relative
-        fpset = 43, fnset = 44, // set stack[fp +- uint] = stack_top_value
+        push_stsz = 41, // push stack size
+        set = 42, // set stack[uint] = stack_top_value
+        setr = 43, // set stack[stack_back_pos() - uint] = stack_top_value // r aka relative
+        fpset = 44, fnset = 45, // set stack[fp +- uint] = stack_top_value
         pop, popn, // pop COUNT:uint, pop0 === pop 1
         collapse, // pop COUNT before the back
         // frame data pointer
@@ -279,6 +280,11 @@ public:
     {
         code_.push_back(static_cast<uint8_t>(op::pushc));
         append_uint(num);
+    }
+
+    void append_push_stsz()
+    {
+        code_.push_back(static_cast<uint8_t>(op::push_stsz));
     }
 
     void append_pushr(size_t offset)
@@ -657,6 +663,11 @@ struct printer
         generic_print(address, "pushc"sv) << " C["sv << std::dec << index << "]->["sv << ctx.stack_size() << "] ("sv << ctx.const_at(index) << ")\n"sv;
     }
 
+    inline void operator()(identity_type<op::push_stsz>, ContextT& ctx, size_t address) const
+    {
+        generic_print(address, "push_stsz"sv) << "\t;"sv << std::dec << ctx.stack_size() << " -> ["sv << ctx.stack_size() << "]\n"sv;
+    }
+
     inline void operator()(identity_type<op::set>, ContextT& ctx, size_t address, size_t index) const
     {
         generic_print(address, "set"sv) << " [" << std::dec << (ctx.stack_size() - 1) << "]->[" << index << "] (" << ctx.stack_back() << ")" << "\n";
@@ -857,6 +868,12 @@ struct runner
     inline void operator()(identity_type<op::pushc>, ContextT& ctx, size_t /*address*/, size_t index) const
     {
         var_t val = ctx.const_at(index);
+        ctx.stack_push(std::move(val));
+    }
+
+    inline void operator()(identity_type<op::push_stsz>, ContextT& ctx, size_t /*address*/) const
+    {
+        var_t val = ctx.value_of(ctx.stack_size());
         ctx.stack_push(std::move(val));
     }
 
@@ -1121,6 +1138,12 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
                 size_t start_address = address++;
                 size_t index = read_uint(address);
                 ftor(identity<op::pushc>, ctx, start_address, index);
+                continue;
+            }
+        case op::push_stsz:
+            {
+                size_t start_address = address++;
+                ftor(identity<op::push_stsz>, ctx, start_address);
                 continue;
             }
         case op::set:

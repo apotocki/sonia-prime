@@ -119,7 +119,7 @@ struct resource_location
     explicit operator bool() const noexcept { return !!resource; }
 };
 
-inline resource_location const& operator |(resource_location const& l, resource_location const& r) noexcept
+inline resource_location const& operator ||(resource_location const& l, resource_location const& r) noexcept
 {
     return l.resource ? l : r;
 }

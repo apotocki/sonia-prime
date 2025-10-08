@@ -87,7 +87,20 @@ public:
     {
         return print_description(s << indent) << '(' << line << ',' << column << ')';
     }
+
+    virtual size_t hash() const noexcept = 0;
+    virtual bool equal(code_resource const& rhs) const noexcept = 0;
 };
+
+inline size_t hash_value(code_resource const& res) noexcept
+{
+    return res.hash();
+}
+
+inline bool operator==(code_resource const& l, code_resource const& r) noexcept
+{
+    return l.equal(r);
+}
 
 template <typename T, typename Traits>
 inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& os, code_resource const& res)
@@ -117,7 +130,21 @@ struct resource_location
     }
 
     explicit operator bool() const noexcept { return !!resource; }
+
+    friend inline bool operator==(resource_location const& l, resource_location const& r) noexcept
+    {
+        if (!l) return !r;
+        if (!r) return false;
+        if (l.line != r.line) return false;
+        if (l.column != r.column) return false;
+        return l.resource.get() == r.resource.get() || *l.resource == *r.resource;
+    }
 };
+
+inline size_t hash_value(resource_location const& rloc) noexcept
+{
+    return rloc ? hasher{}(rloc.line, rloc.column, *rloc.resource) : 0;
+}
 
 inline resource_location const& operator ||(resource_location const& l, resource_location const& r) noexcept
 {

@@ -12,8 +12,8 @@
 #include "sonia/services/service.hpp"
 #include "sonia/services/service_locator.hpp"
 
-#include "host.hpp"
-#include "multimethod_registry.hpp"
+#include "sonia/services/host.hpp"
+#include "sonia/services/multimethod_registry.hpp"
 
 namespace sonia::services {
 

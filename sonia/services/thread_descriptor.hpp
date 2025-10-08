@@ -6,7 +6,7 @@
 
 #include "sonia/prime_config.hpp"
 
-#include "host_impl.hpp"
+#include "sonia/services/host_impl.hpp"
 
 namespace sonia::services {
 

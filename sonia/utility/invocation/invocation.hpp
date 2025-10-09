@@ -678,7 +678,8 @@ inline blob_result particular_blob_result(ArgT && value)
     else if constexpr (std::is_same_v<T, uint64_t> || (std::is_integral_v<T> && !std::is_signed_v<T> && sizeof(T) == 8)) return ui64_blob_result(value);
     else if constexpr (std::is_same_v<T, int64_t> || (std::is_integral_v<T> && std::is_signed_v<T> && sizeof(T) == 8)) return i64_blob_result(value);
     else if constexpr (std::is_same_v<T, numetron::float16>) return f16_blob_result(value);
-    else if constexpr (sonia::is_template_instance_v<numetron::basic_integer_view, T>) return bigint_blob_result(value);
+    else if constexpr (numetron::is_basic_integer_view_v<T>) return bigint_blob_result(value);
+    else if constexpr (numetron::is_basic_decimal_view_v<T>) return decimal_blob_result(value);
     else if constexpr (std::is_same_v<T, float_t>) return f32_blob_result(value);
     else if constexpr (std::is_same_v<T, double_t>) return f64_blob_result(value);
     else if constexpr (sonia::is_string_v<T>) return string_blob_result(std::forward<ArgT>(value));
@@ -808,6 +809,8 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
         return ftor(std::type_identity<blob_result>{}, b);
     case blob_type::bigint:
         return ftor(std::type_identity<numetron::basic_integer_view<invocation_bigint_limb_type>>{}, b);
+    case blob_type::decimal:
+        return ftor(std::type_identity<numetron::basic_decimal_view<invocation_bigint_limb_type>>{}, b);
     case blob_type::string:
     case blob_type::error:
         return ftor(std::type_identity<std::string_view>{}, b);

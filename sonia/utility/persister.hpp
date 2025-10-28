@@ -30,8 +30,10 @@ public:
     bool read_stream(FtorT const& ftor)
     {
         return read([&ftor](input_iterator ii) {
-            serialization::istream<input_iterator, char> is(std::move(ii));
-            ftor(is);
+            serialization::istream_wrapper<input_iterator, char> isw(std::move(ii));
+            ftor(isw.istream);
+            //serialization::istream<input_iterator, char> is(std::move(ii));
+            //ftor(is);
         });
     }
 

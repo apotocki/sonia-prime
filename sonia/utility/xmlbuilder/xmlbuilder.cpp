@@ -5,6 +5,8 @@
 #include "sonia/config.hpp"
 #include "xmlbuilder.hpp"
 
+#include <sstream>
+
 #include "sonia/singleton.hpp"
 #include "sonia/logger/logger.hpp"
 
@@ -41,29 +43,32 @@ void basic_external_builder::append_element(span<element> parents, element & e)
         }
     }
     
-    if (parents.size() > 1) {
-        append(parents.back().id, e.id);
-    } else { // parents.size() == 1
-        append_to_document(e.id);
-    }
+    //if (parents.size() > 1) {
+    //    append(parents.back(), e);
+    //} else { // parents.size() == 1
+    //    append_to_document(e);
+    //}
 }
 
 void basic_external_builder::close_element(span<element> parents, element& e)
 {
-    // is attribute tag?
-    if (!e.text.empty()) {
-        set_text(e.id, e.text);
-    }
-
     for (auto const& attr_pair : e.attrs) {
         auto const& attrname = attr_pair.first;
         auto const& attrvalue = attr_pair.second;
+        set_property(e, attrname, attrvalue);
+        /*
         auto tpl = ar()(e.name, attrname, attrvalue);
         if (std::get<0>(tpl).type == blob_type::function) {
             set_property_functional(e.id, attrname, as<string_view>(std::get<0>(tpl)), std::get<1>(tpl));
         } else {
             set_property(e.id, attrname, std::get<0>(tpl));
         }
+        */
+    }
+
+    // is attribute tag?
+    if (!e.text.empty()) {
+        set_text(e, e.text);
     }
 }
 

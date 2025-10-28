@@ -77,9 +77,14 @@ enum class resource_print_mode_t : uint8_t
     just_pointer = 1
 };
 
+struct resource_tag;
+using resource_identifier = sonia::lang::identifier<uint32_t, resource_tag>;
+
 class code_resource
 {
 public:
+    resource_identifier id;
+
     virtual ~code_resource() = default;
     virtual std::ostream& print_description(std::ostream&) const = 0;
 
@@ -119,17 +124,17 @@ struct resource_location
 {
     int line;
     int column;
-    shared_ptr<code_resource> resource;
+    resource_identifier resource_id;
 
-    inline std::ostream& print_to(std::ostream& s, string_view indent = {}, resource_print_mode_t mode = resource_print_mode_t::default_mode) const
-    {
-        if (resource) {
-            return resource->print_to(s, indent, line, column, mode);
-        }
-        return s << indent << "<undefined resource>("sv << line << ',' << column << ')';
-    }
+    //inline std::ostream& print_to(std::ostream& s, string_view indent = {}, resource_print_mode_t mode = resource_print_mode_t::default_mode) const
+    //{
+    //    if (resource) {
+    //        return resource->print_to(s, indent, line, column, mode);
+    //    }
+    //    return s << indent << "<undefined resource>("sv << line << ',' << column << ')';
+    //}
 
-    explicit operator bool() const noexcept { return !!resource; }
+    explicit operator bool() const noexcept { return !!resource_id; }
 
     friend inline bool operator==(resource_location const& l, resource_location const& r) noexcept
     {
@@ -137,25 +142,25 @@ struct resource_location
         if (!r) return false;
         if (l.line != r.line) return false;
         if (l.column != r.column) return false;
-        return l.resource.get() == r.resource.get() || *l.resource == *r.resource;
+        return l.resource_id == r.resource_id;
     }
 };
 
 inline size_t hash_value(resource_location const& rloc) noexcept
 {
-    return rloc ? hasher{}(rloc.line, rloc.column, *rloc.resource) : 0;
+    return rloc ? hasher{}(rloc.line, rloc.column, rloc.resource_id) : 0;
 }
 
 inline resource_location const& operator ||(resource_location const& l, resource_location const& r) noexcept
 {
-    return l.resource ? l : r;
+    return l.resource_id ? l : r;
 }
 
-template <typename T, typename Traits>
-inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& os, resource_location const& res)
-{
-    return res.print_to(os);
-}
+//template <typename T, typename Traits>
+//inline std::basic_ostream<T, Traits>& operator<<(std::basic_ostream<T, Traits>& os, resource_location const& res)
+//{
+//    return res.print_to(os);
+//}
 
 struct resource_span
 {

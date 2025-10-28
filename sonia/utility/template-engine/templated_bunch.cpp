@@ -62,7 +62,7 @@ public:
         return it->second(id);
     }
 
-    xmlbuilder::attribute_resolver& get_attribute_resolver() override
+    xmlbuilder::basic_attribute_resolver& get_attribute_resolver() override
     {
         return *as_singleton<templated_attribute_resolver>();
     }

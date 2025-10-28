@@ -6,15 +6,18 @@
 
 #include <boost/unordered_map.hpp>
 
+#include "sonia/utility/invocation/invocation.hpp"
+#include "functor_type.hpp"
+
 #include "xmlbuilder.hpp"
 #include "attr_parser.hpp"
 
 namespace sonia::xmlbuilder {
 
-class basic_attribute_resolver : public attribute_resolver
+class basic_attribute_resolver
 {
 public:
-    std::tuple<blob_result, func_type> operator()(string_view element, string_view attr_name, string_view attr_value) const override;
+    std::tuple<blob_result, func_type> operator()(string_view element, string_view attr_name, string_view attr_value) const;
 
     template <typename AttrT>
     void setup_set(string_view element, std::initializer_list<string_view> names)

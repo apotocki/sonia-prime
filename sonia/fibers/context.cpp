@@ -12,6 +12,7 @@
 
 #include "sonia/fibers/exceptions.hpp"
 #include "sonia/fibers/scheduler.hpp"
+#include "sonia/fibers/context_initializer.hpp"
 
 #ifdef BOOST_HAS_ABI_HEADERS
 #  include BOOST_ABI_PREFIX
@@ -64,64 +65,7 @@ static boost::intrusive_ptr< context > make_dispatcher_context() {
                 boost::context::preallocated{ storage, size, sctx }, std::move( salloc) } };
 }
 
-// schwarz counter
-struct context_initializer {
-    struct context_descriptor {
-        context * active_;
-        context * main_;
-    };
-    static thread_local context_descriptor context_descriptor_;
 
-    //static thread_local context *   active_;
-    //static thread_local std::size_t counter_;
-
-    static BOOST_NOINLINE context_descriptor* get_descriptor() noexcept {
-        return &context_descriptor_;
-    }
-
-    static context** get_pactive() noexcept {
-        return &get_descriptor()->active_;
-    }
-
-    //static BOOST_NOINLINE context** get_pactive() noexcept {
-    //    return &active_;
-    //}
-
-    context_initializer() = default;
-    
-    //void init() {
-    //    //if ( 0 == counter_++) {
-    //        // main fiber context of this thread
-    //        context * main_ctx = new main_context{};
-    //        // scheduler of this thread
-    //        auto sched = new scheduler{};
-    //        // attach main context to scheduler
-    //        sched->attach_main_context( main_ctx);
-    //        // create and attach dispatcher context to scheduler
-    //        sched->attach_dispatcher_context( make_dispatcher_context() );
-    //        // make main context to active context
-    //        *get_pactive() = main_ctx;
-    //    //}
-    //}
-
-    ~context_initializer() {
-        context_descriptor* pd = get_descriptor();
-        if (context * main_ctx = pd->main_; main_ctx) {
-            BOOST_ASSERT(main_ctx->is_context( type::main_context) );
-            scheduler * sched = main_ctx->get_scheduler();
-            delete sched;
-            delete main_ctx;
-        }
-    }
-};
-
-// zero-initialization
-thread_local context_initializer::context_descriptor context_initializer::context_descriptor_{ nullptr, nullptr };
-//thread_local context * context_initializer::active_{ nullptr };
-//thread_local std::size_t context_initializer::counter_{ 0 };
-
-// to free resources
-thread_local static context_initializer ctx_initializer;
 
 context *
 context::active() noexcept {

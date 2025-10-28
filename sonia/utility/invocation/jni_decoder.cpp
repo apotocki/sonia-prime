@@ -23,7 +23,7 @@ blob_result jni_decoder::do_decode(JNIEnv* penv, jobject obj) const
     auto jclsname = env.get_class_name(*objcls);
     auto chars = env.get_string_utf_chars(*jclsname);
 
-    if (auto it = type_handlers_.find(string_view{chars.c_str()}, hasher{}, string_equal_to{}); it != type_handlers_.end()) {
+    if (auto it = type_handlers_.find(string_view{ chars.c_str() }); it != type_handlers_.end()) {
         return it->second(this, penv, obj);
     }
     throw exception("unknown type: %1%"_fmt % chars.c_str());

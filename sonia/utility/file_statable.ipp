@@ -74,6 +74,9 @@ void file_statable<DerivedT>::backup() const
     state_persister_->write_stream([this](std::ostream & os) {
         boost::archive::xml_oarchive oa{os};
         oa << boost::serialization::make_nvp(SONIA_FILE_STATABLE_NVP_TAG_NAME, const_cast<DerivedT&>(derived()));
+        if (boost::core::uncaught_exceptions() > 0 && 0 == (oa.get_flags() & boost::archive::no_header)) {
+            oa.put("</boost_serialization>\n");
+        }
     });
 }
 

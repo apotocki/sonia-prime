@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <string>
+#include <iterator>
 #include "sonia/utility/parsers/xml/model.hpp"
 #include "sonia/utility/xmlbuilder/xmlbuilder.hpp"
 
@@ -34,9 +36,13 @@ public:
 
     void on_attribute_value();
 
+    // XML entity decoding helper
+    template <typename InputIteratorT, typename OutputIteratorT>
+    void decode_xml_entities(InputIteratorT b, InputIteratorT e, OutputIteratorT oit) const;
+
 private:
     void do_close_tag();
-
+    
 private:
     external_builder& eb;
     std::vector<element> stack_;

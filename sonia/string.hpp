@@ -359,6 +359,8 @@ MAKE_FREE_COMPARISON_OPERATORS(is_string_view_v)
 
 struct string_equal_to
 {
+    using is_transparent = void;
+
     template <typename CharT, typename TraitsT, typename OtherT>
     requires(requires{(basic_string_view<CharT, TraitsT>)std::declval<OtherT>(); })
     inline bool operator() (basic_string_view<CharT, TraitsT> const& l, OtherT const& r) const noexcept

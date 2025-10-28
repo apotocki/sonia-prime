@@ -159,6 +159,18 @@ private:
 };
 
 template <class InputIteratorT, typename ElemT = remove_cv_t<iterator_value_t<InputIteratorT>>, class TraitsT = std::char_traits<ElemT>>
+struct istream_wrapper
+{
+    istreambuf<InputIteratorT, ElemT, TraitsT> buf;
+    std::basic_istream<ElemT, TraitsT> istream;
+
+    explicit istream_wrapper(InputIteratorT it)
+        : buf{ std::move(it) }
+        , istream{ &buf }
+    {}
+};
+
+template <class InputIteratorT, typename ElemT = remove_cv_t<iterator_value_t<InputIteratorT>>, class TraitsT = std::char_traits<ElemT>>
 class istream 
     : private boost::base_from_member<istreambuf<InputIteratorT, ElemT, TraitsT>>
     , public std::basic_istream<ElemT, TraitsT>

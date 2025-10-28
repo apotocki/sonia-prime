@@ -8,10 +8,15 @@
 #include <list>
 #include <boost/unordered_set.hpp>
 #include <boost/unordered_map.hpp>
-#include <boost/container/small_vector.hpp>
+
+#include "sonia/small_vector.hpp"
+#include "sonia/utility/automatic_polymorphic.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
+
+#include "functor_type.hpp"
 
 #include "xmlbuilder.hpp"
-#include "sonia/utility/automatic_polymorphic.hpp"
+
 
 #include "sonia/utility/lang/vm.hpp"
 #include "detail/types.hpp"
@@ -28,7 +33,7 @@ namespace detail {
 struct x_parameter
 {
     small_string name;
-    boost::container::small_vector<x_generic_type, 2> type;
+    small_vector<x_generic_type, 2> type;
     optional<smart_blob> default_value;
     int priority = 0;
 
@@ -119,7 +124,6 @@ struct x_type : public x_parameter_adopter, public x_body_adopter
 
 class advanced_external_builder 
     : public external_builder
-    , public attribute_resolver
 {
     friend class x_generic_type_factory;
     friend class x_code_context;
@@ -153,8 +157,7 @@ public:
     void append_element(span<element> parents, element&) override;
     void close_element(span<element> parents, element&) override;
 
-    //attribute_resolver const& ar() const override final { return *this; }
-    std::tuple<blob_result, func_type> operator()(string_view element, string_view attr_name, string_view attr_value) const override;
+    std::tuple<blob_result, func_type> operator()(string_view element, string_view attr_name, string_view attr_value) const;
 
 protected:
     string_view query_ns(element const&, span<const element> parents) const;

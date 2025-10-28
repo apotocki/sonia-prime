@@ -119,6 +119,9 @@
     <ClCompile Include="..\..\..\sonia\utility\invocation\invocation.cpp">
       <Filter>sonia.utility.invocation</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\context_shared.cpp">
+      <Filter>sonia.fibers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">
@@ -162,6 +165,9 @@
     </Filter>
     <Filter Include="sonia.utility.invocation">
       <UniqueIdentifier>{65222d1f-e832-4541-bd15-d57c45118524}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="sonia.fibers">
+      <UniqueIdentifier>{75ee86ea-30db-4f9d-82d7-9bff618d74e2}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>

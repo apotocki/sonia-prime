@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
 
 #include "sonia/span.hpp"
 #include "sonia/string.hpp"
@@ -33,7 +33,7 @@ private:
 	blob_result do_decode(JNIEnv*, jobject) const;
 
 	using value_handler = blob_result(*)(jni_decoder const*, JNIEnv*, jobject);
-	boost::unordered_map<std::string, value_handler, hasher, string_equal_to> type_handlers_;
+	std::unordered_map<std::string, value_handler, hasher, string_equal_to> type_handlers_;
 };
 
 }

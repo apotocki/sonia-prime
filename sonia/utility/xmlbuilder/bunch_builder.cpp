@@ -49,6 +49,18 @@ void bunch_builder::do_set_text(invocation::invocable& obj, string_view text)
     obj.set_property("$", string_blob_result(text));
 }
 
+#ifdef USE_BASIC_BUILDER
+void bunch_builder::set_property(xmlbuilder::element& e, string_view propname, string_view propvalue) override
+{
+    auto tpl = factory_.get_attribute_resolver()(e.name, propname, propvalue);
+    if (std::get<0>(tpl).type == blob_type::function) {
+        set_property_functional(e.id, propname, as<string_view>(std::get<0>(tpl)), std::get<1>(tpl));
+    } else {
+        set_property(e.id, propname, std::get<0>(tpl));
+    }
+}
+#endif
+
 void bunch_builder::set_property(string_view id, string_view propname, blob_result const& value)
 {
     if (value.type == blob_type::string) {

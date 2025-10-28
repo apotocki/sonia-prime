@@ -241,6 +241,7 @@
     <ClInclude Include="..\..\..\sonia\fibers\barrier.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\condition_variable.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\context.hpp" />
+    <ClInclude Include="..\..\..\sonia\fibers\context_initializer.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\detail\config.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\detail\convert.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\detail\cpu_relax.hpp" />

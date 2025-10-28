@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
 
 #include "sonia/span.hpp"
 #include "sonia/string.hpp"
@@ -23,7 +23,7 @@ public:
 
 private:
     using value_handler = blob_result(*)(span<const uint8_t>, string_view e);
-    boost::unordered_map<std::string, value_handler, hasher, string_equal_to> value_handlers_;
+    std::unordered_map<std::string, value_handler, hasher, string_equal_to> value_handlers_;
 };
 
 }

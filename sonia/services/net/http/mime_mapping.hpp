@@ -4,8 +4,7 @@
 
 #pragma once
 
-#include <boost/unordered_map.hpp>
-
+#include <unordered_map>
 #include "sonia/string.hpp"
 #include "sonia/filesystem.hpp"
 
@@ -13,14 +12,12 @@ namespace sonia::services {
 
 class mime_mapping
 {
-    using mime_mapping_type = boost::unordered_map<std::string, std::string, hasher>;
-
 public:
     mime_mapping(fs::path const&);
-    std::string const* find(string_view ext);
+    std::string const* find(string_view ext) const;
 
 private:
-    mime_mapping_type mime_map_;
+    std::unordered_map<std::string, std::string, hasher, string_equal_to> mime_map_;
 };
 
 }

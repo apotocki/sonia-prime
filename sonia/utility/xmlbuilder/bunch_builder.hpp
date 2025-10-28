@@ -8,6 +8,7 @@
 
 #include "xmlbuilder.hpp"
 #include "advxmlbuilder.hpp"
+#include "basic_attribute_resolver.hpp"
 #include "sonia/utility/invocation/invocable.hpp"
 
 //#define USE_BASIC_BUILDER
@@ -27,7 +28,9 @@ public:
     public:
         virtual ~factory() = default;
         virtual shared_ptr<invocation::invocable> create(string_view type, string_view id) = 0;
-        virtual attribute_resolver& get_attribute_resolver() = 0;
+//#ifdef USE_BASIC_BUILDER
+        virtual xmlbuilder::basic_attribute_resolver& get_attribute_resolver() = 0;
+//#endif
     };
 
     explicit bunch_builder(factory& f) : factory_{f} {}
@@ -37,6 +40,7 @@ public:
     // external_builder api
     void create(string_view type, string_view id) override;
     void set_text(string_view id, string_view text) override;
+    
     void set_property(string_view id, string_view propname, blob_result const& value) override;
     void set_property_functional(string_view id, string_view propname, string_view code, func_type) override;
     void append(string_view parentid, string_view childid) override;
@@ -45,7 +49,7 @@ public:
     shared_ptr<invocation::invocable> try_get_element_by(string_view id) noexcept;
 
 #ifdef USE_BASIC_BUILDER
-    attribute_resolver const& ar() const override final { return factory_.get_attribute_resolver(); };
+    void set_property(xmlbuilder::element& e, string_view propname, string_view propvalue) override;
 #endif
 
 protected:

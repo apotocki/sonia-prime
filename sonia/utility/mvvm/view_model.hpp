@@ -60,19 +60,19 @@ public:
         virtual scheduler& get_scheduler() const = 0;
 
         //typedef void(*on_invoke_cv_result_setter)(void*, blob_result*, uint32_t); // cookie, results, result count
-        //virtual void invoke_callback(void* cookie, int32_t cvid, string_view method_name, span<const blob_result>, on_invoke_cv_result_setter setter) = 0;
+        //virtual void invoke_callback(void* cookie, int32_t vmid, string_view method_name, span<const blob_result>, on_invoke_cv_result_setter setter) = 0;
 
-        virtual smart_blob invoke_callback(int32_t cvid, string_view method_name, span<const blob_result>) = 0;
+        virtual smart_blob invoke_callback(int32_t vmid, string_view method_name, span<const blob_result>) = 0;
 
-        virtual int on_change_callback(int32_t cvid, status_type, std::span<const blob_result> args) = 0;
+        virtual int on_change_callback(int32_t vmid, status_type, std::span<const blob_result> args) = 0;
 
-        virtual int32_t create_content_view(string_view) = 0;
-        virtual int32_t push_content_view(shared_ptr<view_model>) = 0;
-        virtual shared_ptr<view_model> get_content_view(int32_t id) = 0;
+        virtual int32_t create_view_model(string_view kind) = 0;
+        virtual int32_t push_view_model(shared_ptr<view_model>) = 0;
+        virtual shared_ptr<view_model> get_view_model(int32_t id) = 0;
         virtual void free_view_model(int32_t) = 0;
     };
 
-    explicit view_model(int32_t idval = 0);
+    explicit view_model(int32_t idval = 0) noexcept;
 
     view_model(view_model const&) = delete;
 
@@ -82,9 +82,9 @@ public:
 
     virtual shared_ptr<view_model> self_as_content_view_shared() = 0;
 
-    void set(int32_t idval);
+    inline void set_id(int32_t idval) noexcept { id_ = idval; }
+    inline int32_t id() const noexcept { return id_; }
 
-    int32_t id() const { return id_; }
     void inherit(int32_t baseid);
 
     // invocable
@@ -92,9 +92,6 @@ public:
     bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept override;
     bool try_get_property(string_view propname, smart_blob& result) const override;
     bool try_set_property(string_view propname, blob_result const& val) override;
-    // properties
-    //smart_blob get_property(string_view propname) const override;
-    //void set_property(string_view propname, blob_result const& val) override;
 
     template<class Archive>
     void serialize_properties(Archive& ar, std::initializer_list<cstring_view> l);
@@ -126,7 +123,7 @@ public:
     void do_serialised_cmd(F&& f);
 
     virtual shared_ptr<manager> get_manager() const = 0;
-    virtual void set(shared_ptr<manager>) = 0;
+    virtual void set_manager(shared_ptr<manager>) = 0;
 
     // properties routine
     void on_property_change(string_view propname) override;
@@ -134,7 +131,7 @@ public:
     smart_blob call_method(string_view name, blob_result args) const;
     smart_blob do_call_method(string_view name, span<const blob_result> args) const;
     smart_blob do_call_method(string_view name, std::initializer_list<const blob_result> args) const
-    { return do_call_method(name, span{args}); }
+    { return do_call_method(name, span{ args }); }
 
     smart_blob get_method(string_view name) const;
     void set_method(string_view name, string_view propname, blob_result val);
@@ -176,23 +173,19 @@ template <std::derived_from<view_model> BaseT>
 class final_view_model 
     : public BaseT
     , public enable_shared_from_this<final_view_model<BaseT>>
-    //, public invocation::registrar<bang_canvas_view_model, bang_view_model>
 {
 public:
-    explicit final_view_model(int32_t idval, shared_ptr<view_model::manager> mng = {})
-        : BaseT{ idval }, mng_{ std::move(mng) }
+    final_view_model() = default;
+
+    template <typename... ArgsT>
+    explicit final_view_model(shared_ptr<view_model::manager> mng, ArgsT&&... args)
+        : BaseT{ std::forward<ArgsT>(args)... }, mng_{ std::move(mng) }
     {}
 
     shared_ptr<view_model::manager> get_manager() const override final { return mng_.lock(); }
-    void set(shared_ptr<view_model::manager> mng) override final { mng_ = mng; }
+    void set_manager(shared_ptr<view_model::manager> mng) noexcept override final { mng_ = mng; }
 
-    shared_ptr<view_model> self_as_content_view_shared() override final { return this->shared_from_this(); }
-
-    //template <typename RT>
-    //static void do_registration(RT& mr)
-    //{
-    //    mr.inherit(typeid(bang_view_model));
-    //}
+    shared_ptr<view_model> self_as_content_view_shared() override final { return enable_shared_from_this<final_view_model<BaseT>>::shared_from_this(); }
 
     // invocable
     std::type_index get_type_index() const override { return typeid(BaseT); }

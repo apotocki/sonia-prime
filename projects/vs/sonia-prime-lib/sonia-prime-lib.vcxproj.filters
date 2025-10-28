@@ -2055,6 +2055,9 @@
     <ClInclude Include="..\..\..\sonia\utility\concurrency\call_once.hpp">
       <Filter>sonia.utility\concurrency</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\fibers\context_initializer.hpp">
+      <Filter>sonia.fibers</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2267,9 +2270,6 @@
     <ClCompile Include="..\..\..\sonia\fibers\condition_variable.cpp">
       <Filter>sonia.fibers</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\fibers\context.cpp">
-      <Filter>sonia.fibers</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\..\sonia\fibers\fiber.cpp">
       <Filter>sonia.fibers</Filter>
     </ClCompile>
@@ -2326,6 +2326,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\java\jni_env.cpp">
       <Filter>sonia.java</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\context.cpp">
+      <Filter>sonia.fibers</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -34,9 +34,9 @@ mime_mapping::mime_mapping(fs::path const& p)
     }
 }
 
-std::string const* mime_mapping::find(string_view ext)
+std::string const* mime_mapping::find(string_view ext) const
 {
-    auto extit = mime_map_.find(ext, hasher(), string_equal_to());
+    auto extit = mime_map_.find(ext);
     if (extit == mime_map_.end()) return nullptr;
     return &extit->second;
 }

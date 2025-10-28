@@ -23,7 +23,6 @@ class model_base
 
 public:
     model_base() = default;
-    //~model_base(){}
 
     // XML Decl
     bool is_xml_decl_optional() const { return false; }
@@ -32,8 +31,8 @@ public:
     void on_standalone()
     {
         string_view sv{tempstr_.data(), tempstr_.size()};
-        if (sv == "yes") derived().on_standalone(true);
-        else if (sv == "no") derived().on_standalone(false);
+        if (sv == "yes"sv) derived().on_standalone(true);
+        else if (sv == "no"sv) derived().on_standalone(false);
         else throw exception("wrong standalone value %1%"_fmt % sv);
     }
     void on_standalone(bool){}
@@ -55,13 +54,18 @@ public:
     void on_attribute_value() {}
     void on_char_data() {}
 
+    template <typename InputIteratorT, typename OutputIteratorT>
+    void decode_xml_entities(InputIteratorT b, InputIteratorT e, OutputIteratorT oit) const
+    {
+        std::copy(b, e, std::move(oit));
+    }
+
     template <typename IteratorT>
     void put_string(IteratorT b, IteratorT e, uint8_t qsz = 1)
     {
         for (uint8_t v = qsz; v > 0; ++b, --v);
         tempstr_.clear();
-        std::copy(b, e, std::back_inserter(tempstr_));
-        //normilize_xml_string(b, e, std::back_inserter(tempstr_));
+        static_cast<DerivedT const&>(*this).decode_xml_entities(b, e, std::back_inserter(tempstr_));
         BOOST_ASSERT(qsz <= tempstr_.size());
         tempstr_.resize(tempstr_.size() - qsz);
     }

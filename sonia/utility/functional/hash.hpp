@@ -52,6 +52,8 @@ inline constexpr size_t hash_prime_value()
 
 struct hasher
 {
+    using is_transparent = void;
+
     template <typename T>
     inline size_t operator()(T const& arg) const noexcept
     {

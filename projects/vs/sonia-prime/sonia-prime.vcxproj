@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\applied\dllmain.cpp" />
     <ClCompile Include="..\..\..\applied\embedded.cpp" />
+    <ClCompile Include="..\..\..\sonia\fibers\context_shared.cpp" />
     <ClCompile Include="..\..\..\sonia\services\auth\auth_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\auth\auth_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\basic_service_factory.cpp" />
@@ -66,6 +67,9 @@
     <ClCompile Include="..\..\..\sonia\utility\invocation\invocation.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\numetron\msvc\numetron.vcxproj">
+      <Project>{b3da4b02-589c-4f86-b8be-4cccd9faa17b}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\sonia-prime-lib\sonia-prime-lib.vcxproj">
       <Project>{c98dcaaf-ba4a-4500-b111-cf0773eb0a38}</Project>
     </ProjectReference>

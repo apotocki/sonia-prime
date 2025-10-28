@@ -66,7 +66,7 @@ bool invocable::try_set_property(string_view propname, blob_result const& val)
 
 void invocable::set_property(string_view propname, blob_result&& val)
 {
-    SCOPE_EXIT([&val]() {  blob_result_unpin(&val); });
+    SCOPE_EXIT([&val]() { blob_result_unpin(&val); });
     set_property(propname, std::as_const(val));
 }
 

@@ -11,7 +11,7 @@ namespace sonia::invocation {
 
 blob_result value_decoder::decode(span<const uint8_t> sp, string_view type, string_view endianness) const
 {
-    if (auto it = value_handlers_.find(type, hasher{}, string_equal_to{}); it != value_handlers_.end()) {
+    if (auto it = value_handlers_.find(type); it != value_handlers_.end()) {
         return it->second(sp, endianness);
     }
     throw exception("unknown type: %1%"_fmt % type);

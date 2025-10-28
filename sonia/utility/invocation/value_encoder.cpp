@@ -10,7 +10,7 @@ namespace sonia::invocation {
 
 void value_encoder::encode(blob_result const& value, string_view type, string_view endianness, function<void(span<const uint8_t>)> const& writer) const
 {
-    if (auto it = value_handlers_.find(type, hasher{}, string_equal_to{}); it != value_handlers_.end()) {
+    if (auto it = value_handlers_.find(type); it != value_handlers_.end()) {
         it->second(value, endianness, writer);
         return;
     }

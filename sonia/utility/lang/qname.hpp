@@ -187,6 +187,8 @@ public:
         return qname_view{span{base_t::data(), base_t::size() - 1}, absolute_ };
     }
 
+    explicit operator bool() const noexcept { return !base_t::empty(); }
+
     inline bool is_relative() const noexcept { return !absolute_; }
     inline bool is_absolute() const noexcept { return absolute_; }
 

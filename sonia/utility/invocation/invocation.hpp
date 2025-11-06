@@ -21,35 +21,6 @@
 #include "numetron/basic_decimal.hpp"
 #include "sonia/prime_config.hpp"
 
-namespace sonia::invocation {
-
-class object
-{
-public:
-    virtual ~object() = default;
-};
-
-template <typename T>
-class wrapper_object : public object
-{
-public:
-    T value;
-
-    template <typename ... ArgsT>
-    explicit wrapper_object(ArgsT&& ... args)
-        : value { std::forward<ArgsT>(args) ... }
-    {}
-};
-
-struct error
-{
-    string_view what;
-};
-
-inline size_t hash_value(error const& val) noexcept { return hasher{}(val.what); }
-
-}
-
 // X XX XXXXX-type
 // | |- subtype
 // |- is array
@@ -165,6 +136,69 @@ extern "C" {
 SONIA_PRIME_API void blob_result_allocate(blob_result *, bool no_inplace = false);
 SONIA_PRIME_API void blob_result_pin(blob_result *);
 SONIA_PRIME_API void blob_result_unpin(blob_result *);
+
+}
+
+namespace sonia { class smart_blob; }
+
+namespace sonia::invocation {
+
+class object
+{
+public:
+    virtual ~object() = default;
+};
+
+template <typename T>
+class wrapper_object : public object
+{
+public:
+    T value;
+
+    template <typename ... ArgsT>
+    explicit wrapper_object(ArgsT&& ... args)
+        : value { std::forward<ArgsT>(args) ... }
+    {}
+};
+
+template <class T> struct is_wrapper_object : false_type {};
+template <class T> struct is_wrapper_object<wrapper_object<T>> : true_type {};
+template <class T> constexpr int is_wrapper_object_v = is_wrapper_object<T>::value;
+
+class invocable
+{
+public:
+    virtual ~invocable() = default;
+
+    virtual std::type_index get_type_index() const { return typeid(*this); }
+
+    virtual bool has_method(string_view methodname) const;
+    virtual bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept;
+    virtual bool try_get_property(string_view propname, smart_blob& result) const;
+    virtual bool try_set_property(string_view propname, blob_result const& val);
+
+    virtual void on_property_change(string_view) {}
+
+    virtual shared_ptr<invocable> self_as_invocable_shared() { return {}; }
+
+    // method routine
+    inline bool try_invoke(string_view methodname, span<const blob_result> args) noexcept;
+    
+    smart_blob invoke(string_view methodname, span<const blob_result> args) noexcept;
+    inline smart_blob invoke(string_view name, std::initializer_list<const blob_result> args) noexcept;
+
+    // properties routine
+    smart_blob get_property(string_view propname) const;
+    void set_property(string_view propname, blob_result const& val);
+    void set_property(string_view propname, blob_result&& val);
+};
+
+struct error
+{
+    string_view what;
+};
+
+inline size_t hash_value(error const& val) noexcept { return hasher{}(val.what); }
 
 }
 
@@ -1286,8 +1320,16 @@ std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem, Trait
         return os << "nil"sv;
     }
     else if (b.type == blob_type::object) {
-        auto& obj = *data_of<sonia::invocation::object>(b);
-        return os << "object : "sv << typeid(obj).name();
+        sonia::invocation::object const* pobj = data_of<sonia::invocation::object>(b);
+        if (auto *p = dynamic_cast<sonia::invocation::wrapper_object<sonia::shared_ptr<sonia::invocation::invocable>> const*>(pobj)) {
+            if (p->value) {
+                return os << "object at 0x"sv << std::hex << std::uppercase << reinterpret_cast<std::uintptr_t>(p->value.get()) << ": "sv << typeid(*p->value).name();
+            } else {
+                return os << "object : null invocable pointer"sv;
+            }
+        } else {
+            return os << "object at 0x"sv << std::hex << reinterpret_cast<std::uintptr_t>(pobj) << " : "sv << typeid(*pobj).name();
+        }
     }
     else if (b.type == blob_type::blob_reference) {
         return os << '&' << *data_of<blob_result>(b);
@@ -1298,12 +1340,12 @@ std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem, Trait
             using type = typename decltype(ident)::type;
             if constexpr (std::is_same_v<type, std::nullptr_t>) { os << "nil"sv; }
             else if constexpr (std::is_void_v<type>) { os << "unknown"sv; }
-            else if constexpr (std::is_same_v<type, numetron::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"; }
+            else if constexpr (std::is_same_v<type, numetron::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"sv; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
                 fstype const* begin_ptr = data_of<fstype>(b);
                 for (auto* p = begin_ptr, *e = begin_ptr + array_size_of<fstype>(b); p != e; ++p) {
-                    os << ((p != begin_ptr) ? "," : "");
+                    if (p != begin_ptr) os << ", "sv;
                     os << particular_blob_result((type)*p);
                 }
             }
@@ -1583,6 +1625,18 @@ template <typename Elem, typename Traits>
 inline std::basic_ostream<Elem, Traits>& operator<<(std::basic_ostream<Elem, Traits>& os, smart_blob const& b)
 {
     return os << *b;
+}
+
+// method routine
+inline bool invocation::invocable::try_invoke(string_view methodname, span<const blob_result> args) noexcept
+{
+    smart_blob result;
+    return try_invoke(methodname, args, result);
+}
+
+inline smart_blob invocation::invocable::invoke(string_view name, std::initializer_list<const blob_result> args) noexcept
+{
+    return invoke(name, span{ args });
 }
 
 }

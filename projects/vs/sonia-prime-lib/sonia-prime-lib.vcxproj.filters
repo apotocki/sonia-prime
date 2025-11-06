@@ -1989,9 +1989,6 @@
     <ClInclude Include="..\..\..\sonia\utility\invocation\invocation.hpp">
       <Filter>sonia.utility\invocation</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invocation\invocable.hpp">
-      <Filter>sonia.utility\invocation</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\invocation\functor_object.hpp">
       <Filter>sonia.utility\invocation</Filter>
     </ClInclude>

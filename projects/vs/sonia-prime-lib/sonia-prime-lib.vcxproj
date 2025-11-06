@@ -453,7 +453,6 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\range_less.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\reference_wrapper.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\functor_object.hpp" />
-    <ClInclude Include="..\..\..\sonia\utility\invocation\invocable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\invocation.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\jni_decoder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\jni_encoder.hpp" />

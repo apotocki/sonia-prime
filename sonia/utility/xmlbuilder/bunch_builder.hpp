@@ -9,7 +9,7 @@
 #include "xmlbuilder.hpp"
 #include "advxmlbuilder.hpp"
 #include "basic_attribute_resolver.hpp"
-#include "sonia/utility/invocation/invocable.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 
 //#define USE_BASIC_BUILDER
 

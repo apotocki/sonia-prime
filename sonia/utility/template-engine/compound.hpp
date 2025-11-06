@@ -5,7 +5,7 @@
 #pragma once
 
 #include <vector>
-#include "sonia/utility/invocation/invocable.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 
 namespace sonia::templates {
 

@@ -4,8 +4,7 @@
 
 #pragma once
 
-#include "invocation.hpp"
-#include "invocable.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 
 namespace sonia::invocation {
 

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "invocable.hpp"
+#include "sonia/utility/invocation/invocation.hpp"
 
 #include <boost/function_types/function_type.hpp>
 #include <boost/function_types/parameter_types.hpp>

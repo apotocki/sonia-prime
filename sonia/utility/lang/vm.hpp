@@ -541,13 +541,13 @@ struct printer
 
     inline size_t operator()(identity_type<op::jmpp>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        generic_print(address, "jmpp"sv) << " 0x"sv << std::hex << (next_address + jmp_offset) << '\n';
+        generic_print(address, "jmpp"sv) << " 0x"sv << std::hex << (address + jmp_offset) << '\n';
         return next_address;
     }
 
     inline size_t operator()(identity_type<op::jmpn>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        generic_print(address, "jmpn"sv) << " 0x"sv << std::hex << (next_address - jmp_offset) << '\n';
+        generic_print(address, "jmpn"sv) << " 0x"sv << std::hex << (address - jmp_offset) << '\n';
         return next_address;
     }
 
@@ -559,12 +559,12 @@ struct printer
     }\
     inline size_t operator()(identity_type<op::opname##p>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const \
     {\
-        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, p))) << " 0x"sv << std::hex << (next_address + jmp_offset) << " ("sv << std::boolalpha << cond(ctx.stack_back()) << ")\n"; \
+        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, p))) << " 0x"sv << std::hex << (address + jmp_offset) << " ("sv << std::boolalpha << cond(ctx.stack_back()) << ")\n"; \
         return next_address; \
     }\
     inline size_t operator()(identity_type<op::opname##n>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const \
     {\
-        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, n))) << " 0x"sv << std::hex << (next_address - jmp_offset) << " ("sv << std::boolalpha << cond(ctx.stack_back()) << ")\n"; \
+        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, n))) << " 0x"sv << std::hex << (address - jmp_offset) << " ("sv << std::boolalpha << cond(ctx.stack_back()) << ")\n"; \
         return next_address; \
     }
 
@@ -736,22 +736,22 @@ struct runner
     inline void operator()(identity_type<op::noop>, ContextT &, size_t) const {}
 
     inline size_t operator()(identity_type<op::jmp>, ContextT&, size_t /*address*/, size_t jmp_address, size_t) const { return jmp_address; }
-    inline size_t operator()(identity_type<op::jmpp>, ContextT&, size_t /*address*/, size_t jmp_offset, size_t next) const { return next + jmp_offset; }
-    inline size_t operator()(identity_type<op::jmpn>, ContextT&, size_t /*address*/, size_t jmp_offset, size_t next) const { return next - jmp_offset; }
+    inline size_t operator()(identity_type<op::jmpp>, ContextT&, size_t address, size_t jmp_offset, size_t next) const { return address + jmp_offset; }
+    inline size_t operator()(identity_type<op::jmpn>, ContextT&, size_t address, size_t jmp_offset, size_t next) const { return address - jmp_offset; }
 
     inline size_t operator()(identity_type<op::jg>, ContextT& ctx, size_t /*address*/, size_t jmp_address, size_t next_address) const
     {
         return ctx.is_positive(ctx.stack_back()) ? jmp_address : next_address;
     }
 
-    inline size_t operator()(identity_type<op::jgp>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jgp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_positive(ctx.stack_back()) ? (next_address + jmp_offset) : next_address;
+        return ctx.is_positive(ctx.stack_back()) ? (address + jmp_offset) : next_address;
     }
 
-    inline size_t operator()(identity_type<op::jgn>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jgn>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_positive(ctx.stack_back()) ? (next_address - jmp_offset) : next_address;
+        return ctx.is_positive(ctx.stack_back()) ? (address - jmp_offset) : next_address;
     }
 
     inline size_t operator()(identity_type<op::jge>, ContextT& ctx, size_t /*address*/, size_t jmp_address, size_t next_address) const
@@ -759,14 +759,14 @@ struct runner
         return ctx.is_negative(ctx.stack_back()) ? next_address : jmp_address;
     }
 
-    inline size_t operator()(identity_type<op::jgep>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jgep>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_negative(ctx.stack_back()) ? next_address : (next_address + jmp_offset);
+        return ctx.is_negative(ctx.stack_back()) ? next_address : (address + jmp_offset);
     }
 
-    inline size_t operator()(identity_type<op::jgen>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jgen>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_negative(ctx.stack_back()) ? next_address : (next_address - jmp_offset);
+        return ctx.is_negative(ctx.stack_back()) ? next_address : (address - jmp_offset);
     }
 
     inline size_t operator()(identity_type<op::jl>, ContextT& ctx, size_t /*address*/, size_t jmp_address, size_t next_address) const
@@ -774,14 +774,14 @@ struct runner
         return ctx.is_negative(ctx.stack_back()) ? jmp_address : next_address;
     }
 
-    inline size_t operator()(identity_type<op::jlp>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jlp>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_negative(ctx.stack_back()) ? (next_address + jmp_offset) : next_address;
+        return ctx.is_negative(ctx.stack_back()) ? (address + jmp_offset) : next_address;
     }
 
-    inline size_t operator()(identity_type<op::jln>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jln>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_negative(ctx.stack_back()) ? (next_address - jmp_offset) : next_address;
+        return ctx.is_negative(ctx.stack_back()) ? (address - jmp_offset) : next_address;
     }
 
     inline size_t operator()(identity_type<op::jle>, ContextT& ctx, size_t /*address*/, size_t jmp_address, size_t next_address) const
@@ -789,14 +789,14 @@ struct runner
         return ctx.is_positive(ctx.stack_back()) ? next_address : jmp_address;
     }
 
-    inline size_t operator()(identity_type<op::jlep>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jlep>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_positive(ctx.stack_back()) ? next_address : (next_address + jmp_offset);
+        return ctx.is_positive(ctx.stack_back()) ? next_address : (address + jmp_offset);
     }
 
-    inline size_t operator()(identity_type<op::jlen>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jlen>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_positive(ctx.stack_back()) ? next_address : (next_address - jmp_offset);
+        return ctx.is_positive(ctx.stack_back()) ? next_address : (address - jmp_offset);
     }
 
     inline size_t operator()(identity_type<op::jne>, ContextT& ctx, size_t /*address*/, size_t jmp_address, size_t next_address) const
@@ -804,14 +804,14 @@ struct runner
         return ctx.is_zero(ctx.stack_back()) ? next_address : jmp_address;
     }
 
-    inline size_t operator()(identity_type<op::jnep>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jnep>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_zero(ctx.stack_back()) ? next_address : (next_address + jmp_offset);
+        return ctx.is_zero(ctx.stack_back()) ? next_address : (address + jmp_offset);
     }
 
-    inline size_t operator()(identity_type<op::jnen>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jnen>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_zero(ctx.stack_back()) ? next_address : (next_address - jmp_offset);
+        return ctx.is_zero(ctx.stack_back()) ? next_address : (address - jmp_offset);
     }
 
     inline size_t operator()(identity_type<op::je>, ContextT& ctx, size_t /*address*/, size_t jmp_address, size_t next_address) const
@@ -819,14 +819,14 @@ struct runner
         return ctx.is_zero(ctx.stack_back()) ? jmp_address : next_address;
     }
 
-    inline size_t operator()(identity_type<op::jep>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jep>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_zero(ctx.stack_back()) ? (next_address + jmp_offset) : next_address;
+        return ctx.is_zero(ctx.stack_back()) ? (address + jmp_offset) : next_address;
     }
 
-    inline size_t operator()(identity_type<op::jen>, ContextT& ctx, size_t /*address*/, size_t jmp_offset, size_t next_address) const
+    inline size_t operator()(identity_type<op::jen>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        return ctx.is_zero(ctx.stack_back()) ? (next_address - jmp_offset) : next_address;
+        return ctx.is_zero(ctx.stack_back()) ? (address - jmp_offset) : next_address;
     }
 
     inline void operator()(identity_type<op::cmp>, ContextT& ctx, size_t) const
@@ -1004,6 +1004,7 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
         switch (static_cast<op>(op_byte)) {
         case op::noop:
             ftor(identity<op::noop>, ctx, address);
+            ++address;
             continue;
         SONIA_VM_MAKE_JUMP_CASES(jmp)
         SONIA_VM_MAKE_JUMP_CASES(jne)

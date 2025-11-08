@@ -39,7 +39,7 @@
 
 // aux plane:
 // X XX XXXXX
-//          |-- type: nil=0, bool=1, bigint=2, tuple =3, function=4, error=5
+//          |-- type: nil=0, bool=1, bigint=2, decimal=3, blob/tuple=4, function=5, blob_reference=6, error=7
 //    |-------- plane: aux0 =0(0x0)
 // |----------- is array
 
@@ -904,6 +904,8 @@ inline std::basic_ostream<Elem, Traits>& print_type(std::basic_ostream<Elem, Tra
         return os << "error"sv;
     } else if (b.type == blob_type::object) {
         return os << "object"sv;
+    } else if (b.type == blob_type::tuple) {
+        return os << "tuple"sv;
     } else if (b.type == blob_type::blob_reference) {
         return print_type(os << '&', *data_of<blob_result>(b));
     }
@@ -937,6 +939,8 @@ inline std::basic_ostream<Elem, Traits>& print_type(std::basic_ostream<Elem, Tra
         os << "f32"sv; break;
     case blob_type::flt64:
         os << "f64"sv; break;
+    case blob_type::blob:
+        os << "blob"sv; break;
     case blob_type::function:
         os << "function"sv; break;
     case blob_type::object:

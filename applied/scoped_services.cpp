@@ -10,7 +10,7 @@
 #	include "sonia/services/environment.hpp"
 #endif
 
-void scoped_services::pre_initialize(int& argc, char const**& argv)
+void scoped_services::pre_initialize(int& /* argc */, char const**& /* argv */)
 {
 #if defined(SONIA_PRIME_STATIC) && !defined(SONIA_NO_PRIME_BUNDLE)
 	using namespace sonia::services;

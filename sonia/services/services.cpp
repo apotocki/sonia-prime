@@ -210,7 +210,7 @@ std::type_index get_durable_type_index(uint32_t did)
     return env_->get_durable_type_index(did);
 }
 
-void load_durable_id(std::string_view name, std::string_view meta)
+void load_durable_id(std::string_view /* name */, std::string_view meta)
 {
     assert_environment();
     locate(meta);

@@ -102,7 +102,7 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
         // value
         if (eof) throw_unexpected_eof();
 
-        bool start_internal = false;
+        //bool start_internal = false;
         switch (b->id)
         {
         case ID_NULL:
@@ -131,11 +131,11 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
             break;
         case ID_START_ARRAY:
             mdl_.push_state(model::state::ARRAY);
-            start_internal = true;
+            //start_internal = true;
             break;
         case ID_START_OBJECT:
             mdl_.push_state(model::state::OBJECT);
-            start_internal = true;
+            //start_internal = true;
             break;
         default:
             throw exception("unexpected token");
@@ -173,7 +173,7 @@ void parser<LexerT, ModelT>::parse(iterator & b, iterator const& e) const
 }
 
 template <class LexerT, class ModelT>
-bool parser<LexerT, ModelT>::ws(iterator & b, iterator const& e)
+bool parser<LexerT, ModelT>::ws(iterator & b, iterator const& /* e */)
 {
     auto tokid = b->id;
     if (tokid == ID_SPACE || tokid == ID_LINE_COMMENT || tokid == ID_COMMENT) {

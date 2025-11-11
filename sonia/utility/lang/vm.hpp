@@ -736,8 +736,8 @@ struct runner
     inline void operator()(identity_type<op::noop>, ContextT &, size_t) const {}
 
     inline size_t operator()(identity_type<op::jmp>, ContextT&, size_t /*address*/, size_t jmp_address, size_t) const { return jmp_address; }
-    inline size_t operator()(identity_type<op::jmpp>, ContextT&, size_t address, size_t jmp_offset, size_t next) const { return address + jmp_offset; }
-    inline size_t operator()(identity_type<op::jmpn>, ContextT&, size_t address, size_t jmp_offset, size_t next) const { return address - jmp_offset; }
+    inline size_t operator()(identity_type<op::jmpp>, ContextT&, size_t address, size_t jmp_offset, size_t /*next*/) const { return address + jmp_offset; }
+    inline size_t operator()(identity_type<op::jmpn>, ContextT&, size_t address, size_t jmp_offset, size_t /*next*/) const { return address - jmp_offset; }
 
     inline size_t operator()(identity_type<op::jg>, ContextT& ctx, size_t /*address*/, size_t jmp_address, size_t next_address) const
     {

@@ -458,7 +458,7 @@ std::string to_string(json_value const& val)
 {
     std::ostringstream ss;
     ss << val;
-    return std::move(ss.str());
+    return ss.str();
 }
 
 }

@@ -22,12 +22,12 @@
 
 namespace sonia::sal {
 
-void set_thread_name(sonia::thread::id tid, string_view name)
+void set_thread_name(sonia::thread::id, string_view)
 {
     // do nothing
 }
 
-void set_thread_name(sonia::thread::id tid, std::string const& name)
+void set_thread_name(sonia::thread::id, std::string const&)
 {
     // do nothing
 }
@@ -122,7 +122,7 @@ void close_socket(socket_handle sval) noexcept
     }
 }
 
-void setsockopt(socket_handle s, int level, int optname, int val)
+void setsockopt(socket_handle s, int level, int optname, int /* val */)
 {
     posix::setsockopt(s, level, optname, (const char*)&optname, sizeof(int));
 }

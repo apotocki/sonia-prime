@@ -168,7 +168,7 @@ public:
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::decrement");
     }
 
-    [[noreturn]] virtual void advance(DifferenceT dif)
+    [[noreturn]] virtual void advance(DifferenceT)
     {
         THROW_NOT_SUPPORTED_ERROR("iterator_polymorphic::advance");
     }

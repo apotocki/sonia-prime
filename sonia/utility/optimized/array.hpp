@@ -257,6 +257,7 @@ public:
     }
 
     optimized_array(optimized_array const& rhs)
+        : holder_t{}
     {
         if constexpr (is_trivial_v<element_t>) {
             holder_t::operator= (static_cast<holder_t const&>(rhs));
@@ -270,6 +271,7 @@ public:
     }
 
     optimized_array(optimized_array && rhs)
+        : holder_t{}
     {
         if constexpr (is_trivial_v<element_t>) {
             holder_t::operator= (std::move(static_cast<holder_t&>(rhs)));

@@ -67,7 +67,7 @@ public:
                 blob_storage st = std::move(it->second.first);
                 blobs_.erase(it);
                 GLOBAL_LOG_TRACE() << "a blob was unpinned at: " << std::hex << (uint64_t)b->bp.data;
-                return std::move(st);
+                return st;
             }
         } else {
             GLOBAL_LOG_ERROR() << "a blob '" << *b << "' was not found for unpinning at: " << std::hex << (uint64_t)b->bp.data;

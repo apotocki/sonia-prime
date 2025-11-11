@@ -31,7 +31,7 @@ namespace type {
 
 class durable_id
 {
-    SONIA_DECLARE_SERIALIZATION_FRIENDLY;
+    SONIA_DECLARE_SERIALIZATION_FRIENDLY
     
     durable_id(uint32_t idval, std::type_index ti)
         : val_(idval), ti_(ti)

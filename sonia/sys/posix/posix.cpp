@@ -84,7 +84,7 @@ void bind_socket(int sockfd, const sockaddr* addr, socklen_t addrlen)
     }
 }
 
-void listen(int sockfd, int backlog)
+void listen(int sockfd, int /* backlog */)
 {
     if (int r = ::listen(sockfd, SOMAXCONN); r != 0) {
         int err = errno;

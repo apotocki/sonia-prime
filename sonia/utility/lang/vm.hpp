@@ -452,7 +452,7 @@ struct printer
 
     std::ostream& generic_print(size_t address, string_view cmd) const
     {
-        return ss << "0x"sv << std::hex << std::setfill('0') << std::setw(4) << address << ' ' << cmd;
+        return ss << std::hex << std::showbase << std::setfill('0') << std::setw(4) << address << ' ' << cmd;
     }
 
     inline void operator()(identity_type<op::noop>, ContextT&, size_t address) const
@@ -465,18 +465,18 @@ struct printer
         generic_print(address, "ret"sv);
         auto optaddr = ctx.call_stack_back();
         if (!optaddr) {
-            ss << " (no address)\n"sv;
+            ss << "\t; no address\n"sv;
         } else {
-            ss << " ("sv << std::hex << std::showbase << *optaddr << ")\n"sv;
+            ss << "\t; "sv << std::hex << std::showbase << *optaddr << '\n';
         }
         return nullopt;
     }
 
     inline size_t operator()(identity_type<op::call>, ContextT& ctx, size_t address, size_t call_address, size_t ret_address) const
     {
-        generic_print(address, "call"sv) << " 0x" << std::hex << call_address;
+        generic_print(address, "call "sv) << std::hex << std::showbase << call_address;
         if constexpr (requires{ ctx.describe_address(call_address); }) {
-            ss << ' ' << ctx.describe_address(call_address) << '\n';
+            ss << "\t; "sv << ctx.describe_address(call_address) << '\n';
         } else {
             ss << '\n';
         }
@@ -497,76 +497,46 @@ struct printer
 
     inline void operator()(identity_type<op::ecall>, ContextT& ctx, size_t address, size_t fn_index) const
     {
-        generic_print(address, "ecall"sv);
-        ss << " #"sv << std::dec << fn_index;
+        generic_print(address, "ecall #"sv) << std::dec << fn_index;
         if constexpr (requires{ ctx.ecall_describe(fn_index); }) {
-            ss << ' ' << ctx.ecall_describe(fn_index) << '\n';
+            ss << "\t; "sv << ctx.ecall_describe(fn_index) << '\n';
         } else {
             ss << '\n';
         }
     }
 
-    //void common_ecall1(ContextT& ctx, size_t arg_index, size_t fn_index) const
-    //{
-    //    ss << " ("sv << ctx.stack_at(arg_index) << ") "sv;
-    //    if constexpr (requires{ ctx.ecall1_describe(fn_index); }) {
-    //        ss << ctx.ecall1_describe(fn_index);
-    //    } else {
-    //        ss << '#' << std::dec << fn_index;
-    //    }
-    //    ss << '\n';
-    //}
-
-    //inline void operator()(identity_type<op::ecall1>, ContextT& ctx, size_t address, size_t arg_index, size_t fn_index, ext1_function_t) const
-    //{
-    //    generic_print(address, "ecall1"sv);
-    //    common_ecall1(ctx, arg_index, fn_index);
-    //}
-
-    //inline void operator()(identity_type<op::fpecall1>, ContextT& ctx, size_t address, size_t arg_offset, size_t fn_index, ext1_function_t) const
-    //{
-    //    generic_print(address, "fpecall1"sv);
-    //    common_ecall1(ctx, ctx.frame_stack_back() + arg_offset, fn_index);
-    //}
-
-    //inline void operator()(identity_type<op::fnecall1>, ContextT& ctx, size_t address, size_t arg_offset, size_t fn_index, ext1_function_t) const
-    //{
-    //    generic_print(address, "fnecall1"sv);
-    //    common_ecall1(ctx, ctx.frame_stack_back() - arg_offset, fn_index);
-    //}
-
     inline size_t operator()(identity_type<op::jmp>, ContextT&, size_t address, size_t jmp_address, size_t next_address) const
     {
-        generic_print(address, "jmp"sv) << " 0x"sv << std::hex << jmp_address << '\n';
+        generic_print(address, "jmp "sv) << std::hex << std::showbase << jmp_address << '\n';
         return next_address;
     }
 
     inline size_t operator()(identity_type<op::jmpp>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        generic_print(address, "jmpp"sv) << " 0x"sv << std::hex << (address + jmp_offset) << '\n';
+        generic_print(address, "jmpp "sv) << std::hex << std::showbase << (address + jmp_offset) << '\n';
         return next_address;
     }
 
     inline size_t operator()(identity_type<op::jmpn>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        generic_print(address, "jmpn"sv) << " 0x"sv << std::hex << (address - jmp_offset) << '\n';
+        generic_print(address, "jmpn "sv) << std::hex << std::showbase << (address - jmp_offset) << '\n';
         return next_address;
     }
 
 #define SONIA_VM_PRINTER_JUMP_OPS(opname, cond) \
     inline size_t operator()(identity_type<op::opname>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const \
     {\
-        generic_print(address, #opname##sv) << " 0x"sv << std::hex << jmp_address << " ("sv << std::boolalpha << cond(ctx.stack_back()) << ")\n"sv; \
+        generic_print(address, #opname##sv) << ' ' << std::hex << std::showbase << jmp_address << "\t; "sv << std::boolalpha << cond(ctx.stack_back()) << '\n'; \
         return next_address; \
     }\
     inline size_t operator()(identity_type<op::opname##p>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const \
     {\
-        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, p))) << " 0x"sv << std::hex << (address + jmp_offset) << " ("sv << std::boolalpha << cond(ctx.stack_back()) << ")\n"; \
+        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, p))) << ' ' << std::hex << std::showbase << (address + jmp_offset) << "\t; "sv << std::boolalpha << cond(ctx.stack_back()) << '\n'; \
         return next_address; \
     }\
     inline size_t operator()(identity_type<op::opname##n>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const \
     {\
-        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, n))) << " 0x"sv << std::hex << (address - jmp_offset) << " ("sv << std::boolalpha << cond(ctx.stack_back()) << ")\n"; \
+        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, n))) << ' ' << std::hex << std::showbase << (address - jmp_offset) << "\t; "sv << std::boolalpha << cond(ctx.stack_back()) << '\n'; \
         return next_address; \
     }
 
@@ -585,12 +555,12 @@ struct printer
 
     inline void operator()(identity_type<op::pop>, ContextT& ctx, size_t address) const
     {
-        generic_print(address, "pop"sv) << " ["sv << std::dec << (ctx.stack_size() - 1) << "] ("sv << ctx.stack_back() << ")\n"sv;
+        generic_print(address, "pop"sv) << " ["sv << std::dec << (ctx.stack_size() - 1) << "]\t; "sv << ctx.stack_back() << '\n';
     }
 
     inline void operator()(identity_type<op::popn>, ContextT& ctx, size_t address, size_t n) const
     {
-        generic_print(address, "popn"sv) << " ["sv << std::dec  << (ctx.stack_size() - n) << " - "sv << (ctx.stack_size() - 1) << "] ("sv;
+        generic_print(address, "popn"sv) << " ["sv << std::dec  << (ctx.stack_size() - n) << " - "sv << (ctx.stack_size() - 1) << "]\t; ["sv;
         auto sp = ctx.stack_span(0, n);
         if (!sp.empty()) {
             ss << sp.front();
@@ -601,12 +571,12 @@ struct printer
             ss << sp.front();
             sp = sp.subspan(1);
         }
-        ss << ")\n"sv;
+        ss << "]\n"sv;
     }
 
     inline void operator()(identity_type<op::collapse>, ContextT& ctx, size_t address, size_t n) const
     {
-        generic_print(address, "collapse"sv) << ' ' << n << " ("sv;
+        generic_print(address, "collapse"sv) << ' ' << n << "\t; ["sv;
         auto sp = ctx.stack_span(1, n);
         if (!sp.empty()) {
             ss << sp.front();
@@ -617,79 +587,79 @@ struct printer
             ss << sp.front();
             sp = sp.subspan(1);
         }
-        ss << ")\n"sv;
+        ss << "]\n"sv;
     }
 
     inline void operator()(identity_type<op::push>, ContextT& ctx, size_t address, size_t index) const
     {
-        generic_print(address, "push"sv) << " ["sv << std::dec << index << "]->["sv << ctx.stack_size() << "] ("sv << ctx.stack_at(index) << ")\n"sv;
+        generic_print(address, "push"sv) << " ["sv << std::dec << index << "]->["sv << ctx.stack_size() << "]\t; "sv << ctx.stack_at(index) << '\n';
     }
 
     inline void operator()(identity_type<op::pushr>, ContextT& ctx, size_t address, size_t offset) const
     {
-        generic_print(address, "pushr"sv) << " ["sv << std::dec << (ctx.stack_size() - offset - 1) << "]->["sv << ctx.stack_size() << "] ("sv << ctx.stack_back(offset) << ")\n"sv;
+        generic_print(address, "pushr"sv) << " ["sv << std::dec << (ctx.stack_size() - offset - 1) << "]->["sv << ctx.stack_size() << "]\t; "sv << ctx.stack_back(offset) << '\n';
     }
 
     inline void operator()(identity_type<op::fppush>, ContextT& ctx, size_t address, size_t offset) const
     {
         size_t index = ctx.frame_stack_back() + offset;
-        generic_print(address, "fppush"sv) << " ["sv << std::dec << index << "]->["sv << ctx.stack_size() << "] ("sv << ctx.stack_at(index) << ")\n"sv;
+        generic_print(address, "fppush"sv) << " ["sv << std::dec << index << "]->["sv << ctx.stack_size() << "]\t; "sv << ctx.stack_at(index) << '\n';
     }
 
     inline void operator()(identity_type<op::fnpush>, ContextT& ctx, size_t address, size_t offset) const
     {
         size_t index = ctx.frame_stack_back() - offset;
-        generic_print(address, "fnpush"sv) << " ["sv << std::dec << index << "]->["sv << ctx.stack_size() << "] ("sv << ctx.stack_at(index) << ")\n"sv;
+        generic_print(address, "fnpush"sv) << " ["sv << std::dec << index << "]->["sv << ctx.stack_size() << "]\t; "sv << ctx.stack_at(index) << '\n';
     }
 
 
     inline void operator()(identity_type<op::pushi>, ContextT& ctx, size_t address, size_t index) const
     {
-        generic_print(address, "pushi"sv) << ' ' << std::dec << index << "->[" << ctx.stack_size() << "] \n"sv;
+        generic_print(address, "pushi"sv) << ' ' << std::dec << index << "->[" << ctx.stack_size() << "]\n"sv;
     }
 
     inline void operator()(identity_type<op::fppushi>, ContextT& ctx, size_t address, size_t offset) const
     {
         size_t index = ctx.frame_stack_back() + offset;
-        generic_print(address, "fppushi"sv) << ' ' << std::dec << index << "->[" << ctx.stack_size() << "] \n"sv;
+        generic_print(address, "fppushi"sv) << ' ' << std::dec << index << "->[" << ctx.stack_size() << "]\n"sv;
     }
 
     inline void operator()(identity_type<op::fnpushi>, ContextT& ctx, size_t address, size_t offset) const
     {
         size_t index = ctx.frame_stack_back() - offset;
-        generic_print(address, "fnpushi"sv) << ' ' << std::dec << index << "->[" << ctx.stack_size() << "] \n"sv;
+        generic_print(address, "fnpushi"sv) << ' ' << std::dec << index << "->[" << ctx.stack_size() << "]\n"sv;
     }
 
     inline void operator()(identity_type<op::pushc>, ContextT& ctx, size_t address, size_t index) const
     {
-        generic_print(address, "pushc"sv) << " C["sv << std::dec << index << "]->["sv << ctx.stack_size() << "] ("sv << ctx.const_at(index) << ")\n"sv;
+        generic_print(address, "pushc"sv) << " C["sv << std::dec << index << "]->["sv << ctx.stack_size() << "]\t; "sv << ctx.const_at(index) << '\n';
     }
 
     inline void operator()(identity_type<op::push_stsz>, ContextT& ctx, size_t address) const
     {
-        generic_print(address, "push_stsz"sv) << "\t;"sv << std::dec << ctx.stack_size() << " -> ["sv << ctx.stack_size() << "]\n"sv;
+        generic_print(address, "push_stsz"sv) << "\t; "sv << std::dec << ctx.stack_size() << " -> ["sv << ctx.stack_size() << "]\n"sv;
     }
 
     inline void operator()(identity_type<op::set>, ContextT& ctx, size_t address, size_t index) const
     {
-        generic_print(address, "set"sv) << " [" << std::dec << (ctx.stack_size() - 1) << "]->[" << index << "] (" << ctx.stack_back() << ")" << "\n";
+        generic_print(address, "set"sv) << " [" << std::dec << (ctx.stack_size() - 1) << "]->[" << index << "]\t; " << ctx.stack_back() << '\n';
     }
 
     inline void operator()(identity_type<op::setr>, ContextT& ctx, size_t address, size_t offset) const
     {
-        generic_print(address, "setr"sv) << " [" << std::dec << (ctx.stack_size() - 1) << "]->[" << (ctx.stack_size() - offset - 1) << "] (" << ctx.stack_back() << ")" << "\n";
+        generic_print(address, "setr"sv) << " [" << std::dec << (ctx.stack_size() - 1) << "]->[" << (ctx.stack_size() - offset - 1) << "]\t; " << ctx.stack_back() << '\n';
     }
 
     inline void operator()(identity_type<op::fpset>, ContextT& ctx, size_t address, size_t offset) const
     {
         size_t index = ctx.frame_stack_back() + offset;
-        generic_print(address, "fpset"sv) << " [" << std::dec << (ctx.stack_size() - 1) << "]->[" << index << "] (" << ctx.stack_back() << ")" << "\n";
+        generic_print(address, "fpset"sv) << " [" << std::dec << (ctx.stack_size() - 1) << "]->[" << index << "]\t; " << ctx.stack_back() << '\n';
     }
 
     inline void operator()(identity_type<op::fnset>, ContextT& ctx, size_t address, size_t offset) const
     {
         size_t index = ctx.frame_stack_back() - offset;
-        generic_print(address, "fnset"sv) << " [" << std::dec << (ctx.stack_size() - 1) << "]->[" << index << "] (" << ctx.stack_back() << ")" << "\n";
+        generic_print(address, "fnset"sv) << " [" << std::dec << (ctx.stack_size() - 1) << "]->[" << index << "]\t; " << ctx.stack_back() << '\n';
     }
 
     inline void operator()(identity_type<op::pindexs>, ContextT& ctx, size_t address, size_t shift) const
@@ -712,23 +682,27 @@ struct printer
 
     inline void operator()(identity_type<op::pushfp>, ContextT& ctx, size_t address) const
     {
-        generic_print(address, "pushfp"sv) << ", fp: "sv << std::dec << static_cast<uint32_t>(ctx.stack_size()) << "\n";
+        generic_print(address, "pushfp"sv) << "\t; fp: "sv << std::dec << static_cast<uint32_t>(ctx.stack_size()) << '\n';
     }
 
     inline void operator()(identity_type<op::popfp>, ContextT& /*ctx*/, size_t address) const
     {
-        generic_print(address, "popfp"sv) << "\n";
+        generic_print(address, "popfp"sv) << '\n';
     }
 
     inline void operator()(identity_type<op::truncatefpp>, ContextT& ctx, size_t address, size_t cnt) const
     {
-        generic_print(address, "truncatefpp"sv) << " " << std::dec << (ctx.frame_stack_back() + cnt) << '\n';
+        generic_print(address, "truncatefpp "sv) << std::dec << (ctx.frame_stack_back() + cnt) << '\n';
     }
     inline void operator()(identity_type<op::truncatefpn>, ContextT& ctx, size_t address, size_t cnt) const
     {
         size_t min_idx = ctx.frame_stack_back() - cnt;
-        //generic_print(address, "truncatefpn"sv) << " " << std::dec << min_idx << '\n';
-        generic_print(address, "truncatefpn"sv) << " ["sv << std::dec << min_idx << " - "sv << (ctx.stack_size() - 1) << "] ("sv;
+        generic_print(address, "truncatefpn"sv) << " ["sv << std::dec << min_idx;
+        if (min_idx < ctx.stack_size() - 1) {
+            ss << " - "sv << (ctx.stack_size() - 1);
+        }
+        ss << "]\t; ["sv;
+        
         auto sp = ctx.stack_span(0, ctx.stack_size() - min_idx);
         if (!sp.empty()) {
             ss << sp.front();
@@ -739,7 +713,7 @@ struct printer
             ss << sp.front();
             sp = sp.subspan(1);
         }
-        ss << ")\n"sv;
+        ss << "]\n"sv;
     }
 };
 
@@ -1264,7 +1238,7 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
 template <typename ContextT>
 void virtual_stack_machine<ContextT>::run(ContextT& ctx, size_t address)
 {
-#if 1
+#if 0
     sequence_runner<printer<ContextT>, runner<ContextT>> rn{ printer<ContextT>{ std::cout }, {}};
     //printer<ContextT> rn{ std::cout };
 #else

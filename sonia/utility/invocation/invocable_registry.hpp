@@ -50,10 +50,12 @@ struct concrete_method : method
     template <typename InvokableT, size_t ... Is>
     smart_blob do_job(std::index_sequence<Is...>, InvokableT& self, span<const blob_result> args) const noexcept
     {
+        BOOST_ASSERT(sizeof...(Is) == args.size());
+        
         smart_blob result;
         invocable_t* pinv = dynamic_cast<invocable_t*>(std::addressof(self));
         if (!pinv) {
-            auto errstr = ("invocable method error: can not cast from %1% to %2%"_fmt % typeid(self).name() % typeid(invocable_t).name()).str();
+            auto errstr = ("invocable method error: cannot cast from %1% to %2%"_fmt % typeid(self).name() % typeid(invocable_t).name()).str();
             result = error_blob_result(errstr);
             result.allocate();
         } else try {
@@ -95,7 +97,7 @@ struct concrete_fn_property_reader : fn_property_reader
 {
     GetterT getter_;
 
-    concrete_fn_property_reader(GetterT&& g)
+    inline explicit concrete_fn_property_reader(GetterT&& g) noexcept
         : getter_{ std::move(g) }
     {}
 
@@ -109,11 +111,11 @@ struct concrete_fn_property_writer : fn_property_writer
 {
     SetterT setter_;
 
-    concrete_fn_property_writer(SetterT&& s)
+    inline explicit concrete_fn_property_writer(SetterT&& s) noexcept
         : setter_{ std::move(s) }
     {}
 
-    void set(invocable& obj, string_view propname, blob_result const& val) const override { setter_(dynamic_cast<InvokableT &>(obj), val); }
+    void set(invocable& obj, string_view /* propname */, blob_result const& val) const override { setter_(dynamic_cast<InvokableT &>(obj), val); }
 
     SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(concrete_fn_property_writer);
 };

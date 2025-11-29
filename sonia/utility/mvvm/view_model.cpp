@@ -12,10 +12,9 @@ namespace sonia {
 using namespace std::string_view_literals;
 
 view_model::view_model(int32_t idval) noexcept
-    : id_{ idval }, locked_{ 0 }
-{
-
-}
+    : locked_{ 0 }
+    , id_{ idval }
+{}
 
 void view_model::do_registration(registrar_type & mr)
 {
@@ -319,6 +318,7 @@ void view_model::async_cancel()
 void view_model::cancel()
 {
     do_serialised_op([this](bool need_cancel) {
+        (void)need_cancel;
         GLOBAL_LOG_INFO() << "cancel operations";
     });
 }

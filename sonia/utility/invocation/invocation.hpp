@@ -1460,11 +1460,11 @@ namespace sonia {
 class smart_blob : blob_result
 {
 public:
-    smart_blob() : blob_result{ nil_blob_result() } {}
-    smart_blob(blob_result const& b) : blob_result{ b } { blob_result_pin(this); }
-    smart_blob(blob_result&& b) : blob_result{ b } { reset(b); }
+    inline smart_blob() noexcept : blob_result{ nil_blob_result() } {}
+    inline smart_blob(blob_result const& b) noexcept : blob_result{ b } { blob_result_pin(this); }
+    inline smart_blob(blob_result&& b) noexcept : blob_result{ b } { reset(b); }
 
-    smart_blob(smart_blob const& rhs)
+    inline smart_blob(smart_blob const& rhs) noexcept
         : blob_result { rhs }
     {
         blob_result_pin(this);

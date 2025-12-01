@@ -2055,6 +2055,9 @@
     <ClInclude Include="..\..\..\sonia\fibers\context_initializer.hpp">
       <Filter>sonia.fibers</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\callback_invoker.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

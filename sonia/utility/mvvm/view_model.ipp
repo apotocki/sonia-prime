@@ -29,7 +29,7 @@ void view_model::do_post(RT(T::* f)(FArgsT ...), ArgsT && ... args)
 {
     th_.cancel();
     if (auto mng = get_manager(); mng) {
-        mng->get_scheduler().post([self = self_as_content_view_shared(), f, tpl = std::tuple(std::forward<ArgsT>(args) ...)] {
+        mng->get_scheduler().post([self = shared_self(), f, tpl = std::tuple(std::forward<ArgsT>(args) ...)] {
             std::apply(f, std::tuple_cat(std::tuple{dynamic_pointer_cast<T>(self)}, std::move(tpl)));
         });
     }

@@ -82,6 +82,8 @@ public:
 
     virtual shared_ptr<view_model> shared_self() = 0;
 
+    virtual weak_ptr<view_model> weak_self() = 0;
+
     inline void set_id(int32_t idval) noexcept { id_ = idval; }
     inline int32_t id() const noexcept { return id_; }
 
@@ -185,7 +187,15 @@ public:
     shared_ptr<view_model::manager> get_manager() const override final { return mng_.lock(); }
     void set_manager(shared_ptr<view_model::manager> mng) noexcept override final { mng_ = mng; }
 
-    shared_ptr<view_model> shared_self() override final { return enable_shared_from_this<final_view_model<BaseT>>::shared_from_this(); }
+    shared_ptr<view_model> shared_self() override final
+    {
+        return this->shared_from_this();
+    }
+
+    weak_ptr<view_model> weak_self() override final
+    {
+        return this->weak_from_this();
+    }
 
     // invocable
     std::type_index get_type_index() const override { return typeid(BaseT); }

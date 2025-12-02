@@ -1087,7 +1087,9 @@ struct from_blob<numetron::basic_integer_view<LimbT>>
     {
         using namespace sonia;
         return blob_type_dispatch(val, [&val]<typename DT>(DT ival)->bigint_view_t {
-            if constexpr (is_integral_not_bool_v<DT>) {
+            if constexpr (std::is_same_v<bool, DT>) {
+                return bigint_view_t{ ival ? 1 : 0 };
+            } else if constexpr (is_integral_not_bool_v<DT>) {
                 return bigint_view_t{ ival };
             } else if constexpr (std::is_same_v<bigint_view_t, DT>) {
                 return ival;

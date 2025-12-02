@@ -52,7 +52,7 @@ shared_ptr<sonia::services::bundle> load_bundle(sonia::services::bundle_configur
         DWORD err = GetLastError();
         THROW_INTERNAL_ERROR("Cannot load bundle: %1%\n%2%"_fmt % libname % winapi::error_message(err));
     }
-    SCOPE_EXIT([&lib_handle]() { FreeLibrary(lib_handle); });
+    SCOPE_EXIT([&lib_handle]() { if (lib_handle) FreeLibrary(lib_handle); });
 
     get_bundle_fn* fn_handle = (get_bundle_fn*)GetProcAddress(lib_handle, "get_bundle");
     if (!fn_handle) {

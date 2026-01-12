@@ -452,7 +452,7 @@ struct printer
 
     std::ostream& generic_print(size_t address, string_view cmd) const
     {
-        return ss << std::hex << std::showbase << std::setfill('0') << std::setw(4) << address << ' ' << cmd;
+        return ss << "0x"sv << std::hex << std::noshowbase << std::setfill('0') << std::setw(4) << address << ' ' << cmd;
     }
 
     inline void operator()(identity_type<op::noop>, ContextT&, size_t address) const
@@ -1238,7 +1238,7 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
 template <typename ContextT>
 void virtual_stack_machine<ContextT>::run(ContextT& ctx, size_t address)
 {
-#if 0
+#if 1
     sequence_runner<printer<ContextT>, runner<ContextT>> rn{ printer<ContextT>{ std::cout }, {}};
     //printer<ContextT> rn{ std::cout };
 #else

@@ -22,6 +22,7 @@
     <ClCompile Include="..\..\..\applied\dllmain.cpp" />
     <ClCompile Include="..\..\..\applied\embedded.cpp" />
     <ClCompile Include="..\..\..\sonia\fibers\context_shared.cpp" />
+    <ClCompile Include="..\..\..\sonia\fibers\default_stack.cpp" />
     <ClCompile Include="..\..\..\sonia\services\auth\auth_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\auth\auth_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\basic_service_factory.cpp" />

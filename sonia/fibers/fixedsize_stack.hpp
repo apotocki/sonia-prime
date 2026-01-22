@@ -9,6 +9,7 @@
 #include <boost/context/fixedsize_stack.hpp>
 #include <boost/context/protected_fixedsize_stack.hpp>
 
+#include "sonia/prime_config.hpp"
 #include "sonia/fibers/detail/config.hpp"
 
 #ifdef BOOST_HAS_ABI_HEADERS
@@ -22,7 +23,7 @@ using fixedsize_stack = boost::context::fixedsize_stack;
 //using default_stack = boost::context::default_stack;
 class default_stack : public boost::context::protected_fixedsize_stack {
 public:
-    default_stack() : boost::context::protected_fixedsize_stack{ } {}
+    SONIA_PRIME_API default_stack();
 };
 
 #endif

@@ -122,6 +122,9 @@
     <ClCompile Include="..\..\..\sonia\fibers\context_shared.cpp">
       <Filter>sonia.fibers</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\fibers\default_stack.cpp">
+      <Filter>sonia.fibers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="sonia.services">

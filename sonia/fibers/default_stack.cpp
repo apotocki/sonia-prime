@@ -7,7 +7,7 @@
 namespace sonia::fibers {
 
 SONIA_PRIME_API default_stack::default_stack()
-    : boost::context::protected_fixedsize_stack{ 16 * 1024 * 1024 }
+    : boost::context::protected_fixedsize_stack{ /* 16 * 1024 * 1024 */ }
 {}
 
 }

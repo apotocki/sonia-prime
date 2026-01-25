@@ -1141,6 +1141,8 @@ struct from_blob<numetron::basic_decimal_view<LimbT>>
                 return decimal_view_t{ numetron::basic_integer_view<LimbT>{dval}, numetron::basic_integer_view<LimbT>{} };
             } else if constexpr (std::is_same_v<decimal_view_t, DT>) {
                 return dval;
+            } else if constexpr (std::is_floating_point_v<DT> || std::is_same_v<numetron::float16, DT>) {
+                return decimal_view_t{ dval };
             }
             THROW_INTERNAL_ERROR("can't convert blob %1% to basic_decimal_view"_fmt % val);
         });

@@ -1238,7 +1238,7 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
 template <typename ContextT>
 void virtual_stack_machine<ContextT>::run(ContextT& ctx, size_t address)
 {
-#if 1
+#if 0
     sequence_runner<printer<ContextT>, runner<ContextT>> rn{ printer<ContextT>{ std::cout }, {}};
     //printer<ContextT> rn{ std::cout };
 #else

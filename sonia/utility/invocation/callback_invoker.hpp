@@ -4,6 +4,9 @@
 
 #pragma once
 
+#include <span>
+#include <initializer_list>
+
 #include "sonia/utility/invocation/invocation.hpp"
 
 namespace sonia::invocation {

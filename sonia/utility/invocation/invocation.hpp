@@ -965,7 +965,7 @@ struct from_blob
     T operator()(blob_result val) const {
         using namespace sonia;
         static_assert(dependent_false<T>);
-        THROW_INTERNAL_ERROR("can't convert blob %1% to type %2%"_fmt % val % typeid(T).name());
+        THROW_INTERNAL_ERROR("can't convert blob `%1%` to type `%2%`"_fmt % val % typeid(T).name());
     }
 };
 
@@ -992,7 +992,7 @@ struct from_blob<T>
                 return *result;
             }
         }
-        THROW_INTERNAL_ERROR("can't convert blob %1% to object %2%"_fmt % val % typeid(T).name());
+        THROW_INTERNAL_ERROR("can't convert blob `%1%` to object `%2%`"_fmt % val % typeid(T).name());
     }
 };
 
@@ -1005,7 +1005,7 @@ struct from_blob<bool>
         if (val.type == blob_type::boolean) {
             return !!val.bp.i8value;
         }
-        THROW_INTERNAL_ERROR("can't convert blob %1% to bool"_fmt % val);
+        THROW_INTERNAL_ERROR("can't convert blob `%1%` to bool"_fmt % val);
     }
 };
 
@@ -1037,7 +1037,7 @@ struct from_blob<T>
                 if (ival.template is_fit<T>()) return (T)ival;
             }
 
-            THROW_INTERNAL_ERROR("can't convert blob %1% to %2%"_fmt % val % typeid(T).name());
+            THROW_INTERNAL_ERROR("can't convert blob `%1%` to `%2%`"_fmt % val % typeid(T).name());
         });
     }
 };
@@ -1057,7 +1057,7 @@ struct from_blob<T>
             } else if constexpr (std::is_same_v<DT, numetron::float16>) {
                 return (T)(float)ival;
             } else {
-                THROW_INTERNAL_ERROR("can't convert blob %1% to %2%"_fmt % val % typeid(T).name());
+                THROW_INTERNAL_ERROR("can't convert blob `%1%` to `%2%`"_fmt % val % typeid(T).name());
             }
         });
     }
@@ -1074,7 +1074,7 @@ struct from_blob<numetron::basic_integer<LimbT, N, AllocatorT>>
             if constexpr (is_integral_not_bool_v<DT> || numetron::is_basic_integer_view_v<DT>) {
                 return bigint_t{ ival, alloc };
             }
-            THROW_INTERNAL_ERROR("can't convert blob %1% to basic_integer<%2%>"_fmt % val % typeid(LimbT).name());
+            THROW_INTERNAL_ERROR("can't convert blob `%1%` to basic_integer<%2%>"_fmt % val % typeid(LimbT).name());
         });
     }
 };
@@ -1094,7 +1094,7 @@ struct from_blob<numetron::basic_integer_view<LimbT>>
             } else if constexpr (std::is_same_v<bigint_view_t, DT>) {
                 return ival;
             }
-            THROW_INTERNAL_ERROR("can't convert blob %1% to basic_integer_view<%2%>"_fmt % val % typeid(LimbT).name());
+            THROW_INTERNAL_ERROR("can't convert blob `%1%` to basic_integer_view<%2%>"_fmt % val % typeid(LimbT).name());
         });
     }
 };
@@ -1121,7 +1121,7 @@ struct from_blob<numetron::basic_decimal<LimbT, N, E, AllocatorT>>
             } else if constexpr (numetron::is_basic_decimal_view_v<DT>) {
                 return decimal_t{ numetron::basic_integer<LimbT, 1, AllocatorT>{ dval.significand(), alloc }, numetron::basic_integer<LimbT, 1, AllocatorT>{ dval.exponent(), alloc }, alloc };
             }
-            THROW_INTERNAL_ERROR("can't convert blob %1% to basic_decimal<%2%>"_fmt % val % typeid(LimbT).name());
+            THROW_INTERNAL_ERROR("can't convert blob `%1%` to basic_decimal<%2%>"_fmt % val % typeid(LimbT).name());
         });
     }
 };
@@ -1144,7 +1144,7 @@ struct from_blob<numetron::basic_decimal_view<LimbT>>
             } else if constexpr (std::is_floating_point_v<DT> || std::is_same_v<numetron::float16, DT>) {
                 return decimal_view_t{ dval };
             }
-            THROW_INTERNAL_ERROR("can't convert blob %1% to basic_decimal_view"_fmt % val);
+            THROW_INTERNAL_ERROR("can't convert blob `%1%` to basic_decimal_view"_fmt % val);
         });
     }
 };
@@ -1168,9 +1168,9 @@ struct from_blob<std::span<const CharT>>
             return span_t{ reinterpret_cast<CharT const*>(&val.bp.ui8value), (size_t)1 };
         }
 #ifdef BOOST_WINDOWS
-        THROW_INTERNAL_ERROR("can't convert blob %1% to std::span<%2%>"_fmt % val % typeid(CharT).name());
+        THROW_INTERNAL_ERROR("can't convert blob `%1%` to std::span<%2%>"_fmt % val % typeid(CharT).name());
 #else
-        THROW_INTERNAL_ERROR("can't convert blob %1% to std::span<CharT>"_fmt % val);
+        THROW_INTERNAL_ERROR("can't convert blob `%1%` to std::span<CharT>"_fmt % val);
 #endif   
     }
 };
@@ -1194,9 +1194,9 @@ struct from_blob<std::span<T>>
             }
         }
 #ifdef BOOST_WINDOWS
-        THROW_INTERNAL_ERROR("can't convert blob %1% to std::span<%2%>"_fmt % val % typeid(T).name());
+        THROW_INTERNAL_ERROR("can't convert blob `%1%` to std::span<%2%>"_fmt % val % typeid(T).name());
 #else
-        THROW_INTERNAL_ERROR("can't convert blob %1% to std::span<T>"_fmt % val);
+        THROW_INTERNAL_ERROR("can't convert blob `%1%` to std::span<T>"_fmt % val);
 #endif
     }
 };
@@ -1214,7 +1214,7 @@ struct from_blob<T>
             size_t sz = val.inplace_size ? (size_t)val.inplace_size : (size_t)val.bp.size;
             return T{ begin_ptr, sz };
         }
-        THROW_INTERNAL_ERROR("can't convert blob %1% to %2%"_fmt % val % typeid(T).name());
+        THROW_INTERNAL_ERROR("can't convert blob `%1%` to `%2%`"_fmt % val % typeid(T).name());
     }
 };
 /*
@@ -1257,7 +1257,7 @@ struct from_blob<std::tuple<Ts...>>
         if (val.type == blob_type::tuple) {
             return this->operator()(std::make_index_sequence<sizeof ...(Ts)>{}, reinterpret_cast<blob_result const*>(val.bp.data));
         } // else { to do: handle arrays }
-        THROW_INTERNAL_ERROR("can't convert blob %1% to std::tuple"_fmt % val);
+        THROW_INTERNAL_ERROR("can't convert blob `%1%` to std::tuple"_fmt % val);
     }
 
     template <size_t ... Is>
@@ -1279,7 +1279,7 @@ struct from_blob<std::array<T, SzV>>
                 return this->selector(idt, val);
             });
         }
-        THROW_INTERNAL_ERROR("can't convert blob %1% to std::array"_fmt % val);
+        THROW_INTERNAL_ERROR("can't convert blob `%1%` to std::array"_fmt % val);
     }
 
 private:
@@ -1296,7 +1296,7 @@ private:
             BOOST_ASSERT(sz / sizeof(blob_result) >= SzV);
             return decode(std::make_index_sequence<SzV>{}, reinterpret_cast<blob_result const*>(begin_ptr));
         } else {
-            THROW_INTERNAL_ERROR("can't convert blob %1% to std::array<%2%>"_fmt % val % typeid(T).name());
+            THROW_INTERNAL_ERROR("can't convert blob `%1%` to std::array<%2%>"_fmt % val % typeid(T).name());
         }
     }
 

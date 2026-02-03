@@ -36,14 +36,50 @@ public:
 template <auto v> struct identity_type {};
 template <auto v> inline constexpr identity_type<v> identity{};
 
+template <typename VarT>
+class basic_context
+{
+public:
+    using variable_type = VarT;
+    using stack_type = std::vector<variable_type>;
+
+    inline variable_type const& stack_back() const
+    {
+        if (stack_.empty()) throw internal_error("no value on stack");
+        return stack_.back();
+    }
+
+    void set_at_stack(size_t pos, variable_type value)
+    {
+        if (stack_.size() <= pos) {
+            stack_.resize(pos + 1);
+        }
+        stack_[pos] = std::move(value);
+    }
+
+    template <typename T>
+    requires (std::is_convertible_v<std::remove_cvref_t<T>, variable_type>)
+    size_t push_on_stack(T&& value)
+    {
+        size_t pos = stack_.size();
+        stack_.emplace_back(std::forward<T>(value));
+        return pos;
+    }
+
+    inline stack_type const& stack() const noexcept { return stack_; }
+    inline stack_type& stack() noexcept { return stack_; }
+    inline size_t stack_size() const noexcept { return stack_.size(); }
+
+protected:
+    stack_type stack_;
+};
+
 template <typename ContextT>
 class virtual_stack_machine
 {
 public:
     using var_t = typename ContextT::variable_type;
 
-    using stack_type = std::vector<var_t>;
-    
     using ext_function_t = void(*)(ContextT&);
 
     enum class op : uint8_t {
@@ -87,7 +123,7 @@ public:
 
 protected:
     std::vector<var_t> consts_;
-    stack_type stack_;
+    //stack_type stack_;
     
     std::vector<uint8_t> code_;
     std::vector<std::pair<ext_function_t, small_string>> efns_;
@@ -127,11 +163,7 @@ protected:
         }
     }
 
-    inline var_t const& stack_back() const
-    {
-        if (stack_.empty()) throw internal_error("no value on stack");
-        return stack_.back();
-    }
+
 
 public:
     virtual_stack_machine() = default;
@@ -147,7 +179,7 @@ public:
     }
 
     auto& consts() { return consts_; }
-    auto& stack() { return stack_; }
+
     auto& efns() const { return efns_; }
 
     void set_efn(size_t idx, ext_function_t pfn, small_string descr = {})
@@ -405,23 +437,6 @@ public:
         consts_[index].replace(std::move(value));
     }
 
-    template <typename T>
-    requires (std::is_convertible_v<std::remove_cvref_t<T>, var_t>)
-    size_t push_on_stack(T && value)
-    {
-        size_t pos = stack_.size();
-        stack_.emplace_back(std::forward<T>(value));
-        return pos;
-    }
-
-    void set_at_stack(size_t pos, var_t value)
-    {
-        if (stack_.size() <= pos) {
-            stack_.resize(pos + 1);
-        }
-        stack_[pos] = std::move(value);
-    }
-
     size_t push_external_fn(ext_function_t efn, string_view descr = {})
     {
         size_t pos = efns_.size();
@@ -440,7 +455,7 @@ template <typename ContextT>
 struct printer
 {
     using vm_t = virtual_stack_machine<ContextT>;
-    using stack_type = typename vm_t::stack_type;
+    using stack_type = typename ContextT::stack_type;
     using ext_function_t = typename vm_t::ext_function_t;
     //using ext1_function_t = typename vm_t::ext1_function_t;
     //using call_stack_type = typename vm_t::call_stack_type;
@@ -721,7 +736,7 @@ template <typename ContextT>
 struct runner
 {
     using vm_t = virtual_stack_machine<ContextT>;
-    using stack_type = typename vm_t::stack_type;
+    using stack_type = typename ContextT::stack_type;
     using ext_function_t = typename vm_t::ext_function_t;
     //using ext1_function_t = typename vm_t::ext1_function_t;
     using var_t = typename vm_t::var_t;
@@ -1238,7 +1253,7 @@ void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, Fu
 template <typename ContextT>
 void virtual_stack_machine<ContextT>::run(ContextT& ctx, size_t address)
 {
-#if 0
+#if 1
     sequence_runner<printer<ContextT>, runner<ContextT>> rn{ printer<ContextT>{ std::cout }, {}};
     //printer<ContextT> rn{ std::cout };
 #else

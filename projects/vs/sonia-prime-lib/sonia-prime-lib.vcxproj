@@ -977,9 +977,9 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;SONIA_LANG_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;SONIA_LANG_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)tpls\boost\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\bzip2\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include;$(SolutionDir)tpls\xz\include;$(SolutionDir)tpls\lua\include;$(SolutionDir)tpls\jni;$(SolutionDir)tpls\jni\win32</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\bzip2\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include;$(SolutionDir)tpls\xz\include;$(SolutionDir)tpls\lua\include;$(SolutionDir)tpls\jni;$(SolutionDir)tpls\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -1024,9 +1024,9 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>
       </SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)tpls\boost\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\bzip2\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include;$(SolutionDir)tpls\xz\include;$(SolutionDir)tpls\lua\include;$(SolutionDir)tpls\jni;$(SolutionDir)tpls\jni\win32</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\bzip2\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include;$(SolutionDir)tpls\xz\include;$(SolutionDir)tpls\lua\include;$(SolutionDir)tpls\jni;$(SolutionDir)tpls\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

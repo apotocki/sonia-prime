@@ -590,14 +590,15 @@ void advanced_external_builder::append_vm_append_child_object_creation_code(stri
 
 size_t advanced_external_builder::push_vm_value(blob_result b)
 {
-    auto it = vm_values_.find(b, hasher{}, std::equal_to<>{});
-    if (it == vm_values_.end()) {
-        smart_blob val{ b };
-        val.allocate();
-        size_t index = vm_.push_on_stack(val);
-        it = vm_values_.insert(it, std::pair{ std::move(val), index });
-    }
-    return it->second;
+    THROW_NOT_IMPLEMENTED_ERROR("advanced_external_builder::push_vm_value");
+    //auto it = vm_values_.find(b, hasher{}, std::equal_to<>{});
+    //if (it == vm_values_.end()) {
+    //    smart_blob val{ b };
+    //    val.allocate();
+    //    size_t index = vm_.push_on_stack(val);
+    //    it = vm_values_.insert(it, std::pair{ std::move(val), index });
+    //}
+    //return it->second;
 }
 
 void advanced_external_builder::instantiate(detail::x_type const&)

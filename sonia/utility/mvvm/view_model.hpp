@@ -14,6 +14,7 @@
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
 #include "sonia/utility/invocation/invocable_registry.hpp"
+#include "sonia/utility/invocation/callback_invoker.hpp"
 #include "sonia/services/scheduler/scheduler.hpp"
 
 namespace sonia {
@@ -130,6 +131,11 @@ public:
     // properties routine
     void on_property_change(string_view propname) override;
     
+    inline void set_callback_invoker(shared_ptr<invocation::callback_invoker> cbinv) noexcept
+    {
+        cb_invoker_ = std::move(cbinv);
+    }
+
     smart_blob call_method(string_view name, blob_result args) const;
     smart_blob do_call_method(string_view name, span<const blob_result> args) const;
     smart_blob do_call_method(string_view name, std::initializer_list<const blob_result> args) const
@@ -146,6 +152,8 @@ protected:
     static void do_registration(registrar_type &);
 
 protected:
+    weak_ptr<invocation::callback_invoker> cb_invoker_;
+
     fibers::mutex ev_mtx_;
     fibers::condition_variable ev_cv_;
     //boost::unordered_map<uint32_t, response_item> ev_resps_;

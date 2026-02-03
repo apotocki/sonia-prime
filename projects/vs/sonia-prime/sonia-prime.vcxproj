@@ -217,9 +217,9 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_EXPORTS;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;HAS_ICU;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_EXPORTS;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;HAS_ICU;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)tpls\boost\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\icu\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include\;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\icu\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -229,7 +229,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib;$(ProjectDir)..\..\..\..\..\tpls\icu\lib64;$(ProjectDir)..\..\..\..\..\tpls\lua\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\x64-windows-cpp23\debug\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib;$(ProjectDir)..\..\..\..\..\tpls\icu\lib64;$(ProjectDir)..\..\..\..\..\tpls\lua\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>zlibd.lib;icuucd.lib;luad.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -286,9 +286,9 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>
       </SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_EXPORTS;BOOST_LOG_DYN_LINK;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;HAS_ICU;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_EXPORTS;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;HAS_ICU;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)tpls\boost\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\icu\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include\;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\icu\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <LanguageStandard>stdcpplatest</LanguageStandard>

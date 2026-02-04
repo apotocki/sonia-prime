@@ -679,9 +679,9 @@ struct printer
         generic_print(address, "push_stsz"sv) << "\t; "sv << std::dec << ctx.stack_size() << " -> ["sv << ctx.stack_size() << "]\n"sv;
     }
 
-    inline void operator()(identity_type<op::dup>, ContextT& ctx, size_t /*address*/) const
+    inline void operator()(identity_type<op::dup>, ContextT& ctx, size_t address) const
     {
-        ss << "\t; "sv << ctx.stack_back() << " -> ["sv << std::dec << ctx.stack_size() << "]\n"sv;
+        generic_print(address, "dup"sv) << "\t; "sv << ctx.stack_back() << " -> ["sv << std::dec << ctx.stack_size() << "]\n"sv;
     }
 
     inline void operator()(identity_type<op::set>, ContextT& ctx, size_t address, size_t index) const

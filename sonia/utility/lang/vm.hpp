@@ -506,14 +506,14 @@ struct printer
         if (!optaddr) {
             ss << "\t; no address\n"sv;
         } else {
-            ss << "\t; "sv << std::hex << std::showbase << *optaddr << '\n';
+            ss << "\t; 0x"sv << std::hex << std::uppercase << *optaddr << '\n';
         }
         return nullopt;
     }
 
     inline size_t operator()(identity_type<op::call>, ContextT& ctx, size_t address, size_t call_address, size_t ret_address) const
     {
-        generic_print(address, "call "sv) << std::hex << std::showbase << call_address;
+        generic_print(address, "call 0x"sv) << std::hex << std::uppercase << call_address;
         if constexpr (requires{ ctx.describe_address(call_address); }) {
             ss << "\t; "sv << ctx.describe_address(call_address) << '\n';
         } else {
@@ -546,36 +546,36 @@ struct printer
 
     inline size_t operator()(identity_type<op::jmp>, ContextT&, size_t address, size_t jmp_address, size_t next_address) const
     {
-        generic_print(address, "jmp "sv) << std::hex << std::showbase << jmp_address << '\n';
+        generic_print(address, "jmp 0x"sv) << std::hex << std::uppercase << jmp_address << '\n';
         return next_address;
     }
 
     inline size_t operator()(identity_type<op::jmpp>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        generic_print(address, "jmpp "sv) << std::hex << std::showbase << (address + jmp_offset) << '\n';
+        generic_print(address, "jmpp 0x"sv) << std::hex << std::uppercase << (address + jmp_offset) << '\n';
         return next_address;
     }
 
     inline size_t operator()(identity_type<op::jmpn>, ContextT&, size_t address, size_t jmp_offset, size_t next_address) const
     {
-        generic_print(address, "jmpn "sv) << std::hex << std::showbase << (address - jmp_offset) << '\n';
+        generic_print(address, "jmpn 0x"sv) << std::hex << std::uppercase << (address - jmp_offset) << '\n';
         return next_address;
     }
 
 #define SONIA_VM_PRINTER_JUMP_OPS(opname, cond) \
     inline size_t operator()(identity_type<op::opname>, ContextT& ctx, size_t address, size_t jmp_address, size_t next_address) const \
     {\
-        generic_print(address, #opname##sv) << ' ' << std::hex << std::showbase << jmp_address << "\t; "sv << std::boolalpha << cond(ctx.stack_back()) << '\n'; \
+        generic_print(address, #opname##sv) << " 0x"sv << std::hex << std::uppercase << jmp_address << "\t; "sv << std::boolalpha << cond(ctx.stack_back()) << '\n'; \
         return next_address; \
     }\
     inline size_t operator()(identity_type<op::opname##p>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const \
     {\
-        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, p))) << ' ' << std::hex << std::showbase << (address + jmp_offset) << "\t; "sv << std::boolalpha << cond(ctx.stack_back()) << '\n'; \
+        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, p))) << " 0x"sv << std::hex << std::uppercase << (address + jmp_offset) << "\t; "sv << std::boolalpha << cond(ctx.stack_back()) << '\n'; \
         return next_address; \
     }\
     inline size_t operator()(identity_type<op::opname##n>, ContextT& ctx, size_t address, size_t jmp_offset, size_t next_address) const \
     {\
-        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, n))) << ' ' << std::hex << std::showbase << (address - jmp_offset) << "\t; "sv << std::boolalpha << cond(ctx.stack_back()) << '\n'; \
+        generic_print(address, BOOST_STRINGIZE(BOOST_PP_CAT(opname, n))) << " 0x"sv << std::hex << std::uppercase << (address - jmp_offset) << "\t; "sv << std::boolalpha << cond(ctx.stack_back()) << '\n'; \
         return next_address; \
     }
 

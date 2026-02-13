@@ -528,7 +528,7 @@ struct printer
         if constexpr (requires{ ctx.callp_describe(); }) {
             ss << ctx.callp_describe();
         } else {
-            ss << std::hex << std::showbase << ctx.stack_back().template as<size_t>();
+            ss << "0x"sv << std::hex << std::uppercase << ctx.stack_back().template as<size_t>();
         }
         ss << '\n';
         return address + 1;
@@ -709,19 +709,19 @@ struct printer
     inline void operator()(identity_type<op::pindexs>, ContextT& ctx, size_t address, size_t shift) const
     {
         uint64_t index = ctx.stack_back().template as<size_t>() + shift;
-        generic_print(address, "indexs "sv) << shift << "\t; stack["sv << std::dec << index << "] = "sv << std::hex << std::showbase << ctx.stack_at(index) << '\n';
+        generic_print(address, "indexs "sv) << shift << "\t; stack["sv << std::dec << index << "] = 0x"sv << std::hex << std::uppercase << ctx.stack_at(index) << '\n';
     }
 
     inline void operator()(identity_type<op::nindexs>, ContextT& ctx, size_t address, size_t shift) const
     {
         uint64_t index = ctx.stack_back().template as<size_t>() - shift;
-        generic_print(address, "indexs -"sv) << shift << "\t; stack["sv << std::dec << index << "] = "sv << std::hex << std::showbase << ctx.stack_at(index) << '\n';
+        generic_print(address, "indexs -"sv) << shift << "\t; stack["sv << std::dec << index << "] = 0x"sv << std::hex << std::uppercase << ctx.stack_at(index) << '\n';
     }
 
     inline void operator()(identity_type<op::indexc>, ContextT& ctx, size_t address) const
     {
         uint64_t index = ctx.stack_back().template as<size_t>();
-        generic_print(address, "indexc"sv) << "\t; consts["sv << std::dec << index << "] = "sv << std::hex << std::showbase << ctx.const_at(index) << '\n';
+        generic_print(address, "indexc"sv) << "\t; consts["sv << std::dec << index << "] = 0x"sv << std::hex << std::uppercase << ctx.const_at(index) << '\n';
     }
 
     inline void operator()(identity_type<op::pushfp>, ContextT& ctx, size_t address) const

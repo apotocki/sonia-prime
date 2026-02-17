@@ -7,6 +7,7 @@
 
 //#include <winsock2.h>
 #include <WS2tcpip.h>
+#include <iphlpapi.h>
 //#include <mswsock.h>
 #include <winioctl.h>
 
@@ -17,6 +18,7 @@
 #include <boost/lexical_cast.hpp>
 
 #pragma comment(lib, "ws2_32.lib")
+#pragma comment(lib, "iphlpapi.lib")
 
 const DWORD MS_VC_EXCEPTION=0x406D1388;
 
@@ -136,6 +138,47 @@ wsa_scope::wsa_scope()
 wsa_scope::~wsa_scope()
 {
     WSACleanup();
+}
+
+void get_host_addresses(function<bool(std::string_view)> consumer)
+{
+    ULONG flags = GAA_FLAG_SKIP_ANYCAST | GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_DNS_SERVER;
+    ULONG family = AF_INET;
+
+    ULONG buflen = 0;
+    DWORD rc = GetAdaptersAddresses(family, flags, nullptr, nullptr, &buflen);
+    if (rc != ERROR_BUFFER_OVERFLOW || buflen == 0) {
+        DWORD err = WSAGetLastError();
+        throw exception("can't get addresses error: %1%"_fmt % error_message(err));
+    }
+
+    std::vector<unsigned char> buf(buflen);
+    auto* addrs = reinterpret_cast<PIP_ADAPTER_ADDRESSES>(buf.data());
+    rc = GetAdaptersAddresses(family, flags, nullptr, addrs, &buflen);
+    if (rc != NO_ERROR) {
+        DWORD err = WSAGetLastError();
+        throw exception("can't get addresses error: %1%"_fmt % error_message(err));
+    }
+
+    for (auto* aa = addrs; aa; aa = aa->Next) {
+        if (aa->OperStatus != IfOperStatusUp) continue;
+        if (aa->IfType == IF_TYPE_SOFTWARE_LOOPBACK) continue;
+
+        for (auto* ua = aa->FirstUnicastAddress; ua; ua = ua->Next) {
+            if (!ua->Address.lpSockaddr) continue;
+            if (ua->Address.lpSockaddr->sa_family != AF_INET) continue;
+        
+            auto* sin = reinterpret_cast<sockaddr_in*>(ua->Address.lpSockaddr);
+            if (!sin) continue;
+
+            char strbuf[INET_ADDRSTRLEN]{};
+            if (!InetNtopA(AF_INET, &sin->sin_addr, strbuf, (DWORD)sizeof(strbuf))) continue;
+
+            std::string_view sv{ strbuf };
+            if (sv == "127.0.0.1"sv) continue;
+            if (!consumer(sv)) return;
+        }
+    }
 }
 
 bool parse_address(int hint_af, int hint_type, int hint_protocol, std::string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc)

@@ -44,6 +44,8 @@ public:
 LPFN_ACCEPTEX get_accept_function(SOCKET);
 bool parse_address(int hint_af, int hint_type, int hint_protocol, std::string_view address, uint16_t port, function<bool(ADDRINFOW*)> rproc);
 
+void get_host_addresses(function<bool(std::string_view)> consumer);
+
 std::u8string inet_ntoa(sockaddr const* addr, DWORD sz, LPWSAPROTOCOL_INFOW);
 
 SOCKET create_socket(int af, int type, int protocol);

@@ -1330,8 +1330,9 @@ std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem, Trait
     else if (b.type == blob_type::object) {
         sonia::invocation::object const* pobj = data_of<sonia::invocation::object>(b);
         if (auto *p = dynamic_cast<sonia::invocation::wrapper_object<sonia::shared_ptr<sonia::invocation::invocable>> const*>(pobj)) {
-            if (p->value) {
-                return os << "object at 0x"sv << std::hex << std::uppercase << reinterpret_cast<std::uintptr_t>(p->value.get()) << ": "sv << typeid(*p->value).name();
+            if (sonia::shared_ptr<sonia::invocation::invocable> sptr = p->value) {
+                sonia::invocation::invocable& object_ref = *sptr;
+                return os << "object at 0x"sv << std::hex << std::uppercase << reinterpret_cast<std::uintptr_t>(sptr.get()) << ": "sv << typeid(object_ref).name();
             } else {
                 return os << "object : null invocable pointer"sv;
             }

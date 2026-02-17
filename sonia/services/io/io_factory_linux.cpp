@@ -20,8 +20,9 @@
 
 #include <atomic>
 #include <sstream>
+#include <expected>
+#include <unordered_set>
 
-#include <boost/unordered_map.hpp>
 #include <boost/intrusive/list.hpp>
 
 #include "sonia/exceptions.hpp"
@@ -182,15 +183,17 @@ private:
 
 struct lin_shared_handle_hasher
 {
-    size_t operator()(lin_shared_handle * ph) const { return ph->bkid(); }
-    size_t operator()(uint32_t id) const { return id; }
+    using is_transparent = void;
+    inline size_t operator()(lin_shared_handle * ph) const noexcept { return ph->bkid(); }
+    inline size_t operator()(uint32_t id) const noexcept { return id; }
 };
 
 struct lin_shared_handle_equal_to
 {
-    size_t operator()(lin_shared_handle * lhs, lin_shared_handle * rhs) const { return lhs == rhs; }
-    size_t operator()(lin_shared_handle * lhs, uint32_t rhs) const { return lhs->bkid() == rhs; }
-    size_t operator()(uint32_t lhs, lin_shared_handle * rhs) const { return lhs == rhs->bkid(); }
+    using is_transparent = void;
+    inline size_t operator()(lin_shared_handle * lhs, lin_shared_handle * rhs) const noexcept { return lhs == rhs; }
+    inline size_t operator()(lin_shared_handle * lhs, uint32_t rhs) const noexcept { return lhs->bkid() == rhs; }
+    inline size_t operator()(uint32_t lhs, lin_shared_handle * rhs) const noexcept { return lhs == rhs->bkid(); }
 };
 
 template <typename OnErrorHandlerT>
@@ -217,7 +220,7 @@ struct lin_impl
 
     sonia::spin_mutex bk_mtx_;
     std::atomic<uint32_t> bkid_cnt_{0};
-    boost::unordered_set<lin_shared_handle*, lin_shared_handle_hasher> book_keeper_;
+    std::unordered_set<lin_shared_handle*, lin_shared_handle_hasher, lin_shared_handle_equal_to> book_keeper_;
 
     object_pool<lin_shared_handle, spin_mutex> sockets_;
     object_pool<lin_shared_handle::callback_t, spin_mutex> callbacks_;
@@ -265,8 +268,8 @@ struct lin_impl
     void free_handle(identity<tcp_server_socket_service_type>, tcp_handle_type) noexcept override final;
     
     // tcp socket service
-    expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept override final;
-    expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept override final;
+    std::expected<size_t, std::exception_ptr> tcp_socket_read_some(tcp_handle_type, void * buff, size_t sz) noexcept override final;
+    std::expected<size_t, std::exception_ptr> tcp_socket_write_some(tcp_handle_type, void const* buff, size_t sz) noexcept override final;
     void shutdown_handle(identity<tcp_socket_service_type>, tcp_handle_type, shutdown_opt) noexcept override final;
     void close_handle(identity<tcp_socket_service_type>, tcp_handle_type) noexcept override final;
     void release_handle(identity<tcp_socket_service>, tcp_handle_type) noexcept override final;
@@ -276,9 +279,9 @@ struct lin_impl
     // udp socket service
     void udp_socket_bind(udp_handle_type, cstring_view address, uint16_t port) override final;
     size_t udp_socket_waiting_count(udp_handle_type) override final;
-    expected<size_t, std::exception_ptr> udp_socket_read_some(udp_handle_type, void * buff, size_t sz, sonia::sal::socket_address* addr) override final;
-    expected<size_t, std::exception_ptr> udp_socket_write_some(udp_handle_type, sonia::sal::socket_address const&, void const* buff, size_t sz) override final;
-    expected<size_t, std::exception_ptr> udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz) override final;
+    std::expected<size_t, std::exception_ptr> udp_socket_read_some(udp_handle_type, void * buff, size_t sz, sonia::sal::socket_address* addr) override final;
+    std::expected<size_t, std::exception_ptr> udp_socket_write_some(udp_handle_type, sonia::sal::socket_address const&, void const* buff, size_t sz) override final;
+    std::expected<size_t, std::exception_ptr> udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz) override final;
     void close_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override final;
     void release_handle(identity<udp_socket_service_type>, tcp_handle_type) noexcept override final;
     void free_handle(identity<udp_socket_service_type>, udp_handle_type) noexcept override final;
@@ -408,7 +411,7 @@ void lin_impl::thread_proc()
             lin_shared_handle* h;
             {
                 lock_guard guard(bk_mtx_);
-                auto it = book_keeper_.find(bkid, lin_shared_handle_hasher(), lin_shared_handle_equal_to());
+                auto it = book_keeper_.find(bkid);
                 if (it == book_keeper_.end()) continue; // skip obsoleted descriptor event
                 h = static_cast<lin_shared_handle*>(*it);
                 h->add_weakref();
@@ -545,7 +548,7 @@ void lin_impl::free_handle(identity<tcp_server_socket_service>, tcp_handle_type 
     delete_socket_handle(static_cast<lin_shared_handle*>(h));
 }
 
-expected<size_t, std::exception_ptr> lin_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz) noexcept
+std::expected<size_t, std::exception_ptr> lin_impl::tcp_socket_read_some(tcp_handle_type handle, void * buff, size_t sz) noexcept
 {
     auto * sh = static_cast<lin_shared_handle*>(handle);
     SCOPE_EXIT([&sh]() { --sh->waiting_cnt; });
@@ -560,7 +563,7 @@ expected<size_t, std::exception_ptr> lin_impl::tcp_socket_read_some(tcp_handle_t
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) read %2% bytes"_fmt % sh->handle % n);
         if (n >= 0) return (size_t)n;
         int err = errno;
-        if (BOOST_UNLIKELY(EAGAIN != err)) return make_unexpected(std::make_exception_ptr(exception(strerror(err))));
+        if (BOOST_UNLIKELY(EAGAIN != err)) return std::unexpected(std::make_exception_ptr(exception(strerror(err))));
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) read waiting..."_fmt % sh->handle);
         //++wrapper->pending_reads_;
         sh->wait(lck);
@@ -569,7 +572,7 @@ expected<size_t, std::exception_ptr> lin_impl::tcp_socket_read_some(tcp_handle_t
     }
 }
 
-expected<size_t, std::exception_ptr> lin_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz) noexcept
+std::expected<size_t, std::exception_ptr> lin_impl::tcp_socket_write_some(tcp_handle_type handle, void const* buff, size_t sz) noexcept
 {
     auto * sh = static_cast<lin_shared_handle*>(handle);
     SCOPE_EXIT([&sh]() { --sh->waiting_cnt; });
@@ -583,7 +586,7 @@ expected<size_t, std::exception_ptr> lin_impl::tcp_socket_write_some(tcp_handle_
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write %2% bytes"_fmt % sh->handle % n);
         if (n >= 0) return (size_t)n;
         int err = errno;
-        if (BOOST_UNLIKELY(EAGAIN != err)) return make_unexpected(std::make_exception_ptr(exception(strerror(err))));
+        if (BOOST_UNLIKELY(EAGAIN != err)) return std::unexpected(std::make_exception_ptr(exception(strerror(err))));
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write waiting..."_fmt % sh->handle);
         //++wrapper->pending_writes_;
         sh->wait(lck);
@@ -772,17 +775,17 @@ size_t lin_impl::udp_socket_waiting_count(tcp_handle_type handle)
     return sh->waiting_cnt.load();
 }
 
-expected<size_t, std::exception_ptr> lin_impl::udp_socket_read_some(udp_handle_type, void * buff, size_t sz, sonia::sal::socket_address* addr)
+std::expected<size_t, std::exception_ptr> lin_impl::udp_socket_read_some(udp_handle_type, void * buff, size_t sz, sonia::sal::socket_address* addr)
 {
     THROW_NOT_IMPLEMENTED_ERROR("udp_socket_read_some");
 }
 
-expected<size_t, std::exception_ptr> lin_impl::udp_socket_write_some(udp_handle_type handle, sonia::sal::socket_address const& address, void const* buff, size_t sz)
+std::expected<size_t, std::exception_ptr> lin_impl::udp_socket_write_some(udp_handle_type handle, sonia::sal::socket_address const& address, void const* buff, size_t sz)
 {
     THROW_NOT_IMPLEMENTED_ERROR("udp_socket_write_some");
 }
 
-expected<size_t, std::exception_ptr> lin_impl::udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz)
+std::expected<size_t, std::exception_ptr> lin_impl::udp_socket_write_some(udp_handle_type handle, cstring_view address, uint16_t port, void const* buff, size_t sz)
 {
     THROW_NOT_IMPLEMENTED_ERROR("udp_socket_write_some");
 }

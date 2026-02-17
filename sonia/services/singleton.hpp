@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <string>
 #include "sonia/cstdint.hpp"
 
 namespace sonia {

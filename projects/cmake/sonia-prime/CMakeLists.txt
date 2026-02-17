@@ -1,8 +1,9 @@
 include (${COMMON_INCLUDE})
 
 include_directories(${PROJECT_HOME})
-include_directories(${BUNDLES})
 include_directories(${BUNDLES}/sonia-prime)
+include_directories(${BUNDLES}/numetron/include)
+include_directories(${BUNDLES}/dataforge/include)
 include_directories(${TPLS}/lexertl14/include)
 
 set (BUNDLE_NAME sonia-prime)
@@ -30,8 +31,6 @@ if (NOT DEFINED NO_NET)
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
         ${BUNDLE_HOME}/sonia/services/io/io_service_builder.cpp
         ${BUNDLE_HOME}/sonia/services/io/io_service.cpp
-
-
 
         ${BUNDLE_HOME}/sonia/services/net/net_service_builder.cpp
         ${BUNDLE_HOME}/sonia/services/net/net_service.cpp

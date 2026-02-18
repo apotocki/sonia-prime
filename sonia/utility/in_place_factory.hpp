@@ -61,7 +61,7 @@ struct in_place_factory_impl : bind_tuple_t<ArgsT ...>
     explicit in_place_factory_impl(ArgsT&& ... args) : tuple_type(std::forward<ArgsT>(args) ...) {}
 
     template <typename T, typename ... AdditionalArgsT>
-    T * apply(void * place, AdditionalArgsT&& ... args) const
+    T * apply(void * place, AdditionalArgsT&& ...) const
     {
         return std::apply(callable_constructor<T>(place), static_cast<tuple_type const&>(*this));
     }

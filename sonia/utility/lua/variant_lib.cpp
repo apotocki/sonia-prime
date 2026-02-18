@@ -157,7 +157,7 @@ void push_from_blob(lua_State* L, blob_result const& b)
     case blob_type::nil:
         lua_pushnil(L); break;
     case blob_type::boolean:
-        lua_pushboolean(L, (int)b.bp.ui8value); break;
+        lua_pushboolean(L, (int)b.data.bp.ui8value); break;
     case blob_type::i8:
     case blob_type::ui8:
     case blob_type::i16:
@@ -177,7 +177,7 @@ void push_from_blob(lua_State* L, blob_result const& b)
             break;
         }
     case blob_type::c8:
-        lua_pushlstring(L, (const char*)b.bp.data, 1); break;
+        lua_pushlstring(L, (const char*)b.data.bp.payload_ptr, 1); break;
     case blob_type::flt16:
     case blob_type::flt32:
     case blob_type::flt64:
@@ -338,29 +338,29 @@ std::ostream& fancy_print(std::ostream& os, blob_result const& b, PrinterT const
     case blob_type::nil:
         return os << "nil";
     case blob_type::boolean:
-        return printer(os, b.type, !!b.bp.i8value);
+        return printer(os, b.type, !!b.data.bp.i8value);
     case blob_type::i8:
-        return printer(os, b.type, b.bp.i8value);
+        return printer(os, b.type, b.data.bp.i8value);
     case blob_type::ui8:
-        return printer(os, b.type, b.bp.ui8value);
+        return printer(os, b.type, b.data.bp.ui8value);
     case blob_type::i16:
-        return printer(os, b.type, b.bp.i16value);
+        return printer(os, b.type, b.data.bp.i16value);
     case blob_type::ui16:
-        return printer(os, b.type, b.bp.ui16value);
+        return printer(os, b.type, b.data.bp.ui16value);
     case blob_type::i32:
-        return printer(os, b.type, b.bp.i32value);
+        return printer(os, b.type, b.data.bp.i32value);
     case blob_type::ui32:
-        return printer(os, b.type, b.bp.ui32value);
+        return printer(os, b.type, b.data.bp.ui32value);
     case blob_type::i64:
-        return printer(os, b.type, b.bp.i64value);
+        return printer(os, b.type, b.data.bp.i64value);
     case blob_type::ui64:
-        return printer(os, b.type, b.bp.ui64value);
+        return printer(os, b.type, b.data.bp.ui64value);
     case blob_type::flt16:
-        return printer(os, b.type, b.bp.f16value);
+        return printer(os, b.type, b.data.bp.f16value);
     case blob_type::flt32:
-        return printer(os, b.type, b.bp.f32value);
+        return printer(os, b.type, b.data.bp.f32value);
     case blob_type::flt64:
-        return printer(os, b.type, b.bp.f64value);
+        return printer(os, b.type, b.data.bp.f64value);
     case blob_type::string:
         return printer(os, b.type, sonia::string_view{ data_of<char>(b), array_size_of<char>(b) });
     case blob_type::bigint:
@@ -454,7 +454,7 @@ blob_result to_blob_array(blob_type elemtype, span<const blob_result> sp)
     blob_result values = make_blob_result(arrayify(elemtype), nullptr, (int32_t)(sp.size() * sizeof(T)));
     if constexpr (!is_same_v<blob_result, T>) {
         if (sp.size() == 1) {
-            *reinterpret_cast<T*>(values.ui8array) = as<T>(sp[0]);
+            *reinterpret_cast<T*>(values.data.ui8array) = as<T>(sp[0]);
             values.inplace_size = static_cast<uint8_t>(sizeof(T));
             return values;
         }
@@ -563,8 +563,8 @@ blob_result to_blob(lua_State* L, int index)
 
             smart_blob blob_keys = to_blob_array<blob_result>(blob_type::tuple, keys);
             
-            *reinterpret_cast<blob_result*>(const_cast<void*>(result.data())) = blob_keys.detach();
-            *(reinterpret_cast<blob_result*>(const_cast<void*>(result.data())) + 1) = blob_values.detach();
+            *reinterpret_cast<blob_result*>(const_cast<void*>(result.get_pointer())) = blob_keys.detach();
+            *(reinterpret_cast<blob_result*>(const_cast<void*>(result.get_pointer())) + 1) = blob_values.detach();
             return result.detach();
         }
 

@@ -29,7 +29,7 @@ void save(ArchiveT& ar, blob_result& b, const unsigned int version)
         // to do: save byte array
         break;
     case blob_type::boolean:
-        valuess << (b.bp.i8value ? "true" : "false");
+        valuess << (b.data.bp.i8value ? "true" : "false");
         break;
     case blob_type::string:
         valuess << '"';

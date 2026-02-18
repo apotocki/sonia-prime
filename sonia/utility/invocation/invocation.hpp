@@ -89,13 +89,14 @@ inline bool is_ref(blob_type val) noexcept
 template <typename T> constexpr bool is_integral_not_bool_v = std::is_integral_v<T> && !std::is_same_v<T, bool>;
 //#pragma pack(push)
 //#pragma pack(1)
+
 #pragma pack(push, 1)
 struct alignas(8) blob_result
 {
     union {
-        struct  {
+        struct {
             union {
-                void const* data;
+                void const* payload_ptr;
                 uint64_t ui64value;
                 int64_t i64value;
                 numetron::float16 f16value;
@@ -110,15 +111,15 @@ struct alignas(8) blob_result
             };
             uint32_t size;
             union {
-                uint16_t reserved;
+                uint16_t u16;
                 struct {
                     uint8_t n0;
                     uint8_t n1;
-                } reserved8;
-            };
+                } u8;
+            } reserved;
         } bp; // base_plane
         uint8_t ui8array[14];
-    };
+    } data;
     uint8_t inplace_size : 4;
     uint8_t need_unpin : 1;
     uint8_t bp_reserved_used : 1;
@@ -288,7 +289,7 @@ inline void reset(blob_result& br) { br.type = blob_type::nil; br.need_unpin = 0
 template <typename T>
 inline const T* data_of(blob_result const& val) noexcept
 {
-    return val.inplace_size ? reinterpret_cast<T const*>(val.ui8array) : reinterpret_cast<T const*>(val.bp.data);
+    return val.inplace_size ? reinterpret_cast<T const*>(val.data.ui8array) : reinterpret_cast<T const*>(val.data.bp.payload_ptr);
 }
 
 template <typename T>
@@ -325,7 +326,7 @@ inline bool contains_string(blob_result const& val) noexcept
 template <typename T>
 inline size_t array_size_of(blob_result const& val) noexcept(!sonia_is_debug)
 {
-    size_t raw_sz = (val.inplace_size ? (size_t)val.inplace_size : (size_t)val.bp.size);
+    size_t raw_sz = (val.inplace_size ? (size_t)val.inplace_size : (size_t)val.data.bp.size);
     BOOST_ASSERT(0 == raw_sz % sizeof(T));
     return raw_sz / sizeof(T);
 }
@@ -338,8 +339,8 @@ template <std::unsigned_integral LimbT>
 auto make_basic_integer_view(blob_result const& val)
 {
     // val.reserved0 - sign
-    // val.bp.reserved8.n0 - skip bits
-    return numetron::basic_integer_view<LimbT>{ std::span{ data_of<const LimbT>(val), array_size_of<LimbT>(val) }, val.reserved0 ? -1 : 1, val.bp.reserved8.n0 };
+    // val.data.bp.reserved8.n0 - skip bits
+    return numetron::basic_integer_view<LimbT>{ std::span{ data_of<const LimbT>(val), array_size_of<LimbT>(val) }, val.reserved0 ? -1 : 1, val.data.bp.reserved.u8.n0 };
 }
 
 #include "sonia/type_traits.hpp"
@@ -381,7 +382,14 @@ blob_result particular_blob_result(T && value);
 
 inline blob_result make_blob_result(blob_type bt, void const* data = nullptr, uint32_t size = 0)
 {
-    return blob_result { data, /*bp.size*/ size, /*bp.reserved*/ 0, /*inplace_size*/ 0, /*need_unpin*/ 0, /*bp_reserved_used*/ 0, /*reserved0*/ 0, /*reserved1*/ 0, bt };
+    return blob_result {
+            .data = { .bp = { .payload_ptr = data, .size = size, .reserved = { 0 } } },
+        .inplace_size = 0,
+        .need_unpin = 0,
+        .bp_reserved_used = 0,
+        .reserved0 = 0,
+        .reserved1 = 0,
+        .type = bt };
 }
 
 inline blob_result nil_blob_result()
@@ -392,7 +400,7 @@ inline blob_result nil_blob_result()
 inline blob_result function_blob_result(sonia::string_view value)
 {
     blob_result result = make_blob_result(blob_type::function, value.data());
-    result.bp.size = static_cast<uint32_t>(value.size());
+    result.data.bp.size = static_cast<uint32_t>(value.size());
     return result;
 }
 
@@ -427,91 +435,91 @@ inline blob_result object_blob_result(sonia::weak_ptr<T> object)
 inline blob_result bool_blob_result(bool value)
 {
     blob_result result = make_blob_result(blob_type::boolean);
-    result.bp.ui8value = value ? 1 : 0;
+    result.data.bp.ui8value = value ? 1 : 0;
     return result;
 }
 
 inline blob_result ui8_blob_result(uint8_t value)
 {
     blob_result result = make_blob_result(blob_type::ui8);
-    result.bp.ui8value = value;
+    result.data.bp.ui8value = value;
     return result;
 }
 
 inline blob_result i8_blob_result(int8_t value)
 {
     blob_result result = make_blob_result(blob_type::i8);
-    result.bp.i8value = value;
+    result.data.bp.i8value = value;
     return result;
 }
 
 inline blob_result char_blob_result(char value)
 {
     blob_result result = make_blob_result(blob_type::c8);
-    result.bp.i8value = value;
+    result.data.bp.i8value = value;
     return result;
 }
 
 inline blob_result ui16_blob_result(uint16_t value)
 {
     blob_result result = make_blob_result(blob_type::ui16);
-    result.bp.ui16value = value;
+    result.data.bp.ui16value = value;
     return result;
 }
 
 inline blob_result i16_blob_result(int16_t value)
 {
     blob_result result = make_blob_result(blob_type::i16);
-    result.bp.i16value = value;
+    result.data.bp.i16value = value;
     return result;
 }
 
 inline blob_result ui32_blob_result(uint32_t value)
 {
     blob_result result = make_blob_result(blob_type::ui32);
-    result.bp.ui32value = value;
+    result.data.bp.ui32value = value;
     return result;
 }
 
 inline blob_result i32_blob_result(int32_t value)
 {
     blob_result result = make_blob_result(blob_type::i32);
-    result.bp.i32value = value;
+    result.data.bp.i32value = value;
     return result;
 }
 
 inline blob_result ui64_blob_result(uint64_t value)
 {
     blob_result result = make_blob_result(blob_type::ui64);
-    result.bp.ui64value = value;
+    result.data.bp.ui64value = value;
     return result;
 }
 
 inline blob_result i64_blob_result(int64_t value)
 {
     blob_result result = make_blob_result(blob_type::i64);
-    result.bp.i64value = value;
+    result.data.bp.i64value = value;
     return result;
 }
 
 inline blob_result f16_blob_result(numetron::float16 value)
 {
     blob_result result = make_blob_result(blob_type::flt16);
-    result.bp.f16value = value;
+    result.data.bp.f16value = value;
     return result;
 }
 
 inline blob_result f32_blob_result(float_t value)
 {
     blob_result result = make_blob_result(blob_type::flt32);
-    result.bp.f32value = value;
+    result.data.bp.f32value = value;
     return result;
 }
 
 inline blob_result f64_blob_result(double_t value)
 {
     blob_result result = make_blob_result(blob_type::flt64);
-    result.bp.f64value = value;
+    result.data.bp.f64value = value;
     return result;
 }
 
@@ -521,7 +529,7 @@ inline blob_result string_blob_result(const CharT(&value)[N], blob_type t = blob
 {
     assert(!value[N - 1]);
     blob_result result = make_blob_result(t, value);
-    result.bp.size = static_cast<uint32_t>(N - 1);
+    result.data.bp.size = static_cast<uint32_t>(N - 1);
     return result;
 }
 
@@ -541,7 +549,7 @@ template <typename CharT, size_t ET>
 requires (sizeof(CharT) == 1)
 inline blob_result string_blob_result(std::span<CharT, ET> value, blob_type t = blob_type::string)
 {
-    return make_blob_result(t, value.data(), static_cast<uint32_t>(value.size()));
+    return make_blob_result(t, value.get_pointer(), static_cast<uint32_t>(value.size()));
 }
 
 inline blob_result string_blob_result(const char* value, blob_type t = blob_type::string)
@@ -564,14 +572,14 @@ inline blob_result bigint_blob_result(numetron::basic_integer_view<LimbT> bival)
     result.reserved0 = bival.sgn() < 0 ? 1 : 0;
     result.need_unpin = 0;
     if (bival = bival.abs(); bival.template is_fit<uint64_t>()) {
-        result.bp.ui64value = (uint64_t)bival;
-        result.bp.size = 0;
+        result.data.bp.ui64value = (uint64_t)bival;
+        result.data.bp.size = 0;
         result.inplace_size = 8;
     } else {
-        result.bp.data = bival.data();
-        result.bp.size = static_cast<uint32_t>(bival.size() * sizeof(LimbT));
-        result.bp.reserved8.n0 = static_cast<uint8_t>(bival.most_significant_skipping_bits());
-        result.bp.reserved8.n1 = static_cast<uint8_t>(sizeof(LimbT));
+        result.data.bp.payload_ptr = bival.data();
+        result.data.bp.size = static_cast<uint32_t>(bival.size() * sizeof(LimbT));
+        result.data.bp.reserved.u8.n0 = static_cast<uint8_t>(bival.most_significant_skipping_bits());
+        result.data.bp.reserved.u8.n1 = static_cast<uint8_t>(sizeof(LimbT));
         result.bp_reserved_used = 1;
         result.inplace_size = 0;
     }
@@ -589,7 +597,7 @@ inline blob_result bigint_blob_result(numetron::basic_integer<LimbT, N, Allocato
 //    using namespace sonia;
 //    auto sp = (std::span<const invocation_bigint_limb_type>)mval;
 //    blob_result result = make_blob_result(blob_type::decimal, sp.data(), static_cast<uint32_t>(sp.size() * sizeof(invocation_bigint_limb_type)));
-//    result.bp.reserved = static_cast<uint16_t>(eval);
+//    result.data.bp.reserved = static_cast<uint16_t>(eval);
 //    result.reserved = mval.sgn() < 0 ? 1 : 0;
 //    return result;
 //}
@@ -604,9 +612,9 @@ inline blob_result decimal_blob_result(numetron::basic_decimal_view<LimbT> const
         numetron::basic_integer_view<LimbT> sval = dv.significand().abs();
         if (sval.template is_fit<uint64_t>()) {
             int64_t eval = (int16_t)dv.exponent();
-            result.bp.reserved = static_cast<uint16_t>(eval);
-            result.bp.ui64value = (uint64_t)sval;
-            result.bp.size = 0;
+            result.data.bp.reserved.u16 = static_cast<uint16_t>(eval);
+            result.data.bp.ui64value = (uint64_t)sval;
+            result.data.bp.size = 0;
             result.need_unpin = 0;
             result.inplace_size = 8;
             return result;
@@ -736,10 +744,10 @@ inline auto blob_bigint_dispatch(blob_result const& val, FT&& ftor)
     using namespace std::string_view_literals;
     using numetron::basic_integer_view;
     if (val.inplace_size) {
-        return ftor(basic_integer_view<invocation_bigint_limb_type>{ val.bp.ui64value, val.reserved0 ? -1 : 1 });
+        return ftor(basic_integer_view<invocation_bigint_limb_type>{ val.data.bp.ui64value, val.reserved0 ? -1 : 1 });
     } else {
         //int sign = val.reserved0 ? -1 : 1;
-        switch(val.bp.reserved8.n1) {
+        switch(val.data.bp.reserved.u8.n1) {
         case 8:
             return ftor(make_basic_integer_view<uint8_t>(val));
         case 16:
@@ -749,7 +757,7 @@ inline auto blob_bigint_dispatch(blob_result const& val, FT&& ftor)
         case 64:
             return ftor(make_basic_integer_view<uint64_t>(val));
         default:
-            throw std::runtime_error((std::ostringstream() << "unsupported limb bit size: "sv << val.bp.reserved8.n1).str());
+            throw std::runtime_error((std::ostringstream() << "unsupported limb bit size: "sv << val.data.bp.reserved.u8.n1).str());
         }
     }
 }
@@ -762,8 +770,8 @@ inline auto blob_decimal_dispatch(blob_result const& val, FT&& ftor)
     using numetron::basic_decimal_view;
     if (val.inplace_size) {
         return ftor(basic_decimal_view<invocation_bigint_limb_type>{
-              basic_integer_view<invocation_bigint_limb_type>{ val.bp.ui64value, val.reserved0 ? -1 : 1 }
-            , static_cast<int16_t>(val.bp.reserved)
+              basic_integer_view<invocation_bigint_limb_type>{ val.data.bp.ui64value, val.reserved0 ? -1 : 1 }
+            , static_cast<int16_t>(val.data.bp.reserved.u16)
         });
     } else {
         THROW_NOT_IMPLEMENTED_ERROR("basic_decimal_view");
@@ -781,41 +789,41 @@ inline auto blob_type_dispatch(blob_result const& b, FT&& ftor)
     case blob_type::blob_reference:
         return blob_type_dispatch(*data_of<blob_result>(b), std::forward<FT>(ftor));
     case blob_type::boolean:
-        return ftor(!!b.bp.ui8value);
+        return ftor(!!b.data.bp.ui8value);
     case blob_type::i8:
-        return ftor(b.bp.i8value);
+        return ftor(b.data.bp.i8value);
     case blob_type::ui8:
-        return ftor(b.bp.ui8value);
+        return ftor(b.data.bp.ui8value);
     case blob_type::c8:
-        return ftor((char)b.bp.i8value);
+        return ftor((char)b.data.bp.i8value);
     case blob_type::i16:
-        return ftor(b.bp.i16value);
+        return ftor(b.data.bp.i16value);
     case blob_type::ui16:
-        return ftor(b.bp.ui16value);
+        return ftor(b.data.bp.ui16value);
     case blob_type::i32:
-        return ftor(b.bp.i32value);
+        return ftor(b.data.bp.i32value);
     case blob_type::ui32:
-        return ftor(b.bp.ui32value);
+        return ftor(b.data.bp.ui32value);
     case blob_type::i64:
-        return ftor(b.bp.i64value);
+        return ftor(b.data.bp.i64value);
     case blob_type::ui64:
-        return ftor(b.bp.ui64value);
+        return ftor(b.data.bp.ui64value);
     case blob_type::flt16:
-        return ftor(b.bp.f16value);
+        return ftor(b.data.bp.f16value);
     case blob_type::flt32:
-        return ftor(b.bp.f32value);
+        return ftor(b.data.bp.f32value);
     case blob_type::flt64:
-        return ftor(b.bp.f64value);
+        return ftor(b.data.bp.f64value);
     case blob_type::string:
         return ftor(b.inplace_size ?
-              std::string_view{ reinterpret_cast<char const*>(b.ui8array), static_cast<size_t>(b.inplace_size) }
-            : std::string_view{ reinterpret_cast<char const*>(b.bp.data), static_cast<size_t>(b.bp.size) }
+              std::string_view{ reinterpret_cast<char const*>(b.data.ui8array), static_cast<size_t>(b.inplace_size) }
+            : std::string_view{ reinterpret_cast<char const*>(b.data.bp.payload_ptr), static_cast<size_t>(b.data.bp.size) }
         );
     case blob_type::error:
         return ftor(sonia::invocation::error{
             b.inplace_size ?
-                  std::string_view{ reinterpret_cast<char const*>(b.ui8array), static_cast<size_t>(b.inplace_size) }
-                : std::string_view{ reinterpret_cast<char const*>(b.bp.data), static_cast<size_t>(b.bp.size) }
+                  std::string_view{ reinterpret_cast<char const*>(b.data.ui8array), static_cast<size_t>(b.inplace_size) }
+                : std::string_view{ reinterpret_cast<char const*>(b.data.bp.payload_ptr), static_cast<size_t>(b.data.bp.size) }
         });
     case blob_type::tuple:
         return ftor(std::span<const blob_result>{ data_of<blob_result>(b), array_size_of<blob_result>(b) });
@@ -1003,7 +1011,7 @@ struct from_blob<bool>
     {
         using namespace sonia;
         if (val.type == blob_type::boolean) {
-            return !!val.bp.i8value;
+            return !!val.data.bp.i8value;
         }
         THROW_INTERNAL_ERROR("can't convert blob `%1%` to bool"_fmt % val);
     }
@@ -1020,7 +1028,7 @@ struct from_blob<numetron::float16>
 {
     numetron::float16 operator()(blob_result val) const
     {
-        return val.bp.f16value;
+        return val.data.bp.f16value;
     }
 };
 
@@ -1165,7 +1173,7 @@ struct from_blob<std::span<const CharT>>
             size_t sz = array_size_of<CharT>(val);
             return span_t{ begin_ptr, sz };
         } else if (!is_array(val) && (val.type == blob_type::i8 || val.type == blob_type::ui8 || decayed_type == blob_type::c8)) {
-            return span_t{ reinterpret_cast<CharT const*>(&val.bp.ui8value), (size_t)1 };
+            return span_t{ reinterpret_cast<CharT const*>(&val.data.bp.ui8value), (size_t)1 };
         }
 #ifdef BOOST_WINDOWS
         THROW_INTERNAL_ERROR("can't convert blob `%1%` to std::span<%2%>"_fmt % val % typeid(CharT).name());
@@ -1190,7 +1198,7 @@ struct from_blob<std::span<T>>
                 size_t sz = array_size_of<T>(val);
                 return span_t{ begin_ptr, sz };
             } else {
-                return span_t{ reinterpret_cast<T*>(&val.bp.data), 1 };
+                return span_t{ reinterpret_cast<T*>(&val.data.bp.payload_ptr), 1 };
             }
         }
 #ifdef BOOST_WINDOWS
@@ -1210,8 +1218,8 @@ struct from_blob<T>
     {
         using namespace sonia;
         if (contains_string(val)) {
-            char_t const* begin_ptr = val.inplace_size ? reinterpret_cast<char_t const*>(val.ui8array) : reinterpret_cast<char_t const*>(val.bp.data);
-            size_t sz = val.inplace_size ? (size_t)val.inplace_size : (size_t)val.bp.size;
+            char_t const* begin_ptr = val.inplace_size ? reinterpret_cast<char_t const*>(val.data.ui8array) : reinterpret_cast<char_t const*>(val.data.bp.payload_ptr);
+            size_t sz = val.inplace_size ? (size_t)val.inplace_size : (size_t)val.data.bp.size;
             return T{ begin_ptr, sz };
         }
         THROW_INTERNAL_ERROR("can't convert blob `%1%` to `%2%`"_fmt % val % typeid(T).name());
@@ -1255,7 +1263,7 @@ struct from_blob<std::tuple<Ts...>>
     {
         using namespace sonia;
         if (val.type == blob_type::tuple) {
-            return this->operator()(std::make_index_sequence<sizeof ...(Ts)>{}, reinterpret_cast<blob_result const*>(val.bp.data));
+            return this->operator()(std::make_index_sequence<sizeof ...(Ts)>{}, reinterpret_cast<blob_result const*>(val.data.bp.payload_ptr));
         } // else { to do: handle arrays }
         THROW_INTERNAL_ERROR("can't convert blob `%1%` to std::tuple"_fmt % val);
     }
@@ -1287,8 +1295,8 @@ private:
     inline std::array<T, SzV> selector(std::type_identity<BT>, blob_result const& val) const
     {
         using namespace sonia;
-        void const* begin_ptr = val.inplace_size ? val.ui8array : val.bp.data;
-        size_t sz = val.inplace_size ? (size_t)val.inplace_size : (size_t)val.bp.size;
+        void const* begin_ptr = val.inplace_size ? val.data.ui8array : val.data.bp.payload_ptr;
+        size_t sz = val.inplace_size ? (size_t)val.inplace_size : (size_t)val.data.bp.size;
         if constexpr (is_same_v<T, BT> && (is_integral_v<T> || is_floating_point_v<T>)) {
             BOOST_ASSERT(sz / sizeof(T) >= SzV);
             return direct_decode(std::make_index_sequence<SzV>{}, reinterpret_cast<T const*>(begin_ptr));
@@ -1366,31 +1374,31 @@ std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem, Trait
     case blob_type::nil:
         return os << "nil"sv;
     case blob_type::boolean:
-        return os << (b.bp.i8value ? "true"sv : "false"sv);
+        return os << (b.data.bp.i8value ? "true"sv : "false"sv);
     case blob_type::c8:
-        return with_types ? (os << '\'' << (char)b.bp.i8value << '\'') : (os << (char)b.bp.i8value);
+        return with_types ? (os << '\'' << (char)b.data.bp.i8value << '\'') : (os << (char)b.data.bp.i8value);
     case blob_type::i8:
-        return os << (int)b.bp.i8value << (with_types ? ":i8"sv : ""sv);
+        return os << (int)b.data.bp.i8value << (with_types ? ":i8"sv : ""sv);
     case blob_type::ui8:
-        return os << (int)b.bp.ui8value << (with_types ? ":ui8"sv : ""sv);
+        return os << (int)b.data.bp.ui8value << (with_types ? ":ui8"sv : ""sv);
     case blob_type::i16:
-        return os << (int)b.bp.i16value << (with_types ? ":i16"sv : ""sv);
+        return os << (int)b.data.bp.i16value << (with_types ? ":i16"sv : ""sv);
     case blob_type::ui16:
-        return os << (int)b.bp.ui16value << (with_types ? ":ui16"sv : ""sv);
+        return os << (int)b.data.bp.ui16value << (with_types ? ":ui16"sv : ""sv);
     case blob_type::i32:
-        return os << b.bp.i32value << (with_types ? ":i32"sv : ""sv);
+        return os << b.data.bp.i32value << (with_types ? ":i32"sv : ""sv);
     case blob_type::ui32:
-        return os << b.bp.ui32value << (with_types ? ":ui32"sv : ""sv);
+        return os << b.data.bp.ui32value << (with_types ? ":ui32"sv : ""sv);
     case blob_type::i64:
-        return os << b.bp.i64value << (with_types ? ":i64"sv : ""sv);
+        return os << b.data.bp.i64value << (with_types ? ":i64"sv : ""sv);
     case blob_type::ui64:
-        return os << b.bp.ui64value << (with_types ? ":ui64"sv : ""sv);
+        return os << b.data.bp.ui64value << (with_types ? ":ui64"sv : ""sv);
     case blob_type::flt16:
-        return os << b.bp.f16value << (with_types ? ":f16"sv : ""sv);
+        return os << b.data.bp.f16value << (with_types ? ":f16"sv : ""sv);
     case blob_type::flt32:
-        return os << b.bp.f32value << (with_types ? ":f32"sv : ""sv);
+        return os << b.data.bp.f32value << (with_types ? ":f32"sv : ""sv);
     case blob_type::flt64:
-        return os << b.bp.f64value << (with_types ? ":f64"sv : ""sv);
+        return os << b.data.bp.f64value << (with_types ? ":f64"sv : ""sv);
     case blob_type::bigint:
         return os << as<numetron::basic_integer_view<invocation_bigint_limb_type>>(b) << (with_types ? ":bigint"sv : ""sv);
     case blob_type::decimal:
@@ -1447,7 +1455,7 @@ inline bool operator== (blob_result const& lhs, blob_result const& rhs) noexcept
 {
     return blob_type_dispatch(lhs, [rhs = unref(rhs)]<typename DT>(DT v)->bool {
         if constexpr (std::is_same_v<nullptr_t, DT>) { return is_nil(rhs); }
-        else if constexpr (std::is_same_v<bool, DT>) { return rhs.type == blob_type::boolean && v == !!rhs.bp.i8value; }
+        else if constexpr (std::is_same_v<bool, DT>) { return rhs.type == blob_type::boolean && v == !!rhs.data.bp.i8value; }
         else if constexpr (is_integral_not_bool_v<DT>) { return ::is_integral(rhs.type) && from_blob<numetron::basic_integer_view<invocation_bigint_limb_type>>{}(rhs) == v; }
         else if constexpr (std::is_floating_point_v<DT>) { return ::is_floating_point(rhs.type) && (double_t)v == from_blob<double_t>{}(rhs); } // to do: improve
         else if constexpr (std::is_same_v<numetron::float16, DT>) { return ::is_floating_point(rhs.type) && (float)v == from_blob<float>{}(rhs); } // to do: improve
@@ -1563,14 +1571,14 @@ public:
     inline bool is_inplace() const noexcept { return !!inplace_size; }
     inline bool is_error() const noexcept { return type == blob_type::error; }
 
-    inline const void* data() const noexcept
+    inline const void* get_pointer() const noexcept
     {
-        return inplace_size ? reinterpret_cast<const void*>(ui8array) : bp.data;
+        return inplace_size ? reinterpret_cast<const void*>(data.ui8array) : data.bp.payload_ptr;
     }
 
     inline size_t size() const noexcept
     {
-        return inplace_size ? (size_t)inplace_size : (size_t)bp.size;
+        return inplace_size ? (size_t)inplace_size : (size_t)data.bp.size;
     }
 
     template <typename T>
@@ -1597,8 +1605,8 @@ public:
             BOOST_ASSERT(sz <= inplace_size);
             inplace_size = (uint8_t)sz;
         } else {
-            BOOST_ASSERT(sz <= bp.size);
-            bp.size = (uint32_t)sz;
+            BOOST_ASSERT(sz <= data.bp.size);
+            data.bp.size = (uint32_t)sz;
         }
     }
 

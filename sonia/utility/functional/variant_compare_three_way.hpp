@@ -12,7 +12,7 @@ struct variant_compare_three_way_visitor : static_visitor<std::strong_ordering>
 {
     variant_compare_three_way_visitor() = default;
     template <typename L, typename R>
-    result_type operator()(L const& l, R const& r) const { std::terminate(); }
+    result_type operator()(L const&, R const&) const { std::terminate(); }
 
     template <typename T>
     result_type operator()(T const& l, T const& r) const { return l <=> r; }

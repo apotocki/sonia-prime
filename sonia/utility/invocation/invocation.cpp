@@ -50,27 +50,27 @@ public:
     void addref(blob_result* b)
     {
         lock_guard guard(blobs_mtx_);
-        auto it = blobs_.find(b->bp.data);
+        auto it = blobs_.find(b->data.bp.payload_ptr);
         if (it != blobs_.end()) {
             ++it->second.second;
         } else {
-            GLOBAL_LOG_DEBUG() << "a blob was not found for pinning at: " << std::hex << (uint64_t)b->bp.data;
+            GLOBAL_LOG_DEBUG() << "a blob was not found for pinning at: " << std::hex << (uint64_t)b->data.bp.payload_ptr;
         }
     }
 
     optional<blob_storage> releaseref(blob_result* b) noexcept
     {
         lock_guard guard(blobs_mtx_);
-        auto it = blobs_.find(b->bp.data);
+        auto it = blobs_.find(b->data.bp.payload_ptr);
         if (it != blobs_.end()) {
             if (--it->second.second == 0) {
                 blob_storage st = std::move(it->second.first);
                 blobs_.erase(it);
-                GLOBAL_LOG_TRACE() << "a blob was unpinned at: " << std::hex << (uint64_t)b->bp.data;
+                GLOBAL_LOG_TRACE() << "a blob was unpinned at: " << std::hex << (uint64_t)b->data.bp.payload_ptr;
                 return st;
             }
         } else {
-            GLOBAL_LOG_ERROR() << "a blob '" << *b << "' was not found for unpinning at: " << std::hex << (uint64_t)b->bp.data;
+            GLOBAL_LOG_ERROR() << "a blob '" << *b << "' was not found for unpinning at: " << std::hex << (uint64_t)b->data.bp.payload_ptr;
             //THROW_INTERNAL_ERROR("a blob was not found for unpinning %1%"_fmt % *b);
         }
         return nullopt;
@@ -93,26 +93,26 @@ void blob_result_allocate(blob_result * b, bool no_inplace)
     if (b->inplace_size) {
         if (!no_inplace) return; // already inplace
         inplace_buffer = *b;
-        ptr = inplace_buffer.ui8array;
+        ptr = inplace_buffer.data.ui8array;
         sz = b->inplace_size;
     } else {
-        ptr = b->bp.data;
-        sz = b->bp.size;
+        ptr = b->data.bp.payload_ptr;
+        sz = b->data.bp.size;
         if (!sz) return; // nothing to allocate
     }
     
-    static_assert(sizeof(b->ui8array) == 14);
-    if (!no_inplace && sz <= sizeof(b->ui8array) - b->bp_reserved_used * 2) {
+    static_assert(sizeof(b->data.ui8array) == 14);
+    if (!no_inplace && sz <= sizeof(b->data.ui8array) - b->bp_reserved_used * 2) {
         b->inplace_size = static_cast<uint8_t>(sz);
         if (ptr) {
-            std::memcpy(b->ui8array, ptr, sz);
+            std::memcpy(b->data.ui8array, ptr, sz);
         }
     } else {
         sonia::shared_ptr<uint8_t> data(new uint8_t[sz], [](uint8_t* p) { delete[] p; });
-        if (b->bp.data) {
+        if (b->data.bp.payload_ptr) {
             std::memcpy(data.get(), ptr, sz);
         }
-        b->bp.data = data.get();
+        b->data.bp.payload_ptr = data.get();
         b->need_unpin = 1;
         sonia::as_singleton<sonia::invocation::blob_manager>()->pin(std::move(data));
     }

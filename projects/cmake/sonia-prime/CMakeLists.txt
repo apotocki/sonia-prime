@@ -25,6 +25,8 @@ set (BUNDLE_SOURCES
     ${BUNDLE_HOME}/sonia/services/auth/auth_service.cpp
     ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
     ${BUNDLE_HOME}/sonia/utility/invocation/invocation.cpp
+    ${BUNDLE_HOME}/sonia/fibers/default_stack.cpp
+    ${BUNDLE_HOME}/sonia/fibers/context_shared.cpp
 )
 
 if (NOT DEFINED NO_NET)
@@ -91,6 +93,14 @@ else()
     add_definitions(-DSONIA_NO_NET)
 endif ()
 
+if (NOT DEFINED NO_LUA)
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        
+    )
+else()
+    add_definitions(-DSONIA_NO_LUA)
+endif ()
+
 if (NOT DEFINED NO_TENGER)
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
         ${BUNDLE_HOME}/sonia/services/tenger/tenger_service.cpp
@@ -112,6 +122,9 @@ target_link_libraries(${BUNDLE_NAME} sonia-prime-lib ${ZLIB} ${BZLIB} ${LIBLZMA}
 if (NOT DEFINED NO_SSL)
     target_link_libraries(${BUNDLE_NAME} ${OPENSSL})
 endif ()
+if (NOT DEFINED NO_LUA)
+    target_link_libraries(${BUNDLE_NAME} ${LUALIB})
+endif()
 if (CMAKE_SYSTEM_NAME STREQUAL "Android")
     target_link_libraries(${BUNDLE_NAME} log)
 endif()

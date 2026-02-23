@@ -4,8 +4,6 @@
 
 #pragma once
 
-#include <boost/unordered_map.hpp>
-
 #include "sonia/span.hpp"
 #include "sonia/string.hpp"
 #include "sonia/singleton.hpp"
@@ -19,6 +17,7 @@ class jni_encoder : public singleton
 {
 public:
 	jni_encoder();
+
 	[[nodiscard]] jobject encode(JNIEnv*, blob_result const&) const;
 };
 

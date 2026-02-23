@@ -63,9 +63,9 @@ public:
         //typedef void(*on_invoke_cv_result_setter)(void*, blob_result*, uint32_t); // cookie, results, result count
         //virtual void invoke_callback(void* cookie, int32_t vmid, string_view method_name, span<const blob_result>, on_invoke_cv_result_setter setter) = 0;
 
-        virtual smart_blob invoke_callback(int32_t vmid, string_view method_name, span<const blob_result>) = 0;
+        virtual smart_blob invoke_callback(blob_result const& cbid, string_view method_name, span<const blob_result>) = 0;
 
-        virtual int on_change_callback(int32_t vmid, status_type, std::span<const blob_result> args) = 0;
+        virtual int on_state_change_callback(int32_t vmid, status_type, std::span<const blob_result> args) = 0;
 
         virtual int32_t create_view_model(string_view kind) = 0;
         virtual int32_t push_view_model(shared_ptr<view_model>) = 0;
@@ -111,7 +111,8 @@ public:
 
     void final_cancel();
 
-    int on_change(status_type st, std::initializer_list<const blob_result> args);
+    // returns 1 if the event was handled, 0 otherwise
+    int on_state_change(status_type st, std::initializer_list<const blob_result> args);
 
     template <typename F>
     void post(F&& f);
@@ -130,19 +131,25 @@ public:
 
     // properties routine
     void on_property_change(string_view propname) override;
-    
+
+    // set event listener
+    void set_on_property_change(smart_blob br)
+    {
+        on_property_change_ftor_ = std::move(br);
+    }
+
     inline void set_callback_invoker(shared_ptr<invocation::callback_invoker> cbinv) noexcept
     {
         cb_invoker_ = std::move(cbinv);
     }
 
-    smart_blob call_method(string_view name, blob_result args) const;
-    smart_blob do_call_method(string_view name, span<const blob_result> args) const;
-    smart_blob do_call_method(string_view name, std::initializer_list<const blob_result> args) const
-    { return do_call_method(name, span{ args }); }
+    //smart_blob call_method(string_view name, blob_result args) const;
+    //smart_blob do_call_method(string_view name, span<const blob_result> args) const;
+    //smart_blob do_call_method(string_view name, std::initializer_list<const blob_result> args) const
+    //{ return do_call_method(name, span{ args }); }
 
-    smart_blob get_method(string_view name) const;
-    void set_method(string_view name, string_view propname, blob_result val);
+    //smart_blob get_method(string_view name) const;
+    //void set_method(string_view name, string_view propname, blob_result val);
 
     // test method
     string_view echo_method(string_view arg) const;
@@ -153,6 +160,7 @@ protected:
 
 protected:
     weak_ptr<invocation::callback_invoker> cb_invoker_;
+    smart_blob on_property_change_ftor_;
 
     fibers::mutex ev_mtx_;
     fibers::condition_variable ev_cv_;

@@ -5,7 +5,7 @@
 #include "sonia/config.hpp"
 #include "view_model.hpp"
 #include "view_model.ipp"
-#include <boost/container/small_vector.hpp>
+#include "sonia/small_vector.hpp"
 
 namespace sonia {
 
@@ -20,9 +20,10 @@ void view_model::do_registration(registrar_type & mr)
 {
     mr.register_method<&view_model::async_cancel>("async_cancel"sv);
     mr.register_method<&view_model::echo_method>("echo"sv);
-    mr.register_method<&view_model::call_method>("call"sv);
-    mr.register_method<&view_model::get_method>("get"sv);
-    mr.register_method<&view_model::set_method>("set"sv);
+    //mr.register_method<&view_model::call_method>("call"sv);
+    //mr.register_method<&view_model::get_method>("get"sv);
+    //mr.register_method<&view_model::set_method>("set"sv);
+    mr.register_method<&view_model::set_on_property_change>("set_on_property_change"sv);
     mr.register_method<&view_model::inherit>("inherit"sv);
 }
 
@@ -164,7 +165,10 @@ void view_model::set_property(std::string_view propname, blob_result && val)
 
 void view_model::on_property_change(string_view propname)
 {
-    on_change(status_type::PROPERTY_CHANGED_ST, {string_blob_result(propname)});
+    if (auto invk = cb_invoker_.lock()) {
+        invk->invoke(*on_property_change_ftor_, std::initializer_list<const blob_result>{ string_blob_result(propname) });
+    }
+    on_state_change(status_type::PROPERTY_CHANGED_ST, { string_blob_result(propname) });
 }
 
 /*
@@ -195,6 +199,7 @@ blob_result view_model::do_call_method(string_view name, std::initializer_list<c
 }
 */
 
+#if 0
 smart_blob view_model::do_call_method(std::string_view name, std::span<const blob_result> args) const
 {
     if (auto mng = get_manager(); mng) {
@@ -225,7 +230,7 @@ smart_blob view_model::call_method(std::string_view name, blob_result args) cons
     } else if (args.type == blob_type::tuple) {
         return do_call_method(name, std::span{ data_of<blob_result const>(args), array_size_of<blob_result>(args) });
     } else {
-        boost::container::small_vector<blob_result, 16> bargs;
+        small_vector<blob_result, 16> bargs;
         blob_type_selector(args, [&bargs](auto ident, blob_result const& b) {
             using type = typename decltype(ident)::type;
             if constexpr (std::is_void_v<type> || std::is_same_v<numetron::basic_integer_view<invocation_bigint_limb_type>, type>) { bargs.push_back(nil_blob_result()); }
@@ -271,18 +276,19 @@ void view_model::set_method(std::string_view name, std::string_view propname, bl
         mng->invoke_callback(id(), "="sv, args);
     }
 }
+#endif
 
 std::string_view view_model::echo_method(std::string_view arg) const
 {
     return arg;
 }
 
-int view_model::on_change(status_type st, std::initializer_list<const blob_result> args)
+int view_model::on_state_change(status_type st, std::initializer_list<const blob_result> args)
 {
     if (auto mng = get_manager(); mng) {
-        return mng->on_change_callback(id(), st, std::span{args});
+        return mng->on_state_change_callback(id(), st, std::span{args});
     }
-    return 1;
+    return 0;
 }
 
 /*

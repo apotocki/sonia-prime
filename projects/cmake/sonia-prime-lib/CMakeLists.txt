@@ -125,6 +125,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux" OR CMAKE_SYSTEM_NAME STREQUAL "Androi
             ${BUNDLE_HOME}/sonia/java/jni_env.cpp
             ${BUNDLE_HOME}/sonia/utility/invocation/jni_decoder.cpp
             ${BUNDLE_HOME}/sonia/utility/invocation/jni_encoder.cpp
+            ${BUNDLE_HOME}/sonia/utility/invocation/jni_invoker.cpp
         )
     endif ()
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "iOS")

@@ -1024,6 +1024,12 @@ struct from_blob<blob_result>
 };
 
 template <>
+struct from_blob<sonia::smart_blob>
+{
+    sonia::smart_blob operator()(blob_result const& val) const noexcept;
+};
+
+template <>
 struct from_blob<numetron::float16>
 {
     numetron::float16 operator()(blob_result val) const
@@ -1656,4 +1662,9 @@ inline smart_blob invocation::invocable::invoke(string_view name, std::initializ
     return invoke(name, span{ args });
 }
 
+}
+
+inline sonia::smart_blob from_blob<sonia::smart_blob>::operator()(blob_result const& val) const noexcept
+{
+    return sonia::smart_blob{ val };
 }

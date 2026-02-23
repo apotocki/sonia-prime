@@ -8,7 +8,8 @@
 #include "sonia/shared_ptr.hpp"
 #include "sonia/concurrency.hpp"
 #include "sonia/logger/logger.hpp"
-#include <boost/unordered_map.hpp>
+
+#include <unordered_map>
 
 namespace sonia::invocation {
 
@@ -78,7 +79,7 @@ public:
 
 private:
     mutable fibers::mutex blobs_mtx_;
-    boost::unordered_map<const void*, std::pair<blob_storage, uint32_t>> blobs_; // start of blob -> {blob, pin count}
+    std::unordered_map<const void*, std::pair<blob_storage, uint32_t>> blobs_; // start of blob -> {blob, pin count}
 };
 
 }

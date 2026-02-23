@@ -38,16 +38,19 @@ public:
         smart_blob result;
         if (!ctx_.view_model::try_get_property(key, result)) {
             blob_result args[] = { string_blob_result(key) };
-            result = ctx_.do_call_method("hasMethod", std::span{args});
+            result = ctx_.invoke("hasMethod", std::span{ args });
+            //result = ctx_.do_call_method("hasMethod", std::span{args});
             if (result->type == blob_type::boolean && result.as<bool>()) {
                 return function_blob_result(key);
             }
-            result = ctx_.do_call_method("hasProperty", std::span{args});
+            result = ctx_.invoke("hasProperty", std::span{ args });
+            //result = ctx_.do_call_method("hasProperty", std::span{args});
             if (result->type != blob_type::boolean || !result.as<bool>()) {
                 // GLOBAL_LOG_INFO() << "no property '" << key << "' was found";
                 return nil_blob_result();
             }
-            result = ctx_.do_call_method("getProperty", std::span{args});
+            result = ctx_.invoke("getProperty", std::span{ args });
+            //result = ctx_.do_call_method("getProperty", std::span{args});
         }
         return result.detach();
         //return ctx_.view_model::get_property(key).detach();
@@ -80,7 +83,8 @@ public:
         smart_blob result;
         if (!ctx_.view_model::try_invoke(name, args, result)) {
             //GLOBAL_LOG_INFO() << "callback invoking: " << name;
-            result = ctx_.do_call_method(name, args);
+            result = ctx_.invoke(name, args);
+            //result = ctx_.do_call_method(name, args);
         }
         return result.detach();
     }

@@ -282,7 +282,7 @@ SONIA_JNI_INLINE jmethodID jni_env::get_jmethod(jclass cls, char const* mname, c
         env_->ExceptionClear();
         auto clsnamejstring = get_class_name(cls);
         std::ostringstream errss;
-        errss << "error: can't find method " << mname << " with signature " << sig << " for class " << get_string_utf_chars(clsnamejstring.get()).c_str();
+        errss << "error: can't find method `" << mname << "` with signature " << sig << " for class " << get_string_utf_chars(clsnamejstring.get()).c_str();
         throw jni_error(errss.str());
     }
     return method;
@@ -295,7 +295,7 @@ SONIA_JNI_INLINE jmethodID jni_env::get_static_jmethod(jclass cls, char const* m
         env_->ExceptionClear();
         auto clsnamejstring = get_class_name(cls);
         std::ostringstream errss;
-        errss << "error: can't find static method " << mname << " with signature " << sig << " for class " << get_string_utf_chars(clsnamejstring.get()).c_str();
+        errss << "error: can't find static method `" << mname << "` with signature " << sig << " for class " << get_string_utf_chars(clsnamejstring.get()).c_str();
         throw jni_error(errss.str());
     }
     return method;

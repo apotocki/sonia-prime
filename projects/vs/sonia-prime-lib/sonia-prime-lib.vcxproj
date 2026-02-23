@@ -455,6 +455,7 @@
     <ClInclude Include="..\..\..\sonia\utility\invocation\callback_invoker.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\functor_object.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\invocation.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invocation\jni_invoker.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\jni_decoder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\jni_encoder.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\serialization.hpp" />
@@ -821,6 +822,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_invoker.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\invocation\jni_decoder.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\invocation\jni_encoder.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\invocation\value_decoder.cpp" />

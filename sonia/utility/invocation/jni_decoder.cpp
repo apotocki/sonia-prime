@@ -6,8 +6,72 @@
 #include "jni_decoder.hpp"
 #include "sonia/java/jni_env.hpp"
 #include "sonia/java/jni_ref.hpp"
+//#include "jni_encoder.hpp"
+#include "jni_invoker.hpp"
 
 namespace sonia::invocation {
+
+class jni_invocable_proxy 
+    : public invocable
+    , public enable_shared_from_this<jni_invocable_proxy>
+{
+    JNIEnv* penv_;
+    jint id_;
+
+public:
+    inline jni_invocable_proxy(JNIEnv* penv, jint id) noexcept : penv_{ penv }, id_{ id }
+    {
+        GLOBAL_LOG_INFO() << "jni_invocable_proxy created, id: " << id_;
+    }
+
+    ~jni_invocable_proxy()
+    {
+        GLOBAL_LOG_INFO() << "destroyed jni_invocable_proxy, id: " << id_;
+    }
+
+    shared_ptr<invocable> self_as_invocable_shared() override
+    {
+        return shared_from_this();
+    }
+
+    bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept override
+    {
+        try {
+            jni_env env{ penv_ };
+            result = as_singleton<invocation::jni_invoker>(penv_)->invoke(id_, methodname, args);
+            return true;
+        } catch (...) {
+            return false;
+        }
+    }
+
+    bool try_set_property(string_view propname, blob_result const& val) override
+    {
+        GLOBAL_LOG_INFO() << "setting property '" << propname << "' with value: " << val;
+        try {
+            jni_env env{ penv_ };
+            as_singleton<invocation::jni_invoker>(penv_)->set_property(id_, propname, val);
+            return true;
+        }
+        catch (...) {
+            GLOBAL_LOG_ERROR() << "failed to set property '" << propname << "', error: " << boost::current_exception_diagnostic_information();
+            return false;
+        }
+    }
+
+    bool try_get_property(string_view propname, smart_blob& result) const override
+    {
+        try {
+            jni_env env{ penv_ };
+            result = as_singleton<invocation::jni_invoker>(penv_)->get_property(id_, propname);
+            GLOBAL_LOG_INFO() << "got property '" << propname << "' with value: " << result;
+            return true;
+        } catch (...) {
+            GLOBAL_LOG_ERROR() << "failed to get property '" << propname << "', error: " << boost::current_exception_diagnostic_information();
+            return false;
+        }
+    }
+};
 
 blob_result jni_decoder::decode(JNIEnv* penv, jobject obj)
 {
@@ -25,6 +89,11 @@ blob_result jni_decoder::do_decode(JNIEnv* penv, jobject obj) const
 
     if (auto it = type_handlers_.find(string_view{ chars.c_str() }); it != type_handlers_.end()) {
         return it->second(this, penv, obj);
+    }
+    for (auto const& ph : polymorphic_type_handlers_) {
+        if (env->IsInstanceOf(obj, ph.first)) {
+            return ph.second(this, penv, obj);
+        }
     }
     throw exception("unknown type: %1%"_fmt % chars.c_str());
 }
@@ -59,6 +128,10 @@ jni_decoder::jni_decoder(JNIEnv* penv)
     {
         auto double_cls = env.get_class(jni_traits<jdouble>::class_name);
         double_doubleValue_ = env.get_jmethod(*double_cls, "doubleValue", "()D");
+    }
+    {
+        auto invocable_registry_cls = env.get_class("com/sonia/invocation/InvocableRegistry");
+        get_invocable_id_ = env.get_static_jmethod(*invocable_registry_cls, "register", "(Lcom/sonia/invocation/Invocable;)I");
     }
 
     type_handlers_["java.lang.String"] = [](jni_decoder const* p, JNIEnv* penv, jobject obj) -> blob_result {
@@ -111,6 +184,19 @@ jni_decoder::jni_decoder(JNIEnv* penv)
         jdouble value = env.invoke<jdouble>(nullptr, obj, p->double_doubleValue_);
         return f64_blob_result(value);
     };
+
+    jni_invoker & inv = *as_singleton<jni_invoker>(penv);
+    invocable_registry_cls_ = *inv.invocable_registry_cls;
+
+    polymorphic_type_handlers_.emplace_back(
+        *inv.invocable_cls,
+        [](jni_decoder const* p, JNIEnv* penv, jobject obj) -> blob_result {
+            if (!obj) return nil_blob_result();
+            jni_env env{ penv };
+            jint value = env.invoke<jint>(p->invocable_registry_cls_, nullptr, p->get_invocable_id_, obj);
+            using wrapper_object_t = wrapper_object<shared_ptr<invocable>>;
+            return object_blob_result<wrapper_object_t>(make_shared<jni_invocable_proxy>(penv, value));
+        });
 }
 
 }

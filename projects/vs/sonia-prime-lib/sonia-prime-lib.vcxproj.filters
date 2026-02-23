@@ -2058,6 +2058,9 @@
     <ClInclude Include="..\..\..\sonia\utility\invocation\callback_invoker.hpp">
       <Filter>sonia.utility\invocation</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\jni_invoker.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2329,6 +2332,9 @@
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\fibers\context.cpp">
       <Filter>sonia.fibers</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_invoker.cpp">
+      <Filter>sonia.utility\invocation</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

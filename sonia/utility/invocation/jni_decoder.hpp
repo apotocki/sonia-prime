@@ -20,8 +20,8 @@ class jni_decoder : public singleton
 	friend class jni_invocable_proxy;
 
 public:
-	jni_decoder(JNIEnv* penv);
-	static blob_result decode(JNIEnv*, jobject);
+	explicit jni_decoder(JNIEnv* penv);
+	[[nodiscard]] static blob_result decode(JNIEnv*, jobject);
 
 private:
 	jclass invocable_registry_cls_;

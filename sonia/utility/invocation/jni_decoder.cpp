@@ -61,6 +61,10 @@ public:
 
     bool try_get_property(string_view propname, smart_blob& result) const override
     {
+        if (propname == "java_id"sv) {
+            result = i32_blob_result(id_);
+            return true;
+        }
         try {
             jni_env env{ penv_ };
             result = as_singleton<invocation::jni_invoker>(penv_)->get_property(id_, propname);

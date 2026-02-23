@@ -12,6 +12,7 @@
 #include "sonia/exceptions.hpp"
 #include "sonia/string.hpp"
 #include "sonia/optional.hpp"
+#include "sonia/span.hpp"
 #include "sonia/utility/variadic.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/utility/functional/hash.hpp"
@@ -1459,7 +1460,7 @@ std::tuple<Ts...> from_blobs(std::span<const blob_result> vals)
 
 inline bool operator== (blob_result const& lhs, blob_result const& rhs) noexcept
 {
-    return blob_type_dispatch(lhs, [rhs = unref(rhs)]<typename DT>(DT v)->bool {
+    return blob_type_dispatch(unref(lhs), [&rhs = unref(rhs)]<typename DT>(DT v)->bool {
         if constexpr (std::is_same_v<nullptr_t, DT>) { return is_nil(rhs); }
         else if constexpr (std::is_same_v<bool, DT>) { return rhs.type == blob_type::boolean && v == !!rhs.data.bp.i8value; }
         else if constexpr (is_integral_not_bool_v<DT>) { return ::is_integral(rhs.type) && from_blob<numetron::basic_integer_view<invocation_bigint_limb_type>>{}(rhs) == v; }
@@ -1473,6 +1474,36 @@ inline bool operator== (blob_result const& lhs, blob_result const& rhs) noexcept
         else { return false; }
     });
 }
+
+struct blob_result_strict_equal_to
+{
+    bool operator()(blob_result const& lhs, blob_result const& rhs) const noexcept
+    {
+        return lhs.type == rhs.type && blob_type_dispatch(unref(lhs), [&rhs = unref(rhs)]<typename LDT>(LDT const& lv)->bool {
+            return blob_type_dispatch(rhs, [lv]<typename RDT>(RDT const& rv)->bool {
+                if constexpr (std::is_same_v<LDT, RDT>) {
+                    if constexpr (std::is_same_v<nullptr_t, LDT>) { return true; }
+                    else if constexpr (std::is_same_v<bool, LDT>) { return lv == !!rv; }
+                    else if constexpr (is_integral_not_bool_v<LDT> || std::is_floating_point_v<LDT> || std::is_same_v<LDT, numetron::float16>) { return lv == rv; }
+                    else if constexpr (numetron::is_basic_integer_view_v<LDT> || numetron::is_basic_decimal_view_v<LDT>) { return lv == rv; }
+                    else if constexpr (std::is_same_v<std::string_view, LDT>) { return lv == rv; }
+                    else if constexpr (std::is_same_v<std::span<const blob_result>, LDT>) {
+                        if (rv.size() != lv.size()) return false;
+                        for (size_t i = 0; i < lv.size(); ++i) {
+                            if (!blob_result_strict_equal_to{}(lv[i], rv[i])) return false;
+                        }
+                        return true;
+                    } else if constexpr (sonia::is_span_v<LDT>) { // other span types can be compared directly
+                        return sonia::range_equal{}(lv, rv);
+                    }
+                    else { return false; }
+                } else {
+                    return false;
+                }
+            });
+        });
+    }
+};
 
 namespace sonia {
 

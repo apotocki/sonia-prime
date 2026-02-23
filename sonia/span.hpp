@@ -37,6 +37,15 @@ inline bool is_subset_of(std::span<T, EVL> l, std::span<T, EVR> r)
         l.data() - r.data() + l.size() <= r.size();
 }
 
+template <class T>
+struct is_span : std::false_type {};
+
+template <typename T, size_t E>
+struct is_span<std::span<T, E>> : std::true_type {};
+
+template <typename T>
+constexpr bool is_span_v = is_span<T>::value;
+
 }
 
 #include <boost/range/range_fwd.hpp>

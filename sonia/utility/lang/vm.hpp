@@ -448,7 +448,7 @@ public:
 
     template <typename T>
     requires (std::is_convertible_v<std::remove_cvref_t<T>, var_t>)
-    size_t add_const(T&& value)
+    size_t push_const(T&& value)
     {
         size_t pos = consts_.size();
         consts_.emplace_back(std::forward<T>(value));

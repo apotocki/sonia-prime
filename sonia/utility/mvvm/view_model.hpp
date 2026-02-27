@@ -14,7 +14,6 @@
 #include "sonia/concurrency.hpp"
 #include "sonia/utility/automatic_polymorphic.hpp"
 #include "sonia/utility/invocation/invocable_registry.hpp"
-#include "sonia/utility/invocation/callback_invoker.hpp"
 #include "sonia/services/scheduler/scheduler.hpp"
 
 namespace sonia {
@@ -133,15 +132,15 @@ public:
     void on_property_change(string_view propname) override;
 
     // set event listener
-    void set_on_property_change(smart_blob br)
+    inline void set_on_property_change(shared_ptr<invocation::callable> cbinv) noexcept
     {
-        on_property_change_ftor_ = std::move(br);
+        on_property_change_ftor_ = std::move(cbinv);
     }
 
-    inline void set_callback_invoker(shared_ptr<invocation::callback_invoker> cbinv) noexcept
-    {
-        cb_invoker_ = std::move(cbinv);
-    }
+    //inline void set_callback_invoker(shared_ptr<invocation::callable> cbinv) noexcept
+    //{
+    //    cb_invoker_ = std::move(cbinv);
+    //}
 
     //smart_blob call_method(string_view name, blob_result args) const;
     //smart_blob do_call_method(string_view name, span<const blob_result> args) const;
@@ -159,8 +158,8 @@ protected:
     static void do_registration(registrar_type &);
 
 protected:
-    weak_ptr<invocation::callback_invoker> cb_invoker_;
-    smart_blob on_property_change_ftor_;
+    //shared_ptr<invocation::callable> cb_invoker_;
+    shared_ptr<invocation::callable> on_property_change_ftor_;
 
     fibers::mutex ev_mtx_;
     fibers::condition_variable ev_cv_;

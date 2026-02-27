@@ -23,8 +23,12 @@ void view_model::do_registration(registrar_type & mr)
     //mr.register_method<&view_model::call_method>("call"sv);
     //mr.register_method<&view_model::get_method>("get"sv);
     //mr.register_method<&view_model::set_method>("set"sv);
-    mr.register_method<&view_model::set_on_property_change>("set_on_property_change"sv);
     mr.register_method<&view_model::inherit>("inherit"sv);
+
+    mr.register_writeonly_property("on-property-change"sv, [](auto& obj, blob_result const& br) {
+        using namespace sonia::invocation;
+        obj.set_on_property_change(as<wrapper_object<shared_ptr<callable>>>(br).value);
+    });
 }
 
 void view_model::inherit(int32_t baseid)
@@ -165,8 +169,8 @@ void view_model::set_property(std::string_view propname, blob_result && val)
 
 void view_model::on_property_change(string_view propname)
 {
-    if (auto invk = cb_invoker_.lock()) {
-        invk->invoke(*on_property_change_ftor_, std::initializer_list<const blob_result>{ string_blob_result(propname) });
+    if (on_property_change_ftor_) {
+        on_property_change_ftor_->invoke(std::initializer_list<const blob_result>{ string_blob_result(propname) });
     }
     on_state_change(status_type::PROPERTY_CHANGED_ST, { string_blob_result(propname) });
 }

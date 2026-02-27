@@ -1989,9 +1989,6 @@
     <ClInclude Include="..\..\..\sonia\utility\invocation\invocation.hpp">
       <Filter>sonia.utility\invocation</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invocation\functor_object.hpp">
-      <Filter>sonia.utility\invocation</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\lang\qname_registry.hpp">
       <Filter>sonia.utility\lang</Filter>
     </ClInclude>
@@ -2054,9 +2051,6 @@
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\fibers\context_initializer.hpp">
       <Filter>sonia.fibers</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\utility\invocation\callback_invoker.hpp">
-      <Filter>sonia.utility\invocation</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\invocation\jni_invoker.hpp">
       <Filter>sonia.utility\invocation</Filter>

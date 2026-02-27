@@ -195,6 +195,15 @@ public:
     void set_property(string_view propname, blob_result&& val);
 };
 
+class callable
+{
+public:
+    virtual ~callable() = default;
+
+    virtual smart_blob invoke(span<const blob_result> args) = 0;
+    inline smart_blob invoke(std::initializer_list<const blob_result> args);
+};
+
 struct error
 {
     string_view what;
@@ -1691,6 +1700,11 @@ inline bool invocation::invocable::try_invoke(string_view methodname, span<const
 inline smart_blob invocation::invocable::invoke(string_view name, std::initializer_list<const blob_result> args) noexcept
 {
     return invoke(name, span{ args });
+}
+
+inline smart_blob invocation::callable::invoke(std::initializer_list<const blob_result> args)
+{
+    return invoke(span{ args });
 }
 
 }

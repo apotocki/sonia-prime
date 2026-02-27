@@ -8,6 +8,7 @@
 
 namespace sonia::invocation {
 
+#if 0
 class functor_object : public object
 {
 public:
@@ -69,5 +70,6 @@ public:
         return {};
     }
 };
+#endif
 
 }

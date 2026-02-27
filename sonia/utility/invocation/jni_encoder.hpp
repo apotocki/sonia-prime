@@ -16,9 +16,18 @@ namespace sonia::invocation {
 class jni_encoder : public singleton
 {
 public:
-	jni_encoder();
+	explicit jni_encoder(JNIEnv* penv);
+	[[nodiscard]] static jobject encode(JNIEnv*, blob_result const&);
 
-	[[nodiscard]] jobject encode(JNIEnv*, blob_result const&) const;
+    jclass obj_cls_;
+	jclass invocable_cls_;
+	jclass invocable_registry_cls_;
+    
+	jmethodID get_invocable_;
+	jmethodID debug_method_;
+
+private:
+	[[nodiscard]] jobject do_encode(JNIEnv*, blob_result const&) const;
 };
 
 }

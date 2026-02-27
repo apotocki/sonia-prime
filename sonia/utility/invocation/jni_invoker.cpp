@@ -97,7 +97,7 @@ void jni_invoker::set_property(jint invid, string_view name, blob_result const& 
 		GLOBAL_LOG_INFO() << "jni_invoker::set_property " << name << ", with value: " << value;
 		jni_env env{ penv };
 		auto jname = env.new_string(name);
-		jobject arg = as_singleton<invocation::jni_encoder>()->encode(env.get(), value);
+		jobject arg = jni_encoder::encode(env.get(), value);
 		env.invoke<void>(invocable_registry_cls, nullptr, invoke_set_, invid, jname.detach(), arg);
 		if (arg) {
 			env->DeleteLocalRef(arg);
@@ -116,7 +116,7 @@ smart_blob jni_invoker::get_property(jint invid, string_view name)
 		jni_env env{ penv };
 		auto jname = env.new_string(name);
 		auto res = env.invoke<jobject>(invocable_registry_cls, nullptr, invoke_get_, invid, jname.detach());
-		blob_result br = sonia::invocation::jni_decoder::decode(env.get(), *res);
+		blob_result br = jni_decoder::decode(env.get(), *res);
 		GLOBAL_LOG_INFO() << "jni_invoker::get_property " << name << ", result: " << br;
 		return smart_blob{ std::move(br) };
 	}
@@ -132,7 +132,7 @@ unique_jni_ref<jobjectArray> jni_invoker::encode_arguments(jni_env & env, sonia:
 	jsize index = 0;
 	for (blob_result const& br : args) {
 		//GLOBAL_LOG_INFO() << "argument: " << br;
-		jobject arg = as_singleton<invocation::jni_encoder>()->encode(env.get(), br);
+		jobject arg = jni_encoder::encode(env.get(), br);
 		if (arg) {
 			env->SetObjectArrayElement(*jobjarr, index, arg);
 			env->DeleteLocalRef(arg);

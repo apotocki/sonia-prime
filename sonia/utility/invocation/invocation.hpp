@@ -866,7 +866,9 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
     case blob_type::string:
     case blob_type::error:
         return ftor(std::type_identity<std::string_view>{}, b);
-        default:
+    case blob_type::object:
+        return ftor(std::type_identity<sonia::invocation::object>{}, b);
+    default:
             break;
     }
     blob_type decayed_type = (blob_type)(((uint8_t)b.type) & 0x7f);
@@ -900,6 +902,8 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
         return ftor(std::type_identity<double_t>{}, b);
     case blob_type::tuple:
         return ftor(std::type_identity<blob_result>{}, b);
+    case blob_type::object:
+        return ftor(std::type_identity<sonia::invocation::object>{}, b);
     default:
         break;
     }
@@ -1373,6 +1377,7 @@ std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem, Trait
             using type = typename decltype(ident)::type;
             if constexpr (std::is_same_v<type, std::nullptr_t>) { os << "nil"sv; }
             else if constexpr (std::is_void_v<type>) { os << "unknown"sv; }
+            else if constexpr (std::is_same_v<type, sonia::invocation::object>) { os << "object"sv; }
             else if constexpr (std::is_same_v<type, numetron::basic_integer_view<invocation_bigint_limb_type>>) { os << "bigint"sv; }
             else {
                 using fstype = std::conditional_t<std::is_same_v<type, bool>, uint8_t, type>;
@@ -1489,7 +1494,8 @@ struct blob_result_strict_equal_to
     bool operator()(blob_result const& lhs, blob_result const& rhs) const noexcept
     {
         return lhs.type == rhs.type && blob_type_dispatch(unref(lhs), [&rhs = unref(rhs)]<typename LDT>(LDT const& lv)->bool {
-            return blob_type_dispatch(rhs, [lv]<typename RDT>(RDT const& rv)->bool {
+            return blob_type_dispatch(rhs, [&lv]<typename RDT>(RDT const& rv)->bool {
+                (void)lv; (void)rv;
                 if constexpr (std::is_same_v<LDT, RDT>) {
                     if constexpr (std::is_same_v<nullptr_t, LDT>) { return true; }
                     else if constexpr (std::is_same_v<bool, LDT>) { return lv == !!rv; }

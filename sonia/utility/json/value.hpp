@@ -134,7 +134,7 @@ class json_value : json_detail::holder_t
     ~json_value();
 
     json_value(json_value const&) = default;
-    json_value(json_value &&) = default;
+    json_value(json_value &&) noexcept = default;
     json_value& operator=(json_value const&) = default;
     json_value& operator=(json_value &&) = default;
 

@@ -22,8 +22,10 @@ public:
     jclass obj_cls_;
 	jclass invocable_cls_;
 	jclass invocable_registry_cls_;
-    
+	jclass callable_registry_cls_;
+
 	jmethodID get_invocable_;
+	jmethodID register_callable_;
 	jmethodID debug_method_;
 
 private:

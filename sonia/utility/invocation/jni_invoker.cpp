@@ -51,6 +51,7 @@ jni_invoker::jni_invoker(JNIEnv* penv)
 
 	invocable_cls = env.get_class("com/sonia/invocation/Invocable");
     invocable_registry_cls = env.get_class("com/sonia/invocation/InvocableRegistry");
+	callable_registry_cls = env.get_class("com/sonia/invocation/CallableRegistry");
     invoke_ = env.get_static_jmethod(*invocable_registry_cls, "invoke", "(ILjava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;");
 	invoke_set_ = env.get_static_jmethod(*invocable_registry_cls, "setProperty", "(ILjava/lang/String;Ljava/lang/Object;)V");
 	invoke_get_ = env.get_static_jmethod(*invocable_registry_cls, "getProperty", "(ILjava/lang/String;)Ljava/lang/Object;");
@@ -66,13 +67,13 @@ smart_blob jni_invoker::invoke(jint invid, string_view name, sonia::span<const b
     JNIEnv* penv;
     int res = jvm->GetEnv((void**)&penv, JNI_VERSION_1_6);
     if (res == JNI_OK) {
-		GLOBAL_LOG_INFO() << "jni_invoker::invoke " << name;
+		//GLOBAL_LOG_INFO() << "jni_invoker::invoke " << name;
         jni_env env{ penv };
 		auto jname = env.new_string(name);
 		auto jargs = encode_arguments(env, args);
 		auto res = env.invoke<jobject>(invocable_registry_cls, nullptr, invoke_, invid, jname.detach(), (jobject)jargs.detach());
 		blob_result br = sonia::invocation::jni_decoder::decode(env.get(), *res);
-		GLOBAL_LOG_INFO() << "jni_invoker::invoke " << name << ", result: " << br;
+		//GLOBAL_LOG_INFO() << "jni_invoker::invoke " << name << ", result: " << br;
 		return smart_blob{ std::move(br) };
     }
 	auto s = make_shared<sync_t>();
@@ -94,7 +95,7 @@ void jni_invoker::set_property(jint invid, string_view name, blob_result const& 
 	JNIEnv* penv;
 	int res = jvm->GetEnv((void**)&penv, JNI_VERSION_1_6);
 	if (res == JNI_OK) {
-		GLOBAL_LOG_INFO() << "jni_invoker::set_property " << name << ", with value: " << value;
+		//GLOBAL_LOG_INFO() << "jni_invoker::set_property " << name << ", with value: " << value;
 		jni_env env{ penv };
 		auto jname = env.new_string(name);
 		jobject arg = jni_encoder::encode(env.get(), value);

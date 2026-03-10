@@ -21,12 +21,12 @@ class jni_invocable_proxy
 public:
     inline jni_invocable_proxy(JNIEnv* penv, jint id) noexcept : penv_{ penv }, id_{ id }
     {
-        GLOBAL_LOG_INFO() << "jni_invocable_proxy created, id: " << id_;
+        //GLOBAL_LOG_INFO() << "jni_invocable_proxy created, id: " << id_;
     }
 
     ~jni_invocable_proxy()
     {
-        GLOBAL_LOG_INFO() << "destroyed jni_invocable_proxy, id: " << id_;
+        //GLOBAL_LOG_INFO() << "destroyed jni_invocable_proxy, id: " << id_;
     }
 
     shared_ptr<invocable> self_as_invocable_shared() override
@@ -47,7 +47,7 @@ public:
 
     bool try_set_property(string_view propname, blob_result const& val) override
     {
-        GLOBAL_LOG_INFO() << "setting property '" << propname << "' with value: " << val;
+        // GLOBAL_LOG_INFO() << "setting property '" << propname << "' with value: " << val;
         try {
             jni_env env{ penv_ };
             as_singleton<invocation::jni_invoker>(penv_)->set_property(id_, propname, val);

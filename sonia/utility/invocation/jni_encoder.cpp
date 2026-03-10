@@ -4,10 +4,19 @@
 
 #include "sonia/config.hpp"
 #include "jni_encoder.hpp"
+#include "jni_decoder.hpp"
 #include "jni_invoker.hpp"
+
+#include "sonia/small_vector.hpp"
 
 #include "sonia/java/jni_env.hpp"
 #include "sonia/java/jni_ref.hpp"
+
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/hashed_index.hpp>
+#include <boost/multi_index/member.hpp>
+#include <boost/multi_index/mem_fun.hpp>
+
 
 namespace sonia::invocation {
 
@@ -32,11 +41,13 @@ jobject create_array(std::type_identity<JElementT>, jni_encoder const&, jni_env&
     using jtype_t = JElementT;
     jsize sz = static_cast<jsize>(array_size_of<type_t>(b));
     auto arr = env.new_array(std::type_identity<jtype_t>{}, sz);
+    //GLOBAL_LOG_INFO() << "create_array<" << typeid(type_t).name() << ">("sv << typeid(jtype_t).name() << ") "sv << b;
     jtype_t* body = env.GetArrayElements<jtype_t>(arr);
     type_t const* begin_ptr = data_of<type_t>(b);
     type_t const* end_ptr = begin_ptr + sz;
     for (size_t index = 0; begin_ptr != end_ptr; ++begin_ptr, ++index) {
         body[index] = (jtype_t)*begin_ptr;
+        //GLOBAL_LOG_INFO() << "  element[" << index << "] = "sv << *begin_ptr;
     }
     env.ReleaseArrayElements<jtype_t>(arr, body, 0);
     return arr.detach();
@@ -47,7 +58,7 @@ template <typename IT>
 jobject create_array(std::type_identity<jobject>, jni_encoder const& enc, jni_env& env, blob_result const& b)
 {
     if constexpr (std::is_same_v<blob_result, IT>) {
-        GLOBAL_LOG_INFO() << "jni_encoder::encode: encoding array of blob_result, blob: " << b;
+        //GLOBAL_LOG_INFO() << "jni_encoder::encode: encoding array of blob_result, blob: " << b;
         jsize sz = static_cast<jsize>(array_size_of<blob_result>(b));
         
         // create array of Invokeable objects if all elements of the array are invocable objects, otherwise create array of Objects
@@ -73,7 +84,7 @@ jobject create_array(std::type_identity<jobject>, jni_encoder const& enc, jni_en
         }
         return jobjarr.detach();
     } else if constexpr (std::is_same_v<sonia::invocation::object, IT>) {
-        GLOBAL_LOG_INFO() << "jni_encoder::encode: encoding array of invocable objects, blob: " << b;
+        //GLOBAL_LOG_INFO() << "jni_encoder::encode: encoding array of invocable objects, blob: " << b;
         using wrapper_object_t = wrapper_object<shared_ptr<invocable>>;
         jsize sz = static_cast<jsize>(array_size_of<wrapper_object_t>(b));
         auto jobjarr = env.new_object_array(sz, enc.invocable_cls_, nullptr);
@@ -85,13 +96,13 @@ jobject create_array(std::type_identity<jobject>, jni_encoder const& enc, jni_en
                 THROW_INTERNAL_ERROR("jni_encoder::encode: can't get java_id property of object %1%"_fmt % begin_ptr->value.get());
             }
             jint java_id = java_id_res.as<jint>();
-            GLOBAL_LOG_INFO() << "jni_encoder::encode: encoding object array element, java_id: " << java_id;
+            //GLOBAL_LOG_INFO() << "jni_encoder::encode: encoding object array element, java_id: " << java_id;
             auto arg = env.invoke<jobject>(enc.invocable_registry_cls_, nullptr, enc.get_invocable_, java_id);
             if (arg) {
                 env->SetObjectArrayElement(*jobjarr, index, *arg);
             }
         }
-        env.invoke<void>(enc.invocable_registry_cls_, nullptr, enc.debug_method_, *jobjarr);
+        //env.invoke<void>(enc.invocable_registry_cls_, nullptr, enc.debug_method_, *jobjarr);
         return jobjarr.detach();
     } else {
         static_assert(sonia::dependent_false<IT>);
@@ -105,29 +116,102 @@ jobject create_array(std::type_identity<void>, jni_encoder const&, jni_env& env,
     THROW_NOT_IMPLEMENTED_ERROR("jni_encoder::encode: can't encode array %1%"_fmt % b);
 }
 
+class callable_registry : public singleton
+{
+    struct entry
+    {
+        shared_ptr<callable> object;
+        uint32_t id;
+        inline callable const* get_pointer() const noexcept { return object.get(); }
+    };
+
+    using set_t = boost::multi_index::multi_index_container<
+        entry,
+        boost::multi_index::indexed_by<
+            boost::multi_index::hashed_unique<boost::multi_index::member<entry, uint32_t, &entry::id>>,
+            boost::multi_index::hashed_unique<boost::multi_index::const_mem_fun<entry, callable const*, &entry::get_pointer>>
+        >
+    >;
+
+    set_t cache;
+    std::atomic<uint32_t> next_id{ 1 };
+    mutable threads::mutex cache_mutex;
+
+public:
+    uint32_t register_callable(shared_ptr<callable> obj)
+    {
+        std::lock_guard lock(cache_mutex);
+        auto& id_index = cache.template get<0>();
+        auto& ptr_index = cache.template get<1>();
+        auto it = ptr_index.find(obj.get());
+        if (it != ptr_index.end()) {
+            return it->id;
+        }
+        uint32_t id = next_id.fetch_add(1, std::memory_order_relaxed);
+        cache.insert({ std::move(obj), id });
+        return id;
+    }
+
+    shared_ptr<callable> get_callable(uint32_t id) const
+    {
+        std::lock_guard lock(cache_mutex);
+        auto& id_index = cache.template get<0>();
+        auto it = id_index.find(id);
+        if (it != id_index.end()) {
+            return it->object;
+        }
+        return {};
+    }
+
+    void free_callable(uint32_t id)
+    {
+        std::lock_guard lock(cache_mutex);
+        auto& id_index = cache.template get<0>();
+        auto it = id_index.find(id);
+        if (it != id_index.end()) {
+            id_index.erase(it);
+        }
+    }
+};
+
+
+
 jobject jni_encoder::do_encode(JNIEnv* penv, blob_result const& b) const
 {
     if (is_nil(b)) return nullptr;
     
     jni_env env{ penv };
-    if (b.type == blob_type::object) { // object is considered ad an array type (array of bytes that represents an object)
+    if (b.type == blob_type::object) { // object is considered as an array type (array of bytes that represents an object)
         using wrapper_object_t = wrapper_object<shared_ptr<invocable>>;
-        shared_ptr<invocable> invk = as<wrapper_object_t>(b).value;
-        smart_blob java_id_res;
-        if (!invk->try_get_property("java_id", java_id_res)) {
-            GLOBAL_LOG_ERROR() << "jni_encoder::encode: failed to get java_id property of object invokable" << b;
-            return nullptr;
+        using wrapper_callable_t = wrapper_object<shared_ptr<callable>>;
+
+        invocation::object & dyn_object = as<invocation::object>(b);
+        if (wrapper_object_t * pwrinv = dynamic_cast<wrapper_object_t*>(&dyn_object)) {
+            shared_ptr<invocable> invk = pwrinv->value;
+            smart_blob java_id_res;
+            if (!invk->try_get_property("java_id", java_id_res)) {
+                GLOBAL_LOG_ERROR() << "jni_encoder::encode: failed to get java_id property of object invokable" << b;
+                return nullptr;
+            }
+            return env.invoke<jobject>(invocable_registry_cls_, nullptr, get_invocable_, java_id_res.as<jint>()).detach();
+        } else if (wrapper_callable_t* pwrcall = dynamic_cast<wrapper_callable_t*>(&dyn_object)) {
+            shared_ptr<callable> call = pwrcall->value;
+            uint32_t callable_id = as_singleton<callable_registry>()->register_callable(call);
+            return env.invoke<jobject>(callable_registry_cls_, nullptr, register_callable_, (jint)callable_id).detach();
+        } else {
+            THROW_NOT_IMPLEMENTED_ERROR("jni_encoder::encode: can't encode unknown object %1%"_fmt % b);
         }
-        return env.invoke<jobject>(invocable_registry_cls_, nullptr, get_invocable_, java_id_res.as<jint>()).detach();
     }
+    //GLOBAL_LOG_INFO() << "encoding: " << b;
+
     if (is_array(b) && !contains_string(b)) {
         return blob_type_selector(b, [&env, this](auto ident, blob_result b) {
             using type = typename decltype(ident)::type;
             using jtype = typename cxxjni<type>::jtype;
-            GLOBAL_LOG_INFO() << "jni_encoder::encode: encoding array of type " << typeid(type).name() << ", blob: " << b;
             return create_array<type>(std::type_identity<jtype>{}, *this, env, b);
         });
     }
+    
     switch (b.type) {
     case blob_type::boolean:
         return env.new_boxed_value<jboolean>((jint)b.data.bp.i8value).detach();
@@ -169,9 +253,11 @@ jni_encoder::jni_encoder(JNIEnv* penv)
     obj_cls_ = *inv.obj_cls;
     invocable_cls_ = *inv.invocable_cls;
     invocable_registry_cls_ = *inv.invocable_registry_cls;
+    callable_registry_cls_ = *inv.callable_registry_cls;
 
     jni_env env{ penv };
     get_invocable_ = env.get_static_jmethod(invocable_registry_cls_, "get", "(I)Lcom/sonia/invocation/Invocable;");
+    register_callable_ = env.get_static_jmethod(callable_registry_cls_, "register", "(I)Lcom/sonia/invocation/Callable;");
     debug_method_ = env.get_static_jmethod(invocable_registry_cls_, "debug", "(Ljava/lang/Object;)V");
 }
 
@@ -180,4 +266,47 @@ jobject jni_encoder::encode(JNIEnv* penv, blob_result const& br)
     return as_singleton<jni_encoder>(penv)->do_encode(penv, br);
 }
 
+}
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_sonia_invocation_NativeCallable_invoke(JNIEnv* penv, jclass clazz, jint id, jobjectArray arguments)
+{
+    using namespace sonia;
+    using namespace sonia::services;
+
+    GLOBAL_LOG_INFO() << "NativeCallable_invoke: id=" << id;
+
+    jni_env env{ penv };
+    
+    try {
+        shared_ptr<invocation::callable> c = as_singleton<invocation::callable_registry>()->get_callable(id);
+
+        if (!c) {
+            throw exception("NativeCallable_invoke: no callable found for id=%1%"_fmt % id);
+        }
+        small_vector<smart_blob, 8> blob_args;
+        int length = env.get_array_length(arguments);
+        for (int index = 0; index < length; index++)
+        {
+            auto obj = env.get_object_array_element(arguments, index);
+            blob_args.emplace_back(invocation::jni_decoder::decode(penv, *obj));
+            //GLOBAL_LOG_ERROR() << "jni contentViewInvoke, method " << methodname.c_str() << ", arg# " << index << ", argval: " << blob_args.back();
+        }
+
+        auto res = c->invoke(span{ reinterpret_cast<blob_result*>(blob_args.data()), blob_args.size() });
+        if (res.is_error()) {
+            throw exception(res.as<string_view>());
+        }
+        return invocation::jni_encoder::encode(penv, *res);
+    } catch (std::exception const& e) {
+        auto expcls = env.get_class("java/lang/RuntimeException");
+        env.throw_new(*expcls, e.what());
+        return nullptr;
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_sonia_invocation_NativeCallable_release(JNIEnv* penv, jclass clazz, jint id)
+{
+    sonia::as_singleton<sonia::invocation::callable_registry>()->free_callable(id);
 }

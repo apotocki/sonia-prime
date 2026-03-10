@@ -60,6 +60,7 @@ public:
     unique_jni_ref<jclass, global_ref_kind> obj_cls;
     unique_jni_ref<jclass, global_ref_kind> invocable_cls;
     unique_jni_ref<jclass, global_ref_kind> invocable_registry_cls;
+    unique_jni_ref<jclass, global_ref_kind> callable_registry_cls;
     unique_jni_ref<jclass, global_ref_kind> cbcl;
 
     explicit jni_invoker(JNIEnv* penv);

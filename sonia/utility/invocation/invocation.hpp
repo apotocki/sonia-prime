@@ -135,7 +135,7 @@ static_assert(sizeof(blob_result) == 16);
 
 extern "C" {
 
-SONIA_PRIME_API void blob_result_allocate(blob_result *, bool no_inplace = false);
+SONIA_PRIME_API void blob_result_allocate(blob_result *, bool disable_inplace = false);
 SONIA_PRIME_API void blob_result_pin(blob_result *);
 SONIA_PRIME_API void blob_result_unpin(blob_result *);
 
@@ -648,16 +648,24 @@ inline blob_result optional_blob_result(sonia::optional<T> const& value)
 
 template <typename T, size_t EV>
 requires std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_same_v<numetron::float16, std::remove_cv_t<T>> || std::is_same_v<blob_result, std::remove_cv_t<T>>
-inline blob_result array_blob_result(std::span<T, EV> arr)
+inline blob_result array_blob_result(std::span<T, EV> arr, bool take_ownership = false, bool disable_inplace = false)
 {
-    return make_blob_result(arrayify(blob_type_for<T>()), arr.data(), static_cast<uint32_t>(arr.size() * sizeof(T)));
+    blob_result result = make_blob_result(arrayify(blob_type_for<T>()), arr.data(), static_cast<uint32_t>(arr.size() * sizeof(T)));
+    if (take_ownership) {
+        blob_result_allocate(&result, disable_inplace);
+    }
+    return result;
 }
 
 template <typename T, size_t N>
 requires std::is_integral_v<T> || std::is_floating_point_v<T> || std::is_same_v<numetron::float16, std::remove_cv_t<T>> || std::is_same_v<blob_result, std::remove_cv_t<T>>
-inline blob_result array_blob_result(T(&arr)[N])
+inline blob_result array_blob_result(T(&arr)[N], bool take_ownership = false, bool disable_inplace = false)
 {
-    return make_blob_result(arrayify(blob_type_for<T>()), arr, static_cast<uint32_t>(N * sizeof(T)));
+    blob_result result = make_blob_result(arrayify(blob_type_for<T>()), arr, static_cast<uint32_t>(N * sizeof(T)));
+    if (take_ownership) {
+        blob_result_allocate(&result, disable_inplace);
+    }
+    return result;
 }
 
 [[nodiscard]]

@@ -80,7 +80,16 @@ public:
 
     optimized_base<RefCountT>* clone() const override
     {
-        THROW_NOT_IMPLEMENTED_ERROR();
+        // subject to test
+        AllocatorT alloc = const_cast<optimized_decimal*>(this)->allocator();
+        size_t total_limbs = self_size_in_limbs() + this->allocated_size;
+        LimbT* ptr = alloc_traits_t::allocate(alloc, total_limbs);
+        optimized_decimal* self = new (ptr) optimized_decimal{ alloc };
+        static_cast<numetron::detail::decimal_data&>(*self) = static_cast<numetron::detail::decimal_data const&>(*this);
+        LimbT const* src_limbs = reinterpret_cast<LimbT const*>(this) + self_size_in_limbs();
+        LimbT* dst_limbs = ptr + self_size_in_limbs();
+        std::copy(src_limbs, src_limbs + this->allocated_size, dst_limbs);
+        return self;
     }
 
     void dispose() noexcept override

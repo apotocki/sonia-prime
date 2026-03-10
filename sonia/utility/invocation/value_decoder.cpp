@@ -14,7 +14,7 @@ blob_result value_decoder::decode(span<const uint8_t> sp, string_view type, stri
     if (auto it = value_handlers_.find(type); it != value_handlers_.end()) {
         return it->second(sp, endianness);
     }
-    throw exception("unknown type: %1%"_fmt % type);
+    throw exception("value_decoder::decode: unknown type: %1%"_fmt % type);
 }
 
 template <std::integral T>

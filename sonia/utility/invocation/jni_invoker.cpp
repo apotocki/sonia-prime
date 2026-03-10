@@ -50,11 +50,14 @@ jni_invoker::jni_invoker(JNIEnv* penv)
     cbcl = env.get_class("com/sonia/invocation/CallbackBean");
 
 	invocable_cls = env.get_class("com/sonia/invocation/Invocable");
+    callable_cls = env.get_class("com/sonia/invocation/Callable");
     invocable_registry_cls = env.get_class("com/sonia/invocation/InvocableRegistry");
-	callable_registry_cls = env.get_class("com/sonia/invocation/CallableRegistry");
-    invoke_ = env.get_static_jmethod(*invocable_registry_cls, "invoke", "(ILjava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;");
+	invoke_ = env.get_static_jmethod(*invocable_registry_cls, "invoke", "(ILjava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;");
 	invoke_set_ = env.get_static_jmethod(*invocable_registry_cls, "setProperty", "(ILjava/lang/String;Ljava/lang/Object;)V");
 	invoke_get_ = env.get_static_jmethod(*invocable_registry_cls, "getProperty", "(ILjava/lang/String;)Ljava/lang/Object;");
+
+	callable_registry_cls = env.get_class("com/sonia/invocation/CallableRegistry");
+    call_invoke_ = env.get_static_jmethod(*callable_registry_cls, "invoke", "(I[Ljava/lang/Object;)Ljava/lang/Object;");
 
     cbcl_id_fld = env.get_jfield(*cbcl, "id", "J");
     cbcl_invId_fld = env.get_jfield(*cbcl, "invId", "I");
@@ -80,6 +83,33 @@ smart_blob jni_invoker::invoke(jint invid, string_view name, sonia::span<const b
 	{
 		lock_guard guard(caller_queue_mtx);
 		caller_queue.emplace_back(caller_bean{ .invid = invid, .name = name, .args = args, .sync = s });
+		cvar.notify_one();
+	}
+
+	// wait for to java types encoding
+	s->wait_for_start_invokation();
+	s->wait_for_result();
+	blob_result br = s->result.detach();
+	return smart_blob{ std::move(br) };
+}
+
+smart_blob jni_invoker::call_invoke(jint callid, sonia::span<const blob_result> args)
+{
+	JNIEnv* penv;
+	int res = jvm->GetEnv((void**)&penv, JNI_VERSION_1_6);
+	if (res == JNI_OK) {
+		//GLOBAL_LOG_INFO() << "jni_invoker::call_invoke " << name;
+		jni_env env{ penv };
+		auto jargs = encode_arguments(env, args);
+		auto res = env.invoke<jobject>(callable_registry_cls, nullptr, call_invoke_, callid, (jobject)jargs.detach());
+		blob_result br = sonia::invocation::jni_decoder::decode(env.get(), *res);
+		//GLOBAL_LOG_INFO() << "jni_invoker::invoke " << name << ", result: " << br;
+		return smart_blob{ std::move(br) };
+	}
+	auto s = make_shared<sync_t>();
+	{
+		lock_guard guard(caller_queue_mtx);
+		caller_queue.emplace_back(caller_bean{ .invid = callid, .name = {}, .args = args, .sync = s });
 		cvar.notify_one();
 	}
 
@@ -183,14 +213,14 @@ void jni_invoker::push_result(JNIEnv* penv, jlong cbid, jobject result) noexcept
 	cbean->sync->set_result_stage();
 }
 
-extern "C" JNIEXPORT void JNICALL Java_com_sonia_invocation_InvocableRegistry_pollCallback(JNIEnv* penv, jclass, jobject cb)
+extern "C" JNIEXPORT void JNICALL Java_com_sonia_invocation_CallbackBean_pollCallback(JNIEnv* penv, jclass, jobject cb)
 {
 	//GLOBAL_LOG_INFO() << "in pollCallback";
 	as_singleton<invocation::jni_invoker>(penv)->poll(penv, cb);
 	//GLOBAL_LOG_INFO() << "out of pollCallback";
 }
 
-extern "C" JNIEXPORT void JNICALL Java_com_sonia_invocation_InvocableRegistry_callbackResult(JNIEnv* penv, jclass, jlong cbid, jobject result)
+extern "C" JNIEXPORT void JNICALL Java_com_sonia_invocation_CallbackBean_callbackResult(JNIEnv* penv, jclass, jlong cbid, jobject result)
 {
 	//GLOBAL_LOG_INFO() << "in callbackResult";
 	as_singleton<invocation::jni_invoker>(penv)->push_result(penv, cbid, result);

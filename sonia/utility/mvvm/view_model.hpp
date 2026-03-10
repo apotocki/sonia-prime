@@ -62,9 +62,9 @@ public:
         //typedef void(*on_invoke_cv_result_setter)(void*, blob_result*, uint32_t); // cookie, results, result count
         //virtual void invoke_callback(void* cookie, int32_t vmid, string_view method_name, span<const blob_result>, on_invoke_cv_result_setter setter) = 0;
 
-        virtual smart_blob invoke_callback(blob_result const& cbid, string_view method_name, span<const blob_result>) = 0;
+        //virtual smart_blob invoke_callback(blob_result const& cbid, string_view method_name, span<const blob_result>) = 0;
 
-        virtual int on_state_change_callback(int32_t vmid, status_type, std::span<const blob_result> args) = 0;
+        //virtual int on_state_change_callback(int32_t vmid, status_type, std::span<const blob_result> args) = 0;
 
         virtual int32_t create_view_model(string_view kind) = 0;
         virtual int32_t push_view_model(shared_ptr<view_model>) = 0;
@@ -111,7 +111,8 @@ public:
     void final_cancel();
 
     // returns 1 if the event was handled, 0 otherwise
-    int on_state_change(status_type st, std::initializer_list<const blob_result> args);
+    smart_blob on_state_change(status_type st, std::initializer_list<const blob_result> args);
+    smart_blob on_state_change(span<const blob_result> args);
 
     template <typename F>
     void post(F&& f);
@@ -132,9 +133,9 @@ public:
     void on_property_change(string_view propname) override;
 
     // set event listener
-    inline void set_on_property_change(shared_ptr<invocation::callable> cbinv) noexcept
+    inline void set_on_change(shared_ptr<invocation::callable> cbinv) noexcept
     {
-        on_property_change_ftor_ = std::move(cbinv);
+        on_change_ftor_ = std::move(cbinv);
     }
 
     //inline void set_callback_invoker(shared_ptr<invocation::callable> cbinv) noexcept
@@ -158,8 +159,7 @@ protected:
     static void do_registration(registrar_type &);
 
 protected:
-    //shared_ptr<invocation::callable> cb_invoker_;
-    shared_ptr<invocation::callable> on_property_change_ftor_;
+    shared_ptr<invocation::callable> on_change_ftor_;
 
     fibers::mutex ev_mtx_;
     fibers::condition_variable ev_cv_;

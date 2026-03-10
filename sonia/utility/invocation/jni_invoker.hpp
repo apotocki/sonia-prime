@@ -21,6 +21,7 @@ class jni_invoker : public singleton
     jmethodID invoke_;
     jmethodID invoke_set_;
     jmethodID invoke_get_;
+    jmethodID call_invoke_;
     // com.sonia.invocation.CallbackBean fields
     jfieldID cbcl_id_fld;
     jfieldID cbcl_invId_fld;
@@ -59,6 +60,7 @@ class jni_invoker : public singleton
 public:
     unique_jni_ref<jclass, global_ref_kind> obj_cls;
     unique_jni_ref<jclass, global_ref_kind> invocable_cls;
+    unique_jni_ref<jclass, global_ref_kind> callable_cls;
     unique_jni_ref<jclass, global_ref_kind> invocable_registry_cls;
     unique_jni_ref<jclass, global_ref_kind> callable_registry_cls;
     unique_jni_ref<jclass, global_ref_kind> cbcl;
@@ -66,6 +68,7 @@ public:
     explicit jni_invoker(JNIEnv* penv);
 
     smart_blob invoke(jint invid, string_view name, sonia::span<const blob_result> args);
+    smart_blob call_invoke(jint callid, sonia::span<const blob_result> args);
     void set_property(jint invid, string_view name, blob_result const& value);
     smart_blob get_property(jint invid, string_view name);
 

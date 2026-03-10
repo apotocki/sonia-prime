@@ -568,9 +568,13 @@ inline blob_result string_blob_result(const char* value, blob_type t = blob_type
 }
 
 template <typename ArgT>
-inline blob_result error_blob_result(ArgT && arg)
+inline blob_result error_blob_result(ArgT && arg, bool take_ownership = false, bool disable_inplace = false)
 {
-    return string_blob_result(std::forward<ArgT>(arg), blob_type::error);
+    blob_result result = string_blob_result(std::forward<ArgT>(arg), blob_type::error);
+    if (take_ownership) {
+        blob_result_allocate(&result, disable_inplace);
+    }
+    return result;
 }
 
 template <std::unsigned_integral LimbT>

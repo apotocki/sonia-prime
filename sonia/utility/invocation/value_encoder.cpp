@@ -14,7 +14,7 @@ void value_encoder::encode(blob_result const& value, string_view type, string_vi
         it->second(value, endianness, writer);
         return;
     }
-    throw exception("unknown type: %1%"_fmt % type);
+    throw exception("value_encoder::encode: unknown type: %1%"_fmt % type);
 }
 
 template <std::integral T>

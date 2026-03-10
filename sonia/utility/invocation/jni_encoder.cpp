@@ -121,20 +121,20 @@ class callable_registry : public singleton
     struct entry
     {
         shared_ptr<callable> object;
-        uint32_t id;
+        int32_t id;
         inline callable const* get_pointer() const noexcept { return object.get(); }
     };
 
     using set_t = boost::multi_index::multi_index_container<
         entry,
         boost::multi_index::indexed_by<
-            boost::multi_index::hashed_unique<boost::multi_index::member<entry, uint32_t, &entry::id>>,
+            boost::multi_index::hashed_unique<boost::multi_index::member<entry, int32_t, &entry::id>>,
             boost::multi_index::hashed_unique<boost::multi_index::const_mem_fun<entry, callable const*, &entry::get_pointer>>
         >
     >;
 
     set_t cache;
-    std::atomic<uint32_t> next_id{ 1 };
+    std::atomic<int32_t> next_id{ -1 };
     mutable threads::mutex cache_mutex;
 
 public:
@@ -147,12 +147,12 @@ public:
         if (it != ptr_index.end()) {
             return it->id;
         }
-        uint32_t id = next_id.fetch_add(1, std::memory_order_relaxed);
+        int32_t id = next_id.fetch_sub(1, std::memory_order_relaxed);
         cache.insert({ std::move(obj), id });
         return id;
     }
 
-    shared_ptr<callable> get_callable(uint32_t id) const
+    shared_ptr<callable> get_callable(int32_t id) const
     {
         std::lock_guard lock(cache_mutex);
         auto& id_index = cache.template get<0>();

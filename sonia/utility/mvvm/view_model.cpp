@@ -11,19 +11,19 @@ namespace sonia {
 
 using namespace std::string_view_literals;
 
-class view_model_on_property_change_callable : public sonia::invocation::callable
+class view_model_on_state_change_callable : public sonia::invocation::callable
 {
     weak_ptr<view_model> vm_;
 
 public:
-    view_model_on_property_change_callable(view_model& vm) : vm_{ vm.weak_self() } {}
+    view_model_on_state_change_callable(view_model& vm) : vm_{ vm.weak_self() } {}
     smart_blob invoke(span<const blob_result> args) override
     {
-        if (args.size() != 1 || args[0].type != blob_type::string) {
-            throw exception("invalid arguments for on_property_change event");
+        if (args.size() < 1) {
+            throw exception("invalid arguments for on_state_change event");
         }
         if (auto vm = vm_.lock()) {
-            vm->on_property_change(as<string_view>(args[0]));
+            vm->on_state_change(args);
         }
         return nil_blob_result();
     }
@@ -43,9 +43,9 @@ void view_model::do_registration(registrar_type & mr)
     //mr.register_method<&view_model::set_method>("set"sv);
     mr.register_method<&view_model::inherit>("inherit"sv);
 
-    mr.register_writeonly_property("on_property_change"sv, [](auto& obj, blob_result const& br) {
+    mr.register_writeonly_property("on_change"sv, [](auto& obj, blob_result const& br) {
         using namespace sonia::invocation;
-        obj.set_on_property_change(as<wrapper_object<shared_ptr<callable>>>(br).value);
+        obj.set_on_change(as<wrapper_object<shared_ptr<callable>>>(br).value);
     });
 }
 
@@ -55,7 +55,7 @@ void view_model::inherit(int32_t baseid)
     bases_.insert(baseid);
     shared_ptr<manager> mng = get_manager();
     if (!mng) throw exception("the assigned manager is obsoleted");
-    mng->get_view_model(baseid)->set_on_property_change(make_shared<view_model_on_property_change_callable>(*this));
+    mng->get_view_model(baseid)->set_on_change(make_shared<view_model_on_state_change_callable>(*this));
 }
 
 bool view_model::has_method(string_view methodname) const
@@ -188,12 +188,47 @@ void view_model::set_property(std::string_view propname, blob_result && val)
 }
 */
 
+smart_blob view_model::on_state_change(status_type st, std::initializer_list<const blob_result> args)
+{
+    if (on_change_ftor_) {
+        small_vector<blob_result, 16> bargs;
+        bargs.push_back(i16_blob_result((int16_t)st));
+        std::copy(args.begin(), args.end(), std::back_inserter(bargs));
+        try {
+            GLOBAL_LOG_INFO() << "view_model::on_state_change: " << (int16_t)st << ", args count: " << args.size();
+            return on_change_ftor_->invoke(bargs);
+        } catch (std::exception& ex) {
+            return error_blob_result(ex.what(), true);
+        }
+    }
+    GLOBAL_LOG_WARN() << "view_model("sv << id() << ")::on_state_change: no handler for state change event"sv;
+    return {};
+}
+
+smart_blob view_model::on_state_change(span<const blob_result> args)
+{
+    if (on_change_ftor_) {
+        try {
+            if (args.empty()) {
+                return error_blob_result("invalid arguments for on_state_change event"sv, true);
+            }
+            GLOBAL_LOG_INFO() << "view_model::on_state_change: " << as<int16_t>(args.front()) << ", args count: " << args.size();
+            return on_change_ftor_->invoke(args);
+        } catch (std::exception& ex) {
+            return error_blob_result(ex.what(), true);
+        }
+    }
+    GLOBAL_LOG_WARN() << "view_model("sv << id() << ")::on_state_change: no handler for state change event"sv;
+    return {};
+}
+
 void view_model::on_property_change(string_view propname)
 {
-    if (on_property_change_ftor_) {
-        on_property_change_ftor_->invoke(std::initializer_list<const blob_result>{ string_blob_result(propname) });
+    blob_result args[] = { i16_blob_result((int16_t)status_type::PROPERTY_CHANGED_ST), string_blob_result(propname) };
+    smart_blob res = on_state_change(args);
+    if (res.is_error()) {
+        GLOBAL_LOG_ERROR() << "error in on_property_change handler: " << res;
     }
-    on_state_change(status_type::PROPERTY_CHANGED_ST, { string_blob_result(propname) });
 }
 
 /*
@@ -308,13 +343,7 @@ std::string_view view_model::echo_method(std::string_view arg) const
     return arg;
 }
 
-int view_model::on_state_change(status_type st, std::initializer_list<const blob_result> args)
-{
-    if (auto mng = get_manager(); mng) {
-        return mng->on_state_change_callback(id(), st, std::span{args});
-    }
-    return 0;
-}
+
 
 /*
 void view_model::push_event(uint32_t request_id, response_item itm)

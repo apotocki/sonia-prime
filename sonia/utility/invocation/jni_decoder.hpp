@@ -25,6 +25,7 @@ public:
 
 private:
 	jclass invocable_registry_cls_;
+	jclass callable_registry_cls_;
 
 	jmethodID boolean_booleanValue_;
 	jmethodID byte_byteValue_;
@@ -34,6 +35,7 @@ private:
 	jmethodID float_floatValue_;
 	jmethodID double_doubleValue_;
 	jmethodID get_invocable_id_;
+	jmethodID get_callable_id_;
 
 	blob_result do_decode(JNIEnv*, jobject) const;
 

@@ -11,6 +11,24 @@ namespace sonia {
 
 using namespace std::string_view_literals;
 
+class view_model_on_property_change_callable : public sonia::invocation::callable
+{
+    weak_ptr<view_model> vm_;
+
+public:
+    view_model_on_property_change_callable(view_model& vm) : vm_{ vm.weak_self() } {}
+    smart_blob invoke(span<const blob_result> args) override
+    {
+        if (args.size() != 1 || args[0].type != blob_type::string) {
+            throw exception("invalid arguments for on_property_change event");
+        }
+        if (auto vm = vm_.lock()) {
+            vm->on_property_change(as<string_view>(args[0]));
+        }
+        return nil_blob_result();
+    }
+};
+
 view_model::view_model(int32_t idval) noexcept
     : locked_{ 0 }
     , id_{ idval }
@@ -25,7 +43,7 @@ void view_model::do_registration(registrar_type & mr)
     //mr.register_method<&view_model::set_method>("set"sv);
     mr.register_method<&view_model::inherit>("inherit"sv);
 
-    mr.register_writeonly_property("on-property-change"sv, [](auto& obj, blob_result const& br) {
+    mr.register_writeonly_property("on_property_change"sv, [](auto& obj, blob_result const& br) {
         using namespace sonia::invocation;
         obj.set_on_property_change(as<wrapper_object<shared_ptr<callable>>>(br).value);
     });
@@ -35,6 +53,9 @@ void view_model::inherit(int32_t baseid)
 {
     if (baseid == id()) throw exception("can't inherit itself"sv);
     bases_.insert(baseid);
+    shared_ptr<manager> mng = get_manager();
+    if (!mng) throw exception("the assigned manager is obsoleted");
+    mng->get_view_model(baseid)->set_on_property_change(make_shared<view_model_on_property_change_callable>(*this));
 }
 
 bool view_model::has_method(string_view methodname) const

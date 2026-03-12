@@ -572,6 +572,7 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\integral.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\iostream.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\json_serialization.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\serialization\map.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\maybe_array.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\mpl_sequence.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\serialization\optimized_array.hpp" />

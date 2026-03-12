@@ -2055,6 +2055,9 @@
     <ClInclude Include="..\..\..\sonia\utility\invocation\jni_invoker.hpp">
       <Filter>sonia.utility\invocation</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\serialization\map.hpp">
+      <Filter>sonia.utility\serialization</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

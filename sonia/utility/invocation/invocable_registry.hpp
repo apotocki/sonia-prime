@@ -21,6 +21,26 @@
 
 namespace sonia::invocation {
 
+// A callable that proxies invocable::invoke for a fixed method name.
+// Multiple overloads registered under the same name share a single proxy instance;
+// runtime dispatch is handled by invocable::invoke.
+class method_proxy_callable : public callable
+{
+    invocable* target_;
+    std::string method_name_;
+
+public:
+    method_proxy_callable(invocable* target, std::string method_name)
+        : target_{ target }
+        , method_name_{ std::move(method_name) }
+    {}
+
+    smart_blob invoke(span<const blob_result> args) override
+    {
+        return target_->invoke(method_name_, args);
+    }
+};
+
 struct method : multimethod
 {
     virtual smart_blob operator()(invocable &, span<const blob_result> args) const noexcept = 0;
@@ -161,6 +181,24 @@ struct field_fn_property_writer : field_fn_property_base<FieldV>, fn_property_wr
     SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(field_fn_property_writer);
 };
 
+// A fn_property_reader that returns a method_proxy_callable for the registered method name.
+struct method_callable_property_reader : fn_property_reader
+{
+    std::string method_name_;
+
+    explicit method_callable_property_reader(string_view name)
+        : method_name_{ name }
+    {}
+
+    smart_blob get(invocable const& obj) const override
+    {
+        shared_ptr<callable> proxy = std::make_shared<method_proxy_callable>(const_cast<invocable*>(&obj), method_name_);
+        return smart_blob{ object_blob_result<wrapper_object<shared_ptr<callable>>>(std::move(proxy)) };
+    }
+
+    SONIA_POLYMORPHIC_CLONABLE_MOVABLE_IMPL(method_callable_property_reader);
+};
+
 template <typename TargetT>
 struct basic_registrar
 {
@@ -168,6 +206,9 @@ struct basic_registrar
     static void register_method(string_view name)
     {
         sonia::services::register_multimethod(concrete_method<FuncV>(), { typeid(TargetT), name });
+        // Also expose the method as a read-only callable property so callers can retrieve
+        // a callable by name and invoke it later. Multiple overloads share the same proxy.
+        sonia::services::register_multimethod(method_callable_property_reader(name), { typeid(TargetT), typeid(fn_property_reader), name });
     }
 
     template <typename GetterT>

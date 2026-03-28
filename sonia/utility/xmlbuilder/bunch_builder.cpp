@@ -104,10 +104,10 @@ void bunch_builder::append(string_view parentid, string_view childid)
 {
     do_append(*get_element_by(parentid), get_element_by(childid));
     //if (view_ptr pview = dynamic_pointer_cast<view>(it->second), cview = dynamic_pointer_cast<view>(it2->second); cview && pview) {
-    //    pview->add_subview(cview);
+    //    pview->append_subview(cview);
     //}
     //view_ptr cview = it->second;
-    //pview->add_subview(cview);
+    //pview->append_subview(cview);
 }
 
 void bunch_builder::do_append(invocation::invocable& parent, shared_ptr<invocation::invocable> child)

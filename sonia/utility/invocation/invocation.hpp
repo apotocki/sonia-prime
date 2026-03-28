@@ -1030,6 +1030,24 @@ struct from_blob<T>
     }
 };
 
+template <std::derived_from<sonia::invocation::invocable> T>
+struct from_blob<sonia::shared_ptr<T>>
+{
+    sonia::shared_ptr<T> operator()(blob_result const& val) const
+    {
+        using namespace sonia;
+        using wobj_t = invocation::wrapper_object<shared_ptr<invocation::invocable>>;
+
+        if (val.type == blob_type::object) {
+            if (wobj_t* result = dynamic_cast<wobj_t*>(mutable_data_of<sonia::invocation::object>(val)); result) {
+                auto r = std::dynamic_pointer_cast<T>(result->value);
+                if (r) return r;
+            }
+        }
+        THROW_INTERNAL_ERROR("object in blob `%1%` is not of expected type `shared_ptr<%2%>`"_fmt % val % typeid(T).name());
+    }
+};
+
 template <>
 struct from_blob<bool>
 {

@@ -12,7 +12,6 @@
 #if SONIA_VARIANT_IMPLEMENTATION == SONIA_STD_VARIANT
 #   include <variant>
 #   include "sonia/utility/functional/hash.hpp"
-#   include "sonia/utility/functional/less.hpp"
 
 namespace sonia {
 

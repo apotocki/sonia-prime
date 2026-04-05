@@ -35,7 +35,7 @@ struct variant_less_visitor
     }
 };
 
-template <typename LessT = less>
+template <typename LessT = less_fn>
 struct variant_greater_visitor
 {
     using is_transparent = void;

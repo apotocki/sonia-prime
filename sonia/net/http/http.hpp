@@ -14,16 +14,16 @@
 
 namespace sonia::http {
 
-#define SONIA_HTTP_METHODS_SEQ \
-    ((GET,  "GET"))            \
-    ((HEAD, "HEAD"))           \
-    ((POST, "POST"))           \
-    ((PUT, "PUT"))             \
-    ((DELETE_, "DELETE"))      \
-    ((CONNECT, "CONNECT"))     \
-    ((OPTIONS, "OPTIONS"))     \
-    ((TRACE_, "TRACE"))        \
-    ((PATCH, "PATCH"))
+#define SONIA_HTTP_METHODS_SEQ  \
+    ((GET,  "GET"sv))           \
+    ((HEAD, "HEAD"sv))          \
+    ((POST, "POST"sv))          \
+    ((PUT, "PUT"sv))            \
+    ((DELETE_, "DELETE"sv))     \
+    ((CONNECT, "CONNECT"sv))    \
+    ((OPTIONS, "OPTIONS"sv))    \
+    ((TRACE_, "TRACE"sv))       \
+    ((PATCH, "PATCH"sv))
 
 #define SONIA_PRINT_TYPE_ENUM(r, data, i, elem) BOOST_PP_TUPLE_ELEM(2, 0, elem),
 
@@ -34,13 +34,13 @@ enum class method_verb
     UPPER_BOUND_VALUE
 };
 
-std::string const& to_string(method_verb);
+std::string_view to_string_view(method_verb);
 method_verb to_method(std::string_view);
 
 template <typename CharT, class TraitsT>
-std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, method_verb mv)
+inline std::basic_ostream<CharT, TraitsT> & operator<< (std::basic_ostream<CharT, TraitsT> & os, method_verb mv)
 {
-    return os << to_string(mv);
+    return os << to_string_view(mv);
 }
 
 std::string http_date(tm* tm);

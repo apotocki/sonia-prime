@@ -98,7 +98,7 @@ int sonialib_iso_datetime(lua_State* L)
 }
 
 template <typename T>
-struct caster : static_visitor<T>
+struct caster
 {
     caster() = default;
     template <typename VT>
@@ -106,7 +106,7 @@ struct caster : static_visitor<T>
 };
 
 template <uint64_t TicksPerSecV, int64_t EpochTo2000secondsV = 946684800LL>
-struct iso_datetime_printer : static_visitor<std::string>
+struct iso_datetime_printer
 {
     iso_datetime_printer() = default;
 
@@ -132,7 +132,7 @@ struct iso_datetime_printer : static_visitor<std::string>
 };
 
 template <uint64_t TicksPerSecV, int64_t EpochTo2000secondsV = 946684800LL>
-struct iso_date_printer : static_visitor<std::string>
+struct iso_date_printer
 {
     iso_date_printer() = default;
 
@@ -160,7 +160,7 @@ struct iso_date_printer : static_visitor<std::string>
 };
 
 template <uint64_t TicksPerSecV, int64_t EpochTo2000secondsV = 946684800LL>
-struct iso_time_printer : static_visitor<std::string>
+struct iso_time_printer
 {
     iso_time_printer() = default;
 
@@ -206,19 +206,19 @@ int sonialib_iso_datetime_string(lua_State* L)
         return luaL_argerror(L, 1, "integer or `bigint' expected");
     }
     if (dttype == "java"sv) { // milliseconds since 1970-01-01T00:00:00Z
-        result = apply_visitor(printer<1000>{}, arg);
+        result = std::visit(printer<1000>{}, arg);
     } else if(dttype == "winfile"sv) { // 100 nanoseconds intervals since 1601-01-01T00:00:00Z
-        result = apply_visitor(printer<10000000, 12591158400LL>{}, arg);
+        result = std::visit(printer<10000000, 12591158400LL>{}, arg);
     } else if (dttype == "unix"sv) { // seconds since 1970-01-01T00:00:00Z
-        result = apply_visitor(printer<1>{}, arg);
+        result = std::visit(printer<1>{}, arg);
     } else if (dttype == "dosdate"sv) { // seconds since 1970-01-01T00:00:00Z
-        auto ival = apply_visitor(caster<lua_Integer>{}, arg);
+        auto ival = std::visit(caster<lua_Integer>{}, arg);
         unsigned int day = (unsigned int)(ival & 31);
         unsigned int month = (unsigned int)((ival >> 5) & 15);
         int64_t year = (int64_t)(1980 + (ival >> 9));
         result = printer<1>{}(basic_datetime_tag<uint64_t, 1>::construct(year, month, day));
     } else if (dttype == "dostime"sv) { // seconds since 1970-01-01T00:00:00Z
-        auto ival = apply_visitor(caster<lua_Integer>{}, arg);
+        auto ival = std::visit(caster<lua_Integer>{}, arg);
         luaL_argcheck(L, ival >= 0 && ival < 65536, 1, "wrong value");
         unsigned int seconds = (unsigned int)((ival & 31) * 2);
         unsigned int minutes = (unsigned int)((ival >> 5) & 63);

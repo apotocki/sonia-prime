@@ -6,7 +6,8 @@
 #include "http.hpp"
 
 #include <utility>
-#include <boost/unordered_map.hpp>
+#include <unordered_map>
+
 #include <boost/assign/list_of.hpp>
 
 #include "sonia/singleton.hpp"
@@ -28,18 +29,18 @@ struct status_codes_cache : singleton
 {
     status_codes_cache()
     {
-        map_[0] = std::string("UNKNOWN");
+        map_[0] = "UNKNOWN"sv;
         BOOST_PP_SEQ_FOR_EACH_I(SONIA_PRINT_HTTP_STATUS_CODES_SETUPPER, _, SONIA_HTTP_STATUS_CODES_SEQ)
     }
 
-    std::string const& to_message(status c) const
+    std::string_view to_message(status c) const
     {
         auto it = map_.find((int)c);
         if (BOOST_LIKELY(it != map_.end())) return it->second;
         return map_.find(0)->second;
     }
 
-    boost::unordered_map<int, std::string> map_;
+    std::unordered_map<int, std::string_view> map_;
 };
 
 template <typename EnumT>
@@ -47,18 +48,18 @@ struct back_way_cache
 {
     using back_way_cache_t = back_way_cache;
 
-    std::string const& to_string(EnumT c) const
+    std::string_view to_string_view(EnumT c) const
     {
         int idx = (int)c;
         if (idx <= 0 || idx >= (int)list_.size()) {
             THROW_INTERNAL_ERROR("unexceptable %1% value: %2%"_fmt % typeid(EnumT).name() % idx);
         }
-        BOOST_ASSERT (list_[idx]);
-        return *list_[idx];
+        BOOST_ASSERT (!list_[idx].empty());
+        return list_[idx];
     }
 
 protected:
-    std::vector<std::string const*> list_;
+    std::vector<std::string_view> list_;
 };
 
 struct methods_cache 
@@ -71,21 +72,21 @@ struct methods_cache
             BOOST_PP_SEQ_FOR_EACH_I(SONIA_PRINT_HTTP_METHODS_SETUPPER, _, SONIA_HTTP_METHODS_SEQ)
         ;
 
-        list_.resize((size_t)method_verb::UPPER_BOUND_VALUE, nullptr);
+        list_.resize((size_t)method_verb::UPPER_BOUND_VALUE, ""sv);
         for (auto const& [k, v] : map_) {
             BOOST_ASSERT ((size_t)v < list_.size());
-            list_[(size_t)v] = &k;
+            list_[(size_t)v] = k;
         }
     }
 
     method_verb to_method(std::string_view str) const
     {
-        auto it = map_.find(str, hasher(), string_equal_to());
+        auto it = map_.find(str);
         if (BOOST_LIKELY(it != map_.end())) return it->second;
         return method_verb::UNKNOWN;
     }
 
-    boost::unordered_map<std::string, method_verb, hasher> map_;
+    std::unordered_map<std::string_view, method_verb, hasher, string_equal_to> map_;
 };
 
 struct headers_cache
@@ -96,11 +97,11 @@ struct headers_cache
     {
         BOOST_PP_SEQ_FOR_EACH_I(SONIA_PRINT_HTTP_HEADERS_SETUPPER, _, SONIA_HTTP_HEADERS_SEQ)
 
-        list_.resize((size_t)header::UPPER_BOUND_VALUE, nullptr);
+        list_.resize((size_t)header::UPPER_BOUND_VALUE, ""sv);
         
         for (auto const& [k, v] : map_) {
             BOOST_ASSERT ((size_t)v.second < list_.size());
-            list_[(size_t)v.second] = &v.first;
+            list_[(size_t)v.second] = v.first;
         }
     }
 
@@ -114,7 +115,7 @@ struct headers_cache
             tmp = to_uc(str);
             str = tmp;
         }
-        auto it = map_.find(str, hasher(), string_equal_to());
+        auto it = map_.find(str);
         if (BOOST_LIKELY(it != map_.cend())) {
             return it->second.second;
         }
@@ -139,17 +140,17 @@ struct headers_cache
         return result;
     }
 
-    boost::unordered_map<std::string, std::pair<std::string, header>, hasher> map_;
+    std::unordered_map<std::string, std::pair<std::string_view, header>, hasher, string_equal_to> map_;
 };
 
-std::string const& to_string(status c)
+std::string_view to_string_view(status c)
 {
     return as_singleton<status_codes_cache>()->to_message(c);
 }
 
-std::string const& to_string(header c)
+std::string_view to_string_view(header c)
 {
-    return as_singleton<headers_cache>()->to_string(c);
+    return as_singleton<headers_cache>()->to_string_view(c);
 }
 
 header to_header(std::string_view str)
@@ -157,9 +158,9 @@ header to_header(std::string_view str)
     return as_singleton<headers_cache>()->to_header(str);
 }
 
-std::string const& to_string(method_verb m)
+std::string_view to_string_view(method_verb m)
 {
-    return as_singleton<methods_cache>()->to_string(m);
+    return as_singleton<methods_cache>()->to_string_view(m);
 }
 
 method_verb to_method(std::string_view str)

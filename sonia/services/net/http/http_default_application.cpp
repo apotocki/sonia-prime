@@ -33,7 +33,7 @@ void http_default_application::handle(http::request & req, http::response & resp
         res << "<center><table><tr><td>Name</td><td>Value</td></tr>";
         for (auto const& [hname, hvals] : req.headers) {
             for (auto const& hval : hvals) {
-                res << "<tr><td>" << http::message::header_name(hname) << "</td>";
+                res << "<tr><td>" << http::to_string_view(hname) << "</td>";
                 res << "<td>" << hval << "</td></tr>";
             }
         }

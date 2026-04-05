@@ -40,11 +40,20 @@ struct less_unrelated<string_view, std::type_index>
 
 namespace sonia::services {
 
+auto to_key_set(span<const mm_id_elem_t> mmid) -> multimethod_registry::key_set_t
+{
+    multimethod_registry::key_set_t res; res.reserve(mmid.size());
+    for (auto const& elem : mmid) {
+        res.emplace_back(std::visit([](auto const& e) { return multimethod_registry::mm_id_stored_elem_t(e); }, elem));
+    }
+    return res;
+};
 
 void multimethod_registry::register_multimethod(multimethod && mm, span<const mm_id_elem_t> mmid)
 {
-    //GLOBAL_LOG_INFO() << "SET " << mmid;
-    key_set_t vid(mmid.begin(), mmid.end());
+//GLOBAL_LOG_INFO() << "SET " << mmid;
+    key_set_t vid = to_key_set(mmid);
+    
     lock_guard slguard(mm_item_mtx_);
     auto it = mm_set_.find(vid);
     if (it == mm_set_.end()) {
@@ -82,7 +91,7 @@ void multimethod_registry::copy_multimethods(span<const mm_id_elem_t> from, span
         }()) break;
         
         // matched
-        copied_methods.emplace_back(key_set_t{to.begin(), to.end()}, it->mm);
+        copied_methods.emplace_back(to_key_set(to), it->mm);
         // supplement key
         key_set_t& k = copied_methods.back().first;
         k.insert(k.end(), findee_it, it->id.end());

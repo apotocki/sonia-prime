@@ -19,7 +19,7 @@ public:
     template <typename OutputIteratorT>
     OutputIteratorT encode(http::request const& r, OutputIteratorT oi) const
     {
-        std::string hello_line = to_string("%1% %2% HTTP/%3%.%4%\r\n"_fmt % to_string(r.method) % r.get_relative_uri() % (r.version / 10) % (r.version % 10));
+        std::string hello_line = to_string("%1% %2% HTTP/%3%.%4%\r\n"_fmt % to_string_view(r.method) % r.get_relative_uri() % (r.version / 10) % (r.version % 10));
         oi = std::copy(hello_line.begin(), hello_line.end(), std::move(oi));
 
         oi = base_type::encode(r, std::move(oi));

@@ -11,60 +11,61 @@
 
 namespace sonia {
 
-template <typename ArgT>
-struct variant_less_visitor : static_visitor<bool>
+template <typename LessT = less_fn>
+struct variant_less_visitor
 {
-    call_param_t<ArgT> l_;
-
-    variant_less_visitor(call_param_t<ArgT> l) : l_(l) {}
-
-    template <typename T>
-    bool operator()(T && val) const
+    using is_transparent = void;
+    
+    template <typename T, typename ... RTs>
+    inline bool operator()(T const& l, variant<RTs...> const& r) const noexcept
     {
-        return less_f(l_, std::forward<T>(val));
+        return std::visit([&l](auto const& rv) { return LessT{}(l, rv); }, r);
+    }
+
+    template <typename ... LTs, typename T>
+    inline bool operator()(variant<LTs...> const& l, T const& r) const noexcept
+    {
+        return std::visit([&r](auto const& lv) { return LessT{}(lv, r); }, l);
+    }
+
+    template <typename ... LTs, typename ... RTs>
+    inline bool operator()(variant<LTs...> const& l, variant<RTs...> const& r) const noexcept
+    {
+        return std::visit([](auto const& lv, auto const& rv) { return LessT{}(lv, rv); }, l, r);
     }
 };
 
-template <typename ArgT>
-struct variant_greater_visitor : static_visitor<bool>
+template <typename LessT = less>
+struct variant_greater_visitor
 {
-    call_param_t<ArgT> l_;
+    using is_transparent = void;
 
-    variant_greater_visitor(call_param_t<ArgT> l) : l_(l) {}
-
-    template <typename T>
-    bool operator()(T&& val) const
+    template <typename T, typename ... RTs>
+    inline bool operator()(T const& l, variant<RTs...> const& r) const noexcept
     {
-        return less_f(std::forward<T>(val), l_);
+        return std::visit([&l](auto const& rv) { return LessT{}(rv, l); }, r);
+    }
+
+    template <typename ... LTs, typename T>
+    inline bool operator()(variant<LTs...> const& l, T const& r) const noexcept
+    {
+        return std::visit([&r](auto const& lv) { return LessT{}(r, lv); }, l);
+    }
+
+    template <typename ... LTs, typename ... RTs>
+    inline bool operator()(variant<LTs...> const& l, variant<RTs...> const& r) const noexcept
+    {
+        return std::visit([](auto const& lv, auto const& rv) { return LessT{}(rv, lv); }, l, r);
     }
 };
 
-template <typename ... Ts, typename RT>
-struct less<variant<Ts...>, RT>
+template <typename LT, typename RT>
+requires(is_variant_v<LT> || is_variant_v<RT>)
+struct less<LT, RT>
 {
-    template <typename T>
-    bool operator()(variant<Ts...> const& l, T && r) const
+    inline bool operator()(LT const& l, RT const& r) const noexcept
     {
-        return apply_visitor(variant_greater_visitor<RT>(std::forward<T>(r)), l);
-    }
-};
-
-template <typename LT, typename ... RTs>
-struct less<LT, variant<RTs...>>
-{
-    template <typename T>
-    bool operator()(T && l, variant<RTs...> const& r) const
-    {
-        return apply_visitor(variant_less_visitor<LT>(std::forward<T>(l)), r);
-    }
-};
-
-template <typename ... LTs, typename ... RTs>
-struct less<variant<LTs...>, variant<RTs...>>
-{
-    bool operator()(variant<LTs...> const& l, variant<RTs...> const& r) const
-    {
-        return apply_visitor(variant_less_visitor<variant<LTs...>>(l), r);
+        return variant_less_visitor<>{}(l, r);
     }
 };
 

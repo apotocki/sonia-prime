@@ -74,4 +74,14 @@ constexpr inline bool greater_equal_f(LT && l, RT && r)
         (std::forward<LT>(l), std::forward<RT>(r));
 }
 
+struct less_fn
+{
+    template <typename LT, typename RT>
+    bool operator()(LT&& l, RT&& r) const
+    {
+        return less<remove_cvref_t<LT>, remove_cvref_t<RT>>()
+            (std::forward<LT>(l), std::forward<RT>(r));
+    }
+};
+
 }

@@ -14,13 +14,13 @@
 
 namespace sonia::http {
 
-struct to_rvstring_visitor : boost::static_visitor<std::string>
+struct to_rvstring_visitor
 {
     std::string operator()(std::string_view sv) const { return std::string(sv); }
     std::string operator()(std::string& s) const { return std::move(s); }
 };
 
-struct to_string_view_visitor : boost::static_visitor<std::string_view>
+struct to_string_view_visitor
 {
     std::string_view operator()(std::string_view sv) const { return sv; }
     std::string_view operator()(std::string const& s) const { return s; }
@@ -28,21 +28,24 @@ struct to_string_view_visitor : boost::static_visitor<std::string_view>
 
 std::string header_string(header_value_param_t & v)
 {
-    return boost::apply_visitor(to_rvstring_visitor(), v);
+    return std::visit(to_rvstring_visitor{}, v);
 }
 
-std::string_view header_collection::header_name(any_header_t const& hn)
+std::string_view to_string_view(any_header_t const& hn)
 {
-    header const* h = get<header>(&hn);
-    if (h) return to_string(*h);
-    return get<std::string>(hn);
+    return std::visit(match{
+        [](header h) { return to_string_view(h); },
+        [](std::string_view s) { return s; }
+    }, hn);
 }
 
 void header_collection::set_header(any_header_param_t h, header_value_param_t v)
 {
-    auto it = headers.find(h, hasher(), header_equal_to());
+    auto it = headers.find(h);
     if (it == headers.end()) {
-        headers.insert(it, std::pair(boost::apply_visitor(header_param_converter(), h), std::vector{header_string(v)}));
+        std::pair<any_header_t, std::vector<std::string>> vv{ std::visit(header_param_converter{}, h), std::vector{ header_string(v) } };
+        headers.insert(it, std::move(vv));
+        //headers.insert(it, std::pair{ std::visit(header_param_converter{}, h), std::vector{ header_string(v) } });
     } else {
         it->second.clear();
         it->second.push_back(header_string(v));
@@ -51,9 +54,9 @@ void header_collection::set_header(any_header_param_t h, header_value_param_t v)
 
 void header_collection::add_header(any_header_param_t h, header_value_param_t v)
 {
-    auto it = headers.find(h, hasher(), header_equal_to());
+    auto it = headers.find(h);
     if (it == headers.end()) {
-        headers.insert(it, std::pair(boost::apply_visitor(header_param_converter(), h), std::vector{header_string(v)}));
+        headers.insert(it, std::pair{ std::visit(header_param_converter{}, h), std::vector{ header_string(v) } });
     } else {
         it->second.push_back(header_string(v));
     }
@@ -61,7 +64,7 @@ void header_collection::add_header(any_header_param_t h, header_value_param_t v)
 
 void header_collection::remove_header(any_header_param_t h)
 {
-    auto it = headers.find(h, hasher(), header_equal_to());
+    auto it = headers.find(h);
     if (it != headers.end()) {
         headers.erase(it);
     }
@@ -69,7 +72,7 @@ void header_collection::remove_header(any_header_param_t h)
 
 std::span<const std::string> header_collection::get_header(any_header_param_t h) const
 {
-    auto it = headers.find(h, hasher(), header_equal_to());
+    auto it = headers.find(h);
     if (it != headers.end()) {
         return it->second;
     }
@@ -274,28 +277,28 @@ void request::set_uri(string_view uri, bool ignore_abs_parts)
 
 void request::add_parameter(parameter_arg_t name, parameter_arg_t value)
 {
-    std::string_view pname = boost::apply_visitor(to_string_view_visitor(), name);
-    auto it = parameters.find(pname, hasher(), string_equal_to());
+    std::string_view pname = std::visit(to_string_view_visitor{}, name);
+    auto it = parameters.find(pname);
     if (it == parameters.end()) {
         parameters.insert(it, std::pair(
-            boost::apply_visitor(to_rvstring_visitor(), name),
-            parameter_value_t{boost::apply_visitor(to_rvstring_visitor(), value)})
+            std::visit(to_rvstring_visitor{}, name),
+            parameter_value_t{ std::visit(to_rvstring_visitor{}, value) })
         );
     } else {
-        it->second.push_back(boost::apply_visitor(to_rvstring_visitor(), value));
+        it->second.push_back(std::visit(to_rvstring_visitor{}, value));
     }
 }
 
 std::span<const std::string> request::get_parameter(std::string_view name) const
 {
-    auto it = parameters.find(name, hasher(), string_equal_to());
+    auto it = parameters.find(name);
     if (it == parameters.end() || it->second.empty()) return {};
     return it->second;
 }
 
 void request::set_property(std::string_view name, json_value value)
 {
-    auto it = properties.find(name, hasher(), string_equal_to());
+    auto it = properties.find(name);
     if (it == properties.end()) {
         properties.insert(it, std::pair(std::string(name), value));
     } else {
@@ -305,7 +308,7 @@ void request::set_property(std::string_view name, json_value value)
 
 json_value const* request::get_property(std::string_view name) const
 {
-    auto it = properties.find(name, hasher(), string_equal_to());
+    auto it = properties.find(name);
     if (it == properties.end()) return nullptr;
     return &it->second;
 }

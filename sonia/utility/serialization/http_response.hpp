@@ -31,8 +31,14 @@ public:
     {
         using namespace std::literals::string_view_literals;
 
-        auto msg = r.status_string.value_or(to_string(r.status_code));
-        std::string start_line = to_string("HTTP/%1%.%2% %3% %4%\r\n"_fmt % (r.version / 10) % (r.version % 10) % (int)r.status_code % msg);
+        std::ostringstream start_line_ss;
+        start_line_ss << "HTTP/"sv << (r.version / 10) << '.' << (r.version % 10) << ' ' << (int)r.status_code << ' ';
+        if (r.status_string) {
+            start_line_ss << *r.status_string;
+        } else {
+            start_line_ss << to_string_view(r.status_code);
+        }
+        std::string start_line = start_line_ss.str();
 
         range_dereferencing_iterator writ{std::move(oi)};
         writ = std::copy(start_line.begin(), start_line.end(), std::move(writ));

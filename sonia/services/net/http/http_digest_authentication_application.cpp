@@ -266,7 +266,7 @@ void http_digest_authentication_application::handle(http::request & req, http::r
 
         std::array<uint8_t, 32> ha2str;
         auto ha2_it = quark_push_iterator{ int8 | md5 | base16l, ha2str.begin() };
-        ha2_it << to_string(req.method) << ':' << dig.uri;
+        ha2_it << to_string_view(req.method) << ':' << dig.uri;
         ha2_it.finish();
 
         std::array<uint8_t, 16> response;

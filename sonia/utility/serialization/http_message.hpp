@@ -18,8 +18,7 @@ public:
     OutputIteratorT encode(http::message const& m, OutputIteratorT oi) const
     {
         for (auto const& [hname, hval] : m.headers) {
-            http::header const* h = boost::get<http::header>(&hname);
-            auto const& hnamestr = h ? to_string(*h) : boost::get<std::string>(hname);
+            std::string_view hnamestr = to_string_view(hname);
             for (auto const& hvalitm : hval) {
                 oi = std::copy(hnamestr.begin(), hnamestr.end(), std::move(oi));
                 *oi = ':'; ++oi;
@@ -89,9 +88,9 @@ public:
 
             any_header_param_t hkey = (h == header::UNKNOWN) ? any_header_param_t(hname) : any_header_param_t(h);
 
-            auto it = headers.find(hkey, hasher(), header_equal_to());
+            auto it = headers.find(hkey);
             if (it == headers.end()) {
-                headers.insert(it, std::pair(boost::apply_visitor(header_param_converter(), hkey), std::vector{std::move(val)}));
+                headers.insert(it, std::pair(std::visit(header_param_converter{}, hkey), std::vector{std::move(val)}));
             } else {
                 it->second.push_back(std::move(val));
             }

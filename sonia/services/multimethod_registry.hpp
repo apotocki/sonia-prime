@@ -28,7 +28,7 @@ public:
 
     using mm_id_stored_elem_t = variant<std::type_index, small_string>;
 
-    using key_set_t = boost::container::small_vector<mm_id_stored_elem_t, 4>;
+    using key_set_t = small_vector<mm_id_stored_elem_t, 4>;
     struct mm_item
     {
         mmholder_t mm;

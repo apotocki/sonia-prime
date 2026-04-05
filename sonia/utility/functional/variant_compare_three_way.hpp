@@ -8,9 +8,12 @@
 
 namespace sonia {
 
-struct variant_compare_three_way_visitor : static_visitor<std::strong_ordering>
+struct variant_compare_three_way_visitor
 {
+    using result_type = std::strong_ordering;
+
     variant_compare_three_way_visitor() = default;
+
     template <typename L, typename R>
     result_type operator()(L const&, R const&) const { std::terminate(); }
 

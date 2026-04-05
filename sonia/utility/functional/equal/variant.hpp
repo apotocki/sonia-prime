@@ -11,46 +11,38 @@
 
 namespace sonia {
 
-template <typename ArgT>
-struct variant_equal_visitor : static_visitor<bool>
+template <typename EqualToT = equal_fn>
+struct variant_equal_visitor
 {
-    call_param_t<ArgT> r_;
-
-    variant_equal_visitor(call_param_t<ArgT> r) : r_(r) {}
-
-    template <typename T>
-    bool operator()(T && val) const
+    using result_type = bool;
+    using is_transparent = void;
+    
+    template <typename T, typename ... RTs>
+    inline bool operator()(T const& l, variant<RTs...> const& r) const noexcept
     {
-        return equal_f(std::forward<T>(val), r_);
+        return std::visit([&l](auto const& rv) { return EqualToT{}(l, rv); }, r);
+    }
+
+    template <typename ... LTs, typename T>
+    inline bool operator()(variant<LTs...> const& l, T const& r) const noexcept
+    {
+        return std::visit([&r](auto const& lv) { return EqualToT{}(lv, r); }, l);
+    }
+
+    template <typename ... LTs, typename ... RTs>
+    inline bool operator()(variant<LTs...> const& l, variant<RTs...> const& r) const noexcept
+    {
+        return std::visit([](auto const& lv, auto const& rv) { return EqualToT{}(lv, rv); }, l, r);
     }
 };
 
-template <typename ... Ts, typename RT>
-struct equal<variant<Ts...>, RT>
+template <typename LT, typename RT>
+requires(is_variant_v<LT> || is_variant_v<RT>)
+struct equal<LT, RT>
 {
-    template <typename T>
-    bool operator()(variant<Ts...> const& l, T && r) const
+    inline bool operator()(LT const& l, RT const& r) const noexcept
     {
-        return apply_visitor(variant_equal_visitor<RT>(std::forward<T>(r)), l);
-    }
-};
-
-template <typename LT, typename ... RTs>
-struct equal<LT, variant<RTs...>>
-{
-    template <typename T>
-    bool operator()(T && l, variant<RTs...> const& r) const
-    {
-        return apply_visitor(variant_equal_visitor<LT>(std::forward<T>(l)), r);
-    }
-};
-
-template <typename ... LTs, typename ... RTs>
-struct equal<variant<LTs...>, variant<RTs...>>
-{
-    bool operator()(variant<LTs...> const& l, variant<RTs...> const& r) const
-    {
-        return apply_visitor(variant_equal_visitor<variant<LTs...>>(l), r);
+        return variant_equal_visitor<>{}(l, r);
     }
 };
 

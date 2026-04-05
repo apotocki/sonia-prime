@@ -50,7 +50,7 @@ inline bool equal_f(LT && l, RT && r)
         (std::forward<LT>(l), std::forward<RT>(r));
 }
 
-struct equal_to
+struct equal_fn
 {
     template <typename LT, typename RT>
     bool operator()(LT && l, RT && r) const

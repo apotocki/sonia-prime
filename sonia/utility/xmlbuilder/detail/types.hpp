@@ -3,12 +3,14 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #pragma once
-#include <boost/container/small_vector.hpp>
+#include "sonia/small_vector.hpp"
 
 #include "sonia/variant.hpp"
 #include "sonia/optional.hpp"
 #include "sonia/string.hpp"
 #include "sonia/utility/invocation/invocation.hpp"
+
+#include <boost/variant.hpp>
 
 namespace sonia::xmlbuilder::detail {
 
@@ -53,12 +55,12 @@ struct x_object
     bool operator== (x_object const& rhs) const { return type == rhs.type; }
 };
 
-using x_generic_type = make_recursive_variant<
+using x_generic_type = boost::make_recursive_variant<
     x_bool, x_int, x_float, x_string, x_object, x_action,
-    x_array<recursive_variant_>, x_tuple<recursive_variant_>
+    x_array<boost::recursive_variant_>, x_tuple<boost::recursive_variant_>
 >::type;
 
-struct array_value_parser_visitor : static_visitor<std::pair<optional<blob_result>, string_view>>
+struct array_value_parser_visitor : boost::static_visitor<std::pair<optional<blob_result>, string_view>>
 {
     string_view value;
     size_t size;
@@ -76,7 +78,7 @@ struct array_value_parser_visitor : static_visitor<std::pair<optional<blob_resul
     }
 };
 
-struct type_value_parser_visitor : static_visitor<std::pair<optional<blob_result>, string_view>>
+struct type_value_parser_visitor : boost::static_visitor<std::pair<optional<blob_result>, string_view>>
 {
     string_view value;
     bool is_greedy; // impacts on strings

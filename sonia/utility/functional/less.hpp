@@ -5,7 +5,7 @@
 #pragma once
 
 #include <functional>
-
+#include "sonia/cstdint.hpp"
 #include "sonia/type_traits.hpp"
 
 namespace sonia {

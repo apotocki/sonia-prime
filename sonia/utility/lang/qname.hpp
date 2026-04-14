@@ -5,6 +5,7 @@
 #pragma once
 #include <algorithm>
 
+#include "sonia/cstdint.hpp"
 #include "sonia/span.hpp"
 #include "sonia/small_vector.hpp"
 

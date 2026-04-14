@@ -354,32 +354,33 @@ IteratorT parse(ModelT & model, IteratorT b, IteratorT e)
 
     ParserT<lexer_type, ModelT> parser(model);
 
-    auto get_error_str = [&iter, &end, &e](std::string const& msg) {
-        std::ostringstream resultss;
-        resultss << "parsing error : ";
+    auto print_error_str = [&iter, &end, &e](std::ostream & resultss, std::string const& msg) {
+        resultss << "parsing error : "sv;
         std::string tokval;
         if (iter == end) {
-            tokval = "end of input";
+            tokval = "end of input"sv;
         } else {
             auto const& tok = *iter;
             tokval = std::string(tok.first, tok.second);
         }
-        if (msg.empty()) resultss << "token: '" << tokval << "' is not expected";
-        else resultss << msg << ", got: '" << tokval << "'";
+        if (msg.empty()) resultss << "token: '"sv << tokval << "' is not expected"sv;
+        else resultss << msg << ", got: '"sv << tokval << "'"sv;
         std::string rest;
         copy_not_more(iter->first, e, std::back_inserter(rest), 150);
-        resultss << ", stopped at: \"" << rest << "\"";
-        return resultss.str();
+        resultss << ", stopped at: \""sv << rest << "\""sv;
     };
 
     try {
         parser.parse(iter, end);
     } catch (internal_error const& err) {
-        std::string msg = get_error_str(err.what());
-        msg += "\ncaused by: " + ::boost::diagnostic_information(err);
-        throw internal_error{msg};
-    } catch (exception const& err) {
-        throw exception(get_error_str(err.what()));
+        std::ostringstream ss;
+        print_error_str(ss, err.what());
+        ss << "\ncaused by: "sv << ::boost::diagnostic_information(err);
+        throw internal_error{ ss.str() };
+    } catch (std::exception const& err) {
+        std::ostringstream ss;
+        print_error_str(ss, err.what());
+        throw exception(ss.str());
     }
 
     if (iter != end) {

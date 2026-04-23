@@ -2061,6 +2061,9 @@
     <ClInclude Include="..\..\..\sonia\utility\invocation\invocable_registry.hpp">
       <Filter>sonia.utility\invocation</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\invocation\functor_callable.hpp">
+      <Filter>sonia.utility\invocation</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

@@ -354,7 +354,7 @@
     <ClInclude Include="..\..\..\applied\embedded.hpp">
       <Filter>sonia.applied</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\services\io\io_ssl_service.hpp">
+    <ClInclude Include="..\..\..\sonia\services\io\io_ssl_service_.hpp">
       <Filter>sonia.services\io</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\services\io\io_ssl_service_builder.hpp">

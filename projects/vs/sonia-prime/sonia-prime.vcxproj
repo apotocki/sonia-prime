@@ -33,7 +33,9 @@
     <ClCompile Include="..\..\..\sonia\services\io\io_cache_service_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\io\io_service.cpp" />
     <ClCompile Include="..\..\..\sonia\services\io\io_service_builder.cpp" />
-    <ClCompile Include="..\..\..\sonia\services\io\io_ssl_service_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\io\io_ssl_service_builder.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_SSL)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\local_service_registry.cpp" />
     <ClCompile Include="..\..\..\sonia\services\net\basic_connector.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -61,8 +63,12 @@
     <ClCompile Include="..\..\..\sonia\services\services.cpp" />
     <ClCompile Include="..\..\..\sonia\services\services_host.cpp" />
     <ClCompile Include="..\..\..\sonia\services\service_locator.cpp" />
-    <ClCompile Include="..\..\..\sonia\services\tenger\tenger_service.cpp" />
-    <ClCompile Include="..\..\..\sonia\services\tenger\tenger_service_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\tenger\tenger_service.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\services\tenger\tenger_service_builder.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\transceiver\transceiver_builder.cpp" />
     <ClCompile Include="..\..\..\sonia\services\transceiver\transceiver_service.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\invocation\invocation.cpp" />
@@ -211,6 +217,18 @@
     <LinkIncremental>false</LinkIncremental>
     <IntDir>$(ShortProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' and '$(SONIA_NO_SSL)' != '1'">
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)tpls\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libcrypto.lib;libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64' and '$(SONIA_NO_LUA)' != '1'">
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)tpls\lua\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>luad.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
@@ -229,8 +247,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\x64-windows-cpp23\debug\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib;$(ProjectDir)..\..\..\..\..\tpls\icu\lib64;$(ProjectDir)..\..\..\..\..\tpls\lua\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>zlibd.lib;icuucd.lib;luad.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\x64-windows-cpp23\debug\lib;$(SolutionDir)tpls\zlib\lib;$(SolutionDir)tpls\icu\lib64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>zlibd.lib;icuucd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -241,7 +259,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;SONIA_PRIME_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)vcpkg_installed\x86-windows-cpp23\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\zlib\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>Async</ExceptionHandling>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -250,7 +268,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\x86-windows-cpp23\debug\lib;$(SolutionDir)tpls\zlib\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -263,7 +281,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;SONIA_PRIME_EXPORTS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(ProjectDir)..\..\..\..\..\tpls\boost\include;$(ProjectDir)..\..\..\..\..\tpls\lexertl14\include;$(ProjectDir)..\..\..\..\..\tpls\openssl\include;$(ProjectDir)..\..\..\..\..\tpls\zlib\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)vcpkg_installed\x86-windows-cpp23\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\zlib\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <ExceptionHandling>Async</ExceptionHandling>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -274,7 +292,19 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\x86-windows-cpp23\lib;$(SolutionDir)tpls\zlib\lib</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64' and '$(SONIA_NO_SSL)' != '1'">
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)tpls\openssl\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>libcrypto.lib;libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64' and '$(SONIA_NO_LUA)' != '1'">
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)tpls\lua\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -301,8 +331,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(ProjectDir)..\..\..\..\..\tpls\boost\lib;$(ProjectDir)..\..\..\..\..\tpls\openssl\lib;$(ProjectDir)..\..\..\..\..\tpls\zlib\lib;$(ProjectDir)..\..\..\..\..\tpls\icu\lib64;$(ProjectDir)..\..\..\..\..\tpls\lua\lib</AdditionalLibraryDirectories>
-      <AdditionalDependencies>zlib.lib;icuucd.lib;lua.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\x64-windows-cpp23\lib;$(SolutionDir)tpls\zlib\lib;$(SolutionDir)tpls\icu\lib64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>zlib.lib;icuuc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

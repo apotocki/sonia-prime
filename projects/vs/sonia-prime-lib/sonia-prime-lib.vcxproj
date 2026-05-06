@@ -739,7 +739,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\io_factory_win.cpp" />
-    <ClCompile Include="..\..\..\sonia\services\io\io_ssl_factory.cpp" />
+    <ClCompile Include="..\..\..\sonia\services\io\io_ssl_factory.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_SSL)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\services\io\socket_address.cpp" />
     <ClCompile Include="..\..\..\sonia\services\local_type_registry.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</ExcludedFromBuild>
@@ -842,11 +844,21 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\lua\bigint_lib.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\lua\lua.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\lua\sonia_lib.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\lua\variant_lib.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\mvvm\lua_view_model.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\lua\bigint_lib.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\lua\lua.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\lua\sonia_lib.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\lua\variant_lib.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\mvvm\lua_view_model.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\mvvm\view_model.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\parameters\parameters.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
@@ -868,7 +880,9 @@
     <ClCompile Include="..\..\..\sonia\utility\template-engine\document_element.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\template-engine\file_template_element.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\template-engine\foreach_element.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\template-engine\lua_build_visitor.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\lua_build_visitor.cpp">
+    <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_bunch.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_unit.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\template-engine\compound.cpp" />

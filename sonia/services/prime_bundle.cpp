@@ -42,7 +42,7 @@
 #   endif
 #endif
 
-#ifndef SONIA_NO_TENGER
+#if !defined(SONIA_NO_TENGER) && !defined(SONIA_NO_LUA)
 #   include "sonia/services/tenger/tenger_service_builder.hpp"
 #endif
 
@@ -82,7 +82,7 @@ void prime_bundle::init()
         install<io_ssl_service_builder>("io-ssl");
 #   endif
 #endif
-#ifndef SONIA_NO_TENGER
+#if !defined(SONIA_NO_TENGER) && !defined(SONIA_NO_LUA)
     install<tenger_service_builder>("tenger");
 #endif
 }

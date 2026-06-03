@@ -38,6 +38,7 @@ public:
         } else {
             start_line_ss << to_string_view(r.status_code);
         }
+        start_line_ss << "\r\n"sv;
         std::string start_line = start_line_ss.str();
 
         range_dereferencing_iterator writ{std::move(oi)};

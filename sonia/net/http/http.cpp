@@ -14,13 +14,13 @@
 #include "sonia/exceptions.hpp"
 
 #define SONIA_PRINT_HTTP_STATUS_CODES_SETUPPER(r, data, i, elem) \
-    map_[BOOST_PP_TUPLE_ELEM(3, 2, elem)] = std::string(BOOST_PP_TUPLE_ELEM(3, 1, elem));
+    map_[BOOST_PP_TUPLE_ELEM(3, 2, elem)] = BOOST_PP_TUPLE_ELEM(3, 1, elem);
 
 #define SONIA_PRINT_HTTP_HEADERS_SETUPPER(r, data, i, elem) \
-    map_[to_uc(BOOST_PP_TUPLE_ELEM(2, 1, elem))] = std::pair{std::string(BOOST_PP_TUPLE_ELEM(2, 1, elem)), header::BOOST_PP_TUPLE_ELEM(2, 0, elem)};
+    map_[to_uc(BOOST_PP_TUPLE_ELEM(2, 1, elem))] = std::pair{ BOOST_PP_TUPLE_ELEM(2, 1, elem), header::BOOST_PP_TUPLE_ELEM(2, 0, elem)};
 
 #define SONIA_PRINT_HTTP_METHODS_SETUPPER(r, data, i, elem) \
-    (std::string(BOOST_PP_TUPLE_ELEM(2, 1, elem)), method_verb::BOOST_PP_TUPLE_ELEM(2, 0, elem))
+    (BOOST_PP_TUPLE_ELEM(2, 1, elem), method_verb::BOOST_PP_TUPLE_ELEM(2, 0, elem))
 
 
 namespace sonia::http {

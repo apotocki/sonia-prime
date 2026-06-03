@@ -66,6 +66,7 @@ void view_model::do_serialised_cmd(F&& cmd)
         try {
             cmd();
         } catch (std::exception const& e) {
+            GLOBAL_LOG_ERROR() << e.what();
             on_state_change(status_type::OP_ERROR_ST, { string_blob_result(string_view(e.what())) });
             return;
         }

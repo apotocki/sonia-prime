@@ -12,8 +12,11 @@
 #include "sonia/span.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/concurrency.hpp"
-#include "sonia/utility/automatic_polymorphic.hpp"
+#include "sonia/variant.hpp"
+#include "sonia/small_vector.hpp"
+//#include "sonia/utility/automatic_polymorphic.hpp"
 #include "sonia/utility/invocation/invocable_registry.hpp"
+#include "sonia/utility/invocation/event_emitter.hpp"
 #include "sonia/services/scheduler/scheduler.hpp"
 
 namespace sonia {
@@ -87,7 +90,7 @@ public:
     inline void set_id(int32_t idval) noexcept { id_ = idval; }
     inline int32_t id() const noexcept { return id_; }
 
-    void inherit(int32_t baseid);
+    void extends(int32_t baseid);
 
     // invocable
     bool has_method(string_view methodname) const override;
@@ -110,10 +113,6 @@ public:
 
     void final_cancel();
 
-    // returns 1 if the event was handled, 0 otherwise
-    smart_blob on_state_change(status_type st, std::initializer_list<const blob_result> args);
-    smart_blob on_state_change(span<const blob_result> args);
-
     template <typename F>
     void post(F&& f);
 
@@ -133,15 +132,14 @@ public:
     void on_property_change(string_view propname) override;
 
     // set event listener
-    inline void set_on_change(shared_ptr<invocation::callable> cbinv) noexcept
-    {
-        on_change_ftor_ = std::move(cbinv);
-    }
+    template <typename HandlerT>
+    requires requires { std::declval<invocation::event_emitter&>().subscribe(std::declval<HandlerT>()); }
+    inline auto set_on_change(HandlerT && cbinv) { return on_change_emitter_.subscribe(std::forward<HandlerT>(cbinv)); }
+    inline void remove_on_change(size_t cb_id) { on_change_emitter_.unsubscribe(cb_id); }
+    size_t subscribe_on_change(shared_ptr<invocation::callable> cb);
 
-    //inline void set_callback_invoker(shared_ptr<invocation::callable> cbinv) noexcept
-    //{
-    //    cb_invoker_ = std::move(cbinv);
-    //}
+    void on_state_change(status_type st, std::initializer_list<const blob_result> args);
+    void on_state_change(span<const blob_result> args);
 
     //smart_blob call_method(string_view name, blob_result args) const;
     //smart_blob do_call_method(string_view name, span<const blob_result> args) const;
@@ -156,10 +154,10 @@ public:
 
 protected:
     // invocation routine
-    static void do_registration(registrar_type &);
+    static void do_registration(registrar_type&);
 
 protected:
-    shared_ptr<invocation::callable> on_change_ftor_;
+    invocation::event_emitter on_change_emitter_;
 
     fibers::mutex ev_mtx_;
     fibers::condition_variable ev_cv_;

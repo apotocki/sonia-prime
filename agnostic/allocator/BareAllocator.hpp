@@ -49,6 +49,7 @@ struct stl_allocator_adapter : private BA
 
 }
 
+#if 0
 #include "agnostic/std/memory/allocator_traits.hpp"
 
 namespace std {
@@ -110,3 +111,5 @@ struct allocator_traits<BA>
 };
 
 }
+
+#endif

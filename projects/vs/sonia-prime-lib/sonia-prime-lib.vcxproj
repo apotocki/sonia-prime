@@ -452,6 +452,7 @@
     <ClInclude Include="..\..\..\sonia\utility\functional\range_equal.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\range_less.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\functional\reference_wrapper.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\invocation\event_emitter.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\functor_callable.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\invocable_registry.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\invocation\invocation.hpp" />
@@ -881,7 +882,7 @@
     <ClCompile Include="..\..\..\sonia\utility\template-engine\file_template_element.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\template-engine\foreach_element.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\template-engine\lua_build_visitor.cpp">
-    <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_bunch.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_unit.cpp" />

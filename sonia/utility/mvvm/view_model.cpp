@@ -41,20 +41,28 @@ void view_model::do_registration(registrar_type & mr)
     //mr.register_method<&view_model::call_method>("call"sv);
     //mr.register_method<&view_model::get_method>("get"sv);
     //mr.register_method<&view_model::set_method>("set"sv);
-    mr.register_method<&view_model::inherit>("inherit"sv);
+    mr.register_method<&view_model::extends>("extends"sv);
 
     mr.register_writeonly_property("on_change"sv, [](auto& obj, blob_result const& br) {
         using namespace sonia::invocation;
-        obj.set_on_change(as<wrapper_object<shared_ptr<callable>>>(br).value);
+        size_t cb_id = obj.set_on_change(as<wrapper_object<shared_ptr<callable>>>(br).value);
+        return ui64_blob_result(cb_id);
     });
+
+    mr.register_method<&view_model::subscribe_on_change>("subscribe_on_change"sv);
 }
 
-void view_model::inherit(int32_t baseid)
+size_t view_model::subscribe_on_change(shared_ptr<invocation::callable> cb)
+{
+    return on_change_emitter_.subscribe(std::move(cb));
+}
+
+void view_model::extends(int32_t baseid)
 {
     if (baseid == id()) throw exception("can't inherit itself"sv);
     bases_.insert(baseid);
     shared_ptr<manager> mng = get_manager();
-    if (!mng) throw exception("the assigned manager is obsoleted");
+    if (!mng) throw exception("the assigned manager is obsoleted"sv);
     mng->get_view_model(baseid)->set_on_change(make_shared<view_model_on_state_change_callable>(*this));
 }
 
@@ -188,47 +196,31 @@ void view_model::set_property(std::string_view propname, blob_result && val)
 }
 */
 
-smart_blob view_model::on_state_change(status_type st, std::initializer_list<const blob_result> args)
+void view_model::on_state_change(status_type st, std::initializer_list<const blob_result> args)
 {
-    if (on_change_ftor_) {
-        small_vector<blob_result, 16> bargs;
-        bargs.push_back(i16_blob_result((int16_t)st));
-        std::copy(args.begin(), args.end(), std::back_inserter(bargs));
-        try {
-            GLOBAL_LOG_INFO() << "view_model::on_state_change: " << (int16_t)st << ", args count: " << args.size();
-            return on_change_ftor_->invoke(bargs);
-        } catch (std::exception& ex) {
-            return error_blob_result(ex.what(), true);
-        }
-    }
-    GLOBAL_LOG_WARN() << "view_model("sv << id() << ")::on_state_change: no handler for state change event"sv;
-    return {};
+    small_vector<blob_result, 16> bargs;
+    bargs.push_back(i16_blob_result((int16_t)st));
+    std::copy(args.begin(), args.end(), std::back_inserter(bargs));
+    on_state_change(bargs);
 }
 
-smart_blob view_model::on_state_change(span<const blob_result> args)
+void view_model::on_state_change(span<const blob_result> args)
 {
-    if (on_change_ftor_) {
-        try {
-            if (args.empty()) {
-                return error_blob_result("invalid arguments for on_state_change event"sv, true);
-            }
-            GLOBAL_LOG_INFO() << "view_model::on_state_change: " << as<int16_t>(args.front()) << ", args count: " << args.size();
-            return on_change_ftor_->invoke(args);
-        } catch (std::exception& ex) {
-            return error_blob_result(ex.what(), true);
+    //GLOBAL_LOG_INFO() << "view_model::on_state_change: " << as<int16_t>(args.front()) << ", args count: " << args.size();
+    on_change_emitter_.emit(args,
+        [this](size_t, smart_blob const& res) {
+            GLOBAL_LOG_ERROR() << "view_model("sv << id() << ")::on_state_change: error in on_state_change handler: " << res;
+        },
+        [this](size_t, std::exception const& ex) {
+            GLOBAL_LOG_ERROR() << "view_model("sv << id() << ")::on_state_change: exception in on_state_change handler: " << ex.what();
         }
-    }
-    GLOBAL_LOG_WARN() << "view_model("sv << id() << ")::on_state_change: no handler for state change event"sv;
-    return {};
+    );
 }
 
 void view_model::on_property_change(string_view propname)
 {
     blob_result args[] = { i16_blob_result((int16_t)status_type::PROPERTY_CHANGED_ST), string_blob_result(propname) };
-    smart_blob res = on_state_change(args);
-    if (res.is_error()) {
-        GLOBAL_LOG_ERROR() << "error in on_property_change handler: " << res;
-    }
+    on_state_change(args);
 }
 
 /*

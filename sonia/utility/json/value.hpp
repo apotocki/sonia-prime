@@ -12,6 +12,7 @@
 #include "sonia/span.hpp"
 #include "sonia/string.hpp"
 #include "sonia/type_traits.hpp"
+#include "sonia/variant.hpp"
 
 #include "sonia/utility/optimized/holder.hpp"
 #include "numetron/basic_decimal.hpp"
@@ -39,7 +40,7 @@ enum class json_value_type
 class json_value;
 class json_object;
 template <bool IsConstV> class json_object_item_iterator;
-
+using json_any_string_reference_type = variant<string_view, cstring_view, std::reference_wrapper<const std::string>>;
 
 class json_object : json_detail::holder_t
 {
@@ -67,11 +68,17 @@ public:
 
     size_t size() const noexcept;
 
-    json_value const* operator[](std::string_view) const noexcept;
-    json_value * operator[](std::string_view) noexcept;
+    json_value const* operator[](string_view) const noexcept;
+    json_value * operator[](string_view) noexcept;
 
     const_item_range_t items() const noexcept;
     item_range_t items() noexcept;
+
+    template <typename T>
+    T as(string_view key, T&& default_value, const std::nothrow_t&) const;
+
+    template <typename T>
+    T as(string_view key, T&& default_value) const;
 };
 
 std::pair<std::string_view, json_value&> json_object_item_iterator_dereference(json_object &, size_t pos);
@@ -115,21 +122,29 @@ class json_value : json_detail::holder_t
 
     explicit json_value(json_detail::holder_t const&); // reference
 
+    using strings_t = variant<span<const std::string>, span<string_view>>;
+
  public:
     json_value();
 
     explicit json_value(bool);
     explicit json_value(int);
+
     explicit json_value(numetron::decimal_view);
+
+    template <std::floating_point T>
+    explicit json_value(T val) : json_value(numetron::decimal_view{ val }) {}
+    
     explicit json_value(string_view);
     explicit json_value(cstring_view);
+    explicit json_value(std::string const&);
     explicit json_value(span<json_value>);
     
     json_value(std::initializer_list<json_value>);
 
-    json_value(span<const std::string>, span<const json_value>);
+    json_value(strings_t, span<const json_value>);
 
-    explicit json_value(const char* val) : json_value(std::string_view(val)) {}
+    json_value(std::initializer_list<string_view> keys, std::initializer_list<json_value> values);
 
     ~json_value();
 
@@ -181,5 +196,46 @@ inline bool operator>=(json_value const& l, json_value const& r) { return !(l < 
 std::string to_string(json_value const&);
 
 std::ostream & operator<< (std::ostream &, json_value const&);
+
+template <typename T>
+inline T json_object::as(string_view key, T && default_value) const
+{
+    json_value const* value = operator[](key);
+    if (!value) {
+        return std::forward<T>(default_value);
+    }
+
+    if constexpr (std::is_same_v<T, int>) {
+        return value->get_int();
+    }
+    else if constexpr (std::is_same_v<T, int64_t>) {
+        return value->get_int64();
+    }
+    else if constexpr (std::is_floating_point_v<T>) {
+        return static_cast<T>(value->get_number());
+    }
+    else if constexpr (std::is_same_v<T, numetron::decimal_view>) {
+        return value->get_number();
+    }
+    else if constexpr (std::is_same_v<T, std::string_view>) {
+        return value->get_string();
+    }
+    else if constexpr (std::is_same_v<T, std::u8string_view>) {
+        return value->get_u8string();
+    } else {
+        static_assert(false, "unsupported type");
+    }
+}
+
+template <typename T>
+T json_object::as(string_view key, T&& default_value, const std::nothrow_t&) const
+{
+    try {
+        return as<T>(key, std::forward<T>(default_value));
+    }
+    catch (...) {
+        return std::forward<T>(default_value);
+    }
+}
 
 }

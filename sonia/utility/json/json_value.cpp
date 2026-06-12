@@ -43,9 +43,17 @@ struct json_object_item_transformer
 
     template <typename TplT>
     result_type operator()(TplT&& x) const {
+
         return result_type(
             //to_string_view(boost::get<0>(x)),
             get<0>(x),
+            /*
+            visit(match(
+                [](std::string_view sv) { return sv; },
+                [](cstring_view csv) { return std::string_view(csv.data(), csv.size()); },
+                [](std::reference_wrapper<const std::string> sref) { return std::string_view(sref.get()); }
+            ), get<0>(x)),
+            */
             get<1>(x)
         );
     }
@@ -78,7 +86,8 @@ struct optimized_object_impl : optimized_array_impl<object_item_t, HolderT>
     using optimized_collection_base_t = typename base_t::optimized_collection_base_t;
     using optimized_collection_t = typename base_t::optimized_collection_t;
 
-    static void init(HolderT * self, span<const std::string> keys, span<const json_value> vals)
+    template <typename StringsT>
+    static void init(HolderT * self, StringsT keys, span<const json_value> vals)
     {
         BOOST_ASSERT(keys.size() == vals.size());
         if (!keys.empty()) {
@@ -224,7 +233,7 @@ json_object json_value::get_object() const
 json_object::json_object()
 {
     using object_t = optimized_object_impl<holder_t>;
-    object_t::init(this, span<std::string>(), span<json_value>());
+    object_t::init(this, span<string_view>{}, span<json_value>());
     set_service_cookie((size_t)json_value_type::object);
 }
 
@@ -310,6 +319,22 @@ json_value::json_value(numetron::decimal_view val)
     set_service_cookie((size_t)json_value_type::number);
 }
 
+#if 0
+json_value::json_value(json_any_string_reference_type val)
+{
+    using string_t = optimized_array_impl<char, holder_t>;
+    visit([this](auto && arg) {
+        using StringT = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<StringT, std::reference_wrapper<const std::string>>) {
+            string_t::init(this, arg.get());
+        } else {
+            string_t::init(this, std::forward<StringT>(arg));
+        }
+    }, val);
+    set_service_cookie((size_t)json_value_type::string);
+}
+#endif
+
 json_value::json_value(string_view val)
 {
     using string_t = optimized_array_impl<char, holder_t>;
@@ -318,6 +343,13 @@ json_value::json_value(string_view val)
 }
 
 json_value::json_value(cstring_view val)
+{
+    using string_t = optimized_array_impl<char, holder_t>;
+    string_t::init(this, val);
+    set_service_cookie((size_t)json_value_type::string);
+}
+
+json_value::json_value(std::string const& val)
 {
     using string_t = optimized_array_impl<char, holder_t>;
     string_t::init(this, val);
@@ -338,10 +370,19 @@ json_value::json_value(std::initializer_list<json_value> l)
     set_service_cookie((size_t)json_value_type::array);
 }
 
-json_value::json_value(span<const std::string> keys, span<const json_value> vals)
+json_value::json_value(strings_t keys, span<const json_value> vals)
 {
     using object_t = optimized_object_impl<holder_t>;
-    object_t::init(this, keys, vals);
+    visit([this, &vals](auto arg) {
+        object_t::init(this, arg, vals);
+    }, keys);
+    set_service_cookie((size_t)json_value_type::object);
+}
+
+json_value::json_value(std::initializer_list<string_view> keys, std::initializer_list<json_value> values)
+{
+    using object_t = optimized_object_impl<holder_t>;
+    object_t::init(this, span{ keys }, span{ values });
     set_service_cookie((size_t)json_value_type::object);
 }
 

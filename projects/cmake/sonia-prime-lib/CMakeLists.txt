@@ -143,3 +143,4 @@ add_definitions(-DSONIA_PRIME_STATIC)
 add_library(${BUNDLE_NAME} STATIC ${BUNDLE_SOURCES})
 
 set_target_properties(${BUNDLE_NAME} PROPERTIES FOLDER "libs")
+target_compile_options(${BUNDLE_NAME} PRIVATE -Ulinux)

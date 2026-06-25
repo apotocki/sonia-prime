@@ -18,6 +18,7 @@
 #if 1
 #include <boost/test/test_tools.hpp>
 #include <boost/test/unit_test_suite.hpp>
+#include <boost/test/unit_test.hpp>
 
 #if !defined(BOOST_ALL_NO_LIB) && !defined(BOOST_TEST_NO_LIB) && \
     !defined(BOOST_TEST_SOURCE) && !defined(BOOST_TEST_INCLUDED)
@@ -33,11 +34,6 @@
 
 #include <iostream>
 
-namespace boost::unit_test {
-
-int BOOST_TEST_DECL unit_test_main(init_unit_test_func init_func, int argc, char* argv[]);
-
-}
 #endif
 
 #ifndef AUTO_TEST_REGISTRATION

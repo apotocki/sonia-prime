@@ -2067,6 +2067,9 @@
     <ClInclude Include="..\..\..\sonia\utility\invocation\event_emitter.hpp">
       <Filter>sonia.utility\invocation</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\enum_proto.hpp">
+      <Filter>sonia</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

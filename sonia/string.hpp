@@ -473,7 +473,7 @@ std::basic_string<Ch, Tr> to_string(boost::basic_format<Ch, Tr, Alloc> const && 
 
 
 
-inline boost::basic_format<char> operator "" _fmt(const char* str, std::size_t)
+inline boost::basic_format<char> operator ""_fmt(const char* str, std::size_t)
 {
     return boost::format(str);
 }

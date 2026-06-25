@@ -247,8 +247,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\x64-windows-cpp23\debug\lib;$(SolutionDir)tpls\zlib\lib;$(SolutionDir)tpls\icu\lib64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>zlibd.lib;icuucd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\x64-windows-cpp23\debug\lib;$(SolutionDir)tpls\icu\lib64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>zd.lib;icuucd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -331,8 +331,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\x64-windows-cpp23\lib;$(SolutionDir)tpls\zlib\lib;$(SolutionDir)tpls\icu\lib64</AdditionalLibraryDirectories>
-      <AdditionalDependencies>zlib.lib;icuuc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)vcpkg_installed\x64-windows-cpp23\lib;$(SolutionDir)tpls\icu\lib64</AdditionalLibraryDirectories>
+      <AdditionalDependencies>z.lib;icuuc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

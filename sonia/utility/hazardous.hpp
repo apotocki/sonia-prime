@@ -79,7 +79,7 @@ public:
     T * operator->() { return get_pointer(); }
 
 private:
-    alignas(T) char buffer_[sizeof(T)];
+    alignas(T) std::byte buffer_[sizeof(T)];
 };
 
 template <typename CharT, class TraitsT, typename T>

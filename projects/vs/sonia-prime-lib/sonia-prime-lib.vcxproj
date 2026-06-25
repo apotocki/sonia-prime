@@ -235,6 +235,7 @@
     <ClInclude Include="..\..\..\sonia\concurrency.hpp" />
     <ClInclude Include="..\..\..\sonia\cstdint.hpp" />
     <ClInclude Include="..\..\..\sonia\config.hpp" />
+    <ClInclude Include="..\..\..\sonia\enum_proto.hpp" />
     <ClInclude Include="..\..\..\sonia\exceptions.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\algo\algorithm.hpp" />
     <ClInclude Include="..\..\..\sonia\fibers\algo\round_robin.hpp" />

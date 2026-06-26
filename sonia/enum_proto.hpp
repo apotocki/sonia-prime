@@ -6,24 +6,16 @@
 #   define __has_cpp_attribute(x) 0
 #endif
 
-/*
-#if __has_cpp_attribute(clang::annotate)
-#define DEFINE_BITMASK_PROTO(TypeName, UnderlyingType, ...) \
-    struct [[clang::annotate("bitmask:" #TypeName ":" #UnderlyingType)]] \
-    proto_##TypeName { \
-        enum { __VA_ARGS__ }; \
-    }; \
-    enum class TypeName : UnderlyingType { __VA_ARGS__ };
-#else
-#define DEFINE_BITMASK_PROTO(...)
-#endif
-*/
-
 #if __has_cpp_attribute(clang::annotate)
 #define DEFINE_BITMASK_PROTO(TypeName, UnderlyingType, ...) \
     enum class [[clang::annotate("bitmask:" #TypeName ":" #UnderlyingType)]] \
     TypeName : UnderlyingType { __VA_ARGS__ };
+#define DEFINE_ENUM_PROTO(TypeName, UnderlyingType, ...) \
+    enum class [[clang::annotate("enum:" #TypeName ":" #UnderlyingType)]] \
+    TypeName : UnderlyingType { __VA_ARGS__ };
 #else
 #define DEFINE_BITMASK_PROTO(TypeName, UnderlyingType, ...) \
     enum class TypeName : UnderlyingType;
+#define DEFINE_ENUM_PROTO(TypeName, UnderlyingType, ...) \
+    enum class TypeName : UnderlyingType { __VA_ARGS__ };
 #endif

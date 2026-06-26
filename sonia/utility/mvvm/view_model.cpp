@@ -196,7 +196,7 @@ void view_model::set_property(std::string_view propname, blob_result && val)
 }
 */
 
-void view_model::on_state_change(status_type st, std::initializer_list<const blob_result> args)
+void view_model::on_state_change(status_type st, std::initializer_list<const blob_result> args) noexcept
 {
     small_vector<blob_result, 16> bargs;
     bargs.push_back(i16_blob_result((int16_t)st));
@@ -204,7 +204,7 @@ void view_model::on_state_change(status_type st, std::initializer_list<const blo
     on_state_change(bargs);
 }
 
-void view_model::on_state_change(span<const blob_result> args)
+void view_model::on_state_change(span<const blob_result> args) noexcept
 {
     //GLOBAL_LOG_INFO() << "view_model::on_state_change: " << as<int16_t>(args.front()) << ", args count: " << args.size();
     on_change_emitter_.emit(args,
@@ -217,7 +217,7 @@ void view_model::on_state_change(span<const blob_result> args)
     );
 }
 
-void view_model::on_property_change(string_view propname)
+void view_model::on_property_change(string_view propname) noexcept
 {
     blob_result args[] = { i16_blob_result((int16_t)status_type::PROPERTY_CHANGED_ST), string_blob_result(propname) };
     on_state_change(args);

@@ -179,7 +179,7 @@ public:
     virtual bool try_get_property(string_view propname, smart_blob& result) const;
     virtual bool try_set_property(string_view propname, blob_result const& val);
 
-    virtual void on_property_change(string_view) {}
+    virtual void on_property_change(string_view) noexcept {}
 
     virtual shared_ptr<invocable> self_as_invocable_shared() { return {}; }
 

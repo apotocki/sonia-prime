@@ -129,7 +129,7 @@ public:
     virtual void set_manager(shared_ptr<manager>) = 0;
 
     // properties routine
-    void on_property_change(string_view propname) override;
+    void on_property_change(string_view propname) noexcept override;
 
     // set event listener
     template <typename HandlerT>
@@ -138,8 +138,8 @@ public:
     inline void remove_on_change(size_t cb_id) { on_change_emitter_.unsubscribe(cb_id); }
     size_t subscribe_on_change(shared_ptr<invocation::callable> cb);
 
-    void on_state_change(status_type st, std::initializer_list<const blob_result> args);
-    void on_state_change(span<const blob_result> args);
+    void on_state_change(status_type st, std::initializer_list<const blob_result> args) noexcept;
+    void on_state_change(span<const blob_result> args) noexcept;
 
     //smart_blob call_method(string_view name, blob_result args) const;
     //smart_blob do_call_method(string_view name, span<const blob_result> args) const;

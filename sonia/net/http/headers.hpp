@@ -3,241 +3,229 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 #pragma once
 
-#include <boost/preprocessor/seq/for_each_i.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
-
+#include "sonia/config.hpp"
+#include "sonia/enum_proto.hpp"
 #include "sonia/string.hpp"
 
 namespace sonia::http {
 
-// windows defines OPTIONAL
-#define OPTIONAL_FIX OPTIONAL_
+DEFINE_ENUM_PROTO_EX(header, uint16_t, "icase,ostream",
+    UNKNOWN                              ENUM_VALUE_SKIP = 0,
+    A_IM                                 ENUM_VALUE_STR("A-IM"),
+    ALPN                                 ENUM_VALUE_STR("ALPN"),
+    AMP_CACHE_TRANSFORM                  ENUM_VALUE_STR("AMP-Cache-Transform"),
+    ACCEPT                               ENUM_VALUE_STR("Accept"),
+    ACCEPT_ADDITIONS                     ENUM_VALUE_STR("Accept-Additions"),
+    ACCEPT_CHARSET                       ENUM_VALUE_STR("Accept-Charset"),
+    ACCEPT_DATETIME                      ENUM_VALUE_STR("Accept-Datetime"),
+    ACCEPT_ENCODING                      ENUM_VALUE_STR("Accept-Encoding"),
+    ACCEPT_FEATURES                      ENUM_VALUE_STR("Accept-Features"),
+    ACCEPT_LANGUAGE                      ENUM_VALUE_STR("Accept-Language"),
+    ACCEPT_PATCH                         ENUM_VALUE_STR("Accept-Patch"),
+    ACCEPT_POST                          ENUM_VALUE_STR("Accept-Post"),
+    ACCEPT_RANGES                        ENUM_VALUE_STR("Accept-Ranges"),
+    ACCESS_CONTROL                       ENUM_VALUE_STR("Access-Control"),
+    ACCESS_CONTROL_ALLOW_CREDENTIALS     ENUM_VALUE_STR("Access-Control-Allow-Credentials"),
+    ACCESS_CONTROL_ALLOW_HEADERS         ENUM_VALUE_STR("Access-Control-Allow-Headers"),
+    ACCESS_CONTROL_ALLOW_METHODS         ENUM_VALUE_STR("Access-Control-Allow-Methods"),
+    ACCESS_CONTROL_ALLOW_ORIGIN          ENUM_VALUE_STR("Access-Control-Allow-Origin"),
+    ACCESS_CONTROL_MAX_AGE               ENUM_VALUE_STR("Access-Control-Max-Age"),
+    ACCESS_CONTROL_REQUEST_HEADERS       ENUM_VALUE_STR("Access-Control-Request-Headers"),
+    ACCESS_CONTROL_REQUEST_METHOD        ENUM_VALUE_STR("Access-Control-Request-Method"),
+    AGE                                  ENUM_VALUE_STR("Age"),
+    ALLOW                                ENUM_VALUE_STR("Allow"),
+    ALT_SVC                              ENUM_VALUE_STR("Alt-Svc"),
+    ALT_USED                             ENUM_VALUE_STR("Alt-Used"),
+    ALTERNATES                           ENUM_VALUE_STR("Alternates"),
+    APPLY_TO_REDIRECT_REF                ENUM_VALUE_STR("Apply-To-Redirect-Ref"),
+    AUTHENTICATION_CONTROL               ENUM_VALUE_STR("Authentication-Control"),
+    AUTHENTICATION_INFO                  ENUM_VALUE_STR("Authentication-Info"),
+    AUTHORIZATION                        ENUM_VALUE_STR("Authorization"),
+    C_EXT                                ENUM_VALUE_STR("C-Ext"),
+    C_MAN                                ENUM_VALUE_STR("C-Man"),
+    C_OPT                                ENUM_VALUE_STR("C-Opt"),
+    C_PEP                                ENUM_VALUE_STR("C-PEP"),
+    C_PEP_INFO                           ENUM_VALUE_STR("C-PEP-Info"),
+    CDN_LOOP                             ENUM_VALUE_STR("CDN-Loop"),
+    CACHE_CONTROL                        ENUM_VALUE_STR("Cache-Control"),
+    CAL_MANAGED_ID                       ENUM_VALUE_STR("Cal-Managed-ID"),
+    CALDAV_TIMEZONES                     ENUM_VALUE_STR("CalDAV-Timezones"),
+    CLOSE                                ENUM_VALUE_STR("Close"),
+    COMPLIANCE                           ENUM_VALUE_STR("Compliance"),
+    CONNECTION                           ENUM_VALUE_STR("Connection"),
+    CONTENT_BASE                         ENUM_VALUE_STR("Content-Base"),
+    CONTENT_DISPOSITION                  ENUM_VALUE_STR("Content-Disposition"),
+    CONTENT_ENCODING                     ENUM_VALUE_STR("Content-Encoding"),
+    CONTENT_ID                           ENUM_VALUE_STR("Content-ID"),
+    CONTENT_LANGUAGE                     ENUM_VALUE_STR("Content-Language"),
+    CONTENT_LENGTH                       ENUM_VALUE_STR("Content-Length"),
+    CONTENT_LOCATION                     ENUM_VALUE_STR("Content-Location"),
+    CONTENT_MD5                          ENUM_VALUE_STR("Content-MD5"),
+    CONTENT_RANGE                        ENUM_VALUE_STR("Content-Range"),
+    CONTENT_SCRIPT_TYPE                  ENUM_VALUE_STR("Content-Script-Type"),
+    CONTENT_STYLE_TYPE                   ENUM_VALUE_STR("Content-Style-Type"),
+    CONTENT_TRANSFER_ENCODING            ENUM_VALUE_STR("Content-Transfer-Encoding"),
+    CONTENT_TYPE                         ENUM_VALUE_STR("Content-Type"),
+    CONTENT_VERSION                      ENUM_VALUE_STR("Content-Version"),
+    COOKIE                               ENUM_VALUE_STR("Cookie"),
+    COOKIE2                              ENUM_VALUE_STR("Cookie2"),
+    COST                                 ENUM_VALUE_STR("Cost"),
+    DASL                                 ENUM_VALUE_STR("DASL"),
+    DAV                                  ENUM_VALUE_STR("DAV"),
+    DATE                                 ENUM_VALUE_STR("Date"),
+    DEFAULT_STYLE                        ENUM_VALUE_STR("Default-Style"),
+    DELTA_BASE                           ENUM_VALUE_STR("Delta-Base"),
+    DEPTH                                ENUM_VALUE_STR("Depth"),
+    DERIVED_FROM                         ENUM_VALUE_STR("Derived-From"),
+    DESTINATION                          ENUM_VALUE_STR("Destination"),
+    DIFFERENTIAL_ID                      ENUM_VALUE_STR("Differential-ID"),
+    DIGEST                               ENUM_VALUE_STR("Digest"),
+    EDIINT_FEATURES                      ENUM_VALUE_STR("EDIINT-Features"),
+    ETAG                                 ENUM_VALUE_STR("ETag"),
+    EARLY_DATA                           ENUM_VALUE_STR("Early-Data"),
+    EXPECT                               ENUM_VALUE_STR("Expect"),
+    EXPECT_CT                            ENUM_VALUE_STR("Expect-CT"),
+    EXPIRES                              ENUM_VALUE_STR("Expires"),
+    EXT                                  ENUM_VALUE_STR("Ext"),
+    FORWARDED                            ENUM_VALUE_STR("Forwarded"),
+    FROM                                 ENUM_VALUE_STR("From"),
+    GETPROFILE                           ENUM_VALUE_STR("GetProfile"),
+    HTTP2_SETTINGS                       ENUM_VALUE_STR("HTTP2-Settings"),
+    HOBAREG                              ENUM_VALUE_STR("Hobareg"),
+    HOST                                 ENUM_VALUE_STR("Host"),
+    IM                                   ENUM_VALUE_STR("IM"),
+    IF                                   ENUM_VALUE_STR("If"),
+    IF_MATCH                             ENUM_VALUE_STR("If-Match"),
+    IF_MODIFIED_SINCE                    ENUM_VALUE_STR("If-Modified-Since"),
+    IF_NONE_MATCH                        ENUM_VALUE_STR("If-None-Match"),
+    IF_RANGE                             ENUM_VALUE_STR("If-Range"),
+    IF_SCHEDULE_TAG_MATCH                ENUM_VALUE_STR("If-Schedule-Tag-Match"),
+    IF_UNMODIFIED_SINCE                  ENUM_VALUE_STR("If-Unmodified-Since"),
+    INCLUDE_REFERRED_TOKEN_BINDING_ID    ENUM_VALUE_STR("Include-Referred-Token-Binding-ID"),
+    KEEP_ALIVE                           ENUM_VALUE_STR("Keep-Alive"),
+    LABEL                                ENUM_VALUE_STR("Label"),
+    LAST_MODIFIED                        ENUM_VALUE_STR("Last-Modified"),
+    LINK                                 ENUM_VALUE_STR("Link"),
+    LOCATION                             ENUM_VALUE_STR("Location"),
+    LOCK_TOKEN                           ENUM_VALUE_STR("Lock-Token"),
+    MIME_VERSION                         ENUM_VALUE_STR("MIME-Version"),
+    MAN                                  ENUM_VALUE_STR("Man"),
+    MAX_FORWARDS                         ENUM_VALUE_STR("Max-Forwards"),
+    MEMENTO_DATETIME                     ENUM_VALUE_STR("Memento-Datetime"),
+    MESSAGE_ID                           ENUM_VALUE_STR("Message-ID"),
+    METER                                ENUM_VALUE_STR("Meter"),
+    METHOD_CHECK                         ENUM_VALUE_STR("Method-Check"),
+    METHOD_CHECK_EXPIRES                 ENUM_VALUE_STR("Method-Check-Expires"),
+    NEGOTIATE                            ENUM_VALUE_STR("Negotiate"),
+    NON_COMPLIANCE                       ENUM_VALUE_STR("Non-Compliance"),
+    OSCORE                               ENUM_VALUE_STR("OSCORE"),
+    OPT                                  ENUM_VALUE_STR("Opt"),
+    OPTIONAL_                            ENUM_VALUE_STR("Optional"),
+    OPTIONAL_WWW_AUTHENTICATE            ENUM_VALUE_STR("Optional-WWW-Authenticate"),
+    ORDERING_TYPE                        ENUM_VALUE_STR("Ordering-Type"),
+    ORIGIN                               ENUM_VALUE_STR("Origin"),
+    OVERWRITE                            ENUM_VALUE_STR("Overwrite"),
+    P3P                                  ENUM_VALUE_STR("P3P"),
+    PEP                                  ENUM_VALUE_STR("PEP"),
+    PICS_LABEL                           ENUM_VALUE_STR("PICS-Label"),
+    PEP_INFO                             ENUM_VALUE_STR("Pep-Info"),
+    POSITION                             ENUM_VALUE_STR("Position"),
+    PRAGMA                               ENUM_VALUE_STR("Pragma"),
+    PREFER                               ENUM_VALUE_STR("Prefer"),
+    PREFERENCE_APPLIED                   ENUM_VALUE_STR("Preference-Applied"),
+    PROFILEOBJECT                        ENUM_VALUE_STR("ProfileObject"),
+    PROTOCOL                             ENUM_VALUE_STR("Protocol"),
+    PROTOCOL_INFO                        ENUM_VALUE_STR("Protocol-Info"),
+    PROTOCOL_QUERY                       ENUM_VALUE_STR("Protocol-Query"),
+    PROTOCOL_REQUEST                     ENUM_VALUE_STR("Protocol-Request"),
+    PROXY_AUTHENTICATE                   ENUM_VALUE_STR("Proxy-Authenticate"),
+    PROXY_AUTHENTICATION_INFO            ENUM_VALUE_STR("Proxy-Authentication-Info"),
+    PROXY_AUTHORIZATION                  ENUM_VALUE_STR("Proxy-Authorization"),
+    PROXY_FEATURES                       ENUM_VALUE_STR("Proxy-Features"),
+    PROXY_INSTRUCTION                    ENUM_VALUE_STR("Proxy-Instruction"),
+    PUBLIC                               ENUM_VALUE_STR("Public"),
+    PUBLIC_KEY_PINS                      ENUM_VALUE_STR("Public-Key-Pins"),
+    PUBLIC_KEY_PINS_REPORT_ONLY          ENUM_VALUE_STR("Public-Key-Pins-Report-Only"),
+    RANGE                                ENUM_VALUE_STR("Range"),
+    REDIRECT_REF                         ENUM_VALUE_STR("Redirect-Ref"),
+    REFERER                              ENUM_VALUE_STR("Referer"),
+    REFERER_ROOT                         ENUM_VALUE_STR("Referer-Root"),
+    REPLAY_NONCE                         ENUM_VALUE_STR("Replay-Nonce"),
+    RESOLUTION_HINT                      ENUM_VALUE_STR("Resolution-Hint"),
+    RESOLVER_LOCATION                    ENUM_VALUE_STR("Resolver-Location"),
+    RETRY_AFTER                          ENUM_VALUE_STR("Retry-After"),
+    SLUG                                 ENUM_VALUE_STR("SLUG"),
+    SAFE                                 ENUM_VALUE_STR("Safe"),
+    SCHEDULE_REPLY                       ENUM_VALUE_STR("Schedule-Reply"),
+    SCHEDULE_TAG                         ENUM_VALUE_STR("Schedule-Tag"),
+    SEC_TOKEN_BINDING                    ENUM_VALUE_STR("Sec-Token-Binding"),
+    SEC_WEBSOCKET_ACCEPT                 ENUM_VALUE_STR("Sec-WebSocket-Accept"),
+    SEC_WEBSOCKET_EXTENSIONS             ENUM_VALUE_STR("Sec-WebSocket-Extensions"),
+    SEC_WEBSOCKET_KEY                    ENUM_VALUE_STR("Sec-WebSocket-Key"),
+    SEC_WEBSOCKET_PROTOCOL               ENUM_VALUE_STR("Sec-WebSocket-Protocol"),
+    SEC_WEBSOCKET_VERSION                ENUM_VALUE_STR("Sec-WebSocket-Version"),
+    SECURITY_SCHEME                      ENUM_VALUE_STR("Security-Scheme"),
+    SERVER                               ENUM_VALUE_STR("Server"),
+    SET_COOKIE                           ENUM_VALUE_STR("Set-Cookie"),
+    SET_COOKIE2                          ENUM_VALUE_STR("Set-Cookie2"),
+    SETPROFILE                           ENUM_VALUE_STR("SetProfile"),
+    SOAPACTION                           ENUM_VALUE_STR("SoapAction"),
+    STATUS_URI                           ENUM_VALUE_STR("Status-URI"),
+    STRICT_TRANSPORT_SECURITY            ENUM_VALUE_STR("Strict-Transport-Security"),
+    SUBOK                                ENUM_VALUE_STR("SubOK"),
+    SUBST                                ENUM_VALUE_STR("Subst"),
+    SUNSET                               ENUM_VALUE_STR("Sunset"),
+    SURROGATE_CAPABILITY                 ENUM_VALUE_STR("Surrogate-Capability"),
+    SURROGATE_CONTROL                    ENUM_VALUE_STR("Surrogate-Control"),
+    TCN                                  ENUM_VALUE_STR("TCN"),
+    TE                                   ENUM_VALUE_STR("TE"),
+    TTL                                  ENUM_VALUE_STR("TTL"),
+    TIMEOUT                              ENUM_VALUE_STR("Timeout"),
+    TIMING_ALLOW_ORIGIN                  ENUM_VALUE_STR("Timing-Allow-Origin"),
+    TITLE                                ENUM_VALUE_STR("Title"),
+    TOPIC                                ENUM_VALUE_STR("Topic"),
+    TRACEPARENT                          ENUM_VALUE_STR("Traceparent"),
+    TRACESTATE                           ENUM_VALUE_STR("Tracestate"),
+    TRAILER                              ENUM_VALUE_STR("Trailer"),
+    TRANSFER_ENCODING                    ENUM_VALUE_STR("Transfer-Encoding"),
+    UA_COLOR                             ENUM_VALUE_STR("UA-Color"),
+    UA_MEDIA                             ENUM_VALUE_STR("UA-Media"),
+    UA_PIXELS                            ENUM_VALUE_STR("UA-Pixels"),
+    UA_RESOLUTION                        ENUM_VALUE_STR("UA-Resolution"),
+    UA_WINDOWPIXELS                      ENUM_VALUE_STR("UA-Windowpixels"),
+    URI                                  ENUM_VALUE_STR("URI"),
+    UPGRADE                              ENUM_VALUE_STR("Upgrade"),
+    URGENCY                              ENUM_VALUE_STR("Urgency"),
+    USER_AGENT                           ENUM_VALUE_STR("User-Agent"),
+    VARIANT_VARY                         ENUM_VALUE_STR("Variant-Vary"),
+    VARY                                 ENUM_VALUE_STR("Vary"),
+    VERSION                              ENUM_VALUE_STR("Version"),
+    VIA                                  ENUM_VALUE_STR("Via"),
+    WWW_AUTHENTICATE                     ENUM_VALUE_STR("WWW-Authenticate"),
+    WANT_DIGEST                          ENUM_VALUE_STR("Want-Digest"),
+    WARNING                              ENUM_VALUE_STR("Warning"),
+    X_CACHE                              ENUM_VALUE_STR("X-Cache"),
+    X_CONTENT_TYPE_OPTIONS               ENUM_VALUE_STR("X-Content-Type-Options"),
+    X_DEVICE_ACCEPT                      ENUM_VALUE_STR("X-Device-Accept"),
+    X_DEVICE_ACCEPT_CHARSET              ENUM_VALUE_STR("X-Device-Accept-Charset"),
+    X_DEVICE_ACCEPT_ENCODING             ENUM_VALUE_STR("X-Device-Accept-Encoding"),
+    X_DEVICE_ACCEPT_LANGUAGE             ENUM_VALUE_STR("X-Device-Accept-Language"),
+    X_DEVICE_USER_AGENT                  ENUM_VALUE_STR("X-Device-User-Agent"),
+    X_FRAME_OPTIONS                      ENUM_VALUE_STR("X-Frame-Options"),
+    X_HTTP_METHOD_OVERRIDE               ENUM_VALUE_STR("X-Http-Method-Override"),
+    X_POWERED_BY                         ENUM_VALUE_STR("X-Powered-By"),
+    X_REQUESTED_WITH                     ENUM_VALUE_STR("X-Requested-With"),
+    X_UA_COMPATIBLE                      ENUM_VALUE_STR("X-UA-Compatible"),
+    X_UIDH                               ENUM_VALUE_STR("X-UIDH"),
+    X_WAP_PROFILE                        ENUM_VALUE_STR("X-Wap-Profile"),
+    X_WEBKIT_CSP                         ENUM_VALUE_STR("X-WebKit-CSP"),
+    X_XSS_PROTECTION                     ENUM_VALUE_STR("X-XSS-Protection"),
+    UPPER_BOUND_VALUE                    ENUM_VALUE_SKIP)
 
-#define SONIA_HTTP_HEADERS_SEQ                                                  \
-    ((A_IM, "A-IM"sv))                                                            \
-    ((ALPN, "ALPN"sv))                                                            \
-    ((AMP_CACHE_TRANSFORM, "AMP-Cache-Transform"sv))                              \
-    ((ACCEPT, "Accept"sv))                                                        \
-    ((ACCEPT_ADDITIONS, "Accept-Additions"sv))                                    \
-    ((ACCEPT_CHARSET, "Accept-Charset"sv))                                        \
-    ((ACCEPT_DATETIME, "Accept-Datetime"sv))                                      \
-    ((ACCEPT_ENCODING, "Accept-Encoding"sv))                                      \
-    ((ACCEPT_FEATURES, "Accept-Features"sv))                                      \
-    ((ACCEPT_LANGUAGE, "Accept-Language"sv))                                      \
-    ((ACCEPT_PATCH, "Accept-Patch"sv))                                            \
-    ((ACCEPT_POST, "Accept-Post"sv))                                              \
-    ((ACCEPT_RANGES, "Accept-Ranges"sv))                                          \
-    ((ACCESS_CONTROL, "Access-Control"sv))                                        \
-    ((ACCESS_CONTROL_ALLOW_CREDENTIALS, "Access-Control-Allow-Credentials"sv))    \
-    ((ACCESS_CONTROL_ALLOW_HEADERS, "Access-Control-Allow-Headers"sv))            \
-    ((ACCESS_CONTROL_ALLOW_METHODS, "Access-Control-Allow-Methods"sv))            \
-    ((ACCESS_CONTROL_ALLOW_ORIGIN, "Access-Control-Allow-Origin"sv))              \
-    ((ACCESS_CONTROL_MAX_AGE, "Access-Control-Max-Age"sv))                        \
-    ((ACCESS_CONTROL_REQUEST_HEADERS, "Access-Control-Request-Headers"sv))        \
-    ((ACCESS_CONTROL_REQUEST_METHOD, "Access-Control-Request-Method"sv))          \
-    ((AGE, "Age"sv))                                                              \
-    ((ALLOW, "Allow"sv))                                                          \
-    ((ALT_SVC, "Alt-Svc"sv))                                                      \
-    ((ALT_USED, "Alt-Used"sv))                                                    \
-    ((ALTERNATES, "Alternates"sv))                                                \
-    ((APPLY_TO_REDIRECT_REF, "Apply-To-Redirect-Ref"sv))                          \
-    ((AUTHENTICATION_CONTROL, "Authentication-Control"sv))                        \
-    ((AUTHENTICATION_INFO, "Authentication-Info"sv))                              \
-    ((AUTHORIZATION, "Authorization"sv))                                          \
-    ((C_EXT, "C-Ext"sv))                                                          \
-    ((C_MAN, "C-Man"sv))                                                          \
-    ((C_OPT, "C-Opt"sv))                                                          \
-    ((C_PEP, "C-PEP"sv))                                                          \
-    ((C_PEP_INFO, "C-PEP-Info"sv))                                                \
-    ((CDN_LOOP, "CDN-Loop"sv))                                                    \
-    ((CACHE_CONTROL, "Cache-Control"sv))                                          \
-    ((CAL_MANAGED_ID, "Cal-Managed-ID"sv))                                        \
-    ((CALDAV_TIMEZONES, "CalDAV-Timezones"sv))                                    \
-    ((CLOSE, "Close"sv))                                                          \
-    ((COMPLIANCE, "Compliance"sv))                                                \
-    ((CONNECTION, "Connection"sv))                                                \
-    ((CONTENT_BASE, "Content-Base"sv))                                            \
-    ((CONTENT_DISPOSITION, "Content-Disposition"sv))                              \
-    ((CONTENT_ENCODING, "Content-Encoding"sv))                                    \
-    ((CONTENT_ID, "Content-ID"sv))                                                \
-    ((CONTENT_LANGUAGE, "Content-Language"sv))                                    \
-    ((CONTENT_LENGTH, "Content-Length"sv))                                        \
-    ((CONTENT_LOCATION, "Content-Location"sv))                                    \
-    ((CONTENT_MD5, "Content-MD5"sv))                                              \
-    ((CONTENT_RANGE, "Content-Range"sv))                                          \
-    ((CONTENT_SCRIPT_TYPE, "Content-Script-Type"sv))                              \
-    ((CONTENT_STYLE_TYPE, "Content-Style-Type"sv))                                \
-    ((CONTENT_TRANSFER_ENCODING, "Content-Transfer-Encoding"sv))                  \
-    ((CONTENT_TYPE, "Content-Type"sv))                                            \
-    ((CONTENT_VERSION, "Content-Version"sv))                                      \
-    ((COOKIE, "Cookie"sv))                                                        \
-    ((COOKIE2, "Cookie2"sv))                                                      \
-    ((COST, "Cost"sv))                                                            \
-    ((DASL, "DASL"sv))                                                            \
-    ((DAV, "DAV"sv))                                                              \
-    ((DATE, "Date"sv))                                                            \
-    ((DEFAULT_STYLE, "Default-Style"sv))                                          \
-    ((DELTA_BASE, "Delta-Base"sv))                                                \
-    ((DEPTH, "Depth"sv))                                                          \
-    ((DERIVED_FROM, "Derived-From"sv))                                            \
-    ((DESTINATION, "Destination"sv))                                              \
-    ((DIFFERENTIAL_ID, "Differential-ID"sv))                                      \
-    ((DIGEST, "Digest"sv))                                                        \
-    ((EDIINT_FEATURES, "EDIINT-Features"sv))                                      \
-    ((ETAG, "ETag"sv))                                                            \
-    ((EARLY_DATA, "Early-Data"sv))                                                \
-    ((EXPECT, "Expect"sv))                                                        \
-    ((EXPECT_CT, "Expect-CT"sv))                                                  \
-    ((EXPIRES, "Expires"sv))                                                      \
-    ((EXT, "Ext"sv))                                                              \
-    ((FORWARDED, "Forwarded"sv))                                                  \
-    ((FROM, "From"sv))                                                            \
-    ((GETPROFILE, "GetProfile"sv))                                                \
-    ((HTTP2_SETTINGS, "HTTP2-Settings"sv))                                        \
-    ((HOBAREG, "Hobareg"sv))                                                      \
-    ((HOST, "Host"sv))                                                            \
-    ((IM, "IM"sv))                                                                \
-    ((IF, "If"sv))                                                                \
-    ((IF_MATCH, "If-Match"sv))                                                    \
-    ((IF_MODIFIED_SINCE, "If-Modified-Since"sv))                                  \
-    ((IF_NONE_MATCH, "If-None-Match"sv))                                          \
-    ((IF_RANGE, "If-Range"sv))                                                    \
-    ((IF_SCHEDULE_TAG_MATCH, "If-Schedule-Tag-Match"sv))                          \
-    ((IF_UNMODIFIED_SINCE, "If-Unmodified-Since"sv))                              \
-    ((INCLUDE_REFERRED_TOKEN_BINDING_ID, "Include-Referred-Token-Binding-ID"sv))  \
-    ((KEEP_ALIVE, "Keep-Alive"sv))                                                \
-    ((LABEL, "Label"sv))                                                          \
-    ((LAST_MODIFIED, "Last-Modified"sv))                                          \
-    ((LINK, "Link"sv))                                                            \
-    ((LOCATION, "Location"sv))                                                    \
-    ((LOCK_TOKEN, "Lock-Token"sv))                                                \
-    ((MIME_VERSION, "MIME-Version"sv))                                            \
-    ((MAN, "Man"sv))                                                              \
-    ((MAX_FORWARDS, "Max-Forwards"sv))                                            \
-    ((MEMENTO_DATETIME, "Memento-Datetime"sv))                                    \
-    ((MESSAGE_ID, "Message-ID"sv))                                                \
-    ((METER, "Meter"sv))                                                          \
-    ((METHOD_CHECK, "Method-Check"sv))                                            \
-    ((METHOD_CHECK_EXPIRES, "Method-Check-Expires"sv))                            \
-    ((NEGOTIATE, "Negotiate"sv))                                                  \
-    ((NON_COMPLIANCE, "Non-Compliance"sv))                                        \
-    ((OSCORE, "OSCORE"sv))                                                        \
-    ((OPT, "Opt"sv))                                                              \
-    ((OPTIONAL_FIX, "Optional"sv))                                                \
-    ((OPTIONAL_WWW_AUTHENTICATE, "Optional-WWW-Authenticate"sv))                  \
-    ((ORDERING_TYPE, "Ordering-Type"sv))                                          \
-    ((ORIGIN, "Origin"sv))                                                        \
-    ((OVERWRITE, "Overwrite"sv))                                                  \
-    ((P3P, "P3P"sv))                                                              \
-    ((PEP, "PEP"sv))                                                              \
-    ((PICS_LABEL, "PICS-Label"sv))                                                \
-    ((PEP_INFO, "Pep-Info"sv))                                                    \
-    ((POSITION, "Position"sv))                                                    \
-    ((PRAGMA, "Pragma"sv))                                                        \
-    ((PREFER, "Prefer"sv))                                                        \
-    ((PREFERENCE_APPLIED, "Preference-Applied"sv))                                \
-    ((PROFILEOBJECT, "ProfileObject"sv))                                          \
-    ((PROTOCOL, "Protocol"sv))                                                    \
-    ((PROTOCOL_INFO, "Protocol-Info"sv))                                          \
-    ((PROTOCOL_QUERY, "Protocol-Query"sv))                                        \
-    ((PROTOCOL_REQUEST, "Protocol-Request"sv))                                    \
-    ((PROXY_AUTHENTICATE, "Proxy-Authenticate"sv))                                \
-    ((PROXY_AUTHENTICATION_INFO, "Proxy-Authentication-Info"sv))                  \
-    ((PROXY_AUTHORIZATION, "Proxy-Authorization"sv))                              \
-    ((PROXY_FEATURES, "Proxy-Features"sv))                                        \
-    ((PROXY_INSTRUCTION, "Proxy-Instruction"sv))                                  \
-    ((PUBLIC, "Public"sv))                                                        \
-    ((PUBLIC_KEY_PINS, "Public-Key-Pins"sv))                                      \
-    ((PUBLIC_KEY_PINS_REPORT_ONLY, "Public-Key-Pins-Report-Only"sv))              \
-    ((RANGE, "Range"sv))                                                          \
-    ((REDIRECT_REF, "Redirect-Ref"sv))                                            \
-    ((REFERER, "Referer"sv))                                                      \
-    ((REFERER_ROOT, "Referer-Root"sv))                                            \
-    ((REPLAY_NONCE, "Replay-Nonce"sv))                                            \
-    ((RESOLUTION_HINT, "Resolution-Hint"sv))                                      \
-    ((RESOLVER_LOCATION, "Resolver-Location"sv))                                  \
-    ((RETRY_AFTER, "Retry-After"sv))                                              \
-    ((SLUG, "SLUG"sv))                                                            \
-    ((SAFE, "Safe"sv))                                                            \
-    ((SCHEDULE_REPLY, "Schedule-Reply"sv))                                        \
-    ((SCHEDULE_TAG, "Schedule-Tag"sv))                                            \
-    ((SEC_TOKEN_BINDING, "Sec-Token-Binding"sv))                                  \
-    ((SEC_WEBSOCKET_ACCEPT, "Sec-WebSocket-Accept"sv))                            \
-    ((SEC_WEBSOCKET_EXTENSIONS, "Sec-WebSocket-Extensions"sv))                    \
-    ((SEC_WEBSOCKET_KEY, "Sec-WebSocket-Key"sv))                                  \
-    ((SEC_WEBSOCKET_PROTOCOL, "Sec-WebSocket-Protocol"sv))                        \
-    ((SEC_WEBSOCKET_VERSION, "Sec-WebSocket-Version"sv))                          \
-    ((SECURITY_SCHEME, "Security-Scheme"sv))                                      \
-    ((SERVER, "Server"sv))                                                        \
-    ((SET_COOKIE, "Set-Cookie"sv))                                                \
-    ((SET_COOKIE2, "Set-Cookie2"sv))                                              \
-    ((SETPROFILE, "SetProfile"sv))                                                \
-    ((SOAPACTION, "SoapAction"sv))                                                \
-    ((STATUS_URI, "Status-URI"sv))                                                \
-    ((STRICT_TRANSPORT_SECURITY, "Strict-Transport-Security"sv))                  \
-    ((SUBOK, "SubOK"sv))                                                          \
-    ((SUBST, "Subst"sv))                                                          \
-    ((SUNSET, "Sunset"sv))                                                        \
-    ((SURROGATE_CAPABILITY, "Surrogate-Capability"sv))                            \
-    ((SURROGATE_CONTROL, "Surrogate-Control"sv))                                  \
-    ((TCN, "TCN"sv))                                                              \
-    ((TE, "TE"sv))                                                                \
-    ((TTL, "TTL"sv))                                                              \
-    ((TIMEOUT, "Timeout"sv))                                                      \
-    ((TIMING_ALLOW_ORIGIN, "Timing-Allow-Origin"sv))                              \
-    ((TITLE, "Title"sv))                                                          \
-    ((TOPIC, "Topic"sv))                                                          \
-    ((TRACEPARENT, "Traceparent"sv))                                              \
-    ((TRACESTATE, "Tracestate"sv))                                                \
-    ((TRAILER, "Trailer"sv))                                                      \
-    ((TRANSFER_ENCODING, "Transfer-Encoding"sv))                                  \
-    ((UA_COLOR, "UA-Color"sv))                                                    \
-    ((UA_MEDIA, "UA-Media"sv))                                                    \
-    ((UA_PIXELS, "UA-Pixels"sv))                                                  \
-    ((UA_RESOLUTION, "UA-Resolution"sv))                                          \
-    ((UA_WINDOWPIXELS, "UA-Windowpixels"sv))                                      \
-    ((URI, "URI"sv))                                                              \
-    ((UPGRADE, "Upgrade"sv))                                                      \
-    ((URGENCY, "Urgency"sv))                                                      \
-    ((USER_AGENT, "User-Agent"sv))                                                \
-    ((VARIANT_VARY, "Variant-Vary"sv))                                            \
-    ((VARY, "Vary"sv))                                                            \
-    ((VERSION, "Version"sv))                                                      \
-    ((VIA, "Via"sv))                                                              \
-    ((WWW_AUTHENTICATE, "WWW-Authenticate"sv))                                    \
-    ((WANT_DIGEST, "Want-Digest"sv))                                              \
-    ((WARNING, "Warning"sv))                                                      \
-    ((X_CACHE, "X-Cache"sv))                                                      \
-    ((X_CONTENT_TYPE_OPTIONS, "X-Content-Type-Options"sv))                        \
-    ((X_DEVICE_ACCEPT, "X-Device-Accept"sv))                                      \
-    ((X_DEVICE_ACCEPT_CHARSET, "X-Device-Accept-Charset"sv))                      \
-    ((X_DEVICE_ACCEPT_ENCODING, "X-Device-Accept-Encoding"sv))                    \
-    ((X_DEVICE_ACCEPT_LANGUAGE, "X-Device-Accept-Language"sv))                    \
-    ((X_DEVICE_USER_AGENT, "X-Device-User-Agent"sv))                              \
-    ((X_FRAME_OPTIONS, "X-Frame-Options"sv))                                      \
-    ((X_HTTP_METHOD_OVERRIDE, "X-Http-Method-Override"sv))                        \
-    ((X_POWERED_BY, "X-Powered-By"sv))                                            \
-    ((X_REQUESTED_WITH, "X-Requested-With"sv))                                    \
-    ((X_UA_COMPATIBLE, "X-UA-Compatible"sv))                                      \
-    ((X_UIDH, "X-UIDH"sv))                                                        \
-    ((X_WAP_PROFILE, "X-Wap-Profile"sv))                                          \
-    ((X_WEBKIT_CSP, "X-WebKit-CSP"sv))                                            \
-    ((X_XSS_PROTECTION, "X-XSS-Protection"sv))
-
-#define SONIA_PRINT_TYPE_ENUM(r, data, i, elem) BOOST_PP_TUPLE_ELEM(2, 0, elem),
-
-enum class header
-{
-    UNKNOWN = 0,
-    BOOST_PP_SEQ_FOR_EACH_I(SONIA_PRINT_TYPE_ENUM, _, SONIA_HTTP_HEADERS_SEQ)
-    UPPER_BOUND_VALUE
-};
-
-std::string_view to_string_view(header);
-header to_header(std::string_view);
-
-inline size_t hash_value(header h) { return (int)h; }
-
-#undef SONIA_PRINT_TYPE_ENUM
+inline size_t hash_value(header h) { return (size_t)h; }
 
 }
+
+#ifndef SONIA_DO_NOT_INCLUDE_GEN
+#   include "headers.gen.hpp"
+#endif

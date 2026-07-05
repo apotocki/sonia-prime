@@ -169,6 +169,8 @@ public:
             } catch (std::exception const& ex) {
                 if constexpr (!std::is_same_v<ExceptionHandlerT, nullptr_t>) {
                     on_exception(idx, ex);
+                } else if constexpr (!std::is_same_v<ErrorHandlerT, nullptr_t>) {
+                    on_error(idx, smart_blob{ error_blob_result(ex.what()) });
                 }
             }
         }

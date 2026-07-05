@@ -39,9 +39,9 @@ public:
             ++ii;
             if (*bit == ' ') break;
         }
-        req.method = http::to_method(std::string_view(tmpbuff, bit));
+        req.method = http::parse_verb(std::string_view(tmpbuff, bit));
         
-        if (http::method_verb::UNKNOWN == req.method) {
+        if (http::verb::UNKNOWN == req.method) {
             throw exception("unknown verb: %1%"_fmt % std::string_view(tmpbuff, bit));
         }
 

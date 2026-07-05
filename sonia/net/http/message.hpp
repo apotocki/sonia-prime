@@ -18,6 +18,9 @@
 #include "sonia/utility/iterators/http_form_data_read_iterator.hpp"
 
 #include "http.hpp"
+#include "status_codes.hpp"
+#include "verb.hpp"
+#include "headers.hpp"
 
 namespace sonia::http {
 
@@ -110,7 +113,7 @@ public:
 
     explicit request(string_view requri);
 
-    method_verb method{method_verb::GET};
+    verb method{ verb::GET };
     std::string host;
     uint16_t port;
     

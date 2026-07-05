@@ -71,7 +71,7 @@ public:
             }
             
             std::string_view hname{tmpbuff, bit};
-            header h = to_header(hname);
+            header h = parse_header(hname);
         
             for (char c = *ii; c == ' '; ++ii, c = *ii);
         

@@ -27,7 +27,7 @@ void sonnet::handle(request & req, response & resp)
     resp.set_header(header::ACCESS_CONTROL_ALLOW_ORIGIN, "*");
     resp.set_header(header::ACCESS_CONTROL_ALLOW_HEADERS, "Pragma");
 
-    if (req.method == method_verb::OPTIONS) {
+    if (req.method == verb::OPTIONS) {
         resp.set_header(header::ALLOW, "GET,POST,OPTIONS");
         resp.status_code = status::OK;
         return;
@@ -51,7 +51,7 @@ void sonnet::handle(request & req, response & resp)
     request_parameters rparams;
 
     // handle post/form params
-    if (req.method == method_verb::POST) {
+    if (req.method == verb::POST) {
         req.tokenize_header(header::CONTENT_TYPE, [this, &rparams](std::string_view nm, std::string_view val, char d) {
             if (nm == "multipart/form-data") rparams.has_form_data = true;
             else if (nm == "application/x-www-form-urlencoded") rparams.is_urlencoded = true;

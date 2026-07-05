@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <mutex>
 #include <boost/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
@@ -42,6 +43,7 @@ using boost::shared_lock_guard;
 
 namespace threads {
     using std::mutex;
+    using std::recursive_mutex;
     using std::condition_variable;
 }
 

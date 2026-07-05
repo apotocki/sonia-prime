@@ -762,16 +762,10 @@
     <ClInclude Include="..\..\..\sonia\utility\serialization\http_request.hpp">
       <Filter>sonia.utility\serialization</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\sonia\net\http\headers.hpp">
-      <Filter>sonia.net\http</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\sonia\net\http\http.hpp">
       <Filter>sonia.net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\net\http\message.hpp">
-      <Filter>sonia.net\http</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\sonia\net\http\status_codes.hpp">
       <Filter>sonia.net\http</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\sonia\utility\functional\equal\variant.hpp">
@@ -2070,6 +2064,15 @@
     <ClInclude Include="..\..\..\sonia\enum_proto.hpp">
       <Filter>sonia</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\http\verb.gen.hpp">
+      <Filter>sonia.net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\http\status_codes.gen.hpp">
+      <Filter>sonia.net\http</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\net\http\headers.gen.hpp">
+      <Filter>sonia.net\http</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">
@@ -2348,5 +2351,16 @@
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="..\sonia.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\..\sonia\net\http\verb.hpp">
+      <Filter>sonia.net\http</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\sonia\net\http\status_codes.hpp">
+      <Filter>sonia.net\http</Filter>
+    </CustomBuild>
+    <CustomBuild Include="..\..\..\sonia\net\http\headers.hpp">
+      <Filter>sonia.net\http</Filter>
+    </CustomBuild>
   </ItemGroup>
 </Project>

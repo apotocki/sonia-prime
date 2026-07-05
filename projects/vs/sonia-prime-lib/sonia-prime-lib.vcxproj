@@ -337,12 +337,55 @@
     <ClInclude Include="..\..\..\sonia\mp\limbs_to_string.hpp" />
     <ClInclude Include="..\..\..\sonia\mp\limb_arithmetic.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\application.hpp" />
-    <ClInclude Include="..\..\..\sonia\net\http\headers.hpp" />
+    <CustomBuild Include="..\..\..\sonia\net\http\headers.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BuildInParallel>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</BuildInParallel>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BuildInParallel>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</BuildInParallel>
+    </CustomBuild>
+    <ClInclude Include="..\..\..\sonia\net\http\headers.gen.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\http.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\message.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\message.ipp" />
+    <CustomBuild Include="..\..\..\sonia\net\http\verb.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BuildInParallel>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</BuildInParallel>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BuildInParallel>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</BuildInParallel>
+    </CustomBuild>
     <ClInclude Include="..\..\..\sonia\net\http\sonnet.hpp" />
-    <ClInclude Include="..\..\..\sonia\net\http\status_codes.hpp" />
+    <CustomBuild Include="..\..\..\sonia\net\http\status_codes.hpp">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BuildInParallel>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</BuildInParallel>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</BuildInParallel>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
+      <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</BuildInParallel>
+    </CustomBuild>
+    <ClInclude Include="..\..\..\sonia\net\http\status_codes.gen.hpp" />
+    <ClInclude Include="..\..\..\sonia\net\http\verb.gen.hpp" />
     <ClInclude Include="..\..\..\sonia\net\uri.hpp" />
     <ClInclude Include="..\..\..\sonia\net\uri.ipp" />
     <ClInclude Include="..\..\..\sonia\new.hpp" />

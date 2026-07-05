@@ -1,0 +1,24 @@
+{
+  "vs_clang_path": "C:\\Program Files\\LLVM\\bin",
+  "include_dirs": [
+    "tpls/sonia-prime",
+    "tpls/numetron/include",
+    "tpls/dataforge/include",
+    "vcpkg_installed/x64-windows-cpp23/include"
+  ],
+  "preprocessor_defs": [
+    "_MT",
+    "_DLL",
+    "BOOST_NO_USER_CONFIG",
+    "BOOST_ALL_DYN_LINK",
+    "BOOST_STACKTRACE_LINK",
+    "SONIA_DO_NOT_INCLUDE_GEN"
+  ],
+  "compiler_args": [
+    "-std=c++23",
+    "-fms-compatibility",
+    "-fms-extensions",
+    "-Wno-ignored-pragma-intrinsic"
+  ]
+}
+

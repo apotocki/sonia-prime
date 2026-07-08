@@ -8,6 +8,8 @@
 #include "serialization.hpp"
 #include "sonia/net/http/message.hpp"
 
+#include "sonia/logger/logger.hpp"
+
 namespace sonia::serialization {
 
 template <typename TagT>
@@ -71,7 +73,14 @@ public:
             }
             
             std::string_view hname{tmpbuff, bit};
-            header h = parse_header(hname);
+            header h = [hname]{
+                try {
+                    return parse_header(hname);
+                } catch (...) {
+                    GLOBAL_LOG_WARN() << "Unknown header: " << hname;
+                    return header::UNKNOWN;
+                }
+            }();
         
             for (char c = *ii; c == ' '; ++ii, c = *ii);
         

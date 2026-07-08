@@ -56,12 +56,14 @@ inline std::string_view to_string_view(header value) noexcept {
     case header::CACHE_CONTROL: return "Cache-Control"sv;
     case header::CAL_MANAGED_ID: return "Cal-Managed-ID"sv;
     case header::CALDAV_TIMEZONES: return "CalDAV-Timezones"sv;
+    case header::CACHE_STATUS: return "Cache-Status"sv;
     case header::CLOSE: return "Close"sv;
     case header::COMPLIANCE: return "Compliance"sv;
     case header::CONNECTION: return "Connection"sv;
     case header::CONTENT_BASE: return "Content-Base"sv;
     case header::CONTENT_DISPOSITION: return "Content-Disposition"sv;
     case header::CONTENT_ENCODING: return "Content-Encoding"sv;
+    case header::CONTENT_DIGEST: return "Content-Digest"sv;
     case header::CONTENT_ID: return "Content-ID"sv;
     case header::CONTENT_LANGUAGE: return "Content-Language"sv;
     case header::CONTENT_LENGTH: return "Content-Length"sv;
@@ -157,6 +159,7 @@ inline std::string_view to_string_view(header value) noexcept {
     case header::REFERER: return "Referer"sv;
     case header::REFERER_ROOT: return "Referer-Root"sv;
     case header::REPLAY_NONCE: return "Replay-Nonce"sv;
+    case header::REPR_DIGEST: return "Repr-Digest"sv;
     case header::RESOLUTION_HINT: return "Resolution-Hint"sv;
     case header::RESOLVER_LOCATION: return "Resolver-Location"sv;
     case header::RETRY_AFTER: return "Retry-After"sv;
@@ -164,6 +167,13 @@ inline std::string_view to_string_view(header value) noexcept {
     case header::SAFE: return "Safe"sv;
     case header::SCHEDULE_REPLY: return "Schedule-Reply"sv;
     case header::SCHEDULE_TAG: return "Schedule-Tag"sv;
+    case header::SEC_CH_UA: return "Sec-CH-UA"sv;
+    case header::SEC_CH_UA_MOBILE: return "Sec-CH-UA-Mobile"sv;
+    case header::SEC_CH_UA_PLATFORM: return "Sec-CH-UA-Platform"sv;
+    case header::SEC_FETCH_DEST: return "Sec-Fetch-Dest"sv;
+    case header::SEC_FETCH_MODE: return "Sec-Fetch-Mode"sv;
+    case header::SEC_FETCH_SITE: return "Sec-Fetch-Site"sv;
+    case header::SEC_FETCH_USER: return "Sec-Fetch-User"sv;
     case header::SEC_TOKEN_BINDING: return "Sec-Token-Binding"sv;
     case header::SEC_WEBSOCKET_ACCEPT: return "Sec-WebSocket-Accept"sv;
     case header::SEC_WEBSOCKET_EXTENSIONS: return "Sec-WebSocket-Extensions"sv;
@@ -171,6 +181,8 @@ inline std::string_view to_string_view(header value) noexcept {
     case header::SEC_WEBSOCKET_PROTOCOL: return "Sec-WebSocket-Protocol"sv;
     case header::SEC_WEBSOCKET_VERSION: return "Sec-WebSocket-Version"sv;
     case header::SECURITY_SCHEME: return "Security-Scheme"sv;
+    case header::SIGNATURE: return "Signature"sv;
+    case header::SIGNATURE_INPUT: return "Signature-Input"sv;
     case header::SERVER: return "Server"sv;
     case header::SET_COOKIE: return "Set-Cookie"sv;
     case header::SET_COOKIE2: return "Set-Cookie2"sv;
@@ -201,6 +213,7 @@ inline std::string_view to_string_view(header value) noexcept {
     case header::UA_WINDOWPIXELS: return "UA-Windowpixels"sv;
     case header::URI: return "URI"sv;
     case header::UPGRADE: return "Upgrade"sv;
+    case header::UPGRADE_INSECURE_REQUESTS: return "Upgrade-Insecure-Requests"sv;
     case header::URGENCY: return "Urgency"sv;
     case header::USER_AGENT: return "User-Agent"sv;
     case header::VARIANT_VARY: return "Variant-Vary"sv;
@@ -275,12 +288,14 @@ inline bool is_valid(header value) noexcept {
     case header::CACHE_CONTROL:
     case header::CAL_MANAGED_ID:
     case header::CALDAV_TIMEZONES:
+    case header::CACHE_STATUS:
     case header::CLOSE:
     case header::COMPLIANCE:
     case header::CONNECTION:
     case header::CONTENT_BASE:
     case header::CONTENT_DISPOSITION:
     case header::CONTENT_ENCODING:
+    case header::CONTENT_DIGEST:
     case header::CONTENT_ID:
     case header::CONTENT_LANGUAGE:
     case header::CONTENT_LENGTH:
@@ -376,6 +391,7 @@ inline bool is_valid(header value) noexcept {
     case header::REFERER:
     case header::REFERER_ROOT:
     case header::REPLAY_NONCE:
+    case header::REPR_DIGEST:
     case header::RESOLUTION_HINT:
     case header::RESOLVER_LOCATION:
     case header::RETRY_AFTER:
@@ -383,6 +399,13 @@ inline bool is_valid(header value) noexcept {
     case header::SAFE:
     case header::SCHEDULE_REPLY:
     case header::SCHEDULE_TAG:
+    case header::SEC_CH_UA:
+    case header::SEC_CH_UA_MOBILE:
+    case header::SEC_CH_UA_PLATFORM:
+    case header::SEC_FETCH_DEST:
+    case header::SEC_FETCH_MODE:
+    case header::SEC_FETCH_SITE:
+    case header::SEC_FETCH_USER:
     case header::SEC_TOKEN_BINDING:
     case header::SEC_WEBSOCKET_ACCEPT:
     case header::SEC_WEBSOCKET_EXTENSIONS:
@@ -390,6 +413,8 @@ inline bool is_valid(header value) noexcept {
     case header::SEC_WEBSOCKET_PROTOCOL:
     case header::SEC_WEBSOCKET_VERSION:
     case header::SECURITY_SCHEME:
+    case header::SIGNATURE:
+    case header::SIGNATURE_INPUT:
     case header::SERVER:
     case header::SET_COOKIE:
     case header::SET_COOKIE2:
@@ -420,6 +445,7 @@ inline bool is_valid(header value) noexcept {
     case header::UA_WINDOWPIXELS:
     case header::URI:
     case header::UPGRADE:
+    case header::UPGRADE_INSECURE_REQUESTS:
     case header::URGENCY:
     case header::USER_AGENT:
     case header::VARIANT_VARY:
@@ -496,6 +522,7 @@ inline header parse_header(std::string_view str) {
         { "c-pep"sv, header::C_PEP },
         { "c-pep-info"sv, header::C_PEP_INFO },
         { "cache-control"sv, header::CACHE_CONTROL },
+        { "cache-status"sv, header::CACHE_STATUS },
         { "cal-managed-id"sv, header::CAL_MANAGED_ID },
         { "caldav-timezones"sv, header::CALDAV_TIMEZONES },
         { "cdn-loop"sv, header::CDN_LOOP },
@@ -503,6 +530,7 @@ inline header parse_header(std::string_view str) {
         { "compliance"sv, header::COMPLIANCE },
         { "connection"sv, header::CONNECTION },
         { "content-base"sv, header::CONTENT_BASE },
+        { "content-digest"sv, header::CONTENT_DIGEST },
         { "content-disposition"sv, header::CONTENT_DISPOSITION },
         { "content-encoding"sv, header::CONTENT_ENCODING },
         { "content-id"sv, header::CONTENT_ID },
@@ -600,12 +628,20 @@ inline header parse_header(std::string_view str) {
         { "referer"sv, header::REFERER },
         { "referer-root"sv, header::REFERER_ROOT },
         { "replay-nonce"sv, header::REPLAY_NONCE },
+        { "repr-digest"sv, header::REPR_DIGEST },
         { "resolution-hint"sv, header::RESOLUTION_HINT },
         { "resolver-location"sv, header::RESOLVER_LOCATION },
         { "retry-after"sv, header::RETRY_AFTER },
         { "safe"sv, header::SAFE },
         { "schedule-reply"sv, header::SCHEDULE_REPLY },
         { "schedule-tag"sv, header::SCHEDULE_TAG },
+        { "sec-ch-ua"sv, header::SEC_CH_UA },
+        { "sec-ch-ua-mobile"sv, header::SEC_CH_UA_MOBILE },
+        { "sec-ch-ua-platform"sv, header::SEC_CH_UA_PLATFORM },
+        { "sec-fetch-dest"sv, header::SEC_FETCH_DEST },
+        { "sec-fetch-mode"sv, header::SEC_FETCH_MODE },
+        { "sec-fetch-site"sv, header::SEC_FETCH_SITE },
+        { "sec-fetch-user"sv, header::SEC_FETCH_USER },
         { "sec-token-binding"sv, header::SEC_TOKEN_BINDING },
         { "sec-websocket-accept"sv, header::SEC_WEBSOCKET_ACCEPT },
         { "sec-websocket-extensions"sv, header::SEC_WEBSOCKET_EXTENSIONS },
@@ -617,6 +653,8 @@ inline header parse_header(std::string_view str) {
         { "set-cookie"sv, header::SET_COOKIE },
         { "set-cookie2"sv, header::SET_COOKIE2 },
         { "setprofile"sv, header::SETPROFILE },
+        { "signature"sv, header::SIGNATURE },
+        { "signature-input"sv, header::SIGNATURE_INPUT },
         { "slug"sv, header::SLUG },
         { "soapaction"sv, header::SOAPACTION },
         { "status-uri"sv, header::STATUS_URI },
@@ -643,6 +681,7 @@ inline header parse_header(std::string_view str) {
         { "ua-resolution"sv, header::UA_RESOLUTION },
         { "ua-windowpixels"sv, header::UA_WINDOWPIXELS },
         { "upgrade"sv, header::UPGRADE },
+        { "upgrade-insecure-requests"sv, header::UPGRADE_INSECURE_REQUESTS },
         { "urgency"sv, header::URGENCY },
         { "uri"sv, header::URI },
         { "user-agent"sv, header::USER_AGENT },

@@ -1,55 +1,57 @@
 include (${COMMON_INCLUDE})
 
+set (SONIA_HOME ${CMAKE_CURRENT_LIST_DIR}/../../..)
+
 include_directories(${PROJECT_HOME})
-include_directories(${BUNDLES}/sonia-prime)
-include_directories(${BUNDLES}/numetron/include)
-include_directories(${BUNDLES}/dataforge/include)
+include_directories(${SONIA_HOME})
+include_directories(${TPLS}/numetron/include)
+include_directories(${TPLS}/dataforge/include)
 include_directories(${TPLS}/lexertl14/include)
 
 set (BUNDLE_NAME sonia-prime)
-set (BUNDLE_HOME ${BUNDLES}/sonia-prime)
+
 set (BUNDLE_SOURCES
-    ${BUNDLE_HOME}/sonia/services/services.cpp
-    ${BUNDLE_HOME}/sonia/services/environment.cpp
-    ${BUNDLE_HOME}/sonia/services/services_host.cpp
-    ${BUNDLE_HOME}/sonia/services/service_locator.cpp
-    ${BUNDLE_HOME}/sonia/services/basic_service_factory.cpp
-    ${BUNDLE_HOME}/sonia/services/local_service_registry.cpp
-    ${BUNDLE_HOME}/sonia/services/registry/registry_service_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/registry/registry_service.cpp
-    ${BUNDLE_HOME}/sonia/services/bookkeeper/bookkeeper_service_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/bookkeeper/bookkeeper_service.cpp
-    ${BUNDLE_HOME}/sonia/services/scheduler/scheduler_service_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/scheduler/scheduler_service.cpp
-    ${BUNDLE_HOME}/sonia/services/auth/auth_service_builder.cpp
-    ${BUNDLE_HOME}/sonia/services/auth/auth_service.cpp
-    ${BUNDLE_HOME}/sonia/services/prime_bundle.cpp
-    ${BUNDLE_HOME}/sonia/utility/invocation/invocation.cpp
-    ${BUNDLE_HOME}/sonia/fibers/default_stack.cpp
-    ${BUNDLE_HOME}/sonia/fibers/context_shared.cpp
+    ${SONIA_HOME}/sonia/services/services.cpp
+    ${SONIA_HOME}/sonia/services/environment.cpp
+    ${SONIA_HOME}/sonia/services/services_host.cpp
+    ${SONIA_HOME}/sonia/services/service_locator.cpp
+    ${SONIA_HOME}/sonia/services/basic_service_factory.cpp
+    ${SONIA_HOME}/sonia/services/local_service_registry.cpp
+    ${SONIA_HOME}/sonia/services/registry/registry_service_builder.cpp
+    ${SONIA_HOME}/sonia/services/registry/registry_service.cpp
+    ${SONIA_HOME}/sonia/services/bookkeeper/bookkeeper_service_builder.cpp
+    ${SONIA_HOME}/sonia/services/bookkeeper/bookkeeper_service.cpp
+    ${SONIA_HOME}/sonia/services/scheduler/scheduler_service_builder.cpp
+    ${SONIA_HOME}/sonia/services/scheduler/scheduler_service.cpp
+    ${SONIA_HOME}/sonia/services/auth/auth_service_builder.cpp
+    ${SONIA_HOME}/sonia/services/auth/auth_service.cpp
+    ${SONIA_HOME}/sonia/services/prime_bundle.cpp
+    ${SONIA_HOME}/sonia/utility/invocation/invocation.cpp
+    ${SONIA_HOME}/sonia/fibers/default_stack.cpp
+    ${SONIA_HOME}/sonia/fibers/context_shared.cpp
 )
 
 if (NOT DEFINED NO_NET)
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
-        ${BUNDLE_HOME}/sonia/services/io/io_service_builder.cpp
-        ${BUNDLE_HOME}/sonia/services/io/io_service.cpp
+        ${SONIA_HOME}/sonia/services/io/io_service_builder.cpp
+        ${SONIA_HOME}/sonia/services/io/io_service.cpp
 
-        ${BUNDLE_HOME}/sonia/services/net/net_service_builder.cpp
-        ${BUNDLE_HOME}/sonia/services/net/net_service.cpp
+        ${SONIA_HOME}/sonia/services/net/net_service_builder.cpp
+        ${SONIA_HOME}/sonia/services/net/net_service.cpp
 
-        ${BUNDLE_HOME}/sonia/services/net/http/http_connector_builder.cpp
-        ${BUNDLE_HOME}/sonia/services/net/http/http_connector.cpp
+        ${SONIA_HOME}/sonia/services/net/http/http_connector_builder.cpp
+        ${SONIA_HOME}/sonia/services/net/http/http_connector.cpp
 
-        ${BUNDLE_HOME}/sonia/services/net/http/http_static_application_builder.cpp
-        ${BUNDLE_HOME}/sonia/services/net/http/http_static_application.cpp
-        ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application_builder.cpp
-        ${BUNDLE_HOME}/sonia/services/net/http/http_digest_authentication_application.cpp
+        ${SONIA_HOME}/sonia/services/net/http/http_static_application_builder.cpp
+        ${SONIA_HOME}/sonia/services/net/http/http_static_application.cpp
+        ${SONIA_HOME}/sonia/services/net/http/http_digest_authentication_application_builder.cpp
+        ${SONIA_HOME}/sonia/services/net/http/http_digest_authentication_application.cpp
     )
 
     if (NOT DEFINED NO_IO_CACHE)
         set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
-            ${BUNDLE_HOME}/sonia/services/io/io_cache_service.cpp
-            ${BUNDLE_HOME}/sonia/services/io/io_cache_service_builder.cpp
+            ${SONIA_HOME}/sonia/services/io/io_cache_service.cpp
+            ${SONIA_HOME}/sonia/services/io/io_cache_service_builder.cpp
         )
     else()
         add_definitions(-DSONIA_NO_IO_CACHE)
@@ -57,8 +59,8 @@ if (NOT DEFINED NO_NET)
 
     if (NOT DEFINED NO_ECHO)
         set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
-            ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector_builder.cpp
-            ${BUNDLE_HOME}/sonia/services/net/echo/echo_connector.cpp
+            ${SONIA_HOME}/sonia/services/net/echo/echo_connector_builder.cpp
+            ${SONIA_HOME}/sonia/services/net/echo/echo_connector.cpp
         )
     else()
         add_definitions(-DSONIA_NO_ECHO)
@@ -66,8 +68,8 @@ if (NOT DEFINED NO_NET)
 
     if (NOT DEFINED NO_HTTP_DEFAULT)
         set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
-            ${BUNDLE_HOME}/sonia/services/net/http/http_default_application_builder.cpp
-            ${BUNDLE_HOME}/sonia/services/net/http/http_default_application.cpp
+            ${SONIA_HOME}/sonia/services/net/http/http_default_application_builder.cpp
+            ${SONIA_HOME}/sonia/services/net/http/http_default_application.cpp
         )
     else()
         add_definitions(-DSONIA_NO_HTTP_DEFAULT)
@@ -75,8 +77,8 @@ if (NOT DEFINED NO_NET)
 
     if (NOT DEFINED NO_TRANSCEIVER)
         set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
-            ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_builder.cpp
-            ${BUNDLE_HOME}/sonia/services/transceiver/transceiver_service.cpp
+            ${SONIA_HOME}/sonia/services/transceiver/transceiver_builder.cpp
+            ${SONIA_HOME}/sonia/services/transceiver/transceiver_service.cpp
         )
     else()
         add_definitions(-DSONIA_NO_TRANSCEIVER)
@@ -84,7 +86,7 @@ if (NOT DEFINED NO_NET)
 
     if (NOT DEFINED NO_SSL)
         set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
-            ${BUNDLE_HOME}/sonia/services/io/io_ssl_service_builder.cpp
+            ${SONIA_HOME}/sonia/services/io/io_ssl_service_builder.cpp
         )
     else()
         add_definitions(-DSONIA_NO_SSL)
@@ -103,8 +105,8 @@ endif ()
 
 if (NOT DEFINED NO_TENGER)
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
-        ${BUNDLE_HOME}/sonia/services/tenger/tenger_service.cpp
-        ${BUNDLE_HOME}/sonia/services/tenger/tenger_service_builder.cpp
+        ${SONIA_HOME}/sonia/services/tenger/tenger_service.cpp
+        ${SONIA_HOME}/sonia/services/tenger/tenger_service_builder.cpp
     )
 else()
     add_definitions(-DSONIA_NO_TENGER)

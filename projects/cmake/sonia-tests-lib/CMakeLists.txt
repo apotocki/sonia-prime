@@ -1,12 +1,12 @@
 include (${COMMON_INCLUDE})
 
+set (SONIA_HOME ${CMAKE_CURRENT_LIST_DIR}/../../..)
 include_directories(${PROJECT_HOME})
-include_directories(${BUNDLES})
-include_directories(${BUNDLES}/sonia-prime)
+include_directories(${SONIA_HOME})
+#include_directories(${BUNDLES}/sonia-prime)
 include_directories(${TPLS}/lexertl14/include)
 
 set (BUNDLE_NAME sonia-tests-lib)
-set (BUNDLE_HOME ${BUNDLES}/sonia-tests-lib)
 
 set (MAIN_TESTS
     timer_test
@@ -44,34 +44,34 @@ set (MP_TESTS
 )
 
 set (BUNDLE_SOURCES
-	${BUNDLES}/sonia-prime/applied/tests_external.cpp
-    ${BUNDLES}/sonia-prime/applied/scoped_services.cpp
-    ${BUNDLES}/sonia-prime/tests/all_tests_registrar.cpp
+	${SONIA_HOME}/applied/tests_external.cpp
+    ${SONIA_HOME}/applied/scoped_services.cpp
+    ${SONIA_HOME}/tests/all_tests_registrar.cpp
 )
 
 foreach(ITEM ${MAIN_TESTS})
     set (FWD_TEST_DECLS "${FWD_TEST_DECLS}void ${ITEM}_registrar();\n")
     set (TEST_LIST "${TEST_LIST}    ${ITEM}_registrar();\n")
-    set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${BUNDLES}/sonia-prime/tests/${ITEM}.cpp)
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${SONIA_HOME}/tests/${ITEM}.cpp)
 endforeach()
     
 #if (NOT (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "iOS"))
 foreach(ITEM ${AGNOSTIC_TESTS})
     set (FWD_TEST_DECLS "${FWD_TEST_DECLS}void agnostic_${ITEM}_registrar();\n")
     set (TEST_LIST "${TEST_LIST}    agnostic_${ITEM}_registrar();\n")
-    set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${BUNDLES}/sonia-prime/tests/agnostic/${ITEM}.cpp)
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${SONIA_HOME}/tests/agnostic/${ITEM}.cpp)
 endforeach()
 #endif()
 
 foreach(ITEM ${MP_TESTS})
     set (FWD_TEST_DECLS "${FWD_TEST_DECLS}void mp_${ITEM}_registrar();\n")
     set (TEST_LIST "${TEST_LIST}  mp_${ITEM}_registrar();\n")
-    set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${BUNDLES}/sonia-prime/tests/mp/${ITEM}.cpp)
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES} ${SONIA_HOME}/tests/mp/${ITEM}.cpp)
 endforeach()
 
 configure_file (
-    "${BUNDLES}/sonia-prime/tests/all_tests_registrar.cpp.in"
-    "${BUNDLES}/sonia-prime/tests/all_tests_registrar.cpp"
+    "${SONIA_HOME}/tests/all_tests_registrar.cpp.in"
+    "${SONIA_HOME}/tests/all_tests_registrar.cpp"
 )
 
 #FILE(WRITE ${BUNDLES}/sonia-prime/tests/all_tests_registrar.cpp ${FILE_CONTENT})

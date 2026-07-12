@@ -1,9 +1,10 @@
 {
   "vs_clang_path": "C:\\Program Files\\LLVM\\bin",
   "include_dirs": [
-    "tpls/sonia-prime",
-    "tpls/numetron/include",
-    "tpls/dataforge/include",
+    "",
+    "modules/sonia-prime",
+    "modules/numetron/include",
+    "modules/dataforge/include",
     "vcpkg_installed/x64-windows-cpp23/include"
   ],
   "preprocessor_defs": [

@@ -338,10 +338,10 @@
     <ClInclude Include="..\..\..\sonia\mp\limb_arithmetic.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\application.hpp" />
     <CustomBuild Include="..\..\..\sonia\net\http\headers.hpp">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
       <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BuildInParallel>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
@@ -356,10 +356,10 @@
     <ClInclude Include="..\..\..\sonia\net\http\message.hpp" />
     <ClInclude Include="..\..\..\sonia\net\http\message.ipp" />
     <CustomBuild Include="..\..\..\sonia\net\http\verb.hpp">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
@@ -371,10 +371,10 @@
     </CustomBuild>
     <ClInclude Include="..\..\..\sonia\net\http\sonnet.hpp" />
     <CustomBuild Include="..\..\..\sonia\net\http\status_codes.hpp">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PythonExePath) $(SolutionDir)bundles\sonia-pygen\main.py -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(PythonExePath) $(PythonGenPath) -c "$(ProjectDir)..\..\..\pygen.json" --base-dir $(SolutionDir) -f "%(FullPath)"</Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
       <BuildInParallel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</BuildInParallel>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectDir)%(RelativeDir)%(Filename).gen.hpp</Outputs>
@@ -728,8 +728,12 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">false</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\java\jni_env.cpp" />
-    <ClCompile Include="..\..\..\sonia\java\jni_vm.cpp" />
+    <ClCompile Include="..\..\..\sonia\java\jni_env.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_JAVA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\java\jni_vm.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_JAVA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\logger\android_sink.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
@@ -870,9 +874,15 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_invoker.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_decoder.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_encoder.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_invoker.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_JAVA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_decoder.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_JAVA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\invocation\jni_encoder.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_JAVA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\invocation\value_decoder.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\invocation\value_encoder.cpp" />
     <ClCompile Include="..\..\..\sonia\utility\iterators\archive_extract_iterator.cpp">
@@ -1021,7 +1031,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir)tpls\boost\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\bzip2\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include;$(SolutionDir)tpls\xz\include;$(SolutionDir)tpls\lua\include;$(SolutionDir)tpls\jni;$(SolutionDir)tpls\jni\win32;$(SolutionDir)..\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)modules\dataforge\include;$(SolutionDir)modules\numetron\include;$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include;$(SolutionDir)third_party\lexertl14\include;$(SolutionDir)third_party\jni;$(SolutionDir)third_party\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -1041,7 +1051,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;SONIA_LANG_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\bzip2\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include;$(SolutionDir)tpls\xz\include;$(SolutionDir)tpls\lua\include;$(SolutionDir)tpls\jni;$(SolutionDir)tpls\jni\win32</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)modules\dataforge\include;$(SolutionDir)modules\numetron\include;$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include;$(SolutionDir)third_party\lexertl14\include;$(SolutionDir)third_party\jni;$(SolutionDir)third_party\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MinimalRebuild>false</MinimalRebuild>
@@ -1064,7 +1074,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir)tpls\boost\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\bzip2\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include;$(SolutionDir)tpls\xz\include;$(SolutionDir)tpls\lua\include;$(SolutionDir)tpls\jni;$(SolutionDir)tpls\jni\win32;$(SolutionDir)..\</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)modules\dataforge\include;$(SolutionDir)modules\numetron\include;$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include;$(SolutionDir)third_party\lexertl14\include;$(SolutionDir)third_party\jni;$(SolutionDir)third_party\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -1088,7 +1098,7 @@
       </SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include;$(SolutionDir)tpls\lexertl14\include;$(SolutionDir)tpls\zlib\include;$(SolutionDir)tpls\bzip2\include;$(SolutionDir)tpls\openssl\include;$(SolutionDir)tpls\dataforge\include;$(SolutionDir)tpls\numetron\include;$(SolutionDir)tpls\xz\include;$(SolutionDir)tpls\lua\include;$(SolutionDir)tpls\jni;$(SolutionDir)tpls\jni\win32</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)modules\dataforge\include;$(SolutionDir)modules\numetron\include;$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include;$(SolutionDir)third_party\lexertl14\include;$(SolutionDir)third_party\jni;$(SolutionDir)third_party\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <ExceptionHandling>SyncCThrow</ExceptionHandling>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

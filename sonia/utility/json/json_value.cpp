@@ -67,14 +67,15 @@ struct object_item_less
         return std::string_view(span.data(), span.size());
     }
 
-    bool operator()(object_item_t const& l, object_item_t const& r)
+    bool operator()(object_item_t const& l, object_item_t const& r) const
     {
         return to_string_view(l) < to_string_view(r);
     }
 
-    bool operator()(object_item_t const& l, std::string_view r)
+    bool operator()(object_item_t const& l, std::string_view r) const
     {
-        return to_string_view(l) < r;
+        std::string_view lstr = to_string_view(l);
+        return lstr < r;
     }
 };
 

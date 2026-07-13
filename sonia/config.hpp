@@ -58,6 +58,7 @@ constexpr bool sonia_is_debug = true;
 #   define BOOST_STACKTRACE_USE_WINDBG
 #   define NOVTABLE __declspec(novtable)
 #   define EMPTY_BASES __declspec(empty_bases)
+#   define NOMINMAX
 #else
 #   define NOVTABLE
 #   define EMPTY_BASES

@@ -4,8 +4,8 @@ set (SONIA_HOME ${CMAKE_CURRENT_LIST_DIR}/../../..)
 
 include_directories(${PROJECT_HOME})
 include_directories(${SONIA_HOME})
-include_directories(${TPLS}/numetron/include)
-include_directories(${TPLS}/dataforge/include)
+include_directories(${MODULES}/numetron/include)
+include_directories(${MODULES}/dataforge/include)
 include_directories(${TPLS}/lexertl14/include)
 
 set (BUNDLE_NAME sonia-prime-lib)

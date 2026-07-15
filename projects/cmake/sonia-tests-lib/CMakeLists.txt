@@ -76,7 +76,7 @@ configure_file (
 
 #FILE(WRITE ${BUNDLES}/sonia-prime/tests/all_tests_registrar.cpp ${FILE_CONTENT})
 
-add_definitions(-DSONIA_PRIME_STATIC)
+add_compile_definitions(SONIA_PRIME_STATIC)
 
 add_library(${BUNDLE_NAME} STATIC ${BUNDLE_SOURCES})
 

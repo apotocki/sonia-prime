@@ -76,7 +76,7 @@ if (NOT DEFINED NO_LUA)
         ${SONIA_HOME}/sonia/utility/template-engine/templated_bunch.cpp
     )
 else()
-    add_definitions(-DSONIA_NO_LUA)
+    add_compile_definitions(SONIA_NO_LUA)
 endif ()
 if (NOT DEFINED NO_NET)
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
@@ -93,11 +93,11 @@ if (NOT DEFINED NO_NET)
             ${SONIA_HOME}/sonia/services/io/io_ssl_factory.cpp
         )
     else()
-        add_definitions(-DSONIA_NO_SSL)
+        add_compile_definitions(SONIA_NO_SSL)
     endif()
 
 else()
-    add_definitions(-DSONIA_NO_NET)
+    add_compile_definitions(SONIA_NO_NET)
 endif ()
 
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
@@ -139,7 +139,7 @@ elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin" OR CMAKE_SYSTEM_NAME STREQUAL "iOS")
     )
 endif ()
 
-add_definitions(-DSONIA_PRIME_STATIC)
+add_compile_definitions(SONIA_PRIME_STATIC)
 
 add_library(${BUNDLE_NAME} STATIC ${BUNDLE_SOURCES})
 target_include_directories(${BUNDLE_NAME} 

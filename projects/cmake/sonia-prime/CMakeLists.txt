@@ -54,7 +54,7 @@ if (NOT DEFINED NO_NET)
             ${SONIA_HOME}/sonia/services/io/io_cache_service_builder.cpp
         )
     else()
-        add_definitions(-DSONIA_NO_IO_CACHE)
+        add_compile_definitions(SONIA_NO_IO_CACHE)
     endif()
 
     if (NOT DEFINED NO_ECHO)
@@ -63,7 +63,7 @@ if (NOT DEFINED NO_NET)
             ${SONIA_HOME}/sonia/services/net/echo/echo_connector.cpp
         )
     else()
-        add_definitions(-DSONIA_NO_ECHO)
+        add_compile_definitions(SONIA_NO_ECHO)
     endif()
 
     if (NOT DEFINED NO_HTTP_DEFAULT)
@@ -72,7 +72,7 @@ if (NOT DEFINED NO_NET)
             ${SONIA_HOME}/sonia/services/net/http/http_default_application.cpp
         )
     else()
-        add_definitions(-DSONIA_NO_HTTP_DEFAULT)
+        add_compile_definitions(SONIA_NO_HTTP_DEFAULT)
     endif()
 
     if (NOT DEFINED NO_TRANSCEIVER)
@@ -81,7 +81,7 @@ if (NOT DEFINED NO_NET)
             ${SONIA_HOME}/sonia/services/transceiver/transceiver_service.cpp
         )
     else()
-        add_definitions(-DSONIA_NO_TRANSCEIVER)
+        add_compile_definitions(SONIA_NO_TRANSCEIVER)
     endif()
 
     if (NOT DEFINED NO_SSL)
@@ -89,10 +89,10 @@ if (NOT DEFINED NO_NET)
             ${SONIA_HOME}/sonia/services/io/io_ssl_service_builder.cpp
         )
     else()
-        add_definitions(-DSONIA_NO_SSL)
+        add_compile_definitions(SONIA_NO_SSL)
     endif()
 else()
-    add_definitions(-DSONIA_NO_NET)
+    add_compile_definitions(SONIA_NO_NET)
 endif ()
 
 if (NOT DEFINED NO_LUA)
@@ -100,7 +100,7 @@ if (NOT DEFINED NO_LUA)
         
     )
 else()
-    add_definitions(-DSONIA_NO_LUA)
+    add_compile_definitions(SONIA_NO_LUA)
 endif ()
 
 if (NOT DEFINED NO_TENGER)
@@ -109,13 +109,13 @@ if (NOT DEFINED NO_TENGER)
         ${SONIA_HOME}/sonia/services/tenger/tenger_service_builder.cpp
     )
 else()
-    add_definitions(-DSONIA_NO_TENGER)
+    add_compile_definitions(SONIA_NO_TENGER)
 endif()
 
-add_definitions(-DSONIA_PRIME_EXPORTS)
+add_compile_definitions(SONIA_PRIME_EXPORTS)
 
 if ("${LIBRARY_TYPE}" STREQUAL "STATIC")
-	add_definitions(-DSONIA_PRIME_STATIC)
+	add_compile_definitions(SONIA_PRIME_STATIC)
     set_property(GLOBAL PROPERTY ${BUNDLE_NAME}-import-flags -DSONIA_PRIME_STATIC)
 endif ()
 

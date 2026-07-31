@@ -6,7 +6,7 @@
 
 #include "jnifwd.hpp"
 
-#include <boost/container/small_vector.hpp>
+#include "sonia/small_vector.hpp"
 
 #include <dataforge/unicode/utf.hpp>
 #include <dataforge/quark_push_iterator.hpp>

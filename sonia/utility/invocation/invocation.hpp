@@ -393,7 +393,7 @@ blob_result particular_blob_result(T && value);
 inline blob_result make_blob_result(blob_type bt, void const* data = nullptr, uint32_t size = 0)
 {
     return blob_result {
-            .data = { .bp = { .payload_ptr = data, .size = size, .reserved = { 0 } } },
+        .data = { .bp = { .payload_ptr = data, .size = size, .reserved = { 0 } } },
         .inplace_size = 0,
         .need_unpin = 0,
         .bp_reserved_used = 0,
@@ -619,22 +619,54 @@ inline blob_result bigint_blob_result(numetron::basic_integer<LimbT, N, Allocato
 template <std::unsigned_integral LimbT>
 inline blob_result decimal_blob_result(numetron::basic_decimal_view<LimbT> const& dv)
 {
-    blob_result result;
-    result.type = blob_type::decimal;
-    result.reserved0 = dv.sgn() < 0 ? 1 : 0;
-    if (dv.exponent().template is_fit<int16_t>()) {
-        numetron::basic_integer_view<LimbT> sval = dv.significand().abs();
-        if (sval.template is_fit<uint64_t>()) {
-            int64_t eval = (int16_t)dv.exponent();
-            result.data.bp.reserved.u16 = static_cast<uint16_t>(eval);
-            result.data.bp.ui64value = (uint64_t)sval;
-            result.data.bp.size = 0;
-            result.need_unpin = 0;
-            result.inplace_size = 8;
-            return result;
-        }
+    int sign = dv.sgn() < 0 ? 1 : 0;
+    numetron::basic_integer_view<LimbT> sval = dv.significand().abs();
+    numetron::basic_integer_view<LimbT> eval = dv.exponent();
+
+    if (eval.template is_fit<int16_t>() && sval.template is_fit<uint64_t>()) {
+        blob_result result;
+        result.type = blob_type::decimal;
+        result.reserved0 = sign;
+        result.need_unpin = 0;
+        result.data.bp.reserved.u16 = static_cast<uint16_t>(static_cast<int16_t>(eval));
+        result.data.bp.ui64value = static_cast<uint64_t>(sval);
+        result.data.bp.size = 0;
+        result.inplace_size = 8;
+        return result;
     }
-    THROW_NOT_IMPLEMENTED_ERROR("decimal_blob_result");
+
+    if constexpr (std::is_same_v<LimbT, invocation_bigint_limb_type>) {
+        // Significand and/or exponent too large to fit inplace: store both out-of-line in one
+        // allocated buffer, as a [significand_limb_count, exponent_limb_count] header (two uint32_t)
+        // followed by the concatenated limbs. blob_decimal_dispatch (decode side, below) hardcodes
+        // invocation_bigint_limb_type for this format, same as it already does for the inplace case
+        // above -- there's only ever one limb width in play here. The significand's sign lives in
+        // reserved0 (matching the inplace case and bigint_blob_result); the exponent's sign has no
+        // home in the inplace layout's bit budget, so it's folded into reserved1 instead, which
+        // the out-of-line format doesn't otherwise need.
+        // no_inplace=true on the allocate below is load-bearing: this header+limbs layout is only
+        // distinguishable from the inplace scalar layout by inplace_size==0, so it must never be
+        // auto-placed inplace even when it happens to be small enough to fit.
+        numetron::basic_integer_view<LimbT> aeval = eval.abs();
+        uint32_t sig_limb_count = static_cast<uint32_t>(sval.size());
+        uint32_t exp_limb_count = static_cast<uint32_t>(aeval.size());
+        uint32_t total_size = static_cast<uint32_t>(2 * sizeof(uint32_t) + (sig_limb_count + exp_limb_count) * sizeof(LimbT));
+
+        blob_result result = make_blob_result(blob_type::decimal, nullptr, total_size);
+        result.reserved0 = sign;
+        result.reserved1 = eval.is_negative() ? 1 : 0;
+        blob_result_allocate(&result, true);
+
+        uint32_t* header = const_cast<uint32_t*>(reinterpret_cast<uint32_t const*>(result.data.bp.payload_ptr));
+        header[0] = sig_limb_count;
+        header[1] = exp_limb_count;
+        LimbT* limbs = reinterpret_cast<LimbT*>(header + 2);
+        sval.copy_to(limbs);
+        aeval.copy_to(limbs + sig_limb_count);
+        return result;
+    } else {
+        THROW_NOT_IMPLEMENTED_ERROR("decimal_blob_result: out-of-line storage is only implemented for invocation_bigint_limb_type limbs");
+    }
 }
 
 template <std::unsigned_integral LimbT, size_t N, size_t E, typename AllocatorT>
@@ -770,16 +802,16 @@ inline auto blob_bigint_dispatch(blob_result const& val, FT&& ftor)
     } else {
         //int sign = val.reserved0 ? -1 : 1;
         switch(val.data.bp.reserved.u8.n1) {
-        case 8:
+        case 1:
             return ftor(make_basic_integer_view<uint8_t>(val));
-        case 16:
+        case 2:
             return ftor(make_basic_integer_view<uint16_t>(val));
-        case 32:
+        case 4:
             return ftor(make_basic_integer_view<uint32_t>(val));
-        case 64:
+        case 8:
             return ftor(make_basic_integer_view<uint64_t>(val));
         default:
-            throw std::runtime_error((std::ostringstream() << "unsupported limb bit size: "sv << val.data.bp.reserved.u8.n1).str());
+            throw std::runtime_error((std::ostringstream() << "unsupported limb byte size: "sv << val.data.bp.reserved.u8.n1).str());
         }
     }
 }
@@ -796,7 +828,16 @@ inline auto blob_decimal_dispatch(blob_result const& val, FT&& ftor)
             , static_cast<int16_t>(val.data.bp.reserved.u16)
         });
     } else {
-        THROW_NOT_IMPLEMENTED_ERROR("basic_decimal_view");
+        // Out-of-line layout written by decimal_blob_result: a [significand_limb_count,
+        // exponent_limb_count] header (two uint32_t) followed by the concatenated
+        // invocation_bigint_limb_type limbs.
+        uint32_t const* header = data_of<uint32_t>(val);
+        uint32_t sig_limb_count = header[0];
+        uint32_t exp_limb_count = header[1];
+        invocation_bigint_limb_type const* limbs = reinterpret_cast<invocation_bigint_limb_type const*>(header + 2);
+        basic_integer_view<invocation_bigint_limb_type> sval{ std::span{ limbs, sig_limb_count }, val.reserved0 ? -1 : 1 };
+        basic_integer_view<invocation_bigint_limb_type> eval{ std::span{ limbs + sig_limb_count, exp_limb_count }, val.reserved1 ? -1 : 1 };
+        return ftor(basic_decimal_view<invocation_bigint_limb_type>{ sval, eval });
     }
 }
 
@@ -1187,11 +1228,10 @@ struct from_blob<numetron::basic_decimal<LimbT, N, E, AllocatorT>>
         return blob_type_dispatch(val, [&val, &alloc]<typename DT>(DT dval)->decimal_t {
             if constexpr (is_integral_not_bool_v<DT>) { // || std::is_floating_point_v<DT>  flt16
                 return decimal_t{ dval, alloc };
-            }
-            else if constexpr (std::is_same_v<bigint_view_t, DT>) {
+            } else if constexpr (std::is_same_v<bigint_view_t, DT>) {
                 return decimal_t{ numetron::basic_integer_view<LimbT>{ dval }, numetron::basic_integer_view<LimbT>{}, alloc };
             } else if constexpr (numetron::is_basic_integer_view_v<DT>) {
-                return decimal_t{ numetron::basic_integer<LimbT, 1, AllocatorT>{ dval, alloc }, numetron::basic_integer_view<LimbT>{}, alloc };
+                return decimal_t{ dval, {}, alloc };
             } else if constexpr (std::is_same_v<decimal_view_t, DT>) {
                 return decimal_t{ dval, alloc };
             } else if constexpr (numetron::is_basic_decimal_view_v<DT>) {
@@ -1214,7 +1254,28 @@ struct from_blob<numetron::basic_decimal_view<LimbT>>
             if constexpr (is_integral_not_bool_v<DT>) {
                 return decimal_view_t{ dval };
             } else if constexpr (std::is_same_v<bigint_view_t, DT>) {
-                return decimal_view_t{ numetron::basic_integer_view<LimbT>{dval}, numetron::basic_integer_view<LimbT>{} };
+                // decimal_view is assumed always normalized (significand stripped of trailing decimal
+                // zeros, matching basic_decimal_view's own T-integral constructor). dval may point into
+                // the source blob's own out-of-line storage (see blob_bigint_dispatch's non-inplace
+                // case), and normalizing means computing a *new* significand via repeated division by
+                // 10 -- decimal_view is a non-owning view, so it has nowhere safe to point at that new
+                // value unless it turns out small enough to be captured inplace inside the view itself
+                // (see basic_integer_view's scalar constructor). Do the stripping in owned scratch
+                // storage, then either hand back a normalized inplace view, or -- if it's still too
+                // large after stripping every trailing zero -- give up: there's no way to honor the
+                // normalized-view invariant here without a dangling pointer.
+                numetron::basic_integer<LimbT> sig{ dval };
+                int64_t exp = 0;
+                if (sig) {
+                    while (!(sig % 10)) {
+                        sig /= 10;
+                        ++exp;
+                    }
+                }
+                if (!sig.template is_fit<int64_t>()) {
+                    THROW_INTERNAL_ERROR("can't convert blob `%1%` to basic_decimal_view: bigint significand doesn't fit even after stripping trailing decimal zeros"_fmt % val);
+                }
+                return decimal_view_t{ static_cast<int64_t>(sig), exp };
             } else if constexpr (std::is_same_v<decimal_view_t, DT>) {
                 return dval;
             } else if constexpr (std::is_floating_point_v<DT> || std::is_same_v<numetron::float16, DT>) {
@@ -1713,10 +1774,15 @@ public:
     template <typename T>
     inline decltype(auto) as() const { return ::as<T>(get()); }
 
-    smart_blob& allocate(bool no_inplace = false)
+    void allocate(bool no_inplace = false) &
     {
         blob_result_allocate(this, no_inplace);
-        return *this;
+    }
+
+    smart_blob&& allocate(bool no_inplace = false) &&
+    {
+        blob_result_allocate(this, no_inplace);
+        return std::move(*this);
     }
 
     [[nodiscard]]

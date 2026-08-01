@@ -1221,24 +1221,29 @@ struct from_blob<numetron::basic_decimal<LimbT, N, E, AllocatorT>>
 {
     using decimal_t = numetron::basic_decimal<LimbT, N, E, AllocatorT>;
     using decimal_view_t = numetron::basic_decimal_view<LimbT>;
-    using bigint_view_t = numetron::basic_integer_view<LimbT>;
+    using integer_view_t = numetron::basic_integer_view<LimbT>;
     inline decimal_t operator()(blob_result const& val, AllocatorT const& alloc = AllocatorT{}) const
     {
         using namespace sonia;
-        return blob_type_dispatch(val, [&val, &alloc]<typename DT>(DT dval)->decimal_t {
-            if constexpr (is_integral_not_bool_v<DT>) { // || std::is_floating_point_v<DT>  flt16
+        return blob_type_dispatch(
+            val, [&val, &alloc]<typename DT>(DT dval) -> decimal_t {
+              if constexpr (is_integral_not_bool_v<DT>) { // || std::is_floating_point_v<DT>  flt16
                 return decimal_t{ dval, alloc };
-            } else if constexpr (std::is_same_v<bigint_view_t, DT>) {
-                return decimal_t{ numetron::basic_integer_view<LimbT>{ dval }, numetron::basic_integer_view<LimbT>{}, alloc };
-            } else if constexpr (numetron::is_basic_integer_view_v<DT>) {
+              } else if constexpr (std::is_same_v<integer_view_t, DT>) {
+                return decimal_t{ integer_view_t{ dval }, integer_view_t{}, alloc };
+              } else if constexpr (numetron::is_basic_integer_view_v<DT>) {
                 return decimal_t{ dval, {}, alloc };
-            } else if constexpr (std::is_same_v<decimal_view_t, DT>) {
+              } else if constexpr (std::is_same_v<decimal_view_t, DT>) {
                 return decimal_t{ dval, alloc };
-            } else if constexpr (numetron::is_basic_decimal_view_v<DT>) {
-                return decimal_t{ numetron::basic_integer<LimbT, 1, AllocatorT>{ dval.significand(), alloc }, numetron::basic_integer<LimbT, 1, AllocatorT>{ dval.exponent(), alloc }, alloc };
-            }
-            THROW_INTERNAL_ERROR("can't convert blob `%1%` to basic_decimal<%2%>"_fmt % val % typeid(LimbT).name());
-        });
+              } else if constexpr (numetron::is_basic_decimal_view_v<DT>) {
+                numetron::basic_integer<LimbT, 1, AllocatorT> sig{ dval.significand(), alloc };
+                numetron::basic_integer<LimbT, 1, AllocatorT> exp{ dval.exponent(), alloc };
+                return decimal_t{ (integer_view_t)sig, (integer_view_t)exp, alloc };
+              }
+              THROW_INTERNAL_ERROR(
+                  "can't convert blob `%1%` to basic_decimal<%2%>"_fmt % val %
+                  typeid(LimbT).name());
+            });
     }
 };
 

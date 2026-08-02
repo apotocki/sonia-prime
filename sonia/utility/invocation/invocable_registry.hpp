@@ -145,7 +145,7 @@ struct field_fn_property_base
     
     using property_type = remove_reference_t<boost::callable_traits::template return_type_t<sig_t>>;
     using args_type = boost::callable_traits::args_t<sig_t>;
-    using invocable_t = remove_reference_t<std::tuple_element_t<0, args_type>>;
+    using invocable_t = remove_cvref_t<std::tuple_element_t<0, args_type>>;
 };
 
 template <auto FieldV>

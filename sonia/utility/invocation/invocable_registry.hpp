@@ -6,9 +6,8 @@
 
 #include "sonia/utility/invocation/invocation.hpp"
 
-#include <boost/function_types/function_type.hpp>
-#include <boost/function_types/parameter_types.hpp>
-#include <boost/function_types/result_type.hpp>
+#include <boost/mp11/list.hpp>
+#include <boost/callable_traits.hpp>
 
 #include "sonia/concurrency.hpp"
 #include "sonia/singleton.hpp"
@@ -61,12 +60,12 @@ template <auto FuncV>
 struct concrete_method : method
 {
     using sig_t = decltype(FuncV);
-    using f_type = typename boost::function_types::function_type<sig_t>::type;
-    using result_type = typename boost::function_types::result_type<f_type>::type;
-    using args_type = typename boost::function_types::parameter_types<f_type>::type;
-    using pure_args_type = typename boost::mpl::pop_front<args_type>::type;
-    using invocable_t = remove_reference_t<typename boost::mpl::at_c<args_type, 0>::type>;
-
+    using result_type = boost::callable_traits::template return_type_t<sig_t>;
+    
+    using args_type = boost::callable_traits::args_t<sig_t>;
+    using pure_args_type = boost::mp11::mp_pop_front<args_type>;
+    using invocable_t = remove_reference_t<std::tuple_element_t<0, args_type>>;
+    
     template <typename InvokableT, size_t ... Is>
     smart_blob do_job(std::index_sequence<Is...>, InvokableT& self, span<const blob_result> args) const noexcept
     {
@@ -79,8 +78,7 @@ struct concrete_method : method
             result = error_blob_result(errstr);
             result.allocate();
         } else try {
-            std::tuple<invocable_t&, typename boost::mpl::at_c<pure_args_type, Is>::type ...> argstpl{
-                *pinv, from_blob_at<typename boost::mpl::at_c<pure_args_type, Is>::type>(Is, args) ...};
+            args_type argstpl{ *pinv, from_blob_at<typename std::tuple_element<Is, pure_args_type>::type>(Is, args) ... };
             if constexpr (is_void_v<result_type>) {
                 std::apply(FuncV, std::move(argstpl));
             } else if constexpr (is_same_v<result_type, smart_blob>) {
@@ -97,13 +95,13 @@ struct concrete_method : method
 
     smart_blob operator()(invocable & self, span<const blob_result> args) const noexcept override
     {
-        return do_job(std::make_index_sequence<boost::mpl::size<pure_args_type>::type::value>{}, self, args);
+        return do_job(std::make_index_sequence<std::tuple_size<pure_args_type>::value>{}, self, args);
     }
 
     smart_blob operator()(invocable const& self, span<const blob_result> args) const noexcept override
     {
         if constexpr (std::is_const_v<invocable_t>) {
-            return do_job(std::make_index_sequence<boost::mpl::size<pure_args_type>::type::value>{}, self, args);
+            return do_job(std::make_index_sequence<std::tuple_size<pure_args_type>::value>{}, self, args);
         } else {
             return error_blob_result("invocable method internal error: a mutable object is expected");
         }
@@ -144,10 +142,10 @@ template <auto FieldV>
 struct field_fn_property_base
 {
     using sig_t = decltype(FieldV);
-    using f_type = typename boost::function_types::function_type<sig_t>::type;
-    using property_type = remove_reference_t<typename boost::function_types::result_type<f_type>::type>;
-    using args_type = typename boost::function_types::parameter_types<f_type>::type;
-    using invocable_t = remove_reference_t<typename boost::mpl::at_c<args_type, 0>::type>;
+    
+    using property_type = remove_reference_t<boost::callable_traits::template return_type_t<sig_t>>;
+    using args_type = boost::callable_traits::args_t<sig_t>;
+    using invocable_t = remove_reference_t<std::tuple_element_t<0, args_type>>;
 };
 
 template <auto FieldV>

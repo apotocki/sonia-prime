@@ -6,7 +6,7 @@
 
 #include "sonia/config.hpp"
 #include "jni_invoker.hpp"
-
+#include "sonia/logger/logger.hpp"
 #include "sonia/java/jni_env.hpp"
 #include "sonia/utility/invocation/jni_encoder.hpp"
 #include "sonia/utility/invocation/jni_decoder.hpp"

@@ -34,6 +34,8 @@ view_model::view_model(int32_t idval) noexcept
     , id_{ idval }
 {}
 
+
+
 void view_model::do_registration(registrar_type & mr)
 {
     mr.register_method<&view_model::async_cancel>("async_cancel"sv);
@@ -42,6 +44,7 @@ void view_model::do_registration(registrar_type & mr)
     //mr.register_method<&view_model::get_method>("get"sv);
     //mr.register_method<&view_model::set_method>("set"sv);
     mr.register_method<&view_model::extends>("extends"sv);
+    mr.register_method<&view_model::on_property_change>("on_property_change"sv);
 
     mr.register_writeonly_property("on_change"sv, [](auto& obj, blob_result const& br) {
         using namespace sonia::invocation;

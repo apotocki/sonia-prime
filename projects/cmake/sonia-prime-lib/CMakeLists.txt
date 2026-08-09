@@ -142,6 +142,7 @@ endif ()
 add_compile_definitions(SONIA_PRIME_STATIC)
 
 add_library(${BUNDLE_NAME} STATIC ${BUNDLE_SOURCES})
+target_link_libraries(${BUNDLE_NAME} ${BOOST_LOG_SETUP} ${BOOST_LOG}) 
 target_include_directories(${BUNDLE_NAME} 
     PRIVATE ${Boost_INCLUDE_DIRS}
     INTERFACE ${Boost_INCLUDE_DIRS}

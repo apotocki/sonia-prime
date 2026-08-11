@@ -3,10 +3,7 @@
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
 #pragma once
-
-#if 1
-#include "vm2.hpp"
-#else
+#include "sonia/config.hpp"
 
 #include <vector>
 #include <boost/preprocessor/cat.hpp>
@@ -14,6 +11,7 @@
 #include "sonia/span.hpp"
 #include "sonia/function.hpp"
 #include "sonia/logger/logger.hpp"
+#include "vmop_proto.hpp"
 
 #include <iostream>
 
@@ -29,7 +27,7 @@ public:
     bool is_negative(variable_type const&) const; // for conditional jumps
     void cmp();
     variable_type value_of(size_t val) const; // for pushi
-    
+
     variable_type const& static_at(size_t index) const;
 
     optional<size_t> call_stack_pop();
@@ -102,45 +100,52 @@ protected:
     stack_type stack_;
 };
 
-enum class op : uint8_t {
-    noop = 0,
-    jmp = 1, jmpp = 2, jmpn = 3,
+// NOTE: hoisted out of virtual_stack_machine<ContextT> (it never depended on ContextT) so it
+// is a plain namespace-scope enum that an external tool (sonia-pygen) can annotate and walk
+// directly. Each enumerator below carries a VMOP_* tag (see vmop_proto.hpp) describing its
+// bytecode-decode shape; once the sonia-pygen vm-dispatch generator exists, those tags drive
+// generation of virtual_stack_machine::traverse()'s dispatch body (switch form for MSVC,
+// computed-goto form for GCC/Clang), replacing the hand-written switch below. Until then the
+// tags are inert metadata and traverse() is written by hand, same as sonia/utility/lang/vm.hpp.
+DEFINE_VMOP_PROTO(op, uint8_t,
+    noop VMOP_SIMPLE = 0,
+    jmp  VMOP_ARG VMOP_JUMP = 1, jmpp VMOP_ARG VMOP_JUMP = 2, jmpn VMOP_ARG VMOP_JUMP = 3,
     //jt = 4, jtp = 5, jtn = 6,
     //jf = 7, jfp = 8, jfn = 9,
-    jg = 10, jgp = 11, jgn = 12, // jump if greater (positive value)
-    jge = 13, jgep = 14, jgen = 15, // jump if greater or equal (non-negative value)
-    jl = 16, jlp = 17, jln = 18, // jump if less (negative value)
-    jle = 19, jlep = 20, jlen = 21, // jump if less or equal (non-positive value)
-    je = 22, jep = 23, jen = 24, // jump if equal (zero)
-    jne = 25, jnep = 26, jnen = 27, // jump if not equal (non-zero)
-    cmp = 28, // compare stack_top and stack_top-1, replaces stack[top] with the sgn(stack[top-1] - stack[top])
+    jg  VMOP_ARG VMOP_JUMP = 10, jgp  VMOP_ARG VMOP_JUMP = 11, jgn  VMOP_ARG VMOP_JUMP = 12, // jump if greater (positive value)
+    jge VMOP_ARG VMOP_JUMP = 13, jgep VMOP_ARG VMOP_JUMP = 14, jgen VMOP_ARG VMOP_JUMP = 15, // jump if greater or equal (non-negative value)
+    jl  VMOP_ARG VMOP_JUMP = 16, jlp  VMOP_ARG VMOP_JUMP = 17, jln  VMOP_ARG VMOP_JUMP = 18, // jump if less (negative value)
+    jle VMOP_ARG VMOP_JUMP = 19, jlep VMOP_ARG VMOP_JUMP = 20, jlen VMOP_ARG VMOP_JUMP = 21, // jump if less or equal (non-positive value)
+    je  VMOP_ARG VMOP_JUMP = 22, jep  VMOP_ARG VMOP_JUMP = 23, jen  VMOP_ARG VMOP_JUMP = 24, // jump if equal (zero)
+    jne VMOP_ARG VMOP_JUMP = 25, jnep VMOP_ARG VMOP_JUMP = 26, jnen VMOP_ARG VMOP_JUMP = 27, // jump if not equal (non-zero)
+    cmp VMOP_SIMPLE = 28, // compare stack_top and stack_top-1, replaces stack[top] with the sgn(stack[top-1] - stack[top])
 
     // function call/return
-    call = 29,  // call(address) -> call address
-    callp = 30, // call() -> call stack[stack_back_pos()]
-    ecall = 31, // ecall(index) -> call efn[index]
+    call  VMOP_CUSTOM = 29,  // call(address) -> call address
+    callp VMOP_JUMP = 30, // call() -> call stack[stack_back_pos()]
+    ecall VMOP_CUSTOM = 31, // ecall(index) -> call efn[index]
     //ecall1 = 7, // call(fn_index), call(param index, fn_index)
     //fpecall1 = 8, fnecall1 = 9, //call(param +-offset, fn_index)
-    ret = 32,
+    ret VMOP_CUSTOM = 32,
 
     // data move
-    push = 33, // push on stack stack[uint]
-    pushr = 34, // push on stack stack[stack_back_pos() - uint] // r aka relative
-    fppush = 35, fnpush = 36, // push on stack stack[fp +- uint]
-    pushi = 37, fppushi = 38, fnpushi = 39, // push index on stack // positive/negative index
-    pushc = 40, // push const on stack: consts_[uint] -> on stack
-    push_stsz = 41, // push stack size
-    dup = 42, // duplicate stack top value
-    set = 43, // set stack[uint] = stack_top_value
-    setr = 44, // set stack[stack_back_pos() - uint] = stack_top_value // r aka relative
-    fpset = 45, fnset = 46, // set stack[fp +- uint] = stack_top_value
-    pindexs = 47, nindexs = 48, // replace stack top with stack[stack_top + shift]
-    indexc = 49, // replace stack top with consts[stack_top]
-    pop, popn, // pop COUNT:uint, pop0 === pop 1
-    collapse, // pop COUNT before the back
+    push  VMOP_ARG = 33, // push on stack stack[uint]
+    pushr VMOP_ARG = 34, // push on stack stack[stack_back_pos() - uint] // r aka relative
+    fppush VMOP_ARG = 35, fnpush VMOP_ARG = 36, // push on stack stack[fp +- uint]
+    pushi VMOP_ARG = 37, fppushi VMOP_ARG = 38, fnpushi VMOP_ARG = 39, // push index on stack // positive/negative index
+    pushc VMOP_ARG = 40, // push const on stack: consts_[uint] -> on stack
+    push_stsz VMOP_SIMPLE = 41, // push stack size
+    dup VMOP_SIMPLE = 42, // duplicate stack top value
+    set   VMOP_ARG = 43, // set stack[uint] = stack_top_value
+    setr  VMOP_ARG = 44, // set stack[stack_back_pos() - uint] = stack_top_value // r aka relative
+    fpset VMOP_ARG = 45, fnset VMOP_ARG = 46, // set stack[fp +- uint] = stack_top_value
+    pindexs VMOP_ARG = 47, nindexs VMOP_ARG = 48, // replace stack top with stack[stack_top + shift]
+    indexc VMOP_SIMPLE = 49, // replace stack top with consts[stack_top]
+    pop VMOP_SIMPLE, popn VMOP_ARG, // pop COUNT:uint, pop0 === pop 1
+    collapse VMOP_ARG, // pop COUNT before the back
     // frame data pointer
-    pushfp, popfp, truncatefpp, truncatefpn
-};
+    pushfp VMOP_SIMPLE, popfp VMOP_SIMPLE, truncatefpp VMOP_ARG, truncatefpn VMOP_ARG
+);
 
 template <typename ContextT>
 class virtual_stack_machine
@@ -155,7 +160,7 @@ public:
 protected:
     std::vector<var_t> consts_;
     //stack_type stack_;
-    
+
     std::vector<uint8_t> code_;
     std::vector<std::pair<ext_function_t, small_string>> efns_;
     //std::vector<ext1_function_t> e1fns_;
@@ -256,39 +261,48 @@ public:
         }
     }
 
-    void append_jt(size_t address)
-    {
-        code_.push_back(static_cast<uint8_t>(op::jt));
-        append_uint(address);
-    }
-
-    void append_jtx(intptr_t offset)
-    {
-        if (offset >= 0) {
-            code_.push_back(static_cast<uint8_t>(op::jtp));
-            append_uint(static_cast<size_t>(offset));
-        } else {
-            code_.push_back(static_cast<uint8_t>(op::jtn));
-            append_uint(static_cast<size_t>(-offset));
-        }
-    }
-
-    void append_jf(size_t address)
-    {
-        code_.push_back(static_cast<uint8_t>(op::jf));
-        append_uint(address);
-    }
-
-    void append_jfx(intptr_t offset)
-    {
-        if (offset >= 0) {
-            code_.push_back(static_cast<uint8_t>(op::jfp));
-            append_uint(static_cast<size_t>(offset));
-        } else {
-            code_.push_back(static_cast<uint8_t>(op::jfn));
-            append_uint(static_cast<size_t>(-offset));
-        }
-    }
+    // append_jt/append_jtx/append_jf/append_jfx reference op::jt/jtp/jtn/jf/jfp/jfn, which are
+    // commented out of the `op` enum above (never had a traverse() dispatch case either, in
+    // this file or vm.hpp). Their only real call sites (compiler_visitor.hpp, conditional_t /
+    // not_empty_condition_t handling) are themselves inside `#if 0` blocks behind a
+    // THROW_NOT_IMPLEMENTED_ERROR - so these four were always dead, not just currently unused.
+    // MSVC doesn't eagerly check non-dependent names in an uninstantiated class template's
+    // member bodies, so it silently tolerated the dangling op::jt* / op::jf* references; Clang
+    // (via sonia-pygen's AST parse of this file) does check them and fails outright. Commented
+    // out rather than left for MSVC's leniency to keep masking it - see BUGFIXES.md.
+    //void append_jt(size_t address)
+    //{
+    //    code_.push_back(static_cast<uint8_t>(op::jt));
+    //    append_uint(address);
+    //}
+    //
+    //void append_jtx(intptr_t offset)
+    //{
+    //    if (offset >= 0) {
+    //        code_.push_back(static_cast<uint8_t>(op::jtp));
+    //        append_uint(static_cast<size_t>(offset));
+    //    } else {
+    //        code_.push_back(static_cast<uint8_t>(op::jtn));
+    //        append_uint(static_cast<size_t>(-offset));
+    //    }
+    //}
+    //
+    //void append_jf(size_t address)
+    //{
+    //    code_.push_back(static_cast<uint8_t>(op::jf));
+    //    append_uint(address);
+    //}
+    //
+    //void append_jfx(intptr_t offset)
+    //{
+    //    if (offset >= 0) {
+    //        code_.push_back(static_cast<uint8_t>(op::jfp));
+    //        append_uint(static_cast<size_t>(offset));
+    //    } else {
+    //        code_.push_back(static_cast<uint8_t>(op::jfn));
+    //        append_uint(static_cast<size_t>(-offset));
+    //    }
+    //}
 
     void append_call(size_t address)
     {
@@ -491,7 +505,6 @@ struct printer
     //using ext1_function_t = typename vm_t::ext1_function_t;
     //using call_stack_type = typename vm_t::call_stack_type;
     using var_t = typename vm_t::var_t;
-    using op = vm_t::op;
 
     std::ostream& ss;
     function<void()> line_commiter_;
@@ -798,7 +811,7 @@ struct printer
             ss << " - "sv << (ctx.stack_size() - 1);
         }
         ss << "]\t; ["sv;
-        
+
         auto sp = ctx.stack_span(0, ctx.stack_size() - min_idx);
         if (!sp.empty()) {
             ss << sp.front();
@@ -822,8 +835,7 @@ struct runner
     using ext_function_t = typename vm_t::ext_function_t;
     //using ext1_function_t = typename vm_t::ext1_function_t;
     using var_t = typename vm_t::var_t;
-    using op = vm_t::op;
-    
+
     inline void operator()(identity_type<op::noop>, ContextT &, size_t) const {}
 
     inline size_t operator()(identity_type<op::jmp>, ContextT&, size_t /*address*/, size_t jmp_address, size_t) const { return jmp_address; }
@@ -979,11 +991,11 @@ struct runner
     //inline void operator()(identity_type<op::fpecall1>, ContextT& ctx, size_t address, size_t arg_offset, size_t fn_index, ext1_function_t fn) const { fn(ctx, ctx.stack_at(ctx.frame_stack_back() + arg_offset)); }
     //
     //inline void operator()(identity_type<op::fnecall1>, ContextT& ctx, size_t address, size_t arg_offset, size_t fn_index, ext1_function_t fn) const { fn(ctx, ctx.stack_at(ctx.frame_stack_back() - arg_offset)); }
-    
+
     inline void operator()(identity_type<op::pop>, ContextT& ctx, size_t /*address*/) const { ctx.stack_pop(); }
 
     inline void operator()(identity_type<op::popn>, ContextT& ctx, size_t /*address*/, size_t n) const { ctx.stack_pop(n); }
-    
+
     inline void operator()(identity_type<op::collapse>, ContextT& ctx, size_t /*address*/, size_t n) const { ctx.stack_collapse(n); }
 
     inline void operator()(identity_type<op::push>, ContextT& ctx, size_t /*address*/, size_t index) const
@@ -1083,7 +1095,7 @@ struct runner
 
     inline void operator()(identity_type<op::pushfp>, ContextT& ctx, size_t /*address*/) const { ctx.frame_stack_push(); }
     inline void operator()(identity_type<op::popfp>, ContextT& ctx, size_t /*address*/) const { ctx.frame_stack_pop(); }
-    
+
     inline void operator()(identity_type<op::truncatefpp>, ContextT& ctx, size_t /*address*/, size_t cnt) const
     {
         ctx.stack_truncate(ctx.frame_stack_back() + cnt);
@@ -1117,267 +1129,68 @@ struct sequence_runner
     }
 };
 
-#define SONIA_VM_MAKE_JUMP_CASES(optype)\
-    case op::optype: {\
-        size_t start_address = address++;\
-        size_t jump_address = read_uint(address);\
-        address = ftor(identity<op::optype>, ctx, start_address, jump_address, address);\
-        continue;\
-    }\
-    case op::optype##p: {\
-        size_t start_address = address++;\
-        size_t jump_offset = read_uint(address);\
-        address = ftor(identity<op::optype##p>, ctx, start_address, jump_offset, address);\
-        continue;\
-    }\
-    case op::optype##n: {\
-        size_t start_address = address++;\
-        size_t jump_offset = read_uint(address);\
-        address = ftor(identity<op::optype##n>, ctx, start_address, jump_offset, address);\
-        continue;\
+// traverse() is generated by sonia-pygen's vm-dispatch generator from the VMOP_* tags on `op`
+// above (see vmop_proto.hpp) - switch form for MSVC, computed-goto form for GCC/Clang. call,
+// ecall and ret are VMOP_CUSTOM (irregular arg count / early-return / packed short form) and
+// stay hand-written here as hook macros the generated file splices in by name; every other
+// opcode's dispatch case is generated. vm2.gen.hpp is checked in (like sonia-prime's other
+// *.gen.hpp files), so a build without sonia-pygen available just compiles the pre-generated
+// file as-is - SONIA_DO_NOT_INCLUDE_GEN skips the #include instead for the pygen tool's own
+// parse pass, which only needs the `op` declaration above, not a (possibly not yet generated)
+// vm2.gen.hpp.
+#define SONIA_VM_GEN_CUSTOM_CALL_SWITCH \
+    { \
+        size_t start_address = address++; \
+        size_t call_address = read_uint(address); \
+        address = ftor(identity<op::call>, ctx, start_address, call_address, address); \
+        continue; \
+    }
+#define SONIA_VM_GEN_CUSTOM_ECALL_SWITCH \
+    { \
+        size_t start_address = address++; \
+        size_t fn_index = read_uint(address); \
+        ftor(identity<op::ecall>, ctx, start_address, fn_index); \
+        continue; \
+    }
+#define SONIA_VM_GEN_CUSTOM_RET_SWITCH \
+    if (auto optaddress = ftor(identity<op::ret>, ctx, address); optaddress) { \
+        address = *optaddress; \
+        continue; \
+    } \
+    return;
+
+#define SONIA_VM_GEN_CUSTOM_CALL_GOTO \
+    { \
+        size_t start_address = address++; \
+        size_t call_address = read_uint(address); \
+        address = ftor(identity<op::call>, ctx, start_address, call_address, address); \
+        goto *dispatch_table[code_[address]]; \
+    }
+#define SONIA_VM_GEN_CUSTOM_ECALL_GOTO \
+    { \
+        size_t start_address = address++; \
+        size_t fn_index = read_uint(address); \
+        ftor(identity<op::ecall>, ctx, start_address, fn_index); \
+        goto *dispatch_table[code_[address]]; \
+    }
+#define SONIA_VM_GEN_CUSTOM_RET_GOTO \
+    { \
+        auto optaddress = ftor(identity<op::ret>, ctx, address); \
+        if (!optaddress) return; \
+        address = *optaddress; \
+        goto *dispatch_table[code_[address]]; \
     }
 
-template <typename ContextT>
-template <typename FunctorT>
-void virtual_stack_machine<ContextT>::traverse(ContextT& ctx, size_t address, FunctorT const& ftor)
-{
-    while (address < code_.size()) {
-        uint8_t op_byte = code_[address];
-        if (op_byte >= 128) {
-            auto cmdoffset = op_byte - 128u;
-            if (cmdoffset >= efns_.size()) [[unlikely]] {
-                throw internal_error("wrong command");
-            }
-            ftor(identity<op::ecall>, ctx, address, cmdoffset);
-            ++address;
-            continue;
-        }
-        switch (static_cast<op>(op_byte)) {
-        case op::noop:
-            ftor(identity<op::noop>, ctx, address);
-            ++address;
-            continue;
-        SONIA_VM_MAKE_JUMP_CASES(jmp)
-        SONIA_VM_MAKE_JUMP_CASES(jne)
-        SONIA_VM_MAKE_JUMP_CASES(je)
-        SONIA_VM_MAKE_JUMP_CASES(jg)
-        SONIA_VM_MAKE_JUMP_CASES(jge)
-        SONIA_VM_MAKE_JUMP_CASES(jl)
-        SONIA_VM_MAKE_JUMP_CASES(jle)
-        case op::cmp:
-            ftor(identity<op::cmp>, ctx, address);
-            ++address;
-            continue;
-        case op::call:
-            {
-                size_t start_address = address++;
-                size_t call_address = read_uint(address);
-                address = ftor(identity<op::call>, ctx, start_address, call_address, address);
-                continue;
-            }
-        case op::callp:
-            address = ftor(identity<op::callp>, ctx, address);
-            continue;
-        case op::ecall:
-            {
-                size_t start_address = address++;
-                size_t fn_index = read_uint(address);
-                ftor(identity<op::ecall>, ctx, start_address, fn_index);
-                continue;
-            }
-        //case op::ecall1:
-        //    {
-        //        size_t start_address = address++;
-        //        size_t arg_index = read_uint(address);
-        //        size_t fn_index = read_uint(address);
-        //        ftor(identity<op::ecall1>, ctx, start_address, arg_index, fn_index, e1fns_.at(fn_index));
-        //        continue;
-        //    }
-        //case op::fnecall1:
-        //    {
-        //        size_t start_address = address++;
-        //        size_t arg_offset = read_uint(address);
-        //        size_t fn_index = read_uint(address);
-        //        ftor(identity<op::fnecall1>, ctx, start_address, arg_offset, fn_index, e1fns_.at(fn_index));
-        //        continue;
-        //    }
-        //case op::fpecall1:
-        //    {
-        //        size_t start_address = address++;
-        //        size_t arg_offset = read_uint(address);
-        //        size_t fn_index = read_uint(address);
-        //        ftor(identity<op::fpecall1>, ctx, start_address, arg_offset, fn_index, e1fns_.at(fn_index));
-        //        continue;
-        //    }
-        case op::ret:
-            if (auto optaddress = ftor(identity<op::ret>, ctx, address); optaddress) {
-                address = *optaddress;
-                continue;
-            }
-            return;
-        
-        case op::pop:
-            ftor(identity<op::pop>, ctx, address);
-            ++address;
-            continue;
-        case op::popn:
-            {
-                size_t start_address = address++;
-                size_t num = read_uint(address);
-                ftor(identity<op::popn>, ctx, start_address, num);
-                continue;
-            }
-        case op::collapse:
-            {
-                size_t start_address = address++;
-                size_t num = read_uint(address);
-                ftor(identity<op::collapse>, ctx, start_address, num);
-                continue;
-            }
-        case op::push:
-            {
-                size_t start_address = address++;
-                size_t index = read_uint(address);
-                ftor(identity<op::push>, ctx, start_address, index);
-                continue;
-            }
-        case op::pushr:
-            {
-                size_t start_address = address++;
-                size_t offset = read_uint(address);
-                ftor(identity<op::pushr>, ctx, start_address, offset);
-                continue;
-            }
-        case op::fppush:
-            {
-                size_t start_address = address++;
-                size_t offset = read_uint(address);
-                ftor(identity<op::fppush>, ctx, start_address, offset);
-                continue;
-            }
-        case op::fnpush:
-            {
-                size_t start_address = address++;
-                size_t offset = read_uint(address);
-                ftor(identity<op::fnpush>, ctx, start_address, offset);
-                continue;
-            }
-        
-        case op::pushi:
-            {
-                size_t start_address = address++;
-                size_t index = read_uint(address);
-                ftor(identity<op::pushi>, ctx, start_address, index);
-                continue;
-            }
-        case op::fppushi:
-            {
-                size_t start_address = address++;
-                size_t offset = read_uint(address);
-                ftor(identity<op::fppushi>, ctx, start_address, offset);
-                continue;
-            }
-        case op::fnpushi:
-            {
-                size_t start_address = address++;
-                size_t offset = read_uint(address);
-                ftor(identity<op::fnpushi>, ctx, start_address, offset);
-                continue;
-            }
-        case op::pushc:
-            {
-                size_t start_address = address++;
-                size_t index = read_uint(address);
-                ftor(identity<op::pushc>, ctx, start_address, index);
-                continue;
-            }
-        case op::push_stsz:
-            {
-                size_t start_address = address++;
-                ftor(identity<op::push_stsz>, ctx, start_address);
-                continue;
-            }
-        case op::dup:
-            {
-                ftor(identity<op::dup>, ctx, address);
-                ++address;
-                continue;
-            }
-        case op::set:
-            {
-                size_t start_address = address++;
-                size_t index = read_uint(address);
-                ftor(identity<op::set>, ctx, start_address, index);
-                continue;
-            }
-        case op::setr:
-            {
-                size_t start_address = address++;
-                size_t offset = read_uint(address);
-                ftor(identity<op::setr>, ctx, start_address, offset);
-                continue;
-            }
-        case op::fpset:
-            {
-                size_t start_address = address++;
-                size_t offset = read_uint(address);
-                ftor(identity<op::fpset>, ctx, start_address, offset);
-                continue;
-            }
-        case op::fnset:
-            {
-                size_t start_address = address++;
-                size_t offset = read_uint(address);
-                ftor(identity<op::fnset>, ctx, start_address, offset);
-                continue;
-            }
-        case op::pindexs:
-            {
-                size_t start_address = address++;
-                size_t shift = read_uint(address);
-                ftor(identity<op::pindexs>, ctx, start_address, shift);
-                continue;
-            }
-        case op::nindexs:
-            {
-                size_t start_address = address++;
-                size_t shift = read_uint(address);
-                ftor(identity<op::nindexs>, ctx, start_address, shift);
-                continue;
-            }
-        case op::indexc:
-            {
-                size_t start_address = address++;
-                ftor(identity<op::indexc>, ctx, start_address);
-                continue;
-            }
-        case op::pushfp:
-            ftor(identity<op::pushfp>, ctx, address);
-            ++address;
-            continue;
-        case op::popfp:
-            ftor(identity<op::popfp>, ctx, address);
-            ++address;
-            continue;
-        case op::truncatefpp:
-            {
-                size_t start_address = address++;
-                size_t count = read_uint(address);
-                ftor(identity<op::truncatefpp>, ctx, start_address, count);
-                continue;
-            }
-        case op::truncatefpn:
-            {
-                size_t start_address = address++;
-                size_t count = read_uint(address);
-                ftor(identity<op::truncatefpn>, ctx, start_address, count);
-                continue;
-            }
-        default:
-            THROW_INTERNAL_ERROR();
-        }
-    }
-}
+#ifndef SONIA_DO_NOT_INCLUDE_GEN
+#   include "vm2.gen.hpp"
+#endif
+
+#undef SONIA_VM_GEN_CUSTOM_CALL_SWITCH
+#undef SONIA_VM_GEN_CUSTOM_ECALL_SWITCH
+#undef SONIA_VM_GEN_CUSTOM_RET_SWITCH
+#undef SONIA_VM_GEN_CUSTOM_CALL_GOTO
+#undef SONIA_VM_GEN_CUSTOM_ECALL_GOTO
+#undef SONIA_VM_GEN_CUSTOM_RET_GOTO
 
 template <typename ContextT>
 void virtual_stack_machine<ContextT>::run(ContextT& ctx, size_t address)
@@ -1400,5 +1213,3 @@ void virtual_stack_machine<ContextT>::run(ContextT& ctx, size_t address)
 }
 
 }
-
-#endif // SONIA_VM_HPP

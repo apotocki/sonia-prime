@@ -8,11 +8,7 @@
 #include "sonia/exceptions.hpp"
 #include "sonia/utility/base_xx_util.hpp"
 
-#include <boost/uuid/detail/md5.hpp>
-
 namespace sonia::services {
-
-using boost::uuids::detail::md5;
 
 auth_service::auth_service(auth_service_configuration const& cfg)
     : cfg_(cfg)

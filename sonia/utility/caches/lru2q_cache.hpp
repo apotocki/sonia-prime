@@ -4,6 +4,7 @@
 #pragma once
 
 #include <atomic>
+#include <unordered_set>
 
 #include <boost/intrusive/unordered_set.hpp>
 #include <boost/intrusive/list.hpp>
@@ -44,6 +45,17 @@ struct cache_elem_hasher
 
     inline size_t operator()(key_param_type s) const noexcept { return hash_type{}(s); }
     inline size_t operator()(ElementT const& d) const noexcept { return hash_type{}(key(d)); }
+};
+
+// Hands an already computed hash to unordered_set::find(), which applies the hasher to the looked
+// up key only - never to the elements in the bucket - so a constant is exactly what is wanted here.
+// Lets the caller hash the key once and reuse that value for both partition and bucket selection.
+struct precomputed_hash
+{
+    size_t value;
+
+    template <typename T>
+    inline size_t operator()(T const&) const noexcept { return value; }
 };
 
 template <typename ElementT, typename TraitsT>
@@ -289,10 +301,12 @@ public:
         , set_(std::move(rhs.set_))
     {}
 
-    bool try_get(key_param_type key, element** result)
+    // hash is the caller's already computed hash_type{}(key) - the same value that selected this
+    // partition, reused here instead of hashing the key a second time.
+    bool try_get(key_param_type key, size_t hash, element** result)
     {
         shared_lock_guard guard(set_mutex_);
-        auto it = set_.find(key, cache_elem_hasher_type{}, cache_elem_comparer_type{});
+        auto it = set_.find(key, precomputed_hash{hash}, cache_elem_comparer_type{});
         if (it != set_.end()) {
             *result = &*it;
             add_ref_fetch(*result);
@@ -324,6 +338,13 @@ public:
                 throw;
             }
         }
+    }
+
+    // For check_structure() only: walks the set unlocked, so the cache must be quiescent.
+    template <typename FtorT>
+    void visit(FtorT const& f) const
+    {
+        for (element const& e : set_) f(e);
     }
 
     template <typename CheckFtorT>
@@ -367,7 +388,11 @@ namespace sonia {
 //     region only when its last cached_value dies. Hence "hotness" is counted in releases, not
 //     in acquires - an element that always has a live handle never gets promoted, and once it
 //     is finally released it enters the "in" queue as a newcomer;
-//   * a pinned element (refs != 0) belongs to no queue at all and therefore can not be evicted;
+//   * holding a cached_value does NOT take the element out of its queue - acquire() only bumps
+//     refs. Such an element can still be picked as an eviction candidate; what protects it is the
+//     "1 == add_ref_fetch" check in remove_from_cache(), which refuses the erase and moves it to
+//     the removing state, so that the holder's final release() retries the disposal. Only an
+//     element that was never released yet (not_in_queue) is genuinely outside every queue;
 //   * the resident capacity is about in_quota + out_quota + lru_quota, the eviction condition in
 //     put_in_queue() lets the "out" region borrow the yet unused part of the lru quota.
 //
@@ -451,13 +476,25 @@ protected:
     // a derived class may expose it as a diagnostic property.
     bool is_filled() const noexcept { return filled_.load(std::memory_order_relaxed); }
 
+    // hash is hash_of(key), already computed by acquire()
     template <typename ... AuxParamsT>
-    lru2q_detail::lru2q_provenance acquire0(key_param_type key, element_type** ppelement, AuxParamsT&& ... aux_params);
+    lru2q_detail::lru2q_provenance acquire0(key_param_type key, size_t hash, element_type** ppelement, AuxParamsT&& ... aux_params);
     
-    inline partition_type& get_partition(key_param_type key) noexcept
+    inline static size_t hash_of(key_param_type key) noexcept
     {
-        size_t pidx = typename traits_type::hash_type{}(key) % partitions_.size();
-        return partitions_[pidx];
+        return typename traits_type::hash_type{}(key);
+    }
+
+    // Takes the hash rather than the key so that a single hash_of() call serves both the partition
+    // and the bucket lookup. partitions_.size() is a power of two, so this is a mask instead of the
+    // integer division a runtime modulo would compile into.
+    //
+    // The low bits pick the partition, which is why buckets_per_partition should stay odd (prime is
+    // best): with a power of two bucket count the two would select on the very same bits and every
+    // element of a partition would land in the same handful of buckets.
+    inline partition_type& get_partition(size_t hash) noexcept
+    {
+        return partitions_[hash & partition_mask_];
     }
 
     element_type* put_in_queue(element_type*);
@@ -465,7 +502,32 @@ protected:
     element_type* case_out_queue(element_type*);
     element_type* case_lru_queue(element_type*);
 
+    // Verifies every bookkeeping invariant and asserts on the first violation. Takes no locks and
+    // assumes a quiescent cache: no operation in flight, no pin held. Meant for tests and for
+    // periodic checks in a stress run, not for production paths - it is linear in the number of
+    // cached elements and allocates.
+    void check_structure();
+
+    // LOCK HIERARCHY - acquire in this order, never the other way round:
+    //
+    //   1. element pin        (try_acquire_pin, a spin lock on element::pin_)
+    //   2. dcl_mutexes_[key]  (per key create/dispose exclusion)
+    //   3. one of:
+    //        partition::set_mutex_   (hash lookup, insert, checked erase)
+    //        fallback_queue_mtx_
+    //        queue_mtx_              ("in" + "out" regions and next_out_it_)
+    //        lru_queue_mtx_          ("lru" region)
+    //
+    // The mutexes on level 3 are NEVER nested into one another. In particular case_out_queue()
+    // deliberately releases queue_mtx_ before taking lru_queue_mtx_, and put_in_queue() unlocks
+    // queue_mtx_ before calling remove_from_cache(), which needs a dcl mutex - taking a level 2
+    // lock while holding a level 3 one would invert the order.
+    //
+    // The pin sits above everything because put_in_queue() spins for a pin while holding
+    // queue_mtx_. That is only safe as long as a pin owner takes no lock at all before releasing
+    // it, which holds for the one element that spin can target (see the comment there).
     std::vector<partition_type> partitions_;
+    size_t partition_mask_; // partitions_.size() - 1, the size is rounded up to a power of two
     keyed_refcount_pool<key_type, fibers::mutex, typename traits_type::hash_type, typename traits_type::equal_type> dcl_mutexes_;
     size_t in_size_, out_size_;
     std::atomic<size_t> lru_size_;
@@ -493,8 +555,13 @@ lru2q_cache<DerivedT, TraitsT>::lru2q_cache(size_t partition_count, size_t bucke
     , fallback_queue_size_{0}
     , filled_{false}
 {
-    partitions_.reserve(partition_count);
-    while (partitions_.size() < partition_count) {
+    // rounded up to a power of two so that get_partition() masks instead of dividing
+    size_t pcount = 1;
+    while (pcount < partition_count) pcount <<= 1;
+    partition_mask_ = pcount - 1;
+
+    partitions_.reserve(pcount);
+    while (partitions_.size() < pcount) {
         partitions_.emplace_back(buckets_per_partition);
     }
     next_out_it_ = queue_.end(); // put_in_queue relies on end() to detect the 0 == in_quota case
@@ -504,16 +571,17 @@ template <typename DerivedT, typename TraitsT>
 template <typename ... AuxParamsT>
 lru2q_detail::lru2q_provenance lru2q_cache<DerivedT, TraitsT>::acquire(key_param_type key, element_type** ppelement, AuxParamsT&& ... aux_params)
 {
-    partition_type& partition = get_partition(key);
-    if (partition.try_get(key, ppelement)) return lru2q_detail::lru2q_provenance::existing;
-    return acquire0(key, ppelement, std::forward<AuxParamsT>(aux_params)...);
+    size_t const hash = hash_of(key); // hashed once, reused for the partition and for the bucket
+    partition_type& partition = get_partition(hash);
+    if (partition.try_get(key, hash, ppelement)) return lru2q_detail::lru2q_provenance::existing;
+    return acquire0(key, hash, ppelement, std::forward<AuxParamsT>(aux_params)...);
 }
 
 template <typename DerivedT, typename TraitsT>
 template <typename ... AuxParamsT>
-lru2q_detail::lru2q_provenance lru2q_cache<DerivedT, TraitsT>::acquire0(key_param_type key, element_type** ppelement, AuxParamsT&& ... aux_params)
+lru2q_detail::lru2q_provenance lru2q_cache<DerivedT, TraitsT>::acquire0(key_param_type key, size_t hash, element_type** ppelement, AuxParamsT&& ... aux_params)
 {
-    partition_type& partition = get_partition(key);
+    partition_type& partition = get_partition(hash);
     auto * dcl_mutex = dcl_mutexes_.acquire(key);
 
     SCOPE_EXIT([dcl_mutex, this]{
@@ -521,7 +589,7 @@ lru2q_detail::lru2q_provenance lru2q_cache<DerivedT, TraitsT>::acquire0(key_para
     });
     {
         lock_guard dcl_guard(dcl_mutex->value); // it's expected that locked location can not be removed from cache (if allocated)
-        if (partition.try_get(key, ppelement)) return lru2q_detail::lru2q_provenance::existing;
+        if (partition.try_get(key, hash, ppelement)) return lru2q_detail::lru2q_provenance::existing;
 
         // a cache miss takes place
         //
@@ -718,9 +786,10 @@ lru2q_cache<DerivedT, TraitsT>::element_type* lru2q_cache<DerivedT, TraitsT>::re
 {
     filled_.store(true); // set flag
 
-    partition_type & partition = get_partition(key(*elem));
+    key_type const& k = key(*elem);
+    partition_type & partition = get_partition(hash_of(k));
 
-    auto * dcl_mutex = dcl_mutexes_.acquire(key(*elem));
+    auto * dcl_mutex = dcl_mutexes_.acquire(k);
 
     SCOPE_EXIT([dcl_mutex, this]{
         dcl_mutexes_.release(dcl_mutex);
@@ -822,6 +891,107 @@ lru2q_cache<DerivedT, TraitsT>::element_type* lru2q_cache<DerivedT, TraitsT>::ca
         release_pin(elem); // unpin
         return nullptr;
     }
+}
+
+template <typename DerivedT, typename TraitsT>
+void lru2q_cache<DerivedT, TraitsT>::check_structure()
+{
+    using namespace lru2q_detail;
+
+    size_t const in_quota = derived().get_in_quota();
+
+    // ---- everything the partitions know about, with no duplicates across partitions ------------
+    std::unordered_set<element_type const*> resident;
+    for (partition_type& p : partitions_) {
+        p.visit([&resident](element_type const& e) {
+            BOOST_VERIFY(resident.insert(&e).second);
+        });
+    }
+
+    std::unordered_set<element_type const*> queued;
+    auto claim = [&queued, &resident](element_type const& e) {
+        BOOST_VERIFY(queued.insert(&e).second);  // an element may sit in one queue only
+        BOOST_ASSERT(resident.count(&e) == 1);   // ... and must be reachable through its partition
+        BOOST_ASSERT(e.pin_.load() == 0);        // quiescent cache: nobody may hold a pin
+    };
+
+    // ---- queue_: "out" region in [begin, next_out_it_), "in" region in [next_out_it_, end) ------
+    //
+    // next_out_it_ is only positioned once the "in" region has filled up, so there are three
+    // shapes to expect:
+    //   in_quota == 0                  - nothing stays "in": the border is end() and all is "out";
+    //   in_size_ < in_quota            - still filling up: the border is end() and all is "in";
+    //   in_size_ == in_quota (> 0)     - steady state: the border splits the two regions.
+    size_t out_count = 0, in_count = 0;
+
+    if (0 == in_quota) {
+        BOOST_ASSERT(next_out_it_ == queue_.end());
+        BOOST_ASSERT(0 == in_size_);
+        for (element_type const& e : queue_) {
+            BOOST_ASSERT(e.state == queue_state::out_queue);
+            claim(e);
+            ++out_count;
+        }
+    } else if (in_size_ < in_quota) {
+        BOOST_ASSERT(next_out_it_ == queue_.end());
+        BOOST_ASSERT(0 == out_size_);
+        for (element_type const& e : queue_) {
+            BOOST_ASSERT(e.state == queue_state::in_queue);
+            claim(e);
+            ++in_count;
+        }
+    } else {
+        BOOST_ASSERT(in_size_ == in_quota);
+        BOOST_ASSERT(next_out_it_ != queue_.end());
+        auto it = queue_.begin();
+        for (; it != next_out_it_; ++it, ++out_count) {
+            BOOST_ASSERT(it->state == queue_state::out_queue);
+            claim(*it);
+        }
+        for (; it != queue_.end(); ++it, ++in_count) {
+            BOOST_ASSERT(it->state == queue_state::in_queue);
+            claim(*it);
+        }
+    }
+
+    BOOST_ASSERT(out_count == out_size_);
+    BOOST_ASSERT(in_count == in_size_);
+
+    // ---- lru_queue_ ---------------------------------------------------------------------------
+    // lru_size_ is not compared against get_lru_quota(): case_out_queue() may exceed it on purpose
+    // when every lru element is busy, and the next promotion trims it back.
+    size_t lru_count = 0;
+    for (element_type const& e : lru_queue_) {
+        BOOST_ASSERT(e.state == queue_state::lru_queue);
+        claim(e);
+        ++lru_count;
+    }
+    BOOST_ASSERT(lru_count == lru_size_.load());
+
+    // ---- elements that belong to no queue -----------------------------------------------------
+    // Only two states allow that, and both mean somebody is holding the element:
+    //   not_in_queue - freshly created, not released even once;
+    //   removing     - picked for eviction, but a concurrent acquire saved it; the holder's
+    //                  release() will retry the disposal.
+    for (element_type const* pe : resident) {
+        if (queued.count(pe)) {
+            continue;
+        }
+        BOOST_ASSERT(pe->state == queue_state::not_in_queue || pe->state == queue_state::removing);
+        BOOST_ASSERT(pe->refs.load() > 0);
+        BOOST_ASSERT(pe->pin_.load() == 0);
+    }
+
+    // ---- fallback queue -----------------------------------------------------------------------
+    // Its elements failed to be disposed and were erased from their partition beforehand, so they
+    // must not be reachable through one anymore.
+    size_t fallback_count = 0;
+    for (element_type const& e : fallback_queue_) {
+        BOOST_ASSERT(resident.count(&e) == 0);
+        BOOST_ASSERT(queued.count(&e) == 0);
+        ++fallback_count;
+    }
+    BOOST_ASSERT(fallback_count == fallback_queue_size_.load());
 }
 
 template <typename DerivedT, typename TraitsT>

@@ -2073,6 +2073,15 @@
     <ClInclude Include="..\..\..\sonia\net\http\headers.gen.hpp">
       <Filter>sonia.net\http</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\caches\lru2q_cache.hpp">
+      <Filter>sonia.utility\caches</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\caches\bucket_set.hpp">
+      <Filter>sonia.utility\caches</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\sonia\utility\caches\keyed_refcount_pool.hpp">
+      <Filter>sonia.utility\caches</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\..\sonia\logger\logger.cpp">

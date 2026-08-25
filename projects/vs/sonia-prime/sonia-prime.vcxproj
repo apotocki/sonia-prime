@@ -235,7 +235,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_EXPORTS;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;HAS_ICU;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_WINDOWS;_USRDLL;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_EXPORTS;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;HAS_ICU;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)modules\numetron\include;$(SolutionDir)modules\dataforge\include;$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include\;$(SolutionDir)third_party\lexertl14\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -316,7 +316,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>
       </SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_EXPORTS;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;HAS_ICU;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_WINDOWS;_USRDLL;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_EXPORTS;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;HAS_ICU;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)modules\numetron\include;$(SolutionDir)modules\dataforge\include;$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include\;$(SolutionDir)third_party\lexertl14\include</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>

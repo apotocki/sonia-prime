@@ -457,8 +457,11 @@
     <ClInclude Include="..\..\..\sonia\utility\boost_stacktrace.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\buffer.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\bz2_util.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\caches\bucket_set.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\car.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\clock.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\caches\keyed_refcount_pool.hpp" />
+    <ClInclude Include="..\..\..\sonia\utility\caches\lru2q_cache.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\caches\utility.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\barrier.hpp" />
     <ClInclude Include="..\..\..\sonia\utility\concurrency\call_once.hpp" />
@@ -1049,7 +1052,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;SONIA_LANG_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;LZMA_API_STATIC;SONIA_LANG_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)modules\dataforge\include;$(SolutionDir)modules\numetron\include;$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include;$(SolutionDir)third_party\lexertl14\include;$(SolutionDir)third_party\jni;$(SolutionDir)third_party\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
@@ -1096,7 +1099,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>
       </SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;BOOST_STACKTRACE_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;_LIB;_SILENCE_CXX23_DENORM_DEPRECATION_WARNING;_SILENCE_CXX23_ALIGNED_STORAGE_DEPRECATION_WARNING;SONIA_PRIME_STATIC;BOOST_NO_USER_CONFIG;BOOST_ALL_DYN_LINK;LZMA_API_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\;$(SolutionDir);$(SolutionDir)modules\dataforge\include;$(SolutionDir)modules\numetron\include;$(SolutionDir)vcpkg_installed\x64-windows-cpp23\include;$(SolutionDir)third_party\lexertl14\include;$(SolutionDir)third_party\jni;$(SolutionDir)third_party\jni\win32</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>

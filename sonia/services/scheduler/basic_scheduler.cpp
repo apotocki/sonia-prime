@@ -97,7 +97,7 @@ void queue_entry::run(basic_scheduler * s)
     }
 }
 
-void queue_entry::on_cancel(basic_scheduler * s)
+void queue_entry::on_cancel(basic_scheduler *)
 {
     task->on_cancel();
 }

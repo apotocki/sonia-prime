@@ -72,8 +72,8 @@ class keyed_refcount_pool  : private bucket_set<
     >
 >
 {
-    using bucket_set_type = keyed_refcount_pool::bucket_set_type;
-    using set_t = keyed_refcount_pool::set_t;
+    using bucket_set_type = typename keyed_refcount_pool::bucket_set_type;
+    using set_t = typename keyed_refcount_pool::set_t;
 
 public:
     using element_type = keyed_refcount_pool_detail::element<KeyT, ValueT, HashT, EqualT>;
@@ -81,8 +81,8 @@ public:
 
     explicit keyed_refcount_pool(size_t buckets = 17, size_t reserve_size = 32)
         : bucket_set_type{ buckets }
-        , set_{ typename set_t::bucket_traits(this->buckets(), buckets) }
         , pool_{ reserve_size }
+        , set_{ typename set_t::bucket_traits(this->buckets(), buckets) }
     {
 
     }

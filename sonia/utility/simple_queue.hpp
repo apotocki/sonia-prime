@@ -2,12 +2,7 @@
 //  Sonia.one is licensed under the terms of the Open Source GPL 3.0 license.
 //  For a license to use the Sonia.one software under conditions other than those described here, please contact me at admin@sonia.one
 
-#ifndef SONIA_UTILITY_SIMPLE_QUEUE_HPP
-#define SONIA_UTILITY_SIMPLE_QUEUE_HPP
-
-#ifdef BOOST_HAS_PRAGMA_ONCE
-#   pragma once
-#endif
+#pragma once
 
 #include <memory>
 #include <mutex>
@@ -20,12 +15,13 @@ namespace sonia {
 template <typename ElementT, class MutexT, class AllocatorT = std::allocator<ElementT>>
 class simple_queue : private AllocatorT
 {
-    typedef std::lock_guard<MutexT> guard_type;
-    typedef std::conditional_t<is_pointer_v<ElementT>, ElementT, optional<ElementT>> opt_t;
+    using opt_t = std::conditional_t<is_pointer_v<ElementT>, ElementT, optional<ElementT>>;
+
 public:
     template <typename ... ArgsT>
     explicit simple_queue(size_t capacity, ArgsT && ... args)
-        : capacity_(capacity), AllocatorT(std::forward<ArgsT>(args) ...)
+        : AllocatorT(std::forward<ArgsT>(args) ...)
+        , capacity_(capacity)
     {
         slots_ = AllocatorT::allocate(capacity);
     }
@@ -42,13 +38,13 @@ public:
     simple_queue & operator=(simple_queue const&) = delete;
 
     bool empty() const noexcept {
-        guard_type lk(lk_);
+        std::lock_guard lk(lk_);
         return is_empty_();
     }
 
     template <typename T>
     void push(T && arg) {
-        guard_type lk(lk_);
+        std::lock_guard lk(lk_);
         if (is_full_()) {
             resize_();
         }
@@ -58,7 +54,7 @@ public:
 
     opt_t pop() {
         opt_t r = init_opt_();
-        guard_type lk(lk_);
+        std::lock_guard lk(lk_);
         if (!is_empty_()) {
             r = std::move(slots_[cidx_]);
             slots_[cidx_].~ElementT();
@@ -70,7 +66,7 @@ public:
     template <typename PredicateT>
     opt_t take_if(PredicateT const& pr) {
         opt_t r = init_opt_();
-        guard_type lk(lk_);
+        std::lock_guard lk(lk_);
         for (size_t i = cidx_; i != pidx_; i = (i + 1) % capacity_) {
             ElementT & c = slots_[i];
             if (!pr(c)) continue;
@@ -147,5 +143,3 @@ private:
 };
 
 }
-
-#endif // SONIA_UTILITY_SIMPLE_QUEUE_HPP

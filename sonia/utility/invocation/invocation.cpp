@@ -13,6 +13,8 @@
 
 namespace sonia::invocation {
 
+constexpr bool invocation_debug = true;
+
 class blob_manager : public singleton
 {
     using blob_storage = shared_ptr<uint8_t>;// , shared_ptr<sonia::invocation::invocable >> ;
@@ -54,22 +56,27 @@ public:
         auto it = blobs_.find(b->data.bp.payload_ptr);
         if (it != blobs_.end()) {
             ++it->second.second;
+            GLOBAL_LOG_TRACE() << "addref for the blob at: " << std::hex << (uint64_t)b->data.bp.payload_ptr;
         } else {
-            GLOBAL_LOG_DEBUG() << "a blob was not found for pinning at: " << std::hex << (uint64_t)b->data.bp.payload_ptr;
+            GLOBAL_LOG_TRACE() << "a blob was not found for pinning at: " << std::hex << (uint64_t)b->data.bp.payload_ptr;
         }
     }
 
-    optional<blob_storage> releaseref(blob_result* b) noexcept
+    optional<blob_storage> releaseref(blob_result* b) noexcept(!(sonia_is_debug || invocation_debug))
     {
         lock_guard guard(blobs_mtx_);
         auto it = blobs_.find(b->data.bp.payload_ptr);
         if (it != blobs_.end()) {
+            GLOBAL_LOG_TRACE() << "a blob was unpinned at: " << std::hex << (uint64_t)b->data.bp.payload_ptr;
             if (--it->second.second == 0) {
                 blob_storage st = std::move(it->second.first);
                 blobs_.erase(it);
-                GLOBAL_LOG_TRACE() << "a blob was unpinned at: " << std::hex << (uint64_t)b->data.bp.payload_ptr;
+                GLOBAL_LOG_TRACE() << "a blob_storage was released at: " << std::hex << (uint64_t)b->data.bp.payload_ptr;
                 return st;
             }
+        } else if constexpr (sonia_is_debug || invocation_debug) {
+            THROW_INTERNAL_ERROR("a blob was not found for unpinning at: 0x%1$llx"_fmt %
+                 static_cast<unsigned long long>(reinterpret_cast<uintptr_t>(b->data.bp.payload_ptr)));
         } else {
             GLOBAL_LOG_ERROR() << "a blob '" << *b << "' was not found for unpinning at: " << std::hex << (uint64_t)b->data.bp.payload_ptr;
             //THROW_INTERNAL_ERROR("a blob was not found for unpinning %1%"_fmt % *b);
@@ -135,18 +142,22 @@ void blob_result_pin(blob_result * b)
 
 void blob_result_unpin(blob_result * b)
 {
-    if (b->need_unpin) {
-        auto optst = sonia::as_singleton<sonia::invocation::blob_manager>()->releaseref(b);
-        b->need_unpin = 0;
-        if (optst) {
-            if (b->type == blob_type::object) {
-                reinterpret_cast<sonia::invocation::object*>((*optst).get())->~object();
-            } else if (b->type == blob_type::tuple || b->type == blob_type::blob_reference) {
-                blob_result* pblob = mutable_data_of<blob_result>(*b), * epblob = pblob + array_size_of<blob_result>(*b);
-                for (; pblob != epblob; blob_result_unpin(pblob++));
+    try {
+        if (b->need_unpin) {
+            auto optst = sonia::as_singleton<sonia::invocation::blob_manager>()->releaseref(b);
+            b->need_unpin = 0;
+            if (optst) {
+                if (b->type == blob_type::object) {
+                    reinterpret_cast<sonia::invocation::object*>((*optst).get())->~object();
+                } else if (b->type == blob_type::tuple || b->type == blob_type::blob_reference) {
+                    blob_result* pblob = mutable_data_of<blob_result>(*b), * epblob = pblob + array_size_of<blob_result>(*b);
+                    for (; pblob != epblob; blob_result_unpin(pblob++));
+                }
             }
+        } else if (b->type == blob_type::object) {
+            mutable_data_of<sonia::invocation::object>(*b)->~object();
         }
-    } else if (b->type == blob_type::object) {
-        mutable_data_of<sonia::invocation::object>(*b)->~object();
+    } catch (...) {
+        GLOBAL_LOG_ERROR() << "blob_result_unpin: unknown exception: " << boost::current_exception_diagnostic_information();
     }
 }

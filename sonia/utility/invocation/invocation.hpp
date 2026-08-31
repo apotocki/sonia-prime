@@ -1227,7 +1227,7 @@ struct from_blob<numetron::basic_decimal<LimbT, N, E, AllocatorT>>
         using namespace sonia;
         return blob_type_dispatch(
             val, [&val, &alloc]<typename DT>(DT dval) -> decimal_t {
-              if constexpr (is_integral_not_bool_v<DT>) { // || std::is_floating_point_v<DT>  flt16
+              if constexpr (is_integral_not_bool_v<DT> || std::is_floating_point_v<DT> || std::is_same_v<numetron::float16, DT>) {
                 return decimal_t{ dval, alloc };
               } else if constexpr (std::is_same_v<integer_view_t, DT>) {
                 return decimal_t{ integer_view_t{ dval }, integer_view_t{}, alloc };

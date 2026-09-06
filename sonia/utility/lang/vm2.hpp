@@ -660,7 +660,7 @@ struct printer
 
     inline void operator()(identity_type<op::collapse>, ContextT& ctx, size_t address, size_t n) const
     {
-        generic_print(address, "collapse"sv) << ' ' << n << "\t; ["sv;
+        generic_print(address, "collapse"sv) << ' ' << n << "\t; ["sv << std::dec;
         auto sp = ctx.stack_subrange(1, n);
         bool first = true;
         for (auto const& v : sp) {

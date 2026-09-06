@@ -705,10 +705,10 @@ inline blob_result array_blob_result(T(&arr)[N], bool take_ownership = false, bo
 }
 
 [[nodiscard]]
-inline blob_result reference_blob_result(blob_result const& br)
+inline blob_result reference_blob_result(blob_result const& br, bool allocate = true)
 {
     blob_result res = make_blob_result(blob_type::blob_reference, &br, static_cast<uint32_t>(sizeof(blob_result)));
-    blob_result_allocate(&res, true);
+    if (allocate) blob_result_allocate(&res, true);
     return res;
 }
 

@@ -6,6 +6,7 @@
 #include "sonia/config.hpp"
 
 #include <vector>
+#include <deque>
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include "sonia/span.hpp"
@@ -44,7 +45,11 @@ class basic_context
 {
 public:
     using variable_type = VarT;
-    using stack_type = std::vector<variable_type>;
+    // deque, not vector: element addresses must survive growth of the stack - a `blob_reference`
+    // (see annium's context::referify()) stores a pointer straight into a stack slot, and deque
+    // guarantees push_back/pop_back/resize at the ends never invalidates references to the other
+    // elements (unlike vector, which may reallocate the whole buffer). See BUGFIXES.md.
+    using stack_type = std::deque<variable_type>;
 
     inline variable_type const& stack_back(size_t i = 0) const
     {
@@ -642,15 +647,12 @@ struct printer
     inline void operator()(identity_type<op::popn>, ContextT& ctx, size_t address, size_t n) const
     {
         generic_print(address, "popn"sv) << " ["sv << std::dec  << (ctx.stack_size() - n) << " - "sv << (ctx.stack_size() - 1) << "]\t; ["sv;
-        auto sp = ctx.stack_span(0, n);
-        if (!sp.empty()) {
-            ss << sp.front();
-            sp = sp.subspan(1);
-        }
-        while (!sp.empty()) {
-            ss << ", "sv;
-            ss << sp.front();
-            sp = sp.subspan(1);
+        auto sp = ctx.stack_subrange(0, n);
+        bool first = true;
+        for (auto const& v : sp) {
+            if (!first) ss << ", "sv;
+            ss << v;
+            first = false;
         }
         ss << "]\n"sv;
         commit_line();
@@ -659,15 +661,12 @@ struct printer
     inline void operator()(identity_type<op::collapse>, ContextT& ctx, size_t address, size_t n) const
     {
         generic_print(address, "collapse"sv) << ' ' << n << "\t; ["sv;
-        auto sp = ctx.stack_span(1, n);
-        if (!sp.empty()) {
-            ss << sp.front();
-            sp = sp.subspan(1);
-        }
-        while (!sp.empty()) {
-            ss << ", "sv;
-            ss << sp.front();
-            sp = sp.subspan(1);
+        auto sp = ctx.stack_subrange(1, n);
+        bool first = true;
+        for (auto const& v : sp) {
+            if (!first) ss << ", "sv;
+            ss << v;
+            first = false;
         }
         ss << "]\n"sv;
         commit_line();
@@ -812,15 +811,12 @@ struct printer
         }
         ss << "]\t; ["sv;
 
-        auto sp = ctx.stack_span(0, ctx.stack_size() - min_idx);
-        if (!sp.empty()) {
-            ss << sp.front();
-            sp = sp.subspan(1);
-        }
-        while (!sp.empty()) {
-            ss << ", "sv;
-            ss << sp.front();
-            sp = sp.subspan(1);
+        auto sp = ctx.stack_subrange(0, ctx.stack_size() - min_idx);
+        bool first = true;
+        for (auto const& v : sp) {
+            if (!first) ss << ", "sv;
+            ss << v;
+            first = false;
         }
         ss << "]\n"sv;
         commit_line();

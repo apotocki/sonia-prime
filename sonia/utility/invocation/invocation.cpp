@@ -94,6 +94,10 @@ private:
 // allocates only top level array!!!
 void blob_result_allocate(blob_result * b, bool no_inplace)
 {
+    // A raw-scalar reference (see raw_reference_blob_result) must always stay a live alias into
+    // its target's actual storage -- snapshotting it into owned memory here would silently turn it
+    // into a frozen copy, the same class of bug BUGFIXES.md documents for reference_blob_result.
+    if (is_raw_ref(*b)) return;
     if (b->need_unpin) return; // already allocated
     blob_result inplace_buffer;
     void const* ptr;

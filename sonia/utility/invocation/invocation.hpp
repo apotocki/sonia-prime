@@ -133,6 +133,20 @@ struct alignas(8) blob_result
 
 static_assert(sizeof(blob_result) == 16);
 
+// A blob_reference whose payload_ptr points at a raw scalar of type `raw_ref_element_type(b)`
+// (e.g. a packed array/tuple element) instead of at another full blob_result. Encoded via the
+// bp_reserved_used bit + reserved.u8.n0 byte, both otherwise unused for blob_reference (the only
+// other writer of bp_reserved_used is bigint_blob_result, which uses reserved.u8.n1/u16 instead).
+inline bool is_raw_ref(blob_result const& b) noexcept
+{
+    return b.type == blob_type::blob_reference && b.bp_reserved_used;
+}
+
+inline blob_type raw_ref_element_type(blob_result const& b) noexcept
+{
+    return (blob_type)b.data.bp.reserved.u8.n0;
+}
+
 extern "C" {
 
 SONIA_PRIME_API void blob_result_allocate(blob_result *, bool disable_inplace = false);
@@ -308,15 +322,6 @@ inline T* mutable_data_of(blob_result const& val) noexcept
     return const_cast<T*>(data_of<T>(val));
 }
 
-inline blob_result const& unref(blob_result const& val)
-{
-    blob_result const* pval = &val;
-    while (is_ref(pval->type)) {
-        pval = data_of<blob_result>(*pval);
-    }
-    return *pval;
-}
-
 inline bool is_nil(blob_result const& val) noexcept
 {
     return val.type == blob_type::nil;
@@ -405,6 +410,53 @@ inline blob_result make_blob_result(blob_type bt, void const* data = nullptr, ui
 inline blob_result nil_blob_result()
 {
     return make_blob_result(blob_type::nil);
+}
+
+// Pointer-chase through blob_reference levels that point at another full blob_result, stopping at
+// a non-reference OR at a raw-scalar reference (there's nothing further to chase there -- the
+// payload isn't a blob_result at all). Used where the caller needs the ADDRESS of a persistent
+// blob_result (write-through, taking a further reference into it) rather than a materialized value.
+inline blob_result const* unref_ptr(blob_result const& val) noexcept
+{
+    blob_result const* p = &val;
+    while (p->type == blob_type::blob_reference && !p->bp_reserved_used) {
+        p = data_of<blob_result>(*p);
+    }
+    return p;
+}
+
+// Materializes the scalar a raw-scalar reference points at into a fresh, independent blob_result.
+inline blob_result load_raw_ref(blob_result const& b)
+{
+    using namespace std::string_view_literals;
+    switch (raw_ref_element_type(b)) {
+    case blob_type::boolean: return particular_blob_result(*data_of<uint8_t>(b) != 0);
+    case blob_type::c8:      return particular_blob_result(*data_of<char>(b));
+    case blob_type::i8:      return particular_blob_result(*data_of<int8_t>(b));
+    case blob_type::ui8:     return particular_blob_result(*data_of<uint8_t>(b));
+    case blob_type::i16:     return particular_blob_result(*data_of<int16_t>(b));
+    case blob_type::ui16:    return particular_blob_result(*data_of<uint16_t>(b));
+    case blob_type::i32:     return particular_blob_result(*data_of<int32_t>(b));
+    case blob_type::ui32:    return particular_blob_result(*data_of<uint32_t>(b));
+    case blob_type::i64:     return particular_blob_result(*data_of<int64_t>(b));
+    case blob_type::ui64:    return particular_blob_result(*data_of<uint64_t>(b));
+    case blob_type::flt16:   return particular_blob_result(*data_of<numetron::float16>(b));
+    case blob_type::flt32:   return particular_blob_result(*data_of<float_t>(b));
+    case blob_type::flt64:   return particular_blob_result(*data_of<double_t>(b));
+    default:
+        throw std::runtime_error((std::ostringstream() << "unsupported raw reference element type: "sv << std::hex << (int)raw_ref_element_type(b)).str());
+    }
+}
+
+// Fully resolves a (possibly chained) blob_reference to its VALUE, by value. Returning by value
+// (rather than the alias `blob_result const&` this used to return) is required to support a
+// raw-scalar target, which has no existing blob_result object to alias -- it must be materialized.
+// Existing call sites written as `blob_result const& x = unref(y);` remain correct: binding a
+// const reference directly to this prvalue extends its lifetime to that of the reference.
+inline blob_result unref(blob_result const& val)
+{
+    blob_result const* p = unref_ptr(val);
+    return is_raw_ref(*p) ? load_raw_ref(*p) : *p;
 }
 
 inline blob_result function_blob_result(sonia::string_view value)
@@ -712,6 +764,19 @@ inline blob_result reference_blob_result(blob_result const& br, bool allocate = 
     return res;
 }
 
+// A blob_reference pointing directly at a raw scalar of type `elem_type` (e.g. a packed
+// array/tuple element), rather than at another blob_result. Always a live alias -- never
+// allocate/pin this: an interior pointer isn't a valid blob_manager key (keyed on buffer start),
+// and blob_result_allocate() refuses raw refs outright (see invocation.cpp).
+[[nodiscard]]
+inline blob_result raw_reference_blob_result(void const* raw_ptr, blob_type elem_type, uint32_t elem_size)
+{
+    blob_result res = make_blob_result(blob_type::blob_reference, raw_ptr, elem_size);
+    res.bp_reserved_used = 1;
+    res.data.bp.reserved.u8.n0 = (uint8_t)elem_type;
+    return res;
+}
+
 template <typename FirstT, typename SecondT>
 inline blob_result pair_blob_result(std::pair<FirstT, SecondT> const& value)
 {
@@ -850,6 +915,10 @@ inline auto blob_type_dispatch(blob_result const& b, FT&& ftor)
     case blob_type::nil:
         return ftor(nullptr);
     case blob_type::blob_reference:
+        if (is_raw_ref(b)) {
+            blob_result v = load_raw_ref(b);
+            return blob_type_dispatch(v, std::forward<FT>(ftor));
+        }
         return blob_type_dispatch(*data_of<blob_result>(b), std::forward<FT>(ftor));
     case blob_type::boolean:
         return ftor(!!b.data.bp.ui8value);
@@ -909,6 +978,8 @@ auto blob_type_selector(blob_result const& b, FT&& ftor)
     case blob_type::nil:
         return ftor(std::type_identity<std::nullptr_t>{}, b);
     case blob_type::blob_reference:
+        // NB: assumes b is a blob_result-target reference (unhandled for a raw-scalar reference --
+        // callers are expected to have already resolved through unref()/as<T>() by this point).
         return ftor(std::type_identity<blob_result>{}, b);
     case blob_type::tuple:
         return ftor(std::type_identity<blob_result>{}, b);
@@ -982,6 +1053,9 @@ inline std::basic_ostream<Elem, Traits>& print_type(std::basic_ostream<Elem, Tra
     } else if (b.type == blob_type::tuple) {
         return os << "tuple"sv;
     } else if (b.type == blob_type::blob_reference) {
+        if (is_raw_ref(b)) {
+            return print_type(os << '&', make_blob_result(raw_ref_element_type(b)));
+        }
         return print_type(os << '&', *data_of<blob_result>(b));
     }
     if (is_array(b)) {
@@ -1458,7 +1532,16 @@ private:
 template <typename T>
 inline auto as(blob_result const& val) -> decltype(from_blob<T>{}(std::declval<blob_result>()))
 {
-    return from_blob<T>{}(unref(val));
+    // NOT `from_blob<T>{}(unref(val))`: for a non-raw target, from_blob<span<...>>/<string_view>
+    // return pointers/views INTO the blob_result it's given (data_of<>()) -- those must alias the
+    // real, persistent target, not a by-value copy. Only the raw-scalar case needs (and gets) a
+    // materialized temporary, and only scalar from_blob specializations are ever exercised on it.
+    blob_result const* p = unref_ptr(val);
+    if (is_raw_ref(*p)) {
+        blob_result tmp = load_raw_ref(*p);
+        return from_blob<T>{}(tmp);
+    }
+    return from_blob<T>{}(*p);
 }
 
 template <typename Elem, typename Traits>
@@ -1483,6 +1566,9 @@ std::basic_ostream<Elem, Traits>& print_to_stream(std::basic_ostream<Elem, Trait
         }
     }
     else if (b.type == blob_type::blob_reference) {
+        if (is_raw_ref(b)) {
+            return os << '&' << load_raw_ref(b);
+        }
         return os << '&' << *data_of<blob_result>(b);
     }
     if (is_array(b) && !contains_string(b)) {
@@ -1588,7 +1674,7 @@ std::tuple<Ts...> from_blobs(std::span<const blob_result> vals)
 
 inline bool operator== (blob_result const& lhs, blob_result const& rhs) noexcept
 {
-    return blob_type_dispatch(unref(lhs), [&rhs = unref(rhs)]<typename DT>(DT v)->bool {
+    return blob_type_dispatch(unref(lhs), [rhs = unref(rhs)]<typename DT>(DT v)->bool {
         if constexpr (std::is_same_v<nullptr_t, DT>) { return is_nil(rhs); }
         else if constexpr (std::is_same_v<bool, DT>) { return rhs.type == blob_type::boolean && v == !!rhs.data.bp.i8value; }
         else if constexpr (is_integral_not_bool_v<DT>) { return ::is_integral(rhs.type) && from_blob<numetron::basic_integer_view<invocation_bigint_limb_type>>{}(rhs) == v; }
@@ -1607,7 +1693,7 @@ struct blob_result_strict_equal_to
 {
     bool operator()(blob_result const& lhs, blob_result const& rhs) const noexcept
     {
-        return lhs.type == rhs.type && blob_type_dispatch(unref(lhs), [&rhs = unref(rhs)]<typename LDT>(LDT const& lv)->bool {
+        return lhs.type == rhs.type && blob_type_dispatch(unref(lhs), [rhs = unref(rhs)]<typename LDT>(LDT const& lv)->bool {
             return blob_type_dispatch(rhs, [&lv]<typename RDT>(RDT const& rv)->bool {
                 (void)lv; (void)rv;
                 if constexpr (std::is_same_v<LDT, RDT>) {
@@ -1634,6 +1720,32 @@ struct blob_result_strict_equal_to
     }
 };
 
+// Write-through for a raw-scalar reference: converts `value` to the reference's own element type
+// and writes it directly into the referenced address. No pin/unpin -- a raw scalar slot (a packed
+// array/tuple element) is never independently refcounted; its owning buffer's lifetime is managed
+// elsewhere (see raw_reference_blob_result's comment).
+inline void write_through_raw_ref(blob_result& dest, blob_result const& value)
+{
+    void* ptr = const_cast<void*>(dest.data.bp.payload_ptr);
+    switch (raw_ref_element_type(dest)) {
+    case blob_type::boolean: *reinterpret_cast<uint8_t*>(ptr) = as<uint8_t>(value); break;
+    case blob_type::c8:      *reinterpret_cast<char*>(ptr) = as<char>(value); break;
+    case blob_type::i8:      *reinterpret_cast<int8_t*>(ptr) = as<int8_t>(value); break;
+    case blob_type::ui8:     *reinterpret_cast<uint8_t*>(ptr) = as<uint8_t>(value); break;
+    case blob_type::i16:     *reinterpret_cast<int16_t*>(ptr) = as<int16_t>(value); break;
+    case blob_type::ui16:    *reinterpret_cast<uint16_t*>(ptr) = as<uint16_t>(value); break;
+    case blob_type::i32:     *reinterpret_cast<int32_t*>(ptr) = as<int32_t>(value); break;
+    case blob_type::ui32:    *reinterpret_cast<uint32_t*>(ptr) = as<uint32_t>(value); break;
+    case blob_type::i64:     *reinterpret_cast<int64_t*>(ptr) = as<int64_t>(value); break;
+    case blob_type::ui64:    *reinterpret_cast<uint64_t*>(ptr) = as<uint64_t>(value); break;
+    case blob_type::flt16:   *reinterpret_cast<numetron::float16*>(ptr) = as<numetron::float16>(value); break;
+    case blob_type::flt32:   *reinterpret_cast<float_t*>(ptr) = as<float_t>(value); break;
+    case blob_type::flt64:   *reinterpret_cast<double_t*>(ptr) = as<double_t>(value); break;
+    default:
+        THROW_INTERNAL_ERROR("write_through_raw_ref: unsupported element type");
+    }
+}
+
 namespace sonia {
 
 class smart_blob : blob_result
@@ -1657,14 +1769,12 @@ public:
 
     smart_blob& operator= (smart_blob const& rhs)
     {
-        if (is_ref(type) && this != &rhs) {
+        if (::is_raw_ref(*this) && this != &rhs) {
+            write_through_raw_ref(*this, unref(*rhs));
+        } else if (is_ref(type) && this != &rhs) {
             blob_result * actual_value = mutable_data_of<blob_result>(*this);
             blob_result_unpin(actual_value);
-            if (is_ref(rhs->type)) {
-                *actual_value = *rhs.data_of<blob_result>();
-            } else {
-                *actual_value = *rhs;
-            }
+            *actual_value = unref(*rhs);
             blob_result_pin(actual_value);
         } else {
             smart_blob tmp{ rhs };
@@ -1675,11 +1785,13 @@ public:
 
     smart_blob& operator= (smart_blob && rhs)
     {
-        if (is_ref(type) && this != &rhs) {
+        if (::is_raw_ref(*this) && this != &rhs) {
+            write_through_raw_ref(*this, unref(*rhs));
+        } else if (is_ref(type) && this != &rhs) {
             blob_result* actual_value = mutable_data_of<blob_result>(*this);
             blob_result_unpin(actual_value);
             if (is_ref(rhs->type)) {
-                *actual_value = *rhs.data_of<blob_result>();
+                *actual_value = unref(*rhs);
                 blob_result_pin(actual_value);
                 blob_result_unpin(&rhs.get());
             } else {

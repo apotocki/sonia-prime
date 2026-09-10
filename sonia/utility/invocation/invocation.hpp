@@ -459,6 +459,26 @@ inline blob_result unref(blob_result const& val)
     return is_raw_ref(*p) ? load_raw_ref(*p) : *p;
 }
 
+// Resolves a blob_reference by EXACTLY one level -- unlike unref()/unref_ptr(), which chase
+// through however many chained blob_reference levels there are down to a non-reference. A
+// non-reference `val` passes through unchanged (matching unref()'s own behavior for that case,
+// which is what makes replacing unref() with this at a call site safe wherever the chain was
+// never more than one level deep to begin with). Needed wherever a caller must stop at "the
+// value one level in" and leave it alone even if THAT value is itself a blob_reference: a chain
+// of blob_reference is a legitimate value shape on its own (a reference to a reference), not
+// something this helper should keep chasing through on the caller's behalf -- a caller that
+// actually wants the fully-resolved leaf value still has unref() for that. Used by
+// smart_blob::operator='s write-through branches below, which used to call the fully-chasing
+// unref() here and, for a chained blob_reference argument, would silently collapse it straight
+// to its innermost scalar and store that where a blob_reference was expected -- a corrupt
+// blob_result whose type tag no longer matched its bytes, and a dereferenced-garbage-pointer
+// crash for whatever later read expected a real reference there.
+inline blob_result deref_one_level(blob_result const& val) noexcept
+{
+    if (val.type != blob_type::blob_reference) return val;
+    return is_raw_ref(val) ? load_raw_ref(val) : *data_of<blob_result>(val);
+}
+
 inline blob_result function_blob_result(sonia::string_view value)
 {
     blob_result result = make_blob_result(blob_type::function, value.data());
@@ -1774,7 +1794,13 @@ public:
         } else if (is_ref(type) && this != &rhs) {
             blob_result * actual_value = mutable_data_of<blob_result>(*this);
             blob_result_unpin(actual_value);
-            *actual_value = unref(*rhs);
+            // NOT unref(*rhs): rhs already IS the value being written through *this's single
+            // reference level -- copy it verbatim. unref() used to fully resolve rhs first, which
+            // is only equivalent to this when rhs isn't itself a reference; if it IS (a chained
+            // blob_reference), it's a genuine reference VALUE that belongs at actual_value as-is,
+            // not the thing it points at -- resolving it first collapsed straight to the innermost
+            // scalar and stored THAT, corrupting actual_value's own type tag.
+            *actual_value = *rhs;
             blob_result_pin(actual_value);
         } else {
             smart_blob tmp{ rhs };
@@ -1788,15 +1814,18 @@ public:
         if (::is_raw_ref(*this) && this != &rhs) {
             write_through_raw_ref(*this, unref(*rhs));
         } else if (is_ref(type) && this != &rhs) {
+            // Plain transfer, regardless of whether rhs happens to itself be ref-typed: rhs is a
+            // moved-from temporary here, so stealing its bytes (and whatever pin they carry)
+            // wholesale into actual_value is correct either way -- rhs is whatever value its own
+            // blob already represents, a chained blob_reference included, and was never something
+            // to look THROUGH to begin with. This used to branch on is_ref(rhs->type) and call
+            // unref(*rhs) (full resolve) in that case -- correct only when rhs was never itself a
+            // reference; for a chained blob_reference it collapsed rhs straight to its innermost
+            // scalar and stored THAT, corrupting actual_value's own type tag -- a corrupt-pointer /
+            // access-violation bug for the next read through actual_value, not just a wrong value.
             blob_result* actual_value = mutable_data_of<blob_result>(*this);
             blob_result_unpin(actual_value);
-            if (is_ref(rhs->type)) {
-                *actual_value = unref(*rhs);
-                blob_result_pin(actual_value);
-                blob_result_unpin(&rhs.get());
-            } else {
-                *actual_value = *rhs;
-            }
+            *actual_value = *rhs;
             reset(*rhs);
         } else {
             smart_blob tmp{ std::move(rhs) };

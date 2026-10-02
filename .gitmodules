@@ -1,6 +1,8 @@
 [submodule "modules/numetron"]
 	path = modules/numetron
 	url = https://github.com/apotocki/numetron
+	update = none
 [submodule "modules/dataforge"]
 	path = modules/dataforge
 	url = https://github.com/apotocki/dataforge.git
+	update = none

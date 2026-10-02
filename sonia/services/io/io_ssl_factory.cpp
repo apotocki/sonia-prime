@@ -63,19 +63,8 @@ void openssl_context::use(shared_ptr<openssl_key> pk)
         throw exception("can't use pk on context, error: %1%"_fmt % errstr);
     };
 
-    EVP_PKEY** pkval = boost::get<EVP_PKEY*>(&pk->key);
-    if (pkval) {
-        if (SSL_CTX_use_PrivateKey(ctx, *pkval) == 1) return;
-        errh();
-    }
-    
-    RSA** rsapkval = boost::get<RSA*>(&pk->key);
-    if (rsapkval) {
-        if (SSL_CTX_use_RSAPrivateKey(ctx, *rsapkval) == 1) return;
-        errh();
-    }
-    
-    THROW_INTERNAL_ERROR("unknown private key type");
+    if (SSL_CTX_use_PrivateKey(ctx, pk->key) == 1) return;
+    errh();
 }
 
 openssl_x509::openssl_x509(array_view<char> data, x509_format_type ft)
@@ -115,31 +104,6 @@ openssl_x509::~openssl_x509()
     BIO_free_all(bio);
 }
 
-struct key_error_visitor
-{
-    template <typename T>
-    void operator()(T* p) const
-    {
-        if (!p) {
-            const auto errstr = get_ssl_error();
-            throw exception("can't read a key, error: %1%"_fmt % errstr);
-        }
-    }
-};
-
-struct key_free_visitor
-{
-    void operator()(RSA* p) const
-    {
-        RSA_free(p);
-    }
-
-    void operator()(EVP_PKEY* p) const
-    {
-        EVP_PKEY_free(p);
-    }
-};
-
 openssl_key::openssl_key(array_view<char> data, key_format_type ft, optional<std::string> const& password)
     : bio(BIO_new(BIO_s_mem()))
 {
@@ -157,8 +121,6 @@ openssl_key::openssl_key(array_view<char> data, key_format_type ft, optional<std
 
     switch (ft) {
         case key_format_type::PRIVATE_RSA:
-            key = PEM_read_bio_RSAPrivateKey(bio, NULL, 0, passwd);
-            break;
         case key_format_type::PRIVATE_EVP:
             key = PEM_read_bio_PrivateKey(bio, NULL, 0, passwd);
             break;
@@ -166,14 +128,17 @@ openssl_key::openssl_key(array_view<char> data, key_format_type ft, optional<std
             THROW_INTERNAL_ERROR("undefined key format type: %1%"_fmt % (int)ft);
     }
 
-    boost::apply_visitor(key_error_visitor(), key);
+    if (!key) {
+        const auto errstr = get_ssl_error();
+        throw exception("can't read a key, error: %1%"_fmt % errstr);
+    }
     // unpin
     biopin = nullptr;
 }
 
 openssl_key::~openssl_key()
 {
-    boost::apply_visitor(key_free_visitor(), key);
+    EVP_PKEY_free(key);
     BIO_free_all(bio);
 }
 

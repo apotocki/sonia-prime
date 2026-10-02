@@ -1,0 +1,26 @@
+{
+  "name": "dataforge",
+  "version": "0.1.0",
+  "description": "Annium programming language",
+  "dependencies": [
+    "boost-crc",
+    "boost-random",
+    "boost-log",
+    "boost-thread",
+    "boost-format",
+    "boost-coroutine2",
+    "boost-program-options",
+    "boost-bimap",
+    "boost-stacktrace",
+    "boost-test",
+    "boost-dynamic-bitset",
+    "boost-container",
+    "boost-callable-traits",
+    "zlib",
+    "bzip2",
+    "liblzma",
+    "icu4c",
+    "lua",
+    "openssl"
+  ]
+}

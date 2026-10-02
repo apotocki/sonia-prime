@@ -1,0 +1,12 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Folder Name="/Apps/">
+    <Project Path="projects/vs/angel/angel.vcxproj" Id="8e258ba1-b1f6-4b8c-a09f-4f7e2acce4a6" />
+  </Folder>
+  <Project Path="modules/numetron/msvc/numetron.vcxproj" Id="b3da4b02-589c-4f86-b8be-4cccd9faa17b" />
+  <Project Path="projects/vs/sonia-prime-lib/sonia-prime-lib.vcxproj" Id="c98dcaaf-ba4a-4500-b111-cf0773eb0a38" />
+  <Project Path="projects/vs/sonia-prime/sonia-prime.vcxproj" Id="aa72585c-37c3-430c-8e09-634f201bd396" />
+</Solution>

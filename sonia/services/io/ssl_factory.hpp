@@ -40,7 +40,7 @@ struct openssl_x509
 struct openssl_key
 {
     BIO *bio;
-    boost::variant<EVP_PKEY*, RSA*> key;
+    EVP_PKEY *key;
 
     openssl_key(array_view<char> data, key_format_type, optional<std::string> const& password);
     openssl_key(openssl_key const&) = delete;

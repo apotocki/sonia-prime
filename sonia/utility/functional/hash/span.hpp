@@ -5,6 +5,7 @@
 #ifndef SONIA_SPAN_DECLARED
 #   error do not include directly, use "sonia/span.hpp"
 #endif
+#include <cstdint>
 #include "sonia/utility/functional/hash.hpp"
 
 namespace sonia {

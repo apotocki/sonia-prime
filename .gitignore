@@ -2,6 +2,7 @@
 /**/Debug
 /**/x64
 /**/.vs
+/build
 /projects/vs/**/*.user
 /vcpkg_installed
 /Directory.Build.local.props

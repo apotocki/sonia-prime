@@ -14,7 +14,7 @@ target_link_libraries(angel PRIVATE
     "$<LINK_GROUP:RESCAN,sonia-prime,sonia-prime-lib,numetron>"
     ${OPENSSL} ${LUALIB} ${LIBLZMA} ${BZLIB} ${ZLIB}
     Boost::log_setup Boost::log Boost::serialization Boost::filesystem Boost::thread
-    Boost::program_options Boost::context Boost::regex Boost::random Boost::system Boost::chrono
+    Boost::program_options Boost::context Boost::regex Boost::random Boost::chrono
     Boost::atomic Boost::date_time
     ${PLATFORM_LIBS})
 

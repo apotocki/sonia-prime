@@ -505,13 +505,21 @@ inline blob_result object_blob_result(ArgsT&& ... args)
 template <typename T>
 inline blob_result object_blob_result(sonia::shared_ptr<T> object)
 {
-    return object_blob_result<sonia::invocation::wrapper_object<sonia::shared_ptr<T>>>(std::move(object));
+    if constexpr (std::is_base_of_v<sonia::invocation::invocable, T>) {
+        return object_blob_result<sonia::invocation::wrapper_object<sonia::shared_ptr<sonia::invocation::invocable>>>(std::move(object));
+    } else {
+        return object_blob_result<sonia::invocation::wrapper_object<sonia::shared_ptr<T>>>(std::move(object));
+    }
 }
 
 template <typename T>
 inline blob_result object_blob_result(sonia::weak_ptr<T> object)
 {
-    return object_blob_result<sonia::invocation::wrapper_object<sonia::weak_ptr<T>>>(std::move(object));
+    if constexpr (std::is_base_of_v<sonia::invocation::invocable, T>) {
+        return object_blob_result<sonia::invocation::wrapper_object<sonia::weak_ptr<sonia::invocation::invocable>>>(std::move(object));
+    } else {
+        return object_blob_result<sonia::invocation::wrapper_object<sonia::weak_ptr<T>>>(std::move(object));
+    }
 }
 
 inline blob_result bool_blob_result(bool value)

@@ -24,9 +24,6 @@ public:
 	[[nodiscard]] static blob_result decode(JNIEnv*, jobject);
 
 private:
-	jclass invocable_registry_cls_;
-	jclass callable_registry_cls_;
-
 	jmethodID boolean_booleanValue_;
 	jmethodID byte_byteValue_;
 	jmethodID short_shortValue_;
@@ -34,9 +31,9 @@ private:
 	jmethodID long_longValue_;
 	jmethodID float_floatValue_;
 	jmethodID double_doubleValue_;
-	jmethodID get_invocable_id_;
-	jmethodID get_callable_id_;
 	jmethodID get_native_handle_;
+	jmethodID throwable_toString_;
+	jfieldID weak_invocable_target_fld_;
 
 	blob_result do_decode(JNIEnv*, jobject) const;
 

@@ -25,16 +25,11 @@ public:
 
     jclass obj_cls_;
 	jclass invocable_cls_;
-	jclass invocable_registry_cls_;
-	jclass callable_registry_cls_;
 	jclass native_invocable_cls_;
 	jclass native_callable_cls_;
 
-	jmethodID get_invocable_;
-	jmethodID get_callable_;
 	jmethodID native_invocable_ctor_;
 	jmethodID native_callable_ctor_;
-	jmethodID debug_method_;
 
 private:
 	[[nodiscard]] jobject do_encode(JNIEnv*, blob_result const&) const;

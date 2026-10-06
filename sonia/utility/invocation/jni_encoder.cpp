@@ -111,8 +111,8 @@ jobject jni_encoder::encode_invocable(jni_env& env, shared_ptr<invocable> const&
 {
     if (!obj) return nullptr;
     if (auto const* proxy = dynamic_cast<jni_invocable_proxy const*>(obj.get())) {
-        // a Java object exposed to native earlier: hand back the original
-        return env.invoke<jobject>(invocable_registry_cls_, nullptr, get_invocable_, proxy->java_id()).detach();
+        // a Java object exposed to native earlier: hand back the original (null if a weakly referenced one is collected)
+        return env->NewLocalRef(proxy->java_object());
     }
     jlong handle = make_native_handle(obj);
     jobject result = env->NewObject(native_invocable_cls_, native_invocable_ctor_, handle);
@@ -129,7 +129,7 @@ jobject jni_encoder::encode_callable(jni_env& env, shared_ptr<callable> const& o
     if (!obj) return nullptr;
     if (auto const* proxy = dynamic_cast<jni_callable_proxy const*>(obj.get())) {
         // a Java object exposed to native earlier: hand back the original
-        return env.invoke<jobject>(callable_registry_cls_, nullptr, get_callable_, proxy->java_id()).detach();
+        return env->NewLocalRef(proxy->java_object());
     }
     jlong handle = make_native_handle(obj);
     jobject result = env->NewObject(native_callable_cls_, native_callable_ctor_, handle);
@@ -209,17 +209,12 @@ jni_encoder::jni_encoder(JNIEnv* penv)
     jni_invoker const& inv = *as_singleton<jni_invoker>(penv);
     obj_cls_ = *inv.obj_cls;
     invocable_cls_ = *inv.invocable_cls;
-    invocable_registry_cls_ = *inv.invocable_registry_cls;
-    callable_registry_cls_ = *inv.callable_registry_cls;
     native_invocable_cls_ = *inv.native_invocable_cls;
     native_callable_cls_ = *inv.native_callable_cls;
 
     jni_env env{ penv };
-    get_invocable_ = env.get_static_jmethod(invocable_registry_cls_, "get", "(I)Lcom/sonia/invocation/Invocable;");
-    get_callable_ = env.get_static_jmethod(callable_registry_cls_, "get", "(I)Lcom/sonia/invocation/Callable;");
     native_invocable_ctor_ = env.get_jmethod(native_invocable_cls_, "<init>", "(J)V");
     native_callable_ctor_ = env.get_jmethod(native_callable_cls_, "<init>", "(J)V");
-    debug_method_ = env.get_static_jmethod(invocable_registry_cls_, "debug", "(Ljava/lang/Object;)V");
 }
 
 jobject jni_encoder::encode(JNIEnv* penv, blob_result const& br)

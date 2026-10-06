@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <atomic>
 #include <unordered_map>
 
 #include "sonia/java/jni_ref.hpp"
@@ -15,18 +16,26 @@
 
 namespace sonia::invocation {
 
+// Calls into Java Invocable/Callable objects referenced by JNI global (or weak global) references,
+// see jni_invocable_proxy/jni_callable_proxy. Calls made on a thread that is not attached to the JVM
+// are marshalled to the Java callback thread (com.sonia.invocation.CallbackBean.callbackProc).
 class jni_invoker : public singleton
 {
     JavaVM* jvm;
-    jmethodID invoke_;
-    jmethodID invoke_set_;
-    jmethodID invoke_get_;
-    jmethodID call_invoke_;
+    jmethodID invocable_invoke_;
+    jmethodID invocable_set_property_;
+    jmethodID invocable_get_property_;
+    jmethodID invocable_has_method_;
+    jmethodID callable_invoke_;
     // com.sonia.invocation.CallbackBean fields
     jfieldID cbcl_id_fld;
-    jfieldID cbcl_invId_fld;
+    jfieldID cbcl_target_fld;
     jfieldID cbcl_name_fld;
     jfieldID cbcl_arguments_fld;
+
+    // a warning is logged each time the number of live references held by proxies crosses a multiple of this value
+    static constexpr int live_refs_warning_step = 5000;
+    std::atomic<int> live_refs_{ 0 };
 
 	struct sync_t
 	{
@@ -44,7 +53,8 @@ class jni_invoker : public singleton
 
     struct caller_bean
     {
-        jint invid;
+        jobject target; // global or weak global reference, owned by the calling proxy
+        bool is_callable;
         string_view name;
         sonia::span<const blob_result> args;
         shared_ptr<sync_t> sync;
@@ -57,22 +67,29 @@ class jni_invoker : public singleton
     std::unordered_map<jlong, caller_bean> results;
     threads::mutex results_mtx;
 
+    smart_blob enqueue(caller_bean&&);
+
 public:
     unique_jni_ref<jclass, global_ref_kind> obj_cls;
+    unique_jni_ref<jclass, global_ref_kind> throwable_cls;
     unique_jni_ref<jclass, global_ref_kind> invocable_cls;
     unique_jni_ref<jclass, global_ref_kind> callable_cls;
+    unique_jni_ref<jclass, global_ref_kind> weak_invocable_cls;
     unique_jni_ref<jclass, global_ref_kind> native_invocable_cls;
     unique_jni_ref<jclass, global_ref_kind> native_callable_cls;
-    unique_jni_ref<jclass, global_ref_kind> invocable_registry_cls;
-    unique_jni_ref<jclass, global_ref_kind> callable_registry_cls;
     unique_jni_ref<jclass, global_ref_kind> cbcl;
 
     explicit jni_invoker(JNIEnv* penv);
 
-    smart_blob invoke(jint invid, string_view name, sonia::span<const blob_result> args);
-    smart_blob call_invoke(jint callid, sonia::span<const blob_result> args);
-    void set_property(jint invid, string_view name, blob_result const& value);
-    smart_blob get_property(jint invid, string_view name);
+    // reference management for proxies; delete_ref may be called on any thread
+    jobject new_ref(JNIEnv* penv, jobject obj, bool weak);
+    void delete_ref(jobject ref, bool weak) noexcept;
+
+    smart_blob invoke(jobject target, string_view name, sonia::span<const blob_result> args);
+    smart_blob call_invoke(jobject target, sonia::span<const blob_result> args);
+    void set_property(jobject target, string_view name, blob_result const& value);
+    smart_blob get_property(jobject target, string_view name);
+    bool has_method(jobject target, string_view name);
 
     void poll(JNIEnv* penv, jobject cb) noexcept;
     void push_result(JNIEnv* penv, jlong cbid, jobject result) noexcept;

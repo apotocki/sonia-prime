@@ -36,6 +36,7 @@ private:
 	jmethodID double_doubleValue_;
 	jmethodID get_invocable_id_;
 	jmethodID get_callable_id_;
+	jmethodID get_native_handle_;
 
 	blob_result do_decode(JNIEnv*, jobject) const;
 

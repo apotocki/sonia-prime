@@ -6,17 +6,13 @@
 #include "jni_encoder.hpp"
 #include "jni_decoder.hpp"
 #include "jni_invoker.hpp"
+#include "jni_proxy.hpp"
+#include "jni_native_handle.hpp"
 
 #include "sonia/small_vector.hpp"
 
 #include "sonia/java/jni_env.hpp"
 #include "sonia/java/jni_ref.hpp"
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/mem_fun.hpp>
-
 
 namespace sonia::invocation {
 
@@ -91,15 +87,10 @@ jobject create_array(std::type_identity<jobject>, jni_encoder const& enc, jni_en
         wrapper_object_t const* begin_ptr = data_of<wrapper_object_t>(b);
         wrapper_object_t const* end_ptr = begin_ptr + sz;
         for (jsize index = 0; begin_ptr != end_ptr; ++begin_ptr, ++index) {
-            smart_blob java_id_res;
-            if (!begin_ptr->value->try_get_property("java_id"sv, java_id_res)) {
-                THROW_INTERNAL_ERROR("jni_encoder::encode: can't get java_id property of object %1%"_fmt % begin_ptr->value.get());
-            }
-            jint java_id = java_id_res.as<jint>();
-            //GLOBAL_LOG_INFO() << "jni_encoder::encode: encoding object array element, java_id: " << java_id;
-            auto arg = env.invoke<jobject>(enc.invocable_registry_cls_, nullptr, enc.get_invocable_, java_id);
+            jobject arg = enc.encode_invocable(env, begin_ptr->value);
             if (arg) {
-                env->SetObjectArrayElement(*jobjarr, index, *arg);
+                env->SetObjectArrayElement(*jobjarr, index, arg);
+                env->DeleteLocalRef(arg);
             }
         }
         //env.invoke<void>(enc.invocable_registry_cls_, nullptr, enc.debug_method_, *jobjarr);
@@ -116,70 +107,44 @@ jobject create_array(std::type_identity<void>, jni_encoder const&, jni_env& env,
     THROW_NOT_IMPLEMENTED_ERROR("jni_encoder::encode: can't encode array %1%"_fmt % b);
 }
 
-class callable_registry : public singleton
+jobject jni_encoder::encode_invocable(jni_env& env, shared_ptr<invocable> const& obj) const
 {
-    struct entry
-    {
-        shared_ptr<callable> object;
-        int32_t id;
-        inline callable const* get_pointer() const noexcept { return object.get(); }
-    };
-
-    using set_t = boost::multi_index::multi_index_container<
-        entry,
-        boost::multi_index::indexed_by<
-            boost::multi_index::hashed_unique<boost::multi_index::member<entry, int32_t, &entry::id>>,
-            boost::multi_index::hashed_unique<boost::multi_index::const_mem_fun<entry, callable const*, &entry::get_pointer>>
-        >
-    >;
-
-    set_t cache;
-    std::atomic<int32_t> next_id{ -1 };
-    mutable threads::mutex cache_mutex;
-
-public:
-    uint32_t register_callable(shared_ptr<callable> obj)
-    {
-        std::lock_guard lock(cache_mutex);
-        auto& id_index = cache.template get<0>();
-        auto& ptr_index = cache.template get<1>();
-        auto it = ptr_index.find(obj.get());
-        if (it != ptr_index.end()) {
-            return it->id;
-        }
-        int32_t id = next_id.fetch_sub(1, std::memory_order_relaxed);
-        cache.insert({ std::move(obj), id });
-        return id;
+    if (!obj) return nullptr;
+    if (auto const* proxy = dynamic_cast<jni_invocable_proxy const*>(obj.get())) {
+        // a Java object exposed to native earlier: hand back the original
+        return env.invoke<jobject>(invocable_registry_cls_, nullptr, get_invocable_, proxy->java_id()).detach();
     }
-
-    shared_ptr<callable> get_callable(int32_t id) const
-    {
-        std::lock_guard lock(cache_mutex);
-        auto& id_index = cache.template get<0>();
-        auto it = id_index.find(id);
-        if (it != id_index.end()) {
-            return it->object;
-        }
-        return {};
+    jlong handle = make_native_handle(obj);
+    jobject result = env->NewObject(native_invocable_cls_, native_invocable_ctor_, handle);
+    if (!result) {
+        free_native_handle<invocable>(handle);
+        env.check_exception();
+        THROW_INTERNAL_ERROR("jni_encoder: can't create NativeInvocable");
     }
+    return result;
+}
 
-    void free_callable(uint32_t id)
-    {
-        std::lock_guard lock(cache_mutex);
-        auto& id_index = cache.template get<0>();
-        auto it = id_index.find(id);
-        if (it != id_index.end()) {
-            id_index.erase(it);
-        }
+jobject jni_encoder::encode_callable(jni_env& env, shared_ptr<callable> const& obj) const
+{
+    if (!obj) return nullptr;
+    if (auto const* proxy = dynamic_cast<jni_callable_proxy const*>(obj.get())) {
+        // a Java object exposed to native earlier: hand back the original
+        return env.invoke<jobject>(callable_registry_cls_, nullptr, get_callable_, proxy->java_id()).detach();
     }
-};
-
-
+    jlong handle = make_native_handle(obj);
+    jobject result = env->NewObject(native_callable_cls_, native_callable_ctor_, handle);
+    if (!result) {
+        free_native_handle<callable>(handle);
+        env.check_exception();
+        THROW_INTERNAL_ERROR("jni_encoder: can't create NativeCallable");
+    }
+    return result;
+}
 
 jobject jni_encoder::do_encode(JNIEnv* penv, blob_result const& b) const
 {
     if (is_nil(b)) return nullptr;
-    
+
     jni_env env{ penv };
     if (b.type == blob_type::object) { // object is considered as an array type (array of bytes that represents an object)
         using wrapper_object_t = wrapper_object<shared_ptr<invocable>>;
@@ -187,17 +152,9 @@ jobject jni_encoder::do_encode(JNIEnv* penv, blob_result const& b) const
 
         invocation::object & dyn_object = as<invocation::object>(b);
         if (wrapper_object_t * pwrinv = dynamic_cast<wrapper_object_t*>(&dyn_object)) {
-            shared_ptr<invocable> invk = pwrinv->value;
-            smart_blob java_id_res;
-            if (!invk->try_get_property("java_id", java_id_res)) {
-                GLOBAL_LOG_ERROR() << "jni_encoder::encode: failed to get java_id property of object invokable" << b;
-                return nullptr;
-            }
-            return env.invoke<jobject>(invocable_registry_cls_, nullptr, get_invocable_, java_id_res.as<jint>()).detach();
+            return encode_invocable(env, pwrinv->value);
         } else if (wrapper_callable_t* pwrcall = dynamic_cast<wrapper_callable_t*>(&dyn_object)) {
-            shared_ptr<callable> call = pwrcall->value;
-            uint32_t callable_id = as_singleton<callable_registry>()->register_callable(call);
-            return env.invoke<jobject>(callable_registry_cls_, nullptr, register_callable_, (jint)callable_id).detach();
+            return encode_callable(env, pwrcall->value);
         } else {
             THROW_NOT_IMPLEMENTED_ERROR("jni_encoder::encode: can't encode unknown object %1%"_fmt % b);
         }
@@ -254,10 +211,14 @@ jni_encoder::jni_encoder(JNIEnv* penv)
     invocable_cls_ = *inv.invocable_cls;
     invocable_registry_cls_ = *inv.invocable_registry_cls;
     callable_registry_cls_ = *inv.callable_registry_cls;
+    native_invocable_cls_ = *inv.native_invocable_cls;
+    native_callable_cls_ = *inv.native_callable_cls;
 
     jni_env env{ penv };
     get_invocable_ = env.get_static_jmethod(invocable_registry_cls_, "get", "(I)Lcom/sonia/invocation/Invocable;");
-    register_callable_ = env.get_static_jmethod(callable_registry_cls_, "register", "(I)Lcom/sonia/invocation/Callable;");
+    get_callable_ = env.get_static_jmethod(callable_registry_cls_, "get", "(I)Lcom/sonia/invocation/Callable;");
+    native_invocable_ctor_ = env.get_jmethod(native_invocable_cls_, "<init>", "(J)V");
+    native_callable_ctor_ = env.get_jmethod(native_callable_cls_, "<init>", "(J)V");
     debug_method_ = env.get_static_jmethod(invocable_registry_cls_, "debug", "(Ljava/lang/Object;)V");
 }
 
@@ -268,45 +229,142 @@ jobject jni_encoder::encode(JNIEnv* penv, blob_result const& br)
 
 }
 
-extern "C" JNIEXPORT jobject JNICALL
-Java_com_sonia_invocation_NativeCallable_invoke(JNIEnv* penv, jclass clazz, jint id, jobjectArray arguments)
+namespace {
+
+using namespace sonia;
+using namespace sonia::invocation;
+
+small_vector<smart_blob, 8> decode_arguments(JNIEnv* penv, jobjectArray arguments)
 {
-    using namespace sonia;
-    using namespace sonia::services;
-
-    GLOBAL_LOG_INFO() << "NativeCallable_invoke: id=" << id;
-
+    small_vector<smart_blob, 8> result;
+    if (!arguments) return result;
     jni_env env{ penv };
-    
+    jsize length = env.get_array_length(arguments);
+    for (jsize index = 0; index < length; ++index) {
+        auto obj = env.get_object_array_element(arguments, index);
+        result.emplace_back(jni_decoder::decode(penv, *obj));
+    }
+    return result;
+}
+
+inline span<const blob_result> as_args(small_vector<smart_blob, 8> const& args) noexcept
+{
+    return span{ reinterpret_cast<blob_result const*>(args.data()), args.size() };
+}
+
+// Converts the exception in flight to a pending Java exception. A missing property is reported by
+// invocable::get_property/set_property with a fixed "... is not registered" message (invocable.cpp),
+// it becomes UndefinedPropertyException when `property_access` is set.
+void rethrow_to_java(JNIEnv* penv, bool property_access = false) noexcept
+{
+    if (penv->ExceptionCheck()) return; // a Java exception from a nested callback just propagates
+    std::string what;
     try {
-        shared_ptr<invocation::callable> c = as_singleton<invocation::callable_registry>()->get_callable(id);
+        throw;
+    } catch (std::exception const& e) {
+        what = e.what();
+    } catch (...) {
+        what = boost::current_exception_diagnostic_information();
+    }
+    char const* clsname = (property_access && what.ends_with("is not registered"))
+        ? "com/sonia/invocation/UndefinedPropertyException"
+        : "java/lang/RuntimeException";
+    try {
+        jni_env env{ penv };
+        auto cls = env.get_class(clsname);
+        env.throw_new(*cls, what.c_str());
+    } catch (...) {}
+}
 
-        if (!c) {
-            throw exception("NativeCallable_invoke: no callable found for id=%1%"_fmt % id);
-        }
-        small_vector<smart_blob, 8> blob_args;
-        int length = env.get_array_length(arguments);
-        for (int index = 0; index < length; index++)
-        {
-            auto obj = env.get_object_array_element(arguments, index);
-            blob_args.emplace_back(invocation::jni_decoder::decode(penv, *obj));
-            //GLOBAL_LOG_ERROR() << "jni contentViewInvoke, method " << methodname.c_str() << ", arg# " << index << ", argval: " << blob_args.back();
-        }
+}
 
-        auto res = c->invoke(span{ reinterpret_cast<blob_result*>(blob_args.data()), blob_args.size() });
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_sonia_invocation_NativeInvocable_nativeInvoke(JNIEnv* penv, jclass, jlong handle, jstring method, jobjectArray arguments)
+{
+    try {
+        jni_env env{ penv };
+        auto mname = env.get_string_utf_chars(method);
+        auto args = decode_arguments(penv, arguments);
+        smart_blob res = native_handle_ref<invocable>(handle)->invoke(string_view{ mname.c_str() }, as_args(args));
         if (res.is_error()) {
             throw exception(res.as<string_view>());
         }
-        return invocation::jni_encoder::encode(penv, *res);
-    } catch (std::exception const& e) {
-        auto expcls = env.get_class("java/lang/RuntimeException");
-        env.throw_new(*expcls, e.what());
+        return jni_encoder::encode(penv, *res);
+    } catch (...) {
+        rethrow_to_java(penv);
+        return nullptr;
+    }
+}
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_sonia_invocation_NativeInvocable_nativeGetProperty(JNIEnv* penv, jclass, jlong handle, jstring name)
+{
+    try {
+        jni_env env{ penv };
+        auto pname = env.get_string_utf_chars(name);
+        smart_blob res = native_handle_ref<invocable>(handle)->get_property(string_view{ pname.c_str() });
+        return jni_encoder::encode(penv, *res);
+    } catch (...) {
+        rethrow_to_java(penv, true);
         return nullptr;
     }
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_sonia_invocation_NativeCallable_release(JNIEnv* penv, jclass clazz, jint id)
+Java_com_sonia_invocation_NativeInvocable_nativeSetProperty(JNIEnv* penv, jclass, jlong handle, jstring name, jobject value)
 {
-    sonia::as_singleton<sonia::invocation::callable_registry>()->free_callable(id);
+    try {
+        jni_env env{ penv };
+        auto pname = env.get_string_utf_chars(name);
+        smart_blob val{ jni_decoder::decode(penv, value) };
+        native_handle_ref<invocable>(handle)->set_property(string_view{ pname.c_str() }, *val);
+    } catch (...) {
+        rethrow_to_java(penv, true);
+    }
+}
+
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_sonia_invocation_NativeInvocable_nativeHasMethod(JNIEnv* penv, jclass, jlong handle, jstring method)
+{
+    try {
+        jni_env env{ penv };
+        auto mname = env.get_string_utf_chars(method);
+        return native_handle_ref<invocable>(handle)->has_method(string_view{ mname.c_str() }) ? JNI_TRUE : JNI_FALSE;
+    } catch (...) {
+        return JNI_FALSE;
+    }
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_sonia_invocation_NativeInvocable_nativeDuplicate(JNIEnv*, jclass, jlong handle)
+{
+    return make_native_handle(native_handle_ref<invocable>(handle));
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_sonia_invocation_NativeInvocable_nativeRelease(JNIEnv*, jclass, jlong handle)
+{
+    free_native_handle<invocable>(handle);
+}
+
+extern "C" JNIEXPORT jobject JNICALL
+Java_com_sonia_invocation_NativeCallable_nativeInvoke(JNIEnv* penv, jclass, jlong handle, jobjectArray arguments)
+{
+    try {
+        auto args = decode_arguments(penv, arguments);
+        smart_blob res = native_handle_ref<callable>(handle)->invoke(as_args(args));
+        if (res.is_error()) {
+            throw exception(res.as<string_view>());
+        }
+        return jni_encoder::encode(penv, *res);
+    } catch (...) {
+        rethrow_to_java(penv);
+        return nullptr;
+    }
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_sonia_invocation_NativeCallable_nativeRelease(JNIEnv*, jclass, jlong handle)
+{
+    free_native_handle<callable>(handle);
 }

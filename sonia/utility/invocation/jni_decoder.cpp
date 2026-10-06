@@ -8,99 +8,59 @@
 #include "sonia/java/jni_ref.hpp"
 //#include "jni_encoder.hpp"
 #include "jni_invoker.hpp"
+#include "jni_proxy.hpp"
+#include "jni_native_handle.hpp"
 
 namespace sonia::invocation {
 
-class jni_callable_proxy
-    : public callable
-    , public enable_shared_from_this<jni_callable_proxy>
+smart_blob jni_callable_proxy::invoke(span<const blob_result> args)
 {
-    JNIEnv* penv_;
-    jint id_;
+    jni_env env{ penv_ };
+    return as_singleton<invocation::jni_invoker>(penv_)->call_invoke(id_, args);
+}
 
-public:
-    inline jni_callable_proxy(JNIEnv* penv, jint id) noexcept : penv_{ penv }, id_{ id }
-    {
-        //GLOBAL_LOG_INFO() << "jni_callable_proxy created, id: " << id_;
-    }
+shared_ptr<invocable> jni_invocable_proxy::self_as_invocable_shared()
+{
+    return shared_from_this();
+}
 
-    ~jni_callable_proxy()
-    {
-        //GLOBAL_LOG_INFO() << "destroyed jni_callable_proxy, id: " << id_;
-    }
-
-    smart_blob invoke(span<const blob_result> args) override
-    {
+bool jni_invocable_proxy::try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept
+{
+    try {
         jni_env env{ penv_ };
-        return as_singleton<invocation::jni_invoker>(penv_)->call_invoke(id_, args);
+        result = as_singleton<invocation::jni_invoker>(penv_)->invoke(id_, methodname, args);
+        return true;
+    } catch (...) {
+        return false;
     }
-};
+}
 
-class jni_invocable_proxy 
-    : public invocable
-    , public enable_shared_from_this<jni_invocable_proxy>
+bool jni_invocable_proxy::try_set_property(string_view propname, blob_result const& val)
 {
-    JNIEnv* penv_;
-    jint id_;
-
-public:
-    inline jni_invocable_proxy(JNIEnv* penv, jint id) noexcept : penv_{ penv }, id_{ id }
-    {
-        //GLOBAL_LOG_INFO() << "jni_invocable_proxy created, id: " << id_;
+    // GLOBAL_LOG_INFO() << "setting property '" << propname << "' with value: " << val;
+    try {
+        jni_env env{ penv_ };
+        as_singleton<invocation::jni_invoker>(penv_)->set_property(id_, propname, val);
+        return true;
     }
-
-    ~jni_invocable_proxy()
-    {
-        //GLOBAL_LOG_INFO() << "destroyed jni_invocable_proxy, id: " << id_;
+    catch (...) {
+        GLOBAL_LOG_ERROR() << "failed to set property '" << propname << "', error: " << boost::current_exception_diagnostic_information();
+        return false;
     }
+}
 
-    shared_ptr<invocable> self_as_invocable_shared() override
-    {
-        return shared_from_this();
+bool jni_invocable_proxy::try_get_property(string_view propname, smart_blob& result) const
+{
+    try {
+        jni_env env{ penv_ };
+        result = as_singleton<invocation::jni_invoker>(penv_)->get_property(id_, propname);
+        GLOBAL_LOG_INFO() << "got property '" << propname << "' with value: " << result;
+        return true;
+    } catch (...) {
+        GLOBAL_LOG_ERROR() << "failed to get property '" << propname << "', error: " << boost::current_exception_diagnostic_information();
+        return false;
     }
-
-    bool try_invoke(string_view methodname, span<const blob_result> args, smart_blob& result) noexcept override
-    {
-        try {
-            jni_env env{ penv_ };
-            result = as_singleton<invocation::jni_invoker>(penv_)->invoke(id_, methodname, args);
-            return true;
-        } catch (...) {
-            return false;
-        }
-    }
-
-    bool try_set_property(string_view propname, blob_result const& val) override
-    {
-        // GLOBAL_LOG_INFO() << "setting property '" << propname << "' with value: " << val;
-        try {
-            jni_env env{ penv_ };
-            as_singleton<invocation::jni_invoker>(penv_)->set_property(id_, propname, val);
-            return true;
-        }
-        catch (...) {
-            GLOBAL_LOG_ERROR() << "failed to set property '" << propname << "', error: " << boost::current_exception_diagnostic_information();
-            return false;
-        }
-    }
-
-    bool try_get_property(string_view propname, smart_blob& result) const override
-    {
-        if (propname == "java_id"sv) {
-            result = i32_blob_result(id_);
-            return true;
-        }
-        try {
-            jni_env env{ penv_ };
-            result = as_singleton<invocation::jni_invoker>(penv_)->get_property(id_, propname);
-            GLOBAL_LOG_INFO() << "got property '" << propname << "' with value: " << result;
-            return true;
-        } catch (...) {
-            GLOBAL_LOG_ERROR() << "failed to get property '" << propname << "', error: " << boost::current_exception_diagnostic_information();
-            return false;
-        }
-    }
-};
+}
 
 blob_result jni_decoder::decode(JNIEnv* penv, jobject obj)
 {
@@ -218,6 +178,28 @@ jni_decoder::jni_decoder(JNIEnv* penv)
         jdouble value = env.invoke<jdouble>(nullptr, obj, p->double_doubleValue_);
         return f64_blob_result(value);
     };
+
+    get_native_handle_ = env.get_jmethod(*inv.native_invocable_cls, "getHandle", "()J"); // declared in NativeObject
+
+    // must precede the generic Invocable/Callable handlers below: NativeInvocable/NativeCallable implement
+    // those interfaces too, but wrap a native object that is handed back as is instead of being proxied again
+    polymorphic_type_handlers_.emplace_back(
+        *inv.native_invocable_cls,
+        [](jni_decoder const* p, JNIEnv* penv, jobject obj) -> blob_result {
+            jni_env env{ penv };
+            jlong handle = env.invoke<jlong>(nullptr, obj, p->get_native_handle_);
+            using wrapper_object_t = wrapper_object<shared_ptr<invocable>>;
+            return object_blob_result<wrapper_object_t>(native_handle_ref<invocable>(handle));
+        });
+
+    polymorphic_type_handlers_.emplace_back(
+        *inv.native_callable_cls,
+        [](jni_decoder const* p, JNIEnv* penv, jobject obj) -> blob_result {
+            jni_env env{ penv };
+            jlong handle = env.invoke<jlong>(nullptr, obj, p->get_native_handle_);
+            using wrapper_object_t = wrapper_object<shared_ptr<callable>>;
+            return object_blob_result<wrapper_object_t>(native_handle_ref<callable>(handle));
+        });
 
     polymorphic_type_handlers_.emplace_back(
         *inv.invocable_cls,

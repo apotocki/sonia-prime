@@ -61,6 +61,8 @@ public:
     unique_jni_ref<jclass, global_ref_kind> obj_cls;
     unique_jni_ref<jclass, global_ref_kind> invocable_cls;
     unique_jni_ref<jclass, global_ref_kind> callable_cls;
+    unique_jni_ref<jclass, global_ref_kind> native_invocable_cls;
+    unique_jni_ref<jclass, global_ref_kind> native_callable_cls;
     unique_jni_ref<jclass, global_ref_kind> invocable_registry_cls;
     unique_jni_ref<jclass, global_ref_kind> callable_registry_cls;
     unique_jni_ref<jclass, global_ref_kind> cbcl;

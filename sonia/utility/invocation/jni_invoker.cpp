@@ -51,6 +51,8 @@ jni_invoker::jni_invoker(JNIEnv* penv)
 
 	invocable_cls = env.get_class("com/sonia/invocation/Invocable");
     callable_cls = env.get_class("com/sonia/invocation/Callable");
+    native_invocable_cls = env.get_class("com/sonia/invocation/NativeInvocable");
+    native_callable_cls = env.get_class("com/sonia/invocation/NativeCallable");
     invocable_registry_cls = env.get_class("com/sonia/invocation/InvocableRegistry");
 	invoke_ = env.get_static_jmethod(*invocable_registry_cls, "invoke", "(ILjava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;");
 	invoke_set_ = env.get_static_jmethod(*invocable_registry_cls, "setProperty", "(ILjava/lang/String;Ljava/lang/Object;)V");

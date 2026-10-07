@@ -5,6 +5,7 @@
 #pragma once
 
 #include <vector>
+#include <chrono>
 #include "sonia/optional.hpp"
 #include "sonia/shared_ptr.hpp"
 #include "sonia/net/http/application.hpp"
@@ -19,7 +20,8 @@ struct http_connector_configuration
     size_t not_keep_alive_max_count;
     size_t request_buffer_size;
     size_t response_buffer_size;
-    // keep_alive_timeout;
+    std::chrono::seconds keep_alive_timeout; // no activity while waiting for the next request on a connection
+    std::chrono::seconds io_timeout;         // no byte read or written while handling a request
     std::string dos_message;
     std::vector<http_route> routes;
     std::string page404_message;

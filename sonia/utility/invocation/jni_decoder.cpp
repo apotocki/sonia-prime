@@ -70,7 +70,7 @@ bool jni_invocable_proxy::try_get_property(string_view propname, smart_blob& res
 {
     try {
         result = obj_.invoker().get_property(obj_.get(), propname);
-        GLOBAL_LOG_INFO() << "got property '" << propname << "' with value: " << result;
+        //GLOBAL_LOG_INFO() << "got property '" << propname << "' with value: " << result;
         return true;
     } catch (...) {
         GLOBAL_LOG_ERROR() << "failed to get property '" << propname << "', error: " << boost::current_exception_diagnostic_information();

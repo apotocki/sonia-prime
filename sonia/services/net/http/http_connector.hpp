@@ -34,6 +34,8 @@ public:
 
     void close_connections() noexcept override;
 
+    uint64_t idle_time_ms() const noexcept override;
+
     // route selector api
     void enable_route(string_view routeid, bool enable_val) override;
 
@@ -52,6 +54,10 @@ private:
 
     std::atomic<size_t> keep_alive_count_{0};
     std::atomic<size_t> one_shot_count_{0};
+
+    // activity tracking (idle_time_ms): requests being handled, steady clock time of the last completed one
+    std::atomic<size_t> active_requests_{0};
+    std::atomic<int64_t> last_activity_ms_;
 };
 
 }

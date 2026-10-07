@@ -17,6 +17,10 @@ public:
 
     virtual void connect(io::tcp_socket) = 0;
     virtual void close_connections() noexcept = 0;
+
+    // milliseconds since the last request was completed, 0 while a request is in progress
+    // (the default: the connector doesn't track its activity, it is never idle)
+    virtual uint64_t idle_time_ms() const noexcept { return 0; }
 };
 
 class udp_connector

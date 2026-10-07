@@ -5,6 +5,8 @@
 #include "sonia/config.hpp"
 #include "http_connector.hpp"
 
+#include <chrono>
+
 #include <boost/algorithm/string/predicate.hpp>
 
 #include "sonia/exceptions.hpp"
@@ -24,8 +26,14 @@ namespace sonia::services {
 using sonia::io::tcp_socket;
 using namespace sonia::http;
 
+static int64_t steady_now_ms() noexcept
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
 http_connector::http_connector(http_connector_configuration cfg)
     : cfg_(std::move(cfg))
+    , last_activity_ms_{ steady_now_ms() }
 {
     set_log_attribute("Type", "http-connector");
 }
@@ -103,6 +111,11 @@ bool http_connector::do_connection(read_iterator & ii, write_iterator & oi, bool
     auto it = decode<serialization::default_t>(range_dereferencing_iterator{reference_wrapper_iterator{ii}}, req);
     it.flush();
 
+    // the request is in progress from here on (a keep-alive connection waiting for the next request above is not);
+    // the time is stored before the decrement, so a zero counter is never seen with a stale time
+    ++active_requests_;
+    SCOPE_EXIT([this] { last_activity_ms_ = steady_now_ms(); --active_requests_; });
+
     req.build_input_iterator(ii);
     
     cstring_view uri = req.get_relative_uri();
@@ -161,6 +174,13 @@ void http_connector::one_shot_connect(sonia::io::tcp_socket soc)
     read_iterator ii{soc, reqbuff, (size_t)0};
 
     do_connection(ii, oi, false);
+}
+
+uint64_t http_connector::idle_time_ms() const noexcept
+{
+    if (active_requests_.load()) return 0;
+    int64_t idle = steady_now_ms() - last_activity_ms_.load();
+    return idle > 0 ? (uint64_t)idle : 0;
 }
 
 void http_connector::enable_route(string_view routeid, bool enable_val)

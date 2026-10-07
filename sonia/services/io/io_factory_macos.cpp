@@ -15,9 +15,11 @@
 #include <netdb.h>
 
 #include <atomic>
+#include <cstdlib>
 #include <sstream>
 #include <expected>
 
+#include <boost/log/core/core.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/unordered_set.hpp>
 #include <boost/intrusive/list.hpp>
@@ -338,8 +340,12 @@ void macos_impl::thread_proc()
         if constexpr (IO_DEBUG) LOG_INFO(wrapper->logger()) << "woke up thread: " << this_thread::get_id();
         if (-1 == n) {
             int err = errno;
-            LOG_ERROR(wrapper->logger()) << "kevent interrupted: " << strerror(err) ;
-            return;
+            if (EINTR == err) continue; // interrupted by a signal, not an error
+            // the kqueue descriptor itself is broken - a bug in our code;
+            // crash loudly instead of leaving every socket waiting forever for events nobody dispatches
+            LOG_FATAL(wrapper->logger()) << "kevent error: " << strerror(err);
+            boost::log::core::get()->flush();
+            std::abort();
         }
         if (n == 0) {
             LOG_ERROR(wrapper->logger()) << "kevent WRONG WOKE UP";
@@ -512,6 +518,7 @@ std::expected<size_t, std::exception_ptr> macos_impl::tcp_socket_read_some(tcp_h
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) read %2% bytes"_fmt % sh->handle % n);
         if (n >= 0) return (size_t)n;
         int err = errno;
+        if (EINTR == err) continue; // interrupted by a signal before any data was transferred, retry
         if (BOOST_UNLIKELY(EAGAIN != err)) return std::unexpected(std::make_exception_ptr(exception(strerror(err))));
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) read waiting..."_fmt % sh->handle);
         sh->wait(lck);
@@ -534,6 +541,7 @@ std::expected<size_t, std::exception_ptr> macos_impl::tcp_socket_write_some(tcp_
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write %2% bytes"_fmt % sh->handle % n);
         if (n >= 0) return (size_t)n;
         int err = errno;
+        if (EINTR == err) continue; // interrupted by a signal before any data was transferred, retry
         if (BOOST_UNLIKELY(EAGAIN != err)) return std::unexpected(std::make_exception_ptr(exception(strerror(err))));
         if constexpr (IO_DEBUG) LOG_TRACE(wrapper->logger()) << to_string("socket(%1%) write waiting..."_fmt % sh->handle);
         sh->wait(lck);

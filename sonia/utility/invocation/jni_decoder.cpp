@@ -190,6 +190,28 @@ jni_decoder::jni_decoder(JNIEnv* penv)
         return f64_blob_result(value);
     };
 
+    // an object array (e.g. a String[]/Object[] property value) becomes a tuple of its decoded elements
+    auto decode_object_array = [](jni_decoder const* p, JNIEnv* penv, jobject obj) -> blob_result {
+        if (!obj) return nil_blob_result();
+        jni_env env{ penv };
+        jobjectArray arr = static_cast<jobjectArray>(obj);
+        jsize length = env.get_array_length(arr);
+        std::vector<smart_blob> items; // owns the decoded elements until the tuple takes them
+        items.reserve(length);
+        for (jsize index = 0; index < length; ++index) {
+            auto el = env.get_object_array_element(arr, index);
+            items.emplace_back(p->do_decode(penv, *el));
+        }
+        std::vector<blob_result> elems;
+        elems.reserve(items.size());
+        for (auto& item : items) elems.push_back(item.detach());
+        blob_result result = make_blob_result(blob_type::tuple, elems.data(), static_cast<uint32_t>(elems.size() * sizeof(blob_result)));
+        blob_result_allocate(&result);
+        return result;
+    };
+    type_handlers_["[Ljava.lang.Object;"] = decode_object_array;
+    type_handlers_["[Ljava.lang.String;"] = decode_object_array;
+
     // an Invocable that native should reference weakly, see com.sonia.invocation.WeakInvocable
     type_handlers_["com.sonia.invocation.WeakInvocable"] = [](jni_decoder const* p, JNIEnv* penv, jobject obj) -> blob_result {
         if (!obj) return nil_blob_result();

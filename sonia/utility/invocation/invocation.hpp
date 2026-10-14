@@ -1424,7 +1424,9 @@ requires (sizeof(T) > 1)
 struct from_blob<std::span<T>>
 {
     using span_t = std::span<T>;
-    span_t operator()(blob_result val) const
+    // by reference, like from_blob<span<const CharT>>: a small array is stored inside the blob itself
+    // (inplace), a span over a by-value copy would dangle once this returns
+    span_t operator()(blob_result const& val) const
     {
         using namespace sonia;
         blob_type decayed_type = (blob_type)(((uint8_t)val.type) & 0x7f);

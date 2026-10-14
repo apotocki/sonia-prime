@@ -240,6 +240,16 @@ jni_decoder::jni_decoder(JNIEnv* penv)
     type_handlers_["[Ljava.lang.Object;"] = decode_object_array;
     type_handlers_["[Ljava.lang.String;"] = decode_object_array;
 
+    // a long[] (e.g. a table row path) becomes an i64 array
+    type_handlers_["[J"] = [](jni_decoder const* p, JNIEnv* penv, jobject obj) -> blob_result {
+        if (!obj) return nil_blob_result();
+        auto arr = static_cast<jlongArray>(obj);
+        jsize n = penv->GetArrayLength(arr);
+        std::vector<int64_t> values(n);
+        if (n) penv->GetLongArrayRegion(arr, 0, n, reinterpret_cast<jlong*>(values.data()));
+        return array_blob_result(std::span<int64_t>{ values }, true); // owns a copy
+    };
+
     // an Invocable that native should reference weakly, see com.sonia.invocation.WeakInvocable
     type_handlers_["com.sonia.invocation.WeakInvocable"] = [](jni_decoder const* p, JNIEnv* penv, jobject obj) -> blob_result {
         if (!obj) return nil_blob_result();

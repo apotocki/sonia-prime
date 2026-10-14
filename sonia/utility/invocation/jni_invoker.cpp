@@ -91,6 +91,7 @@ jni_invoker::jni_invoker(JNIEnv* penv)
     weak_invocable_cls = env.get_class("com/sonia/invocation/WeakInvocable");
     native_invocable_cls = env.get_class("com/sonia/invocation/NativeInvocable");
     native_callable_cls = env.get_class("com/sonia/invocation/NativeCallable");
+    bigint_cls = env.get_class("java/math/BigInteger");
 
 	invocable_invoke_ = env.get_jmethod(*invocable_cls, "invoke", "(Ljava/lang/String;[Ljava/lang/Object;)Ljava/lang/Object;");
 	invocable_set_property_ = env.get_jmethod(*invocable_cls, "setProperty", "(Ljava/lang/String;Ljava/lang/Object;)V");

@@ -31,6 +31,9 @@ private:
 	jmethodID long_longValue_;
 	jmethodID float_floatValue_;
 	jmethodID double_doubleValue_;
+	jmethodID bigint_signum_;
+	jmethodID bigint_abs_;
+	jmethodID bigint_toByteArray_;
 	jmethodID get_native_handle_;
 	jmethodID throwable_toString_;
 	jfieldID weak_invocable_target_fld_;

@@ -137,6 +137,12 @@ jni_decoder::jni_decoder(JNIEnv* penv)
         auto double_cls = env.get_class(jni_traits<jdouble>::class_name);
         double_doubleValue_ = env.get_jmethod(*double_cls, "doubleValue", "()D");
     }
+    {
+        auto bigint_cls = env.get_class("java/math/BigInteger");
+        bigint_signum_ = env.get_jmethod(*bigint_cls, "signum", "()I");
+        bigint_abs_ = env.get_jmethod(*bigint_cls, "abs", "()Ljava/math/BigInteger;");
+        bigint_toByteArray_ = env.get_jmethod(*bigint_cls, "toByteArray", "()[B");
+    }
     weak_invocable_target_fld_ = env.get_jfield(*inv.weak_invocable_cls, "target", "Lcom/sonia/invocation/Invocable;");
 
     type_handlers_["java.lang.String"] = [](jni_decoder const* p, JNIEnv* penv, jobject obj) -> blob_result {
@@ -188,6 +194,28 @@ jni_decoder::jni_decoder(JNIEnv* penv)
         jni_env env{ penv };
         jdouble value = env.invoke<jdouble>(nullptr, obj, p->double_doubleValue_);
         return f64_blob_result(value);
+    };
+    // the script's `integer`
+    type_handlers_["java.math.BigInteger"] = [](jni_decoder const* p, JNIEnv* penv, jobject obj) -> blob_result {
+        if (!obj) return nil_blob_result();
+        using limb_t = invocation_bigint_limb_type;
+        jint sign = penv->CallIntMethod(obj, p->bigint_signum_);
+        jobject absval = penv->CallObjectMethod(obj, p->bigint_abs_);
+        auto bytes = static_cast<jbyteArray>(penv->CallObjectMethod(absval, p->bigint_toByteArray_));
+        jsize n = penv->GetArrayLength(bytes);
+        std::vector<jbyte> magnitude(n); // big-endian
+        penv->GetByteArrayRegion(bytes, 0, n, magnitude.data());
+        penv->DeleteLocalRef(bytes);
+        penv->DeleteLocalRef(absval);
+        std::vector<limb_t> limbs((n + sizeof(limb_t) - 1) / sizeof(limb_t), 0); // little-endian limbs
+        for (jsize i = 0; i < n; ++i) {
+            size_t pos = static_cast<size_t>(n - 1 - i); // from the least significant byte
+            limbs[pos / sizeof(limb_t)] |= static_cast<limb_t>(static_cast<uint8_t>(magnitude[i])) << (8 * (pos % sizeof(limb_t)));
+        }
+        while (!limbs.empty() && !limbs.back()) limbs.pop_back();
+        blob_result result = bigint_blob_result(numetron::basic_integer_view<limb_t>{ std::span<const limb_t>{ limbs }, sign < 0 ? -1 : 1 });
+        blob_result_allocate(&result); // the limbs are local
+        return result;
     };
 
     // an object array (e.g. a String[]/Object[] property value) becomes a tuple of its decoded elements

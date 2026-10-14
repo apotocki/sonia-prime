@@ -22,14 +22,17 @@ public:
 
 	[[nodiscard]] jobject encode_invocable(jni_env&, shared_ptr<invocable> const&) const;
 	[[nodiscard]] jobject encode_callable(jni_env&, shared_ptr<callable> const&) const;
+	[[nodiscard]] jobject encode_bigint(JNIEnv*, numetron::basic_integer_view<invocation_bigint_limb_type>) const;
 
     jclass obj_cls_;
 	jclass invocable_cls_;
 	jclass native_invocable_cls_;
 	jclass native_callable_cls_;
+	jclass bigint_cls_;
 
 	jmethodID native_invocable_ctor_;
 	jmethodID native_callable_ctor_;
+	jmethodID bigint_ctor_; // BigInteger(int signum, byte[] magnitude)
 
 private:
 	[[nodiscard]] jobject do_encode(JNIEnv*, blob_result const&) const;

@@ -11,6 +11,8 @@
 
 #include "sonia/small_vector.hpp"
 
+#include <vector>
+
 #include "sonia/java/jni_env.hpp"
 #include "sonia/java/jni_ref.hpp"
 
@@ -199,9 +201,30 @@ jobject jni_encoder::do_encode(JNIEnv* penv, blob_result const& b) const
         string_view s{ data_of<char>(b), array_size_of<char>(b) };
         return env.new_string(s).detach();
     }
+    case blob_type::bigint:
+        return encode_bigint(penv, as<numetron::basic_integer_view<invocation_bigint_limb_type>>(b));
     default:
         THROW_NOT_IMPLEMENTED_ERROR("jni_encoder::encode: can't encode %1%"_fmt % b);
     }
+}
+
+// BigInteger(int signum, byte[] magnitude), the magnitude is big-endian
+jobject jni_encoder::encode_bigint(JNIEnv* penv, numetron::basic_integer_view<invocation_bigint_limb_type> v) const
+{
+    using limb_t = invocation_bigint_limb_type;
+    size_t const sz = v.size() * sizeof(limb_t);
+    std::vector<jbyte> magnitude(sz);
+    for (size_t i = 0; i < v.size(); ++i) {
+        limb_t l = v.at(i); // masked: the most significant limb may carry skipped bits
+        for (size_t j = 0; j < sizeof(limb_t); ++j, l >>= 8) {
+            magnitude[sz - 1 - (i * sizeof(limb_t) + j)] = static_cast<jbyte>(l & 0xff);
+        }
+    }
+    jbyteArray arr = penv->NewByteArray(static_cast<jsize>(sz));
+    penv->SetByteArrayRegion(arr, 0, static_cast<jsize>(sz), magnitude.data());
+    jobject result = penv->NewObject(bigint_cls_, bigint_ctor_, static_cast<jint>(v.sgn() < 0 ? -1 : 1), arr);
+    penv->DeleteLocalRef(arr);
+    return result;
 }
 
 jni_encoder::jni_encoder(JNIEnv* penv)
@@ -211,10 +234,12 @@ jni_encoder::jni_encoder(JNIEnv* penv)
     invocable_cls_ = *inv.invocable_cls;
     native_invocable_cls_ = *inv.native_invocable_cls;
     native_callable_cls_ = *inv.native_callable_cls;
+    bigint_cls_ = *inv.bigint_cls;
 
     jni_env env{ penv };
     native_invocable_ctor_ = env.get_jmethod(native_invocable_cls_, "<init>", "(J)V");
     native_callable_ctor_ = env.get_jmethod(native_callable_cls_, "<init>", "(J)V");
+    bigint_ctor_ = env.get_jmethod(bigint_cls_, "<init>", "(I[B)V");
 }
 
 jobject jni_encoder::encode(JNIEnv* penv, blob_result const& br)

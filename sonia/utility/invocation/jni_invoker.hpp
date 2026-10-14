@@ -77,6 +77,7 @@ public:
     unique_jni_ref<jclass, global_ref_kind> weak_invocable_cls;
     unique_jni_ref<jclass, global_ref_kind> native_invocable_cls;
     unique_jni_ref<jclass, global_ref_kind> native_callable_cls;
+    unique_jni_ref<jclass, global_ref_kind> bigint_cls; // java.math.BigInteger <-> blob_type::bigint
     unique_jni_ref<jclass, global_ref_kind> cbcl;
 
     explicit jni_invoker(JNIEnv* penv);

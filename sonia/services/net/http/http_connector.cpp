@@ -172,17 +172,28 @@ bool http_connector::do_connection(connection& conn, read_iterator & ii, write_i
     auto it = decode<serialization::default_t>(range_dereferencing_iterator{reference_wrapper_iterator{ii}}, req);
     it.flush();
 
+    // a passive request (a periodic poll of the web interface) is not an activity for idle_time_ms;
+    // get_relative_uri throws for a request without one: it fails below, as before
+    bool passive = false;
+    if (cfg_.passive_pathre) {
+        try {
+            passive = regex_match(req.get_relative_uri().c_str(), *cfg_.passive_pathre);
+        } catch (...) {}
+    }
+
     // the request is in progress from here on (a keep-alive connection waiting for the next request above is not);
     // the time is stored before the decrement, so a zero counter is never seen with a stale time;
     // the keep alive timeout of the connection counts from the end of the request
     conn.in_request = true;
-    ++active_requests_;
-    SCOPE_EXIT([this, &conn] {
+    if (!passive) ++active_requests_;
+    SCOPE_EXIT([this, &conn, passive] {
         int64_t now = steady_now_ms();
         conn.last_io_ms = now;
         conn.in_request = false;
-        last_activity_ms_ = now;
-        --active_requests_;
+        if (!passive) {
+            last_activity_ms_ = now;
+            --active_requests_;
+        }
     });
 
     req.build_input_iterator(ii);

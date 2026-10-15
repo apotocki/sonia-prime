@@ -22,6 +22,7 @@ struct http_connector_configuration
     size_t response_buffer_size;
     std::chrono::seconds keep_alive_timeout; // no activity while waiting for the next request on a connection
     std::chrono::seconds io_timeout;         // no byte read or written while handling a request
+    optional<boost::regex> passive_pathre;   // requests that are not an activity for idle_time_ms (e.g. periodic polls)
     std::string dos_message;
     std::vector<http_route> routes;
     std::string page404_message;

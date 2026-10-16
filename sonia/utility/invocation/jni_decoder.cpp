@@ -114,7 +114,7 @@ jni_decoder::jni_decoder(JNIEnv* penv)
         boolean_booleanValue_ = env.get_jmethod(*boolean_cls, "booleanValue", "()Z");
     }
     {
-        auto byte_cls = env.get_class(jni_traits<jshort>::class_name);
+        auto byte_cls = env.get_class(jni_traits<jbyte>::class_name);
         byte_byteValue_ = env.get_jmethod(*byte_cls, "byteValue", "()B");
     }
     {

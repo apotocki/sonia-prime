@@ -152,6 +152,11 @@ DEFINE_VMOP_PROTO(op, uint8_t,
     pushfp VMOP_SIMPLE, popfp VMOP_SIMPLE, truncatefpp VMOP_ARG, truncatefpn VMOP_ARG
 );
 
+// Version of the bytecode encoding defined in this file: the op set and values above, the operand
+// encoding (read_uint/append_uint) and the short ecall form (128 + fnindex). Persisted bytecode
+// images store it and refuse to load on a mismatch, so bump it whenever any of these changes.
+inline constexpr uint32_t bytecode_version = 1;
+
 template <typename ContextT>
 class virtual_stack_machine
 {
@@ -220,8 +225,16 @@ public:
     }
 
     auto& consts() { return consts_; }
+    auto const& consts() const { return consts_; }
+
+    span<const uint8_t> code() const noexcept { return code_; }
 
     auto& efns() const { return efns_; }
+
+    // Restoring a persisted image: each call replaces the whole corresponding state.
+    void set_code(std::vector<uint8_t> code) { code_ = std::move(code); }
+    void set_consts(std::vector<var_t> consts) { consts_ = std::move(consts); }
+    void set_efns(std::vector<std::pair<ext_function_t, small_string>> efns) { efns_ = std::move(efns); }
 
     void set_efn(size_t idx, ext_function_t pfn, small_string descr = {})
     {

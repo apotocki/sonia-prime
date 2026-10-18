@@ -66,6 +66,10 @@ public:
     }
 
     template <typename T = IteratorT>
+    requires(requires(T const& it) { it.remaining(); })
+    size_t remaining() const { return base_.remaining(); }
+
+    template <typename T = IteratorT>
     enable_if_t<iterators::has_method_flush_v<T, void()>> flush() { base_.flush(); }
 
     template <typename T = IteratorT>

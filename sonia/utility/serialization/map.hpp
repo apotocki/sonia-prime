@@ -35,7 +35,10 @@ struct map_coder
     {
         typename MapT::size_type sz;
         ii = sonia::decode<TagT>(std::move(ii), sz);
-        value.reserve(sz);
+        check_decoded_count(ii, sz, min_encoded_size_v<TagT, key_type> + min_encoded_size_v<TagT, mapped_type>);
+        if constexpr (requires { value.reserve(sz); }) { // std::map has no reserve
+            value.reserve(sz);
+        }
         for (size_type i = 0; i < sz; ++i) {
             key_type k; ii = sonia::decode<TagT>(std::move(ii), k);
             mapped_type v; ii = sonia::decode<TagT>(std::move(ii), v);

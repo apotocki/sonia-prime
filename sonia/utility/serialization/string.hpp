@@ -114,6 +114,7 @@ public:
     {
         size_type sz;
         ii = sonia::decode<TagT>(std::move(ii), sz);
+        check_decoded_count<TagT, CharT>(ii, sz);
         value.resize(sz);
         return sonia::decode<TagT>(std::move(ii), std::span{value});
     }

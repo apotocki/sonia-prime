@@ -211,16 +211,21 @@ public:
         return std::move(oi);
     }
 
+    // a value that doesn't fit the type (too many parts or extra bits in the last one) is malformed
     template <typename InputIteratorT>
     InputIteratorT decode(InputIteratorT ii, type & val) const
     {
         val = 0;
-        for (unsigned int i = 0; i < parts_ * 7; i += 7) {
+        for (unsigned int i = 0; ; i += 7) {
             type part = *ii;
             ++ii;
 
             const auto hasnext = part & 0x80;
-            val |= ((part & 0x7f) << i);
+            part &= 0x7f;
+            if (i >= traits::digits || (traits::digits - i < 7 && (part >> (traits::digits - i)))) {
+                throw exception("malformed compressed integer: the value doesn't fit the type");
+            }
+            val |= (part << i);
             if (!hasnext) break;
         }
         return std::move(ii);

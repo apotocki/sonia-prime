@@ -25,6 +25,11 @@ public:
 
     bool empty() const { return b_ == e_; }
 
+    // the number of elements left, e.g. to check a size read from untrusted input before allocating
+    template <typename T = IteratorT>
+    requires(std::random_access_iterator<T>)
+    size_t remaining() const { return static_cast<size_t>(e_ - b_); }
+
     bool operator==(safe_iterator const& rhs) const
     {
         return rhs.b_ == b_;

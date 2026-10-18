@@ -4,10 +4,47 @@
 
 #pragma once
 
+#include <cstdint>
+#include <type_traits>
+
 #include "sonia/type_traits.hpp"
+#include "sonia/exceptions.hpp"
 #include "sonia/utility/serialization/serialization_fwd.hpp"
 
 namespace sonia {
+
+namespace serialization {
+
+// A lower bound of the encoded size of a T, used to check element counts read from an untrusted
+// input before allocating (see check_decoded_count); 0 means unknown, no check. A coder that can
+// encode a non-empty T in zero bytes must specialize it to 0.
+template <typename TagT, typename T>
+struct min_encoded_size : integral_constant<size_t, std::is_empty_v<T> ? 0 : 1> {};
+
+template <typename TagT, typename T>
+inline constexpr size_t min_encoded_size_v = min_encoded_size<TagT, remove_cv_t<T>>::value;
+
+}
+
+// For decoders, before allocating `count` elements of at least `min_element_size` encoded bytes
+// each, as read from the input: if the input iterator knows how much is left (remaining(), e.g.
+// empty_check_iterator over safe_iterator), a count that can't fit in it fails as eof instead of
+// requesting a huge allocation. Other iterators aren't checked.
+template <typename InputIteratorT>
+void check_decoded_count(InputIteratorT const& ii, std::uint64_t count, size_t min_element_size)
+{
+    if constexpr (requires { ii.remaining(); }) {
+        if (min_element_size && count > ii.remaining() / min_element_size) {
+            throw eof_exception();
+        }
+    }
+}
+
+template <typename TagT, typename T, typename InputIteratorT>
+void check_decoded_count(InputIteratorT const& ii, std::uint64_t count)
+{
+    check_decoded_count(ii, count, serialization::min_encoded_size_v<TagT, T>);
+}
 
 template <typename TagT, typename T, typename OutputIteratorT>
 OutputIteratorT encode(T const& arg, OutputIteratorT oi)

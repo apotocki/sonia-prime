@@ -88,6 +88,7 @@ struct vector_coder
     {
         SizeT sz;
         ii = sonia::decode<TagT>(std::move(ii), sz);
+        check_decoded_count<TagT, typename VectorT::value_type>(ii, sz);
         value.resize(sz);
         return sonia::decode<TagT>(std::move(ii), std::span{value});
     }
@@ -97,6 +98,7 @@ struct vector_coder
     {
         SizeT sz;
         ii = sonia::decode<TagT>(std::move(ii), sz);
+        check_decoded_count<TagT, typename VectorT::value_type>(ii, sz);
 
         try {
             new(value) VectorT(sz);

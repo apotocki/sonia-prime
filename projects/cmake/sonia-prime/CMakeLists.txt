@@ -17,10 +17,6 @@ set (BUNDLE_SOURCES
     ${SONIA_HOME}/sonia/services/service_locator.cpp
     ${SONIA_HOME}/sonia/services/basic_service_factory.cpp
     ${SONIA_HOME}/sonia/services/local_service_registry.cpp
-    ${SONIA_HOME}/sonia/services/registry/registry_service_builder.cpp
-    ${SONIA_HOME}/sonia/services/registry/registry_service.cpp
-    ${SONIA_HOME}/sonia/services/bookkeeper/bookkeeper_service_builder.cpp
-    ${SONIA_HOME}/sonia/services/bookkeeper/bookkeeper_service.cpp
     ${SONIA_HOME}/sonia/services/scheduler/scheduler_service_builder.cpp
     ${SONIA_HOME}/sonia/services/scheduler/scheduler_service.cpp
     ${SONIA_HOME}/sonia/services/auth/auth_service_builder.cpp
@@ -30,6 +26,24 @@ set (BUNDLE_SOURCES
     ${SONIA_HOME}/sonia/fibers/default_stack.cpp
     ${SONIA_HOME}/sonia/fibers/context_shared.cpp
 )
+
+if (NOT DEFINED NO_REGISTRY)
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        ${SONIA_HOME}/sonia/services/registry/registry_service_builder.cpp
+        ${SONIA_HOME}/sonia/services/registry/registry_service.cpp
+    )
+else()
+    add_compile_definitions(SONIA_NO_REGISTRY)
+endif()
+
+if (NOT DEFINED NO_BOOKKEEPER)
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        ${SONIA_HOME}/sonia/services/bookkeeper/bookkeeper_service_builder.cpp
+        ${SONIA_HOME}/sonia/services/bookkeeper/bookkeeper_service.cpp
+    )
+else()
+    add_compile_definitions(SONIA_NO_BOOKKEEPER)
+endif()
 
 if (NOT DEFINED NO_NET)
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}

@@ -118,7 +118,8 @@ private:
 
 template <typename ContextT>
 requires(std::is_same_v<typename ContextT::variable_type, smart_blob>)
-std::vector<uint8_t> save_image(virtual_stack_machine<ContextT> const& vm, image_traits const& traits, size_t entry_address, string_view source_name)
+std::vector<uint8_t> save_image(virtual_stack_machine<ContextT> const& vm, image_traits const& traits, size_t entry_address, string_view source_name,
+    bool with_descriptions = true) // the descriptions are diagnostics only, without them the table is empty
 {
     using namespace image_detail;
 
@@ -153,7 +154,12 @@ std::vector<uint8_t> save_image(virtual_stack_machine<ContextT> const& vm, image
         enc & *c;
     }
 
-    enc & vm.code() & entry_address & vm.address_descriptions();
+    enc & vm.code() & entry_address;
+    if (with_descriptions) {
+        enc & vm.address_descriptions();
+    } else {
+        enc & std::unordered_map<size_t, std::string>{};
+    }
     return result;
 }
 

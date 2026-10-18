@@ -7,6 +7,8 @@
 
 #include <vector>
 #include <deque>
+#include <string>
+#include <unordered_map>
 #include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/stringize.hpp>
 #include "sonia/span.hpp"
@@ -175,6 +177,9 @@ protected:
     std::vector<std::pair<ext_function_t, small_string>> efns_;
     //std::vector<ext1_function_t> e1fns_;
 
+    // diagnostics only: texts for code addresses (e.g. function entry points), see describe_address
+    std::unordered_map<size_t, std::string> address_descriptions_;
+
     size_t read_uint(size_t& address) const
     {
         size_t result = 0;
@@ -235,6 +240,26 @@ public:
     void set_code(std::vector<uint8_t> code) { code_ = std::move(code); }
     void set_consts(std::vector<var_t> consts) { consts_ = std::move(consts); }
     void set_efns(std::vector<std::pair<ext_function_t, small_string>> efns) { efns_ = std::move(efns); }
+    void set_address_descriptions(std::unordered_map<size_t, std::string> descriptions) { address_descriptions_ = std::move(descriptions); }
+
+    auto const& address_descriptions() const noexcept { return address_descriptions_; }
+
+    // empty if there is no description for the address
+    string_view describe_address(size_t address) const noexcept
+    {
+        auto it = address_descriptions_.find(address);
+        return it != address_descriptions_.end() ? string_view{ it->second } : string_view{};
+    }
+
+    // an empty description removes the address's one
+    void set_address_description(size_t address, std::string description)
+    {
+        if (description.empty()) {
+            address_descriptions_.erase(address);
+        } else {
+            address_descriptions_.insert_or_assign(address, std::move(description));
+        }
+    }
 
     void set_efn(size_t idx, ext_function_t pfn, small_string descr = {})
     {

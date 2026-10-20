@@ -39,15 +39,7 @@ set (BUNDLE_SOURCES
     ${SONIA_HOME}/sonia/utility/invocation/value_encoder.cpp
     ${SONIA_HOME}/sonia/utility/invocation/value_decoder.cpp
     ${SONIA_HOME}/sonia/utility/mvvm/view_model.cpp
-    
-    ${SONIA_HOME}/sonia/utility/xmlbuilder/xmlbuilder.cpp
-    ${SONIA_HOME}/sonia/utility/xmlbuilder/bunch_builder.cpp
-    ${SONIA_HOME}/sonia/utility/xmlbuilder/attr_parser.cpp
-    ${SONIA_HOME}/sonia/utility/xmlbuilder/basic_attribute_resolver.cpp
-    ${SONIA_HOME}/sonia/utility/xmlbuilder/ui_attribute_resolver.cpp
-    ${SONIA_HOME}/sonia/utility/xmlbuilder/detail/xmlbuilder_types.cpp
-    ${SONIA_HOME}/sonia/utility/xmlbuilder/detail/xmlbuilder_model.cpp
-    
+
     ${SONIA_HOME}/sonia/services/singleton_locator.cpp
     ${SONIA_HOME}/sonia/services/local_type_registry.cpp
     ${SONIA_HOME}/sonia/services/durable_type_registry.cpp
@@ -77,6 +69,25 @@ if (NOT DEFINED NO_LUA)
     )
 else()
     add_compile_definitions(SONIA_NO_LUA)
+endif ()
+
+# xmlbuilder core: the SAX-style XML parser (sonia-ui's resources loader)
+if (NOT DEFINED NO_XMLBUILDER)
+    set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+        ${SONIA_HOME}/sonia/utility/xmlbuilder/xmlbuilder.cpp
+        ${SONIA_HOME}/sonia/utility/xmlbuilder/detail/xmlbuilder_model.cpp
+    )
+    # xml-to-objects builder on top of it, used only by the Lua template engine
+    if (NOT DEFINED NO_LUA)
+        set (BUNDLE_SOURCES ${BUNDLE_SOURCES}
+            ${SONIA_HOME}/sonia/utility/xmlbuilder/advxmlbuilder.cpp
+            ${SONIA_HOME}/sonia/utility/xmlbuilder/bunch_builder.cpp
+            ${SONIA_HOME}/sonia/utility/xmlbuilder/attr_parser.cpp
+            ${SONIA_HOME}/sonia/utility/xmlbuilder/basic_attribute_resolver.cpp
+            ${SONIA_HOME}/sonia/utility/xmlbuilder/ui_attribute_resolver.cpp
+            ${SONIA_HOME}/sonia/utility/xmlbuilder/detail/xmlbuilder_types.cpp
+        )
+    endif ()
 endif ()
 if (NOT DEFINED NO_NET)
     set (BUNDLE_SOURCES ${BUNDLE_SOURCES}

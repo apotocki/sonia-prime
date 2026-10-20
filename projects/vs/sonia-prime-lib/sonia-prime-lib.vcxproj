@@ -934,23 +934,49 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\template-engine\code_element.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\template-engine\document_element.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\template-engine\file_template_element.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\template-engine\foreach_element.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\code_element.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\document_element.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\file_template_element.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\foreach_element.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\template-engine\lua_build_visitor.cpp">
       <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_bunch.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_unit.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\template-engine\compound.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\advxmlbuilder.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\attr_parser.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\basic_attribute_resolver.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\bunch_builder.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_bunch.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\templated_unit.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\template-engine\compound.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\advxmlbuilder.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\attr_parser.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\basic_attribute_resolver.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\bunch_builder.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\detail\xmlbuilder_model.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\detail\xmlbuilder_types.cpp" />
-    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\ui_attribute_resolver.cpp" />
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\detail\xmlbuilder_types.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\ui_attribute_resolver.cpp">
+      <ExcludedFromBuild Condition="'$(SONIA_NO_LUA)' == '1'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="..\..\..\sonia\utility\xmlbuilder\xmlbuilder.cpp" />
   </ItemGroup>
   <ItemGroup>
